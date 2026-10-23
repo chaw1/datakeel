@@ -10,7 +10,7 @@ from datakeel.core.models import FileItem
 from datakeel.operators.base import Operator, OperatorResult, PiiParams, artifact, summarize
 
 EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
-PHONE = re.compile(r"(?<!\w)(?:\+?\d[\d ()-]{7,}\d)(?!\w)")
+PHONE = re.compile(r"(?<![\w/-])(?!(?:\d{4}-\d{2}-\d{2})(?!\d))(?:\+?\d[\d ()-]{7,}\d)(?!\w)")
 
 
 def execute(files: list[FileItem], output_dir: Path, params: PiiParams) -> OperatorResult:

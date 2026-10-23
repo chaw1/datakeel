@@ -4,6 +4,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Fixed
+
+- Phone redaction preserves ISO dates, slash-separated dates and time values while continuing to redact local and international phone numbers.
+
 ## [0.8.0] - 2026-10-24
 
 ### Added
