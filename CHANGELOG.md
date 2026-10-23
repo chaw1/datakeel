@@ -4,6 +4,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- Typed YAML workflow definitions with tool, wait, branch, approval and output steps, located validation errors, deep overrides and deterministic variable expressions. `datakeel workflow list` and `datakeel workflow validate` inspect the bundled contracts.
+
 ## [0.7.0] - 2026-10-24
 
 ### Added

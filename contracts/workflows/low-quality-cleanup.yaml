@@ -1,0 +1,82 @@
+id: low-quality-cleanup
+name: 低质样本清理 / Low-quality sample cleanup
+description: Select low-quality files, quarantine them, request deletion approval,
+  and inspect quality again.
+inputs:
+  dataset_id:
+    type: string
+    description: Already imported dataset identifier / 已导入的数据集 ID
+  quality_max:
+    type: number
+    description: Maximum selected quality score / 低质分数上限
+    default: 60
+triggers:
+  keywords:
+  - - 低质样本清理
+  - - 低质量样本
+    - 清理
+  - - low-quality sample cleanup
+  - - low-quality samples
+    - clean up
+  - - query evidence
+    - prepare deletion
+  classification_keywords:
+  - 清理
+  - cleanup
+  - clean up
+  - prepare deletion
+  threshold: 1
+  margin: 1
+entry: find
+steps:
+- id: find
+  type: tool
+  tool: search_files
+  arguments:
+    dataset_id: ${inputs.dataset_id}
+    quality_max: ${inputs.quality_max}
+    limit: 1000
+  next: has_files
+- id: has_files
+  type: branch
+  ref: ${steps.find.data.objects}
+  op: ne
+  value: []
+  then: quarantine
+  otherwise: empty
+- id: quarantine
+  type: tool
+  tool: quarantine_files
+  arguments:
+    selection: &id001
+      dataset_id: ${inputs.dataset_id}
+      filters:
+      - field: id
+        operator: in
+        value:
+          $pluck:
+          - ${steps.find.data.objects}
+          - asset_ref.asset_id
+  next: delete
+- id: delete
+  type: approval
+  action: delete_files
+  arguments:
+    selection: *id001
+  next: quality
+- id: quality
+  type: tool
+  tool: get_quality
+  arguments:
+    dataset_id: ${inputs.dataset_id}
+  next: result
+- id: result
+  type: output
+  value:
+    conclusion: cleaned
+    total: ${steps.quality.data.total}
+    file_count: ${steps.quality.data.file_count}
+- id: empty
+  type: output
+  value:
+    conclusion: no_low_quality_files

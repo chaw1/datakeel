@@ -48,6 +48,12 @@ from datakeel.storage.harness_rows import EvalRunRow, ModelCallTraceRow
 from datakeel.storage.metric_audit import MetricAuditRow
 from datakeel.storage.migrations import add_nullable_columns
 from datakeel.storage.tool_rows import ToolInvocationRow
+from datakeel.storage.workflow_rows import (
+    WorkflowAuditRow,
+    WorkflowResumeRow,
+    WorkflowRunRow,
+    WorkflowStepRow,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
@@ -79,6 +85,10 @@ _REGISTERED_MODELS = (
     AskAnswerRow,
     CheckpointRow,
     CheckpointWriteRow,
+    WorkflowRunRow,
+    WorkflowStepRow,
+    WorkflowAuditRow,
+    WorkflowResumeRow,
 )
 
 

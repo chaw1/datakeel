@@ -1,0 +1,89 @@
+id: metric-change
+name: 指标口径变更 / Metric definition change
+description: Inspect the existing definition and impact, apply a reversible override,
+  and compare answers.
+inputs:
+  metric_id:
+    type: string
+    description: Metric identifier / 指标 ID
+    default: retail_revenue
+  override:
+    type: object
+    description: Deeply merged metric definition changes / 指标定义深合并改动
+    default:
+      measure:
+        column: ecommerce/main/orders/list_amount
+  question:
+    type: string
+    description: Question asked before and after the change / 变更前后的同一问题
+    default: 上个季度华东区零售额是多少
+  reference_instant:
+    type: string
+    description: Fixed UTC question reference / 固定问数时间
+    default: '2026-10-01T00:00:00Z'
+triggers:
+  keywords:
+  - - 指标口径变更
+  - - 指标
+    - 度量字段
+    - 更改
+  - - 度量字段
+    - 改
+    - 再回答
+  - - metric definition change
+  - - metric
+    - measure column
+    - change
+  classification_keywords:
+  - 口径变更
+  - 度量字段
+  - definition change
+  - measure column
+  threshold: 1
+  margin: 1
+entry: current
+steps:
+- id: current
+  type: tool
+  tool: explain_metric
+  arguments:
+    metric_id: ${inputs.metric_id}
+  next: before
+- id: before
+  type: tool
+  tool: ask_data
+  arguments: &id001
+    question: ${inputs.question}
+    metric_id: ${inputs.metric_id}
+    reference_instant: ${inputs.reference_instant}
+  next: impact
+- id: impact
+  type: tool
+  tool: impact_of
+  arguments:
+    asset_id: ${inputs.metric_id}
+  next: update
+- id: update
+  type: tool
+  tool: update_metric
+  arguments:
+    definition:
+      $merge:
+      - ${steps.current.data.definition}
+      - ${inputs.override}
+  next: after
+- id: after
+  type: tool
+  tool: ask_data
+  arguments: *id001
+  next: comparison
+- id: comparison
+  type: output
+  value:
+    before_rows: ${steps.before.data.result.rows}
+    after_rows: ${steps.after.data.result.rows}
+    rows_equal:
+      $rows_equal:
+      - ${steps.before.data.result.rows}
+      - ${steps.after.data.result.rows}
+    impact: ${steps.impact.data}

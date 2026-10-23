@@ -11,6 +11,7 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
+from datakeel.cli import workflow
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -72,6 +73,7 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
+    workflow.register_parser(commands)
     return result
 
 
@@ -97,6 +99,9 @@ def main() -> None:
     """Dispatch a validated local command and configure structured diagnostics."""
     args = parser().parse_args()
     configure_logging()
+    if args.command == "workflow":
+        workflow.dispatch(args)
+        return
     if args.command == "demo":
         demo(args)
         return

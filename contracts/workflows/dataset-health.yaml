@@ -1,0 +1,73 @@
+id: dataset-health
+name: 新数据集体检 / Dataset health check
+description: Process an imported dataset, inspect quality and evidence, and produce
+  a deterministic conclusion.
+inputs:
+  dataset_id:
+    type: string
+    description: Already imported dataset identifier / 已导入的数据集 ID
+triggers:
+  keywords:
+  - - 数据集
+    - 体检
+  - - dataset health check
+  - - dataset checkup
+  classification_keywords:
+  - 体检
+  - health check
+  - checkup
+  threshold: 1
+  margin: 1
+entry: pipeline
+steps:
+- id: pipeline
+  type: tool
+  tool: run_pipeline
+  arguments:
+    dataset_id: ${inputs.dataset_id}
+  next: wait
+- id: wait
+  type: wait
+  task_id: ${steps.pipeline.task_id}
+  timeout_seconds: 60
+  poll_interval: 0.25
+  next: quality
+- id: quality
+  type: tool
+  tool: get_quality
+  arguments:
+    dataset_id: ${inputs.dataset_id}
+  next: report
+- id: report
+  type: tool
+  tool: get_report
+  arguments:
+    dataset_id: ${inputs.dataset_id}
+  next: evidence
+- id: evidence
+  type: tool
+  tool: query_evidence
+  arguments:
+    dataset_id: ${inputs.dataset_id}
+  next: score
+- id: score
+  type: branch
+  ref: ${steps.quality.data.total}
+  op: gte
+  value: 80
+  then: healthy
+  otherwise: review
+- id: healthy
+  type: output
+  value:
+    conclusion: healthy
+    total: ${steps.quality.data.total}
+    report: ${steps.report.data.body}
+    evidence_total: ${steps.evidence.data.total}
+- id: review
+  type: output
+  value:
+    conclusion: needs_review
+    total: ${steps.quality.data.total}
+    report: ${steps.report.data.body}
+    evidence_total: ${steps.evidence.data.total}

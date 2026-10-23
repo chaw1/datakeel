@@ -14,6 +14,8 @@ FUNCTION_LIMIT = 60
 COMPONENT_LIMIT = 300
 AGENT_PACKAGE_LIMIT = 1500
 RUNTIME_PACKAGE_LIMIT = 1500
+WORKFLOWS_PACKAGE_LIMIT = 1500
+ROUTING_PACKAGE_LIMIT = 1500
 
 
 def violations() -> list[str]:
@@ -35,7 +37,12 @@ def violations() -> list[str]:
         for path in Path("web/src").rglob("*.tsx")
         if len(path.read_text().splitlines()) > COMPONENT_LIMIT
     )
-    for package, limit in (("agent", AGENT_PACKAGE_LIMIT), ("runtime", RUNTIME_PACKAGE_LIMIT)):
+    for package, limit in (
+        ("agent", AGENT_PACKAGE_LIMIT),
+        ("runtime", RUNTIME_PACKAGE_LIMIT),
+        ("workflows", WORKFLOWS_PACKAGE_LIMIT),
+        ("routing", ROUTING_PACKAGE_LIMIT),
+    ):
         lines = sum(
             len(path.read_text().splitlines()) for path in Path(f"datakeel/{package}").rglob("*.py")
         )

@@ -72,6 +72,8 @@ packages = ["datakeel"]
 "contracts/evidence" = "datakeel/_contracts/evidence"
 "contracts/semantic-layer" = "datakeel/_contracts/semantic-layer"
 "contracts/ask" = "datakeel/_contracts/ask"
+"contracts/workflows" = "datakeel/_contracts/workflows"
+"contracts/routing" = "datakeel/_contracts/routing"
 
 [tool.ruff]
 target-version = "py312"
