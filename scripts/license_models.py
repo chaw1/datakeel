@@ -125,7 +125,8 @@ class LicenseFileEvidence(BoundaryModel):
 
     name: str
     version: str
-    declared: str
+    declared: str = ""
+    declared_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     filename: str
     sha256: str
     license: str

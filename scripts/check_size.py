@@ -13,6 +13,7 @@ TEST_FILE_LIMIT = 600
 FUNCTION_LIMIT = 60
 COMPONENT_LIMIT = 300
 AGENT_PACKAGE_LIMIT = 1500
+RUNTIME_PACKAGE_LIMIT = 1500
 
 
 def violations() -> list[str]:
@@ -34,11 +35,12 @@ def violations() -> list[str]:
         for path in Path("web/src").rglob("*.tsx")
         if len(path.read_text().splitlines()) > COMPONENT_LIMIT
     )
-    agent_lines = sum(
-        len(path.read_text().splitlines()) for path in Path("datakeel/agent").rglob("*.py")
-    )
-    if agent_lines > AGENT_PACKAGE_LIMIT:
-        problems.append(f"datakeel/agent: {agent_lines} lines exceeds {AGENT_PACKAGE_LIMIT}")
+    for package, limit in (("agent", AGENT_PACKAGE_LIMIT), ("runtime", RUNTIME_PACKAGE_LIMIT)):
+        lines = sum(
+            len(path.read_text().splitlines()) for path in Path(f"datakeel/{package}").rglob("*.py")
+        )
+        if lines > limit:
+            problems.append(f"datakeel/{package}: {lines} lines exceeds {limit}")
     return problems
 
 

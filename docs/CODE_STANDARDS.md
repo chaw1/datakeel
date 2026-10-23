@@ -26,7 +26,9 @@ uv run python scripts/license_audit.py
 - Python 3.12；ruff `select = ["ALL"]`。全局 ignore 白名单只有：`D203, D213`（docstring 风格二选一）、`COM812, ISC001`（与 formatter 冲突）。`per-file-ignores` 允许 `tests/**` 加 `S101, ARG001, ARG002, PLR2004`，`scripts/**` 加 `T201`；每条 per-file-ignore 在 pyproject 里写一句理由。`ANN401` 不进白名单，边界处的 `Any` 用行内 `# noqa: ANN401  # 理由`。
 - `line-length = 100` 真实生效，不 ignore E501。
 - pyright `typeCheckingMode = "strict"`，0 error 0 warning。公共函数签名不得出现未标注的 `Any`。
+- `datakeel/runtime/` 是图与模型框架的适配边界，目前沿用全部 strict 规则，没有包级放宽；其它包同样不得放宽。框架类型如需局部适配，必须只在 runtime 内精确声明，并在此逐条记录规则与理由。
 - 复杂度与规模：`mccabe max-complexity = 10`；`PLR0915 max-statements = 40`；参数 ≤ 6（PLR0913）；单文件 ≤ 400 行（测试文件 ≤ 600）、单函数 ≤ 60 行由 `scripts/check_size.py` 检查并列入 `make check`。超限就拆。
+- `agent` 与 `runtime` 两个包各自最多 1500 行，分别由 `AGENT_PACKAGE_LIMIT` 和 `RUNTIME_PACKAGE_LIMIT` 检查，不能互相借用额度。
 - 公共模块、类、函数必须有 Google 风格 docstring（ruff D 规则）；私有（下划线开头）可省。
 - 错误处理：自定义异常层级 `datakeel.core.errors`（`DatakeelError` 根，按领域派生）；禁止裸 `except:`、禁止 `except Exception` 吞异常不重抛（BLE001）。HTTP 层统一异常到状态码的映射在一处。
 - 日志：`structlog` 或标准 `logging` 的 JSON 格式，禁止 `print`（T201），CLI 的用户输出走 `rich.console`。
@@ -40,17 +42,19 @@ uv run python scripts/license_audit.py
 
 ```
 cli
-└── api / worker / agent / mcp / harness        （可相互不依赖；都只能向下）
+└── api / worker / agent / runtime / mcp / harness （可相互不依赖；都只能向下）
     └── pipeline / quality / lineage / governance / semantic / operators / storage / ontology / actions / evidence / catalog / metrics / ask
         └── core                                 （模型、错误、ID、时间，无任何向上依赖）
 ```
 
 `.importlinter` 定义 layers 合同；同层之间的依赖必须列明为显式例外并写理由。
 
+只有 `datakeel/runtime/` 可以直接导入 `langgraph`、`langgraph_sdk`、`langchain_core`、`langchain_openai`、`langchain_anthropic`、`langsmith`、`openai`、`anthropic` 和 `tiktoken`。forbidden 合同启用外部包扫描及间接依赖许可，使其它模块只能经 Datakeel 的类型化接口使用它们。checkpoint 数据库模型与 bytes 读写函数仍在 `storage/checkpoint_store.py`，不得导入框架。
+
 ## 4. 测试
 
 - `tests/` 目录结构镜像 `datakeel/`；每个公共模块至少一个测试文件。
-- 覆盖率总体 ≥ 85%（`--cov-fail-under`）；`core`、`lineage`、`actions`、`worker`、`harness`、`agent`、`ontology`、`evidence`、`operators/evidence`、`catalog`、`metrics`、`ask` 与 `cli/evidence_benchmark.py` 各 ≥ 90%，由 `scripts/check_coverage.py` 读 coverage.xml 判定并列入 `make check`。领域在 storage 层的事务实现同时计入相应模块；报告缺失目标模块也判为失败。
+- 覆盖率总体 ≥ 85%（`--cov-fail-under`）；`core`、`lineage`、`actions`、`worker`、`harness`、`agent`、`runtime`、`ontology`、`evidence`、`operators/evidence`、`catalog`、`metrics`、`ask` 与 `cli/evidence_benchmark.py` 各 ≥ 90%，由 `scripts/check_coverage.py` 读 coverage.xml 判定并列入 `make check`。领域在 storage 层的事务实现同时计入相应模块，`checkpoint_*.py` 归入 runtime；报告缺失目标模块也判为失败。
 - 不用真实网络、真实 LLM、真实对象存储；全部走本机 fixture。真实服务集成测试单独标记 `@pytest.mark.integration`，默认不跑。
 - 每个 bug 修复附回归测试；每个 golden 用例过变异测试（故意改坏实现必须变红）。
 
@@ -75,6 +79,9 @@ cli
 - `scripts/license_audit.py` 按锁文件遍历当前 Python 目标环境的运行时传递依赖（含递归 extras），以及前端 production/optional/peer 依赖闭包与实际构建模块/资源的并集。版本、安装包身份及运行时依赖关系必须与锁定元数据一致。审计在前端构建后执行，读取绑定源码哈希的 `.runtime-dependencies.json`，生成 `THIRD_PARTY_NOTICES.md`，并纳入 `make check`。
 - 许可白名单为 Apache-2.0、MIT、MIT-0、CC0-1.0、MIT-CMU、BSD-2-Clause、BSD-3-Clause、ISC、PSF-2.0、Zlib、OFL-1.1、0BSD、Python-2.0、Unlicense。新增的 MIT-0、CC0-1.0、MIT-CMU 适用于所有依赖，不按包单独开例外。GPL、AGPL、LGPL、SSPL、未知或缺失许可一律失败；无证据的模糊许可名称与其余白名单外条款同样失败，复合表达式逐项检查，不以 MIT 等子串代替完整许可。
 - `certifi`（MPL-2.0，仅根证书数据，httpx/fastmcp 传递引入）：允许。MPL 是文件级弱 copyleft，不改其源码即无义务；其它 MPL 代码包仍需逐个申请。
+- `orjson` 仅接受精确表达式 `MPL-2.0 AND (Apache-2.0 OR MIT)`：它是 langsmith 和 langgraph-sdk 的传递硬依赖，分发保持上游源码不变，并保留上游许可文件。
+- `regex` 仅接受精确表达式 `Apache-2.0 AND CNRI-Python`：CNRI-Python 为宽松许可。上述两条仅适用于对应 Python 包，不扩展到其它包、前端或额外条款。
+- `jsonpointer`、`distro`、`requests-toolbelt`、`tiktoken` 的模糊声明按锁定版本、声明原文（长文本使用 SHA-256）及许可文件 SHA-256 三者共同确认；任一变化必须重新核验。GPL、AGPL、LGPL、SSPL 和未知许可仍然失败。
 
 ## 8. 约定（人审，不进门禁）
 - 测试命名 `test_<行为>_<条件>_<预期>`；一个测试尽量只断言一件事。

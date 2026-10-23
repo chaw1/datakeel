@@ -161,6 +161,30 @@ def test_legacy_license_requires_exact_version_declared_value_and_file_hash(
     assert license_python.declared_license(item)[0] == "Dual License"
 
 
+def test_legacy_declaration_hash_still_requires_unchanged_metadata_and_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A long metadata declaration is bound by hash without copying upstream personal details."""
+    item = distribution(tmp_path, "License: Generated legacy declaration\n")
+    evidence = LicenseFileEvidence(
+        name="generated",
+        version="1.0",
+        declared_sha256=hashlib.sha256(b"Generated legacy declaration").hexdigest(),
+        filename="LICENSE",
+        sha256=hashlib.sha256(b"Generated license terms").hexdigest(),
+        license="MIT",
+    )
+    monkeypatch.setattr(license_python, "_LEGACY_EVIDENCE", (evidence,))
+    assert license_python.declared_license(item)[0] == "MIT"
+    metadata_path = tmp_path / "generated-1.0.dist-info" / "METADATA"
+    original = metadata_path.read_text()
+    metadata_path.write_text(original.replace("Generated legacy declaration", "GPL-3.0-only"))
+    assert license_python.declared_license(item)[0] == "GPL-3.0-only"
+    metadata_path.write_text(original)
+    (tmp_path / "generated-1.0.dist-info" / "LICENSE").write_text("Changed terms")
+    assert license_python.declared_license(item)[0] == "Generated legacy declaration"
+
+
 def test_python_inventory_reports_transitive_packages_with_matching_versions(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -36,17 +36,22 @@ ALLOWED_LICENSES = frozenset(
         "Unlicense",
     }
 )
+PACKAGE_EXCEPTIONS = {
+    "certifi": "MPL-2.0",
+    "orjson": "MPL-2.0 AND (Apache-2.0 OR MIT)",
+    "regex": "Apache-2.0 AND CNRI-Python",
+}
 
 
 def license_findings(package: LicensePackage) -> tuple[LicenseFinding, ...]:
-    """Require every SPDX term to be permitted, retaining the approved certifi data exception."""
+    """Require every SPDX term to be permitted, retaining exact approved package exceptions."""
     try:
         expression = canonicalize_license_expression(package.license)
     except InvalidLicenseExpression:
         reason = "Unknown or invalid SPDX license expression"
     else:
         terms = set(re.findall(r"[A-Za-z0-9][A-Za-z0-9.+-]*", expression)) - {"AND", "OR"}
-        if package.ecosystem == "python" and package.name == "certifi" and expression == "MPL-2.0":
+        if package.ecosystem == "python" and PACKAGE_EXCEPTIONS.get(package.name) == expression:
             return ()
         rejected = sorted(terms - ALLOWED_LICENSES)
         if not rejected:
@@ -94,7 +99,11 @@ def render_notices(report: LicenseReport) -> str:
         "Every term in a compound expression must be permitted; unknown or missing licenses fail.",
         "",
         "Approved exception: Python `certifi` uses `MPL-2.0` for root-certificate data only.",
-        "This does not permit other MPL code dependencies. Upstream license texts remain in",
+        "Approved exception: Python `orjson` uses `MPL-2.0 AND (Apache-2.0 OR MIT)`.",
+        "It is required by langsmith and langgraph-sdk; upstream source is distributed unchanged.",
+        "Approved exception: Python `regex` uses `Apache-2.0 AND CNRI-Python`; CNRI-Python is",
+        "permissive. These exact package exceptions do not permit other MPL or CNRI dependencies.",
+        "Upstream license texts remain in",
         "installed distributions; frontend texts are in `web/public/THIRD-PARTY-LICENSES.txt`.",
         "",
         "| Ecosystem | Package | Version | SPDX license | Evidence |",

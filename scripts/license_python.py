@@ -46,6 +46,38 @@ _LEGACY_EVIDENCE = (
         sha256="a72b0acc9389e4c17ced890ef1b03455e04978d39e25636099b93efb76b74ead",
         license="BSD-3-Clause",
     ),
+    LicenseFileEvidence(
+        name="jsonpointer",
+        version="3.4",
+        declared="Modified BSD License",
+        filename="LICENSE.txt",
+        sha256="d8b24f15d472885f788a2d6e985850f264627b86012a17bb242c83f310d907e5",
+        license="BSD-3-Clause",
+    ),
+    LicenseFileEvidence(
+        name="distro",
+        version="1.9.0",
+        declared="Apache License, Version 2.0",
+        filename="LICENSE",
+        sha256="cb5e8e7e5f4a3988e1063c142c60dc2df75605f4c46515e776e3aca6df976e14",
+        license="Apache-2.0",
+    ),
+    LicenseFileEvidence(
+        name="requests-toolbelt",
+        version="1.0.0",
+        declared="Apache 2.0",
+        filename="LICENSE",
+        sha256="1f8cf8bdacd98ed6d36d0fec0c07f7765acebd6e81205962ab5146023b3c858d",
+        license="Apache-2.0",
+    ),
+    LicenseFileEvidence(
+        name="tiktoken",
+        version="0.14.0",
+        declared_sha256="418cb499b436128d653d79941333a5437b7be2ea9213dcc2f04d15d5d2c51d86",
+        filename="LICENSE",
+        sha256="418cb499b436128d653d79941333a5437b7be2ea9213dcc2f04d15d5d2c51d86",
+        license="MIT",
+    ),
 )
 _ALIASES = {
     "Apache License 2.0": "Apache-2.0",
@@ -117,11 +149,14 @@ def runtime_closure(lock: PythonLock, project_name: str) -> tuple[LockedPackage,
 def _legacy_license(distribution: metadata.Distribution, declared: str) -> tuple[str, str] | None:
     name = canonicalize_name(distribution.metadata["Name"] or "")
     for reviewed in _LEGACY_EVIDENCE:
-        if (name, distribution.version, declared) != (
-            reviewed.name,
-            reviewed.version,
-            reviewed.declared,
-        ):
+        if (name, distribution.version) != (reviewed.name, reviewed.version):
+            continue
+        matches = (
+            hashlib.sha256(declared.encode()).hexdigest() == reviewed.declared_sha256
+            if reviewed.declared_sha256
+            else declared == reviewed.declared
+        )
+        if not matches:
             continue
         for file in distribution.files or ():
             if file.name == reviewed.filename and any(

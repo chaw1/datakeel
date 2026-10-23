@@ -1,12 +1,13 @@
 [importlinter]
 root_package = datakeel
+include_external_packages = True
 
 [importlinter:contract:application-layers]
 name = Applications only depend on domain services and core
 type = layers
 layers =
     datakeel.cli
-    datakeel.api | datakeel.worker | datakeel.agent | datakeel.harness | datakeel.mcp
+    datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
     datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
@@ -183,3 +184,26 @@ ignore_imports =
     datakeel.ask.evaluation -> datakeel.storage.database
     datakeel.ask.evaluation -> datakeel.storage.metric_store
     datakeel.ask.evaluation_checks -> datakeel.metrics.sql_safety
+
+[importlinter:contract:runtime-framework-isolation]
+name = Only runtime imports graph and chat-model frameworks
+type = forbidden
+source_modules =
+    datakeel
+forbidden_modules =
+    langgraph
+    langgraph_sdk
+    langchain_core
+    langchain_openai
+    langchain_anthropic
+    langsmith
+    openai
+    anthropic
+    tiktoken
+allow_indirect_imports = True
+# The adapter owns framework edges; all other modules consume typed application interfaces.
+ignore_imports =
+    datakeel.runtime -> **
+    datakeel.runtime.** -> **
+# Some adapter entry points intentionally contain no imports.
+unmatched_ignore_imports_alerting = none

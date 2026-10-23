@@ -102,6 +102,29 @@ def test_certifi_exception_cannot_cover_other_packages_ecosystems_or_extra_terms
 
 
 @pytest.mark.parametrize(
+    ("name", "expression"),
+    [
+        ("orjson", "MPL-2.0 AND (Apache-2.0 OR MIT)"),
+        ("regex", "Apache-2.0 AND CNRI-Python"),
+    ],
+)
+def test_runtime_exceptions_remain_bound_to_exact_package_and_terms(
+    name: str, expression: str
+) -> None:
+    """Approved runtime exceptions never admit copied names, other ecosystems or extra terms."""
+    approved = package(expression, name)
+    assert license_audit.license_findings(approved) == ()
+    for changed in (
+        approved.model_copy(update={"name": "different-package"}),
+        approved.model_copy(update={"ecosystem": "frontend"}),
+        approved.model_copy(update={"license": expression + " AND GPL-3.0-only"}),
+        approved.model_copy(update={"license": "MPL-2.0"}),
+        approved.model_copy(update={"license": "CNRI-Python"}),
+    ):
+        assert license_audit.license_findings(changed)
+
+
+@pytest.mark.parametrize(
     ("license_id", "exit_code"),
     [
         ("MIT", 0),
