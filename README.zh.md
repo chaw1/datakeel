@@ -40,7 +40,7 @@ uv run pyright
 cd web
 npm ci
 npm run screenshots -- http://127.0.0.1:8765
-# 10 页 × 中英文 × 浅深色 → 仓库根目录 artifacts/screenshots/
+# 12 页 × 中英文 × 浅深色 → 仓库根目录 artifacts/screenshots/
 cd ..
 ```
 
@@ -161,6 +161,10 @@ uv run datakeel eval-route
 Agent 使用 LangGraph，在同一 SQLite 或 PostgreSQL 数据库中同步保存 checkpoint。需要审批的计划会持久暂停，进程重启后仍可继续。人工签批后，客户端可恢复挂起计划而不追加用户消息；若已通过签批单执行，恢复时复用原回执。暂停期间发送新消息会使旧断点作废并留下审计，随后正常对话。[动作指南](docs/ACTIONS.md#resuming-a-paused-agent--恢复暂停的-agent) 说明恢复请求和签批校验。
 
 每会话/每日 token 与 USD 预算均持久化，重启不清零。默认每会话 100,000 token / 1 USD、每个 UTC 日 1,000,000 token / 10 USD，可在新建会话表单设置。远程调用前保守预占预算；trace 各段 token 之和等于实际输入，缓存读写是输入的子集。已发送请求失败且用量未知时，trace 标为 `billing_status=unknown`：观测用量保持 0，但 `accounted_tokens` 和估算成本按预占额计入预算。实际用量超限时先记账，再停止工具执行。fake 的费用来自 `contracts/model-prices.yaml` 中的测试价目，不产生真实扣费。
+
+委派工具通过 `tool_search` 加载。输入 `委派目录分析` 可运行独立子会话；嵌套步骤显示工具和 token，所有费用计入根会话。内置目录分析、证据审核和指标管理三个子 Agent，均不能准备不可逆动作。工具数据进入不可信 JSON 信封，canary 泄漏会在保存回复和执行工具前停止；注入仍可能诱导可逆动作，不可逆动作始终需要人工签批。
+
+「记忆」面板支持显式添加、数据集筛选与确认删除，写入前脱敏邮箱和电话；跨会话按相关度和衰减强度取用，当前取用条目显示在 Agent 页。删除后再开会话提同样问题，可确认不再取用。定义、参数、API 和 golden 格式见 [Agent 参考](docs/AGENT.md)。
 
 ### 可选真实 provider 配置
 
@@ -374,9 +378,9 @@ uv run datakeel eval-ask --json
 uv run python scripts/mutate.py --output mutation-results.json
 ```
 
-20 条 golden 保留原有 12 条查询、动作、审批、打转、预算、跨轮指代与 dry-run 等场景，以及证据查询、未知状态解释、按查询结果生成版本和删除待审四条；新增问数、澄清、拒答、受控修改指标后答案变化四条企业场景。每条用脚本回复驱动真实本机服务与隔离样例。第二次运行显示上次 ID 和通过数、token、成本差值；`--json` 输出完整结果，有失败则退出码非零。`--provider openai` / `--provider anthropic` 会选择真实付费评估，离线门禁不会运行。
+32 条 golden 保留原有 12 条查询、动作、审批、打转、预算、跨轮指代与 dry-run 等场景，以及证据查询、未知状态解释、按查询结果生成版本和删除待审四条；新增问数、澄清、拒答、受控修改指标后答案变化四条企业场景。另外 12 条覆盖委派、泄漏、注入审批及跨会话记忆。每条用脚本回复驱动真实本机服务与隔离样例。第二次运行显示上次 ID 和通过数、token、成本差值；`--json` 输出完整结果，有失败则退出码非零。`--provider openai` / `--provider anthropic` 会选择真实付费评估，离线门禁不会运行。
 
-变异脚本要求临时源码副本中的 16 处变异全部为 `KILLED`。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。运行时变异还检查签批恢复授权与工具调用幂等。工作流及路由变异检查工作流签批恢复授权、意图得分分差、图的环检测，以及切换备用模型前对失败尝试结算预算。每个隔离子进程仍限时 60 秒。环境或初始化失败不计为成功杀死变异。
+变异脚本要求临时源码副本中的 20 处变异全部为 `KILLED`。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。运行时变异还检查签批恢复授权与工具调用幂等。工作流及路由变异检查工作流签批恢复授权、意图得分分差、图的环检测，以及切换备用模型前对失败尝试结算预算。新增 canary、委派深度、工具越权及记忆硬删四个变异。每个隔离子进程仍限时 60 秒。环境或初始化失败不计为成功杀死变异。
 
 `eval-evidence` 在隔离的本机进程中新生成 1,000 个样本，运行生产抽取 DAG，再执行 [questions.yaml](contracts/evidence/questions.yaml) 的 15 题：近重复 4 题、冲突 4 题、损坏 4 题、无标注 3 题。baseline 只用标签、路径和已有质量事实，with_evidence 加入断言与直接近重复关系。报告包含每题 precision/recall、宏平均、pair 指标、三态计数、抽取计数与耗时，复用 `eval_runs` 表，`provider=evidence`，`suite_digest` 是题集文件 SHA-256。临时样例随评测结束清理，保留报告和 gold 摘要；`--questions path.yaml` 可指定另一份通过校验的题集。
 

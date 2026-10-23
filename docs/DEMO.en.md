@@ -154,6 +154,12 @@ Open Review approval (查看签批), check that the frozen plan contains only th
 
 The other two workflows share this entry point. Agent's Run as workflow suggestion only opens the form with its dataset prefilled. See the [workflow reference](WORKFLOWS.md) for definitions, CLI commands, failures and API contracts.
 
+## 9. Add and delete a memory (1 minute)
+
+Open **Memory** and add a global entry: `Catalog reports use the approved active-record definition.` Start a new Agent conversation and ask `How do catalog reports use active records?`. Inspect **Memories used this turn** and its source. This verifies actual retrieval; the offline provider's fixed answer does not demonstrate language understanding.
+
+Return to Memory, delete that entry and confirm. Start another conversation and ask the same question; the deleted entry must no longer appear as used. Historical references show it as deleted. Try `Delegate a catalog review` and expand the specialist's tools and tokens. The [Agent reference](AGENT.md) explains retrieval and deletion boundaries.
+
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.

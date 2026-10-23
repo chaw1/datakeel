@@ -127,3 +127,19 @@ Each conversation has a private `dkc_` sentinel with 24 random hexadecimal chara
 Tool history is encoded as `["data-only", tool_name, payload]` only when assembling a prompt; stored tool results retain their original JSON. The envelope's fixed overhead is 17 UTF-8 bytes, plus source-tool name and any JSON encoding required for non-JSON text. The canary segment consumes 66 units under the conservative byte estimator, including its 16-unit segment allowance. Empty context segments are omitted.
 
 威胁模型：信封区分数据和指令，canary 检测部分提示泄漏；二者不保证模型完全免受提示注入。恶意 caption 或元数据仍可能诱导可逆动作自动执行，这些动作有审计和回滚。不可逆动作始终由受控动作签批边界保护，没有人类签批不能执行。各项测试只用独立生成样例和离线模型。
+
+## 10. Delegation / 委派
+
+`delegation/` owns frozen YAML definitions, scope/depth/batch policy, tool-call replay and call-tree projections. `runtime/delegation_graph.py` only wires serial independent graph instances. Children have separate conversation IDs, histories, response leases, canaries and checkpoint threads; parent/root IDs and parent tool-call IDs retain ancestry. Storage migrations add nullable/defaulted columns to existing databases. Root session lists hide children.
+
+`delegation/` 管定义、权限、深度与数量限制、幂等结果和调用树；runtime 只接图。子会话具备独立历史和 checkpoint，预算预留与结算统一归根会话；trace 保留实际子会话及父工具调用 ID。子调用不增加主轮数；已完成委派重放不增 trace 或预算。越权调用留审计，嵌套权限只能收窄；不可逆动作在定义加载时拒绝，主会话继续遵循签批边界。
+
+SSE reuses existing event types with defaulted path/name/usage fields. Child results enter the parent's prompt in the same data-only envelope as every other tool. Child and ancestor canaries are checked before persistence, and returned conclusions are checked again. The API exposes the measured tree without exporting private canaries or mutable database rows.
+
+## 11. Cross-conversation memory / 跨会话记忆
+
+`memory/` owns explicit writes, shared PII redaction, deterministic BM25 retrieval, lazy strength decay and consolidation. `storage/memory_store.py` owns transactional rows and returns frozen core models. Memory and delegation each have a 1500-line limit and a ≥90% coverage gate; all same-layer imports are explicit in `.importlinter`. No runtime dependency or vector service is added.
+
+记忆只由用户或显式工具写入，作用域为全局或指定数据集。检索依据当前用户消息，至少两个不同词元重合，按 BM25 × 衰减强度取前三条，含段开销不超过 1200 字节估算词元。无匹配不增加上下文段。模型调用前重查，实际尝试后增强；具体常量与同分规则见 [Agent reference](AGENT.md)。
+
+Consolidation merges only within one scope, keeps the strongest entry, unions provenance, then archives excess weak entries. Hard deletion recursively removes archived source entries and writes an ID-only audit. Checkpoints and response events store only used memory IDs; the UI resolves current entries so deleted content is unavailable there. Original user speech and explicit tool parameters retain normal transcript semantics; deletion does not rewrite prior speech. Retrieval never uses archived or deleted entries, and no automatic conversation summarization writes memory.
