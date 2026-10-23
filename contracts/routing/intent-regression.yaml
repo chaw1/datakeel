@@ -1,0 +1,168 @@
+# P7b 验收留出集，验收后公开给 P7b.1 作回归集；下一轮验收另写新的留出集。
+version: 1
+cases:
+- id: regression-negative-01
+  input: 这个数据集的质量分是多少？
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-02
+  input: 帮我看一下最近一次体检报告里有哪些告警
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-03
+  input: 体检是什么意思？
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-04
+  input: 删除这个文件
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-05
+  input: 把低质量样本列出来，先别动
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-06
+  input: 低质量样本有多少条？
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-07
+  input: 清理一下这个会话的上下文
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-08
+  input: 零售额这个指标是怎么定义的？
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-09
+  input: 零售额的度量字段是什么？
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-10
+  input: 上个季度华东区零售额是多少
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-11
+  input: 把指标的负责人改成张三
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-12
+  input: 回滚零售额到上一个版本
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-13
+  input: 隔离质量低于 60 分的文本样本
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-14
+  input: 给我看这个数据集的血缘
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-15
+  input: 跑一下流水线
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-16
+  input: 导出这个数据集
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-17
+  input: 查询证据并准备删除那个重复文件
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-18
+  input: 这个指标改了以后影响哪些报表？
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-19
+  input: What is the quality score of this dataset?
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-20
+  input: Show me the latest health check alerts.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-21
+  input: Delete these two files.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-22
+  input: How many low-quality samples are there?
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-23
+  input: List the low-quality samples but do not change anything.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-24
+  input: Clean up my draft notes.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-25
+  input: What does the retail revenue metric measure?
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-26
+  input: Which column does the metric use?
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-27
+  input: Change the metric owner to the data team.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-28
+  input: Roll back the retail revenue metric.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-29
+  input: Quarantine text files scoring below 60.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-30
+  input: Run the pipeline on this dataset.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-31
+  input: Export the dataset.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-32
+  input: Query evidence and prepare deletion of the duplicate image.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-33
+  input: Compare this quarter's revenue with last quarter.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-34
+  input: Change the chart color and compare again.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-negative-35
+  input: Show lineage for the orders table.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: regression-positive-01
+  input: 给新导入的数据集做一次完整体检
+  expected_workflow: dataset-health
+  expected_branch: keyword
+- id: regression-positive-02
+  input: Please run a health check on the newly imported dataset.
+  expected_workflow: dataset-health
+  expected_branch: keyword
+- id: regression-positive-03
+  input: 把零售额的度量字段换成标价金额，前后答案对比一下
+  expected_workflow: metric-change
+  expected_branch: keyword
+- id: regression-positive-04
+  input: Switch the revenue metric's measure column and show me the before/after answers.
+  expected_workflow: metric-change
+  expected_branch: keyword
+- id: regression-positive-05
+  input: 帮我把低质样本清理掉，删之前让我审批
+  expected_workflow: low-quality-cleanup
+  expected_branch: keyword
+- id: regression-positive-06
+  input: Clean up the low-quality samples, but ask me before deleting.
+  expected_workflow: low-quality-cleanup
+  expected_branch: keyword
+
