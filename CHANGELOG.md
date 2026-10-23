@@ -15,7 +15,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Performance
 
-- `demo --once` runs in about 11 s instead of 25 s on an M-series laptop. Settings are reused while `DATAKEEL_*` variables are unchanged, evidence contracts are parsed once per content revision, and cache entries group assertions by subject in one pass.
+- A fresh `uv run datakeel demo --once` has a three-run median of 5.86 s, down from 13.02 s on the same M-series laptop (measured range: 5.85–6.12 s). Object access and input hashes are reused within each batch, evidence projections use bounded bulk queries and inserts, small image work runs with bounded concurrency, and offline commands defer server imports. These extend the existing settings, contract and assertion-grouping caches. Generated image bytes, evidence/catalog rebuild hashes and evaluation outcomes are preserved.
 
 ## [0.6.1] - 2026-10-23
 

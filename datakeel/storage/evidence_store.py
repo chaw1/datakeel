@@ -3,7 +3,9 @@
 
 """Validated extraction publication and typed evidence projection reads."""
 
-from sqlalchemy import select
+from itertools import batched
+
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from datakeel.core.errors import ConflictError, ValidationError
@@ -13,9 +15,9 @@ from datakeel.core.models import AssetRef, LineageEvent
 from datakeel.storage.database import Database, EventRow
 from datakeel.storage.events import append_event
 from datakeel.storage.evidence_artifacts import load_bundle, publish_bundle
-from datakeel.storage.evidence_cache import invalidations_for, project_cache
+from datakeel.storage.evidence_cache import cache_predecessors, invalidations_for, project_cache
 from datakeel.storage.evidence_decisions import append_decision, assertion_view
-from datakeel.storage.evidence_rows import AssertionRow, EvidenceCacheRow
+from datakeel.storage.evidence_rows import AssertionRow
 
 
 def _identity(ref: AssetRef) -> tuple[str, str, str, str | None]:
@@ -70,25 +72,35 @@ def validated_bundle(event: LineageEvent, bundle: KnowledgeBundle | None = None)
 
 def project_bundle(session: Session, event: LineageEvent, bundle: KnowledgeBundle) -> None:
     """Project validated event content without overwriting immutable observations."""
+    payloads = {
+        identifier: payload
+        for identifiers in batched((assertion.id for assertion in bundle.assertions), 500)
+        for identifier, payload in session.execute(
+            select(AssertionRow.id, AssertionRow.payload).where(AssertionRow.id.in_(identifiers))
+        )
+    }
+    pending: list[dict[str, object]] = []
     for assertion in bundle.assertions:
-        row = session.get(AssertionRow, assertion.id)
         payload = assertion.model_dump(mode="json")
-        if row is not None:
-            if row.payload != payload:
+        if assertion.id in payloads:
+            if payloads[assertion.id] != payload:
                 msg = "An assertion identity already binds different immutable content"
                 raise ConflictError(msg)
             continue
-        session.add(
-            AssertionRow(
-                id=assertion.id,
-                subject_id=assertion.subject.asset_id,
-                predicate=assertion.predicate,
-                producer_event_id=event.event_id,
-                payload=payload,
-                status="candidate",
-                active=True,
-            )
+        payloads[assertion.id] = payload
+        pending.append(
+            {
+                "id": assertion.id,
+                "subject_id": assertion.subject.asset_id,
+                "predicate": assertion.predicate,
+                "producer_event_id": event.event_id,
+                "payload": payload,
+                "status": "candidate",
+                "active": True,
+            }
         )
+    if pending:
+        session.execute(insert(AssertionRow), pending)
     session.flush()
     for decision in bundle.invalidations:
         append_decision(session, decision, f"invalidation:{decision.id}")
@@ -131,15 +143,11 @@ def record_extraction_in_session(
             msg = "Extraction idempotency key already binds different run content"
             raise ConflictError(msg)
         return result
-    predecessors = {
-        prior.producer_event_id
-        for entry in bundle.cache_entries
-        if (prior := session.get(EvidenceCacheRow, entry.slot)) is not None
-    }
+    predecessors = cache_predecessors(session, bundle)
     bundle = bundle.model_copy(
         update={
             "invalidations": invalidations_for(session, bundle, event),
-            "prior_cache_event_ids": tuple(sorted(predecessors)),
+            "prior_cache_event_ids": predecessors,
         }
     )
     result = publish_bundle(event, bundle)

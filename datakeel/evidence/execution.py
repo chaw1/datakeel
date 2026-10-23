@@ -11,7 +11,7 @@ from datakeel.core.evidence_execution import EvidenceExecutionContext, PendingEx
 from datakeel.core.evidence_models import ExtractorRef
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.evidence.runtime_compute import compute_node
-from datakeel.evidence.runtime_inputs import cache_requests, prepare_inputs
+from datakeel.evidence.runtime_inputs import prepare_node_inputs
 from datakeel.evidence.runtime_publication import publication
 from datakeel.operators import REGISTRY, OperatorResult
 from datakeel.pipeline.models import Node
@@ -35,16 +35,16 @@ class EvidenceExecution:
         if not str(node.operator).startswith("evidence."):
             return operator.run(files, directory, node.params)
         started = perf_counter()
-        prepared = prepare_inputs(files, self.context.version_id)
         params = JsonDocument.model_validate(
             operator.params_type.model_validate(node.params).model_dump()
         )
         extractor = ExtractorRef(
             id=str(node.operator), version=str(params.root["extractor_version"])
         )
-        requests = cache_requests(prepared, extractor, params)
+        prepared = prepare_node_inputs(files, self.context.version_id, extractor, params)
+        requests = prepared.requests
         result = compute_node(
-            node, prepared, directory, requests, cached_entries(self.db, requests)
+            node, prepared.files, directory, requests, cached_entries(self.db, requests)
         )
         pending = publication(self.context, node, result, perf_counter() - started)
         with self.lock:

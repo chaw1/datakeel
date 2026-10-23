@@ -8,14 +8,18 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from datakeel.core.evidence_inputs import sample_sidecars
 from datakeel.core.evidence_models import ExtractorRef
 from datakeel.core.models import JsonDocument
-from datakeel.evidence.runtime_inputs import cache_requests, prepare_inputs
+from datakeel.evidence import runtime_inputs
+from datakeel.evidence.runtime_inputs import cache_requests, prepare_inputs, prepare_node_inputs
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_import import source_manifest
 from tests.evidence.test_execution import seed_evidence
 
 if TYPE_CHECKING:
+    import pytest
+
     from datakeel.storage.database import Database
 
 
@@ -57,3 +61,31 @@ def test_caption_cache_ignores_path_changes_but_tracks_sidecar_content(
     caption = files[0].metadata["evidence_sample"]["caption"]
     Path(caption["path"]).write_text("A changed generated caption")
     assert cache_requests(renamed, extractor, params)[0].key != before[0].key
+
+
+def test_node_snapshot_hashes_each_path_once_and_refreshes_next_call(
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Anchors and cache keys share current bytes without retaining stale input revisions."""
+    dataset_id = seed_evidence(db, tmp_path / "samples")
+    version, source = source_manifest(db, dataset_id)
+    files = materialize_files(source[:2])
+    extractor = ExtractorRef(id="evidence.caption_mentions", version="1.0")
+    params = JsonDocument({"extractor_version": "1.0"})
+    original = runtime_inputs.digest
+    calls: list[Path] = []
+
+    def digest(path: Path) -> str:
+        calls.append(path)
+        return original(path)
+
+    monkeypatch.setattr(runtime_inputs, "digest", digest)
+    before = prepare_node_inputs(files, version, extractor, params)
+    assert len(calls) == len(set(calls))
+    caption = sample_sidecars(before.files[0]).caption
+    assert caption is not None
+    assert before.requests[0].key.inputs[0].content_revision == caption.sha256
+    Path(caption.path).write_text("Changed after the first node snapshot")
+    after = prepare_node_inputs(files, version, extractor, params)
+    assert after.requests[0].key != before.requests[0].key
+    assert after.requests[1].key == before.requests[1].key

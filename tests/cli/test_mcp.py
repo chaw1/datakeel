@@ -40,7 +40,7 @@ def test_mcp_transport_when_started_disables_banner_and_releases_database(
     """Reserve stdout for JSON-RPC and clean up after either transport returns."""
     server = MagicMock()
     dispose = MagicMock(wraps=db.engine.dispose)
-    monkeypatch.setattr("datakeel.cli.mcp.create_server", lambda _db: server)
+    monkeypatch.setattr("datakeel.mcp.create_server", lambda _db: server)
     monkeypatch.setattr(db.engine, "dispose", dispose)
     serve(db, transport, "127.0.0.1", 8766)
     assert server.run.call_args.kwargs["show_banner"] is False
@@ -56,7 +56,7 @@ def test_mcp_transport_when_initialization_fails_still_releases_database(
     """Close infrastructure even when the server cannot finish constructing tools."""
     dispose = MagicMock(wraps=db.engine.dispose)
     monkeypatch.setattr(
-        "datakeel.cli.mcp.create_server", MagicMock(side_effect=RuntimeError("fixture"))
+        "datakeel.mcp.create_server", MagicMock(side_effect=RuntimeError("fixture"))
     )
     monkeypatch.setattr(db.engine, "dispose", dispose)
     with pytest.raises(RuntimeError, match="fixture"):

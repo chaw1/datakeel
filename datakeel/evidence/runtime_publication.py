@@ -19,7 +19,7 @@ def publication(
     event_id = new_id()
     assertions = tuple(
         Assertion(
-            **draft.model_dump(),
+            **dict(draft),
             producer_event_id=event_id,
             run_id=context.task_id,
         )

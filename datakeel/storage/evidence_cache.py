@@ -3,7 +3,9 @@
 
 """Content cache projection and auditable extractor or input invalidation."""
 
-from sqlalchemy import select
+from itertools import batched
+
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from datakeel.core.evidence_cache import EvidenceCacheEntry, EvidenceCacheKey, KnowledgeBundle
@@ -65,11 +67,23 @@ def invalidations_for(
     """Materialize obsolete assertion decisions before their event is appended."""
     decisions: list[AssertionDecision] = []
     seen: set[str] = set()
+    priors = _cache_rows(session, bundle)
+    old_entries = {
+        slot: EvidenceCacheEntry.model_validate(row.payload) for slot, row in priors.items()
+    }
+    identifiers = {identifier for old in old_entries.values() for identifier in old.assertion_ids}
+    assertions = {
+        row.id: row
+        for batch in batched(identifiers, 500)
+        for row in session.scalars(
+            select(AssertionRow).where(AssertionRow.id.in_(batch), AssertionRow.active.is_(True))
+        )
+    }
     for entry in bundle.cache_entries:
-        prior = session.get(EvidenceCacheRow, entry.slot)
+        prior = priors.get(entry.slot)
         if prior is None:
             continue
-        old = EvidenceCacheEntry.model_validate(prior.payload)
+        old = old_entries[entry.slot]
         if prior.cache_key == entry.key.digest() and old.assertion_ids == entry.assertion_ids:
             continue
         reason = (
@@ -80,8 +94,8 @@ def invalidations_for(
             else "superseded_extraction"
         )
         for identifier in old.assertion_ids:
-            row = session.get(AssertionRow, identifier)
-            if row is not None and row.active and identifier not in seen:
+            row = assertions.get(identifier)
+            if row is not None and identifier not in seen:
                 seen.add(identifier)
                 assertion = assertion_view(row)
                 decisions.append(
@@ -101,11 +115,34 @@ def invalidations_for(
 
 def project_cache(session: Session, bundle: KnowledgeBundle, event_id: str) -> None:
     """Replace disposable cache slots with products declared in the current event."""
-    for entry in bundle.cache_entries:
-        row = session.get(EvidenceCacheRow, entry.slot)
+    rows = _cache_rows(session, bundle)
+    entries = {entry.slot: entry for entry in bundle.cache_entries}
+    pending: list[dict[str, object]] = []
+    for slot, entry in entries.items():
+        row = rows.get(slot)
+        key = entry.key.digest()
+        payload = entry.model_dump(mode="json")
         if row is None:
-            row = EvidenceCacheRow(slot=entry.slot)
-            session.add(row)
-        row.cache_key = entry.key.digest()
-        row.producer_event_id = event_id
-        row.payload = entry.model_dump(mode="json")
+            pending.append(
+                {"slot": slot, "cache_key": key, "producer_event_id": event_id, "payload": payload}
+            )
+        else:
+            row.cache_key = key
+            row.producer_event_id = event_id
+            row.payload = payload
+    if pending:
+        session.execute(insert(EvidenceCacheRow), pending)
+
+
+def cache_predecessors(session: Session, bundle: KnowledgeBundle) -> tuple[str, ...]:
+    """Read the prior producing event identities in bounded cache-slot batches."""
+    return tuple(sorted({row.producer_event_id for row in _cache_rows(session, bundle).values()}))
+
+
+def _cache_rows(session: Session, bundle: KnowledgeBundle) -> dict[str, EvidenceCacheRow]:
+    slots = {entry.slot for entry in bundle.cache_entries}
+    return {
+        row.slot: row
+        for batch in batched(slots, 500)
+        for row in session.scalars(select(EvidenceCacheRow).where(EvidenceCacheRow.slot.in_(batch)))
+    }

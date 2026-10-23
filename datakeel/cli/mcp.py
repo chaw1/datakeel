@@ -5,12 +5,14 @@
 
 from typing import Literal
 
-from datakeel.mcp import create_server
 from datakeel.storage.database import Database
 
 
 def serve(db: Database, transport: Literal["stdio", "sse"], host: str, port: int) -> None:
     """Keep stdout protocol-only and release the database when the transport exits."""
+    # Server dependencies are unnecessary for offline demo and evaluation commands.
+    from datakeel.mcp import create_server  # noqa: PLC0415
+
     try:
         server = create_server(db)
         if transport == "stdio":

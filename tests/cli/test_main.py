@@ -78,7 +78,7 @@ def test_api_command_when_dispatched_uses_selected_bind_address(
 ) -> None:
     """Verify api command when dispatched uses selected bind address."""
     calls = []
-    monkeypatch.setattr(cli, "create_app", lambda: "application")
+    monkeypatch.setattr("datakeel.api.app.create_app", lambda: "application")
     monkeypatch.setattr(cli.uvicorn, "run", lambda app, **kwargs: calls.append((app, kwargs)))
     invoke("api", "--host", "127.0.0.1", "--port", "9999")
     assert calls == [("application", {"host": "127.0.0.1", "port": 9999})]

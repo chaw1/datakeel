@@ -50,7 +50,7 @@ class LocalStore:
 
     def __init__(self, root: Path | None = None) -> None:
         """Initialize a private object directory."""
-        self.root = root or data_dir() / "objects"
+        self.root = (root or data_dir() / "objects").resolve()
         self.root.mkdir(parents=True, exist_ok=True)
 
     def put(self, path: Path, key: str) -> str:
@@ -69,7 +69,7 @@ class LocalStore:
     def materialize(self, key: str) -> Path:
         """Resolve an object, downloading into the cache when necessary."""
         path = (self.root / safe_key(key)).resolve()
-        if not path.is_relative_to(self.root.resolve()):
+        if not path.is_relative_to(self.root):
             message = "Object outside store"
             raise ValidationError(message)
         if not path.is_file():

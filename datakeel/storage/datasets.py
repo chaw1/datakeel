@@ -15,15 +15,15 @@ from datakeel.semantic import classify
 from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.events import append_event
 from datakeel.storage.file_state import overlay_files
-from datakeel.storage.objects import digest, object_store
+from datakeel.storage.objects import ObjectStore, digest, object_store
 
 
-def persist_file(item: FileItem) -> FileItem:
+def persist_file(item: FileItem, store: ObjectStore | None = None) -> FileItem:
     """Store file content and return reproducible object evidence."""
     path = Path(item.path)
     checksum = digest(path)
     key = f"{checksum[:2]}/{checksum}{path.suffix.lower()}"
-    store = object_store()
+    store = store or object_store()
     store.put(path, key)
     return item.model_copy(
         update={
@@ -34,15 +34,24 @@ def persist_file(item: FileItem) -> FileItem:
     )
 
 
+def persist_files(items: Sequence[FileItem]) -> list[FileItem]:
+    """Persist one manifest with a shared backend for this operation."""
+    store = object_store()
+    return [persist_file(item, store) for item in items]
+
+
 def materialize_files(items: Sequence[FileItem | dict[str, Any]]) -> list[FileItem]:
     """Restore manifest objects into locally readable file models."""
     store = object_store()
+    paths: dict[str, Path] = {}
     result: list[FileItem] = []
     for value in items:
         item = FileItem.model_validate(value)
         key = item.metadata.get("object_key")
         if key:
-            item = item.model_copy(update={"path": str(store.materialize(key))})
+            if key not in paths:
+                paths[key] = store.materialize(key)
+            item = item.model_copy(update={"path": str(paths[key])})
         result.append(item)
     return result
 
@@ -52,6 +61,7 @@ def import_dataset(
 ) -> DatasetRow:
     """Import local files and publish their initial lineage atomically."""
     files: list[dict[str, Any]] = []
+    store = object_store()
     for path in paths:
         semantic = classify(path.name)
         files.append(
@@ -61,7 +71,8 @@ def import_dataset(
                     filename=path.name,
                     modality=semantic.get("modality", "unknown"),
                     metadata={"semantic": semantic.model_dump(mode="json")},
-                )
+                ),
+                store,
             ).model_dump(mode="json")
         )
     dataset = DatasetRow(name=name, files=files, metadata_values=metadata or {})

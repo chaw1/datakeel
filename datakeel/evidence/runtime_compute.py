@@ -43,17 +43,9 @@ def _execute_misses(
 ) -> dict[str, FileItem]:
     operator = REGISTRY[str(node.operator)]
     missing = [file for file in files if file.id not in hits]
-    if node.operator == "evidence.near_duplicate":
-        output = operator.run(files, directory, node.params).files if missing else []
-    else:
-        output = [
-            result
-            for file in missing
-            for result in operator.run([file], directory / file.id, node.params).files
-        ]
-    expected = {
-        file.id for file in (files if node.operator == "evidence.near_duplicate" else missing)
-    }
+    selected = files if node.operator == "evidence.near_duplicate" else missing
+    output = operator.run(selected, directory, node.params).files if missing else []
+    expected = {file.id for file in selected}
     if missing and (len(output) != len(expected) or {file.id for file in output} != expected):
         msg = "Evidence operators must retain exactly one output for every source sample"
         raise ExecutionError(msg)

@@ -4,6 +4,8 @@
 """Build deterministic paired inputs and ground truth without external data."""
 
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
 from pathlib import Path
 from typing import Literal
 
@@ -140,8 +142,11 @@ def generate_samples(directory: Path, samples: int = 1000) -> SampleGold:
         for index in range(samples // 20)
     ]
     chains = _chains(records, pairs)
-    for index, sample in enumerate(records):
-        _write_sample(directory, sample, index, samples)
+    with ThreadPoolExecutor(max_workers=4, thread_name_prefix="sample") as pool:
+        for _ in pool.map(
+            _write_sample, repeat(directory), records, range(samples), repeat(samples)
+        ):
+            pass
     gold = SampleGold(
         sample_count=samples,
         train_count=train_count,

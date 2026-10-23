@@ -3,6 +3,8 @@
 
 """Import generated or user-supplied paired samples into immutable object storage."""
 
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
 from pathlib import Path
 
 from sqlalchemy import select
@@ -13,21 +15,23 @@ from datakeel.core.models import AssetRef, FileItem, LineageEvent
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.datasets import dataset_dict, persist_file
 from datakeel.storage.events import append_event
+from datakeel.storage.objects import ObjectStore, object_store
 from datakeel.storage.views import DatasetView
 
 IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp"})
 
 
-def _sidecar(paths: list[Path], root: Path) -> FileItem | None:
+def _sidecar(paths: list[Path], root: Path, store: ObjectStore) -> FileItem | None:
     path = next((value for value in paths if value.is_file()), None)
     if path is None:
         return None
     return persist_file(
-        FileItem(path=str(path), filename=path.relative_to(root).as_posix(), modality="text")
+        FileItem(path=str(path), filename=path.relative_to(root).as_posix(), modality="text"),
+        store,
     )
 
 
-def _paired_file(path: Path, root: Path) -> FileItem:
+def _paired_file(path: Path, root: Path, store: ObjectStore) -> FileItem:
     relative = path.relative_to(root)
     split = relative.parts[0]
     if split not in {"train", "val"}:
@@ -44,6 +48,7 @@ def _paired_file(path: Path, root: Path) -> FileItem:
                 path.with_suffix(".json"),
             ],
             root,
+            store,
         ),
         annotation=_sidecar(
             [
@@ -52,6 +57,7 @@ def _paired_file(path: Path, root: Path) -> FileItem:
                 path.with_suffix(".json"),
             ],
             root,
+            store,
         ),
     )
     return persist_file(
@@ -60,7 +66,8 @@ def _paired_file(path: Path, root: Path) -> FileItem:
             filename=relative.as_posix(),
             modality="image",
             metadata={"split": split, "evidence_sample": sidecars.model_dump(mode="json")},
-        )
+        ),
+        store,
     )
 
 
@@ -71,11 +78,17 @@ def import_evidence_samples(db: Database, name: str, directory: Path) -> Dataset
     Gold files and directory names other than the split never supply assertions.
     """
     root = directory.resolve()
-    files = [
-        _paired_file(path, root).model_dump(mode="json")
+    store = object_store()
+    paths = [
+        path
         for path in sorted(root.rglob("*"))
         if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
     ]
+    with ThreadPoolExecutor(max_workers=4, thread_name_prefix="import") as pool:
+        files = [
+            file.model_dump(mode="json")
+            for file in pool.map(_paired_file, paths, repeat(root), repeat(store))
+        ]
     if not files:
         msg = "No paired image samples found"
         raise ValidationError(msg)

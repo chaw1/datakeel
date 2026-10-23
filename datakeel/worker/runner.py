@@ -13,7 +13,7 @@ from datakeel.core.evidence_execution import EvidenceExecutionContext
 from datakeel.evidence.execution import EvidenceExecution
 from datakeel.pipeline import Pipeline, default_pipeline, run_pipeline
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.datasets import materialize_files, persist_file
+from datakeel.storage.datasets import materialize_files, persist_files
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.worker.observations import Observations
 from datakeel.worker.queue import DatabaseQueue, Lease
@@ -54,7 +54,7 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
             observations.observe,
             operator_executor=evidence.execute_node,
         )
-        persisted = [persist_file(item) for item in outputs]
+        persisted = persist_files(outputs)
         return queue.finish(lease, persisted, observations.events, evidence=tuple(evidence.pending))
     except Exception as exc:
         logger.exception("Shard execution failed", extra={"shard_id": lease.shard_id})

@@ -3,20 +3,27 @@
 
 """Committed extraction accounting derived directly from COMPLETE event facts."""
 
+from sqlalchemy import select
+
 from datakeel.core.evidence_execution import EvidenceRunReport, OperatorExtractionReport
-from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
+from datakeel.storage.database import Database, EventRow
 
 
 def extraction_report(db: Database, task_id: str) -> EvidenceRunReport:
     """Aggregate only committed extraction nodes for the requested durable task."""
     with db.session() as session:
+        statement = select(
+            EventRow.payload["operator"].as_string(),
+            EventRow.payload["quality"],
+            EventRow.payload["params"],
+        ).where(
+            EventRow.payload["event_type"].as_string() == "COMPLETE",
+            EventRow.payload["source_ref"].as_string() == task_id,
+        )
         operators = tuple(
-            OperatorExtractionReport(operator=event.operator, **event.quality)
-            for event in all_events(session)
-            if event.event_type == "COMPLETE"
-            and "knowledge_bundle" in event.params
-            and event.source_ref == task_id
+            OperatorExtractionReport(operator=operator, **quality)
+            for operator, quality, params in session.execute(statement)
+            if "knowledge_bundle" in params
         )
     return EvidenceRunReport(
         task_id=task_id,

@@ -11,7 +11,6 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
-from datakeel.api.app import create_app
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -102,6 +101,9 @@ def main() -> None:
         demo(args)
         return
     if args.command == "api":
+        # Register HTTP routes only when starting the HTTP server.
+        from datakeel.api.app import create_app  # noqa: PLC0415
+
         uvicorn.run(create_app(), host=args.host, port=args.port)
         return
     db = Database()

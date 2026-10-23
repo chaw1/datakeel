@@ -3,25 +3,30 @@
 
 """Deterministic, entirely generated demonstration inputs."""
 
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
 
 
+def _write_image(directory: Path, index: int) -> Path:
+    path = directory / f"scene-{index:03d}.png"
+    rng = np.random.default_rng(index)
+    image = Image.fromarray(rng.integers(40, 210, (128, 192, 3), dtype=np.uint8))
+    drawing = ImageDraw.Draw(image)
+    drawing.rectangle((20, 20, 100, 100), fill=(index % 255, 120, 220))
+    drawing.text((35, 60), f"{index:03d}", fill=(255, 255, 255))
+    image.save(path)
+    return path
+
+
 def generate_samples(directory: Path) -> list[Path]:
     """Generate two hundred local images and two hundred text samples."""
     directory.mkdir(parents=True, exist_ok=True)
-    paths: list[Path] = []
-    for index in range(200):
-        path = directory / f"scene-{index:03d}.png"
-        rng = np.random.default_rng(index)
-        image = Image.fromarray(rng.integers(40, 210, (128, 192, 3), dtype=np.uint8))
-        drawing = ImageDraw.Draw(image)
-        drawing.rectangle((20, 20, 100, 100), fill=(index % 255, 120, 220))
-        drawing.text((35, 60), f"{index:03d}", fill=(255, 255, 255))
-        image.save(path)
-        paths.append(path)
+    with ThreadPoolExecutor(max_workers=4, thread_name_prefix="sample") as pool:
+        paths = list(pool.map(_write_image, repeat(directory), range(200)))
     topics = ("forest", "coast", "mountain", "meadow")
     for index in range(200):
         path = directory / f"note-{index:03d}.txt"

@@ -12,10 +12,28 @@ from pydantic import JsonValue
 from datakeel.core.evidence_cache import EvidenceCacheEntry, EvidenceCacheKey, EvidenceInput
 from datakeel.core.evidence_inputs import SampleSidecars, sample_sidecars
 from datakeel.core.evidence_models import ExtractorRef
-from datakeel.core.models import AssetRef, FileItem, JsonDocument
+from datakeel.core.models import AssetRef, BoundaryModel, FileItem, JsonDocument
 from datakeel.operators.evidence.contracts import contract_hashes
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.objects import digest
+
+
+class PreparedInputs(BoundaryModel):
+    """Bind materialized file facts and cache keys to one node's input snapshot."""
+
+    files: list[FileItem]
+    requests: tuple[EvidenceCacheEntry, ...]
+
+
+def prepare_node_inputs(
+    files: list[FileItem], version_id: str, extractor: ExtractorRef, params: JsonDocument
+) -> PreparedInputs:
+    """Hash each actual path once for both anchors and keys within this execution."""
+    revisions: dict[str, str] = {}
+    prepared = _prepare_inputs(files, version_id, revisions)
+    return PreparedInputs(
+        files=prepared, requests=_cache_requests(prepared, extractor, params, revisions)
+    )
 
 
 def subject_ref(file: FileItem) -> AssetRef:
@@ -23,16 +41,38 @@ def subject_ref(file: FileItem) -> AssetRef:
     return AssetRef.model_validate(file.metadata["evidence_subject"])
 
 
+def _revision(path: str, revisions: dict[str, str]) -> str:
+    if path not in revisions:
+        revisions[path] = digest(Path(path))
+    return revisions[path]
+
+
 def prepare_inputs(files: list[FileItem], version_id: str) -> list[FileItem]:
     """Materialize every sidecar from stored bytes and attach a source manifest identity."""
+    return _prepare_inputs(files, version_id, {})
+
+
+def _prepare_inputs(
+    files: list[FileItem], version_id: str, revisions: dict[str, str]
+) -> list[FileItem]:
     result: list[FileItem] = []
-    for file in files:
-        source = sample_sidecars(file)
+    sources = [sample_sidecars(file) for file in files]
+    sidecar_files = iter(
+        materialize_files(
+            [
+                sidecar
+                for source in sources
+                for sidecar in (source.caption, source.annotation)
+                if sidecar is not None
+            ]
+        )
+    )
+    for file, source in zip(files, sources, strict=True):
         updated: dict[str, FileItem | None] = {}
         for field, sidecar in (("caption", source.caption), ("annotation", source.annotation)):
-            materialized = materialize_files([sidecar])[0] if sidecar is not None else None
+            materialized = next(sidecar_files) if sidecar is not None else None
             updated[field] = (
-                materialized.model_copy(update={"sha256": digest(Path(materialized.path))})
+                materialized.model_copy(update={"sha256": _revision(materialized.path, revisions)})
                 if materialized is not None
                 else None
             )
@@ -41,7 +81,7 @@ def prepare_inputs(files: list[FileItem], version_id: str) -> list[FileItem]:
         result.append(
             file.model_copy(
                 update={
-                    "sha256": digest(Path(file.path)),
+                    "sha256": _revision(file.path, revisions),
                     "metadata": {
                         **file.metadata,
                         "evidence_subject": subject.model_dump(mode="json"),
@@ -62,18 +102,25 @@ def json_revision(value: JsonValue) -> str:
     ).hexdigest()
 
 
-def _content(file: FileItem | None, role: str) -> EvidenceInput:
-    revision = digest(Path(file.path)) if file is not None else json_revision({"missing": role})
+def _content(file: FileItem | None, role: str, revisions: dict[str, str]) -> EvidenceInput:
+    revision = (
+        _revision(file.path, revisions) if file is not None else json_revision({"missing": role})
+    )
     return EvidenceInput(role=role, content_revision=revision)
 
 
-def _sample_inputs(file: FileItem, operator: str) -> tuple[EvidenceInput, ...]:
+def _sample_inputs(
+    file: FileItem, operator: str, revisions: dict[str, str]
+) -> tuple[EvidenceInput, ...]:
     sidecars: SampleSidecars = sample_sidecars(file)
     if operator == "evidence.caption_mentions":
-        return (_content(sidecars.caption, "caption"),)
+        return (_content(sidecars.caption, "caption", revisions),)
     if operator == "evidence.image_phash":
-        return (_content(file, "image"),)
-    values = (_content(file, "image"), _content(sidecars.annotation, "annotation"))
+        return (_content(file, "image", revisions),)
+    values = (
+        _content(file, "image", revisions),
+        _content(sidecars.annotation, "annotation", revisions),
+    )
     if operator == "evidence.label_gap":
         facts = JsonDocument.model_validate(
             {
@@ -88,7 +135,7 @@ def _sample_inputs(file: FileItem, operator: str) -> tuple[EvidenceInput, ...]:
         )
         return (
             *values,
-            _content(sidecars.caption, "caption"),
+            _content(sidecars.caption, "caption", revisions),
             EvidenceInput(
                 role="normalized_facts",
                 content_revision=json_revision(facts.root),
@@ -101,6 +148,15 @@ def cache_requests(
     files: list[FileItem], extractor: ExtractorRef, params: JsonDocument
 ) -> tuple[EvidenceCacheEntry, ...]:
     """Build versioned slots from complete source, parameter, and contract content."""
+    return _cache_requests(files, extractor, params, {})
+
+
+def _cache_requests(
+    files: list[FileItem],
+    extractor: ExtractorRef,
+    params: JsonDocument,
+    revisions: dict[str, str],
+) -> tuple[EvidenceCacheEntry, ...]:
     lexicon_hash, near_duplicate_hash = contract_hashes()
     parameters = EvidenceInput(role="parameters", content_revision=json_revision(params.root))
     global_inputs = (
@@ -111,7 +167,7 @@ def cache_requests(
                     [
                         {
                             "asset_id": file.id,
-                            "content": digest(Path(file.path)),
+                            "content": _revision(file.path, revisions),
                             "phash": file.metadata.get("image_phash"),
                         }
                         for file in sorted(files, key=lambda item: item.id)
@@ -130,7 +186,7 @@ def cache_requests(
                 inputs=(*global_inputs, parameters)
                 if global_inputs
                 else (
-                    *_sample_inputs(file, extractor.id),
+                    *_sample_inputs(file, extractor.id, revisions),
                     parameters,
                 ),
                 extractor=extractor,
