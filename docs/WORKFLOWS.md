@@ -134,9 +134,21 @@ This preserves the full metric definition while changing only the requested nest
 
 ### Trigger vocabulary / 触发词声明
 
-`triggers.keywords` is a list of keyword groups. A group matches when all its phrases occur in the normalized message; each matching group contributes one point. The score is the count of matched groups. Phrase matching is case-insensitive and normalizes runs of whitespace. A candidate reaches its `threshold` when `score >= threshold`; an unambiguous winner must also lead the second score by at least its `margin`. Defaults and bundled values are `threshold: 1`, `margin: 1`. `classification_keywords` provides additional vocabulary for resolving close candidates.
+`triggers.keywords` is a list of keyword groups. Each group is an AND of concepts, and `|` separates literal alternatives within one concept. For example, `["数据集|dataset", "体检|health check|checkup", "运行|run|conduct"]` requires a dataset, a health examination and an execution request, in any order. A matching group contributes exactly one point even if several synonyms match. Empty groups and empty alternatives are rejected. This is literal vocabulary, not a regular expression language; `|` is reserved as the alternative separator.
 
-`triggers.keywords` 是关键词组列表；一组内的短语全部命中才得一分，分数是命中组数之和。匹配忽略大小写并归一连续空白。候选分数满足 `score >= threshold` 才过阈值，直接命中还须领先第二名至少 `margin` 分。默认值及内置值均为 `threshold: 1`、`margin: 1`。`classification_keywords` 提供分差不足时使用的额外词汇。
+`triggers.keywords` 是关键词组列表：组内各概念之间为 AND，一个概念内用 `|` 表示同义词任选其一。例如 `["数据集|dataset", "体检|health check|checkup", "运行|run|conduct"]` 要求同时包含数据集、健康检查和执行意图，不要求固定语序。每个命中组仅得一分，多个同义词同时命中不重复计分。空组、空同义词会被拒绝；词汇按字面匹配，不支持正则表达式，`|` 保留作同义词分隔符。
+
+Matching ignores case and normalizes runs of whitespace. ASCII letters, digits and underscores form word boundaries: `change` does not match `exchange`, while Chinese concepts may occur inside a longer phrase. The same matching applies to `classification_keywords`, `excluded_keywords`, `excluded_groups` and `excluded_prefixes`. A keyword exclusion or a complete exclusion group sets the score to zero. Prefix exclusions apply only at the beginning of the request, after optional courtesy prefixes such as `please`, `can you`, `could you`, `would you`, `请`, `请你`, `麻烦`, `麻烦你`, `帮我` and `给我`.
+
+匹配忽略大小写并归一连续空白。英文词边界由 ASCII 字母、数字和下划线界定，`change` 不会命中 `exchange`；中文词汇可出现在较长短语中。分类词、排除词、排除组和排除前缀使用相同规则。命中任一 `excluded_keywords` 或完整的 `excluded_groups` 合取组，分数即归零。`excluded_prefixes` 只匹配请求开头，先跳过上述可重复的中英文礼貌前缀，因此「查看体检结果」保留自由路由，而「运行体检后查看质量报告」仍可推荐工作流。
+
+The bundled rules require dataset/examination/execution concepts for health checks, low quality/sample/cleanup concepts for cleanup, and either an explicit metric workflow request or a measure-column change followed by another question or an answer comparison. Metadata edits (description, owner or name), informational questions, leading read requests and read requests about historical artifacts conservatively abstain. These are vocabulary rules, not unrestricted language understanding: ambiguous wording may remain with the free Agent, and a suggestion never starts a workflow.
+
+内置规则分别要求数据集、体检与执行意图；低质量、样本与清理意图；以及显式指标工作流请求，或度量字段修改后重问/比较答案的复合意图。描述、负责人、名称等元数据修改，解释性疑问，以读取动词开头的请求，以及读取历史记录类产物的请求，保守交给自由 Agent。词汇规则不等于完整自然语言理解，含糊表述可能不推荐；建议始终不会自动启动流程。
+
+The score is the count of matched groups. A candidate reaches its `threshold` when `score >= threshold`; an unambiguous winner must also lead the second score by at least its `margin`. Defaults and bundled values are `threshold: 1`, `margin: 1`. `classification_keywords` provides vocabulary for resolving close candidates; the offline classifier selects the earliest matching signal among candidates that passed their threshold.
+
+分数是命中组数之和。候选分数满足 `score >= threshold` 才过阈值，直接命中还须领先第二名至少 `margin` 分。默认值及内置值均为 `threshold: 1`、`margin: 1`。`classification_keywords` 提供分差不足时的分类词汇；离线分类器只在过阈值候选中选择最早出现的分类信号。
 
 ## Invalid definitions / 错误示例
 
@@ -272,6 +284,6 @@ uv run datakeel eval-route
 uv run datakeel eval-route --json
 ```
 
-Validation runs at startup too. Unknown tiers, missing providers or models, unpriced models, cross-provider chains, cycles and more than two backups are errors with locations; invalid custom configuration never silently falls back to defaults. The offline evaluation reports accuracy and workflow/branch/tier confusion matrices using frozen cases and no provider calls.
+Validation runs at startup too. Unknown tiers, missing providers or models, unpriced models, cross-provider chains, cycles and more than two backups are errors with locations; invalid custom configuration never silently falls back to defaults. The offline evaluation runs both `intent-cases.yaml` and `intent-regression.yaml`, reports each suite's correct/total counts plus aggregate accuracy and workflow/branch/tier confusion matrices, and makes no provider calls.
 
-启动时也会校验。未知档位、缺少 provider 或模型、无价格模型、跨 provider 链、环及超过两个备用均报带位置的错误；非法自定义配置不会静默退回默认。离线评测使用冻结用例，报告准确率及工作流、分支、档位混淆矩阵，不调用真实 provider。
+启动时也会校验。未知档位、缺少 provider 或模型、无价格模型、跨 provider 链、环及超过两个备用均报带位置的错误；非法自定义配置不会静默退回默认。离线评测同时运行 `intent-cases.yaml` 和 `intent-regression.yaml`，分别报告两套冻结意图集的正确数/总数，并报告总体准确率及工作流、分支、档位混淆矩阵，不调用真实 provider。

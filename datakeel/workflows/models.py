@@ -5,7 +5,7 @@
 
 from typing import Annotated, Literal
 
-from pydantic import Field, JsonValue
+from pydantic import Field, JsonValue, field_validator
 
 from datakeel.core.models import BoundaryModel, JsonDocument
 
@@ -28,8 +28,30 @@ class WorkflowTriggers(BoundaryModel):
     keywords: list[list[str]] = Field(min_length=1)
     classification_keywords: list[str] = Field(default_factory=list[str])
     excluded_keywords: list[str] = Field(default_factory=list[str])
+    excluded_prefixes: list[str] = Field(default_factory=list[str])
+    excluded_groups: list[list[str]] = Field(default_factory=list[list[str]])
     threshold: float = Field(default=1, gt=0)
     margin: float = Field(default=1, gt=0)
+
+    @field_validator("keywords", "excluded_groups")
+    @classmethod
+    def validate_groups(cls, groups: list[list[str]]) -> list[list[str]]:
+        """Reject empty concepts so every declared conjunction requires real vocabulary."""
+        if any(not group for group in groups):
+            msg = "keyword groups must not be empty"
+            raise ValueError(msg)
+        for group in groups:
+            cls.validate_terms(group)
+        return groups
+
+    @field_validator("classification_keywords", "excluded_keywords", "excluded_prefixes")
+    @classmethod
+    def validate_terms(cls, terms: list[str]) -> list[str]:
+        """Require a nonempty literal on both sides of every synonym separator."""
+        if any(not alternative.strip() for term in terms for alternative in term.split("|")):
+            msg = "keyword alternatives must not be empty"
+            raise ValueError(msg)
+        return terms
 
 
 class ToolStep(BoundaryModel):

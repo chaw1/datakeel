@@ -4,6 +4,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Fixed
+
+- Workflow intent routing matches semantic groups with interchangeable synonyms and English word boundaries. Single-object deletion and descriptive metric edits remain free Agent requests; `eval-route` also checks the frozen intent regression corpus.
+
 ## [0.8.0] - 2026-10-24
 
 ### Added

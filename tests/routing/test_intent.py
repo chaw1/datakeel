@@ -23,7 +23,11 @@ def test_frozen_routes_when_evaluated_match_every_label() -> None:
     """Require both workflow and branch accuracy, plus all state-based tier cases."""
     result = evaluate_routes()
     assert result.failures == []
-    assert (result.intent_correct, result.tier_correct, result.accuracy) == (75, 14, 1)
+    assert (result.intent_correct, result.tier_correct, result.accuracy) == (116, 14, 1)
+    assert {name: (suite.correct, suite.total) for name, suite in result.intent_suites.items()} == {
+        "intent-cases.yaml": (75, 75),
+        "intent-regression.yaml": (41, 41),
+    }
     assert result.branch_confusion["classifier"] == {"classifier": 6}
 
 

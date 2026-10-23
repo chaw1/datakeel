@@ -28,7 +28,9 @@ def test_eval_command_when_offline_prints_accuracy_and_confusion(
     assert "100%" in output
     assert all(f"{name} confusion matrix" in output for name in ("Workflow", "Branch", "Tier"))
     dispatch(_arguments(["eval-route", "--json"]))
-    assert json.loads(capsys.readouterr().out)["accuracy"] == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["accuracy"] == 1
+    assert payload["intent_suites"]["intent-regression.yaml"] == {"total": 41, "correct": 41}
 
 
 def test_config_command_when_valid_or_missing_reports_explicit_status(

@@ -8,10 +8,9 @@ inputs:
     description: Already imported dataset identifier / 已导入的数据集 ID
 triggers:
   keywords:
-  - - 数据集
-    - 体检
-  - - dataset health check
-  - - dataset checkup
+  - - 数据集|dataset|datasets
+    - 体检|健康检查|health check|checkup
+    - 做|运行|执行|启动|开展|run|perform|conduct|start|begin|prioritize|do
   classification_keywords:
   - 体检
   - health check
@@ -29,6 +28,13 @@ triggers:
   - 是什么
   - 仅查看
   - 只查看
+  - 介绍|说明|如何|怎么|how to|how do
+  - 什么|哪些|为什么|是否|需不需要|what|why|how|does|should
+  excluded_prefixes:
+  - 查看|查询|列出|显示|展示|获取|show|list|display|find|get|tell
+  excluded_groups:
+  - - 查看|查询|列出|显示|展示|show|list|display|find|get
+    - 历史|记录|日志|状态|进度|上次|history|record|records|log|logs|status|progress|previous|last
   threshold: 1
   margin: 1
 entry: pipeline

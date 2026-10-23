@@ -16,6 +16,13 @@ from datakeel.routing.tiers import classify_tier
 from datakeel.workflows.loader import list_workflows
 
 
+class IntentSuiteEvaluation(BoundaryModel):
+    """Keep the original corpus and later regression corpus independently visible."""
+
+    total: int
+    correct: int
+
+
 class RouteEvaluation(BoundaryModel):
     """Report exact workflow, branch, and model-tier agreement."""
 
@@ -23,6 +30,7 @@ class RouteEvaluation(BoundaryModel):
     tier_total: int
     intent_correct: int
     tier_correct: int
+    intent_suites: dict[str, IntentSuiteEvaluation]
     workflow_confusion: dict[str, dict[str, int]]
     branch_confusion: dict[str, dict[str, int]]
     tier_confusion: dict[str, dict[str, int]]
@@ -39,10 +47,19 @@ def _record(matrix: dict[str, dict[str, int]], expected: str, actual: str) -> No
     row[actual] = row.get(actual, 0) + 1
 
 
+def _intent_suites(path: Path) -> dict[str, IntentSuite]:
+    return {
+        filename: IntentSuite.model_validate(yaml.safe_load((path / filename).read_text()))
+        for filename in ("intent-cases.yaml", "intent-regression.yaml")
+    }
+
+
 def evaluate_routes(directory: Path | None = None) -> RouteEvaluation:
     """Run the immutable intent and state-based tier corpora with the production rules."""
     path = directory or contract_path("routing")
-    intents = IntentSuite.model_validate(yaml.safe_load((path / "intent-cases.yaml").read_text()))
+    suites = _intent_suites(path)
+    intents = [(name, case) for name, suite in suites.items() for case in suite.cases]
+    correct_by_suite = dict.fromkeys(suites, 0)
     tiers = TierSuite.model_validate(yaml.safe_load((path / "model-tier-cases.yaml").read_text()))
     workflows = list_workflows()
     workflow_matrix: dict[str, dict[str, int]] = {}
@@ -50,7 +67,7 @@ def evaluate_routes(directory: Path | None = None) -> RouteEvaluation:
     tier_matrix: dict[str, dict[str, int]] = {}
     failures: list[str] = []
     intent_correct = tier_correct = 0
-    for case in intents.cases:
+    for name, case in intents:
         result = keyword_route(case.input, workflows)
         if result.branch == "classifier":
             result = classified_route(
@@ -64,6 +81,7 @@ def evaluate_routes(directory: Path | None = None) -> RouteEvaluation:
         _record(branch_matrix, case.expected_branch, result.branch)
         if (result.workflow_id, result.branch) == (case.expected_workflow, case.expected_branch):
             intent_correct += 1
+            correct_by_suite[name] += 1
         else:
             failures.append(
                 f"{case.id}: expected {case.expected_workflow}/{case.expected_branch}, "
@@ -77,10 +95,14 @@ def evaluate_routes(directory: Path | None = None) -> RouteEvaluation:
         else:
             failures.append(f"{case.id}: expected {case.expected_tier}, got {tier}")
     return RouteEvaluation(
-        intent_total=len(intents.cases),
+        intent_total=len(intents),
         tier_total=len(tiers.cases),
         intent_correct=intent_correct,
         tier_correct=tier_correct,
+        intent_suites={
+            name: IntentSuiteEvaluation(total=len(suite.cases), correct=correct_by_suite[name])
+            for name, suite in suites.items()
+        },
         workflow_confusion=workflow_matrix,
         branch_confusion=branch_matrix,
         tier_confusion=tier_matrix,

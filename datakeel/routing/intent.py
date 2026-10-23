@@ -3,6 +3,8 @@
 
 """Score declared multilingual trigger groups without running a workflow."""
 
+import re
+
 from datakeel.core.routing_models import RouteCandidate, RouteDecision
 from datakeel.workflows.models import WorkflowDefinition
 
@@ -51,12 +53,33 @@ def keyword_route(text: str, workflows: list[WorkflowDefinition]) -> RouteDecisi
 
 def _score(text: str, workflow: WorkflowDefinition) -> float:
     triggers = workflow.triggers
-    if any(normalize(word) in text for word in triggers.excluded_keywords):
+    request = re.sub(
+        r"^(?:(?:(?:please|can you|could you|would you)\s+|请你|请|麻烦你|麻烦|帮我|给我)\s*)+",
+        "",
+        text,
+    )
+    if any(_position(request, word) == 0 for word in triggers.excluded_prefixes):
+        return 0
+    if any(_position(text, word) is not None for word in triggers.excluded_keywords) or any(
+        all(_position(text, term) is not None for term in group)
+        for group in triggers.excluded_groups
+    ):
         return 0
     return sum(
-        bool(group) and all(normalize(term) in text for term in group)
-        for group in triggers.keywords
+        all(_position(text, term) is not None for term in group) for group in triggers.keywords
     )
+
+
+def _position(text: str, expression: str) -> int | None:
+    positions: list[int] = []
+    for alternative in expression.split("|"):
+        term = normalize(alternative)
+        prefix = r"(?<![a-z0-9_])" if term[0].isascii() and term[0].isalnum() else ""
+        suffix = r"(?![a-z0-9_])" if term[-1].isascii() and term[-1].isalnum() else ""
+        match = re.search(prefix + re.escape(term) + suffix, text)
+        if match:
+            positions.append(match.start())
+    return min(positions) if positions else None
 
 
 def classify_offline(
@@ -70,9 +93,9 @@ def classify_offline(
         if scores.get(workflow.id, 0) < workflow.triggers.threshold:
             continue
         positions = [
-            normalized.index(normalize(word))
+            position
             for word in workflow.triggers.classification_keywords
-            if normalize(word) in normalized
+            if (position := _position(normalized, word)) is not None
         ]
         if positions:
             ranked.append((min(positions), workflow.id))

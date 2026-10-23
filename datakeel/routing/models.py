@@ -37,7 +37,7 @@ class IntentCase(BoundaryModel):
     """Identify the expected semantic result and routing branch of one input."""
 
     id: str
-    source: str
+    source: str = ""
     input: str
     expected_workflow: str | None
     expected_branch: RouteBranch

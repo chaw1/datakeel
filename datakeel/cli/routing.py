@@ -45,6 +45,8 @@ def dispatch(args: argparse.Namespace) -> None:
             f"({result.intent_correct}/{result.intent_total} intents, "
             f"{result.tier_correct}/{result.tier_total} tiers)"
         )
+        for name, suite in result.intent_suites.items():
+            console.print(f"{name}: {suite.correct}/{suite.total}", markup=False)
         for label, matrix in (
             ("Workflow", result.workflow_confusion),
             ("Branch", result.branch_confusion),
