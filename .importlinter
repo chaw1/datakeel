@@ -12,14 +12,21 @@ layers =
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
-# HTTP exposes typed conversations/traces; the loop meters calls; evaluation exercises that loop.
+# HTTP exposes typed conversations/traces; application helpers meter calls for graph execution.
     datakeel.api.routes.agent -> datakeel.agent.service
     datakeel.api.routes.agent -> datakeel.agent.models
     datakeel.api.routes.harness -> datakeel.harness.service
-    datakeel.agent.loop -> datakeel.harness.service
+    datakeel.agent.metering -> datakeel.harness.service
     datakeel.harness.execution -> datakeel.agent.service
     datakeel.harness.execution -> datakeel.agent.providers
     datakeel.harness.execution -> datakeel.agent.models
+# Conversation services enter the adapter; graph nodes reuse native guards, dispatch and metering.
+    datakeel.agent.service -> datakeel.runtime.graph
+    datakeel.agent.factory -> datakeel.runtime.chat_provider
+    datakeel.runtime.graph -> datakeel.agent.dispatch
+    datakeel.runtime.graph -> datakeel.agent.guards
+    datakeel.runtime.graph -> datakeel.agent.metering
+    datakeel.runtime.graph -> datakeel.agent.models
 # Shared tool dispatch uses action policy/services and stores invocation audit through typed models.
     datakeel.ontology.tooling -> datakeel.actions.service
     datakeel.ontology.tooling -> datakeel.actions.models

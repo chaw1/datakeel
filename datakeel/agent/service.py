@@ -6,12 +6,12 @@
 from collections.abc import Iterator
 
 from datakeel.agent.factory import provider_session
-from datakeel.agent.loop import AgentLoop
 from datakeel.agent.memory import close_interrupted, conversation_view
 from datakeel.agent.models import AgentEvent, ConversationView
 from datakeel.core.agent_models import ConversationCreate, MessageInput, Provider
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
+from datakeel.runtime.graph import AgentGraph
 from datakeel.storage import conversation_store as memory
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import get_dataset
@@ -77,6 +77,6 @@ def _response_events(
     config = memory.get(db, conversation_id).config
     try:
         with provider_session(config, provider) as selected:
-            yield from AgentLoop(db, conversation_id, token, selected).run()
+            yield from AgentGraph(db, conversation_id, token, selected).run()
     except ValidationError as error:
         yield AgentEvent(event="stopped", stop_reason="configuration_error", text=str(error))

@@ -26,7 +26,7 @@ uv run python scripts/license_audit.py
 - Python 3.12；ruff `select = ["ALL"]`。全局 ignore 白名单只有：`D203, D213`（docstring 风格二选一）、`COM812, ISC001`（与 formatter 冲突）。`per-file-ignores` 允许 `tests/**` 加 `S101, ARG001, ARG002, PLR2004`，`scripts/**` 加 `T201`；每条 per-file-ignore 在 pyproject 里写一句理由。`ANN401` 不进白名单，边界处的 `Any` 用行内 `# noqa: ANN401  # 理由`。
 - `line-length = 100` 真实生效，不 ignore E501。
 - pyright `typeCheckingMode = "strict"`，0 error 0 warning。公共函数签名不得出现未标注的 `Any`。
-- `datakeel/runtime/` 是图与模型框架的适配边界，目前沿用全部 strict 规则，没有包级放宽；其它包同样不得放宽。框架类型如需局部适配，必须只在 runtime 内精确声明，并在此逐条记录规则与理由。
+- `datakeel/runtime/` 是图与模型框架的适配边界，仅在该目录的 pyright executionEnvironment 中关闭两条诊断：`reportMissingTypeStubs`（锁定 LangGraph 的图构造入口没有完整 stub）和 `reportUnknownMemberType`（`add_node`、`compile`、`stream` 等泛型成员包含第三方未精确标注的类型）。参数、返回值和模块边界仍须显式类型化，其余 strict 规则继续生效；后置根目录 executionEnvironment 保持其它包全部 strict 诊断，禁止包外新增 suppression。
 - 复杂度与规模：`mccabe max-complexity = 10`；`PLR0915 max-statements = 40`；参数 ≤ 6（PLR0913）；单文件 ≤ 400 行（测试文件 ≤ 600）、单函数 ≤ 60 行由 `scripts/check_size.py` 检查并列入 `make check`。超限就拆。
 - `agent` 与 `runtime` 两个包各自最多 1500 行，分别由 `AGENT_PACKAGE_LIMIT` 和 `RUNTIME_PACKAGE_LIMIT` 检查，不能互相借用额度。
 - 公共模块、类、函数必须有 Google 风格 docstring（ruff D 规则）；私有（下划线开头）可省。

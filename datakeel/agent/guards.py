@@ -7,10 +7,22 @@ from collections import Counter
 
 from datakeel.actions.policy import digest
 from datakeel.core.agent_models import ToolCall
+from datakeel.core.models import BoundaryModel
 from datakeel.ontology.tool_models import ToolOutcome
 
 REPEAT_LIMIT = 3
 PING_WINDOW = 4
+
+
+class GuardSnapshot(BoundaryModel):
+    """Encode progress counters as basic values without serializing a live guard object."""
+
+    calls: dict[str, int]
+    failures: dict[str, int]
+    history: list[str]
+    last_result: str | None
+    no_progress: int
+    seen_assets: list[tuple[str, str, str | None]]
 
 
 class LoopGuard:
@@ -64,3 +76,22 @@ class LoopGuard:
         """Count empty model rounds as a separate absence of useful progress."""
         self.no_progress += 1
         return "no_progress" if self.no_progress >= REPEAT_LIMIT else None
+
+    def snapshot(self) -> str:
+        """Preserve the same counters across synchronous checkpoint boundaries."""
+        return GuardSnapshot(
+            calls=dict(self.calls),
+            failures=dict(self.failures),
+            history=self.history,
+            last_result=self.last_result,
+            no_progress=self.no_progress,
+            seen_assets=list(self.seen_assets),
+        ).model_dump_json()
+
+    def restore(self, payload: str) -> None:
+        """Restore only the explicitly declared basic counter fields."""
+        if payload:
+            state = GuardSnapshot.model_validate_json(payload)
+            self.calls, self.failures = Counter(state.calls), Counter(state.failures)
+            self.history, self.last_result = state.history, state.last_result
+            self.no_progress, self.seen_assets = state.no_progress, set(state.seen_assets)

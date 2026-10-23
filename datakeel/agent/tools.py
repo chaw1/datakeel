@@ -16,7 +16,12 @@ from datakeel.ontology.functions import function_definitions
 from datakeel.ontology.tool_models import ToolCallContext, ToolInvocationStart, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.database import Database
-from datakeel.storage.tool_invocations import begin_invocation, finish_invocation
+from datakeel.storage.tool_invocations import (
+    begin_invocation,
+    finish_invocation,
+    invocation_identity,
+    replay_invocation,
+)
 
 DEFERRED_READ_FUNCTIONS = frozenset({"ask_data", "list_metrics", "explain_metric", "impact_of"})
 
@@ -87,6 +92,12 @@ class ToolCatalog:
 
     def invoke(self, db: Database, call: ToolCall, context: ToolCallContext) -> ToolOutcome:
         """Enforce model-visible capabilities even if a provider invents a hidden call."""
+        identifier = invocation_identity(context.session_id, call.id)
+        previous = replay_invocation(db, identifier, call.name, digest(call.arguments.root))
+        if previous is not None:
+            if call.name == "tool_search":
+                self._load(previous)
+            return previous
         if call.name == "tool_search":
             try:
                 query = ToolSearchParams.model_validate(call.arguments.root).query.casefold()
@@ -116,7 +127,7 @@ class ToolCatalog:
                 error="Tool unavailable; discover allowed tools first",
             )
             return _record_local(db, call, context, result)
-        return invoke_tool(db, call.name, call.arguments, context)
+        return invoke_tool(db, call.name, call.arguments, context, call_id=call.id)
 
     def _load(self, result: ToolOutcome) -> None:
         values = result.content.root.get("tools", [])
@@ -140,6 +151,7 @@ def _record_local(
             argument_keys=sorted(call.arguments.root),
             context=context,
             asset_refs=[],
+            identifier=invocation_identity(context.session_id, call.id),
         ),
     )
     result = outcome.model_copy(update={"invocation_id": identifier})

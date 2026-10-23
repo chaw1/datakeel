@@ -25,7 +25,12 @@ from datakeel.ontology.tool_models import (
 )
 from datakeel.ontology.tool_refs import argument_refs, extract_refs, reconcile_refs
 from datakeel.storage.database import Database
-from datakeel.storage.tool_invocations import begin_invocation, finish_invocation
+from datakeel.storage.tool_invocations import (
+    begin_invocation,
+    finish_invocation,
+    invocation_identity,
+    replay_invocation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -104,10 +109,19 @@ def _finish(
 
 
 def invoke_tool(
-    db: Database, name: str, arguments: JsonDocument, context: ToolCallContext
+    db: Database,
+    name: str,
+    arguments: JsonDocument,
+    context: ToolCallContext,
+    *,
+    call_id: str | None = None,
 ) -> ToolOutcome:
     """Persist every attempt; action tools only prepare and require explicit execution."""
     started = perf_counter()
+    identity = invocation_identity(context.session_id, call_id)
+    previous = replay_invocation(db, identity, name, digest(arguments.root))
+    if previous is not None:
+        return previous
     identifier = begin_invocation(
         db,
         ToolInvocationStart(
@@ -116,6 +130,7 @@ def invoke_tool(
             argument_keys=sorted(arguments.root),
             context=context,
             asset_refs=argument_refs(name, arguments.root),
+            identifier=identity,
         ),
     )
     try:

@@ -26,3 +26,4 @@ class ToolInvocationRow(Base):
     completed_at: Mapped[float | None] = mapped_column(Float, nullable=True)
     elapsed_ms: Mapped[float] = mapped_column(Float, default=0)
     error: Mapped[str | None] = mapped_column(String, nullable=True)
+    outcome: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)

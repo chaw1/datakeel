@@ -27,4 +27,5 @@ def execute_reversible(
             }
         ),
         context,
+        call_id=plan.operation_id,
     )

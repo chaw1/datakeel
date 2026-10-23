@@ -42,6 +42,7 @@ class ToolInvocationStart(BoundaryModel):
     argument_keys: list[str]
     context: ToolCallContext
     asset_refs: list[AssetRef]
+    identifier: str | None = None
 
 
 class ToolInvocation(BoundaryModel):

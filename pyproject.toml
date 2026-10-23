@@ -109,6 +109,15 @@ typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
 
+[[tool.pyright.executionEnvironments]]
+root = "datakeel/runtime"
+# Graph factories expose incomplete third-party stubs and generic callable members.
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+
+[[tool.pyright.executionEnvironments]]
+root = "."
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra -m 'not integration'"
