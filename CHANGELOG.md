@@ -4,12 +4,6 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
-### Fixed
-
-- Workflow intent routing matches semantic groups with interchangeable synonyms and English word boundaries. Single-object deletion and descriptive metric edits remain free Agent requests; `eval-route` also checks the frozen intent regression corpus.
-- Workflow timelines show bilingual step titles and readable summaries for file counts, branch decisions, action receipts, quality scores and before/after answers. Original outputs remain available in expandable details, and historical titles come from each run's frozen definition.
-- Agent model routing uses one compact row per response; fallback attempt details expand only when a backup was used.
-
 ## [0.8.0] - 2026-10-24
 
 ### Added
@@ -27,6 +21,12 @@ All notable changes are documented here using the Keep a Changelog format.
 - Non-paused runs interrupted by client disconnects or process restarts become `INTERRUPTED`; they cannot resume midway. Waiting tasks fail explicitly on timeout or task failure, with a worker startup hint.
 - `done` events add optional route and model-attempt metadata without changing existing event ordering. Classification and fallback attempts do not consume additional Agent turns. Existing golden inputs, context segments and tool discovery are unchanged.
 - Package, API and frontend release identifiers advance to 0.8.0 without adding runtime dependencies.
+
+### Fixed
+
+- Workflow intent routing matches semantic groups with interchangeable synonyms and English word boundaries. Single-object deletion and descriptive metric edits remain free Agent requests; `eval-route` also checks the frozen intent regression corpus.
+- Workflow timelines show bilingual step titles and readable summaries for file counts, branch decisions, action receipts, quality scores and before/after answers. Original outputs remain available in expandable details, and historical titles come from each run's frozen definition.
+- Agent model routing uses one compact row per response; fallback attempt details expand only when a backup was used.
 
 ## [0.7.0] - 2026-10-24
 
