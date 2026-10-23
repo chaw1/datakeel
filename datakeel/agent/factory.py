@@ -9,10 +9,10 @@ from contextlib import contextmanager
 import httpx
 
 from datakeel.agent.demo import DemoProvider
-from datakeel.agent.providers import AnthropicProvider, OpenAIProvider
 from datakeel.core.agent_models import ConversationCreate, Provider
 from datakeel.core.errors import ValidationError
 from datakeel.core.settings import get_settings
+from datakeel.runtime.chat_provider import model_provider
 
 
 @contextmanager
@@ -31,10 +31,8 @@ def provider_session(
     if secret is None:
         msg = f"No API key configured for {config.provider}"
         raise ValidationError(msg)
-    with httpx.Client(timeout=settings.provider_timeout, trust_env=False) as client:
-        if config.provider == "openai":
-            yield OpenAIProvider(client, api_key=secret.get_secret_value(), url=settings.openai_url)
-        else:
-            yield AnthropicProvider(
-                client, api_key=secret.get_secret_value(), url=settings.anthropic_url
-            )
+    with (
+        httpx.Client(timeout=settings.provider_timeout, trust_env=False) as client,
+        model_provider(config, settings, client) as provider,
+    ):
+        yield provider

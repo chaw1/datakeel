@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     report_timeout: float = Field(default=2.0, gt=0, le=30)
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
+    openai_base_url: str | None = None
+    anthropic_base_url: str | None = None
     openai_url: str = "https://api.openai.com/v1/chat/completions"
     anthropic_url: str = "https://api.anthropic.com/v1/messages"
     provider_timeout: float = Field(default=30, gt=0, le=120)

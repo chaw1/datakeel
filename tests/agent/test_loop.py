@@ -10,12 +10,14 @@ from typing import TYPE_CHECKING
 import httpx
 import pytest
 
-from datakeel.agent.providers import FakeProvider, OpenAIProvider
+from datakeel.agent.providers import FakeProvider
 from datakeel.agent.service import create_conversation, get_conversation, send_message
 from datakeel.core.agent_models import ConversationCreate, MessageInput, ModelResponse, ToolCall
 from datakeel.core.harness_models import BudgetLimits, TokenUsage
 from datakeel.core.models import JsonDocument
+from datakeel.core.settings import Settings
 from datakeel.harness.service import list_accounts, list_traces
+from datakeel.runtime.chat_provider import model_provider
 from datakeel.storage.tool_invocations import list_invocations
 from tests.agent.test_service import action_script
 
@@ -91,8 +93,16 @@ def test_loop_when_provider_fails_records_unknown_usage_and_accounts_reservation
 ) -> None:
     """Count failed HTTP requests without inventing provider token usage or final answers."""
     conversation = create_conversation(db, ConversationCreate())
-    with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(500))) as client:
-        provider = OpenAIProvider(client, api_key="fixture", url="https://fixture.invalid")
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(500)), trust_env=False
+        ) as client,
+        model_provider(
+            ConversationCreate(provider="openai"),
+            Settings(openai_api_key="fixture", openai_base_url="https://fixture.invalid"),
+            client,
+        ) as provider,
+    ):
         events = list(
             send_message(db, conversation.id, MessageInput(content="request"), provider=provider)
         )
@@ -118,8 +128,14 @@ def test_loop_when_timeouts_repeat_consumes_budget_without_inventing_provider_us
         msg = "Fixture timed out after dispatch"
         raise httpx.ReadTimeout(msg, request=request)
 
-    with httpx.Client(transport=httpx.MockTransport(timeout)) as client:
-        provider = OpenAIProvider(client, api_key="fixture", url="https://fixture.invalid")
+    with (
+        httpx.Client(transport=httpx.MockTransport(timeout), trust_env=False) as client,
+        model_provider(
+            ConversationCreate(provider="openai"),
+            Settings(openai_api_key="fixture", openai_base_url="https://fixture.invalid"),
+            client,
+        ) as provider,
+    ):
         for _ in range(10):
             events = list(
                 send_message(db, conversation.id, MessageInput(content="retry"), provider=provider)

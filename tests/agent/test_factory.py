@@ -11,9 +11,10 @@ import httpx
 import pytest
 
 from datakeel.agent.factory import provider_session
-from datakeel.agent.providers import AnthropicProvider, FakeProvider, OpenAIProvider
+from datakeel.agent.providers import FakeProvider
 from datakeel.core.agent_models import ConversationCreate
 from datakeel.core.errors import ValidationError
+from datakeel.runtime.chat import ChatProvider
 
 
 @pytest.mark.parametrize("kind", ["openai", "anthropic"])
@@ -46,7 +47,10 @@ def test_provider_factory_when_configured_closes_injected_http_client(
 
     monkeypatch.setattr("datakeel.agent.factory.httpx.Client", factory)
     with provider_session(ConversationCreate(provider=kind)) as provider:
-        assert isinstance(provider, OpenAIProvider if kind == "openai" else AnthropicProvider)
+        assert isinstance(provider, ChatProvider)
+        assert provider.model.max_retries == 0
+        transport = getattr(provider.model, "http_client" if kind == "openai" else "transport")
+        assert transport.trust_env is False
     assert client.is_closed
 
 

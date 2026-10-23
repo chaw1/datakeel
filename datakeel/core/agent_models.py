@@ -64,6 +64,7 @@ class ModelResponse(BoundaryModel):
     tool_calls: list[ToolCall] = Field(default_factory=list[ToolCall])
     usage: TokenUsage = Field(default_factory=TokenUsage)
     stop_reason: str = "stop"
+    usage_known: bool = Field(default=True, exclude=True)
 
 
 class Provider(Protocol):
