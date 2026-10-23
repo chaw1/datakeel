@@ -12,6 +12,7 @@ from datakeel.core.memory_models import (
     MemoryEntry,
     MemoryPolicy,
     MemorySelection,
+    MemoryUseScope,
 )
 from datakeel.core.models import utcnow
 from datakeel.operators.text.pii_redact import EMAIL, PHONE
@@ -76,9 +77,10 @@ def reinforce_memories(
     *,
     clock: Callable[[], datetime] = utcnow,
     policy: MemoryPolicy | None = None,
+    scope: MemoryUseScope | None = None,
 ) -> None:
-    """Record actual use after a model attempt; absent identities remain absent."""
-    memory_store.reinforce(db, identifiers, clock(), policy or MemoryPolicy())
+    """Record actual use, strengthening once per scoped question without restoring deletions."""
+    memory_store.reinforce(db, identifiers, clock(), policy or MemoryPolicy(), scope)
 
 
 def retrieve(

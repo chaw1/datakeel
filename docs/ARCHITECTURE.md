@@ -140,6 +140,8 @@ SSE reuses existing event types with defaulted path/name/usage fields. Child res
 
 `memory/` owns explicit writes, shared PII redaction, deterministic BM25 retrieval, lazy strength decay and consolidation. `storage/memory_store.py` owns transactional rows and returns frozen core models. Memory and delegation each have a 1500-line limit and a ≥90% coverage gate; all same-layer imports are explicit in `.importlinter`. No runtime dependency or vector service is added.
 
-记忆只由用户或显式工具写入，作用域为全局或指定数据集。检索依据当前用户消息，至少两个不同词元重合，按 BM25 × 衰减强度取前三条，含段开销不超过 1200 字节估算词元。无匹配不增加上下文段。模型调用前重查，实际尝试后增强；具体常量与同分规则见 [Agent reference](AGENT.md)。
+记忆只由用户或显式工具写入，作用域为全局或指定数据集。检索依据当前用户消息，至少两个不同词元重合，按 BM25 × 衰减强度取前三条，含段开销不超过 1200 字节估算词元。无匹配不增加上下文段。每次模型调用及备用尝试前重查，已删条目不进入后续请求；具体常量与同分规则见 [Agent reference](AGENT.md)。
+
+每次用户提问中，同一条记忆仅在首次实际 provider 尝试后增强 0.5；失败尝试也计入。根会话、多步工具调用、备用模型和全部委派子会话共用去重范围。`MemoryUseRow` 按根会话 ID、用户消息序号与记忆 ID 持久化取用标记，并在记忆写事务中原子去重，因此进程重启或 checkpoint 恢复不会重复增强。每次实际取用仍更新 `last_used_at` 和本次响应的取用 ID，仅首次增强更新 `reinforced_at`。新用户消息开启新的增强范围；审批恢复不追加用户消息，沿用原范围。模型尝试前被预算拒绝不记录取用。
 
 Consolidation merges only within one scope, keeps the strongest entry, unions provenance, then archives excess weak entries. Hard deletion recursively removes archived source entries and writes an ID-only audit. Checkpoints and response events store only used memory IDs; the UI resolves current entries so deleted content is unavailable there. Original user speech and explicit tool parameters retain normal transcript semantics; deletion does not rewrite prior speech. Retrieval never uses archived or deleted entries, and no automatic conversation summarization writes memory.

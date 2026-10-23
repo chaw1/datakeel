@@ -15,6 +15,7 @@ from datakeel.core.memory_models import MemoryCreate
 from datakeel.harness.service import list_traces
 from datakeel.memory.service import create_memory, delete_memory, get_memory, list_memories
 from datakeel.runtime.chat_provider import model_provider
+from tests.memory.helpers import freeze_memory_clock
 from tests.routing.protocol_helpers import FailingTransport, configure_fallback
 
 if TYPE_CHECKING:
@@ -72,12 +73,15 @@ def test_fallback_when_memory_deleted_during_first_attempt_refreshes_prompt_and_
     assert not any(segment.name == "memory" for segment in traces[1].segments)
 
 
-def test_fallback_when_memory_remains_live_strengthens_each_actual_attempt(
+def test_fallback_when_memory_remains_live_strengthens_once_per_question(
     db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The failed primary and successful backup are two uses but one response-level identity."""
+    """The failed primary and successful backup share one user-question reinforcement."""
+    clock = freeze_memory_clock(monkeypatch)
     config, settings, _backup = configure_fallback(tmp_path, monkeypatch, "openai")
-    entry = create_memory(db, MemoryCreate(content="revenue metric excludes generated refund rows"))
+    entry = create_memory(
+        db, MemoryCreate(content="revenue metric excludes generated refund rows"), clock=clock
+    )
     conversation = create_conversation(db, config)
     transport = FailingTransport("openai", 500)
     with (
@@ -93,7 +97,9 @@ def test_fallback_when_memory_remains_live_strengthens_each_actual_attempt(
             )
         )
     assert len(transport.models) == 2
-    assert get_memory(db, entry.id).strength > 1.99
+    used = get_memory(db, entry.id, clock=clock)
+    assert used.strength == 1.5
+    assert used.last_used_at == clock.now
     assert events[-1].used_memory_ids == [entry.id]
     assert all(
         any(segment.name == "memory" for segment in trace.segments)

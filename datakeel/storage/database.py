@@ -45,7 +45,7 @@ from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
 from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.harness_rows import EvalRunRow, ModelCallTraceRow
-from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryWriteRow
+from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 from datakeel.storage.metric_audit import MetricAuditRow
 from datakeel.storage.migrations import add_nullable_columns
 from datakeel.storage.tool_rows import ToolInvocationRow
@@ -77,6 +77,7 @@ _REGISTERED_MODELS = (
     ModelCallTraceRow,
     MemoryRow,
     MemoryWriteRow,
+    MemoryUseRow,
     MemoryAuditRow,
     ToolInvocationRow,
     AssertionRow,

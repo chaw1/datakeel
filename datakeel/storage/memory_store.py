@@ -16,13 +16,14 @@ from datakeel.core.memory_models import (
     MemoryEntry,
     MemoryPolicy,
     MemorySelection,
+    MemoryUseScope,
 )
 from datakeel.core.models import new_id
 from datakeel.memory.consolidation import consolidate
 from datakeel.memory.retrieval import refreshed, reinforced, select_entries
 from datakeel.storage.conversation_rows import ConversationRow
 from datakeel.storage.database import Database, DatasetRow
-from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryWriteRow
+from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 
 
 def _lock(db: Database, session: Session) -> None:
@@ -149,8 +150,24 @@ def select_memories(
     )
 
 
-def reinforce(db: Database, identifiers: list[str], now: datetime, policy: MemoryPolicy) -> None:
-    """Strengthen selected live entries once and never restore a deleted or archived record."""
+def _used_in_turn(session: Session, scope: MemoryUseScope | None, identifier: str) -> bool:
+    if scope is None:
+        return False
+    key = (scope.root_conversation_id, scope.user_message_number, identifier)
+    if session.get(MemoryUseRow, key) is not None:
+        return True
+    session.add(MemoryUseRow(**scope.model_dump(), memory_id=identifier))
+    return False
+
+
+def reinforce(
+    db: Database,
+    identifiers: list[str],
+    now: datetime,
+    policy: MemoryPolicy,
+    scope: MemoryUseScope | None = None,
+) -> None:
+    """Atomically deduplicate question-scoped strength while refreshing every actual use."""
     if not identifiers:
         return
     with db.session() as session:
@@ -160,7 +177,11 @@ def reinforce(db: Database, identifiers: list[str], now: datetime, policy: Memor
             if row is not None:
                 entry = _read(row, now, policy)
                 if not entry.archived:
-                    row.payload = reinforced(entry, now, policy).model_dump(mode="json")
+                    if _used_in_turn(session, scope, identifier):
+                        entry = entry.model_copy(update={"last_used_at": now})
+                    else:
+                        entry = reinforced(entry, now, policy)
+                    row.payload = entry.model_dump(mode="json")
         session.commit()
 
 

@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Delegation, leak detection and memory deletion regression mutations."""
+"""Delegation, leak detection and memory regression mutations."""
 
 from scripts.mutation_models import Mutation
 
@@ -38,6 +38,17 @@ ADVANCED_MUTATIONS = (
         case=(
             "tests/memory/test_deletion.py::"
             "test_delete_memory_when_retrieved_excludes_it_from_new_conversation"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="memory-turn-reinforcement",
+        path="storage/memory_store.py",
+        before="if _used_in_turn(session, scope, identifier):",
+        after="if False:",
+        case=(
+            "tests/memory/test_turn_reinforcement.py::"
+            "test_memory_when_three_model_calls_share_question_strengthens_once"
         ),
         runner="pytest",
     ),

@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from sqlalchemy import JSON, String
+from sqlalchemy import JSON, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from datakeel.storage.base import Base
@@ -26,6 +26,15 @@ class MemoryWriteRow(Base):
     key: Mapped[str] = mapped_column(String, primary_key=True)
     digest: Mapped[str] = mapped_column(String)
     memory_id: Mapped[str] = mapped_column(String)
+
+
+class MemoryUseRow(Base):
+    """Deduplicate reinforcement by root user question, retaining only identities."""
+
+    __tablename__ = "memory_uses"
+    root_conversation_id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_message_number: Mapped[int] = mapped_column(Integer, primary_key=True)
+    memory_id: Mapped[str] = mapped_column(String, primary_key=True)
 
 
 class MemoryAuditRow(Base):

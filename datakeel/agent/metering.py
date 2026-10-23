@@ -11,6 +11,7 @@ from datakeel.agent.demo import DemoProvider
 from datakeel.agent.memory import workspace
 from datakeel.agent.tools import ToolCatalog
 from datakeel.core.agent_models import Conversation, ModelRequest, ModelResponse, Provider
+from datakeel.core.memory_models import MemoryUseScope
 from datakeel.core.routing_models import TierState
 from datakeel.memory.service import reinforce_memories, select_memories
 from datakeel.routing.accounting import CallContext, ModelAccount
@@ -100,7 +101,17 @@ class ModelMeter:
             return invoke(request)
         finally:
             self.used_memory_ids = list(dict.fromkeys([*self.used_memory_ids, *self._memory_ids]))
-            reinforce_memories(self.db, self._memory_ids)
+            reinforce_memories(self.db, self._memory_ids, scope=self._memory_scope())
+
+    def _memory_scope(self) -> MemoryUseScope:
+        conversation = memory.get(self.db, self.conversation_id)
+        root = memory.get(self.db, conversation.root_conversation_id or conversation.id)
+        return MemoryUseScope(
+            root_conversation_id=root.id,
+            user_message_number=sum(
+                message.role == "user" and message.name is None for message in root.messages
+            ),
+        )
 
     def _request(self, conversation: Conversation, catalog: ToolCatalog) -> ModelRequest:
         selected = select_memories(

@@ -65,6 +65,13 @@ class MemorySelection(BoundaryModel):
     text: str = ""
 
 
+class MemoryUseScope(BoundaryModel):
+    """Identify one root user question shared by model attempts and delegated descendants."""
+
+    root_conversation_id: str = Field(min_length=1)
+    user_message_number: int = Field(ge=1)
+
+
 class MemoryDeletion(BoundaryModel):
     """Retain deletion evidence containing identities only, never memory content."""
 

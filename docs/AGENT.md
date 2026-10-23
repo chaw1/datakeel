@@ -58,12 +58,16 @@ Use the Memory page or `POST /api/agent/memories` to create a global entry (`dat
 | Relevance / 相关度 | BM25, k1=1.2, b=0.75; at least 2 distinct overlapping tokens and positive score / 至少两个不同词元重合且分数为正 |
 | Ranking / 排序 | BM25 × current strength; last use descending, never-used last; then ID ascending / 分数降序、最近使用降序、ID 升序 |
 | Selection / 取用 | Global + current dataset; top 3; at most 1200 estimated tokens including segment overhead / 全局加当前数据集，最多三条，含段开销不超过 1200 字节估算词元 |
-| Strength / 强度 | New=1; `max(0.05, s0 * 2^(-elapsed_days/14))`; actual model use adds 0.5, cap 3 / 初始 1，半衰期默认 14 天，取用加 0.5、上限 3 |
+| Strength / 强度 | New=1; `max(0.05, s0 * 2^(-elapsed_days/14))`; first actual use per user question adds 0.5, cap 3 / 初始 1，半衰期默认 14 天，每次用户提问首次实际取用加 0.5、上限 3 |
 | Consolidation / 凝练 | Over 200 active entries: normalized exact duplicates, then character-bigram Jaccard ≥0.8 within one scope; keep strongest and union provenance; archive weakest excess / 同作用域合并，保留最强条目及来源并集，再归档最弱超额条目 |
 
-Whole trailing entries are removed to fit the prompt cap; text is never cut mid-entry. No match means no `memory` segment. Selection reads current storage before each model call. Each fallback attempt re-reads current memory before reservation. A snapshot already sent to an in-flight provider cannot be recalled; later attempts omit deleted entries. Reinforcement occurs only after each actual provider attempt, and updates the reinforcement clock. The service exposes injectable clocks and policy defaults for deterministic tests.
+Whole trailing entries are removed to fit the prompt cap; text is never cut mid-entry. No match means no `memory` segment. Selection reads current storage before each model call. Each fallback attempt re-reads current memory before reservation. A snapshot already sent to an in-flight provider cannot be recalled; later attempts omit deleted entries.
 
-段超限时从末尾整条移除，不截断内容；没有匹配就不生成记忆段。每次调用模型前重新读取存储，每次备用尝试也重新检索；已发给进行中调用的快照无法撤回，但后续尝试不再发送已删条目。只有实际尝试模型调用才增强并更新时间；预算在调用前拒绝不会增强。服务支持注入时钟及策略参数，便于确定性验证。
+段超限时从末尾整条移除，不截断内容；没有匹配就不生成记忆段。每次调用模型前重新读取存储，每次备用尝试也重新检索；已发给进行中调用的快照无法撤回，但后续尝试不再发送已删条目。
+
+Each memory gains strength only after its first actual provider attempt in one user question, even if that attempt fails. Multiple model calls, fallback attempts and delegated children share this limit. Every actual use still updates `last_used_at` and the current response's used memory IDs; only the first use changes `reinforced_at`. A new user message starts a new allowance. Approval resume adds no user message and remains in the original question, including after a process restart or checkpoint recovery. A budget rejection before a provider attempt does not count as use. The service exposes injectable clocks and policy defaults for deterministic tests.
+
+每次用户提问中，每条记忆只在首次实际模型尝试后增强，即使该尝试失败也计入。多次模型调用、备用模型和委派子 Agent 共用这一限制。每次实际取用仍更新 `last_used_at` 和本次响应的取用记忆 ID；仅首次增强更新 `reinforced_at`。下一条用户消息重新允许增强；审批恢复不新增用户消息，仍属于原提问，进程重启或 checkpoint 恢复也不重置。预算在模型尝试前拒绝不算取用。服务支持注入时钟及策略参数，便于确定性验证。
 
 Deletion hard-deletes the entry and its archived source entries recursively. Audit retains identities, not content. Future retrieval cannot reinject deleted entries. `done.used_memory_ids` contains only identities; the UI resolves current content and shows deleted entries as unavailable. Historical user messages and explicit write-tool parameters remain original conversation history; deleting memory does not rewrite that history.
 
