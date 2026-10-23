@@ -83,3 +83,12 @@ class WorkflowRecovery(BoundaryModel):
     plan_id: str
     idempotency_key: str
     completed: bool = False
+
+
+class WorkflowCreation(BoundaryModel):
+    """Pass a checked definition and initial steps into one creation transaction."""
+
+    workflow_id: str
+    definition: JsonDocument
+    request: WorkflowStart
+    steps: list[WorkflowStep]

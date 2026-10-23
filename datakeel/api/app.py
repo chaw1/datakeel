@@ -22,7 +22,9 @@ from datakeel.api.routes import (
     search,
     system,
     tasks,
+    workflow_runs,
 )
+from datakeel.runtime.workflow_service import recover_runs
 from datakeel.storage.database import Database
 
 
@@ -30,6 +32,7 @@ def create_app(db: Database | None = None) -> FastAPI:
     """Create an isolated application with explicit infrastructure dependencies."""
     database = db or Database()
     database.migrate()
+    recover_runs(database)
     app = FastAPI(
         title="Datakeel", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
     )
@@ -49,6 +52,7 @@ def create_app(db: Database | None = None) -> FastAPI:
         actions.router,
         agent.router,
         harness.router,
+        workflow_runs.router,
     ):
         app.include_router(router)
     if system.STATIC_DIRECTORY.is_dir():

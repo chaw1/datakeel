@@ -29,7 +29,7 @@ CRITICAL_PACKAGES = (
 MINIMUM_COVERAGE = 90
 STORAGE_IMPLEMENTATIONS = {
     "lineage": ("events.py", "lineage_service.py"),
-    "actions": ("action_*.py", "file_state.py"),
+    "actions": ("action_*.py", "file_state.py", "approval_evidence.py"),
     "worker": ("task_queue.py", "task_queries.py", "task_models.py", "task_terminal.py"),
     "harness": ("harness_*.py", "budget_*.py"),
     "agent": ("conversation_*.py",),

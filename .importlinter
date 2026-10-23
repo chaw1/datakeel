@@ -20,6 +20,19 @@ ignore_imports =
     datakeel.workflows.schemas -> datakeel.ontology.models
     datakeel.workflows.schemas -> datakeel.quality.models
     datakeel.workflows.validation -> datakeel.actions.registry
+# Workflow adapters enter the persistent graph and reuse signed action receipts.
+    datakeel.api.app -> datakeel.runtime.workflow_service
+    datakeel.api.routes.workflow_runs -> datakeel.runtime.workflow_service
+    datakeel.runtime.workflow_graph -> datakeel.agent.recovery
+# Domain execution uses existing tool dispatch and read-only task projections.
+    datakeel.workflows.execution -> datakeel.ontology.tool_models
+    datakeel.workflows.execution -> datakeel.ontology.tooling
+    datakeel.workflows.execution -> datakeel.storage.database
+    datakeel.workflows.execution -> datakeel.storage.task_queries
+# Recovery projects signed records into pure shared policy, independent of conversations.
+    datakeel.storage.workflow_recovery -> datakeel.actions.recovery
+    datakeel.storage.workflow_recovery -> datakeel.actions.models
+    datakeel.storage.approval_evidence -> datakeel.actions.recovery
 # HTTP exposes typed conversations/traces; application helpers meter calls for graph execution.
     datakeel.api.routes.agent -> datakeel.agent.service
     datakeel.api.routes.agent -> datakeel.agent.models
@@ -111,7 +124,7 @@ ignore_imports =
     datakeel.storage.action_requests -> datakeel.actions.policy
 # Recovery verifies the original frozen action digest and signed actor before graph continuation.
     datakeel.storage.conversation_authorization -> datakeel.actions.models
-    datakeel.storage.conversation_authorization -> datakeel.actions.policy
+    datakeel.storage.conversation_authorization -> datakeel.actions.recovery
     datakeel.storage.action_store -> datakeel.actions.models
     datakeel.storage.action_worker -> datakeel.actions.models
     datakeel.storage.action_worker -> datakeel.actions.receipts

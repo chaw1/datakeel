@@ -10,54 +10,20 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.actions.models import ActionPlan
-from datakeel.actions.policy import plan_digest
+from datakeel.actions.recovery import approval_error
 from datakeel.core.agent_models import ConversationAudit
 from datakeel.core.errors import AuthorizationError, NotFoundError
 from datakeel.core.models import new_id, utcnow
-from datakeel.storage.action_rows import ActionRunRow, ApprovalRow
 from datakeel.storage.action_store import locked_plan
+from datakeel.storage.approval_evidence import read_approval
 from datakeel.storage.conversation_rows import ConversationAuditRow
 from datakeel.storage.conversation_store import get
 from datakeel.storage.database import Database
 
 
-def _approval_reason(plan: ActionPlan, approval: ApprovalRow) -> str:
-    checks = [
-        (approval.status != "APPROVED" or not plan.requires_approval, "approval_rejected"),
-        (approval.actor != plan.actor, "actor_mismatch"),
-        (
-            approval.plan_digest != plan.plan_digest or plan_digest(plan) != plan.plan_digest,
-            "digest_mismatch",
-        ),
-    ]
-    return next((reason for failed, reason in checks if failed), "")
-
-
 def _reason(session: Session, plan: ActionPlan, conversation_id: str) -> str:
-    if plan.session_id != conversation_id:
-        return "plan_not_in_conversation"
-    if plan.expires_at <= utcnow():
-        return "expired"
-    approval = session.scalar(select(ApprovalRow).where(ApprovalRow.plan_id == plan.id))
-    if approval is None:
-        return "no_approval"
-    if reason := _approval_reason(plan, approval):
-        return reason
-    run = session.scalar(
-        select(ActionRunRow)
-        .where(ActionRunRow.plan_id == plan.id, ActionRunRow.status != "DENIED")
-        .order_by(ActionRunRow.created_at.desc())
-    )
-    if approval.consumed and run is None:
-        return "approval_consumed"
-    valid = plan.status == "APPROVED" or (
-        run is not None
-        and (
-            (plan.status == "EXECUTED" and run.status in {"QUEUED", "RUNNING", "SUCCEEDED"})
-            or (plan.status == "FAILED" and run.status == "FAILED")
-        )
-    )
-    return "" if valid else "approval_rejected"
+    reason = approval_error(plan, read_approval(session, plan.id), conversation_id, utcnow())
+    return "plan_not_in_conversation" if reason == "plan_not_in_session" else reason
 
 
 def _audit(session: Session, conversation_id: str, plan_id: str, kind: str, reason: str) -> None:
