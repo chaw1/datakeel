@@ -4,6 +4,14 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Fixed
+
+- CI starts the Postgres service container; its health-check command is double-quoted for the runner.
+
+### Performance
+
+- `demo --once` runs in about 11 s instead of 25 s on an M-series laptop. Settings are reused while `DATAKEEL_*` variables are unchanged, evidence contracts are parsed once per content revision, and cache entries group assertions by subject in one pass.
+
 ## [0.6.1] - 2026-10-23
 
 ### Added
