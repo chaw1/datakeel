@@ -23,10 +23,12 @@ dependencies = [
   "httpx>=0.28.1",
   "fastmcp==4.1.3",
   "sqlglot==30.24.0",
+  # The strict checkpoint codec depends on this version's Interrupt fields and constructor.
   "langgraph==1.2.16",
-  "langchain-core==1.7.0",
-  "langchain-openai>=1.7.2",
-  "langchain-anthropic>=1.7.6",
+  "langchain-core>=1.7.0,<2",
+  "langchain-openai>=1.7.2,<2",
+  # Transport injection relies on the adapter's private _client and _client_params contract.
+  "langchain-anthropic==1.7.6",
 ]
 
 [project.scripts]

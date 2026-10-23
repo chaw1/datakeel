@@ -11,6 +11,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Runtime framework dependency declarations use upper bounds or documented exact pins; locked package versions are unchanged.
 - `make check` scans tracked and untracked publishable worktree files for private content before other checks. Reserved example email domains are accepted, generated sample contacts use `example.org`, and commit identities still require GitHub noreply addresses.
 
 ### Performance
