@@ -1,0 +1,31 @@
+body {
+  text-autospace: normal;
+  font-variant-numeric: tabular-nums;
+}
+code,
+pre,
+kbd,
+.mono {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+table th,
+table td {
+  line-height: var(--line-table);
+}
+.stat-number,
+.answer-number {
+  font-family: var(--font-serif);
+  font-weight: 600;
+}
+:lang(zh) * {
+  letter-spacing: 0 !important;
+  font-weight: 400 !important;
+}
+:lang(zh) :is(h1, h2, h3, h4, strong, b, button, th, summary, .nav-label) {
+  font-weight: 500 !important;
+}
+:lang(en) :is(.eyebrow, .nav-label) {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

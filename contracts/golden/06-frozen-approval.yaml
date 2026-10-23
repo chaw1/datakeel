@@ -1,0 +1,45 @@
+id: 06-frozen-approval
+description: Both changed canonical parameters and later target state invalidate old
+  approval.
+turns:
+- input: Prepare deleting this dataset.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: delete_files
+      id: 06-frozen-approval-call-1
+  - tool_calls:
+    - name: delete_files
+      arguments:
+        selection:
+          dataset_id: '{{dataset_id}}'
+      id: 06-frozen-approval-call-2
+  operations:
+  - operation: approve
+  - operation: execute
+    canonical_params: {}
+  - operation: change_quality_config
+  - operation: execute
+expect:
+  tool_sequence:
+  - tool_search
+  - delete_files
+  actions:
+  - action_type: delete_files
+    requires_approval: true
+    executions: 0
+  stop_contains:
+  - approval_required
+  operation_statuses:
+  - APPROVED
+  - REFUSED
+  - SUCCEEDED
+  - REFUSED
+  operation_errors:
+  - Canonical parameters changed
+  - target state changed
+  file_count: 3
+  quarantined_count: 0
+  max_turns: 2
+  max_tokens: 20000

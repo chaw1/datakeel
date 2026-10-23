@@ -1,0 +1,20 @@
+id: 01-read-only
+description: Read-only dataset query produces no mutation.
+turns:
+- input: List the datasets.
+  script:
+  - tool_calls:
+    - name: list_datasets
+      arguments: {}
+      id: 01-read-only-call-1
+  - content: One generated dataset is available.
+expect:
+  tool_sequence:
+  - list_datasets
+  answer_contains:
+  - generated dataset
+  answer_not_contains:
+  - deleted
+  file_count: 3
+  max_turns: 2
+  max_tokens: 15000

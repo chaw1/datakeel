@@ -1,0 +1,45 @@
+id: 04-irreversible-approval
+description: Deletion stops for human approval; unapproved and repeated executions
+  are refused.
+turns:
+- input: Delete these files.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: delete_files
+      id: 04-irreversible-approval-call-1
+  - tool_calls:
+    - name: delete_files
+      arguments:
+        selection:
+          dataset_id: '{{dataset_id}}'
+      id: 04-irreversible-approval-call-2
+  operations:
+  - operation: execute
+  - operation: approve
+  - operation: execute
+  - operation: execute
+expect:
+  tool_sequence:
+  - tool_search
+  - delete_files
+  actions:
+  - action_type: delete_files
+    requires_approval: true
+    executions: 1
+  stop_contains:
+  - approval_required
+  operation_statuses:
+  - REFUSED
+  - APPROVED
+  - SUCCEEDED
+  - REFUSED
+  operation_errors:
+  - human approval
+  - approval was consumed
+  answer_not_contains:
+  - deleted
+  file_count: 0
+  max_turns: 2
+  max_tokens: 20000

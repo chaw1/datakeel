@@ -1,0 +1,939 @@
+{
+  "contractVersion": "2026.08.0",
+  "formatAliases": [],
+  "formats": [
+    {
+      "code": "jpeg",
+      "containerKind": "none",
+      "defaultModality": "image",
+      "extensions": [
+        "jpg",
+        "jpeg",
+        "jfif"
+      ],
+      "formatFamily": "raster-image",
+      "mimeHints": [
+        "image/jpeg"
+      ],
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "raster-image",
+      "containerKind": "none",
+      "defaultModality": "image",
+      "extensions": [
+        "png",
+        "gif",
+        "bmp",
+        "webp",
+        "tif",
+        "tiff",
+        "ico",
+        "apng"
+      ],
+      "formatFamily": "raster-image",
+      "mimeHints": [
+        "image/png",
+        "image/gif",
+        "image/bmp",
+        "image/webp",
+        "image/tiff"
+      ],
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "heif",
+      "containerKind": "none",
+      "defaultModality": "image",
+      "extensions": [
+        "heic",
+        "heif",
+        "avif"
+      ],
+      "formatFamily": "raster-image",
+      "mimeHints": [
+        "image/heic",
+        "image/heif",
+        "image/avif"
+      ],
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "svg",
+      "containerKind": "none",
+      "defaultModality": "image",
+      "extensions": [
+        "svg"
+      ],
+      "formatFamily": "vector-image",
+      "mimeHints": [
+        "image/svg+xml"
+      ],
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "camera-raw",
+      "containerKind": "none",
+      "defaultModality": "image",
+      "extensions": [
+        "cr2",
+        "cr3",
+        "nef",
+        "arw",
+        "dng",
+        "orf",
+        "rw2",
+        "raf",
+        "pef",
+        "srw"
+      ],
+      "formatFamily": "raster-image",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "raw-camera",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "raw"
+      ],
+      "formatFamily": "unknown",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "audio",
+      "containerKind": "none",
+      "defaultModality": "audio",
+      "extensions": [
+        "mp3",
+        "wav",
+        "flac",
+        "aac",
+        "ogg",
+        "m4a",
+        "opus",
+        "wma",
+        "amr",
+        "ape"
+      ],
+      "formatFamily": "audio",
+      "mimeHints": [
+        "audio/mpeg",
+        "audio/wav",
+        "audio/flac",
+        "audio/aac",
+        "audio/ogg",
+        "audio/mp4",
+        "audio/opus",
+        "audio/x-ms-wma"
+      ],
+      "ruleIdPattern": "ext.audio.{extension}.v1"
+    },
+    {
+      "code": "video",
+      "containerKind": "none",
+      "defaultModality": "video",
+      "extensions": [
+        "mp4",
+        "avi",
+        "webm",
+        "mkv",
+        "mov",
+        "m4v",
+        "flv",
+        "wmv",
+        "3gp",
+        "mpg",
+        "mpeg"
+      ],
+      "formatFamily": "video",
+      "mimeHints": [
+        "video/mp4",
+        "video/x-msvideo",
+        "video/webm",
+        "video/x-matroska",
+        "video/quicktime",
+        "video/x-flv",
+        "video/x-ms-wmv",
+        "video/3gpp",
+        "video/mpeg"
+      ],
+      "ruleIdPattern": "ext.video.{extension}.v1"
+    },
+    {
+      "code": "mpeg-ts",
+      "containerKind": "none",
+      "defaultModality": "video",
+      "extensions": [
+        "ts",
+        "mts"
+      ],
+      "formatFamily": "video",
+      "mimeHints": [
+        "video/mp2t"
+      ],
+      "ruleIdPattern": "ext.video.{extension}.v1"
+    },
+    {
+      "code": "pcd",
+      "containerKind": "none",
+      "defaultModality": "point-cloud",
+      "extensions": [
+        "pcd"
+      ],
+      "formatFamily": "point-cloud",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.point-cloud.{extension}.v1"
+    },
+    {
+      "code": "pcd-bin",
+      "containerKind": "none",
+      "defaultModality": "point-cloud",
+      "extensions": [
+        "pcd.bin"
+      ],
+      "formatFamily": "point-cloud",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.point-cloud.pcd-bin.v1"
+    },
+    {
+      "code": "las",
+      "containerKind": "none",
+      "defaultModality": "point-cloud",
+      "extensions": [
+        "las",
+        "laz"
+      ],
+      "formatFamily": "point-cloud",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.point-cloud.{extension}.v1"
+    },
+    {
+      "code": "ply",
+      "containerKind": "none",
+      "defaultModality": "point-cloud",
+      "extensions": [
+        "ply"
+      ],
+      "formatFamily": "point-cloud",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.point-cloud.ply.context.v1"
+    },
+    {
+      "code": "bin",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "bin"
+      ],
+      "formatFamily": "unknown",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "unresolved-point-data",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "xyz",
+        "pts",
+        "e57"
+      ],
+      "formatFamily": "unknown",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.awaiting-golden.{extension}.v1"
+    },
+    {
+      "code": "mesh-3d",
+      "containerKind": "none",
+      "defaultModality": "3d-model",
+      "extensions": [
+        "obj",
+        "stl",
+        "glb",
+        "gltf",
+        "fbx",
+        "dae",
+        "3ds",
+        "usd",
+        "usdz",
+        "ifc",
+        "blend",
+        "lwo"
+      ],
+      "formatFamily": "mesh-3d",
+      "mimeHints": [
+        "model/obj",
+        "model/stl",
+        "model/gltf-binary"
+      ],
+      "ruleIdPattern": "ext.3d-model.{extension}.v1"
+    },
+    {
+      "code": "cad-opaque",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "dwg",
+        "dxf",
+        "step",
+        "stp",
+        "iges",
+        "igs"
+      ],
+      "formatFamily": "unknown",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "nifti",
+      "containerKind": "none",
+      "defaultModality": "image",
+      "extensions": [
+        "nii",
+        "nii.gz"
+      ],
+      "formatFamily": "medical-volume",
+      "mimeHints": [
+        "application/x-nifti"
+      ],
+      "ruleIds": {
+        "nii": "ext.medical.nifti.v1",
+        "nii.gz": "ext.medical.nifti-gzip.v1"
+      }
+    },
+    {
+      "code": "medical-volume",
+      "containerKind": "none",
+      "defaultModality": "image",
+      "extensions": [
+        "nrrd",
+        "mha",
+        "mhd",
+        "mgh",
+        "mgz"
+      ],
+      "formatFamily": "medical-volume",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.medical.{extension}.v1"
+    },
+    {
+      "code": "dicom",
+      "containerKind": "none",
+      "defaultModality": "image",
+      "extensions": [
+        "dcm",
+        "dicom"
+      ],
+      "formatFamily": "medical-image",
+      "mimeHints": [
+        "application/dicom"
+      ],
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "pathology-slide",
+      "containerKind": "directory-image",
+      "defaultModality": "image",
+      "extensions": [
+        "svs",
+        "ndpi",
+        "mrxs",
+        "scn",
+        "bif",
+        "vms",
+        "vmu"
+      ],
+      "formatFamily": "medical-image",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.medical.{extension}.v1"
+    },
+    {
+      "code": "numeric-array",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "npy",
+        "npz"
+      ],
+      "formatFamily": "numeric-array",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "raw-pixel",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "yuv",
+        "nv12"
+      ],
+      "formatFamily": "raw-pixel",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "structured-json",
+      "containerKind": "none",
+      "defaultModality": "text",
+      "extensions": [
+        "json",
+        "jsonl",
+        "ndjson",
+        "ipynb"
+      ],
+      "formatFamily": "structured-text",
+      "mimeHints": [
+        "application/json",
+        "application/x-jsonlines",
+        "application/x-ndjson"
+      ],
+      "ruleIdPattern": "ext.text.{extension}.v1"
+    },
+    {
+      "code": "jsonl-gzip",
+      "containerKind": "compression",
+      "defaultModality": "text",
+      "extensions": [
+        "jsonl.gz"
+      ],
+      "formatFamily": "structured-text",
+      "mimeHints": [
+        "application/gzip"
+      ],
+      "ruleIdPattern": "ext.text.jsonl-gzip.v1"
+    },
+    {
+      "code": "structured-markup",
+      "containerKind": "none",
+      "defaultModality": "text",
+      "extensions": [
+        "xml",
+        "yaml",
+        "yml",
+        "toml"
+      ],
+      "formatFamily": "structured-text",
+      "mimeHints": [
+        "application/xml",
+        "application/x-yaml",
+        "application/toml"
+      ],
+      "ruleIdPattern": "ext.text.{extension}.v1"
+    },
+    {
+      "code": "plain-text",
+      "containerKind": "none",
+      "defaultModality": "text",
+      "extensions": [
+        "txt",
+        "md",
+        "markdown",
+        "html",
+        "htm",
+        "ini",
+        "conf",
+        "properties",
+        "log",
+        "py",
+        "java",
+        "go",
+        "rs",
+        "kt",
+        "rb",
+        "php",
+        "swift",
+        "c",
+        "cpp",
+        "h",
+        "hpp",
+        "cs",
+        "css",
+        "scss",
+        "less",
+        "js",
+        "jsx",
+        "tsx",
+        "vue",
+        "sh",
+        "bash",
+        "zsh",
+        "sql",
+        "dockerfile",
+        "makefile"
+      ],
+      "formatFamily": "plain-text",
+      "mimeHints": [
+        "text/plain",
+        "text/markdown",
+        "text/html"
+      ],
+      "ruleIdPattern": "ext.text.{extension}.v1"
+    },
+    {
+      "code": "spreadsheet",
+      "containerKind": "none",
+      "defaultModality": "table",
+      "extensions": [
+        "csv",
+        "tsv",
+        "xls",
+        "xlsx",
+        "ods",
+        "parquet",
+        "arrow",
+        "feather",
+        "orc"
+      ],
+      "formatFamily": "spreadsheet",
+      "mimeHints": [
+        "text/csv",
+        "text/tab-separated-values",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      ],
+      "ruleIdPattern": "ext.table.{extension}.v1"
+    },
+    {
+      "code": "document",
+      "containerKind": "none",
+      "defaultModality": "document",
+      "extensions": [
+        "pdf",
+        "doc",
+        "docx",
+        "dot",
+        "ppt",
+        "pptx",
+        "pot",
+        "rtf",
+        "odt",
+        "odp",
+        "epub"
+      ],
+      "formatFamily": "document",
+      "mimeHints": [
+        "application/pdf",
+        "application/rtf",
+        "application/epub+zip"
+      ],
+      "ruleIdPattern": "ext.document.{extension}.v1"
+    },
+    {
+      "code": "signal",
+      "containerKind": "none",
+      "defaultModality": "signal",
+      "extensions": [
+        "edf",
+        "bdf",
+        "gdf",
+        "vhdr",
+        "eeg",
+        "set",
+        "acq",
+        "cnt"
+      ],
+      "formatFamily": "signal",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.signal.{extension}.v1"
+    },
+    {
+      "code": "gis",
+      "containerKind": "none",
+      "defaultModality": "gis",
+      "extensions": [
+        "geojson",
+        "kml",
+        "kmz",
+        "gpx",
+        "shp"
+      ],
+      "formatFamily": "gis",
+      "mimeHints": [],
+      "ruleIdPattern": "ext.gis.{extension}.v1"
+    },
+    {
+      "code": "zip",
+      "containerKind": "archive",
+      "defaultModality": "unknown",
+      "extensions": [
+        "zip"
+      ],
+      "formatFamily": "archive",
+      "mimeHints": [
+        "application/zip"
+      ],
+      "ruleIdPattern": "ext.archive.{extension}.v1"
+    },
+    {
+      "code": "tar",
+      "containerKind": "archive",
+      "defaultModality": "unknown",
+      "extensions": [
+        "tar",
+        "tar.gz",
+        "tgz",
+        "tar.bz2",
+        "tbz2",
+        "tar.xz"
+      ],
+      "formatFamily": "archive",
+      "mimeHints": [
+        "application/x-tar"
+      ],
+      "ruleIdPattern": "ext.archive.{extension}.v1"
+    },
+    {
+      "code": "rar",
+      "containerKind": "archive",
+      "defaultModality": "unknown",
+      "extensions": [
+        "rar"
+      ],
+      "formatFamily": "archive",
+      "mimeHints": [
+        "application/vnd.rar",
+        "application/x-rar-compressed"
+      ],
+      "ruleIdPattern": "ext.archive.{extension}.v1"
+    },
+    {
+      "code": "sevenzip",
+      "containerKind": "archive",
+      "defaultModality": "unknown",
+      "extensions": [
+        "7z"
+      ],
+      "formatFamily": "archive",
+      "mimeHints": [
+        "application/x-7z-compressed"
+      ],
+      "ruleIdPattern": "ext.archive.{extension}.v1"
+    },
+    {
+      "code": "single-compression",
+      "containerKind": "compression",
+      "defaultModality": "unknown",
+      "extensions": [
+        "gz",
+        "bz2",
+        "xz"
+      ],
+      "formatFamily": "compression",
+      "mimeHints": [
+        "application/gzip",
+        "application/x-bzip2",
+        "application/x-xz"
+      ],
+      "ruleIdPattern": "ext.compression.{extension}.v1"
+    },
+    {
+      "code": "font",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "ttf",
+        "otf",
+        "woff",
+        "woff2"
+      ],
+      "formatFamily": "font",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "executable",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "exe",
+        "dll",
+        "jar"
+      ],
+      "formatFamily": "executable",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "rosbag",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "bag",
+        "mcap"
+      ],
+      "formatFamily": "unknown",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "opaque-data",
+      "containerKind": "none",
+      "defaultModality": "unknown",
+      "extensions": [
+        "001",
+        "atr",
+        "dat",
+        "data",
+        "db",
+        "downloading",
+        "lastupdated",
+        "pickle",
+        "pkl",
+        "pom",
+        "pt137",
+        "pteye",
+        "sha1",
+        "tmp",
+        "url",
+        "vsp3",
+        "opuz",
+        "svgz",
+        "bak"
+      ],
+      "formatFamily": "unknown",
+      "mimeHints": [],
+      "ruleIdPattern": "unknown.context-required.v1"
+    }
+  ],
+  "invariants": {
+    "aliasCycleCheck": true,
+    "conflictingRolePolicy": "ambiguous",
+    "everyFormatHasDefaultModality": true,
+    "samePriorityConflictIsSchemaError": true,
+    "uniqueCodes": true,
+    "uniqueExtensions": true,
+    "unknownExtensionPolicy": "unknown"
+  },
+  "normalization": {
+    "case": "lower",
+    "mimeConflictPolicy": "ambiguous",
+    "rawFileTypePolicy": "distrust",
+    "stripLeadingDot": true,
+    "suffixStrategy": "longest-match"
+  },
+  "roleRules": [
+    {
+      "id": "role.standard.v1",
+      "priority": 500,
+      "then": {
+        "confidence": 1.0,
+        "usageRole": "fromStandard"
+      },
+      "when": {
+        "standardRole": "*"
+      }
+    },
+    {
+      "id": "role.manifest.explicit.v1",
+      "priority": 400,
+      "then": {
+        "confidence": 1.0,
+        "usageRole": "fromManifest"
+      },
+      "when": {
+        "manifestRole": "*"
+      }
+    },
+    {
+      "id": "role.metadata.explicit-manifest.v1",
+      "priority": 350,
+      "then": {
+        "confidence": 1.0,
+        "usageRole": "metadata"
+      },
+      "when": {
+        "parentRelationAny": [
+          "manifest-for-archive"
+        ]
+      }
+    },
+    {
+      "id": "role.preview.path.v1",
+      "priority": 300,
+      "then": {
+        "confidence": 1.0,
+        "usageRole": "preview"
+      },
+      "when": {
+        "pathPrefixAny": [
+          "_preview/",
+          "_previews/"
+        ]
+      }
+    },
+    {
+      "id": "role.artifact.path.processed.v1",
+      "priority": 300,
+      "then": {
+        "confidence": 1.0,
+        "usageRole": "artifact"
+      },
+      "when": {
+        "pathPrefixAny": [
+          "processed/"
+        ]
+      }
+    },
+    {
+      "id": "role.metadata.camera-config-path.v1",
+      "priority": 300,
+      "then": {
+        "confidence": 0.85,
+        "usageRole": "metadata"
+      },
+      "when": {
+        "pathSegmentsAny": [
+          "camera_config"
+        ]
+      }
+    },
+    {
+      "id": "role.annotation.path.v1",
+      "priority": 300,
+      "then": {
+        "confidence": 0.75,
+        "usageRole": "annotation"
+      },
+      "when": {
+        "pathSegmentsAny": [
+          "annotations",
+          "labels"
+        ]
+      }
+    },
+    {
+      "id": "role.readme.filename.v1",
+      "priority": 200,
+      "then": {
+        "confidence": 1.0,
+        "usageRole": "readme"
+      },
+      "when": {
+        "fileNameRegex": "(?i)^readme(\\..*)?$"
+      }
+    },
+    {
+      "id": "role.manifest.filename.v1",
+      "priority": 200,
+      "then": {
+        "confidence": 0.6,
+        "usageRole": "metadata"
+      },
+      "when": {
+        "fileNameRegex": "(?i)^manifest\\.json$",
+        "pathDepthMax": 2
+      }
+    },
+    {
+      "id": "role.artifact.suffix.result.v1",
+      "priority": 200,
+      "then": {
+        "confidence": 1.0,
+        "usageRole": "artifact"
+      },
+      "when": {
+        "fileNameSuffixAny": [
+          "_result.json"
+        ]
+      }
+    },
+    {
+      "id": "role.artifact.suffix.annotation.v1",
+      "priority": 200,
+      "then": {
+        "confidence": 1.0,
+        "usageRole": "artifact"
+      },
+      "when": {
+        "fileNameSuffixAny": [
+          "_annotation.json"
+        ]
+      }
+    },
+    {
+      "id": "role.payload.default.v1",
+      "priority": 100,
+      "then": {
+        "confidence": 0.5,
+        "usageRole": "payload"
+      },
+      "when": {
+        "datasetTypesNotAny": [
+          "text"
+        ],
+        "formatCodesAny": [
+          "structured-json"
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 1,
+  "vocabularies": {
+    "admissionState": [
+      "unknown",
+      "accepted",
+      "quarantined",
+      "exempt",
+      "rejected"
+    ],
+    "containerKind": [
+      "none",
+      "archive",
+      "compression",
+      "directory-image"
+    ],
+    "formatFamily": [
+      "raster-image",
+      "vector-image",
+      "raw-pixel",
+      "audio",
+      "video",
+      "point-cloud",
+      "mesh-3d",
+      "structured-text",
+      "plain-text",
+      "document",
+      "spreadsheet",
+      "medical-image",
+      "medical-volume",
+      "signal",
+      "gis",
+      "numeric-array",
+      "archive",
+      "compression",
+      "font",
+      "executable",
+      "unknown"
+    ],
+    "modality": [
+      "image",
+      "audio",
+      "video",
+      "point-cloud",
+      "text",
+      "table",
+      "timeseries",
+      "document",
+      "signal",
+      "gis",
+      "3d-model",
+      "unknown"
+    ],
+    "toolCapability": [
+      "native",
+      "convert",
+      "unsupported"
+    ],
+    "usageRole": [
+      "payload",
+      "annotation",
+      "metadata",
+      "readme",
+      "artifact",
+      "preview"
+    ]
+  }
+}

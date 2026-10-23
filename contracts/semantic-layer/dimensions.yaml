@@ -1,0 +1,93 @@
+# All entities and data are fictional. Reference instant: 2026-10-01T00:00:00Z.
+dimensions:
+- id: retail_region
+  name: 零售区域
+  synonyms:
+  - 区域
+  - 地区
+  column: ecommerce/main/orders/region
+  values: &id001
+  - 华东
+  - 华南
+  - 华北
+  - 西部
+- id: retail_channel
+  name: 零售渠道
+  synonyms:
+  - 渠道
+  column: ecommerce/main/orders/channel
+  values: &id002
+  - 线上
+  - 门店
+  - 经销商
+- id: retail_category
+  name: 零售品类
+  synonyms:
+  - 品类
+  column: ecommerce/main/orders/category
+  values:
+  - 油烟机
+  - 洗碗机
+  - 燃气灶
+  - 蒸烤箱
+- id: shipment_region
+  name: 出货区域
+  synonyms:
+  - 区域
+  - 地区
+  column: erp/main/shipments/region
+  values: *id001
+- id: sales_region
+  name: 销售区域
+  synonyms:
+  - 区域
+  - 地区
+  column: crm/main/sales/region
+  values: *id001
+- id: sales_channel
+  name: 销售渠道
+  synonyms:
+  - 渠道
+  column: crm/main/sales/channel
+  values: *id002
+- id: inventory_region
+  name: 库存区域
+  synonyms:
+  - 区域
+  - 地区
+  column: erp/main/inventory/region
+  values: *id001
+- id: customer_region
+  name: 客户区域
+  synonyms:
+  - 区域
+  - 地区
+  column: crm/main/customers/region
+  values: *id001
+- id: ticket_region
+  name: 售后区域
+  synonyms:
+  - 区域
+  - 地区
+  column: service/main/tickets/region
+  values: *id001
+- id: repair_region
+  name: 维修区域
+  synonyms:
+  - 区域
+  - 地区
+  column: service/main/repairs/region
+  values: *id001
+- id: refund_region
+  name: 退款区域
+  synonyms:
+  - 区域
+  - 地区
+  column: ecommerce/main/returns/region
+  values: *id001
+- id: payment_channel
+  name: 支付渠道
+  synonyms:
+  - 渠道
+  column: ecommerce/main/payments/channel
+  values: *id002

@@ -1,0 +1,226 @@
+.baseline-note {
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  line-height: var(--line-body);
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--muted);
+  padding: calc(var(--space) * 4);
+  border-radius: 6px;
+  margin-top: calc(var(--space) * 3);
+}
+
+.measurement-details {
+  margin-top: calc(var(--space) * 2.5);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+}
+.table-toolbar {
+  flex-wrap: wrap;
+}
+
+button.brand {
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.operations-label {
+  padding-top: calc(var(--space) * 5);
+  margin-bottom: var(--space);
+}
+.resource-loading {
+  color: var(--muted);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  margin: calc(var(--space) * 5) 0;
+}
+.approval-grid,
+.definition-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: calc(var(--space) * 5.5);
+  margin: calc(var(--space) * 5.5) 0;
+}
+.approval-item {
+  min-width: 0;
+}
+.plan-select {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+  margin: 0 0 calc(var(--space) * 2.5) calc(var(--space) * 0.75);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+}
+.plan-select input {
+  accent-color: var(--pencil);
+}
+.plan-card {
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  border-radius: 9px;
+  padding: calc(var(--space) * 6);
+}
+.plan-heading,
+.definition-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--space) * 3);
+  margin-bottom: calc(var(--space) * 3.5);
+}
+.plan-card h3,
+.definition-card h3 {
+  font-size: var(--font-xl);
+  font-family: var(--font-serif);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.plan-card details,
+.definition-card details {
+  margin-top: calc(var(--space) * 4);
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--space) * 4.25) calc(var(--space) * 5);
+  margin: calc(var(--space) * 5.5) 0;
+}
+.detail-grid dt {
+  color: var(--muted);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  margin-bottom: calc(var(--space) * 1.5);
+}
+.detail-grid dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  overflow-wrap: anywhere;
+}
+.digest {
+  display: block;
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  padding-top: calc(var(--space) * 3);
+  overflow-wrap: anywhere;
+}
+.plan-controls {
+  display: flex;
+  gap: calc(var(--space) * 2.5);
+  flex-wrap: wrap;
+  padding-top: calc(var(--space) * 5.5);
+}
+.plan-card .error-text,
+.plan-card > .muted {
+  margin-top: calc(var(--space) * 4);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+}
+.selection-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 3);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+}
+.action-receipt {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  padding: calc(var(--space) * 5);
+  margin: calc(var(--space) * 4.5) 0;
+}
+.receipt-failed {
+  background: var(--red-wash);
+  border-color: var(--rule);
+}
+.receipt-heading {
+  display: flex;
+  gap: calc(var(--space) * 2.5);
+  align-items: center;
+  color: var(--ok);
+}
+.receipt-heading > strong {
+  flex: 1;
+  font-size: var(--font-sm);
+  font-family: var(--font-body);
+  overflow-wrap: anywhere;
+}
+.action-receipt > p {
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  margin-top: calc(var(--space) * 3.5);
+  color: var(--muted);
+}
+.action-receipt .detail-grid {
+  margin: calc(var(--space) * 4) 0;
+}
+.action-run-list {
+  display: grid;
+  gap: calc(var(--space) * 4.5);
+  margin-top: calc(var(--space) * 5.5);
+}
+.run-card {
+  padding: 0 calc(var(--space) * 5.5) calc(var(--space) * 5.5);
+}
+.run-card .action-receipt {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.run-card .action-receipt.receipt-failed {
+  color: var(--red);
+}
+.definition-card {
+  padding: calc(var(--space) * 6.25);
+}
+.definition-card p,
+.definition-card li {
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  line-height: var(--line-body);
+  color: var(--muted);
+}
+.definition-card h4 {
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  margin: calc(var(--space) * 4) 0 calc(var(--space) * 1.75);
+  color: var(--ink);
+}
+.definition-card ul {
+  padding-left: calc(var(--space) * 4);
+}
+.definition-card pre,
+.run-card pre,
+.plan-card pre {
+  max-width: 100%;
+}
+@media (max-width: 880px) {
+  .operations-label {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .approval-grid,
+  .definition-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .plan-card,
+  .definition-card {
+    padding: calc(var(--space) * 4.5);
+  }
+  .selection-actions {
+    gap: calc(var(--space) * 1.75);
+    font-size: var(--font-xs);
+    font-family: var(--font-body);
+  }
+  .detail-grid {
+    gap: calc(var(--space) * 3.75);
+  }
+}

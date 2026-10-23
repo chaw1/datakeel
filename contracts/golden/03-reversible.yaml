@@ -1,0 +1,44 @@
+id: 03-reversible
+description: A reversible action executes automatically after discovery and preparation.
+turns:
+- input: Quarantine low-quality text samples.
+  script:
+  - tool_calls:
+    - name: search_files
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        modality: text
+        quality_max: 59
+      id: 03-reversible-call-1
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: quarantine_files
+      id: 03-reversible-call-2
+  - tool_calls:
+    - name: quarantine_files
+      arguments:
+        selection:
+          dataset_id: '{{dataset_id}}'
+          quality_max: 59
+          filters:
+          - field: modality
+            operator: eq
+            value: text
+      id: 03-reversible-call-3
+  - content: Quarantined one low-quality sample.
+expect:
+  tool_sequence:
+  - search_files
+  - tool_search
+  - quarantine_files
+  actions:
+  - action_type: quarantine_files
+    requires_approval: false
+    executions: 1
+  answer_contains:
+  - Quarantined
+  quarantined_count: 1
+  file_count: 3
+  max_turns: 4
+  max_tokens: 80000

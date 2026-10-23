@@ -1,0 +1,116 @@
+[project]
+name = "datakeel"
+version = "0.6.1"
+description = "A small, observable data platform from files to trustworthy datasets."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.30,<1",
+  "pydantic>=2.12,<3",
+  "sqlalchemy>=2.0,<3",
+  "pg8000>=1.31,<2",
+  "networkx>=3.3,<4",
+  "pyyaml>=6,<7",
+  "jsonschema>=4.23,<5",
+  "referencing>=0.35,<1",
+  "numpy>=2,<3",
+  "pillow>=12,<14",
+  "boto3>=1.35,<2",
+  "pydantic-settings>=2.16.1",
+  "rich>=15.0.0",
+  "httpx>=0.28.1",
+  "fastmcp==4.1.3",
+  "sqlglot==30.24.0",
+]
+
+[project.scripts]
+datakeel = "datakeel.cli:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "pyright>=1.1.390",
+    "pytest>=8",
+    "pytest-cov>=6",
+    "import-linter>=2.15",
+    "pre-commit>=4.7.0",
+    "types-pyyaml>=6.0.12.20260906",
+    "types-jsonschema>=4.26.0.20261006",
+    "boto3-stubs[s3]>=1.43.117",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.import_linter_cache",
+  "/.pytest_cache",
+  "/.ruff_cache",
+  "**/__pycache__",
+  "/examples/sample-data/train",
+  "/examples/sample-data/val",
+  "/examples/sample-data/gold.json",
+  "/examples/enterprise/generated",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["datakeel"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"contracts/model-prices.yaml" = "datakeel/_contracts/model-prices.yaml"
+"contracts/golden" = "datakeel/_contracts/golden"
+"contracts/evidence" = "datakeel/_contracts/evidence"
+"contracts/semantic-layer" = "datakeel/_contracts/semantic-layer"
+"contracts/ask" = "datakeel/_contracts/ask"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "D203", "D213", # Google docstrings use one blank line and start on the first line.
+  "COM812", "ISC001", # Formatter owns commas and adjacent literal layout.
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Pytest assertions and parameterized fixture values intentionally use literals and injected args.
+"tests/**/*.py" = ["S101", "ARG001", "ARG002", "PLR2004"]
+
+[tool.ruff.lint.flake8-type-checking]
+# Pydantic and SQLAlchemy inspect inherited model annotations when constructing schemas/mappings.
+runtime-evaluated-base-classes = [
+  "pydantic.BaseModel", "pydantic.RootModel", "pydantic_settings.BaseSettings",
+  "datakeel.core.models.BoundaryModel", "datakeel.core.models.Record",
+  "sqlalchemy.orm.DeclarativeBase", "datakeel.storage.base.Base",
+]
+# Route request/response annotations are evaluated by FastAPI at router registration.
+runtime-evaluated-decorators = ["router.get", "router.post", "router.put", "router.patch", "router.delete"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pyright]
+include = ["datakeel"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -m 'not integration'"
+markers = ["integration: optional real-service integration checks (not run by default)"]
+
+[tool.ruff.lint.pylint]
+max-args = 6
+max-positional-args = 6
+max-statements = 40

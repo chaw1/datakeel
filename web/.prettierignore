@@ -1,0 +1,3 @@
+node_modules
+public/THIRD-PARTY-LICENSES.txt
+src/api/generated.ts

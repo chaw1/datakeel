@@ -1,0 +1,328 @@
+id: 20-ask-updated-metric
+description: Execute a reversible metric action, then verify changed SQL, result,
+  and authoritative version.
+fixture_kind: enterprise
+turns:
+- input: 上个季度华东区零售额是多少
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: ask_data
+      id: 20-discover-ask
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: 上个季度华东区零售额是多少
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 20-before
+  - content: Initial answer recorded.
+- input: 将零售额的度量字段改为标价金额，再回答同一个问题。
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: update_metric
+      id: 20-discover-update
+  - tool_calls:
+    - name: update_metric
+      arguments:
+        definition:
+          id: retail_revenue
+          name: 零售额
+          synonyms:
+          - 终端零售额
+          - 实付零售额
+          - 营业额
+          description: 以电商已完成订单的终端实付金额计量，包含订单优惠，未冲抵后续退款。
+          owner: 零售运营负责人
+          version: 1
+          measure:
+            table: ecommerce/main/orders
+            column: ecommerce/main/orders/list_amount
+            aggregation: sum
+          filters:
+          - column: ecommerce/main/orders/status
+            op: eq
+            value: completed
+          time:
+            column: ecommerce/main/orders/date
+            granularity: day
+          dimensions:
+          - retail_region
+          - retail_channel
+          - retail_category
+          caveats:
+          - 数据完全合成；金额单位为人民币元。
+          - 本指标口径独立，请勿将出货额、销售额和零售额互换。
+      id: 20-update
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: 上个季度华东区零售额是多少
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 20-after
+  - content: Updated metric answer recorded.
+expect:
+  tool_sequence:
+  - tool_search
+  - ask_data
+  - tool_search
+  - update_metric
+  - ask_data
+  actions:
+  - action_type: update_metric
+    requires_approval: false
+    executions: 1
+  tool_results:
+  - name: ask_data
+    calls: 2
+    call_index: 0
+    content_schema:
+      type: object
+      required:
+      - function
+      - asset_refs
+      - data
+      properties:
+        function:
+          const: ask_data
+        asset_refs:
+          type: array
+          minItems: 1
+        data:
+          type: object
+          required:
+          - status
+          - reference_instant
+          - assertion_ids
+          - assertions
+          - metric_card
+          - sql
+          - result
+          - matches
+          - time_range
+          - lineage
+          properties:
+            status:
+              const: answered
+            reference_instant:
+              const: '2026-10-01T00:00:00Z'
+            assertion_ids:
+              type: array
+              minItems: 1
+            assertions:
+              type: array
+              minItems: 1
+            metric_card:
+              type: object
+              required:
+              - status
+              - definition
+              properties:
+                status:
+                  const: resolved
+                definition:
+                  type: object
+                  required:
+                  - id
+                  - version
+                  - owner
+                  - caveats
+                  properties:
+                    id:
+                      const: retail_revenue
+                    version:
+                      const: 1
+                    owner:
+                      type: string
+                      minLength: 1
+                    caveats:
+                      type: array
+                      minItems: 1
+            sql:
+              type: object
+              required:
+              - metric_id
+              - metric_version
+              - sql
+              - parameters
+              - tables
+              - columns
+              properties:
+                metric_id:
+                  const: retail_revenue
+                metric_version:
+                  const: 1
+                sql:
+                  type: string
+                  pattern: ^SELECT SUM
+                parameters:
+                  type: object
+                  minProperties: 4
+                tables:
+                  const:
+                  - ecommerce/main/orders
+                columns:
+                  type: array
+                  contains:
+                    const: ecommerce/main/orders/paid_amount
+            result:
+              type: object
+              required:
+              - columns
+              - rows
+              - truncated
+              properties:
+                columns:
+                  const:
+                  - value
+                rows:
+                  const:
+                  - - 4979475
+                truncated:
+                  const: false
+            matches:
+              type: array
+              minItems: 3
+            time_range:
+              const:
+                start: '2026-07-01'
+                end: '2026-10-01'
+            lineage:
+              type: object
+              required:
+              - asset_id
+              - include_catalog
+              properties:
+                asset_id:
+                  const: retail_revenue
+                include_catalog:
+                  const: true
+  - name: ask_data
+    calls: 2
+    call_index: 1
+    content_schema:
+      type: object
+      required:
+      - function
+      - asset_refs
+      - data
+      properties:
+        function:
+          const: ask_data
+        asset_refs:
+          type: array
+          minItems: 1
+        data:
+          type: object
+          required:
+          - status
+          - reference_instant
+          - assertion_ids
+          - assertions
+          - metric_card
+          - sql
+          - result
+          - matches
+          - time_range
+          - lineage
+          properties:
+            status:
+              const: answered
+            reference_instant:
+              const: '2026-10-01T00:00:00Z'
+            assertion_ids:
+              type: array
+              minItems: 1
+            assertions:
+              type: array
+              minItems: 1
+            metric_card:
+              type: object
+              required:
+              - status
+              - definition
+              properties:
+                status:
+                  const: resolved
+                definition:
+                  type: object
+                  required:
+                  - id
+                  - version
+                  - owner
+                  - caveats
+                  properties:
+                    id:
+                      const: retail_revenue
+                    version:
+                      const: 2
+                    owner:
+                      type: string
+                      minLength: 1
+                    caveats:
+                      type: array
+                      minItems: 1
+            sql:
+              type: object
+              required:
+              - metric_id
+              - metric_version
+              - sql
+              - parameters
+              - tables
+              - columns
+              properties:
+                metric_id:
+                  const: retail_revenue
+                metric_version:
+                  const: 2
+                sql:
+                  type: string
+                  pattern: ^SELECT SUM
+                parameters:
+                  type: object
+                  minProperties: 4
+                tables:
+                  const:
+                  - ecommerce/main/orders
+                columns:
+                  type: array
+                  contains:
+                    const: ecommerce/main/orders/list_amount
+            result:
+              type: object
+              required:
+              - columns
+              - rows
+              - truncated
+              properties:
+                columns:
+                  const:
+                  - value
+                rows:
+                  const:
+                  - - 5255975
+                truncated:
+                  const: false
+            matches:
+              type: array
+              minItems: 3
+            time_range:
+              const:
+                start: '2026-07-01'
+                end: '2026-10-01'
+            lineage:
+              type: object
+              required:
+              - asset_id
+              - include_catalog
+              properties:
+                asset_id:
+                  const: retail_revenue
+                include_catalog:
+                  const: true
+  file_count: 1
+  max_turns: 7
+  max_tokens: 200000

@@ -1,0 +1,59 @@
+.tri-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space);
+  min-width: 24px;
+  height: 18px;
+  padding: 0 var(--space);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--font-xs);
+  line-height: var(--line-solid);
+}
+.tri-state.present {
+  font-weight: 600;
+}
+.tri-state.absent {
+  border: 1px solid var(--ink);
+}
+.tri-state.unknown {
+  color: var(--pencil);
+  border: 1px dashed var(--pencil);
+  border-radius: 50%;
+  min-width: 18px;
+  width: 18px;
+  padding: 0;
+}
+.tri-state.missing {
+  color: var(--muted);
+}
+.tri-state.accepted > span {
+  color: var(--pencil);
+}
+.evidence-anchor {
+  display: inline;
+  border: 0;
+  border-bottom: 1px solid var(--pencil);
+  padding: 0;
+  color: var(--pencil);
+  background: var(--pencil-wash);
+  font: inherit;
+  text-align: inherit;
+}
+.evidence-anchor mark {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+.evidence-anchor sup {
+  color: var(--pencil);
+  font-family: var(--font-body);
+  font-size: var(--font-xs);
+  line-height: var(--line-solid);
+  padding-left: 1px;
+}
+.evidence-anchor.is-linked {
+  outline: 2px solid var(--pencil);
+  outline-offset: 2px;
+}

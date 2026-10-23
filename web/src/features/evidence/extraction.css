@@ -1,0 +1,28 @@
+.evidence-extraction {
+  max-width: 900px;
+}
+.evidence-extraction p {
+  font-family: var(--font-body);
+  font-size: var(--font-sm);
+  overflow-wrap: anywhere;
+}
+.evidence-extraction details {
+  margin: calc(var(--space) * 3) 0;
+}
+.evidence-extraction summary {
+  cursor: pointer;
+  color: var(--pencil);
+}
+.evidence-extraction pre {
+  padding: calc(var(--space) * 3);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--font-xs);
+}
+.evidence-extraction-links {
+  display: flex;
+  gap: calc(var(--space) * 4);
+  flex-wrap: wrap;
+}

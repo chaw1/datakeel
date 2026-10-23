@@ -1,0 +1,105 @@
+id: 13-evidence-query
+description: Real extraction supports a versioned val-to-train concept gap query with
+  direct evidence.
+fixture_kind: evidence
+turns:
+- input: Find validation samples mentioning person with missing labels and a train
+    near duplicate.
+  script:
+  - tool_calls:
+    - name: query_evidence
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        version_ids:
+        - '{{version_id}}'
+        split: val
+        page_size: 1
+        has_near_duplicate_in: train
+        assertion_filters:
+        - predicate: mentions
+          concept: person
+          value: present
+        - predicate: annotated_as
+          concept: person
+          value: present
+          operator: not_exists
+      id: 13-query
+  - content: Found a directly supported person label gap.
+expect:
+  tool_sequence:
+  - query_evidence
+  tool_results:
+  - name: query_evidence
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          - total
+          properties:
+            total:
+              const: 1
+            items:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                type: object
+                required:
+                - filename
+                - asset_ref
+                - assertions
+                - near_duplicates
+                properties:
+                  filename:
+                    const: val/scene-0016/image.png
+                  asset_ref:
+                    type: object
+                    required:
+                    - asset_id
+                    - version
+                    properties:
+                      asset_id:
+                        const: '{{file_id}}'
+                      version:
+                        const: '{{version_id}}'
+                  near_duplicates:
+                    type: array
+                    minItems: 1
+                  assertions:
+                    type: array
+                    contains:
+                      type: object
+                      required:
+                      - predicate
+                      - object
+                      - anchors
+                      - producer_event_id
+                      properties:
+                        predicate:
+                          const: label_gap
+                        anchors:
+                          type: array
+                          minItems: 1
+                        producer_event_id:
+                          type: string
+                          minLength: 1
+                        object:
+                          type: object
+                          required:
+                          - concept
+                          - value
+                          properties:
+                            concept:
+                              const: person
+                            value:
+                              const: present
+  answer_contains:
+  - label gap
+  file_count: 20
+  max_turns: 2
+  max_tokens: 100000

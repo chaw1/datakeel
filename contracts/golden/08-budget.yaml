@@ -1,0 +1,22 @@
+id: 08-budget
+description: An exhausted conversation refuses reservation before any provider call.
+config:
+  budget:
+    conversation_tokens: 1
+turns:
+- input: List datasets.
+  script:
+  - tool_calls:
+    - name: list_datasets
+      arguments: {}
+      id: 08-budget-call-1
+  - content: This must not be produced.
+expect:
+  tool_sequence: []
+  stop_contains:
+  - budget_exceeded
+  answer_not_contains:
+  - must not
+  file_count: 3
+  max_turns: 0
+  max_tokens: 0

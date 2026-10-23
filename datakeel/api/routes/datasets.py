@@ -1,0 +1,61 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Dataset imports, immutable versions, and file downloads."""
+
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, Query
+from fastapi.responses import FileResponse
+
+from datakeel.api.dependencies import DatabaseDependency
+from datakeel.storage import dataset_service as service
+from datakeel.storage.dataset_service import DatasetInput
+from datakeel.storage.governance_service import dataset_quality_summaries
+from datakeel.storage.views import DatasetQualityView, DatasetView, FileView, VersionView
+
+router = APIRouter(prefix="/api/datasets", tags=["datasets"])
+
+
+@router.get("")
+def datasets(
+    db: DatabaseDependency, include: Literal["quality"] | None = None
+) -> list[DatasetView | DatasetQualityView]:
+    """List datasets, optionally including the latest read-only quality score."""
+    return list(dataset_quality_summaries(db)) if include else list(service.list_datasets(db))
+
+
+@router.post("", status_code=201)
+def create_dataset(body: DatasetInput, db: DatabaseDependency) -> DatasetView:
+    """Import uploaded files and their initial immutable manifest."""
+    return service.create_dataset(db, body)
+
+
+@router.get("/{identifier}")
+def dataset(identifier: str, db: DatabaseDependency) -> DatasetView:
+    """Read one dataset summary."""
+    return service.get_dataset(db, identifier)
+
+
+@router.get("/{identifier}/files")
+def files(identifier: str, db: DatabaseDependency, version: str | None = None) -> list[FileView]:
+    """Read original or versioned files without exposing local paths."""
+    return service.list_files(db, identifier, version)
+
+
+@router.get("/{identifier}/versions")
+def versions(identifier: str, db: DatabaseDependency) -> list[VersionView]:
+    """List a dataset's immutable manifest snapshots."""
+    return service.list_versions(db, identifier)
+
+
+@router.get("/{identifier}/files/{file_id}/download")
+def download(
+    identifier: str,
+    file_id: str,
+    db: DatabaseDependency,
+    version: Annotated[str | None, Query(min_length=1)] = None,
+) -> FileResponse:
+    """Download a file from its dataset, optionally pinned to one immutable version."""
+    value = service.resolve_download(db, identifier, file_id, version)
+    return FileResponse(value.path, filename=value.filename)

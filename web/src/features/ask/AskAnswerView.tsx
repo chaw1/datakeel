@@ -1,0 +1,137 @@
+import { FootnoteReference } from "../../components/FootnoteReference";
+import { useI18n } from "../../i18n/useI18n";
+import { date } from "../../lib/format";
+
+import { answerFootnotes } from "./answerFootnotes";
+import { AnswerProvenance } from "./AnswerProvenance";
+import { AskResolution } from "./AskResolution";
+
+import type { AskAnswer, AskResult } from "../../api/ask";
+import type { LineageTarget } from "../../app/navigation";
+import type { Translate } from "../../i18n/context";
+
+const statusLabels = {
+  answered: "askAnswered",
+  unanswerable: "askUnanswerable",
+  clarification: "askClarification",
+} as const;
+
+function displayValue(
+  value: AskResult["rows"][number][number],
+  locale: string,
+  t: Translate,
+) {
+  if (value === null) return t("askNull");
+  if (typeof value === "boolean") return t(value ? "askTrue" : "askFalse");
+  return typeof value === "number"
+    ? new Intl.NumberFormat(locale, { maximumFractionDigits: 8 }).format(value)
+    : value;
+}
+
+export function AskAnswerView({
+  answer,
+  onOpenReceipt,
+  onChooseMetric,
+}: {
+  answer: AskAnswer;
+  onOpenReceipt: (target: LineageTarget) => void;
+  onChooseMetric?: (id: string) => void;
+}) {
+  const { t, locale } = useI18n();
+  const result = answer.result;
+  const footnotes = answerFootnotes(answer, t);
+  const scalar = result?.rows.length === 1 && result.columns.length === 1;
+  return (
+    <article className={`card ask-answer ask-answer-${answer.status}`}>
+      <header className="ask-answer-heading">
+        <span
+          className={`badge ${answer.status === "answered" ? "green" : ""}`}
+        >
+          {t(statusLabels[answer.status])}
+        </span>
+        <span className="ask-muted">
+          {t("askReferenceUsed")}
+          <time dateTime={answer.reference_instant}>
+            {t("askUtcTime", {
+              time: date(answer.reference_instant, locale, "UTC"),
+            })}
+          </time>
+        </span>
+      </header>
+      {answer.status === "answered" ? (
+        <>
+          <div className="ask-result">
+            <span className="eyebrow">
+              {answer.metric_card?.definition.name}
+            </span>
+            {scalar ? (
+              <div className="ask-number-line">
+                <output
+                  className="ask-scalar answer-number"
+                  aria-label={t("askResult")}
+                >
+                  {displayValue(result.rows[0]?.[0] ?? null, locale, t)}
+                </output>
+                <span className="ask-answer-references">
+                  {footnotes.map((item, index) => (
+                    <FootnoteReference
+                      item={item}
+                      index={index}
+                      key={item.id}
+                    />
+                  ))}
+                </span>
+              </div>
+            ) : result?.rows.length ? (
+              <div className="ask-table-scroll">
+                <table>
+                  <caption>{t("askResults")}</caption>
+                  <thead>
+                    <tr>
+                      {result.columns.map((column) => (
+                        <th key={column} scope="col">
+                          {column}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.rows.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {row.map((value, index) => (
+                          <td key={index}>
+                            {displayValue(value, locale, t)}
+                            {typeof value === "number" &&
+                              footnotes.map((item, footnoteIndex) => (
+                                <FootnoteReference
+                                  item={item}
+                                  index={footnoteIndex}
+                                  key={item.id}
+                                />
+                              ))}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>{t("askNoRows")}</p>
+            )}
+            {result?.truncated && (
+              <p className="ask-muted">{t("askTruncated")}</p>
+            )}
+          </div>
+        </>
+      ) : (
+        <AskResolution
+          key={answer.id ?? answer.question}
+          answer={answer}
+          onChooseMetric={onChooseMetric}
+        />
+      )}
+      <AnswerProvenance answer={answer} onOpenReceipt={onOpenReceipt} />
+    </article>
+  );
+}

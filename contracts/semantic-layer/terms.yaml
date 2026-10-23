@@ -1,0 +1,184 @@
+# All entities and data are fictional. Reference instant: 2026-10-01T00:00:00Z.
+terms:
+- term: 出货额
+  synonyms:
+  - 发货金额
+  means:
+    kind: metric
+    id: shipment_amount
+- term: 销售额
+  synonyms:
+  - 开票销售额
+  - 营业额
+  means:
+    kind: metric
+    id: sales_amount
+- term: 零售额
+  synonyms:
+  - 终端零售额
+  - 营业额
+  means:
+    kind: metric
+    id: retail_revenue
+- term: 订单数
+  synonyms:
+  - 成交订单数
+  means:
+    kind: metric
+    id: order_count
+- term: 退款额
+  synonyms:
+  - 退款金额
+  means:
+    kind: metric
+    id: refund_amount
+- term: 库存量
+  synonyms:
+  - 库存件数
+  means:
+    kind: metric
+    id: inventory_units
+- term: 客户数
+  synonyms:
+  - 客户数量
+  means:
+    kind: metric
+    id: customer_count
+- term: 售后工单数
+  synonyms:
+  - 工单数
+  means:
+    kind: metric
+    id: ticket_count
+- term: 维修费用
+  synonyms:
+  - 维修人工费
+  means:
+    kind: metric
+    id: repair_cost
+- term: 收款额
+  synonyms:
+  - 支付金额
+  means:
+    kind: metric
+    id: payment_amount
+- term: 销售量
+  synonyms:
+  - 销售件数
+  means:
+    kind: metric
+    id: sales_units
+- term: 出货量
+  synonyms:
+  - 出货件数
+  means:
+    kind: metric
+    id: shipment_units
+- term: 零售量
+  synonyms:
+  - 零售件数
+  means:
+    kind: metric
+    id: retail_units
+- term: 零售区域
+  synonyms: []
+  means:
+    kind: dimension
+    id: retail_region
+- term: 零售渠道
+  synonyms: []
+  means:
+    kind: dimension
+    id: retail_channel
+- term: 零售品类
+  synonyms: []
+  means:
+    kind: dimension
+    id: retail_category
+- term: 出货区域
+  synonyms: []
+  means:
+    kind: dimension
+    id: shipment_region
+- term: 销售区域
+  synonyms: []
+  means:
+    kind: dimension
+    id: sales_region
+- term: 销售渠道
+  synonyms: []
+  means:
+    kind: dimension
+    id: sales_channel
+- term: 库存区域
+  synonyms: []
+  means:
+    kind: dimension
+    id: inventory_region
+- term: 客户区域
+  synonyms: []
+  means:
+    kind: dimension
+    id: customer_region
+- term: 售后区域
+  synonyms: []
+  means:
+    kind: dimension
+    id: ticket_region
+- term: 维修区域
+  synonyms: []
+  means:
+    kind: dimension
+    id: repair_region
+- term: 退款区域
+  synonyms: []
+  means:
+    kind: dimension
+    id: refund_region
+- term: 支付渠道
+  synonyms: []
+  means:
+    kind: dimension
+    id: payment_channel
+- term: 终端实付金额
+  synonyms:
+  - 消费者实付
+  means:
+    kind: column
+    id: ecommerce/main/orders/paid_amount
+- term: 订单原价
+  synonyms:
+  - 促销前金额
+  means:
+    kind: column
+    id: ecommerce/main/orders/list_amount
+- term: 出库单价口径
+  synonyms:
+  - 出货价格
+  means:
+    kind: column
+    id: erp/main/shipments/shipped_amount
+- term: 开票金额
+  synonyms:
+  - 已入账金额
+  means:
+    kind: column
+    id: crm/main/sales/invoiced_amount
+- term: 工单日期
+  synonyms:
+  - 报修日期
+  means:
+    kind: column
+    id: service/main/tickets/date
+- term: 人工费
+  synonyms:
+  - 工时费用
+  means:
+    kind: column
+    id: service/main/repairs/labor_cost
+- term: 库存快照日期
+  synonyms:
+  - 盘点日期
+  means:
+    kind: column
+    id: erp/main/inventory/date

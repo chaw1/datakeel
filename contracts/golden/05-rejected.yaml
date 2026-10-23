@@ -1,0 +1,42 @@
+id: 05-rejected
+description: A rejected human decision cannot produce a destructive execution.
+turns:
+- input: Prepare deletion.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: delete_files
+      id: 05-rejected-call-1
+  - tool_calls:
+    - name: delete_files
+      arguments:
+        selection:
+          dataset_id: '{{dataset_id}}'
+      id: 05-rejected-call-2
+  operations:
+  - operation: reject
+  - operation: execute
+- input: Keep everything after my rejection.
+  script:
+  - content: Kept all files; the request was rejected.
+expect:
+  tool_sequence:
+  - tool_search
+  - delete_files
+  actions:
+  - action_type: delete_files
+    requires_approval: true
+    executions: 0
+  stop_contains:
+  - approval_required
+  operation_statuses:
+  - REJECTED
+  - REFUSED
+  operation_errors:
+  - rejected
+  answer_contains:
+  - Kept all files
+  file_count: 3
+  max_turns: 3
+  max_tokens: 60000

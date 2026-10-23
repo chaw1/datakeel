@@ -1,0 +1,292 @@
+.app-shell {
+  min-height: 100vh;
+}
+.sidebar {
+  width: 226px;
+  position: fixed;
+  inset: 0 auto 0 0;
+  background: var(--sheet);
+  border-right: 1px solid var(--rule);
+  padding: calc(var(--space) * 7.5) calc(var(--space) * 4.5) 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 2.5);
+  font-size: var(--font-2xl);
+  font-family: var(--font-serif);
+  letter-spacing: -1.2px;
+  font-weight: 700;
+  padding: 0 calc(var(--space) * 3);
+}
+.brand-dot {
+  color: var(--pencil);
+  margin-left: calc(var(--space) * -2.25);
+}
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 0.75);
+  width: 26px;
+  height: 29px;
+  transform: rotate(-13deg);
+}
+.brand-mark span {
+  display: block;
+  width: 6px;
+  border-radius: 2px;
+  background: var(--pencil);
+}
+.brand-mark span:nth-child(1) {
+  height: 16px;
+  align-self: flex-end;
+}
+.brand-mark span:nth-child(2) {
+  height: 25px;
+}
+.brand-mark span:nth-child(3) {
+  height: 17px;
+  align-self: flex-start;
+}
+.workspace-switch {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 2.5);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  padding: calc(var(--space) * 2.5);
+  margin: calc(var(--space) * 8.5) 0 calc(var(--space) * 7.25);
+}
+.workspace-avatar,
+.user-avatar {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: var(--font-sm);
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+.workspace-switch strong {
+  display: block;
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+.workspace-switch div span {
+  display: block;
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+  margin-top: calc(var(--space) * 0.25);
+}
+.workspace-caret {
+  margin-left: auto;
+  color: var(--muted);
+}
+.nav-label,
+.eyebrow {
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+}
+.nav-label {
+  padding-left: calc(var(--space) * 3.25);
+  margin-bottom: calc(var(--space) * 3);
+}
+nav {
+  display: flex;
+}
+.sidebar nav {
+  flex-direction: column;
+  gap: calc(var(--space) * 1.25);
+}
+.nav-item {
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 3);
+  padding: calc(var(--space) * 2.75) calc(var(--space) * 3.25);
+  text-align: left;
+  border-radius: 6px;
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+}
+.nav-item:hover {
+  background: var(--paper);
+}
+.nav-item.active {
+  background: var(--pencil-wash);
+  color: var(--pencil);
+  font-weight: 600;
+}
+.nav-count {
+  margin-left: auto;
+  background: var(--pencil-wash);
+  color: var(--pencil);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  min-width: 19px;
+  text-align: center;
+  border-radius: 4px;
+}
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: calc(var(--space) * 12.5);
+}
+.local-note {
+  padding: calc(var(--space) * 4) calc(var(--space) * 2.25)
+    calc(var(--space) * 6);
+}
+.local-note .status-dot {
+  display: inline-block;
+  margin-right: calc(var(--space) * 1.5);
+}
+.local-note strong {
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--ink);
+}
+.local-note p {
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+  padding-left: calc(var(--space) * 3.25);
+  margin-top: calc(var(--space) * 1.25);
+}
+.sidebar-footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--rule);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+  padding: calc(var(--space) * 4.5) calc(var(--space) * 2.5);
+}
+.main-shell {
+  margin-left: calc(var(--space) * 56.5);
+}
+.topbar {
+  height: 76px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 calc(var(--space) * 10);
+  background: var(--sheet);
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 3.5);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+}
+.breadcrumb button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--muted);
+}
+.breadcrumb-current {
+  color: var(--ink);
+  overflow: hidden;
+  max-width: 220px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 6.25);
+}
+.local-badge {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 1.75);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+}
+.user-avatar {
+  border-radius: 50%;
+  width: 29px;
+  height: 29px;
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  background: var(--paper);
+}
+.status-dot,
+.live-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--ok);
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.status-dot.offline {
+  background: var(--red);
+}
+.live-dot {
+  margin-left: auto;
+}
+main {
+  padding: calc(var(--space) * 9.5) calc(var(--space) * 10) 0;
+  max-width: 1800px;
+  margin: auto;
+}
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--space) * 5);
+  margin-bottom: calc(var(--space) * 8);
+}
+.page-heading .eyebrow {
+  display: block;
+  margin-bottom: calc(var(--space) * 2.75);
+  color: var(--muted);
+}
+.page-heading p {
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+  margin-top: calc(var(--space) * 2.5);
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--space) * 1.75);
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  border-radius: 6px;
+  padding: calc(var(--space) * 2) calc(var(--space) * 3.25);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+.button:hover {
+  border-color: var(--rule);
+  background: var(--sheet);
+}
+.button.subtle {
+  background: transparent;
+  box-shadow: none;
+  padding: calc(var(--space) * 1.25) calc(var(--space) * 2.5);
+}

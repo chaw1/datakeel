@@ -1,0 +1,22 @@
+id: 02-filtered-search
+description: Text, path, and quality filters are passed through the real read tool.
+turns:
+- input: Find empty low-quality text files.
+  script:
+  - tool_calls:
+    - name: search_files
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        modality: text
+        quality_max: 59
+        path: empty
+      id: 02-filtered-search-call-1
+  - content: Found the empty text sample.
+expect:
+  tool_set:
+  - search_files
+  answer_contains:
+  - empty text
+  file_count: 3
+  max_turns: 2
+  max_tokens: 15000

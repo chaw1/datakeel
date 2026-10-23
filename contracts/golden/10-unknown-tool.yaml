@@ -1,0 +1,21 @@
+id: 10-unknown-tool
+description: Invented tool names remain unavailable and do not mutate assets.
+turns:
+- input: Use the missing tool.
+  script:
+  - tool_calls:
+    - name: invented_unsafe_tool
+      arguments:
+        dataset_id: '{{dataset_id}}'
+      id: 10-unknown-tool-call-1
+  - content: The requested tool is unavailable.
+expect:
+  tool_sequence:
+  - invented_unsafe_tool
+  answer_contains:
+  - unavailable
+  context_contains:
+  - Tool unavailable
+  file_count: 3
+  max_turns: 2
+  max_tokens: 15000

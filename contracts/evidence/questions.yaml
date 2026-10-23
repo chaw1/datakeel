@@ -1,0 +1,139 @@
+schema_version: "1.0"
+thresholds:
+  recall_gain: 0.05
+  allowed_precision_drop: 0.02
+  pair_precision: 0.9
+  pair_recall: 0.8
+questions:
+  - id: near-val-train
+    description: Validation samples with a direct training-set near duplicate
+    baseline_description: Split-only candidates; labels cannot establish image similarity.
+    target: {kind: near_duplicate, split: val, peer_split: train}
+    baseline: {split: val}
+    with_evidence: {split: val, has_near_duplicate_in: train}
+  - id: near-train-val
+    description: Training samples with a direct validation-set near duplicate
+    baseline_description: Split-only candidates; labels cannot establish image similarity.
+    target: {kind: near_duplicate, split: train, peer_split: val}
+    baseline: {split: train}
+    with_evidence: {split: train, has_near_duplicate_in: val}
+  - id: near-night-val
+    description: Caption-described night validation samples with a training-set near duplicate
+    baseline_description: Split-only candidates lack both scene-caption and image-similarity evidence.
+    target: {kind: near_duplicate, split: val, peer_split: train, scene: night}
+    baseline: {split: val}
+    with_evidence:
+      split: val
+      has_near_duplicate_in: train
+      assertion_filters: [{predicate: mentions, concept: night, value: present}]
+  - id: near-rain-train
+    description: Caption-described rainy training samples with a validation-set near duplicate
+    baseline_description: Split-only candidates lack both scene-caption and image-similarity evidence.
+    target: {kind: near_duplicate, split: train, peer_split: val, scene: rain}
+    baseline: {split: train}
+    with_evidence:
+      split: train
+      has_near_duplicate_in: val
+      assertion_filters: [{predicate: mentions, concept: rain, value: present}]
+  - id: gap-person
+    description: Caption mentions a person but supplied annotations omit person
+    baseline_description: With the two object-label vocabulary, empty or car-only labels are omission candidates; caption intent is unavailable.
+    target: {kind: conflict, concept: person}
+    baseline: &unannotated_person
+      filters: [{field: metadata.annotation_categories, operator: in, value: [[], [car]]}]
+    with_evidence:
+      assertion_filters: [{predicate: label_gap, concept: person, value: present}]
+  - id: gap-night
+    description: Person annotation gaps in caption-described night scenes
+    baseline_description: Label-only omission candidates cannot distinguish the caption scene.
+    target: {kind: conflict, concept: person, scene: night}
+    baseline: *unannotated_person
+    with_evidence:
+      assertion_filters:
+        - {predicate: label_gap, concept: person, value: present}
+        - {predicate: mentions, concept: night, value: present}
+  - id: gap-rain
+    description: Person annotation gaps in caption-described rainy scenes
+    baseline_description: Label-only omission candidates cannot distinguish the caption scene.
+    target: {kind: conflict, concept: person, scene: rain}
+    baseline: *unannotated_person
+    with_evidence:
+      assertion_filters:
+        - {predicate: label_gap, concept: person, value: present}
+        - {predicate: mentions, concept: rain, value: present}
+  - id: gap-indoor
+    description: Person annotation gaps in caption-described indoor scenes
+    baseline_description: Label-only omission candidates cannot distinguish the caption scene.
+    target: {kind: conflict, concept: person, scene: indoor}
+    baseline: *unannotated_person
+    with_evidence:
+      assertion_filters:
+        - {predicate: label_gap, concept: person, value: present}
+        - {predicate: mentions, concept: indoor, value: present}
+  - id: corrupt-all
+    description: All generated undecodable image files
+    baseline_description: The existing file-quality zero rule already detects unreadable images.
+    target: {kind: corrupt}
+    baseline: {quality_max: 0}
+    with_evidence:
+      assertion_filters: [{predicate: corrupt, value: present}]
+  - id: corrupt-person
+    description: Undecodable images whose captions mention a person
+    baseline_description: File-quality zero and person annotation labels, without caption interpretation.
+    target: {kind: corrupt, concept: person}
+    baseline:
+      quality_max: 0
+      filters: [{field: metadata.annotation_categories, operator: contains, value: person}]
+    with_evidence:
+      assertion_filters:
+        - {predicate: corrupt, value: present}
+        - {predicate: mentions, concept: person, value: present}
+  - id: corrupt-car
+    description: Undecodable images whose captions mention a car
+    baseline_description: File-quality zero and car annotation labels, without caption interpretation.
+    target: {kind: corrupt, concept: car}
+    baseline:
+      quality_max: 0
+      filters: [{field: metadata.annotation_categories, operator: contains, value: car}]
+    with_evidence:
+      assertion_filters:
+        - {predicate: corrupt, value: present}
+        - {predicate: mentions, concept: car, value: present}
+  - id: corrupt-night
+    description: Undecodable images in caption-described night scenes
+    baseline_description: File-quality zero candidates cannot distinguish the caption scene.
+    target: {kind: corrupt, scene: night}
+    baseline: {quality_max: 0}
+    with_evidence:
+      assertion_filters:
+        - {predicate: corrupt, value: present}
+        - {predicate: mentions, concept: night, value: present}
+  - id: missing-all
+    description: Samples without an annotation sidecar retain unknown label-gap state
+    baseline_description: A null annotation-sidecar reference directly detects missing input.
+    target: {kind: missing_annotation}
+    baseline: &missing_annotation
+      filters: [{field: metadata.evidence_sample.annotation, value: null}]
+    with_evidence:
+      assertion_filters: [{predicate: label_gap, concept: person, value: unknown}]
+  - id: missing-night
+    description: Missing annotations in caption-described night scenes
+    baseline_description: A null sidecar identifies missing inputs; label-only data cannot identify night scenes.
+    target: {kind: missing_annotation, scene: night}
+    baseline: *missing_annotation
+    with_evidence:
+      assertion_filters:
+        - {predicate: label_gap, concept: person, value: unknown}
+        - {predicate: mentions, concept: night, value: present}
+  - id: missing-car
+    description: Missing annotations where a caption mentions a car
+    baseline_description: Null-sidecar plus car-label lookup has no car evidence when the annotation input is missing.
+    target: {kind: missing_annotation, concept: car}
+    baseline:
+      filters:
+        - {field: metadata.evidence_sample.annotation, value: null}
+        - {field: metadata.annotation_categories, operator: contains, value: car}
+    with_evidence:
+      assertion_filters:
+        - {predicate: label_gap, concept: car, value: unknown}
+        - {predicate: mentions, concept: car, value: present}

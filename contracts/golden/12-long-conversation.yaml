@@ -1,0 +1,124 @@
+id: 12-long-conversation
+description: Long within-session history retains early evidence beyond thirty messages.
+config:
+  budget:
+    conversation_tokens: 1000000
+    daily_tokens: 10000000
+    conversation_usd: 10
+    daily_usd: 100
+turns:
+- input: Remember the original marker ORIGIN-927.
+  script:
+  - content: Original marker acknowledged.
+- input: Continue local conversation turn 2.
+  script:
+  - content: Conversation turn 2 acknowledged.
+- input: Continue local conversation turn 3.
+  script:
+  - content: Conversation turn 3 acknowledged.
+- input: Continue local conversation turn 4.
+  script:
+  - content: Conversation turn 4 acknowledged.
+- input: Continue local conversation turn 5.
+  script:
+  - content: Conversation turn 5 acknowledged.
+- input: Continue local conversation turn 6.
+  script:
+  - content: Conversation turn 6 acknowledged.
+- input: Continue local conversation turn 7.
+  script:
+  - content: Conversation turn 7 acknowledged.
+- input: Continue local conversation turn 8.
+  script:
+  - content: Conversation turn 8 acknowledged.
+- input: Continue local conversation turn 9.
+  script:
+  - content: Conversation turn 9 acknowledged.
+- input: Continue local conversation turn 10.
+  script:
+  - content: Conversation turn 10 acknowledged.
+- input: Continue local conversation turn 11.
+  script:
+  - content: Conversation turn 11 acknowledged.
+- input: Continue local conversation turn 12.
+  script:
+  - content: Conversation turn 12 acknowledged.
+- input: Continue local conversation turn 13.
+  script:
+  - content: Conversation turn 13 acknowledged.
+- input: Continue local conversation turn 14.
+  script:
+  - content: Conversation turn 14 acknowledged.
+- input: Continue local conversation turn 15.
+  script:
+  - content: Conversation turn 15 acknowledged.
+- input: Continue local conversation turn 16.
+  script:
+  - content: Conversation turn 16 acknowledged.
+- input: Continue local conversation turn 17.
+  script:
+  - content: Conversation turn 17 acknowledged.
+- input: Continue local conversation turn 18.
+  script:
+  - content: Conversation turn 18 acknowledged.
+- input: Continue local conversation turn 19.
+  script:
+  - content: Conversation turn 19 acknowledged.
+- input: Continue local conversation turn 20.
+  script:
+  - content: Conversation turn 20 acknowledged.
+- input: Continue local conversation turn 21.
+  script:
+  - content: Conversation turn 21 acknowledged.
+- input: Continue local conversation turn 22.
+  script:
+  - content: Conversation turn 22 acknowledged.
+- input: Continue local conversation turn 23.
+  script:
+  - content: Conversation turn 23 acknowledged.
+- input: Continue local conversation turn 24.
+  script:
+  - content: Conversation turn 24 acknowledged.
+- input: Continue local conversation turn 25.
+  script:
+  - content: Conversation turn 25 acknowledged.
+- input: Continue local conversation turn 26.
+  script:
+  - content: Conversation turn 26 acknowledged.
+- input: Continue local conversation turn 27.
+  script:
+  - content: Conversation turn 27 acknowledged.
+- input: Continue local conversation turn 28.
+  script:
+  - content: Conversation turn 28 acknowledged.
+- input: Continue local conversation turn 29.
+  script:
+  - content: Conversation turn 29 acknowledged.
+- input: Continue local conversation turn 30.
+  script:
+  - content: Conversation turn 30 acknowledged.
+- input: Continue local conversation turn 31.
+  script:
+  - content: Conversation turn 31 acknowledged.
+- input: Continue local conversation turn 32.
+  script:
+  - content: Conversation turn 32 acknowledged.
+- input: Continue local conversation turn 33.
+  script:
+  - content: Conversation turn 33 acknowledged.
+- input: Continue local conversation turn 34.
+  script:
+  - content: Conversation turn 34 acknowledged.
+- input: Continue local conversation turn 35.
+  script:
+  - content: Conversation turn 35 acknowledged.
+expect:
+  tool_sequence: []
+  answer_contains:
+  - Conversation turn 35 acknowledged.
+  context_contains:
+  - ORIGIN-927
+  - Continue local conversation turn 34.
+  file_count: 3
+  max_turns: 35
+  max_tokens: 350000

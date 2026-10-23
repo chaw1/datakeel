@@ -1,0 +1,120 @@
+.command-trigger {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: calc(var(--space) * 1.5) calc(var(--space) * 2);
+  color: var(--muted);
+}
+.command-trigger kbd {
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+}
+.command-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: min(12vh, 100px) calc(var(--space) * 4);
+}
+.command-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: var(--scrim);
+  backdrop-filter: blur(3px);
+}
+.command-dialog {
+  position: relative;
+  margin: 0;
+  color: var(--ink);
+  width: min(650px, 100%);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--ink);
+  box-shadow: 0 12px 40px var(--shadow);
+  padding: calc(var(--space) * 5);
+}
+.command-dialog header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--space) * 3);
+  margin-bottom: calc(var(--space) * 3);
+}
+.command-dialog input {
+  width: 100%;
+  border: 1px solid var(--pencil);
+  padding: calc(var(--space) * 3);
+  background: var(--paper);
+  color: var(--ink);
+}
+.command-dialog ul {
+  list-style: none;
+  margin: calc(var(--space) * 3) 0;
+  padding: 0;
+  overflow: auto;
+  min-height: 0;
+}
+.command-dialog [role="option"] {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 85px minmax(0, 1fr) 70px;
+  gap: calc(var(--space) * 2);
+  align-items: baseline;
+  text-align: left;
+  padding: calc(var(--space) * 3) calc(var(--space) * 2);
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+}
+.command-dialog [aria-selected="true"] {
+  background: var(--pencil-wash);
+}
+.command-kind,
+.command-dialog code {
+  color: var(--muted);
+  font-size: var(--font-xs);
+}
+.command-name {
+  overflow-wrap: anywhere;
+}
+.command-dialog footer {
+  border-top: 1px solid var(--rule);
+  padding-top: calc(var(--space) * 3);
+}
+.command-dialog footer p {
+  color: var(--muted);
+  font-size: var(--font-xs);
+  margin-top: calc(var(--space) * 2);
+}
+.command-chat {
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .command-trigger span,
+  .command-trigger kbd {
+    display: none;
+  }
+  .command-overlay {
+    padding: calc(var(--space) * 4);
+  }
+  .command-dialog {
+    padding: calc(var(--space) * 3);
+    max-height: 90vh;
+  }
+  .command-dialog [role="option"] {
+    grid-template-columns: 60px minmax(0, 1fr);
+  }
+  .command-dialog [role="option"] code {
+    display: none;
+  }
+}

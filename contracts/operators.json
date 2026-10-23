@@ -1,0 +1,482 @@
+[
+  {
+    "id": "file.dedup",
+    "modality": "any",
+    "category": "deduplication",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Declare an operator with no configurable parameters.",
+      "properties": {},
+      "title": "EmptyParams",
+      "type": "object"
+    },
+    "queue": "io"
+  },
+  {
+    "id": "file.corrupt_check",
+    "modality": "any",
+    "category": "validation",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Control whether invalid files are removed from outputs.",
+      "properties": {
+        "remove": {
+          "default": true,
+          "title": "Remove",
+          "type": "boolean"
+        }
+      },
+      "title": "FilterParams",
+      "type": "object"
+    },
+    "queue": "io"
+  },
+  {
+    "id": "file.empty_check",
+    "modality": "any",
+    "category": "validation",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Control whether invalid files are removed from outputs.",
+      "properties": {
+        "remove": {
+          "default": true,
+          "title": "Remove",
+          "type": "boolean"
+        }
+      },
+      "title": "FilterParams",
+      "type": "object"
+    },
+    "queue": "io"
+  },
+  {
+    "id": "image.quality",
+    "modality": "image",
+    "category": "quality",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Define the image-quality measurement thresholds.",
+      "properties": {
+        "blur_threshold": {
+          "default": 50.0,
+          "minimum": 0,
+          "title": "Blur Threshold",
+          "type": "number"
+        },
+        "min_brightness": {
+          "default": 20.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Min Brightness",
+          "type": "number"
+        },
+        "max_brightness": {
+          "default": 235.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Max Brightness",
+          "type": "number"
+        },
+        "min_resolution": {
+          "default": 64,
+          "minimum": 1,
+          "title": "Min Resolution",
+          "type": "integer"
+        }
+      },
+      "title": "ImageQualityParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "image.resize",
+    "modality": "image",
+    "category": "transform",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Bound the requested output image dimensions.",
+      "properties": {
+        "width": {
+          "default": 512,
+          "maximum": 16384,
+          "minimum": 1,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "default": 512,
+          "maximum": 16384,
+          "minimum": 1,
+          "title": "Height",
+          "type": "integer"
+        },
+        "preserve_aspect": {
+          "default": true,
+          "title": "Preserve Aspect",
+          "type": "boolean"
+        }
+      },
+      "title": "ResizeParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "image.thumbnail",
+    "modality": "image",
+    "category": "preview",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Bound the longest side of generated thumbnails.",
+      "properties": {
+        "size": {
+          "default": 128,
+          "maximum": 2048,
+          "minimum": 1,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "title": "ThumbnailParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "image.convert",
+    "modality": "image",
+    "category": "transform",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Select a supported image encoding and its quality.",
+      "properties": {
+        "format": {
+          "default": "png",
+          "enum": [
+            "png",
+            "jpg",
+            "webp"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "quality": {
+          "default": 90,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Quality",
+          "type": "integer"
+        }
+      },
+      "title": "ConvertParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "text.encoding_fix",
+    "modality": "text",
+    "category": "transform",
+    "inputs": {
+      "files": "files.text"
+    },
+    "outputs": {
+      "files": "files.text"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Select the fallback for non-UTF-8 text.",
+      "properties": {
+        "fallback": {
+          "default": "cp1252",
+          "enum": [
+            "cp1252",
+            "latin-1",
+            "gb18030"
+          ],
+          "title": "Fallback",
+          "type": "string"
+        }
+      },
+      "title": "EncodingParams",
+      "type": "object"
+    },
+    "queue": "io"
+  },
+  {
+    "id": "text.pii_redact",
+    "modality": "text",
+    "category": "privacy",
+    "inputs": {
+      "files": "files.text"
+    },
+    "outputs": {
+      "files": "files.text"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Configure deterministic contact-information redaction.",
+      "properties": {
+        "emails": {
+          "default": true,
+          "title": "Emails",
+          "type": "boolean"
+        },
+        "phones": {
+          "default": true,
+          "title": "Phones",
+          "type": "boolean"
+        },
+        "replacement": {
+          "default": "[REDACTED]",
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Replacement",
+          "type": "string"
+        }
+      },
+      "title": "PiiParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "text.dedup",
+    "modality": "text",
+    "category": "deduplication",
+    "inputs": {
+      "files": "files.text"
+    },
+    "outputs": {
+      "files": "files.text"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Configure exact or similarity-based text deduplication.",
+      "properties": {
+        "approximate": {
+          "default": true,
+          "title": "Approximate",
+          "type": "boolean"
+        },
+        "threshold": {
+          "default": 0.9,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        }
+      },
+      "title": "TextDedupParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "text.quality",
+    "modality": "text",
+    "category": "quality",
+    "inputs": {
+      "files": "files.text"
+    },
+    "outputs": {
+      "files": "files.text"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Define minimum text content and printable-character ratio.",
+      "properties": {
+        "min_characters": {
+          "default": 20,
+          "minimum": 0,
+          "title": "Min Characters",
+          "type": "integer"
+        },
+        "min_printable_ratio": {
+          "default": 0.95,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Min Printable Ratio",
+          "type": "number"
+        }
+      },
+      "title": "TextQualityParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "evidence.image_phash",
+    "modality": "image",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Expose the selected implementation version as a reproducible DAG parameter.",
+      "properties": {
+        "extractor_version": {
+          "default": "1.0",
+          "minLength": 1,
+          "title": "Extractor Version",
+          "type": "string"
+        }
+      },
+      "title": "EvidenceParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "evidence.caption_mentions",
+    "modality": "image",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Expose the selected implementation version as a reproducible DAG parameter.",
+      "properties": {
+        "extractor_version": {
+          "default": "1.0",
+          "minLength": 1,
+          "title": "Extractor Version",
+          "type": "string"
+        }
+      },
+      "title": "EvidenceParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "evidence.annotation_labels",
+    "modality": "image",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Expose the selected implementation version as a reproducible DAG parameter.",
+      "properties": {
+        "extractor_version": {
+          "default": "1.0",
+          "minLength": 1,
+          "title": "Extractor Version",
+          "type": "string"
+        }
+      },
+      "title": "EvidenceParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "evidence.label_gap",
+    "modality": "image",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Expose the selected implementation version as a reproducible DAG parameter.",
+      "properties": {
+        "extractor_version": {
+          "default": "1.0",
+          "minLength": 1,
+          "title": "Extractor Version",
+          "type": "string"
+        }
+      },
+      "title": "EvidenceParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "evidence.near_duplicate",
+    "modality": "image",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.image"
+    },
+    "outputs": {
+      "files": "files.image"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Expose the selected implementation version as a reproducible DAG parameter.",
+      "properties": {
+        "extractor_version": {
+          "default": "1.0",
+          "minLength": 1,
+          "title": "Extractor Version",
+          "type": "string"
+        }
+      },
+      "title": "EvidenceParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  }
+]

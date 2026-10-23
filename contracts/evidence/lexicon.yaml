@@ -1,0 +1,22 @@
+schema_version: '1.0'
+concepts:
+  - id: person
+    kind: object
+    synonyms: [person, people, pedestrian, pedestrians, 行人, 人]
+    annotation_categories: [person, people, pedestrian, 行人]
+  - id: car
+    kind: object
+    synonyms: [car, cars, automobile, vehicle, 汽车, 车辆]
+    annotation_categories: [car, automobile, vehicle, 汽车]
+  - id: night
+    kind: scene
+    synonyms: [night, nighttime, 夜间, 夜晚]
+    annotation_categories: []
+  - id: rain
+    kind: scene
+    synonyms: [rain, rainy, raining, 雨天, 下雨]
+    annotation_categories: []
+  - id: indoor
+    kind: scene
+    synonyms: [indoor, indoors, inside, 室内]
+    annotation_categories: []

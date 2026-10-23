@@ -1,0 +1,36 @@
+name: Quality gates
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        database: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: datakeel
+          POSTGRES_DB: datakeel
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd 'pg_isready -U datakeel'
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: uv sync --locked
+      - run: npm ci
+        working-directory: web
+      - name: Same gates as local development
+        env:
+          DATAKEEL_TEST_DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgresql+pg8000://datakeel@127.0.0.1:5432/datakeel' || '' }}
+        run: scripts/ci-check.sh

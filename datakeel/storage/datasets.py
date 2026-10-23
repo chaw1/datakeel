@@ -1,0 +1,122 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Dataset imports and immutable manifest snapshots."""
+
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from datakeel.core.models import AssetRef, FileItem, LineageEvent
+from datakeel.semantic import classify
+from datakeel.storage.database import DatasetRow, VersionRow
+from datakeel.storage.events import append_event
+from datakeel.storage.file_state import overlay_files
+from datakeel.storage.objects import digest, object_store
+
+
+def persist_file(item: FileItem) -> FileItem:
+    """Store file content and return reproducible object evidence."""
+    path = Path(item.path)
+    checksum = digest(path)
+    key = f"{checksum[:2]}/{checksum}{path.suffix.lower()}"
+    store = object_store()
+    store.put(path, key)
+    return item.model_copy(
+        update={
+            "sha256": checksum,
+            "size": path.stat().st_size,
+            "metadata": {**item.metadata, "object_key": key},
+        }
+    )
+
+
+def materialize_files(items: Sequence[FileItem | dict[str, Any]]) -> list[FileItem]:
+    """Restore manifest objects into locally readable file models."""
+    store = object_store()
+    result: list[FileItem] = []
+    for value in items:
+        item = FileItem.model_validate(value)
+        key = item.metadata.get("object_key")
+        if key:
+            item = item.model_copy(update={"path": str(store.materialize(key))})
+        result.append(item)
+    return result
+
+
+def import_dataset(
+    session: Session, name: str, paths: list[Path], metadata: dict[str, Any] | None = None
+) -> DatasetRow:
+    """Import local files and publish their initial lineage atomically."""
+    files: list[dict[str, Any]] = []
+    for path in paths:
+        semantic = classify(path.name)
+        files.append(
+            persist_file(
+                FileItem(
+                    path=str(path.resolve()),
+                    filename=path.name,
+                    modality=semantic.get("modality", "unknown"),
+                    metadata={"semantic": semantic.model_dump(mode="json")},
+                )
+            ).model_dump(mode="json")
+        )
+    dataset = DatasetRow(name=name, files=files, metadata_values=metadata or {})
+    session.add(dataset)
+    session.flush()
+    version = VersionRow(dataset_id=dataset.id, manifest=files)
+    session.add(version)
+    session.flush()
+    append_event(
+        session,
+        LineageEvent(
+            idempotency_key=f"import:{dataset.id}",
+            event_type="IMPORT",
+            operator="dataset.import",
+            inputs=[
+                AssetRef(
+                    asset_type="source",
+                    asset_id=f"source:{dataset.id}",
+                    display_name="Local import",
+                )
+            ],
+            outputs=[AssetRef(asset_id=dataset.id, version=version.id, display_name=name)],
+            source_module="storage",
+            quality={"file_count": len(files)},
+        ),
+    )
+    return dataset
+
+
+def dataset_dict(dataset: DatasetRow) -> dict[str, Any]:
+    """Serialize an internal dataset row before validation at the service boundary."""
+    return {
+        "id": dataset.id,
+        "name": dataset.name,
+        "file_count": len(dataset.files),
+        "created_at": dataset.created_at,
+        "metadata": dataset.metadata_values,
+        "quality_config": dataset.quality_config,
+        "template": dataset.template,
+        "compliance": dataset.compliance,
+    }
+
+
+def latest_files(session: Session, dataset: DatasetRow) -> list[FileItem]:
+    """Read the newest immutable manifest in the current transaction."""
+    version = session.scalars(
+        select(VersionRow)
+        .where(VersionRow.dataset_id == dataset.id)
+        .order_by(VersionRow.created_at.desc())
+    ).first()
+    return overlay_files(
+        session,
+        dataset.id,
+        [
+            FileItem.model_validate(value)
+            for value in (version.manifest if version else dataset.files)
+        ],
+    )

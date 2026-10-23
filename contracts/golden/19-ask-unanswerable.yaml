@@ -1,0 +1,78 @@
+id: 19-ask-unanswerable
+description: Discover and invoke the real registered question function; validate its
+  persisted evidence.
+fixture_kind: enterprise
+turns:
+- input: 退货率为什么上升
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: ask_data
+      id: 19-ask-unanswerable-discover
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: 退货率为什么上升
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 19-ask-unanswerable-ask
+  - content: Question tool completed; inspect its recorded evidence.
+expect:
+  tool_sequence:
+  - tool_search
+  - ask_data
+  tool_results:
+  - name: ask_data
+    content_schema:
+      type: object
+      required:
+      - function
+      - asset_refs
+      - data
+      properties:
+        function:
+          const: ask_data
+        asset_refs:
+          type: array
+          minItems: 1
+        data:
+          type: object
+          required:
+          - status
+          - reference_instant
+          - assertion_ids
+          - assertions
+          - metric_card
+          - sql
+          - result
+          - candidates
+          properties:
+            status:
+              const: unanswerable
+            reference_instant:
+              const: '2026-10-01T00:00:00Z'
+            assertion_ids:
+              type: array
+              minItems: 1
+            assertions:
+              type: array
+              minItems: 1
+              contains:
+                type: object
+                required:
+                - predicate
+                properties:
+                  predicate:
+                    const: ask.unanswerable
+            metric_card:
+              const: null
+            sql:
+              const: null
+            result:
+              const: null
+            candidates:
+              type: array
+              minItems: 3
+  file_count: 1
+  max_turns: 3
+  max_tokens: 100000

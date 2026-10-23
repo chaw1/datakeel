@@ -1,0 +1,9 @@
+.graph-node.quarantined > rect:first-child {
+  fill: var(--warn-wash);
+  stroke: var(--warn);
+}
+.graph-node.deleted > rect:first-child {
+  fill: var(--red-wash);
+  stroke: var(--red);
+  stroke-dasharray: 4 3;
+}

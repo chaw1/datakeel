@@ -1,0 +1,47 @@
+.source-footnotes {
+  list-style: none;
+  padding: 0;
+  margin: calc(var(--space) * 4) 0 0;
+  border-top: 1px solid var(--rule);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+}
+.source-footnotes > li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: baseline;
+  gap: calc(var(--space) * 2);
+  border-bottom: 1px solid var(--rule);
+  padding: calc(var(--space) * 2) 0;
+  scroll-margin: calc(var(--space) * 4);
+}
+.footnote-marker,
+.footnote-reference {
+  color: var(--pencil);
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+}
+.footnote-reference {
+  margin-left: var(--space);
+}
+.source-footnotes summary,
+.source-footnotes > li > a,
+.source-footnotes > li > button {
+  cursor: pointer;
+  color: var(--pencil);
+  text-align: left;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.source-footnotes > li > button {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.footnote-content {
+  padding: calc(var(--space) * 3) 0;
+  color: var(--ink);
+}
+.footnote-content pre {
+  overflow: auto;
+}

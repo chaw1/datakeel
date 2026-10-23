@@ -1,0 +1,75 @@
+id: 18-ask-clarification
+description: Discover and invoke the real registered question function; validate its
+  persisted evidence.
+fixture_kind: enterprise
+turns:
+- input: 上个季度营业额是多少
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: ask_data
+      id: 18-ask-clarification-discover
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: 上个季度营业额是多少
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 18-ask-clarification-ask
+  - content: Question tool completed; inspect its recorded evidence.
+expect:
+  tool_sequence:
+  - tool_search
+  - ask_data
+  tool_results:
+  - name: ask_data
+    content_schema:
+      type: object
+      required:
+      - function
+      - asset_refs
+      - data
+      properties:
+        function:
+          const: ask_data
+        asset_refs:
+          type: array
+          minItems: 1
+        data:
+          type: object
+          required:
+          - status
+          - reference_instant
+          - assertion_ids
+          - assertions
+          - metric_card
+          - sql
+          - result
+          - candidates
+          - matches
+          properties:
+            status:
+              const: clarification
+            reference_instant:
+              const: '2026-10-01T00:00:00Z'
+            assertion_ids:
+              type: array
+              minItems: 1
+            assertions:
+              type: array
+              minItems: 1
+            metric_card:
+              const: null
+            sql:
+              const: null
+            result:
+              const: null
+            candidates:
+              type: array
+              minItems: 2
+            matches:
+              type: array
+              minItems: 2
+  file_count: 1
+  max_turns: 3
+  max_tokens: 100000

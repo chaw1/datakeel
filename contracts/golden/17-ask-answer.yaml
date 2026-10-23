@@ -1,0 +1,149 @@
+id: 17-ask-answer
+description: Discover and invoke the real registered question function; validate its
+  persisted evidence.
+fixture_kind: enterprise
+turns:
+- input: 上个季度华东区零售额是多少
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: ask_data
+      id: 17-ask-answer-discover
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: 上个季度华东区零售额是多少
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 17-ask-answer-ask
+  - content: Question tool completed; inspect its recorded evidence.
+expect:
+  tool_sequence:
+  - tool_search
+  - ask_data
+  tool_results:
+  - name: ask_data
+    content_schema:
+      type: object
+      required:
+      - function
+      - asset_refs
+      - data
+      properties:
+        function:
+          const: ask_data
+        asset_refs:
+          type: array
+          minItems: 1
+        data:
+          type: object
+          required:
+          - status
+          - reference_instant
+          - assertion_ids
+          - assertions
+          - metric_card
+          - sql
+          - result
+          - matches
+          - time_range
+          - lineage
+          properties:
+            status:
+              const: answered
+            reference_instant:
+              const: '2026-10-01T00:00:00Z'
+            assertion_ids:
+              type: array
+              minItems: 1
+            assertions:
+              type: array
+              minItems: 1
+            metric_card:
+              type: object
+              required:
+              - status
+              - definition
+              properties:
+                status:
+                  const: resolved
+                definition:
+                  type: object
+                  required:
+                  - id
+                  - version
+                  - owner
+                  - caveats
+                  properties:
+                    id:
+                      const: retail_revenue
+                    version:
+                      const: 1
+                    owner:
+                      type: string
+                      minLength: 1
+                    caveats:
+                      type: array
+                      minItems: 1
+            sql:
+              type: object
+              required:
+              - metric_id
+              - metric_version
+              - sql
+              - parameters
+              - tables
+              - columns
+              properties:
+                metric_id:
+                  const: retail_revenue
+                metric_version:
+                  const: 1
+                sql:
+                  type: string
+                  pattern: ^SELECT SUM
+                parameters:
+                  type: object
+                  minProperties: 4
+                tables:
+                  const:
+                  - ecommerce/main/orders
+                columns:
+                  type: array
+                  contains:
+                    const: ecommerce/main/orders/paid_amount
+            result:
+              type: object
+              required:
+              - columns
+              - rows
+              - truncated
+              properties:
+                columns:
+                  const:
+                  - value
+                rows:
+                  const:
+                  - - 4979475
+                truncated:
+                  const: false
+            matches:
+              type: array
+              minItems: 3
+            time_range:
+              const:
+                start: '2026-07-01'
+                end: '2026-10-01'
+            lineage:
+              type: object
+              required:
+              - asset_id
+              - include_catalog
+              properties:
+                asset_id:
+                  const: retail_revenue
+                include_catalog:
+                  const: true
+  file_count: 1
+  max_turns: 3
+  max_tokens: 100000

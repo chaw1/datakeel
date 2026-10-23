@@ -1,0 +1,134 @@
+id: 15-evidence-version
+description: Query evidence and create a version from exactly the selected source
+  samples.
+fixture_kind: evidence
+turns:
+- input: Query evidence and create a version from exactly the selected source samples.
+  script:
+  - tool_calls:
+    - name: query_evidence
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        version_ids:
+        - '{{version_id}}'
+        split: val
+        page_size: 1
+        has_near_duplicate_in: train
+        assertion_filters:
+        - predicate: mentions
+          concept: person
+          value: present
+        - predicate: annotated_as
+          concept: person
+          value: present
+          operator: not_exists
+      id: 15-query
+    - name: tool_search
+      arguments:
+        query: create_version_from_selection
+      id: 15-discover
+  - tool_calls:
+    - name: create_version_from_selection
+      arguments:
+        selection:
+          dataset_id: '{{dataset_id}}'
+          version_ids:
+          - '{{version_id}}'
+          split: val
+          has_near_duplicate_in: train
+          assertion_filters:
+          - predicate: mentions
+            concept: person
+            value: present
+          - predicate: annotated_as
+            concept: person
+            value: present
+            operator: not_exists
+      id: 15-action
+  - content: Created a version containing the selected evidence samples.
+expect:
+  tool_sequence:
+  - query_evidence
+  - tool_search
+  - create_version_from_selection
+  tool_results:
+  - name: query_evidence
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          - total
+          properties:
+            total:
+              const: 1
+            items:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                type: object
+                required:
+                - filename
+                - asset_ref
+                - assertions
+                - near_duplicates
+                properties:
+                  filename:
+                    const: val/scene-0016/image.png
+                  asset_ref:
+                    type: object
+                    required:
+                    - asset_id
+                    - version
+                    properties:
+                      asset_id:
+                        const: '{{file_id}}'
+                      version:
+                        const: '{{version_id}}'
+                  near_duplicates:
+                    type: array
+                    minItems: 1
+                  assertions:
+                    type: array
+                    contains:
+                      type: object
+                      required:
+                      - predicate
+                      - object
+                      - anchors
+                      - producer_event_id
+                      properties:
+                        predicate:
+                          const: label_gap
+                        anchors:
+                          type: array
+                          minItems: 1
+                        producer_event_id:
+                          type: string
+                          minLength: 1
+                        object:
+                          type: object
+                          required:
+                          - concept
+                          - value
+                          properties:
+                            concept:
+                              const: person
+                            value:
+                              const: present
+  actions:
+  - action_type: create_version_from_selection
+    requires_approval: false
+    executions: 1
+    selection_from_tool: query_evidence
+    output_matches_selection: true
+  file_count: 20
+  max_turns: 3
+  max_tokens: 100000
+  answer_contains:
+  - Created a version

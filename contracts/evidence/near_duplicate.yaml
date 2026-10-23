@@ -1,0 +1,11 @@
+schema_version: '1.0'
+algorithm: dhash
+bits: 64
+width: 9
+height: 8
+resampling: lanczos
+hamming_threshold: 8
+prefix_bits: 4
+# Smooth generated textures preserve dHash under mild crop/resize/noise. Four
+# prefix bits bound comparisons without sacrificing the measured >0.8 recall.
+# Direct pair distance only: no connected-component or transitive expansion.

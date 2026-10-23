@@ -1,0 +1,156 @@
+.plan-card.approval-sheet {
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: calc(var(--space) * 5);
+  min-width: 0;
+}
+.approval-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: calc(var(--space) * 4);
+  padding-bottom: calc(var(--space) * 3);
+  border-bottom: 2px solid var(--ink);
+}
+.approval-heading h3 {
+  font-family: var(--font-serif);
+  font-size: var(--font-xl);
+  line-height: var(--line-heading);
+  margin-top: var(--space);
+}
+.approval-kicker,
+.approval-serial,
+.approval-footnote,
+.approval-frozen-notice {
+  color: var(--muted);
+  font-size: var(--font-xs);
+}
+.approval-serial {
+  flex-shrink: 0;
+  display: grid;
+  text-align: end;
+}
+.approval-serial code {
+  font-size: var(--font-sm);
+  color: var(--ink);
+}
+.approval-fields {
+  margin: calc(var(--space) * 2) 0;
+}
+.approval-fields > div {
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) minmax(0, 4fr);
+  gap: calc(var(--space) * 3);
+  align-items: baseline;
+  padding: calc(var(--space) * 2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.approval-fields dt {
+  color: var(--muted);
+  font-size: var(--font-xs);
+}
+.approval-fields dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-sm);
+}
+.approval-irreversible {
+  display: inline-block;
+  color: var(--red);
+  border: 1.5px solid var(--red);
+  padding: 0 calc(var(--space) * 1.5);
+  margin-right: calc(var(--space) * 2);
+  transform: rotate(-2deg);
+}
+.approval-reversible {
+  color: var(--ok);
+}
+.approval-digest code {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: var(--font-xs);
+}
+.approval-countdown,
+.approval-expired {
+  display: block;
+  color: var(--muted);
+}
+.approval-expired {
+  color: var(--red);
+}
+.approval-objects h4 {
+  font-family: var(--font-body);
+  font-size: var(--font-xs);
+  margin: calc(var(--space) * 3) 0 calc(var(--space) * 2);
+}
+.approval-objects ol {
+  padding-left: calc(var(--space) * 5);
+  font-size: var(--font-xs);
+}
+.approval-objects li {
+  padding-bottom: var(--space);
+  overflow-wrap: anywhere;
+}
+.approval-objects li > a {
+  font-family: var(--font-mono);
+}
+.approval-objects li > span {
+  color: var(--muted);
+  margin-left: calc(var(--space) * 2);
+}
+.approval-footnote {
+  margin-top: calc(var(--space) * 3);
+}
+.approval-parameters {
+  font-size: var(--font-xs);
+}
+.approval-signature {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 3);
+  margin-top: calc(var(--space) * 5);
+}
+.approval-signer {
+  flex: 1;
+  display: flex;
+  gap: calc(var(--space) * 2);
+  align-items: baseline;
+  min-width: 130px;
+  font-size: var(--font-xs);
+  color: var(--muted);
+}
+.approval-signature-line {
+  flex: 1;
+  color: var(--ink);
+  border-bottom: 1px solid var(--ink);
+  font-family: var(--font-mono);
+  min-width: 60px;
+  padding: 0 var(--space) var(--space);
+}
+.approval-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 2);
+}
+.button.approval-destructive {
+  color: var(--sheet);
+  background: var(--red);
+  border-color: var(--red);
+}
+.approval-frozen-notice {
+  margin-top: calc(var(--space) * 3);
+}
+@media (max-width: 600px) {
+  .plan-card.approval-sheet {
+    padding: calc(var(--space) * 3);
+  }
+  .approval-heading {
+    gap: calc(var(--space) * 2);
+  }
+  .approval-fields > div {
+    grid-template-columns: minmax(65px, 1fr) minmax(0, 3fr);
+    gap: calc(var(--space) * 2);
+  }
+}

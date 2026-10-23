@@ -1,0 +1,185 @@
+[importlinter]
+root_package = datakeel
+
+[importlinter:contract:application-layers]
+name = Applications only depend on domain services and core
+type = layers
+layers =
+    datakeel.cli
+    datakeel.api | datakeel.worker | datakeel.agent | datakeel.harness | datakeel.mcp
+    datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask
+    datakeel.core
+# Every same-layer dependency is explicit; new edges require a reviewed reason.
+ignore_imports =
+# HTTP exposes typed conversations/traces; the loop meters calls; evaluation exercises that loop.
+    datakeel.api.routes.agent -> datakeel.agent.service
+    datakeel.api.routes.agent -> datakeel.agent.models
+    datakeel.api.routes.harness -> datakeel.harness.service
+    datakeel.agent.loop -> datakeel.harness.service
+    datakeel.harness.execution -> datakeel.agent.service
+    datakeel.harness.execution -> datakeel.agent.providers
+    datakeel.harness.execution -> datakeel.agent.models
+# Shared tool dispatch uses action policy/services and stores invocation audit through typed models.
+    datakeel.ontology.tooling -> datakeel.actions.service
+    datakeel.ontology.tooling -> datakeel.actions.models
+    datakeel.ontology.tooling -> datakeel.actions.parameters
+    datakeel.ontology.tooling -> datakeel.actions.policy
+    datakeel.ontology.tooling -> datakeel.actions.references
+    datakeel.ontology.tooling -> datakeel.storage.database
+    datakeel.ontology.tooling -> datakeel.storage.tool_invocations
+# Action facades call typed transactional storage services; schemas reuse ontology and DAG models.
+    datakeel.actions.approvals -> datakeel.storage.action_approvals
+    datakeel.actions.execution -> datakeel.storage.action_execution
+    datakeel.actions.models -> datakeel.ontology.models
+    datakeel.actions.parameters -> datakeel.ontology.models
+    datakeel.actions.parameters -> datakeel.pipeline
+    datakeel.actions.planning -> datakeel.storage.action_planning
+    datakeel.actions.registry -> datakeel.ontology.models
+    datakeel.actions.service -> datakeel.storage.action_store
+    datakeel.actions.worker -> datakeel.storage.action_worker
+# Read-only ontology functions use typed storage projections; object schemas reuse public views.
+    datakeel.ontology.functions -> datakeel.storage.database
+    datakeel.ontology.functions -> datakeel.storage.dataset_service
+    datakeel.ontology.functions -> datakeel.storage.governance_service
+    datakeel.ontology.functions -> datakeel.storage.lineage_service
+    datakeel.ontology.functions -> datakeel.storage.object_queries
+    datakeel.ontology.functions -> datakeel.storage.task_queries
+    datakeel.ontology.properties -> datakeel.storage.views
+    datakeel.ontology.tool_models -> datakeel.actions.models
+# P1 persistence composes typed governance/quality/lineage projections; DAG validation uses operators.
+    datakeel.governance.models -> datakeel.quality.models
+    datakeel.lineage.service -> datakeel.storage.events
+    datakeel.pipeline.execution -> datakeel.operators
+    datakeel.pipeline.models -> datakeel.operators.base
+    datakeel.pipeline.validation -> datakeel.operators
+    datakeel.storage.datasets -> datakeel.semantic
+    datakeel.storage.governance_service -> datakeel.governance
+    datakeel.storage.governance_service -> datakeel.governance.models
+    datakeel.storage.governance_service -> datakeel.quality
+    datakeel.storage.governance_service -> datakeel.quality.models
+    datakeel.storage.lineage_service -> datakeel.lineage.exports
+    datakeel.storage.lineage_service -> datakeel.lineage.collapse
+    datakeel.storage.lineage_service -> datakeel.lineage.models
+    datakeel.storage.lineage_service -> datakeel.lineage.service
+    datakeel.storage.task_queue -> datakeel.pipeline
+    datakeel.storage.views -> datakeel.governance.models
+# Persistence implements action transactions with pure policy/receipt helpers and ontology projections.
+    datakeel.storage.action_approvals -> datakeel.actions.models
+    datakeel.storage.action_execution -> datakeel.actions.models
+    datakeel.storage.action_execution -> datakeel.actions.parameters
+    datakeel.storage.action_execution -> datakeel.actions.policy
+    datakeel.storage.action_execution -> datakeel.actions.receipts
+    datakeel.storage.action_export -> datakeel.actions.models
+    datakeel.storage.action_export -> datakeel.actions.parameters
+    datakeel.storage.action_export -> datakeel.lineage.exports
+    datakeel.storage.action_export -> datakeel.lineage.service
+    datakeel.storage.action_operations -> datakeel.actions.models
+    datakeel.storage.action_operations -> datakeel.actions.parameters
+    datakeel.storage.action_operations -> datakeel.governance
+    datakeel.storage.action_planning -> datakeel.actions.models
+    datakeel.storage.action_planning -> datakeel.actions.parameters
+    datakeel.storage.action_planning -> datakeel.actions.policy
+    datakeel.storage.action_planning -> datakeel.actions.registry
+    datakeel.storage.action_planning -> datakeel.actions.references
+    datakeel.storage.action_planning -> datakeel.ontology.models
+    datakeel.storage.action_planning -> datakeel.pipeline
+    datakeel.storage.action_selection -> datakeel.actions.models
+    datakeel.storage.action_selection -> datakeel.ontology.models
+    datakeel.storage.action_snapshot -> datakeel.actions.models
+    datakeel.storage.action_snapshot -> datakeel.actions.parameters
+    datakeel.storage.action_snapshot -> datakeel.lineage.service
+    datakeel.storage.action_snapshot -> datakeel.ontology.models
+# Idempotent execution validates typed requests and the same canonical action policy.
+    datakeel.storage.action_requests -> datakeel.actions.models
+    datakeel.storage.action_requests -> datakeel.actions.policy
+    datakeel.storage.action_store -> datakeel.actions.models
+    datakeel.storage.action_worker -> datakeel.actions.models
+    datakeel.storage.action_worker -> datakeel.actions.receipts
+    datakeel.storage.object_projection -> datakeel.ontology.models
+    datakeel.storage.object_projection -> datakeel.quality
+    datakeel.storage.object_queries -> datakeel.ontology.models
+    datakeel.storage.tool_invocations -> datakeel.ontology.tool_models
+
+# Evidence execution wraps the existing typed DAG and reads disposable storage caches.
+    datakeel.evidence.execution -> datakeel.operators
+    datakeel.evidence.execution -> datakeel.pipeline.models
+    datakeel.evidence.execution -> datakeel.storage.database
+    datakeel.evidence.execution -> datakeel.storage.evidence_cache
+    datakeel.evidence.runtime_compute -> datakeel.operators
+    datakeel.evidence.runtime_compute -> datakeel.pipeline.models
+    datakeel.evidence.runtime_inputs -> datakeel.operators.evidence.contracts
+    datakeel.evidence.runtime_inputs -> datakeel.storage.datasets
+    datakeel.evidence.runtime_inputs -> datakeel.storage.objects
+    datakeel.evidence.runtime_publication -> datakeel.pipeline.models
+# Global-pair extraction requires one complete input shard at both submission boundaries.
+    datakeel.storage.task_queue -> datakeel.pipeline.sharding
+    datakeel.storage.action_planning -> datakeel.pipeline.sharding
+    datakeel.storage.action_operations -> datakeel.pipeline.sharding
+# The evidence preset binds each manifest to its independently versioned deterministic extractor.
+    datakeel.pipeline.evidence -> datakeel.operators.evidence.annotation_labels
+    datakeel.pipeline.evidence -> datakeel.operators.evidence.caption_mentions
+    datakeel.pipeline.evidence -> datakeel.operators.evidence.image_phash
+    datakeel.pipeline.evidence -> datakeel.operators.evidence.label_gap
+    datakeel.pipeline.evidence -> datakeel.operators.evidence.near_duplicate
+# Evidence tools share typed query models and read transactional evidence projections.
+    datakeel.ontology.functions -> datakeel.evidence.query_models
+    datakeel.ontology.evidence_functions -> datakeel.evidence.query_models
+    datakeel.ontology.evidence_functions -> datakeel.storage.database
+    datakeel.ontology.evidence_functions -> datakeel.storage.evidence_queries
+# Assertion decisions reuse controlled plans and versioned asset selections in one transaction.
+    datakeel.storage.evidence_actions -> datakeel.actions.models
+    datakeel.storage.evidence_actions -> datakeel.actions.parameters
+    datakeel.storage.evidence_actions -> datakeel.ontology.models
+# Evidence queries extend ObjectSet and render typed frozen objects within storage snapshots.
+    datakeel.evidence.query_models -> datakeel.ontology.models
+    datakeel.evidence.presentation -> datakeel.ontology.models
+    datakeel.storage.evidence_filters -> datakeel.ontology.models
+    datakeel.storage.evidence_queries -> datakeel.ontology.models
+    datakeel.storage.evidence_queries -> datakeel.evidence.query_models
+    datakeel.storage.evidence_queries -> datakeel.evidence.presentation
+# Evidence selection execution revalidates frozen file revisions without resampling assertions.
+    datakeel.storage.action_targets -> datakeel.actions.models
+    datakeel.storage.action_targets -> datakeel.actions.parameters
+    datakeel.storage.action_targets -> datakeel.ontology.models
+# Evidence golden fixtures exercise the existing fenced worker instead of fabricated assertions.
+    datakeel.harness.evidence_cases -> datakeel.worker.runner
+# Evidence benchmarks evaluate typed ObjectSets against one consistent storage snapshot.
+    datakeel.storage.evidence_evaluations -> datakeel.ontology.models
+# Semantic persistence publishes typed metric snapshots using pure projection helpers.
+    datakeel.storage.metric_store -> datakeel.metrics.projection
+# Catalog import services publish typed snapshots through the transactional fact store.
+    datakeel.catalog.service -> datakeel.storage.catalog_store
+    datakeel.catalog.service -> datakeel.storage.database
+# Questions compose registered semantics and read-only compilation, then persist typed answers.
+    datakeel.ask.service -> datakeel.metrics.compiler
+    datakeel.ask.service -> datakeel.metrics.execution
+    datakeel.ask.service -> datakeel.metrics.projection
+    datakeel.ask.service -> datakeel.storage.ask_store
+    datakeel.ask.service -> datakeel.storage.catalog_store
+    datakeel.ask.service -> datakeel.storage.database
+# Catalog functions expose the same typed query and answer services to every tool transport.
+    datakeel.ontology.catalog_functions -> datakeel.ask.service
+    datakeel.ontology.catalog_functions -> datakeel.storage.metric_store
+    datakeel.ontology.catalog_functions -> datakeel.storage.catalog_queries
+    datakeel.ontology.catalog_functions -> datakeel.storage.database
+# Metadata actions freeze independent catalog state and commit versioned semantics atomically.
+    datakeel.storage.catalog_action_state -> datakeel.actions.catalog_parameters
+    datakeel.storage.catalog_action_state -> datakeel.catalog.service
+    datakeel.storage.catalog_action_state -> datakeel.ontology.models
+    datakeel.storage.catalog_actions -> datakeel.actions.catalog_parameters
+    datakeel.storage.catalog_actions -> datakeel.actions.models
+    datakeel.storage.metric_audit -> datakeel.actions.models
+    datakeel.storage.action_operations -> datakeel.actions.catalog_parameters
+    datakeel.storage.action_snapshot -> datakeel.actions.catalog_parameters
+    datakeel.storage.evidence_actions -> datakeel.actions.catalog_parameters
+    datakeel.storage.term_changes -> datakeel.metrics.projection
+# Current source availability refreshes semantic cards without rewriting historical versions.
+    datakeel.storage.catalog_queries -> datakeel.metrics.projection
+    datakeel.storage.ask_evidence -> datakeel.metrics.projection
+# The offline question benchmark creates generated sources and exercises the production pipeline.
+    datakeel.ask.evaluation -> datakeel.catalog.service
+    datakeel.ask.evaluation -> datakeel.metrics.loader
+    datakeel.ask.evaluation -> datakeel.sample_enterprise
+    datakeel.ask.evaluation -> datakeel.storage.database
+    datakeel.ask.evaluation -> datakeel.storage.metric_store
+    datakeel.ask.evaluation_checks -> datakeel.metrics.sql_safety

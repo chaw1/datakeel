@@ -1,0 +1,86 @@
+:root {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  font-synthesis: none;
+  font-weight: 400;
+  font-size: var(--font-sm);
+  line-height: var(--line-body);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.graph-node:focus-visible {
+  outline: 3px solid var(--pencil);
+  outline-offset: 3px;
+}
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: var(--font-3xl);
+  font-family: var(--font-serif);
+  line-height: var(--line-heading);
+  letter-spacing: -1.1px;
+  font-weight: 600;
+}
+h2 {
+  font-size: var(--font-lg);
+  font-family: var(--font-body);
+  letter-spacing: -0.25px;
+  font-weight: 600;
+}
+h3 {
+  font-size: var(--font-lg);
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+h4 {
+  font-size: var(--font-md);
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+button {
+  color: inherit;
+}
+svg {
+  flex-shrink: 0;
+}

@@ -1,0 +1,939 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "2026.08.0",
+  "normalization": {
+    "case": "lower",
+    "stripLeadingDot": true,
+    "suffixStrategy": "longest-match",
+    "rawFileTypePolicy": "distrust",
+    "mimeConflictPolicy": "ambiguous"
+  },
+  "vocabularies": {
+    "modality": [
+      "image",
+      "audio",
+      "video",
+      "point-cloud",
+      "text",
+      "table",
+      "timeseries",
+      "document",
+      "signal",
+      "gis",
+      "3d-model",
+      "unknown"
+    ],
+    "usageRole": [
+      "payload",
+      "annotation",
+      "metadata",
+      "readme",
+      "artifact",
+      "preview"
+    ],
+    "containerKind": [
+      "none",
+      "archive",
+      "compression",
+      "directory-image"
+    ],
+    "admissionState": [
+      "unknown",
+      "accepted",
+      "quarantined",
+      "exempt",
+      "rejected"
+    ],
+    "formatFamily": [
+      "raster-image",
+      "vector-image",
+      "raw-pixel",
+      "audio",
+      "video",
+      "point-cloud",
+      "mesh-3d",
+      "structured-text",
+      "plain-text",
+      "document",
+      "spreadsheet",
+      "medical-image",
+      "medical-volume",
+      "signal",
+      "gis",
+      "numeric-array",
+      "archive",
+      "compression",
+      "font",
+      "executable",
+      "unknown"
+    ],
+    "toolCapability": [
+      "native",
+      "convert",
+      "unsupported"
+    ]
+  },
+  "formatAliases": [],
+  "formats": [
+    {
+      "code": "jpeg",
+      "extensions": [
+        "jpg",
+        "jpeg",
+        "jfif"
+      ],
+      "mimeHints": [
+        "image/jpeg"
+      ],
+      "formatFamily": "raster-image",
+      "defaultModality": "image",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "raster-image",
+      "extensions": [
+        "png",
+        "gif",
+        "bmp",
+        "webp",
+        "tif",
+        "tiff",
+        "ico",
+        "apng"
+      ],
+      "mimeHints": [
+        "image/png",
+        "image/gif",
+        "image/bmp",
+        "image/webp",
+        "image/tiff"
+      ],
+      "formatFamily": "raster-image",
+      "defaultModality": "image",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "heif",
+      "extensions": [
+        "heic",
+        "heif",
+        "avif"
+      ],
+      "mimeHints": [
+        "image/heic",
+        "image/heif",
+        "image/avif"
+      ],
+      "formatFamily": "raster-image",
+      "defaultModality": "image",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "svg",
+      "extensions": [
+        "svg"
+      ],
+      "mimeHints": [
+        "image/svg+xml"
+      ],
+      "formatFamily": "vector-image",
+      "defaultModality": "image",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "camera-raw",
+      "extensions": [
+        "cr2",
+        "cr3",
+        "nef",
+        "arw",
+        "dng",
+        "orf",
+        "rw2",
+        "raf",
+        "pef",
+        "srw"
+      ],
+      "mimeHints": [],
+      "formatFamily": "raster-image",
+      "defaultModality": "image",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "raw-camera",
+      "extensions": [
+        "raw"
+      ],
+      "mimeHints": [],
+      "formatFamily": "unknown",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "audio",
+      "extensions": [
+        "mp3",
+        "wav",
+        "flac",
+        "aac",
+        "ogg",
+        "m4a",
+        "opus",
+        "wma",
+        "amr",
+        "ape"
+      ],
+      "mimeHints": [
+        "audio/mpeg",
+        "audio/wav",
+        "audio/flac",
+        "audio/aac",
+        "audio/ogg",
+        "audio/mp4",
+        "audio/opus",
+        "audio/x-ms-wma"
+      ],
+      "formatFamily": "audio",
+      "defaultModality": "audio",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.audio.{extension}.v1"
+    },
+    {
+      "code": "video",
+      "extensions": [
+        "mp4",
+        "avi",
+        "webm",
+        "mkv",
+        "mov",
+        "m4v",
+        "flv",
+        "wmv",
+        "3gp",
+        "mpg",
+        "mpeg"
+      ],
+      "mimeHints": [
+        "video/mp4",
+        "video/x-msvideo",
+        "video/webm",
+        "video/x-matroska",
+        "video/quicktime",
+        "video/x-flv",
+        "video/x-ms-wmv",
+        "video/3gpp",
+        "video/mpeg"
+      ],
+      "formatFamily": "video",
+      "defaultModality": "video",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.video.{extension}.v1"
+    },
+    {
+      "code": "mpeg-ts",
+      "extensions": [
+        "ts",
+        "mts"
+      ],
+      "mimeHints": [
+        "video/mp2t"
+      ],
+      "formatFamily": "video",
+      "defaultModality": "video",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.video.{extension}.v1"
+    },
+    {
+      "code": "pcd",
+      "extensions": [
+        "pcd"
+      ],
+      "mimeHints": [],
+      "formatFamily": "point-cloud",
+      "defaultModality": "point-cloud",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.point-cloud.{extension}.v1"
+    },
+    {
+      "code": "pcd-bin",
+      "extensions": [
+        "pcd.bin"
+      ],
+      "mimeHints": [],
+      "formatFamily": "point-cloud",
+      "defaultModality": "point-cloud",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.point-cloud.pcd-bin.v1"
+    },
+    {
+      "code": "las",
+      "extensions": [
+        "las",
+        "laz"
+      ],
+      "mimeHints": [],
+      "formatFamily": "point-cloud",
+      "defaultModality": "point-cloud",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.point-cloud.{extension}.v1"
+    },
+    {
+      "code": "ply",
+      "extensions": [
+        "ply"
+      ],
+      "mimeHints": [],
+      "formatFamily": "point-cloud",
+      "defaultModality": "point-cloud",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.point-cloud.ply.context.v1"
+    },
+    {
+      "code": "bin",
+      "extensions": [
+        "bin"
+      ],
+      "mimeHints": [],
+      "formatFamily": "unknown",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "unresolved-point-data",
+      "extensions": [
+        "xyz",
+        "pts",
+        "e57"
+      ],
+      "mimeHints": [],
+      "formatFamily": "unknown",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.awaiting-golden.{extension}.v1"
+    },
+    {
+      "code": "mesh-3d",
+      "extensions": [
+        "obj",
+        "stl",
+        "glb",
+        "gltf",
+        "fbx",
+        "dae",
+        "3ds",
+        "usd",
+        "usdz",
+        "ifc",
+        "blend",
+        "lwo"
+      ],
+      "mimeHints": [
+        "model/obj",
+        "model/stl",
+        "model/gltf-binary"
+      ],
+      "formatFamily": "mesh-3d",
+      "defaultModality": "3d-model",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.3d-model.{extension}.v1"
+    },
+    {
+      "code": "cad-opaque",
+      "extensions": [
+        "dwg",
+        "dxf",
+        "step",
+        "stp",
+        "iges",
+        "igs"
+      ],
+      "mimeHints": [],
+      "formatFamily": "unknown",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "nifti",
+      "extensions": [
+        "nii",
+        "nii.gz"
+      ],
+      "mimeHints": [
+        "application/x-nifti"
+      ],
+      "formatFamily": "medical-volume",
+      "defaultModality": "image",
+      "containerKind": "none",
+      "ruleIds": {
+        "nii": "ext.medical.nifti.v1",
+        "nii.gz": "ext.medical.nifti-gzip.v1"
+      }
+    },
+    {
+      "code": "medical-volume",
+      "extensions": [
+        "nrrd",
+        "mha",
+        "mhd",
+        "mgh",
+        "mgz"
+      ],
+      "mimeHints": [],
+      "formatFamily": "medical-volume",
+      "defaultModality": "image",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.medical.{extension}.v1"
+    },
+    {
+      "code": "dicom",
+      "extensions": [
+        "dcm",
+        "dicom"
+      ],
+      "mimeHints": [
+        "application/dicom"
+      ],
+      "formatFamily": "medical-image",
+      "defaultModality": "image",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.image.{extension}.v1"
+    },
+    {
+      "code": "pathology-slide",
+      "extensions": [
+        "svs",
+        "ndpi",
+        "mrxs",
+        "scn",
+        "bif",
+        "vms",
+        "vmu"
+      ],
+      "mimeHints": [],
+      "formatFamily": "medical-image",
+      "defaultModality": "image",
+      "containerKind": "directory-image",
+      "ruleIdPattern": "ext.medical.{extension}.v1"
+    },
+    {
+      "code": "numeric-array",
+      "extensions": [
+        "npy",
+        "npz"
+      ],
+      "mimeHints": [],
+      "formatFamily": "numeric-array",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "raw-pixel",
+      "extensions": [
+        "yuv",
+        "nv12"
+      ],
+      "mimeHints": [],
+      "formatFamily": "raw-pixel",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "structured-json",
+      "extensions": [
+        "json",
+        "jsonl",
+        "ndjson",
+        "ipynb"
+      ],
+      "mimeHints": [
+        "application/json",
+        "application/x-jsonlines",
+        "application/x-ndjson"
+      ],
+      "formatFamily": "structured-text",
+      "defaultModality": "text",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.text.{extension}.v1"
+    },
+    {
+      "code": "jsonl-gzip",
+      "extensions": [
+        "jsonl.gz"
+      ],
+      "mimeHints": [
+        "application/gzip"
+      ],
+      "formatFamily": "structured-text",
+      "defaultModality": "text",
+      "containerKind": "compression",
+      "ruleIdPattern": "ext.text.jsonl-gzip.v1"
+    },
+    {
+      "code": "structured-markup",
+      "extensions": [
+        "xml",
+        "yaml",
+        "yml",
+        "toml"
+      ],
+      "mimeHints": [
+        "application/xml",
+        "application/x-yaml",
+        "application/toml"
+      ],
+      "formatFamily": "structured-text",
+      "defaultModality": "text",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.text.{extension}.v1"
+    },
+    {
+      "code": "plain-text",
+      "extensions": [
+        "txt",
+        "md",
+        "markdown",
+        "html",
+        "htm",
+        "ini",
+        "conf",
+        "properties",
+        "log",
+        "py",
+        "java",
+        "go",
+        "rs",
+        "kt",
+        "rb",
+        "php",
+        "swift",
+        "c",
+        "cpp",
+        "h",
+        "hpp",
+        "cs",
+        "css",
+        "scss",
+        "less",
+        "js",
+        "jsx",
+        "tsx",
+        "vue",
+        "sh",
+        "bash",
+        "zsh",
+        "sql",
+        "dockerfile",
+        "makefile"
+      ],
+      "mimeHints": [
+        "text/plain",
+        "text/markdown",
+        "text/html"
+      ],
+      "formatFamily": "plain-text",
+      "defaultModality": "text",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.text.{extension}.v1"
+    },
+    {
+      "code": "spreadsheet",
+      "extensions": [
+        "csv",
+        "tsv",
+        "xls",
+        "xlsx",
+        "ods",
+        "parquet",
+        "arrow",
+        "feather",
+        "orc"
+      ],
+      "mimeHints": [
+        "text/csv",
+        "text/tab-separated-values",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      ],
+      "formatFamily": "spreadsheet",
+      "defaultModality": "table",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.table.{extension}.v1"
+    },
+    {
+      "code": "document",
+      "extensions": [
+        "pdf",
+        "doc",
+        "docx",
+        "dot",
+        "ppt",
+        "pptx",
+        "pot",
+        "rtf",
+        "odt",
+        "odp",
+        "epub"
+      ],
+      "mimeHints": [
+        "application/pdf",
+        "application/rtf",
+        "application/epub+zip"
+      ],
+      "formatFamily": "document",
+      "defaultModality": "document",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.document.{extension}.v1"
+    },
+    {
+      "code": "signal",
+      "extensions": [
+        "edf",
+        "bdf",
+        "gdf",
+        "vhdr",
+        "eeg",
+        "set",
+        "acq",
+        "cnt"
+      ],
+      "mimeHints": [],
+      "formatFamily": "signal",
+      "defaultModality": "signal",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.signal.{extension}.v1"
+    },
+    {
+      "code": "gis",
+      "extensions": [
+        "geojson",
+        "kml",
+        "kmz",
+        "gpx",
+        "shp"
+      ],
+      "mimeHints": [],
+      "formatFamily": "gis",
+      "defaultModality": "gis",
+      "containerKind": "none",
+      "ruleIdPattern": "ext.gis.{extension}.v1"
+    },
+    {
+      "code": "zip",
+      "extensions": [
+        "zip"
+      ],
+      "mimeHints": [
+        "application/zip"
+      ],
+      "formatFamily": "archive",
+      "defaultModality": "unknown",
+      "containerKind": "archive",
+      "ruleIdPattern": "ext.archive.{extension}.v1"
+    },
+    {
+      "code": "tar",
+      "extensions": [
+        "tar",
+        "tar.gz",
+        "tgz",
+        "tar.bz2",
+        "tbz2",
+        "tar.xz"
+      ],
+      "mimeHints": [
+        "application/x-tar"
+      ],
+      "formatFamily": "archive",
+      "defaultModality": "unknown",
+      "containerKind": "archive",
+      "ruleIdPattern": "ext.archive.{extension}.v1"
+    },
+    {
+      "code": "rar",
+      "extensions": [
+        "rar"
+      ],
+      "mimeHints": [
+        "application/vnd.rar",
+        "application/x-rar-compressed"
+      ],
+      "formatFamily": "archive",
+      "defaultModality": "unknown",
+      "containerKind": "archive",
+      "ruleIdPattern": "ext.archive.{extension}.v1"
+    },
+    {
+      "code": "sevenzip",
+      "extensions": [
+        "7z"
+      ],
+      "mimeHints": [
+        "application/x-7z-compressed"
+      ],
+      "formatFamily": "archive",
+      "defaultModality": "unknown",
+      "containerKind": "archive",
+      "ruleIdPattern": "ext.archive.{extension}.v1"
+    },
+    {
+      "code": "single-compression",
+      "extensions": [
+        "gz",
+        "bz2",
+        "xz"
+      ],
+      "mimeHints": [
+        "application/gzip",
+        "application/x-bzip2",
+        "application/x-xz"
+      ],
+      "formatFamily": "compression",
+      "defaultModality": "unknown",
+      "containerKind": "compression",
+      "ruleIdPattern": "ext.compression.{extension}.v1"
+    },
+    {
+      "code": "font",
+      "extensions": [
+        "ttf",
+        "otf",
+        "woff",
+        "woff2"
+      ],
+      "mimeHints": [],
+      "formatFamily": "font",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "executable",
+      "extensions": [
+        "exe",
+        "dll",
+        "jar"
+      ],
+      "mimeHints": [],
+      "formatFamily": "executable",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "rosbag",
+      "extensions": [
+        "bag",
+        "mcap"
+      ],
+      "mimeHints": [],
+      "formatFamily": "unknown",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    },
+    {
+      "code": "opaque-data",
+      "extensions": [
+        "001",
+        "atr",
+        "dat",
+        "data",
+        "db",
+        "downloading",
+        "lastupdated",
+        "pickle",
+        "pkl",
+        "pom",
+        "pt137",
+        "pteye",
+        "sha1",
+        "tmp",
+        "url",
+        "vsp3",
+        "opuz",
+        "svgz",
+        "bak"
+      ],
+      "mimeHints": [],
+      "formatFamily": "unknown",
+      "defaultModality": "unknown",
+      "containerKind": "none",
+      "ruleIdPattern": "unknown.context-required.v1"
+    }
+  ],
+  "roleRules": [
+    {
+      "id": "role.standard.v1",
+      "priority": 500,
+      "when": {
+        "standardRole": "*"
+      },
+      "then": {
+        "usageRole": "fromStandard",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "role.manifest.explicit.v1",
+      "priority": 400,
+      "when": {
+        "manifestRole": "*"
+      },
+      "then": {
+        "usageRole": "fromManifest",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "role.metadata.explicit-manifest.v1",
+      "priority": 350,
+      "when": {
+        "parentRelationAny": [
+          "manifest-for-archive"
+        ]
+      },
+      "then": {
+        "usageRole": "metadata",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "role.preview.path.v1",
+      "priority": 300,
+      "when": {
+        "pathPrefixAny": [
+          "_preview/",
+          "_previews/"
+        ]
+      },
+      "then": {
+        "usageRole": "preview",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "role.artifact.path.processed.v1",
+      "priority": 300,
+      "when": {
+        "pathPrefixAny": [
+          "processed/"
+        ]
+      },
+      "then": {
+        "usageRole": "artifact",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "role.metadata.camera-config-path.v1",
+      "priority": 300,
+      "when": {
+        "pathSegmentsAny": [
+          "camera_config"
+        ]
+      },
+      "then": {
+        "usageRole": "metadata",
+        "confidence": 0.85
+      }
+    },
+    {
+      "id": "role.annotation.path.v1",
+      "priority": 300,
+      "when": {
+        "pathSegmentsAny": [
+          "annotations",
+          "labels"
+        ]
+      },
+      "then": {
+        "usageRole": "annotation",
+        "confidence": 0.75
+      }
+    },
+    {
+      "id": "role.readme.filename.v1",
+      "priority": 200,
+      "when": {
+        "fileNameRegex": "(?i)^readme(\\..*)?$"
+      },
+      "then": {
+        "usageRole": "readme",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "role.manifest.filename.v1",
+      "priority": 200,
+      "when": {
+        "fileNameRegex": "(?i)^manifest\\.json$",
+        "pathDepthMax": 2
+      },
+      "then": {
+        "usageRole": "metadata",
+        "confidence": 0.6
+      }
+    },
+    {
+      "id": "role.artifact.suffix.result.v1",
+      "priority": 200,
+      "when": {
+        "fileNameSuffixAny": [
+          "_result.json"
+        ]
+      },
+      "then": {
+        "usageRole": "artifact",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "role.artifact.suffix.annotation.v1",
+      "priority": 200,
+      "when": {
+        "fileNameSuffixAny": [
+          "_annotation.json"
+        ]
+      },
+      "then": {
+        "usageRole": "artifact",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "role.payload.default.v1",
+      "priority": 100,
+      "when": {
+        "formatCodesAny": [
+          "structured-json"
+        ],
+        "datasetTypesNotAny": [
+          "text"
+        ]
+      },
+      "then": {
+        "usageRole": "payload",
+        "confidence": 0.5
+      }
+    }
+  ],
+  "invariants": {
+    "unknownExtensionPolicy": "unknown",
+    "conflictingRolePolicy": "ambiguous",
+    "uniqueCodes": true,
+    "uniqueExtensions": true,
+    "aliasCycleCheck": true,
+    "everyFormatHasDefaultModality": true,
+    "samePriorityConflictIsSchemaError": true
+  }
+}

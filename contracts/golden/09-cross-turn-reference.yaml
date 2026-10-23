@@ -1,0 +1,49 @@
+id: 09-cross-turn-reference
+description: A later instruction retains the selection and discovered action from
+  an earlier turn.
+turns:
+- input: 'Remember selection marker ALPHA: find low-quality text.'
+  script:
+  - tool_calls:
+    - name: search_files
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        modality: text
+        quality_max: 59
+      id: 09-cross-turn-reference-call-1
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: quarantine_files
+      id: 09-cross-turn-reference-call-2
+  - content: Selected one low-quality text sample.
+- input: Quarantine that selection.
+  script:
+  - tool_calls:
+    - name: quarantine_files
+      arguments:
+        selection:
+          dataset_id: '{{dataset_id}}'
+          filters:
+          - field: id
+            operator: eq
+            value: '{{file_id}}'
+      id: 09-cross-turn-reference-call-3
+  - content: Quarantined the selection.
+expect:
+  tool_sequence:
+  - search_files
+  - tool_search
+  - quarantine_files
+  actions:
+  - action_type: quarantine_files
+    requires_approval: false
+    executions: 1
+  answer_contains:
+  - Quarantined the selection
+  context_contains:
+  - selection marker ALPHA
+  file_count: 3
+  quarantined_count: 1
+  max_turns: 5
+  max_tokens: 100000

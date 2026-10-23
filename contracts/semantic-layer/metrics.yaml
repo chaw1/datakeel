@@ -1,0 +1,301 @@
+# All entities and data are fictional. Reference instant: 2026-10-01T00:00:00Z.
+metrics:
+- id: shipment_amount
+  name: 出货额
+  synonyms:
+  - 发货金额
+  - 出库金额
+  description: 以ERP已出库商品的出货价计量，未扣终端促销及退款。
+  owner: 供应链负责人
+  version: 1
+  measure:
+    table: erp/main/shipments
+    column: erp/main/shipments/shipped_amount
+    aggregation: sum
+  filters:
+  - column: erp/main/shipments/status
+    value: shipped
+    op: eq
+  dimensions:
+  - shipment_region
+  caveats:
+  - 数据完全合成；金额单位为人民币元。
+  - 本指标口径独立，请勿将出货额、销售额和零售额互换。
+  time:
+    column: erp/main/shipments/date
+    granularity: day
+- id: sales_amount
+  name: 销售额
+  synonyms:
+  - 开票销售额
+  - 营业额
+  description: 以CRM已入账销售单的开票金额计量，含经销渠道。
+  owner: 财务负责人
+  version: 1
+  measure:
+    table: crm/main/sales
+    column: crm/main/sales/invoiced_amount
+    aggregation: sum
+  filters:
+  - column: crm/main/sales/status
+    value: booked
+    op: eq
+  dimensions:
+  - sales_region
+  - sales_channel
+  caveats:
+  - 数据完全合成；金额单位为人民币元。
+  - 本指标口径独立，请勿将出货额、销售额和零售额互换。
+  time:
+    column: crm/main/sales/date
+    granularity: day
+- id: retail_revenue
+  name: 零售额
+  synonyms:
+  - 终端零售额
+  - 实付零售额
+  - 营业额
+  description: 以电商已完成订单的终端实付金额计量，包含订单优惠，未冲抵后续退款。
+  owner: 零售运营负责人
+  version: 1
+  measure:
+    table: ecommerce/main/orders
+    column: ecommerce/main/orders/paid_amount
+    aggregation: sum
+  filters:
+  - column: ecommerce/main/orders/status
+    value: completed
+    op: eq
+  dimensions:
+  - retail_region
+  - retail_channel
+  - retail_category
+  caveats:
+  - 数据完全合成；金额单位为人民币元。
+  - 本指标口径独立，请勿将出货额、销售额和零售额互换。
+  time:
+    column: ecommerce/main/orders/date
+    granularity: day
+- id: order_count
+  name: 订单数
+  synonyms:
+  - 成交订单数
+  - 订单量
+  description: 已完成终端订单的数量。
+  owner: 零售运营负责人
+  version: 1
+  measure:
+    table: ecommerce/main/orders
+    column: ecommerce/main/orders/id
+    aggregation: count
+  filters:
+  - column: ecommerce/main/orders/status
+    value: completed
+    op: eq
+  dimensions:
+  - retail_region
+  - retail_channel
+  - retail_category
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: ecommerce/main/orders/date
+    granularity: day
+- id: refund_amount
+  name: 退款额
+  synonyms:
+  - 退款金额
+  - 退回金额
+  description: 已批准退款单的金额，不代表退货率或原因。
+  owner: 售后财务负责人
+  version: 1
+  measure:
+    table: ecommerce/main/returns
+    column: ecommerce/main/returns/refund_amount
+    aggregation: sum
+  filters:
+  - column: ecommerce/main/returns/status
+    value: approved
+    op: eq
+  dimensions:
+  - refund_region
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: ecommerce/main/returns/date
+    granularity: day
+- id: inventory_units
+  name: 库存量
+  synonyms:
+  - 库存件数
+  - 在库数量
+  description: 2026年9月30日库存快照中的可用件数。
+  owner: 仓储负责人
+  version: 1
+  measure:
+    table: erp/main/inventory
+    column: erp/main/inventory/quantity
+    aggregation: sum
+  filters: []
+  dimensions:
+  - inventory_region
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: erp/main/inventory/date
+    granularity: day
+- id: customer_count
+  name: 客户数
+  synonyms:
+  - 客户数量
+  - 客户总数
+  description: CRM中登记的客户数，含个人及企业。
+  owner: 客户运营负责人
+  version: 1
+  measure:
+    table: crm/main/customers
+    column: crm/main/customers/id
+    aggregation: count
+  filters: []
+  dimensions:
+  - customer_region
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: crm/main/customers/joined_date
+    granularity: day
+- id: ticket_count
+  name: 售后工单数
+  synonyms:
+  - 工单数
+  - 售后单量
+  description: 所有已登记售后工单数，含未关闭工单。
+  owner: 售后服务负责人
+  version: 1
+  measure:
+    table: service/main/tickets
+    column: service/main/tickets/id
+    aggregation: count
+  filters: []
+  dimensions:
+  - ticket_region
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: service/main/tickets/date
+    granularity: day
+- id: repair_cost
+  name: 维修费用
+  synonyms:
+  - 维修人工费
+  - 维修成本
+  description: 维修记录中的人工费用，不含零件费用。
+  owner: 维修负责人
+  version: 1
+  measure:
+    table: service/main/repairs
+    column: service/main/repairs/labor_cost
+    aggregation: sum
+  filters: []
+  dimensions:
+  - repair_region
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: service/main/repairs/date
+    granularity: day
+- id: payment_amount
+  name: 收款额
+  synonyms:
+  - 支付金额
+  - 到账金额
+  description: 已完成支付流水的收款金额。
+  owner: 资金负责人
+  version: 1
+  measure:
+    table: ecommerce/main/payments
+    column: ecommerce/main/payments/amount
+    aggregation: sum
+  filters:
+  - column: ecommerce/main/payments/status
+    value: paid
+    op: eq
+  dimensions:
+  - payment_channel
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: ecommerce/main/payments/date
+    granularity: day
+- id: sales_units
+  name: 销售量
+  synonyms:
+  - 销售件数
+  - 开票件数
+  description: CRM已入账销售单的商品件数。
+  owner: 财务负责人
+  version: 1
+  measure:
+    table: crm/main/sales
+    column: crm/main/sales/quantity
+    aggregation: sum
+  filters:
+  - column: crm/main/sales/status
+    value: booked
+    op: eq
+  dimensions:
+  - sales_region
+  - sales_channel
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: crm/main/sales/date
+    granularity: day
+- id: shipment_units
+  name: 出货量
+  synonyms:
+  - 出货件数
+  - 发货数量
+  description: ERP已出库商品件数。
+  owner: 供应链负责人
+  version: 1
+  measure:
+    table: erp/main/shipments
+    column: erp/main/shipments/quantity
+    aggregation: sum
+  filters:
+  - column: erp/main/shipments/status
+    value: shipped
+    op: eq
+  dimensions:
+  - shipment_region
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: erp/main/shipments/date
+    granularity: day
+- id: retail_units
+  name: 零售量
+  synonyms:
+  - 零售件数
+  - 成交件数
+  description: 已完成终端订单中的商品件数。
+  owner: 零售运营负责人
+  version: 1
+  measure:
+    table: ecommerce/main/orders
+    column: ecommerce/main/orders/quantity
+    aggregation: sum
+  filters:
+  - column: ecommerce/main/orders/status
+    value: completed
+    op: eq
+  dimensions:
+  - retail_region
+  - retail_channel
+  - retail_category
+  caveats:
+  - 数据完全合成，仅用于本地演示。
+  time:
+    column: ecommerce/main/orders/date
+    granularity: day

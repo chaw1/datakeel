@@ -1,0 +1,39 @@
+id: 11-dry-run
+description: Dry-run prepares a reversible action without automatic execution.
+config:
+  dry_run: true
+turns:
+- input: Preview quarantine without applying it.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: quarantine_files
+      id: 11-dry-run-call-1
+  - tool_calls:
+    - name: quarantine_files
+      arguments:
+        selection:
+          dataset_id: '{{dataset_id}}'
+          quality_max: 59
+          filters:
+          - field: modality
+            operator: eq
+            value: text
+      id: 11-dry-run-call-2
+expect:
+  tool_sequence:
+  - tool_search
+  - quarantine_files
+  actions:
+  - action_type: quarantine_files
+    requires_approval: false
+    executions: 0
+  stop_contains:
+  - dry_run
+  answer_not_contains:
+  - Quarantined
+  file_count: 3
+  quarantined_count: 0
+  max_turns: 2
+  max_tokens: 20000

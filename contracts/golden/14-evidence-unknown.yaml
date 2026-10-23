@@ -1,0 +1,70 @@
+id: 14-evidence-unknown
+description: An actual explanation preserves unknown label gaps when annotations are
+  unavailable.
+fixture_kind: evidence
+turns:
+- input: Explain the sample without annotation evidence; do not infer absence.
+  script:
+  - tool_calls:
+    - name: explain_sample
+      arguments:
+        asset_id: '{{unknown_file_id}}'
+        version_id: '{{version_id}}'
+      id: 14-explain
+  - content: The label gap is unknown because annotation evidence is unavailable.
+expect:
+  tool_sequence:
+  - explain_sample
+  tool_results:
+  - name: explain_sample
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - states
+          - assertions
+          - text
+          properties:
+            text:
+              type: string
+              pattern: unknown
+            assertions:
+              type: array
+              minItems: 1
+            states:
+              type: array
+              contains:
+                type: object
+                required:
+                - predicate
+                - concept
+                - value
+                properties:
+                  predicate:
+                    const: label_gap
+                  concept:
+                    const: person
+                  value:
+                    const: unknown
+              not:
+                contains:
+                  type: object
+                  required:
+                  - predicate
+                  - value
+                  properties:
+                    predicate:
+                      const: label_gap
+                    value:
+                      const: absent
+  answer_contains:
+  - unknown
+  answer_not_contains:
+  - confirmed absent
+  file_count: 20
+  max_turns: 2
+  max_tokens: 100000

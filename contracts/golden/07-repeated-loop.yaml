@@ -1,0 +1,37 @@
+id: 07-repeated-loop
+description: Three identical calls terminate with the specific repetition reason.
+turns:
+- input: Keep checking the same dataset.
+  script:
+  - tool_calls:
+    - name: get_quality
+      arguments:
+        dataset_id: '{{dataset_id}}'
+      id: 07-repeated-loop-call-1
+  - tool_calls:
+    - name: get_quality
+      arguments:
+        dataset_id: '{{dataset_id}}'
+      id: 07-repeated-loop-call-2
+  - tool_calls:
+    - name: get_quality
+      arguments:
+        dataset_id: '{{dataset_id}}'
+      id: 07-repeated-loop-call-3
+  - tool_calls:
+    - name: get_quality
+      arguments:
+        dataset_id: '{{dataset_id}}'
+      id: 07-repeated-loop-call-4
+expect:
+  tool_sequence:
+  - get_quality
+  - get_quality
+  - get_quality
+  stop_contains:
+  - repeated_call
+  answer_not_contains:
+  - Complete.
+  file_count: 3
+  max_turns: 3
+  max_tokens: 30000

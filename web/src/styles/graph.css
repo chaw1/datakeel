@@ -1,0 +1,107 @@
+.graph-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: calc(var(--space) * 5);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  color: var(--muted);
+  padding: calc(var(--space) * 3.5) calc(var(--space) * 5.75);
+  background: var(--sheet);
+}
+.graph-legend {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 1.5);
+  white-space: nowrap;
+}
+.legend-dot {
+  height: 6px;
+  width: 6px;
+  border-radius: 2px;
+  background: var(--pencil);
+}
+.legend-line {
+  height: 1px;
+  width: 14px;
+  background: var(--pencil);
+  margin-left: calc(var(--space) * 1.75);
+}
+.graph-scroll {
+  overflow: auto;
+  max-height: 550px;
+  background-color: var(--sheet);
+  background-image: radial-gradient(var(--rule) 0.7px, transparent 0.7px);
+  background-size: 16px 16px;
+}
+.compact .graph-scroll {
+  max-height: 235px;
+  min-height: 204px;
+}
+.graph {
+  display: block;
+}
+.graph-edge {
+  stroke: var(--rule);
+  stroke-width: 1.4;
+  fill: none;
+}
+.graph-edge.active {
+  stroke: var(--pencil);
+  stroke-width: 2;
+}
+.graph-edge.semantic {
+  stroke: var(--rule);
+  stroke-dasharray: 6 4;
+}
+.graph-edge.semantic.active {
+  stroke: var(--pencil);
+}
+.legend-line.semantic {
+  border-top: 2px dashed var(--rule);
+  background: transparent;
+  height: 0;
+}
+.semantic-detail {
+  border-left: 2px dashed var(--rule);
+  padding-left: calc(var(--space) * 3.5);
+}
+.graph-node {
+  cursor: pointer;
+}
+.graph-node > rect:first-child {
+  fill: var(--sheet);
+  stroke: var(--rule);
+  stroke-width: 1.2;
+  filter: drop-shadow(0 2px 2px var(--shadow));
+}
+.graph-node:hover > rect:first-child,
+.graph-node.selected > rect:first-child {
+  stroke: var(--pencil);
+  fill: var(--pencil-wash);
+  stroke-width: 1.8;
+}
+.graph-node .node-icon {
+  fill: var(--paper);
+  stroke: none;
+}
+.node-title {
+  fill: var(--ink);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+.node-subtitle {
+  fill: var(--muted);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+}
+.graph-hint {
+  padding: calc(var(--space) * 3) calc(var(--space) * 5.75);
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 1.75);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+}

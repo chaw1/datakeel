@@ -1,0 +1,43 @@
+@import "./palette-pencil.css";
+
+:root {
+  --icon-fill: none;
+  --icon-stroke: currentColor;
+  --font-body:
+    -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  --font-serif:
+    "Source Serif 4", "Songti SC", "Noto Serif CJK SC", SimSun, serif;
+  --font-mono: "Source Code Pro", SFMono-Regular, Consolas, monospace;
+  --font-hidden: 0;
+  --font-xs: 12px;
+  --font-sm: 13px;
+  --font-md: 14px;
+  --font-lg: 16px;
+  --font-xl: 18px;
+  --font-2xl: 24px;
+  --font-3xl: 32px;
+  --line-body: 1.6;
+  --line-table: 1.45;
+  --line-heading: 1.25;
+  --line-solid: 1;
+  --line-loose: 2;
+  --space: 4px;
+  --ok-wash: color-mix(in srgb, var(--ok) 8%, var(--sheet));
+  --warn-wash: color-mix(in srgb, var(--warn) 8%, var(--sheet));
+  --red-wash: color-mix(in srgb, var(--red) 8%, var(--sheet));
+  --ink-wash: color-mix(in srgb, var(--ink) 4%, var(--sheet));
+  --shadow: color-mix(in srgb, var(--ink) 12%, transparent);
+  --scrim: color-mix(in srgb, var(--paper) 65%, transparent);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}

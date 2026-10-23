@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "source_hash": "d16381a2eb28a4e22a726bcd72387dc412560ba167eb160ce2e18fa83ead3505",
+  "packages": [
+    "node_modules/@fontsource/source-code-pro",
+    "node_modules/@fontsource/source-serif-4",
+    "node_modules/react",
+    "node_modules/react-dom",
+    "node_modules/scheduler",
+    "node_modules/vite"
+  ]
+}

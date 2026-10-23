@@ -1,0 +1,78 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Durable local conversations and server-sent model/tool/action events."""
+
+from collections.abc import Generator, Iterator
+from itertools import chain
+from typing import Annotated, cast
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
+from starlette.background import BackgroundTask
+
+from datakeel.agent import service
+from datakeel.agent.models import AgentEvent, ConversationView
+from datakeel.api.dependencies import DatabaseDependency
+from datakeel.core.agent_models import ConversationCreate, MessageInput, Provider
+
+router = APIRouter(prefix="/api/agent/conversations", tags=["agent"])
+
+
+class EventStreamResponse(StreamingResponse):
+    """Declare the streaming media type alongside its typed event schema."""
+
+    media_type = "text/event-stream"
+
+
+def get_provider(request: Request) -> Provider | None:
+    """Resolve an explicitly injected test provider, otherwise use session settings."""
+    return cast("Provider | None", getattr(request.app.state, "agent_provider", None))
+
+
+ProviderDependency = Annotated[Provider | None, Depends(get_provider)]
+
+
+@router.post("")
+def create(body: ConversationCreate, db: DatabaseDependency) -> ConversationView:
+    """Create a session with persistent limits and optional dataset context."""
+    return service.create_conversation(db, body)
+
+
+@router.get("")
+def list_all(db: DatabaseDependency) -> list[ConversationView]:
+    """List recoverable local conversations."""
+    return service.list_conversations(db)
+
+
+@router.get("/{conversation_id}")
+def get(conversation_id: str, db: DatabaseDependency) -> ConversationView:
+    """Recover all persisted events and current human approval decisions."""
+    return service.get_conversation(db, conversation_id)
+
+
+def _encode(events: Iterator[AgentEvent], first: AgentEvent | None) -> Iterator[str]:
+    for event in chain([first] if first is not None else [], events):
+        yield f"id: {event.id}\nevent: {event.event}\ndata: {event.model_dump_json()}\n\n"
+
+
+@router.post(
+    "/{conversation_id}/messages", response_model=AgentEvent, response_class=EventStreamResponse
+)
+def send(
+    conversation_id: str,
+    body: MessageInput,
+    db: DatabaseDependency,
+    provider: ProviderDependency,
+) -> EventStreamResponse:
+    """Stream durable events with explicit replay keys and no duplicate execution."""
+    stream = cast(
+        "Generator[AgentEvent, None, None]",
+        service.send_message(db, conversation_id, body, provider=provider),
+    )
+    first = next(stream, None)
+    return EventStreamResponse(
+        _encode(stream, first),
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        background=BackgroundTask(stream.close),
+    )
