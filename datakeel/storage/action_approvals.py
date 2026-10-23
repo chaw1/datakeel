@@ -67,4 +67,7 @@ def consume_approval(session: Session, plan: ActionPlan) -> None:
     if approval.plan_digest != plan.plan_digest:
         msg = "Human approval no longer matches the plan"
         raise ConflictError(msg)
+    if approval.actor != plan.actor:
+        msg = "Human approval actor does not match the prepared plan"
+        raise AuthorizationError(msg)
     approval.consumed = True

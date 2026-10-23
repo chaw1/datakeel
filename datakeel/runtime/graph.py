@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import httpx
 from langgraph.graph import END, START, StateGraph
-from langgraph.types import interrupt
+from langgraph.types import Command, interrupt
 from pydantic import Field, JsonValue
 from pydantic import ValidationError as ModelValidationError
 
@@ -17,8 +17,9 @@ from datakeel.agent.dispatch import ToolDispatcher
 from datakeel.agent.guards import LoopGuard
 from datakeel.agent.metering import ModelMeter
 from datakeel.agent.models import AgentEvent
-from datakeel.core.agent_models import ChatMessage, Provider, ToolCall
-from datakeel.core.errors import BudgetError, DatakeelError
+from datakeel.agent.recovery import execute_approved
+from datakeel.core.agent_models import ChatMessage, Provider, ResumeInput, ToolCall
+from datakeel.core.errors import BudgetError, ConflictError, DatakeelError, ValidationError
 from datakeel.core.models import BoundaryModel
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.runtime import DURABILITY
@@ -26,6 +27,7 @@ from datakeel.runtime.chat import complete
 from datakeel.runtime.saver import SQLAlchemySaver
 from datakeel.runtime.tracing import tracing_disabled
 from datakeel.storage import conversation_store as memory
+from datakeel.storage.conversation_authorization import authorize_resume, record_audit
 from datakeel.storage.database import Database
 
 if TYPE_CHECKING:
@@ -63,7 +65,9 @@ def _route(state: GraphState) -> str:
 class AgentGraph:
     """Bind ephemeral response dependencies to a graph with durable primitive execution state."""
 
-    def __init__(self, db: Database, conversation_id: str, token: str, provider: Provider) -> None:
+    def __init__(
+        self, db: Database, conversation_id: str, token: str, provider: Provider | None
+    ) -> None:
         """Keep the response token on this ephemeral instance, outside config and metadata."""
         self.db, self.conversation_id, self.token, self.provider = (
             db,
@@ -82,30 +86,85 @@ class AgentGraph:
         builder.add_node("model", self._model_node)
         builder.add_node("tools", self._tools_node)
         builder.add_node("approval_gate", approval_gate)
+        builder.add_node("execute", self._execute)
         builder.add_edge(START, "model")
         for node in ("model", "tools"):
             builder.add_conditional_edges(node, _route)
-        builder.add_edge("approval_gate", END)
+        builder.add_edge("approval_gate", "execute")
+        builder.add_conditional_edges("execute", _route)
         self.graph = builder.compile(checkpointer=self.saver)
+
+    def invalidate(self) -> None:
+        """Discard an accepted new message's old pause before provider setup can fail."""
+        pending = self.pending_plan()
+        if pending:
+            record_audit(
+                self.db, self.conversation_id, pending, "INTERRUPT_INVALIDATED", "new_message"
+            )
+        self.saver.delete_thread(self.conversation_id)
 
     def run(self) -> Iterator[AgentEvent]:
         """Start a fresh user response while retaining all authoritative business history."""
-        self.saver.delete_thread(self.conversation_id)
+        self.invalidate()
+        return self._stream(cast("GraphState", GraphState().model_dump()))
+
+    def pending_plan(self) -> str:
+        """Read a suspended gate or an interrupted execution following an authorized gate."""
+        snapshot = self.graph.get_state(self.config)
+        if not set(snapshot.next).intersection({"approval_gate", "execute"}):
+            return ""
+        return GraphState.model_validate(snapshot.values).plan_id
+
+    def resume(self, request: ResumeInput) -> Iterator[AgentEvent]:
+        """Check real approval immediately, before lazy execution or provider construction."""
+        authorize_resume(self.db, self.conversation_id, request.plan_id, self.pending_plan())
+        snapshot = self.graph.get_state(self.config)
+        values = {
+            item.id: request.plan_id
+            for item in snapshot.interrupts
+            if item.value == request.plan_id
+        }
+        command: Command[str] | None = Command(resume=values) if values else None
+        return self._stream(command)
+
+    def _stream(self, value: GraphState | Command[str] | None) -> Iterator[AgentEvent]:
         with tracing_disabled():
             for update in self.graph.stream(
-                cast("GraphState", GraphState().model_dump()),
+                value,
                 self.config,
                 stream_mode="updates",
                 durability=DURABILITY,
             ):
-                for value in cast("dict[str, object]", update).values():
-                    if isinstance(value, dict):
-                        events = cast("dict[str, list[str]]", value).get("events", [])
+                for node_update in cast("dict[str, object]", update).values():
+                    if isinstance(node_update, dict):
+                        events = cast("dict[str, list[str]]", node_update).get("events", [])
                         yield from (AgentEvent.model_validate_json(event) for event in events)
             if self.graph.get_state(self.config).interrupts:
                 yield _stopped("approval_required")
 
+    def _execute(self, state: GraphState) -> dict[str, JsonValue]:
+        dispatcher = ToolDispatcher(self.db, self.conversation_id, self.token, self.guard)
+        call = ToolCall.model_validate_json(state.pending_call)
+        recorded = dispatcher.catalog.invoke(self.db, call, dispatcher.context)
+        if recorded.plan is None or recorded.plan.id != state.plan_id:
+            msg = "Paused tool outcome no longer matches the approved plan"
+            raise ConflictError(msg)
+        outcome = execute_approved(self.db, state.plan_id)
+        state = state.model_copy(
+            update={"events": [AgentEvent(event="receipt", outcome=outcome).model_dump_json()]}
+        )
+        self.guard.restore(state.guard)
+        result = (
+            self._stop(state, "execution_failed")
+            if outcome.status == "FAILED"
+            else self._continue(state)
+        )
+        return result.model_dump(mode="json")
+
     def _model(self, state: GraphState) -> GraphState:
+        if self.provider is None:
+            msg = "A configured provider is required to execute a model node"
+            raise ValidationError(msg)
         state = state.model_copy(update={"events": []})
         self.guard.restore(state.guard)
         meter = ModelMeter(self.db, self.conversation_id, self.token, self.provider)

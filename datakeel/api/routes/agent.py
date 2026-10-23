@@ -14,9 +14,17 @@ from starlette.background import BackgroundTask
 from datakeel.agent import service
 from datakeel.agent.models import AgentEvent, ConversationView
 from datakeel.api.dependencies import DatabaseDependency
-from datakeel.core.agent_models import ConversationCreate, MessageInput, Provider
+from datakeel.core.agent_models import (
+    ConversationAudit,
+    ConversationCreate,
+    MessageInput,
+    Provider,
+    ResumeInput,
+)
+from datakeel.storage.conversation_authorization import list_audit
 
 router = APIRouter(prefix="/api/agent/conversations", tags=["agent"])
+resume_router = APIRouter(prefix="/api/conversations", tags=["agent"])
 
 
 class EventStreamResponse(StreamingResponse):
@@ -76,3 +84,31 @@ def send(
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         background=BackgroundTask(stream.close),
     )
+
+
+@resume_router.post(
+    "/{conversation_id}/resume", response_model=AgentEvent, response_class=EventStreamResponse
+)
+def resume(
+    conversation_id: str,
+    body: ResumeInput,
+    db: DatabaseDependency,
+    provider: ProviderDependency,
+) -> EventStreamResponse:
+    """Continue an approved pause without treating caller input as execution authority."""
+    stream = cast(
+        "Generator[AgentEvent, None, None]",
+        service.resume_conversation(db, conversation_id, body, provider=provider),
+    )
+    first = next(stream, None)
+    return EventStreamResponse(
+        _encode(stream, first),
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        background=BackgroundTask(stream.close),
+    )
+
+
+@resume_router.get("/{conversation_id}/audit")
+def recovery_audit(conversation_id: str, db: DatabaseDependency) -> list[ConversationAudit]:
+    """Read persisted resume denials, authorization checks and pause invalidations."""
+    return list_audit(db, conversation_id)

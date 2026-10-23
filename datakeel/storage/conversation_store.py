@@ -17,7 +17,11 @@ from datakeel.core.agent_models import (
 )
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.models import JsonDocument, new_id, utcnow
-from datakeel.storage.conversation_rows import ConversationRequestRow, ConversationRow
+from datakeel.storage.conversation_rows import (
+    ConversationRequestRow,
+    ConversationResumeRow,
+    ConversationRow,
+)
 from datakeel.storage.database import Database
 
 
@@ -33,7 +37,7 @@ def create(db: Database, config: ConversationCreate) -> Conversation:
 def get(db: Database, conversation_id: str) -> Conversation:
     """Read all durable messages and events in original order."""
     with db.session() as session:
-        return Conversation.model_validate(_row(session, conversation_id).payload)
+        return Conversation.model_validate(locked_conversation(session, conversation_id).payload)
 
 
 def list_all(db: Database) -> list[Conversation]:
@@ -50,7 +54,7 @@ def begin(db: Database, conversation_id: str, request: MessageInput) -> Conversa
     """Claim one user turn or replay its already completed events."""
     with db.session() as session:
         db.lock_writes(session)
-        row = _row(session, conversation_id)
+        row = locked_conversation(session, conversation_id)
         previous = session.get(ConversationRequestRow, (conversation_id, request.idempotency_key))
         if previous is not None:
             if previous.content != request.content:
@@ -109,9 +113,7 @@ def append(
         )
         row.payload = updated.model_dump(mode="json")
         if event is not None:
-            request = session.scalar(
-                select(ConversationRequestRow).where(ConversationRequestRow.token == token)
-            )
+            request = _request(session, token)
             if request is None:
                 msg = "Conversation request disappeared"
                 raise ConflictError(msg)
@@ -125,16 +127,15 @@ def finish(db: Database, conversation_id: str, token: str, *, completed: bool) -
     with db.session() as session:
         db.lock_writes(session)
         row = _owned(session, conversation_id, token)
-        request = session.scalar(
-            select(ConversationRequestRow).where(ConversationRequestRow.token == token)
-        )
+        request = _request(session, token)
         if request is not None:
             request.status = "COMPLETED" if completed else "INTERRUPTED"
         row.active_token = None
         session.commit()
 
 
-def _row(session: Session, conversation_id: str) -> ConversationRow:
+def locked_conversation(session: Session, conversation_id: str) -> ConversationRow:
+    """Lock the aggregate for storage-owned response and recovery transactions."""
     row = session.scalar(
         select(ConversationRow).where(ConversationRow.id == conversation_id).with_for_update()
     )
@@ -144,8 +145,14 @@ def _row(session: Session, conversation_id: str) -> ConversationRow:
     return row
 
 
+def _request(session: Session, token: str) -> ConversationRequestRow | ConversationResumeRow | None:
+    return session.scalar(
+        select(ConversationRequestRow).where(ConversationRequestRow.token == token)
+    ) or session.scalar(select(ConversationResumeRow).where(ConversationResumeRow.token == token))
+
+
 def _owned(session: Session, conversation_id: str, token: str) -> ConversationRow:
-    row = _row(session, conversation_id)
+    row = locked_conversation(session, conversation_id)
     if row.active_token != token:
         msg = "Conversation response ownership changed"
         raise ConflictError(msg)

@@ -8,11 +8,19 @@ from collections.abc import Iterator
 from datakeel.agent.factory import provider_session
 from datakeel.agent.memory import close_interrupted, conversation_view
 from datakeel.agent.models import AgentEvent, ConversationView
-from datakeel.core.agent_models import ConversationCreate, MessageInput, Provider
+from datakeel.core.agent_models import (
+    ConversationCreate,
+    ConversationLease,
+    MessageInput,
+    Provider,
+    ResumeInput,
+)
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
 from datakeel.runtime.graph import AgentGraph
 from datakeel.storage import conversation_store as memory
+from datakeel.storage.conversation_lock import response_lock
+from datakeel.storage.conversation_resume import abandoned_token, begin_resume
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import get_dataset
 
@@ -42,13 +50,49 @@ def send_message(
     provider: Provider | None = None,
 ) -> Iterator[AgentEvent]:
     """Stream durable events; replay a completed request without executing it again."""
-    lease = memory.begin(db, conversation_id, request)
+    with response_lock(db, conversation_id):
+        _recover_lease(db, conversation_id)
+        lease = memory.begin(db, conversation_id, request)
+        yield from _deliver(
+            db, conversation_id, lease, _response_events(db, conversation_id, lease.token, provider)
+        )
+
+
+def resume_conversation(
+    db: Database,
+    conversation_id: str,
+    request: ResumeInput,
+    *,
+    provider: Provider | None = None,
+) -> Iterator[AgentEvent]:
+    """Resume a signed pause with a separate response lease and no synthetic user turn."""
+    with response_lock(db, conversation_id):
+        _recover_lease(db, conversation_id)
+        lease = begin_resume(db, conversation_id, request)
+        yield from _deliver(
+            db,
+            conversation_id,
+            lease,
+            _response_events(db, conversation_id, lease.token, provider, request),
+        )
+
+
+def _recover_lease(db: Database, conversation_id: str) -> None:
+    token = abandoned_token(db, conversation_id)
+    if token:
+        close_interrupted(db, conversation_id, token)
+        memory.finish(db, conversation_id, token, completed=False)
+
+
+def _deliver(
+    db: Database, conversation_id: str, lease: ConversationLease, events: Iterator[AgentEvent]
+) -> Iterator[AgentEvent]:
     if lease.replay is not None:
         yield from (AgentEvent.model_validate(document.root) for document in lease.replay)
         return
     completed = False
     try:
-        for event in _response_events(db, conversation_id, lease.token, provider):
+        for event in events:
             memory.append(
                 db,
                 conversation_id,
@@ -72,11 +116,18 @@ def send_message(
 
 
 def _response_events(
-    db: Database, conversation_id: str, token: str, provider: Provider | None
+    db: Database,
+    conversation_id: str,
+    token: str,
+    provider: Provider | None,
+    resume: ResumeInput | None = None,
 ) -> Iterator[AgentEvent]:
     config = memory.get(db, conversation_id).config
+    graph = AgentGraph(db, conversation_id, token, provider)
+    events = graph.run() if resume is None else graph.resume(resume)
     try:
         with provider_session(config, provider) as selected:
-            yield from AgentGraph(db, conversation_id, token, selected).run()
+            graph.provider = selected
+            yield from events
     except ValidationError as error:
         yield AgentEvent(event="stopped", stop_reason="configuration_error", text=str(error))

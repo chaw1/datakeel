@@ -94,6 +94,24 @@ class MessageInput(BoundaryModel):
     idempotency_key: str = Field(default_factory=new_id, min_length=1, max_length=200)
 
 
+class ResumeInput(BoundaryModel):
+    """Identify a paused plan without accepting any caller-supplied approval authority."""
+
+    plan_id: str = Field(min_length=1, max_length=200)
+    idempotency_key: str = Field(min_length=1, max_length=200)
+
+
+class ConversationAudit(BoundaryModel):
+    """Expose durable recovery decisions independently of disposable graph checkpoints."""
+
+    id: str
+    conversation_id: str
+    plan_id: str
+    kind: Literal["RESUME_DENIED", "RESUME_AUTHORIZED", "INTERRUPT_INVALIDATED"]
+    reason: str
+    created_at: datetime
+
+
 class Conversation(BoundaryModel):
     """The durable within-session history and its configuration."""
 

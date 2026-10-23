@@ -31,3 +31,27 @@ class ConversationRequestRow(Base):
     token: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String)
     events: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+
+
+class ConversationResumeRow(Base):
+    """Own replayable recovery responses separately from user-message request keys."""
+
+    __tablename__ = "conversation_resumes"
+    conversation_id: Mapped[str] = mapped_column(ForeignKey("conversations.id"), primary_key=True)
+    key: Mapped[str] = mapped_column(String, primary_key=True)
+    plan_id: Mapped[str] = mapped_column(String)
+    token: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String)
+    events: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+
+
+class ConversationAuditRow(Base):
+    """Retain authorization denials and invalidations even after checkpoint deletion."""
+
+    __tablename__ = "conversation_audit"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(ForeignKey("conversations.id"), index=True)
+    plan_id: Mapped[str] = mapped_column(String)
+    kind: Mapped[str] = mapped_column(String)
+    reason: Mapped[str] = mapped_column(String)
+    created_at: Mapped[float] = mapped_column(Float)

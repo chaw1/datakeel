@@ -22,7 +22,11 @@ def conversation_view(db: Database, conversation: Conversation) -> ConversationV
         outcome = event.outcome
         if outcome is not None and outcome.plan is not None:
             plan = get_plan(db, outcome.plan.id)
-            run = next((item for item in runs if item.plan_id == plan.id), outcome.run)
+            matching = [item for item in runs if item.plan_id == plan.id]
+            run = next(
+                (item for item in matching if item.status != "DENIED"),
+                next(iter(matching), outcome.run),
+            )
             outcome = outcome.model_copy(update={"plan": plan, "run": run})
             event = event.model_copy(update={"outcome": outcome})
         events.append(event)

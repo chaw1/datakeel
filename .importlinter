@@ -27,6 +27,7 @@ ignore_imports =
     datakeel.runtime.graph -> datakeel.agent.guards
     datakeel.runtime.graph -> datakeel.agent.metering
     datakeel.runtime.graph -> datakeel.agent.models
+    datakeel.runtime.graph -> datakeel.agent.recovery
 # Shared tool dispatch uses action policy/services and stores invocation audit through typed models.
     datakeel.ontology.tooling -> datakeel.actions.service
     datakeel.ontology.tooling -> datakeel.actions.models
@@ -100,6 +101,9 @@ ignore_imports =
 # Idempotent execution validates typed requests and the same canonical action policy.
     datakeel.storage.action_requests -> datakeel.actions.models
     datakeel.storage.action_requests -> datakeel.actions.policy
+# Recovery verifies the original frozen action digest and signed actor before graph continuation.
+    datakeel.storage.conversation_authorization -> datakeel.actions.models
+    datakeel.storage.conversation_authorization -> datakeel.actions.policy
     datakeel.storage.action_store -> datakeel.actions.models
     datakeel.storage.action_worker -> datakeel.actions.models
     datakeel.storage.action_worker -> datakeel.actions.receipts
