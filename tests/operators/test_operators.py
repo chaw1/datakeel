@@ -117,12 +117,10 @@ def test_encoding_fix_normalizes_legacy_and_bom(make_file: FileFactory, output_d
 
 def test_pii_redact_matches_email_and_phone(make_file: FileFactory, output_dir: Path) -> None:
     """Verify pii redact matches email and phone."""
-    source = make_file(
-        "Contact sample@users.noreply.github.com or +1 (415) 555-0132. Keep reference A42."
-    )
+    source = make_file("Contact sample@example.org or +1 (415) 555-0132. Keep reference A42.")
     result = REGISTRY["text.pii_redact"].run([source], output_dir)
     text = Path(result.files[0].path).read_text()
-    assert "users.noreply.github.com" not in text
+    assert "example.org" not in text
     assert "415" not in text
     assert text.count("[REDACTED]") == 2
     assert "A42" in text
@@ -218,7 +216,7 @@ def test_text_transform_discards_old_measurements_and_refreshes_empty(
     make_file: FileFactory, output_dir: Path, replacement: str
 ) -> None:
     """Verify text transform discards old measurements and refreshes empty."""
-    source = make_file("sample@users.noreply.github.com")
+    source = make_file("sample@example.org")
     measured = REGISTRY["text.quality"].run([source], output_dir / "measure")
     result = REGISTRY["text.pii_redact"].run(
         measured.files, output_dir / "redact", {"replacement": replacement}
@@ -226,9 +224,7 @@ def test_text_transform_discards_old_measurements_and_refreshes_empty(
     final = result.files[0]
     assert final.metadata["empty"] is True
     assert "text_quality" not in final.metadata
-    assert measured.quality["measurements"][source.id]["characters"] == len(
-        "sample@users.noreply.github.com"
-    )
+    assert measured.quality["measurements"][source.id]["characters"] == len("sample@example.org")
     assert score_quality([final])["dimensions"]["completeness"]["score"] == 0
 
 

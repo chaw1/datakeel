@@ -29,9 +29,7 @@ module = importlib.import_module("datakeel.cli.demo")
 def seeded(db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, str]:
     """Provide the seeded test fixture."""
     source = tmp_path / "generated.txt"
-    source.write_text(
-        "Generated example with sample@users.noreply.github.com contact.", encoding="utf-8"
-    )
+    source.write_text("Generated example with sample@example.org contact.", encoding="utf-8")
     monkeypatch.setattr(module, "generate_samples", lambda _directory: [source])
     return module.seed_demo(db)
 

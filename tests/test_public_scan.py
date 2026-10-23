@@ -170,9 +170,10 @@ def test_blob_size_boundary_covers_binary_and_text(repository: Path) -> None:
     ]
 
 
-def test_commit_message_and_both_identities_are_scanned(repository: Path) -> None:
+@pytest.mark.parametrize("identity", [email(), "sample@example.org"])
+def test_commit_message_and_both_identities_are_scanned(repository: Path, identity: str) -> None:
     """Commit-only process vocabulary and private contributor identities have explicit locations."""
-    git(repository, "config", "user.email", email())
+    git(repository, "config", "user.email", identity)
     commit(repository, "docs: " + "co" + "dex")
     report = scan_repository(repository, ())
     assert {(item.path, item.rule) for item in report.findings} == {
@@ -180,7 +181,7 @@ def test_commit_message_and_both_identities_are_scanned(repository: Path) -> Non
         ("<author>", "email"),
         ("<committer>", "email"),
     }
-    assert email() not in report.model_dump_json()
+    assert identity not in report.model_dump_json()
 
 
 def test_current_scanner_and_tests_do_not_embed_sensitive_samples(repository: Path) -> None:

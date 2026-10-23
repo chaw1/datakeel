@@ -7,6 +7,7 @@
 `make check` 依次执行，任一失败即失败：
 
 ```
+uv run python scripts/check_public_worktree.py
 uv run ruff format --check .
 uv run ruff check .
 uv run pyright
@@ -17,6 +18,8 @@ uv run python scripts/license_audit.py
 ```
 
 另有 `make fix`（ruff format + ruff check --fix + prettier --write）。pre-commit 钩子只跑秒级子集（ruff format、ruff check、prettier）；pyright 与测试留给 `make check` 和 CI。仓库带 `.github/workflows/ci.yml` 跑 `make check`（SQLite + Postgres 服务容器两套矩阵）。
+
+公开内容扫描首先检查工作树中所有已跟踪文件（含未暂存修改）和未忽略的未跟踪文件，复用公开导出的本机路径、内网地址、密钥、内部名称、邮箱及文件大小规则。忽略的本地生成数据不进入扫描；已跟踪文件即使匹配忽略规则也必须检查。报告仅输出相对文件名、行号和规则，不输出命中值。邮箱样例可使用 RFC 2606/6761 保留的 `example.com`、`example.org`、`example.net` 及其子域，以及以 `.example`、`.invalid`、`.test`、`.localhost` 结尾的域名；提交身份仍只接受既有 GitHub noreply 域名。
 
 ## 2. Python
 

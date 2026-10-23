@@ -52,7 +52,7 @@ def test_default_executes_all_operators_and_events(tmp_path: Path) -> None:
         file_at(
             tmp_path,
             "sample.txt",
-            b"Generated text contact sample@users.noreply.github.com with reference 42.",
+            b"Generated text contact sample@example.org with reference 42.",
             "text",
         ),
     ]
@@ -203,7 +203,7 @@ def test_empty_branches_emit_zero_item_events_without_artifacts(tmp_path: Path) 
 
 def test_false_condition_keeps_input_out_of_downstream_operators(tmp_path: Path) -> None:
     """Verify false condition keeps input out of downstream operators."""
-    source = file_at(tmp_path, "text.txt", b"sample@users.noreply.github.com", "text")
+    source = file_at(tmp_path, "text.txt", b"sample@example.org", "text")
     definition = {
         "nodes": [
             {
@@ -220,7 +220,7 @@ def test_false_condition_keeps_input_out_of_downstream_operators(tmp_path: Path)
     events = []
     output = run_pipeline([source], tmp_path / "output", definition, events.append)
     assert [file.id for file in output] == [source.id]
-    assert Path(output[0].path).read_bytes() == b"sample@users.noreply.github.com"
+    assert Path(output[0].path).read_bytes() == b"sample@example.org"
     assert len(events) == 1
     assert events[0]["output_count"] == events[0]["input_count"] == 0
 

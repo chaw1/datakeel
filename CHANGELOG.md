@@ -8,6 +8,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 - CI starts the Postgres service container; its health-check command is double-quoted for the runner.
 
+### Changed
+
+- `make check` scans tracked and untracked publishable worktree files for private content before other checks. Reserved example email domains are accepted, generated sample contacts use `example.org`, and commit identities still require GitHub noreply addresses.
+
 ### Performance
 
 - `demo --once` runs in about 11 s instead of 25 s on an M-series laptop. Settings are reused while `DATAKEEL_*` variables are unchanged, evidence contracts are parsed once per content revision, and cache entries group assertions by subject in one pass.

@@ -9,7 +9,7 @@ import json
 
 import pytest
 
-from scripts.public_scan_rules import excluded_path, noreply_email, text_findings
+from scripts.public_scan_rules import excluded_path, noreply_email, reserved_email, text_findings
 
 
 def local_path() -> str:
@@ -23,8 +23,8 @@ def address(*octets: int) -> str:
 
 
 def email() -> str:
-    """Build an undeliverable email only in the test process."""
-    return "generated" + "@" + "example.invalid"
+    """Build a synthetic nonreserved email only in the test process."""
+    return "generated" + "@" + "real-domain.com"
 
 
 def rules(source: str, path: str = "sample.txt") -> set[str]:
@@ -181,3 +181,52 @@ def test_noreply_addresses_require_the_exact_public_domain() -> None:
     assert noreply_email("chaw1@users.noreply.github.com")
     assert not noreply_email("chaw1@users.noreply.github.com" + ".invalid")
     assert not noreply_email("")
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        "example.com",
+        "example.org",
+        "example.net",
+        "docs.example.org",
+        "generated.example",
+        "generated.invalid",
+        "generated.test",
+        "generated.localhost",
+        "nested.generated.test",
+        "EXAMPLE.ORG",
+        "GENERATED.LOCALHOST",
+    ],
+)
+def test_reserved_domain_samples_pass_without_becoming_contributor_identities(domain: str) -> None:
+    """Reserved content domains are safe fixtures but do not change the noreply identity rule."""
+    value = "sample@" + domain
+    assert reserved_email(value)
+    assert rules(value) == set()
+    assert not noreply_email(value)
+
+
+@pytest.mark.parametrize(
+    "domain",
+    [
+        "real-domain.com",
+        "notexample.org",
+        "example.org.real-domain.com",
+        "generated.test.real-domain.com",
+        "generated.invalidated",
+        "generated.localhosted",
+        "users.noreply.github.com.real-domain.com",
+    ],
+)
+def test_nonreserved_domains_and_lookalikes_still_fail(domain: str) -> None:
+    """Exemptions require complete domain boundaries rather than matching substrings."""
+    value = "sample@" + domain
+    assert not reserved_email(value)
+    assert rules(value) == {"email"}
+
+
+@pytest.mark.parametrize("value", ["", "@example.org", "sample@example.org trailing"])
+def test_reserved_email_requires_one_complete_address(value: str) -> None:
+    """The helper does not accept malformed values around an otherwise reserved domain."""
+    assert not reserved_email(value)

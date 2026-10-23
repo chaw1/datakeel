@@ -28,7 +28,7 @@ def generate_samples(directory: Path) -> list[Path]:
         text = (
             f"Observation {index:03d}: a {topics[index % 4]} scene in a generated benchmark. "
             f"The measured sample index is {index * 37}. "
-            f"Contact sample-{index}@users.noreply.github.com.\n"
+            f"Contact sample-{index}@example.org.\n"
         )
         if index in (198, 199):
             text = ""

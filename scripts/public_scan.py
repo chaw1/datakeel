@@ -1,12 +1,13 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Scan every reachable commit, tree entry, blob and identity without exposing matched values."""
+"""Scan public history and worktrees without exposing matched values or following symlinks."""
 
 from __future__ import annotations
 
 import os
 import re
+import stat
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -164,4 +165,64 @@ def scan_repository(repo: Path, excluded_patterns: tuple[str, ...]) -> ScanRepor
         images=tuple(sorted(images)),
         scanned_commits=len(commits),
         scanned_blobs=len({oid for oid, _ in cache}),
+    )
+
+
+def _worktree_blob(repo: Path, path: str) -> bytes | None:
+    target = repo / path
+    if any(
+        parent.is_symlink()
+        for parent in target.parents
+        if parent != repo and parent.is_relative_to(repo)
+    ):
+        msg = "A worktree entry cannot traverse a symlink"
+        raise ValueError(msg)
+    try:
+        mode = target.lstat().st_mode
+    except FileNotFoundError:
+        return None
+    if stat.S_ISLNK(mode):
+        return os.fsencode(target.readlink())
+    if not stat.S_ISREG(mode):
+        msg = "Unsupported worktree entry"
+        raise ValueError(msg)
+    return target.read_bytes()
+
+
+def scan_worktree(repo: Path) -> ScanReport:
+    """Scan current tracked and untracked nonignored files, including unstaged edits."""
+    repo = repo.resolve()
+    paths = sorted(
+        {
+            path.decode("utf-8", errors="surrogateescape")
+            for path in _git(
+                repo, "ls-files", "-z", "--cached", "--others", "--exclude-standard"
+            ).split(b"\0")
+            if path
+        }
+    )
+    findings: list[ScanFinding] = []
+    images: list[str] = []
+    scanned = 0
+    for path in paths:
+        try:
+            data = _worktree_blob(repo, path)
+        except (OSError, ValueError):
+            findings.append(
+                ScanFinding(commit="<worktree>", path=path, line=1, rule="unsupported_entry")
+            )
+            continue
+        if data is None:
+            continue
+        findings.extend(_located("<worktree>", path, text_findings("", path, ())))
+        scanned += 1
+        result = _scan_blob(path, data, ())
+        findings.extend(_located("<worktree>", path, result.findings))
+        if result.image:
+            images.append(path)
+    return ScanReport(
+        findings=tuple(findings),
+        images=tuple(images),
+        scanned_commits=0,
+        scanned_blobs=scanned,
     )

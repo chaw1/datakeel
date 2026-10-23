@@ -1,6 +1,9 @@
-.PHONY: check fix check-python check-web check-licenses
+.PHONY: check fix check-public check-python check-web check-licenses
 
-check: check-python check-web check-licenses
+check: check-public check-python check-web check-licenses
+
+check-public:
+	uv run python scripts/check_public_worktree.py
 
 check-python:
 	uv run ruff format --check .

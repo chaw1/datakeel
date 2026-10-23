@@ -38,9 +38,9 @@ For API schema changes and any frontend source change, regenerate the correspond
 make check
 ```
 
-`make check` enforces formatting, lint, strict types, layering, size limits, runtime license auditing, test coverage, frontend tests and a production build. Overall Python coverage must remain at least 85%; the modules listed in `docs/CODE_STANDARDS.md` must remain at least 90%. Do not weaken checks to make a change pass. `make fix` applies formatters and safe lint fixes; review its diff.
+`make check` enforces public-content scanning, formatting, lint, strict types, layering, size limits, runtime license auditing, test coverage, frontend tests and a production build. Overall Python coverage must remain at least 85%; the modules listed in `docs/CODE_STANDARDS.md` must remain at least 90%. Do not weaken checks to make a change pass. `make fix` applies formatters and safe lint fixes; review its diff.
 
-`make check` 包含格式、lint、严格类型、分层、规模、运行时许可审计、测试覆盖率及前端测试和构建。Python 总覆盖率至少 85%，规范列出的模块至少 90%。不得通过降低门禁来交付。`make fix` 可执行格式化与自动修复，执行后检查差异。
+`make check` 包含公开内容扫描、格式、lint、严格类型、分层、规模、运行时许可审计、测试覆盖率及前端测试和构建。Python 总覆盖率至少 85%，规范列出的模块至少 90%。不得通过降低门禁来交付。`make fix` 可执行格式化与自动修复，执行后检查差异。
 
 For the same extended checks used in CI, run:
 
@@ -73,6 +73,10 @@ Contributions are provided under the repository's [Apache-2.0 license](LICENSE).
 Do not include credentials, personal local paths, private network addresses, customer identifiers or real tenant data in code, logs, screenshots or fixtures. Send suspected vulnerabilities through the private process in [SECURITY.md](SECURITY.md), not a public issue.
 
 代码、日志、截图和样例不得包含凭证、本机个人路径、内网地址、客户标识或真实租户数据。疑似漏洞按 [SECURITY.md](SECURITY.md) 私下报告，不放进公开 issue。
+
+The public-content gate reads current tracked files and untracked files that Git does not ignore, including unstaged edits. Findings report a relative file, line and rule without copying sensitive values. Use reserved domains such as `example.org` for generated email samples; the contributor identity rule still requires GitHub noreply addresses. Run `make check-public` for this scan alone.
+
+公开内容门禁读取当前已跟踪文件及未忽略的新文件，包含未暂存修改；命中仅报告相对文件、行号和规则。生成的邮箱样例使用 `example.org` 等保留域名；提交身份仍要求 GitHub noreply 地址。可用 `make check-public` 单独执行扫描。
 
 Maintainers can prepare a local public copy using the [export guide](docs/PUBLIC_EXPORT.md).
 维护者可按[导出指南](docs/PUBLIC_EXPORT.md)准备本地公开副本，发布仍是单独的人工步骤。

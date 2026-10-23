@@ -60,6 +60,18 @@ def noreply_email(value: str) -> bool:
     return bool(_EMAIL.fullmatch(value)) and value.lower().endswith("@users.noreply.github.com")
 
 
+def reserved_email(value: str) -> bool:
+    """Accept reserved example domains and their descendants without weakening identity rules."""
+    if not _EMAIL.fullmatch(value):
+        return False
+    domain = value.rsplit("@", 1)[1].lower()
+    examples = ("example.com", "example.org", "example.net")
+    suffixes = (".example", ".invalid", ".test", ".localhost")
+    return domain in examples or domain.endswith(
+        (*tuple("." + name for name in examples), *suffixes)
+    )
+
+
 def _valid_hash(value: str, *, integrity: bool) -> bool:
     separator = "-" if integrity else ":"
     algorithm, found, encoded = value.partition(separator)
@@ -205,7 +217,7 @@ def text_findings(
     found.update(
         (source.count("\n", 0, match.start()) + 1, "email")
         for match in _EMAIL.finditer(source)
-        if not noreply_email(match.group())
+        if not noreply_email(match.group()) and not reserved_email(match.group())
     )
     found.update(
         (source.count("\n", 0, match.start()) + 1, "private_ip")
