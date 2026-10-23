@@ -42,6 +42,7 @@ def test_tracing_when_hostile_environment_runs_all_twenty_golden_without_externa
     monkeypatch.setenv("LANGSMITH_ENDPOINT", "https://trace-fixture.invalid")
     attempts: list[str] = []
     original_connect = socket.socket.connect
+    original_connect_ex = socket.socket.connect_ex
     original_resolve = socket.getaddrinfo
 
     def local(host: object) -> None:
@@ -54,6 +55,10 @@ def test_tracing_when_hostile_environment_runs_all_twenty_golden_without_externa
         local(address[0] if isinstance(address, tuple) else address)
         original_connect(connection, address)
 
+    def connect_ex(connection: socket.socket, address: tuple[str, int] | str) -> int:
+        local(address[0] if isinstance(address, tuple) else address)
+        return original_connect_ex(connection, address)
+
     def resolve(
         host: str | bytes | None, port: str | int | None, *args: object, **kwargs: object
     ) -> list[tuple[object, ...]]:
@@ -61,6 +66,7 @@ def test_tracing_when_hostile_environment_runs_all_twenty_golden_without_externa
         return original_resolve(host, port, *args, **kwargs)
 
     monkeypatch.setattr(socket.socket, "connect", connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", connect_ex)
     monkeypatch.setattr(socket, "getaddrinfo", resolve)
     configure(enabled=True)
     report = run_evaluation(db)

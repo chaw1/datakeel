@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Kill ten mutants using isolated sources, genuine golden runs, and a measured image test."""
+"""Kill behavioral mutants using isolated sources and measured golden or regression tests."""
 
 from __future__ import annotations
 
@@ -14,54 +14,37 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Literal
 
-from pydantic import Field
 from rich.console import Console
 
 from datakeel.core.harness_eval import EvalCaseResult, EvalReport
-from datakeel.core.models import BoundaryModel
+from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-class Mutation(BoundaryModel):
-    """Replace exactly one production guard and require its relevant case to fail."""
-
-    name: str
-    path: str
-    before: str
-    after: str
-    case: str
-    runner: Literal["golden", "pytest"] = "golden"
-
-
-class MutationResult(BoundaryModel):
-    """Distinguish a detected behavior regression from a crashed evaluation process."""
-
-    name: str
-    killed: bool
-    passed: int
-    total: int
-    failures: dict[str, list[str]] = Field(default_factory=dict)
-    runner: Literal["golden", "pytest"] = "golden"
-    target: str
-    boundary_case: EvalCaseResult | None = None
-    explanation_case: EvalCaseResult | None = None
-    explanation_probe_exit: int | None = None
-    validation_bypass: str | None = None
-
-
-class TestMeasurement(BoundaryModel):
-    """Keep actual test counts and assertion failures distinct from process or setup errors."""
-
-    exit_code: int
-    passed: int
-    total: int
-    failures: dict[str, list[str]]
-
-
 MUTATIONS = (
+    Mutation(
+        name="resume-authorization",
+        path="runtime/graph.py",
+        before=(
+            "authorize_resume(self.db, self.conversation_id, request.plan_id, self.pending_plan())"
+        ),
+        after="pass",
+        case="tests/agent/test_resume.py::test_forged_resume_cases_are_denied_and_audited",
+        runner="pytest",
+    ),
+    Mutation(
+        name="tool-call-idempotency",
+        path="storage/tool_invocations.py",
+        before="if call_id is None:",
+        after="if True:",
+        case=(
+            "tests/runtime/test_recovery.py::"
+            "test_recovery_when_killed_after_interrupt_preserves_one_action_and_tool_call"
+        ),
+        runner="pytest",
+    ),
     Mutation(
         name="repeated-call",
         path="agent/guards.py",
@@ -335,7 +318,7 @@ def run_mutation(mutation: Mutation) -> MutationResult:
 
 
 def main() -> None:
-    """Require green golden/image baselines and ten observed failures, with durable evidence."""
+    """Require green baselines and observed assertion failures with durable evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()

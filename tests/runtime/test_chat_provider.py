@@ -181,6 +181,24 @@ def test_anthropic_when_tool_roundtrip_uses_messages_blocks_and_inclusive_usage(
         {"choices": [True]},
         {"choices": [{"message": {"role": "assistant", "content": 1}}]},
         {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "invalid-call",
+                                "type": "function",
+                                "function": {"name": "search_files", "arguments": "not-json"},
+                            }
+                        ],
+                    }
+                }
+            ],
+            "usage": {"prompt_tokens": 3, "completion_tokens": 1},
+        },
+        {
             "choices": [{"message": {"role": "assistant", "content": "ok"}}],
             "usage": {"prompt_tokens": True, "completion_tokens": 1},
         },
