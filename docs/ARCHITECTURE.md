@@ -29,6 +29,7 @@ Agent 全程用对话操作，但只能走受控动作；harness 让 Agent 可�
 | 算子 | manifest 驱动 + 类型化槽位 DAG（条件/路由节点） | 保持算子职责明确、可组合、可独立测试 |
 | 确认门 | Action 声明影响面与可逆性；门控不可逆与外发操作；审批 token 绑定参数一次性；落库 | 审批绑定冻结计划与执行人，持久化决策和消费状态 |
 | Harness | 每次模型调用一条 trace（分段 token/成本/缓存命中）；预算持久化；golden set + 变异测试 | 对调用成本、预算约束和行为回归提供可核验记录 |
+| Agent 执行 | LangGraph 同步持久化图；LangChain chat model 适配；框架依赖仅在 `runtime/` | 中断后从已落盘节点继续，Datakeel 保持动作授权、审计与预算的事实源 |
 
 ## 3. 目录结构
 
@@ -46,7 +47,8 @@ datakeel/
     storage/                # DB（SQLAlchemy，Postgres/SQLite 双栈）、对象存储（S3/本地）
     worker/                 # 任务领取、分片、reaper、outbox relay
     api/                    # FastAPI 路由；/admin 只读看板
-    agent/                  # 二期：主循环、工具发现、确认门、记忆
+    agent/                  # 会话、上下文、工具发现、确认门、预算计量
+    runtime/                # LangGraph 图、chat model 适配和同步 checkpoint saver
     harness/                # 二期：trace、成本、golden runner
     mcp/                    # 二期：FastMCP server
     cli.py                  # `datakeel demo | api | worker | migrate`
@@ -74,3 +76,19 @@ datakeel/
 **交互与治理**：分模块的 Agent 主循环、证据分级、治理与血缘服务层、MCP 工具、前端、确认门、预算与 trace。实现规模与依赖方向统一由代码规范和自动门禁约束。
 
 **公开数据边界**：代码、样例、测试与截图不包含客户名、内网地址、凭证或租户数据；样例在本地生成。
+
+## 6. Agent 执行与恢复
+
+`agent/` 暴露 Datakeel 的冻结类型接口，负责会话、上下文、工具发现、打转检测和模型调用计量；`runtime/` 负责 LangGraph 节点调度和 LangChain chat model 适配。Fake/Demo provider 保持原生类型，经 runtime 内的 `ScriptedChatModel` 包装，harness 仍直接使用同一脚本接口。框架包及 SDK 的直接导入只允许出现在 runtime，import-linter 对整个应用强制这一边界。
+
+每次模型调用仍单独 reserve/settle 并写一条 trace。模型 SDK 自动重试关闭，输入上界和分段 token 仍由 Datakeel 估算；观测用量已包含缓存 token，缓存读写只作为子集记录。无用量响应保留保守预留并标记 `billing_status=unknown`。LangSmith 追踪在 runtime 强制关闭，环境中的第三方追踪开关不能启用它。
+
+可逆动作按原策略自动执行，dry-run 只出计划；仅 `requires_approval=True` 的计划进入 `approval_gate`。该节点只调用 interrupt，不执行动作或写其它业务事实。图使用 `durability="sync"`；状态只存 ID 与基本类型，严格白名单序列化不允许还原任意类。响应 lease token 不进入图 config、state 或 checkpoint metadata。
+
+`runtime/saver.py` 实现框架同步 saver 契约，持久化模型及类型化 bytes 读写由 `storage/checkpoint_store.py` 完成。SQLite 和 PostgreSQL 使用各自的冲突写入语法，并通过现有数据库写锁管理事务。checkpoint 与 pending writes 使用二进制列；transcript、trace、预算、工具调用和动作回执仍存原有表，清理 checkpoint 不会删除这些审计事实。
+
+恢复先确认会话针对该计划仍有挂起 interrupt 或该审批门之后尚未完成的执行 checkpoint，再验证数据库中的真实签批记录。恢复请求本身不授予执行权限：签批必须匹配计划摘要、有效期和计划 actor。已存在且状态不是 `DENIED` 的动作 run 返回原回执，历史拒绝记录不代表已经执行；没有可复用 run 时以计划固有的 `operation_id` 执行。结果经 workspace facts 进入模型上下文，不重复写同一 `tool_call_id` 的工具结果。工具派发也按 `tool_call_id` 幂等，因此动作已提交而 checkpoint 尚未更新的进程故障不会造成第二次动作或工具调用。
+
+新用户消息会作废当前挂起 interrupt 并追加审计，随后按正常会话处理。恢复拥有独立响应 lease 与幂等键，不追加用户消息；协议沿用既有七类 SSE 事件。恢复授权和失败语义详见 [ACTIONS.md](ACTIONS.md)。
+
+消息与恢复共享进程释放型会话锁：PostgreSQL 使用按 schema 与会话划分的 session advisory lock，SQLite 使用按数据库与会话划分的文件锁。同一会话只允许一个响应写入者；进程退出或被杀后锁由系统释放，后继写入者取得锁后才能回收遗留 response lease，避免仅凭超时抢占仍在执行的请求。签批校验成功、恢复拒绝和暂停作废均写入独立审计表，并可经恢复审计接口查询。

@@ -143,11 +143,13 @@ metrics:
 
 新建会话时开启 **Dry run**，所有动作只生成计划，不执行。完整历史、工具结果、计划和回执均落库，刷新后恢复会话及最新审批状态，不会重新提交消息。内置 Agent 的模型工具列表不包含 `approve_plan` 或 `execute_plan`，人工确认由 UI 完成。
 
+Agent 使用 LangGraph，在同一 SQLite 或 PostgreSQL 数据库中同步保存 checkpoint。需要审批的计划会持久暂停，进程重启后仍可继续。人工签批后，客户端可恢复挂起计划而不追加用户消息；若已通过签批单执行，恢复时复用原回执。暂停期间发送新消息会使旧断点作废并留下审计，随后正常对话。[动作指南](docs/ACTIONS.md#resuming-a-paused-agent--恢复暂停的-agent) 说明恢复请求和签批校验。
+
 每会话/每日 token 与 USD 预算均持久化，重启不清零。默认每会话 100,000 token / 1 USD、每个 UTC 日 1,000,000 token / 10 USD，可在新建会话表单设置。远程调用前保守预占预算；trace 各段 token 之和等于实际输入，缓存读写是输入的子集。已发送请求失败且用量未知时，trace 标为 `billing_status=unknown`：观测用量保持 0，但 `accounted_tokens` 和估算成本按预占额计入预算。实际用量超限时先记账，再停止工具执行。fake 的费用来自 `contracts/model-prices.yaml` 中的测试价目，不产生真实扣费。
 
 ### 可选真实 provider 配置
 
-运行时支持 OpenAI chat-completions 和 Anthropic messages。离线演示与测试不调用真实服务。将 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY` 作为仓库外环境密钥配置，再通过 `POST /api/agent/conversations` 显式设置 `provider` / `model`：`openai` / `gpt-4.1-mini`，或 `anthropic` / `claude-haiku-4-5-20251001`。这些模型列在 `contracts/model-prices.yaml`，UI 默认创建离线会话。`DATAKEEL_OPENAI_URL` / `DATAKEEL_ANTHROPIC_URL` 接受完整请求地址，`DATAKEEL_PROVIDER_TIMEOUT` 默认 30 秒。选择真实 provider 并发送消息会发出计费请求；本期仅用 HTTPX fixture 验证协议。旧的 `DATAKEEL_LLM_URL` 独立控制报告正文增强。
+运行时支持 OpenAI chat-completions 和 Anthropic messages。离线演示与测试不调用真实服务。将 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY` 作为仓库外环境密钥配置，再通过 `POST /api/agent/conversations` 显式设置 `provider` / `model`：`openai` / `gpt-4.1-mini`，或 `anthropic` / `claude-haiku-4-5-20251001`。这些模型列在 `contracts/model-prices.yaml`，UI 默认创建离线会话。使用 `DATAKEEL_OPENAI_BASE_URL`（通常以 `/v1` 结尾）或 `DATAKEEL_ANTHROPIC_BASE_URL`（服务根地址）覆盖地址；OpenAI 兼容地址可指向其它兼容服务，模型使用前须有价目条目。`DATAKEEL_PROVIDER_TIMEOUT` 默认 30 秒。旧完整端点配置 `DATAKEEL_OPENAI_URL` / `DATAKEEL_ANTHROPIC_URL` 已弃用，仅再兼容一个版本，分别要求以 `/chat/completions` / `/v1/messages` 结尾；显式 BASE_URL 优先。选择真实 provider 并发送消息会发出计费请求；适配通过 LangChain chat model，仅用本机 HTTP fixture 验证协议；模型自动重试关闭。LangSmith 追踪强制关闭，即使设置 `LANGSMITH_TRACING` 或 `LANGCHAIN_TRACING_V2` 也不会启用，本版不提供追踪开关。旧的 `DATAKEEL_LLM_URL` 独立控制报告正文增强。
 
 ## 架构
 
@@ -155,6 +157,8 @@ metrics:
 flowchart LR
   UI[CLI / React] --> API[FastAPI]
   API --> Agent[Agent / 上下文 / 工具发现]
+  Agent --> Runtime[LangGraph / chat model]
+  Runtime -->|checkpoint| DB
   Agent --> Actions[本体 / 受控动作]
   MCP[MCP stdio / SSE] --> Actions
   Actions --> DB
@@ -195,7 +199,8 @@ datakeel/
   api/           HTTP 路由和 /admin 只读页
   ontology/      版本化类型、对象查询、只读函数
   actions/       冻结计划、审批、执行策略
-  agent/         协议适配、会话记忆、有限工具循环
+  agent/         会话、上下文、工具发现、打转检测与计量
+  runtime/       LangGraph 执行、LangChain 模型适配与 checkpoint saver
   harness/       持久预算、trace、golden 评估
   mcp/           FastMCP stdio / SSE 工具
   cli/           demo、api、worker、migrate、export、ask、eval、eval-evidence、eval-ask、
@@ -245,6 +250,7 @@ uv run datakeel demo --once
 | 质量         | `GET /api/datasets/{id}/quality`、`PUT /quality/config`                                                                                                                        |
 | 治理         | `PUT /template`、`GET/PUT /metadata`、`GET /metadata/changes`、`GET /compliance`                                                                                               |
 | Agent 会话   | `POST/GET /api/agent/conversations`、`GET /api/agent/conversations/{id}`、`POST /api/agent/conversations/{id}/messages`（SSE）                                                 |
+| Agent 恢复   | `POST /api/conversations/{id}/resume`，请求体 `{plan_id, idempotency_key}`（SSE）；`GET /api/conversations/{id}/audit` 查询恢复审计 |
 | 受控动作     | `POST /api/actions/{type}/prepare`、`POST /api/approvals/{plan_id}`、`POST /api/actions/{plan_id}/execute`、`GET /api/actions/runs`                                            |
 | 本体与计量   | `GET /api/ontology`、`POST /api/ontology/object-sets/evaluate`、`GET /api/harness/traces`、`GET /api/harness/costs?group_by=conversation`                                      |
 | 报告与导出   | `/api/datasets/{id}/report`、`/api/export?format=croissant&dataset_id={id}`                                                                                                    |
@@ -384,4 +390,4 @@ S3 提供客户端契约测试，不自动连接真实 S3。LLM 成功分支用�
 
 ## 许可与范围说明
 
-项目 Apache-2.0，样例全部自行生成。Python 直接运行依赖采用 Apache、MIT 家族或 BSD 家族许可；锁定依赖中的宽松传递组件还包括 PSF、ISC、Zlib、CC0。FastMCP 采用 Apache-2.0，email-validator 为宽松的 Unlicense。Python 数据包的已批准例外是 `certifi`（MPL-2.0，仅根证书数据，作为传递依赖原样使用）。前端还打包本期明确批准的 Source Serif 4 与 Source Code Pro 拉丁字体，采用 SIL Open Font License 1.1（OFL-1.1），原样使用 `@fontsource` 包中的字体文件；版权与许可声明和 React 运行时声明一起写入 `THIRD-PARTY-LICENSES.txt`，随编译后应用分发。未引入 ELv2、BSL、AGPL、SSPL 运行时，保留上游许可声明。
+项目 Apache-2.0，样例全部自行生成。Python 直接运行依赖采用 Apache、MIT 家族或 BSD 家族许可；锁定依赖中的宽松传递组件还包括 PSF、ISC、Zlib、CC0。FastMCP 采用 Apache-2.0，email-validator 为宽松的 Unlicense。Python 按包精确例外包括原样使用的 `certifi` 根证书数据（`MPL-2.0`）、原样使用的 `orjson`（`MPL-2.0 AND (Apache-2.0 OR MIT)`）及 `regex`（`Apache-2.0 AND CNRI-Python`）。[运行时许可清单](THIRD_PARTY_NOTICES.md) 列出完整传递闭包及核验证据。前端还打包本期明确批准的 Source Serif 4 与 Source Code Pro 拉丁字体，采用 SIL Open Font License 1.1（OFL-1.1），原样使用 `@fontsource` 包中的字体文件；版权与许可声明和 React 运行时声明一起写入 `THIRD-PARTY-LICENSES.txt`，随编译后应用分发。未引入 ELv2、BSL、AGPL、SSPL 运行时，保留上游许可声明。

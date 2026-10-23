@@ -146,11 +146,13 @@ For evidence chat, create a conversation on **Paired scenes · evidence demo** a
 
 Enable **Dry run** when creating a conversation to prepare every action without executing it. Complete conversation messages, tool results, plans and receipts are stored in the database. Reloading restores the stream and refreshes human decisions; it does not submit the message again. The built-in Agent never receives `approve_plan` or `execute_plan` as model-callable tools.
 
+The Agent runs on LangGraph with synchronous checkpoints in the same SQLite or PostgreSQL database. A plan that requires approval pauses at a durable checkpoint, so the conversation can continue after a process restart. After a human approval, clients can resume the pending plan without adding a user message; an action already executed through the approval sheet reuses its receipt. A new message instead invalidates the old pause and records that decision. The [action guide](docs/ACTIONS.md#resuming-a-paused-agent--恢复暂停的-agent) describes the resume request and approval checks.
+
 Conversation and daily limits cover both tokens and USD and persist across restarts. Defaults are 100,000 tokens / USD 1 per conversation and 1,000,000 tokens / USD 10 per UTC day; the conversation form exposes these limits. Input is reserved conservatively before a remote call. Trace segments sum to observed input tokens, with cache-read/write subsets recorded separately. If a dispatched request fails without usage, its trace shows `billing_status=unknown`: observed usage stays zero, while `accounted_tokens` and estimated cost charge the reservation to the budget. Actual usage over budget is recorded before stopping further tool execution. Fake-provider costs use the disclosed test tariff in `contracts/model-prices.yaml`; no money is spent.
 
 ### Optional provider configuration
 
-The runtime supports OpenAI chat-completions and Anthropic messages. Configuration is optional: the offline demo and tests never call those services. Store `DATAKEEL_OPENAI_API_KEY` or `DATAKEEL_ANTHROPIC_API_KEY` outside the repository as environment secrets, then explicitly set `provider` and `model` in `POST /api/agent/conversations` (`openai` / `gpt-4.1-mini`, or `anthropic` / `claude-haiku-4-5-20251001`). These models are listed in `contracts/model-prices.yaml`; the UI creates offline conversations by default. Endpoint overrides are `DATAKEEL_OPENAI_URL` and `DATAKEEL_ANTHROPIC_URL` (complete request URLs); `DATAKEEL_PROVIDER_TIMEOUT` defaults to 30 seconds. Selecting a real provider and sending a message would make a billable external request. These adapters are verified with HTTPX fixtures only. The older `DATAKEEL_LLM_URL` controls report enrichment independently.
+The runtime supports OpenAI chat-completions and Anthropic messages. Configuration is optional: the offline demo and tests never call those services. Store `DATAKEEL_OPENAI_API_KEY` or `DATAKEEL_ANTHROPIC_API_KEY` outside the repository as environment secrets, then explicitly set `provider` and `model` in `POST /api/agent/conversations` (`openai` / `gpt-4.1-mini`, or `anthropic` / `claude-haiku-4-5-20251001`). These models are listed in `contracts/model-prices.yaml`; the UI creates offline conversations by default. Use `DATAKEEL_OPENAI_BASE_URL` (normally ending in `/v1`) or `DATAKEEL_ANTHROPIC_BASE_URL` (the server root) for endpoint overrides. An OpenAI-compatible base URL can point to another compatible provider; its model must have a price entry before use. `DATAKEEL_PROVIDER_TIMEOUT` defaults to 30 seconds. The deprecated complete-endpoint settings `DATAKEEL_OPENAI_URL` and `DATAKEEL_ANTHROPIC_URL` remain compatible for one release only when they end in `/chat/completions` and `/v1/messages`, respectively; explicit base URLs take precedence. Selecting a real provider and sending a message would make a billable external request. These adapters use LangChain chat models and are verified with local HTTP fixtures only. Automatic model retries are disabled. LangSmith tracing is forcibly disabled even when `LANGSMITH_TRACING` or `LANGCHAIN_TRACING_V2` is set; this release has no tracing opt-in. The older `DATAKEEL_LLM_URL` controls report enrichment independently.
 
 ## How it fits together
 
@@ -158,6 +160,8 @@ The runtime supports OpenAI chat-completions and Anthropic messages. Configurati
 flowchart LR
   CLI[CLI / React] --> API[FastAPI]
   API --> Agent[Agent / context / tool discovery]
+  Agent --> Runtime[LangGraph / chat models]
+  Runtime -->|checkpoints| DB
   Agent --> Actions[Ontology / controlled actions]
   MCP[MCP stdio / SSE] --> Actions
   Actions --> DB
@@ -198,7 +202,8 @@ datakeel/
   api/           HTTP routes and read-only /admin view
   ontology/      Versioned types, queries and read-only functions
   actions/       Frozen plans, approvals and execution policy
-  agent/         Provider adapters, memory and bounded tool loop
+  agent/         Conversations, context, tool discovery, guards and metering
+  runtime/       LangGraph execution, LangChain chat adapters and checkpoint saver
   harness/       Persistent budgets, traces and golden evaluation
   mcp/           FastMCP tools over stdio or SSE
   cli/           demo, api, worker, migrate, export, ask, eval, eval-evidence, eval-ask,
@@ -257,6 +262,7 @@ The interactive [local API reference](http://127.0.0.1:8765/api/docs) includes a
 | Quality                | `GET /api/datasets/{id}/quality`, `PUT /api/datasets/{id}/quality/config`                                                                                                                |
 | Governance             | `PUT /api/datasets/{id}/template`, `GET/PUT /metadata`, `GET /metadata/changes`, `GET /compliance`                                                                                       |
 | Agent conversations    | `POST/GET /api/agent/conversations`, `GET /api/agent/conversations/{id}`, `POST /api/agent/conversations/{id}/messages` (SSE)                                                            |
+| Agent resume           | `POST /api/conversations/{id}/resume` with `{plan_id, idempotency_key}` (SSE); `GET /api/conversations/{id}/audit` exposes recovery audit |
 | Controlled actions     | `POST /api/actions/{type}/prepare`, `POST /api/approvals/{plan_id}`, `POST /api/actions/{plan_id}/execute`, `GET /api/actions/runs`                                                      |
 | Ontology and metering  | `GET /api/ontology`, `POST /api/ontology/object-sets/evaluate`, `GET /api/harness/traces`, `GET /api/harness/costs?group_by=conversation`                                                |
 | Reports and export     | `GET /api/datasets/{id}/report`, `GET /api/export?format=croissant&dataset_id={id}`                                                                                                      |
@@ -396,4 +402,4 @@ S3 has a client-contract test; a live S3-compatible service is not required or a
 
 ## License
 
-Apache-2.0. All sample content is generated locally. Direct Python runtime packages use Apache, MIT-family or BSD-family licenses. Permissive transitive components also include PSF, ISC, Zlib and CC0. FastMCP uses Apache-2.0; email-validator uses the permissive Unlicense. The approved Python data-package exception is `certifi` (MPL-2.0 root-certificate data), used unchanged as a transitive dependency. The frontend also bundles the explicitly approved Source Serif 4 and Source Code Pro Latin fonts under SIL Open Font License 1.1 (OFL-1.1), unchanged from their `@fontsource` packages. Their copyright and license notices are included alongside the React runtime notices in `THIRD-PARTY-LICENSES.txt`, distributed with the compiled application. No ELv2, BSL, AGPL or SSPL runtime is introduced. Upstream notices are retained.
+Apache-2.0. All sample content is generated locally. Direct Python runtime packages use Apache, MIT-family or BSD-family licenses. Permissive transitive components also include PSF, ISC, Zlib and CC0. FastMCP uses Apache-2.0; email-validator uses the permissive Unlicense. Exact Python package exceptions cover unchanged `certifi` root-certificate data (`MPL-2.0`), unchanged `orjson` (`MPL-2.0 AND (Apache-2.0 OR MIT)`) and `regex` (`Apache-2.0 AND CNRI-Python`). The [runtime notices](THIRD_PARTY_NOTICES.md) include the complete transitive inventory and license evidence. The frontend also bundles the explicitly approved Source Serif 4 and Source Code Pro Latin fonts under SIL Open Font License 1.1 (OFL-1.1), unchanged from their `@fontsource` packages. Their copyright and license notices are included alongside the React runtime notices in `THIRD-PARTY-LICENSES.txt`, distributed with the compiled application. No ELv2, BSL, AGPL or SSPL runtime is introduced. Upstream notices are retained.

@@ -17,6 +17,30 @@ All notable changes are documented here using the Keep a Changelog format.
 
 - A fresh `uv run datakeel demo --once` has a three-run median of 5.86 s, down from 13.02 s on the same M-series laptop (measured range: 5.85–6.12 s). Object access and input hashes are reused within each batch, evidence projections use bounded bulk queries and inserts, small image work runs with bounded concurrency, and offline commands defer server imports. These extend the existing settings, contract and assertion-grouping caches. Generated image bytes, evidence/catalog rebuild hashes and evaluation outcomes are preserved.
 
+## [0.7.0] - 2026-10-24
+
+### Added
+
+- Durable Agent approval pauses and a resume SSE endpoint backed by synchronous checkpoints in the existing SQLite or PostgreSQL database. Resume validates the persisted approval and reuses existing action receipts after process restarts.
+- A SQLAlchemy checkpoint saver with binary storage, deterministic pending-write ordering and a fixed serialization allowlist. Conversation, tool, trace, budget and action audit records remain independent of checkpoints.
+- Runtime-only framework import boundaries, a separate 1500-line runtime package limit and a 90% runtime coverage gate. The dependency inventory includes exact `orjson` and `regex` license exceptions and verified legacy metadata evidence.
+
+### Changed
+
+- LangGraph replaces the handwritten Agent loop, and LangChain chat models replace the protocol-specific HTTP providers. Fake/Demo providers retain the existing scripted interface through an adapter; the twenty golden cases, context segments, tool set, budgets and seven SSE event types are preserved.
+- Approval recovery uses an independent response lease and adds no user message. A new message invalidates a pending pause with an audit event. Tool calls are deduplicated by their original call identifier, including the action-commit/checkpoint-write failure window.
+- LangSmith tracing is forcibly disabled even when third-party tracing environment variables are set. Model retries remain disabled, and explicitly injected HTTP clients ignore proxy environment variables.
+- Package, API and frontend release identifiers advance to 0.7.0.
+
+### Deprecated
+
+- `DATAKEEL_OPENAI_URL` and `DATAKEEL_ANTHROPIC_URL` complete endpoints are supported for one more release only with the standard `/chat/completions` and `/v1/messages` suffixes. Prefer `DATAKEEL_OPENAI_BASE_URL` and `DATAKEEL_ANTHROPIC_BASE_URL`; explicit base URLs take precedence.
+
+### Fixed
+
+- Cache-read and cache-write tokens are recorded as subsets of the model's reported input usage instead of being added twice. Missing usage remains unknown and retains the conservative budget reservation.
+- Resume attempts with missing, mismatched, expired or wrong-actor approval, or a plan outside the conversation, are rejected with audit evidence before action dispatch.
+
 ## [0.6.1] - 2026-10-23
 
 ### Added
