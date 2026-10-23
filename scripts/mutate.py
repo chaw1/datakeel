@@ -19,6 +19,7 @@ from rich.console import Console
 
 from datakeel.core.harness_eval import EvalCaseResult, EvalReport
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
+from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -125,6 +126,7 @@ MUTATIONS = (
         ),
         runner="pytest",
     ),
+    *WORKFLOW_MUTATIONS,
 )
 
 
