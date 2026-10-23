@@ -44,14 +44,11 @@ def publication(
         params={"run_id": context.task_id, "node_id": node.id},
         quality=counts.model_dump(mode="json"),
     )
+    by_subject: dict[AssetRef, list[str]] = {}
+    for assertion in assertions:
+        by_subject.setdefault(assertion.subject, []).append(assertion.id)
     entries = tuple(
-        entry.model_copy(
-            update={
-                "assertion_ids": tuple(
-                    assertion.id for assertion in assertions if assertion.subject == entry.subject
-                )
-            }
-        )
+        entry.model_copy(update={"assertion_ids": tuple(by_subject.get(entry.subject, ()))})
         for entry in result.entries
     )
     return PendingExtraction(
