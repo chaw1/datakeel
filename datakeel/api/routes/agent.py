@@ -21,6 +21,7 @@ from datakeel.core.agent_models import (
     Provider,
     ResumeInput,
 )
+from datakeel.core.routing_models import RouteDecision
 from datakeel.storage.conversation_authorization import list_audit
 
 router = APIRouter(prefix="/api/agent/conversations", tags=["agent"])
@@ -111,3 +112,13 @@ def resume(
 def recovery_audit(conversation_id: str, db: DatabaseDependency) -> list[ConversationAudit]:
     """Read persisted resume denials, authorization checks and pause invalidations."""
     return list_audit(db, conversation_id)
+
+
+@router.get("/{conversation_id}/routes")
+def routes(conversation_id: str, db: DatabaseDependency) -> list[RouteDecision]:
+    """Read persisted workflow suggestions and free-Agent routing decisions."""
+    return [
+        event.route
+        for event in service.get_conversation(db, conversation_id).events
+        if event.route is not None
+    ]

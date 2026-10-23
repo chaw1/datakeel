@@ -16,6 +16,19 @@ triggers:
   - 体检
   - health check
   - checkup
+  excluded_keywords:
+  - explain
+  - what is
+  - what does
+  - how does
+  - do not
+  - don't
+  - 不要
+  - 解释
+  - 说明一下
+  - 是什么
+  - 仅查看
+  - 只查看
   threshold: 1
   margin: 1
 entry: pipeline

@@ -1,0 +1,25 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+# Model prices are supplied by the checked-in model-prices.yaml snapshot.
+# Add same-provider fallback links only after adding their explicit price records.
+version: 1
+providers:
+  fake:
+    tiers:
+      simple: fake-demo
+      multi_step: fake-demo
+      high_risk: fake-demo
+    fallbacks: {}
+  openai:
+    tiers:
+      simple: gpt-4.1-mini
+      multi_step: gpt-4.1-mini
+      high_risk: gpt-4.1-mini
+    fallbacks: {}
+  anthropic:
+    tiers:
+      simple: claude-haiku-4-5-20251001
+      multi_step: claude-haiku-4-5-20251001
+      high_risk: claude-haiku-4-5-20251001
+    fallbacks: {}

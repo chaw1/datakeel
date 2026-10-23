@@ -10,6 +10,7 @@ from typing import Literal, Self
 from pydantic import Field, model_validator
 
 from datakeel.core.models import BoundaryModel
+from datakeel.core.routing_models import ModelRouteDecision
 
 
 class TokenUsage(BoundaryModel):
@@ -93,6 +94,8 @@ class TraceInput(BoundaryModel):
     stop_reason: str
     tool_calls: int = Field(ge=0)
     billing_status: Literal["actual", "unknown"] = "actual"
+    call_type: Literal["conversation", "intent_classifier"] = "conversation"
+    model_route: ModelRouteDecision | None = None
 
     @model_validator(mode="after")
     def validate_segments(self) -> Self:

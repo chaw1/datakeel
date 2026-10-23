@@ -24,6 +24,7 @@ from datakeel.api.routes import (
     tasks,
     workflow_runs,
 )
+from datakeel.routing.config import load_config
 from datakeel.runtime.workflow_service import recover_runs
 from datakeel.storage.database import Database
 
@@ -32,6 +33,7 @@ def create_app(db: Database | None = None) -> FastAPI:
     """Create an isolated application with explicit infrastructure dependencies."""
     database = db or Database()
     database.migrate()
+    load_config()
     recover_runs(database)
     app = FastAPI(
         title="Datakeel", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"

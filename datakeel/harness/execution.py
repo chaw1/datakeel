@@ -95,7 +95,11 @@ def _measured_result(
             (event.text for event in reversed(events) if event.event == "text" and event.text), ""
         ),
         stop_reasons=[event.stop_reason for event in events if event.stop_reason],
-        turns=len(traces),
+        turns=sum(
+            trace.call_type == "conversation"
+            and (trace.model_route is None or trace.model_route.attempt == 1)
+            for trace in traces
+        ),
         tokens=sum(trace.usage.input_tokens + trace.usage.output_tokens for trace in traces),
         cost_usd=sum((trace.cost_usd for trace in traces), start=Decimal(0)),
         tool_results=[

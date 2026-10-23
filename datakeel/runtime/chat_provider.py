@@ -26,12 +26,16 @@ class _Transport(httpx2.BaseTransport):
 
     def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         """Bridge HTTP library generations without interpreting any model protocol."""
-        response = self.client.request(
-            request.method,
-            str(request.url),
-            headers=request.headers.multi_items(),
-            content=request.read(),
-        )
+        try:
+            response = self.client.request(
+                request.method,
+                str(request.url),
+                headers=request.headers.multi_items(),
+                content=request.read(),
+            )
+        except httpx.TimeoutException as error:
+            message = "Model transport timeout"
+            raise httpx2.ReadTimeout(message, request=request) from error
         return httpx2.Response(
             response.status_code, headers=response.headers.multi_items(), content=response.content
         )

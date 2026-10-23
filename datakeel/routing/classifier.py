@@ -1,0 +1,74 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Independent classification requests that never consume the conversation's fake queue."""
+
+import json
+
+from datakeel.core.agent_models import ChatMessage, ContextSegment, ModelRequest, ModelResponse
+from datakeel.core.context_tokens import estimate_tokens
+from datakeel.core.harness_models import TokenUsage
+from datakeel.core.routing_models import RouteDecision
+from datakeel.routing.intent import classify_offline
+from datakeel.workflows.models import WorkflowDefinition
+
+
+def classification_request(
+    model: str, text: str, decision: RouteDecision, workflows: list[WorkflowDefinition]
+) -> ModelRequest:
+    """Describe candidate workflows in a separate bounded model request."""
+    candidates = {item.workflow_id for item in decision.candidates if item.score > 0}
+    descriptions = [
+        {
+            "id": workflow.id,
+            "description": workflow.description,
+            "triggers": workflow.triggers.model_dump(),
+        }
+        for workflow in workflows
+        if workflow.id in candidates
+    ]
+    instruction = (
+        "Select the single workflow requested first. Return only its exact id, or NONE if no "
+        "workflow is appropriate. Do not execute tools. Workflows: "
+        + json.dumps(descriptions, ensure_ascii=False, separators=(",", ":"))
+    )
+    return ModelRequest(
+        model=model,
+        messages=[
+            ChatMessage(role="system", content=instruction),
+            ChatMessage(role="user", content=text),
+        ],
+        tools=[],
+        segments=[
+            ContextSegment(
+                name="intent_instructions",
+                kind="stable",
+                text=instruction,
+                tokens=estimate_tokens(instruction) + 16,
+            ),
+            ContextSegment(
+                name="intent_input", kind="volatile", text=text, tokens=estimate_tokens(text) + 16
+            ),
+        ],
+        max_output_tokens=64,
+    )
+
+
+class OfflineClassifier:
+    """Use declared workflow vocabulary independently of scripted conversation responses."""
+
+    def __init__(self, decision: RouteDecision, workflows: list[WorkflowDefinition]) -> None:
+        """Retain typed candidate scores and definitions rather than benchmark examples."""
+        self.decision, self.workflows = decision, workflows
+
+    def complete(self, request: ModelRequest) -> ModelResponse:
+        """Produce a deterministic choice and explicit local fixture usage."""
+        text = request.messages[-1].content
+        selected = classify_offline(text, self.decision.candidates, self.workflows) or "NONE"
+        return ModelResponse(
+            content=selected,
+            usage=TokenUsage(
+                input_tokens=sum(segment.tokens for segment in request.segments),
+                output_tokens=estimate_tokens(selected),
+            ),
+        )

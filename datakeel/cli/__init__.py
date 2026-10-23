@@ -11,7 +11,7 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
-from datakeel.cli import workflow
+from datakeel.cli import routing, workflow
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -23,6 +23,7 @@ from datakeel.cli.mcp import serve
 from datakeel.core.errors import NotFoundError
 from datakeel.core.logging import configure_logging
 from datakeel.core.settings import get_settings
+from datakeel.routing.config import load_config
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
 from datakeel.storage.lineage_service import export_dataset, export_events
@@ -74,6 +75,7 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
     workflow.register_parser(commands)
+    routing.register_parser(commands)
     return result
 
 
@@ -99,6 +101,10 @@ def main() -> None:
     """Dispatch a validated local command and configure structured diagnostics."""
     args = parser().parse_args()
     configure_logging()
+    if args.command in {"routing", "eval-route"}:
+        routing.dispatch(args)
+        return
+    load_config()
     if args.command == "workflow":
         workflow.dispatch(args)
         return

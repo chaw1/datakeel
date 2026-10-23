@@ -27,6 +27,7 @@ triggers:
   - - 指标
     - 度量字段
     - 更改
+    - 重新问数
   - - 度量字段
     - 改
     - 再回答
@@ -34,11 +35,26 @@ triggers:
   - - metric
     - measure column
     - change
+    - again
+    - compare
   classification_keywords:
   - 口径变更
   - 度量字段
   - definition change
   - measure column
+  excluded_keywords:
+  - explain
+  - what is
+  - what does
+  - how does
+  - do not
+  - don't
+  - 不要
+  - 解释
+  - 说明一下
+  - 是什么
+  - 仅查看
+  - 只查看
   threshold: 1
   margin: 1
 entry: current

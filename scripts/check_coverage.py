@@ -18,6 +18,7 @@ CRITICAL_PACKAGES = (
     "agent",
     "runtime",
     "workflows",
+    "routing",
     "ontology",
     "evidence",
     "operators/evidence",

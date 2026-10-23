@@ -43,6 +43,8 @@ class GraphState(BoundaryModel):
     guard: str = ""
     plan_id: str = ""
     pending_call: str = ""
+    response_has_plan: bool = False
+    response_has_tool_result: bool = False
     next_node: Literal["model", "tools", "approval_gate", "__end__"] = "model"
 
 
@@ -169,7 +171,11 @@ class AgentGraph:
         self.guard.restore(state.guard)
         meter = ModelMeter(self.db, self.conversation_id, self.token, self.provider)
         try:
-            response = meter.complete(partial(complete, self.provider))
+            response = meter.complete(
+                partial(complete, self.provider),
+                has_plan=state.response_has_plan,
+                has_tool_result=state.response_has_tool_result,
+            )
         except BudgetError:
             return self._stop(state, "budget_exceeded")
         except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError) as error:
@@ -216,7 +222,15 @@ class AgentGraph:
                         pending, ToolOutcome(name=pending.name, status="FAILED", error=reason)
                     )
                 break
-        state = state.model_copy(update={"events": [event.model_dump_json() for event in events]})
+        state = state.model_copy(
+            update={
+                "events": [event.model_dump_json() for event in events],
+                "response_has_plan": state.response_has_plan
+                or any(event.event == "plan" for event in events),
+                "response_has_tool_result": state.response_has_tool_result
+                or any(event.event == "tool_result" for event in events),
+            }
+        )
         if reason == "approval_required":
             plan = next(
                 event.outcome.plan for event in results if event.event == "plan" and event.outcome

@@ -8,7 +8,7 @@ type = layers
 layers =
     datakeel.cli
     datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows
+    datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
@@ -33,11 +33,23 @@ ignore_imports =
     datakeel.storage.workflow_recovery -> datakeel.actions.recovery
     datakeel.storage.workflow_recovery -> datakeel.actions.models
     datakeel.storage.approval_evidence -> datakeel.actions.recovery
+# Routing reads workflow vocabulary and controlled action declarations without dispatching them.
+    datakeel.routing.classifier -> datakeel.workflows.models
+    datakeel.routing.intent -> datakeel.workflows.models
+    datakeel.routing.evaluation -> datakeel.workflows.loader
+    datakeel.routing.service -> datakeel.workflows.loader
+    datakeel.routing.service -> datakeel.workflows.models
+    datakeel.routing.tiers -> datakeel.actions.registry
+# Separate classification and model attempts use the same transactional budget and trace store.
+    datakeel.routing.service -> datakeel.storage.database
+    datakeel.routing.service -> datakeel.storage.harness_service
+    datakeel.routing.accounting -> datakeel.storage.database
+    datakeel.routing.accounting -> datakeel.storage.budget_service
+    datakeel.routing.accounting -> datakeel.storage.harness_service
 # HTTP exposes typed conversations/traces; application helpers meter calls for graph execution.
     datakeel.api.routes.agent -> datakeel.agent.service
     datakeel.api.routes.agent -> datakeel.agent.models
     datakeel.api.routes.harness -> datakeel.harness.service
-    datakeel.agent.metering -> datakeel.harness.service
     datakeel.harness.execution -> datakeel.agent.service
     datakeel.harness.execution -> datakeel.agent.providers
     datakeel.harness.execution -> datakeel.agent.models

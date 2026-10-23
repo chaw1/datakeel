@@ -17,6 +17,8 @@ from datakeel.core.agent_models import (
 )
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
+from datakeel.routing.config import load_config
+from datakeel.routing.service import model_decisions, route_message
 from datakeel.runtime.graph import AgentGraph
 from datakeel.storage import conversation_store as memory
 from datakeel.storage.conversation_lock import response_lock
@@ -27,6 +29,7 @@ from datakeel.storage.dataset_service import get_dataset
 
 def create_conversation(db: Database, request: ConversationCreate) -> ConversationView:
     """Validate an optional workspace and persist the new session configuration."""
+    load_config()
     if request.dataset_id is not None:
         get_dataset(db, request.dataset_id)
     return conversation_view(db, memory.create(db, request))
@@ -99,16 +102,9 @@ def _deliver(
                 lease.token,
                 event=JsonDocument.model_validate(event.model_dump(mode="json")),
             )
+            if event.event == "done":
+                completed = True
             yield event
-        done = AgentEvent(event="done")
-        memory.append(
-            db,
-            conversation_id,
-            lease.token,
-            event=JsonDocument.model_validate(done.model_dump(mode="json")),
-        )
-        completed = True
-        yield done
     finally:
         if not completed:
             close_interrupted(db, conversation_id, lease.token)
@@ -122,12 +118,22 @@ def _response_events(
     provider: Provider | None,
     resume: ResumeInput | None = None,
 ) -> Iterator[AgentEvent]:
-    config = memory.get(db, conversation_id).config
+    conversation = memory.get(db, conversation_id)
+    config = conversation.config
     graph = AgentGraph(db, conversation_id, token, provider)
     events = graph.run() if resume is None else graph.resume(resume)
+    route = None
     try:
         with provider_session(config, provider) as selected:
             graph.provider = selected
+            route = route_message(db, conversation, selected) if resume is None else None
             yield from events
+            if route is not None and route.workflow_id is not None:
+                yield AgentEvent(event="route", route=route)
     except ValidationError as error:
         yield AgentEvent(event="stopped", stop_reason="configuration_error", text=str(error))
+    yield AgentEvent(
+        event="done",
+        route=route if route is not None and route.workflow_id is None else None,
+        model_routes=model_decisions(db, conversation_id, conversation.turns),
+    )

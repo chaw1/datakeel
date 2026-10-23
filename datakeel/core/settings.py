@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     openai_url: str = "https://api.openai.com/v1/chat/completions"
     anthropic_url: str = "https://api.anthropic.com/v1/messages"
     provider_timeout: float = Field(default=30, gt=0, le=120)
+    model_routing_file: Path | None = None
 
 
 def get_settings() -> Settings:

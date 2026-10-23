@@ -27,6 +27,7 @@ class WorkflowTriggers(BoundaryModel):
 
     keywords: list[list[str]] = Field(min_length=1)
     classification_keywords: list[str] = Field(default_factory=list[str])
+    excluded_keywords: list[str] = Field(default_factory=list[str])
     threshold: float = Field(default=1, gt=0)
     margin: float = Field(default=1, gt=0)
 

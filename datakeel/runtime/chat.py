@@ -6,17 +6,21 @@
 from collections.abc import Sequence
 
 from anthropic import AnthropicError
+from anthropic import APIStatusError as AnthropicStatusError
+from anthropic import APITimeoutError as AnthropicTimeoutError
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.messages.ai import InputTokenDetails, UsageMetadata
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import Runnable
+from openai import APIStatusError as OpenAIStatusError
+from openai import APITimeoutError as OpenAITimeoutError
 from openai import OpenAIError
 from pydantic import PrivateAttr
 
 from datakeel.core.agent_models import ChatMessage, ModelRequest, ModelResponse, Provider, ToolCall
-from datakeel.core.errors import ValidationError
+from datakeel.core.errors import ProviderError, ValidationError
 from datakeel.core.harness_models import TokenUsage
 from datakeel.runtime.tracing import tracing_disabled
 
@@ -155,6 +159,12 @@ class ChatProvider:
         """Translate vendor failures without retrying or inventing successful usage."""
         try:
             return _invoke(self.model, request)
+        except (OpenAITimeoutError, AnthropicTimeoutError) as error:
+            reason = "timeout"
+            raise ProviderError(reason) from error
+        except (OpenAIStatusError, AnthropicStatusError) as error:
+            reason = f"http_{error.status_code}"
+            raise ProviderError(reason, status_code=error.status_code) from error
         except (OpenAIError, AnthropicError, ValueError, KeyError, TypeError, IndexError) as error:
             msg = "Model provider request failed or returned invalid data"
             raise ValidationError(msg) from error
