@@ -48,7 +48,6 @@ def create_app(db: Database | None = None) -> FastAPI:
         search.router,
         actions.router,
         agent.router,
-        agent.resume_router,
         harness.router,
     ):
         app.include_router(router)

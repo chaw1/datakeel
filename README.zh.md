@@ -250,7 +250,7 @@ uv run datakeel demo --once
 | 质量         | `GET /api/datasets/{id}/quality`、`PUT /quality/config`                                                                                                                        |
 | 治理         | `PUT /template`、`GET/PUT /metadata`、`GET /metadata/changes`、`GET /compliance`                                                                                               |
 | Agent 会话   | `POST/GET /api/agent/conversations`、`GET /api/agent/conversations/{id}`、`POST /api/agent/conversations/{id}/messages`（SSE）                                                 |
-| Agent 恢复   | `POST /api/conversations/{id}/resume`，请求体 `{plan_id, idempotency_key}`（SSE）；`GET /api/conversations/{id}/audit` 查询恢复审计 |
+| Agent 恢复   | `POST /api/agent/conversations/{id}/resume`，请求体 `{plan_id, idempotency_key}`（SSE）；`GET /api/agent/conversations/{id}/audit` 查询恢复审计 |
 | 受控动作     | `POST /api/actions/{type}/prepare`、`POST /api/approvals/{plan_id}`、`POST /api/actions/{plan_id}/execute`、`GET /api/actions/runs`                                            |
 | 本体与计量   | `GET /api/ontology`、`POST /api/ontology/object-sets/evaluate`、`GET /api/harness/traces`、`GET /api/harness/costs?group_by=conversation`                                      |
 | 报告与导出   | `/api/datasets/{id}/report`、`/api/export?format=croissant&dataset_id={id}`                                                                                                    |

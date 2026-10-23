@@ -262,7 +262,7 @@ The interactive [local API reference](http://127.0.0.1:8765/api/docs) includes a
 | Quality                | `GET /api/datasets/{id}/quality`, `PUT /api/datasets/{id}/quality/config`                                                                                                                |
 | Governance             | `PUT /api/datasets/{id}/template`, `GET/PUT /metadata`, `GET /metadata/changes`, `GET /compliance`                                                                                       |
 | Agent conversations    | `POST/GET /api/agent/conversations`, `GET /api/agent/conversations/{id}`, `POST /api/agent/conversations/{id}/messages` (SSE)                                                            |
-| Agent resume           | `POST /api/conversations/{id}/resume` with `{plan_id, idempotency_key}` (SSE); `GET /api/conversations/{id}/audit` exposes recovery audit |
+| Agent resume           | `POST /api/agent/conversations/{id}/resume` with `{plan_id, idempotency_key}` (SSE); `GET /api/agent/conversations/{id}/audit` exposes recovery audit |
 | Controlled actions     | `POST /api/actions/{type}/prepare`, `POST /api/approvals/{plan_id}`, `POST /api/actions/{plan_id}/execute`, `GET /api/actions/runs`                                                      |
 | Ontology and metering  | `GET /api/ontology`, `POST /api/ontology/object-sets/evaluate`, `GET /api/harness/traces`, `GET /api/harness/costs?group_by=conversation`                                                |
 | Reports and export     | `GET /api/datasets/{id}/report`, `GET /api/export?format=croissant&dataset_id={id}`                                                                                                      |

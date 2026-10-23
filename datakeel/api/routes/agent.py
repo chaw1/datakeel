@@ -24,7 +24,6 @@ from datakeel.core.agent_models import (
 from datakeel.storage.conversation_authorization import list_audit
 
 router = APIRouter(prefix="/api/agent/conversations", tags=["agent"])
-resume_router = APIRouter(prefix="/api/conversations", tags=["agent"])
 
 
 class EventStreamResponse(StreamingResponse):
@@ -86,7 +85,7 @@ def send(
     )
 
 
-@resume_router.post(
+@router.post(
     "/{conversation_id}/resume", response_model=AgentEvent, response_class=EventStreamResponse
 )
 def resume(
@@ -108,7 +107,7 @@ def resume(
     )
 
 
-@resume_router.get("/{conversation_id}/audit")
+@router.get("/{conversation_id}/audit")
 def recovery_audit(conversation_id: str, db: DatabaseDependency) -> list[ConversationAudit]:
     """Read persisted resume denials, authorization checks and pause invalidations."""
     return list_audit(db, conversation_id)

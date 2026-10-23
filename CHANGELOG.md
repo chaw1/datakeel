@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Agent resume and recovery audit endpoints now share the `/api/agent/conversations` prefix with the other conversation endpoints.
 - CI starts the Postgres service container; its health-check command is double-quoted for the runner.
 - English object headings, breadcrumbs, command search and approval object names reuse the catalog translations shown on graph cards. Catalog types and qualified field names share the same fallback; Chinese labels and non-catalog object names retain their existing behavior.
 

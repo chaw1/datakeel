@@ -91,4 +91,6 @@ datakeel/
 
 新用户消息会作废当前挂起 interrupt 并追加审计，随后按正常会话处理。恢复拥有独立响应 lease 与幂等键，不追加用户消息；协议沿用既有七类 SSE 事件。恢复授权和失败语义详见 [ACTIONS.md](ACTIONS.md)。
 
+会话创建、查询、消息、恢复与恢复审计统一使用 `/api/agent/conversations` 前缀；恢复入口为 `POST /api/agent/conversations/{id}/resume`，审计入口为 `GET /api/agent/conversations/{id}/audit`。
+
 消息与恢复共享进程释放型会话锁：PostgreSQL 使用按 schema 与会话划分的 session advisory lock，SQLite 使用按数据库与会话划分的文件锁。同一会话只允许一个响应写入者；进程退出或被杀后锁由系统释放，后继写入者取得锁后才能回收遗留 response lease，避免仅凭超时抢占仍在执行的请求。签批校验成功、恢复拒绝和暂停作废均写入独立审计表，并可经恢复审计接口查询。

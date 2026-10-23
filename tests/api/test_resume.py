@@ -46,12 +46,12 @@ def test_resume_when_authorization_forged_returns_403_and_queryable_denial(
         forge_approval(db, plan, case)
     before = get_conversation(db, conversation_id)
     response = client.post(
-        f"/api/conversations/{conversation_id}/resume",
+        f"/api/agent/conversations/{conversation_id}/resume",
         json={"plan_id": requested.id, "idempotency_key": case},
     )
     assert response.status_code == 403, response.text
     assert response.headers["content-type"].startswith("application/json")
-    audit_response = client.get(f"/api/conversations/{conversation_id}/audit")
+    audit_response = client.get(f"/api/agent/conversations/{conversation_id}/audit")
     assert audit_response.status_code == 200
     audit = [ConversationAudit.model_validate(entry) for entry in audit_response.json()]
     assert len(audit) == 1
@@ -77,7 +77,7 @@ def test_resume_when_approved_streams_receipt_and_replays_without_second_executi
         f"/api/approvals/{plan.id}", json={"approve": True, "plan_digest": plan.plan_digest}
     )
     assert approval.status_code == 200
-    url = f"/api/conversations/{conversation_id}/resume"
+    url = f"/api/agent/conversations/{conversation_id}/resume"
     body = {"plan_id": plan.id, "idempotency_key": "separate-response-key"}
     first = events(client.post(url, json=body))
     assert [event.event for event in first] == ["receipt", "text", "done"]
@@ -85,7 +85,7 @@ def test_resume_when_approved_streams_receipt_and_replays_without_second_executi
     assert len(provider.requests) == 1
     assert len(list_runs(db)) == 1
     assert get_conversation(db, conversation_id).messages[:-1] == before.messages
-    audit = client.get(f"/api/conversations/{conversation_id}/audit").json()
+    audit = client.get(f"/api/agent/conversations/{conversation_id}/audit").json()
     assert [entry["kind"] for entry in audit] == ["RESUME_AUTHORIZED"]
     assert client.post(url, json={**body, "plan_id": "different-plan"}).status_code == 409
 
@@ -97,7 +97,7 @@ def test_resume_when_missing_or_extra_authorization_payload_rejects_typed_input(
     """The recovery payload accepts only plan identity and its idempotency key."""
     client, dataset_id = agent_client
     conversation_id, plan = pause_deletion(db, dataset_id)
-    url = f"/api/conversations/{conversation_id}/resume"
+    url = f"/api/agent/conversations/{conversation_id}/resume"
     for extra in ({"approve": True}, {"actor": "local"}, {"plan_digest": plan.plan_digest}):
         response = client.post(
             url, json={"plan_id": plan.id, "idempotency_key": "forged-extra", **extra}
@@ -109,13 +109,13 @@ def test_resume_when_missing_or_extra_authorization_payload_rejects_typed_input(
         {"plan_id": plan.id, "idempotency_key": ""},
     ):
         assert client.post(url, json=body).status_code == 422
-    assert client.get(f"/api/conversations/{conversation_id}/audit").json() == []
+    assert client.get(f"/api/agent/conversations/{conversation_id}/audit").json() == []
     schema = client.get("/api/openapi.json").json()
     resume_schema = schema["components"]["schemas"]["ResumeInput"]
     assert set(resume_schema["properties"]) == {"plan_id", "idempotency_key"}
     assert resume_schema["additionalProperties"] is False
-    assert "/api/conversations/{conversation_id}/resume" in schema["paths"]
-    assert "/api/conversations/{conversation_id}/audit" in schema["paths"]
+    assert "/api/agent/conversations/{conversation_id}/resume" in schema["paths"]
+    assert "/api/agent/conversations/{conversation_id}/audit" in schema["paths"]
 
 
 def test_resume_when_conversation_missing_returns_404_before_stream(
@@ -124,8 +124,29 @@ def test_resume_when_conversation_missing_returns_404_before_stream(
     """Unknown conversation identities preserve the existing HTTP not-found boundary."""
     client, _ = agent_client
     response = client.post(
-        "/api/conversations/missing/resume",
+        "/api/agent/conversations/missing/resume",
         json={"plan_id": "missing", "idempotency_key": "missing"},
     )
     assert response.status_code == 404
-    assert client.get("/api/conversations/missing/audit").status_code == 404
+    assert client.get("/api/agent/conversations/missing/audit").status_code == 404
+
+
+def test_recovery_routes_when_old_prefix_used_are_unavailable(
+    db: Database,
+    agent_client: tuple[TestClient, str],
+) -> None:
+    """Removed routes cannot resume an approved plan or expose its recovery audit."""
+    client, dataset_id = agent_client
+    conversation_id, plan = pause_deletion(db, dataset_id)
+    approve_plan(db, plan.id, ApprovalDecision(approve=True, plan_digest=plan.plan_digest))
+    response = client.post(
+        f"/api/conversations/{conversation_id}/resume",
+        json={"plan_id": plan.id, "idempotency_key": "removed-prefix"},
+    )
+    assert response.status_code in {404, 405}
+    assert client.get(f"/api/conversations/{conversation_id}/audit").status_code == 404
+    assert list_runs(db) == []
+    assert client.get(f"/api/agent/conversations/{conversation_id}/audit").json() == []
+    paths = client.get("/api/openapi.json").json()["paths"]
+    assert "/api/conversations/{conversation_id}/resume" not in paths
+    assert "/api/conversations/{conversation_id}/audit" not in paths
