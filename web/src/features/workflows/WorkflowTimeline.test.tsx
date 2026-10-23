@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
 import { I18nContext, translator } from "../../i18n/context";
@@ -48,4 +49,43 @@ it("renders the paused timeline and explicit resume instruction in Chinese", () 
     screen.getByText("审阅并签批冻结计划后，返回此处继续工作流。"),
   ).toBeVisible();
   expect(screen.getByText("步骤时间线")).toBeVisible();
+  expect(screen.getByText("查找低质文件")).toBeVisible();
+  expect(screen.getByText("找到 2 个文件")).toBeVisible();
+  expect(screen.getByText("计划已准备，等待签批后继续")).toBeVisible();
 });
+
+it.each(["en", "zh"] as const)(
+  "keeps raw output folded while showing localized titles and a plain summary in %s",
+  async (locale) => {
+    render(
+      <I18nContext.Provider
+        value={{ locale, setLocale: vi.fn(), t: translator(locale) }}
+      >
+        <WorkflowTimeline
+          run={pausedWorkflow}
+          busy={false}
+          onResume={vi.fn()}
+        />
+      </I18nContext.Provider>,
+    );
+    expect(
+      screen.getByText(
+        locale === "en" ? "Find low-quality files" : "查找低质文件",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(locale === "en" ? "Found 2 files" : "找到 2 个文件"),
+    ).toBeVisible();
+    const output = screen.getByText(/"function": "search_files"/);
+    expect(output).not.toBeVisible();
+    await userEvent.click(
+      screen.getByText(locale === "en" ? "Output" : "输出", {
+        selector: "summary",
+      }),
+    );
+    expect(output).toBeVisible();
+    expect(output.textContent).toBe(
+      JSON.stringify(pausedWorkflow.steps[0].output, null, 2),
+    );
+  },
+);

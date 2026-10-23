@@ -7,6 +7,8 @@ All notable changes are documented here using the Keep a Changelog format.
 ### Fixed
 
 - Workflow intent routing matches semantic groups with interchangeable synonyms and English word boundaries. Single-object deletion and descriptive metric edits remain free Agent requests; `eval-route` also checks the frozen intent regression corpus.
+- Workflow timelines show bilingual step titles and readable summaries for file counts, branch decisions, action receipts, quality scores and before/after answers. Original outputs remain available in expandable details, and historical titles come from each run's frozen definition.
+- Agent model routing uses one compact row per response; fallback attempt details expand only when a backup was used.
 
 ## [0.8.0] - 2026-10-24
 

@@ -1378,6 +1378,7 @@ export interface components {
             id: string;
             /** Next */
             next: string;
+            title?: components["schemas"]["WorkflowStepTitle"] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1564,6 +1565,7 @@ export interface components {
             ref: string;
             /** Then */
             then: string;
+            title?: components["schemas"]["WorkflowStepTitle"] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -3042,6 +3044,7 @@ export interface components {
         OutputStep: {
             /** Id */
             id: string;
+            title?: components["schemas"]["WorkflowStepTitle"] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -3499,6 +3502,7 @@ export interface components {
             id: string;
             /** Next */
             next: string;
+            title?: components["schemas"]["WorkflowStepTitle"] | null;
             /** Tool */
             tool: string;
             /**
@@ -3564,6 +3568,7 @@ export interface components {
              * @default 60
              */
             timeout_seconds: number;
+            title?: components["schemas"]["WorkflowStepTitle"] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -3727,8 +3732,21 @@ export interface components {
              * @enum {string}
              */
             status: "PENDING" | "RUNNING" | "PAUSED" | "SUCCEEDED" | "SKIPPED" | "FAILED";
+            title?: components["schemas"]["WorkflowStepTitle"] | null;
+            /** Tool */
+            tool?: string | null;
             /** Type */
             type: string;
+        };
+        /**
+         * WorkflowStepTitle
+         * @description Name a declared step in both supported interface languages.
+         */
+        WorkflowStepTitle: {
+            /** En */
+            en: string;
+            /** Zh */
+            zh: string;
         };
         /**
          * WorkflowTriggers
@@ -3737,8 +3755,12 @@ export interface components {
         WorkflowTriggers: {
             /** Classification Keywords */
             classification_keywords?: string[];
+            /** Excluded Groups */
+            excluded_groups?: string[][];
             /** Excluded Keywords */
             excluded_keywords?: string[];
+            /** Excluded Prefixes */
+            excluded_prefixes?: string[];
             /** Keywords */
             keywords: string[][];
             /**

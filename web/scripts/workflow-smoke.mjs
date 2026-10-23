@@ -154,7 +154,13 @@ export async function workflowJourney({
   };
 }
 
-export async function workflowRoutingSmoke({ page, base, datasetId, json }) {
+export async function workflowRoutingSmoke({
+  page,
+  base,
+  datasetId,
+  json,
+  capture,
+}) {
   const before = await json("/api/workflows/runs");
   await page.goto(
     `${base.origin}/#/agent?dataset=${encodeURIComponent(datasetId)}`,
@@ -202,6 +208,10 @@ export async function workflowRoutingSmoke({ page, base, datasetId, json }) {
     .last();
   await suggestion.waitFor();
   assert.equal((await json("/api/workflows/runs")).length, before.length);
+  if (capture)
+    await capture("agent-routing", {
+      conversationId: conversation.id,
+    });
   await suggestion.click();
   assert.equal(
     await page.locator("#workflow-input-dataset_id").inputValue(),
@@ -210,6 +220,7 @@ export async function workflowRoutingSmoke({ page, base, datasetId, json }) {
   assert.ok(new URL(page.url()).hash.includes("workflow=dataset-health"));
   assert.equal((await json("/api/workflows/runs")).length, before.length);
   return {
+    conversationId: conversation.id,
     datasetId,
     suggestedWorkflow: "dataset-health",
     automaticallyStarted: false,

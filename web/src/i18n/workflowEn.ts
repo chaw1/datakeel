@@ -13,6 +13,54 @@ export const workflowEn = {
   workflowSteps: "Step timeline",
   workflowOutput: "Output",
   workflowOutputSummary: "Output summary",
+  workflowFoundFiles: "Found {count} {count, plural, one {file} other {files}}",
+  workflowQuarantinedFiles:
+    "Quarantined {count} {count, plural, one {file} other {files}}",
+  workflowDeletedFiles:
+    "Approved and deleted {count} {count, plural, one {file} other {files}}",
+  workflowQualityScore: "Quality score {count}",
+  workflowReportSummary:
+    "Read report with {count} {count, plural, one {section} other {sections}}",
+  workflowEvidenceSummary:
+    "Found {count} evidence {count, plural, one {item} other {items}}",
+  workflowMetricSummary: "Read {name}, version {version}",
+  workflowImpactSummary:
+    "Found {count} affected {count, plural, one {object} other {objects}}",
+  workflowImpactTruncated:
+    "Found at least {count} affected {count, plural, one {object} other {objects}}",
+  workflowAnswerSummary: "Answer: {answer}",
+  workflowAnswerUnavailable: "This question could not be answered",
+  workflowAnswerClarification: "The question needs clarification",
+  workflowPipelineQueued: "Pipeline task queued",
+  workflowTaskCompleted: "Pipeline task completed",
+  workflowMetricUpdated: "Metric definition updated",
+  workflowConditionMatched: "Condition met → {next}",
+  workflowConditionUnmatched: "Condition not met → {next}",
+  workflowConditionTrue: "Condition met",
+  workflowConditionFalse: "Condition not met",
+  workflowCleanedSummary:
+    "Conclusion: cleaned; {count} {count, plural, one {file} other {files}} remaining",
+  workflowCleaned: "Conclusion: cleaned",
+  workflowNoLowQualityFiles: "Conclusion: no low-quality files found",
+  workflowHealthy: "Conclusion: healthy",
+  workflowNeedsReview: "Conclusion: needs review",
+  workflowHealthSummary: "{conclusion}; quality score {score}",
+  workflowComparisonSummary: "Before {before} / after {after}; {result}",
+  workflowAnswerChanged: "answer changed",
+  workflowAnswerUnchanged: "answer unchanged",
+  workflowResultRows:
+    "{count} {count, plural, one {result row} other {result rows}}",
+  workflowNoValue: "no value",
+  workflowStepPending: "Waiting for earlier steps",
+  workflowNotRunFailed: "Not run: the workflow failed",
+  workflowNotRunInterrupted: "Not run: the workflow was interrupted",
+  workflowStepRunning: "Step in progress",
+  workflowStepPaused: "Plan prepared; waiting for approval and continuation",
+  workflowStepSkipped: "This step was not taken",
+  workflowStepFailed: "Step failed; see the reason below",
+  workflowStepCompleted: "Step completed; details are available in the output",
+  workflowConclusionReady:
+    "Conclusion recorded; details are available in the output",
   workflowResume: "Continue after approval",
   workflowApproval: "Review approval",
   workflowApprovalHint:
@@ -65,4 +113,7 @@ export const workflowEn = {
   modelPinned: "Conversation model",
   modelAutomatic: "Selected by tier",
   modelFallback: "Fallback attempt {attempt}: {reason}",
+  workflowModelCalls: "{count} model {count, plural, one {call} other {calls}}",
+  modelFallbackDetails:
+    "{count} fallback {count, plural, one {switch} other {switches}}",
 };

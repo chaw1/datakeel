@@ -44,6 +44,9 @@ triggers:
 entry: find
 steps:
 - id: find
+  title:
+    zh: 查找低质文件
+    en: Find low-quality files
   type: tool
   tool: search_files
   arguments:
@@ -52,6 +55,9 @@ steps:
     limit: 1000
   next: has_files
 - id: has_files
+  title:
+    zh: 判断是否需要清理
+    en: Check whether cleanup is needed
   type: branch
   ref: ${steps.find.data.objects}
   op: ne
@@ -59,6 +65,9 @@ steps:
   then: quarantine
   otherwise: empty
 - id: quarantine
+  title:
+    zh: 隔离低质文件
+    en: Quarantine low-quality files
   type: tool
   tool: quarantine_files
   arguments:
@@ -73,24 +82,36 @@ steps:
           - asset_ref.asset_id
   next: delete
 - id: delete
+  title:
+    zh: 签批并删除文件
+    en: Approve and delete files
   type: approval
   action: delete_files
   arguments:
     selection: *id001
   next: quality
 - id: quality
+  title:
+    zh: 复查质量评分
+    en: Recheck quality score
   type: tool
   tool: get_quality
   arguments:
     dataset_id: ${inputs.dataset_id}
   next: result
 - id: result
+  title:
+    zh: 汇总清理结果
+    en: Summarize cleanup results
   type: output
   value:
     conclusion: cleaned
     total: ${steps.quality.data.total}
     file_count: ${steps.quality.data.file_count}
 - id: empty
+  title:
+    zh: 确认无需清理
+    en: Confirm no cleanup is needed
   type: output
   value:
     conclusion: no_low_quality_files

@@ -46,26 +46,42 @@ export function AgentRouting({ event }: { event: AgentEvent }) {
       multi_step: "modelTierMultiStep",
       high_risk: "modelTierHighRisk",
     };
+    const routes = event.model_routes;
+    const last = routes[routes.length - 1];
+    const tierLabels = [...new Set(routes.map((route) => route.tier))]
+      .map((tier) => t(tiers[tier]))
+      .join(" → ");
+    const fallbacks = routes.filter((route) => route.fallback_reason);
+    const line = (
+      <>
+        <strong>{tierLabels}</strong> · <code>{last.model}</code> ·{" "}
+        {t(last.pinned ? "modelPinned" : "modelAutomatic")} ·{" "}
+        {t("workflowModelCalls", { count: routes.length })}
+      </>
+    );
+    if (!fallbacks.length)
+      return (
+        <div className="model-routing" aria-label={t("modelRoute")}>
+          {line}
+        </div>
+      );
     return (
-      <div aria-label={t("modelRoute")}>
-        {event.model_routes.map((route, index) => (
-          <div
-            className="model-routing"
-            key={`${route.model}:${String(index)}`}
-          >
-            <strong>{t(tiers[route.tier])}</strong> · <code>{route.model}</code>{" "}
-            · {t(route.pinned ? "modelPinned" : "modelAutomatic")}
-            {route.fallback_reason && (
-              <p>
-                {t("modelFallback", {
-                  attempt: route.attempt,
-                  reason: route.fallback_reason,
-                })}
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
+      <details className="model-routing" aria-label={t("modelRoute")}>
+        <summary>
+          {line} · {t("modelFallbackDetails", { count: fallbacks.length })}
+        </summary>
+        <ul className="model-fallbacks">
+          {fallbacks.map((route, index) => (
+            <li key={`${route.model}:${String(index)}`}>
+              <code>{route.model}</code> ·{" "}
+              {t("modelFallback", {
+                attempt: route.attempt,
+                reason: route.fallback_reason ?? "",
+              })}
+            </li>
+          ))}
+        </ul>
+      </details>
     );
   }
   return null;

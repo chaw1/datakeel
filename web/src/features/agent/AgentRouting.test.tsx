@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
 import { I18nContext, translator } from "../../i18n/context";
@@ -30,7 +31,7 @@ it("links a route suggestion to a prefilled form without running it", () => {
   expect(screen.getByText(/Match score 2/)).toBeVisible();
   expect(fetch).not.toHaveBeenCalled();
 });
-it("hides free-agent decisions and displays persisted model fallback information", () => {
+it("hides free-agent decisions and folds persisted model fallback information", async () => {
   const { rerender, container } = render(
     <AgentRouting
       event={agentEvent("route", {
@@ -66,6 +67,29 @@ it("hides free-agent decisions and displays persisted model fallback information
     </I18nContext.Provider>,
   );
   expect(screen.getByText("受控动作规划")).toBeVisible();
-  expect(screen.getByText("fallback-model")).toBeVisible();
-  expect(screen.getByText("备用尝试 2：HTTP 429")).toBeVisible();
+  expect(screen.getAllByText("fallback-model")[0]).toBeVisible();
+  const reason = screen.getByText(/备用尝试 2：HTTP 429/);
+  expect(reason).not.toBeVisible();
+  await userEvent.click(screen.getByText(/1 次备用切换/));
+  expect(reason).toBeVisible();
+});
+
+it("combines all model calls in one compact row per turn without a details control", () => {
+  const { container } = render(
+    <AgentRouting
+      event={agentEvent("done", {
+        model_routes: [
+          { tier: "simple", model: "reader", pinned: false, attempt: 1 },
+          { tier: "multi_step", model: "planner", pinned: false, attempt: 1 },
+          { tier: "multi_step", model: "planner", pinned: false, attempt: 1 },
+          { tier: "high_risk", model: "controller", pinned: false, attempt: 1 },
+        ],
+      })}
+    />,
+  );
+  expect(container.querySelectorAll(".model-routing")).toHaveLength(1);
+  expect(container.querySelector("details")).toBeNull();
+  expect(screen.getByLabelText("Model routing")).toHaveTextContent(
+    "Simple read → Multi-step tools → Controlled action planning · controller · Selected by tier · 4 model calls",
+  );
 });

@@ -40,36 +40,54 @@ triggers:
 entry: pipeline
 steps:
 - id: pipeline
+  title:
+    zh: 运行预处理流水线
+    en: Run preprocessing pipeline
   type: tool
   tool: run_pipeline
   arguments:
     dataset_id: ${inputs.dataset_id}
   next: wait
 - id: wait
+  title:
+    zh: 等待流水线完成
+    en: Wait for pipeline completion
   type: wait
   task_id: ${steps.pipeline.task_id}
   timeout_seconds: 60
   poll_interval: 0.25
   next: quality
 - id: quality
+  title:
+    zh: 检查质量评分
+    en: Inspect quality score
   type: tool
   tool: get_quality
   arguments:
     dataset_id: ${inputs.dataset_id}
   next: report
 - id: report
+  title:
+    zh: 生成质量报告
+    en: Generate quality report
   type: tool
   tool: get_report
   arguments:
     dataset_id: ${inputs.dataset_id}
   next: evidence
 - id: evidence
+  title:
+    zh: 汇总质量证据
+    en: Summarize quality evidence
   type: tool
   tool: query_evidence
   arguments:
     dataset_id: ${inputs.dataset_id}
   next: score
 - id: score
+  title:
+    zh: 判断质量是否达标
+    en: Check quality threshold
   type: branch
   ref: ${steps.quality.data.total}
   op: gte
@@ -77,6 +95,9 @@ steps:
   then: healthy
   otherwise: review
 - id: healthy
+  title:
+    zh: 得出健康结论
+    en: Conclude healthy
   type: output
   value:
     conclusion: healthy
@@ -84,6 +105,9 @@ steps:
     report: ${steps.report.data.body}
     evidence_total: ${steps.evidence.data.total}
 - id: review
+  title:
+    zh: 提示质量复查
+    en: Recommend quality review
   type: output
   value:
     conclusion: needs_review

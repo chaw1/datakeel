@@ -34,11 +34,13 @@ def locked_run(session: Session, run_id: str) -> WorkflowRunRow:
     return row
 
 
-def _step_view(row: WorkflowStepRow) -> WorkflowStep:
+def _step_view(row: WorkflowStepRow, definition: JsonDocument) -> WorkflowStep:
     return WorkflowStep.model_validate(
         {
             "id": row.id,
             "type": row.type,
+            "title": definition.root.get("title"),
+            "tool": definition.root.get("tool", definition.root.get("action")),
             "status": row.status,
             "output": row.output,
             "error": row.error,
@@ -57,13 +59,23 @@ def _view(session: Session, row: WorkflowRunRow) -> WorkflowRun:
         .where(WorkflowStepRow.run_id == row.id)
         .order_by(WorkflowStepRow.ordinal)
     )
+    definitions = JsonDocument(row.definition).root.get("steps", [])
+    metadata = (
+        {
+            step["id"]: JsonDocument(step)
+            for step in definitions
+            if isinstance(step, dict) and "id" in step and isinstance(step["id"], str)
+        }
+        if isinstance(definitions, list)
+        else {}
+    )
     return WorkflowRun.model_validate(
         {
             "id": row.id,
             "workflow_id": row.workflow_id,
             "status": row.status,
             "inputs": row.inputs,
-            "steps": [_step_view(step) for step in steps],
+            "steps": [_step_view(step, metadata.get(step.id, JsonDocument({}))) for step in steps],
             "pending_plan_id": row.pending_plan_id,
             "error": row.error,
             "created_at": datetime.fromtimestamp(row.created_at, UTC),

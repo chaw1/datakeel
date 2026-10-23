@@ -126,11 +126,10 @@
   color: var(--muted);
 }
 .workflow-output-summary {
-  font-family: var(--font-mono);
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   line-height: var(--line-body);
   overflow-wrap: anywhere;
-  color: var(--muted);
+  color: var(--ink);
   margin-top: calc(var(--space) * 2);
 }
 .workflow-step-body details {
@@ -152,8 +151,7 @@
 .workflow-history .table-scroll {
   overflow-x: auto;
 }
-.workflow-suggestion,
-.model-routing {
+.workflow-suggestion {
   border: 1px solid var(--rule);
   padding: calc(var(--space) * 3);
   margin: calc(var(--space) * 3) 0;
@@ -171,6 +169,19 @@
 .model-routing {
   font-size: var(--font-xs);
   line-height: var(--line-body);
+  color: var(--muted);
+  margin: calc(var(--space) * 2) 0;
+  overflow-wrap: anywhere;
+}
+.model-routing strong {
+  font-weight: 500;
+}
+.model-routing summary {
+  cursor: pointer;
+}
+.model-fallbacks {
+  margin: calc(var(--space) * 2) 0 0;
+  padding-left: calc(var(--space) * 5);
 }
 @media (max-width: 880px) {
   .workflows-layout {

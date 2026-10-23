@@ -74,6 +74,10 @@ The metric workflow defaults to `retail_revenue`, an override of `measure.column
 
 ### Step types / 步骤类型
 
+Every step may declare `title: {zh: 中文标题, en: English title}`. Both translations must be nonempty when supplied. Existing definitions without a title remain valid. The timeline displays the localized title and keeps the step ID as secondary information; titles come from the run's frozen definition, so later YAML edits do not rename past runs.
+
+每个步骤可声明 `title: {zh: 中文标题, en: English title}`，提供标题时两种语言均不得为空。旧定义省略标题仍有效。时间线显示本地化标题，步骤 ID 作为次要信息；标题取自运行时冻结的定义，后续修改 YAML 不会改写历史运行的步骤名称。
+
 | `type` | Fields / 字段 | Behavior / 行为 |
 | --- | --- | --- |
 | `tool` | `id`, `tool`, `arguments`, `next` | Call a registered read, or prepare and automatically execute a reversible action. / 调用已注册只读函数，或准备并自动执行可逆动作。 |

@@ -63,12 +63,18 @@ triggers:
 entry: current
 steps:
 - id: current
+  title:
+    zh: 查看当前指标定义
+    en: Inspect current metric definition
   type: tool
   tool: explain_metric
   arguments:
     metric_id: ${inputs.metric_id}
   next: before
 - id: before
+  title:
+    zh: 获取变更前答案
+    en: Get answer before change
   type: tool
   tool: ask_data
   arguments: &id001
@@ -77,12 +83,18 @@ steps:
     reference_instant: ${inputs.reference_instant}
   next: impact
 - id: impact
+  title:
+    zh: 检查变更影响面
+    en: Inspect change impact
   type: tool
   tool: impact_of
   arguments:
     asset_id: ${inputs.metric_id}
   next: update
 - id: update
+  title:
+    zh: 更新指标定义
+    en: Update metric definition
   type: tool
   tool: update_metric
   arguments:
@@ -92,11 +104,17 @@ steps:
       - ${inputs.override}
   next: after
 - id: after
+  title:
+    zh: 获取变更后答案
+    en: Get answer after change
   type: tool
   tool: ask_data
   arguments: *id001
   next: comparison
 - id: comparison
+  title:
+    zh: 对比变更前后答案
+    en: Compare answers before and after
   type: output
   value:
     before_rows: ${steps.before.data.result.rows}

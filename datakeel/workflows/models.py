@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from pydantic import Field, JsonValue, field_validator
 
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.core.workflow_models import WorkflowStepTitle
 
 Identity = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")]
 Comparison = Literal["eq", "ne", "lt", "lte", "gt", "gte", "in"]
@@ -58,6 +59,7 @@ class ToolStep(BoundaryModel):
     """Invoke a registered read or prepare and execute a reversible action."""
 
     id: Identity
+    title: WorkflowStepTitle | None = None
     type: Literal["tool"]
     tool: str
     arguments: JsonDocument
@@ -68,6 +70,7 @@ class ApprovalStep(BoundaryModel):
     """Prepare, pause, and execute one irreversible action after authorization."""
 
     id: Identity
+    title: WorkflowStepTitle | None = None
     type: Literal["approval"]
     action: str
     arguments: JsonDocument
@@ -78,6 +81,7 @@ class WaitStep(BoundaryModel):
     """Poll one queued task with an explicit bounded deadline."""
 
     id: Identity
+    title: WorkflowStepTitle | None = None
     type: Literal["wait"]
     task_id: JsonValue
     timeout_seconds: float = Field(default=60, gt=0, le=3600)
@@ -89,6 +93,7 @@ class BranchStep(BoundaryModel):
     """Choose an edge using a reference, an allowlisted comparator, and an operand."""
 
     id: Identity
+    title: WorkflowStepTitle | None = None
     type: Literal["branch"]
     ref: str
     op: Comparison
@@ -101,6 +106,7 @@ class OutputStep(BoundaryModel):
     """Finish a path with a JSON template using only pure expressions."""
 
     id: Identity
+    title: WorkflowStepTitle | None = None
     type: Literal["output"]
     value: JsonValue
 

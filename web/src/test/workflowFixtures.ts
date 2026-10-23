@@ -32,6 +32,7 @@ export const workflow: WorkflowDefinition = {
   steps: [
     {
       id: "find",
+      title: { zh: "查找低质文件", en: "Find low-quality files" },
       type: "tool",
       tool: "search_files",
       arguments: { dataset_id: "${inputs.dataset_id}" },
@@ -39,12 +40,18 @@ export const workflow: WorkflowDefinition = {
     },
     {
       id: "delete",
+      title: { zh: "签批并删除文件", en: "Approve and delete files" },
       type: "approval",
       action: "delete_files",
       arguments: {},
       next: "result",
     },
-    { id: "result", type: "output", value: { conclusion: "cleaned" } },
+    {
+      id: "result",
+      title: { zh: "查看清理结论", en: "Review cleanup conclusion" },
+      type: "output",
+      value: { conclusion: "cleaned" },
+    },
   ],
 };
 export const pausedWorkflow: WorkflowRun = {
@@ -59,9 +66,20 @@ export const pausedWorkflow: WorkflowRun = {
   steps: [
     {
       id: "find",
+      title: { zh: "查找低质文件", en: "Find low-quality files" },
+      tool: "search_files",
       type: "tool",
       status: "SUCCEEDED",
-      output: { data: { total: 2 } },
+      output: {
+        function: "search_files",
+        asset_refs: [],
+        data: {
+          objects: [
+            { asset_ref: { asset_id: "file-1" } },
+            { asset_ref: { asset_id: "file-2" } },
+          ],
+        },
+      },
       error: null,
       plan_id: null,
       started_at: null,
@@ -69,6 +87,8 @@ export const pausedWorkflow: WorkflowRun = {
     },
     {
       id: "delete",
+      title: { zh: "签批并删除文件", en: "Approve and delete files" },
+      tool: "delete_files",
       type: "approval",
       status: "PAUSED",
       output: null,
@@ -79,6 +99,8 @@ export const pausedWorkflow: WorkflowRun = {
     },
     {
       id: "result",
+      title: { zh: "查看清理结论", en: "Review cleanup conclusion" },
+      tool: null,
       type: "output",
       status: "PENDING",
       output: null,

@@ -21,11 +21,20 @@ class WorkflowStart(BoundaryModel):
     idempotency_key: str = Field(min_length=1, max_length=200)
 
 
+class WorkflowStepTitle(BoundaryModel):
+    """Name a declared step in both supported interface languages."""
+
+    zh: str = Field(min_length=1)
+    en: str = Field(min_length=1)
+
+
 class WorkflowStep(BoundaryModel):
     """Expose one declared step's durable progress and JSON output."""
 
     id: str
     type: str
+    title: WorkflowStepTitle | None = None
+    tool: str | None = None
     status: StepStatus = "PENDING"
     output: JsonValue = None
     error: str | None = None

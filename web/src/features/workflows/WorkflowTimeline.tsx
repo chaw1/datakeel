@@ -2,7 +2,8 @@ import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { StateBadge } from "../tasks/StateBadge";
 
-import { stepLabel, workflowName } from "./labels";
+import { workflowName } from "./labels";
+import { workflowStepSummary, workflowStepTitle } from "./summary";
 
 import type { WorkflowRun } from "../../api/workflows";
 
@@ -74,12 +75,7 @@ export function WorkflowTimeline({
       <h3>{t("workflowSteps")}</h3>
       <ol className="workflow-timeline">
         {run.steps.map((step, index) => {
-          const output =
-            step.output === null || step.output === undefined
-              ? ""
-              : typeof step.output === "string"
-                ? step.output
-                : JSON.stringify(step.output);
+          const hasOutput = step.output !== null && step.output !== undefined;
           return (
             <li
               key={step.id}
@@ -90,31 +86,27 @@ export function WorkflowTimeline({
               <div className="workflow-step-body">
                 <div className="workflow-step-heading">
                   <div>
-                    <strong>{stepLabel(step.type, t)}</strong>{" "}
+                    <strong>{workflowStepTitle(step, locale, t)}</strong>{" "}
                     <code>{step.id}</code>
                   </div>
                   <StateBadge state={step.status} />
                 </div>
+                <p
+                  className="workflow-output-summary"
+                  aria-label={t("workflowOutputSummary")}
+                >
+                  {workflowStepSummary(step, run, locale, t)}
+                </p>
                 {step.error && (
                   <p className="error-text" role="alert">
                     {step.error}
                   </p>
                 )}
-                {output && (
-                  <>
-                    <p
-                      className="workflow-output-summary"
-                      aria-label={t("workflowOutputSummary")}
-                    >
-                      {output.length > 220
-                        ? `${output.slice(0, 220)}…`
-                        : output}
-                    </p>
-                    <details>
-                      <summary>{t("workflowOutput")}</summary>
-                      <pre>{JSON.stringify(step.output, null, 2)}</pre>
-                    </details>
-                  </>
+                {hasOutput && (
+                  <details>
+                    <summary>{t("workflowOutput")}</summary>
+                    <pre>{JSON.stringify(step.output, null, 2)}</pre>
+                  </details>
                 )}
               </div>
             </li>
