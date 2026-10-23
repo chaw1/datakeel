@@ -37,6 +37,14 @@ def test_settings_when_environment_changes_resolve_fresh_values(
     assert (first.home, get_settings().home) == (Path("first"), Path("second"))
 
 
+def test_settings_when_environment_unchanged_reuse_instance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify settings when environment unchanged reuse instance."""
+    monkeypatch.setenv("DATAKEEL_HOME", "shared")
+    assert get_settings() is get_settings()
+
+
 @pytest.mark.parametrize("timeout", [0, -1, 31])
 def test_settings_when_timeout_outside_bounds_rejects_input(timeout: int) -> None:
     """Verify settings when timeout outside bounds rejects input."""

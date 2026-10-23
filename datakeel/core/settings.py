@@ -3,6 +3,8 @@
 
 """Validated configuration for every application entry point."""
 
+import os
+from functools import lru_cache
 from pathlib import Path
 
 from pydantic import Field, SecretStr
@@ -10,7 +12,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Read the local process environment without caching mutable test settings."""
+    """Read the local process environment; callers share one instance per environment snapshot."""
 
     model_config = SettingsConfigDict(env_prefix="DATAKEEL_", extra="forbid", frozen=True)
 
@@ -32,4 +34,19 @@ class Settings(BaseSettings):
 
 def get_settings() -> Settings:
     """Resolve the current process configuration through one typed boundary."""
+    return _settings_for(_environment_snapshot())
+
+
+def _environment_snapshot() -> tuple[tuple[str, str], ...]:
+    """Capture the prefixed variables so a changed environment yields fresh settings."""
+    return tuple(
+        sorted(
+            (key, value) for key, value in os.environ.items() if key.upper().startswith("DATAKEEL_")
+        )
+    )
+
+
+@lru_cache(maxsize=8)
+def _settings_for(_snapshot: tuple[tuple[str, str], ...]) -> Settings:
+    """Build settings once per snapshot; parsing on every call dominated demo runtime."""
     return Settings()
