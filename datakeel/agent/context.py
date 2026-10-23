@@ -12,7 +12,9 @@ from datakeel.core.agent_models import (
     ModelRequest,
     ToolDefinition,
 )
+from datakeel.core.canary import canary_instruction
 from datakeel.core.context_tokens import allocate_tokens, estimate_tokens
+from datakeel.core.envelopes import envelope
 from datakeel.core.models import JsonDocument
 
 __all__ = ["allocate_tokens", "assemble", "estimate_tokens"]
@@ -33,32 +35,38 @@ def assemble(
     core_tools: list[ToolDefinition],
     loaded_tools: list[ToolDefinition],
     facts: JsonDocument,
+    canary: str = "",
 ) -> ModelRequest:
     """Place immutable instructions and core schemas before changing history and facts."""
+    history = [envelope(message) for message in conversation.messages]
+    secret = canary_instruction(canary) if canary else ""
     parts = [
         ("instructions", "stable", INSTRUCTIONS),
         ("core_tools", "stable", _schemas(core_tools)),
-        ("discovered_tools", "volatile", _schemas(loaded_tools)),
+        ("canary", "volatile", secret),
+        ("discovered_tools", "volatile", _schemas(loaded_tools) if loaded_tools else ""),
         (
             "history",
             "volatile",
-            json.dumps(
-                [m.model_dump(mode="json") for m in conversation.messages], separators=(",", ":")
-            ),
+            json.dumps([m.model_dump(mode="json") for m in history], separators=(",", ":"))
+            if history
+            else "",
         ),
-        ("workspace", "volatile", facts.model_dump_json()),
+        ("workspace", "volatile", facts.model_dump_json() if facts.root else ""),
     ]
     segments = [
         ContextSegment.model_validate(
             {"name": name, "kind": kind, "text": text, "tokens": estimate_tokens(text) + 16}
         )
         for name, kind, text in parts
+        if text
     ]
     return ModelRequest(
         model=conversation.config.model,
         messages=[
             ChatMessage(role="system", content=INSTRUCTIONS),
-            *conversation.messages,
+            *([ChatMessage(role="system", content=secret, name="canary")] if secret else []),
+            *history,
             ChatMessage(role="user", content=facts.model_dump_json(), name="workspace_context"),
         ],
         tools=[*core_tools, *loaded_tools],

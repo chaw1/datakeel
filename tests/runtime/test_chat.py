@@ -4,6 +4,9 @@
 """Scripted chat models preserve the provider-neutral fixture contract."""
 
 import pytest
+from langchain_core.callbacks import CallbackManagerForLLMRun
+from langchain_core.messages import BaseMessage
+from langchain_core.outputs import ChatResult
 
 from datakeel.agent.providers import FakeProvider
 from datakeel.core.agent_models import (
@@ -77,7 +80,34 @@ def test_scripted_when_no_tools_still_calls_original_provider() -> None:
     assert result.usage.input_tokens == 17
 
 
-def test_scripted_when_metadata_missing_rejects_unaccounted_model_invocation() -> None:
+def test_scripted_when_request_missing_rejects_unaccounted_model_invocation() -> None:
     """Direct framework calls cannot silently reconstruct different prompt accounting."""
-    with pytest.raises(ValidationError, match="request metadata"):
+    with pytest.raises(ValidationError, match="ephemeral typed request"):
         ScriptedChatModel(FakeProvider([])).invoke("unaccounted")
+
+
+def test_private_request_never_enters_framework_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Model content is ephemeral and absent from the runnable callback configuration."""
+    original = ScriptedChatModel._generate  # noqa: SLF001  # Inspect callback metadata before dispatch.
+    seen: list[object] = []
+    canary_value = "dkc_0123456789abcdef01234567"
+
+    def capture(
+        adapter: ScriptedChatModel,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
+        **kwargs: object,
+    ) -> ChatResult:
+        assert run_manager is not None
+        seen.append(run_manager.metadata)
+        assert canary_value not in str(run_manager.metadata)
+        assert canary_value not in adapter.model_dump_json()
+        return original(adapter, messages, stop, run_manager, **kwargs)
+
+    monkeypatch.setattr(ScriptedChatModel, "_generate", capture)
+    prompt = request().model_copy(
+        update={"messages": [ChatMessage(role="system", content=canary_value)]}
+    )
+    complete(FakeProvider([]), prompt)
+    assert len(seen) == 1

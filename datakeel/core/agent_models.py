@@ -107,7 +107,7 @@ class ConversationAudit(BoundaryModel):
     id: str
     conversation_id: str
     plan_id: str
-    kind: Literal["RESUME_DENIED", "RESUME_AUTHORIZED", "INTERRUPT_INVALIDATED"]
+    kind: Literal["RESUME_DENIED", "RESUME_AUTHORIZED", "INTERRUPT_INVALIDATED", "CANARY_LEAK"]
     reason: str
     created_at: datetime
 

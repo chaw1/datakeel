@@ -19,6 +19,7 @@ class ConversationRow(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSON)
     active_token: Mapped[str | None] = mapped_column(String, nullable=True)
     active_until: Mapped[float] = mapped_column(Float, default=0)
+    canary: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class ConversationRequestRow(Base):

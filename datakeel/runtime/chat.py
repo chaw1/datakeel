@@ -82,11 +82,13 @@ class ScriptedChatModel(BaseChatModel):
     """Wrap the existing mutable fixture queue without changing its typed request."""
 
     _provider: Provider = PrivateAttr()
+    _request: ModelRequest | None = PrivateAttr()
 
-    def __init__(self, provider: Provider) -> None:
+    def __init__(self, provider: Provider, request: ModelRequest | None = None) -> None:
         """Retain the original fake or demo provider for deterministic accounting."""
         super().__init__(cache=False)
         self._provider = provider
+        self._request = request
 
     @property
     def _llm_type(self) -> str:
@@ -105,12 +107,11 @@ class ScriptedChatModel(BaseChatModel):
         run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: object,
     ) -> ChatResult:
-        del messages, stop, kwargs
-        if run_manager is None or "datakeel_request" not in run_manager.metadata:
-            msg = "Scripted model requires typed request metadata"
+        del messages, stop, run_manager, kwargs
+        if self._request is None:
+            msg = "Scripted model requires an ephemeral typed request"
             raise ValidationError(msg)
-        request = ModelRequest.model_validate(run_manager.metadata["datakeel_request"])
-        result = self._provider.complete(request)
+        result = self._provider.complete(self._request)
         message = AIMessage(
             content=result.content,
             tool_calls=[
@@ -141,7 +142,6 @@ def _invoke(model: BaseChatModel, request: ModelRequest) -> ModelResponse:
         runnable = model.bind_tools(tools) if tools else model
         message = runnable.invoke(
             [_message(item) for item in request.messages],
-            config={"metadata": {"datakeel_request": request.model_dump(mode="json")}},
             model=request.model,
             max_tokens=request.max_output_tokens,
         )
@@ -174,4 +174,4 @@ def complete(provider: Provider, request: ModelRequest) -> ModelResponse:
     """Run every model attempt through a chat model while retaining fixture identity."""
     if isinstance(provider, ChatProvider):
         return provider.complete(request)
-    return _invoke(ScriptedChatModel(provider), request)
+    return _invoke(ScriptedChatModel(provider, request), request)

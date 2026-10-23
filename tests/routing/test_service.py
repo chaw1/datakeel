@@ -62,7 +62,11 @@ def test_keyword_or_free_route_when_unambiguous_adds_no_model_call(
         send_message(db, conversation.id, MessageInput(content=content), provider=provider)
     )
     assert len(list_traces(db, conversation.id)) == 1
-    assert provider.requests[0].messages[1].content == content
+    assert [
+        message.content
+        for message in provider.requests[0].messages
+        if message.role == "user" and message.name is None
+    ] == [content]
     assert any(event.route is not None for event in events)
 
 

@@ -117,3 +117,13 @@ Intent scoring uses only vocabulary, exclusions, thresholds and score margins de
 Before every conversational model call, loaded controlled actions or a plan in the current response select the high-risk tier; a prior tool result selects multi-step; otherwise the tier is simple. Explicit models are pinned; only `model=auto` selects from provider configuration. Fake mode keeps the configured model. All referenced models must have a declared price and belong to the same provider. Startup and CLI validation reject missing models, unknown tiers, cyclic chains and more than two backups.
 
 只有超时、429 与 5xx 可触发备用模型；400、401 不切换。每次尝试单独预留和结算预算并写 trace，后一条记录切换原因。SDK 自动重试仍关闭，HTTP 客户端仍忽略代理环境变量，追踪仍强制关闭。`done.model_routes` 暴露本次响应的档位、pinned 状态、模型及备用尝试，分类与备用尝试不额外消耗 max_turns。
+
+## 9. Canary and untrusted data / Canary 与不可信数据
+
+Each conversation has a private `dkc_` sentinel with 24 random hexadecimal characters in a separate nullable storage column. Legacy rows acquire a sentinel once after additive migration. It is never part of public conversation models, transcript, graph state, runnable config or checkpoint metadata. The model sees a short volatile `canary` segment after the stable instructions and core tool schemas. Scripted request objects remain on ephemeral model instances rather than framework metadata.
+
+模型节点在计费完成后、追加 assistant 消息前检测泄漏：忽略大小写与空白，完整值或随机部分连续 16 位均触发 `stopped` / `canary_leak`。该回复不产生 text 或工具执行，审计只记 `CANARY_LEAK` 和原因，不存秘密。计费记录仍保留真实用量。
+
+Tool history is encoded as `["data-only", tool_name, payload]` only when assembling a prompt; stored tool results retain their original JSON. The envelope's fixed overhead is 17 UTF-8 bytes, plus source-tool name and any JSON encoding required for non-JSON text. The canary segment consumes 66 units under the conservative byte estimator, including its 16-unit segment allowance. Empty context segments are omitted.
+
+威胁模型：信封区分数据和指令，canary 检测部分提示泄漏；二者不保证模型完全免受提示注入。恶意 caption 或元数据仍可能诱导可逆动作自动执行，这些动作有审计和回滚。不可逆动作始终由受控动作签批边界保护，没有人类签批不能执行。各项测试只用独立生成样例和离线模型。

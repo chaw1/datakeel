@@ -1802,7 +1802,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "RESUME_DENIED" | "RESUME_AUTHORIZED" | "INTERRUPT_INVALIDATED";
+            kind: "RESUME_DENIED" | "RESUME_AUTHORIZED" | "INTERRUPT_INVALIDATED" | "CANARY_LEAK";
             /** Plan Id */
             plan_id: string;
             /** Reason */

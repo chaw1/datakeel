@@ -121,4 +121,4 @@ expect:
   - Continue local conversation turn 34.
   file_count: 3
   max_turns: 35
-  max_tokens: 350000
+  max_tokens: 400000

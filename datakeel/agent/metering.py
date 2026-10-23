@@ -16,6 +16,7 @@ from datakeel.routing.attempts import complete_with_fallback
 from datakeel.routing.config import load_config
 from datakeel.routing.tiers import model_chain, select_model
 from datakeel.storage import conversation_store as memory
+from datakeel.storage.conversation_secrets import get_canary
 from datakeel.storage.database import Database
 
 
@@ -46,6 +47,7 @@ class ModelMeter:
             catalog.core,
             list(catalog.loaded.values()),
             workspace(self.db, conversation),
+            get_canary(self.db, self.conversation_id),
         )
         config = load_config()
         route = select_model(

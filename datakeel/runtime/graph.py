@@ -19,6 +19,7 @@ from datakeel.agent.metering import ModelMeter
 from datakeel.agent.models import AgentEvent
 from datakeel.agent.recovery import execute_approved
 from datakeel.core.agent_models import ChatMessage, Provider, ResumeInput, ToolCall
+from datakeel.core.canary import response_leaks
 from datakeel.core.errors import BudgetError, ConflictError, DatakeelError, ValidationError
 from datakeel.core.models import BoundaryModel
 from datakeel.ontology.tool_models import ToolOutcome
@@ -28,6 +29,7 @@ from datakeel.runtime.saver import SQLAlchemySaver
 from datakeel.runtime.tracing import tracing_disabled
 from datakeel.storage import conversation_store as memory
 from datakeel.storage.conversation_authorization import authorize_resume, record_audit
+from datakeel.storage.conversation_secrets import get_canary
 from datakeel.storage.database import Database
 
 if TYPE_CHECKING:
@@ -180,6 +182,9 @@ class AgentGraph:
             return self._stop(state, "budget_exceeded")
         except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError) as error:
             return self._stop(state, "provider_error", type(error).__name__)
+        if response_leaks(get_canary(self.db, self.conversation_id), response):
+            record_audit(self.db, self.conversation_id, "", "CANARY_LEAK", "model_output")
+            return self._stop(state, "canary_leak")
         memory.append(
             self.db,
             self.conversation_id,

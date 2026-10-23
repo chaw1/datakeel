@@ -4,6 +4,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- Private per-conversation canaries stop leaked model text and tool arguments before transcript, checkpoint or tool dispatch. Tool results enter prompts in compact data-only JSON envelopes; raw audit transcripts remain unchanged.
+
 ### Fixed
 
 - Phone redaction preserves ISO dates, slash-separated dates and time values while continuing to redact local and international phone numbers.

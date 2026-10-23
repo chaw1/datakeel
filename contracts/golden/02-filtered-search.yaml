@@ -19,4 +19,4 @@ expect:
   - empty text
   file_count: 3
   max_turns: 2
-  max_tokens: 15000
+  max_tokens: 16500

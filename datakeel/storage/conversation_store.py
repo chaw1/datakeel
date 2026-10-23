@@ -15,6 +15,7 @@ from datakeel.core.agent_models import (
     ConversationLease,
     MessageInput,
 )
+from datakeel.core.canary import generate_canary
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.models import JsonDocument, new_id, utcnow
 from datakeel.storage.conversation_rows import (
@@ -29,7 +30,11 @@ def create(db: Database, config: ConversationCreate) -> Conversation:
     """Persist one local conversation before any model or tool invocation."""
     view = Conversation(id=new_id(), config=config)
     with db.session() as session:
-        session.add(ConversationRow(id=view.id, payload=view.model_dump(mode="json")))
+        session.add(
+            ConversationRow(
+                id=view.id, payload=view.model_dump(mode="json"), canary=generate_canary()
+            )
+        )
         session.commit()
     return view
 

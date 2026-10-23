@@ -8,6 +8,7 @@ from collections.abc import Mapping
 
 from datakeel.agent.evidence_demo import respond_evidence
 from datakeel.core.agent_models import ChatMessage, ModelRequest, ModelResponse, ToolCall
+from datakeel.core.envelopes import unwrap
 from datakeel.core.harness_models import TokenUsage
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.tool_models import ToolOutcome
@@ -18,6 +19,7 @@ class DemoProvider:
 
     def complete(self, request: ModelRequest) -> ModelResponse:
         """Use the complete session transcript to resolve current-turn progress."""
+        request = request.model_copy(update={"messages": [unwrap(m) for m in request.messages]})
         users = [
             index
             for index, message in enumerate(request.messages)

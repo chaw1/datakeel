@@ -77,7 +77,7 @@ def record_audit(
     db: Database,
     conversation_id: str,
     plan_id: str,
-    kind: Literal["INTERRUPT_INVALIDATED"],
+    kind: Literal["INTERRUPT_INVALIDATED", "CANARY_LEAK"],
     reason: str,
 ) -> None:
     """Record replacement of a pause before deleting its disposable checkpoint."""
