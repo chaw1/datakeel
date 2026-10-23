@@ -28,15 +28,20 @@ export function ObjectPage({
   target,
   onOpen,
   onDataChanged,
+  onNameChange,
 }: {
   target: ObjectTarget;
   onOpen?: (target: ObjectTarget) => void;
   onDataChanged?: () => void;
+  onNameChange?: (target: ObjectTarget, name: string) => void;
 }) {
   const { t } = useI18n();
   const resource = useObject(target);
   const data = resource.value;
   const tab = target.tab ?? "relations";
+  useEffect(() => {
+    if (data) onNameChange?.(data.target, data.name);
+  }, [data, onNameChange]);
   useEffect(() => {
     const ids = [
       target.eventId && `object-event-${target.eventId}`,

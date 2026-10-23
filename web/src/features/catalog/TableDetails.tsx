@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { tablePath } from "../../api/catalog";
 import { ResourceState } from "../../components/ResourceState";
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 import { objectHref } from "../object/navigation";
@@ -19,7 +20,7 @@ export function TableDetails({
   tableId: string;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [fieldId, setFieldId] = useState("");
   const resource = useResource<CatalogTableDetail>(tablePath(tableId));
   const detail = resource.value;
@@ -34,7 +35,7 @@ export function TableDetails({
         <>
           <div className="section-heading">
             <div>
-              <h2>{detail.table.name}</h2>
+              <h2>{localizedObjectName("table", detail.table.name, locale)}</h2>
               <a
                 className="text-button"
                 href={objectHref({ kind: "table", id: tableId })}
@@ -57,8 +58,9 @@ export function TableDetails({
           <p>
             <strong>{t("catOwner")}</strong>
             {": "}
-            {detail.owners.map((item) => item.name).join(", ") ||
-              t("catNotSet")}
+            {detail.owners
+              .map((item) => localizedObjectName("owner", item.name, locale))
+              .join(", ") || t("catNotSet")}
           </p>
           <div className="catalog-table-scroll">
             <table>
@@ -81,7 +83,9 @@ export function TableDetails({
                           id: column.asset_ref.asset_id,
                         })}
                       >
-                        <strong>{column.name}</strong>
+                        <strong>
+                          {localizedObjectName("column", column.name, locale)}
+                        </strong>
                       </a>
                     </td>
                     <td className="mono">
@@ -98,7 +102,7 @@ export function TableDetails({
                     <td>
                       <button
                         className="text-button"
-                        aria-label={`${t("catImpact")}: ${column.name}`}
+                        aria-label={`${t("catImpact")}: ${localizedObjectName("column", column.name, locale)}`}
                         onClick={() => {
                           setFieldId(column.asset_ref.asset_id);
                         }}
@@ -133,7 +137,7 @@ export function TableDetails({
                         });
                       }}
                     >
-                      {metric.name}
+                      {localizedObjectName("metric", metric.name, locale)}
                     </button>
                   </li>
                 ))}

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { objectKinds } from "../features/object/navigation";
+import { I18nContext, translator } from "../i18n/context";
 
 import { CommandPalette } from "./CommandPalette";
 
@@ -159,3 +160,77 @@ it("reads the typed search term and exposes a retry without changing location on
   );
   expect(navigate).not.toHaveBeenCalled();
 });
+
+it("updates result and conversation names with the language while retaining IDs and original names", async () => {
+  const items: SearchResult[] = [
+    { kind: "metric", id: "retail_revenue", name: "零售额" },
+    { kind: "term", id: "term/retail", name: "零售区域" },
+    { kind: "table", id: "custom-table", name: "自定义表" },
+  ];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(new Response(JSON.stringify(items)))),
+  );
+  const navigate = vi.fn<(href: string) => void>();
+  const user = userEvent.setup();
+  const content = (locale: "en" | "zh") => (
+    <I18nContext.Provider
+      value={{ locale, setLocale: vi.fn(), t: translator(locale) }}
+    >
+      <CommandPalette onNavigate={navigate} />
+    </I18nContext.Provider>
+  );
+  const { rerender } = render(content("en"));
+  fireEvent.keyDown(window, { key: "k", metaKey: true });
+  expect(
+    await screen.findByRole("option", { name: /Retail revenue/ }),
+  ).toBeVisible();
+  expect(screen.getByRole("option", { name: /Retail region/ })).toBeVisible();
+  expect(screen.getByRole("option", { name: /自定义表/ })).toBeVisible();
+  rerender(content("zh"));
+  expect(screen.getByRole("option", { name: /零售额/ })).toBeVisible();
+  expect(screen.getByRole("option", { name: /零售区域/ })).toBeVisible();
+  rerender(content("en"));
+  await user.click(
+    screen.getByRole("button", {
+      name: "Start a conversation about Retail revenue",
+    }),
+  );
+  const query = new URLSearchParams(navigate.mock.calls[0][0].split("?")[1]);
+  expect(query.get("prompt")).toContain("Retail revenue");
+  expect(query.get("prompt")).toContain("retail_revenue");
+  expect(items[0].name).toBe("零售额");
+});
+
+it.each([
+  ["dataset", "零售额", "en", "零售额"],
+  ["file", "零售额", "en", "零售额"],
+  ["metric", "Retail revenue", "zh", "Retail revenue"],
+  ["term", "Retail region", "zh", "Retail region"],
+  ["column", "orders.零售品类", "en", "orders.Retail category"],
+  ["column", "orders.零售品类", "zh", "orders.零售品类"],
+] as const)(
+  "shows %s search name %s in %s without changing its identity",
+  async (kind, name, locale, expected) => {
+    const item: SearchResult = { kind, id: "original-object", name };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response(JSON.stringify([item])))),
+    );
+    const navigate = vi.fn();
+    render(
+      <I18nContext.Provider
+        value={{ locale, setLocale: vi.fn(), t: translator(locale) }}
+      >
+        <CommandPalette onNavigate={navigate} />
+      </I18nContext.Provider>,
+    );
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    const result = await screen.findByRole("option");
+    expect(result.querySelector(".command-name")).toHaveTextContent(expected);
+    await userEvent.click(result);
+    expect(navigate).toHaveBeenCalledWith(
+      `#/object/${kind}/original-object?tab=relations`,
+    );
+  },
+);

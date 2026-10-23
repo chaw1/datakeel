@@ -25,6 +25,8 @@ uv run pyright
 
 The interface organizes work into six groups: Workbench, Data, Evidence & quality, Operations, Agents and Models. Start at the workbench to review pending approvals, running pipelines, recent actions and dataset quality alerts. Eight object kinds share an archive with facts, relationships, evidence and history; each fact links to its source. Related actions with the same name fold into an expandable ×N card, and local graphs remain bounded to 25 visible nodes.
 
+Catalog names with an English translation use it consistently in object titles, breadcrumbs, search results, approval sheets and relationship cards. Names without a translation keep their original spelling.
+
 - **Three-state marks** distinguish present, absent and unknown evidence; a dot means no assertion. Review status remains separate from the evidence value.
 - **Evidence anchors** connect an underlined caption and its superscript to the same numbered concept row and image box. Hovering highlights all three. At 1440×900, the evidence list shows six complete samples; use j/k, a/r and Esc in the detail drawer to navigate, accept, reject and close.
 - **Source footnotes** consolidate extractor/version references and connect answer numbers to the metric, SQL, source fields and time range. Clarification candidates rerun the original question with an explicit metric; unavailable answers explain the missing information.

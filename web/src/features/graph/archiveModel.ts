@@ -1,5 +1,8 @@
 import { translator } from "../../i18n/context";
-import { localizedCatalogName } from "../../i18n/graphCatalogNames";
+import {
+  localizedCatalogName,
+  localizedObjectName,
+} from "../../i18n/graphCatalogNames";
 import { catalogKindLabel } from "../lineage/catalogLabels";
 
 import type { Graph, GraphEdge, GraphNode } from "../../api/types";
@@ -41,11 +44,13 @@ export function safeNodeName(node: GraphNode, locale: Locale = "en"): string {
   }
   if (["metric", "dimension"].includes(kind))
     return localizedCatalogName(readable, t);
-  if (kind === "column" && !readable.includes(".")) {
+  if (kind === "column") {
     const table = node.asset_id.split("/").at(-2);
-    if (table) return `${table}.${readable}`;
+    const qualified =
+      !readable.includes(".") && table ? `${table}.${readable}` : readable;
+    return localizedObjectName(kind, qualified, locale);
   }
-  return readable;
+  return localizedObjectName(kind, readable, locale);
 }
 
 export function middleEllipsis(value: string, length: number): string {

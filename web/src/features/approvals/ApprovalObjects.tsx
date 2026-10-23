@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { bytes } from "../../lib/format";
 import { isObjectKind, objectHref } from "../object/navigation";
@@ -10,7 +11,7 @@ import { isMetricPlan } from "./metricObject";
 import type { ActionPlan } from "../../api/types";
 
 export function ApprovalObjects({ plan }: { plan: ActionPlan }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [limit, setLimit] = useState(5);
   const objects = plan.manifest.objects;
   if (isMetricPlan(plan))
@@ -29,7 +30,11 @@ export function ApprovalObjects({ plan }: { plan: ActionPlan }) {
             item.properties.filename ??
             item.properties.name ??
             ref.display_name;
-          const label = typeof name === "string" && name ? name : ref.asset_id;
+          const label = localizedObjectName(
+            ref.asset_type,
+            typeof name === "string" && name ? name : ref.asset_id,
+            locale,
+          );
           const quality = item.properties.quality;
           return (
             <li key={`${ref.asset_id}:${ref.version ?? ""}`}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { useWorkspace } from "../features/datasets/useWorkspace";
 import { objectHref } from "../features/object/navigation";
@@ -19,7 +19,7 @@ import { useDashboard } from "./useDashboard";
 import { useLegacyRoute } from "./useLegacyRoute";
 
 import type { Page, LineageTarget } from "./navigation";
-import type { ObjectTab } from "../features/object/navigation";
+import type { ObjectTab, ObjectTarget } from "../features/object/navigation";
 
 export default function App() {
   const { t } = useI18n();
@@ -38,6 +38,17 @@ export default function App() {
     error,
   } = workspace;
   const page = route.page;
+  const [objectName, setObjectName] = useState({ key: "", name: "" });
+  const receiveObjectName = useCallback(
+    (target: ObjectTarget, name: string) => {
+      setObjectName({ key: `${target.kind}:${target.id}`, name });
+    },
+    [],
+  );
+  const currentObjectName =
+    route.object && objectName.key === `${route.object.kind}:${route.object.id}`
+      ? objectName.name
+      : undefined;
   function navigate(next: Page) {
     const tabs: Partial<Record<Page, ObjectTab>> = {
       overview: "facts",
@@ -73,7 +84,13 @@ export default function App() {
         error={error || dashboard.error}
       />
       <div className="main-shell">
-        <Topbar page={page} navigate={navigate} selected={selected} />
+        <Topbar
+          page={page}
+          navigate={navigate}
+          selected={selected}
+          objectName={currentObjectName}
+          objectKind={route.object?.kind}
+        />
         <main>
           {(error || dashboard.error) && (
             <div className="error-banner" role="alert">
@@ -96,6 +113,7 @@ export default function App() {
               key={`${route.object.kind}:${route.object.id}`}
               target={route.object}
               onDataChanged={changed}
+              onNameChange={receiveObjectName}
             />
           ) : page === "runs" ? (
             <RunsPage data={dashboard.value} params={route.params} />

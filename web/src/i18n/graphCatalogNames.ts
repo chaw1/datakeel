@@ -1,7 +1,8 @@
+import { translator } from "./context";
 import { graphEn } from "./graphEn";
 import { graphZh } from "./graphZh";
 
-import type { Translate } from "./context";
+import type { Locale, Translate } from "./context";
 
 const nameKeys = Object.keys(graphEn).filter((key) =>
   key.startsWith("graphCatalog"),
@@ -12,4 +13,31 @@ export function localizedCatalogName(name: string, t: Translate): string {
     (key) => graphEn[key] === name || graphZh[key] === name,
   );
   return key ? t(key) : name;
+}
+
+export function localizedObjectName(
+  kind: string,
+  name: string,
+  locale: Locale,
+): string {
+  if (
+    locale !== "en" ||
+    ![
+      "source",
+      "table",
+      "column",
+      "metric",
+      "dimension",
+      "term",
+      "owner",
+    ].includes(kind)
+  )
+    return name;
+  const t = translator(locale);
+  return kind === "column"
+    ? name
+        .split(".")
+        .map((part) => localizedCatalogName(part, t))
+        .join(".")
+    : localizedCatalogName(name, t);
 }

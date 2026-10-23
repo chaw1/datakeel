@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { get } from "../api/client";
 import { kindLabels } from "../features/object/descriptors";
 import { objectHref } from "../features/object/navigation";
+import { localizedObjectName } from "../i18n/graphCatalogNames";
 import { useI18n } from "../i18n/useI18n";
 import { useCompositionGuard } from "../lib/useCompositionGuard";
 import { useResource } from "../lib/useResource";
@@ -23,7 +24,7 @@ export function CommandPalette({
 }: {
   onNavigate?: (href: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState(0);
@@ -62,7 +63,7 @@ export function CommandPalette({
   }
   function startConversation(item: SearchResult) {
     const prompt = t("cmdPrompt", {
-      name: item.name,
+      name: localizedObjectName(item.kind, item.name, locale),
       kind: t(kindLabels[item.kind]),
       id: item.id,
     });
@@ -246,7 +247,9 @@ export function CommandPalette({
                     <span className="command-kind">
                       {t(kindLabels[item.kind])}
                     </span>
-                    <span className="command-name">{item.name}</span>
+                    <span className="command-name">
+                      {localizedObjectName(item.kind, item.name, locale)}
+                    </span>
                     <code title={item.id}>{item.id.slice(0, 8)}</code>
                   </button>
                 </li>
@@ -263,7 +266,13 @@ export function CommandPalette({
                     startConversation(selected);
                   }}
                 >
-                  {t("cmdConversation", { name: selected.name })}
+                  {t("cmdConversation", {
+                    name: localizedObjectName(
+                      selected.kind,
+                      selected.name,
+                      locale,
+                    ),
+                  })}
                 </button>
               )}
               <p>{t("cmdHint")}</p>

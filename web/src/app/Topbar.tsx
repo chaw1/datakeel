@@ -1,5 +1,6 @@
 import { CommandPalette } from "../components/CommandPalette";
 import { Icon } from "../components/Icon";
+import { localizedObjectName } from "../i18n/graphCatalogNames";
 import { useI18n } from "../i18n/useI18n";
 
 import { operationPages } from "./navigation";
@@ -7,15 +8,20 @@ import { ThemeControl } from "./ThemeControl";
 
 import type { Page } from "./navigation";
 import type { Dataset } from "../api/types";
+import type { ObjectKind } from "../features/object/navigation";
 
 export function Topbar({
   page,
   navigate,
   selected,
+  objectName,
+  objectKind,
 }: {
   page: Page;
   navigate: (page: Page) => void;
   selected?: Dataset;
+  objectName?: string;
+  objectKind?: ObjectKind;
 }) {
   const { t, locale, setLocale } = useI18n();
   const operation = operationPages.find((item) => item.id === page);
@@ -24,7 +30,9 @@ export function Topbar({
     : page === "workbench"
       ? t("workbench")
       : page === "object"
-        ? t("pageObject")
+        ? locale === "en" && objectName && objectKind
+          ? localizedObjectName(objectKind, objectName, locale)
+          : t("pageObject")
         : page === "runs"
           ? t("runRecords")
           : page === "quality"

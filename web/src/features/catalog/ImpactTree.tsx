@@ -1,5 +1,6 @@
 import { impactPath } from "../../api/catalog";
 import { ResourceState } from "../../components/ResourceState";
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 
@@ -16,7 +17,7 @@ export function ImpactTree({
   assetId: string;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const resource = useResource<ImpactResult>(impactPath(assetId));
   const branches = resource.value ? impactBranches(resource.value) : [];
   function nodes(items: ImpactBranch[]) {
@@ -33,7 +34,11 @@ export function ImpactTree({
                 });
               }}
             >
-              {item.name}
+              {localizedObjectName(
+                item.asset_ref.asset_type,
+                item.name,
+                locale,
+              )}
             </button>
             <small className="mono">{item.asset_ref.asset_id}</small>
             {!!children.length && nodes(children)}

@@ -9,7 +9,7 @@ import { dataset, task } from "../test/fixtures";
 
 import App from "./App";
 
-function mockWorkspace() {
+function mockWorkspace(metricName = metric.definition.name) {
   const objects = mockObjects().getMockImplementation();
   if (!objects) throw new Error("Object fixture missing");
   const fetch = vi.fn((path: string) => {
@@ -23,10 +23,15 @@ function mockWorkspace() {
         {
           kind: "metric",
           id: metric.definition.id,
-          name: metric.definition.name,
+          name: metricName,
         },
         { kind: "dataset", id: dataset.id, name: dataset.name },
       ];
+    else if (path === `/api/catalog/metrics/${metric.definition.id}`)
+      payload = {
+        ...metric,
+        definition: { ...metric.definition, name: metricName },
+      };
     else return objects(path);
     return Promise.resolve(new Response(JSON.stringify(payload)));
   });
@@ -67,6 +72,43 @@ it("opens the workbench, six navigation groups, dataset archive and persisted la
   ).toBeVisible();
   expect(document.documentElement.lang).toBe("zh");
   expect(localStorage.getItem("datakeel.locale")).toBe("zh");
+});
+
+it("shares the fetched object name with the breadcrumb and updates both when switching language", async () => {
+  mockWorkspace("零售额");
+  window.history.replaceState(
+    null,
+    "",
+    "#/object/metric/retail_revenue?tab=relations",
+  );
+  const user = userEvent.setup();
+  render(
+    <I18nProvider>
+      <App />
+    </I18nProvider>,
+  );
+  expect(
+    await screen.findByRole("heading", { level: 1, name: "Retail revenue" }),
+  ).toBeVisible();
+  await waitFor(() => {
+    expect(document.querySelector(".breadcrumb-current")).toHaveTextContent(
+      "Retail revenue",
+    );
+  });
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: "Language" }),
+    "zh",
+  );
+  expect(
+    screen.getByRole("heading", { level: 1, name: "零售额" }),
+  ).toBeVisible();
+  expect(document.querySelector(".breadcrumb-current")).toHaveTextContent(
+    "对象",
+  );
+  await user.click(screen.getByRole("link", { name: "工作台" }));
+  expect(document.querySelector(".breadcrumb-current")).toHaveTextContent(
+    "工作台",
+  );
 });
 
 it("shows a retry action when the API is unavailable", async () => {

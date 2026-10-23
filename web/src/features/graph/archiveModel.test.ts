@@ -170,6 +170,14 @@ it("removes term prefixes and never leaves unnamed cards showing only the type",
   ).toBe("文件 dce31df1");
 });
 
+it("localizes column names with an existing or inferred table prefix", () => {
+  for (const name of ["零售品类", "orders.零售品类"]) {
+    const column = node("shop/main/orders/category", name, "column");
+    expect(safeNodeName(column, "en")).toBe("orders.Retail category");
+    expect(safeNodeName(column, "zh")).toBe("orders.零售品类");
+  }
+});
+
 it("uses each asset identity for unnamed versioned files and metric revisions", () => {
   expect(
     safeNodeName({

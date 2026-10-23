@@ -2,7 +2,10 @@ import { useState } from "react";
 
 import { metricPath } from "../../api/catalog";
 import { ResourceState } from "../../components/ResourceState";
-import { localizedCatalogName } from "../../i18n/graphCatalogNames";
+import {
+  localizedCatalogName,
+  localizedObjectName,
+} from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 import { objectHref } from "../object/navigation";
@@ -24,7 +27,7 @@ export function MetricDetails({
   onOpenReceipt: (target: LineageTarget) => void;
   initialEditing?: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const resource = useResource<MetricCard>(metricPath(metricId));
   const [editing, setEditing] = useState(initialEditing);
   const card = resource.value;
@@ -75,7 +78,7 @@ export function MetricDetails({
             </div>
             <div>
               <dt>{t("catOwner")}</dt>
-              <dd>{metric.owner}</dd>
+              <dd>{localizedObjectName("owner", metric.owner, locale)}</dd>
             </div>
           </dl>
           <p>{metric.description}</p>

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { prepareMetric, tablePath } from "../../api/catalog";
 import { ResourceState } from "../../components/ResourceState";
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { useResource } from "../../lib/useResource";
@@ -35,7 +36,7 @@ export function MetricEditor({
   onChanged: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isComposing = useCompositionGuard();
   const [draft, setDraft] = useState<MetricDefinition>(card.definition);
   const [synonymText, setSynonymText] = useState(
@@ -150,7 +151,11 @@ export function MetricEditor({
                     key={item.asset_ref.asset_id}
                     value={item.asset_ref.asset_id}
                   >
-                    {item.name}
+                    {localizedObjectName(
+                      item.asset_ref.asset_type,
+                      item.name,
+                      locale,
+                    )}
                   </option>
                 ))}
               </select>

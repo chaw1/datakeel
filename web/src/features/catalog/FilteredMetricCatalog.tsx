@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { tablePath } from "../../api/catalog";
 import { get } from "../../api/client";
 import { ResourceState } from "../../components/ResourceState";
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 
 import { MetricDetails } from "./MetricDetails";
@@ -27,7 +28,7 @@ export function FilteredMetricCatalog({
   onOpenReceipt: (target: LineageTarget) => void;
   onCount?: (count: number) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [items, setItems] = useState<CatalogObject[]>([]);
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
@@ -88,7 +89,11 @@ export function FilteredMetricCatalog({
                   setSelected(item.asset_ref.asset_id);
                 }}
               >
-                {item.name}
+                {localizedObjectName(
+                  item.asset_ref.asset_type,
+                  item.name,
+                  locale,
+                )}
               </button>
             </li>
           ))}

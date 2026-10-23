@@ -122,7 +122,7 @@ Return to Ask and enter `上个季度华东区零售额是多少`. Submit the sa
 
 ## 7. Find the object again with ⌘K / Ctrl+K (30 seconds)
 
-Press ⌘K on macOS or Ctrl+K elsewhere, type `retail_revenue`, select 零售额 (retail revenue), and press Enter to open the metric object.
+Press ⌘K on macOS or Ctrl+K elsewhere, type `retail_revenue`, select Retail revenue (零售额 in Chinese), and press Enter to open the metric object. In English, the object title, breadcrumb, relationship card and approval sheet use the same name; objects without a translation keep their original names. The Chinese interface retains its existing labels.
 
 ![Command palette finding a metric by ID](images/demo/14-command-palette.jpg)
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { catalogPath } from "../../api/catalog";
 import { ResourceState } from "../../components/ResourceState";
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 import { objectHref } from "../object/navigation";
@@ -16,7 +17,7 @@ export function Glossary({
 }: {
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
   const [offset, setOffset] = useState(0);
   const resource = useResource<CatalogPage>(
@@ -62,7 +63,9 @@ export function Glossary({
                           id: term.asset_ref.asset_id,
                         })}
                       >
-                        <strong>{term.name}</strong>
+                        <strong>
+                          {localizedObjectName("term", term.name, locale)}
+                        </strong>
                       </a>
                     </td>
                     <td>{synonyms(term).join(", ") || t("catNotSet")}</td>

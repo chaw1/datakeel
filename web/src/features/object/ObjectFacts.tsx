@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 
 import { objectFacts } from "./descriptors";
@@ -14,7 +15,7 @@ export function ObjectFacts({
   data: ObjectData;
   target: ObjectTarget;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [manifestHash, setManifestHash] = useState("");
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -57,7 +58,9 @@ export function ObjectFacts({
           <strong>
             {fact.label === "objReceipt" && data.action
               ? t(data.action.status)
-              : fact.value}
+              : fact.label === "objOwner" && typeof fact.value === "string"
+                ? localizedObjectName("owner", fact.value, locale)
+                : fact.value}
           </strong>
         </a>
       ))}

@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
+import { I18nContext, translator } from "../../i18n/context";
+
 import { CatalogList } from "./CatalogList";
 import { page, source } from "./fixtures";
 
@@ -60,4 +62,23 @@ it("shows errors with a retry and reports a successful empty result separately",
   expect(
     await screen.findByText("No registered objects match this view."),
   ).toBeVisible();
+});
+
+it("preserves an original English catalog name in the Chinese interface", async () => {
+  const item = { ...source, name: "Retail revenue" };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(new Response(JSON.stringify(page([item]))))),
+  );
+  render(
+    <I18nContext.Provider
+      value={{ locale: "zh", setLocale: vi.fn(), t: translator("zh") }}
+    >
+      <CatalogList collection="sources" label="Sources" onSelect={vi.fn()} />
+    </I18nContext.Provider>,
+  );
+  expect(
+    await screen.findByRole("button", { name: /Retail revenue/ }),
+  ).toBeVisible();
+  expect(screen.queryByText("零售额")).not.toBeInTheDocument();
 });

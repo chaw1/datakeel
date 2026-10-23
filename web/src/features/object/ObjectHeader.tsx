@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 
 import { kindLabels, objectStatus } from "./descriptors";
@@ -15,15 +16,16 @@ export function ObjectHeader({
   data: ObjectData;
   target: ObjectTarget;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const name = localizedObjectName(target.kind, data.name || target.id, locale);
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   const chatDataset =
     target.kind === "dataset"
       ? target.id
       : (data.dataset?.id ?? target.datasetId);
-  const chat = `#/agent?${new URLSearchParams({ prompt: t("objChatPrompt", { name: data.name, kind: t(kindLabels[target.kind]), id: target.id }), ...(chatDataset ? { dataset: chatDataset } : {}) }).toString()}`;
-  const ask = `#/ask?${new URLSearchParams({ question: t("objAskPrompt", { name: data.name }), ...(target.kind === "metric" ? { metric: target.id } : {}) }).toString()}`;
+  const chat = `#/agent?${new URLSearchParams({ prompt: t("objChatPrompt", { name, kind: t(kindLabels[target.kind]), id: target.id }), ...(chatDataset ? { dataset: chatDataset } : {}) }).toString()}`;
+  const ask = `#/ask?${new URLSearchParams({ question: t("objAskPrompt", { name }), ...(target.kind === "metric" ? { metric: target.id } : {}) }).toString()}`;
   async function copyId() {
     try {
       await navigator.clipboard.writeText(target.id);
@@ -40,7 +42,7 @@ export function ObjectHeader({
           <span>{t(kindLabels[target.kind])}</span>
           <span className="badge gray">{t(objectStatus(data))}</span>
         </p>
-        <h1 className="page-title">{data.name}</h1>
+        <h1 className="page-title">{name}</h1>
         <button
           className="object-id"
           title={target.id}
