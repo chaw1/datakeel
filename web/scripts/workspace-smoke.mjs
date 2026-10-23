@@ -437,17 +437,46 @@ export async function workspaceSmoke({ page, json, post, screenshot, checks }) {
     { kind: "metric", table: tableId },
     ".catalog-object-list",
   );
+  for (const { locale, heading, names } of [
+    {
+      locale: "en",
+      heading: "Metrics",
+      names: ["Order count", "Retail revenue", "Retail units"],
+    },
+    {
+      locale: "zh",
+      heading: "指标目录",
+      names: table.metrics.map((item) => item.name),
+    },
+  ]) {
+    await page
+      .getByRole("combobox", { name: /^(Language|语言)$/ })
+      .selectOption(locale);
+    await page
+      .getByRole("heading", {
+        name: `${heading} · ${table.metrics.length}`,
+        exact: true,
+      })
+      .waitFor();
+    assert.deepEqual(
+      (
+        await page.locator(".catalog-object-list button").allTextContents()
+      ).sort(),
+      names.sort(),
+      `Filtered metric names in ${locale}`,
+    );
+  }
+  await page
+    .getByRole("combobox", { name: /^(Language|语言)$/ })
+    .selectOption("en");
   await page
     .getByRole("heading", {
       name: `Metrics · ${table.metrics.length}`,
       exact: true,
     })
     .waitFor();
-  assert.deepEqual(
-    (
-      await page.locator(".catalog-object-list button").allTextContents()
-    ).sort(),
-    table.metrics.map((item) => item.name).sort(),
+  checks.push(
+    "table metric destinations preserve API names in Chinese and show the exact localized fixture names in English",
   );
   await openObject("table", tableId);
   const imported = [...tableGraph.events]

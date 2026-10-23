@@ -56,7 +56,10 @@ export async function polishSmoke({ page, json, screenshot, checks }) {
   const origin = new URL(page.url()).origin;
   await page
     .getByRole("combobox", { name: /^(Language|语言)$/ })
-    .selectOption("en");
+    .selectOption("zh");
+  await page.waitForFunction(
+    () => globalThis.document.documentElement.lang === "zh",
+  );
   await page.setViewportSize({ width: 1440, height: 900 });
   const objects = await json("/api/search?limit=100");
   const kinds = [
@@ -78,7 +81,9 @@ export async function polishSmoke({ page, json, screenshot, checks }) {
       writes.push(request.url());
   };
   page.on("request", observe);
-  const input = page.getByRole("combobox", { name: "Object name or ID" });
+  const input = page.getByRole("combobox", {
+    name: /^(Object name or ID|对象名称或 ID)$/,
+  });
   for (const kind of kinds) {
     const object = objects.find((item) => item.kind === kind);
     assert.ok(object, kind);
@@ -95,6 +100,12 @@ export async function polishSmoke({ page, json, screenshot, checks }) {
     );
     await page.locator(".object-header h1").waitFor();
   }
+  await page
+    .getByRole("combobox", { name: /^(Language|语言)$/ })
+    .selectOption("en");
+  await page.waitForFunction(
+    () => globalThis.document.documentElement.lang === "en",
+  );
   const dataset = objects.find((item) => item.kind === "dataset");
   for (const text of [dataset.id, dataset.id.slice(0, 8)]) {
     await page.keyboard.press("Meta+k");
