@@ -4,21 +4,6 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
-### Fixed
-
-- Agent resume and recovery audit endpoints now share the `/api/agent/conversations` prefix with the other conversation endpoints.
-- CI starts the Postgres service container; its health-check command is double-quoted for the runner.
-- English object headings, breadcrumbs, command search and approval object names reuse the catalog translations shown on graph cards. Catalog types and qualified field names share the same fallback; Chinese labels and non-catalog object names retain their existing behavior.
-
-### Changed
-
-- Runtime framework dependency declarations use upper bounds or documented exact pins; locked package versions are unchanged.
-- `make check` scans tracked and untracked publishable worktree files for private content before other checks. Reserved example email domains are accepted, generated sample contacts use `example.org`, and commit identities still require GitHub noreply addresses.
-
-### Performance
-
-- A fresh `uv run datakeel demo --once` has a three-run median of 5.86 s, down from 13.02 s on the same M-series laptop (measured range: 5.85–6.12 s). Object access and input hashes are reused within each batch, evidence projections use bounded bulk queries and inserts, small image work runs with bounded concurrency, and offline commands defer server imports. These extend the existing settings, contract and assertion-grouping caches. Generated image bytes, evidence/catalog rebuild hashes and evaluation outcomes are preserved.
-
 ## [0.7.0] - 2026-10-24
 
 ### Added
@@ -33,6 +18,8 @@ All notable changes are documented here using the Keep a Changelog format.
 - Approval recovery uses an independent response lease and adds no user message. A new message invalidates a pending pause with an audit event. Tool calls are deduplicated by their original call identifier, including the action-commit/checkpoint-write failure window.
 - LangSmith tracing is forcibly disabled even when third-party tracing environment variables are set. Model retries remain disabled, and explicitly injected HTTP clients ignore proxy environment variables.
 - Package, API and frontend release identifiers advance to 0.7.0.
+- Runtime framework dependency declarations use upper bounds or documented exact pins; locked package versions are unchanged.
+- `make check` scans tracked and untracked publishable worktree files for private content before other checks. Reserved example email domains are accepted, generated sample contacts use `example.org`, and commit identities still require GitHub noreply addresses.
 
 ### Deprecated
 
@@ -42,6 +29,12 @@ All notable changes are documented here using the Keep a Changelog format.
 
 - Cache-read and cache-write tokens are recorded as subsets of the model's reported input usage instead of being added twice. Missing usage remains unknown and retains the conservative budget reservation.
 - Resume attempts with missing, mismatched, expired or wrong-actor approval, or a plan outside the conversation, are rejected with audit evidence before action dispatch.
+- CI starts the Postgres service container; its health-check command is double-quoted for the runner.
+- English object headings, breadcrumbs, command search and approval object names reuse the catalog translations shown on graph cards. Catalog types and qualified field names share the same fallback; Chinese labels and non-catalog object names retain their existing behavior.
+
+### Performance
+
+- A fresh `uv run datakeel demo --once` has a three-run median of 5.86 s, down from 13.02 s on the same M-series laptop (measured range: 5.85–6.12 s). Object access and input hashes are reused within each batch, evidence projections use bounded bulk queries and inserts, small image work runs with bounded concurrency, and offline commands defer server imports. These extend the existing settings, contract and assertion-grouping caches. Generated image bytes, evidence/catalog rebuild hashes and evaluation outcomes are preserved.
 
 ## [0.6.1] - 2026-10-23
 
