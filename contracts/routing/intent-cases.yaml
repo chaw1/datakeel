@@ -261,8 +261,8 @@ cases:
 - id: golden-16-evidence-approval-01
   source: contracts/golden/16-evidence-approval.yaml#turns/0
   input: Query evidence and prepare deletion, leaving execution for human approval.
-  expected_workflow: low-quality-cleanup
-  expected_branch: keyword
+  expected_workflow: null
+  expected_branch: free_agent
 - id: golden-17-ask-answer-01
   source: contracts/golden/17-ask-answer.yaml#turns/0
   input: 上个季度华东区零售额是多少
