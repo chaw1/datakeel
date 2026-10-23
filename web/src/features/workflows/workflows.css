@@ -1,0 +1,185 @@
+.workflows-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 2fr);
+  gap: calc(var(--space) * 6);
+  align-items: start;
+}
+.workflow-list,
+.workflow-form,
+.workflow-field {
+  display: grid;
+  gap: calc(var(--space) * 3);
+}
+.workflow-list h2,
+.workflow-history h2 {
+  font-size: var(--font-lg);
+  line-height: var(--line-heading);
+}
+.workflow-card {
+  text-align: left;
+  padding: calc(var(--space) * 4);
+  display: grid;
+  gap: calc(var(--space) * 2);
+  width: 100%;
+}
+.workflow-card.selected {
+  border-color: var(--pencil);
+  background: var(--pencil-wash);
+}
+.workflow-card span,
+.workflow-card code {
+  font-size: var(--font-xs);
+  line-height: var(--line-body);
+  color: var(--muted);
+}
+.workflow-form-card,
+.workflow-run,
+.workflow-history {
+  padding: calc(var(--space) * 5);
+}
+.workflow-form-card h2,
+.workflow-run h2 {
+  font-family: var(--font-serif);
+  font-size: var(--font-2xl);
+  line-height: var(--line-heading);
+}
+.workflow-form-card > p {
+  margin: calc(var(--space) * 3) 0 calc(var(--space) * 5);
+}
+.workflow-field label {
+  font-size: var(--font-sm);
+  line-height: var(--line-body);
+  font-weight: 600;
+}
+.workflow-field input:not([type="checkbox"]),
+.workflow-field select,
+.workflow-field textarea {
+  width: 100%;
+  padding: calc(var(--space) * 2.5);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--sheet);
+  color: var(--ink);
+}
+.workflow-field textarea {
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+  line-height: var(--line-body);
+  resize: vertical;
+}
+.workflow-field input[type="checkbox"] {
+  justify-self: start;
+  accent-color: var(--pencil);
+}
+.workflow-form > button {
+  justify-self: start;
+  margin-top: calc(var(--space) * 2);
+}
+.workflow-run-heading,
+.workflow-step-heading,
+.workflow-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--space) * 3);
+  flex-wrap: wrap;
+}
+.workflow-approval {
+  border: 1px solid var(--rule);
+  background: var(--warn-wash);
+  padding: calc(var(--space) * 4);
+  margin-bottom: calc(var(--space) * 5);
+}
+.workflow-approval p {
+  margin: calc(var(--space) * 2) 0 calc(var(--space) * 4);
+}
+.workflow-actions {
+  justify-content: flex-start;
+}
+.workflow-timeline {
+  list-style: none;
+  padding: 0;
+  margin: calc(var(--space) * 4) 0 0;
+}
+.workflow-timeline li {
+  display: flex;
+  gap: calc(var(--space) * 3);
+  border-top: 1px solid var(--rule);
+  padding: calc(var(--space) * 4) 0;
+}
+.workflow-step-number {
+  flex: 0 0 28px;
+  height: 28px;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  text-align: center;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+.workflow-step-body {
+  min-width: 0;
+  flex: 1;
+}
+.workflow-step-heading code {
+  font-size: var(--font-xs);
+  line-height: var(--line-body);
+  color: var(--muted);
+}
+.workflow-output-summary {
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+  line-height: var(--line-body);
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  margin-top: calc(var(--space) * 2);
+}
+.workflow-step-body details {
+  margin-top: calc(var(--space) * 2);
+  font-size: var(--font-xs);
+  line-height: var(--line-body);
+}
+.workflow-step-body pre {
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.workflow-history {
+  margin-top: calc(var(--space) * 6);
+}
+.workflow-history h2 {
+  margin-bottom: calc(var(--space) * 4);
+}
+.workflow-history .table-scroll {
+  overflow-x: auto;
+}
+.workflow-suggestion,
+.model-routing {
+  border: 1px solid var(--rule);
+  padding: calc(var(--space) * 3);
+  margin: calc(var(--space) * 3) 0;
+  border-radius: 5px;
+  background: var(--paper);
+}
+.workflow-suggestion h3 {
+  font-size: var(--font-lg);
+  line-height: var(--line-heading);
+  margin: calc(var(--space) * 2) 0;
+}
+.workflow-suggestion details {
+  margin: calc(var(--space) * 2) 0;
+}
+.model-routing {
+  font-size: var(--font-xs);
+  line-height: var(--line-body);
+}
+@media (max-width: 880px) {
+  .workflows-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workflow-list {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .workflow-list h2 {
+    grid-column: 1 / -1;
+  }
+}

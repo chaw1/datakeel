@@ -17,6 +17,7 @@ const events: AgentEvent["event"][] = [
   "receipt",
   "stopped",
   "done",
+  "route",
 ];
 export function parseAgentEvent(data: string): AgentEvent {
   const value: unknown = JSON.parse(data);

@@ -18,6 +18,9 @@ export function ApprovalsPage({
   onDataChanged: () => void;
 }) {
   const { t } = useI18n();
+  const params = new URLSearchParams(window.location.hash.split("?")[1]);
+  const workflowRun = params.get("workflow_run");
+  const selectedPlan = params.get("plan");
   const resource = useResource<ActionPlan[]>("/api/approvals");
   const [receipts, setReceipts] = useState<ActionRun[]>([]);
   function resolved(run: ActionRun | null) {
@@ -41,13 +44,27 @@ export function ApprovalsPage({
           {t("refresh")}
         </button>
       </div>
+      {workflowRun && (
+        <p>
+          <a
+            className="button"
+            href={`#/workflows?${new URLSearchParams({ run: workflowRun }).toString()}`}
+          >
+            {t("workflowReturn")}
+          </a>
+        </p>
+      )}
       <ResourceState {...resource} onRetry={resource.reload} />
       {receipts.map((run) => (
         <ActionReceipt key={run.id} run={run} onOpenReceipt={onOpenReceipt} />
       ))}
       {resource.value && (
         <ApprovalList
-          plans={resource.value}
+          plans={
+            selectedPlan
+              ? resource.value.filter((plan) => plan.id === selectedPlan)
+              : resource.value
+          }
           onResolved={resolved}
           onOpenReceipt={onOpenReceipt}
         />

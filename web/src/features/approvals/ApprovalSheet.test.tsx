@@ -243,3 +243,22 @@ it("keeps read-only previews inert and renders the required Chinese wording", ()
     screen.queryByRole("button", { name: "退回" }),
   ).not.toBeInTheDocument();
 });
+
+it("links workflow-owned plans to their run instead of a conversation", () => {
+  render(
+    <ApprovalSheet
+      plan={{
+        ...sourcePlan,
+        agent_id: "datakeel-workflow",
+        session_id: "workflow-run-1",
+      }}
+      onOpenReceipt={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole("link", { name: "Workflow workflow" }),
+  ).toHaveAttribute("href", "#/workflows?run=workflow-run-1");
+  expect(
+    screen.queryByRole("link", { name: /Conversation/ }),
+  ).not.toBeInTheDocument();
+});

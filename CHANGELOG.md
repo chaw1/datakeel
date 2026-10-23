@@ -4,9 +4,23 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-24
+
 ### Added
 
-- Typed YAML workflow definitions with tool, wait, branch, approval and output steps, located validation errors, deep overrides and deterministic variable expressions. `datakeel workflow list` and `datakeel workflow validate` inspect the bundled contracts.
+- Typed YAML workflows for dataset health checks, reversible metric changes with before/after answers, and low-quality sample cleanup with human-approved deletion. Tool, wait, branch, approval and output steps support located validation, deep overrides and deterministic JSON references.
+- Explicit workflow start, history, timeline, audit and resume endpoints under `/api/workflows`, synchronous SSE snapshots, and `workflow list`, `validate`, `run` and `resume` commands. Starts and resumes have independent idempotency keys; signed pauses survive process restarts and reuse existing action receipts.
+- Intent suggestions with bilingual contract vocabulary, independent metered classification for ambiguous matches, queryable route decisions and a `route` SSE event before `done`. Suggestions never start workflows; only the selected dataset is used for prefilling inputs.
+- Simple, multi-step and high-risk model tiers, provider-specific validated configuration, explicit `auto` selection and pinned conversation models. Same-provider fallback chains allow at most two backups for timeout, 429 or server failures; every attempt reserves and settles its own budget and trace.
+- Offline `eval-route` confusion matrices, `routing validate`, and `DATAKEEL_MODEL_ROUTING_FILE`. Workflow and routing contracts are included in wheels; both domain packages have independent size and coverage gates.
+- Bilingual workflow forms, run history and timelines, links to human approval, explicit signed continuation, and Agent displays for route suggestions, model tiers and fallback attempts. The tour creates a separate generated cleanup dataset.
+
+### Changed
+
+- Approval recovery shares a pure signed-record policy across conversations and workflows. Workflow facts, steps, audit and resume keys are independent of conversation tables.
+- Non-paused runs interrupted by client disconnects or process restarts become `INTERRUPTED`; they cannot resume midway. Waiting tasks fail explicitly on timeout or task failure, with a worker startup hint.
+- `done` events add optional route and model-attempt metadata without changing existing event ordering. Classification and fallback attempts do not consume additional Agent turns. Existing golden inputs, context segments and tool discovery are unchanged.
+- Package, API and frontend release identifiers advance to 0.8.0 without adding runtime dependencies.
 
 ## [0.7.0] - 2026-10-24
 

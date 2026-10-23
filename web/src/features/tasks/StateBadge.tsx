@@ -13,11 +13,14 @@ export function StateBadge({ state }: { state: string }) {
     RUNNING: "runningState",
     PENDING: "pendingState",
     QUEUED: "queuedState",
+    PAUSED: "workflowPaused",
+    SKIPPED: "workflowSkipped",
+    INTERRUPTED: "workflowInterrupted",
   };
   const normalized = state.toUpperCase();
   return (
     <span
-      className={`badge ${["COMPLETED", "SUCCEEDED"].includes(normalized) ? "green" : ["FAILED", "CANCELLED", "DENIED"].includes(normalized) ? "red" : "amber"}`}
+      className={`badge ${["COMPLETED", "SUCCEEDED"].includes(normalized) ? "green" : ["FAILED", "CANCELLED", "DENIED", "INTERRUPTED"].includes(normalized) ? "red" : "amber"}`}
     >
       <span className="status-dot" />
       {normalized in states

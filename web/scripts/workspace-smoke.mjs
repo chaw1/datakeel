@@ -602,7 +602,7 @@ async function workbenchChecks({ page, json, open, screenshot, checks }) {
     ["workbench", ["workbench"]],
     ["dataGroup", ["datasets", "catalog", "ask"]],
     ["evidenceGroup", ["evidence", "quality"]],
-    ["operationsGroup", ["approvals", "runs"]],
+    ["operationsGroup", ["workflows", "approvals", "runs"]],
     ["agentsGroup", ["agent", "traces"]],
     ["modelsGroup", ["ontology"]],
   ];

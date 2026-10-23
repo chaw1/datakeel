@@ -6,6 +6,7 @@ import { CatalogPage } from "../pages/CatalogPage";
 import { EvidencePage } from "../pages/EvidencePage";
 import { OntologyPage } from "../pages/OntologyPage";
 import { TracesPage } from "../pages/TracesPage";
+import { WorkflowsPage } from "../pages/WorkflowsPage";
 
 import type { LineageTarget, OperationPage } from "./navigation";
 import type { Dataset } from "../api/types";
@@ -28,6 +29,8 @@ export function OperationsWorkspace({
   onOpenReceipt: (target: LineageTarget) => void;
   onDataChanged: () => void;
 }) {
+  if (page === "workflows")
+    return <WorkflowsPage datasets={datasets} onDataChanged={onDataChanged} />;
   if (page === "catalog")
     return (
       <CatalogPage

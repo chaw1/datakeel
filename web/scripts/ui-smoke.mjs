@@ -14,6 +14,11 @@ import { extractionSmoke } from "./extraction-smoke.mjs";
 import { polishSmoke } from "./polish-smoke.mjs";
 import { refinementSmoke } from "./refinement-smoke.mjs";
 import { workspaceSmoke } from "./workspace-smoke.mjs";
+import {
+  cleanupFixture,
+  workflowJourney,
+  workflowRoutingSmoke,
+} from "./workflow-smoke.mjs";
 
 const { version } = JSON.parse(
   await readFile(new URL("../package.json", import.meta.url), "utf8"),
@@ -419,6 +424,26 @@ try {
         checks,
       })
     : null;
+  await page
+    .getByRole("combobox", { name: /^(Language|语言)$/, exact: true })
+    .selectOption("en");
+  const workflows = await workflowJourney({
+    page,
+    base,
+    dataset: await cleanupFixture(post),
+    json,
+  });
+  await screenshot("workflows-complete");
+  const routing = await workflowRoutingSmoke({
+    page,
+    base,
+    datasetId: workflows.datasetId,
+    json,
+  });
+  await screenshot("workflow-route-prefill");
+  checks.push(
+    "workflow schema form, isolated cleanup, approval link, explicit resume, persisted timeline and exactly one deletion",
+  );
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(output, "evidence.json"),
@@ -436,6 +461,8 @@ try {
         polish,
         refinement,
         extraction,
+        workflows,
+        routing,
         checks,
         errors,
       },

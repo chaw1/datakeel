@@ -28,6 +28,7 @@ const groups = [
   {
     label: "operationsGroup",
     items: [
+      { id: "workflows", label: "workflowsNav", icon: "activity" },
       { id: "approvals", label: "approvalsNav", icon: "check" },
       { id: "runs", label: "runRecords", icon: "activity" },
     ],

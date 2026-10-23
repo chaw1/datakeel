@@ -65,11 +65,20 @@ export function ApprovalSheet(props: ApprovalProps) {
           <dd>
             {plan.session_id ? (
               <a
-                href={`#/agent?${new URLSearchParams({ conversation: plan.session_id }).toString()}`}
+                href={
+                  plan.agent_id === "datakeel-workflow"
+                    ? `#/workflows?${new URLSearchParams({ run: plan.session_id }).toString()}`
+                    : `#/agent?${new URLSearchParams({ conversation: plan.session_id }).toString()}`
+                }
               >
-                {t("approvalSourceConversation", {
-                  id: plan.session_id.slice(0, 8),
-                })}
+                {t(
+                  plan.agent_id === "datakeel-workflow"
+                    ? "workflowSource"
+                    : "approvalSourceConversation",
+                  {
+                    id: plan.session_id.slice(0, 8),
+                  },
+                )}
               </a>
             ) : (
               t("approvalLocalSource")

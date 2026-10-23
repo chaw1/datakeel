@@ -28,6 +28,7 @@ export const pages = [
   { name: "approval", hash: "#/approvals", ready: ".approval-sheet" },
   { name: "command-palette", hash: "#/workbench", ready: ".workbench-section" },
   { name: "runs", hash: "#/runs", ready: "main table tbody tr" },
+  { name: "workflows", hash: "#/workflows", ready: ".workflow-form" },
 ];
 
 export function localBase(value) {

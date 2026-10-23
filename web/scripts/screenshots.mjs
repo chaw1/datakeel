@@ -35,7 +35,7 @@ const expectedFiles = pages
     variants.map(({ locale, theme }) => `${name}-${locale}-${theme}.png`),
   )
   .sort();
-assert.equal(expectedFiles.length, 36);
+assert.equal(expectedFiles.length, 40);
 await mkdir(output, { recursive: true });
 const existing = (await readdir(output)).filter((name) =>
   name.endsWith(".png"),
@@ -233,7 +233,7 @@ try {
     [],
     "Every captured page must have zero console errors",
   );
-  assert.equal(report.pages.length, 36);
+  assert.equal(report.pages.length, 40);
   assert.deepEqual(
     (await readdir(output)).filter((name) => name.endsWith(".png")).sort(),
     expectedFiles,

@@ -187,6 +187,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agent/conversations/{conversation_id}/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Routes
+         * @description Read persisted workflow suggestions and free-Agent routing decisions.
+         */
+        get: operations["routes_api_agent_conversations__conversation_id__routes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/approvals": {
         parameters: {
             query?: never;
@@ -999,6 +1019,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Definitions
+         * @description List validated bundled workflows and their form input declarations.
+         */
+        get: operations["definitions_api_workflows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Runs
+         * @description List execution history, keeping each explicit run independent of conversations.
+         */
+        get: operations["runs_api_workflows_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Run
+         * @description Read a full durable timeline after a stream disconnect or page reload.
+         */
+        get: operations["run_api_workflows_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/runs/{run_id}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Audit
+         * @description Inspect signed-resume authorization and interrupted-run evidence.
+         */
+        get: operations["audit_api_workflows_runs__run_id__audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/runs/{run_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume
+         * @description Continue after a human decision; the request body itself grants no authority.
+         */
+        post: operations["resume_api_workflows_runs__run_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/{workflow_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Definition
+         * @description Read one validated workflow's schema, steps and routing vocabulary.
+         */
+        get: operations["definition_api_workflows__workflow_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workflows/{workflow_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start
+         * @description Start an explicitly requested workflow once and stream its durable snapshots.
+         */
+        post: operations["start_api_workflows__workflow_id__runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1174,10 +1334,13 @@ export interface components {
              * Event
              * @enum {string}
              */
-            event: "text" | "tool_call" | "tool_result" | "plan" | "receipt" | "stopped" | "done";
+            event: "text" | "tool_call" | "tool_result" | "plan" | "receipt" | "stopped" | "done" | "route";
             /** Id */
             id?: string;
+            /** Model Routes */
+            model_routes?: components["schemas"]["ModelRouteDecision"][];
             outcome?: components["schemas"]["ToolOutcome"] | null;
+            route?: components["schemas"]["RouteDecision"] | null;
             /** Stop Reason */
             stop_reason?: string | null;
             /** Text */
@@ -1202,6 +1365,24 @@ export interface components {
              * @default
              */
             reason: string;
+        };
+        /**
+         * ApprovalStep
+         * @description Prepare, pause, and execute one irreversible action after authorization.
+         */
+        ApprovalStep: {
+            /** Action */
+            action: string;
+            arguments: components["schemas"]["JsonDocument"];
+            /** Id */
+            id: string;
+            /** Next */
+            next: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "approval";
         };
         /**
          * AskAnswer
@@ -1364,6 +1545,31 @@ export interface components {
             namespace: string;
             /** Version */
             version?: string | null;
+        };
+        /**
+         * BranchStep
+         * @description Choose an edge using a reference, an allowlisted comparator, and an operand.
+         */
+        BranchStep: {
+            /** Id */
+            id: string;
+            /**
+             * Op
+             * @enum {string}
+             */
+            op: "eq" | "ne" | "lt" | "lte" | "gt" | "gte" | "in";
+            /** Otherwise */
+            otherwise: string;
+            /** Ref */
+            ref: string;
+            /** Then */
+            then: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "branch";
+            value: components["schemas"]["JsonValue"];
         };
         /**
          * BudgetAccount
@@ -2643,6 +2849,12 @@ export interface components {
              * @default false
              */
             budget_exceeded: boolean;
+            /**
+             * Call Type
+             * @default conversation
+             * @enum {string}
+             */
+            call_type: "conversation" | "intent_classifier";
             /** Conversation Id */
             conversation_id: string;
             /** Cost Usd */
@@ -2658,6 +2870,7 @@ export interface components {
             latency_ms: number;
             /** Model */
             model: string;
+            model_route?: components["schemas"]["ModelRouteDecision"] | null;
             /** Price Version */
             price_version: string;
             /** Provider */
@@ -2673,6 +2886,28 @@ export interface components {
             /** Turn */
             turn: number;
             usage: components["schemas"]["TokenUsage"];
+        };
+        /**
+         * ModelRouteDecision
+         * @description Record the selected tier, override policy, and one provider attempt.
+         */
+        ModelRouteDecision: {
+            /**
+             * Attempt
+             * @default 1
+             */
+            attempt: number;
+            /** Fallback Reason */
+            fallback_reason?: string | null;
+            /** Model */
+            model: string;
+            /** Pinned */
+            pinned: boolean;
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "simple" | "multi_step" | "high_risk";
         };
         /**
          * NearDuplicateCandidate
@@ -2799,6 +3034,20 @@ export interface components {
              * @default 1.0
              */
             version: string;
+        };
+        /**
+         * OutputStep
+         * @description Finish a path with a JSON template using only pure expressions.
+         */
+        OutputStep: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "output";
+            value: components["schemas"]["JsonValue"];
         };
         /**
          * Pipeline
@@ -2951,6 +3200,47 @@ export interface components {
             idempotency_key: string;
             /** Plan Id */
             plan_id: string;
+        };
+        /**
+         * RouteCandidate
+         * @description Expose the deterministic keyword score for one registered workflow.
+         */
+        RouteCandidate: {
+            /** Score */
+            score: number;
+            /** Workflow Id */
+            workflow_id: string;
+        };
+        /**
+         * RouteDecision
+         * @description Persist an auditable suggestion without authorizing workflow execution.
+         */
+        RouteDecision: {
+            /**
+             * Branch
+             * @enum {string}
+             */
+            branch: "keyword" | "classifier" | "free_agent";
+            /** Candidates */
+            candidates: components["schemas"]["RouteCandidate"][];
+            inputs?: components["schemas"]["RouteInputs"];
+            /** Reason */
+            reason: string;
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+            /** Workflow Id */
+            workflow_id?: string | null;
+        };
+        /**
+         * RouteInputs
+         * @description Prefill only the conversation's explicitly selected dataset.
+         */
+        RouteInputs: {
+            /** Dataset Id */
+            dataset_id?: string | null;
         };
         Scalar: string | number | boolean | null;
         /**
@@ -3200,6 +3490,24 @@ export interface components {
             status: "SUCCEEDED" | "FAILED";
         };
         /**
+         * ToolStep
+         * @description Invoke a registered read or prepare and execute a reversible action.
+         */
+        ToolStep: {
+            arguments: components["schemas"]["JsonDocument"];
+            /** Id */
+            id: string;
+            /** Next */
+            next: string;
+            /** Tool */
+            tool: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "tool";
+        };
+        /**
          * UploadFile
          * @description One basename and base64-encoded upload payload.
          */
@@ -3237,6 +3545,32 @@ export interface components {
             manifest: components["schemas"]["FileView"][];
         };
         /**
+         * WaitStep
+         * @description Poll one queued task with an explicit bounded deadline.
+         */
+        WaitStep: {
+            /** Id */
+            id: string;
+            /** Next */
+            next: string;
+            /**
+             * Poll Interval
+             * @default 0.25
+             */
+            poll_interval: number;
+            task_id: components["schemas"]["JsonValue"];
+            /**
+             * Timeout Seconds
+             * @default 60
+             */
+            timeout_seconds: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "wait";
+        };
+        /**
          * Whole
          * @description Locate the entire revision of an asset.
          */
@@ -3246,6 +3580,177 @@ export interface components {
              * @enum {string}
              */
             type: "whole";
+        };
+        /**
+         * WorkflowAudit
+         * @description Retain recovery authorization and interruption reasons beyond checkpoints.
+         */
+        WorkflowAudit: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "RESUME_DENIED" | "RESUME_AUTHORIZED" | "INTERRUPTED";
+            /** Plan Id */
+            plan_id?: string | null;
+            /** Reason */
+            reason: string;
+            /** Run Id */
+            run_id: string;
+        };
+        /**
+         * WorkflowDefinition
+         * @description Bind input declarations, routing vocabulary, and an acyclic step graph.
+         */
+        WorkflowDefinition: {
+            /** Description */
+            description: string;
+            /** Entry */
+            entry: string;
+            /** Id */
+            id: string;
+            /** Inputs */
+            inputs: {
+                [key: string]: components["schemas"]["WorkflowInput"];
+            };
+            /** Name */
+            name: string;
+            /** Steps */
+            steps: (components["schemas"]["ToolStep"] | components["schemas"]["ApprovalStep"] | components["schemas"]["WaitStep"] | components["schemas"]["BranchStep"] | components["schemas"]["OutputStep"])[];
+            triggers: components["schemas"]["WorkflowTriggers"];
+        };
+        /**
+         * WorkflowEvent
+         * @description Send complete snapshots so reconnecting clients can recover through GET.
+         */
+        WorkflowEvent: {
+            /**
+             * Event
+             * @enum {string}
+             */
+            event: "run" | "step" | "done";
+            /** Id */
+            id?: string;
+            run: components["schemas"]["WorkflowRun"];
+            /** Step Id */
+            step_id?: string | null;
+        };
+        /**
+         * WorkflowInput
+         * @description Describe one form input and its deterministic default value.
+         */
+        WorkflowInput: {
+            default?: components["schemas"]["JsonValue"];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Required
+             * @default true
+             */
+            required: boolean;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "number" | "integer" | "boolean" | "object" | "array";
+        };
+        /**
+         * WorkflowRun
+         * @description Read a complete run without exposing persistence rows or checkpoint state.
+         */
+        WorkflowRun: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error */
+            error?: string | null;
+            /** Id */
+            id: string;
+            inputs: components["schemas"]["JsonDocument"];
+            /** Pending Plan Id */
+            pending_plan_id?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "PENDING" | "RUNNING" | "PAUSED" | "SUCCEEDED" | "FAILED" | "INTERRUPTED";
+            /** Steps */
+            steps: components["schemas"]["WorkflowStep"][];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Workflow Id */
+            workflow_id: string;
+        };
+        /**
+         * WorkflowStart
+         * @description Bind an explicit human start to validated inputs and a durable replay key.
+         */
+        WorkflowStart: {
+            /** Idempotency Key */
+            idempotency_key: string;
+            inputs?: components["schemas"]["JsonDocument"];
+        };
+        /**
+         * WorkflowStep
+         * @description Expose one declared step's durable progress and JSON output.
+         */
+        WorkflowStep: {
+            /** Error */
+            error?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Id */
+            id: string;
+            output?: components["schemas"]["JsonValue"];
+            /** Plan Id */
+            plan_id?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /**
+             * Status
+             * @default PENDING
+             * @enum {string}
+             */
+            status: "PENDING" | "RUNNING" | "PAUSED" | "SUCCEEDED" | "SKIPPED" | "FAILED";
+            /** Type */
+            type: string;
+        };
+        /**
+         * WorkflowTriggers
+         * @description Declare multilingual routing vocabulary and auditable score thresholds.
+         */
+        WorkflowTriggers: {
+            /** Classification Keywords */
+            classification_keywords?: string[];
+            /** Excluded Keywords */
+            excluded_keywords?: string[];
+            /** Keywords */
+            keywords: string[][];
+            /**
+             * Margin
+             * @default 1
+             */
+            margin: number;
+            /**
+             * Threshold
+             * @default 1
+             */
+            threshold: number;
         };
     };
     responses: never;
@@ -3549,6 +4054,37 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    routes_api_agent_conversations__conversation_id__routes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteDecision"][];
                 };
             };
             /** @description Validation Error */
@@ -4884,6 +5420,209 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    definitions_api_workflows_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDefinition"][];
+                };
+            };
+        };
+    };
+    runs_api_workflows_runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowRun"][];
+                };
+            };
+        };
+    };
+    run_api_workflows_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowRun"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audit_api_workflows_runs__run_id__audit_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowAudit"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_api_workflows_runs__run_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResumeInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    definition_api_workflows__workflow_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDefinition"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_api_workflows__workflow_id__runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
                 };
             };
             /** @description Validation Error */

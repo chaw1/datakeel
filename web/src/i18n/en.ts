@@ -8,6 +8,7 @@ import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
 import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
+import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
@@ -18,6 +19,7 @@ export const en = {
   ...approvalEn,
   ...commandEn,
   ...workspaceEn,
+  ...workflowEn,
   theme: "Theme",
   themeSystem: "System",
   themeLight: "Light",

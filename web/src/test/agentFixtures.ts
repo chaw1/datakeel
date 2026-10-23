@@ -77,6 +77,7 @@ export const toolEvent: AgentEvent = agentEvent("tool_call", {
   },
 });
 export const trace: ModelCallTrace = {
+  call_type: "conversation",
   billing_status: "actual",
   accounted_tokens: 120,
   budget_exceeded: false,

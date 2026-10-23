@@ -10,6 +10,7 @@ import { chromium } from "playwright";
 
 import { evidenceTour } from "./demo-tour-evidence.mjs";
 import { enterpriseTour } from "./demo-tour-enterprise.mjs";
+import { cleanupFixture, workflowJourney } from "./workflow-smoke.mjs";
 import { appearance, localBase, settle } from "./screenshots-helpers.mjs";
 
 const base = localBase(process.argv[2] ?? "http://127.0.0.1:8773");
@@ -217,6 +218,29 @@ try {
   await page.waitForURL((url) =>
     url.hash.startsWith("#/object/metric/retail_revenue"),
   );
+  const workflowDataset = await cleanupFixture(async (endpoint, data) => {
+    assert.equal(endpoint, "/api/datasets");
+    const response = await context.request.post(new URL(endpoint, base).href, {
+      data,
+      maxRedirects: 0,
+    });
+    assert.equal(response.status(), 201);
+    report.requests.push({
+      method: "POST",
+      path: endpoint,
+      status: response.status(),
+      via: "fixture",
+    });
+    return response.json();
+  });
+  report.workflows = await workflowJourney({
+    page,
+    base,
+    dataset: workflowDataset,
+    json: api,
+    capture,
+    locale: "zh",
+  });
   assert.deepEqual(report.blockedRequests, []);
   assert.deepEqual(
     report.errors,
@@ -225,11 +249,14 @@ try {
   );
   assert.ok(
     report.requests.every(
-      (request) => request.via === "ui" || request.method === "GET",
+      (request) =>
+        request.via === "ui" ||
+        request.method === "GET" ||
+        (request.via === "fixture" && request.path === "/api/datasets"),
     ),
-    "Every mutation must originate from the UI",
+    "Only isolated dataset fixture creation may bypass the UI",
   );
-  assert.equal(report.screenshots.length, 16);
+  assert.equal(report.screenshots.length, 18);
   report.status = "passed";
 } catch (error) {
   report.status = "failed";

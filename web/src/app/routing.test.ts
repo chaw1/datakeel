@@ -15,6 +15,7 @@ it("loads every canonical workspace URL independently of app state", () => {
     "agent",
     "traces",
     "ontology",
+    "workflows",
   ]) {
     window.history.replaceState(null, "", `/#/${page}?type=action`);
     expect(readRoute().page).toBe(page);

@@ -2,6 +2,8 @@ import { useI18n } from "../../i18n/useI18n";
 import { ActionReceipt } from "../actions/ActionReceipt";
 import { PlanCard } from "../actions/PlanCard";
 
+import { AgentRouting } from "./AgentRouting";
+
 import type { AgentEvent } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 import type { MessageKey } from "../../i18n/en";
@@ -33,6 +35,11 @@ export function AgentObservation({
 }) {
   const { t } = useI18n();
   const reasonKey = event.stop_reason ? reasons[event.stop_reason] : undefined;
+  if (
+    event.event === "route" ||
+    (event.event === "done" && !!event.model_routes?.length)
+  )
+    return <AgentRouting event={event} />;
   if (event.event === "text" && event.text)
     return (
       <div className="assistant-text">
