@@ -34,6 +34,7 @@ from datakeel.storage.ask_rows import AskAnswerRow, AskSessionRow
 from datakeel.storage.base import Base
 from datakeel.storage.budget_rows import BudgetAccountRow, BudgetReservationRow
 from datakeel.storage.catalog_rows import CatalogEdgeRow, CatalogObjectRow
+from datakeel.storage.checkpoint_store import CheckpointRow, CheckpointWriteRow
 from datakeel.storage.conversation_rows import ConversationRequestRow, ConversationRow
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
@@ -69,6 +70,8 @@ _REGISTERED_MODELS = (
     MetricAuditRow,
     AskSessionRow,
     AskAnswerRow,
+    CheckpointRow,
+    CheckpointWriteRow,
 )
 
 
