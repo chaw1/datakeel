@@ -29,6 +29,8 @@ export const pages = [
   { name: "command-palette", hash: "#/workbench", ready: ".workbench-section" },
   { name: "runs", hash: "#/runs", ready: "main table tbody tr" },
   { name: "workflows", hash: "#/workflows", ready: ".workflow-form" },
+  { name: "memory", hash: "#/memory", ready: ".memory-card" },
+  { name: "agent-advanced", hash: "#/agent", ready: ".delegation-step" },
 ];
 
 export function localBase(value) {
@@ -258,7 +260,12 @@ export async function verifyThemes(page, base) {
 }
 
 export async function preparePage(page, entry, fixture) {
-  if (entry.name === "evidence") {
+  if (entry.name === "agent-advanced") {
+    await page.locator(".delegation-step > summary").first().click();
+    await page
+      .locator(`[data-used-memory-id="${fixture.advanced.memoryId}"]`)
+      .waitFor();
+  } else if (entry.name === "evidence") {
     await page
       .locator(".dataset-selector select")
       .selectOption(fixture.datasetId);

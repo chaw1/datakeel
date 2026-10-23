@@ -1,3 +1,4 @@
+import { advancedZh } from "./advancedZh";
 import { agentZh } from "./agentZh";
 import { approvalsMetricZh } from "./approvalsMetricZh";
 import { approvalZh } from "./approvalZh";
@@ -26,6 +27,7 @@ export const zh: Record<MessageKey, string> = {
   themeLight: "浅色",
   themeDark: "深色",
   ...agentZh,
+  ...advancedZh,
   ...askZh,
   ...evidenceZh,
   ...catalogZh,

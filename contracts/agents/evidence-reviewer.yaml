@@ -1,0 +1,9 @@
+name: evidence-reviewer
+description: Query and explain evidence, and prepare reversible assertion review decisions when requested.
+max_turns: 4
+tools:
+  - query_evidence
+  - get_evidence
+  - explain_sample
+  - decide_assertions
+  - delegate_agent

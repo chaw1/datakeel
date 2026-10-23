@@ -1,0 +1,65 @@
+id: 24-delegation-concurrency
+description: delegation concurrency
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Delegate four catalog sub-tasks in one response.
+  script:
+  - agent: main
+    tool_calls:
+    - id: advanced-call-13
+      name: tool_search
+      arguments:
+        query: delegate_agent
+  - agent: main
+    tool_calls:
+    - id: advanced-call-14
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: Review catalog topic 0
+    - id: advanced-call-15
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: Review catalog topic 1
+    - id: advanced-call-16
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: Review catalog topic 2
+    - id: advanced-call-17
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: Review catalog topic 3
+  - agent: catalog-analyst
+    content: First review complete.
+  - agent: catalog-analyst
+    content: Second review complete.
+  - agent: catalog-analyst
+    content: Third review complete.
+  - agent: main
+    content: Only three sub-tasks were permitted.
+expect:
+  max_turns: 20
+  max_tokens: 200000
+  tool_sequence:
+  - tool_search
+  - delegate_agent
+  - delegate_agent
+  - delegate_agent
+  - delegate_agent
+  tool_results:
+  - name: delegate_agent
+    status: FAILED
+    calls: 4
+    asset_refs_required: false
+    content_schema:
+      type: object
+    call_index: 3
+  answer_contains:
+  - Only three

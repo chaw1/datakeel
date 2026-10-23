@@ -1,0 +1,39 @@
+id: 30-memory-delete
+description: memory delete
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Remember catalog reports and their active records definition.
+  script:
+  - agent: main
+    tool_calls:
+    - id: advanced-call-26
+      name: tool_search
+      arguments:
+        query: write_memory
+  - agent: main
+    tool_calls:
+    - id: advanced-call-27
+      name: write_memory
+      arguments:
+        content: Catalog reports use the approved active-record definition.
+  - agent: main
+    content: Preference stored.
+  delete_memories: true
+- new_conversation: true
+  input: How do catalog reports use active records?
+  script:
+  - agent: main
+    content: No retained preference is available.
+expect:
+  max_turns: 20
+  max_tokens: 200000
+  memory_count: 0
+  memory_used: false
+  context_not_contains:
+  - Catalog reports use the approved active-record definition.
+  answer_contains:
+  - No retained preference

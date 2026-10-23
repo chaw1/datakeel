@@ -1,0 +1,25 @@
+id: 26-canary-arguments
+description: canary arguments
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Exercise output parameter safety.
+  script:
+  - agent: main
+    content: This text must also be suppressed.
+    tool_calls:
+    - id: advanced-call-18
+      name: list_datasets
+      arguments:
+        note: '{{canary_fragment}}'
+expect:
+  max_turns: 1
+  max_tokens: 10000
+  tool_sequence: []
+  stop_contains:
+  - canary_leak
+  answer_not_contains:
+  - This text

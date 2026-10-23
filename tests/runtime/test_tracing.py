@@ -31,11 +31,11 @@ def test_tracing_when_environment_and_ambient_context_enable_it_force_disable(
     assert tracing_is_enabled() is False
 
 
-def test_tracing_when_hostile_environment_runs_all_twenty_golden_without_external_socket(
+def test_tracing_when_hostile_environment_runs_all_golden_without_external_socket(
     db: Database,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Guard DNS and socket calls while the complete unchanged golden suite executes."""
+    """Guard DNS and socket calls across legacy and advanced golden conversations."""
     monkeypatch.setenv("LANGSMITH_TRACING", "true")
     monkeypatch.setenv("LANGCHAIN_TRACING_V2", "true")
     monkeypatch.setenv("LANGSMITH_API_KEY", "synthetic-tracing-fixture")
@@ -70,5 +70,5 @@ def test_tracing_when_hostile_environment_runs_all_twenty_golden_without_externa
     monkeypatch.setattr(socket, "getaddrinfo", resolve)
     configure(enabled=True)
     report = run_evaluation(db)
-    assert report.total == report.passed == 20, [(case.id, case.failures) for case in report.cases]
+    assert report.total == report.passed == 32, [(case.id, case.failures) for case in report.cases]
     assert attempts == []

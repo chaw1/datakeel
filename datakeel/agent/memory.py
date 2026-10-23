@@ -64,11 +64,6 @@ def workspace(db: Database, conversation: Conversation) -> JsonDocument:
     )
 
 
-def cross_session_memory() -> list[JsonDocument]:
-    """Reserve an explicit extension point while keeping P2 memory session-scoped."""
-    return []
-
-
 def _plan_summary(outcome: ToolOutcome) -> JsonDocument:
     """Keep current status concise while the transcript retains complete frozen plans."""
     plan, run = outcome.plan, outcome.run

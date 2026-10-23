@@ -18,6 +18,7 @@ from datakeel.api.routes import (
     governance,
     harness,
     lineage,
+    memories,
     ontology,
     search,
     system,
@@ -53,6 +54,7 @@ def create_app(db: Database | None = None) -> FastAPI:
         search.router,
         actions.router,
         agent.router,
+        memories.router,
         harness.router,
         workflow_runs.router,
     ):

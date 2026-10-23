@@ -107,6 +107,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agent/conversations/definitions/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Definitions
+         * @description List validated specialist contracts bundled with this installation.
+         */
+        get: operations["definitions_api_agent_conversations_definitions_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agent/conversations/{conversation_id}": {
         parameters: {
             query?: never;
@@ -202,6 +222,94 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/conversations/{conversation_id}/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tree
+         * @description Read nested specialist sessions and every metered parent and child call.
+         */
+        get: operations["tree_api_agent_conversations__conversation_id__tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/memories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List All
+         * @description List active memories, optionally restricted to global and one dataset scope.
+         */
+        get: operations["list_all_api_agent_memories_get"];
+        put?: never;
+        /**
+         * Create
+         * @description Redact PII and persist an explicitly supplied memory exactly once.
+         */
+        post: operations["create_api_agent_memories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/memories/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Audit
+         * @description Read hard-deletion evidence that contains no memory content.
+         */
+        get: operations["audit_api_agent_memories_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/memories/{memory_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get
+         * @description Read one memory and its current decayed strength.
+         */
+        get: operations["get_api_agent_memories__memory_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete
+         * @description Hard-delete the memory and archived provenance records in one transaction.
+         */
+        delete: operations["delete_api_agent_memories__memory_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1325,11 +1433,40 @@ export interface components {
             version: string;
         };
         /**
+         * AgentDefinition
+         * @description Limit a named specialist to declared tools and at most four model turns.
+         */
+        AgentDefinition: {
+            /** Description */
+            description: string;
+            /**
+             * Max Turns
+             * @default 4
+             */
+            max_turns: number;
+            /** Name */
+            name: string;
+            /** Tools */
+            tools: string[];
+        };
+        /**
          * AgentEvent
          * @description Persist one replayable text, tool, plan, receipt, or terminal observation.
          */
         AgentEvent: {
+            /**
+             * Agent Name
+             * @default main
+             */
+            agent_name: string;
+            /**
+             * Agent Path
+             * @default main
+             */
+            agent_path: string;
             call?: components["schemas"]["ToolCall"] | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
             /**
              * Event
              * @enum {string}
@@ -1345,6 +1482,13 @@ export interface components {
             stop_reason?: string | null;
             /** Text */
             text?: string | null;
+            /**
+             * Tokens
+             * @default 0
+             */
+            tokens: number;
+            /** Used Memory Ids */
+            used_memory_ids?: string[];
         };
         /**
          * ApprovalDecision
@@ -1646,6 +1790,40 @@ export interface components {
             daily_usd: string;
         };
         /**
+         * CallTree
+         * @description Return independently auditable nodes and their individual model-call traces.
+         */
+        CallTree: {
+            /** Nodes */
+            nodes: components["schemas"]["CallTreeNode"][];
+            /** Traces */
+            traces: components["schemas"]["ModelCallTrace"][];
+        };
+        /**
+         * CallTreeNode
+         * @description Expose hierarchy and measured activity without exposing child capability snapshots.
+         */
+        CallTreeNode: {
+            /** Agent Name */
+            agent_name: string;
+            /** Agent Path */
+            agent_path: string;
+            /** Depth */
+            depth: number;
+            /** Id */
+            id: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Parent Tool Call Id */
+            parent_tool_call_id: string | null;
+            /** Root Id */
+            root_id: string;
+            /** Tokens */
+            tokens: number;
+            /** Tools */
+            tools: string[];
+        };
+        /**
          * CatalogLink
          * @description Declare one explicit relationship, without inferring a Cartesian product.
          */
@@ -1802,7 +1980,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "RESUME_DENIED" | "RESUME_AUTHORIZED" | "INTERRUPT_INVALIDATED" | "CANARY_LEAK";
+            kind: "RESUME_DENIED" | "RESUME_AUTHORIZED" | "INTERRUPT_INVALIDATED" | "CANARY_LEAK" | "DELEGATION_DENIED";
             /** Plan Id */
             plan_id: string;
             /** Reason */
@@ -2652,6 +2830,86 @@ export interface components {
             table: string;
         };
         /**
+         * MemoryCreate
+         * @description Bind an explicit write to its optional source and replay key.
+         */
+        MemoryCreate: {
+            /** Content */
+            content: string;
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /** Idempotency Key */
+            idempotency_key?: string;
+            /** Source Conversation Id */
+            source_conversation_id?: string | null;
+        };
+        /**
+         * MemoryDeletion
+         * @description Retain deletion evidence containing identities only, never memory content.
+         */
+        MemoryDeletion: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Deleted Ids */
+            deleted_ids: string[];
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @default MEMORY_DELETED
+             * @constant
+             */
+            kind: "MEMORY_DELETED";
+            /** Memory Id */
+            memory_id: string;
+        };
+        /**
+         * MemoryEntry
+         * @description Expose current strength and provenance without leaking persistence rows.
+         */
+        MemoryEntry: {
+            /**
+             * Archived
+             * @default false
+             */
+            archived: boolean;
+            /** Content */
+            content: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Current Strength
+             * @default 1
+             */
+            current_strength: number;
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /** Id */
+            id: string;
+            /** Last Used At */
+            last_used_at?: string | null;
+            /**
+             * Reinforced At
+             * Format: date-time
+             */
+            reinforced_at: string;
+            /** Source Conversation Ids */
+            source_conversation_ids?: string[];
+            /** Source Memory Ids */
+            source_memory_ids?: string[];
+            /**
+             * Strength
+             * @default 1
+             */
+            strength: number;
+        };
+        /**
          * MessageInput
          * @description An idempotent user turn, independent of transport reconnects.
          */
@@ -2840,6 +3098,13 @@ export interface components {
              * @default 0
              */
             accounted_tokens: number;
+            /** Accounting Conversation Id */
+            accounting_conversation_id?: string | null;
+            /**
+             * Agent Path
+             * @default main
+             */
+            agent_path: string;
             /**
              * Billing Status
              * @default actual
@@ -2866,6 +3131,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Depth
+             * @default 0
+             */
+            depth: number;
             /** Id */
             id: string;
             /** Latency Ms */
@@ -2873,6 +3143,8 @@ export interface components {
             /** Model */
             model: string;
             model_route?: components["schemas"]["ModelRouteDecision"] | null;
+            /** Parent Tool Call Id */
+            parent_tool_call_id?: string | null;
             /** Price Version */
             price_version: string;
             /** Provider */
@@ -3957,6 +4229,26 @@ export interface operations {
             };
         };
     };
+    definitions_api_agent_conversations_definitions_agents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDefinition"][];
+                };
+            };
+        };
+    };
     get_api_agent_conversations__conversation_id__get: {
         parameters: {
             query?: never;
@@ -4107,6 +4399,183 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RouteDecision"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tree_api_agent_conversations__conversation_id__tree_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CallTree"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_all_api_agent_memories_get: {
+        parameters: {
+            query?: {
+                dataset_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_agent_memories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audit_api_agent_memories_audit_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryDeletion"][];
+                };
+            };
+        };
+    };
+    get_api_agent_memories__memory_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_agent_memories__memory_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryDeletion"];
                 };
             };
             /** @description Validation Error */

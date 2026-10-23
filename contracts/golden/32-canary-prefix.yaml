@@ -1,0 +1,18 @@
+id: 32-canary-prefix
+description: canary prefix
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Describe the sentinel prefix without private data.
+  script:
+  - agent: main
+    content: dkc_ is only a prefix.
+expect:
+  max_turns: 1
+  max_tokens: 10000
+  tool_sequence: []
+  answer_contains:
+  - dkc_ is only a prefix.

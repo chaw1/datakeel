@@ -35,6 +35,11 @@ class AgentEvent(BoundaryModel):
     stop_reason: str | None = None
     route: RouteDecision | None = None
     model_routes: list[ModelRouteDecision] = Field(default_factory=list[ModelRouteDecision])
+    agent_path: str = "main"
+    agent_name: str = "main"
+    conversation_id: str | None = None
+    tokens: int = Field(default=0, ge=0)
+    used_memory_ids: list[str] = Field(default_factory=list[str])
 
 
 class ConversationView(BoundaryModel):

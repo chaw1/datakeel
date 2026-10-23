@@ -3,6 +3,8 @@
 
 """Dispatch controlled tools while preserving transcript and event contracts."""
 
+from collections.abc import Callable
+
 from datakeel.agent.confirm import execute_reversible
 from datakeel.agent.guards import LoopGuard
 from datakeel.agent.models import AgentEvent
@@ -23,14 +25,20 @@ class ToolDispatcher:
         self.catalog = ToolCatalog(memory.get(db, conversation_id))
         self.context = ToolCallContext(agent_id="datakeel-agent", session_id=conversation_id)
 
-    def dispatch(self, call: ToolCall, *, dry_run: bool) -> tuple[list[AgentEvent], str | None]:
+    def dispatch(
+        self,
+        call: ToolCall,
+        *,
+        dry_run: bool,
+        local: Callable[[ToolCall], ToolOutcome] | None = None,
+    ) -> tuple[list[AgentEvent], str | None]:
         """Apply the existing guard, tool policy and automatic reversible action behavior."""
         reason = self.guard.observe_call(call)
         if reason:
             outcome = ToolOutcome(name=call.name, status="FAILED", error=reason)
             self.tool_message(call, outcome)
             return [AgentEvent(event="tool_result", outcome=outcome)], reason
-        outcome = self.catalog.invoke(self.db, call, self.context)
+        outcome = self.catalog.invoke(self.db, call, self.context, local)
         events = [AgentEvent(event="tool_result", outcome=outcome)]
         reason = self.guard.observe_outcome(outcome)
         if outcome.plan is not None:

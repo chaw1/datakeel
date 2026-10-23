@@ -37,6 +37,7 @@ const groups = [
     label: "agentsGroup",
     items: [
       { id: "agent", label: "agentNav", icon: "message" },
+      { id: "memory", label: "memoryNav", icon: "grid" },
       { id: "traces", label: "tracesNav", icon: "activity" },
     ],
   },

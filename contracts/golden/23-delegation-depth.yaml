@@ -1,0 +1,75 @@
+id: 23-delegation-depth
+description: delegation depth
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Delegate a nested catalog review.
+  script:
+  - agent: main
+    tool_calls:
+    - id: advanced-call-7
+      name: tool_search
+      arguments:
+        query: delegate_agent
+  - agent: main
+    tool_calls:
+    - id: advanced-call-8
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: First nested review
+  - agent: catalog-analyst
+    tool_calls:
+    - id: advanced-call-9
+      name: tool_search
+      arguments:
+        query: delegate_agent
+  - agent: catalog-analyst
+    tool_calls:
+    - id: advanced-call-10
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: Second nested review
+  - agent: catalog-analyst
+    tool_calls:
+    - id: advanced-call-11
+      name: tool_search
+      arguments:
+        query: delegate_agent
+  - agent: catalog-analyst
+    tool_calls:
+    - id: advanced-call-12
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: Third nested review
+  - agent: catalog-analyst
+    content: Depth limit reached.
+  - agent: catalog-analyst
+    content: Nested review returned.
+  - agent: main
+    content: The depth limit was enforced.
+expect:
+  max_turns: 20
+  max_tokens: 300000
+  tool_sequence:
+  - tool_search
+  - delegate_agent
+  - tool_search
+  - delegate_agent
+  - tool_search
+  - delegate_agent
+  tool_results:
+  - name: delegate_agent
+    status: FAILED
+    calls: 3
+    asset_refs_required: false
+    content_schema:
+      type: object
+    call_index: 0
+  answer_contains:
+  - depth limit

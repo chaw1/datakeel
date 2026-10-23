@@ -1,0 +1,18 @@
+id: 25-canary-text
+description: canary text
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Exercise private sentinel handling.
+  script:
+  - agent: main
+    content: '{{canary}}'
+expect:
+  max_turns: 1
+  max_tokens: 10000
+  tool_sequence: []
+  stop_contains:
+  - canary_leak

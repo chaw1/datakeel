@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from datakeel.core.agent_models import ConversationCreate, ModelResponse
+from datakeel.core.agent_models import ConversationCreate, ScriptedResponse
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 
 
@@ -24,8 +24,10 @@ class GoldenTurn(BoundaryModel):
     """Supply user text, scripted model responses, and subsequent user decisions."""
 
     input: str
-    script: list[ModelResponse] = Field(default_factory=list[ModelResponse])
+    script: list[ScriptedResponse] = Field(default_factory=list[ScriptedResponse])
     operations: list[PlanOperation] = Field(default_factory=list[PlanOperation])
+    new_conversation: bool = False
+    delete_memories: bool = False
 
 
 class ExpectedAction(BoundaryModel):
@@ -69,6 +71,9 @@ class GoldenExpect(BoundaryModel):
     answer_not_contains: list[str] = Field(default_factory=list[str])
     stop_contains: list[str] = Field(default_factory=list[str])
     context_contains: list[str] = Field(default_factory=list[str])
+    context_not_contains: list[str] = Field(default_factory=list[str])
+    memory_count: int | None = Field(default=None, ge=0)
+    memory_used: bool | None = None
     operation_statuses: list[str] | None = None
     operation_errors: list[str] = Field(default_factory=list[str])
     max_turns: int = Field(default=20, ge=0)
@@ -82,7 +87,7 @@ class GoldenCase(BoundaryModel):
 
     id: str
     description: str
-    fixture_kind: Literal["legacy", "evidence", "enterprise"] = "legacy"
+    fixture_kind: Literal["legacy", "evidence", "enterprise", "injection"] = "legacy"
     config: ConversationCreate = Field(default_factory=ConversationCreate)
     turns: list[GoldenTurn] = Field(min_length=1)
     expect: GoldenExpect

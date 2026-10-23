@@ -29,6 +29,11 @@ export function TraceList({ traces }: { traces: ModelCallTrace[] }) {
               {date(trace.created_at, locale)}
             </span>
           </div>
+          {trace.agent_path && trace.agent_path !== "main" && (
+            <p className="muted small">
+              {t("delegationPath")}: <code>{trace.agent_path}</code>
+            </p>
+          )}
           <p
             className={`badge ${trace.billing_status === "unknown" ? "amber" : "gray"}`}
           >

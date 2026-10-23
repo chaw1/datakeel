@@ -603,7 +603,7 @@ async function workbenchChecks({ page, json, open, screenshot, checks }) {
     ["dataGroup", ["datasets", "catalog", "ask"]],
     ["evidenceGroup", ["evidence", "quality"]],
     ["operationsGroup", ["workflows", "approvals", "runs"]],
-    ["agentsGroup", ["agent", "traces"]],
+    ["agentsGroup", ["agent", "memory", "traces"]],
     ["modelsGroup", ["ontology"]],
   ];
   assert.equal(await navigation.locator("[data-nav-group]").count(), 6);

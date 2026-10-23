@@ -1,0 +1,38 @@
+id: 29-memory-cross-session
+description: memory cross session
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Remember catalog reports and their active records definition.
+  script:
+  - agent: main
+    tool_calls:
+    - id: advanced-call-24
+      name: tool_search
+      arguments:
+        query: write_memory
+  - agent: main
+    tool_calls:
+    - id: advanced-call-25
+      name: write_memory
+      arguments:
+        content: Catalog reports use the approved active-record definition.
+  - agent: main
+    content: Preference stored.
+- new_conversation: true
+  input: How do catalog reports use active records?
+  script:
+  - agent: main
+    content: Using the retained catalog preference.
+expect:
+  max_turns: 20
+  max_tokens: 200000
+  memory_count: 1
+  memory_used: true
+  context_contains:
+  - Catalog reports use the approved active-record definition.
+  answer_contains:
+  - retained catalog preference

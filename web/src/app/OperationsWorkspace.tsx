@@ -4,6 +4,7 @@ import { ApprovalsPage } from "../pages/ApprovalsPage";
 import { AskPage } from "../pages/AskPage";
 import { CatalogPage } from "../pages/CatalogPage";
 import { EvidencePage } from "../pages/EvidencePage";
+import { MemoryPage } from "../pages/MemoryPage";
 import { OntologyPage } from "../pages/OntologyPage";
 import { TracesPage } from "../pages/TracesPage";
 import { WorkflowsPage } from "../pages/WorkflowsPage";
@@ -29,6 +30,7 @@ export function OperationsWorkspace({
   onOpenReceipt: (target: LineageTarget) => void;
   onDataChanged: () => void;
 }) {
+  if (page === "memory") return <MemoryPage datasets={datasets} />;
   if (page === "workflows")
     return <WorkflowsPage datasets={datasets} onDataChanged={onDataChanged} />;
   if (page === "catalog")

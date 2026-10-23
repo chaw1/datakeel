@@ -27,6 +27,7 @@ const pages: Page[] = [
   "traces",
   "ontology",
   "workflows",
+  "memory",
 ];
 export function readRoute(): Route {
   const hash = window.location.hash;

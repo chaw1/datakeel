@@ -18,6 +18,7 @@ from tempfile import TemporaryDirectory
 from rich.console import Console
 
 from datakeel.core.harness_eval import EvalCaseResult, EvalReport
+from scripts.advanced_mutations import ADVANCED_MUTATIONS
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
@@ -127,6 +128,7 @@ MUTATIONS = (
         runner="pytest",
     ),
     *WORKFLOW_MUTATIONS,
+    *ADVANCED_MUTATIONS,
 )
 
 

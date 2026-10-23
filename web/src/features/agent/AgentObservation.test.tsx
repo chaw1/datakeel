@@ -39,3 +39,22 @@ it("preserves details for an unfamiliar stop reason", () => {
   expect(screen.getByText("provider_error")).toBeVisible();
   expect(screen.getByText("Unexpected provider response")).toBeVisible();
 });
+
+it("explains a canary stop without rendering its attached protected content", () => {
+  render(
+    <AgentObservation
+      event={agentEvent("stopped", {
+        stop_reason: "canary_leak",
+        text: "PROTECTED_SESSION_VALUE",
+      })}
+      dryRun={false}
+      busy={false}
+      onResolved={vi.fn()}
+      onOpenReceipt={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "protected session marker",
+  );
+  expect(screen.queryByText("PROTECTED_SESSION_VALUE")).not.toBeInTheDocument();
+});

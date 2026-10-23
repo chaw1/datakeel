@@ -1,0 +1,51 @@
+id: 22-delegation-scope
+description: delegation scope
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Delegate a strictly read-only catalog review.
+  script:
+  - agent: main
+    tool_calls:
+    - id: advanced-call-4
+      name: tool_search
+      arguments:
+        query: delegate_agent
+  - agent: main
+    tool_calls:
+    - id: advanced-call-5
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: Inspect only catalog information
+  - agent: catalog-analyst
+    tool_calls:
+    - id: advanced-call-6
+      name: delete_files
+      arguments:
+        selection:
+          dataset_id: '{{dataset_id}}'
+  - agent: catalog-analyst
+    content: The forbidden action was rejected.
+  - agent: main
+    content: The scope boundary refused deletion.
+expect:
+  max_turns: 20
+  max_tokens: 200000
+  tool_sequence:
+  - tool_search
+  - delegate_agent
+  - delete_files
+  tool_results:
+  - name: delete_files
+    status: FAILED
+    calls: 1
+    asset_refs_required: false
+    content_schema:
+      type: object
+  answer_contains:
+  - refused deletion
+  file_count: 3

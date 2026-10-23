@@ -2,10 +2,14 @@
 
 All notable changes are documented here using the Keep a Changelog format.
 
-## [Unreleased]
+## [0.9.0] - 2026-10-24
 
 ### Added
 
+- Packaged, validated specialist definitions with serial delegated conversations, bounded tool scopes/depth/batches, root-budget accounting, call-tree traces and idempotent conclusion replay.
+- Explicit scoped memory with PII redaction, deterministic BM25 retrieval, decayed strength, provenance-preserving consolidation and recursive hard deletion with content-free audit.
+- Bilingual nested Agent steps, safe canary stops, current memory-use references and a Memory management page with filtering, creation and confirmed deletion.
+- Twelve advanced golden cases and four guard mutations, bringing the suites to 32 conversations and 20 mutations; shared script ownership and multi-conversation fixtures are documented in `docs/AGENT.md`.
 - Private per-conversation canaries stop leaked model text and tool arguments before transcript, checkpoint or tool dispatch. Tool results enter prompts in compact data-only JSON envelopes; raw audit transcripts remain unchanged.
 
 ### Fixed

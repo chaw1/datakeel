@@ -7,7 +7,7 @@ from collections import defaultdict
 from decimal import Decimal
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.harness_models import CostSummary, ModelCallTrace, TraceInput
@@ -42,7 +42,8 @@ def settle(db: Database, reservation_id: str, trace: TraceInput) -> ModelCallTra
         if row.status != "RESERVED":
             msg = "Reservation is not outstanding"
             raise ConflictError(msg)
-        if row.conversation_id != trace.conversation_id or row.model != trace.model:
+        accounting_id = trace.accounting_conversation_id or trace.conversation_id
+        if row.conversation_id != accounting_id or row.model != trace.model:
             msg = "Trace does not match its reserved conversation and model"
             raise ConflictError(msg)
         result = _account_trace(row, trace, reserved_accounts(session, row))
@@ -50,7 +51,11 @@ def settle(db: Database, reservation_id: str, trace: TraceInput) -> ModelCallTra
             ModelCallTraceRow(
                 id=result.id,
                 reservation_id=row.id,
-                conversation_id=row.conversation_id,
+                conversation_id=trace.conversation_id,
+                accounting_conversation_id=accounting_id,
+                agent_path=trace.agent_path,
+                depth=trace.depth,
+                parent_tool_call_id=trace.parent_tool_call_id,
                 model=row.model,
                 day=row.day,
                 cost_nanos=usd_to_nanos(result.cost_usd),
@@ -98,7 +103,12 @@ def list_traces(db: Database, conversation_id: str | None = None) -> list[ModelC
             ModelCallTraceRow.created_at, ModelCallTraceRow.id
         )
         if conversation_id is not None:
-            query = query.where(ModelCallTraceRow.conversation_id == conversation_id)
+            query = query.where(
+                or_(
+                    ModelCallTraceRow.conversation_id == conversation_id,
+                    ModelCallTraceRow.accounting_conversation_id == conversation_id,
+                )
+            )
         return [ModelCallTrace.model_validate(row.payload) for row in session.scalars(query)]
 
 
@@ -109,7 +119,7 @@ def summarize_costs(
     groups: dict[str, list[ModelCallTrace]] = defaultdict(list)
     for trace in list_traces(db):
         key = {
-            "conversation": trace.conversation_id,
+            "conversation": trace.accounting_conversation_id or trace.conversation_id,
             "day": trace.created_at.date().isoformat(),
             "model": trace.model,
         }[group_by]

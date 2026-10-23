@@ -55,6 +55,8 @@ class ModelRequest(BoundaryModel):
     tools: list[ToolDefinition]
     segments: list[ContextSegment]
     max_output_tokens: int = Field(default=1024, ge=1)
+    agent_name: str = "main"
+    agent_path: str = "main"
 
 
 class ModelResponse(BoundaryModel):
@@ -65,6 +67,12 @@ class ModelResponse(BoundaryModel):
     usage: TokenUsage = Field(default_factory=TokenUsage)
     stop_reason: str = "stop"
     usage_known: bool = Field(default=True, exclude=True)
+
+
+class ScriptedResponse(ModelResponse):
+    """Optionally assert which named agent consumes a deterministic script entry."""
+
+    agent: str | None = None
 
 
 class Provider(Protocol):
@@ -107,7 +115,13 @@ class ConversationAudit(BoundaryModel):
     id: str
     conversation_id: str
     plan_id: str
-    kind: Literal["RESUME_DENIED", "RESUME_AUTHORIZED", "INTERRUPT_INVALIDATED", "CANARY_LEAK"]
+    kind: Literal[
+        "RESUME_DENIED",
+        "RESUME_AUTHORIZED",
+        "INTERRUPT_INVALIDATED",
+        "CANARY_LEAK",
+        "DELEGATION_DENIED",
+    ]
     reason: str
     created_at: datetime
 
@@ -122,6 +136,13 @@ class Conversation(BoundaryModel):
     messages: list[ChatMessage] = Field(default_factory=list[ChatMessage])
     events: list[JsonDocument] = Field(default_factory=list[JsonDocument])
     turns: int = 0
+    parent_conversation_id: str | None = None
+    root_conversation_id: str | None = None
+    agent_name: str = "main"
+    agent_path: str = "main"
+    depth: int = Field(default=0, ge=0)
+    parent_tool_call_id: str | None = None
+    allowed_tools: list[str] | None = None
 
 
 class ConversationLease(BoundaryModel):

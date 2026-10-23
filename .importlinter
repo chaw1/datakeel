@@ -8,10 +8,38 @@ type = layers
 layers =
     datakeel.cli
     datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing
+    datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
+# Explicit memory services retain only typed projections across storage and tool boundaries.
+    datakeel.memory.service -> datakeel.operators.text.pii_redact
+    datakeel.memory.service -> datakeel.storage.memory_store
+    datakeel.memory.service -> datakeel.storage.database
+    datakeel.memory.tools -> datakeel.ontology.tool_models
+    datakeel.memory.tools -> datakeel.storage.database
+    datakeel.memory.tools -> datakeel.storage.tool_invocations
+    datakeel.storage.memory_store -> datakeel.memory.consolidation
+    datakeel.storage.memory_store -> datakeel.memory.retrieval
+    datakeel.runtime.delegation_graph -> datakeel.agent.models
+# Delegation validates tool policy and projects child conversations through typed stores.
+    datakeel.delegation.loader -> datakeel.ontology.functions
+    datakeel.delegation.models -> datakeel.ontology.tool_models
+    datakeel.delegation.service -> datakeel.ontology.tool_models
+    datakeel.delegation.service -> datakeel.storage.conversation_authorization
+    datakeel.delegation.tree -> datakeel.storage.harness_service
+    datakeel.delegation.tree -> datakeel.storage.tool_invocations
+    datakeel.delegation.tree -> datakeel.storage.database
+    datakeel.delegation.policy -> datakeel.storage.conversation_store
+    datakeel.delegation.policy -> datakeel.storage.conversation_secrets
+    datakeel.delegation.policy -> datakeel.storage.database
+    datakeel.delegation.service -> datakeel.storage.tool_invocations
+    datakeel.delegation.service -> datakeel.storage.conversation_store
+    datakeel.delegation.service -> datakeel.storage.conversation_secrets
+    datakeel.delegation.service -> datakeel.storage.database
+    datakeel.delegation.tree -> datakeel.storage.conversation_store
+    datakeel.delegation.service -> datakeel.actions.policy
+    datakeel.delegation.loader -> datakeel.actions.registry
 # Workflow definitions validate existing tool schemas and irreversible action policy.
     datakeel.workflows.schemas -> datakeel.actions.models
     datakeel.workflows.schemas -> datakeel.actions.parameters
@@ -188,6 +216,7 @@ ignore_imports =
     datakeel.storage.action_targets -> datakeel.ontology.models
 # Evidence golden fixtures exercise the existing fenced worker instead of fabricated assertions.
     datakeel.harness.evidence_cases -> datakeel.worker.runner
+    datakeel.harness.injection_cases -> datakeel.worker.runner
 # Evidence benchmarks evaluate typed ObjectSets against one consistent storage snapshot.
     datakeel.storage.evidence_evaluations -> datakeel.ontology.models
 # Semantic persistence publishes typed metric snapshots using pure projection helpers.

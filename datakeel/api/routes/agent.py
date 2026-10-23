@@ -22,6 +22,9 @@ from datakeel.core.agent_models import (
     ResumeInput,
 )
 from datakeel.core.routing_models import RouteDecision
+from datakeel.delegation.loader import list_agents
+from datakeel.delegation.models import AgentDefinition, CallTree
+from datakeel.delegation.tree import call_tree
 from datakeel.storage.conversation_authorization import list_audit
 
 router = APIRouter(prefix="/api/agent/conversations", tags=["agent"])
@@ -57,6 +60,18 @@ def list_all(db: DatabaseDependency) -> list[ConversationView]:
 def get(conversation_id: str, db: DatabaseDependency) -> ConversationView:
     """Recover all persisted events and current human approval decisions."""
     return service.get_conversation(db, conversation_id)
+
+
+@router.get("/{conversation_id}/tree")
+def tree(conversation_id: str, db: DatabaseDependency) -> CallTree:
+    """Read nested specialist sessions and every metered parent and child call."""
+    return call_tree(db, conversation_id)
+
+
+@router.get("/definitions/agents")
+def definitions() -> list[AgentDefinition]:
+    """List validated specialist contracts bundled with this installation."""
+    return list_agents()
 
 
 def _encode(events: Iterator[AgentEvent], first: AgentEvent | None) -> Iterator[str]:

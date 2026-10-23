@@ -28,7 +28,11 @@ from datakeel.storage.database import Database
 
 def create(db: Database, config: ConversationCreate) -> Conversation:
     """Persist one local conversation before any model or tool invocation."""
-    view = Conversation(id=new_id(), config=config)
+    return store(db, Conversation(id=new_id(), config=config))
+
+
+def store(db: Database, view: Conversation) -> Conversation:
+    """Persist a service-created root or child with a private independent sentinel."""
     with db.session() as session:
         session.add(
             ConversationRow(
@@ -45,12 +49,17 @@ def get(db: Database, conversation_id: str) -> Conversation:
         return Conversation.model_validate(locked_conversation(session, conversation_id).payload)
 
 
-def list_all(db: Database) -> list[Conversation]:
+def list_all(db: Database, *, include_children: bool = False) -> list[Conversation]:
     """List complete local sessions in deterministic creation order."""
     with db.session() as session:
         rows = session.scalars(select(ConversationRow)).all()
         return sorted(
-            (Conversation.model_validate(row.payload) for row in rows),
+            (
+                view
+                for row in rows
+                if (view := Conversation.model_validate(row.payload))
+                and (include_children or view.parent_conversation_id is None)
+            ),
             key=lambda item: item.created_at,
         )
 

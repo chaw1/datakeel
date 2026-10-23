@@ -3,6 +3,7 @@
 
 """Keep legacy reads resident and discover catalog reads and controlled actions on demand."""
 
+from collections.abc import Callable
 from time import perf_counter
 
 from pydantic import Field, ValidationError
@@ -12,9 +13,13 @@ from datakeel.actions.registry import action_definitions
 from datakeel.agent.schemas import compact_schema
 from datakeel.core.agent_models import Conversation, ToolCall, ToolDefinition
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.delegation.models import DelegateParams
+from datakeel.delegation.policy import tool_allowed
+from datakeel.memory.tools import invoke_memory, memory_tool
 from datakeel.ontology.functions import function_definitions
 from datakeel.ontology.tool_models import ToolCallContext, ToolInvocationStart, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
+from datakeel.storage.conversation_authorization import record_audit
 from datakeel.storage.database import Database
 from datakeel.storage.tool_invocations import (
     begin_invocation,
@@ -67,6 +72,14 @@ def deferred_tools() -> list[ToolDefinition]:
     ]
     return [
         *reads,
+        memory_tool(),
+        ToolDefinition(
+            name="delegate_agent",
+            description="Delegate a bounded task to a named specialist.",
+            parameters=compact_schema(
+                JsonDocument.model_validate(DelegateParams.model_json_schema())
+            ),
+        ),
         *[
             ToolDefinition(
                 name=item.id,
@@ -83,56 +96,85 @@ class ToolCatalog:
 
     def __init__(self, conversation: Conversation) -> None:
         """Recover only discoverable read and action schemas from persisted search results."""
-        self.core = resident_tools()
+        self.conversation = conversation
+        self.core = [
+            tool for tool in resident_tools() if tool_allowed(conversation.allowed_tools, tool.name)
+        ]
+        self.deferred = [
+            tool for tool in deferred_tools() if tool_allowed(conversation.allowed_tools, tool.name)
+        ]
         self.loaded: dict[str, ToolDefinition] = {}
         for message in conversation.messages:
             if message.role == "tool" and message.name == "tool_search":
                 result = ToolOutcome.model_validate_json(message.content)
                 self._load(result)
 
-    def invoke(self, db: Database, call: ToolCall, context: ToolCallContext) -> ToolOutcome:
+    def invoke(
+        self,
+        db: Database,
+        call: ToolCall,
+        context: ToolCallContext,
+        local: Callable[[ToolCall], ToolOutcome] | None = None,
+    ) -> ToolOutcome:
         """Enforce model-visible capabilities even if a provider invents a hidden call."""
         identifier = invocation_identity(context.session_id, call.id)
         previous = replay_invocation(db, identifier, call.name, digest(call.arguments.root))
         if previous is not None:
             if call.name == "tool_search":
                 self._load(previous)
-            return previous
+            return local(call) if call.name == "delegate_agent" and local is not None else previous
         if call.name == "tool_search":
-            try:
-                query = ToolSearchParams.model_validate(call.arguments.root).query.casefold()
-                matches = [
-                    tool
-                    for tool in deferred_tools()
-                    if query in f"{tool.name} {tool.description}".casefold()
-                ]
-                exact = [tool for tool in matches if tool.name.casefold() == query]
-                matches = exact or matches
-                result = ToolOutcome(
-                    name=call.name,
-                    status="SUCCEEDED",
-                    content=JsonDocument.model_validate(
-                        {"tools": [tool.model_dump(mode="json") for tool in matches]}
-                    ),
-                )
-                self._load(result)
-            except ValidationError as error:
-                result = ToolOutcome(name=call.name, status="FAILED", error=str(error))
-            return _record_local(db, call, context, result)
+            return _record_local(db, call, context, self._search(call))
         allowed = {tool.name for tool in self.core} | self.loaded.keys()
+        if not tool_allowed(self.conversation.allowed_tools, call.name):
+            record_audit(db, self.conversation.id, "", "DELEGATION_DENIED", "tool_scope_exceeded")
+            result = ToolOutcome(
+                name=call.name, status="FAILED", error="Tool outside delegated scope"
+            )
+            return _record_local(db, call, context, result)
         if call.name not in allowed:
             result = ToolOutcome(
                 name=call.name,
                 status="FAILED",
                 error="Tool unavailable; discover allowed tools first",
             )
-            return _record_local(db, call, context, result)
-        return invoke_tool(db, call.name, call.arguments, context, call_id=call.id)
+        elif call.name == "delegate_agent" and local is not None:
+            return local(call)
+        elif call.name == "delegate_agent":
+            result = ToolOutcome(
+                name=call.name, status="FAILED", error="Delegation requires an active agent graph"
+            )
+        elif call.name == "write_memory":
+            result = invoke_memory(db, call, context)
+        else:
+            return invoke_tool(db, call.name, call.arguments, context, call_id=call.id)
+        return _record_local(db, call, context, result)
+
+    def _search(self, call: ToolCall) -> ToolOutcome:
+        try:
+            query = ToolSearchParams.model_validate(call.arguments.root).query.casefold()
+            matches = [
+                tool
+                for tool in self.deferred
+                if query in f"{tool.name} {tool.description}".casefold()
+            ]
+            matches = [tool for tool in matches if tool.name.casefold() == query] or matches
+            result = ToolOutcome(
+                name=call.name,
+                status="SUCCEEDED",
+                content=JsonDocument.model_validate(
+                    {"tools": [tool.model_dump(mode="json") for tool in matches]}
+                ),
+            )
+            self._load(result)
+        except ValidationError as error:
+            result = ToolOutcome(name=call.name, status="FAILED", error=str(error))
+        return result
 
     def _load(self, result: ToolOutcome) -> None:
         values = result.content.root.get("tools", [])
         if isinstance(values, list):
-            allowed = {tool.name for tool in deferred_tools()}
+            allowed = {tool.name for tool in self.deferred}
             for value in values:
                 tool = ToolDefinition.model_validate(value)
                 if tool.name in allowed:

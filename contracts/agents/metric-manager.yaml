@@ -1,0 +1,10 @@
+name: metric-manager
+description: Inspect metric definitions and impact, and prepare reversible metric updates or rollbacks when requested.
+max_turns: 4
+tools:
+  - list_metrics
+  - explain_metric
+  - impact_of
+  - update_metric
+  - rollback_metric
+  - delegate_agent

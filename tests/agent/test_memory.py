@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from datakeel.actions.models import ApprovalDecision
 from datakeel.actions.service import approve_plan
-from datakeel.agent.memory import cross_session_memory, workspace
+from datakeel.agent.memory import workspace
 from datakeel.agent.providers import FakeProvider
 from datakeel.agent.service import create_conversation, get_conversation, send_message
 from datakeel.core.agent_models import ConversationCreate, MessageInput
@@ -40,7 +40,6 @@ def test_memory_when_human_rejects_plan_removes_pending_card_and_keeps_decision(
     approve_plan(db, plan.id, ApprovalDecision(approve=False, plan_digest=plan.plan_digest))
     assert get_conversation(db, conversation.id).pending_plans == []
     assert "REJECTED" in workspace(db, get(db, conversation.id)).model_dump_json()
-    assert cross_session_memory() == []
 
 
 def test_memory_when_action_completes_keeps_full_plan_once_and_summarizes_workspace(

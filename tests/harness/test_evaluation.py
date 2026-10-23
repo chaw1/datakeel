@@ -30,16 +30,16 @@ if TYPE_CHECKING:
     from datakeel.storage.database import Database
 
 
-def test_twenty_real_golden_cases_pass_and_results_survive_restart(db: Database) -> None:
+def test_all_real_golden_cases_pass_and_results_survive_restart(db: Database) -> None:
     """Run all scripted conversations twice and compare stored authoritative reports."""
     first = run_evaluation(db)
-    assert first.total == first.passed == 20, [(case.id, case.failures) for case in first.cases]
+    assert first.total == first.passed == 32, [(case.id, case.failures) for case in first.cases]
     assert first.total_tokens > 0
     assert first.total_cost_usd > 0
     assert first.previous_id is None
     db.engine.dispose()
     second = run_evaluation(db)
-    assert second.passed == 20
+    assert second.passed == 32
     assert second.previous_id == first.id
     assert second.previous_suite_digest == second.suite_digest
     assert second.passed_delta == 0

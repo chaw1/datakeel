@@ -1,0 +1,148 @@
+.memory-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr);
+  gap: calc(var(--space) * 6);
+  align-items: start;
+}
+.memory-form {
+  padding: calc(var(--space) * 6);
+  display: grid;
+  gap: calc(var(--space) * 3);
+}
+.memory-form h2 {
+  font-size: var(--font-lg);
+}
+.memory-form label,
+.memory-filter label,
+.memory-facts dt,
+.memory-sources {
+  color: var(--muted);
+  font-size: var(--font-xs);
+}
+.memory-form textarea {
+  min-height: 160px;
+  resize: vertical;
+  width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--font-sm);
+  line-height: var(--line-body);
+  padding: calc(var(--space) * 3);
+}
+.memory-form textarea:focus {
+  outline: 2px solid var(--pencil);
+  outline-offset: 2px;
+}
+.memory-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 3);
+  align-items: center;
+  margin-bottom: calc(var(--space) * 4);
+}
+.memory-filter select {
+  max-width: 100%;
+}
+.memory-list {
+  display: grid;
+  gap: calc(var(--space) * 4);
+}
+.memory-card {
+  padding: calc(var(--space) * 6);
+}
+.memory-content {
+  margin: calc(var(--space) * 4) 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: var(--line-body);
+}
+.memory-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(var(--space) * 3);
+}
+.memory-facts dd {
+  margin: calc(var(--space) * 2) 0;
+  font-size: var(--font-sm);
+}
+.memory-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 2);
+  padding-top: calc(var(--space) * 3);
+  overflow-wrap: anywhere;
+}
+.memory-confirm {
+  margin-top: calc(var(--space) * 4);
+  border-top: 1px solid var(--rule);
+  padding-top: calc(var(--space) * 4);
+}
+.memory-confirm h3 {
+  font-size: var(--font-sm);
+}
+.memory-confirm p {
+  margin: calc(var(--space) * 3) 0;
+  font-size: var(--font-sm);
+  line-height: var(--line-body);
+}
+.memory-confirm > div {
+  display: flex;
+  gap: calc(var(--space) * 3);
+}
+.delegation-step {
+  border-left: 2px solid var(--pencil);
+  padding-left: calc(var(--space) * 4);
+  margin: calc(var(--space) * 4) 0;
+}
+.delegation-step > summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: calc(var(--space) * 2);
+  font-size: var(--font-sm);
+  cursor: pointer;
+}
+.delegation-step > summary::before {
+  content: "+";
+  color: var(--pencil);
+}
+.delegation-step[open] > summary::before {
+  content: "−";
+}
+.delegation-step > summary > span:first-of-type {
+  flex: 1;
+}
+.delegation-tools,
+.agent-memory {
+  font-size: var(--font-xs);
+  line-height: var(--line-body);
+  overflow-wrap: anywhere;
+}
+.delegation-tools {
+  margin: calc(var(--space) * 3) 0;
+  color: var(--muted);
+}
+.agent-memory {
+  border: 1px solid var(--rule);
+  background: var(--pencil-wash);
+  padding: calc(var(--space) * 4);
+  margin: calc(var(--space) * 3) 0;
+  border-radius: 6px;
+}
+.agent-memory ul {
+  padding-left: calc(var(--space) * 5);
+  margin: calc(var(--space) * 2) 0;
+}
+@media (max-width: 850px) {
+  .memory-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 550px) {
+  .memory-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

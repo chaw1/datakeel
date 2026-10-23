@@ -1,0 +1,48 @@
+id: 21-delegation-catalog
+description: delegation catalog
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Delegate catalog analysis to a specialist.
+  script:
+  - agent: main
+    tool_calls:
+    - id: advanced-call-1
+      name: tool_search
+      arguments:
+        query: delegate_agent
+  - agent: main
+    tool_calls:
+    - id: advanced-call-2
+      name: delegate_agent
+      arguments:
+        agent: catalog-analyst
+        task: Inspect the available catalog
+  - agent: catalog-analyst
+    tool_calls:
+    - id: advanced-call-3
+      name: list_datasets
+      arguments: {}
+  - agent: catalog-analyst
+    content: Catalog analysis complete.
+  - agent: main
+    content: The specialist reviewed the catalog.
+expect:
+  max_turns: 20
+  max_tokens: 200000
+  tool_sequence:
+  - tool_search
+  - delegate_agent
+  - list_datasets
+  tool_results:
+  - name: delegate_agent
+    status: SUCCEEDED
+    calls: 1
+    asset_refs_required: false
+    content_schema:
+      type: object
+  answer_contains:
+  - specialist reviewed

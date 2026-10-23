@@ -17,6 +17,7 @@ from datakeel.core.agent_models import (
 )
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
+from datakeel.delegation.loader import list_agents
 from datakeel.routing.config import load_config
 from datakeel.routing.service import model_decisions, route_message
 from datakeel.runtime.graph import AgentGraph
@@ -30,6 +31,7 @@ from datakeel.storage.dataset_service import get_dataset
 def create_conversation(db: Database, request: ConversationCreate) -> ConversationView:
     """Validate an optional workspace and persist the new session configuration."""
     load_config()
+    list_agents()
     if request.dataset_id is not None:
         get_dataset(db, request.dataset_id)
     return conversation_view(db, memory.create(db, request))
@@ -102,7 +104,7 @@ def _deliver(
                 lease.token,
                 event=JsonDocument.model_validate(event.model_dump(mode="json")),
             )
-            if event.event == "done":
+            if event.event == "done" and event.agent_path == "main":
                 completed = True
             yield event
     finally:
@@ -136,4 +138,5 @@ def _response_events(
         event="done",
         route=route if route is not None and route.workflow_id is None else None,
         model_routes=model_decisions(db, conversation_id, conversation.turns),
+        used_memory_ids=graph.used_memories(),
     )

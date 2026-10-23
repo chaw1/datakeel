@@ -10,6 +10,7 @@ import type { MessageKey } from "../../i18n/en";
 
 const reasons: Partial<Record<string, MessageKey>> = {
   budget_exceeded: "budgetStopped",
+  canary_leak: "canaryStopped",
   repeated_call: "repeatStopped",
   no_progress: "progressStopped",
   ping_pong: "pingPongStopped",

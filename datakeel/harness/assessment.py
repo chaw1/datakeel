@@ -19,6 +19,8 @@ class CaseObservation(BoundaryModel):
     operation_errors: list[str]
     file_count: int
     quarantined_count: int
+    memory_count: int = 0
+    memory_used: bool = False
 
 
 def _selection_failures(
@@ -92,6 +94,8 @@ def assess(expect: GoldenExpect, observed: CaseObservation) -> EvalCaseResult:
         (expect.operation_statuses, result.operations, "Human operation statuses"),
         (expect.file_count, observed.file_count, "Visible file count"),
         (expect.quarantined_count, observed.quarantined_count, "Quarantined file count"),
+        (expect.memory_count, observed.memory_count, "Active memory count"),
+        (expect.memory_used, observed.memory_used, "Memory context present"),
     ]
     for expected, actual, label in equalities:
         if expected is not None and expected != actual:
@@ -105,6 +109,11 @@ def assess(expect: GoldenExpect, observed: CaseObservation) -> EvalCaseResult:
         f"Answer contains forbidden text: {text}"
         for text in expect.answer_not_contains
         if text in result.final_answer
+    )
+    failures.extend(
+        f"Retained context contains forbidden text: {text}"
+        for text in expect.context_not_contains
+        if text in observed.context
     )
     for values, haystack, label in (
         (expect.stop_contains, "\n".join(result.stop_reasons), "Stop reason"),

@@ -36,3 +36,7 @@ export type EvidenceSample = components["schemas"]["EvidenceSample"];
 export type Assertion = components["schemas"]["Assertion"];
 export type DecideAssertionsParams =
   components["schemas"]["DecideAssertionsParams"];
+
+export type MemoryEntry = components["schemas"]["MemoryEntry"];
+export type MemoryCreate = components["schemas"]["MemoryCreate"];
+export type MemoryDeletion = components["schemas"]["MemoryDeletion"];

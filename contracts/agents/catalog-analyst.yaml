@@ -1,0 +1,11 @@
+name: catalog-analyst
+description: Inspect catalog assets, lineage, metrics and impact using read-only tools. Delegate only within this same read-only scope.
+max_turns: 4
+tools:
+  - list_datasets
+  - search_files
+  - get_lineage
+  - list_metrics
+  - explain_metric
+  - impact_of
+  - delegate_agent

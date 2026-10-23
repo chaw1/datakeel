@@ -1,3 +1,4 @@
+import { advancedEn } from "./advancedEn";
 import { agentEn } from "./agentEn";
 import { approvalEn } from "./approvalEn";
 import { approvalsMetricEn } from "./approvalsMetricEn";
@@ -25,6 +26,7 @@ export const en = {
   themeLight: "Light",
   themeDark: "Dark",
   ...agentEn,
+  ...advancedEn,
   ...askEn,
   ...evidenceEn,
   ...catalogEn,

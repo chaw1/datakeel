@@ -74,7 +74,8 @@ def model_decisions(
     return [
         trace.model_route
         for trace in list_traces(db, conversation_id)
-        if trace.turn > after_turn
+        if trace.conversation_id == conversation_id
+        and trace.turn > after_turn
         and trace.call_type == "conversation"
         and trace.model_route is not None
     ]

@@ -1,4 +1,4 @@
-// Capture only the generated loopback demo. A missing approval is prepared, never executed.
+// Capture the isolated generated loopback demo, including fake delegation and saved memory.
 // npm run screenshots -- http://127.0.0.1:8773 [output-directory]
 import assert from "node:assert/strict";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 
+import { prepareAdvancedScreenshots } from "./advanced-screenshots.mjs";
 import { typographySample } from "./polish-smoke.mjs";
 import {
   appearance,
@@ -35,7 +36,7 @@ const expectedFiles = pages
     variants.map(({ locale, theme }) => `${name}-${locale}-${theme}.png`),
   )
   .sort();
-assert.equal(expectedFiles.length, 40);
+assert.equal(expectedFiles.length, 48);
 await mkdir(output, { recursive: true });
 const existing = (await readdir(output)).filter((name) =>
   name.endsWith(".png"),
@@ -68,6 +69,7 @@ const context = await browser.newContext({
   reducedMotion: "reduce",
   serviceWorkers: "block",
 });
+context.setDefaultTimeout(30_000);
 let currentName = "fixture";
 let askPosts = 0;
 let replayGets = 0;
@@ -135,6 +137,12 @@ await context.route("**/*", async (route) => {
 const api = localApi(context, base, report.writes);
 try {
   report.fixture = await prepareFixture(api);
+  report.fixture.advanced = await prepareAdvancedScreenshots(
+    context,
+    base,
+    report.fixture.datasetId,
+    report.writes,
+  );
   currentName = "theme-verification";
   const themePage = await context.newPage();
   await themePage.clock.setFixedTime(new Date(fixedTime));
@@ -144,7 +152,11 @@ try {
   await page.clock.setFixedTime(new Date(fixedTime));
   for (const entry of pages) {
     currentName = `${entry.name}-setup`;
-    await page.goto(`${base.origin}/${entry.hash}`);
+    const hash =
+      entry.name === "agent-advanced"
+        ? `#/agent?conversation=${report.fixture.advanced.conversationId}`
+        : entry.hash;
+    await page.goto(`${base.origin}/${hash}`);
     await page.locator(entry.ready).first().waitFor();
     const answer = await preparePage(page, entry, report.fixture);
     for (const [index, { locale, theme }] of variants.entries()) {
@@ -202,7 +214,7 @@ try {
         name,
         filename,
         bytes: image.length,
-        route: entry.hash,
+        route: hash,
         ...metadata,
         typography: typography.samples,
         consoleErrors: report.errors.filter(
@@ -233,7 +245,7 @@ try {
     [],
     "Every captured page must have zero console errors",
   );
-  assert.equal(report.pages.length, 40);
+  assert.equal(report.pages.length, 48);
   assert.deepEqual(
     (await readdir(output)).filter((name) => name.endsWith(".png")).sort(),
     expectedFiles,

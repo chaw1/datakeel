@@ -35,6 +35,9 @@ export function agentEvent(
 ): AgentEvent {
   return {
     id: `event-${event}`,
+    agent_path: "main",
+    agent_name: "main",
+    tokens: 0,
     event,
     text: null,
     call: null,
@@ -78,6 +81,8 @@ export const toolEvent: AgentEvent = agentEvent("tool_call", {
 });
 export const trace: ModelCallTrace = {
   call_type: "conversation",
+  agent_path: "main",
+  depth: 0,
   billing_status: "actual",
   accounted_tokens: 120,
   budget_exceeded: false,

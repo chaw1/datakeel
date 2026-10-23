@@ -4,13 +4,15 @@
 """Preserve conversation context and model-turn accounting around routed attempts."""
 
 from collections.abc import Callable
+from functools import partial
 
 from datakeel.agent.context import assemble
 from datakeel.agent.demo import DemoProvider
 from datakeel.agent.memory import workspace
 from datakeel.agent.tools import ToolCatalog
-from datakeel.core.agent_models import ModelRequest, ModelResponse, Provider
+from datakeel.core.agent_models import Conversation, ModelRequest, ModelResponse, Provider
 from datakeel.core.routing_models import TierState
+from datakeel.memory.service import reinforce_memories, select_memories
 from datakeel.routing.accounting import CallContext, ModelAccount
 from datakeel.routing.attempts import complete_with_fallback
 from datakeel.routing.config import load_config
@@ -23,7 +25,14 @@ from datakeel.storage.database import Database
 class ModelMeter:
     """Meter one model node without inflating turns for its fallback attempts."""
 
-    def __init__(self, db: Database, conversation_id: str, token: str, provider: Provider) -> None:
+    def __init__(
+        self,
+        db: Database,
+        conversation_id: str,
+        token: str,
+        provider: Provider,
+        accounting_conversation_id: str | None = None,
+    ) -> None:
         """Keep response ownership outside framework configuration and checkpoint state."""
         self.db, self.conversation_id, self.token, self.provider = (
             db,
@@ -31,6 +40,9 @@ class ModelMeter:
             token,
             provider,
         )
+        self.accounting_conversation_id = accounting_conversation_id
+        self.used_memory_ids: list[str] = []
+        self._memory_ids: list[str] = []
 
     def complete(
         self,
@@ -42,13 +54,7 @@ class ModelMeter:
         """Assemble unchanged context and count one turn when any provider was attempted."""
         conversation = memory.get(self.db, self.conversation_id)
         catalog = ToolCatalog(conversation)
-        request = assemble(
-            conversation,
-            catalog.core,
-            list(catalog.loaded.values()),
-            workspace(self.db, conversation),
-            get_canary(self.db, self.conversation_id),
-        )
+        request = self._request(conversation, catalog)
         config = load_config()
         route = select_model(
             conversation.config,
@@ -67,12 +73,61 @@ class ModelMeter:
                 provider=conversation.config.provider,
                 limits=conversation.config.budget,
                 input_divisor=4 if isinstance(self.provider, DemoProvider) else 1,
+                accounting_conversation_id=self.accounting_conversation_id
+                or conversation.root_conversation_id,
+                agent_path=conversation.agent_path,
+                depth=conversation.depth,
+                parent_tool_call_id=conversation.parent_tool_call_id,
             ),
         )
         try:
             return complete_with_fallback(
-                account, request, invoke, route, model_chain(conversation.config, route, config)
+                account,
+                request,
+                partial(self._invoke, invoke),
+                route,
+                model_chain(conversation.config, route, config),
+                partial(self._request, conversation, catalog),
             )
         finally:
             if account.attempts:
                 memory.append(self.db, self.conversation_id, self.token, model_call=True)
+
+    def _invoke(
+        self, invoke: Callable[[ModelRequest], ModelResponse], request: ModelRequest
+    ) -> ModelResponse:
+        try:
+            return invoke(request)
+        finally:
+            self.used_memory_ids = list(dict.fromkeys([*self.used_memory_ids, *self._memory_ids]))
+            reinforce_memories(self.db, self._memory_ids)
+
+    def _request(self, conversation: Conversation, catalog: ToolCatalog) -> ModelRequest:
+        selected = select_memories(
+            self.db,
+            next(
+                (
+                    message.content
+                    for message in reversed(conversation.messages)
+                    if message.role == "user" and message.name is None
+                ),
+                "",
+            ),
+            conversation.config.dataset_id,
+        )
+        request = assemble(
+            conversation,
+            catalog.core,
+            list(catalog.loaded.values()),
+            workspace(self.db, conversation),
+            get_canary(self.db, self.conversation_id),
+            selected.text,
+        )
+        request = request.model_copy(
+            update={
+                "agent_name": conversation.agent_name,
+                "agent_path": conversation.agent_path,
+            }
+        )
+        self._memory_ids = [entry.id for entry in selected.entries]
+        return request

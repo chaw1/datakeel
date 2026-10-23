@@ -80,7 +80,11 @@ export async function streamMessage(
     if (frame.event !== "message" && frame.event !== event.event)
       throw new Error("Agent event name does not match payload");
     onEvent(event);
-    if (event.event === "done") complete = true;
+    if (
+      event.event === "done" &&
+      (!event.agent_path || event.agent_path === "main")
+    )
+      complete = true;
   }
   if (!complete) throw new Error("Agent stream ended before the done event");
 }

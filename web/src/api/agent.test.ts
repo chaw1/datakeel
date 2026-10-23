@@ -52,3 +52,56 @@ it("rejects malformed stream observations", () => {
     "Invalid Agent",
   );
 });
+
+it("does not mistake a child done event for the root stream's completion", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve(
+        eventStream([
+          agentEvent("done", {
+            agent_path: "main/catalog-analyst#1",
+            agent_name: "catalog-analyst",
+          }),
+        ]),
+      ),
+    ),
+  );
+  await expect(
+    streamMessage(
+      "conversation-1",
+      { content: "Delegate a review", idempotency_key: "key-child" },
+      vi.fn(),
+      new AbortController().signal,
+    ),
+  ).rejects.toThrow("done event");
+});
+it("continues receiving the main response after a delegated Agent finishes", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve(
+        eventStream([
+          agentEvent("done", {
+            id: "child-done",
+            agent_path: "main/catalog-analyst#1",
+            agent_name: "catalog-analyst",
+          }),
+          agentEvent("text", { text: "The delegated review is complete." }),
+          agentEvent("done"),
+        ]),
+      ),
+    ),
+  );
+  const observed = vi.fn();
+  await streamMessage(
+    "conversation-1",
+    { content: "Delegate a review", idempotency_key: "key-root" },
+    observed,
+    new AbortController().signal,
+  );
+  expect(observed).toHaveBeenCalledTimes(3);
+  expect(observed).toHaveBeenCalledWith(
+    expect.objectContaining({ text: "The delegated review is complete." }),
+  );
+});

@@ -1,0 +1,38 @@
+id: 31-memory-minimum-overlap
+description: memory minimum overlap
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Remember catalog reports and their active records definition.
+  script:
+  - agent: main
+    tool_calls:
+    - id: advanced-call-28
+      name: tool_search
+      arguments:
+        query: write_memory
+  - agent: main
+    tool_calls:
+    - id: advanced-call-29
+      name: write_memory
+      arguments:
+        content: Catalog reports use the approved active-record definition.
+  - agent: main
+    content: Preference stored.
+- new_conversation: true
+  input: Catalog unrelated observations
+  script:
+  - agent: main
+    content: Insufficient overlap for memory retrieval.
+expect:
+  max_turns: 20
+  max_tokens: 200000
+  memory_count: 1
+  memory_used: false
+  context_not_contains:
+  - Catalog reports use the approved active-record definition.
+  answer_contains:
+  - Insufficient overlap

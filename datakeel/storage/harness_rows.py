@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from sqlalchemy import JSON, BigInteger, Float, String
+from sqlalchemy import JSON, BigInteger, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from datakeel.core.models import new_id, utcnow
@@ -19,6 +19,10 @@ class ModelCallTraceRow(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
     reservation_id: Mapped[str] = mapped_column(String, unique=True)
     conversation_id: Mapped[str] = mapped_column(String, index=True)
+    accounting_conversation_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    agent_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    depth: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    parent_tool_call_id: Mapped[str | None] = mapped_column(String, nullable=True)
     model: Mapped[str] = mapped_column(String, index=True)
     day: Mapped[str] = mapped_column(String, index=True)
     cost_nanos: Mapped[int] = mapped_column(BigInteger)

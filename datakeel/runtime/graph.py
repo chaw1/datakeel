@@ -22,9 +22,11 @@ from datakeel.core.agent_models import ChatMessage, Provider, ResumeInput, ToolC
 from datakeel.core.canary import response_leaks
 from datakeel.core.errors import BudgetError, ConflictError, DatakeelError, ValidationError
 from datakeel.core.models import BoundaryModel
+from datakeel.delegation.policy import ancestor_leak
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.runtime import DURABILITY
 from datakeel.runtime.chat import complete
+from datakeel.runtime.delegation_graph import DelegationExecutor
 from datakeel.runtime.saver import SQLAlchemySaver
 from datakeel.runtime.tracing import tracing_disabled
 from datakeel.storage import conversation_store as memory
@@ -42,6 +44,7 @@ class GraphState(BoundaryModel):
     turn: int = 0
     calls: list[str] = Field(default_factory=list[str])
     events: list[str] = Field(default_factory=list[str])
+    used_memory_ids: list[str] = Field(default_factory=list[str])
     guard: str = ""
     plan_id: str = ""
     pending_call: str = ""
@@ -80,7 +83,8 @@ class AgentGraph:
             provider,
         )
         self.guard = LoopGuard()
-        self.maximum = memory.get(db, conversation_id).config.max_turns
+        self.conversation = memory.get(db, conversation_id)
+        self.maximum = self.conversation.config.max_turns
         self.saver = SQLAlchemySaver(db)
         self.config: RunnableConfig = {
             "configurable": {"thread_id": conversation_id},
@@ -119,6 +123,11 @@ class AgentGraph:
             return ""
         return GraphState.model_validate(snapshot.values).plan_id
 
+    def used_memories(self) -> list[str]:
+        """Project only identities of memories actually sent in this response's model calls."""
+        snapshot = self.graph.get_state(self.config)
+        return GraphState.model_validate(snapshot.values).used_memory_ids
+
     def resume(self, request: ResumeInput) -> Iterator[AgentEvent]:
         """Check real approval immediately, before lazy execution or provider construction."""
         authorize_resume(self.db, self.conversation_id, request.plan_id, self.pending_plan())
@@ -142,7 +151,19 @@ class AgentGraph:
                 for node_update in cast("dict[str, object]", update).values():
                     if isinstance(node_update, dict):
                         events = cast("dict[str, list[str]]", node_update).get("events", [])
-                        yield from (AgentEvent.model_validate_json(event) for event in events)
+                        for event in events:
+                            item = AgentEvent.model_validate_json(event)
+                            yield (
+                                item
+                                if item.agent_path != "main"
+                                else item.model_copy(
+                                    update={
+                                        "agent_path": self.conversation.agent_path,
+                                        "agent_name": self.conversation.agent_name,
+                                        "conversation_id": self.conversation_id,
+                                    }
+                                )
+                            )
             if self.graph.get_state(self.config).interrupts:
                 yield _stopped("approval_required")
 
@@ -179,10 +200,13 @@ class AgentGraph:
                 has_tool_result=state.response_has_tool_result,
             )
         except BudgetError:
-            return self._stop(state, "budget_exceeded")
+            return self._stop(self._remember(state, meter), "budget_exceeded")
         except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError) as error:
-            return self._stop(state, "provider_error", type(error).__name__)
-        if response_leaks(get_canary(self.db, self.conversation_id), response):
+            return self._stop(self._remember(state, meter), "provider_error", type(error).__name__)
+        state = self._remember(state, meter)
+        if response_leaks(get_canary(self.db, self.conversation_id), response) or ancestor_leak(
+            self.db, self.conversation, response
+        ):
             record_audit(self.db, self.conversation_id, "", "CANARY_LEAK", "model_output")
             return self._stop(state, "canary_leak")
         memory.append(
@@ -207,9 +231,20 @@ class AgentGraph:
             return self._stop(state, reason) if reason else self._continue(state)
         return state
 
+    @staticmethod
+    def _remember(state: GraphState, meter: ModelMeter) -> GraphState:
+        return state.model_copy(
+            update={
+                "used_memory_ids": list(
+                    dict.fromkeys([*state.used_memory_ids, *meter.used_memory_ids])
+                )
+            }
+        )
+
     def _tools(self, state: GraphState) -> GraphState:
         self.guard.restore(state.guard)
         dispatcher = ToolDispatcher(self.db, self.conversation_id, self.token, self.guard)
+        delegated = DelegationExecutor(self.db, self.conversation, self.provider, AgentGraph)
         dry_run = memory.get(self.db, self.conversation_id).config.dry_run
         calls = [ToolCall.model_validate_json(item) for item in state.calls]
         events: list[AgentEvent] = []
@@ -218,7 +253,9 @@ class AgentGraph:
         pending_call = ""
         for index, call in enumerate(calls):
             events.append(AgentEvent(event="tool_call", call=call))
-            results, reason = dispatcher.dispatch(call, dry_run=dry_run)
+            results, reason = dispatcher.dispatch(call, dry_run=dry_run, local=delegated.invoke)
+            events.extend(delegated.drain())
+            reason = delegated.stop_reason or reason
             events.extend(results)
             if reason:
                 pending_call = call.model_dump_json()
@@ -259,7 +296,15 @@ class AgentGraph:
         return self._model(state).model_dump(mode="json")
 
     def _tools_node(self, state: GraphState) -> dict[str, JsonValue]:
-        return self._tools(state).model_dump(mode="json")
+        result = self._tools(state)
+        identifiers = [
+            identifier
+            for item in result.events
+            for identifier in AgentEvent.model_validate_json(item).used_memory_ids
+        ]
+        return result.model_copy(
+            update={"used_memory_ids": list(dict.fromkeys([*result.used_memory_ids, *identifiers]))}
+        ).model_dump(mode="json")
 
     def _stop(self, state: GraphState, reason: str, detail: str = "") -> GraphState:
         return state.model_copy(

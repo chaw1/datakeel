@@ -51,3 +51,17 @@ def test_context_canaries_preserve_prefix_and_tool_results_are_only_wrapped_in_p
     assert first.messages[2].content.startswith('["data-only","list_datasets",')
     assert conversation.messages[0] == message
     assert first.segments[2] != second.segments[2]
+
+
+def test_memory_segment_is_bounded_volatile_and_does_not_change_shared_prefix() -> None:
+    """Data-only memory preserves the established user query and workspace roles."""
+    conversation = Conversation(id="session", config=ConversationCreate())
+    empty = assemble(conversation, resident_tools(), [], JsonDocument({}))
+    text = '["data-only","memory",[["m1","Catalog records use active status."]]]'
+    populated = assemble(conversation, resident_tools(), [], JsonDocument({}), memory_text=text)
+    assert populated.segments[:2] == empty.segments[:2]
+    assert [part.name for part in populated.segments] == ["instructions", "core_tools", "memory"]
+    assert populated.segments[-1].tokens == len(text.encode()) + 16
+    assert populated.messages[-2].name == "memory_context"
+    assert populated.messages[-2].role == "user"
+    assert all(message.name != "memory_context" for message in empty.messages)

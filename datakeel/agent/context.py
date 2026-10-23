@@ -36,6 +36,7 @@ def assemble(
     loaded_tools: list[ToolDefinition],
     facts: JsonDocument,
     canary: str = "",
+    memory_text: str = "",
 ) -> ModelRequest:
     """Place immutable instructions and core schemas before changing history and facts."""
     history = [envelope(message) for message in conversation.messages]
@@ -45,6 +46,7 @@ def assemble(
         ("core_tools", "stable", _schemas(core_tools)),
         ("canary", "volatile", secret),
         ("discovered_tools", "volatile", _schemas(loaded_tools) if loaded_tools else ""),
+        ("memory", "volatile", memory_text),
         (
             "history",
             "volatile",
@@ -66,6 +68,11 @@ def assemble(
         messages=[
             ChatMessage(role="system", content=INSTRUCTIONS),
             *([ChatMessage(role="system", content=secret, name="canary")] if secret else []),
+            *(
+                [ChatMessage(role="user", content=memory_text, name="memory_context")]
+                if memory_text
+                else []
+            ),
             *history,
             ChatMessage(role="user", content=facts.model_dump_json(), name="workspace_context"),
         ],

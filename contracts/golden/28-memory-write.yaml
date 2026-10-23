@@ -1,0 +1,42 @@
+id: 28-memory-write
+description: memory write
+config:
+  model: fake-script
+  budget:
+    conversation_tokens: 400000
+    daily_tokens: 2000000
+turns:
+- input: Remember catalog reports and their active records definition.
+  script:
+  - agent: main
+    tool_calls:
+    - id: advanced-call-22
+      name: tool_search
+      arguments:
+        query: write_memory
+  - agent: main
+    tool_calls:
+    - id: advanced-call-23
+      name: write_memory
+      arguments:
+        content: Catalog reports contact sample@example.org on 2026-10-24.
+  - agent: main
+    content: Preference stored.
+expect:
+  max_turns: 20
+  max_tokens: 200000
+  tool_sequence:
+  - tool_search
+  - write_memory
+  tool_results:
+  - name: write_memory
+    status: SUCCEEDED
+    calls: 1
+    asset_refs_required: false
+    content_schema:
+      type: object
+  memory_count: 1
+  context_contains:
+  - '[REDACTED]'
+  - '2026-10-24'
+  memory_used: true

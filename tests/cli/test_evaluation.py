@@ -20,14 +20,14 @@ def test_eval_when_repeated_reports_full_score_and_previous_comparison(
     invoke: Invoke,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Run twenty real golden conversations twice through the public command grammar."""
+    """Run all packaged golden conversations twice through the public command grammar."""
     invoke("eval")
     first = capsys.readouterr().out
-    assert "20/20" in first
+    assert "32/32" in first
     assert "Previous: none" in first
     invoke("eval", "--json")
     report = json.loads(capsys.readouterr().out)
-    assert report["passed"] == report["total"] == 20
+    assert report["passed"] == report["total"] == 32
     assert report["previous_id"]
     assert report["passed_delta"] == 0
 

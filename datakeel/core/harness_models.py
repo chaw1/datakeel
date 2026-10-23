@@ -96,6 +96,10 @@ class TraceInput(BoundaryModel):
     billing_status: Literal["actual", "unknown"] = "actual"
     call_type: Literal["conversation", "intent_classifier"] = "conversation"
     model_route: ModelRouteDecision | None = None
+    accounting_conversation_id: str | None = None
+    agent_path: str = "main"
+    depth: int = Field(default=0, ge=0)
+    parent_tool_call_id: str | None = None
 
     @model_validator(mode="after")
     def validate_segments(self) -> Self:

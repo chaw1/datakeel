@@ -22,6 +22,7 @@ from datakeel.harness.assessment import CaseObservation, assess
 from datakeel.harness.cases import bind_case, seed_case
 from datakeel.harness.operations import OperationObservation, apply_operation
 from datakeel.harness.service import list_traces
+from datakeel.memory.service import delete_memory, list_memories
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_files, list_versions
 
@@ -33,6 +34,8 @@ def _run_turns(
     operations: list[OperationObservation] = []
     plans: list[ActionPlan] = []
     for turn in case.turns:
+        if turn.new_conversation:
+            conversation_id = create_conversation(db, case.config).id
         if fake is not None:
             fake.script.extend(turn.script)
         for event in send_message(
@@ -49,6 +52,9 @@ def _run_turns(
             apply_operation(db, plans[-1] if plans else None, operation)
             for operation in turn.operations
         )
+        if turn.delete_memories:
+            for entry in list_memories(db):
+                delete_memory(db, entry.id)
     return events, operations, plans
 
 
@@ -70,11 +76,10 @@ def _version_outputs(db: Database, dataset_id: str, runs: list[ActionRun]) -> di
 def _measured_result(
     db: Database,
     case: GoldenCase,
-    conversation_id: str,
     events: list[AgentEvent],
     operations: list[OperationObservation],
 ) -> EvalCaseResult:
-    traces = list_traces(db, conversation_id)
+    traces = list_traces(db)
     names = {item.name for item in case.expect.tool_results} | {
         item.selection_from_tool for item in case.expect.actions if item.selection_from_tool
     }
@@ -97,6 +102,7 @@ def _measured_result(
         stop_reasons=[event.stop_reason for event in events if event.stop_reason],
         turns=sum(
             trace.call_type == "conversation"
+            and trace.depth == 0
             and (trace.model_route is None or trace.model_route.attempt == 1)
             for trace in traces
         ),
@@ -123,13 +129,19 @@ def _observe(db: Database, case: GoldenCase, fake: FakeProvider | None) -> CaseO
     context = fake.requests[-1].messages if fake is not None and fake.requests else memory.messages
     files = list_files(db, case.config.dataset_id or "")
     return CaseObservation(
-        result=_measured_result(db, case, conversation.id, events, operations),
+        result=_measured_result(db, case, events, operations),
         plans=plans,
         runs=list_runs(db),
         context="\n".join(message.content for message in context),
         operation_errors=[operation.error for operation in operations],
         file_count=len(files),
         quarantined_count=sum(file.metadata.get("quarantined") is True for file in files),
+        memory_count=len(list_memories(db)),
+        memory_used=bool(
+            fake
+            and fake.requests
+            and any(segment.name == "memory" for segment in fake.requests[-1].segments)
+        ),
     )
 
 
@@ -178,6 +190,11 @@ def run_case(case: GoldenCase, provider: Literal["fake", "openai", "anthropic"])
                 }
             )
             fake = FakeProvider([]) if provider == "fake" else None
-            return assess(case.expect, _observe(db, case, fake))
+            result = assess(case.expect, _observe(db, case, fake))
+            if fake is not None and fake.script_errors:
+                result = result.model_copy(
+                    update={"passed": False, "failures": [*result.failures, *fake.script_errors]}
+                )
+            return result
         finally:
             db.engine.dispose()

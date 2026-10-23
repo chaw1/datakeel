@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 
 import { useI18n } from "../../i18n/useI18n";
 
-import { AgentObservation } from "./AgentObservation";
+import { AgentMemoryUsage } from "./AgentMemoryUsage";
+import { AgentSteps } from "./AgentSteps";
 
 import type { AgentEvent, Conversation } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
@@ -32,7 +33,11 @@ export function ConversationTranscript({
   const groups: AgentEvent[][] = [[]];
   for (const event of [...conversation.events, ...live.events]) {
     groups[groups.length - 1].push(event);
-    if (event.event === "done") groups.push([]);
+    if (
+      event.event === "done" &&
+      (!event.agent_path || event.agent_path === "main")
+    )
+      groups.push([]);
   }
   const receipts = new Set<string>();
   return (
@@ -58,24 +63,35 @@ export function ConversationTranscript({
               <p>{users[index]}</p>
             </div>
           )}
-          {events.map((event) => {
-            const runId = ["plan", "receipt"].includes(event.event)
-              ? event.outcome?.run?.id
-              : undefined;
-            const receiptVisible = !runId || !receipts.has(runId);
-            if (runId) receipts.add(runId);
-            return (
-              <AgentObservation
-                receiptVisible={receiptVisible}
-                key={event.id}
-                event={event}
-                dryRun={conversation.config.dry_run}
-                busy={busy}
-                onResolved={onResolved}
-                onOpenReceipt={onOpenReceipt}
-              />
-            );
-          })}
+          <AgentMemoryUsage
+            ids={[
+              ...new Set(
+                events.flatMap((event) => event.used_memory_ids ?? []),
+              ),
+            ]}
+          />
+          <AgentSteps
+            events={events}
+            dryRun={conversation.config.dry_run}
+            busy={busy}
+            onResolved={onResolved}
+            onOpenReceipt={onOpenReceipt}
+            visibleReceipts={
+              new Set(
+                events
+                  .filter((event) => {
+                    const runId = ["plan", "receipt"].includes(event.event)
+                      ? event.outcome?.run?.id
+                      : undefined;
+                    if (!runId) return true;
+                    if (receipts.has(runId)) return false;
+                    receipts.add(runId);
+                    return true;
+                  })
+                  .map((event) => event.id),
+              )
+            }
+          />
         </section>
       ))}
       {busy && (

@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 
+import { advancedSmoke } from "./advanced-smoke.mjs";
 import { enterpriseSmoke } from "./enterprise-smoke.mjs";
 import { evidenceSmoke } from "./evidence-smoke.mjs";
 import { extractionSmoke } from "./extraction-smoke.mjs";
@@ -39,6 +40,7 @@ const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
   timezoneId: "Asia/Shanghai",
 });
+context.setDefaultTimeout(30_000);
 const errors = [];
 const checks = [];
 const page = await context.newPage();
@@ -444,6 +446,16 @@ try {
   checks.push(
     "workflow schema form, isolated cleanup, approval link, explicit resume, persisted timeline and exactly one deletion",
   );
+  const advanced = await advancedSmoke({
+    page,
+    base,
+    json,
+    post,
+    send,
+    screenshot,
+    checks,
+    datasetId: workflows.datasetId,
+  });
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(output, "evidence.json"),
@@ -463,6 +475,7 @@ try {
         extraction,
         workflows,
         routing,
+        advanced,
         checks,
         errors,
       },

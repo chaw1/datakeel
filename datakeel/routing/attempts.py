@@ -17,10 +17,13 @@ def complete_with_fallback(
     invoke: Callable[[ModelRequest], ModelResponse],
     route: ModelRouteDecision,
     models: list[str],
+    refresh: Callable[[], ModelRequest] | None = None,
 ) -> ModelResponse:
     """Retry only normalized timeout, rate-limit, and server failures on configured backups."""
     reason: str | None = None
     for index, model in enumerate(models):
+        if index and refresh is not None:
+            request = refresh()
         selected = route.model_copy(
             update={"model": model, "attempt": index + 1, "fallback_reason": reason}
         )

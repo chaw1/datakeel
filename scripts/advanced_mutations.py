@@ -1,0 +1,44 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Delegation, leak detection and memory deletion regression mutations."""
+
+from scripts.mutation_models import Mutation
+
+ADVANCED_MUTATIONS = (
+    Mutation(
+        name="canary-output-guard",
+        path="core/canary.py",
+        before="return any(is_leak(canary, text) for text in texts)",
+        after="return False",
+        case="tests/runtime/test_canary.py::test_canary_guard_cannot_be_disabled",
+        runner="pytest",
+    ),
+    Mutation(
+        name="delegation-depth",
+        path="delegation/policy.py",
+        before="if parent.depth >= limits.delegation_max_depth:",
+        after="if False:",
+        case="tests/delegation/test_execution.py::test_nested_delegation_cannot_exceed_depth",
+        runner="pytest",
+    ),
+    Mutation(
+        name="delegation-scope",
+        path="delegation/policy.py",
+        before='return scope is None or name in scope or name == "tool_search"',
+        after="return True",
+        case="tests/delegation/test_execution.py::test_child_cannot_call_outside_scope",
+        runner="pytest",
+    ),
+    Mutation(
+        name="memory-hard-delete",
+        path="storage/memory_store.py",
+        before="            session.delete(rows[memory_id])",
+        after="            pass",
+        case=(
+            "tests/memory/test_deletion.py::"
+            "test_delete_memory_when_retrieved_excludes_it_from_new_conversation"
+        ),
+        runner="pytest",
+    ),
+)

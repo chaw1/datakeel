@@ -30,6 +30,10 @@ class CallContext(BoundaryModel):
     limits: BudgetLimits
     call_type: Literal["conversation", "intent_classifier"] = "conversation"
     input_divisor: int = Field(default=1, ge=1)
+    accounting_conversation_id: str | None = None
+    agent_path: str = "main"
+    depth: int = 0
+    parent_tool_call_id: str | None = None
 
 
 class ModelAccount:
@@ -50,7 +54,8 @@ class ModelAccount:
         reservation = reserve(
             self.db,
             BudgetRequest(
-                conversation_id=self.context.conversation_id,
+                conversation_id=self.context.accounting_conversation_id
+                or self.context.conversation_id,
                 model=request.model,
                 input_tokens=max(
                     1,
@@ -112,6 +117,10 @@ class ModelAccount:
                 billing_status="actual" if response.usage_known else "unknown",
                 call_type=self.context.call_type,
                 model_route=route,
+                accounting_conversation_id=self.context.accounting_conversation_id,
+                agent_path=self.context.agent_path,
+                depth=self.context.depth,
+                parent_tool_call_id=self.context.parent_tool_call_id,
             ),
         )
         if trace.budget_exceeded:

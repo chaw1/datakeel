@@ -1,0 +1,38 @@
+export const advancedEn = {
+  memoryNav: "Memory",
+  memoryDescription:
+    "Saved context is available across conversations. You control what stays.",
+  memoryContent: "Memory content",
+  memoryScope: "Scope",
+  memoryGlobal: "Global",
+  memoryAllScopes: "All scopes",
+  memoryFilter: "Filter memory by dataset",
+  memoryAdd: "Add memory",
+  memoryAdding: "Saving…",
+  memoryEmpty: "No saved memories in this scope.",
+  memoryStrength: "Current strength",
+  memoryLastUsed: "Last used",
+  memoryNeverUsed: "Never used",
+  memorySources: "Source conversations",
+  memoryManual: "Manually added",
+  memoryDelete: "Delete memory",
+  memoryDeleteTitle: "Delete this memory?",
+  memoryDeleteExplanation:
+    "This permanently removes this memory and its archived sources. It will no longer be used in future responses.",
+  memoryConfirmDelete: "Confirm deletion",
+  memoryCancelDelete: "Keep memory",
+  memoryDeleting: "Deleting…",
+  memoryUsed: "Memories used this turn",
+  memoryDeletedReference: "Deleted memory ({id})",
+  memoryOpen: "Manage memories",
+  memoryUnavailable:
+    "Memory details are unavailable. References are preserved below.",
+  delegationStep: "Delegated Agent",
+  delegationTools: "Tools used",
+  delegationNoTools: "No tool calls",
+  delegationTokens: "{count} tokens",
+  delegationPath: "Agent path",
+  delegationParentCall: "Parent tool call",
+  canaryStopped:
+    "A protected session marker appeared in the model response. The response was withheld and execution stopped before any tools from that response ran.",
+};
