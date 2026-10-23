@@ -126,9 +126,37 @@ PY
 
 ![命令面板按指标 ID 搜索对象](images/demo/14-command-palette.jpg)
 
+## 8. 跑一次低质样本清理并签批（约 1 分钟）
+
+先在第二个终端执行以下导入命令，新建独立的 `Workflow cleanup demo`：两个空文本加一个正常文本。它不改变原有 400 文件数据集，清理也只选择这个新数据集。
+
+```bash
+curl --fail http://127.0.0.1:8773/api/datasets \
+  -H 'Content-Type: application/json' --data-binary @- <<'JSON'
+{
+  "name": "Workflow cleanup demo",
+  "files": [
+    {"filename": "empty-a.txt", "content_base64": ""},
+    {"filename": "empty-b.txt", "content_base64": ""},
+    {"filename": "observation.txt", "content_base64": "QSBnZW5lcmF0ZWQgb2JzZXJ2YXRpb24gd2l0aCBlbm91Z2ggdGV4dCB0byBiZSB1c2VmdWwu"}
+  ]
+}
+JSON
+```
+
+刷新浏览器，打开「工作流」→「低质样本清理」。数据集选 `Workflow cleanup demo`，保留质量分数上限 `60`，点击「运行工作流」。时间线显示查找、自动隔离及删除待签批；此时三个文件仍在，两个空文件已被隔离。
+
+![低质样本清理自动隔离后暂停等待签批](images/demo/15-workflow-paused.jpg)
+
+点击「查看签批」，确认冻结计划只影响两个空文件，再点「签批并删除文件」。点击「返回工作流」：运行仍然暂停。点击「签批后继续」，工作流复用已有删除回执并完成质量复查，最终只剩 `observation.txt`。刷新页面后，运行记录与时间线仍保留。
+
+![显式恢复后的工作流结论与完成状态](images/demo/16-workflow-complete.jpg)
+
+其他工作流可从同一入口选择。Agent 的「按工作流运行」建议只预填数据集并打开表单，不自动执行。定义、CLI、失败语义及接口见[工作流参考](WORKFLOWS.md)。
+
 ## 自动复现与截图
 
-在一个**尚未操作过的新 demo** 上运行以下命令。脚本会按上面的顺序操作真实界面；指标修改和回滚都通过界面准备计划、审阅签批单并执行，直接 API 调用只读取或轮询证据。
+在一个**尚未操作过的新 demo** 上运行以下命令。脚本会按上面的顺序操作真实界面；指标修改和回滚都通过界面准备计划、审阅签批单并执行，直接 API 调用只读取或轮询证据，唯一写入例外是在清理步骤前创建上述独立三文件样例。
 
 ```bash
 npm --prefix web ci
@@ -137,4 +165,4 @@ npm --prefix web exec -- playwright install chromium
 npm --prefix web run smoke:tour -- http://127.0.0.1:8773
 ```
 
-脚本生成 16 张 `1440 × 900` 的 JPEG 到 `docs/images/demo/`，每张不超过 400,000 字节，直接取自浏览器，不做图片后处理。`artifacts/demo-tour/tour.json` 记录每步操作、响应状态、对象与版本、图片尺寸及大小、控制台错误和拦截的外部请求；同目录保存页面文本。脚本还检查两种指标签批单的中英文影响数字一致，以及问数结果 `4,979,475 → 5,255,975 → 4,979,475` 和指标版本 `1 → 2 → 3`。成功要求控制台和页面错误均为 0，外部请求为 0。重复运行需要再次启动全新的临时工作区。
+脚本生成 18 张 `1440 × 900` 的 JPEG 到 `docs/images/demo/`，每张不超过 400,000 字节，直接取自浏览器，不做图片后处理。`artifacts/demo-tour/tour.json` 记录每步操作、响应状态、对象与版本、图片尺寸及大小、控制台错误和拦截的外部请求；同目录保存页面文本。脚本还检查两种指标签批单的中英文影响数字一致，以及问数结果 `4,979,475 → 5,255,975 → 4,979,475` 和指标版本 `1 → 2 → 3`。新增清理步骤核对两个隔离文件、签批后显式恢复、唯一删除记录、剩余一个文件，以及原 400 文件数据集未变。成功要求控制台和页面错误均为 0，外部请求为 0。重复运行需要再次启动全新的临时工作区。

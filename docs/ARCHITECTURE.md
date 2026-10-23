@@ -94,3 +94,26 @@ datakeel/
 会话创建、查询、消息、恢复与恢复审计统一使用 `/api/agent/conversations` 前缀；恢复入口为 `POST /api/agent/conversations/{id}/resume`，审计入口为 `GET /api/agent/conversations/{id}/audit`。
 
 消息与恢复共享进程释放型会话锁：PostgreSQL 使用按 schema 与会话划分的 session advisory lock，SQLite 使用按数据库与会话划分的文件锁。同一会话只允许一个响应写入者；进程退出或被杀后锁由系统释放，后继写入者取得锁后才能回收遗留 response lease，避免仅凭超时抢占仍在执行的请求。签批校验成功、恢复拒绝和暂停作废均写入独立审计表，并可经恢复审计接口查询。
+
+
+## 7. 确定性工作流 / Deterministic workflows
+
+`workflows/` is a framework-free domain package: frozen YAML schemas, graph validation, input binding, JSON reference resolution and existing tool/task execution. `runtime/workflow_graph.py` compiles each checked step into LangGraph nodes and uses the same strict synchronous saver. `routing/` may read workflow declarations but cannot start a run. Both domain packages have their own 1500-line limit and 90% coverage gate.
+
+`workflows/` 负责定义和执行的领域规则，`runtime/` 负责图调度，`routing/` 只读取工作流词汇并给出建议。工具步调用现有读函数或准备可逆动作后自动执行；任务等待在节点内轮询，时钟与 sleep 可注入，不使用 interrupt。分支只能使用 ref/op/value 白名单，output 只使用变量与声明的纯函数。输入和定义在启动时冻结，恢复不读取后来改动的 YAML。
+
+An irreversible step has separate preparation, `approval_gate`, and execution nodes. The gate only interrupts. Preparation uses a stable run-scoped tool call ID; execution reuses `execute_approved` and existing receipts. The pure approval policy checks original digest, signed actor, expiry, consumed state and run ownership. Workflow run, step, audit and resume records live in four independent tables; plans use the run ID as `session_id` and `datakeel-workflow` as `agent_id`. A signed action still requires an explicit workflow resume request.
+
+运行采用同步 SSE。每个启动幂等键绑定工作流与输入；每个恢复键绑定运行与计划。消息锁机制以工作流运行 ID 为命名空间，在进程退出时自动释放；并发恢复只能有一个写入者。普通断线或重启后的运行标为 `INTERRUPTED`，没有通用中途续跑；持久签批暂停及其尚未完成的执行节点允许从真实签批记录恢复。事件在产生时冻结完整运行快照，避免消费时读到更后一步的状态。审计不依赖 checkpoint 的保留。
+
+See [WORKFLOWS.md](WORKFLOWS.md) for declarations, endpoints, events and examples. 详细引用语法、CLI、API 与错误示例见工作流文档。
+
+## 8. 意图与模型路由 / Intent and model routing
+
+Intent scoring uses only vocabulary, exclusions, thresholds and score margins declared in workflow YAML. A clear winner produces a suggestion; ambiguous scores use an independent classifier; insufficient or failed classification returns to the free Agent. The offline classifier does not consume the scripted Agent queue. Real classification uses the configured conversation model, has its own reserve/settle trace marked `intent_classifier`, and does not increment Agent turns. No new tools, context segments or ChatMessage fields are introduced.
+
+会话路由只建议，执行仍由用户显式启动。命中建议以 `route` 事件在 `done` 前发出；自由路由决策保存在 `done.route`，可经会话路由接口查询。恢复请求不重新路由。预填只来自会话的 dataset_id，不从用户文本推断额外执行参数。
+
+Before every conversational model call, loaded controlled actions or a plan in the current response select the high-risk tier; a prior tool result selects multi-step; otherwise the tier is simple. Explicit models are pinned; only `model=auto` selects from provider configuration. Fake mode keeps the configured model. All referenced models must have a declared price and belong to the same provider. Startup and CLI validation reject missing models, unknown tiers, cyclic chains and more than two backups.
+
+只有超时、429 与 5xx 可触发备用模型；400、401 不切换。每次尝试单独预留和结算预算并写 trace，后一条记录切换原因。SDK 自动重试仍关闭，HTTP 客户端仍忽略代理环境变量，追踪仍强制关闭。`done.model_routes` 暴露本次响应的档位、pinned 状态、模型及备用尝试，分类与备用尝试不额外消耗 max_turns。

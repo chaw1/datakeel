@@ -40,7 +40,7 @@ uv run pyright
 cd web
 npm ci
 npm run screenshots -- http://127.0.0.1:8765
-# 9 页 × 中英文 × 浅深色 → 仓库根目录 artifacts/screenshots/
+# 10 页 × 中英文 × 浅深色 → 仓库根目录 artifacts/screenshots/
 cd ..
 ```
 
@@ -128,6 +128,21 @@ metrics:
 五个算子为 `evidence.image_phash`、`evidence.caption_mentions`、`evidence.annotation_labels`、`evidence.label_gap`、`evidence.near_duplicate`。[词表](contracts/evidence/lexicon.yaml) 把 `pedestrian`、`行人` 及标注类别别名折叠为 canonical `person`；`night` 等场景概念同样使用 `mentions` 谓词。caption 派生状态只取 `present` 或 `unknown`，缺 sidecar 保持未知。只有 caption 提到某概念且已提供的标注文件漏标时，`label_gap` 才是 `present`；本版只有直接测量的 `corrupt` 可取 `absent`。文本锚点是 NFC 归一化后 Unicode 码点的半开区间 `[start, end)`，图像锚点是原图像素 `xyxy`，附原始宽高。
 
 [近重复合同](contracts/evidence/near_duplicate.yaml) 固定 64 位 dHash、前 4 位分桶、汉明距离 ≤8。每个直接样本对只存一次、双向查询，不做传递扩展或自动合并。前缀分桶可能漏检，下方评测如实报告。模型抽取器接口和 fake 适配器仅做单元测试，不进入抽取 DAG、证据评测或模型预算。
+
+## 确定性工作流与路由
+
+打开「工作流」，选择「新数据集体检」「指标口径变更」或「低质样本清理」，核对按 schema 生成的输入表单并显式开始。运行记录保留各步骤状态、输出与失败原因。清理流程先自动隔离，删除前暂停等签批；签批后须返回运行页点「签批后继续」。可按[导览中的独立三文件数据集](docs/DEMO.md#8-跑一次低质样本清理并签批约-1-分钟)演练，不改动原来的 400 文件 demo。
+
+Agent 对话会给出匹配的工作流建议，显示模型档位及备用尝试。点击建议只打开预填表单，不自动运行。会话指定模型优先；只有 `model: auto` 按档位选择。默认 fake provider 继续离线运行。
+
+```bash
+uv run datakeel workflow list
+uv run datakeel workflow validate contracts/workflows/low-quality-cleanup.yaml
+uv run datakeel routing validate
+uv run datakeel eval-route
+```
+
+[YAML、CLI、HTTP/SSE、恢复与路由参考](docs/WORKFLOWS.md)说明合同及失败行为。单独启动 `datakeel api` 时，还须运行 `datakeel worker` 推进排队流水线。失败或断流不从中途重试，只有签批暂停可以恢复。
 
 ## 离线聊天演示
 
@@ -361,7 +376,7 @@ uv run python scripts/mutate.py --output mutation-results.json
 
 20 条 golden 保留原有 12 条查询、动作、审批、打转、预算、跨轮指代与 dry-run 等场景，以及证据查询、未知状态解释、按查询结果生成版本和删除待审四条；新增问数、澄清、拒答、受控修改指标后答案变化四条企业场景。每条用脚本回复驱动真实本机服务与隔离样例。第二次运行显示上次 ID 和通过数、token、成本差值；`--json` 输出完整结果，有失败则退出码非零。`--provider openai` / `--provider anthropic` 会选择真实付费评估，离线门禁不会运行。
 
-变异脚本在临时源码副本验证 10 处变异。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。环境或初始化失败不计为成功杀死变异。
+变异脚本要求临时源码副本中的 16 处变异全部为 `KILLED`。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。运行时变异还检查签批恢复授权与工具调用幂等。工作流及路由变异检查工作流签批恢复授权、意图得分分差、图的环检测，以及切换备用模型前对失败尝试结算预算。每个隔离子进程仍限时 60 秒。环境或初始化失败不计为成功杀死变异。
 
 `eval-evidence` 在隔离的本机进程中新生成 1,000 个样本，运行生产抽取 DAG，再执行 [questions.yaml](contracts/evidence/questions.yaml) 的 15 题：近重复 4 题、冲突 4 题、损坏 4 题、无标注 3 题。baseline 只用标签、路径和已有质量事实，with_evidence 加入断言与直接近重复关系。报告包含每题 precision/recall、宏平均、pair 指标、三态计数、抽取计数与耗时，复用 `eval_runs` 表，`provider=evidence`，`suite_digest` 是题集文件 SHA-256。临时样例随评测结束清理，保留报告和 gold 摘要；`--questions path.yaml` 可指定另一份通过校验的题集。
 

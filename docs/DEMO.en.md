@@ -126,9 +126,37 @@ Press ⌘K on macOS or Ctrl+K elsewhere, type `retail_revenue`, select Retail re
 
 ![Command palette finding a metric by ID](images/demo/14-command-palette.jpg)
 
+## 8. Run a cleanup workflow and approve it (1 minute)
+
+In a second terminal, import an independent `Workflow cleanup demo` with two empty texts and one useful text. The original 400-file dataset stays separate, and the cleanup selects only this new dataset.
+
+```bash
+curl --fail http://127.0.0.1:8773/api/datasets \
+  -H 'Content-Type: application/json' --data-binary @- <<'JSON'
+{
+  "name": "Workflow cleanup demo",
+  "files": [
+    {"filename": "empty-a.txt", "content_base64": ""},
+    {"filename": "empty-b.txt", "content_base64": ""},
+    {"filename": "observation.txt", "content_base64": "QSBnZW5lcmF0ZWQgb2JzZXJ2YXRpb24gd2l0aCBlbm91Z2ggdGV4dCB0byBiZSB1c2VmdWwu"}
+  ]
+}
+JSON
+```
+
+Refresh the browser and open Workflows (工作流) → Low-quality sample cleanup (低质样本清理). Choose `Workflow cleanup demo`, keep Maximum quality score (质量分数上限) at `60`, and click Run workflow (运行工作流). The timeline shows selection, automatic quarantine, and deletion waiting for approval. All three files still exist; the two empty files are quarantined.
+
+![Cleanup pauses after quarantining the two empty files](images/demo/15-workflow-paused.jpg)
+
+Open Review approval (查看签批), check that the frozen plan contains only the two empty files, and choose Approve and delete files (签批并删除文件). Use Return to workflow (返回工作流): the run is still paused. Click Continue after approval (签批后继续). The workflow reuses the deletion receipt, checks quality, and completes with only `observation.txt` remaining. Reloading preserves the run and timeline.
+
+![The explicitly resumed workflow shows completion and its conclusion](images/demo/16-workflow-complete.jpg)
+
+The other two workflows share this entry point. Agent's Run as workflow suggestion only opens the form with its dataset prefilled. See the [workflow reference](WORKFLOWS.md) for definitions, CLI commands, failures and API contracts.
+
 ## Replay the tour and generate screenshots
 
-Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence.
+Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.
 
 ```bash
 npm --prefix web ci
@@ -137,4 +165,4 @@ npm --prefix web exec -- playwright install chromium
 npm --prefix web run smoke:tour -- http://127.0.0.1:8773
 ```
 
-The script writes 16 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.
+The script writes 18 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. The cleanup step also checks two quarantined files, explicit continuation after approval, one deletion record, one remaining file, and the unchanged original 400-file dataset. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.

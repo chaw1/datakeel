@@ -40,7 +40,7 @@ To reproduce the screenshot matrix against an isolated local demo:
 cd web
 npm ci
 npm run screenshots -- http://127.0.0.1:8765
-# 9 pages × English/Chinese × light/dark → artifacts/screenshots/ at repository root
+# 10 pages × English/Chinese × light/dark → artifacts/screenshots/ at repository root
 cd ..
 ```
 
@@ -131,6 +131,21 @@ When a source version contains paired-sample metadata but has not been extracted
 The five operators are `evidence.image_phash`, `evidence.caption_mentions`, `evidence.annotation_labels`, `evidence.label_gap` and `evidence.near_duplicate`. The [lexicon](contracts/evidence/lexicon.yaml) maps `pedestrian`, `行人` and annotation aliases to canonical `person`; scene concepts such as `night` use the same `mentions` predicate. Caption-derived observations are `present` or `unknown`; missing sidecars remain unknown. A label gap is `present` only when a caption mentions a concept and a supplied annotation file omits it. Only directly measured `corrupt` observations can be `absent` in this release. Text spans use NFC-normalized Unicode code points, `[start, end)`; image boxes use original-pixel `xyxy` with original width/height.
 
 The [near-duplicate contract](contracts/evidence/near_duplicate.yaml) fixes 64-bit dHash, four prefix bits for blocking, and Hamming distance ≤8. Each direct pair is stored once and queried in both directions. There is no transitive expansion or automatic merge. Prefix blocking can miss pairs; the evaluation below reports those misses. The model-extractor interface and fake adapter have unit tests only; neither runs in the extraction DAG, evidence evaluation or model budget.
+
+## Deterministic workflows and routing
+
+Open **Workflows** to choose **Dataset health check**, **Metric definition change**, or **Low-quality sample cleanup**. Review the generated input form, start explicitly, and follow each step's output and status in the saved timeline. Cleanup automatically quarantines matching files, pauses for deletion approval, then continues only when you return and click **Continue after approval**. Use the [tour's independent three-file dataset](docs/DEMO.en.md#8-run-a-cleanup-workflow-and-approve-it-1-minute) to try deletion safely without changing the original 400-file demo.
+
+Agent conversations suggest a matching workflow and show the selected model tier and any backup attempt. A suggestion opens a prefilled form; it does not run automatically. Explicit conversation models stay pinned; `model: auto` uses the configured tier. The default fake provider remains offline.
+
+```bash
+uv run datakeel workflow list
+uv run datakeel workflow validate contracts/workflows/low-quality-cleanup.yaml
+uv run datakeel routing validate
+uv run datakeel eval-route
+```
+
+[YAML, CLI, HTTP/SSE, recovery and routing reference](docs/WORKFLOWS.md) describes the contracts and failure behavior. A separate `datakeel api` process needs `datakeel worker` for queued pipelines. Failed or disconnected runs do not retry from the middle; only approval pauses can resume.
 
 ## Offline chat demo
 
@@ -373,7 +388,7 @@ uv run python scripts/mutate.py --output mutation-results.json
 
 The 20 golden cases retain the twelve original cases covering reads, actions, approvals, loops, budgets, cross-turn references and dry-run, plus the four evidence cases for queries, unknown-state explanations, selected-version creation and deletion approval. Four enterprise cases cover an answer, clarification, refusal and an answer changed by a controlled metric update. Each executes real local services against isolated generated fixtures with scripted model replies. A second run reports the previous run ID and changes in passed cases, tokens and cost; `--json` emits the full report. Failed cases return a nonzero exit status. `--provider openai` and `--provider anthropic` opt into real paid evaluation and are not run by offline checks.
 
-The mutation script checks ten mutations in temporary source copies. For missing-annotation `unknown → absent`, production assertion validation first rejects the malformed value; an explicitly recorded bypass only in the temporary mutant then lets the real `explain_sample` result reach its golden content check, which must fail. Raising the near-duplicate threshold by four is killed by an actual-image chain test: A–B and B–C have distance 6, A–C has distance 12. Two enterprise mutations test the candidate-ID boundary against model-supplied SQL and reject numeric guesses in an unanswerable answer. These are focused production-boundary tests, not a live model path. Setup failures do not count as a successful mutation kill.
+The mutation script requires all 16 mutations to be `KILLED` in temporary source copies. For missing-annotation `unknown → absent`, production assertion validation first rejects the malformed value; an explicitly recorded bypass only in the temporary mutant then lets the real `explain_sample` result reach its golden content check, which must fail. Raising the near-duplicate threshold by four is killed by an actual-image chain test: A–B and B–C have distance 6, A–C has distance 12. Two enterprise mutations test the candidate-ID boundary against model-supplied SQL and reject numeric guesses in an unanswerable answer. These are focused production-boundary tests, not a live model path. Runtime checks also cover signed resume authorization and tool-call idempotency. Workflow and routing checks cover signed workflow resume, the intent score margin, graph cycle detection, and settling the failed attempt before a fallback. Each isolated subprocess retains its 60-second limit. Setup failures do not count as a successful mutation kill.
 
 `eval-evidence` generates a fresh 1,000-sample corpus in an isolated local process and runs the production extraction DAG. It measures the 15 questions in [questions.yaml](contracts/evidence/questions.yaml): four near-duplicate, four conflict, four corrupt-image and three missing-annotation queries. The baseline uses labels, paths and existing quality facts; the evidence expression adds assertions and direct neighbors. The report includes each query's precision/recall, macro averages, pair metrics, three-state counts, extraction counters and elapsed times. It records `provider=evidence` in the existing `eval_runs` table, with the question file's SHA-256 as `suite_digest`. The temporary corpus is discarded; its report and gold digest remain. `--questions path.yaml` selects an alternative validated question suite.
 

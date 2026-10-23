@@ -166,6 +166,112 @@ quality-summary.yaml:steps[quality]: unknown tool: missing_tool
 3. Add Chinese and English keyword groups that describe the complete workflow, including enough intent to distinguish single-step requests. / 编写描述完整工作流的中英文关键词组，避免把单步请求误认为多步工作流。
 4. Run the validation command, add isolated regression cases for success, branches and failure, then run `make check`. / 运行校验命令，添加成功、分支及失败的隔离回归测试，再运行 `make check`。
 
+Restart the API process to refresh cached intent definitions after changing workflow triggers.
+
+修改工作流触发词后，重启 API 进程以刷新缓存的意图定义。
+
 Keep generated fixtures isolated and preserve the existing action authorization chain. Contracts do not create new tools or broaden an actor's permissions.
 
 使用独立生成样例，保留既有动作授权链。工作流合同不创建新工具，也不扩大执行人的权限。
+
+## Run and resume / 运行与恢复
+
+Open **Workflows / 工作流**, choose a definition, and review the generated input form. Starting is always explicit. The saved run page shows each step's status, output summary and failure reason. A suggestion in Agent opens this form and only prefills the conversation's dataset; it does not start a run.
+
+打开「工作流」，选择定义并核对按 schema 生成的输入表单，再显式发起运行。运行页展示各步骤状态、输出摘要及失败原因。Agent 的工作流建议只打开表单，预填会话中已选的数据集，不自动运行。
+
+For deletion, reversible quarantine runs first. The workflow then pauses with a frozen plan. Open **Review approval / 查看签批**, approve the plan, return to the run, and click **Continue after approval / 签批后继续**. Approval alone does not resume a workflow. If the approval page has already executed the action, continuation reuses its receipt. A resume request cannot grant approval by itself.
+
+清理流程先自动执行可逆隔离，再携冻结计划暂停。点击「查看签批」审阅并签批，随后返回运行页点击「签批后继续」。签批本身不会自动续跑；若审批页已经执行动作，续跑复用原回执。恢复请求本身不授予签批权限。
+
+CLI commands use the same database and object-store settings as API and worker:
+
+CLI 使用与 API、worker 一致的数据库和对象存储配置：
+
+```bash
+uv run datakeel workflow run dataset-health --input dataset_id=DATASET_ID
+uv run datakeel workflow run metric-change --input 'override={"measure":{"column":"ecommerce/main/orders/list_amount"}}'
+uv run datakeel workflow run low-quality-cleanup --input dataset_id=DATASET_ID --input quality_max=60
+uv run datakeel workflow resume RUN_ID --plan PLAN_ID
+```
+
+Replace the uppercase placeholders with actual IDs. `--input k=v` accepts JSON numbers, booleans, arrays and objects; other values stay strings. Repeated keys are rejected. `--idempotency-key KEY` makes an intentional retry use the original request identity. On pause, the CLI prints the plan ID, approval URL and resume command.
+
+将大写占位符替换为真实 ID。`--input k=v` 支持 JSON 数字、布尔、数组及对象，其余保留为字符串；不允许重复键。使用 `--idempotency-key KEY` 可在主动重试时保持原请求身份。暂停时 CLI 输出计划 ID、审批地址及恢复命令。
+
+If a task times out, inspect its reason and confirm a worker is running with `uv run datakeel worker`. Failures do not retry or continue to later steps. A disconnected live run becomes `INTERRUPTED`; after process restart, unfinished runs outside approval pause are also interrupted. Reload the saved record to inspect it. Only approval pauses can resume; an interrupted run cannot restart from its middle.
+
+任务超时后先查看原因，并确认已运行 `uv run datakeel worker`。失败不会重试，也不会执行后续步骤。运行中断开连接会标为 `INTERRUPTED`；进程重启时，未处于签批暂停的未完成运行也会中断。重新加载运行记录即可检查状态；只有签批暂停支持恢复，普通中断不支持从中途续跑。
+
+## HTTP and SSE / HTTP 与 SSE
+
+All workflow resources share `/api/workflows`:
+
+全部工作流资源统一使用 `/api/workflows` 前缀：
+
+| Method / 方法 | Path / 路径 | Result / 结果 |
+| --- | --- | --- |
+| `GET` | `/api/workflows` | Validated definitions and input schemas / 定义及输入 schema |
+| `GET` | `/api/workflows/{workflow_id}` | One definition / 单份定义 |
+| `POST` | `/api/workflows/{workflow_id}/runs` | Start or replay a run as SSE / 发起或重放运行，返回 SSE |
+| `GET` | `/api/workflows/runs` | Run history / 运行记录 |
+| `GET` | `/api/workflows/runs/{run_id}` | Durable run and step timeline / 持久运行及步骤时间线 |
+| `POST` | `/api/workflows/runs/{run_id}/resume` | Explicit signed continuation as SSE / 显式签批恢复，返回 SSE |
+| `GET` | `/api/workflows/runs/{run_id}/audit` | Resume authorization and interruption audit / 恢复授权及中断审计 |
+
+Start body / 发起请求体：
+
+```json
+{"inputs":{"dataset_id":"DATASET_ID","quality_max":60},"idempotency_key":"cleanup-demo-1"}
+```
+
+Resume body / 恢复请求体：
+
+```json
+{"plan_id":"PLAN_ID","idempotency_key":"cleanup-resume-1"}
+```
+
+A start requires `idempotency_key`; replaying the same key returns the same run instead of creating another. Recovery also has a separate key, and concurrent recovery of one run is serialized. Keys do not replace the database's signed approval checks.
+
+发起请求必须包含 `idempotency_key`，相同键重放返回同一个运行，不重复创建。恢复也有独立的幂等键，同一运行的并发恢复会串行化。幂等键不替代数据库内的真实签批校验。
+
+Each SSE frame has `id`, `event` and a JSON `data` payload. Event names are `run`, `step`, and `done`. Every payload contains `{id, event, run, step_id}`; `step_id` can be null. `run` is a complete snapshot with `id`, `workflow_id`, `status`, `inputs`, `steps`, `pending_plan_id`, `error`, `created_at`, and `updated_at`. A step includes `id`, `type`, `status`, `output`, `error`, `plan_id`, `started_at`, and `finished_at`.
+
+每个 SSE 帧具有 `id`、`event` 和 JSON 格式的 `data`。事件名为 `run`、`step`、`done`，载荷统一为 `{id, event, run, step_id}`，其中 `step_id` 可为空。`run` 包含完整运行快照及上述字段；每个步骤也保存完整状态、输出、错误及时间。
+
+Run states: `PENDING`, `RUNNING`, `PAUSED`, `SUCCEEDED`, `FAILED`, `INTERRUPTED`. Step states: `PENDING`, `RUNNING`, `PAUSED`, `SUCCEEDED`, `SKIPPED`, `FAILED`. A `done` frame marks the end of this request, including a pause or failure; inspect `run.status` to determine the outcome. A stream ending without `done` is not proof of success.
+
+运行状态和步骤状态分别如上。`done` 只表示本次请求结束，暂停和失败也会发送它；应查看 `run.status` 判断结果。没有 `done` 就结束的流不能当作成功。
+
+## Intent and model routing / 意图与模型路由
+
+Below-threshold messages go to the free Agent. A confident keyword winner yields a suggestion directly; close candidates use a separate classifier. Excluded phrases in `triggers.excluded_keywords` set that workflow's keyword score to zero. The fake classifier reads only the contract's classification vocabulary and can abstain. Classifier failure or exhausted classification budget falls back to the free Agent. Normal Agent calls remain subject to the same remaining conversation/day budget; an exhausted shared budget still produces the normal budget stop. Classification reserves and settles its own budget and trace, and does not consume conversation turns.
+
+未过阈值的消息交给自由 Agent；明确的关键词优胜者直接给出建议，分差不足时使用独立分类器。命中 `triggers.excluded_keywords` 排除短语时，对应工作流关键词得分归零。假分类器只读合同声明的分类词汇，也可以弃权。分类失败或分类预算不足时回到自由 Agent。正常 Agent 调用仍受同一会话/日预算的剩余额度约束；共享预算耗尽时仍按原有预算机制停止。分类调用独立预留、结算预算和记录 trace，不占会话轮数。
+
+Agent SSE adds `route` before `done`: `route` contains `workflow_id`, `score`, `reason`, `branch` (`keyword`, `classifier`, `free_agent`), scored `candidates`, and `inputs.dataset_id`. Only a matched workflow emits a separate `route` event; free-Agent decisions are attached to `done.route`. Decisions remain in the conversation's saved events and can also be queried at `GET /api/agent/conversations/{id}/routes`. Resume emits no intent route.
+
+Agent 在 `done` 前新增 `route` 事件，字段如上；仅命中工作流时单独发送 `route`，自由 Agent 决策附在 `done.route`。决策保存在会话事件中，也可通过 `GET /api/agent/conversations/{id}/routes` 查询。恢复不进行意图路由。
+
+Model configuration lives in [`contracts/routing/models.yaml`](../contracts/routing/models.yaml). `DATAKEEL_MODEL_ROUTING_FILE` selects another file. Each provider declares `tiers.simple`, `tiers.multi_step`, `tiers.high_risk` and a `fallbacks` mapping from one model name to the next. The bundled configuration has no backup links. All referenced models must have same-provider prices in `contracts/model-prices.yaml`.
+
+模型配置位于上述 YAML，可用 `DATAKEEL_MODEL_ROUTING_FILE` 指向另一份配置。每个 provider 声明三个档位以及主模型到下一模型的 `fallbacks` 映射；默认配置不启用备用链。每个引用模型都必须在价格表中具有同 provider 的价格。
+
+Before each call, loaded controlled actions or an already produced plan select `high_risk`; otherwise an earlier tool result in this response selects `multi_step`; otherwise the tier is `simple`. An explicit conversation model stays pinned. Only `model: auto` selects by tier. Fake conversations always use their configured model.
+
+每次调用前，已加载受控动作或本轮已产生计划时选 `high_risk`；否则，本轮已产生工具结果时选 `multi_step`；其余选 `simple`。会话显式指定的模型优先，只有 `model: auto` 按档位选择；fake 会话始终使用会话模型。
+
+Timeout, HTTP 429 and HTTP 5xx may advance a configured same-provider chain, at most two backups after the primary. HTTP 400 and 401 do not switch. Each attempt independently reserves/settles budget and writes a trace. The existing `done` event includes `model_routes`, an ordered list of attempts with `tier`, `model`, `pinned`, `fallback_reason` and `attempt`; it persists with the conversation and appears in Agent.
+
+超时、HTTP 429 和 5xx 可沿同 provider 的备用链切换，主模型外最多两个备用；400 和 401 不切换。每次尝试独立预留、结算预算并写 trace。既有 `done` 事件增加 `model_routes`，按调用顺序记录每次尝试的档位、模型、固定模型标记、切换理由及尝试序号，持久保存在会话中并显示在 Agent 页。
+
+```bash
+uv run datakeel routing validate
+uv run datakeel routing validate path/to/models.yaml
+uv run datakeel eval-route
+uv run datakeel eval-route --json
+```
+
+Validation runs at startup too. Unknown tiers, missing providers or models, unpriced models, cross-provider chains, cycles and more than two backups are errors with locations; invalid custom configuration never silently falls back to defaults. The offline evaluation reports accuracy and workflow/branch/tier confusion matrices using frozen cases and no provider calls.
+
+启动时也会校验。未知档位、缺少 provider 或模型、无价格模型、跨 provider 链、环及超过两个备用均报带位置的错误；非法自定义配置不会静默退回默认。离线评测使用冻结用例，报告准确率及工作流、分支、档位混淆矩阵，不调用真实 provider。
