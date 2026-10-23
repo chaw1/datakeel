@@ -1,0 +1,382 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+version: 1
+cases:
+- id: golden-01-read-only-01
+  source: contracts/golden/01-read-only.yaml#turns/0
+  input: List the datasets.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-02-filtered-search-01
+  source: contracts/golden/02-filtered-search.yaml#turns/0
+  input: Find empty low-quality text files.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-03-reversible-01
+  source: contracts/golden/03-reversible.yaml#turns/0
+  input: Quarantine low-quality text samples.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-04-irreversible-approval-01
+  source: contracts/golden/04-irreversible-approval.yaml#turns/0
+  input: Delete these files.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-05-rejected-01
+  source: contracts/golden/05-rejected.yaml#turns/0
+  input: Prepare deletion.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-05-rejected-02
+  source: contracts/golden/05-rejected.yaml#turns/1
+  input: Keep everything after my rejection.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-06-frozen-approval-01
+  source: contracts/golden/06-frozen-approval.yaml#turns/0
+  input: Prepare deleting this dataset.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-07-repeated-loop-01
+  source: contracts/golden/07-repeated-loop.yaml#turns/0
+  input: Keep checking the same dataset.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-08-budget-01
+  source: contracts/golden/08-budget.yaml#turns/0
+  input: List datasets.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-09-cross-turn-reference-01
+  source: contracts/golden/09-cross-turn-reference.yaml#turns/0
+  input: 'Remember selection marker ALPHA: find low-quality text.'
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-09-cross-turn-reference-02
+  source: contracts/golden/09-cross-turn-reference.yaml#turns/1
+  input: Quarantine that selection.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-10-unknown-tool-01
+  source: contracts/golden/10-unknown-tool.yaml#turns/0
+  input: Use the missing tool.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-11-dry-run-01
+  source: contracts/golden/11-dry-run.yaml#turns/0
+  input: Preview quarantine without applying it.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-01
+  source: contracts/golden/12-long-conversation.yaml#turns/0
+  input: Remember the original marker ORIGIN-927.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-02
+  source: contracts/golden/12-long-conversation.yaml#turns/1
+  input: Continue local conversation turn 2.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-03
+  source: contracts/golden/12-long-conversation.yaml#turns/2
+  input: Continue local conversation turn 3.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-04
+  source: contracts/golden/12-long-conversation.yaml#turns/3
+  input: Continue local conversation turn 4.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-05
+  source: contracts/golden/12-long-conversation.yaml#turns/4
+  input: Continue local conversation turn 5.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-06
+  source: contracts/golden/12-long-conversation.yaml#turns/5
+  input: Continue local conversation turn 6.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-07
+  source: contracts/golden/12-long-conversation.yaml#turns/6
+  input: Continue local conversation turn 7.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-08
+  source: contracts/golden/12-long-conversation.yaml#turns/7
+  input: Continue local conversation turn 8.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-09
+  source: contracts/golden/12-long-conversation.yaml#turns/8
+  input: Continue local conversation turn 9.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-10
+  source: contracts/golden/12-long-conversation.yaml#turns/9
+  input: Continue local conversation turn 10.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-11
+  source: contracts/golden/12-long-conversation.yaml#turns/10
+  input: Continue local conversation turn 11.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-12
+  source: contracts/golden/12-long-conversation.yaml#turns/11
+  input: Continue local conversation turn 12.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-13
+  source: contracts/golden/12-long-conversation.yaml#turns/12
+  input: Continue local conversation turn 13.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-14
+  source: contracts/golden/12-long-conversation.yaml#turns/13
+  input: Continue local conversation turn 14.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-15
+  source: contracts/golden/12-long-conversation.yaml#turns/14
+  input: Continue local conversation turn 15.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-16
+  source: contracts/golden/12-long-conversation.yaml#turns/15
+  input: Continue local conversation turn 16.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-17
+  source: contracts/golden/12-long-conversation.yaml#turns/16
+  input: Continue local conversation turn 17.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-18
+  source: contracts/golden/12-long-conversation.yaml#turns/17
+  input: Continue local conversation turn 18.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-19
+  source: contracts/golden/12-long-conversation.yaml#turns/18
+  input: Continue local conversation turn 19.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-20
+  source: contracts/golden/12-long-conversation.yaml#turns/19
+  input: Continue local conversation turn 20.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-21
+  source: contracts/golden/12-long-conversation.yaml#turns/20
+  input: Continue local conversation turn 21.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-22
+  source: contracts/golden/12-long-conversation.yaml#turns/21
+  input: Continue local conversation turn 22.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-23
+  source: contracts/golden/12-long-conversation.yaml#turns/22
+  input: Continue local conversation turn 23.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-24
+  source: contracts/golden/12-long-conversation.yaml#turns/23
+  input: Continue local conversation turn 24.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-25
+  source: contracts/golden/12-long-conversation.yaml#turns/24
+  input: Continue local conversation turn 25.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-26
+  source: contracts/golden/12-long-conversation.yaml#turns/25
+  input: Continue local conversation turn 26.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-27
+  source: contracts/golden/12-long-conversation.yaml#turns/26
+  input: Continue local conversation turn 27.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-28
+  source: contracts/golden/12-long-conversation.yaml#turns/27
+  input: Continue local conversation turn 28.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-29
+  source: contracts/golden/12-long-conversation.yaml#turns/28
+  input: Continue local conversation turn 29.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-30
+  source: contracts/golden/12-long-conversation.yaml#turns/29
+  input: Continue local conversation turn 30.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-31
+  source: contracts/golden/12-long-conversation.yaml#turns/30
+  input: Continue local conversation turn 31.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-32
+  source: contracts/golden/12-long-conversation.yaml#turns/31
+  input: Continue local conversation turn 32.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-33
+  source: contracts/golden/12-long-conversation.yaml#turns/32
+  input: Continue local conversation turn 33.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-34
+  source: contracts/golden/12-long-conversation.yaml#turns/33
+  input: Continue local conversation turn 34.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-12-long-conversation-35
+  source: contracts/golden/12-long-conversation.yaml#turns/34
+  input: Continue local conversation turn 35.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-13-evidence-query-01
+  source: contracts/golden/13-evidence-query.yaml#turns/0
+  input: Find validation samples mentioning person with missing labels and a train near duplicate.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-14-evidence-unknown-01
+  source: contracts/golden/14-evidence-unknown.yaml#turns/0
+  input: Explain the sample without annotation evidence; do not infer absence.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-15-evidence-version-01
+  source: contracts/golden/15-evidence-version.yaml#turns/0
+  input: Query evidence and create a version from exactly the selected source samples.
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-16-evidence-approval-01
+  source: contracts/golden/16-evidence-approval.yaml#turns/0
+  input: Query evidence and prepare deletion, leaving execution for human approval.
+  expected_workflow: low-quality-cleanup
+  expected_branch: keyword
+- id: golden-17-ask-answer-01
+  source: contracts/golden/17-ask-answer.yaml#turns/0
+  input: 上个季度华东区零售额是多少
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-18-ask-clarification-01
+  source: contracts/golden/18-ask-clarification.yaml#turns/0
+  input: 上个季度营业额是多少
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-19-ask-unanswerable-01
+  source: contracts/golden/19-ask-unanswerable.yaml#turns/0
+  input: 退货率为什么上升
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-20-ask-updated-metric-01
+  source: contracts/golden/20-ask-updated-metric.yaml#turns/0
+  input: 上个季度华东区零售额是多少
+  expected_workflow: null
+  expected_branch: free_agent
+- id: golden-20-ask-updated-metric-02
+  source: contracts/golden/20-ask-updated-metric.yaml#turns/1
+  input: 将零售额的度量字段改为标价金额，再回答同一个问题。
+  expected_workflow: metric-change
+  expected_branch: keyword
+- id: health-zh-1
+  source: workflow-positive
+  input: 为这个数据集做完整体检：跑流水线，查看质量与证据，再给出结论。
+  expected_workflow: dataset-health
+  expected_branch: keyword
+- id: health-zh-2
+  source: workflow-positive
+  input: 运行新数据集体检，等处理完成后汇总质量报告和证据。
+  expected_workflow: dataset-health
+  expected_branch: keyword
+- id: health-en-1
+  source: workflow-positive
+  input: Run a new dataset health check, including the pipeline, quality report and evidence summary.
+  expected_workflow: dataset-health
+  expected_branch: keyword
+- id: health-en-2
+  source: workflow-positive
+  input: Perform a full dataset checkup and summarize its quality and evidence after processing.
+  expected_workflow: dataset-health
+  expected_branch: keyword
+- id: metric-zh-1
+  source: workflow-positive
+  input: 执行指标口径变更，先保存旧答案，再更新定义并对比问数结果。
+  expected_workflow: metric-change
+  expected_branch: keyword
+- id: metric-zh-2
+  source: workflow-positive
+  input: 更改指标的度量字段，然后重新问数并比较改前改后的答案。
+  expected_workflow: metric-change
+  expected_branch: keyword
+- id: metric-en-1
+  source: workflow-positive
+  input: Run the metric definition change workflow and compare answers before and after the update.
+  expected_workflow: metric-change
+  expected_branch: keyword
+- id: metric-en-2
+  source: workflow-positive
+  input: Change the metric measure column, then ask the same question again and compare the results.
+  expected_workflow: metric-change
+  expected_branch: keyword
+- id: cleanup-zh-1
+  source: workflow-positive
+  input: 运行低质样本清理，先隔离，再等我签批删除，最后复查质量。
+  expected_workflow: low-quality-cleanup
+  expected_branch: keyword
+- id: cleanup-zh-2
+  source: workflow-positive
+  input: 清理低质量样本：筛选并隔离文件，人工审批后删除，再看质量。
+  expected_workflow: low-quality-cleanup
+  expected_branch: keyword
+- id: cleanup-en-1
+  source: workflow-positive
+  input: 'Run the low-quality sample cleanup workflow: quarantine, request approval, delete and recheck
+    quality.'
+  expected_workflow: low-quality-cleanup
+  expected_branch: keyword
+- id: cleanup-en-2
+  source: workflow-positive
+  input: Clean up low-quality samples by quarantining them, waiting for approval, deleting them and reviewing
+    quality.
+  expected_workflow: low-quality-cleanup
+  expected_branch: keyword
+- id: ambiguous-zh-health-cleanup
+  source: ambiguous
+  input: 先运行新数据集体检，之后再考虑低质样本清理。
+  expected_workflow: dataset-health
+  expected_branch: classifier
+- id: ambiguous-zh-cleanup-health
+  source: ambiguous
+  input: 优先做低质样本清理，新数据集体检放到后面。
+  expected_workflow: low-quality-cleanup
+  expected_branch: classifier
+- id: ambiguous-zh-metric-health
+  source: ambiguous
+  input: 这次先做指标口径变更，再安排新数据集体检。
+  expected_workflow: metric-change
+  expected_branch: classifier
+- id: ambiguous-en-health-metric
+  source: ambiguous
+  input: Start with a new dataset health check; the metric definition change can wait.
+  expected_workflow: dataset-health
+  expected_branch: classifier
+- id: ambiguous-en-cleanup-metric
+  source: ambiguous
+  input: Start with low-quality sample cleanup; later run the metric definition change.
+  expected_workflow: low-quality-cleanup
+  expected_branch: classifier
+- id: ambiguous-en-metric-cleanup
+  source: ambiguous
+  input: First run the metric definition change, then consider low-quality sample cleanup.
+  expected_workflow: metric-change
+  expected_branch: classifier

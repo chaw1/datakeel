@@ -1,0 +1,103 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+version: 1
+cases:
+- id: simple-empty
+  input:
+    loaded_tools: []
+    response_has_plan: false
+    response_has_tool_result: false
+  expected_tier: simple
+- id: simple-datasets
+  input:
+    loaded_tools:
+    - list_datasets
+    response_has_plan: false
+    response_has_tool_result: false
+  expected_tier: simple
+- id: simple-quality
+  input:
+    loaded_tools:
+    - get_quality
+    - get_report
+    response_has_plan: false
+    response_has_tool_result: false
+  expected_tier: simple
+- id: simple-metric
+  input:
+    loaded_tools:
+    - explain_metric
+    - impact_of
+    response_has_plan: false
+    response_has_tool_result: false
+  expected_tier: simple
+- id: multi-empty
+  input:
+    loaded_tools: []
+    response_has_plan: false
+    response_has_tool_result: true
+  expected_tier: multi_step
+- id: multi-evidence
+  input:
+    loaded_tools:
+    - query_evidence
+    - get_evidence
+    response_has_plan: false
+    response_has_tool_result: true
+  expected_tier: multi_step
+- id: multi-question
+  input:
+    loaded_tools:
+    - ask_data
+    response_has_plan: false
+    response_has_tool_result: true
+  expected_tier: multi_step
+- id: multi-discovery
+  input:
+    loaded_tools:
+    - search_files
+    response_has_plan: false
+    response_has_tool_result: true
+  expected_tier: multi_step
+- id: risk-loaded-reversible
+  input:
+    loaded_tools:
+    - quarantine_files
+    response_has_plan: false
+    response_has_tool_result: false
+  expected_tier: high_risk
+- id: risk-loaded-irreversible
+  input:
+    loaded_tools:
+    - delete_files
+    response_has_plan: false
+    response_has_tool_result: false
+  expected_tier: high_risk
+- id: risk-update-after-result
+  input:
+    loaded_tools:
+    - update_metric
+    response_has_plan: false
+    response_has_tool_result: true
+  expected_tier: high_risk
+- id: risk-existing-plan
+  input:
+    loaded_tools: []
+    response_has_plan: true
+    response_has_tool_result: false
+  expected_tier: high_risk
+- id: risk-plan-and-result
+  input:
+    loaded_tools:
+    - get_quality
+    response_has_plan: true
+    response_has_tool_result: true
+  expected_tier: high_risk
+- id: risk-loaded-plan-result
+  input:
+    loaded_tools:
+    - export_dataset
+    response_has_plan: true
+    response_has_tool_result: true
+  expected_tier: high_risk
