@@ -4,6 +4,7 @@
 """Load versioned deterministic evidence vocabulary and image matching settings."""
 
 import hashlib
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -51,15 +52,25 @@ def contract_path(name: str) -> Path:
 
 
 def read_lexicon() -> Lexicon:
-    """Validate the current on-disk lexicon without hiding contract edits in a cache."""
-    return Lexicon.model_validate(yaml.safe_load(contract_path("lexicon.yaml").read_text()))
+    """Validate the current on-disk lexicon; edits take effect because the cache keys on content."""
+    return _parse_lexicon(contract_path("lexicon.yaml").read_text())
 
 
 def read_near_duplicate() -> NearDuplicateContract:
     """Read the single authoritative matching threshold and blocking policy."""
-    return NearDuplicateContract.model_validate(
-        yaml.safe_load(contract_path("near_duplicate.yaml").read_text())
-    )
+    return _parse_near_duplicate(contract_path("near_duplicate.yaml").read_text())
+
+
+@lru_cache(maxsize=4)
+def _parse_lexicon(text: str) -> Lexicon:
+    """Parse each lexicon revision once; operators read it for every sample."""
+    return Lexicon.model_validate(yaml.safe_load(text))
+
+
+@lru_cache(maxsize=4)
+def _parse_near_duplicate(text: str) -> NearDuplicateContract:
+    """Parse each matching-contract revision once."""
+    return NearDuplicateContract.model_validate(yaml.safe_load(text))
 
 
 def contract_hashes() -> tuple[str, str]:
