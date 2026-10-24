@@ -7,7 +7,7 @@ base_url: http://localhost:11434/v1
 api_key_env: null
 output_method: json_schema
 request_parameters:
-  enable_thinking: false
+  reasoning_effort: none
   num_ctx: 16384
 temperature: 0
 max_output_tokens: 4096

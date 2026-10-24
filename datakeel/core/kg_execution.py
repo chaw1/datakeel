@@ -12,8 +12,8 @@ from pydantic import Field
 from datakeel.core.evidence_models import ContentRevision
 from datakeel.core.harness_pricing import ModelPrice
 from datakeel.core.kg_contracts import ExtractionProfile, KGSchema
-from datakeel.core.kg_models import TextBlock
-from datakeel.core.kg_product import SchemaProposal
+from datakeel.core.kg_models import Recording, TextBlock
+from datakeel.core.kg_product import ProductExtraction, SchemaProposal
 from datakeel.core.models import AssetRef, BoundaryModel
 
 
@@ -49,6 +49,9 @@ class KGPrepared(BoundaryModel):
     documents: tuple[KGDocument, ...]
     estimate: KGEstimate
     recording_hash: str | None = None
+    recording: Recording | None = None
+    accounting_price: ModelPrice
+    accounting_price_version: str
     external: bool
 
 
@@ -86,6 +89,7 @@ class KGReport(BoundaryModel):
     cost_usd: Decimal | None = None
     accounted_cost_usd: Decimal = Decimal(0)
     elapsed_seconds: float = 0
+    error: str | None = None
     failures: tuple[KGBlockFailure, ...] = ()
     partial_documents: tuple[str, ...] = ()
     proposals: tuple[SchemaProposal, ...] = ()
@@ -106,3 +110,40 @@ class KGRun(BoundaryModel):
     completed_at: datetime | None = None
     task_id: str | None = None
     report: KGReport = Field(default_factory=KGReport)
+
+
+class KGJob(BoundaryModel):
+    """Carry a complete frozen worker request across the storage boundary."""
+
+    run: KGRun
+    prepared: KGPrepared
+    budget_tokens: int = Field(ge=0)
+    max_cost_usd: Decimal = Field(ge=0, allow_inf_nan=False)
+
+
+class KGLeaseFence(BoundaryModel):
+    """Identify the only worker attempt allowed to publish progress or facts."""
+
+    task_id: str
+    shard_id: str
+    owner: str
+
+
+class KGCompletion(BoundaryModel):
+    """Publish successful block products while replacing only fully completed documents."""
+
+    run: KGRun
+    products: ProductExtraction
+    replace_file_ids: tuple[str, ...] = ()
+
+
+class KGMeteringConfig(BoundaryModel):
+    """Separate the known tariff from the conservative unknown-price accounting envelope."""
+
+    run_id: str
+    profile: ExtractionProfile
+    price: ModelPrice
+    price_version: str
+    known_price: bool
+    budget_tokens: int = Field(default=250000, ge=0)
+    max_cost_usd: Decimal = Field(default=Decimal(5), ge=0, allow_inf_nan=False)

@@ -15,6 +15,7 @@ export type Page =
   | "action-runs"
   | "ontology"
   | "evidence"
+  | "kg"
   | "agent"
   | "catalog"
   | "ask"
@@ -36,6 +37,7 @@ export const operationPages = [
   { id: "catalog", label: "catalogNav", icon: "database" },
   { id: "ask", label: "askNav", icon: "message" },
   { id: "evidence", label: "evidenceNav", icon: "quality" },
+  { id: "kg", label: "kgNav", icon: "grid" },
   { id: "agent", label: "agentNav", icon: "message" },
   { id: "memory", label: "memoryNav", icon: "grid" },
   { id: "approvals", label: "approvalsNav", icon: "check" },

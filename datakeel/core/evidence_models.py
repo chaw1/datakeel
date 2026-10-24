@@ -226,7 +226,7 @@ class AssertionDecision(BoundaryModel):
 
     id: str = Field(default_factory=new_id)
     assertion_id: str
-    action: Literal["accept", "reject", "restore", "invalidate"]
+    action: Literal["accept", "reject", "restore", "invalidate", "reactivate"]
     previous_status: AssertionStatus
     status: AssertionStatus
     actor: str

@@ -21,6 +21,7 @@ from datakeel.cli.evidence import rebuild
 from datakeel.cli.evidence_evaluation import evaluate_evidence
 from datakeel.cli.mcp import serve
 from datakeel.core.errors import NotFoundError
+from datakeel.core.harness_models import BudgetLimits
 from datakeel.core.logging import configure_logging
 from datakeel.core.settings import get_settings
 from datakeel.routing.config import load_config
@@ -151,7 +152,14 @@ def _evaluation_command(db: Database, args: argparse.Namespace) -> None:
         evaluate_evidence(db, args.questions, json_output=args.json_output)
     elif args.command == "eval-kg":
         kg_evaluation.evaluate(
-            db, args.profile, args.cases, schema=args.schema, json_output=args.json_output
+            db,
+            args.profile,
+            args.cases,
+            schema=args.schema,
+            json_output=args.json_output,
+            limits=BudgetLimits(
+                conversation_tokens=args.budget_tokens, conversation_usd=args.max_cost_usd
+            ),
         )
     else:
         evaluate_ask(db, args.questions, json_output=args.json_output)

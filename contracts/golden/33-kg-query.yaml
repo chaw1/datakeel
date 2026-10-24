@@ -1,0 +1,77 @@
+id: 33-kg-query
+description: Query a production replay graph and preserve the absent-endpoint review
+  candidate.
+fixture_kind: kg
+turns:
+- input: Find recorded graph relations for Vivo requiring review.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: query_kg
+      id: 33-discover
+  - tool_calls:
+    - name: query_kg
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        version_id: '{{version_id}}'
+        name: Vivo
+        verification: needs_review
+      id: 33-query
+  - content: The Vivo relation is a candidate that needs review.
+expect:
+  tool_sequence:
+  - tool_search
+  - query_kg
+  tool_results:
+  - name: query_kg
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - relations
+          properties:
+            relations:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                type: object
+                required:
+                - tail
+                - assertion
+                properties:
+                  tail:
+                    type: object
+                    required:
+                    - name
+                    properties:
+                      name:
+                        const: Vivo
+                  assertion:
+                    type: object
+                    required:
+                    - verification
+                    - status
+                    - verification_detail
+                    properties:
+                      verification:
+                        const: needs_review
+                      status:
+                        const: candidate
+                      verification_detail:
+                        type: object
+                        required:
+                        - issues
+                        properties:
+                          issues:
+                            type: array
+                            minItems: 1
+  answer_contains:
+  - needs review
+  file_count: 1
+  max_turns: 3

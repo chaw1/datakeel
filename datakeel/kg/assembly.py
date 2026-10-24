@@ -76,9 +76,14 @@ def _relation_draft(
     if resolved.head is None or resolved.tail is None:
         msg = "Resolved endpoints are required for relation assembly"
         raise ValueError(msg)
+    matches = find_spans(source.text, relation.evidence)
+    inside = tuple(
+        span
+        for span in matches
+        if span.start >= source.block_start and span.end <= (source.block_end or len(source.text))
+    )
     evidence = nearest_span(
-        find_spans(source.text, relation.evidence),
-        TextSpan(start=source.block_start, end=source.block_start + 1),
+        inside or matches, TextSpan(start=source.block_start, end=source.block_start + 1)
     )
     head = nearest_span(entity_spans(source.text, _spellings(resolved.head, schema)), evidence)
     tail = nearest_span(entity_spans(source.text, _spellings(resolved.tail, schema)), evidence)

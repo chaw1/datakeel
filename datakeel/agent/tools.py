@@ -28,7 +28,9 @@ from datakeel.storage.tool_invocations import (
     replay_invocation,
 )
 
-DEFERRED_READ_FUNCTIONS = frozenset({"ask_data", "list_metrics", "explain_metric", "impact_of"})
+DEFERRED_READ_FUNCTIONS = frozenset(
+    {"ask_data", "list_metrics", "explain_metric", "impact_of", "query_kg", "explain_relation"}
+)
 
 
 class ToolSearchParams(BoundaryModel):

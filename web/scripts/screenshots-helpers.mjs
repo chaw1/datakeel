@@ -13,6 +13,7 @@ export const variants = [
 export const pages = [
   { name: "workbench", hash: "#/workbench", ready: ".workbench-section" },
   { name: "evidence", hash: "#/evidence", ready: ".evidence-sample-row" },
+  { name: "knowledge-graph", hash: "#/kg", ready: ".kg-relations tbody tr" },
   { name: "ask", hash: "#/ask", ready: ".ask-composer" },
   { name: "catalog", hash: "#/catalog", ready: ".catalog-object-list button" },
   {

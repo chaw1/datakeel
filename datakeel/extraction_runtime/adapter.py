@@ -15,9 +15,12 @@ from langchain_core.messages import AIMessage, HumanMessage
 from openai import APIStatusError as OpenAIStatusError
 from openai import APITimeoutError as OpenAITimeoutError
 from openai import LengthFinishReasonError, OpenAIError
+from pydantic import Field
 
 from datakeel.core.errors import ProviderError
+from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation
 from datakeel.core.kg_models import ExtractionResult, RawExtraction
+from datakeel.core.models import BoundaryModel
 from datakeel.extraction_runtime.transport import chat_model, tracing_disabled
 from datakeel.kg.prompt import extraction_prompt, output_schema
 
@@ -33,6 +36,11 @@ if TYPE_CHECKING:
 
     from datakeel.core.kg_contracts import ExtractionProfile, KGSchema
     from datakeel.core.kg_models import TextBlock
+
+
+class _RequiredOutput(BoundaryModel):
+    entities: tuple[ExtractedEntity, ...] = Field(...)
+    relations: tuple[ExtractedRelation, ...] = Field(...)
 
 
 def _parameters(profile: ExtractionProfile) -> dict[str, object]:
@@ -101,9 +109,10 @@ def _result(message: AIMessage, profile: ExtractionProfile) -> ExtractionResult:
             if len(message.tool_calls) != 1 or message.tool_calls[0]["name"] != "KGExtraction":
                 msg = "parse_error"
                 raise ProviderError(msg)
-            output = RawExtraction.model_validate(message.tool_calls[0]["args"])
+            parsed = _RequiredOutput.model_validate(message.tool_calls[0]["args"])
         else:
-            output = RawExtraction.model_validate_json(message.text)
+            parsed = _RequiredOutput.model_validate_json(message.text)
+        output = RawExtraction(entities=parsed.entities, relations=parsed.relations)
     return ExtractionResult(
         output=output,
         finish_reason=reason,

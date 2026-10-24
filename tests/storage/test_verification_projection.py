@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import DBAPIError
 
 from datakeel.core.evidence_models import Assertion, TextSpan, VerificationDetail, VerificationIssue
 from datakeel.storage.evidence_projection import rebuild_evidence
@@ -74,3 +76,26 @@ def test_legacy_assertion_migration_adds_nullable_columns_and_index(
     assert any(
         index["column_names"] == ["verification"] for index in inspector.get_indexes("assertions")
     )
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "UPDATE assertions SET verification='verified'",
+        "UPDATE assertions SET verification_detail='{}'",
+    ],
+)
+def test_database_guards_immutable_verification_projections(db: Database, statement: str) -> None:
+    """Both SQL dialects reject direct edits even though status remains independently mutable."""
+    record_extraction(db, extraction_event())
+    db.migrate()
+    with pytest.raises(DBAPIError, match="immutable"), db.engine.begin() as connection:
+        connection.execute(text(statement))
+    with db.session() as session:
+        row = session.get(AssertionRow, list_assertions(db)[0].id)
+        assert row is not None
+        assert row.verification is None
+        assert row.verification_detail is None
+        row.status = "accepted"
+        session.commit()
+    assert list_assertions(db)[0].status == "accepted"

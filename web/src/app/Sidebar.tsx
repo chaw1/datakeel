@@ -22,6 +22,7 @@ const groups = [
     label: "evidenceGroup",
     items: [
       { id: "evidence", label: "evidenceNav", icon: "quality" },
+      { id: "kg", label: "kgNav", icon: "grid" },
       { id: "quality", label: "dataQuality", icon: "quality" },
     ],
   },

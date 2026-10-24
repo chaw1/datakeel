@@ -49,7 +49,9 @@ def _references(assertions: list[Assertion]) -> list[AssetRef]:
                 refs[(ref.asset_type, ref.asset_id, ref.version or "")] = ref
             continue
         targets = [assertion.subject]
-        if isinstance(assertion.object, AssetRef):
+        if assertion.subject.asset_type == "kg_entity":
+            targets = [anchor.asset_ref for anchor in assertion.anchors]
+        if isinstance(assertion.object, AssetRef) and assertion.subject.asset_type != "kg_entity":
             targets.append(assertion.object)
         for ref in targets:
             if ref.asset_type != "file" or ref.namespace != "default" or not ref.version:

@@ -1,0 +1,90 @@
+id: 34-kg-explain-review
+description: Explain the real recorded Vivo relation and identify its missing tail
+  position.
+fixture_kind: kg
+turns:
+- input: Explain why this relationship needs review, including exactly which source
+    check failed.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: explain_relation
+      id: 34-discover
+  - tool_calls:
+    - name: explain_relation
+      arguments:
+        assertion_id: '{{relation_id}}'
+      id: 34-explain
+  - content: The tail entity Vivo cannot be located in the source. The evidence sentence
+      exists, but that tail position is missing, so the relation needs review.
+expect:
+  tool_sequence:
+  - tool_search
+  - explain_relation
+  tool_results:
+  - name: explain_relation
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - relation
+          - sources
+          - summary
+          properties:
+            relation:
+              type: object
+              required:
+              - tail
+              - assertion
+              properties:
+                tail:
+                  type: object
+                  required:
+                  - name
+                  properties:
+                    name:
+                      const: Vivo
+                assertion:
+                  type: object
+                  required:
+                  - verification
+                  - status
+                  - verification_detail
+                  properties:
+                    verification:
+                      const: needs_review
+                    status:
+                      const: candidate
+                    verification_detail:
+                      type: object
+                      required:
+                      - issues
+                      properties:
+                        issues:
+                          type: array
+                          minItems: 1
+            sources:
+              type: array
+              minItems: 1
+              items:
+                type: object
+                required:
+                - text
+                properties:
+                  text:
+                    type: string
+                    minLength: 1
+            summary:
+              type: string
+              pattern: tail
+  answer_contains:
+  - tail
+  - Vivo
+  - needs review
+  file_count: 1
+  max_turns: 3

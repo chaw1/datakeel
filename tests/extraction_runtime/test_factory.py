@@ -17,6 +17,7 @@ from datakeel.core.kg_models import RawExtraction, Recording, RecordingRecord
 from datakeel.core.settings import Settings
 from datakeel.extraction_runtime.factory import create_extractor
 from datakeel.kg.extractors import FakeExtractor, ReplayExtractor
+from datakeel.kg.gliner import GlinerExtractor
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -52,8 +53,14 @@ def test_factory_when_fake_does_not_read_settings(monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.mark.parametrize("absolute", [False, True])
+@pytest.mark.parametrize("provider", ["replay", "fake"])
 def test_factory_when_replay_resolves_explicit_or_bundled_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, block: TextBlock, *, absolute: bool
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    block: TextBlock,
+    provider: str,
+    *,
+    absolute: bool,
 ) -> None:
     """Replay accepts bundled contract-relative paths and explicit local recording files."""
     path = tmp_path / "fixture.yaml"
@@ -67,7 +74,7 @@ def test_factory_when_replay_resolves_explicit_or_bundled_path(
     path.write_text(recording.model_dump_json(), encoding="utf-8")
     monkeypatch.setattr("datakeel.extraction_runtime.factory.contracts_path", lambda: tmp_path)
     profile = _profile(
-        extractor="replay", provider="replay", recording=str(path) if absolute else path.name
+        extractor=provider, provider=provider, recording=str(path) if absolute else path.name
     )
     with create_extractor(profile) as adapter:
         assert isinstance(adapter, ReplayExtractor)
@@ -92,7 +99,12 @@ def test_factory_when_llm_selected_resolves_only_explicit_key_and_preserves_inje
             "Bearer not-required" if local else "Bearer synthetic-selected-key"
         )
         return httpx.Response(
-            200, json={"choices": [{"message": {"role": "assistant", "content": "{}"}}]}
+            200,
+            json={
+                "choices": [
+                    {"message": {"role": "assistant", "content": '{"entities":[],"relations":[]}'}}
+                ]
+            },
         )
 
     monkeypatch.setattr("datakeel.extraction_runtime.factory.get_settings", lambda: settings)
@@ -143,3 +155,32 @@ def test_factory_when_creating_http_client_disables_proxies_and_redirects(
         assert not clients[0].is_closed
     assert clients[0].is_closed
     assert options == [{"trust_env": False, "follow_redirects": False}]
+
+
+@pytest.mark.parametrize("provider", ["replay", "fake"])
+def test_factory_when_recording_frozen_never_reopens_changed_or_missing_file(
+    block: TextBlock, schema: KGSchema, provider: str
+) -> None:
+    """Worker execution uses approved recording bytes even if its profile path changes."""
+    frozen = Recording(
+        model="scripted-fixture",
+        recorded_at="2026-01-01",
+        prompt_version="fixture-v1",
+        source="Synthetic fixture",
+        records=(
+            RecordingRecord(
+                text_hash=block.content_hash,
+                output=RawExtraction(),
+                input_tokens=17,
+            ),
+        ),
+    )
+    profile = _profile(extractor=provider, provider=provider, recording="missing-fixture.yaml")
+    with create_extractor(profile, recording=frozen) as adapter:
+        assert adapter.extract(block, schema).input_tokens == 17
+
+
+def test_factory_when_gliner_selected_defers_optional_model_loading() -> None:
+    """Constructing the optional adapter never imports its package or downloads a model."""
+    with create_extractor(_profile(extractor="gliner2", provider="gliner2")) as adapter:
+        assert isinstance(adapter, GlinerExtractor)

@@ -63,6 +63,13 @@ class KGRelationExplanation(BoundaryModel):
 
     relation: KGRelationView
     sources: tuple[KGSourceText, ...]
+    summary: str = ""
+
+
+class KGExplainQuery(BoundaryModel):
+    """Select one immutable relationship for an original-source explanation."""
+
+    assertion_id: str = Field(min_length=1)
 
 
 class KGGraphNode(BoundaryModel):

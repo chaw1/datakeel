@@ -100,6 +100,7 @@ class TraceInput(BoundaryModel):
     agent_path: str = "main"
     depth: int = Field(default=0, ge=0)
     parent_tool_call_id: str | None = None
+    observed_usage: TokenUsage | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def validate_segments(self) -> Self:
@@ -109,6 +110,9 @@ class TraceInput(BoundaryModel):
             raise ValueError(msg)
         if self.billing_status == "unknown" and self.usage != TokenUsage():
             msg = "Unknown billing cannot claim observed token usage"
+            raise ValueError(msg)
+        if self.observed_usage is not None and self.call_type != "extraction":
+            msg = "Separate observed usage is reserved for extraction accounting"
             raise ValueError(msg)
         return self
 

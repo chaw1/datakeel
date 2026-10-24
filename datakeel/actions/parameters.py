@@ -15,6 +15,7 @@ from datakeel.actions.catalog_parameters import (
     UpdateMetricParams,
     UpdateTermParams,
 )
+from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.models import BoundaryModel, JsonDocument
@@ -82,6 +83,7 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "delete_files": SelectionParams,
     "create_version_from_selection": VersionParams,
     "run_pipeline": PipelineParams,
+    "run_kg_extraction": RunKGExtractionParams,
     "save_metadata": MetadataParams,
     "export_dataset": ExportParams,
     "decide_assertions": DecideAssertionsParams,
@@ -116,11 +118,14 @@ def selection_for(params: BoundaryModel) -> ObjectSet:
             msg = "Deleted files cannot be action targets"
             raise ValidationError(msg)
         return params.selection
-    if isinstance(params, PipelineParams):
+    if isinstance(params, PipelineParams | RunKGExtractionParams):
         return ObjectSet(
             dataset_id=params.dataset_id,
             limit=10000,
             version_ids=[params.version_id] if params.version_id else [],
+            filters=[PropertyFilter(field="id", operator="in", value=list(params.file_ids))]
+            if isinstance(params, RunKGExtractionParams) and params.file_ids
+            else [],
         )
     if isinstance(params, ExportParams):
         return ObjectSet(dataset_id=params.dataset_id, limit=10000)

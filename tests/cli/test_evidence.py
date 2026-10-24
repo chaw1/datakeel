@@ -53,13 +53,17 @@ def test_demo_with_evidence_reuses_sources_and_reports_complete_second_run_cache
     output.truncate()
     demo_module.demo(argparse.Namespace(once=True, legacy_only=False))
     second = json.loads(output.getvalue())
-    assert len(list_datasets(db)) == 2
+    assert len(list_datasets(db)) == 3
     assert first["dataset_id"] == second["dataset_id"]
     assert first["evidence"]["dataset_id"] == second["evidence"]["dataset_id"]
     assert first["evidence"]["inputs"] == 100
     assert first["evidence"]["extracted"] == 100
     assert second["evidence"]["skipped_cached"] == 100
     assert second["evidence"]["extracted"] == 0
+    assert {run["dataset_id"] for run in first["knowledge_graph"]} == {
+        run["dataset_id"] for run in second["knowledge_graph"]
+    }
+    assert all(run["report"]["cached"] > 0 for run in second["knowledge_graph"])
 
 
 def test_rebuild_command_when_projection_exists_reports_identical_hash(

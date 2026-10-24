@@ -1,0 +1,32 @@
+id: 35-kg-replay-action
+description: Offline replay extraction runs through discovery, preparation, queue
+  and worker automatically.
+fixture_kind: kg
+turns:
+- input: Prepare knowledge graph extraction with replay-demo.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: run_kg_extraction
+      id: 35-discover
+  - tool_calls:
+    - name: run_kg_extraction
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        version_id: '{{version_id}}'
+        profile_id: replay-demo
+        file_ids:
+        - '{{file_id}}'
+      id: 35-action
+  - content: Submitted the offline recorded extraction.
+expect:
+  tool_sequence:
+  - tool_search
+  - run_kg_extraction
+  actions:
+  - action_type: run_kg_extraction
+    requires_approval: false
+    executions: 1
+  file_count: 1
+  max_turns: 3

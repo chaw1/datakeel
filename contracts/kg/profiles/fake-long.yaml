@@ -1,0 +1,14 @@
+# Synthetic scripted fixture, not a real model output.
+id: fake-long
+extractor: fake
+provider: fake
+model: scripted-long-v1
+base_url: null
+api_key_env: null
+output_method: json_schema
+request_parameters: {}
+temperature: 0
+max_output_tokens: 1024
+chunk_size: 180
+chunk_overlap: 20
+recording: recordings/fake-long.yaml

@@ -7,12 +7,14 @@ import { catalogEn } from "./catalogEn";
 import { commandEn } from "./commandEn";
 import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
+import { kgEn } from "./kgEn";
 import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  ...kgEn,
   ...metricRollbackEn,
   ...approvalsMetricEn,
   ...graphEn,

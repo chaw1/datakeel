@@ -76,7 +76,9 @@ def execute_case(
         relations.extend(raw_relations(result.output, text))
         products.append(
             assemble_extraction(
-                result.output, schema, source.model_copy(update={"block_start": block.start})
+                result.output,
+                schema,
+                source.model_copy(update={"block_start": block.start, "block_end": block.end}),
             )
         )
     raw = ScoredRecord(

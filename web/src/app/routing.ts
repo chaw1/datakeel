@@ -20,6 +20,7 @@ const pages: Page[] = [
   "catalog",
   "ask",
   "evidence",
+  "kg",
   "quality",
   "approvals",
   "runs",

@@ -36,7 +36,7 @@ const expectedFiles = pages
     variants.map(({ locale, theme }) => `${name}-${locale}-${theme}.png`),
   )
   .sort();
-assert.equal(expectedFiles.length, 48);
+assert.equal(expectedFiles.length, 52);
 await mkdir(output, { recursive: true });
 const existing = (await readdir(output)).filter((name) =>
   name.endsWith(".png"),
@@ -108,7 +108,12 @@ await context.route("**/*", async (route) => {
   if (!["GET", "HEAD"].includes(request.method())) {
     if (
       request.method() !== "POST" ||
-      !["/api/ask", "/api/evidence/query"].includes(url.pathname)
+      ![
+        "/api/ask",
+        "/api/evidence/query",
+        "/api/kg/query",
+        "/api/kg/graph",
+      ].includes(url.pathname)
     ) {
       report.errors.push({
         page: currentName,
@@ -245,7 +250,7 @@ try {
     [],
     "Every captured page must have zero console errors",
   );
-  assert.equal(report.pages.length, 48);
+  assert.equal(report.pages.length, 52);
   assert.deepEqual(
     (await readdir(output)).filter((name) => name.endsWith(".png")).sort(),
     expectedFiles,

@@ -1,0 +1,345 @@
+# Synthetic scripted fixture, not a real model output.
+model: scripted-long-v1
+recorded_at: '2026-10-24'
+prompt_version: scripted-fixture-v1
+source: Deterministic scripted fixture; not a model response. Each complete fixture sentence produces
+  its declared claim.
+records:
+- text_hash: b941830700955a8471ed3c0a13007f3229c0bd51cae1614a2e32e6dd375fed51
+  output:
+    entities:
+    - name: Mira Chen
+      type: person
+    - name: Copper Unit
+      type: organization
+    - name: Bristol
+      type: location
+    relations:
+    - head: Mira Chen
+      relation: works_for
+      tail: Copper Unit
+      evidence: Mira Chen works for Copper Unit.
+    - head: Copper Unit
+      relation: located_in
+      tail: Bristol
+      evidence: Copper Unit is located in Bristol.
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: 5a41916e5668b4abb4cce0726749fe67b1b3de2250a7a84dc05708fd0e424970
+  output:
+    entities:
+    - name: Mira Chen
+      type: person
+    - name: Copper Unit
+      type: organization
+    - name: AtlasBoard
+      type: system
+    - name: orders_clean
+      type: dataset
+    - name: orders_raw
+      type: dataset
+    - name: fulfillment_rate
+      type: metric
+    relations:
+    - head: Mira Chen
+      relation: works_for
+      tail: Copper Unit
+      evidence: Mira Chen works for Copper Unit.
+    - head: Copper Unit
+      relation: uses
+      tail: AtlasBoard
+      evidence: Copper Unit uses AtlasBoard.
+    - head: orders_clean
+      relation: derived_from
+      tail: orders_raw
+      evidence: orders_clean is derived from orders_raw.
+    - head: fulfillment_rate
+      relation: computed_from
+      tail: orders_clean
+      evidence: fulfillment_rate is computed from orders_clean.
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: ec941fbddd37a32b15d0e76c864e776ca7230b42f738b684b70237400e8c5be8
+  output:
+    entities:
+    - name: Copper Unit
+      type: organization
+    - name: Bristol
+      type: location
+    - name: AtlasBoard
+      type: system
+    - name: orders_clean
+      type: dataset
+    - name: orders_raw
+      type: dataset
+    - name: fulfillment_rate
+      type: metric
+    relations:
+    - head: Copper Unit
+      relation: located_in
+      tail: Bristol
+      evidence: Copper Unit is located in Bristol.
+    - head: Copper Unit
+      relation: uses
+      tail: AtlasBoard
+      evidence: Copper Unit uses AtlasBoard.
+    - head: orders_clean
+      relation: derived_from
+      tail: orders_raw
+      evidence: orders_clean is derived from orders_raw.
+    - head: fulfillment_rate
+      relation: computed_from
+      tail: orders_clean
+      evidence: fulfillment_rate is computed from orders_clean.
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: 6645a18ed12090889ae9075aa313a2fe68b88261a6ff1f6a755c46de2cc71149
+  output:
+    entities:
+    - name: Mira Chen
+      type: person
+    - name: Copper Unit
+      type: organization
+    - name: Bristol
+      type: location
+    - name: AtlasBoard
+      type: system
+    - name: orders_clean
+      type: dataset
+    - name: orders_raw
+      type: dataset
+    relations:
+    - head: Mira Chen
+      relation: works_for
+      tail: Copper Unit
+      evidence: Mira Chen works for Copper Unit.
+    - head: Copper Unit
+      relation: located_in
+      tail: Bristol
+      evidence: Copper Unit is located in Bristol.
+    - head: Copper Unit
+      relation: uses
+      tail: AtlasBoard
+      evidence: Copper Unit uses AtlasBoard.
+    - head: orders_clean
+      relation: derived_from
+      tail: orders_raw
+      evidence: orders_clean is derived from orders_raw.
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: 66042571c8966c79d7fa1336974b364485e30db3463da245da1e1928038ec2d6
+  output:
+    entities:
+    - name: fulfillment_rate
+      type: metric
+    - name: orders_clean
+      type: dataset
+    relations:
+    - head: fulfillment_rate
+      relation: computed_from
+      tail: orders_clean
+      evidence: fulfillment_rate is computed from orders_clean.
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: 3a2b4230c2a77db23d36c5118f21ea919ceb87c10f74afa0f985481edf2b740e
+  output:
+    entities:
+    - name: 陈舟
+      type: person
+    - name: 星帆分析组
+      type: organization
+    - name: 宁波
+      type: location
+    - name: HarborFlow
+      type: system
+    - name: 订单清洗表
+      type: dataset
+    - name: 订单原始表
+      type: dataset
+    - name: 交付率
+      type: metric
+    relations:
+    - head: 陈舟
+      relation: works_for
+      tail: 星帆分析组
+      evidence: 陈舟在星帆分析组任职。
+    - head: 星帆分析组
+      relation: located_in
+      tail: 宁波
+      evidence: 星帆分析组位于宁波。
+    - head: 星帆分析组
+      relation: uses
+      tail: HarborFlow
+      evidence: 星帆分析组使用 HarborFlow。
+    - head: 订单清洗表
+      relation: derived_from
+      tail: 订单原始表
+      evidence: 订单清洗表由订单原始表清洗而来。
+    - head: 交付率
+      relation: computed_from
+      tail: 订单清洗表
+      evidence: 交付率基于订单清洗表计算。
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: e5556bfab85b9778a64ecc25901e40e246cf21babdca5be105cfd37f128bf2e6
+  output:
+    entities:
+    - name: 陈舟
+      type: person
+    - name: 星帆分析组
+      type: organization
+    - name: 宁波
+      type: location
+    - name: HarborFlow
+      type: system
+    - name: 订单清洗表
+      type: dataset
+    - name: 订单原始表
+      type: dataset
+    - name: 交付率
+      type: metric
+    relations:
+    - head: 陈舟
+      relation: works_for
+      tail: 星帆分析组
+      evidence: 陈舟在星帆分析组任职。
+    - head: 星帆分析组
+      relation: located_in
+      tail: 宁波
+      evidence: 星帆分析组位于宁波。
+    - head: 星帆分析组
+      relation: uses
+      tail: HarborFlow
+      evidence: 星帆分析组使用 HarborFlow。
+    - head: 订单清洗表
+      relation: derived_from
+      tail: 订单原始表
+      evidence: 订单清洗表由订单原始表清洗而来。
+    - head: 交付率
+      relation: computed_from
+      tail: 订单清洗表
+      evidence: 交付率基于订单清洗表计算。
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: baa431f9554b553d53c96eeaf295fb1c8f03ff2649c7f04f491fe4168cde6194
+  output:
+    entities:
+    - name: Café Unit
+      type: organization
+    - name: Porto
+      type: location
+    - name: SignalBoard
+      type: system
+    - name: 林舟
+      type: person
+    - name: 指标表
+      type: dataset
+    relations:
+    - head: Café Unit
+      relation: located_in
+      tail: Porto
+      evidence: Café Unit is located in Porto.
+    - head: Café Unit
+      relation: uses
+      tail: SignalBoard
+      evidence: Café Unit uses SignalBoard.
+    - head: 林舟
+      relation: works_for
+      tail: Café Unit
+      evidence: 林舟在 Café Unit 任职。
+    - head: 林舟
+      relation: owns
+      tail: 指标表
+      evidence: 林舟负责指标表。
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: 76dda69c8d52ad550e46f6c07a40b39d6be4b5f0e4b6c7371ee09994c7f3e57e
+  output:
+    entities:
+    - name: Café Unit
+      type: organization
+    - name: Porto
+      type: location
+    - name: SignalBoard
+      type: system
+    - name: 林舟
+      type: person
+    - name: 指标表
+      type: dataset
+    - name: 事件原始表
+      type: dataset
+    relations:
+    - head: Café Unit
+      relation: located_in
+      tail: Porto
+      evidence: Café Unit is located in Porto.
+    - head: Café Unit
+      relation: uses
+      tail: SignalBoard
+      evidence: Café Unit uses SignalBoard.
+    - head: 林舟
+      relation: works_for
+      tail: Café Unit
+      evidence: 林舟在 Café Unit 任职。
+    - head: 林舟
+      relation: owns
+      tail: 指标表
+      evidence: 林舟负责指标表。
+    - head: 指标表
+      relation: derived_from
+      tail: 事件原始表
+      evidence: 指标表由事件原始表汇总生成。
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null
+- text_hash: 1c652029ff8afebc1f3bdd68ca2afe501fe4d5e7191b7f247b3a991d692e1275
+  output:
+    entities:
+    - name: Café Unit
+      type: organization
+    - name: SignalBoard
+      type: system
+    - name: 林舟
+      type: person
+    - name: 指标表
+      type: dataset
+    - name: 事件原始表
+      type: dataset
+    relations:
+    - head: Café Unit
+      relation: uses
+      tail: SignalBoard
+      evidence: Café Unit uses SignalBoard.
+    - head: 林舟
+      relation: works_for
+      tail: Café Unit
+      evidence: 林舟在 Café Unit 任职。
+    - head: 林舟
+      relation: owns
+      tail: 指标表
+      evidence: 林舟负责指标表。
+    - head: 指标表
+      relation: derived_from
+      tail: 事件原始表
+      evidence: 指标表由事件原始表汇总生成。
+  finish_reason: stop
+  input_tokens: 0
+  output_tokens: 0
+  original: null

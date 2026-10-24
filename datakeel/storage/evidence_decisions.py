@@ -4,16 +4,20 @@
 """Atomic, reversible decision overlays without mutation of extracted content."""
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.evidence_models import Assertion, AssertionDecision, AssertionDecisionRequest
-from datakeel.storage.database import Database
+from datakeel.core.kg_contracts import KGSchema
+from datakeel.core.kg_registry import register_kg_schema
+from datakeel.core.predicate_registry import registered_predicates
+from datakeel.storage.database import Database, EventRow
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow
 
 
 def assertion_view(row: AssertionRow) -> Assertion:
     """Overlay reviewed status on the original immutable assertion payload."""
+    _restore_vocabulary(row)
     return Assertion.model_validate(
         {
             **row.payload,
@@ -22,6 +26,17 @@ def assertion_view(row: AssertionRow) -> Assertion:
             "decided_at": row.decided_at,
         }
     )
+
+
+def _restore_vocabulary(row: AssertionRow) -> None:
+    if not row.predicate.startswith("kg.") or any(
+        item.id == row.predicate for item in registered_predicates()
+    ):
+        return
+    session = object_session(row)
+    event = session.get(EventRow, row.producer_event_id) if session is not None else None
+    if event is not None and "kg_schema" in event.payload.get("params", {}):
+        register_kg_schema(KGSchema.model_validate(event.payload["params"]["kg_schema"]))
 
 
 def append_decision(session: Session, decision: AssertionDecision, key: str) -> None:
@@ -50,6 +65,8 @@ def apply_decision(session: Session, decision: AssertionDecision) -> None:
         raise NotFoundError(msg)
     if decision.action == "invalidate":
         row.active = False
+    elif decision.action == "reactivate":
+        row.active = True
     else:
         row.status = decision.status
         row.decided_by = decision.actor

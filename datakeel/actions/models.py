@@ -28,6 +28,7 @@ ActionName = Literal[
     "rollback_metric",
     "update_term",
     "rollback_term",
+    "run_kg_extraction",
 ]
 PlanStatus = Literal["PREPARED", "APPROVED", "REJECTED", "EXECUTED", "FAILED"]
 RunStatus = Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED"]

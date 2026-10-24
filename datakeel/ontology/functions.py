@@ -7,11 +7,13 @@ from pydantic import BaseModel, JsonValue
 
 from datakeel.core.ask_models import AskRequest
 from datakeel.core.errors import NotFoundError
+from datakeel.core.kg_queries import KGExplainQuery, KGQuery
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.ontology.catalog_functions import invoke_catalog
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
 from datakeel.ontology.evidence_functions import invoke_evidence
+from datakeel.ontology.kg_functions import invoke_kg
 from datakeel.ontology.models import FunctionResult, FunctionType, ObjectSet, PropertyFilter
 from datakeel.ontology.parameters import (
     DatasetParams,
@@ -42,6 +44,8 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "list_metrics": MetricListParams,
     "explain_metric": MetricParams,
     "impact_of": ImpactParams,
+    "query_kg": KGQuery,
+    "explain_relation": KGExplainQuery,
 }
 
 
@@ -144,9 +148,13 @@ def invoke_function(db: Database, name: str, arguments: JsonDocument) -> Functio
         "list_metrics",
         "explain_metric",
         "impact_of",
+        "query_kg",
+        "explain_relation",
     }:
         handler = (
-            invoke_evidence
+            invoke_kg
+            if name in {"query_kg", "explain_relation"}
+            else invoke_evidence
             if name in {"query_evidence", "get_evidence", "explain_sample"}
             else invoke_catalog
         )

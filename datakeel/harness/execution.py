@@ -25,6 +25,7 @@ from datakeel.harness.service import list_traces
 from datakeel.memory.service import delete_memory, list_memories
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_files, list_versions
+from datakeel.worker.runner import run_worker
 
 
 def _run_turns(
@@ -122,16 +123,20 @@ def _measured_result(
     )
 
 
-def _observe(db: Database, case: GoldenCase, fake: FakeProvider | None) -> CaseObservation:
+def observe_case(db: Database, case: GoldenCase, fake: FakeProvider | None) -> CaseObservation:
+    """Measure conversation activity separately from any actions used to prepare its fixture."""
+    baseline_run_ids = {run.id for run in list_runs(db)}
     conversation = create_conversation(db, case.config)
     events, operations, plans = _run_turns(db, case, conversation.id, fake)
+    if case.fixture_kind == "kg":
+        run_worker(db, once=True)
     memory = get_conversation(db, conversation.id)
     context = fake.requests[-1].messages if fake is not None and fake.requests else memory.messages
     files = list_files(db, case.config.dataset_id or "")
     return CaseObservation(
         result=_measured_result(db, case, events, operations),
         plans=plans,
-        runs=list_runs(db),
+        runs=[run for run in list_runs(db) if run.id not in baseline_run_ids],
         context="\n".join(message.content for message in context),
         operation_errors=[operation.error for operation in operations],
         file_count=len(files),
@@ -190,7 +195,7 @@ def run_case(case: GoldenCase, provider: Literal["fake", "openai", "anthropic"])
                 }
             )
             fake = FakeProvider([]) if provider == "fake" else None
-            result = assess(case.expect, _observe(db, case, fake))
+            result = assess(case.expect, observe_case(db, case, fake))
             if fake is not None and fake.script_errors:
                 result = result.model_copy(
                     update={"passed": False, "failures": [*result.failures, *fake.script_errors]}

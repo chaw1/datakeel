@@ -19,6 +19,8 @@ from datakeel.extraction_runtime.adapter import llm_extractor
 from datakeel.extraction_runtime.transport import chat_model, tracing_disabled
 
 if TYPE_CHECKING:
+    from pydantic import JsonValue
+
     from datakeel.core.kg_contracts import KGSchema
     from datakeel.core.kg_models import TextBlock
 
@@ -102,7 +104,11 @@ def test_transport_when_tracing_enabled_only_injected_http_peer_receives_source(
         assert tracing_is_enabled() is False
         return httpx.Response(
             200,
-            json={"choices": [{"message": {"role": "assistant", "content": "{}"}}]},
+            json={
+                "choices": [
+                    {"message": {"role": "assistant", "content": '{"entities":[],"relations":[]}'}}
+                ]
+            },
         )
 
     monkeypatch.setattr(socket.socket, "connect", forbid)
@@ -137,7 +143,11 @@ def test_transport_when_base_url_omitted_ignores_ambient_provider_destinations(
     def respond(request: httpx.Request) -> httpx.Response:
         requested.append(str(request.url))
         if provider == "openai":
-            payload = {"choices": [{"message": {"role": "assistant", "content": "{}"}}]}
+            payload = {
+                "choices": [
+                    {"message": {"role": "assistant", "content": '{"entities":[],"relations":[]}'}}
+                ]
+            }
         else:
             payload = {
                 "id": "msg-fixture",
@@ -171,3 +181,69 @@ def test_transport_when_ollama_endpoint_missing_rejects_without_vendor_default()
         ),
     ):
         pytest.fail("A missing Ollama URL must fail before yielding a model")
+
+
+def _empty_reply(provider: str) -> dict[str, JsonValue]:
+    content = '{"entities":[],"relations":[]}'
+    if provider == "openai":
+        return {"choices": [{"message": {"role": "assistant", "content": content}}]}
+    return {
+        "id": "msg-fixture",
+        "type": "message",
+        "role": "assistant",
+        "model": "fixture-model",
+        "content": [{"type": "text", "text": content}],
+        "stop_reason": "end_turn",
+        "usage": {"input_tokens": 1, "output_tokens": 1},
+    }
+
+
+@pytest.mark.parametrize("provider", ["openai", "anthropic"])
+def test_transport_when_vendor_environment_hostile_keeps_only_explicit_protocol_headers(
+    monkeypatch: pytest.MonkeyPatch, schema: KGSchema, block: TextBlock, provider: str
+) -> None:
+    """Ambient authentication, routing, organization and arbitrary headers never reach the peer."""
+    for name in (
+        "OPENAI_API_KEY",
+        "OPENAI_ADMIN_KEY",
+        "OPENAI_WEBHOOK_SECRET",
+        "OPENAI_ORG_ID",
+        "OPENAI_ORGANIZATION",
+        "OPENAI_PROJECT_ID",
+        "ANTHROPIC_API_KEY",
+        "ANTHROPIC_AUTH_TOKEN",
+        "ANTHROPIC_WEBHOOK_SIGNING_KEY",
+    ):
+        monkeypatch.setenv(name, "synthetic-ambient-secret")
+    for name in ("OPENAI_PROXY", "ANTHROPIC_PROXY"):
+        monkeypatch.setenv(name, "http://unapproved-fixture.invalid:9999")
+    headers = (
+        "Authorization: Bearer synthetic-ambient-secret\nX-Api-Key: synthetic-ambient-secret\n"
+        "Host: unapproved-fixture.invalid\nAnthropic-Version: 2000-01-01\n"
+        "Content-Type: text/plain\nX-Ambient-Secret: synthetic-ambient-secret"
+    )
+    monkeypatch.setenv("OPENAI_CUSTOM_HEADERS", headers)
+    monkeypatch.setenv("ANTHROPIC_CUSTOM_HEADERS", headers)
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert "synthetic-ambient-secret" not in str(request.headers)
+        assert request.headers["host"] == "fixture.invalid"
+        assert request.headers["content-type"] == "application/json"
+        assert "x-ambient-secret" not in request.headers
+        if provider == "openai":
+            assert request.headers["authorization"] == "Bearer fixture-key"
+            assert "x-api-key" not in request.headers
+        else:
+            assert request.headers["x-api-key"] == "fixture-key"
+            assert request.headers["anthropic-version"] == "2023-06-01"
+            assert "authorization" not in request.headers
+        return httpx.Response(200, json=_empty_reply(provider))
+
+    with (
+        httpx.Client(transport=httpx.MockTransport(respond), trust_env=False) as client,
+        llm_extractor(_profile(provider), "fixture-key", client) as extractor,
+    ):
+        extractor.extract(block, schema)
+    assert len(requests) == 1

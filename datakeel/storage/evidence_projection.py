@@ -29,6 +29,8 @@ _CANONICAL_FIELDS = {
     "anchors",
     "extractor",
     "producer_event_id",
+    "verification",
+    "verification_detail",
 }
 
 

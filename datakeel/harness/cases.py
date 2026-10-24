@@ -14,6 +14,7 @@ from datakeel.core.harness_eval import CaseFixture, GoldenCase
 from datakeel.harness.enterprise_cases import seed_enterprise_case
 from datakeel.harness.evidence_cases import seed_evidence_case
 from datakeel.harness.injection_cases import seed_injection_case
+from datakeel.harness.kg_cases import seed_kg_case
 from datakeel.harness.resources import contract_path
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths, list_files
@@ -37,9 +38,11 @@ def load_cases(directory: Path | None = None) -> list[GoldenCase]:
 def seed_case(
     db: Database,
     directory: Path,
-    kind: Literal["legacy", "evidence", "enterprise", "injection"] = "legacy",
+    kind: Literal["legacy", "evidence", "enterprise", "injection", "kg"] = "legacy",
 ) -> CaseFixture:
     """Import an empty text, healthy text, and tiny image for actual tool effects."""
+    if kind == "kg":
+        return seed_kg_case(db, directory)
     if kind == "enterprise":
         return seed_enterprise_case(db, directory)
     if kind == "injection":

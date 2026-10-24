@@ -14,6 +14,7 @@ import langsmith
 from anthropic import Anthropic
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
+from openai import OpenAI
 from pydantic import Field
 
 from datakeel.core.errors import ValidationError
@@ -35,8 +36,13 @@ def tracing_disabled() -> Generator[None]:
 
 
 class _Transport(httpx2.BaseTransport):
-    def __init__(self, client: httpx.Client) -> None:
+    def __init__(self, client: httpx.Client, provider: str, api_key: str) -> None:
         self.client = client
+        self.headers = {"accept": "application/json", "content-type": "application/json"}
+        if provider == "anthropic":
+            self.headers.update({"x-api-key": api_key, "anthropic-version": "2023-06-01"})
+        else:
+            self.headers["authorization"] = f"Bearer {api_key}"
 
     def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         """Send every SDK request through the caller's explicitly owned client."""
@@ -44,7 +50,7 @@ class _Transport(httpx2.BaseTransport):
             response = self.client.request(
                 request.method,
                 str(request.url),
-                headers=request.headers.multi_items(),
+                headers=self.headers,
                 content=request.read(),
                 extensions=request.extensions,
                 follow_redirects=False,
@@ -65,7 +71,7 @@ class _AnthropicModel(ChatAnthropic):
 
     @cached_property
     def _client(self) -> Anthropic:
-        return Anthropic(**self._client_params, http_client=self.transport)
+        return Anthropic(**self._client_params, http_client=self.transport, webhook_key="")
 
 
 def _base_url(profile: ExtractionProfile) -> str:
@@ -79,6 +85,37 @@ def _base_url(profile: ExtractionProfile) -> str:
     return value
 
 
+def _openai_model(
+    options: dict[str, object],
+    profile: ExtractionProfile,
+    api_key: str,
+    transport: httpx2.Client,
+    timeout: float,
+) -> ChatOpenAI:
+    root = OpenAI(
+        api_key=api_key,
+        base_url=_base_url(profile),
+        http_client=transport,
+        timeout=timeout,
+        max_retries=0,
+        admin_api_key="",
+        organization="",
+        project="",
+        webhook_secret="",
+    )
+    return ChatOpenAI.model_validate(
+        {
+            **options,
+            "http_client": transport,
+            "http_socket_options": (),
+            "async_client": object(),
+            "root_client": root,
+            "client": root.chat.completions,
+            "openai_proxy": None,
+        }
+    )
+
+
 @contextmanager
 def chat_model(
     profile: ExtractionProfile, api_key: str, client: httpx.Client, timeout: float
@@ -90,8 +127,10 @@ def chat_model(
     if not api_key:
         message = "LLM extraction requires an explicitly supplied API key"
         raise ValidationError(message)
-    with httpx2.Client(transport=_Transport(client), trust_env=False) as transport:
-        options = {
+    with httpx2.Client(
+        transport=_Transport(client, profile.provider, api_key), trust_env=False
+    ) as transport:
+        options: dict[str, object] = {
             "model": profile.model,
             "api_key": api_key,
             "base_url": _base_url(profile),
@@ -102,15 +141,10 @@ def chat_model(
             "max_tokens": profile.max_output_tokens,
         }
         model = (
-            ChatOpenAI.model_validate(
-                {
-                    **options,
-                    "http_client": transport,
-                    "http_socket_options": (),
-                    "async_client": object(),
-                }
-            )
+            _openai_model(options, profile, api_key, transport, timeout)
             if profile.provider != "anthropic"
-            else _AnthropicModel.model_validate({**options, "transport": transport})
+            else _AnthropicModel.model_validate(
+                {**options, "transport": transport, "anthropic_proxy": None}
+            )
         )
         yield model

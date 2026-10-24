@@ -263,3 +263,31 @@ def test_combining_sequences_match_without_losing_source_boundaries(
     """Compatibility normalization composes marks while retaining complete source clusters."""
     span = find_spans(text, quote)[0]
     assert (span.start, span.end) == interval
+
+
+def test_repeated_sentence_binds_each_block_to_its_own_occurrence() -> None:
+    """Adjacent repeated quotations must retain both locations after merging."""
+    sentence = "Acme uses Widget."
+    source = _source(sentence * 2)
+    first = assemble_extraction(
+        _raw(),
+        get_schema(),
+        source.model_copy(update={"block_start": 0, "block_end": len(sentence)}),
+    )
+    second = assemble_extraction(
+        _raw(),
+        get_schema(),
+        source.model_copy(update={"block_start": len(sentence), "block_end": len(sentence) * 2}),
+    )
+    relation = next(
+        draft
+        for draft in merge_drafts((*first.drafts, *second.drafts))
+        if draft.predicate == "kg.uses"
+    )
+    assert relation.verification_detail is not None
+    assert {
+        location.evidence.start
+        for location in relation.verification_detail.locations
+        if location.evidence
+    } == {0, len(sentence)}
+    assert len(relation.anchors) == 6

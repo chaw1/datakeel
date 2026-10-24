@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.evidence_cache import KnowledgeBundle
 from datakeel.core.evidence_models import Assertion
+from datakeel.core.kg_contracts import KGSchema
+from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.models import AssetRef, LineageEvent
 from datakeel.storage.database import Database, EventRow
 from datakeel.storage.events import append_event
@@ -18,10 +20,26 @@ from datakeel.storage.evidence_artifacts import load_bundle, publish_bundle
 from datakeel.storage.evidence_cache import cache_predecessors, invalidations_for, project_cache
 from datakeel.storage.evidence_decisions import append_decision, assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
+from datakeel.storage.kg_provenance import kg_predecessors
 
 
 def _identity(ref: AssetRef) -> tuple[str, str, str, str | None]:
     return ref.namespace, ref.asset_type, ref.asset_id, ref.version
+
+
+def _references_bound(event: LineageEvent, assertion: Assertion) -> bool:
+    inputs = {_identity(ref) for ref in event.inputs}
+    if any(_identity(anchor.asset_ref) not in inputs for anchor in assertion.anchors):
+        return False
+    allowed = inputs
+    if event.operator == "evidence.kg" and assertion.predicate.startswith("kg."):
+        allowed = inputs | {
+            _identity(ref) for ref in event.outputs if ref.asset_type == "kg_entity"
+        }
+    endpoints = [assertion.subject]
+    if isinstance(assertion.object, AssetRef):
+        endpoints.append(assertion.object)
+    return all(_identity(ref) in allowed for ref in endpoints)
 
 
 def validated_bundle(event: LineageEvent, bundle: KnowledgeBundle | None = None) -> KnowledgeBundle:
@@ -34,6 +52,8 @@ def validated_bundle(event: LineageEvent, bundle: KnowledgeBundle | None = None)
     ):
         msg = "Assertions require a COMPLETE evidence extraction event and knowledge bundle output"
         raise ValidationError(msg)
+    if "kg_schema" in event.params:
+        register_kg_schema(KGSchema.model_validate(event.params["kg_schema"]))
     bundle = bundle or load_bundle(event)
     if any(item.extractor.id != event.operator for item in bundle.assertions) or any(
         entry.key.extractor.id != event.operator for entry in bundle.cache_entries
@@ -48,16 +68,13 @@ def validated_bundle(event: LineageEvent, bundle: KnowledgeBundle | None = None)
         msg = "Cache subjects must belong to the extraction inputs"
         raise ValidationError(msg)
     for assertion in bundle.assertions:
-        references = [assertion.subject, *(anchor.asset_ref for anchor in assertion.anchors)]
-        if isinstance(assertion.object, AssetRef):
-            references.append(assertion.object)
         if (
             assertion.producer_event_id != event.event_id
             or assertion.run_id != bundle.run_id
             or assertion.status != "candidate"
             or assertion.decided_by is not None
             or assertion.decided_at is not None
-            or any(_identity(ref) not in inputs for ref in references)
+            or not _references_bound(event, assertion)
         ):
             msg = "Assertion content must bind this extraction event and its versioned inputs"
             raise ValidationError(msg)
@@ -149,7 +166,9 @@ def record_extraction_in_session(
             msg = "Extraction idempotency key already binds different run content"
             raise ConflictError(msg)
         return result
-    predecessors = cache_predecessors(session, bundle)
+    predecessors = tuple(
+        sorted(set(cache_predecessors(session, bundle)) | set(kg_predecessors(session, event)))
+    )
     bundle = bundle.model_copy(
         update={
             "invalidations": invalidations_for(session, bundle, event),

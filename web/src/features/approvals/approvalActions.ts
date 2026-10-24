@@ -8,6 +8,7 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   unquarantine_files: "approvalUnquarantine",
   create_version_from_selection: "approvalVersion",
   run_pipeline: "approvalPipeline",
+  run_kg_extraction: "kgExtractAction",
   save_metadata: "approvalMetadata",
   decide_assertions: "approvalAssertions",
   import_catalog: "approvalImport",

@@ -216,3 +216,17 @@ def test_provider_failures_become_retryable_block_failures(reason: str) -> None:
 
     with pytest.raises(KGExtractionError, match=reason):
         checked_extract(FailingExtractor(), _block(), get_schema())
+
+
+def test_extractor_identity_changes_only_for_extraction_semantics() -> None:
+    """Credential variable names and recording paths do not version factual content."""
+    profile, schema = get_profile("replay-demo"), get_schema()
+    original = cache.extraction_identity(schema, profile, "recording-digest")
+    assert original.id == "evidence.kg"
+    assert original.version.startswith("1:")
+    relocated = profile.model_copy(update={"recording": "different.yaml", "api_key_env": "NEW_KEY"})
+    assert cache.extraction_identity(schema, relocated, "recording-digest") == original
+    assert cache.extraction_identity(schema, profile, "changed-digest") != original
+    assert (
+        cache.extraction_identity(schema.model_copy(update={"version": "2"}), profile) != original
+    )

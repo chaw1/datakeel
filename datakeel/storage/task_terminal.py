@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
 from datakeel.storage.database import OutboxRow, ShardRow, TaskRow, VersionRow
+from datakeel.storage.kg_store import finish_failed
 
 
 def complete_task(session: Session, task: TaskRow, error: str | None) -> None:
@@ -23,7 +24,8 @@ def complete_task(session: Session, task: TaskRow, error: str | None) -> None:
             for sibling in sorted(siblings, key=lambda item: item.ordinal)
             for item in sibling.outputs
         ]
-        session.add(VersionRow(dataset_id=task.dataset_id, task_id=task.id, manifest=manifest))
+        if task.kg_run_id is None:
+            session.add(VersionRow(dataset_id=task.dataset_id, task_id=task.id, manifest=manifest))
     if task.state in ("COMPLETED", "FAILED"):
         _publish_terminal(session, task)
 
@@ -45,11 +47,13 @@ def _cancel_shards(siblings: list[ShardRow]) -> None:
 
 
 def _publish_terminal(session: Session, task: TaskRow) -> None:
+    if task.kg_run_id and task.state in {"FAILED", "CANCELLED"}:
+        finish_failed(session, task.kg_run_id, task.error or "Graph task cancelled")
     task.finished_at = utcnow().timestamp()
     terminal = LineageEvent(
         idempotency_key=f"task:{task.id}:terminal",
         event_type="TASK_TERMINAL",
-        operator="pipeline.complete",
+        operator="kg.complete" if task.kg_run_id else "pipeline.complete",
         run_state=task.state,
         source_module="worker",
         source_ref=task.id,

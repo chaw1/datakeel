@@ -23,6 +23,7 @@ class KGSource(BoundaryModel):
     content_revision: ContentRevision
     extractor: ExtractorRef
     block_start: int = Field(default=0, ge=0)
+    block_end: int | None = Field(default=None, ge=0)
 
 
 class KGEntity(BoundaryModel):

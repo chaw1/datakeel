@@ -12,9 +12,11 @@ import pytest
 import yaml
 
 from datakeel.cli.kg_evaluation import evaluate, register_parser
-from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
+from datakeel.core.errors import BudgetError, ConflictError, NotFoundError, ValidationError
+from datakeel.core.harness_models import BudgetLimits
 from datakeel.kg.loader import contracts_path, get_profile
 from datakeel.storage.database import Database
+from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_evaluations import get_evaluation, list_evaluations, save_evaluation
 
 
@@ -50,6 +52,10 @@ def test_default_evaluation_opens_no_network_and_persists_history(
     assert output["recording"]["all"]["relation_strict"]["f1"] == 0.865
     assert get_evaluation(db, report.id) == report
     assert list_evaluations(db) == (report,)
+    traces = list_traces(db, report.id)
+    assert len(traces) == 24
+    assert all(trace.call_type == "extraction" and trace.cost_usd == 0 for trace in traces)
+    assert report.input_tokens == report.output_tokens == 0
     assert save_evaluation(db, report) == report
     with pytest.raises(ConflictError, match="identity cannot be replaced"):
         save_evaluation(db, report.model_copy(update={"model": "changed"}))
@@ -88,3 +94,11 @@ def test_history_missing_identity_is_explicit(db: Database) -> None:
     """Return a typed not-found error instead of a fabricated empty report."""
     with pytest.raises(NotFoundError):
         get_evaluation(db, "absent")
+
+
+def test_budget_rejection_does_not_publish_a_complete_evaluation(db: Database) -> None:
+    """Reserve before extraction and leave no misleading scored report when the budget refuses."""
+    with pytest.raises(BudgetError):
+        evaluate(db, limits=BudgetLimits(conversation_tokens=0))
+    assert list_evaluations(db) == ()
+    assert list_traces(db) == []

@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 import { evidenceTour } from "./demo-tour-evidence.mjs";
+import { kgTour } from "./demo-tour-kg.mjs";
 import { enterpriseTour } from "./demo-tour-enterprise.mjs";
 import { cleanupFixture, workflowJourney } from "./workflow-smoke.mjs";
 import { appearance, localBase, settle } from "./screenshots-helpers.mjs";
@@ -241,6 +242,7 @@ try {
     capture,
     locale: "zh",
   });
+  await kgTour({ page, api, capture, report });
   assert.deepEqual(report.blockedRequests, []);
   assert.deepEqual(
     report.errors,
@@ -256,7 +258,7 @@ try {
     ),
     "Only isolated dataset fixture creation may bypass the UI",
   );
-  assert.equal(report.screenshots.length, 18);
+  assert.equal(report.screenshots.length, 20);
   report.status = "passed";
 } catch (error) {
   report.status = "failed";

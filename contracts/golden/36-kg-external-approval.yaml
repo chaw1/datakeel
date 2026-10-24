@@ -1,0 +1,35 @@
+id: 36-kg-external-approval
+description: External extraction pauses for approval with zero conversation action
+  executions.
+fixture_kind: kg
+turns:
+- input: Prepare knowledge graph extraction with cloud.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: run_kg_extraction
+      id: 36-discover
+  - tool_calls:
+    - name: run_kg_extraction
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        version_id: '{{version_id}}'
+        profile_id: cloud
+        file_ids:
+        - '{{file_id}}'
+      id: 36-action
+expect:
+  tool_sequence:
+  - tool_search
+  - run_kg_extraction
+  actions:
+  - action_type: run_kg_extraction
+    requires_approval: true
+    executions: 0
+  file_count: 1
+  max_turns: 3
+  stop_contains:
+  - approval_required
+  answer_not_contains:
+  - Extraction completed

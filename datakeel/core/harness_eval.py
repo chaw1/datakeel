@@ -87,7 +87,7 @@ class GoldenCase(BoundaryModel):
 
     id: str
     description: str
-    fixture_kind: Literal["legacy", "evidence", "enterprise", "injection"] = "legacy"
+    fixture_kind: Literal["legacy", "evidence", "enterprise", "injection", "kg"] = "legacy"
     config: ConversationCreate = Field(default_factory=ConversationCreate)
     turns: list[GoldenTurn] = Field(min_length=1)
     expect: GoldenExpect
@@ -100,6 +100,7 @@ class CaseFixture(BoundaryModel):
     file_id: str
     unknown_file_id: str = ""
     version_id: str = ""
+    relation_id: str = ""
 
 
 class EvalCaseResult(BoundaryModel):

@@ -7,6 +7,7 @@ from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
+from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionContext, ActionImpact, ActionPlan
 from datakeel.actions.parameters import (
     DecideAssertionsParams,
@@ -31,6 +32,7 @@ from datakeel.storage.action_targets import current_manifest
 from datakeel.storage.catalog_action_state import catalog_impact, prepare_catalog_params
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_actions import action_manifest
+from datakeel.storage.kg_preparation import prepare_kg_params
 
 
 def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
@@ -65,6 +67,8 @@ def verify_target_state(session: Session, plan: ActionPlan) -> None:
 
 def _prepare_params(session: Session, action_type: str, params: JsonDocument) -> BoundaryModel:
     parsed = prepare_catalog_params(session, parse_params(action_type, params))
+    if isinstance(parsed, RunKGExtractionParams):
+        parsed = prepare_kg_params(session, parsed)
     if isinstance(parsed, PipelineParams) and parsed.pipeline is None:
         parsed = parsed.model_copy(update={"pipeline": default_pipeline()})
     if isinstance(parsed, PipelineParams):
@@ -85,8 +89,10 @@ def _new_plan(
     definition = action_definition(action_type)
     parsed = _prepare_params(session, action_type, params)
     manifest = action_manifest(session, parsed)
-    if isinstance(parsed, VersionParams | PipelineParams | ExportParams):
+    if isinstance(parsed, VersionParams | PipelineParams | ExportParams | RunKGExtractionParams):
         require_unique_file_sources(manifest)
+    kg = parsed.prepared if isinstance(parsed, RunKGExtractionParams) else None
+    external = action_type == "export_dataset" or bool(kg and kg.external)
     created = utcnow()
     plan = ActionPlan.model_validate(
         {
@@ -109,11 +115,12 @@ def _new_plan(
             "created_at": created,
             "expires_at": created + timedelta(seconds=context.ttl_seconds),
             "reversible": definition.reversible,
-            "external": action_type == "export_dataset",
+            "external": external,
             "impact": ActionImpact(
                 object_count=_impact_count(session, parsed, manifest),
                 total_bytes=manifest.total_bytes,
-                external=action_type == "export_dataset",
+                external=external,
+                kg_estimate=kg.estimate if kg else None,
             ),
             "actor": context.actor,
             "agent_id": context.agent_id,

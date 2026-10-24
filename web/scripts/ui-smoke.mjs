@@ -11,6 +11,7 @@ import { chromium } from "playwright";
 import { advancedSmoke } from "./advanced-smoke.mjs";
 import { enterpriseSmoke } from "./enterprise-smoke.mjs";
 import { evidenceSmoke } from "./evidence-smoke.mjs";
+import { kgSmoke } from "./kg-smoke.mjs";
 import { extractionSmoke } from "./extraction-smoke.mjs";
 import { polishSmoke } from "./polish-smoke.mjs";
 import { refinementSmoke } from "./refinement-smoke.mjs";
@@ -200,7 +201,10 @@ try {
   assert.equal(await page.locator("[data-nav-group]").count(), 6);
   await page.getByRole("link", { name: "Data library", exact: true }).click();
   const datasets = await json("/api/datasets");
-  const legacy = datasets.find((dataset) => !dataset.metadata.evidence_samples);
+  const legacy = datasets.find(
+    (dataset) =>
+      !dataset.metadata.evidence_samples && !dataset.metadata.kg_samples,
+  );
   assert.ok(legacy, "Keep the P1/P2 regression on its original fixture");
   await page
     .locator(".dataset-card")
@@ -393,6 +397,7 @@ try {
   await page.getByRole("heading", { name: "dataset", exact: true }).waitFor();
   await screenshot("ontology-zh");
   checks.push("approval queue and ontology render with Chinese labels");
+  const knowledgeGraph = await kgSmoke({ page, json, screenshot, checks });
   const evidence = await evidenceSmoke({
     page,
     json,
@@ -468,6 +473,7 @@ try {
         deletionRunId: deletionRun.id,
         traces: traces.length,
         evidence,
+        knowledgeGraph,
         enterprise,
         workspace,
         polish,

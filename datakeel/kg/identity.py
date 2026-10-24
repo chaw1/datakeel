@@ -43,7 +43,7 @@ def assertion_identity(draft: ObservationDraft) -> str:
 
 
 def _merge_group(drafts: list[ObservationDraft]) -> ObservationDraft:
-    first = drafts[0]
+    first = min(drafts, key=lambda draft: draft.model_dump_json())
     anchors: dict[str, EvidenceAnchor] = {}
     for draft in drafts:
         for anchor in draft.anchors:
@@ -53,19 +53,25 @@ def _merge_group(drafts: list[ObservationDraft]) -> ObservationDraft:
     ]
     detail = details[0] if details else None
     if detail:
-        issues = tuple(dict.fromkeys(issue for item in details for issue in item.issues))
+        issues = tuple(
+            sorted(
+                {
+                    issue.model_dump_json(): issue for item in details for issue in item.issues
+                }.values(),
+                key=lambda issue: (issue.code, issue.role or ""),
+            )
+        )
+        locations = {
+            location.model_dump_json(): location for item in details for location in item.locations
+        }
+        ordered = tuple(locations[key] for key in sorted(locations))
+        first_location = ordered[0] if ordered else detail
         detail = VerificationDetail(
             issues=issues,
-            evidence=detail.evidence,
-            head=detail.head,
-            tail=detail.tail,
-            locations=tuple(
-                {
-                    location.model_dump_json(): location
-                    for item in details
-                    for location in item.locations
-                }.values()
-            ),
+            evidence=first_location.evidence,
+            head=first_location.head,
+            tail=first_location.tail,
+            locations=ordered,
         )
     return first.model_copy(
         update={

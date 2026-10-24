@@ -182,6 +182,9 @@ def test_extract_when_billing_absent_marks_usage_unknown(
     "message",
     [
         {"role": "assistant", "content": "not JSON"},
+        {"role": "assistant", "content": "{}"},
+        {"role": "assistant", "content": '{"entities":[]}'},
+        {"role": "assistant", "content": '{"relations":[]}'},
         {"role": "assistant", "content": '{"unexpected":true}'},
         {"role": "assistant", "content": None},
         {"role": "assistant", "content": 42},

@@ -46,6 +46,7 @@ from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, E
 from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.harness_rows import EvalRunRow, ModelCallTraceRow
 from datakeel.storage.kg_eval_rows import KGEvalRunRow
+from datakeel.storage.kg_rows import KGCacheRow, KGRunRow
 from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 from datakeel.storage.metric_audit import MetricAuditRow
 from datakeel.storage.migrations import add_nullable_columns
@@ -76,6 +77,8 @@ _REGISTERED_MODELS = (
     ConversationAuditRow,
     EvalRunRow,
     KGEvalRunRow,
+    KGCacheRow,
+    KGRunRow,
     ModelCallTraceRow,
     MemoryRow,
     MemoryWriteRow,
@@ -155,6 +158,7 @@ class TaskRow(Base):
     total_shards: Mapped[int] = mapped_column(Integer, default=1)
     error: Mapped[str | None] = mapped_column(String, nullable=True)
     input_version_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    kg_run_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
 
 class ShardRow(Base):

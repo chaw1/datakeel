@@ -15,20 +15,18 @@ from datakeel.pipeline import Pipeline, default_pipeline, run_pipeline
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.datasets import materialize_files, persist_files
 from datakeel.storage.evidence_import import source_manifest
+from datakeel.worker.heartbeat import pulse as _pulse
+from datakeel.worker.kg_runner import execute_kg
 from datakeel.worker.observations import Observations
 from datakeel.worker.queue import DatabaseQueue, Lease
 
 logger = logging.getLogger(__name__)
 
 
-def _pulse(queue: DatabaseQueue, lease: Lease, stop: threading.Event) -> None:
-    while not stop.wait(max(0.1, queue.lease_seconds / 3)):
-        if not queue.heartbeat(lease):
-            return
-
-
 def execute(queue: DatabaseQueue, lease: Lease) -> bool:
     """Run one attempt and persist either a fenced result or a durable failure."""
+    if lease.kg_run_id is not None:
+        return execute_kg(queue, lease)
     stop = threading.Event()
     definition = Pipeline.model_validate(
         lease.pipeline if lease.pipeline is not None else default_pipeline()

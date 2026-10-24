@@ -8,6 +8,7 @@ import json
 from sqlalchemy.orm import Session
 
 from datakeel.actions.catalog_parameters import CatalogActionParams
+from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import (
     DecideAssertionsParams,
@@ -24,6 +25,7 @@ from datakeel.storage.catalog_actions import execute_catalog_action
 from datakeel.storage.database import DatasetRow, MetadataChangeRow, ShardRow, TaskRow, VersionRow
 from datakeel.storage.datasets import latest_files
 from datakeel.storage.evidence_actions import decide_action
+from datakeel.storage.kg_store import schedule_extraction
 
 
 def _metadata(session: Session, params: MetadataParams) -> OperationResult:
@@ -106,9 +108,15 @@ def execute_business(session: Session, plan: ActionPlan) -> OperationResult:
         return OperationResult(
             outputs=[AssetRef(asset_type="version", asset_id=version.id, version=version.id)]
         )
+    return _additional_action(session, plan, params)
+
+
+def _additional_action(session: Session, plan: ActionPlan, params: object) -> OperationResult:
     if isinstance(params, MetadataParams):
         return _metadata(session, params)
     if isinstance(params, PipelineParams):
         return _pipeline(session, plan, params)
+    if isinstance(params, RunKGExtractionParams):
+        return schedule_extraction(session, plan, params)
     msg = "No in-database handler for this action"
     raise NotFoundError(msg)

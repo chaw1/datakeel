@@ -8,7 +8,7 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
@@ -257,6 +257,33 @@ ignore_imports =
     datakeel.ask.evaluation -> datakeel.storage.database
     datakeel.ask.evaluation -> datakeel.storage.metric_store
     datakeel.ask.evaluation_checks -> datakeel.metrics.sql_safety
+
+# Scripted graph samples read only packaged vocabulary and recording fixtures.
+    datakeel.sample_kg -> datakeel.kg.loader
+# Graph extraction reuses controlled transactions and typed domain preparation/publication.
+    datakeel.storage.action_planning -> datakeel.actions.kg_parameters
+    datakeel.storage.action_operations -> datakeel.actions.kg_parameters
+    datakeel.storage.kg_preparation -> datakeel.actions.kg_parameters
+    datakeel.storage.kg_preparation -> datakeel.actions.parameters
+    datakeel.storage.kg_preparation -> datakeel.kg.loader
+    datakeel.storage.kg_preparation -> datakeel.kg.policy
+    datakeel.storage.kg_preparation -> datakeel.kg.prompt
+    datakeel.storage.kg_preparation -> datakeel.kg.text
+    datakeel.storage.kg_pricing -> datakeel.kg.loader
+    datakeel.storage.kg_publication -> datakeel.kg.aliases
+    datakeel.storage.kg_publication -> datakeel.kg.cache
+    datakeel.storage.kg_publication -> datakeel.kg.identity
+    datakeel.storage.kg_publication -> datakeel.kg.retention
+    datakeel.storage.kg_queries -> datakeel.kg.text
+    datakeel.storage.kg_store -> datakeel.actions.kg_parameters
+    datakeel.storage.kg_store -> datakeel.actions.models
+# Graph read tools use typed storage projections; workers own the injected provider factory.
+    datakeel.ontology.kg_functions -> datakeel.storage.database
+    datakeel.ontology.kg_functions -> datakeel.storage.kg_queries
+    datakeel.worker.kg_runner -> datakeel.extraction_runtime.factory
+# Graph benchmarks drain the same durable worker path as user-triggered actions.
+    datakeel.harness.kg_cases -> datakeel.worker.runner
+    datakeel.harness.execution -> datakeel.worker.runner
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

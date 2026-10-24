@@ -7,9 +7,10 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pydantic import ValidationError as ModelValidationError
 
 from datakeel.core.errors import NotFoundError, ValidationError
-from datakeel.core.kg_contracts import ExtractionProfile
+from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation, ExtractionProfile
 from datakeel.kg import loader
 
 
@@ -169,3 +170,37 @@ def test_bundled_identifiers_do_not_accept_paths(
         loader.get_schema("../sample")
     with pytest.raises(NotFoundError):
         loader.get_profile("../fake")
+
+
+def test_blank_entity_and_endpoint_names_are_rejected() -> None:
+    """Empty normalized names cannot match arbitrary declared endpoints by containment."""
+    with pytest.raises(ModelValidationError):
+        ExtractedEntity(name=" \t ", type="organization")
+    with pytest.raises(ModelValidationError):
+        ExtractedRelation(head=" ", relation="uses", tail="Widget", evidence="quote")
+
+
+def test_repeated_domain_names_are_rejected(tmp_path: Path) -> None:
+    """Duplicate endpoint type options cannot make a unique type look ambiguous."""
+    content = _schema()
+    content["relations"] = [
+        {
+            "name": "owns",
+            "description": "Own",
+            "domain": ["Company", "Company"],
+            "range": ["Company"],
+        }
+    ]
+    with pytest.raises(ValidationError, match="duplicate entity type"):
+        loader.load_schema(_write(tmp_path / "schema.yaml", content))
+
+
+@pytest.mark.parametrize("name", ["mentions", "same_as"])
+def test_schema_cannot_redefine_reserved_graph_predicates(tmp_path: Path, name: str) -> None:
+    """Domain relations cannot overwrite built-in mention or symmetric-alias semantics."""
+    content = _schema()
+    content["relations"] = [
+        {"name": name, "description": "Reserved", "domain": ["Company"], "range": ["Company"]}
+    ]
+    with pytest.raises(ValidationError, match=r"relations\.0\.name: reserved"):
+        loader.load_schema(_write(tmp_path / "reserved.yaml", content))

@@ -5,6 +5,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { bytes, date } from "../../lib/format";
 import { useClock } from "../../lib/useClock";
 import { ActionReceipt } from "../actions/ActionReceipt";
+import { KGApprovalEstimate } from "../kg/KGApprovalEstimate";
 
 import { approvalActions } from "./approvalActions";
 import { ApprovalObjects } from "./ApprovalObjects";
@@ -155,6 +156,7 @@ export function ApprovalSheet(props: ApprovalProps) {
           </dd>
         </div>
       </dl>
+      <KGApprovalEstimate plan={plan} />
       <ApprovalObjects plan={plan} />
       <p className="approval-footnote">
         {t("approvalFrozenAt", { date: date(plan.created_at, locale) })}

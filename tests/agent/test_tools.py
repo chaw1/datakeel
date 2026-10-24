@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 def test_catalog_when_constructed_has_only_read_tools_and_deferred_actions() -> None:
     """Never expose approve_plan or execute_plan through either discovery list."""
     assert len(resident_tools()) == 10
-    assert len(deferred_tools()) == 20
+    assert len(deferred_tools()) == 23
     assert not {"approve_plan", "execute_plan"}.intersection(
         tool.name for tool in resident_tools() + deferred_tools()
     )
@@ -99,9 +99,16 @@ def test_catalog_when_new_read_requested_requires_discovery_and_restores_it(db: 
 def test_catalog_when_all_new_reads_discovered_never_loads_execution_authority(
     db: Database,
 ) -> None:
-    """Discovery includes all four read extensions while controls remain unavailable."""
+    """Discovery includes catalog and graph reads while controls remain unavailable."""
     catalog = ToolCatalog(Conversation(id="catalog-session", config=ConversationCreate()))
-    for name in ("ask_data", "list_metrics", "explain_metric", "impact_of"):
+    for name in (
+        "ask_data",
+        "list_metrics",
+        "explain_metric",
+        "impact_of",
+        "query_kg",
+        "explain_relation",
+    ):
         assert catalog.invoke(db, ToolCall(name=name), ToolCallContext()).status == "FAILED"
         search = catalog.invoke(
             db,

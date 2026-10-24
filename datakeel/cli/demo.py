@@ -17,6 +17,7 @@ from rich.console import Console
 
 from datakeel.cli.enterprise import seed_enterprise_demo
 from datakeel.cli.evidence import seed_evidence_demo
+from datakeel.cli.kg_demo import check_demo, demo_reports, seed_kg_demo
 from datakeel.core.errors import ExecutionError
 from datakeel.http import Client
 from datakeel.sample import generate_samples
@@ -147,6 +148,7 @@ def demo(args: argparse.Namespace) -> None:
     dataset_id, task_id = seed_demo(db)
     evidence = None if getattr(args, "legacy_only", False) else seed_evidence_demo(db)
     enterprise = None if getattr(args, "legacy_only", False) else seed_enterprise_demo(db)
+    graph = None if getattr(args, "legacy_only", False) else seed_kg_demo(db)
     if not args.once:
         if enterprise is not None:
             console.print(enterprise.model_dump_json(), markup=False, soft_wrap=True)
@@ -159,6 +161,8 @@ def demo(args: argparse.Namespace) -> None:
     if evidence and not _check_task(db, evidence[1]):
         msg = "Evidence demo task did not complete"
         raise ExecutionError(msg)
+    if graph:
+        check_demo(db, graph)
     console.print(
         json.dumps(
             {
@@ -167,6 +171,9 @@ def demo(args: argparse.Namespace) -> None:
                 "state": "COMPLETED",
                 "elapsed_seconds": round(time.monotonic() - started, 3),
                 "enterprise": enterprise.model_dump(mode="json") if enterprise else None,
+                "knowledge_graph": [run.model_dump(mode="json") for run in demo_reports(db, graph)]
+                if graph
+                else None,
                 "evidence": {
                     "dataset_id": evidence[0],
                     **extraction_report(db, evidence[1]).model_dump(mode="json"),

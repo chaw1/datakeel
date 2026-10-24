@@ -963,6 +963,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kg/evaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evaluations
+         * @description Read prior graph evaluations in newest-first order.
+         */
+        get: operations["evaluations_api_kg_evaluations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Graph
+         * @description Return a bounded graph with accepted alias display groups.
+         */
+        post: operations["graph_api_kg_graph_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Profiles
+         * @description List profiles containing only credential environment variable names.
+         */
+        get: operations["profiles_api_kg_profiles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query
+         * @description Read filtered entities and candidate or decided relationships.
+         */
+        post: operations["query_api_kg_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/relations/{assertion_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Relation
+         * @description Explain the exact source checks and model attribution for one relationship.
+         */
+        get: operations["relation_api_kg_relations__assertion_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Runs
+         * @description Read extraction reports without exposing private frozen request data.
+         */
+        get: operations["runs_api_kg_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/runs/{extraction_id}/traces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Traces
+         * @description List every metered model attempt belonging to one existing extraction run.
+         */
+        get: operations["traces_api_kg_runs__extraction_id__traces_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/schemas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Schemas
+         * @description List validated graph vocabularies available to extraction plans.
+         */
+        get: operations["schemas_api_kg_schemas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/sources/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Source
+         * @description Read the frozen normalized text underlying displayed code-point offsets.
+         */
+        get: operations["source_api_kg_sources__file_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lineage/events": {
         parameters: {
             query?: never;
@@ -1325,7 +1505,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -1379,7 +1559,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -2239,6 +2419,20 @@ export interface components {
             weight: number;
         };
         /**
+         * EntityType
+         * @description Declare an entity category and explicitly permitted spelling aliases.
+         */
+        EntityType: {
+            /** Aliases */
+            aliases?: {
+                [key: string]: string[];
+            };
+            /** Description */
+            description: string;
+            /** Name */
+            name: string;
+        };
+        /**
          * EventRecorded
          * @description Whether an idempotent append inserted a new observation.
          */
@@ -2434,6 +2628,83 @@ export interface components {
             operation_id?: string | null;
             /** Plan Digest */
             plan_digest: string;
+        };
+        /**
+         * ExtractedEntity
+         * @description Carry a model-provided name and category before product validation.
+         */
+        ExtractedEntity: {
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+        };
+        /**
+         * ExtractedRelation
+         * @description Carry a directed model claim and its purported verbatim evidence.
+         */
+        ExtractedRelation: {
+            /** Evidence */
+            evidence: string;
+            /** Head */
+            head: string;
+            /** Relation */
+            relation: string;
+            /** Tail */
+            tail: string;
+        };
+        /**
+         * ExtractionProfile
+         * @description Declare transport settings while allowing only environment variable key names.
+         */
+        ExtractionProfile: {
+            /** Api Key Env */
+            api_key_env?: string | null;
+            /** Base Url */
+            base_url?: string | null;
+            /**
+             * Chunk Overlap
+             * @default 0
+             */
+            chunk_overlap: number;
+            /**
+             * Chunk Size
+             * @default 12000
+             */
+            chunk_size: number;
+            /**
+             * Extractor
+             * @enum {string}
+             */
+            extractor: "llm" | "fake" | "replay" | "gliner2";
+            /** Id */
+            id: string;
+            /**
+             * Max Output Tokens
+             * @default 4096
+             */
+            max_output_tokens: number;
+            /** Model */
+            model: string;
+            /**
+             * Output Method
+             * @default json_schema
+             * @enum {string}
+             */
+            output_method: "json_schema" | "function_calling" | "json_mode";
+            /** Provider */
+            provider: string;
+            /** Recording */
+            recording?: string | null;
+            /** Request Parameters */
+            request_parameters?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Temperature
+             * @default 0
+             */
+            temperature: number;
         };
         /**
          * ExtractorRef
@@ -2691,6 +2962,77 @@ export interface components {
         };
         JsonValue: unknown;
         /**
+         * KGBlockFailure
+         * @description Explain a failed or unexecuted block using source offsets rather than silent omission.
+         */
+        KGBlockFailure: {
+            /**
+             * Attempted
+             * @default true
+             */
+            attempted: boolean;
+            /** End */
+            end: number;
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Reason */
+            reason: string;
+            /** Start */
+            start: number;
+        };
+        /**
+         * KGBlockedRelation
+         * @description Explain each relation excluded by the actual product pipeline.
+         */
+        KGBlockedRelation: {
+            /** Case Id */
+            case_id: string;
+            /** Evidence */
+            evidence: string;
+            /** Head */
+            head: string;
+            /** Reason */
+            reason: string;
+            /** Relation */
+            relation: string;
+            /** Tail */
+            tail: string;
+        };
+        /**
+         * KGEntity
+         * @description Expose the deterministic entity identity alongside its readable spelling.
+         */
+        KGEntity: {
+            asset_ref: components["schemas"]["AssetRef"];
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+        };
+        /**
+         * KGEntityView
+         * @description Expose all source mentions for one deterministic entity identity.
+         */
+        KGEntityView: {
+            asset_ref: components["schemas"]["AssetRef"];
+            /**
+             * Mention Count
+             * @default 0
+             */
+            mention_count: number;
+            /**
+             * Mentions
+             * @default []
+             */
+            mentions: components["schemas"]["Assertion"][];
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+        };
+        /**
          * KGEstimate
          * @description Bind visible outbound impact and its exact price snapshot to the plan digest.
          */
@@ -2712,6 +3054,439 @@ export interface components {
             price_version?: string | null;
             /** Target Host */
             target_host: string | null;
+        };
+        /**
+         * KGEvalReport
+         * @description Persist independent recording and production-path scores from one execution.
+         */
+        KGEvalReport: {
+            /**
+             * Blocked Relations
+             * @default []
+             */
+            blocked_relations: components["schemas"]["KGBlockedRelation"][];
+            /** Cost Usd */
+            cost_usd?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /** Elapsed Seconds */
+            elapsed_seconds: number;
+            /** Id */
+            id?: string;
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens: number;
+            /**
+             * Metric Convention
+             * @default Independent benchmark normalization and aliases; tolerated triples contribute neither TP nor FP; unmapped endpoints count as FP; empty precision and recall are zero. Recording verification preserves original span checks; product verification uses the production evidence/head/tail checks. Recorded usage is not replay execution usage.
+             */
+            metric_convention: string;
+            /** Model */
+            model: string;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens: number;
+            product: components["schemas"]["KGScoringView"];
+            /** Profile */
+            profile: string;
+            /**
+             * Provider
+             * @default kg
+             * @constant
+             */
+            provider: "kg";
+            recording: components["schemas"]["KGScoringView"];
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Suite Digest */
+            suite_digest: string;
+        };
+        /**
+         * KGGraph
+         * @description Bound the displayed projection without changing underlying assertions.
+         */
+        KGGraph: {
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /**
+             * Edges
+             * @default []
+             */
+            edges: components["schemas"]["KGGraphEdge"][];
+            /**
+             * Nodes
+             * @default []
+             */
+            nodes: components["schemas"]["KGGraphNode"][];
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /** Version Id */
+            version_id?: string | null;
+        };
+        /**
+         * KGGraphEdge
+         * @description Keep graph styling tied to the independent review and verification states.
+         */
+        KGGraphEdge: {
+            /** Id */
+            id: string;
+            /** Predicate */
+            predicate: string;
+            /** Source */
+            source: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "candidate" | "accepted" | "rejected";
+            /** Target */
+            target: string;
+            /** Verification */
+            verification?: ("verified" | "needs_review") | null;
+        };
+        /**
+         * KGGraphNode
+         * @description Represent one displayed entity or an accepted pair alias group.
+         */
+        KGGraphNode: {
+            /** Entity Type */
+            entity_type: string;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Members */
+            members: string[];
+        };
+        /**
+         * KGMetrics
+         * @description Preserve the independent scorer's published denominators and supporting measurements.
+         */
+        KGMetrics: {
+            /** Cost Usd */
+            cost_usd?: string | null;
+            /** Endpoint In Text */
+            endpoint_in_text: number;
+            /** Endpoint Unmapped */
+            endpoint_unmapped: number;
+            entity_typed: components["schemas"]["PRF"];
+            entity_untyped: components["schemas"]["PRF"];
+            /** Errors */
+            errors: number;
+            /** Evidence Located */
+            evidence_located: number;
+            /** Failed Blocks */
+            failed_blocks: number;
+            /** Input Tokens */
+            input_tokens?: number | null;
+            /** Label Outside Schema */
+            label_outside_schema: number;
+            /** Latency Mean S */
+            latency_mean_s: number;
+            /** Latency Total S */
+            latency_total_s: number;
+            /** Missing */
+            missing: string[];
+            /** Output Tokens */
+            output_tokens?: number | null;
+            /** Passages */
+            passages: number;
+            /** Pred Relations */
+            pred_relations: number;
+            relation_pair: components["schemas"]["PRF"];
+            relation_strict: components["schemas"]["PRF"];
+            /** Trap Hits */
+            trap_hits: number;
+            /** Verified Ratio */
+            verified_ratio: number;
+        };
+        /**
+         * KGQuery
+         * @description Select one dataset-version graph with explicit bounded result filters.
+         */
+        KGQuery: {
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /** Entity Type */
+            entity_type?: string | null;
+            /**
+             * Limit
+             * @default 100
+             */
+            limit: number;
+            /** Name */
+            name?: string | null;
+            /** Status */
+            status?: ("candidate" | "accepted" | "rejected") | null;
+            /** Verification */
+            verification?: ("verified" | "needs_review") | null;
+            /** Version Id */
+            version_id?: string | null;
+        };
+        /**
+         * KGQueryResult
+         * @description Return entities and relations from exactly one dataset version.
+         */
+        KGQueryResult: {
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /**
+             * Entities
+             * @default []
+             */
+            entities: components["schemas"]["KGEntityView"][];
+            /**
+             * Relations
+             * @default []
+             */
+            relations: components["schemas"]["KGRelationView"][];
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /** Version Id */
+            version_id?: string | null;
+        };
+        /**
+         * KGRelationExplanation
+         * @description Keep all checks and original documents together for a human review drawer.
+         */
+        KGRelationExplanation: {
+            relation: components["schemas"]["KGRelationView"];
+            /** Sources */
+            sources: components["schemas"]["KGSourceText"][];
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+        };
+        /**
+         * KGRelationView
+         * @description Present an assertion with readable endpoints and extraction attribution.
+         */
+        KGRelationView: {
+            assertion: components["schemas"]["Assertion"];
+            /** Extraction Id */
+            extraction_id: string;
+            /** Extractor */
+            extractor: string;
+            head: components["schemas"]["KGEntity"];
+            /** Model */
+            model: string;
+            tail: components["schemas"]["KGEntity"];
+        };
+        /**
+         * KGReport
+         * @description Summarize extraction, cache reuse, verification, billing and partial documents.
+         */
+        KGReport: {
+            /**
+             * Accounted Cost Usd
+             * @default 0
+             */
+            accounted_cost_usd: string;
+            /**
+             * Blocks
+             * @default 0
+             */
+            blocks: number;
+            /**
+             * Cached
+             * @default 0
+             */
+            cached: number;
+            /** Cost Usd */
+            cost_usd?: string | null;
+            /**
+             * Documents
+             * @default 0
+             */
+            documents: number;
+            /**
+             * Elapsed Seconds
+             * @default 0
+             */
+            elapsed_seconds: number;
+            /**
+             * Entities
+             * @default 0
+             */
+            entities: number;
+            /**
+             * Entities Needs Review
+             * @default 0
+             */
+            entities_needs_review: number;
+            /**
+             * Entities Verified
+             * @default 0
+             */
+            entities_verified: number;
+            /** Error */
+            error?: string | null;
+            /**
+             * Extracted
+             * @default 0
+             */
+            extracted: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed: number;
+            /**
+             * Failures
+             * @default []
+             */
+            failures: components["schemas"]["KGBlockFailure"][];
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens: number;
+            /**
+             * Model Calls
+             * @default 0
+             */
+            model_calls: number;
+            /**
+             * Needs Review
+             * @default 0
+             */
+            needs_review: number;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens: number;
+            /**
+             * Partial Documents
+             * @default []
+             */
+            partial_documents: string[];
+            /**
+             * Proposals
+             * @default []
+             */
+            proposals: components["schemas"]["SchemaProposal"][];
+            /**
+             * Relations
+             * @default 0
+             */
+            relations: number;
+            /**
+             * Relations Needs Review
+             * @default 0
+             */
+            relations_needs_review: number;
+            /**
+             * Relations Verified
+             * @default 0
+             */
+            relations_verified: number;
+            /**
+             * Unexecuted
+             * @default 0
+             */
+            unexecuted: number;
+            /**
+             * Verified
+             * @default 0
+             */
+            verified: number;
+        };
+        /**
+         * KGRun
+         * @description Expose one durable worker run independently of its internal frozen inputs.
+         */
+        KGRun: {
+            /** Completed At */
+            completed_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Extractor */
+            extractor: string;
+            /** Id */
+            id: string;
+            /** Model */
+            model: string;
+            /** Profile Id */
+            profile_id: string;
+            report?: components["schemas"]["KGReport"];
+            /** Schema Id */
+            schema_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "partial" | "budget_exceeded" | "failed";
+            /** Task Id */
+            task_id?: string | null;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * KGSchema
+         * @description Describe a checked vocabulary without changing it during extraction.
+         */
+        KGSchema: {
+            /** Entity Types */
+            entity_types: components["schemas"]["EntityType"][];
+            /**
+             * Examples
+             * @default []
+             */
+            examples: components["schemas"]["SchemaExample"][];
+            /** Id */
+            id: string;
+            /** Relations */
+            relations: components["schemas"]["RelationType"][];
+            /** Rules */
+            rules: string[];
+            /** Version */
+            version: string;
+        };
+        /**
+         * KGScoringView
+         * @description Show all predictions, language slices, and the verification-only subset.
+         */
+        KGScoringView: {
+            all: components["schemas"]["KGMetrics"];
+            en: components["schemas"]["KGMetrics"];
+            verified: components["schemas"]["KGMetrics"];
+            zh: components["schemas"]["KGMetrics"];
+        };
+        /**
+         * KGSourceText
+         * @description Return the precise decoded text used by verification offsets.
+         */
+        KGSourceText: {
+            asset_ref: components["schemas"]["AssetRef"];
+            /** Filename */
+            filename: string;
+            /** Text */
+            text: string;
         };
         /**
          * LineageEvent
@@ -3170,6 +3945,7 @@ export interface components {
             /** Model */
             model: string;
             model_route?: components["schemas"]["ModelRouteDecision"] | null;
+            observed_usage?: components["schemas"]["TokenUsage"] | null;
             /** Parent Tool Call Id */
             parent_tool_call_id?: string | null;
             /** Price Version */
@@ -3372,6 +4148,24 @@ export interface components {
             value: components["schemas"]["JsonValue"];
         };
         /**
+         * PRF
+         * @description Expose three-decimal benchmark precision, recall, F1, and exact counts.
+         */
+        PRF: {
+            /** F1 */
+            f1: number;
+            /** Fn */
+            fn: number;
+            /** Fp */
+            fp: number;
+            /** P */
+            p: number;
+            /** R */
+            r: number;
+            /** Tp */
+            tp: number;
+        };
+        /**
          * Pipeline
          * @description Describe an acyclic set of nodes and the published output slots.
          */
@@ -3492,6 +4286,20 @@ export interface components {
             truncated: boolean;
         };
         /**
+         * RelationType
+         * @description Constrain a directed relation to declared endpoint categories.
+         */
+        RelationType: {
+            /** Description */
+            description: string;
+            /** Domain */
+            domain: string[];
+            /** Name */
+            name: string;
+            /** Range */
+            range: string[];
+        };
+        /**
          * ReportView
          * @description Rule report and optional enrichment provenance.
          */
@@ -3565,6 +4373,39 @@ export interface components {
             dataset_id?: string | null;
         };
         Scalar: string | number | boolean | null;
+        /**
+         * SchemaExample
+         * @description Demonstrate extraction using evidence copied from the example text.
+         */
+        SchemaExample: {
+            /**
+             * Entities
+             * @default []
+             */
+            entities: components["schemas"]["ExtractedEntity"][];
+            /**
+             * Relations
+             * @default []
+             */
+            relations: components["schemas"]["ExtractedRelation"][];
+            /** Text */
+            text: string;
+        };
+        /**
+         * SchemaProposal
+         * @description Count excluded claims without silently extending the active vocabulary.
+         */
+        SchemaProposal: {
+            /** Count */
+            count: number;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "unknown_relation" | "domain_range" | "endpoint_ambiguous" | "unknown_entity_type";
+            /** Samples */
+            samples: components["schemas"]["ExtractedRelation"][];
+        };
         /**
          * SearchResult
          * @description Expose stable object identity without private paths or connection metadata.
@@ -5742,6 +6583,272 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthView"];
+                };
+            };
+        };
+    };
+    evaluations_api_kg_evaluations_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KGEvalReport"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    graph_api_kg_graph_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KGQuery"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KGGraph"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    profiles_api_kg_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionProfile"][];
+                };
+            };
+        };
+    };
+    query_api_kg_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KGQuery"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KGQueryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    relation_api_kg_relations__assertion_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assertion_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KGRelationExplanation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    runs_api_kg_runs_get: {
+        parameters: {
+            query?: {
+                dataset_id?: string | null;
+                version_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KGRun"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    traces_api_kg_runs__extraction_id__traces_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                extraction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCallTrace"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    schemas_api_kg_schemas_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KGSchema"][];
+                };
+            };
+        };
+    };
+    source_api_kg_sources__file_id__get: {
+        parameters: {
+            query: {
+                version_id: string;
+                extraction_id?: string | null;
+            };
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KGSourceText"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

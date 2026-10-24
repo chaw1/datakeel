@@ -31,16 +31,16 @@ class RelationType(BoundaryModel):
 class ExtractedEntity(BoundaryModel):
     """Carry a model-provided name and category before product validation."""
 
-    name: str = Field(min_length=1)
+    name: str = Field(min_length=1, pattern=r"\S")
     type: str = Field(min_length=1)
 
 
 class ExtractedRelation(BoundaryModel):
     """Carry a directed model claim and its purported verbatim evidence."""
 
-    head: str = Field(min_length=1)
+    head: str = Field(min_length=1, pattern=r"\S")
     relation: str = Field(min_length=1)
-    tail: str = Field(min_length=1)
+    tail: str = Field(min_length=1, pattern=r"\S")
     evidence: str
 
 
@@ -72,8 +72,15 @@ class KGSchema(BoundaryModel):
                 msg = f"{field}: duplicate names"
                 raise ValueError(msg)
         for index, relation in enumerate(self.relations):
+            if relation.name in {"mentions", "same_as"}:
+                msg = f"relations.{index}.name: reserved graph predicate"
+                raise ValueError(msg)
             for field in ("domain", "range"):
-                unknown = set(getattr(relation, field)) - set(names)
+                values = getattr(relation, field)
+                if len(values) != len(set(values)):
+                    msg = f"relations.{index}.{field}: duplicate entity type"
+                    raise ValueError(msg)
+                unknown = set(values) - set(names)
                 if unknown:
                     msg = f"relations.{index}.{field}: unknown entity types {sorted(unknown)}"
                     raise ValueError(msg)

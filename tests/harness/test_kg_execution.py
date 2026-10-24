@@ -153,3 +153,17 @@ def test_fresh_evidence_location_handles_normalization_and_missing_quote() -> No
         update={"relations": (raw.relations[0].model_copy(update={"evidence": ""}),)}
     )
     assert raw_relations(empty, "Alice owns Atlas.")[0].ev_start is None
+
+
+def test_external_combining_text_uses_nfc_offsets_for_fresh_and_product_scores(
+    tmp_path: Path,
+) -> None:
+    """A combining character before evidence cannot corrupt later source span measurements."""
+    path = _cases(tmp_path / "cases.yaml", "Cafe\u0301 is nearby. Alice owns Atlas.")
+    report = evaluate_kg(
+        get_profile("fake"), get_schema(), FakeExtractor((ExtractionResult(output=_raw()),)), path
+    )
+    assert report.recording.all.evidence_located == 1
+    assert report.recording.verified.relation_strict.f1 == 1
+    assert report.product.all.evidence_located == 1
+    assert report.product.verified.relation_strict.f1 == 1

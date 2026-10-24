@@ -44,3 +44,12 @@ def build_cache_key(
         chunk_overlap=profile.chunk_overlap,
         extractor=extractor,
     )
+
+
+def extraction_identity(
+    schema: KGSchema, profile: ExtractionProfile, recording_hash: str | None = None
+) -> ExtractorRef:
+    """Version provenance by all semantic inputs so schema changes invalidate old claims."""
+    base = ExtractorRef(id="evidence.kg", version="1")
+    key = build_cache_key(TextBlock(text="", start=0, end=0), schema, profile, base, recording_hash)
+    return base.model_copy(update={"version": f"1:{key.digest()}"})

@@ -24,6 +24,7 @@ def install_evidence_constraints(connection: Connection, *, sqlite: bool) -> Non
                     "SELECT RAISE(ABORT, 'assertion decisions are append-only'); END"
                 )
             )
+        _verification_constraints(connection, sqlite=True)
         return
     connection.execute(
         text("""
@@ -50,5 +51,30 @@ def install_evidence_constraints(connection: Connection, *, sqlite: bool) -> Non
         ) THEN CREATE TRIGGER datakeel_decision_immutable
         BEFORE UPDATE OR DELETE ON assertion_decisions FOR EACH ROW
         EXECUTE FUNCTION datakeel_immutable_assertion(); END IF; END $$
+    """)
+    )
+
+    _verification_constraints(connection, sqlite=False)
+
+
+def _verification_constraints(connection: Connection, *, sqlite: bool) -> None:
+    """Upgrade old guards without replacing existing assertion or audit protections."""
+    if sqlite:
+        connection.execute(
+            text(
+                "CREATE TRIGGER IF NOT EXISTS assertion_verification_immutable "
+                "BEFORE UPDATE OF verification, verification_detail ON assertions "
+                "BEGIN SELECT RAISE(ABORT, 'assertion verification is immutable'); END"
+            )
+        )
+        return
+    connection.execute(
+        text("""
+        DO $$ BEGIN IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger WHERE tgname = 'datakeel_verification_immutable'
+            AND tgrelid = 'assertions'::regclass
+        ) THEN CREATE TRIGGER datakeel_verification_immutable
+        BEFORE UPDATE OF verification, verification_detail ON assertions
+        FOR EACH ROW EXECUTE FUNCTION datakeel_immutable_assertion(); END IF; END $$
     """)
     )
