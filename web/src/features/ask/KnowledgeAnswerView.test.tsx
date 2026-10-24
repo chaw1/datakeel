@@ -42,6 +42,12 @@ it("separates registered roles from source claims, review status and pending amb
   expect(
     screen.queryByText("No rows matched this question."),
   ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("region", { name: "Matched question text" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("No registered terms matched the question."),
+  ).not.toBeInTheDocument();
 });
 
 it("opens and closes the existing source relation drawer from a document claim", async () => {
@@ -56,6 +62,7 @@ it("opens and closes the existing source relation drawer from a document claim",
     name: "Relation source evidence",
   });
   expect(await within(dialog).findByText("handoff.txt")).toBeVisible();
+  expect(within(dialog).getByText("kg.owns")).toBeVisible();
   expect(fetch).toHaveBeenCalledWith(
     "/api/kg/relations/claim-owner",
     expect.anything(),

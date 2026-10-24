@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
 import { AnswerProvenance } from "./AnswerProvenance";
+import { knowledgeAnswer } from "./knowledgeFixtures";
 import { retailAnswer, unavailableAnswer } from "./testFixtures";
 
 it("starts with collapsed SQL and opens catalog lineage for the registered metric", async () => {
@@ -39,4 +40,23 @@ it("omits SQL and lineage when no metric was resolved", () => {
     screen.queryByRole("button", { name: "View lineage" }),
   ).not.toBeInTheDocument();
   expect(screen.getByText(unavailableAnswer.question)).toBeVisible();
+});
+
+it("omits empty knowledge provenance while retaining an available lineage action", () => {
+  const { rerender } = render(
+    <AnswerProvenance answer={knowledgeAnswer} onOpenReceipt={vi.fn()} />,
+  );
+  expect(
+    screen.queryByRole("region", { name: "Evidence behind this answer" }),
+  ).not.toBeInTheDocument();
+  rerender(
+    <AnswerProvenance
+      answer={{ ...knowledgeAnswer, lineage: retailAnswer.lineage }}
+      onOpenReceipt={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole("region", { name: "Evidence behind this answer" }),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "View lineage" })).toBeVisible();
 });

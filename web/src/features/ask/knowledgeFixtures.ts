@@ -77,7 +77,11 @@ export const claimExplanation = {
     ...relation,
     head: ownerClaim.head,
     tail: ownerClaim.tail,
-    assertion: { ...relation.assertion, id: ownerClaim.assertion_id },
+    assertion: {
+      ...relation.assertion,
+      id: ownerClaim.assertion_id,
+      predicate: "kg.owns",
+    },
   },
   extractor: "replay",
   sources: [

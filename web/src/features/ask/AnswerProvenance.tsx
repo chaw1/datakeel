@@ -16,6 +16,10 @@ export function AnswerProvenance({
 }) {
   const { t } = useI18n();
   const lineage = answer.lineage;
+  const footnotes =
+    answer.status === "answered" ? answerFootnotes(answer, t) : [];
+  if (answer.answer_kind === "knowledge" && !lineage && !footnotes.length)
+    return null;
   return (
     <section className="ask-provenance" aria-label={t("askProvenance")}>
       <div className="ask-section-heading">
@@ -35,10 +39,10 @@ export function AnswerProvenance({
           </button>
         )}
       </div>
-      <QuestionEvidence question={answer.question} matches={answer.matches} />
-      {answer.status === "answered" && (
-        <Footnotes items={answerFootnotes(answer, t)} />
+      {answer.answer_kind !== "knowledge" && (
+        <QuestionEvidence question={answer.question} matches={answer.matches} />
       )}
+      {footnotes.length > 0 && <Footnotes items={footnotes} />}
     </section>
   );
 }

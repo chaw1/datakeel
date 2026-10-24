@@ -3623,7 +3623,7 @@ export interface components {
              */
             pending_ambiguous_links: number;
             /** Reason Code */
-            reason_code?: ("unknown_subject" | "ambiguous_subject" | "no_knowledge") | null;
+            reason_code?: ("unknown_subject" | "ambiguous_subject" | "no_knowledge" | "unsupported_phrasing" | "pending_links") | null;
             subject?: components["schemas"]["KnowledgeSubject"] | null;
             /**
              * System Message
@@ -3702,6 +3702,10 @@ export interface components {
          */
         KnowledgeSubject: {
             asset_ref: components["schemas"]["AssetRef"];
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /** Dataset Name */
+            dataset_name?: string | null;
             /** Entity Type */
             entity_type?: string | null;
             /**

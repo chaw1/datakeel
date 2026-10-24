@@ -1,4 +1,10 @@
-import { createEvent, fireEvent, render, screen } from "@testing-library/react";
+import {
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
@@ -54,6 +60,7 @@ it("renders a no-knowledge refusal without misleading metric suggestions or acti
           reason_code: "no_knowledge",
           system_records: [],
           claims: [],
+          pending_ambiguous_links: 0,
         },
       }}
       onOpenReceipt={vi.fn()}
@@ -78,6 +85,107 @@ it("renders a no-knowledge refusal without misleading metric suggestions or acti
     }),
   ).not.toBeInTheDocument();
   expect(screen.queryByLabelText("Calculated result")).not.toBeInTheDocument();
+});
+
+it.each(["unanswerable", "clarification"] as const)(
+  "shows pending links for a knowledge %s without claiming that records do not exist",
+  (status) => {
+    render(
+      <AskAnswerView
+        answer={{
+          ...knowledgeAnswer,
+          status,
+          knowledge: {
+            ...ownerKnowledge,
+            reason_code:
+              status === "unanswerable" ? "pending_links" : "ambiguous_subject",
+            system_records: [],
+            claims: [],
+            pending_ambiguous_links: 2,
+          },
+        }}
+        onOpenReceipt={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText(
+        "2 document claims have ambiguous asset links awaiting confirmation.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(
+        "The subject is registered, but neither system records nor documents answer this question.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Calculated result"),
+    ).not.toBeInTheDocument();
+  },
+);
+
+it("explains unsupported knowledge phrasing without claiming the subject is unknown", () => {
+  render(
+    <KnowledgeResolution
+      answer={{
+        ...knowledgeAnswer,
+        status: "unanswerable",
+        knowledge: {
+          ...ownerKnowledge,
+          reason_code: "unsupported_phrasing",
+          pending_ambiguous_links: 0,
+        },
+      }}
+    />,
+  );
+  expect(
+    screen.getByText(
+      "This knowledge question could not be interpreted. Try naming the subject and asking about its owner, upstream, or downstream.",
+    ),
+  ).toBeVisible();
+  expect(
+    screen.queryByText(
+      "The subject could not be identified. Try one of the related subjects below.",
+    ),
+  ).not.toBeInTheDocument();
+});
+
+it("distinguishes same-name candidates using their source dataset and entity type", async () => {
+  const user = userEvent.setup();
+  const choose = vi.fn();
+  const candidates = ["Operations notes", "Finance notes"].map(
+    (dataset, index) => ({
+      ...shipmentSubject,
+      name: "Morgan",
+      kind: "kg_entity" as const,
+      entity_type: "person",
+      dataset_name: dataset,
+      asset_ref: {
+        ...shipmentSubject.asset_ref,
+        asset_id: `person-${String(index)}`,
+        asset_type: "kg_entity",
+      },
+    }),
+  );
+  render(
+    <KnowledgeResolution
+      answer={{
+        ...knowledgeAnswer,
+        status: "clarification",
+        subject_candidates: candidates,
+      }}
+      onChooseSubject={choose}
+    />,
+  );
+  for (const candidate of candidates) {
+    const button = screen.getByRole("button", {
+      name: new RegExp(
+        `Morgan Graph entity · person Dataset: ${candidate.dataset_name}`,
+      ),
+    });
+    expect(within(button).getByText("Graph entity · person")).toBeVisible();
+    await user.click(button);
+    expect(choose).toHaveBeenLastCalledWith(candidate);
+  }
 });
 
 it("lists metric, catalog, and graph suggestions for an unknown subject", () => {

@@ -10,6 +10,8 @@ export const knowledgeEn = {
     "The subject is registered, but neither system records nor documents answer this question.",
   knowledgeUnknownSubject:
     "The subject could not be identified. Try one of the related subjects below.",
+  knowledgeUnsupported:
+    "This knowledge question could not be interpreted. Try naming the subject and asking about its owner, upstream, or downstream.",
   knowledgeSystem: "System records",
   knowledgeNoSystem: "No matching system record is registered.",
   knowledgeNoOwner: "No owner is registered in the system.",
@@ -32,6 +34,10 @@ export const knowledgeEn = {
   knowledgeOtherEnd: "Related asset",
   knowledgeRelated: "Related knowledge",
   knowledgeSource: "Source: {name}",
+  knowledgeDataset: "Dataset: {name}",
+  knowledgeOwns: "owns",
+  knowledgeComputedFrom: "computed from",
+  knowledgeDerivedFrom: "derived from",
   knowledgeMetric: "Metric",
   knowledgeTable: "Table",
   knowledgeView: "View",

@@ -11,6 +11,8 @@ export const knowledgeZh: Record<keyof typeof knowledgeEn, string> = {
   knowledgeNoRecords:
     "主语已登记，但系统记录和文档都没有能回答这个问题的记录。",
   knowledgeUnknownSubject: "无法确定问题主语，请尝试下列相近对象。",
+  knowledgeUnsupported:
+    "暂时无法理解这个知识问题的问法。请写明主语，并询问负责人、上游或下游。",
   knowledgeSystem: "系统记录",
   knowledgeNoSystem: "系统里没有登记。",
   knowledgeNoOwner: "系统里没有登记负责人。",
@@ -31,6 +33,10 @@ export const knowledgeZh: Record<keyof typeof knowledgeEn, string> = {
   knowledgeOtherEnd: "另一端对应资产",
   knowledgeRelated: "相关知识",
   knowledgeSource: "来源：{name}",
+  knowledgeDataset: "数据集：{name}",
+  knowledgeOwns: "负责",
+  knowledgeComputedFrom: "基于…计算",
+  knowledgeDerivedFrom: "由…加工",
   knowledgeMetric: "指标",
   knowledgeTable: "表",
   knowledgeView: "视图",

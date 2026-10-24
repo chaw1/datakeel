@@ -3,12 +3,18 @@ import { KGBadge } from "../kg/KGBadge";
 import { objectHref } from "../object/navigation";
 
 import type { KnowledgeClaim } from "../../api/ask";
+import type { MessageKey } from "../../i18n/en";
 
 const consistencyLabels = {
   consistent: "knowledgeConsistent",
   not_in_system: "knowledgeNotInSystem",
   not_in_catalog: "knowledgeNotInCatalog",
 } as const;
+const relationLabels: Partial<Record<string, MessageKey>> = {
+  owns: "knowledgeOwns",
+  computed_from: "knowledgeComputedFrom",
+  derived_from: "knowledgeDerivedFrom",
+};
 
 export function KnowledgeClaimCard({
   claim,
@@ -19,6 +25,7 @@ export function KnowledgeClaimCard({
 }) {
   const { t } = useI18n();
   const other = claim.other_end;
+  const relationLabel = relationLabels[claim.predicate];
   return (
     <article className="knowledge-claim" data-assertion-id={claim.assertion_id}>
       <button
@@ -29,7 +36,7 @@ export function KnowledgeClaimCard({
         }}
       >
         <strong>{claim.head.name}</strong>
-        <span>{claim.predicate}</span>
+        <span>{relationLabel ? t(relationLabel) : claim.predicate}</span>
         <strong>{claim.tail.name}</strong>
       </button>
       <div className="kg-detail-meta">
