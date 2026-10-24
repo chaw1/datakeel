@@ -192,7 +192,7 @@ def main() -> None:
                 [sys.executable, "-m", "datakeel.cli", *arguments],
                 env=environment,
                 check=True,
-                timeout=60,
+                timeout=300,  # Shared CI runners are several times slower; this only bounds hangs.
             )
         asyncio.run(asyncio.wait_for(verify_stdio(config, environment), timeout=30))
         Console().print("Quick start commands passed in a fresh local workspace.")
