@@ -2,7 +2,7 @@
 id: cloud
 extractor: llm
 provider: openai
-model: deepseek-v4-flash
+model: deepseek-flash
 base_url: https://api.deepseek.com
 api_key_env: DATAKEEL_KG_API_KEY
 output_method: json_mode

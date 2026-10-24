@@ -32,3 +32,12 @@ models:
     cache_read: 0.10
     cache_write: 1.25
     source: https://platform.claude.com/docs/en/about-claude/pricing
+  # Checked 2026-10-24; peak prices are conservative. Off-peak prices are half.
+  # Peak: weekdays UTC 01:00-04:00 and 06:00-10:00.
+  - model: deepseek-flash
+    provider: openai
+    input: 0.3
+    output: 1.2
+    cache_read: 0.006
+    cache_write: 0.3
+    source: https://api-docs.deepseek.com/quick_start/pricing (2026-10-24; peak; off-peak half)
