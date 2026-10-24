@@ -243,14 +243,47 @@ Associations rerun after graph publication, catalog import/refresh and semantic 
 
 相同片段命中多个身份时，未拒绝的关联允许图谱实体归并到对应目录资产；人或组织与角色同名时，以角色作为主语，同时保留同名实体的文档说法。拒绝关联会保留目录资产与文档实体两个独立候选，展示名字、来源数据集和类型。数值路线只匹配目录指标，不受图谱同名实体或拒绝关联影响。未知主语返回 `unknown_subject` 和最多三个建议；相似度只用于建议。
 
-| Subject / 主语 | Asked type or direction / 被问类型或方向 | Intent / 意图 |
+疑问词不必紧邻类型名词：先遮住已识别的主语及其类型修饰，再从剩余问句识别表、视图、汇总、报表、看板、指标、数据、人或团队。焦点取被问名词短语的中心词，例如「表的负责人」问人，`metric source tables` 问表；不会把后续从句中的类型词当成主句的被问对象。中文列举请求和英文 `which ones` 等主问占位词也保留前文的类型焦点。`view`、`summary`、`report` 和 `dashboard` 属于视图层；`what data` 属于数据来源焦点。类型名词出现在主语名称内时，不作为被问对象。
+
+Focus and direction share a bounded main-question scope. Recognized supplementary relative clauses, leading concessive clauses and trailing temporal clauses are masked without shifting token coordinates. A narrow trailing apposition such as `, the downstream metric` describes the subject without reversing the main question. A supported main-clause pronoun can retain the resolved subject, including a subject introduced as the sentence topic. These grammatical rules use shared vocabulary and preserve the matched subject's identity.
+
+Direct restrictive clauses retain the predicate connecting the resolved subject to the requested noun. When the subject occurs inside the relative clause, that clause supplies the relation; when it occurs in the main clause, the noun's relative modifier does not supply the main predicate. This bounded treatment also preserves supported topic references and Chinese attributes without changing subject or focus coordinates.
+
+Catalog levels increase from table to view/summary to metric. A question without a reliable direction uses the relative levels: a higher subject asking for a lower object is upstream; a lower subject asking for a higher object is downstream. Same-level lists still require clarification. Explicit source/result roles take precedence over these defaults: a subject used as input points downstream, while a result asking for its inputs points upstream. Usage questions beginning with 谁 or who follow that dependency direction. A person focus does not turn an explicit request for suppliers or inputs into ownership; a main question that actually asks who owns or maintains the subject retains `owner`. Formula and how-calculated questions follow the upstream definition and source route.
+
+| Rule / 规则 | Condition / 条件 | Result / 结果 |
 | --- | --- | --- |
-| Person, team or catalog role / 人、团队、角色 | Responsibility; employment needs clarification / 职责，工作关系需澄清 | `owned` |
-| Metric, table or view / 指标、表、视图 | Person or team; explicit usage takes direction precedence / 人或团队，明确使用方向优先 | `owner` |
-| Any data subject / 数据主语 | Source or usage direction based on subject/focus position / 按主语与焦点位置识别来源或使用方向 | `upstream` / `downstream` |
-| Metric / 指标 | Table, view or source location / 表、视图或来源位置 | `upstream` |
-| Table or view / 表或视图 | Metric list / 指标列表 | `downstream` |
-| Same-type list or otherwise unclear / 同类型列表或无法推断 | No direction / 没有方向线索 | `ambiguous_intent`，两个或三个意图按钮 |
+| `M1-numeric` | Explicit value requests, business quantities or rankings, excluding catalog-object list/count requests / 明确数值请求、业务数量或排名，排除目录对象列表及计数 | Metric route / 指标路线 |
+| `M2-metric-phrase` | A registered metric phrase with time, dimensions or grouping; an exact metric scalar request with time, grouping, reduction or comparison cues / 已登记指标及时间、维度、分组短语，或带时间、分组、归约、比较线索的明确指标数值问句 | Metric route / 指标路线 |
+| `M3-metric-fallback` | No recognized knowledge request / 未识别为知识请求 | Existing metric parser, including refusal or clarification / 原指标解析及拒答、澄清 |
+| `K0-unknown-subject` | No registered subject / 没有已登记主语 | `unknown_subject` with suggestions / 给出建议 |
+| `K1-ambiguous-subject` | Multiple identities / 多个主语身份 | `ambiguous_subject` with choices / 请选主语 |
+| `K2-person-owned` | Person, team or role with responsibility focus / 人、团队、角色的职责 | `owned` |
+| `K3-person-focus` | Main ownership request, or person/team focus without a reliable dependency role / 主问所有权或维护职责，或问人和团队但未明确依赖角色 | `owner` |
+| `K4-direction` | Explicit hierarchy, flow, usage, impact or calculation/source direction / 明确层级、流向、使用、影响或计算来源方向 | `upstream` / `downstream` |
+| `K5-metric-source` | Metric asks for a table, view or source location / 指标问表、视图或来源位置 | `upstream` |
+| `K6-table-metrics` | Table or view asks for metrics / 表或视图问指标 | `downstream` |
+| `K7-location-source` | Source location without another resolved direction / 没有其它已确定方向的来源位置 | `upstream` |
+| `K8-ambiguous-intent` | Same-level or otherwise unclear direction; ambiguous employment / 同层或其它方向不明确，工作关系有歧义 | `ambiguous_intent` with intent choices / 请选意图 |
+| `K9-hierarchy-upstream` | Higher catalog subject asks for lower-level objects / 上层目录主语问下层对象，如视图问表 | `upstream` |
+| `K10-hierarchy-downstream` | Lower catalog subject asks for higher-level objects / 下层目录主语问上层对象，如表问报表 | `downstream` |
+| `K11-subject-role` | Grammar identifies the known subject as an input or result / 句式确定主语是输入还是结果 | Input → `downstream`; result → `upstream` |
+
+The shared vocabulary in `datakeel/ask/knowledge_vocabulary.py` groups these expressions. Rules consume the categories rather than duplicating their words.
+
+| Category / 类别 | Chinese / 中文 | English / 英文 |
+| --- | --- | --- |
+| Hierarchy / 层级 | 上游、上一层、底下、下游、下一层 | upstream, underneath, underlying, beneath, downstream |
+| Flow / 流向 | 来源、源头、输入、基础、依据、去向、下一站、流向、供给 | source, input, basis, foundation, feeds, powers, supports, supplies |
+| Impact / 影响 | 受牵连、波及、连累、受影响；条件句中的停用、消失、删除 | affects, impacts, breaks, suffers; if/without with removal or unavailability |
+
+Source-role templates include 以/拿/用/把 X 当作来源、输入、基础、依据, `fed by X`, `derived from X`, `built on X` and `pull from X`. Result-role templates include X 的来源/源头 and `X is fed by`. Active and passive dependency or production forms distinguish the input from the result; nominal forms such as `source for X`, `X as input` and `X as output` also retain that distinction. Relative subject position distinguishes `X feeds/powers/supports` from an input described after a dependency verb. A generic source noun alone does not override an explicit subject role or an available cross-level catalog default. 角色不明确的弱来源名词不会覆盖跨层级默认方向。
+
+双论元句式分别定位接收对象与输入，例如 `feed/build/supply receiver with/from/using input` 和「用/拿输入生成结果」；已知主语落在输入一端时问下游，落在接收对象或结果一端时问上游。句式中的代词回指也区分「它使用的对象」与「使用它的对象」，不只按依赖词相对主语的位置判断。
+
+被问对象前的层级形容词不会覆盖同一主问句中明确绑定主语的使用、生产、被动或条件角色；直接询问上下游及弱来源介词仍保持原方向。中文主题前置并省略宾语的使用问句，以及使役和接收者句式，也按使用者与被使用对象区分方向。单字使用动词需要对应的句式或明确词边界，不把「读数」「用途」等词中的单字当作方向词。
+
+条件句中的缺失或停用事件只在条件分句内定位，不取结果分句里的同类动词。主题前置和逗号保留主语角色；事件背景只有在主问明确询问影响时才作为来源线索。英语 `used to/for/when` 生产目的句区分直接结果名词与来源介词补语，并保留主动使用者和被动资源的差别。
 
 `AskAnswer.recognition` 保存匹配片段及主语类型、焦点词、方向词和规则编号；界面的「问题中的匹配证据」展示这些记录。知识推断不确定时使用反问，`knowledge.intent_candidates` 给出可选意图；点击按钮通过可选 `knowledge_intent` 重问，并保留原问题和已选主语。
 
@@ -262,7 +295,17 @@ Associations rerun after graph publication, catalog import/refresh and semantic 
 | Downstream / 下游 | `哪些指标依赖 orders？` · `What uses orders?` | `derived_from` / `computed_from`, subject at tail / 主语为尾 |
 | Responsibilities / 负责什么 | `周岩负责哪些？` · `What does treasury team own?` | `owns`, subject at head / 主语为头 |
 
-Numeric and ranking cues (including highest/lowest/largest/smallest and 最大/最小) keep the metric route unless the question explicitly requests a table or metric list. Cues embedded in a registered name are not quantities. 哪几、几张 and 几位 are list expressions, not numeric cues. Pure metric phrases remain numerical after removing metric names, time, dimension values, grouping clauses and filler words; grouping by owner or source is still numerical. Typed person/team, table, metric-list and source questions without quantities never execute a numeric query. Other wording retains the existing metric parser and its refusals or clarifications.
+Numeric and ranking cues (including highest/lowest/largest/smallest and 最大/最小) keep the metric route unless the question requests catalog objects. 几个/多少个/多少张 or `how many` followed by a catalog type asks for a knowledge list and its count; `how many orders` and 订单数是多少 remain business measurements. Cues embedded in a registered name are not quantities. 哪几、几张 and 几位 are list expressions. Pure metric phrases remain numerical after removing metric names, time, dimension values, grouping clauses and filler words; grouping by owner or source is still numerical. Typed person/team, table, view, metric-list and source questions never execute a numeric query merely because they ask for object counts. Other wording retains the existing metric parser and its refusals or clarifications.
+
+明确把 value、amount、quantity、reading 或「数值、读数、金额」作为所求结果的问句走数值路线；`reading` 作读取动作时仍按依赖关系解释。来源、负责人和公式是知识请求，目录类型的数量请求仍保留对象列表与计数，不因句中出现数值名词而改为业务数值。
+
+总额、合计和 `total` 同样按主问对象处理：求总额时，附属分组中的团队、人员或表名不会变成知识焦点；问总额的负责人、来源或公式时，数量修饰词也不会替代知识焦点。纯指标短语先辨别分组和显式筛选从句中的修饰性疑问代词，保留直接询问对象或来源的疑问词。
+
+完整指标别名中的数量词被主语遮蔽后，仍保留明确的值请求：仅当剩余结构精确询问已登记指标，并且原句有时间、分组、统计归约或数值线索时，英文表语问句走指标路线。来源、负责人、公式等关系中心词不会被该规则吞掉；缺少这些值线索的泛问仍可反问。`on top of` 的结构含义不作为数值排名，影响句式则按变化来源与受影响对象区分方向。
+
+分组修饰不能吞掉同句后面的来源、负责人或目录对象主问；「各类数量」「各项金额」等明确输出名词也不会被当作分组字段删除。明确的已登记指标阈值比较及数值输出命令保持指标路线，同时保留目录类型和关系主问。服务回归直接禁止这些知识问句执行 SQL，并检查结果为空及持久化回读。
+
+数目录对象时，数量短语可以位于类型名词前，或明确地置于问题末尾；中英混排的类型词也保留词边界。答案保留请求类型的列表，并分别列出系统登记和文档提及的个数。每部分按对象身份去重，保留各条文档说法的审核状态；两部分不相加成一个总数。表与视图按已关联目录对象的类型区分；未关联的文档 `dataset` 只参与泛指「数据对象」计数，不猜测为表或视图，明确请求表或视图时说明排除的类型未明对象数。待确认的歧义关联另行说明，不计入已列对象。计数只代表本次返回的当前记录，不声称是目录之外的完整总量。
 
 A knowledge answer uses `answer_kind=knowledge`, a separate `knowledge` payload, and `subject_candidates` for ambiguity or suggestions. A resolved subject with no facts returns `no_knowledge`; ambiguous document associations return `pending_links` when no other facts are available. Pending counts remain visible in all states. Successful numeric answers add at most five related document claims with `intent=related`; missing source revisions omit only the unavailable optional claims and preserve the numeric result. Every route records its deterministic recognition rule.
 
