@@ -4,32 +4,16 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
-### Fixed
-
-- Resolve knowledge direction from the interrogative's source or result role, including topic references, missing-source impacts and flow destinations. Recognize neutral catalog relations and list commands, and preserve metric routing for grouped dimensions and dated metric requests.
-- Recognize explicit destination complements and dashboard display consumers while preserving scalar-value requests.
-- Infer default knowledge direction from table, view and metric levels; recover requested noun-phrase heads separated from question words and prefer explicit active, passive and nominal input/result roles, including usage questions with who or 谁. Bound focus and direction to the main question while preserving subject coordinates and supported pronoun references.
-- Recognize bilingual hierarchy, flow and impact expressions through shared vocabulary. Catalog-object count questions return typed lists and separate system/document counts while business measurements retain numeric routing. Use linked catalog subtypes for table/view counts and explain exclusions when document dataset types are unknown.
-- Route explicit value, reading, amount and quantity requests to metrics while preserving catalog counts and reading as a dependency verb. Treat formula questions and explicit supplier/input roles as upstream, preserve main ownership requests, and distinguish receivers from inputs in production clauses and supported pronoun references.
-- Preserve explicit predicate roles when requested objects carry hierarchy modifiers, and resolve supported topic omissions, recipient usage frames and restrictive-clause attachments. Distinguish scalar-total requests from ownership or source questions and from relative clauses inside metric grouping or filters; preserve explicit value requests when a complete metric alias hides the quantity cue.
-- Preserve knowledge questions following grouping modifiers and scalar output nouns following grouped metric commands. Bind missing-source conditions to their own clause and distinguish active usage from passive resources in production-purpose questions.
-- Resolve longest registered subjects before interpreting bilingual question focus and dependency direction. Typed knowledge questions cannot execute numeric queries; grouped metric phrases and numeric rankings retain the metric route.
-- Explain recognition rules and offer intent clarification buttons. Merge same-name people or teams with catalog roles for questions, preserve rejected-link distinctions, and use the sole remaining association candidate with its pending review label.
-- Preserve numeric results when optional related knowledge has an unavailable source revision. Display asset names and candidate provenance, retaining raw identifiers in evidence drawers.
-
-### Added
-
-- Regression mutations detect reversed catalog hierarchy, source/result slots with topic references, and grouping dimensions incorrectly routed to knowledge.
-- Independent development and held-out language corpora with 226 knowledge questions and 64 metric counterexamples, plus focus, direction and numeric-safety regression mutations.
-
-## [0.11.0] - 2026-10-24
+## [0.11.0] - 2026-10-25
 
 ### Added
 
 - Deterministic, reviewable `link.maps_to` associations between graph entities and catalog tables, views or semantic metrics. Publication, catalog refresh and semantic changes rerun associations; human link decisions survive dataset and catalog versions.
 - Bilingual owner, upstream, downstream and responsibility questions through the existing HTTP, CLI, Agent and MCP `ask_data` entry points. Answers separate system records from document claims and preserve evidence fragments, source documents, review labels, verification and consistency markers.
 - Knowledge answer cards, entity association review and asset navigation, plus an association filter for bulk review. Metric-value answers include up to five related claims without changing their numeric behavior.
-- Six fictional enterprise documents and an attributed offline recording in the demo. Separate initial and reviewed knowledge evaluations include 23 cases each, while the original 20 metric cases keep their own fixture and statistics. Four additional JSON-asserting goldens and four mutations bring the suites to 40 and 28.
+- Six fictional enterprise documents and an attributed offline recording in the demo. Separate initial and reviewed knowledge evaluations include 23 cases each, while the original 20 metric cases keep their own fixture and statistics. Four additional JSON-asserting goldens bring the suite to 40, and knowledge mutations bring the mutation suite to 35.
+- Regression mutations detect reversed catalog hierarchy, source/result slots with topic references, and grouping dimensions incorrectly routed to knowledge.
+- Independent development and held-out language corpora with 226 knowledge questions and 64 metric counterexamples, plus focus, direction and numeric-safety regression mutations.
 
 ### Changed
 
@@ -40,6 +24,16 @@ All notable changes are documented here using the Keep a Changelog format.
 - Compose bilingual knowledge intents from subjects, relationship words and fillers; prioritize numeric/ranking questions and refuse unsupported knowledge phrasing instead of returning unrelated values. Compare complete subject names across catalog and graph entities before scanning, and preserve identifier and metric-suffix boundaries.
 - Retain document relationships when the other endpoint's association is rejected, show unresolved association counts in every answer state, and audit knowledge clarifications and refusals. Association reads filter unrelated assertions and events in SQL.
 - Distinguish same-name graph candidates by source dataset and entity type, localize relationship labels, and omit metric-only match evidence on knowledge cards. Shared matching vocabulary and YAML review decisions replace duplicated rules and fixture identities in code.
+- Resolve knowledge direction from the interrogative's source or result role, including topic references, missing-source impacts and flow destinations. Recognize neutral catalog relations and list commands, and preserve metric routing for grouped dimensions and dated metric requests.
+- Recognize explicit destination complements and dashboard display consumers while preserving scalar-value requests.
+- Infer default knowledge direction from table, view and metric levels; recover requested noun-phrase heads separated from question words and prefer explicit active, passive and nominal input/result roles, including usage questions with who or 谁. Bound focus and direction to the main question while preserving subject coordinates and supported pronoun references.
+- Recognize bilingual hierarchy, flow and impact expressions through shared vocabulary. Catalog-object count questions return typed lists and separate system/document counts while business measurements retain numeric routing. Use linked catalog subtypes for table/view counts and explain exclusions when document dataset types are unknown.
+- Route explicit value, reading, amount and quantity requests to metrics while preserving catalog counts and reading as a dependency verb. Treat formula questions and explicit supplier/input roles as upstream, preserve main ownership requests, and distinguish receivers from inputs in production clauses and supported pronoun references.
+- Preserve explicit predicate roles when requested objects carry hierarchy modifiers, and resolve supported topic omissions, recipient usage frames and restrictive-clause attachments. Distinguish scalar-total requests from ownership or source questions and from relative clauses inside metric grouping or filters; preserve explicit value requests when a complete metric alias hides the quantity cue.
+- Preserve knowledge questions following grouping modifiers and scalar output nouns following grouped metric commands. Bind missing-source conditions to their own clause and distinguish active usage from passive resources in production-purpose questions.
+- Resolve longest registered subjects before interpreting bilingual question focus and dependency direction. Typed knowledge questions cannot execute numeric queries; grouped metric phrases and numeric rankings retain the metric route.
+- Explain recognition rules and offer intent clarification buttons. Merge same-name people or teams with catalog roles for questions, preserve rejected-link distinctions, and use the sole remaining association candidate with its pending review label.
+- Preserve numeric results when optional related knowledge has an unavailable source revision. Display asset names and candidate provenance, retaining raw identifiers in evidence drawers.
 
 ## [0.10.0] - 2026-10-24
 
