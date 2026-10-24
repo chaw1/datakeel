@@ -15,6 +15,7 @@ from datakeel.core.kg_models import ExtractionResult
 from datakeel.core.models import new_id, utcnow
 from datakeel.storage.action_selection import selected_files
 from datakeel.storage.database import Database, ShardRow, TaskRow
+from datakeel.storage.kg_progress import failed_report
 from datakeel.storage.kg_rows import KGCacheRow, KGRunRow
 
 MAX_RUNS = 1000
@@ -173,19 +174,31 @@ def cache_block(
         return True
 
 
+def save_progress(db: Database, fence: KGLeaseFence, report: KGReport) -> bool:
+    """Checkpoint completed block counts under the same lease fence as cache publication."""
+    with db.session() as session:
+        db.lock_writes(session)
+        if not owned(session, fence):
+            return False
+        row = session.scalar(select(KGRunRow).where(KGRunRow.task_id == fence.task_id))
+        if row is None:
+            msg = "Graph progress does not belong to an extraction run"
+            raise ValidationError(msg)
+        job = KGJob.model_validate(row.payload)
+        row.payload = job.model_copy(
+            update={"run": job.run.model_copy(update={"report": report})}
+        ).model_dump(mode="json")
+        session.commit()
+        return True
+
+
 def finish_failed(session: Session, identifier: str, reason: str) -> None:
     """Keep terminal run reports visible when authorization or provider construction fails."""
     row = session.get(KGRunRow, identifier)
     if row is None:
         return
     job = KGJob.model_validate(row.payload)
-    report = job.run.report.model_copy(
-        update={
-            "unexecuted": job.prepared.estimate.blocks,
-            "error": reason,
-            "partial_documents": tuple(item.asset_ref.asset_id for item in job.prepared.documents),
-        }
-    )
+    report = failed_report(session, job, reason)
     run = job.run.model_copy(
         update={"status": "failed", "completed_at": utcnow(), "report": report}
     )

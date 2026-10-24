@@ -15,7 +15,7 @@ from datakeel.kg.assembly import assemble_extraction
 from datakeel.kg.cache import build_cache_key, extraction_identity
 from datakeel.kg.extractors import checked_extract
 from datakeel.storage.harness_service import list_traces
-from datakeel.storage.kg_store import cache_block, cached_block
+from datakeel.storage.kg_store import cache_block, cached_block, save_progress
 from datakeel.worker.kg_metering import MeteredExtractor
 from datakeel.worker.kg_report import base_report, merge_products
 from datakeel.worker.queue import DatabaseQueue, Lease
@@ -33,6 +33,7 @@ class KGExecution:
         self.products: list[ProductExtraction] = []
         self.failures: list[KGBlockFailure] = []
         self.cached = self.extracted = 0
+        self.ignored_top_level_keys = 0
         self.stopped = False
         prepared = job.prepared
         self.extractor = extraction_identity(
@@ -55,6 +56,7 @@ class KGExecution:
         return False
 
     def _assemble(self, document: KGDocument, block: TextBlock, result: ExtractionResult) -> None:
+        self.ignored_top_level_keys += result.ignored_top_level_keys
         source = KGSource(
             dataset_id=self.job.run.dataset_id,
             dataset_version_id=self.job.run.version_id,
@@ -101,12 +103,30 @@ class KGExecution:
         self._assemble(document, block, result)
         return True
 
+    def _progress(self, started: float) -> None:
+        report = self.job.run.report.model_copy(
+            update={
+                "cached": self.cached,
+                "extracted": self.extracted,
+                "ignored_top_level_keys": self.ignored_top_level_keys,
+                "failed": sum(failure.attempted for failure in self.failures),
+                "failures": tuple(self.failures),
+                "elapsed_seconds": perf_counter() - started,
+            }
+        )
+        if not save_progress(self.queue.db, self.fence, report):
+            msg = "Graph worker lease was lost before progress publication"
+            raise ConflictError(msg)
+
     def run(self) -> KGCompletion:
         """Continue failed blocks independently and stop only new calls when budget runs out."""
         started = perf_counter()
         complete: list[str] = []
         for document in self.job.documents:
-            outcomes = [self._block(document, block) for block in document.blocks]
+            outcomes: list[bool] = []
+            for block in document.blocks:
+                outcomes.append(self._block(document, block))
+                self._progress(started)
             if all(outcomes):
                 complete.append(document.asset_ref.asset_id)
         products = merge_products(self.job, self.products)
@@ -116,6 +136,7 @@ class KGExecution:
             update={
                 "cached": self.cached,
                 "extracted": self.extracted,
+                "ignored_top_level_keys": self.ignored_top_level_keys,
                 "elapsed_seconds": perf_counter() - started,
             }
         )

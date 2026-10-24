@@ -17,7 +17,7 @@ from datakeel.core.harness_models import (
     TraceInput,
 )
 from datakeel.core.kg_contracts import KGSchema
-from datakeel.core.kg_errors import KGExtractionError
+from datakeel.core.kg_errors import ExtractionProviderError, KGExtractionError
 from datakeel.core.kg_execution import KGMeteringConfig
 from datakeel.core.kg_models import ExtractionResult, TextBlock
 from datakeel.kg.extractors import ExtractorAdapter
@@ -67,23 +67,11 @@ class MeteredExtractor:
         return reservation.id
 
     def _settle(
-        self, reservation_id: str, started: float, result: ExtractionResult | None, reason: str
+        self, reservation_id: str, started: float, observed: TokenUsage | None, reason: str
     ) -> None:
         config = self.config
         offline = config.profile.extractor != "llm"
-        observed = (
-            TokenUsage(
-                input_tokens=result.input_tokens or 0, output_tokens=result.output_tokens or 0
-            )
-            if result
-            else None
-        )
-        complete_usage = (
-            result is not None
-            and result.input_tokens is not None
-            and result.output_tokens is not None
-        )
-        unknown = not offline and (not config.known_price or not complete_usage)
+        unknown = not offline and (not config.known_price or observed is None)
         usage = observed if observed is not None and not unknown and not offline else TokenUsage()
         self.turn += 1
         trace = settle(
@@ -114,7 +102,22 @@ class MeteredExtractor:
             result = self.adapter.extract(block, schema)
         except Exception as error:
             reason = _failure(error)
-            self._settle(reservation, started, None, reason)
-            raise KGExtractionError(reason) from error
-        self._settle(reservation, started, result, result.finish_reason)
+            observed = (
+                error.observed_usage
+                if isinstance(error, KGExtractionError | ExtractionProviderError)
+                else None
+            )
+            self._settle(reservation, started, observed, reason)
+            raise KGExtractionError(reason, observed_usage=observed) from error
+        observed = (
+            TokenUsage(
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+                cache_read_tokens=result.cache_read_tokens,
+                cache_write_tokens=result.cache_write_tokens,
+            )
+            if result.input_tokens is not None and result.output_tokens is not None
+            else None
+        )
+        self._settle(reservation, started, observed, result.finish_reason)
         return result

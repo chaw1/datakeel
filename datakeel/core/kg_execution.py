@@ -112,6 +112,7 @@ class KGReport(BoundaryModel):
     failed: int = 0
     unexecuted: int = 0
     model_calls: int = 0
+    ignored_top_level_keys: int = Field(default=0, ge=0)
     entities: int = 0
     relations: int = 0
     verified: int = 0

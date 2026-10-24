@@ -70,7 +70,13 @@ def _account_trace(
     row: BudgetReservationRow, trace: TraceInput, accounts: list[BudgetAccountRow]
 ) -> ModelCallTrace:
     unknown = trace.billing_status == "unknown"
-    tokens = row.tokens if unknown else trace.usage.input_tokens + trace.usage.output_tokens
+    observed = trace.observed_usage if trace.call_type == "extraction" else None
+    measured = observed or trace.usage
+    tokens = (
+        row.tokens
+        if unknown and observed is None
+        else measured.input_tokens + measured.output_tokens
+    )
     cost = (
         row.cost_nanos if unknown else usage_cost(ModelPrice.model_validate(row.price), trace.usage)
     )
