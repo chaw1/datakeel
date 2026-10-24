@@ -1,0 +1,199 @@
+{
+  "version": 1,
+  "subjects": [
+    {
+      "id": "net_booking_value",
+      "name": "净成交额",
+      "kind": "metric",
+      "split": "development",
+      "aliases": [
+        "成交净值"
+      ]
+    },
+    {
+      "id": "renewal_rate",
+      "name": "续费率",
+      "kind": "metric",
+      "split": "development",
+      "aliases": [
+        "续订比例"
+      ]
+    },
+    {
+      "id": "delay_minutes",
+      "name": "延迟分钟数",
+      "kind": "metric",
+      "split": "development",
+      "aliases": [
+        "延迟时长"
+      ]
+    },
+    {
+      "id": "active_clients",
+      "name": "活跃客户数",
+      "kind": "metric",
+      "split": "development",
+      "aliases": [
+        "活跃客群数"
+      ]
+    },
+    {
+      "id": "dispatch_facts",
+      "name": "dispatch_facts",
+      "kind": "table",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "client_sessions",
+      "name": "client_sessions",
+      "kind": "table",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "booking_rollup",
+      "name": "booking_rollup",
+      "kind": "view",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "customer_cohorts",
+      "name": "customer_cohorts",
+      "kind": "view",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "person-lin-lan",
+      "name": "林岚",
+      "kind": "person",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "person-lin-chen",
+      "name": "林琛",
+      "kind": "person",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "person-morgan",
+      "name": "Morgan Hale",
+      "kind": "person",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "person-noor",
+      "name": "Noor Patel",
+      "kind": "person",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "team-commerce",
+      "name": "Commerce Enablement",
+      "kind": "team",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "team-trust",
+      "name": "Customer Trust team",
+      "kind": "team",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "team-scheduling",
+      "name": "排程支持组",
+      "kind": "team",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "role-data-assurance",
+      "name": "数据保障负责人",
+      "kind": "role",
+      "split": "development",
+      "aliases": []
+    },
+    {
+      "id": "service_latency",
+      "name": "服务耗时",
+      "kind": "metric",
+      "split": "holdout",
+      "aliases": [
+        "服务等待时长"
+      ]
+    },
+    {
+      "id": "churn_ratio",
+      "name": "退订率",
+      "kind": "metric",
+      "split": "holdout",
+      "aliases": [
+        "终止续订比例"
+      ]
+    },
+    {
+      "id": "case_events",
+      "name": "case_events",
+      "kind": "table",
+      "split": "holdout",
+      "aliases": []
+    },
+    {
+      "id": "payment_entries",
+      "name": "payment_entries",
+      "kind": "table",
+      "split": "holdout",
+      "aliases": []
+    },
+    {
+      "id": "service_summary",
+      "name": "service_summary",
+      "kind": "view",
+      "split": "holdout",
+      "aliases": []
+    },
+    {
+      "id": "retention_window",
+      "name": "retention_window",
+      "kind": "view",
+      "split": "holdout",
+      "aliases": []
+    },
+    {
+      "id": "person-gu-qing",
+      "name": "顾青",
+      "kind": "person",
+      "split": "holdout",
+      "aliases": []
+    },
+    {
+      "id": "person-elena",
+      "name": "Elena Costa",
+      "kind": "person",
+      "split": "holdout",
+      "aliases": []
+    },
+    {
+      "id": "team-insight",
+      "name": "Insight Guild",
+      "kind": "team",
+      "split": "holdout",
+      "aliases": []
+    },
+    {
+      "id": "team-finance",
+      "name": "账务稽核组",
+      "kind": "team",
+      "split": "holdout",
+      "aliases": []
+    }
+  ]
+}

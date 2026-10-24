@@ -1,0 +1,2086 @@
+{
+  "version": 1,
+  "split": "development",
+  "cases": [
+    {
+      "id": "d-001",
+      "question": "净成交额由哪几位同事维护着呢？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "start",
+      "tag": "actor-particle"
+    },
+    {
+      "id": "d-002",
+      "question": "想确认一下，哪个部门照料净成交额？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "end",
+      "tag": "unlisted-verb"
+    },
+    {
+      "id": "d-003",
+      "question": "Who is accountable for net_booking_value?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "end",
+      "tag": "responsibility"
+    },
+    {
+      "id": "d-004",
+      "question": "For net_booking_value, which team handles maintenance?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "middle",
+      "tag": "fronted-subject"
+    },
+    {
+      "id": "d-005",
+      "question": "Whose responsibility is net_booking_value?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "end",
+      "tag": "possessive"
+    },
+    {
+      "id": "d-006",
+      "question": "续费率由哪几位同事维护着呢？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "start",
+      "tag": "actor-particle"
+    },
+    {
+      "id": "d-007",
+      "question": "想确认一下，哪个部门照料续费率？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "end",
+      "tag": "unlisted-verb"
+    },
+    {
+      "id": "d-008",
+      "question": "Who is accountable for renewal_rate?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "end",
+      "tag": "responsibility"
+    },
+    {
+      "id": "d-009",
+      "question": "For renewal_rate, which team handles maintenance?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "middle",
+      "tag": "fronted-subject"
+    },
+    {
+      "id": "d-010",
+      "question": "Whose responsibility is renewal_rate?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "end",
+      "tag": "possessive"
+    },
+    {
+      "id": "d-011",
+      "question": "延迟分钟数由哪几位同事维护着呢？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "start",
+      "tag": "actor-particle"
+    },
+    {
+      "id": "d-012",
+      "question": "想确认一下，哪个部门照料延迟分钟数？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "end",
+      "tag": "unlisted-verb"
+    },
+    {
+      "id": "d-013",
+      "question": "Who is accountable for delay_minutes?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "end",
+      "tag": "responsibility"
+    },
+    {
+      "id": "d-014",
+      "question": "For delay_minutes, which team handles maintenance?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "middle",
+      "tag": "fronted-subject"
+    },
+    {
+      "id": "d-015",
+      "question": "Whose responsibility is delay_minutes?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "end",
+      "tag": "possessive"
+    },
+    {
+      "id": "d-016",
+      "question": "活跃客户数由哪几位同事维护着呢？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "start",
+      "tag": "actor-particle"
+    },
+    {
+      "id": "d-017",
+      "question": "想确认一下，哪个部门照料活跃客户数？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "end",
+      "tag": "unlisted-verb"
+    },
+    {
+      "id": "d-018",
+      "question": "Who is accountable for active_clients?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "end",
+      "tag": "responsibility"
+    },
+    {
+      "id": "d-019",
+      "question": "For active_clients, which team handles maintenance?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "middle",
+      "tag": "fronted-subject"
+    },
+    {
+      "id": "d-020",
+      "question": "Whose responsibility is active_clients?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "end",
+      "tag": "possessive"
+    },
+    {
+      "id": "d-021",
+      "question": "dispatch_facts由哪几位同事维护着呢？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "dispatch_facts",
+      "language": "zh",
+      "position": "start",
+      "tag": "actor-particle"
+    },
+    {
+      "id": "d-022",
+      "question": "想确认一下，哪个部门照料dispatch_facts？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "dispatch_facts",
+      "language": "zh",
+      "position": "end",
+      "tag": "unlisted-verb"
+    },
+    {
+      "id": "d-023",
+      "question": "Who is accountable for dispatch_facts?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "dispatch_facts",
+      "language": "en",
+      "position": "end",
+      "tag": "responsibility"
+    },
+    {
+      "id": "d-024",
+      "question": "For dispatch_facts, which team handles maintenance?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "dispatch_facts",
+      "language": "en",
+      "position": "middle",
+      "tag": "fronted-subject"
+    },
+    {
+      "id": "d-025",
+      "question": "Whose responsibility is dispatch_facts?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "dispatch_facts",
+      "language": "en",
+      "position": "end",
+      "tag": "possessive"
+    },
+    {
+      "id": "d-026",
+      "question": "client_sessions由哪几位同事维护着呢？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "client_sessions",
+      "language": "zh",
+      "position": "start",
+      "tag": "actor-particle"
+    },
+    {
+      "id": "d-027",
+      "question": "想确认一下，哪个部门照料client_sessions？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "client_sessions",
+      "language": "zh",
+      "position": "end",
+      "tag": "unlisted-verb"
+    },
+    {
+      "id": "d-028",
+      "question": "Who is accountable for client_sessions?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "client_sessions",
+      "language": "en",
+      "position": "end",
+      "tag": "responsibility"
+    },
+    {
+      "id": "d-029",
+      "question": "For client_sessions, which team handles maintenance?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "client_sessions",
+      "language": "en",
+      "position": "middle",
+      "tag": "fronted-subject"
+    },
+    {
+      "id": "d-030",
+      "question": "Whose responsibility is client_sessions?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "client_sessions",
+      "language": "en",
+      "position": "end",
+      "tag": "possessive"
+    },
+    {
+      "id": "d-031",
+      "question": "booking_rollup由哪几位同事维护着呢？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "booking_rollup",
+      "language": "zh",
+      "position": "start",
+      "tag": "actor-particle"
+    },
+    {
+      "id": "d-032",
+      "question": "想确认一下，哪个部门照料booking_rollup？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "booking_rollup",
+      "language": "zh",
+      "position": "end",
+      "tag": "unlisted-verb"
+    },
+    {
+      "id": "d-033",
+      "question": "Who is accountable for booking_rollup?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "booking_rollup",
+      "language": "en",
+      "position": "end",
+      "tag": "responsibility"
+    },
+    {
+      "id": "d-034",
+      "question": "For booking_rollup, which team handles maintenance?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "booking_rollup",
+      "language": "en",
+      "position": "middle",
+      "tag": "fronted-subject"
+    },
+    {
+      "id": "d-035",
+      "question": "Whose responsibility is booking_rollup?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "booking_rollup",
+      "language": "en",
+      "position": "end",
+      "tag": "possessive"
+    },
+    {
+      "id": "d-036",
+      "question": "customer_cohorts由哪几位同事维护着呢？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "customer_cohorts",
+      "language": "zh",
+      "position": "start",
+      "tag": "actor-particle"
+    },
+    {
+      "id": "d-037",
+      "question": "想确认一下，哪个部门照料customer_cohorts？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "customer_cohorts",
+      "language": "zh",
+      "position": "end",
+      "tag": "unlisted-verb"
+    },
+    {
+      "id": "d-038",
+      "question": "Who is accountable for customer_cohorts?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "customer_cohorts",
+      "language": "en",
+      "position": "end",
+      "tag": "responsibility"
+    },
+    {
+      "id": "d-039",
+      "question": "For customer_cohorts, which team handles maintenance?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "customer_cohorts",
+      "language": "en",
+      "position": "middle",
+      "tag": "fronted-subject"
+    },
+    {
+      "id": "d-040",
+      "question": "Whose responsibility is customer_cohorts?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "customer_cohorts",
+      "language": "en",
+      "position": "end",
+      "tag": "possessive"
+    },
+    {
+      "id": "d-041",
+      "question": "净成交额究竟取了哪张表的数据呀？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "start",
+      "tag": "colloquial-perfective"
+    },
+    {
+      "id": "d-042",
+      "question": "哪份数据给净成交额提供了依据？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "middle",
+      "tag": "focus-first"
+    },
+    {
+      "id": "d-043",
+      "question": "顺便问问，净成交额是据哪张表算出来的？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "middle",
+      "tag": "table-focus"
+    },
+    {
+      "id": "d-044",
+      "question": "What tables provide inputs to net_booking_value?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "end",
+      "tag": "focus-first"
+    },
+    {
+      "id": "d-045",
+      "question": "Which view underlies net_booking_value?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "end",
+      "tag": "view-focus"
+    },
+    {
+      "id": "d-046",
+      "question": "net_booking_value is calculated from what?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "start",
+      "tag": "source-direction"
+    },
+    {
+      "id": "d-047",
+      "question": "Where does net_booking_value originate?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "middle",
+      "tag": "location-focus"
+    },
+    {
+      "id": "d-048",
+      "question": "续费率究竟取了哪张表的数据呀？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "start",
+      "tag": "colloquial-perfective"
+    },
+    {
+      "id": "d-049",
+      "question": "哪份数据给续费率提供了依据？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "middle",
+      "tag": "focus-first"
+    },
+    {
+      "id": "d-050",
+      "question": "顺便问问，续费率是据哪张表算出来的？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "middle",
+      "tag": "table-focus"
+    },
+    {
+      "id": "d-051",
+      "question": "What tables provide inputs to renewal_rate?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "end",
+      "tag": "focus-first"
+    },
+    {
+      "id": "d-052",
+      "question": "Which view underlies renewal_rate?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "end",
+      "tag": "view-focus"
+    },
+    {
+      "id": "d-053",
+      "question": "renewal_rate is calculated from what?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "start",
+      "tag": "source-direction"
+    },
+    {
+      "id": "d-054",
+      "question": "Where does renewal_rate originate?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "middle",
+      "tag": "location-focus"
+    },
+    {
+      "id": "d-055",
+      "question": "延迟分钟数究竟取了哪张表的数据呀？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "start",
+      "tag": "colloquial-perfective"
+    },
+    {
+      "id": "d-056",
+      "question": "哪份数据给延迟分钟数提供了依据？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "middle",
+      "tag": "focus-first"
+    },
+    {
+      "id": "d-057",
+      "question": "顺便问问，延迟分钟数是据哪张表算出来的？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "middle",
+      "tag": "table-focus"
+    },
+    {
+      "id": "d-058",
+      "question": "What tables provide inputs to delay_minutes?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "end",
+      "tag": "focus-first"
+    },
+    {
+      "id": "d-059",
+      "question": "Which view underlies delay_minutes?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "end",
+      "tag": "view-focus"
+    },
+    {
+      "id": "d-060",
+      "question": "delay_minutes is calculated from what?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "start",
+      "tag": "source-direction"
+    },
+    {
+      "id": "d-061",
+      "question": "Where does delay_minutes originate?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "middle",
+      "tag": "location-focus"
+    },
+    {
+      "id": "d-062",
+      "question": "活跃客户数究竟取了哪张表的数据呀？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "start",
+      "tag": "colloquial-perfective"
+    },
+    {
+      "id": "d-063",
+      "question": "哪份数据给活跃客户数提供了依据？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "middle",
+      "tag": "focus-first"
+    },
+    {
+      "id": "d-064",
+      "question": "顺便问问，活跃客户数是据哪张表算出来的？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "middle",
+      "tag": "table-focus"
+    },
+    {
+      "id": "d-065",
+      "question": "What tables provide inputs to active_clients?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "end",
+      "tag": "focus-first"
+    },
+    {
+      "id": "d-066",
+      "question": "Which view underlies active_clients?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "end",
+      "tag": "view-focus"
+    },
+    {
+      "id": "d-067",
+      "question": "active_clients is calculated from what?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "start",
+      "tag": "source-direction"
+    },
+    {
+      "id": "d-068",
+      "question": "Where does active_clients originate?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "middle",
+      "tag": "location-focus"
+    },
+    {
+      "id": "d-069",
+      "question": "dispatch_facts的上游还有哪些？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "dispatch_facts",
+      "language": "zh",
+      "position": "start",
+      "tag": "explicit-upstream"
+    },
+    {
+      "id": "d-070",
+      "question": "What is upstream of dispatch_facts?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "dispatch_facts",
+      "language": "en",
+      "position": "end",
+      "tag": "explicit-upstream"
+    },
+    {
+      "id": "d-071",
+      "question": "从哪些表汇总而来的dispatch_facts？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "dispatch_facts",
+      "language": "zh",
+      "position": "end",
+      "tag": "source-position"
+    },
+    {
+      "id": "d-072",
+      "question": "client_sessions的上游还有哪些？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "client_sessions",
+      "language": "zh",
+      "position": "start",
+      "tag": "explicit-upstream"
+    },
+    {
+      "id": "d-073",
+      "question": "What is upstream of client_sessions?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "client_sessions",
+      "language": "en",
+      "position": "end",
+      "tag": "explicit-upstream"
+    },
+    {
+      "id": "d-074",
+      "question": "从哪些表汇总而来的client_sessions？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "client_sessions",
+      "language": "zh",
+      "position": "end",
+      "tag": "source-position"
+    },
+    {
+      "id": "d-075",
+      "question": "booking_rollup的上游还有哪些？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "booking_rollup",
+      "language": "zh",
+      "position": "start",
+      "tag": "explicit-upstream"
+    },
+    {
+      "id": "d-076",
+      "question": "What is upstream of booking_rollup?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "booking_rollup",
+      "language": "en",
+      "position": "end",
+      "tag": "explicit-upstream"
+    },
+    {
+      "id": "d-077",
+      "question": "从哪些表汇总而来的booking_rollup？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "booking_rollup",
+      "language": "zh",
+      "position": "end",
+      "tag": "source-position"
+    },
+    {
+      "id": "d-078",
+      "question": "customer_cohorts的上游还有哪些？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "customer_cohorts",
+      "language": "zh",
+      "position": "start",
+      "tag": "explicit-upstream"
+    },
+    {
+      "id": "d-079",
+      "question": "What is upstream of customer_cohorts?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "customer_cohorts",
+      "language": "en",
+      "position": "end",
+      "tag": "explicit-upstream"
+    },
+    {
+      "id": "d-080",
+      "question": "从哪些表汇总而来的customer_cohorts？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "customer_cohorts",
+      "language": "zh",
+      "position": "end",
+      "tag": "source-position"
+    },
+    {
+      "id": "d-081",
+      "question": "dispatch_facts供哪些指标计算呢？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "dispatch_facts",
+      "language": "zh",
+      "position": "start",
+      "tag": "metric-focus"
+    },
+    {
+      "id": "d-082",
+      "question": "哪些指标引用过dispatch_facts？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "dispatch_facts",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-083",
+      "question": "麻烦看看，dispatch_facts支撑着什么指标？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "dispatch_facts",
+      "language": "zh",
+      "position": "middle",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-084",
+      "question": "Which metrics consume dispatch_facts?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "dispatch_facts",
+      "language": "en",
+      "position": "end",
+      "tag": "metric-focus"
+    },
+    {
+      "id": "d-085",
+      "question": "What metric is calculated with dispatch_facts?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "dispatch_facts",
+      "language": "en",
+      "position": "end",
+      "tag": "passive-metric"
+    },
+    {
+      "id": "d-086",
+      "question": "dispatch_facts: which metrics draw on it?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "dispatch_facts",
+      "language": "en",
+      "position": "start",
+      "tag": "topic-focus"
+    },
+    {
+      "id": "d-087",
+      "question": "What sits downstream of dispatch_facts?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "dispatch_facts",
+      "language": "en",
+      "position": "end",
+      "tag": "explicit-downstream"
+    },
+    {
+      "id": "d-088",
+      "question": "client_sessions供哪些指标计算呢？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "client_sessions",
+      "language": "zh",
+      "position": "start",
+      "tag": "metric-focus"
+    },
+    {
+      "id": "d-089",
+      "question": "哪些指标引用过client_sessions？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "client_sessions",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-090",
+      "question": "麻烦看看，client_sessions支撑着什么指标？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "client_sessions",
+      "language": "zh",
+      "position": "middle",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-091",
+      "question": "Which metrics consume client_sessions?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "client_sessions",
+      "language": "en",
+      "position": "end",
+      "tag": "metric-focus"
+    },
+    {
+      "id": "d-092",
+      "question": "What metric is calculated with client_sessions?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "client_sessions",
+      "language": "en",
+      "position": "end",
+      "tag": "passive-metric"
+    },
+    {
+      "id": "d-093",
+      "question": "client_sessions: which metrics draw on it?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "client_sessions",
+      "language": "en",
+      "position": "start",
+      "tag": "topic-focus"
+    },
+    {
+      "id": "d-094",
+      "question": "What sits downstream of client_sessions?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "client_sessions",
+      "language": "en",
+      "position": "end",
+      "tag": "explicit-downstream"
+    },
+    {
+      "id": "d-095",
+      "question": "booking_rollup供哪些指标计算呢？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "booking_rollup",
+      "language": "zh",
+      "position": "start",
+      "tag": "metric-focus"
+    },
+    {
+      "id": "d-096",
+      "question": "哪些指标引用过booking_rollup？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "booking_rollup",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-097",
+      "question": "麻烦看看，booking_rollup支撑着什么指标？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "booking_rollup",
+      "language": "zh",
+      "position": "middle",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-098",
+      "question": "Which metrics consume booking_rollup?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "booking_rollup",
+      "language": "en",
+      "position": "end",
+      "tag": "metric-focus"
+    },
+    {
+      "id": "d-099",
+      "question": "What metric is calculated with booking_rollup?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "booking_rollup",
+      "language": "en",
+      "position": "end",
+      "tag": "passive-metric"
+    },
+    {
+      "id": "d-100",
+      "question": "booking_rollup: which metrics draw on it?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "booking_rollup",
+      "language": "en",
+      "position": "start",
+      "tag": "topic-focus"
+    },
+    {
+      "id": "d-101",
+      "question": "What sits downstream of booking_rollup?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "booking_rollup",
+      "language": "en",
+      "position": "end",
+      "tag": "explicit-downstream"
+    },
+    {
+      "id": "d-102",
+      "question": "customer_cohorts供哪些指标计算呢？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "customer_cohorts",
+      "language": "zh",
+      "position": "start",
+      "tag": "metric-focus"
+    },
+    {
+      "id": "d-103",
+      "question": "哪些指标引用过customer_cohorts？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "customer_cohorts",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-104",
+      "question": "麻烦看看，customer_cohorts支撑着什么指标？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "customer_cohorts",
+      "language": "zh",
+      "position": "middle",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-105",
+      "question": "Which metrics consume customer_cohorts?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "customer_cohorts",
+      "language": "en",
+      "position": "end",
+      "tag": "metric-focus"
+    },
+    {
+      "id": "d-106",
+      "question": "What metric is calculated with customer_cohorts?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "customer_cohorts",
+      "language": "en",
+      "position": "end",
+      "tag": "passive-metric"
+    },
+    {
+      "id": "d-107",
+      "question": "customer_cohorts: which metrics draw on it?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "customer_cohorts",
+      "language": "en",
+      "position": "start",
+      "tag": "topic-focus"
+    },
+    {
+      "id": "d-108",
+      "question": "What sits downstream of customer_cohorts?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "customer_cohorts",
+      "language": "en",
+      "position": "end",
+      "tag": "explicit-downstream"
+    },
+    {
+      "id": "d-109",
+      "question": "净成交额被哪些报表用过？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "start",
+      "tag": "passive-use"
+    },
+    {
+      "id": "d-110",
+      "question": "哪些东西依赖净成交额？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "end",
+      "tag": "dependency-position"
+    },
+    {
+      "id": "d-111",
+      "question": "What is built from net_booking_value?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "end",
+      "tag": "source-reversal"
+    },
+    {
+      "id": "d-112",
+      "question": "续费率被哪些报表用过？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "start",
+      "tag": "passive-use"
+    },
+    {
+      "id": "d-113",
+      "question": "哪些东西依赖续费率？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "end",
+      "tag": "dependency-position"
+    },
+    {
+      "id": "d-114",
+      "question": "What is built from renewal_rate?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "end",
+      "tag": "source-reversal"
+    },
+    {
+      "id": "d-115",
+      "question": "延迟分钟数被哪些报表用过？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "start",
+      "tag": "passive-use"
+    },
+    {
+      "id": "d-116",
+      "question": "哪些东西依赖延迟分钟数？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "end",
+      "tag": "dependency-position"
+    },
+    {
+      "id": "d-117",
+      "question": "What is built from delay_minutes?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "end",
+      "tag": "source-reversal"
+    },
+    {
+      "id": "d-118",
+      "question": "活跃客户数被哪些报表用过？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "start",
+      "tag": "passive-use"
+    },
+    {
+      "id": "d-119",
+      "question": "哪些东西依赖活跃客户数？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "end",
+      "tag": "dependency-position"
+    },
+    {
+      "id": "d-120",
+      "question": "What is built from active_clients?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "end",
+      "tag": "source-reversal"
+    },
+    {
+      "id": "d-121",
+      "question": "林岚管着哪些指标呢？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-lan",
+      "language": "zh",
+      "position": "start",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-122",
+      "question": "想了解一下，林岚分管哪些资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-lan",
+      "language": "zh",
+      "position": "middle",
+      "tag": "compound-verb"
+    },
+    {
+      "id": "d-123",
+      "question": "有哪些工作资产交给了林岚？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-lan",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-124",
+      "question": "What does 林岚 look after?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-lan",
+      "language": "en",
+      "position": "middle",
+      "tag": "phrasal-verb"
+    },
+    {
+      "id": "d-125",
+      "question": "List the assets assigned to 林岚.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-lan",
+      "language": "en",
+      "position": "end",
+      "tag": "list-focus"
+    },
+    {
+      "id": "d-126",
+      "question": "林琛管着哪些指标呢？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-chen",
+      "language": "zh",
+      "position": "start",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-127",
+      "question": "想了解一下，林琛分管哪些资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-chen",
+      "language": "zh",
+      "position": "middle",
+      "tag": "compound-verb"
+    },
+    {
+      "id": "d-128",
+      "question": "有哪些工作资产交给了林琛？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-chen",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-129",
+      "question": "What does 林琛 look after?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-chen",
+      "language": "en",
+      "position": "middle",
+      "tag": "phrasal-verb"
+    },
+    {
+      "id": "d-130",
+      "question": "List the assets assigned to 林琛.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-lin-chen",
+      "language": "en",
+      "position": "end",
+      "tag": "list-focus"
+    },
+    {
+      "id": "d-131",
+      "question": "Morgan Hale管着哪些指标呢？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-morgan",
+      "language": "zh",
+      "position": "start",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-132",
+      "question": "想了解一下，Morgan Hale分管哪些资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-morgan",
+      "language": "zh",
+      "position": "middle",
+      "tag": "compound-verb"
+    },
+    {
+      "id": "d-133",
+      "question": "有哪些工作资产交给了Morgan Hale？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-morgan",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-134",
+      "question": "What does Morgan Hale look after?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-morgan",
+      "language": "en",
+      "position": "middle",
+      "tag": "phrasal-verb"
+    },
+    {
+      "id": "d-135",
+      "question": "List the assets assigned to Morgan Hale.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-morgan",
+      "language": "en",
+      "position": "end",
+      "tag": "list-focus"
+    },
+    {
+      "id": "d-136",
+      "question": "Noor Patel管着哪些指标呢？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-noor",
+      "language": "zh",
+      "position": "start",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-137",
+      "question": "想了解一下，Noor Patel分管哪些资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-noor",
+      "language": "zh",
+      "position": "middle",
+      "tag": "compound-verb"
+    },
+    {
+      "id": "d-138",
+      "question": "有哪些工作资产交给了Noor Patel？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-noor",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-139",
+      "question": "What does Noor Patel look after?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-noor",
+      "language": "en",
+      "position": "middle",
+      "tag": "phrasal-verb"
+    },
+    {
+      "id": "d-140",
+      "question": "List the assets assigned to Noor Patel.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-noor",
+      "language": "en",
+      "position": "end",
+      "tag": "list-focus"
+    },
+    {
+      "id": "d-141",
+      "question": "Commerce Enablement管着哪些指标呢？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-commerce",
+      "language": "zh",
+      "position": "start",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-142",
+      "question": "想了解一下，Commerce Enablement分管哪些资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-commerce",
+      "language": "zh",
+      "position": "middle",
+      "tag": "compound-verb"
+    },
+    {
+      "id": "d-143",
+      "question": "有哪些工作资产交给了Commerce Enablement？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-commerce",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-144",
+      "question": "What does Commerce Enablement look after?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-commerce",
+      "language": "en",
+      "position": "middle",
+      "tag": "phrasal-verb"
+    },
+    {
+      "id": "d-145",
+      "question": "List the assets assigned to Commerce Enablement.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-commerce",
+      "language": "en",
+      "position": "end",
+      "tag": "list-focus"
+    },
+    {
+      "id": "d-146",
+      "question": "Customer Trust team管着哪些指标呢？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-trust",
+      "language": "zh",
+      "position": "start",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-147",
+      "question": "想了解一下，Customer Trust team分管哪些资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-trust",
+      "language": "zh",
+      "position": "middle",
+      "tag": "compound-verb"
+    },
+    {
+      "id": "d-148",
+      "question": "有哪些工作资产交给了Customer Trust team？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-trust",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-149",
+      "question": "What does Customer Trust team look after?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-trust",
+      "language": "en",
+      "position": "middle",
+      "tag": "phrasal-verb"
+    },
+    {
+      "id": "d-150",
+      "question": "List the assets assigned to Customer Trust team.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-trust",
+      "language": "en",
+      "position": "end",
+      "tag": "list-focus"
+    },
+    {
+      "id": "d-151",
+      "question": "排程支持组管着哪些指标呢？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-scheduling",
+      "language": "zh",
+      "position": "start",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-152",
+      "question": "想了解一下，排程支持组分管哪些资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-scheduling",
+      "language": "zh",
+      "position": "middle",
+      "tag": "compound-verb"
+    },
+    {
+      "id": "d-153",
+      "question": "有哪些工作资产交给了排程支持组？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-scheduling",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-154",
+      "question": "What does 排程支持组 look after?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-scheduling",
+      "language": "en",
+      "position": "middle",
+      "tag": "phrasal-verb"
+    },
+    {
+      "id": "d-155",
+      "question": "List the assets assigned to 排程支持组.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-scheduling",
+      "language": "en",
+      "position": "end",
+      "tag": "list-focus"
+    },
+    {
+      "id": "d-156",
+      "question": "数据保障负责人管着哪些指标呢？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "role-data-assurance",
+      "language": "zh",
+      "position": "start",
+      "tag": "progressive"
+    },
+    {
+      "id": "d-157",
+      "question": "想了解一下，数据保障负责人分管哪些资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "role-data-assurance",
+      "language": "zh",
+      "position": "middle",
+      "tag": "compound-verb"
+    },
+    {
+      "id": "d-158",
+      "question": "有哪些工作资产交给了数据保障负责人？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "role-data-assurance",
+      "language": "zh",
+      "position": "end",
+      "tag": "perfective"
+    },
+    {
+      "id": "d-159",
+      "question": "What does 数据保障负责人 look after?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "role-data-assurance",
+      "language": "en",
+      "position": "middle",
+      "tag": "phrasal-verb"
+    },
+    {
+      "id": "d-160",
+      "question": "List the assets assigned to 数据保障负责人.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "role-data-assurance",
+      "language": "en",
+      "position": "end",
+      "tag": "list-focus"
+    },
+    {
+      "id": "d-161",
+      "question": "净成交额",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "start",
+      "tag": "pure-metric"
+    },
+    {
+      "id": "d-162",
+      "question": "成交净值",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "start",
+      "tag": "pure-alias"
+    },
+    {
+      "id": "d-163",
+      "question": "本月的净成交额呢",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "middle",
+      "tag": "time-particle"
+    },
+    {
+      "id": "d-164",
+      "question": "各负责人净成交额",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "end",
+      "tag": "owner-dimension"
+    },
+    {
+      "id": "d-165",
+      "question": "按来源渠道看净成交额",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "end",
+      "tag": "source-dimension"
+    },
+    {
+      "id": "d-166",
+      "question": "每个下游渠道的净成交额",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "end",
+      "tag": "downstream-dimension"
+    },
+    {
+      "id": "d-167",
+      "question": "上游供应商的净成交额合计",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "zh",
+      "position": "middle",
+      "tag": "upstream-filter"
+    },
+    {
+      "id": "d-168",
+      "question": "Which owner has the highest net_booking_value?",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "end",
+      "tag": "ranking-owner"
+    },
+    {
+      "id": "d-169",
+      "question": "Show net_booking_value by source channel",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "middle",
+      "tag": "source-grouping"
+    },
+    {
+      "id": "d-170",
+      "question": "Show net_booking_value for downstream channels",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "middle",
+      "tag": "downstream-filter"
+    },
+    {
+      "id": "d-171",
+      "question": "The lowest net_booking_value by region",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "middle",
+      "tag": "ranking"
+    },
+    {
+      "id": "d-172",
+      "question": "total net_booking_value for this month",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "net_booking_value",
+      "language": "en",
+      "position": "middle",
+      "tag": "quantity"
+    },
+    {
+      "id": "d-173",
+      "question": "续费率",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "start",
+      "tag": "pure-metric"
+    },
+    {
+      "id": "d-174",
+      "question": "续订比例",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "start",
+      "tag": "pure-alias"
+    },
+    {
+      "id": "d-175",
+      "question": "本月的续费率呢",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "middle",
+      "tag": "time-particle"
+    },
+    {
+      "id": "d-176",
+      "question": "各负责人续费率",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "end",
+      "tag": "owner-dimension"
+    },
+    {
+      "id": "d-177",
+      "question": "按来源渠道看续费率",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "end",
+      "tag": "source-dimension"
+    },
+    {
+      "id": "d-178",
+      "question": "每个下游渠道的续费率",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "end",
+      "tag": "downstream-dimension"
+    },
+    {
+      "id": "d-179",
+      "question": "上游供应商的续费率合计",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "zh",
+      "position": "middle",
+      "tag": "upstream-filter"
+    },
+    {
+      "id": "d-180",
+      "question": "Which owner has the highest renewal_rate?",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "end",
+      "tag": "ranking-owner"
+    },
+    {
+      "id": "d-181",
+      "question": "Show renewal_rate by source channel",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "middle",
+      "tag": "source-grouping"
+    },
+    {
+      "id": "d-182",
+      "question": "Show renewal_rate for downstream channels",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "middle",
+      "tag": "downstream-filter"
+    },
+    {
+      "id": "d-183",
+      "question": "The lowest renewal_rate by region",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "middle",
+      "tag": "ranking"
+    },
+    {
+      "id": "d-184",
+      "question": "total renewal_rate for this month",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "renewal_rate",
+      "language": "en",
+      "position": "middle",
+      "tag": "quantity"
+    },
+    {
+      "id": "d-185",
+      "question": "延迟分钟数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "start",
+      "tag": "pure-metric"
+    },
+    {
+      "id": "d-186",
+      "question": "延迟时长",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "start",
+      "tag": "pure-alias"
+    },
+    {
+      "id": "d-187",
+      "question": "本月的延迟分钟数呢",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "middle",
+      "tag": "time-particle"
+    },
+    {
+      "id": "d-188",
+      "question": "各负责人延迟分钟数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "end",
+      "tag": "owner-dimension"
+    },
+    {
+      "id": "d-189",
+      "question": "按来源渠道看延迟分钟数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "end",
+      "tag": "source-dimension"
+    },
+    {
+      "id": "d-190",
+      "question": "每个下游渠道的延迟分钟数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "end",
+      "tag": "downstream-dimension"
+    },
+    {
+      "id": "d-191",
+      "question": "上游供应商的延迟分钟数合计",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "zh",
+      "position": "middle",
+      "tag": "upstream-filter"
+    },
+    {
+      "id": "d-192",
+      "question": "Which owner has the highest delay_minutes?",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "end",
+      "tag": "ranking-owner"
+    },
+    {
+      "id": "d-193",
+      "question": "Show delay_minutes by source channel",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "middle",
+      "tag": "source-grouping"
+    },
+    {
+      "id": "d-194",
+      "question": "Show delay_minutes for downstream channels",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "middle",
+      "tag": "downstream-filter"
+    },
+    {
+      "id": "d-195",
+      "question": "The lowest delay_minutes by region",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "middle",
+      "tag": "ranking"
+    },
+    {
+      "id": "d-196",
+      "question": "total delay_minutes for this month",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "delay_minutes",
+      "language": "en",
+      "position": "middle",
+      "tag": "quantity"
+    },
+    {
+      "id": "d-197",
+      "question": "活跃客户数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "start",
+      "tag": "pure-metric"
+    },
+    {
+      "id": "d-198",
+      "question": "活跃客群数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "start",
+      "tag": "pure-alias"
+    },
+    {
+      "id": "d-199",
+      "question": "本月的活跃客户数呢",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "middle",
+      "tag": "time-particle"
+    },
+    {
+      "id": "d-200",
+      "question": "各负责人活跃客户数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "end",
+      "tag": "owner-dimension"
+    },
+    {
+      "id": "d-201",
+      "question": "按来源渠道看活跃客户数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "end",
+      "tag": "source-dimension"
+    },
+    {
+      "id": "d-202",
+      "question": "每个下游渠道的活跃客户数",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "end",
+      "tag": "downstream-dimension"
+    },
+    {
+      "id": "d-203",
+      "question": "上游供应商的活跃客户数合计",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "zh",
+      "position": "middle",
+      "tag": "upstream-filter"
+    },
+    {
+      "id": "d-204",
+      "question": "Which owner has the highest active_clients?",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "end",
+      "tag": "ranking-owner"
+    },
+    {
+      "id": "d-205",
+      "question": "Show active_clients by source channel",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "middle",
+      "tag": "source-grouping"
+    },
+    {
+      "id": "d-206",
+      "question": "Show active_clients for downstream channels",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "middle",
+      "tag": "downstream-filter"
+    },
+    {
+      "id": "d-207",
+      "question": "The lowest active_clients by region",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "middle",
+      "tag": "ranking"
+    },
+    {
+      "id": "d-208",
+      "question": "total active_clients for this month",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "active_clients",
+      "language": "en",
+      "position": "middle",
+      "tag": "quantity"
+    }
+  ]
+}

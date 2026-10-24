@@ -1,0 +1,826 @@
+{
+  "version": 1,
+  "split": "holdout",
+  "cases": [
+    {
+      "id": "h-001",
+      "question": "帮我查查服务耗时，现在归哪个组打理呀？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-care-verb"
+    },
+    {
+      "id": "h-002",
+      "question": "Which person has custody of service_latency?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "service_latency",
+      "language": "en",
+      "position": "end",
+      "tag": "held-custody-verb"
+    },
+    {
+      "id": "h-003",
+      "question": "service_latency — who carries its stewardship?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "service_latency",
+      "language": "en",
+      "position": "start",
+      "tag": "held-stewardship-verb"
+    },
+    {
+      "id": "h-004",
+      "question": "帮我查查退订率，现在归哪个组打理呀？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-care-verb"
+    },
+    {
+      "id": "h-005",
+      "question": "Which person has custody of churn_ratio?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "churn_ratio",
+      "language": "en",
+      "position": "end",
+      "tag": "held-custody-verb"
+    },
+    {
+      "id": "h-006",
+      "question": "churn_ratio — who carries its stewardship?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "churn_ratio",
+      "language": "en",
+      "position": "start",
+      "tag": "held-stewardship-verb"
+    },
+    {
+      "id": "h-007",
+      "question": "帮我查查case_events，现在归哪个组打理呀？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "case_events",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-care-verb"
+    },
+    {
+      "id": "h-008",
+      "question": "Which person has custody of case_events?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "case_events",
+      "language": "en",
+      "position": "end",
+      "tag": "held-custody-verb"
+    },
+    {
+      "id": "h-009",
+      "question": "case_events — who carries its stewardship?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "case_events",
+      "language": "en",
+      "position": "start",
+      "tag": "held-stewardship-verb"
+    },
+    {
+      "id": "h-010",
+      "question": "帮我查查payment_entries，现在归哪个组打理呀？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "payment_entries",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-care-verb"
+    },
+    {
+      "id": "h-011",
+      "question": "Which person has custody of payment_entries?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "payment_entries",
+      "language": "en",
+      "position": "end",
+      "tag": "held-custody-verb"
+    },
+    {
+      "id": "h-012",
+      "question": "payment_entries — who carries its stewardship?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "payment_entries",
+      "language": "en",
+      "position": "start",
+      "tag": "held-stewardship-verb"
+    },
+    {
+      "id": "h-013",
+      "question": "帮我查查service_summary，现在归哪个组打理呀？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "service_summary",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-care-verb"
+    },
+    {
+      "id": "h-014",
+      "question": "Which person has custody of service_summary?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "service_summary",
+      "language": "en",
+      "position": "end",
+      "tag": "held-custody-verb"
+    },
+    {
+      "id": "h-015",
+      "question": "service_summary — who carries its stewardship?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "service_summary",
+      "language": "en",
+      "position": "start",
+      "tag": "held-stewardship-verb"
+    },
+    {
+      "id": "h-016",
+      "question": "帮我查查retention_window，现在归哪个组打理呀？",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "retention_window",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-care-verb"
+    },
+    {
+      "id": "h-017",
+      "question": "Which person has custody of retention_window?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "retention_window",
+      "language": "en",
+      "position": "end",
+      "tag": "held-custody-verb"
+    },
+    {
+      "id": "h-018",
+      "question": "retention_window — who carries its stewardship?",
+      "route": "knowledge",
+      "intent": "owner",
+      "subject_id": "retention_window",
+      "language": "en",
+      "position": "start",
+      "tag": "held-stewardship-verb"
+    },
+    {
+      "id": "h-019",
+      "question": "要算服务耗时的话，拿哪份数据打底？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-base-verb"
+    },
+    {
+      "id": "h-020",
+      "question": "哪张表托起了服务耗时这个口径？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-support-verb"
+    },
+    {
+      "id": "h-021",
+      "question": "service_latency: what table supplies its raw records?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "service_latency",
+      "language": "en",
+      "position": "start",
+      "tag": "held-supply-verb"
+    },
+    {
+      "id": "h-022",
+      "question": "Which view furnishes the records behind service_latency?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "service_latency",
+      "language": "en",
+      "position": "end",
+      "tag": "held-furnish-verb"
+    },
+    {
+      "id": "h-023",
+      "question": "要算退订率的话，拿哪份数据打底？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-base-verb"
+    },
+    {
+      "id": "h-024",
+      "question": "哪张表托起了退订率这个口径？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-support-verb"
+    },
+    {
+      "id": "h-025",
+      "question": "churn_ratio: what table supplies its raw records?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "churn_ratio",
+      "language": "en",
+      "position": "start",
+      "tag": "held-supply-verb"
+    },
+    {
+      "id": "h-026",
+      "question": "Which view furnishes the records behind churn_ratio?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "churn_ratio",
+      "language": "en",
+      "position": "end",
+      "tag": "held-furnish-verb"
+    },
+    {
+      "id": "h-027",
+      "question": "case_events承接的上游都是什么呀？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "case_events",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-inherit-verb"
+    },
+    {
+      "id": "h-028",
+      "question": "From which tables is case_events assembled?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "case_events",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-assemble-verb"
+    },
+    {
+      "id": "h-029",
+      "question": "payment_entries承接的上游都是什么呀？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "payment_entries",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-inherit-verb"
+    },
+    {
+      "id": "h-030",
+      "question": "From which tables is payment_entries assembled?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "payment_entries",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-assemble-verb"
+    },
+    {
+      "id": "h-031",
+      "question": "service_summary承接的上游都是什么呀？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "service_summary",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-inherit-verb"
+    },
+    {
+      "id": "h-032",
+      "question": "From which tables is service_summary assembled?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "service_summary",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-assemble-verb"
+    },
+    {
+      "id": "h-033",
+      "question": "retention_window承接的上游都是什么呀？",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "retention_window",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-inherit-verb"
+    },
+    {
+      "id": "h-034",
+      "question": "From which tables is retention_window assembled?",
+      "route": "knowledge",
+      "intent": "upstream",
+      "subject_id": "retention_window",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-assemble-verb"
+    },
+    {
+      "id": "h-035",
+      "question": "哪些指标是拿case_events作底稿编出来的？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "case_events",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-manuscript-verb"
+    },
+    {
+      "id": "h-036",
+      "question": "case_events托着哪几个指标在跑？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "case_events",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-support-running"
+    },
+    {
+      "id": "h-037",
+      "question": "Which metrics are populated using case_events?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "case_events",
+      "language": "en",
+      "position": "end",
+      "tag": "held-populate-verb"
+    },
+    {
+      "id": "h-038",
+      "question": "哪些指标是拿payment_entries作底稿编出来的？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "payment_entries",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-manuscript-verb"
+    },
+    {
+      "id": "h-039",
+      "question": "payment_entries托着哪几个指标在跑？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "payment_entries",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-support-running"
+    },
+    {
+      "id": "h-040",
+      "question": "Which metrics are populated using payment_entries?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "payment_entries",
+      "language": "en",
+      "position": "end",
+      "tag": "held-populate-verb"
+    },
+    {
+      "id": "h-041",
+      "question": "哪些指标是拿service_summary作底稿编出来的？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "service_summary",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-manuscript-verb"
+    },
+    {
+      "id": "h-042",
+      "question": "service_summary托着哪几个指标在跑？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "service_summary",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-support-running"
+    },
+    {
+      "id": "h-043",
+      "question": "Which metrics are populated using service_summary?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "service_summary",
+      "language": "en",
+      "position": "end",
+      "tag": "held-populate-verb"
+    },
+    {
+      "id": "h-044",
+      "question": "哪些指标是拿retention_window作底稿编出来的？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "retention_window",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-manuscript-verb"
+    },
+    {
+      "id": "h-045",
+      "question": "retention_window托着哪几个指标在跑？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "retention_window",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-support-running"
+    },
+    {
+      "id": "h-046",
+      "question": "Which metrics are populated using retention_window?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "retention_window",
+      "language": "en",
+      "position": "end",
+      "tag": "held-populate-verb"
+    },
+    {
+      "id": "h-047",
+      "question": "服务耗时被哪些下游资产接走了？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-takeover-verb"
+    },
+    {
+      "id": "h-048",
+      "question": "What is constructed using service_latency?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "service_latency",
+      "language": "en",
+      "position": "end",
+      "tag": "held-construct-verb"
+    },
+    {
+      "id": "h-049",
+      "question": "退订率被哪些下游资产接走了？",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-takeover-verb"
+    },
+    {
+      "id": "h-050",
+      "question": "What is constructed using churn_ratio?",
+      "route": "knowledge",
+      "intent": "downstream",
+      "subject_id": "churn_ratio",
+      "language": "en",
+      "position": "end",
+      "tag": "held-construct-verb"
+    },
+    {
+      "id": "h-051",
+      "question": "顾青接管过哪些数据资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-gu-qing",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-takeover-verb"
+    },
+    {
+      "id": "h-052",
+      "question": "现在有哪些指标划归顾青？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-gu-qing",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-transfer-verb"
+    },
+    {
+      "id": "h-053",
+      "question": "What falls within 顾青's remit?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-gu-qing",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-remit-verb"
+    },
+    {
+      "id": "h-054",
+      "question": "Tell me which assets are entrusted to 顾青.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-gu-qing",
+      "language": "en",
+      "position": "end",
+      "tag": "held-entrust-verb"
+    },
+    {
+      "id": "h-055",
+      "question": "Elena Costa接管过哪些数据资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-elena",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-takeover-verb"
+    },
+    {
+      "id": "h-056",
+      "question": "现在有哪些指标划归Elena Costa？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-elena",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-transfer-verb"
+    },
+    {
+      "id": "h-057",
+      "question": "What falls within Elena Costa's remit?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-elena",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-remit-verb"
+    },
+    {
+      "id": "h-058",
+      "question": "Tell me which assets are entrusted to Elena Costa.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "person-elena",
+      "language": "en",
+      "position": "end",
+      "tag": "held-entrust-verb"
+    },
+    {
+      "id": "h-059",
+      "question": "Insight Guild接管过哪些数据资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-insight",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-takeover-verb"
+    },
+    {
+      "id": "h-060",
+      "question": "现在有哪些指标划归Insight Guild？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-insight",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-transfer-verb"
+    },
+    {
+      "id": "h-061",
+      "question": "What falls within Insight Guild's remit?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-insight",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-remit-verb"
+    },
+    {
+      "id": "h-062",
+      "question": "Tell me which assets are entrusted to Insight Guild.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-insight",
+      "language": "en",
+      "position": "end",
+      "tag": "held-entrust-verb"
+    },
+    {
+      "id": "h-063",
+      "question": "账务稽核组接管过哪些数据资产？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-finance",
+      "language": "zh",
+      "position": "start",
+      "tag": "held-takeover-verb"
+    },
+    {
+      "id": "h-064",
+      "question": "现在有哪些指标划归账务稽核组？",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-finance",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-transfer-verb"
+    },
+    {
+      "id": "h-065",
+      "question": "What falls within 账务稽核组's remit?",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-finance",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-remit-verb"
+    },
+    {
+      "id": "h-066",
+      "question": "Tell me which assets are entrusted to 账务稽核组.",
+      "route": "knowledge",
+      "intent": "owned",
+      "subject_id": "team-finance",
+      "language": "en",
+      "position": "end",
+      "tag": "held-entrust-verb"
+    },
+    {
+      "id": "h-067",
+      "question": "这个月服务耗时",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-time-phrase"
+    },
+    {
+      "id": "h-068",
+      "question": "请看看服务耗时吧",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-polite-phrase"
+    },
+    {
+      "id": "h-069",
+      "question": "按维护负责人分组的服务耗时",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-owner-grouping"
+    },
+    {
+      "id": "h-070",
+      "question": "各数据来源渠道的服务耗时",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-source-grouping"
+    },
+    {
+      "id": "h-071",
+      "question": "各区域服务耗时的最大值",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "service_latency",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-ranking"
+    },
+    {
+      "id": "h-072",
+      "question": "Who manages the region with the largest service_latency?",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "service_latency",
+      "language": "en",
+      "position": "end",
+      "tag": "held-ranking-owner"
+    },
+    {
+      "id": "h-073",
+      "question": "service_latency per upstream supplier",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "service_latency",
+      "language": "en",
+      "position": "start",
+      "tag": "held-upstream-grouping"
+    },
+    {
+      "id": "h-074",
+      "question": "Show the smallest service_latency across source categories",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "service_latency",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-ranking-source"
+    },
+    {
+      "id": "h-075",
+      "question": "这个月退订率",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-time-phrase"
+    },
+    {
+      "id": "h-076",
+      "question": "请看看退订率吧",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-polite-phrase"
+    },
+    {
+      "id": "h-077",
+      "question": "按维护负责人分组的退订率",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-owner-grouping"
+    },
+    {
+      "id": "h-078",
+      "question": "各数据来源渠道的退订率",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "end",
+      "tag": "held-source-grouping"
+    },
+    {
+      "id": "h-079",
+      "question": "各区域退订率的最大值",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "churn_ratio",
+      "language": "zh",
+      "position": "middle",
+      "tag": "held-ranking"
+    },
+    {
+      "id": "h-080",
+      "question": "Who manages the region with the largest churn_ratio?",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "churn_ratio",
+      "language": "en",
+      "position": "end",
+      "tag": "held-ranking-owner"
+    },
+    {
+      "id": "h-081",
+      "question": "churn_ratio per upstream supplier",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "churn_ratio",
+      "language": "en",
+      "position": "start",
+      "tag": "held-upstream-grouping"
+    },
+    {
+      "id": "h-082",
+      "question": "Show the smallest churn_ratio across source categories",
+      "route": "metric",
+      "intent": null,
+      "subject_id": "churn_ratio",
+      "language": "en",
+      "position": "middle",
+      "tag": "held-ranking-source"
+    }
+  ]
+}
