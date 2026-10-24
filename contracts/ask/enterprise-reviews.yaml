@@ -1,0 +1,20 @@
+relations:
+  - head: 周岩
+    predicate: kg.owns
+    tail: 出货额
+    status: accepted
+    reason: Scripted human review of a fictional enterprise fixture
+  - head: 韩露
+    predicate: kg.owns
+    tail: 零售额
+    status: rejected
+    reason: Scripted human review of a fictional enterprise fixture
+links:
+  - entity: 营业额
+    target: 销售额
+    status: accepted
+    reason: Resolve the fictional turnover alias to sales
+  - entity: 营业额
+    target: 零售额
+    status: rejected
+    reason: Resolve the fictional turnover alias to sales
