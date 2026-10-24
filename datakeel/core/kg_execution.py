@@ -5,26 +5,63 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, cast
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from datakeel.core.evidence_models import ContentRevision
 from datakeel.core.harness_pricing import ModelPrice
 from datakeel.core.kg_contracts import ExtractionProfile, KGSchema
 from datakeel.core.kg_models import Recording, TextBlock
 from datakeel.core.kg_product import ProductExtraction, SchemaProposal
-from datakeel.core.models import AssetRef, BoundaryModel
+from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 
 
 class KGDocument(BoundaryModel):
-    """Freeze decoded NFC text and source identity before any approval is requested."""
+    """Keep validated NFC source content inside the authorized worker boundary."""
 
     asset_ref: AssetRef
     filename: str
     text: str
     content_revision: ContentRevision
     blocks: tuple[TextBlock, ...]
+
+
+class KGBlockFingerprint(BoundaryModel):
+    """Bind a normalized block without putting its text in a consent payload."""
+
+    start: int = Field(ge=0)
+    end: int = Field(ge=0)
+    content_hash: ContentRevision
+
+
+class KGDocumentFingerprint(BoundaryModel):
+    """Bind a file revision and all chunk coordinates without copying source content."""
+
+    asset_ref: AssetRef
+    filename: str
+    content_revision: ContentRevision
+    blocks: tuple[KGBlockFingerprint, ...]
+
+    @classmethod
+    def from_document(cls, document: KGDocument) -> "KGDocumentFingerprint":
+        """Reduce a decoded source to the exact fields required for later verification."""
+        return cls(
+            asset_ref=document.asset_ref,
+            filename=document.filename,
+            content_revision=document.content_revision,
+            blocks=tuple(
+                KGBlockFingerprint(start=b.start, end=b.end, content_hash=b.content_hash)
+                for b in document.blocks
+            ),
+        )
+
+
+class KGInputs(BoundaryModel):
+    """Carry verified source and recording content only after worker authorization."""
+
+    documents: tuple[KGDocument, ...]
+    recording: Recording | None = None
 
 
 class KGEstimate(BoundaryModel):
@@ -46,10 +83,9 @@ class KGPrepared(BoundaryModel):
 
     schema_definition: KGSchema
     profile: ExtractionProfile
-    documents: tuple[KGDocument, ...]
+    documents: tuple[KGDocumentFingerprint, ...]
     estimate: KGEstimate
     recording_hash: str | None = None
-    recording: Recording | None = None
     accounting_price: ModelPrice
     accounting_price_version: str
     external: bool
@@ -117,8 +153,44 @@ class KGJob(BoundaryModel):
 
     run: KGRun
     prepared: KGPrepared
+    documents: tuple[KGDocument, ...] = ()
     budget_tokens: int = Field(ge=0)
     max_cost_usd: Decimal = Field(ge=0, allow_inf_nan=False)
+
+    @model_validator(mode="before")
+    @classmethod
+    def separate_legacy_content(cls, value: object) -> object:
+        """Keep existing run history readable while removing legacy content from preparation."""
+        candidate = cast("dict[str, object]", value)
+        if not isinstance(value, dict) or not isinstance(candidate.get("prepared"), dict):
+            return cast("object", value)
+        data = JsonDocument.model_validate(value).root
+        prepared = data.get("prepared")
+        if not isinstance(prepared, dict) or "recording" not in prepared:
+            return cast("object", value)
+        sources = prepared.get("documents")
+        if not isinstance(sources, list):
+            return cast("object", value)
+        documents = tuple(KGDocument.model_validate(item) for item in sources)
+        prepared = dict(prepared)
+        prepared.pop("recording")
+        profile = prepared.get("profile")
+        if isinstance(profile, dict):
+            parameters = profile.get("request_parameters")
+            if isinstance(parameters, dict) and "num_ctx" in parameters:
+                profile = {
+                    **profile,
+                    "request_parameters": {k: v for k, v in parameters.items() if k != "num_ctx"},
+                }
+                prepared["profile"] = profile
+        prepared["documents"] = [
+            KGDocumentFingerprint.from_document(item).model_dump(mode="json") for item in documents
+        ]
+        return {
+            **data,
+            "prepared": prepared,
+            "documents": [document.model_dump(mode="json") for document in documents],
+        }
 
 
 class KGLeaseFence(BoundaryModel):

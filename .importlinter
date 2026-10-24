@@ -264,6 +264,8 @@ ignore_imports =
     datakeel.storage.action_planning -> datakeel.actions.kg_parameters
     datakeel.storage.action_operations -> datakeel.actions.kg_parameters
     datakeel.storage.kg_preparation -> datakeel.actions.kg_parameters
+# Authorized workers reuse the same typed file-selection boundary for fingerprint verification.
+    datakeel.storage.kg_inputs -> datakeel.actions.kg_parameters
     datakeel.storage.kg_preparation -> datakeel.actions.parameters
     datakeel.storage.kg_preparation -> datakeel.kg.loader
     datakeel.storage.kg_preparation -> datakeel.kg.policy

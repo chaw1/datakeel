@@ -7,12 +7,14 @@ import logging
 import threading
 from contextlib import ExitStack
 
+from datakeel.core.errors import ValidationError
 from datakeel.core.kg_contracts import KGSchema
 from datakeel.core.kg_execution import KGLeaseFence, KGMeteringConfig, KGPrepared
-from datakeel.core.kg_models import ExtractionResult, TextBlock
+from datakeel.core.kg_models import ExtractionResult, Recording, TextBlock
 from datakeel.extraction_runtime.factory import create_extractor
 from datakeel.kg.extractors import ExtractorAdapter
 from datakeel.storage.database import Database
+from datakeel.storage.kg_inputs import restore_inputs
 from datakeel.storage.kg_store import get_job, start_run
 from datakeel.worker.heartbeat import pulse
 from datakeel.worker.kg_execution import KGExecution
@@ -25,14 +27,14 @@ logger = logging.getLogger(__name__)
 class _DeferredAdapter:
     """Construct credentials and provider resources only when raw output is missing."""
 
-    def __init__(self, prepared: KGPrepared, stack: ExitStack) -> None:
-        self.prepared, self.stack = prepared, stack
+    def __init__(self, prepared: KGPrepared, recording: Recording | None, stack: ExitStack) -> None:
+        self.prepared, self.recording, self.stack = prepared, recording, stack
         self.adapter: ExtractorAdapter | None = None
 
     def initialize(self) -> ExtractorAdapter:
         if self.adapter is None:
             self.adapter = self.stack.enter_context(
-                create_extractor(self.prepared.profile, recording=self.prepared.recording)
+                create_extractor(self.prepared.profile, recording=self.recording)
             )
         return self.adapter
 
@@ -72,13 +74,18 @@ def execute_kg(queue: DatabaseQueue, lease: Lease) -> bool:
         max_cost_usd=job.max_cost_usd,
     )
     try:
+        inputs = restore_inputs(queue.db, job, fence)
+        job = job.model_copy(update={"documents": inputs.documents})
         with ExitStack() as stack:
-            adapter = _DeferredMetering(queue.db, config, _DeferredAdapter(prepared, stack))
+            adapter = _DeferredMetering(
+                queue.db, config, _DeferredAdapter(prepared, inputs.recording, stack)
+            )
             completion = KGExecution(queue, lease, job, adapter).run()
         return queue.finish(lease, lease.inputs, [], evidence=completion)
     except Exception as error:
         logger.exception("Graph worker failed", extra={"extraction_id": job.run.id})
-        return queue.finish(lease, [], [], error=f"Graph extraction failed: {type(error).__name__}")
+        reason = str(error) if isinstance(error, ValidationError) else type(error).__name__
+        return queue.finish(lease, [], [], error=f"Graph extraction failed: {reason}")
     finally:
         stop.set()
         heartbeat.join(timeout=5)

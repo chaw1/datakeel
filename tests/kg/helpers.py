@@ -9,7 +9,14 @@ from decimal import Decimal
 from datakeel.core.evidence_models import Assertion, ExtractorRef
 from datakeel.core.harness_pricing import ModelPrice
 from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation, KGSchema
-from datakeel.core.kg_execution import KGDocument, KGEstimate, KGJob, KGPrepared, KGRun
+from datakeel.core.kg_execution import (
+    KGDocument,
+    KGDocumentFingerprint,
+    KGEstimate,
+    KGJob,
+    KGPrepared,
+    KGRun,
+)
 from datakeel.core.kg_models import RawExtraction
 from datakeel.core.kg_product import KGSource, ProductExtraction
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
@@ -88,10 +95,11 @@ def _job(source: KGSource, schema: KGSchema) -> KGJob:
     )
     return KGJob(
         run=run,
+        documents=(document,),
         prepared=KGPrepared(
             schema_definition=schema,
             profile=get_profile("fake"),
-            documents=(document,),
+            documents=(KGDocumentFingerprint.from_document(document),),
             external=False,
             accounting_price=ModelPrice(
                 model="fixture-model",

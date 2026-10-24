@@ -16,7 +16,7 @@ from datakeel.core.context_tokens import estimate_tokens
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.harness_pricing import nanos_to_usd, reservation_cost
 from datakeel.core.kg_contracts import ExtractionProfile, KGSchema
-from datakeel.core.kg_execution import KGDocument, KGEstimate, KGPrepared
+from datakeel.core.kg_execution import KGDocument, KGDocumentFingerprint, KGEstimate, KGPrepared
 from datakeel.core.kg_models import Recording
 from datakeel.core.models import AssetRef, FileItem
 from datakeel.kg.loader import contracts_path, get_profile, get_schema
@@ -54,9 +54,10 @@ def _document(file: FileItem, version_id: str, profile: ExtractionProfile) -> KG
     )
 
 
-def _documents(
+def read_documents(
     session: Session, params: RunKGExtractionParams, profile: ExtractionProfile
 ) -> tuple[KGDocument, ...]:
+    """Decode the exact selected immutable manifest without exposing storage rows."""
     version = session.get(VersionRow, params.version_id)
     if version is None or version.dataset_id != params.dataset_id:
         msg = "Graph input version does not belong to the selected dataset"
@@ -74,7 +75,8 @@ def _documents(
     return tuple(_document(file, version.id, profile) for file in materialize_files(selected))
 
 
-def _recording(profile: ExtractionProfile) -> tuple[str | None, Recording | None]:
+def read_recording(profile: ExtractionProfile) -> tuple[str | None, Recording | None]:
+    """Read and hash a validated recording without leaking parser source fragments."""
     if not profile.recording:
         return None, None
     path = Path(profile.recording)
@@ -97,11 +99,11 @@ def _prepared(
     cost = nanos_to_usd(
         reservation_cost(config.price, tokens, len(blocks) * profile.max_output_tokens)
     )
-    recording_hash, recording = _recording(profile)
+    recording_hash, _ = read_recording(profile)
     return KGPrepared(
         schema_definition=schema,
         profile=profile,
-        documents=documents,
+        documents=tuple(KGDocumentFingerprint.from_document(document) for document in documents),
         estimate=KGEstimate(
             target_host=target_host(profile),
             model=profile.model,
@@ -116,7 +118,6 @@ def _prepared(
         accounting_price=config.price,
         accounting_price_version=config.price_version,
         recording_hash=recording_hash,
-        recording=recording,
         external=is_external(profile),
     )
 
@@ -124,5 +125,5 @@ def _prepared(
 def prepare_kg_params(session: Session, params: RunKGExtractionParams) -> RunKGExtractionParams:
     """Recompute every supplied snapshot before it enters a signed plan digest."""
     profile, schema = get_profile(params.profile_id), get_schema(params.schema_id)
-    documents = _documents(session, params, profile)
+    documents = read_documents(session, params, profile)
     return params.model_copy(update={"prepared": _prepared(documents, schema, profile)})

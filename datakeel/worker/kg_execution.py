@@ -105,7 +105,7 @@ class KGExecution:
         """Continue failed blocks independently and stop only new calls when budget runs out."""
         started = perf_counter()
         complete: list[str] = []
-        for document in self.job.prepared.documents:
+        for document in self.job.documents:
             outcomes = [self._block(document, block) for block in document.blocks]
             if all(outcomes):
                 complete.append(document.asset_ref.asset_id)

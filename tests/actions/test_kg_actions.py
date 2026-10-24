@@ -50,7 +50,8 @@ def test_external_graph_requires_approval_before_creating_any_worker_task(
     assert adapter.calls == 0
     job = get_job(db, list_runs(db)[0].id)
     assert job.prepared.profile == profile
-    assert job.prepared.documents[0].text == "Acme uses Widget."
+    assert job.prepared.documents[0].content_revision == dataset.files[0].sha256
+    assert job.documents == ()
 
 
 def test_supplied_local_snapshot_cannot_hide_an_external_profile(
@@ -90,7 +91,7 @@ def test_frozen_graph_input_tampering_invalidates_the_approved_digest(
         elif field == "schema_definition":
             prepared[field]["version"] = "changed-version"
         else:
-            prepared[field][0]["text"] = "unapproved replacement text"
+            prepared[field][0]["content_revision"] = "f" * 64
         row.payload = payload
         session.commit()
     with pytest.raises(ConflictError, match="plan_digest"):

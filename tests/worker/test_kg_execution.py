@@ -14,6 +14,7 @@ from datakeel.actions.models import ExecuteRequest
 from datakeel.actions.service import execute_plan, prepare_action
 from datakeel.core.errors import ValidationError
 from datakeel.core.kg_execution import KGCompletion, KGLeaseFence
+from datakeel.core.kg_models import TextBlock
 from datakeel.core.kg_product import ProductExtraction
 from datakeel.core.models import JsonDocument
 from datakeel.kg.cache import build_cache_key, extraction_identity
@@ -112,7 +113,7 @@ def test_cancelled_lease_cannot_publish_cache_or_graph(db: Database, tmp_path: P
     prepared = job.prepared
     fence = KGLeaseFence(task_id=lease.task_id, shard_id=lease.shard_id, owner=lease.owner)
     key = build_cache_key(
-        prepared.documents[0].blocks[0],
+        TextBlock(text="Acme uses Widget.", start=0, end=17),
         prepared.schema_definition,
         prepared.profile,
         extraction_identity(prepared.schema_definition, prepared.profile),

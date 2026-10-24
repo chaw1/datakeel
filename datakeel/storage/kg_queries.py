@@ -129,7 +129,7 @@ def get_source_text(
     )
     for identifier in identifiers:
         job = get_job(db, identifier)
-        for document in job.prepared.documents:
+        for document in job.documents:
             if document.asset_ref.asset_id == file_id and document.asset_ref.version == version_id:
                 return KGSourceText(
                     asset_ref=document.asset_ref, filename=document.filename, text=document.text

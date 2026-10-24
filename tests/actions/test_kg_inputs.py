@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import TYPE_CHECKING
 
 import pytest
@@ -99,10 +100,10 @@ def test_prepared_text_and_block_offsets_use_nfc_after_utf8_decoding(
     params = RunKGExtractionParams.model_validate(prepare_graph(db, dataset).canonical_params)
     assert params.prepared is not None
     document = params.prepared.documents[0]
-    assert document.text == "Acme uses Café."
+    expected = "Acme uses Café."
     assert document.content_revision == dataset.files[0].sha256
-    assert document.blocks[0].end == len(document.text)
-    assert document.blocks[0].text == document.text
+    assert document.blocks[0].end == len(expected)
+    assert document.blocks[0].content_hash == hashlib.sha256(expected.encode()).hexdigest()
 
 
 @pytest.mark.parametrize("content", [None, "[broken: secret-fixture", "records: secret-fixture"])
