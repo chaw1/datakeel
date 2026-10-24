@@ -4,6 +4,16 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve longest registered subjects before interpreting bilingual question focus and dependency direction. Typed knowledge questions cannot execute numeric queries; grouped metric phrases and numeric rankings retain the metric route.
+- Explain recognition rules and offer intent clarification buttons. Merge same-name people or teams with catalog roles for questions, preserve rejected-link distinctions, and use the sole remaining association candidate with its pending review label.
+- Preserve numeric results when optional related knowledge has an unavailable source revision. Display asset names and candidate provenance, retaining raw identifiers in evidence drawers.
+
+### Added
+
+- Independent development and held-out language corpora with 226 knowledge questions and 64 metric counterexamples, plus focus, direction and numeric-safety regression mutations.
+
 ## [0.11.0] - 2026-10-24
 
 ### Added
