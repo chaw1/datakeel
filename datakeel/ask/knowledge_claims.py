@@ -6,7 +6,7 @@
 from collections.abc import Callable
 from typing import Literal
 
-from datakeel.core.evidence_models import Assertion, TextSpan
+from datakeel.core.evidence_models import Assertion, EvidenceAnchor, TextSpan
 from datakeel.core.kg_product import KGEntity
 from datakeel.core.kg_queries import KGSourceText
 from datakeel.core.knowledge_models import (
@@ -20,7 +20,7 @@ from datakeel.core.knowledge_models import (
 from datakeel.core.link_models import EntityLink, LinkContext
 from datakeel.core.models import AssetRef
 
-SourceReader = Callable[[str, str], KGSourceText]
+SourceReader = Callable[[EvidenceAnchor], KGSourceText]
 
 
 def usable_link(link: EntityLink) -> bool:
@@ -109,7 +109,10 @@ def _resolve_other_end(
     other: KGEntity, links: tuple[EntityLink, ...]
 ) -> tuple[KnowledgeOtherEnd | None, bool]:
     matching = tuple(
-        link for link in links if link.entity.asset_ref.asset_id == other.asset_ref.asset_id
+        link
+        for link in links
+        if link.entity.asset_ref.asset_id == other.asset_ref.asset_id
+        and link.assertion.status != "rejected"
     )
     selected = next((link for link in matching if usable_link(link)), None)
     if (
@@ -186,7 +189,7 @@ def _evidence(assertion: Assertion, source_reader: SourceReader) -> tuple[Knowle
         if anchor.asset_ref in seen:
             continue
         seen.add(anchor.asset_ref)
-        source = source_reader(anchor.asset_ref.asset_id, anchor.asset_ref.version or "")
+        source = source_reader(anchor)
         location = (
             next((item for item in detail.locations if item.source == anchor.asset_ref), None)
             if detail

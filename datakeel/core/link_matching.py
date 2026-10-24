@@ -7,23 +7,10 @@ import re
 import unicodedata
 
 from datakeel.core.catalog_models import CatalogObject, CatalogSnapshot
+from datakeel.core.catalog_vocabulary import catalog_identifiers
 from datakeel.core.kg_product import KGEntity
 from datakeel.core.link_models import LinkMatch
 from datakeel.core.metric_models import MetricCard, TermDefinition
-
-_IDENTIFIER = re.compile(r"[A-Za-z][A-Za-z0-9_]*(?:[./][A-Za-z][A-Za-z0-9_]*)*")
-_STOP_WORDS = frozenset({"table", "tables", "the", "表"})
-
-
-def catalog_identifiers(text: str) -> tuple[str, ...]:
-    """Extract whole ASCII identifiers, retaining underscores and qualified segments."""
-    return tuple(
-        dict.fromkeys(
-            match.group().lower()
-            for match in _IDENTIFIER.finditer(text)
-            if match.group().lower() not in _STOP_WORDS
-        )
-    )
 
 
 def catalog_names(item: CatalogObject) -> tuple[str, ...]:
@@ -47,14 +34,8 @@ def normalize_metric_name(value: str) -> str:
 
 def _entity_metric_names(value: str) -> set[str]:
     value = normalize_metric_name(value)
-    return {
-        value,
-        *(
-            value.removesuffix(suffix).strip()
-            for suffix in ("指标", "metric")
-            if value.endswith(suffix)
-        ),
-    } - {""}
+    shortened = re.sub(r"(?:指标|[\s_-]+metric)$", "", value).strip()
+    return {value, shortened} - {""}
 
 
 def _table_matches(spellings: tuple[str, ...], catalog: CatalogSnapshot) -> tuple[LinkMatch, ...]:

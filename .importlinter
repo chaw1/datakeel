@@ -226,7 +226,6 @@ ignore_imports =
     datakeel.catalog.service -> datakeel.storage.database
 # Questions compose registered semantics and read-only compilation, then persist typed answers.
     datakeel.ask.knowledge_service -> datakeel.storage.database
-    datakeel.ask.knowledge_service -> datakeel.storage.kg_queries
     datakeel.ask.knowledge_service -> datakeel.storage.link_queries
     datakeel.ask.service -> datakeel.metrics.compiler
     datakeel.ask.service -> datakeel.metrics.execution

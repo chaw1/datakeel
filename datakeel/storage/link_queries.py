@@ -7,10 +7,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.evidence_models import AssertionStatus
-from datakeel.core.link_models import EntityLink, LinkContext, LinkGraph, LinkMetadata
+from datakeel.core.link_models import (
+    EntityLink,
+    LinkContext,
+    LinkEntitySource,
+    LinkGraph,
+    LinkMetadata,
+)
 from datakeel.core.models import AssetRef
 from datakeel.storage.catalog_reads import read_snapshot
-from datakeel.storage.database import Database
+from datakeel.storage.database import Database, DatasetRow
 from datakeel.storage.evidence_decisions import assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.link_context import read_link_graphs
@@ -22,7 +28,11 @@ def _links(session: Session, graphs: tuple[LinkGraph, ...]) -> tuple[EntityLink,
     result: list[EntityLink] = []
     rows = session.scalars(
         select(AssertionRow)
-        .where(AssertionRow.predicate == "link.maps_to", AssertionRow.active.is_(True))
+        .where(
+            AssertionRow.predicate == "link.maps_to",
+            AssertionRow.active.is_(True),
+            AssertionRow.subject_id.in_(entities),
+        )
         .order_by(AssertionRow.id)
     )
     for row in rows:
@@ -54,10 +64,26 @@ def read_link_context(db: Database) -> LinkContext:
     """Read current entities, raw relations and links; callers apply their review policy."""
     with db.session() as session:
         graphs = read_link_graphs(session)
+        datasets = {
+            row.id: row.name
+            for row in session.scalars(
+                select(DatasetRow).where(DatasetRow.id.in_({graph.dataset_id for graph in graphs}))
+            )
+        }
         return LinkContext(
             entities=tuple(entity for graph in graphs for entity in graph.entities),
             assertions=tuple(assertion for graph in graphs for assertion in graph.assertions),
             links=_links(session, graphs),
+            entity_sources=tuple(
+                LinkEntitySource(
+                    entity_id=entity.asset_ref.asset_id,
+                    dataset_id=graph.dataset_id,
+                    dataset_name=datasets.get(graph.dataset_id, graph.dataset_id),
+                )
+                for graph in graphs
+                for entity in graph.entities
+            ),
+            documents=tuple(document for graph in graphs for document in graph.documents),
         )
 
 

@@ -83,6 +83,11 @@ _PREDICATES = {
             subject_asset_type="question",
             existence=False,
         ),
+        Predicate(
+            id="ask.knowledge_unresolved",
+            description="A knowledge question requires clarification or cannot be answered",
+            subject_asset_type="question",
+        ),
     )
 }
 

@@ -49,8 +49,10 @@ def test_source_verification_and_system_disagreement_are_independent() -> None:
 
 @pytest.mark.parametrize("endpoint", [0, 1])
 @pytest.mark.parametrize("state", ["rejected", "ambiguous"])
-def test_rejected_or_ambiguous_links_never_expose_claims(endpoint: int, state: str) -> None:
-    """Both ends enforce review policy, and only ambiguous candidates increase the pending count."""
+def test_rejected_other_link_preserves_claim_but_ambiguity_hides_it(
+    endpoint: int, state: str
+) -> None:
+    """Subject paths need a link, while a rejected other link only removes its catalog identity."""
     subject, context = claim_context()
     links = list(context.links)
     link = links[endpoint]
@@ -63,8 +65,38 @@ def test_rejected_or_ambiguous_links_never_expose_claims(endpoint: int, state: s
     )
     context = context.model_copy(update={"links": tuple(links)})
     claims, pending = document_claims(subject, "upstream", context, set(), source_reader)
-    assert claims == ()
+    if endpoint == 1 and state == "rejected":
+        assert len(claims) == 1
+        assert claims[0].other_end.status == "not_in_catalog"
+        assert claims[0].consistency == "not_in_catalog"
+    else:
+        assert claims == ()
     assert pending == (1 if state == "ambiguous" else 0)
+
+
+def test_accepted_ownership_survives_rejected_other_link() -> None:
+    """A human-confirmed relationship remains evidence after its target association is rejected."""
+    _subject, context = claim_context()
+    link = context.links[0]
+    ownership = context.assertions[1].model_copy(update={"status": "accepted"})
+    context = context.model_copy(
+        update={
+            "assertions": (ownership,),
+            "links": (
+                link.model_copy(
+                    update={"assertion": link.assertion.model_copy(update={"status": "rejected"})}
+                ),
+            ),
+        }
+    )
+    claims, pending = document_claims(
+        entity_subject(context.entities[2]), "owned", context, set(), source_reader
+    )
+    assert pending == 0
+    assert len(claims) == 1
+    assert claims[0].relation_status == "accepted"
+    assert claims[0].other_end.status == "not_in_catalog"
+    assert claims[0].consistency is None
 
 
 def test_accepted_ambiguous_links_are_usable_without_losing_status() -> None:
@@ -209,7 +241,7 @@ def test_distinct_dataset_entities_merge_only_through_the_same_asset_and_keep_so
         "owner",
         combined,
         set(),
-        lambda identity, _version: SOURCE if identity == "document" else other_source,
+        lambda anchor: SOURCE if anchor.asset_ref.asset_id == "document" else other_source,
     )
     assert pending == 0
     assert len(claims) == 2

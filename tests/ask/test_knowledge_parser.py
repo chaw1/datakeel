@@ -60,11 +60,8 @@ def test_interrogatives_capture_subject_without_full_question_noise(
         "2026年3月下游渠道的出货额是多少",
         "2026年3月维护期内的维修费用是多少",
         "How much revenue came from online orders in March?",
-        "Show sales for downstream channels",
-        "Who owns?",
-        "谁负责",
     ],
 )
 def test_non_interrogative_relationship_words_do_not_steal_metric_route(question: str) -> None:
-    """Only a complete supported relationship question enters knowledge resolution."""
+    """Explicit numerical questions retain their route despite relationship vocabulary."""
     assert parse_knowledge_question(question) is None

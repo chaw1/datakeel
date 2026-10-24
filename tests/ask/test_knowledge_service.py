@@ -12,6 +12,8 @@ from datakeel.ask.knowledge_service import related_knowledge
 from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskAnswer, AskRequest
 from datakeel.core.catalog_models import CatalogSnapshot
+from datakeel.core.errors import NotFoundError
+from datakeel.core.kg_execution import KGDocument
 from datakeel.core.kg_queries import KGSourceText
 from datakeel.core.link_models import LinkContext
 from datakeel.core.metric_models import SemanticLayer
@@ -22,7 +24,7 @@ from datakeel.ontology.catalog_functions import invoke_catalog
 from datakeel.sample_enterprise import EnterpriseSample
 from datakeel.storage.ask_store import get_answer
 from datakeel.storage.database import Database
-from tests.ask.knowledge_helpers import claim_context, source_reader
+from tests.ask.knowledge_helpers import ANCHOR, SOURCE, claim_context
 from tests.ask.test_models import answered_fixture
 
 
@@ -69,12 +71,17 @@ def test_numeric_answers_without_graph_context_remain_compact(
     assert AskAnswer.model_validate(result.data).answer_kind == "metric"
 
 
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("missing_revision", [False, True])
 def test_related_document_context_is_limited_to_five_without_changing_query(
     db: Database,
     layer: SemanticLayer,
     monkeypatch: pytest.MonkeyPatch,
+    *,
+    reverse: bool,
+    missing_revision: bool,
 ) -> None:
-    """A long graph cannot make the metric response lose its numerical contract or size bound."""
+    """Bound claims without changing metric output, and never quote a different file revision."""
     answer = answered_fixture(layer)
     catalog = build_snapshot(layer, CatalogSnapshot(scope="empty"))
     _subject, context = claim_context()
@@ -88,19 +95,33 @@ def test_related_document_context_is_limited_to_five_without_changing_query(
     claims = tuple(
         context.assertions[1].model_copy(update={"id": f"owner-{index}"}) for index in range(7)
     )
-    context = context.model_copy(update={"links": (link,), "assertions": claims})
+    original = KGDocument(
+        asset_ref=SOURCE.asset_ref,
+        filename=SOURCE.filename,
+        text=SOURCE.text,
+        content_revision=ANCHOR.content_revision,
+        blocks=(),
+    )
+    other_revision = original.model_copy(update={"content_revision": "b" * 64, "text": "Different"})
+    documents = (original, other_revision) if reverse else (other_revision, original)
+    if missing_revision:
+        documents = (other_revision,)
+    context = context.model_copy(
+        update={"links": (link,), "assertions": claims, "documents": documents}
+    )
 
     def context_reader(_db: Database) -> LinkContext:
         return context
 
-    def read_source(_db: Database, identity: str, version: str) -> KGSourceText:
-        return source_reader(identity, version)
-
     monkeypatch.setattr(knowledge_service, "read_link_context", context_reader)
-    monkeypatch.setattr(knowledge_service, "get_source_text", read_source)
+    if missing_revision:
+        with pytest.raises(NotFoundError, match="source revision"):
+            related_knowledge(db, answer, catalog)
+        return
     result = related_knowledge(db, answer, catalog)
     assert result.knowledge is not None
     assert len(result.knowledge.claims) == 5
+    assert {claim.evidence[0].text for claim in result.knowledge.claims} == {SOURCE.text[:32]}
     assert result.result == answer.result
     assert result.sql == answer.sql
     assert result.metric_card == answer.metric_card
@@ -126,3 +147,21 @@ def test_bilingual_knowledge_tool_result_has_complete_assertion_citations(
         assert claim.subject_link is not None
         assert claim.subject_link.assertion_id in cited
     assert get_answer(db, answer.id) == answer
+
+
+def test_answer_sources_reuse_current_graph_documents_without_event_rescans(
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Metric context and knowledge claims read sources from the already-loaded frozen graph."""
+    seed_enterprise_kg(db, tmp_path)
+
+    def unexpected_source_read(_db: Database, _identity: str, _version: str) -> KGSourceText:
+        pytest.fail("A current graph source must not rescan extraction history")
+
+    monkeypatch.setattr("datakeel.storage.kg_queries.get_source_text", unexpected_source_read)
+    for question in ("出货额", "出货额谁负责"):
+        answer = ask_data(db, AskRequest(question=question))
+        assert answer.status == "answered"
+        assert answer.knowledge is not None
+        assert answer.knowledge.claims
+        assert all(claim.evidence for claim in answer.knowledge.claims)

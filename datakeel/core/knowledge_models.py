@@ -21,6 +21,8 @@ class KnowledgeSubject(BoundaryModel):
     name: str
     kind: Literal["metric", "table", "view", "owner", "kg_entity"]
     entity_type: str | None = None
+    dataset_id: str | None = None
+    dataset_name: str | None = None
 
 
 class KnowledgeSystemRecord(BoundaryModel):
@@ -96,4 +98,13 @@ class KnowledgeAnswer(BoundaryModel):
     system_message: str = ""
     claims: tuple[KnowledgeClaim, ...] = ()
     pending_ambiguous_links: int = Field(default=0, ge=0)
-    reason_code: Literal["unknown_subject", "ambiguous_subject", "no_knowledge"] | None = None
+    reason_code: (
+        Literal[
+            "unknown_subject",
+            "ambiguous_subject",
+            "no_knowledge",
+            "unsupported_phrasing",
+            "pending_links",
+        ]
+        | None
+    ) = None

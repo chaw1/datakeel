@@ -37,12 +37,22 @@ class EntityLink(LinkMetadata):
     target: CatalogObject
 
 
+class LinkEntitySource(BoundaryModel):
+    """Identify the source dataset of an otherwise opaque graph entity identity."""
+
+    entity_id: str
+    dataset_id: str
+    dataset_name: str
+
+
 class LinkContext(BoundaryModel):
     """Read raw current graphs without alias merging and their current associations."""
 
     entities: tuple[KGEntity, ...] = ()
     assertions: tuple[Assertion, ...] = ()
     links: tuple[EntityLink, ...] = ()
+    entity_sources: tuple[LinkEntitySource, ...] = ()
+    documents: tuple[KGDocument, ...] = ()
 
 
 class LinkGraph(BoundaryModel):

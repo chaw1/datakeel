@@ -89,6 +89,8 @@ def test_metric_matching_uses_whole_names_suffixes_and_only_the_strongest_tier()
     for spelling in (
         "出货额指标",
         " 出货额 metric ",
+        "出货额_metric",
+        "出货额-METRIC",
         "shipment_amount",
         "".join(chr(ord(character) + 0xFEE0) for character in "shipment_amount"),
     ):
@@ -153,3 +155,20 @@ def test_optional_entity_suffix_does_not_shorten_registered_metric_vocabulary() 
         assert matches[0].target.asset_ref.asset_id == "geometric"
     assert match_entity(_entity("geometric", "metric"), (), catalog)[0].strength == "exact"
     assert match_entity(_entity("shape metric", "metric"), (), catalog)[0].strength == "synonym"
+
+
+@pytest.mark.parametrize(
+    ("short_name", "entity_name"), [("geo", "geometric"), ("bio", "biometric")]
+)
+def test_metric_suffix_requires_a_separator_before_the_english_word(
+    short_name: str, entity_name: str
+) -> None:
+    """An ordinary word ending in metric must never link to its shortened prefix."""
+    layer = load_layer(Path("contracts/semantic-layer"))
+    metric = layer.metrics[0].model_copy(
+        update={"id": short_name, "name": short_name, "synonyms": []}
+    )
+    layer = layer.model_copy(update={"metrics": [metric], "terms": []})
+    catalog = build_snapshot(layer, CatalogSnapshot(scope="empty"))
+    assert match_entity(_entity(entity_name, "metric"), (), catalog) == ()
+    assert len(match_entity(_entity(f"{short_name}-METRIC", "metric"), (), catalog)) == 1

@@ -6,26 +6,38 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.evidence_models import Assertion
 from datakeel.core.kg_contracts import KGSchema
 from datakeel.core.kg_execution import KGJob
 from datakeel.core.kg_product import KGEntity
 from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.link_models import LinkGraph
 from datakeel.core.models import LineageEvent
-from datakeel.storage.database import VersionRow
-from datakeel.storage.events import all_events
-from datakeel.storage.evidence_store import read_assertions
+from datakeel.storage.database import EventRow, VersionRow
+from datakeel.storage.evidence_decisions import assertion_view
+from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_rows import KGRunRow
 
 
 def _latest_events(session: Session) -> tuple[LineageEvent, ...]:
     events = tuple(
         sorted(
-            (event for event in all_events(session) if event.operator == "evidence.kg"),
+            (
+                LineageEvent.model_validate(row.payload)
+                for row in session.scalars(
+                    select(EventRow).where(
+                        EventRow.payload["operator"].as_string() == "evidence.kg"
+                    )
+                )
+            ),
             key=lambda event: (event.occurred_at, event.event_id),
         )
     )
-    versions = {row.id: row.created_at for row in session.scalars(select(VersionRow))}
+    version_ids = {str(event.params["kg_version_id"]) for event in events}
+    versions = {
+        row.id: row.created_at
+        for row in session.scalars(select(VersionRow).where(VersionRow.id.in_(version_ids)))
+    }
     first_seen: dict[tuple[str, str], float] = {}
     for event in events:
         key = (str(event.params["kg_dataset_id"]), str(event.params["kg_version_id"]))
@@ -38,16 +50,30 @@ def _latest_events(session: Session) -> tuple[LineageEvent, ...]:
     )
 
 
+def _graph_assertions(
+    session: Session, entities: dict[str, KGEntity], version: str
+) -> tuple[Assertion, ...]:
+    return tuple(
+        assertion_view(row)
+        for row in session.scalars(
+            select(AssertionRow)
+            .where(
+                AssertionRow.predicate.like("kg.%"),
+                AssertionRow.predicate != "kg.same_as",
+                AssertionRow.active.is_(True),
+                AssertionRow.subject_id.in_(entities),
+                AssertionRow.payload["subject"]["version"].as_string() == version,
+            )
+            .order_by(AssertionRow.id)
+        )
+    )
+
+
 def read_link_graphs(session: Session) -> tuple[LinkGraph, ...]:
     """Resolve latest published versions and only active raw graph assertions."""
     events = _latest_events(session)
     for event in events:
         register_kg_schema(KGSchema.model_validate(event.params["kg_schema"]))
-    assertions = tuple(
-        item
-        for item in read_assertions(session)
-        if item.predicate.startswith("kg.") and item.predicate != "kg.same_as"
-    )
     graphs: list[LinkGraph] = []
     for dataset_id in sorted({str(event.params["kg_dataset_id"]) for event in events}):
         selected = tuple(event for event in events if event.params["kg_dataset_id"] == dataset_id)
@@ -58,11 +84,7 @@ def read_link_graphs(session: Session) -> tuple[LinkGraph, ...]:
             if (entity := KGEntity.model_validate(value))
         }
         version = str(selected[-1].params["kg_version_id"])
-        current = tuple(
-            item
-            for item in assertions
-            if item.subject.asset_id in entities and item.subject.version == version
-        )
+        current = _graph_assertions(session, entities, version)
         mentioned = {item.subject.asset_id for item in current if item.predicate == "kg.mentions"}
         runs = {str(event.params["run_id"]) for event in selected}
         graphs.append(

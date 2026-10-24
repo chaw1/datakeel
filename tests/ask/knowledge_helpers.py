@@ -86,6 +86,6 @@ def claim_context() -> tuple[KnowledgeSubject, LinkContext]:
     )
 
 
-def source_reader(_identity: str, _version: str) -> KGSourceText:
+def source_reader(_anchor: EvidenceAnchor) -> KGSourceText:
     """Return frozen source text for pure claim-selection unit tests."""
     return SOURCE

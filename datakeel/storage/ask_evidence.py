@@ -96,7 +96,14 @@ def _facts(
                 match.source,
             )
         )
-    facts.extend(
+    facts.extend(_knowledge_facts(answer, question, event_id))
+    return tuple(facts)
+
+
+def _knowledge_facts(
+    answer: AskAnswer, question: QuestionProperties, event_id: str
+) -> tuple[Assertion, ...]:
+    facts = [
         _assertion(
             question,
             event_id,
@@ -105,7 +112,18 @@ def _facts(
             (_anchor(question),),
         )
         for ref in knowledge_citations(answer.knowledge)
-    )
+    ]
+    if answer.answer_kind == "knowledge" and answer.status != "answered":
+        facts.append(
+            _assertion(
+                question,
+                event_id,
+                "ask.knowledge_unresolved",
+                EvidenceValue(concept="knowledge", value="unknown"),
+                (_anchor(question),),
+                answer.knowledge.reason_code if answer.knowledge else answer.status,
+            )
+        )
     return tuple(facts)
 
 
