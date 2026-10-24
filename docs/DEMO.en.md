@@ -184,3 +184,9 @@ npm --prefix web run smoke:tour -- http://127.0.0.1:8773
 ```
 
 The script writes 20 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. The cleanup step also checks two quarantined files, explicit continuation after approval, one deletion record, one remaining file, and the unchanged original 400-file dataset. The graph step checks missing-tail evidence and the persisted rejection style. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.
+
+## Knowledge questions / 知识问数
+
+After demo initialization, open Ask data and select the owner, upstream or downstream examples, then enter `shipments 表从哪来？` or `营业额谁负责？` for further questions. The first separates the registered supply-chain role from the candidate document claim about 周岩; the second marks `erp_raw_shipments` as missing from the catalog; the third asks you to choose 销售额 or 零售额.
+
+演示初始化后，在问数页点击负责人例句并作答，再手动输入 shipments 上游、营业额负责人两个问题。第一题把系统角色和文档中周岩的说法分开展示；第二题标明原始表「目录里没有」；第三题请用户选择歧义指标。点击文档说法进入原文关系抽屉。切到知识图谱，选择「企业文档 · Enterprise documents」，打开实体的「对应资产」并接受或拒绝关联。审阅后重问可以看到状态变化；重关联、同版本重抽取仍保留人审。全部来自六篇虚构文档的离线录制，不需要模型密钥。

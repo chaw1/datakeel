@@ -4,6 +4,19 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-24
+
+### Added
+
+- Deterministic, reviewable `link.maps_to` associations between graph entities and catalog tables, views or semantic metrics. Publication, catalog refresh and semantic changes rerun associations; human link decisions survive dataset and catalog versions.
+- Bilingual owner, upstream, downstream and responsibility questions through the existing HTTP, CLI, Agent and MCP `ask_data` entry points. Answers separate system records from document claims and preserve evidence fragments, source documents, review labels, verification and consistency markers.
+- Knowledge answer cards, entity association review and asset navigation, plus an association filter for bulk review. Metric-value answers include up to five related claims without changing their numeric behavior.
+- Six fictional enterprise documents and an attributed offline recording in the demo. Separate initial and reviewed knowledge evaluations include 23 cases each, while the original 20 metric cases keep their own fixture and statistics. Four additional JSON-asserting goldens and two mutations bring the suites to 40 and 26.
+
+### Changed
+
+- Package, API and frontend versions advance to 0.11.0. OpenAPI additions preserve existing metric fields; runtime dependencies are unchanged and enterprise replay resources ship in wheels.
+
 ## [0.10.0] - 2026-10-24
 
 ### Added

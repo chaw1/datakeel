@@ -184,3 +184,9 @@ npm --prefix web run smoke:tour -- http://127.0.0.1:8773
 ```
 
 脚本生成 20 张 `1440 × 900` 的 JPEG 到 `docs/images/demo/`，每张不超过 400,000 字节，直接取自浏览器，不做图片后处理。`artifacts/demo-tour/tour.json` 记录每步操作、响应状态、对象与版本、图片尺寸及大小、控制台错误和拦截的外部请求；同目录保存页面文本。脚本还检查两种指标签批单的中英文影响数字一致，以及问数结果 `4,979,475 → 5,255,975 → 4,979,475` 和指标版本 `1 → 2 → 3`。新增清理步骤核对两个隔离文件、签批后显式恢复、唯一删除记录、剩余一个文件，以及原 400 文件数据集未变。图谱步骤核对缺失尾实体的原文证据及已保存的拒绝样式。成功要求控制台和页面错误均为 0，外部请求为 0。重复运行需要再次启动全新的临时工作区。
+
+## Knowledge questions / 知识问数
+
+After demo initialization, open Ask data and select the owner, upstream or downstream examples, then enter `shipments 表从哪来？` or `营业额谁负责？` for further questions. The first separates the registered supply-chain role from the candidate document claim about 周岩; the second marks `erp_raw_shipments` as missing from the catalog; the third asks you to choose 销售额 or 零售额.
+
+演示初始化后，在问数页点击负责人例句并作答，再手动输入 shipments 上游、营业额负责人两个问题。第一题把系统角色和文档中周岩的说法分开展示；第二题标明原始表「目录里没有」；第三题请用户选择歧义指标。点击文档说法进入原文关系抽屉。切到知识图谱，选择「企业文档 · Enterprise documents」，打开实体的「对应资产」并接受或拒绝关联。审阅后重问可以看到状态变化；重关联、同版本重抽取仍保留人审。全部来自六篇虚构文档的离线录制，不需要模型密钥。

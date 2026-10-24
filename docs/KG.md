@@ -226,3 +226,32 @@ Only literal loopback destinations (`localhost`, `localhost.`, IPv4 loopback or 
 Source documents and model responses are untrusted data. Schema restrictions and source checks constrain what becomes a candidate, but they do not prove a statement is true or eliminate prompt injection. A supplied quote may be misleading even when all spans match. No model output can approve a plan, edit schema, alter credentials or call another tool. Frozen plans, server-side authorization and source-scoped audit remain the execution boundary; human review remains the semantic boundary. The default replay path has no outbound request.
 
 原文和模型返回都是不可信数据。schema 与原文核对限制候选形状，但不能证明事实真假，也不能彻底消除提示注入；全部位置匹配的句子仍可能被误解。模型输出不能签批、改 schema、改密钥或调用其他工具。冻结计划、服务端授权和来源审计保护执行边界，人工复核判断关系语义；默认重放路径没有外发请求。
+
+## Catalog associations and knowledge questions / 对应资产与知识问数
+
+Graph `dataset` entities can associate with catalog tables or views; `metric` entities can associate with semantic metrics. Associations are independent candidate assertions under `link.maps_to`, published by `evidence.kg_link`. No model is used for linking, intent recognition or subject resolution. Only the latest published graph version per dataset participates; different datasets retain separate source attribution. Questions completely ignore `kg.same_as`, including accepted aliases. Two entities contribute to the same asset only through their own eligible asset associations.
+
+关联只处理图谱的 dataset 和 metric 类型。表标识符用 `[A-Za-z][A-Za-z0-9_]*(?:[./][A-Za-z][A-Za-z0-9_]*)*` 提取，与表名、`schema.表名`、完整目录 id 忽略大小写精确比较；固定停用词是 `table`、`tables`、`the`、`表`。下划线不会拆开，所以 `erp_raw_shipments` 不等于 `shipments`。文字只来自实体名和该实体提及锚点覆盖的片段，不扫描所在整句。
+
+Metric association compares complete names after NFKC normalization, lowercasing and trimming. Entity names and their mention spans additionally allow removing the suffix `指标` or `metric`; registered names, IDs, terms and synonyms retain their complete spelling. Metric names, IDs and term names form the exact tier; metric and term synonyms form the synonym tier. Only the strongest matching tier is retained. Substring and prefix matching do not create associations.
+
+最强档只命中一个资产是唯一匹配；候选阶段可以作答，显示「关联待确认」。命中多个资产是歧义匹配；人接受前不用于作答，并按本题方向统计被排除说法的 `pending_ambiguous_links`。拒绝的关联及关系不用于回答，也不计入待确认数量。人员、组织、地点和系统的另一端标为 `not_applicable`，不会把人误标成「目录里没有」。
+
+Associations rerun after graph publication, catalog import/refresh and semantic installation/update. `POST /api/kg/links/rerun` is the idempotent manual entry point; `GET /api/kg/links` supports dataset and status filters, and `GET /api/kg/entities/{entity_id}/links` serves the entity panel. Review uses the existing `decide_assertions` flow. Metric targets bind the metric version, while table/view targets bind the catalog revision so metadata changes remain auditable. Link decisions inherit by entity ID, predicate and target ID, excluding versions. Graph relationship decisions retain their earlier rule: inheritance only within the same dataset version. A direct restore supersedes older decisions in either flow.
+
+知识类问句用完整疑问句模板截取主语，再按层短路解析：先指标（含指标 id），再目录表/视图和登记角色，最后图谱实体的规范化整名。同一层命中多个候选才反问；相似度仅用于未知主语的最多三个建议，不用于解析。
+
+| Intent / 意图 | Examples / 例句 | Document direction / 文档关系 |
+| --- | --- | --- |
+| Owner / 负责人 | `出货额由谁维护？` · `Who is responsible for customer_count?` | `owns`, subject at tail / 主语为尾 |
+| Upstream / 上游 | `shipments 从哪来？` · `What is sales_summary derived from?` | `derived_from` / `computed_from`, subject at head / 主语为头 |
+| Downstream / 下游 | `哪些指标依赖 orders？` · `What uses orders?` | `derived_from` / `computed_from`, subject at tail / 主语为尾 |
+| Responsibilities / 负责什么 | `周岩负责哪些？` · `What does treasury team own?` | `owns`, subject at head / 主语为头 |
+
+Metric-value questions with incidental words such as “下游渠道的出货额是多少” keep the metric route. A knowledge answer uses `answer_kind=knowledge`, a separate `knowledge` payload, and `subject_candidates` for clarification or suggestions. A resolved subject with no facts returns `no_knowledge`; no suggested metric or SQL is invented. Successful numeric answers keep their existing fields and add at most five related document claims in `knowledge` with `intent=related`.
+
+问答卡分「系统记录」和「文档里的说法」。系统侧：指标负责人取语义层角色，表负责人读 `owned_by`；指标上游是度量表，表/视图上下游聚合列级 `derived`，下游另加 `measures` 指向本表列的指标。度量表尚未导入目录时，系统仍显示指标定义里的完整表 id，引用版本标为 `semantic/指标id/指标版本`，不冒充目录修订号；文档另一端仍按真实关联判定。外键、术语、维度不算上下游。角色负责什么取指向该角色的 `owned_by` 指标；人员或团队固定说明系统只登记角色，未登记到人。
+
+Document claims expose the assertion ID, endpoints, predicate, `relation_status` (`candidate` / `accepted`), `verification` (`verified` / `needs_review`), exact evidence fragments and document names. `subject_link` and `other_end` retain the association IDs and independent review states. Upstream/downstream consistency is `consistent` when the other asset is in system records, `not_in_system` when it is linked but absent there, and `not_in_catalog` when unlinked. Owner and responsibility questions have null consistency; role names and people are not equated. Clicking a claim opens its source relation drawer. Every used system asset, graph assertion and link assertion is audited with `ask.cites_asset` / `ask.cites_assertion`.
+
+演示另外导入「企业文档 · Enterprise documents」六篇虚构文档，通过 `replay-enterprise` 离线抽取。原文与录制逐字保存在 `docs/p9/`；写入抽取文档时不附加换行。`eval-ask` 保留原 20 条指标用例的纯目录夹具和统计，另跑 23 条知识/反例用例的初始、审后两种状态；审后严格依次人审、重关联、同版本重抽。报告的 `knowledge.states` 保存逐条答案和检查结果，知识用例要求两态全过。
