@@ -24,6 +24,8 @@ class AssertionRow(Base):
     decided_by: Mapped[str | None] = mapped_column(String, nullable=True)
     decided_at: Mapped[str | None] = mapped_column(String, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    verification: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    verification_detail: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
 
 class AssertionDecisionRow(Base):

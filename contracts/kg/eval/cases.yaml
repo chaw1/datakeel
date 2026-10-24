@@ -1,0 +1,1243 @@
+# Synthetic bilingual extraction fixtures; source: independently authored KG benchmark, 2026-10-24.
+id: bilingual-business-24
+version: '1.0'
+cases:
+- id: zh01
+  lang: zh
+  text: 星河零售的数据平台部位于杭州滨江，隶属于集团技术中心。部门负责人是林晓雯，她主导维护订单宽表 dwd_order_wide。该宽表由原始订单表 ods_order 和支付流水表 ods_payment
+    清洗合并而来。
+  entities:
+  - name: 星河零售
+    type: organization
+    aliases: []
+  - name: 数据平台部
+    type: organization
+    aliases:
+    - 星河零售的数据平台部
+    - 星河零售数据平台部
+  - name: 杭州滨江
+    type: location
+    aliases:
+    - 滨江
+    - 杭州
+  - name: 集团技术中心
+    type: organization
+    aliases:
+    - 技术中心
+  - name: 林晓雯
+    type: person
+    aliases: []
+  - name: dwd_order_wide
+    type: dataset
+    aliases:
+    - 订单宽表
+    - 订单宽表 dwd_order_wide
+  - name: ods_order
+    type: dataset
+    aliases:
+    - 原始订单表
+    - 原始订单表 ods_order
+  - name: ods_payment
+    type: dataset
+    aliases:
+    - 支付流水表
+    - 支付流水表 ods_payment
+  relations:
+  - head: 数据平台部
+    relation: located_in
+    tail: 杭州滨江
+  - head: 数据平台部
+    relation: part_of
+    tail: 集团技术中心
+  - head: 林晓雯
+    relation: works_for
+    tail: 数据平台部
+  - head: 林晓雯
+    relation: owns
+    tail: dwd_order_wide
+  - head: dwd_order_wide
+    relation: derived_from
+    tail: ods_order
+  - head: dwd_order_wide
+    relation: derived_from
+    tail: ods_payment
+  optional:
+  - head: 数据平台部
+    relation: part_of
+    tail: 星河零售
+  - head: 集团技术中心
+    relation: part_of
+    tail: 星河零售
+  traps: []
+- id: zh02
+  lang: zh
+  text: 财务分析组的周敏负责 GMV 指标。GMV 按 dws_trade_daily 汇总表计算，而不是基于 dwd_order_wide 直接计算。dws_trade_daily 由 dwd_order_wide
+    按天汇总生成。团队目前用 Superset 做报表，去年曾试用过 Tableau，后来停用了。
+  entities:
+  - name: 财务分析组
+    type: organization
+    aliases: []
+  - name: 周敏
+    type: person
+    aliases: []
+  - name: GMV
+    type: metric
+    aliases:
+    - GMV 指标
+  - name: dws_trade_daily
+    type: dataset
+    aliases:
+    - dws_trade_daily 汇总表
+  - name: dwd_order_wide
+    type: dataset
+    aliases: []
+  - name: Superset
+    type: system
+    aliases: []
+  - name: Tableau
+    type: system
+    aliases: []
+  relations:
+  - head: 周敏
+    relation: works_for
+    tail: 财务分析组
+  - head: 周敏
+    relation: owns
+    tail: GMV
+  - head: GMV
+    relation: computed_from
+    tail: dws_trade_daily
+  - head: dws_trade_daily
+    relation: derived_from
+    tail: dwd_order_wide
+  - head: 财务分析组
+    relation: uses
+    tail: Superset
+  optional: []
+  traps:
+  - head: GMV
+    relation: computed_from
+    tail: dwd_order_wide
+  - head: 财务分析组
+    relation: uses
+    tail: Tableau
+- id: zh03
+  lang: zh
+  text: 云栖智造总部坐落于苏州工业园区，在深圳南山设有研发中心。研发中心下设视觉算法团队，该团队由陈泽宇带领，长期维护缺陷图像数据集 defect-img-v3。
+  entities:
+  - name: 云栖智造
+    type: organization
+    aliases: []
+  - name: 苏州工业园区
+    type: location
+    aliases:
+    - 苏州
+  - name: 深圳南山
+    type: location
+    aliases:
+    - 南山
+    - 深圳
+  - name: 研发中心
+    type: organization
+    aliases:
+    - 深圳研发中心
+  - name: 视觉算法团队
+    type: organization
+    aliases: []
+  - name: 陈泽宇
+    type: person
+    aliases: []
+  - name: defect-img-v3
+    type: dataset
+    aliases:
+    - 缺陷图像数据集
+    - 缺陷图像数据集 defect-img-v3
+  relations:
+  - head: 云栖智造
+    relation: located_in
+    tail: 苏州工业园区
+  - head: 研发中心
+    relation: located_in
+    tail: 深圳南山
+  - head: 研发中心
+    relation: part_of
+    tail: 云栖智造
+  - head: 视觉算法团队
+    relation: part_of
+    tail: 研发中心
+  - head: 陈泽宇
+    relation: works_for
+    tail: 视觉算法团队
+  - head: 视觉算法团队
+    relation: owns
+    tail: defect-img-v3
+  optional:
+  - head: 陈泽宇
+    relation: owns
+    tail: defect-img-v3
+  - head: 云栖智造
+    relation: located_in
+    tail: 深圳南山
+  traps: []
+- id: zh04
+  lang: zh
+  text: 用户增长部计划明年把埋点数据从 Kafka 迁移到 Pulsar，目前埋点仍通过 Kafka 接入。部门的数据工程师赵一鸣维护日活指标 DAU，DAU 基于 dwd_user_event
+    计算；dwd_user_event 由 ods_tracking_log 解析得到。
+  entities:
+  - name: 用户增长部
+    type: organization
+    aliases: []
+  - name: Kafka
+    type: system
+    aliases: []
+  - name: Pulsar
+    type: system
+    aliases: []
+  - name: 赵一鸣
+    type: person
+    aliases: []
+  - name: DAU
+    type: metric
+    aliases:
+    - 日活指标
+    - 日活
+    - 日活指标 DAU
+  - name: dwd_user_event
+    type: dataset
+    aliases: []
+  - name: ods_tracking_log
+    type: dataset
+    aliases: []
+  relations:
+  - head: 用户增长部
+    relation: uses
+    tail: Kafka
+  - head: 赵一鸣
+    relation: works_for
+    tail: 用户增长部
+  - head: 赵一鸣
+    relation: owns
+    tail: DAU
+  - head: DAU
+    relation: computed_from
+    tail: dwd_user_event
+  - head: dwd_user_event
+    relation: derived_from
+    tail: ods_tracking_log
+  optional: []
+  traps:
+  - head: 用户增长部
+    relation: uses
+    tail: Pulsar
+- id: zh05
+  lang: zh
+  text: 会员系统 MemberHub 原本由王磊负责，上个月起改由刘佳接手；王磊已调往供应链团队。MemberHub 使用 Redis 缓存会员等级。会员维表 dim_member 每晚从 MemberHub
+    的导出表 ods_member_snapshot 同步。
+  entities:
+  - name: MemberHub
+    type: system
+    aliases:
+    - 会员系统
+    - 会员系统 MemberHub
+  - name: 王磊
+    type: person
+    aliases: []
+  - name: 刘佳
+    type: person
+    aliases: []
+  - name: 供应链团队
+    type: organization
+    aliases: []
+  - name: Redis
+    type: system
+    aliases: []
+  - name: dim_member
+    type: dataset
+    aliases:
+    - 会员维表
+    - 会员维表 dim_member
+  - name: ods_member_snapshot
+    type: dataset
+    aliases:
+    - 导出表
+    - 导出表 ods_member_snapshot
+  relations:
+  - head: 刘佳
+    relation: owns
+    tail: MemberHub
+  - head: 王磊
+    relation: works_for
+    tail: 供应链团队
+  - head: MemberHub
+    relation: uses
+    tail: Redis
+  - head: dim_member
+    relation: derived_from
+    tail: ods_member_snapshot
+  optional: []
+  traps:
+  - head: 王磊
+    relation: owns
+    tail: MemberHub
+- id: zh06
+  lang: zh
+  text: 华东大区销售运营中心设在上海，归属销售事业部。中心有两名分析师：郑可和孙浩。郑可负责复购率指标，复购率基于 dws_member_order 计算；孙浩负责客单价指标，客单价同样基于 dws_member_order
+    计算。
+  entities:
+  - name: 华东大区销售运营中心
+    type: organization
+    aliases:
+    - 销售运营中心
+  - name: 上海
+    type: location
+    aliases: []
+  - name: 销售事业部
+    type: organization
+    aliases: []
+  - name: 郑可
+    type: person
+    aliases: []
+  - name: 孙浩
+    type: person
+    aliases: []
+  - name: 复购率
+    type: metric
+    aliases:
+    - 复购率指标
+  - name: 客单价
+    type: metric
+    aliases:
+    - 客单价指标
+  - name: dws_member_order
+    type: dataset
+    aliases: []
+  relations:
+  - head: 华东大区销售运营中心
+    relation: located_in
+    tail: 上海
+  - head: 华东大区销售运营中心
+    relation: part_of
+    tail: 销售事业部
+  - head: 郑可
+    relation: works_for
+    tail: 华东大区销售运营中心
+  - head: 孙浩
+    relation: works_for
+    tail: 华东大区销售运营中心
+  - head: 郑可
+    relation: owns
+    tail: 复购率
+  - head: 孙浩
+    relation: owns
+    tail: 客单价
+  - head: 复购率
+    relation: computed_from
+    tail: dws_member_order
+  - head: 客单价
+    relation: computed_from
+    tail: dws_member_order
+  optional: []
+  traps: []
+- id: zh07
+  lang: zh
+  text: 2026 年 3 月，风控平台 Sentinel 完成升级，日均处理 1.2 亿次请求。Sentinel 依赖 Flink 做实时计算，规则配置存放在 PostgreSQL 中。平台由风控技术部维护，部门位于北京望京。
+  entities:
+  - name: Sentinel
+    type: system
+    aliases:
+    - 风控平台
+    - 风控平台 Sentinel
+  - name: Flink
+    type: system
+    aliases: []
+  - name: PostgreSQL
+    type: system
+    aliases: []
+  - name: 风控技术部
+    type: organization
+    aliases: []
+  - name: 北京望京
+    type: location
+    aliases:
+    - 望京
+    - 北京
+  relations:
+  - head: Sentinel
+    relation: uses
+    tail: Flink
+  - head: Sentinel
+    relation: uses
+    tail: PostgreSQL
+  - head: 风控技术部
+    relation: owns
+    tail: Sentinel
+  - head: 风控技术部
+    relation: located_in
+    tail: 北京望京
+  optional: []
+  traps: []
+- id: zh08
+  lang: zh
+  text: 推荐团队的训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志 ods_exposure 拼接生成。feat_user_item 又是从行为宽表 dwd_behavior_wide
+    聚合得到的。样本表的负责人是推荐团队的何静。
+  entities:
+  - name: 推荐团队
+    type: organization
+    aliases: []
+  - name: sample_rec_v2
+    type: dataset
+    aliases:
+    - 训练样本表
+    - 样本表
+    - 训练样本表 sample_rec_v2
+  - name: feat_user_item
+    type: dataset
+    aliases:
+    - 特征表
+    - 特征表 feat_user_item
+  - name: ods_exposure
+    type: dataset
+    aliases:
+    - 曝光日志
+    - 曝光日志 ods_exposure
+  - name: dwd_behavior_wide
+    type: dataset
+    aliases:
+    - 行为宽表
+    - 行为宽表 dwd_behavior_wide
+  - name: 何静
+    type: person
+    aliases: []
+  relations:
+  - head: sample_rec_v2
+    relation: derived_from
+    tail: feat_user_item
+  - head: sample_rec_v2
+    relation: derived_from
+    tail: ods_exposure
+  - head: feat_user_item
+    relation: derived_from
+    tail: dwd_behavior_wide
+  - head: 何静
+    relation: owns
+    tail: sample_rec_v2
+  - head: 何静
+    relation: works_for
+    tail: 推荐团队
+  optional:
+  - head: 推荐团队
+    relation: owns
+    tail: sample_rec_v2
+  - head: sample_rec_v2
+    relation: derived_from
+    tail: dwd_behavior_wide
+  traps: []
+- id: zh09
+  lang: zh
+  text: 标注组位于成都高新区，隶属于数据服务中心。组长吴婷负责车道线标注集 lane-anno-2026，该标注集基于原始路采数据 road-raw-0915 抽帧生成。标注组使用 CVAT 进行标注，并不使用
+    Label Studio。
+  entities:
+  - name: 标注组
+    type: organization
+    aliases: []
+  - name: 成都高新区
+    type: location
+    aliases:
+    - 成都
+  - name: 数据服务中心
+    type: organization
+    aliases: []
+  - name: 吴婷
+    type: person
+    aliases: []
+  - name: lane-anno-2026
+    type: dataset
+    aliases:
+    - 车道线标注集
+    - 车道线标注集 lane-anno-2026
+  - name: road-raw-0915
+    type: dataset
+    aliases:
+    - 原始路采数据
+    - 原始路采数据 road-raw-0915
+  - name: CVAT
+    type: system
+    aliases: []
+  - name: Label Studio
+    type: system
+    aliases: []
+  relations:
+  - head: 标注组
+    relation: located_in
+    tail: 成都高新区
+  - head: 标注组
+    relation: part_of
+    tail: 数据服务中心
+  - head: 吴婷
+    relation: works_for
+    tail: 标注组
+  - head: 吴婷
+    relation: owns
+    tail: lane-anno-2026
+  - head: lane-anno-2026
+    relation: derived_from
+    tail: road-raw-0915
+  - head: 标注组
+    relation: uses
+    tail: CVAT
+  optional: []
+  traps:
+  - head: 标注组
+    relation: uses
+    tail: Label Studio
+- id: zh10
+  lang: zh
+  text: 范志远常驻新加坡，他在海外业务部工作，主要维护东南亚订单表 dwd_order_sea。这张表来自各国站点上报的 ods_order_sea_raw。海外业务部用 BigQuery 存放这些数据。
+  entities:
+  - name: 范志远
+    type: person
+    aliases: []
+  - name: 新加坡
+    type: location
+    aliases: []
+  - name: 海外业务部
+    type: organization
+    aliases: []
+  - name: dwd_order_sea
+    type: dataset
+    aliases:
+    - 东南亚订单表
+    - 东南亚订单表 dwd_order_sea
+  - name: ods_order_sea_raw
+    type: dataset
+    aliases: []
+  - name: BigQuery
+    type: system
+    aliases: []
+  relations:
+  - head: 范志远
+    relation: located_in
+    tail: 新加坡
+  - head: 范志远
+    relation: works_for
+    tail: 海外业务部
+  - head: 范志远
+    relation: owns
+    tail: dwd_order_sea
+  - head: dwd_order_sea
+    relation: derived_from
+    tail: ods_order_sea_raw
+  - head: 海外业务部
+    relation: uses
+    tail: BigQuery
+  optional: []
+  traps: []
+- id: zh11
+  lang: zh
+  text: 库存周转天数由供应链分析组的钱多多负责，计算时同时用到库存快照表 dws_inventory_snapshot 和出库明细表 dwd_outbound。该指标以前也引用过采购表 dwd_purchase，现已不再使用。供应链分析组隶属于运营管理部。
+  entities:
+  - name: 库存周转天数
+    type: metric
+    aliases: []
+  - name: 供应链分析组
+    type: organization
+    aliases: []
+  - name: 钱多多
+    type: person
+    aliases: []
+  - name: dws_inventory_snapshot
+    type: dataset
+    aliases:
+    - 库存快照表
+    - 库存快照表 dws_inventory_snapshot
+  - name: dwd_outbound
+    type: dataset
+    aliases:
+    - 出库明细表
+    - 出库明细表 dwd_outbound
+  - name: dwd_purchase
+    type: dataset
+    aliases:
+    - 采购表
+    - 采购表 dwd_purchase
+  - name: 运营管理部
+    type: organization
+    aliases: []
+  relations:
+  - head: 钱多多
+    relation: owns
+    tail: 库存周转天数
+  - head: 钱多多
+    relation: works_for
+    tail: 供应链分析组
+  - head: 库存周转天数
+    relation: computed_from
+    tail: dws_inventory_snapshot
+  - head: 库存周转天数
+    relation: computed_from
+    tail: dwd_outbound
+  - head: 供应链分析组
+    relation: part_of
+    tail: 运营管理部
+  optional: []
+  traps:
+  - head: 库存周转天数
+    relation: computed_from
+    tail: dwd_purchase
+- id: zh12
+  lang: zh
+  text: 质量中台 QualityHub 由数据治理委员会统一管理，日常运维交给平台工程组。QualityHub 调用 Great Expectations 执行校验规则，校验结果写入 dq_result
+    表；dq_result 汇总后生成每日质量报告表 dq_report_daily。平台工程组位于武汉光谷。
+  entities:
+  - name: QualityHub
+    type: system
+    aliases:
+    - 质量中台
+    - 质量中台 QualityHub
+  - name: 数据治理委员会
+    type: organization
+    aliases: []
+  - name: 平台工程组
+    type: organization
+    aliases: []
+  - name: Great Expectations
+    type: system
+    aliases: []
+  - name: dq_result
+    type: dataset
+    aliases:
+    - dq_result 表
+  - name: dq_report_daily
+    type: dataset
+    aliases:
+    - 每日质量报告表
+    - 每日质量报告表 dq_report_daily
+  - name: 武汉光谷
+    type: location
+    aliases:
+    - 光谷
+    - 武汉
+  relations:
+  - head: 数据治理委员会
+    relation: owns
+    tail: QualityHub
+  - head: QualityHub
+    relation: uses
+    tail: Great Expectations
+  - head: dq_report_daily
+    relation: derived_from
+    tail: dq_result
+  - head: 平台工程组
+    relation: located_in
+    tail: 武汉光谷
+  optional:
+  - head: 平台工程组
+    relation: owns
+    tail: QualityHub
+  traps: []
+- id: en01
+  lang: en
+  text: Northwind Analytics is headquartered in Austin, Texas. Its Data Platform team, part of the Engineering
+    division, maintains the customer master table dim_customer. Priya Raman leads the Data Platform team.
+  entities:
+  - name: Northwind Analytics
+    type: organization
+    aliases: []
+  - name: Austin
+    type: location
+    aliases:
+    - Austin, Texas
+    - Texas
+  - name: Data Platform team
+    type: organization
+    aliases:
+    - Data Platform
+    - Its Data Platform team
+  - name: Engineering division
+    type: organization
+    aliases:
+    - Engineering
+  - name: dim_customer
+    type: dataset
+    aliases:
+    - customer master table
+    - customer master table dim_customer
+  - name: Priya Raman
+    type: person
+    aliases: []
+  relations:
+  - head: Northwind Analytics
+    relation: located_in
+    tail: Austin
+  - head: Data Platform team
+    relation: part_of
+    tail: Engineering division
+  - head: Data Platform team
+    relation: owns
+    tail: dim_customer
+  - head: Priya Raman
+    relation: works_for
+    tail: Data Platform team
+  optional:
+  - head: Data Platform team
+    relation: part_of
+    tail: Northwind Analytics
+  - head: Engineering division
+    relation: part_of
+    tail: Northwind Analytics
+  traps: []
+- id: en02
+  lang: en
+  text: The churn rate metric is owned by Marcus Lee from the Retention Analytics group. Churn rate is
+    computed from fct_subscription_events, not from the legacy table subs_legacy. fct_subscription_events
+    is built from raw_billing_events.
+  entities:
+  - name: churn rate
+    type: metric
+    aliases:
+    - churn rate metric
+  - name: Marcus Lee
+    type: person
+    aliases: []
+  - name: Retention Analytics group
+    type: organization
+    aliases:
+    - Retention Analytics
+  - name: fct_subscription_events
+    type: dataset
+    aliases: []
+  - name: subs_legacy
+    type: dataset
+    aliases:
+    - legacy table subs_legacy
+  - name: raw_billing_events
+    type: dataset
+    aliases: []
+  relations:
+  - head: Marcus Lee
+    relation: owns
+    tail: churn rate
+  - head: Marcus Lee
+    relation: works_for
+    tail: Retention Analytics group
+  - head: churn rate
+    relation: computed_from
+    tail: fct_subscription_events
+  - head: fct_subscription_events
+    relation: derived_from
+    tail: raw_billing_events
+  optional: []
+  traps:
+  - head: churn rate
+    relation: computed_from
+    tail: subs_legacy
+- id: en03
+  lang: en
+  text: The Growth team currently runs its experiments on Optimizely. They are evaluating a move to GrowthBook
+    next quarter, but no decision has been made. Experiment results land in the table exp_results, which
+    Hannah Cho maintains.
+  entities:
+  - name: Growth team
+    type: organization
+    aliases:
+    - Growth
+  - name: Optimizely
+    type: system
+    aliases: []
+  - name: GrowthBook
+    type: system
+    aliases: []
+  - name: exp_results
+    type: dataset
+    aliases: []
+  - name: Hannah Cho
+    type: person
+    aliases: []
+  relations:
+  - head: Growth team
+    relation: uses
+    tail: Optimizely
+  - head: Hannah Cho
+    relation: owns
+    tail: exp_results
+  optional:
+  - head: Hannah Cho
+    relation: works_for
+    tail: Growth team
+  - head: Growth team
+    relation: owns
+    tail: exp_results
+  traps:
+  - head: Growth team
+    relation: uses
+    tail: GrowthBook
+- id: en04
+  lang: en
+  text: Until last year, the fraud score model service was owned by Diego Alvarez. Ownership has since
+    moved to the Risk Engineering team in Toronto. The service, called FraudGuard, reads features from
+    Redis and logs decisions to fraud_decisions.
+  entities:
+  - name: FraudGuard
+    type: system
+    aliases:
+    - fraud score model service
+  - name: Diego Alvarez
+    type: person
+    aliases: []
+  - name: Risk Engineering team
+    type: organization
+    aliases:
+    - Risk Engineering
+  - name: Toronto
+    type: location
+    aliases: []
+  - name: Redis
+    type: system
+    aliases: []
+  - name: fraud_decisions
+    type: dataset
+    aliases: []
+  relations:
+  - head: Risk Engineering team
+    relation: owns
+    tail: FraudGuard
+  - head: Risk Engineering team
+    relation: located_in
+    tail: Toronto
+  - head: FraudGuard
+    relation: uses
+    tail: Redis
+  optional: []
+  traps:
+  - head: Diego Alvarez
+    relation: owns
+    tail: FraudGuard
+- id: en05
+  lang: en
+  text: The marketing attribution table mart_attribution is derived from stg_touchpoints and stg_orders.
+    stg_touchpoints, in turn, is cleaned from the raw clickstream table raw_clicks. The Marketing Science
+    team, based in London, owns mart_attribution.
+  entities:
+  - name: mart_attribution
+    type: dataset
+    aliases:
+    - marketing attribution table
+    - marketing attribution table mart_attribution
+  - name: stg_touchpoints
+    type: dataset
+    aliases: []
+  - name: stg_orders
+    type: dataset
+    aliases: []
+  - name: raw_clicks
+    type: dataset
+    aliases:
+    - raw clickstream table
+    - raw clickstream table raw_clicks
+  - name: Marketing Science team
+    type: organization
+    aliases:
+    - Marketing Science
+  - name: London
+    type: location
+    aliases: []
+  relations:
+  - head: mart_attribution
+    relation: derived_from
+    tail: stg_touchpoints
+  - head: mart_attribution
+    relation: derived_from
+    tail: stg_orders
+  - head: stg_touchpoints
+    relation: derived_from
+    tail: raw_clicks
+  - head: Marketing Science team
+    relation: owns
+    tail: mart_attribution
+  - head: Marketing Science team
+    relation: located_in
+    tail: London
+  optional:
+  - head: mart_attribution
+    relation: derived_from
+    tail: raw_clicks
+  traps: []
+- id: en06
+  lang: en
+  text: At Helios Energy, analysts Omar Haddad and Lena Fischer both work in the Grid Insights unit. Omar
+    owns the outage frequency metric, which is computed from fct_outages. Lena owns average restoration
+    time, which is also computed from fct_outages. Grid Insights is part of the Operations department.
+  entities:
+  - name: Helios Energy
+    type: organization
+    aliases: []
+  - name: Omar Haddad
+    type: person
+    aliases:
+    - Omar
+  - name: Lena Fischer
+    type: person
+    aliases:
+    - Lena
+  - name: Grid Insights unit
+    type: organization
+    aliases:
+    - Grid Insights
+  - name: outage frequency
+    type: metric
+    aliases:
+    - outage frequency metric
+  - name: average restoration time
+    type: metric
+    aliases: []
+  - name: fct_outages
+    type: dataset
+    aliases: []
+  - name: Operations department
+    type: organization
+    aliases:
+    - Operations
+  relations:
+  - head: Omar Haddad
+    relation: works_for
+    tail: Grid Insights unit
+  - head: Lena Fischer
+    relation: works_for
+    tail: Grid Insights unit
+  - head: Omar Haddad
+    relation: owns
+    tail: outage frequency
+  - head: Lena Fischer
+    relation: owns
+    tail: average restoration time
+  - head: outage frequency
+    relation: computed_from
+    tail: fct_outages
+  - head: average restoration time
+    relation: computed_from
+    tail: fct_outages
+  - head: Grid Insights unit
+    relation: part_of
+    tail: Operations department
+  optional:
+  - head: Omar Haddad
+    relation: works_for
+    tail: Helios Energy
+  - head: Lena Fischer
+    relation: works_for
+    tail: Helios Energy
+  - head: Grid Insights unit
+    relation: part_of
+    tail: Helios Energy
+  - head: Operations department
+    relation: part_of
+    tail: Helios Energy
+  traps: []
+- id: en07
+  lang: en
+  text: Atlas, the internal search platform, is built on OpenSearch and uses Kafka to ingest document
+    updates. The Search Infrastructure team in Dublin maintains Atlas. Atlas does not use Elasticsearch
+    anymore since the migration in 2025.
+  entities:
+  - name: Atlas
+    type: system
+    aliases:
+    - internal search platform
+  - name: OpenSearch
+    type: system
+    aliases: []
+  - name: Kafka
+    type: system
+    aliases: []
+  - name: Elasticsearch
+    type: system
+    aliases: []
+  - name: Search Infrastructure team
+    type: organization
+    aliases:
+    - Search Infrastructure
+  - name: Dublin
+    type: location
+    aliases: []
+  relations:
+  - head: Atlas
+    relation: uses
+    tail: OpenSearch
+  - head: Atlas
+    relation: uses
+    tail: Kafka
+  - head: Search Infrastructure team
+    relation: owns
+    tail: Atlas
+  - head: Search Infrastructure team
+    relation: located_in
+    tail: Dublin
+  optional: []
+  traps:
+  - head: Atlas
+    relation: uses
+    tail: Elasticsearch
+- id: en08
+  lang: en
+  text: Aiko Tanaka works remotely from Osaka. She is a data engineer at Kestrel Logistics and maintains
+    the shipment events table fct_shipments, which is loaded from the carrier feed raw_carrier_feed.
+  entities:
+  - name: Aiko Tanaka
+    type: person
+    aliases: []
+  - name: Osaka
+    type: location
+    aliases: []
+  - name: Kestrel Logistics
+    type: organization
+    aliases: []
+  - name: fct_shipments
+    type: dataset
+    aliases:
+    - shipment events table
+    - shipment events table fct_shipments
+  - name: raw_carrier_feed
+    type: dataset
+    aliases:
+    - carrier feed
+    - carrier feed raw_carrier_feed
+  relations:
+  - head: Aiko Tanaka
+    relation: located_in
+    tail: Osaka
+  - head: Aiko Tanaka
+    relation: works_for
+    tail: Kestrel Logistics
+  - head: Aiko Tanaka
+    relation: owns
+    tail: fct_shipments
+  - head: fct_shipments
+    relation: derived_from
+    tail: raw_carrier_feed
+  optional: []
+  traps: []
+- id: en09
+  lang: en
+  text: The labeling vendor team at Orbit Vision uses Label Studio for bounding-box annotation. Their
+    output, the dataset ped-boxes-v4, is generated from the raw dashcam collection dashcam-raw-0801. Ravi
+    Menon, the team's QA lead, owns ped-boxes-v4. The team considered CVAT but chose not to adopt it.
+  entities:
+  - name: labeling vendor team
+    type: organization
+    aliases:
+    - The labeling vendor team
+  - name: Orbit Vision
+    type: organization
+    aliases: []
+  - name: Label Studio
+    type: system
+    aliases: []
+  - name: ped-boxes-v4
+    type: dataset
+    aliases: []
+  - name: dashcam-raw-0801
+    type: dataset
+    aliases:
+    - raw dashcam collection
+    - raw dashcam collection dashcam-raw-0801
+  - name: Ravi Menon
+    type: person
+    aliases: []
+  - name: CVAT
+    type: system
+    aliases: []
+  relations:
+  - head: labeling vendor team
+    relation: uses
+    tail: Label Studio
+  - head: ped-boxes-v4
+    relation: derived_from
+    tail: dashcam-raw-0801
+  - head: Ravi Menon
+    relation: owns
+    tail: ped-boxes-v4
+  - head: Ravi Menon
+    relation: works_for
+    tail: labeling vendor team
+  optional:
+  - head: labeling vendor team
+    relation: part_of
+    tail: Orbit Vision
+  - head: labeling vendor team
+    relation: owns
+    tail: ped-boxes-v4
+  - head: Ravi Menon
+    relation: works_for
+    tail: Orbit Vision
+  traps:
+  - head: labeling vendor team
+    relation: uses
+    tail: CVAT
+- id: en10
+  lang: en
+  text: In Q2 2026, Brightline Bank opened a new analytics hub in Kraków with 40 engineers. The hub belongs
+    to the bank's Data & AI division and is led by Tomasz Nowak. It maintains the credit exposure metric,
+    computed from fct_loan_balances.
+  entities:
+  - name: Brightline Bank
+    type: organization
+    aliases: []
+  - name: analytics hub
+    type: organization
+    aliases:
+    - hub
+    - new analytics hub
+  - name: Kraków
+    type: location
+    aliases:
+    - Krakow
+  - name: Data & AI division
+    type: organization
+    aliases:
+    - Data & AI
+  - name: Tomasz Nowak
+    type: person
+    aliases: []
+  - name: credit exposure
+    type: metric
+    aliases:
+    - credit exposure metric
+  - name: fct_loan_balances
+    type: dataset
+    aliases: []
+  relations:
+  - head: analytics hub
+    relation: located_in
+    tail: Kraków
+  - head: analytics hub
+    relation: part_of
+    tail: Data & AI division
+  - head: Tomasz Nowak
+    relation: works_for
+    tail: analytics hub
+  - head: analytics hub
+    relation: owns
+    tail: credit exposure
+  - head: credit exposure
+    relation: computed_from
+    tail: fct_loan_balances
+  optional:
+  - head: Data & AI division
+    relation: part_of
+    tail: Brightline Bank
+  - head: analytics hub
+    relation: part_of
+    tail: Brightline Bank
+  traps: []
+- id: en11
+  lang: en
+  text: The revenue dashboard used to read from Snowflake, but since March it reads from ClickHouse. The
+    dashboard is built in Metabase and is owned by the Finance Analytics team in Singapore. The revenue
+    metric shown on it is computed from fct_invoices.
+  entities:
+  - name: revenue dashboard
+    type: system
+    aliases:
+    - dashboard
+  - name: Snowflake
+    type: system
+    aliases: []
+  - name: ClickHouse
+    type: system
+    aliases: []
+  - name: Metabase
+    type: system
+    aliases: []
+  - name: Finance Analytics team
+    type: organization
+    aliases:
+    - Finance Analytics
+  - name: Singapore
+    type: location
+    aliases: []
+  - name: revenue
+    type: metric
+    aliases:
+    - revenue metric
+  - name: fct_invoices
+    type: dataset
+    aliases: []
+  relations:
+  - head: revenue dashboard
+    relation: uses
+    tail: ClickHouse
+  - head: Finance Analytics team
+    relation: owns
+    tail: revenue dashboard
+  - head: Finance Analytics team
+    relation: located_in
+    tail: Singapore
+  - head: revenue
+    relation: computed_from
+    tail: fct_invoices
+  optional:
+  - head: revenue dashboard
+    relation: uses
+    tail: Metabase
+  traps:
+  - head: revenue dashboard
+    relation: uses
+    tail: Snowflake
+- id: en12
+  lang: en
+  text: Dr. Elena Petrova, a researcher at the University of Lisbon, published a benchmark called TabEval
+    in 2025. TabEval is derived from two public datasets, OpenTab and WikiTables. Her lab, the Tabular
+    Learning Lab, uses PyTorch and hosts its code on GitHub.
+  entities:
+  - name: Elena Petrova
+    type: person
+    aliases:
+    - Dr. Elena Petrova
+  - name: University of Lisbon
+    type: organization
+    aliases: []
+  - name: TabEval
+    type: dataset
+    aliases: []
+  - name: OpenTab
+    type: dataset
+    aliases: []
+  - name: WikiTables
+    type: dataset
+    aliases: []
+  - name: Tabular Learning Lab
+    type: organization
+    aliases: []
+  - name: PyTorch
+    type: system
+    aliases: []
+  - name: GitHub
+    type: system
+    aliases: []
+  relations:
+  - head: Elena Petrova
+    relation: works_for
+    tail: University of Lisbon
+  - head: TabEval
+    relation: derived_from
+    tail: OpenTab
+  - head: TabEval
+    relation: derived_from
+    tail: WikiTables
+  - head: Tabular Learning Lab
+    relation: uses
+    tail: PyTorch
+  - head: Tabular Learning Lab
+    relation: uses
+    tail: GitHub
+  optional:
+  - head: Tabular Learning Lab
+    relation: part_of
+    tail: University of Lisbon
+  - head: Elena Petrova
+    relation: works_for
+    tail: Tabular Learning Lab
+  - head: Elena Petrova
+    relation: owns
+    tail: TabEval
+  traps: []

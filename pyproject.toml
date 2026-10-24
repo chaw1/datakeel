@@ -75,6 +75,7 @@ packages = ["datakeel"]
 "contracts/workflows" = "datakeel/_contracts/workflows"
 "contracts/routing" = "datakeel/_contracts/routing"
 "contracts/agents" = "datakeel/_contracts/agents"
+"contracts/kg" = "datakeel/_contracts/kg"
 
 [tool.ruff]
 target-version = "py312"

@@ -1,0 +1,80 @@
+# Synthetic bilingual extraction fixtures; source: independently authored KG benchmark, 2026-10-24.
+examples:
+- text: 物流数据组位于广州天河，隶属于运营技术部。组员黄磊维护运单宽表 dwd_waybill，该表由 ods_waybill 清洗而来。物流数据组目前使用 Airflow 调度任务，曾经用过 Oozie，现已下线。
+  entities:
+  - name: 物流数据组
+    type: organization
+  - name: 广州天河
+    type: location
+  - name: 运营技术部
+    type: organization
+  - name: 黄磊
+    type: person
+  - name: dwd_waybill
+    type: dataset
+  - name: ods_waybill
+    type: dataset
+  - name: Airflow
+    type: system
+  relations:
+  - head: 物流数据组
+    relation: located_in
+    tail: 广州天河
+    evidence: 物流数据组位于广州天河
+  - head: 物流数据组
+    relation: part_of
+    tail: 运营技术部
+    evidence: 隶属于运营技术部
+  - head: 黄磊
+    relation: works_for
+    tail: 物流数据组
+    evidence: 组员黄磊
+  - head: 黄磊
+    relation: owns
+    tail: dwd_waybill
+    evidence: 黄磊维护运单宽表 dwd_waybill
+  - head: dwd_waybill
+    relation: derived_from
+    tail: ods_waybill
+    evidence: 该表由 ods_waybill 清洗而来
+  - head: 物流数据组
+    relation: uses
+    tail: Airflow
+    evidence: 物流数据组目前使用 Airflow 调度任务
+- text: Sofia Ruiz leads the Pricing team in Madrid. The team owns the conversion rate metric, which is
+    computed from fct_sessions. fct_sessions is built from raw_web_events. They plan to adopt dbt next
+    year.
+  entities:
+  - name: Sofia Ruiz
+    type: person
+  - name: Pricing team
+    type: organization
+  - name: Madrid
+    type: location
+  - name: conversion rate
+    type: metric
+  - name: fct_sessions
+    type: dataset
+  - name: raw_web_events
+    type: dataset
+  relations:
+  - head: Sofia Ruiz
+    relation: works_for
+    tail: Pricing team
+    evidence: Sofia Ruiz leads the Pricing team
+  - head: Pricing team
+    relation: located_in
+    tail: Madrid
+    evidence: the Pricing team in Madrid
+  - head: Pricing team
+    relation: owns
+    tail: conversion rate
+    evidence: The team owns the conversion rate metric
+  - head: conversion rate
+    relation: computed_from
+    tail: fct_sessions
+    evidence: which is computed from fct_sessions
+  - head: fct_sessions
+    relation: derived_from
+    tail: raw_web_events
+    evidence: fct_sessions is built from raw_web_events

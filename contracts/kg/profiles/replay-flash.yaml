@@ -1,0 +1,14 @@
+# Offline default; real profiles are opt-in examples only. Cloud thinking modes require json_mode; credentials are environment-variable names only.
+id: replay-flash
+extractor: replay
+provider: replay
+model: deepseek-v4-flash
+base_url: null
+api_key_env: null
+output_method: json_mode
+request_parameters: {}
+temperature: 0
+max_output_tokens: 4096
+chunk_size: 4000
+chunk_overlap: 200
+recording: recordings/deepseek-flash.yaml

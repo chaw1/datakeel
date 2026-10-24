@@ -18,6 +18,9 @@ WORKFLOWS_PACKAGE_LIMIT = 1500
 ROUTING_PACKAGE_LIMIT = 1500
 DELEGATION_PACKAGE_LIMIT = 1500
 MEMORY_PACKAGE_LIMIT = 1500
+KG_PACKAGE_LIMIT = 1500
+KG_EVAL_PACKAGE_LIMIT = 1500
+EXTRACTION_RUNTIME_PACKAGE_LIMIT = 600
 
 
 def violations() -> list[str]:
@@ -46,6 +49,9 @@ def violations() -> list[str]:
         ("routing", ROUTING_PACKAGE_LIMIT),
         ("delegation", DELEGATION_PACKAGE_LIMIT),
         ("memory", MEMORY_PACKAGE_LIMIT),
+        ("kg", KG_PACKAGE_LIMIT),
+        ("kg_eval", KG_EVAL_PACKAGE_LIMIT),
+        ("extraction_runtime", EXTRACTION_RUNTIME_PACKAGE_LIMIT),
     ):
         lines = sum(
             len(path.read_text().splitlines()) for path in Path(f"datakeel/{package}").rglob("*.py")

@@ -40,3 +40,6 @@ def add_nullable_columns(connection: Connection) -> None:
         connection.execute(
             DDL(f"ALTER TABLE {preparer.format_table(table)} ADD COLUMN {definition}")
         )
+    for table, _ in missing:
+        for index in table.indexes:
+            index.create(connection, checkfirst=True)

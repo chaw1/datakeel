@@ -11,7 +11,7 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
-from datakeel.cli import routing, workflow
+from datakeel.cli import kg_evaluation, routing, workflow
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -74,8 +74,8 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
-    workflow.register_parser(commands)
-    routing.register_parser(commands)
+    for module in (workflow, routing, kg_evaluation):
+        module.register_parser(commands)
     return result
 
 
@@ -131,7 +131,7 @@ def _database_command(db: Database, args: argparse.Namespace) -> None:
             run_worker(db, once=args.once, queue_name=args.queue)
     elif args.command == "export":
         _export(db, args)
-    elif args.command in {"eval", "eval-evidence", "eval-ask"}:
+    elif args.command in {"eval", "eval-evidence", "eval-ask", "eval-kg"}:
         _evaluation_command(db, args)
     elif args.command == "mcp":
         serve(db, args.transport, args.host, args.port)
@@ -149,5 +149,9 @@ def _evaluation_command(db: Database, args: argparse.Namespace) -> None:
         evaluate(db, args.provider, args.golden_dir, json_output=args.json_output)
     elif args.command == "eval-evidence":
         evaluate_evidence(db, args.questions, json_output=args.json_output)
+    elif args.command == "eval-kg":
+        kg_evaluation.evaluate(
+            db, args.profile, args.cases, schema=args.schema, json_output=args.json_output
+        )
     else:
         evaluate_ask(db, args.questions, json_output=args.json_output)

@@ -1,0 +1,16 @@
+# Offline default; real profiles are opt-in examples only. Cloud thinking modes require json_mode; credentials are environment-variable names only.
+id: cloud
+extractor: llm
+provider: openai
+model: deepseek-v4-flash
+base_url: https://api.deepseek.com
+api_key_env: DATAKEEL_KG_API_KEY
+output_method: json_mode
+request_parameters:
+  thinking:
+    type: disabled
+temperature: 0
+max_output_tokens: 4096
+chunk_size: 4000
+chunk_overlap: 200
+recording: null

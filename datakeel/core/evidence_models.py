@@ -13,6 +13,7 @@ from datakeel.core.predicate_registry import Predicate, PredicateId, predicate
 
 Presence = Literal["present", "absent", "unknown"]
 AssertionStatus = Literal["candidate", "accepted", "rejected"]
+Verification = Literal["verified", "needs_review"]
 ContentRevision = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
 
 
@@ -54,6 +55,33 @@ class ImageRegion(BoundaryModel):
             msg = "Image region must lie within the image"
             raise ValueError(msg)
         return self
+
+
+class VerificationIssue(BoundaryModel):
+    """Identify the exact source check that needs human review."""
+
+    code: Literal["evidence", "head", "tail", "endpoint_undeclared"]
+    role: Literal["head", "tail"] | None = None
+
+
+class VerificationLocation(BoundaryModel):
+    """Retain document-specific endpoint checks when cross-block claims are merged."""
+
+    source: AssetRef
+    evidence: TextSpan | None = None
+    head: TextSpan | None = None
+    tail: TextSpan | None = None
+    issues: tuple[VerificationIssue, ...] = ()
+
+
+class VerificationDetail(BoundaryModel):
+    """Keep independently checked evidence and endpoint locations structured."""
+
+    issues: tuple[VerificationIssue, ...] = ()
+    evidence: TextSpan | None = None
+    head: TextSpan | None = None
+    tail: TextSpan | None = None
+    locations: tuple[VerificationLocation, ...] = ()
 
 
 Selector = Annotated[Whole | TextSpan | ImageRegion, Field(discriminator="type")]
@@ -114,6 +142,10 @@ class Assertion(BoundaryModel):
     decided_at: datetime | None = None
     distance: int | None = Field(default=None, ge=0)
     reason: str | None = None
+    verification: Verification | None = Field(default=None, exclude_if=lambda value: value is None)
+    verification_detail: VerificationDetail | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def validate_semantics(self) -> Self:
@@ -130,6 +162,8 @@ class Assertion(BoundaryModel):
             self._validate_duplicate()
         elif definition.object_kind == "asset":
             self._validate_asset(definition)
+            if self.predicate == "kg.same_as":
+                self._validate_alias_pair()
         elif not isinstance(self.object, EvidenceValue):
             msg = "Existence assertions require a three-state EvidenceValue"
             raise ValueError(msg)
@@ -175,9 +209,15 @@ class Assertion(BoundaryModel):
         if not isinstance(self.object, AssetRef) or self.distance is None:
             msg = "Near-duplicate assertions require an asset object and measured distance"
             raise ValueError(msg)
+
         require_version(self.object)
         if self.subject.asset_id >= self.object.asset_id:
             msg = "Near-duplicate assertions require a canonical ordered distinct pair"
+            raise ValueError(msg)
+
+    def _validate_alias_pair(self) -> None:
+        if not isinstance(self.object, AssetRef) or self.subject.asset_id >= self.object.asset_id:
+            msg = "Alias assertions require a canonical ordered distinct pair"
             raise ValueError(msg)
 
 

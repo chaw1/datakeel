@@ -10,6 +10,8 @@ from datakeel.core.evidence_models import (
     EvidenceValue,
     ExtractorRef,
     PredicateId,
+    Verification,
+    VerificationDetail,
 )
 from datakeel.core.models import AssetRef, BoundaryModel
 
@@ -25,3 +27,7 @@ class ObservationDraft(BoundaryModel):
     confidence: float | None = Field(default=None, ge=0, le=1)
     distance: int | None = Field(default=None, ge=0)
     reason: str | None = None
+    verification: Verification | None = Field(default=None, exclude_if=lambda value: value is None)
+    verification_detail: VerificationDetail | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )

@@ -1,0 +1,16 @@
+# Offline default; real profiles are opt-in examples only. Cloud thinking modes require json_mode; credentials are environment-variable names only.
+id: ollama
+extractor: llm
+provider: openai
+model: qwen3.5:9b
+base_url: http://localhost:11434/v1
+api_key_env: null
+output_method: json_schema
+request_parameters:
+  enable_thinking: false
+  num_ctx: 16384
+temperature: 0
+max_output_tokens: 4096
+chunk_size: 4000
+chunk_overlap: 200
+recording: null

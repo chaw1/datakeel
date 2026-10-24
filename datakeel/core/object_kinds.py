@@ -8,6 +8,7 @@ import re
 from pydantic import BaseModel
 
 from datakeel.core.catalog_models import CATALOG_KINDS, CatalogObject
+from datakeel.core.kg_product import KGEntity
 from datakeel.core.question_models import QuestionProperties
 
 ObjectKind = str
@@ -16,6 +17,7 @@ _KINDS: dict[str, type[BaseModel] | None] = {
     **dict.fromkeys(sorted(LEGACY_OBJECT_KINDS)),
     **dict.fromkeys(CATALOG_KINDS, CatalogObject),
     "question": QuestionProperties,
+    "kg_entity": KGEntity,
 }
 
 

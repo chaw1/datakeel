@@ -1310,6 +1310,7 @@ export interface components {
         ActionImpact: {
             /** External */
             external: boolean;
+            kg_estimate?: components["schemas"]["KGEstimate"] | null;
             /** Object Count */
             object_count: number;
             /** Total Bytes */
@@ -1646,6 +1647,9 @@ export interface components {
              */
             status: "candidate" | "accepted" | "rejected";
             subject: components["schemas"]["AssetRef"];
+            /** Verification */
+            verification?: ("verified" | "needs_review") | null;
+            verification_detail?: components["schemas"]["VerificationDetail"] | null;
         };
         /**
          * AssertionFilter
@@ -2687,6 +2691,29 @@ export interface components {
         };
         JsonValue: unknown;
         /**
+         * KGEstimate
+         * @description Bind visible outbound impact and its exact price snapshot to the plan digest.
+         */
+        KGEstimate: {
+            /** Blocks */
+            blocks: number;
+            /** Cost Upper Usd */
+            cost_upper_usd?: string | null;
+            /** Documents */
+            documents: number;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Max Output Tokens */
+            max_output_tokens: number;
+            /** Model */
+            model: string;
+            price?: components["schemas"]["ModelPrice"] | null;
+            /** Price Version */
+            price_version?: string | null;
+            /** Target Host */
+            target_host: string | null;
+        };
+        /**
          * LineageEvent
          * @description Record an immutable attributed transformation or failure.
          */
@@ -3121,7 +3148,7 @@ export interface components {
              * @default conversation
              * @enum {string}
              */
-            call_type: "conversation" | "intent_classifier";
+            call_type: "conversation" | "intent_classifier" | "extraction";
             /** Conversation Id */
             conversation_id: string;
             /** Cost Usd */
@@ -3160,6 +3187,26 @@ export interface components {
             /** Turn */
             turn: number;
             usage: components["schemas"]["TokenUsage"];
+        };
+        /**
+         * ModelPrice
+         * @description Store USD per million tokens, including the five-minute cache-write tier.
+         */
+        ModelPrice: {
+            /** Cache Read */
+            cache_read: string;
+            /** Cache Write */
+            cache_write: string;
+            /** Input */
+            input: string;
+            /** Model */
+            model: string;
+            /** Output */
+            output: string;
+            /** Provider */
+            provider: string;
+            /** Source */
+            source: string;
         };
         /**
          * ModelRouteDecision
@@ -3805,6 +3852,53 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VerificationDetail
+         * @description Keep independently checked evidence and endpoint locations structured.
+         */
+        VerificationDetail: {
+            evidence?: components["schemas"]["TextSpan"] | null;
+            head?: components["schemas"]["TextSpan"] | null;
+            /**
+             * Issues
+             * @default []
+             */
+            issues: components["schemas"]["VerificationIssue"][];
+            /**
+             * Locations
+             * @default []
+             */
+            locations: components["schemas"]["VerificationLocation"][];
+            tail?: components["schemas"]["TextSpan"] | null;
+        };
+        /**
+         * VerificationIssue
+         * @description Identify the exact source check that needs human review.
+         */
+        VerificationIssue: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "evidence" | "head" | "tail" | "endpoint_undeclared";
+            /** Role */
+            role?: ("head" | "tail") | null;
+        };
+        /**
+         * VerificationLocation
+         * @description Retain document-specific endpoint checks when cross-block claims are merged.
+         */
+        VerificationLocation: {
+            evidence?: components["schemas"]["TextSpan"] | null;
+            head?: components["schemas"]["TextSpan"] | null;
+            /**
+             * Issues
+             * @default []
+             */
+            issues: components["schemas"]["VerificationIssue"][];
+            source: components["schemas"]["AssetRef"];
+            tail?: components["schemas"]["TextSpan"] | null;
         };
         /**
          * VersionView

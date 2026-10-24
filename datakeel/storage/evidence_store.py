@@ -97,6 +97,12 @@ def project_bundle(session: Session, event: LineageEvent, bundle: KnowledgeBundl
                 "payload": payload,
                 "status": "candidate",
                 "active": True,
+                "verification": assertion.verification,
+                "verification_detail": (
+                    assertion.verification_detail.model_dump(mode="json")
+                    if assertion.verification_detail is not None
+                    else None
+                ),
             }
         )
     if pending:

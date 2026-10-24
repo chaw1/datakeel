@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     delegation_max_depth: int = Field(default=2, ge=1, le=8)
     delegation_max_parallel: int = Field(default=3, ge=1, le=16)
 
+    def extraction_key(self, environment_name: str | None) -> SecretStr | None:
+        """Resolve an explicitly selected extraction credential only when it is needed."""
+        value = os.environ.get(environment_name) if environment_name else None
+        return SecretStr(value) if value else None
+
 
 def get_settings() -> Settings:
     """Resolve the current process configuration through one typed boundary."""

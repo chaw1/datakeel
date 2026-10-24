@@ -1,0 +1,2 @@
+# Scripted failure fixture; not a real model response and not part of the evaluation set.
+text: This synthetic recording deliberately simulates a truncated extraction response.

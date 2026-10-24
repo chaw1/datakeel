@@ -94,7 +94,7 @@ class TraceInput(BoundaryModel):
     stop_reason: str
     tool_calls: int = Field(ge=0)
     billing_status: Literal["actual", "unknown"] = "actual"
-    call_type: Literal["conversation", "intent_classifier"] = "conversation"
+    call_type: Literal["conversation", "intent_classifier", "extraction"] = "conversation"
     model_route: ModelRouteDecision | None = None
     accounting_conversation_id: str | None = None
     agent_path: str = "main"

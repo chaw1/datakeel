@@ -1,0 +1,2607 @@
+# Model: deepseek-v4-flash; recorded: 2026-10-24; prompt: bilingual-business-v1; source: synthetic bilingual KG benchmark.
+model: deepseek-v4-flash
+recorded_at: '2026-10-24'
+prompt_version: bilingual-business-v1
+source: Recorded model outputs on synthetic bilingual business passages; 2026-10-24. Final length record,
+  when present, is a scripted failure fixture.
+records:
+- text_hash: 0a9902a1eb7c44433b5fef905003187a637983c3498009e944855135fa64b044
+  output:
+    entities:
+    - name: 星河零售
+      type: organization
+    - name: 数据平台部
+      type: organization
+    - name: 杭州滨江
+      type: location
+    - name: 集团技术中心
+      type: organization
+    - name: 林晓雯
+      type: person
+    - name: dwd_order_wide
+      type: dataset
+    - name: ods_order
+      type: dataset
+    - name: ods_payment
+      type: dataset
+    relations:
+    - head: 数据平台部
+      relation: located_in
+      tail: 杭州滨江
+      evidence: 数据平台部位于杭州滨江
+    - head: 数据平台部
+      relation: part_of
+      tail: 集团技术中心
+      evidence: 隶属于集团技术中心
+    - head: 数据平台部
+      relation: part_of
+      tail: 星河零售
+      evidence: 星河零售的数据平台部
+    - head: 林晓雯
+      relation: works_for
+      tail: 数据平台部
+      evidence: 部门负责人是林晓雯
+    - head: 林晓雯
+      relation: owns
+      tail: dwd_order_wide
+      evidence: 她主导维护订单宽表 dwd_order_wide
+    - head: dwd_order_wide
+      relation: derived_from
+      tail: ods_order
+      evidence: 该宽表由原始订单表 ods_order 和支付流水表 ods_payment 清洗合并而来
+    - head: dwd_order_wide
+      relation: derived_from
+      tail: ods_payment
+      evidence: 该宽表由原始订单表 ods_order 和支付流水表 ods_payment 清洗合并而来
+  finish_reason: stop
+  input_tokens: 1640
+  output_tokens: 442
+  original:
+    pid: zh01
+    entities:
+    - name: 星河零售
+      type: organization
+      start: 0
+      end: 4
+    - name: 数据平台部
+      type: organization
+      start: 5
+      end: 10
+    - name: 杭州滨江
+      type: location
+      start: 12
+      end: 16
+    - name: 集团技术中心
+      type: organization
+      start: 20
+      end: 26
+    - name: 林晓雯
+      type: person
+      start: 33
+      end: 36
+    - name: dwd_order_wide
+      type: dataset
+      start: 47
+      end: 61
+    - name: ods_order
+      type: dataset
+      start: 72
+      end: 81
+    - name: ods_payment
+      type: dataset
+      start: 89
+      end: 100
+    relations:
+    - head: 数据平台部
+      relation: located_in
+      tail: 杭州滨江
+      evidence: 数据平台部位于杭州滨江
+      ev_start: 5
+      ev_end: 16
+    - head: 数据平台部
+      relation: part_of
+      tail: 集团技术中心
+      evidence: 隶属于集团技术中心
+      ev_start: 17
+      ev_end: 26
+    - head: 数据平台部
+      relation: part_of
+      tail: 星河零售
+      evidence: 星河零售的数据平台部
+      ev_start: 0
+      ev_end: 10
+    - head: 林晓雯
+      relation: works_for
+      tail: 数据平台部
+      evidence: 部门负责人是林晓雯
+      ev_start: 27
+      ev_end: 36
+    - head: 林晓雯
+      relation: owns
+      tail: dwd_order_wide
+      evidence: 她主导维护订单宽表 dwd_order_wide
+      ev_start: 37
+      ev_end: 61
+    - head: dwd_order_wide
+      relation: derived_from
+      tail: ods_order
+      evidence: 该宽表由原始订单表 ods_order 和支付流水表 ods_payment 清洗合并而来
+      ev_start: 62
+      ev_end: 107
+    - head: dwd_order_wide
+      relation: derived_from
+      tail: ods_payment
+      evidence: 该宽表由原始订单表 ods_order 和支付流水表 ods_payment 清洗合并而来
+      ev_start: 62
+      ev_end: 107
+    error: null
+    latency_s: 3.03
+    usage:
+      input_tokens: 1640
+      output_tokens: 442
+      total_tokens: 2082
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 01fbf1bd8795ca3503f08e50efa7b96c6db53229b950c36f4cb56c14391ee7aa
+  output:
+    entities:
+    - name: 财务分析组
+      type: organization
+    - name: 周敏
+      type: person
+    - name: GMV
+      type: metric
+    - name: dws_trade_daily
+      type: dataset
+    - name: dwd_order_wide
+      type: dataset
+    - name: Superset
+      type: system
+    relations:
+    - head: 周敏
+      relation: works_for
+      tail: 财务分析组
+      evidence: 财务分析组的周敏
+    - head: 周敏
+      relation: owns
+      tail: GMV
+      evidence: 财务分析组的周敏负责 GMV 指标
+    - head: GMV
+      relation: computed_from
+      tail: dws_trade_daily
+      evidence: GMV 按 dws_trade_daily 汇总表计算
+    - head: dws_trade_daily
+      relation: derived_from
+      tail: dwd_order_wide
+      evidence: dws_trade_daily 由 dwd_order_wide 按天汇总生成
+    - head: 财务分析组
+      relation: uses
+      tail: Superset
+      evidence: 团队目前用 Superset 做报表
+  finish_reason: stop
+  input_tokens: 1658
+  output_tokens: 334
+  original:
+    pid: zh02
+    entities:
+    - name: 财务分析组
+      type: organization
+      start: 0
+      end: 5
+    - name: 周敏
+      type: person
+      start: 6
+      end: 8
+    - name: GMV
+      type: metric
+      start: 11
+      end: 14
+    - name: dws_trade_daily
+      type: dataset
+      start: 24
+      end: 39
+    - name: dwd_order_wide
+      type: dataset
+      start: 52
+      end: 66
+    - name: Superset
+      type: system
+      start: 118
+      end: 126
+    relations:
+    - head: 周敏
+      relation: works_for
+      tail: 财务分析组
+      evidence: 财务分析组的周敏
+      ev_start: 0
+      ev_end: 8
+    - head: 周敏
+      relation: owns
+      tail: GMV
+      evidence: 财务分析组的周敏负责 GMV 指标
+      ev_start: 0
+      ev_end: 17
+    - head: GMV
+      relation: computed_from
+      tail: dws_trade_daily
+      evidence: GMV 按 dws_trade_daily 汇总表计算
+      ev_start: 18
+      ev_end: 45
+    - head: dws_trade_daily
+      relation: derived_from
+      tail: dwd_order_wide
+      evidence: dws_trade_daily 由 dwd_order_wide 按天汇总生成
+      ev_start: 72
+      ev_end: 111
+    - head: 财务分析组
+      relation: uses
+      tail: Superset
+      evidence: 团队目前用 Superset 做报表
+      ev_start: 112
+      ev_end: 130
+    error: null
+    latency_s: 2.04
+    usage:
+      input_tokens: 1658
+      output_tokens: 334
+      total_tokens: 1992
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 6c3599e304305ec34540a4b8df59b301115ac93bfe5cb723cca2bd24f732ad23
+  output:
+    entities:
+    - name: 云栖智造
+      type: organization
+    - name: 苏州工业园区
+      type: location
+    - name: 深圳南山
+      type: location
+    - name: 研发中心
+      type: organization
+    - name: 视觉算法团队
+      type: organization
+    - name: 陈泽宇
+      type: person
+    - name: defect-img-v3
+      type: dataset
+    relations:
+    - head: 云栖智造
+      relation: located_in
+      tail: 苏州工业园区
+      evidence: 云栖智造总部坐落于苏州工业园区
+    - head: 研发中心
+      relation: located_in
+      tail: 深圳南山
+      evidence: 在深圳南山设有研发中心
+    - head: 研发中心
+      relation: part_of
+      tail: 云栖智造
+      evidence: 云栖智造总部坐落于苏州工业园区，在深圳南山设有研发中心
+    - head: 视觉算法团队
+      relation: part_of
+      tail: 研发中心
+      evidence: 研发中心下设视觉算法团队
+    - head: 陈泽宇
+      relation: works_for
+      tail: 视觉算法团队
+      evidence: 该团队由陈泽宇带领
+    - head: 视觉算法团队
+      relation: owns
+      tail: defect-img-v3
+      evidence: 该团队由陈泽宇带领，长期维护缺陷图像数据集 defect-img-v3
+  finish_reason: stop
+  input_tokens: 1624
+  output_tokens: 375
+  original:
+    pid: zh03
+    entities:
+    - name: 云栖智造
+      type: organization
+      start: 0
+      end: 4
+    - name: 苏州工业园区
+      type: location
+      start: 9
+      end: 15
+    - name: 深圳南山
+      type: location
+      start: 17
+      end: 21
+    - name: 研发中心
+      type: organization
+      start: 23
+      end: 27
+    - name: 视觉算法团队
+      type: organization
+      start: 34
+      end: 40
+    - name: 陈泽宇
+      type: person
+      start: 45
+      end: 48
+    - name: defect-img-v3
+      type: dataset
+      start: 63
+      end: 76
+    relations:
+    - head: 云栖智造
+      relation: located_in
+      tail: 苏州工业园区
+      evidence: 云栖智造总部坐落于苏州工业园区
+      ev_start: 0
+      ev_end: 15
+    - head: 研发中心
+      relation: located_in
+      tail: 深圳南山
+      evidence: 在深圳南山设有研发中心
+      ev_start: 16
+      ev_end: 27
+    - head: 研发中心
+      relation: part_of
+      tail: 云栖智造
+      evidence: 云栖智造总部坐落于苏州工业园区，在深圳南山设有研发中心
+      ev_start: 0
+      ev_end: 27
+    - head: 视觉算法团队
+      relation: part_of
+      tail: 研发中心
+      evidence: 研发中心下设视觉算法团队
+      ev_start: 28
+      ev_end: 40
+    - head: 陈泽宇
+      relation: works_for
+      tail: 视觉算法团队
+      evidence: 该团队由陈泽宇带领
+      ev_start: 41
+      ev_end: 50
+    - head: 视觉算法团队
+      relation: owns
+      tail: defect-img-v3
+      evidence: 该团队由陈泽宇带领，长期维护缺陷图像数据集 defect-img-v3
+      ev_start: 41
+      ev_end: 76
+    error: null
+    latency_s: 1.77
+    usage:
+      input_tokens: 1624
+      output_tokens: 375
+      total_tokens: 1999
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 5a6c12679863fb90fa8df8a02b25a10b6adef447cdc52a2e0d1b019d95774cd8
+  output:
+    entities:
+    - name: 用户增长部
+      type: organization
+    - name: 赵一鸣
+      type: person
+    - name: DAU
+      type: metric
+    - name: dwd_user_event
+      type: dataset
+    - name: ods_tracking_log
+      type: dataset
+    - name: Kafka
+      type: system
+    relations:
+    - head: 赵一鸣
+      relation: works_for
+      tail: 用户增长部
+      evidence: 部门的数据工程师赵一鸣
+    - head: 赵一鸣
+      relation: owns
+      tail: DAU
+      evidence: 赵一鸣维护日活指标 DAU
+    - head: DAU
+      relation: computed_from
+      tail: dwd_user_event
+      evidence: DAU 基于 dwd_user_event 计算
+    - head: dwd_user_event
+      relation: derived_from
+      tail: ods_tracking_log
+      evidence: dwd_user_event 由 ods_tracking_log 解析得到
+    - head: 用户增长部
+      relation: uses
+      tail: Kafka
+      evidence: 目前埋点仍通过 Kafka 接入
+  finish_reason: stop
+  input_tokens: 1648
+  output_tokens: 321
+  original:
+    pid: zh04
+    entities:
+    - name: 用户增长部
+      type: organization
+      start: 0
+      end: 5
+    - name: 赵一鸣
+      type: person
+      start: 58
+      end: 61
+    - name: DAU
+      type: metric
+      start: 68
+      end: 71
+    - name: dwd_user_event
+      type: dataset
+      start: 79
+      end: 93
+    - name: ods_tracking_log
+      type: dataset
+      start: 114
+      end: 130
+    - name: Kafka
+      type: system
+      start: 16
+      end: 21
+    relations:
+    - head: 赵一鸣
+      relation: works_for
+      tail: 用户增长部
+      evidence: 部门的数据工程师赵一鸣
+      ev_start: 50
+      ev_end: 61
+    - head: 赵一鸣
+      relation: owns
+      tail: DAU
+      evidence: 赵一鸣维护日活指标 DAU
+      ev_start: 58
+      ev_end: 71
+    - head: DAU
+      relation: computed_from
+      tail: dwd_user_event
+      evidence: DAU 基于 dwd_user_event 计算
+      ev_start: 72
+      ev_end: 96
+    - head: dwd_user_event
+      relation: derived_from
+      tail: ods_tracking_log
+      evidence: dwd_user_event 由 ods_tracking_log 解析得到
+      ev_start: 97
+      ev_end: 135
+    - head: 用户增长部
+      relation: uses
+      tail: Kafka
+      evidence: 目前埋点仍通过 Kafka 接入
+      ev_start: 33
+      ev_end: 49
+    error: null
+    latency_s: 1.79
+    usage:
+      input_tokens: 1648
+      output_tokens: 321
+      total_tokens: 1969
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 7e1e7622dd6b4b07807041c388df54f484082db64811f415162977155da893ce
+  output:
+    entities:
+    - name: MemberHub
+      type: system
+    - name: 王磊
+      type: person
+    - name: 刘佳
+      type: person
+    - name: 供应链团队
+      type: organization
+    - name: Redis
+      type: system
+    - name: dim_member
+      type: dataset
+    - name: ods_member_snapshot
+      type: dataset
+    relations:
+    - head: 刘佳
+      relation: owns
+      tail: MemberHub
+      evidence: 上个月起改由刘佳接手
+    - head: 王磊
+      relation: works_for
+      tail: 供应链团队
+      evidence: 王磊已调往供应链团队
+    - head: MemberHub
+      relation: uses
+      tail: Redis
+      evidence: MemberHub 使用 Redis 缓存会员等级
+    - head: dim_member
+      relation: derived_from
+      tail: ods_member_snapshot
+      evidence: 会员维表 dim_member 每晚从 MemberHub 的导出表 ods_member_snapshot 同步
+  finish_reason: stop
+  input_tokens: 1645
+  output_tokens: 300
+  original:
+    pid: zh05
+    entities:
+    - name: MemberHub
+      type: system
+      start: 5
+      end: 14
+    - name: 王磊
+      type: person
+      start: 18
+      end: 20
+    - name: 刘佳
+      type: person
+      start: 29
+      end: 31
+    - name: 供应链团队
+      type: organization
+      start: 39
+      end: 44
+    - name: Redis
+      type: system
+      start: 58
+      end: 63
+    - name: dim_member
+      type: dataset
+      start: 76
+      end: 86
+    - name: ods_member_snapshot
+      type: dataset
+      start: 106
+      end: 125
+    relations:
+    - head: 刘佳
+      relation: owns
+      tail: MemberHub
+      evidence: 上个月起改由刘佳接手
+      ev_start: 23
+      ev_end: 33
+    - head: 王磊
+      relation: works_for
+      tail: 供应链团队
+      evidence: 王磊已调往供应链团队
+      ev_start: 34
+      ev_end: 44
+    - head: MemberHub
+      relation: uses
+      tail: Redis
+      evidence: MemberHub 使用 Redis 缓存会员等级
+      ev_start: 45
+      ev_end: 70
+    - head: dim_member
+      relation: derived_from
+      tail: ods_member_snapshot
+      evidence: 会员维表 dim_member 每晚从 MemberHub 的导出表 ods_member_snapshot 同步
+      ev_start: 71
+      ev_end: 128
+    error: null
+    latency_s: 1.62
+    usage:
+      input_tokens: 1645
+      output_tokens: 300
+      total_tokens: 1945
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 4a9503d09c3a4f41783f9442d461763b84903353fdc4f106bbd2afcc5e7aa6ca
+  output:
+    entities:
+    - name: 华东大区销售运营中心
+      type: organization
+    - name: 上海
+      type: location
+    - name: 销售事业部
+      type: organization
+    - name: 郑可
+      type: person
+    - name: 孙浩
+      type: person
+    - name: 复购率
+      type: metric
+    - name: 客单价
+      type: metric
+    - name: dws_member_order
+      type: dataset
+    relations:
+    - head: 华东大区销售运营中心
+      relation: located_in
+      tail: 上海
+      evidence: 华东大区销售运营中心设在上海
+    - head: 华东大区销售运营中心
+      relation: part_of
+      tail: 销售事业部
+      evidence: 归属销售事业部
+    - head: 郑可
+      relation: works_for
+      tail: 华东大区销售运营中心
+      evidence: 中心有两名分析师：郑可和孙浩
+    - head: 孙浩
+      relation: works_for
+      tail: 华东大区销售运营中心
+      evidence: 中心有两名分析师：郑可和孙浩
+    - head: 郑可
+      relation: owns
+      tail: 复购率
+      evidence: 郑可负责复购率指标
+    - head: 复购率
+      relation: computed_from
+      tail: dws_member_order
+      evidence: 复购率基于 dws_member_order 计算
+    - head: 孙浩
+      relation: owns
+      tail: 客单价
+      evidence: 孙浩负责客单价指标
+    - head: 客单价
+      relation: computed_from
+      tail: dws_member_order
+      evidence: 客单价同样基于 dws_member_order 计算
+  finish_reason: stop
+  input_tokens: 1645
+  output_tokens: 458
+  original:
+    pid: zh06
+    entities:
+    - name: 华东大区销售运营中心
+      type: organization
+      start: 0
+      end: 10
+    - name: 上海
+      type: location
+      start: 12
+      end: 14
+    - name: 销售事业部
+      type: organization
+      start: 17
+      end: 22
+    - name: 郑可
+      type: person
+      start: 32
+      end: 34
+    - name: 孙浩
+      type: person
+      start: 35
+      end: 37
+    - name: 复购率
+      type: metric
+      start: 42
+      end: 45
+    - name: 客单价
+      type: metric
+      start: 78
+      end: 81
+    - name: dws_member_order
+      type: dataset
+      start: 54
+      end: 70
+    relations:
+    - head: 华东大区销售运营中心
+      relation: located_in
+      tail: 上海
+      evidence: 华东大区销售运营中心设在上海
+      ev_start: 0
+      ev_end: 14
+    - head: 华东大区销售运营中心
+      relation: part_of
+      tail: 销售事业部
+      evidence: 归属销售事业部
+      ev_start: 15
+      ev_end: 22
+    - head: 郑可
+      relation: works_for
+      tail: 华东大区销售运营中心
+      evidence: 中心有两名分析师：郑可和孙浩
+      ev_start: 23
+      ev_end: 37
+    - head: 孙浩
+      relation: works_for
+      tail: 华东大区销售运营中心
+      evidence: 中心有两名分析师：郑可和孙浩
+      ev_start: 23
+      ev_end: 37
+    - head: 郑可
+      relation: owns
+      tail: 复购率
+      evidence: 郑可负责复购率指标
+      ev_start: 38
+      ev_end: 47
+    - head: 复购率
+      relation: computed_from
+      tail: dws_member_order
+      evidence: 复购率基于 dws_member_order 计算
+      ev_start: 48
+      ev_end: 73
+    - head: 孙浩
+      relation: owns
+      tail: 客单价
+      evidence: 孙浩负责客单价指标
+      ev_start: 74
+      ev_end: 83
+    - head: 客单价
+      relation: computed_from
+      tail: dws_member_order
+      evidence: 客单价同样基于 dws_member_order 计算
+      ev_start: 84
+      ev_end: 111
+    error: null
+    latency_s: 2.05
+    usage:
+      input_tokens: 1645
+      output_tokens: 458
+      total_tokens: 2103
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: bcebe632fc3595346d0244408244f17177e96d25d4331053e7407b6440a392ad
+  output:
+    entities:
+    - name: Sentinel
+      type: system
+    - name: Flink
+      type: system
+    - name: PostgreSQL
+      type: system
+    - name: 风控技术部
+      type: organization
+    - name: 北京望京
+      type: location
+    relations:
+    - head: Sentinel
+      relation: uses
+      tail: Flink
+      evidence: Sentinel 依赖 Flink 做实时计算
+    - head: Sentinel
+      relation: uses
+      tail: PostgreSQL
+      evidence: 规则配置存放在 PostgreSQL 中
+    - head: 风控技术部
+      relation: owns
+      tail: Sentinel
+      evidence: 平台由风控技术部维护
+    - head: 风控技术部
+      relation: located_in
+      tail: 北京望京
+      evidence: 部门位于北京望京
+  finish_reason: stop
+  input_tokens: 1642
+  output_tokens: 252
+  original:
+    pid: zh07
+    entities:
+    - name: Sentinel
+      type: system
+      start: 16
+      end: 24
+    - name: Flink
+      type: system
+      start: 56
+      end: 61
+    - name: PostgreSQL
+      type: system
+      start: 76
+      end: 86
+    - name: 风控技术部
+      type: organization
+      start: 92
+      end: 97
+    - name: 北京望京
+      type: location
+      start: 104
+      end: 108
+    relations:
+    - head: Sentinel
+      relation: uses
+      tail: Flink
+      evidence: Sentinel 依赖 Flink 做实时计算
+      ev_start: 44
+      ev_end: 67
+    - head: Sentinel
+      relation: uses
+      tail: PostgreSQL
+      evidence: 规则配置存放在 PostgreSQL 中
+      ev_start: 68
+      ev_end: 88
+    - head: 风控技术部
+      relation: owns
+      tail: Sentinel
+      evidence: 平台由风控技术部维护
+      ev_start: 89
+      ev_end: 99
+    - head: 风控技术部
+      relation: located_in
+      tail: 北京望京
+      evidence: 部门位于北京望京
+      ev_start: 100
+      ev_end: 108
+    error: null
+    latency_s: 1.53
+    usage:
+      input_tokens: 1642
+      output_tokens: 252
+      total_tokens: 1894
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: e3025fdabc35ff04663281f5fa7c65b9a64a53de9395cb70cc350c46bb17f8f5
+  output:
+    entities:
+    - name: 推荐团队
+      type: organization
+    - name: sample_rec_v2
+      type: dataset
+    - name: feat_user_item
+      type: dataset
+    - name: ods_exposure
+      type: dataset
+    - name: dwd_behavior_wide
+      type: dataset
+    - name: 何静
+      type: person
+    relations:
+    - head: sample_rec_v2
+      relation: derived_from
+      tail: feat_user_item
+      evidence: 训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志 ods_exposure 拼接生成
+    - head: sample_rec_v2
+      relation: derived_from
+      tail: ods_exposure
+      evidence: 训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志 ods_exposure 拼接生成
+    - head: feat_user_item
+      relation: derived_from
+      tail: dwd_behavior_wide
+      evidence: feat_user_item 又是从行为宽表 dwd_behavior_wide 聚合得到的
+    - head: 何静
+      relation: works_for
+      tail: 推荐团队
+      evidence: 样本表的负责人是推荐团队的何静
+    - head: 何静
+      relation: owns
+      tail: sample_rec_v2
+      evidence: 样本表的负责人是推荐团队的何静
+  finish_reason: stop
+  input_tokens: 1639
+  output_tokens: 369
+  original:
+    pid: zh08
+    entities:
+    - name: 推荐团队
+      type: organization
+      start: 0
+      end: 4
+    - name: sample_rec_v2
+      type: dataset
+      start: 11
+      end: 24
+    - name: feat_user_item
+      type: dataset
+      start: 30
+      end: 44
+    - name: ods_exposure
+      type: dataset
+      start: 51
+      end: 63
+    - name: dwd_behavior_wide
+      type: dataset
+      start: 92
+      end: 109
+    - name: 何静
+      type: person
+      start: 129
+      end: 131
+    relations:
+    - head: sample_rec_v2
+      relation: derived_from
+      tail: feat_user_item
+      evidence: 训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志 ods_exposure 拼接生成
+      ev_start: 5
+      ev_end: 68
+    - head: sample_rec_v2
+      relation: derived_from
+      tail: ods_exposure
+      evidence: 训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志 ods_exposure 拼接生成
+      ev_start: 5
+      ev_end: 68
+    - head: feat_user_item
+      relation: derived_from
+      tail: dwd_behavior_wide
+      evidence: feat_user_item 又是从行为宽表 dwd_behavior_wide 聚合得到的
+      ev_start: 69
+      ev_end: 115
+    - head: 何静
+      relation: works_for
+      tail: 推荐团队
+      evidence: 样本表的负责人是推荐团队的何静
+      ev_start: 116
+      ev_end: 131
+    - head: 何静
+      relation: owns
+      tail: sample_rec_v2
+      evidence: 样本表的负责人是推荐团队的何静
+      ev_start: 116
+      ev_end: 131
+    error: null
+    latency_s: 2.21
+    usage:
+      input_tokens: 1639
+      output_tokens: 369
+      total_tokens: 2008
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: c332f1d9722816e3149ca2eddc5c5fb43176cad0e940186d64410c9a96840def
+  output:
+    entities:
+    - name: 标注组
+      type: organization
+    - name: 成都高新区
+      type: location
+    - name: 数据服务中心
+      type: organization
+    - name: 吴婷
+      type: person
+    - name: lane-anno-2026
+      type: dataset
+    - name: road-raw-0915
+      type: dataset
+    - name: CVAT
+      type: system
+    relations:
+    - head: 标注组
+      relation: located_in
+      tail: 成都高新区
+      evidence: 标注组位于成都高新区
+    - head: 标注组
+      relation: part_of
+      tail: 数据服务中心
+      evidence: 隶属于数据服务中心
+    - head: 吴婷
+      relation: works_for
+      tail: 标注组
+      evidence: 组长吴婷
+    - head: 吴婷
+      relation: owns
+      tail: lane-anno-2026
+      evidence: 组长吴婷负责车道线标注集 lane-anno-2026
+    - head: lane-anno-2026
+      relation: derived_from
+      tail: road-raw-0915
+      evidence: 该标注集基于原始路采数据 road-raw-0915 抽帧生成
+    - head: 标注组
+      relation: uses
+      tail: CVAT
+      evidence: 标注组使用 CVAT 进行标注
+  finish_reason: stop
+  input_tokens: 1640
+  output_tokens: 367
+  original:
+    pid: zh09
+    entities:
+    - name: 标注组
+      type: organization
+      start: 0
+      end: 3
+    - name: 成都高新区
+      type: location
+      start: 5
+      end: 10
+    - name: 数据服务中心
+      type: organization
+      start: 14
+      end: 20
+    - name: 吴婷
+      type: person
+      start: 23
+      end: 25
+    - name: lane-anno-2026
+      type: dataset
+      start: 34
+      end: 48
+    - name: road-raw-0915
+      type: dataset
+      start: 62
+      end: 75
+    - name: CVAT
+      type: system
+      start: 87
+      end: 91
+    relations:
+    - head: 标注组
+      relation: located_in
+      tail: 成都高新区
+      evidence: 标注组位于成都高新区
+      ev_start: 0
+      ev_end: 10
+    - head: 标注组
+      relation: part_of
+      tail: 数据服务中心
+      evidence: 隶属于数据服务中心
+      ev_start: 11
+      ev_end: 20
+    - head: 吴婷
+      relation: works_for
+      tail: 标注组
+      evidence: 组长吴婷
+      ev_start: 21
+      ev_end: 25
+    - head: 吴婷
+      relation: owns
+      tail: lane-anno-2026
+      evidence: 组长吴婷负责车道线标注集 lane-anno-2026
+      ev_start: 21
+      ev_end: 48
+    - head: lane-anno-2026
+      relation: derived_from
+      tail: road-raw-0915
+      evidence: 该标注集基于原始路采数据 road-raw-0915 抽帧生成
+      ev_start: 49
+      ev_end: 80
+    - head: 标注组
+      relation: uses
+      tail: CVAT
+      evidence: 标注组使用 CVAT 进行标注
+      ev_start: 81
+      ev_end: 96
+    error: null
+    latency_s: 1.98
+    usage:
+      input_tokens: 1640
+      output_tokens: 367
+      total_tokens: 2007
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: bcf193e90719dc901c88d5df5b4c2a8e21ec8aa04767f761278a1a55af52b1d7
+  output:
+    entities:
+    - name: 范志远
+      type: person
+    - name: 新加坡
+      type: location
+    - name: 海外业务部
+      type: organization
+    - name: 东南亚订单表 dwd_order_sea
+      type: dataset
+    - name: ods_order_sea_raw
+      type: dataset
+    - name: BigQuery
+      type: system
+    relations:
+    - head: 范志远
+      relation: located_in
+      tail: 新加坡
+      evidence: 范志远常驻新加坡
+    - head: 范志远
+      relation: works_for
+      tail: 海外业务部
+      evidence: 他在海外业务部工作
+    - head: 范志远
+      relation: owns
+      tail: 东南亚订单表 dwd_order_sea
+      evidence: 主要维护东南亚订单表 dwd_order_sea
+    - head: 东南亚订单表 dwd_order_sea
+      relation: derived_from
+      tail: ods_order_sea_raw
+      evidence: 这张表来自各国站点上报的 ods_order_sea_raw
+    - head: 海外业务部
+      relation: uses
+      tail: BigQuery
+      evidence: 海外业务部用 BigQuery 存放这些数据
+  finish_reason: stop
+  input_tokens: 1631
+  output_tokens: 330
+  original:
+    pid: zh10
+    entities:
+    - name: 范志远
+      type: person
+      start: 0
+      end: 3
+    - name: 新加坡
+      type: location
+      start: 5
+      end: 8
+    - name: 海外业务部
+      type: organization
+      start: 11
+      end: 16
+    - name: 东南亚订单表 dwd_order_sea
+      type: dataset
+      start: 23
+      end: 43
+    - name: ods_order_sea_raw
+      type: dataset
+      start: 57
+      end: 74
+    - name: BigQuery
+      type: system
+      start: 82
+      end: 90
+    relations:
+    - head: 范志远
+      relation: located_in
+      tail: 新加坡
+      evidence: 范志远常驻新加坡
+      ev_start: 0
+      ev_end: 8
+    - head: 范志远
+      relation: works_for
+      tail: 海外业务部
+      evidence: 他在海外业务部工作
+      ev_start: 9
+      ev_end: 18
+    - head: 范志远
+      relation: owns
+      tail: 东南亚订单表 dwd_order_sea
+      evidence: 主要维护东南亚订单表 dwd_order_sea
+      ev_start: 19
+      ev_end: 43
+    - head: 东南亚订单表 dwd_order_sea
+      relation: derived_from
+      tail: ods_order_sea_raw
+      evidence: 这张表来自各国站点上报的 ods_order_sea_raw
+      ev_start: 44
+      ev_end: 74
+    - head: 海外业务部
+      relation: uses
+      tail: BigQuery
+      evidence: 海外业务部用 BigQuery 存放这些数据
+      ev_start: 75
+      ev_end: 97
+    error: null
+    latency_s: 1.71
+    usage:
+      input_tokens: 1631
+      output_tokens: 330
+      total_tokens: 1961
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: ac790ba6c3e9667ac298e7727a157d45b5f43ef5ed688a58338518da3d886812
+  output:
+    entities:
+    - name: 库存周转天数
+      type: metric
+    - name: 供应链分析组
+      type: organization
+    - name: 钱多多
+      type: person
+    - name: dws_inventory_snapshot
+      type: dataset
+    - name: dwd_outbound
+      type: dataset
+    - name: 运营管理部
+      type: organization
+    relations:
+    - head: 钱多多
+      relation: works_for
+      tail: 供应链分析组
+      evidence: 库存周转天数由供应链分析组的钱多多负责
+    - head: 钱多多
+      relation: owns
+      tail: 库存周转天数
+      evidence: 库存周转天数由供应链分析组的钱多多负责
+    - head: 库存周转天数
+      relation: computed_from
+      tail: dws_inventory_snapshot
+      evidence: 计算时同时用到库存快照表 dws_inventory_snapshot
+    - head: 库存周转天数
+      relation: computed_from
+      tail: dwd_outbound
+      evidence: 和出库明细表 dwd_outbound
+    - head: 供应链分析组
+      relation: part_of
+      tail: 运营管理部
+      evidence: 供应链分析组隶属于运营管理部
+  finish_reason: stop
+  input_tokens: 1644
+  output_tokens: 333
+  original:
+    pid: zh11
+    entities:
+    - name: 库存周转天数
+      type: metric
+      start: 0
+      end: 6
+    - name: 供应链分析组
+      type: organization
+      start: 7
+      end: 13
+    - name: 钱多多
+      type: person
+      start: 14
+      end: 17
+    - name: dws_inventory_snapshot
+      type: dataset
+      start: 33
+      end: 55
+    - name: dwd_outbound
+      type: dataset
+      start: 63
+      end: 75
+    - name: 运营管理部
+      type: organization
+      start: 118
+      end: 123
+    relations:
+    - head: 钱多多
+      relation: works_for
+      tail: 供应链分析组
+      evidence: 库存周转天数由供应链分析组的钱多多负责
+      ev_start: 0
+      ev_end: 19
+    - head: 钱多多
+      relation: owns
+      tail: 库存周转天数
+      evidence: 库存周转天数由供应链分析组的钱多多负责
+      ev_start: 0
+      ev_end: 19
+    - head: 库存周转天数
+      relation: computed_from
+      tail: dws_inventory_snapshot
+      evidence: 计算时同时用到库存快照表 dws_inventory_snapshot
+      ev_start: 20
+      ev_end: 55
+    - head: 库存周转天数
+      relation: computed_from
+      tail: dwd_outbound
+      evidence: 和出库明细表 dwd_outbound
+      ev_start: 56
+      ev_end: 75
+    - head: 供应链分析组
+      relation: part_of
+      tail: 运营管理部
+      evidence: 供应链分析组隶属于运营管理部
+      ev_start: 109
+      ev_end: 123
+    error: null
+    latency_s: 1.84
+    usage:
+      input_tokens: 1644
+      output_tokens: 333
+      total_tokens: 1977
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 4c37d05373aaabf4da292823110af846bf6f1bcd8a86af575359a71d27cd7d4e
+  output:
+    entities:
+    - name: QualityHub
+      type: system
+    - name: 数据治理委员会
+      type: organization
+    - name: 平台工程组
+      type: organization
+    - name: Great Expectations
+      type: system
+    - name: dq_result
+      type: dataset
+    - name: dq_report_daily
+      type: dataset
+    - name: 武汉光谷
+      type: location
+    relations:
+    - head: 数据治理委员会
+      relation: owns
+      tail: QualityHub
+      evidence: 质量中台 QualityHub 由数据治理委员会统一管理
+    - head: 平台工程组
+      relation: owns
+      tail: QualityHub
+      evidence: 日常运维交给平台工程组
+    - head: QualityHub
+      relation: uses
+      tail: Great Expectations
+      evidence: QualityHub 调用 Great Expectations 执行校验规则
+    - head: dq_report_daily
+      relation: derived_from
+      tail: dq_result
+      evidence: dq_result 汇总后生成每日质量报告表 dq_report_daily
+    - head: 平台工程组
+      relation: located_in
+      tail: 武汉光谷
+      evidence: 平台工程组位于武汉光谷
+  finish_reason: stop
+  input_tokens: 1646
+  output_tokens: 330
+  original:
+    pid: zh12
+    entities:
+    - name: QualityHub
+      type: system
+      start: 5
+      end: 15
+    - name: 数据治理委员会
+      type: organization
+      start: 17
+      end: 24
+    - name: 平台工程组
+      type: organization
+      start: 35
+      end: 40
+    - name: Great Expectations
+      type: system
+      start: 55
+      end: 73
+    - name: dq_result
+      type: dataset
+      start: 88
+      end: 97
+    - name: dq_report_daily
+      type: dataset
+      start: 123
+      end: 138
+    - name: 武汉光谷
+      type: location
+      start: 146
+      end: 150
+    relations:
+    - head: 数据治理委员会
+      relation: owns
+      tail: QualityHub
+      evidence: 质量中台 QualityHub 由数据治理委员会统一管理
+      ev_start: 0
+      ev_end: 28
+    - head: 平台工程组
+      relation: owns
+      tail: QualityHub
+      evidence: 日常运维交给平台工程组
+      ev_start: 29
+      ev_end: 40
+    - head: QualityHub
+      relation: uses
+      tail: Great Expectations
+      evidence: QualityHub 调用 Great Expectations 执行校验规则
+      ev_start: 41
+      ev_end: 80
+    - head: dq_report_daily
+      relation: derived_from
+      tail: dq_result
+      evidence: dq_result 汇总后生成每日质量报告表 dq_report_daily
+      ev_start: 100
+      ev_end: 138
+    - head: 平台工程组
+      relation: located_in
+      tail: 武汉光谷
+      evidence: 平台工程组位于武汉光谷
+      ev_start: 139
+      ev_end: 150
+    error: null
+    latency_s: 1.88
+    usage:
+      input_tokens: 1646
+      output_tokens: 330
+      total_tokens: 1976
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 8e03f9af85824f3b2f081d1504c556aed2f826ae9c5ff6ea62cf9bdf7bd0c61d
+  output:
+    entities:
+    - name: Northwind Analytics
+      type: organization
+    - name: Austin, Texas
+      type: location
+    - name: Data Platform team
+      type: organization
+    - name: Engineering division
+      type: organization
+    - name: dim_customer
+      type: dataset
+    - name: Priya Raman
+      type: person
+    relations:
+    - head: Northwind Analytics
+      relation: located_in
+      tail: Austin, Texas
+      evidence: Northwind Analytics is headquartered in Austin, Texas
+    - head: Data Platform team
+      relation: part_of
+      tail: Engineering division
+      evidence: Its Data Platform team, part of the Engineering division
+    - head: Data Platform team
+      relation: owns
+      tail: dim_customer
+      evidence: Its Data Platform team, part of the Engineering division, maintains the customer master
+        table dim_customer
+    - head: Priya Raman
+      relation: works_for
+      tail: Data Platform team
+      evidence: Priya Raman leads the Data Platform team
+  finish_reason: stop
+  input_tokens: 1621
+  output_tokens: 289
+  original:
+    pid: en01
+    entities:
+    - name: Northwind Analytics
+      type: organization
+      start: 0
+      end: 19
+    - name: Austin, Texas
+      type: location
+      start: 40
+      end: 53
+    - name: Data Platform team
+      type: organization
+      start: 59
+      end: 77
+    - name: Engineering division
+      type: organization
+      start: 91
+      end: 111
+    - name: dim_customer
+      type: dataset
+      start: 149
+      end: 161
+    - name: Priya Raman
+      type: person
+      start: 163
+      end: 174
+    relations:
+    - head: Northwind Analytics
+      relation: located_in
+      tail: Austin, Texas
+      evidence: Northwind Analytics is headquartered in Austin, Texas
+      ev_start: 0
+      ev_end: 53
+    - head: Data Platform team
+      relation: part_of
+      tail: Engineering division
+      evidence: Its Data Platform team, part of the Engineering division
+      ev_start: 55
+      ev_end: 111
+    - head: Data Platform team
+      relation: owns
+      tail: dim_customer
+      evidence: Its Data Platform team, part of the Engineering division, maintains the customer master
+        table dim_customer
+      ev_start: 55
+      ev_end: 161
+    - head: Priya Raman
+      relation: works_for
+      tail: Data Platform team
+      evidence: Priya Raman leads the Data Platform team
+      ev_start: 163
+      ev_end: 203
+    error: null
+    latency_s: 1.62
+    usage:
+      input_tokens: 1621
+      output_tokens: 289
+      total_tokens: 1910
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: f705f0267ad9c91e6d2859f60ff5ee351dc6d01f6ad68a53e1d3fbe2f5567964
+  output:
+    entities:
+    - name: Marcus Lee
+      type: person
+    - name: Retention Analytics group
+      type: organization
+    - name: churn rate
+      type: metric
+    - name: fct_subscription_events
+      type: dataset
+    - name: raw_billing_events
+      type: dataset
+    relations:
+    - head: Marcus Lee
+      relation: works_for
+      tail: Retention Analytics group
+      evidence: Marcus Lee from the Retention Analytics group
+    - head: Marcus Lee
+      relation: owns
+      tail: churn rate
+      evidence: The churn rate metric is owned by Marcus Lee
+    - head: churn rate
+      relation: computed_from
+      tail: fct_subscription_events
+      evidence: Churn rate is computed from fct_subscription_events
+    - head: fct_subscription_events
+      relation: derived_from
+      tail: raw_billing_events
+      evidence: fct_subscription_events is built from raw_billing_events
+  finish_reason: stop
+  input_tokens: 1636
+  output_tokens: 288
+  original:
+    pid: en02
+    entities:
+    - name: Marcus Lee
+      type: person
+      start: 34
+      end: 44
+    - name: Retention Analytics group
+      type: organization
+      start: 54
+      end: 79
+    - name: churn rate
+      type: metric
+      start: 4
+      end: 14
+    - name: fct_subscription_events
+      type: dataset
+      start: 109
+      end: 132
+    - name: raw_billing_events
+      type: dataset
+      start: 211
+      end: 229
+    relations:
+    - head: Marcus Lee
+      relation: works_for
+      tail: Retention Analytics group
+      evidence: Marcus Lee from the Retention Analytics group
+      ev_start: 34
+      ev_end: 79
+    - head: Marcus Lee
+      relation: owns
+      tail: churn rate
+      evidence: The churn rate metric is owned by Marcus Lee
+      ev_start: 0
+      ev_end: 44
+    - head: churn rate
+      relation: computed_from
+      tail: fct_subscription_events
+      evidence: Churn rate is computed from fct_subscription_events
+      ev_start: 81
+      ev_end: 132
+    - head: fct_subscription_events
+      relation: derived_from
+      tail: raw_billing_events
+      evidence: fct_subscription_events is built from raw_billing_events
+      ev_start: 173
+      ev_end: 229
+    error: null
+    latency_s: 1.97
+    usage:
+      input_tokens: 1636
+      output_tokens: 288
+      total_tokens: 1924
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: fdbe3d9f2648abf64827dd63573390dc2cc6eed3c1ec517b891864d9e9a13b56
+  output:
+    entities:
+    - name: Growth team
+      type: organization
+    - name: Optimizely
+      type: system
+    - name: GrowthBook
+      type: system
+    - name: exp_results
+      type: dataset
+    - name: Hannah Cho
+      type: person
+    relations:
+    - head: Growth team
+      relation: uses
+      tail: Optimizely
+      evidence: The Growth team currently runs its experiments on Optimizely
+    - head: Hannah Cho
+      relation: owns
+      tail: exp_results
+      evidence: the table exp_results, which Hannah Cho maintains
+  finish_reason: stop
+  input_tokens: 1626
+  output_tokens: 189
+  original:
+    pid: en03
+    entities:
+    - name: Growth team
+      type: organization
+      start: 4
+      end: 15
+    - name: Optimizely
+      type: system
+      start: 50
+      end: 60
+    - name: GrowthBook
+      type: system
+      start: 92
+      end: 102
+    - name: exp_results
+      type: dataset
+      start: 185
+      end: 196
+    - name: Hannah Cho
+      type: person
+      start: 204
+      end: 214
+    relations:
+    - head: Growth team
+      relation: uses
+      tail: Optimizely
+      evidence: The Growth team currently runs its experiments on Optimizely
+      ev_start: 0
+      ev_end: 60
+    - head: Hannah Cho
+      relation: owns
+      tail: exp_results
+      evidence: the table exp_results, which Hannah Cho maintains
+      ev_start: 175
+      ev_end: 224
+    error: null
+    latency_s: 1.66
+    usage:
+      input_tokens: 1626
+      output_tokens: 189
+      total_tokens: 1815
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 2f3d44adfee80583a524db3b1e5869f3094b3181f68964561c882665aa5b5bc8
+  output:
+    entities:
+    - name: Diego Alvarez
+      type: person
+    - name: Risk Engineering team
+      type: organization
+    - name: Toronto
+      type: location
+    - name: FraudGuard
+      type: system
+    - name: Redis
+      type: system
+    - name: fraud_decisions
+      type: dataset
+    relations:
+    - head: Risk Engineering team
+      relation: owns
+      tail: FraudGuard
+      evidence: Ownership has since moved to the Risk Engineering team in Toronto
+    - head: Risk Engineering team
+      relation: located_in
+      tail: Toronto
+      evidence: the Risk Engineering team in Toronto
+    - head: FraudGuard
+      relation: uses
+      tail: Redis
+      evidence: The service, called FraudGuard, reads features from Redis
+    - head: FraudGuard
+      relation: owns
+      tail: fraud_decisions
+      evidence: logs decisions to fraud_decisions
+  finish_reason: stop
+  input_tokens: 1628
+  output_tokens: 272
+  original:
+    pid: en04
+    entities:
+    - name: Diego Alvarez
+      type: person
+      start: 60
+      end: 73
+    - name: Risk Engineering team
+      type: organization
+      start: 108
+      end: 129
+    - name: Toronto
+      type: location
+      start: 133
+      end: 140
+    - name: FraudGuard
+      type: system
+      start: 162
+      end: 172
+    - name: Redis
+      type: system
+      start: 194
+      end: 199
+    - name: fraud_decisions
+      type: dataset
+      start: 222
+      end: 237
+    relations:
+    - head: Risk Engineering team
+      relation: owns
+      tail: FraudGuard
+      evidence: Ownership has since moved to the Risk Engineering team in Toronto
+      ev_start: 75
+      ev_end: 140
+    - head: Risk Engineering team
+      relation: located_in
+      tail: Toronto
+      evidence: the Risk Engineering team in Toronto
+      ev_start: 104
+      ev_end: 140
+    - head: FraudGuard
+      relation: uses
+      tail: Redis
+      evidence: The service, called FraudGuard, reads features from Redis
+      ev_start: 142
+      ev_end: 199
+    - head: FraudGuard
+      relation: owns
+      tail: fraud_decisions
+      evidence: logs decisions to fraud_decisions
+      ev_start: 204
+      ev_end: 237
+    error: null
+    latency_s: 1.63
+    usage:
+      input_tokens: 1628
+      output_tokens: 272
+      total_tokens: 1900
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: e8397b05b83a1924f00c2e8b41db24d5d98c23ead880dc14e66abcb386ff6ecd
+  output:
+    entities:
+    - name: mart_attribution
+      type: dataset
+    - name: stg_touchpoints
+      type: dataset
+    - name: stg_orders
+      type: dataset
+    - name: raw_clicks
+      type: dataset
+    - name: Marketing Science team
+      type: organization
+    - name: London
+      type: location
+    relations:
+    - head: mart_attribution
+      relation: derived_from
+      tail: stg_touchpoints
+      evidence: The marketing attribution table mart_attribution is derived from stg_touchpoints and stg_orders
+    - head: mart_attribution
+      relation: derived_from
+      tail: stg_orders
+      evidence: The marketing attribution table mart_attribution is derived from stg_touchpoints and stg_orders
+    - head: stg_touchpoints
+      relation: derived_from
+      tail: raw_clicks
+      evidence: stg_touchpoints, in turn, is cleaned from the raw clickstream table raw_clicks
+    - head: Marketing Science team
+      relation: owns
+      tail: mart_attribution
+      evidence: The Marketing Science team, based in London, owns mart_attribution
+    - head: Marketing Science team
+      relation: located_in
+      tail: London
+      evidence: The Marketing Science team, based in London
+  finish_reason: stop
+  input_tokens: 1640
+  output_tokens: 368
+  original:
+    pid: en05
+    entities:
+    - name: mart_attribution
+      type: dataset
+      start: 32
+      end: 48
+    - name: stg_touchpoints
+      type: dataset
+      start: 65
+      end: 80
+    - name: stg_orders
+      type: dataset
+      start: 85
+      end: 95
+    - name: raw_clicks
+      type: dataset
+      start: 165
+      end: 175
+    - name: Marketing Science team
+      type: organization
+      start: 181
+      end: 203
+    - name: London
+      type: location
+      start: 214
+      end: 220
+    relations:
+    - head: mart_attribution
+      relation: derived_from
+      tail: stg_touchpoints
+      evidence: The marketing attribution table mart_attribution is derived from stg_touchpoints and stg_orders
+      ev_start: 0
+      ev_end: 95
+    - head: mart_attribution
+      relation: derived_from
+      tail: stg_orders
+      evidence: The marketing attribution table mart_attribution is derived from stg_touchpoints and stg_orders
+      ev_start: 0
+      ev_end: 95
+    - head: stg_touchpoints
+      relation: derived_from
+      tail: raw_clicks
+      evidence: stg_touchpoints, in turn, is cleaned from the raw clickstream table raw_clicks
+      ev_start: 97
+      ev_end: 175
+    - head: Marketing Science team
+      relation: owns
+      tail: mart_attribution
+      evidence: The Marketing Science team, based in London, owns mart_attribution
+      ev_start: 177
+      ev_end: 243
+    - head: Marketing Science team
+      relation: located_in
+      tail: London
+      evidence: The Marketing Science team, based in London
+      ev_start: 177
+      ev_end: 220
+    error: null
+    latency_s: 1.75
+    usage:
+      input_tokens: 1640
+      output_tokens: 368
+      total_tokens: 2008
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: fd217df7d62eca5cfbe13169cbac5f25f6afe0681e5bbca9f32c2d17a365d180
+  output:
+    entities:
+    - name: Helios Energy
+      type: organization
+    - name: Omar Haddad
+      type: person
+    - name: Lena Fischer
+      type: person
+    - name: Grid Insights
+      type: organization
+    - name: Operations department
+      type: organization
+    - name: outage frequency
+      type: metric
+    - name: average restoration time
+      type: metric
+    - name: fct_outages
+      type: dataset
+    relations:
+    - head: Omar Haddad
+      relation: works_for
+      tail: Grid Insights
+      evidence: analysts Omar Haddad and Lena Fischer both work in the Grid Insights unit
+    - head: Lena Fischer
+      relation: works_for
+      tail: Grid Insights
+      evidence: analysts Omar Haddad and Lena Fischer both work in the Grid Insights unit
+    - head: Omar Haddad
+      relation: owns
+      tail: outage frequency
+      evidence: Omar owns the outage frequency metric
+    - head: outage frequency
+      relation: computed_from
+      tail: fct_outages
+      evidence: which is computed from fct_outages
+    - head: Lena Fischer
+      relation: owns
+      tail: average restoration time
+      evidence: Lena owns average restoration time
+    - head: average restoration time
+      relation: computed_from
+      tail: fct_outages
+      evidence: which is also computed from fct_outages
+    - head: Grid Insights
+      relation: part_of
+      tail: Operations department
+      evidence: Grid Insights is part of the Operations department
+  finish_reason: stop
+  input_tokens: 1643
+  output_tokens: 426
+  original:
+    pid: en06
+    entities:
+    - name: Helios Energy
+      type: organization
+      start: 3
+      end: 16
+    - name: Omar Haddad
+      type: person
+      start: 27
+      end: 38
+    - name: Lena Fischer
+      type: person
+      start: 43
+      end: 55
+    - name: Grid Insights
+      type: organization
+      start: 73
+      end: 86
+    - name: Operations department
+      type: organization
+      start: 274
+      end: 295
+    - name: outage frequency
+      type: metric
+      start: 107
+      end: 123
+    - name: average restoration time
+      type: metric
+      start: 178
+      end: 202
+    - name: fct_outages
+      type: dataset
+      start: 155
+      end: 166
+    relations:
+    - head: Omar Haddad
+      relation: works_for
+      tail: Grid Insights
+      evidence: analysts Omar Haddad and Lena Fischer both work in the Grid Insights unit
+      ev_start: 18
+      ev_end: 91
+    - head: Lena Fischer
+      relation: works_for
+      tail: Grid Insights
+      evidence: analysts Omar Haddad and Lena Fischer both work in the Grid Insights unit
+      ev_start: 18
+      ev_end: 91
+    - head: Omar Haddad
+      relation: owns
+      tail: outage frequency
+      evidence: Omar owns the outage frequency metric
+      ev_start: 93
+      ev_end: 130
+    - head: outage frequency
+      relation: computed_from
+      tail: fct_outages
+      evidence: which is computed from fct_outages
+      ev_start: 132
+      ev_end: 166
+    - head: Lena Fischer
+      relation: owns
+      tail: average restoration time
+      evidence: Lena owns average restoration time
+      ev_start: 168
+      ev_end: 202
+    - head: average restoration time
+      relation: computed_from
+      tail: fct_outages
+      evidence: which is also computed from fct_outages
+      ev_start: 204
+      ev_end: 243
+    - head: Grid Insights
+      relation: part_of
+      tail: Operations department
+      evidence: Grid Insights is part of the Operations department
+      ev_start: 245
+      ev_end: 295
+    error: null
+    latency_s: 1.98
+    usage:
+      input_tokens: 1643
+      output_tokens: 426
+      total_tokens: 2069
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: ea97e106489a3a73ead75348d8137275ccd5244fb107bf1ce487551e00ee7c5a
+  output:
+    entities:
+    - name: Atlas
+      type: system
+    - name: OpenSearch
+      type: system
+    - name: Kafka
+      type: system
+    - name: Search Infrastructure team
+      type: organization
+    - name: Dublin
+      type: location
+    relations:
+    - head: Atlas
+      relation: uses
+      tail: OpenSearch
+      evidence: Atlas, the internal search platform, is built on OpenSearch
+    - head: Atlas
+      relation: uses
+      tail: Kafka
+      evidence: uses Kafka to ingest document updates
+    - head: Search Infrastructure team
+      relation: owns
+      tail: Atlas
+      evidence: The Search Infrastructure team in Dublin maintains Atlas
+    - head: Search Infrastructure team
+      relation: located_in
+      tail: Dublin
+      evidence: The Search Infrastructure team in Dublin
+  finish_reason: stop
+  input_tokens: 1627
+  output_tokens: 252
+  original:
+    pid: en07
+    entities:
+    - name: Atlas
+      type: system
+      start: 0
+      end: 5
+    - name: OpenSearch
+      type: system
+      start: 49
+      end: 59
+    - name: Kafka
+      type: system
+      start: 69
+      end: 74
+    - name: Search Infrastructure team
+      type: organization
+      start: 107
+      end: 133
+    - name: Dublin
+      type: location
+      start: 137
+      end: 143
+    relations:
+    - head: Atlas
+      relation: uses
+      tail: OpenSearch
+      evidence: Atlas, the internal search platform, is built on OpenSearch
+      ev_start: 0
+      ev_end: 59
+    - head: Atlas
+      relation: uses
+      tail: Kafka
+      evidence: uses Kafka to ingest document updates
+      ev_start: 64
+      ev_end: 101
+    - head: Search Infrastructure team
+      relation: owns
+      tail: Atlas
+      evidence: The Search Infrastructure team in Dublin maintains Atlas
+      ev_start: 103
+      ev_end: 159
+    - head: Search Infrastructure team
+      relation: located_in
+      tail: Dublin
+      evidence: The Search Infrastructure team in Dublin
+      ev_start: 103
+      ev_end: 143
+    error: null
+    latency_s: 1.84
+    usage:
+      input_tokens: 1627
+      output_tokens: 252
+      total_tokens: 1879
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: a29f04cd283cae64070db5b5869eec9583bd04ef333cd58280a8e8699ec0dc9f
+  output:
+    entities:
+    - name: Aiko Tanaka
+      type: person
+    - name: Osaka
+      type: location
+    - name: Kestrel Logistics
+      type: organization
+    - name: fct_shipments
+      type: dataset
+    - name: raw_carrier_feed
+      type: dataset
+    relations:
+    - head: Aiko Tanaka
+      relation: located_in
+      tail: Osaka
+      evidence: Aiko Tanaka works remotely from Osaka
+    - head: Aiko Tanaka
+      relation: works_for
+      tail: Kestrel Logistics
+      evidence: She is a data engineer at Kestrel Logistics
+    - head: Aiko Tanaka
+      relation: owns
+      tail: fct_shipments
+      evidence: maintains the shipment events table fct_shipments
+    - head: fct_shipments
+      relation: derived_from
+      tail: raw_carrier_feed
+      evidence: which is loaded from the carrier feed raw_carrier_feed
+  finish_reason: stop
+  input_tokens: 1626
+  output_tokens: 286
+  original:
+    pid: en08
+    entities:
+    - name: Aiko Tanaka
+      type: person
+      start: 0
+      end: 11
+    - name: Osaka
+      type: location
+      start: 32
+      end: 37
+    - name: Kestrel Logistics
+      type: organization
+      start: 65
+      end: 82
+    - name: fct_shipments
+      type: dataset
+      start: 123
+      end: 136
+    - name: raw_carrier_feed
+      type: dataset
+      start: 176
+      end: 192
+    relations:
+    - head: Aiko Tanaka
+      relation: located_in
+      tail: Osaka
+      evidence: Aiko Tanaka works remotely from Osaka
+      ev_start: 0
+      ev_end: 37
+    - head: Aiko Tanaka
+      relation: works_for
+      tail: Kestrel Logistics
+      evidence: She is a data engineer at Kestrel Logistics
+      ev_start: 39
+      ev_end: 82
+    - head: Aiko Tanaka
+      relation: owns
+      tail: fct_shipments
+      evidence: maintains the shipment events table fct_shipments
+      ev_start: 87
+      ev_end: 136
+    - head: fct_shipments
+      relation: derived_from
+      tail: raw_carrier_feed
+      evidence: which is loaded from the carrier feed raw_carrier_feed
+      ev_start: 138
+      ev_end: 192
+    error: null
+    latency_s: 1.78
+    usage:
+      input_tokens: 1626
+      output_tokens: 286
+      total_tokens: 1912
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: eb88a1e2e3b3163565d7145eb112c30b7a4f67f8ba5e7b4cbf85952a74b9c1d7
+  output:
+    entities:
+    - name: labeling vendor team
+      type: organization
+    - name: Orbit Vision
+      type: organization
+    - name: Label Studio
+      type: system
+    - name: ped-boxes-v4
+      type: dataset
+    - name: dashcam-raw-0801
+      type: dataset
+    - name: Ravi Menon
+      type: person
+    relations:
+    - head: labeling vendor team
+      relation: part_of
+      tail: Orbit Vision
+      evidence: The labeling vendor team at Orbit Vision
+    - head: labeling vendor team
+      relation: uses
+      tail: Label Studio
+      evidence: The labeling vendor team at Orbit Vision uses Label Studio for bounding-box annotation
+    - head: ped-boxes-v4
+      relation: derived_from
+      tail: dashcam-raw-0801
+      evidence: the dataset ped-boxes-v4, is generated from the raw dashcam collection dashcam-raw-0801
+    - head: Ravi Menon
+      relation: works_for
+      tail: labeling vendor team
+      evidence: Ravi Menon, the team's QA lead
+    - head: Ravi Menon
+      relation: owns
+      tail: ped-boxes-v4
+      evidence: Ravi Menon, the team's QA lead, owns ped-boxes-v4
+  finish_reason: stop
+  input_tokens: 1654
+  output_tokens: 365
+  original:
+    pid: en09
+    entities:
+    - name: labeling vendor team
+      type: organization
+      start: 4
+      end: 24
+    - name: Orbit Vision
+      type: organization
+      start: 28
+      end: 40
+    - name: Label Studio
+      type: system
+      start: 46
+      end: 58
+    - name: ped-boxes-v4
+      type: dataset
+      start: 114
+      end: 126
+    - name: dashcam-raw-0801
+      type: dataset
+      start: 173
+      end: 189
+    - name: Ravi Menon
+      type: person
+      start: 191
+      end: 201
+    relations:
+    - head: labeling vendor team
+      relation: part_of
+      tail: Orbit Vision
+      evidence: The labeling vendor team at Orbit Vision
+      ev_start: 0
+      ev_end: 40
+    - head: labeling vendor team
+      relation: uses
+      tail: Label Studio
+      evidence: The labeling vendor team at Orbit Vision uses Label Studio for bounding-box annotation
+      ev_start: 0
+      ev_end: 86
+    - head: ped-boxes-v4
+      relation: derived_from
+      tail: dashcam-raw-0801
+      evidence: the dataset ped-boxes-v4, is generated from the raw dashcam collection dashcam-raw-0801
+      ev_start: 102
+      ev_end: 189
+    - head: Ravi Menon
+      relation: works_for
+      tail: labeling vendor team
+      evidence: Ravi Menon, the team's QA lead
+      ev_start: 191
+      ev_end: 221
+    - head: Ravi Menon
+      relation: owns
+      tail: ped-boxes-v4
+      evidence: Ravi Menon, the team's QA lead, owns ped-boxes-v4
+      ev_start: 191
+      ev_end: 240
+    error: null
+    latency_s: 2.0
+    usage:
+      input_tokens: 1654
+      output_tokens: 365
+      total_tokens: 2019
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 21a2ff58b65fcc630bd8961f7ae0a147181d6470f622fcc1d66571ba02244cbc
+  output:
+    entities:
+    - name: Brightline Bank
+      type: organization
+    - name: analytics hub in Kraków
+      type: organization
+    - name: Kraków
+      type: location
+    - name: Data & AI division
+      type: organization
+    - name: Tomasz Nowak
+      type: person
+    - name: credit exposure
+      type: metric
+    - name: fct_loan_balances
+      type: dataset
+    relations:
+    - head: analytics hub in Kraków
+      relation: located_in
+      tail: Kraków
+      evidence: opened a new analytics hub in Kraków
+    - head: analytics hub in Kraków
+      relation: part_of
+      tail: Data & AI division
+      evidence: The hub belongs to the bank's Data & AI division
+    - head: Tomasz Nowak
+      relation: works_for
+      tail: analytics hub in Kraków
+      evidence: is led by Tomasz Nowak
+    - head: analytics hub in Kraków
+      relation: owns
+      tail: credit exposure
+      evidence: It maintains the credit exposure metric
+    - head: credit exposure
+      relation: computed_from
+      tail: fct_loan_balances
+      evidence: computed from fct_loan_balances
+  finish_reason: stop
+  input_tokens: 1641
+  output_tokens: 354
+  original:
+    pid: en10
+    entities:
+    - name: Brightline Bank
+      type: organization
+      start: 12
+      end: 27
+    - name: analytics hub in Kraków
+      type: organization
+      start: 41
+      end: 64
+    - name: Kraków
+      type: location
+      start: 58
+      end: 64
+    - name: Data & AI division
+      type: organization
+      start: 114
+      end: 132
+    - name: Tomasz Nowak
+      type: person
+      start: 147
+      end: 159
+    - name: credit exposure
+      type: metric
+      start: 178
+      end: 193
+    - name: fct_loan_balances
+      type: dataset
+      start: 216
+      end: 233
+    relations:
+    - head: analytics hub in Kraków
+      relation: located_in
+      tail: Kraków
+      evidence: opened a new analytics hub in Kraków
+      ev_start: 28
+      ev_end: 64
+    - head: analytics hub in Kraków
+      relation: part_of
+      tail: Data & AI division
+      evidence: The hub belongs to the bank's Data & AI division
+      ev_start: 84
+      ev_end: 132
+    - head: Tomasz Nowak
+      relation: works_for
+      tail: analytics hub in Kraków
+      evidence: is led by Tomasz Nowak
+      ev_start: 137
+      ev_end: 159
+    - head: analytics hub in Kraków
+      relation: owns
+      tail: credit exposure
+      evidence: It maintains the credit exposure metric
+      ev_start: 161
+      ev_end: 200
+    - head: credit exposure
+      relation: computed_from
+      tail: fct_loan_balances
+      evidence: computed from fct_loan_balances
+      ev_start: 202
+      ev_end: 233
+    error: null
+    latency_s: 1.96
+    usage:
+      input_tokens: 1641
+      output_tokens: 354
+      total_tokens: 1995
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: 06347e6a39c1bcf0d9b2799ac44b7fd88e7964c28500a86c12114d98cf1c91ec
+  output:
+    entities:
+    - name: revenue dashboard
+      type: system
+    - name: ClickHouse
+      type: system
+    - name: Metabase
+      type: system
+    - name: Finance Analytics team
+      type: organization
+    - name: Singapore
+      type: location
+    - name: revenue
+      type: metric
+    - name: fct_invoices
+      type: dataset
+    relations:
+    - head: revenue dashboard
+      relation: uses
+      tail: ClickHouse
+      evidence: since March it reads from ClickHouse
+    - head: revenue dashboard
+      relation: uses
+      tail: Metabase
+      evidence: The dashboard is built in Metabase
+    - head: Finance Analytics team
+      relation: owns
+      tail: revenue dashboard
+      evidence: is owned by the Finance Analytics team in Singapore
+    - head: Finance Analytics team
+      relation: located_in
+      tail: Singapore
+      evidence: the Finance Analytics team in Singapore
+    - head: revenue
+      relation: computed_from
+      tail: fct_invoices
+      evidence: The revenue metric shown on it is computed from fct_invoices
+  finish_reason: stop
+  input_tokens: 1633
+  output_tokens: 320
+  original:
+    pid: en11
+    entities:
+    - name: revenue dashboard
+      type: system
+      start: 4
+      end: 21
+    - name: ClickHouse
+      type: system
+      start: 81
+      end: 91
+    - name: Metabase
+      type: system
+      start: 119
+      end: 127
+    - name: Finance Analytics team
+      type: organization
+      start: 148
+      end: 170
+    - name: Singapore
+      type: location
+      start: 174
+      end: 183
+    - name: revenue
+      type: metric
+      start: 4
+      end: 11
+    - name: fct_invoices
+      type: dataset
+      start: 233
+      end: 245
+    relations:
+    - head: revenue dashboard
+      relation: uses
+      tail: ClickHouse
+      evidence: since March it reads from ClickHouse
+      ev_start: 55
+      ev_end: 91
+    - head: revenue dashboard
+      relation: uses
+      tail: Metabase
+      evidence: The dashboard is built in Metabase
+      ev_start: 93
+      ev_end: 127
+    - head: Finance Analytics team
+      relation: owns
+      tail: revenue dashboard
+      evidence: is owned by the Finance Analytics team in Singapore
+      ev_start: 132
+      ev_end: 183
+    - head: Finance Analytics team
+      relation: located_in
+      tail: Singapore
+      evidence: the Finance Analytics team in Singapore
+      ev_start: 144
+      ev_end: 183
+    - head: revenue
+      relation: computed_from
+      tail: fct_invoices
+      evidence: The revenue metric shown on it is computed from fct_invoices
+      ev_start: 185
+      ev_end: 245
+    error: null
+    latency_s: 1.83
+    usage:
+      input_tokens: 1633
+      output_tokens: 320
+      total_tokens: 1953
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}
+- text_hash: f2318ecb6834a5f3ddca1e27a8954c15846e217e70626e9383df16df5e15b3fb
+  output:
+    entities:
+    - name: Dr. Elena Petrova
+      type: person
+    - name: University of Lisbon
+      type: organization
+    - name: TabEval
+      type: dataset
+    - name: OpenTab
+      type: dataset
+    - name: WikiTables
+      type: dataset
+    - name: Tabular Learning Lab
+      type: organization
+    - name: PyTorch
+      type: system
+    - name: GitHub
+      type: system
+    relations:
+    - head: Dr. Elena Petrova
+      relation: works_for
+      tail: University of Lisbon
+      evidence: Dr. Elena Petrova, a researcher at the University of Lisbon
+    - head: Dr. Elena Petrova
+      relation: owns
+      tail: TabEval
+      evidence: published a benchmark called TabEval in 2025
+    - head: TabEval
+      relation: derived_from
+      tail: OpenTab
+      evidence: TabEval is derived from two public datasets, OpenTab and WikiTables
+    - head: TabEval
+      relation: derived_from
+      tail: WikiTables
+      evidence: TabEval is derived from two public datasets, OpenTab and WikiTables
+    - head: Tabular Learning Lab
+      relation: uses
+      tail: PyTorch
+      evidence: Her lab, the Tabular Learning Lab, uses PyTorch
+    - head: Tabular Learning Lab
+      relation: uses
+      tail: GitHub
+      evidence: hosts its code on GitHub
+  finish_reason: stop
+  input_tokens: 1644
+  output_tokens: 405
+  original:
+    pid: en12
+    entities:
+    - name: Dr. Elena Petrova
+      type: person
+      start: 0
+      end: 17
+    - name: University of Lisbon
+      type: organization
+      start: 39
+      end: 59
+    - name: TabEval
+      type: dataset
+      start: 90
+      end: 97
+    - name: OpenTab
+      type: dataset
+      start: 152
+      end: 159
+    - name: WikiTables
+      type: dataset
+      start: 164
+      end: 174
+    - name: Tabular Learning Lab
+      type: organization
+      start: 189
+      end: 209
+    - name: PyTorch
+      type: system
+      start: 216
+      end: 223
+    - name: GitHub
+      type: system
+      start: 246
+      end: 252
+    relations:
+    - head: Dr. Elena Petrova
+      relation: works_for
+      tail: University of Lisbon
+      evidence: Dr. Elena Petrova, a researcher at the University of Lisbon
+      ev_start: 0
+      ev_end: 59
+    - head: Dr. Elena Petrova
+      relation: owns
+      tail: TabEval
+      evidence: published a benchmark called TabEval in 2025
+      ev_start: 61
+      ev_end: 105
+    - head: TabEval
+      relation: derived_from
+      tail: OpenTab
+      evidence: TabEval is derived from two public datasets, OpenTab and WikiTables
+      ev_start: 107
+      ev_end: 174
+    - head: TabEval
+      relation: derived_from
+      tail: WikiTables
+      evidence: TabEval is derived from two public datasets, OpenTab and WikiTables
+      ev_start: 107
+      ev_end: 174
+    - head: Tabular Learning Lab
+      relation: uses
+      tail: PyTorch
+      evidence: Her lab, the Tabular Learning Lab, uses PyTorch
+      ev_start: 176
+      ev_end: 223
+    - head: Tabular Learning Lab
+      relation: uses
+      tail: GitHub
+      evidence: hosts its code on GitHub
+      ev_start: 228
+      ev_end: 252
+    error: null
+    latency_s: 2.17
+    usage:
+      input_tokens: 1644
+      output_tokens: 405
+      total_tokens: 2049
+      input_token_details:
+        cache_read: 1408
+      output_token_details: {}

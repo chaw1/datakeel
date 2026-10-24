@@ -36,6 +36,7 @@ def test_registry_when_built_exposes_all_declared_asset_and_read_function_types(
         "artifact",
         "task",
         "question",
+        "kg_entity",
     }
     assert len(value.functions) == 13
 

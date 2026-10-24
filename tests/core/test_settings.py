@@ -63,3 +63,17 @@ def test_settings_when_reassigned_rejects_mutation() -> None:
     settings = Settings()
     with pytest.raises(ValidationError, match="frozen_instance"):
         settings.report_timeout = 20
+
+
+def test_extraction_key_is_explicit_and_not_part_of_serialized_settings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only the requested variable is resolved, and its value stays a SecretStr."""
+    monkeypatch.setenv("KG_TEST_KEY", "synthetic-credential")
+    settings = Settings()
+    key = settings.extraction_key("KG_TEST_KEY")
+    assert key is not None
+    assert key.get_secret_value() == "synthetic-credential"
+    assert settings.extraction_key(None) is None
+    assert settings.extraction_key("KG_UNSET_TEST_KEY") is None
+    assert "synthetic-credential" not in settings.model_dump_json()

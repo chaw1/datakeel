@@ -1,0 +1,154 @@
+# Synthetic bilingual extraction fixtures; source: independently authored KG benchmark, 2026-10-24.
+id: business-knowledge
+version: '1.0'
+entity_types:
+- name: person
+  description: 人名 / a person
+  aliases: {}
+- name: organization
+  description: 公司、部门、团队、小组 / a company, department, team or group
+  aliases: {}
+- name: dataset
+  description: 数据集或数据表 / a dataset or data table
+  aliases: {}
+- name: metric
+  description: 业务指标 / a business metric
+  aliases: {}
+- name: system
+  description: 软件系统、平台、工具、产品 / a software system, platform, tool or product
+  aliases: {}
+- name: location
+  description: 城市、国家、园区等地点 / a city, country, district or other place
+  aliases: {}
+relations:
+- name: works_for
+  description: 某人在某组织工作、任职、带领或属于某团队 / person works for, belongs to or leads an organization
+  domain:
+  - person
+  range:
+  - organization
+- name: owns
+  description: 负责、维护、拥有 / is responsible for, maintains or owns
+  domain:
+  - person
+  - organization
+  range:
+  - dataset
+  - metric
+  - system
+- name: derived_from
+  description: 下游数据集由上游数据集加工、清洗、汇总、拼接、抽取而来 / downstream dataset is built from upstream dataset
+  domain:
+  - dataset
+  range:
+  - dataset
+- name: computed_from
+  description: 指标基于某数据集计算 / metric is computed from dataset
+  domain:
+  - metric
+  range:
+  - dataset
+- name: uses
+  description: 当前正在使用某系统或工具 / currently uses a system or tool
+  domain:
+  - organization
+  - person
+  - system
+  range:
+  - system
+- name: located_in
+  description: 位于、办公在、总部在、常驻 / is located or based in
+  domain:
+  - organization
+  - person
+  range:
+  - location
+- name: part_of
+  description: 部门或团队隶属于更大的组织 / sub-organization belongs to a larger organization
+  domain:
+  - organization
+  range:
+  - organization
+rules:
+- Only extract relations the text states as current facts. Skip relations that are negated, planned, being
+  evaluated, hypothetical, or ended in the past. Resolve pronouns and phrases like 'the team' / '该团队'
+  to the named entity. Do not infer relations that are not stated (no transitive chains).
+examples:
+- text: 物流数据组位于广州天河，隶属于运营技术部。组员黄磊维护运单宽表 dwd_waybill，该表由 ods_waybill 清洗而来。物流数据组目前使用 Airflow 调度任务，曾经用过 Oozie，现已下线。
+  entities:
+  - name: 物流数据组
+    type: organization
+  - name: 广州天河
+    type: location
+  - name: 运营技术部
+    type: organization
+  - name: 黄磊
+    type: person
+  - name: dwd_waybill
+    type: dataset
+  - name: ods_waybill
+    type: dataset
+  - name: Airflow
+    type: system
+  relations:
+  - head: 物流数据组
+    relation: located_in
+    tail: 广州天河
+    evidence: 物流数据组位于广州天河
+  - head: 物流数据组
+    relation: part_of
+    tail: 运营技术部
+    evidence: 隶属于运营技术部
+  - head: 黄磊
+    relation: works_for
+    tail: 物流数据组
+    evidence: 组员黄磊
+  - head: 黄磊
+    relation: owns
+    tail: dwd_waybill
+    evidence: 黄磊维护运单宽表 dwd_waybill
+  - head: dwd_waybill
+    relation: derived_from
+    tail: ods_waybill
+    evidence: 该表由 ods_waybill 清洗而来
+  - head: 物流数据组
+    relation: uses
+    tail: Airflow
+    evidence: 物流数据组目前使用 Airflow 调度任务
+- text: Sofia Ruiz leads the Pricing team in Madrid. The team owns the conversion rate metric, which is
+    computed from fct_sessions. fct_sessions is built from raw_web_events. They plan to adopt dbt next
+    year.
+  entities:
+  - name: Sofia Ruiz
+    type: person
+  - name: Pricing team
+    type: organization
+  - name: Madrid
+    type: location
+  - name: conversion rate
+    type: metric
+  - name: fct_sessions
+    type: dataset
+  - name: raw_web_events
+    type: dataset
+  relations:
+  - head: Sofia Ruiz
+    relation: works_for
+    tail: Pricing team
+    evidence: Sofia Ruiz leads the Pricing team
+  - head: Pricing team
+    relation: located_in
+    tail: Madrid
+    evidence: the Pricing team in Madrid
+  - head: Pricing team
+    relation: owns
+    tail: conversion rate
+    evidence: The team owns the conversion rate metric
+  - head: conversion rate
+    relation: computed_from
+    tail: fct_sessions
+    evidence: which is computed from fct_sessions
+  - head: fct_sessions
+    relation: derived_from
+    tail: raw_web_events
+    evidence: fct_sessions is built from raw_web_events
