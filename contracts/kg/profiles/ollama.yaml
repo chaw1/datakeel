@@ -8,9 +8,8 @@ api_key_env: null
 output_method: json_schema
 request_parameters:
   reasoning_effort: none
-  num_ctx: 16384
 temperature: 0
 max_output_tokens: 4096
-chunk_size: 4000
-chunk_overlap: 200
+chunk_size: 256
+chunk_overlap: 32
 recording: null

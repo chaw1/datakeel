@@ -102,14 +102,12 @@ class KGSchema(BoundaryModel):
                     raise ValueError(msg)
 
 
-_ALLOWED_PARAMETERS = frozenset({"enable_thinking", "thinking", "reasoning_effort", "num_ctx"})
+_ALLOWED_PARAMETERS = frozenset({"enable_thinking", "thinking", "reasoning_effort"})
 
 
 def _valid_parameter(name: str, value: JsonValue) -> bool:
     if name == "enable_thinking":
         return isinstance(value, bool)
-    if name == "num_ctx":
-        return isinstance(value, int) and not isinstance(value, bool) and value > 0
     if name == "reasoning_effort":
         return isinstance(value, str) and value in {"none", "minimal", "low", "medium", "high"}
     if not isinstance(value, dict) or set(value) - {"type", "budget_tokens"}:

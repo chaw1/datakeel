@@ -107,6 +107,7 @@ def test_schema_invalid_fields_are_located(
         {"request_parameters": {"thinking": {"type": "disabled", "api_key": "secret-value"}}},
         {"request_parameters": {"enable_thinking": "secret-value"}},
         {"request_parameters": {"num_ctx": -1}},
+        {"request_parameters": {"num_ctx": 8192}},
         {"request_parameters": {"reasoning_effort": "secret-value"}},
         {"request_parameters": {"thinking": "secret-value"}},
         {"api_key_env": "secret-value"},
@@ -129,7 +130,7 @@ def test_profile_invalid_settings_rejected_without_secret_echo(
 
 
 def test_profile_allowed_parameters_validated() -> None:
-    """The allowlist covers explicit thinking controls and context length."""
+    """The allowlist covers explicit thinking controls accepted by the provider API."""
     profile = ExtractionProfile(
         id="local",
         extractor="llm",
@@ -137,7 +138,7 @@ def test_profile_allowed_parameters_validated() -> None:
         model="sample",
         base_url="http://localhost:11434/v1",
         api_key_env="EXAMPLE_MODEL_KEY",
-        request_parameters={"enable_thinking": False, "num_ctx": 8192},
+        request_parameters={"enable_thinking": False, "reasoning_effort": "none"},
     )
     assert profile.request_parameters["enable_thinking"] is False
 
