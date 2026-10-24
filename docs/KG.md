@@ -131,9 +131,9 @@ No fallback silently changes `output_method`. A rejected request becomes a faile
 
 不兼容的输出方式不会被静默替换；拒绝请求会记为失败块，每次实际调用单独计量。自动重试与 SDK 追踪关闭；重新运行复用成功缓存，并重试失败块。即使返回的局部 JSON 能解析，`length` 或 `max_tokens` 结束原因仍按截断失败处理，不写成功缓存。
 
-Prompts show concrete examples and list permitted vocabulary without embedding raw JSON Schema. Provider constraints still receive the schema for `json_schema` and `function_calling`. Extra top-level response keys are ignored and counted in `ignored_top_level_keys`; both `entities` and `relations` remain mandatory and strictly validated. Schema-only echoes fail parsing. Failed parsing and truncated responses retain any reported usage in the extraction trace.
+Prompt `text-kg-v3` includes every schema example's full source and complete entities/relations JSON after the rules and before the source text. Schemas without examples retain a concrete fallback. Approval estimates and model requests use this same prompt, with permitted vocabulary listed as text and no embedded raw JSON Schema. Provider constraints still receive the schema for `json_schema` and `function_calling`. Extra top-level response keys are ignored and counted in `ignored_top_level_keys`; both `entities` and `relations` remain mandatory and strictly validated. Schema-only echoes fail parsing. Failed parsing and truncated responses retain any reported usage in the extraction trace.
 
-提示词使用具体示例和文字词汇范围，不贴原始 JSON Schema；约束输出仍向 provider 传 schema。响应顶层多余键忽略并计入 `ignored_top_level_keys`，`entities` 和 `relations` 仍必填并严格校验。只有 schema 的回显仍为解析失败；解析失败或截断的已消费用量仍写入抽取 trace。
+提示词 `text-kg-v3` 在规则之后、待抽取原文之前放入 schema 的全部示例，每个示例保留全文及完整实体/关系 JSON；无示例时沿用具体兜底示例。签批估算与模型请求共用这份提示词，词汇范围用文字列出，不贴原始 JSON Schema；约束输出仍向 provider 传 schema。响应顶层多余键忽略并计入 `ignored_top_level_keys`，`entities` 和 `relations` 仍必填并严格校验。只有 schema 的回显仍为解析失败；解析失败或截断的已消费用量仍写入抽取 trace。
 
 ## Source checks and identity / 原文核对与身份
 

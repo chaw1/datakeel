@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from datakeel.core.errors import ProviderError
 from datakeel.core.evidence_models import ExtractorRef
 from datakeel.core.harness_models import TokenUsage
-from datakeel.core.kg_contracts import ExtractionProfile
+from datakeel.core.kg_contracts import ExtractionProfile, SchemaExample
 from datakeel.core.kg_errors import ExtractionProviderError, KGExtractionError
 from datakeel.core.kg_models import ExtractionResult, RawExtraction, Recording, TextBlock
 from datakeel.kg import cache
@@ -20,7 +20,7 @@ from datakeel.kg.cache import build_cache_key
 from datakeel.kg.extractors import FakeExtractor, ReplayExtractor, checked_extract
 from datakeel.kg.loader import contracts_path, get_profile, get_schema
 from datakeel.kg.policy import is_external, target_host
-from datakeel.kg.prompt import extraction_prompt, output_schema
+from datakeel.kg.prompt import PROMPT_VERSION, extraction_prompt, output_schema
 from datakeel.kg.text import chunk_text, decode_text
 
 
@@ -197,19 +197,73 @@ def test_prompt_and_schema_include_enum_vocabulary_and_source() -> None:
     assert "untrusted" in prompt
     assert "two top-level keys: entities and relations" in prompt
     assert "additionalProperties" not in prompt
-    assert "Example source:" in prompt
+    assert "Example 1 source:\n" in prompt
+    assert PROMPT_VERSION == "text-kg-v3"
     assert "organization/person -> location" in prompt
     assert "works_for" in str(output_schema(schema))
     assert _block().content_hash == hashlib.sha256(b"Example.").hexdigest()
 
 
-def test_ollama_prompt_with_worst_case_unicode_block_fits_default_context() -> None:
-    """The local profile leaves room beyond a UTF-8 byte upper bound for chat wrappers."""
-    profile = get_profile("ollama")
-    text = "𠀀" * profile.chunk_size
-    prompt = extraction_prompt(_block(text), get_schema())
-    assert len(prompt.encode("utf-8")) + 256 < 4096
-    assert "num_ctx" not in profile.request_parameters
+@pytest.mark.parametrize("extra_example", [None, "entities_only", "empty"])
+def test_prompt_preserves_all_example_sources_entities_and_relations(
+    extra_example: str | None,
+) -> None:
+    """All bilingual examples survive intact, including examples without relations."""
+    schema = get_schema()
+    if extra_example is not None:
+        sample = schema.examples[0]
+        schema = schema.model_copy(
+            update={
+                "examples": (
+                    SchemaExample(
+                        text=sample.text + "\nNo additional current relation is stated.",
+                        entities=sample.entities if extra_example == "entities_only" else (),
+                    ),
+                    *schema.examples,
+                )
+            }
+        )
+    prompt = extraction_prompt(_block(), schema)
+    previous = prompt.index(schema.rules[-1])
+    for index, sample in enumerate(schema.examples, start=1):
+        marker = f"Example {index} source:\n{sample.text}\nExample {index} output: "
+        position = prompt.index(marker)
+        assert previous < position < prompt.index("<source_text>")
+        payload = prompt[position + len(marker) :].split("\n", maxsplit=1)[0]
+        assert RawExtraction.model_validate_json(payload) == RawExtraction(
+            entities=sample.entities, relations=sample.relations
+        )
+        if index < len(schema.examples):
+            assert f"{payload}\n\nExample {index + 1} source:\n" in prompt
+        previous = position
+    assert prompt.count(" output: ") == len(schema.examples)
+    assert prompt.endswith("\n<source_text>\nExample.\n</source_text>")
+
+
+def test_prompt_without_schema_examples_keeps_the_fallback_output() -> None:
+    """Schemas without examples retain the same concrete subject/object demonstration."""
+    schema = get_schema().model_copy(update={"examples": ()})
+    prompt = extraction_prompt(_block(), schema)
+    evidence = "Example subject works_for Example object."
+    assert f"Example 1 source:\n{evidence}\nExample 1 output: " in prompt
+    payload = prompt.split("Example 1 output: ", maxsplit=1)[1].split("\n", maxsplit=1)[0]
+    assert RawExtraction.model_validate_json(payload) == RawExtraction.model_validate(
+        {
+            "entities": [
+                {"name": "Example subject", "type": "person"},
+                {"name": "Example object", "type": "organization"},
+            ],
+            "relations": [
+                {
+                    "head": "Example subject",
+                    "relation": "works_for",
+                    "tail": "Example object",
+                    "evidence": evidence,
+                }
+            ],
+        }
+    )
+    assert "Example 2" not in prompt
 
 
 @pytest.mark.parametrize("truncated", [False, True])

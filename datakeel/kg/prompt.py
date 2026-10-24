@@ -5,10 +5,10 @@
 
 from pydantic import JsonValue
 
-from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation, KGSchema
+from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation, KGSchema, SchemaExample
 from datakeel.core.kg_models import RawExtraction, TextBlock
 
-PROMPT_VERSION = "text-kg-v2"
+PROMPT_VERSION = "text-kg-v3"
 
 
 def output_schema(schema: KGSchema) -> dict[str, JsonValue]:
@@ -45,18 +45,11 @@ def output_schema(schema: KGSchema) -> dict[str, JsonValue]:
     }
 
 
-def _example(schema: KGSchema) -> RawExtraction:
-    if schema.examples and schema.examples[0].relations:
-        sample = schema.examples[0]
-        relation = sample.relations[0]
-        return RawExtraction(
-            entities=tuple(
-                item for item in sample.entities if item.name in {relation.head, relation.tail}
-            ),
-            relations=(relation,),
-        )
+def _fallback_example(schema: KGSchema) -> SchemaExample:
     relation = schema.relations[0]
-    return RawExtraction(
+    evidence = f"Example subject {relation.name} Example object."
+    return SchemaExample(
+        text=evidence,
         entities=(
             ExtractedEntity(name="Example subject", type=relation.domain[0]),
             ExtractedEntity(name="Example object", type=relation.range[0]),
@@ -66,7 +59,7 @@ def _example(schema: KGSchema) -> RawExtraction:
                 head="Example subject",
                 relation=relation.name,
                 tail="Example object",
-                evidence=f"Example subject {relation.name} Example object.",
+                evidence=evidence,
             ),
         ),
     )
@@ -74,7 +67,11 @@ def _example(schema: KGSchema) -> RawExtraction:
 
 def extraction_prompt(block: TextBlock, schema: KGSchema) -> str:
     """Render the identical prompt for approval estimates and actual model requests."""
-    example = _example(schema)
+    examples = "\n\n".join(
+        f"Example {index} source:\n{sample.text}\nExample {index} output: "
+        + RawExtraction(entities=sample.entities, relations=sample.relations).model_dump_json()
+        for index, sample in enumerate(schema.examples or (_fallback_example(schema),), start=1)
+    )
     entity_types = "\n".join(f"- {item.name}: {item.description}" for item in schema.entity_types)
     relations = "\n".join(
         f"- {item.name} ({'/'.join(item.domain)} -> {'/'.join(item.range)}): {item.description}"
@@ -90,10 +87,8 @@ def extraction_prompt(block: TextBlock, schema: KGSchema) -> str:
         + relations
         + "\nRules:\n"
         + "\n".join(schema.rules)
-        + "\nExample source: "
-        + example.relations[0].evidence
-        + "\nExample output: "
-        + example.model_dump_json()
+        + "\n"
+        + examples
         + "\n<source_text>\n"
         + block.text
         + "\n</source_text>"

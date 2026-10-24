@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Extraction prompt v3 preserves every schema example's full source, entities and relations while keeping approval estimates and model requests on the same prompt.
 - Long source highlights wrap naturally within paragraphs while retaining keyboard activation and visible focus.
 - Extraction approval plans now bind document and block fingerprints without copying source text or recordings into Agent/MCP results. Workers verify all approved inputs before constructing an extractor; existing run history keeps its source snapshots.
 - Accepted and rejected graph relationships and entity mentions retain human decisions when evidence or extraction profiles change, with inherited-decision audit provenance.
