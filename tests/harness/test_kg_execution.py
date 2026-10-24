@@ -92,6 +92,20 @@ def test_external_long_case_merges_overlapping_product_candidates(tmp_path: Path
     assert report.product.verified.relation_strict.f1 == 1
 
 
+def test_failed_blocks_retain_exact_source_offsets(tmp_path: Path) -> None:
+    """Failures identify individual chunks so the saved evaluation can locate every omission."""
+    text = "Alice owns Atlas. Alice owns Atlas. Alice owns Atlas."
+    path = _cases(tmp_path / "cases.yaml", text)
+    profile = get_profile("fake").model_copy(update={"chunk_size": 20, "chunk_overlap": 0})
+    adapter = FakeExtractor(("parse_failure", "provider_error", "truncated"))
+    report = evaluate_kg(profile, get_schema(), adapter, path)
+    assert [(item.case_id, item.start, item.end, item.reason) for item in report.failures] == [
+        ("test", 0, 18, "parse_failure"),
+        ("test", 18, 36, "provider_error"),
+        ("test", 36, 53, "truncated"),
+    ]
+
+
 def test_partial_failures_do_not_hide_successful_blocks(tmp_path: Path) -> None:
     """Persist visible failure counts while scoring the candidate from the completed block."""
     path = _cases(tmp_path / "cases.yaml", "Alice owns Atlas. Alice owns Atlas. Alice owns Atlas.")

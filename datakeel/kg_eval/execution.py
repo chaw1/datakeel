@@ -14,6 +14,7 @@ from datakeel.core.kg_errors import KGExtractionError
 from datakeel.core.kg_eval_models import (
     KGBlockedRelation,
     KGCase,
+    KGEvalFailure,
     RecordedUsage,
     ScoredEntity,
     ScoredRecord,
@@ -37,6 +38,7 @@ class CaseExecution(BoundaryModel):
     raw: ScoredRecord
     product: ScoredRecord
     blocked: tuple[KGBlockedRelation, ...]
+    failures: tuple[KGEvalFailure, ...]
 
 
 def _source(case: KGCase, profile: ExtractionProfile, text: str) -> KGSource:
@@ -60,13 +62,17 @@ def execute_case(
     raw_entities: list[ScoredEntity] = []
     relations: list[ScoredRelation] = []
     products: list[ProductExtraction] = []
-    failures: list[str] = []
+    failures: list[KGEvalFailure] = []
     input_tokens = output_tokens = 0
     for block in chunk_text(text, profile.chunk_size, profile.chunk_overlap):
         try:
             result = checked_extract(adapter, block, schema)
         except KGExtractionError as error:
-            failures.append(error.reason)
+            failures.append(
+                KGEvalFailure(
+                    case_id=case.id, start=block.start, end=block.end, reason=error.reason
+                )
+            )
             continue
         input_tokens += result.input_tokens or 0
         output_tokens += result.output_tokens or 0
@@ -86,7 +92,7 @@ def execute_case(
         entities=tuple(raw_entities),
         relations=tuple(relations),
         latency_s=perf_counter() - started,
-        error=";".join(failures) or None,
+        error=";".join(failure.reason for failure in failures) or None,
         failed_blocks=len(failures),
         usage=RecordedUsage(
             input_tokens=input_tokens,
@@ -97,5 +103,8 @@ def execute_case(
     entities, candidates = product_predictions(tuple(products), text)
     product = raw.model_copy(update={"entities": entities, "relations": candidates})
     return CaseExecution(
-        raw=raw, product=product, blocked=blocked_relations(case.id, tuple(products))
+        raw=raw,
+        product=product,
+        blocked=blocked_relations(case.id, tuple(products)),
+        failures=tuple(failures),
     )

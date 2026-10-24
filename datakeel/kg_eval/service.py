@@ -76,6 +76,7 @@ def evaluate_kg(
         recording=score_views(original, original_suite, labels),
         product=score_views(products, _normalized_suite(suite), labels),
         blocked_relations=tuple(item for execution in executions for item in execution.blocked),
+        failures=tuple(item for execution in executions for item in execution.failures),
         elapsed_seconds=perf_counter() - started,
         input_tokens=0
         if offline

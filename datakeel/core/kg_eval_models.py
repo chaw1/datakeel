@@ -153,6 +153,15 @@ class KGBlockedRelation(BoundaryModel):
     reason: str
 
 
+class KGEvalFailure(BoundaryModel):
+    """Identify an unsuccessful source block without copying its text or provider body."""
+
+    case_id: str
+    start: int = Field(ge=0)
+    end: int = Field(ge=0)
+    reason: str
+
+
 class KGEvalReport(BoundaryModel):
     """Persist independent recording and production-path scores from one execution."""
 
@@ -166,6 +175,7 @@ class KGEvalReport(BoundaryModel):
     recording: KGScoringView
     product: KGScoringView
     blocked_relations: tuple[KGBlockedRelation, ...] = ()
+    failures: tuple[KGEvalFailure, ...] = ()
     elapsed_seconds: float = Field(ge=0)
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)

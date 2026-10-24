@@ -78,6 +78,11 @@ def _display(report: KGEvalReport, console: Console) -> None:
         f"tokens={report.input_tokens + report.output_tokens}; cost USD={cost}; "
         f"blocked relations={len(report.blocked_relations)}"
     )
+    for failure in report.failures:
+        console.print(
+            f"Failed block: {failure.case_id} [{failure.start}, {failure.end}): {failure.reason}",
+            markup=False,
+        )
     console.print(f"Saved evaluation: {report.id}", markup=False)
 
 
