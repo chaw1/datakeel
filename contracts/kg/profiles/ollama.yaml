@@ -10,6 +10,10 @@ request_parameters:
   reasoning_effort: none
 temperature: 0
 max_output_tokens: 4096
-chunk_size: 256
-chunk_overlap: 32
+# Ollama's VRAM-based default context may be only 4096 tokens.
+# The built-in prompt plus one chunk uses roughly 1-2k input tokens, leaving ample headroom.
+# Overlong output is recorded as a failed block; use server-side OLLAMA_CONTEXT_LENGTH
+# before increasing chunk size.
+chunk_size: 1000
+chunk_overlap: 100
 recording: null

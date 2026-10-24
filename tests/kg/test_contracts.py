@@ -143,6 +143,14 @@ def test_profile_allowed_parameters_validated() -> None:
     assert profile.request_parameters["enable_thinking"] is False
 
 
+def test_bundled_ollama_profile_keeps_context_across_sentences() -> None:
+    """The local profile uses the selected block size and overlap without a byte estimate."""
+    profile = loader.get_profile("ollama")
+    assert profile.chunk_size == 1000
+    assert profile.chunk_overlap == 100
+    assert "num_ctx" not in profile.request_parameters
+
+
 def test_contract_read_error_redacts_source(tmp_path: Path) -> None:
     """Unreadable and malformed YAML has a stable located error."""
     with pytest.raises(ValidationError, match="document: unable"):

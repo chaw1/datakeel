@@ -93,13 +93,13 @@ request_parameters:
   reasoning_effort: none
 temperature: 0
 max_output_tokens: 4096
-chunk_size: 256
-chunk_overlap: 32
+chunk_size: 1000
+chunk_overlap: 100
 ```
 
-The bundled Ollama profile uses 256-code-point chunks and 32-code-point overlap so the built-in prompt plus worst-case Unicode input fits the default 4096-token context. For longer chunks, configure `OLLAMA_CONTEXT_LENGTH` on the Ollama server and restart that server yourself. Its OpenAI-compatible endpoint cannot set context length through a request-level `num_ctx`; Datakeel therefore rejects that parameter. Custom schemas can make prompts larger and need their own context allowance. Provider `prompt_tokens` alone cannot reliably prove input truncation without a matching tokenizer.
+The bundled Ollama profile uses 1000-code-point chunks and 100-code-point overlap to preserve context across sentences. Ollama chooses its default context from available VRAM, so it may be only 4096 tokens. The built-in prompt plus one chunk uses roughly 1–2k input tokens, leaving ample headroom; this is an estimate, not a bound for every text or custom schema. Overlong output with `finish_reason=length` is recorded as a failed block. For larger chunks, configure `OLLAMA_CONTEXT_LENGTH` on the Ollama server and restart that server yourself. Its OpenAI-compatible endpoint cannot set context length through a request-level `num_ctx`; Datakeel therefore rejects that parameter. Custom schemas can make prompts larger and need their own context allowance. Provider `prompt_tokens` alone cannot reliably prove input truncation without a matching tokenizer.
 
-内置 Ollama 配置使用 256 码点块、32 码点重叠，为默认 4096 上下文内的提示词与最坏 Unicode 输入留空间。长块需要在 Ollama **服务端**设置 `OLLAMA_CONTEXT_LENGTH` 并自行重启服务；OpenAI 兼容接口不支持通过请求中的 `num_ctx` 调整上下文，配置中已禁止该字段。自定义 schema 会增加提示词长度，需另行核算。没有同模型 tokenizer 时，不能仅凭 `prompt_tokens` 可靠判断输入截断。
+内置 Ollama 配置使用 1000 码点块、100 码点重叠，保留跨句上下文。Ollama 按显存设置默认上下文，可能只有 4096 token；内置提示词加一块的输入约为 1–2k token，留足余量。这是估算，并非所有文本或自定义 schema 的上界。输出超长返回 `finish_reason=length` 时记为失败块。更大的块需要在 Ollama **服务端**设置 `OLLAMA_CONTEXT_LENGTH` 并自行重启服务；OpenAI 兼容接口不支持通过请求中的 `num_ctx` 调整上下文，配置中已禁止该字段。自定义 schema 会增加提示词长度，需另行核算。没有同模型 tokenizer 时，不能仅凭 `prompt_tokens` 可靠判断输入截断。
 
 ### Compatible cloud endpoint / 兼容云端接口
 
