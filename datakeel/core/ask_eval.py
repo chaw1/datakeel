@@ -9,6 +9,7 @@ from typing import Literal, Self
 from pydantic import AwareDatetime, Field, model_validator
 
 from datakeel.core.ask_models import AskAnswer
+from datakeel.core.knowledge_eval import KnowledgeEvaluation
 from datakeel.core.metric_models import QueryResult
 from datakeel.core.models import BoundaryModel, new_id, utcnow
 
@@ -100,6 +101,7 @@ class AskEvalReport(BoundaryModel):
     thresholds: AskThresholds = Field(default_factory=AskThresholds)
     threshold_met: bool
     evaluation_seconds: float = Field(ge=0)
+    knowledge: KnowledgeEvaluation | None = None
     evidence_convention: str = (
         "Answered: card, SELECT, tables, columns, matches and assertions; "
         "unanswerable: three suggestions and refusal assertions; "

@@ -18,6 +18,7 @@ from datakeel.core.evidence_models import (
     TextSpan,
     Whole,
 )
+from datakeel.core.knowledge_citations import knowledge_citations
 from datakeel.core.models import AssetRef, LineageEvent, new_id
 from datakeel.core.question_models import QuestionProperties
 from datakeel.metrics.projection import resolved_metric_cards
@@ -70,7 +71,7 @@ def _facts(
                 or (_anchor(question),),
             )
         )
-    if answer.status == "unanswerable":
+    if answer.answer_kind == "metric" and answer.status == "unanswerable":
         facts.append(
             _assertion(
                 question,
@@ -95,6 +96,16 @@ def _facts(
                 match.source,
             )
         )
+    facts.extend(
+        _assertion(
+            question,
+            event_id,
+            "ask.cites_assertion" if ref.asset_type == "assertion" else "ask.cites_asset",
+            ref,
+            (_anchor(question),),
+        )
+        for ref in knowledge_citations(answer.knowledge)
+    )
     return tuple(facts)
 
 

@@ -87,7 +87,10 @@ class GoldenCase(BoundaryModel):
 
     id: str
     description: str
-    fixture_kind: Literal["legacy", "evidence", "enterprise", "injection", "kg"] = "legacy"
+    fixture_kind: Literal[
+        "legacy", "evidence", "enterprise", "injection", "kg", "enterprise_kg"
+    ] = "legacy"
+    fixture_reviewed: bool = False
     config: ConversationCreate = Field(default_factory=ConversationCreate)
     turns: list[GoldenTurn] = Field(min_length=1)
     expect: GoldenExpect

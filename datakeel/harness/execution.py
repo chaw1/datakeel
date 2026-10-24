@@ -176,7 +176,10 @@ def run_case(case: GoldenCase, provider: Literal["fake", "openai", "anthropic"])
         db.migrate()
         try:
             try:
-                case = bind_case(case, seed_case(db, directory, case.fixture_kind))
+                case = bind_case(
+                    case,
+                    seed_case(db, directory, case.fixture_kind, reviewed=case.fixture_reviewed),
+                )
             except (DatakeelError, ModelValidationError, OSError) as error:
                 return _fixture_failure(case, error)
             model = {

@@ -19,6 +19,11 @@ from datakeel.cli.enterprise import seed_enterprise_demo
 from datakeel.cli.evidence import seed_evidence_demo
 from datakeel.cli.kg_demo import check_demo, demo_reports, seed_kg_demo
 from datakeel.core.errors import ExecutionError
+from datakeel.harness.enterprise_kg import (
+    check_enterprise_extraction,
+    import_enterprise_documents,
+    schedule_enterprise_extraction,
+)
 from datakeel.http import Client
 from datakeel.sample import generate_samples
 from datakeel.storage.database import Database, data_dir
@@ -149,6 +154,10 @@ def demo(args: argparse.Namespace) -> None:
     evidence = None if getattr(args, "legacy_only", False) else seed_evidence_demo(db)
     enterprise = None if getattr(args, "legacy_only", False) else seed_enterprise_demo(db)
     graph = None if getattr(args, "legacy_only", False) else seed_kg_demo(db)
+    documents = (
+        import_enterprise_documents(db, data_dir() / "enterprise-documents") if graph else None
+    )
+    document_task = schedule_enterprise_extraction(db, documents) if documents else None
     if not args.once:
         if enterprise is not None:
             console.print(enterprise.model_dump_json(), markup=False, soft_wrap=True)
@@ -163,6 +172,8 @@ def demo(args: argparse.Namespace) -> None:
         raise ExecutionError(msg)
     if graph:
         check_demo(db, graph)
+    if documents and document_task:
+        check_enterprise_extraction(db, documents, document_task)
     console.print(
         json.dumps(
             {
@@ -171,6 +182,7 @@ def demo(args: argparse.Namespace) -> None:
                 "state": "COMPLETED",
                 "elapsed_seconds": round(time.monotonic() - started, 3),
                 "enterprise": enterprise.model_dump(mode="json") if enterprise else None,
+                "enterprise_documents": documents.model_dump(mode="json") if documents else None,
                 "knowledge_graph": [run.model_dump(mode="json") for run in demo_reports(db, graph)]
                 if graph
                 else None,

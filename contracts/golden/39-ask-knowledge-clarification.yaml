@@ -1,0 +1,64 @@
+id: 39-ask-knowledge-clarification
+description: Exercise source-backed knowledge answers through the existing ask_data
+  tool.
+fixture_kind: enterprise_kg
+fixture_reviewed: false
+turns:
+- input: 营业额谁负责？
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: ask_data
+      id: 39-ask-knowledge-clarification-discover
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: 营业额谁负责？
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 39-ask-knowledge-clarification-ask
+  - content: The structured tool result includes the registered records and attributed
+      document claims.
+expect:
+  tool_sequence:
+  - tool_search
+  - ask_data
+  tool_results:
+  - name: ask_data
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - answer_kind
+          - status
+          - subject_candidates
+          properties:
+            answer_kind:
+              const: knowledge
+            status:
+              const: clarification
+            subject_candidates:
+              type: array
+              minItems: 2
+              maxItems: 2
+              allOf:
+              - contains:
+                  type: object
+                  required:
+                  - name
+                  properties:
+                    name:
+                      const: 销售额
+              - contains:
+                  type: object
+                  required:
+                  - name
+                  properties:
+                    name:
+                      const: 零售额
+  file_count: 6
+  max_turns: 3

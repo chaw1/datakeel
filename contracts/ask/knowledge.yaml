@@ -1,0 +1,311 @@
+# Generated enterprise benchmark; all people, teams and data are fictional.
+reference_instant: '2026-10-01T00:00:00Z'
+questions:
+- id: knowledge-01
+  question: 出货额谁负责？
+  initial:
+    subject: 出货额
+    system_assets: &id001
+    - owner/供应链负责人
+    forbidden_predicates: &id002
+    - computed_from
+    claims:
+    - head: 周岩
+      predicate: owns
+      tail: 出货额
+      relation_status: candidate
+      other_end_status: not_applicable
+      subject_link_status: candidate
+  reviewed:
+    subject: 出货额
+    system_assets: *id001
+    forbidden_predicates: *id002
+    claims:
+    - head: 周岩
+      predicate: owns
+      tail: 出货额
+      relation_status: accepted
+      other_end_status: not_applicable
+      subject_link_status: candidate
+- id: knowledge-02
+  question: shipments 表从哪来？
+  initial:
+    subject: shipments
+    empty_system: true
+    claims:
+    - head: shipments
+      predicate: derived_from
+      tail: erp_raw_shipments
+      consistency: not_in_catalog
+      other_end_status: not_in_catalog
+    forbidden_entities:
+    - 出货额
+- id: knowledge-03
+  question: 零售额是基于哪张表算的？
+  initial:
+    subject: 零售额
+    system_assets:
+    - ecommerce/main/orders
+    claims:
+    - head: 零售额
+      predicate: computed_from
+      tail: orders
+      consistency: consistent
+      other_end_status: linked
+      other_end_asset: ecommerce/main/orders
+- id: knowledge-04
+  question: 订单数从哪来？
+  initial:
+    subject: 订单数
+    system_assets:
+    - ecommerce/main/orders
+    claims:
+    - head: 订单数
+      predicate: computed_from
+      tail: orders
+      consistency: consistent
+      other_end_status: linked
+      other_end_asset: ecommerce/main/orders
+    forbidden_entities:
+    - order_items
+- id: knowledge-05
+  question: orders 表的下游有哪些？
+  initial:
+    subject: orders
+    system_assets:
+    - ecommerce/main/retail_summary
+    - retail_revenue
+    - order_count
+    - retail_units
+    claims:
+    - head: 零售额
+      predicate: computed_from
+      tail: orders
+      consistency: consistent
+      other_end_status: linked
+      other_end_asset: retail_revenue
+    - head: 订单数
+      predicate: computed_from
+      tail: orders
+      consistency: consistent
+      other_end_status: linked
+      other_end_asset: order_count
+    - head: retail_summary
+      predicate: derived_from
+      tail: orders
+      consistency: consistent
+      other_end_status: linked
+      other_end_asset: ecommerce/main/retail_summary
+- id: knowledge-06
+  question: Who owns the sales table?
+  initial:
+    subject: sales
+    empty_system: true
+    claims:
+    - head: Priya Natarajan
+      predicate: owns
+      tail: sales table
+      relation_status: candidate
+      other_end_status: not_applicable
+      subject_entity: sales table
+      subject_link_status: candidate
+- id: knowledge-07
+  question: Who owns customer_count?
+  initial:
+    subject: 客户数
+    system_assets:
+    - owner/客户运营负责人
+    claims:
+    - head: Leo Fang
+      predicate: owns
+      tail: customer_count
+      relation_status: candidate
+      other_end_status: not_applicable
+- id: knowledge-08
+  question: 营业额谁负责？
+  initial:
+    status: clarification
+    candidates:
+    - 销售额
+    - 零售额
+    reason_code: ambiguous_subject
+- id: knowledge-09
+  question: 库存量从哪来？
+  initial:
+    subject: 库存量
+    system_assets:
+    - erp/main/inventory
+    claims:
+    - head: 库存量
+      predicate: computed_from
+      tail: inventory_snapshot
+      consistency: not_in_catalog
+      other_end_status: not_in_catalog
+    forbidden_entities:
+    - inventory
+- id: knowledge-10
+  question: 周岩负责哪些？
+  initial:
+    subject: 周岩
+    empty_system: true
+    claims:
+    - head: 周岩
+      predicate: owns
+      tail: 出货额
+      other_end_status: linked
+      other_end_asset: shipment_amount
+    - head: 周岩
+      predicate: owns
+      tail: 出货量
+      other_end_status: linked
+      other_end_asset: shipment_units
+    forbidden_entities:
+    - 供应链数据组
+  reviewed:
+    subject: 周岩
+    empty_system: true
+    claims:
+    - head: 周岩
+      predicate: owns
+      tail: 出货额
+      relation_status: accepted
+      other_end_status: linked
+      other_end_asset: shipment_amount
+    - head: 周岩
+      predicate: owns
+      tail: 出货量
+      relation_status: candidate
+      other_end_status: linked
+      other_end_asset: shipment_units
+    forbidden_entities:
+    - 供应链数据组
+- id: knowledge-11
+  question: warranties 表谁负责？
+  initial:
+    status: unanswerable
+    subject: warranties
+    reason_code: no_knowledge
+    empty_system: true
+    empty_claims: true
+- id: knowledge-12
+  question: Who owns the weather table?
+  initial:
+    status: unanswerable
+    suggestions: true
+    reason_code: unknown_subject
+- id: knowledge-13
+  question: What is sales_summary derived from?
+  initial:
+    subject: sales_summary
+    system_assets:
+    - crm/main/sales
+    claims:
+    - head: sales_summary
+      predicate: derived_from
+      tail: sales
+      consistency: consistent
+      other_end_status: linked
+      other_end_asset: crm/main/sales
+- id: knowledge-14
+  question: 零售额谁负责？
+  initial:
+    subject: 零售额
+    system_assets:
+    - owner/零售运营负责人
+    claims:
+    - head: 韩露
+      predicate: owns
+      tail: 零售额
+      relation_status: candidate
+      other_end_status: not_applicable
+    forbidden_entities:
+    - Grace Liu
+    pending_ambiguous_links: 1
+  reviewed:
+    subject: 零售额
+    system_assets:
+    - owner/零售运营负责人
+    empty_claims: true
+    forbidden_entities:
+    - 韩露
+    - Grace Liu
+    pending_ambiguous_links: 0
+- id: knowledge-15
+  question: 销售额谁负责？
+  initial:
+    subject: 销售额
+    system_assets:
+    - owner/财务负责人
+    empty_claims: true
+    forbidden_entities:
+    - Grace Liu
+    pending_ambiguous_links: 1
+  reviewed:
+    subject: 销售额
+    system_assets:
+    - owner/财务负责人
+    claims:
+    - head: Grace Liu
+      predicate: owns
+      tail: 营业额
+      relation_status: candidate
+      other_end_status: not_applicable
+      subject_link_status: accepted
+    pending_ambiguous_links: 0
+- id: knowledge-16
+  question: 供应链负责人负责哪些？
+  initial:
+    subject: 供应链负责人
+    system_assets:
+    - shipment_amount
+    - shipment_units
+- id: knowledge-17
+  question: 上个季度华东区出货额是多少
+  initial:
+    answer_kind: metric
+    gold_key: ok-east-shipments-last-quarter
+    claims:
+    - head: 周岩
+      predicate: owns
+      tail: 出货额
+      relation_status: candidate
+      other_end_status: not_applicable
+  reviewed:
+    answer_kind: metric
+    gold_key: ok-east-shipments-last-quarter
+    claims:
+    - head: 周岩
+      predicate: owns
+      tail: 出货额
+      relation_status: accepted
+      other_end_status: not_applicable
+- id: route-counterexample-1
+  question: 上个季度华东区基于开票的销售额是多少
+  initial:
+    answer_kind: metric
+    status: null
+- id: route-counterexample-2
+  question: 2026年3月来源于线上的零售额是多少
+  initial:
+    answer_kind: metric
+    status: null
+- id: route-counterexample-3
+  question: 2026年3月用到优惠券的成交订单数是多少
+  initial:
+    answer_kind: metric
+    status: null
+- id: route-counterexample-4
+  question: 华东区负责的客户数量是多少
+  initial:
+    answer_kind: metric
+    status: null
+- id: route-counterexample-5
+  question: 2026年3月下游渠道的出货额是多少
+  initial:
+    answer_kind: metric
+    status: null
+- id: route-counterexample-6
+  question: 2026年3月维护期内的维修费用是多少
+  initial:
+    answer_kind: metric
+    status: null

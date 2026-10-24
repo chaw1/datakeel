@@ -12,6 +12,7 @@ from datakeel.actions.policy import digest
 from datakeel.actions.registry import action_definitions
 from datakeel.agent.schemas import compact_schema
 from datakeel.core.agent_models import Conversation, ToolCall, ToolDefinition
+from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
 from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.delegation.models import DelegateParams
 from datakeel.delegation.policy import tool_allowed
@@ -66,7 +67,7 @@ def deferred_tools() -> list[ToolDefinition]:
     reads = [
         ToolDefinition(
             name=item.id,
-            description=f"Read {item.id}",
+            description=ASK_DATA_DESCRIPTION if item.id == "ask_data" else f"Read {item.id}",
             parameters=compact_schema(item.input_schema),
         )
         for item in function_definitions()

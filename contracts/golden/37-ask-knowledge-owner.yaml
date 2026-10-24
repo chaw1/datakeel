@@ -1,0 +1,107 @@
+id: 37-ask-knowledge-owner
+description: Exercise source-backed knowledge answers through the existing ask_data
+  tool.
+fixture_kind: enterprise_kg
+fixture_reviewed: false
+turns:
+- input: 出货额谁负责？
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: ask_data
+      id: 37-ask-knowledge-owner-discover
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: 出货额谁负责？
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 37-ask-knowledge-owner-ask
+  - content: The structured tool result includes the registered records and attributed
+      document claims.
+expect:
+  tool_sequence:
+  - tool_search
+  - ask_data
+  tool_results:
+  - name: ask_data
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - answer_kind
+          - status
+          - knowledge
+          properties:
+            answer_kind:
+              const: knowledge
+            status:
+              const: answered
+            knowledge:
+              type: object
+              required:
+              - claims
+              properties:
+                claims:
+                  type: array
+                  contains:
+                    type: object
+                    required:
+                    - assertion_id
+                    - head
+                    - predicate
+                    - tail
+                    - relation_status
+                    - verification
+                    - subject_link
+                    - evidence
+                    properties:
+                      assertion_id:
+                        type: string
+                        minLength: 1
+                      head:
+                        type: object
+                        required:
+                        - name
+                        properties:
+                          name:
+                            const: 周岩
+                      predicate:
+                        const: owns
+                      tail:
+                        type: object
+                        required:
+                        - name
+                        properties:
+                          name:
+                            const: 出货额
+                      relation_status:
+                        const: candidate
+                      verification:
+                        const: verified
+                      subject_link:
+                        type: object
+                        required:
+                        - link_status
+                        properties:
+                          link_status:
+                            const: candidate
+                      evidence:
+                        type: array
+                        contains:
+                          type: object
+                          required:
+                          - document
+                          - text
+                          properties:
+                            document:
+                              const: ent-zh-01.txt
+                            text:
+                              type: string
+                              minLength: 1
+  file_count: 6
+  max_turns: 3

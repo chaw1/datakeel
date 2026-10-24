@@ -6,6 +6,8 @@
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.ask.dimensions import parse_dimensions
+from datakeel.ask.knowledge_parser import parse_knowledge_question
+from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
 from datakeel.ask.models import QueryContext
 from datakeel.ask.parser import parse_question
 from datakeel.ask.resolution import resolve_metric
@@ -33,12 +35,18 @@ def ask_data(db: Database, request: AskRequest) -> AskAnswer:
     with db.session() as session:
         snapshot = read_snapshot(session)
     context = QueryContext(snapshot=snapshot, layer=semantic_layer(snapshot))
+    knowledge = parse_knowledge_question(request.question)
+    if knowledge is not None:
+        return store_answer(
+            db, request, knowledge_answer(db, request, knowledge, snapshot, context.layer)
+        )
     parsed = parse_question(request, context.layer)
     resolution = resolve_metric(parsed, resolved_metric_cards(snapshot), request.metric_id)
     if resolution.status != "resolved":
         answer = _nonanswer(request, parsed, resolution)
     else:
         answer = _answer(request, parsed, resolution, context)
+        answer = related_knowledge(db, answer, snapshot)
     return store_answer(db, request, answer)
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from datakeel.ask.evaluation import run_evaluation
+from datakeel.harness.knowledge_evaluation import run_evaluation
 from datakeel.storage.ask_evaluations import save_ask_evaluation
 from datakeel.storage.database import Database
 
@@ -35,3 +35,10 @@ def evaluate_ask(db: Database, questions: Path | None = None, *, json_output: bo
                 markup=False,
             )
     console.print(f"threshold_met={report.threshold_met}; report={report.id}")
+    if report.knowledge is not None:
+        for state in report.knowledge.states:
+            console.print(f"Knowledge {state.state}: {state.passed}/{state.total}")
+            for question in state.questions:
+                if not question.passed:
+                    console.print(f"{question.id}: {'; '.join(question.failures)}", markup=False)
+        console.print(f"knowledge_threshold_met={report.knowledge.threshold_met}")

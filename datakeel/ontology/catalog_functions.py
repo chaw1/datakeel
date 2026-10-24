@@ -5,6 +5,7 @@
 
 from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskRequest
+from datakeel.core.knowledge_citations import knowledge_citations
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
 from datakeel.ontology.models import FunctionResult
@@ -25,7 +26,17 @@ def _ask(db: Database, arguments: JsonDocument) -> FunctionResult:
         refs.extend(
             AssetRef(asset_type="column", asset_id=identity) for identity in answer.sql.columns
         )
-    return FunctionResult(function="ask_data", asset_refs=refs, data=answer.model_dump(mode="json"))
+    refs.extend(ref for ref in knowledge_citations(answer.knowledge) if ref not in refs)
+    omitted: set[str] = (
+        {"answer_kind", "knowledge", "subject_candidates"}
+        if (answer.answer_kind == "metric" and answer.knowledge is None)
+        else set()
+    )
+    return FunctionResult(
+        function="ask_data",
+        asset_refs=refs,
+        data=answer.model_dump(mode="json", exclude=omitted),
+    )
 
 
 def _metrics(db: Database, arguments: JsonDocument) -> FunctionResult:

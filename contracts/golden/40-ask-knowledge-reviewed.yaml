@@ -1,0 +1,65 @@
+id: 40-ask-knowledge-reviewed
+description: Exercise source-backed knowledge answers through the existing ask_data
+  tool.
+fixture_kind: enterprise_kg
+fixture_reviewed: true
+turns:
+- input: 零售额谁负责？
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: ask_data
+      id: 40-ask-knowledge-reviewed-discover
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: 零售额谁负责？
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 40-ask-knowledge-reviewed-ask
+  - content: The structured tool result includes the registered records and attributed
+      document claims.
+expect:
+  tool_sequence:
+  - tool_search
+  - ask_data
+  tool_results:
+  - name: ask_data
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - answer_kind
+          - status
+          - knowledge
+          properties:
+            answer_kind:
+              const: knowledge
+            status:
+              const: answered
+            knowledge:
+              type: object
+              required:
+              - claims
+              - pending_ambiguous_links
+              - system_records
+              properties:
+                claims:
+                  const: []
+                pending_ambiguous_links:
+                  const: 0
+                system_records:
+                  type: array
+                  contains:
+                    type: object
+                    required:
+                    - name
+                    properties:
+                      name:
+                        const: 零售运营负责人
+  file_count: 6
+  max_turns: 3

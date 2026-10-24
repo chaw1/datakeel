@@ -1,0 +1,14 @@
+# Offline replay of the bundled synthetic enterprise documents.
+id: replay-enterprise
+extractor: replay
+provider: replay
+model: deepseek-flash
+base_url: null
+api_key_env: null
+output_method: json_schema
+request_parameters: {}
+temperature: 0
+max_output_tokens: 4096
+chunk_size: 4000
+chunk_overlap: 200
+recording: ../../docs/p9/enterprise-flash.yaml

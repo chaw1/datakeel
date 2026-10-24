@@ -53,9 +53,18 @@ def test_demo_with_evidence_reuses_sources_and_reports_complete_second_run_cache
     output.truncate()
     demo_module.demo(argparse.Namespace(once=True, legacy_only=False))
     second = json.loads(output.getvalue())
-    assert len(list_datasets(db)) == 3
+    assert len(list_datasets(db)) == 4
     assert first["dataset_id"] == second["dataset_id"]
     assert first["evidence"]["dataset_id"] == second["evidence"]["dataset_id"]
+    assert (
+        first["enterprise_documents"]["dataset_id"] == second["enterprise_documents"]["dataset_id"]
+    )
+    documents = next(
+        item
+        for item in list_datasets(db)
+        if item.id == second["enterprise_documents"]["dataset_id"]
+    )
+    assert documents.file_count == 6
     assert first["evidence"]["inputs"] == 100
     assert first["evidence"]["extracted"] == 100
     assert second["evidence"]["skipped_cached"] == 100

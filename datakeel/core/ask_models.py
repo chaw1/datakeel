@@ -10,8 +10,13 @@ from typing import Literal, Self
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from datakeel.core.evidence_models import Assertion
+from datakeel.core.knowledge_models import KnowledgeAnswer, KnowledgeSubject
 from datakeel.core.metric_models import CompiledQuery, MetricCard, QueryResult, TimeRange
 from datakeel.core.models import BoundaryModel, new_id, utcnow
+
+ASK_DATA_DESCRIPTION = (
+    "Read metric values, owners, upstream or downstream; document evidence includes review status."
+)
 
 
 class MatchEvidence(BoundaryModel):
@@ -41,6 +46,7 @@ class AskRequest(BoundaryModel):
 
     question: str = Field(min_length=1, max_length=2000)
     metric_id: str | None = Field(default=None, min_length=1, max_length=200)
+    subject_id: str | None = Field(default=None, min_length=1, max_length=500)
     session_id: str | None = Field(default=None, min_length=1, max_length=100)
     reference_instant: AwareDatetime = Field(default_factory=utcnow)
     actor: str = Field(default="local-user", min_length=1, max_length=100)
@@ -89,10 +95,16 @@ class AskAnswer(BoundaryModel):
     lineage: LineageReference | None = None
     assertion_ids: tuple[str, ...] = ()
     assertions: tuple[Assertion, ...] = ()
+    answer_kind: Literal["metric", "knowledge"] = "metric"
+    knowledge: KnowledgeAnswer | None = None
+    subject_candidates: tuple[KnowledgeSubject, ...] = ()
 
     @model_validator(mode="after")
     def evidence_matches_state(self) -> Self:
         """Forbid guessed values and ensure every text anchor addresses the saved question."""
+        if self.answer_kind == "knowledge":
+            self._validate_knowledge()
+            return self
         if self.question != unicodedata.normalize("NFC", self.question):
             msg = "Saved questions must use NFC normalization"
             raise ValueError(msg)
@@ -106,6 +118,32 @@ class AskAnswer(BoundaryModel):
         else:
             self._validate_answer()
         return self
+
+    def _validate_knowledge(self) -> None:
+        if not unicodedata.is_normalized("NFC", self.question):
+            msg = "Knowledge questions must use NFC normalization"
+            raise ValueError(msg)
+        if not all(item.text == self.question[item.start : item.end] for item in self.matches):
+            msg = "Knowledge match evidence does not address the saved question"
+            raise ValueError(msg)
+        if self.knowledge is None:
+            msg = "Knowledge answers require a typed knowledge payload"
+            raise ValueError(msg)
+        if any(value is not None for value in (self.sql, self.result, self.metric_card)):
+            msg = "Knowledge answers cannot contain metric execution results"
+            raise ValueError(msg)
+        if self.status == "answered" and (
+            self.knowledge.subject is None
+            or not (self.knowledge.system_records or self.knowledge.claims)
+        ):
+            msg = "Answered knowledge questions require a subject and at least one fact"
+            raise ValueError(msg)
+        if self.status == "clarification" and len(self.subject_candidates) <= 1:
+            msg = "Knowledge clarification requires multiple subject candidates"
+            raise ValueError(msg)
+        if self.status == "unanswerable" and self.knowledge.reason_code is None:
+            msg = "Knowledge refusals require an explicit reason code"
+            raise ValueError(msg)
 
     def _validate_answer(self) -> None:
         if (

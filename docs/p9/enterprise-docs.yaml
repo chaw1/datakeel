@@ -1,0 +1,542 @@
+# Synthetic enterprise documents aligned with the sample enterprise catalog and semantic layer;
+# all people, teams, places and systems are fictional. Authored 2026-10-24.
+id: enterprise-docs-6
+version: '1.0'
+cases:
+- id: ent-zh-01
+  lang: zh
+  text: '供应链数据交接说明（2026 年 9 月）
+
+    供应链数据组隶属于运营中心，常驻佛山。组长周岩负责出货额和出货量两个指标。
+
+    出货额基于 shipments 表计算。shipments 表由 ERP 夜间同步任务从 erp_raw_shipments 抽取而来。
+
+    原负责人何嘉已于九月调往财务部，不再维护 shipments 表。
+
+    inventory 表目前由仓储组的唐蔚维护。'
+  entities:
+  - name: 供应链数据组
+    type: organization
+    aliases: []
+  - name: 运营中心
+    type: organization
+    aliases: []
+  - name: 佛山
+    type: location
+    aliases: []
+  - name: 周岩
+    type: person
+    aliases:
+    - 组长周岩
+  - name: 出货额
+    type: metric
+    aliases:
+    - 出货额指标
+  - name: 出货量
+    type: metric
+    aliases:
+    - 出货量指标
+  - name: shipments
+    type: dataset
+    aliases:
+    - shipments 表
+    - shipments表
+    - shipments table
+    - the shipments table
+  - name: erp_raw_shipments
+    type: dataset
+    aliases:
+    - erp_raw_shipments 表
+    - erp_raw_shipments表
+    - erp_raw_shipments table
+    - the erp_raw_shipments table
+  - name: ERP 夜间同步任务
+    type: system
+    aliases:
+    - ERP
+    - ERP夜间同步任务
+  - name: 何嘉
+    type: person
+    aliases:
+    - 原负责人何嘉
+  - name: 财务部
+    type: organization
+    aliases: []
+  - name: inventory
+    type: dataset
+    aliases:
+    - inventory 表
+    - inventory表
+    - inventory table
+    - the inventory table
+  - name: 仓储组
+    type: organization
+    aliases: []
+  - name: 唐蔚
+    type: person
+    aliases: []
+  relations:
+  - head: 供应链数据组
+    relation: part_of
+    tail: 运营中心
+  - head: 供应链数据组
+    relation: located_in
+    tail: 佛山
+  - head: 周岩
+    relation: works_for
+    tail: 供应链数据组
+  - head: 周岩
+    relation: owns
+    tail: 出货额
+  - head: 周岩
+    relation: owns
+    tail: 出货量
+  - head: 出货额
+    relation: computed_from
+    tail: shipments
+  - head: shipments
+    relation: derived_from
+    tail: erp_raw_shipments
+  - head: 何嘉
+    relation: works_for
+    tail: 财务部
+  - head: 唐蔚
+    relation: owns
+    tail: inventory
+  - head: 唐蔚
+    relation: works_for
+    tail: 仓储组
+  optional: []
+  traps:
+  - head: 何嘉
+    relation: owns
+    tail: shipments
+  - head: 何嘉
+    relation: works_for
+    tail: 供应链数据组
+- id: ent-zh-02
+  lang: zh
+  text: '零售经营周会纪要
+
+    零售运营部的负责人是韩露，部门目前使用镜湖看板跟踪日报。
+
+    会上确认：零售额和订单数都基于 orders 表计算，零售额指标由韩露负责。retail_summary 由 orders 表汇总而来。
+
+    退款额基于 returns 表计算，由售后财务组的邵晨负责。
+
+    有人提议把订单数改为基于 order_items 计算，目前还在评估，没有定论。'
+  entities:
+  - name: 零售运营部
+    type: organization
+    aliases: []
+  - name: 韩露
+    type: person
+    aliases: []
+  - name: 镜湖看板
+    type: system
+    aliases: []
+  - name: 零售额
+    type: metric
+    aliases:
+    - 零售额指标
+  - name: 订单数
+    type: metric
+    aliases:
+    - 订单数指标
+  - name: orders
+    type: dataset
+    aliases:
+    - orders 表
+    - orders表
+    - orders table
+    - the orders table
+  - name: retail_summary
+    type: dataset
+    aliases:
+    - retail_summary 表
+    - retail_summary表
+    - retail_summary table
+    - the retail_summary table
+  - name: 退款额
+    type: metric
+    aliases:
+    - 退款额指标
+  - name: returns
+    type: dataset
+    aliases:
+    - returns 表
+    - returns表
+    - returns table
+    - the returns table
+  - name: 售后财务组
+    type: organization
+    aliases: []
+  - name: 邵晨
+    type: person
+    aliases: []
+  - name: order_items
+    type: dataset
+    aliases:
+    - order_items 表
+    - order_items表
+    - order_items table
+    - the order_items table
+  relations:
+  - head: 韩露
+    relation: works_for
+    tail: 零售运营部
+  - head: 零售运营部
+    relation: uses
+    tail: 镜湖看板
+  - head: 零售额
+    relation: computed_from
+    tail: orders
+  - head: 订单数
+    relation: computed_from
+    tail: orders
+  - head: 韩露
+    relation: owns
+    tail: 零售额
+  - head: retail_summary
+    relation: derived_from
+    tail: orders
+  - head: 退款额
+    relation: computed_from
+    tail: returns
+  - head: 邵晨
+    relation: owns
+    tail: 退款额
+  - head: 邵晨
+    relation: works_for
+    tail: 售后财务组
+  optional: []
+  traps:
+  - head: 订单数
+    relation: computed_from
+    tail: order_items
+- id: ent-en-03
+  lang: en
+  text: 'CRM Data Handbook
+
+    The CRM data team belongs to the Commercial Division and is based in Shenzhen. Priya Natarajan leads the team and owns
+    the sales table.
+
+    The sales_amount metric is computed from the sales table, and sales_summary is derived from sales.
+
+    Leo Fang owns the customer_count metric, which is computed from the customers table. Tom Becker owned the customers table
+    until August; he has since left the company.
+
+    The team uses HarborCRM for campaign tracking. Moving the campaigns table into a separate marketing warehouse is planned
+    for next quarter.'
+  entities:
+  - name: CRM data team
+    type: organization
+    aliases:
+    - The CRM data team
+    - the team
+  - name: Commercial Division
+    type: organization
+    aliases:
+    - the Commercial Division
+  - name: Shenzhen
+    type: location
+    aliases: []
+  - name: Priya Natarajan
+    type: person
+    aliases: []
+  - name: sales
+    type: dataset
+    aliases:
+    - sales 表
+    - sales表
+    - sales table
+    - the sales table
+  - name: sales_amount
+    type: metric
+    aliases:
+    - sales_amount metric
+    - the sales_amount metric
+  - name: sales_summary
+    type: dataset
+    aliases:
+    - sales_summary 表
+    - sales_summary表
+    - sales_summary table
+    - the sales_summary table
+  - name: Leo Fang
+    type: person
+    aliases: []
+  - name: customer_count
+    type: metric
+    aliases:
+    - customer_count metric
+    - the customer_count metric
+  - name: customers
+    type: dataset
+    aliases:
+    - customers 表
+    - customers表
+    - customers table
+    - the customers table
+  - name: Tom Becker
+    type: person
+    aliases: []
+  - name: HarborCRM
+    type: system
+    aliases: []
+  - name: campaigns
+    type: dataset
+    aliases:
+    - campaigns 表
+    - campaigns表
+    - campaigns table
+    - the campaigns table
+  - name: marketing warehouse
+    type: dataset
+    aliases:
+    - a separate marketing warehouse
+    - separate marketing warehouse
+  relations:
+  - head: CRM data team
+    relation: part_of
+    tail: Commercial Division
+  - head: CRM data team
+    relation: located_in
+    tail: Shenzhen
+  - head: Priya Natarajan
+    relation: works_for
+    tail: CRM data team
+  - head: Priya Natarajan
+    relation: owns
+    tail: sales
+  - head: sales_amount
+    relation: computed_from
+    tail: sales
+  - head: sales_summary
+    relation: derived_from
+    tail: sales
+  - head: Leo Fang
+    relation: owns
+    tail: customer_count
+  - head: customer_count
+    relation: computed_from
+    tail: customers
+  - head: CRM data team
+    relation: uses
+    tail: HarborCRM
+  optional: []
+  traps:
+  - head: Tom Becker
+    relation: owns
+    tail: customers
+  - head: marketing warehouse
+    relation: derived_from
+    tail: campaigns
+- id: ent-zh-04
+  lang: zh
+  text: '售后数据说明
+
+    售后服务组位于合肥，隶属于客户服务中心。售后工单数基于 tickets 表计算，ticket_summary 由 tickets 表汇总而来。
+
+    维修费用基于 repairs 表计算，由维修组的祁峰负责。下个季度计划把维修费用改为基于 parts 表计算。
+
+    warranties 表已经停用，不再更新。'
+  entities:
+  - name: 售后服务组
+    type: organization
+    aliases: []
+  - name: 合肥
+    type: location
+    aliases: []
+  - name: 客户服务中心
+    type: organization
+    aliases: []
+  - name: 售后工单数
+    type: metric
+    aliases:
+    - 售后工单数指标
+  - name: tickets
+    type: dataset
+    aliases:
+    - tickets 表
+    - tickets表
+    - tickets table
+    - the tickets table
+  - name: ticket_summary
+    type: dataset
+    aliases:
+    - ticket_summary 表
+    - ticket_summary表
+    - ticket_summary table
+    - the ticket_summary table
+  - name: 维修费用
+    type: metric
+    aliases:
+    - 维修费用指标
+  - name: repairs
+    type: dataset
+    aliases:
+    - repairs 表
+    - repairs表
+    - repairs table
+    - the repairs table
+  - name: 维修组
+    type: organization
+    aliases: []
+  - name: 祁峰
+    type: person
+    aliases: []
+  - name: parts
+    type: dataset
+    aliases:
+    - parts 表
+    - parts表
+    - parts table
+    - the parts table
+  - name: warranties
+    type: dataset
+    aliases:
+    - warranties 表
+    - warranties表
+    - warranties table
+    - the warranties table
+  relations:
+  - head: 售后服务组
+    relation: located_in
+    tail: 合肥
+  - head: 售后服务组
+    relation: part_of
+    tail: 客户服务中心
+  - head: 售后工单数
+    relation: computed_from
+    tail: tickets
+  - head: ticket_summary
+    relation: derived_from
+    tail: tickets
+  - head: 维修费用
+    relation: computed_from
+    tail: repairs
+  - head: 祁峰
+    relation: owns
+    tail: 维修费用
+  - head: 祁峰
+    relation: works_for
+    tail: 维修组
+  optional: []
+  traps:
+  - head: 维修费用
+    relation: computed_from
+    tail: parts
+- id: ent-en-05
+  lang: en
+  text: 'Finance Metrics Note
+
+    In monthly finance reviews, 营业额 refers to invoiced revenue. Grace Liu of the finance team owns 营业额.
+
+    The payment_amount metric is computed from the payments table and is owned by the treasury team.
+
+    The treasury team is part of the finance team and works from Shanghai.'
+  entities:
+  - name: 营业额
+    type: metric
+    aliases: []
+  - name: Grace Liu
+    type: person
+    aliases: []
+  - name: finance team
+    type: organization
+    aliases:
+    - the finance team
+  - name: payment_amount
+    type: metric
+    aliases:
+    - payment_amount metric
+    - the payment_amount metric
+  - name: payments
+    type: dataset
+    aliases:
+    - payments 表
+    - payments表
+    - payments table
+    - the payments table
+  - name: treasury team
+    type: organization
+    aliases:
+    - the treasury team
+  - name: Shanghai
+    type: location
+    aliases: []
+  relations:
+  - head: Grace Liu
+    relation: works_for
+    tail: finance team
+  - head: Grace Liu
+    relation: owns
+    tail: 营业额
+  - head: payment_amount
+    relation: computed_from
+    tail: payments
+  - head: treasury team
+    relation: owns
+    tail: payment_amount
+  - head: treasury team
+    relation: part_of
+    tail: finance team
+  - head: treasury team
+    relation: located_in
+    tail: Shanghai
+  optional: []
+  traps: []
+- id: ent-zh-06
+  lang: zh
+  text: '仓储指标口径备忘
+
+    仓储组隶属于运营中心。库存量基于 inventory_snapshot 表计算，inventory_snapshot 由 inventory 表按日快照生成。
+
+    仓储组的唐蔚负责库存量指标。'
+  entities:
+  - name: 仓储组
+    type: organization
+    aliases: []
+  - name: 运营中心
+    type: organization
+    aliases: []
+  - name: 库存量
+    type: metric
+    aliases:
+    - 库存量指标
+  - name: inventory_snapshot
+    type: dataset
+    aliases:
+    - inventory_snapshot 表
+    - inventory_snapshot表
+    - inventory_snapshot table
+    - the inventory_snapshot table
+  - name: inventory
+    type: dataset
+    aliases:
+    - inventory 表
+    - inventory表
+    - inventory table
+    - the inventory table
+  - name: 唐蔚
+    type: person
+    aliases: []
+  relations:
+  - head: 仓储组
+    relation: part_of
+    tail: 运营中心
+  - head: 库存量
+    relation: computed_from
+    tail: inventory_snapshot
+  - head: inventory_snapshot
+    relation: derived_from
+    tail: inventory
+  - head: 唐蔚
+    relation: works_for
+    tail: 仓储组
+  - head: 唐蔚
+    relation: owns
+    tail: 库存量
+  optional: []
+  traps: []

@@ -1,0 +1,81 @@
+id: 38-ask-knowledge-upstream
+description: Exercise source-backed knowledge answers through the existing ask_data
+  tool.
+fixture_kind: enterprise_kg
+fixture_reviewed: false
+turns:
+- input: shipments 表从哪来？
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: ask_data
+      id: 38-ask-knowledge-upstream-discover
+  - tool_calls:
+    - name: ask_data
+      arguments:
+        question: shipments 表从哪来？
+        reference_instant: '2026-10-01T00:00:00Z'
+      id: 38-ask-knowledge-upstream-ask
+  - content: The structured tool result includes the registered records and attributed
+      document claims.
+expect:
+  tool_sequence:
+  - tool_search
+  - ask_data
+  tool_results:
+  - name: ask_data
+    content_schema:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: object
+          required:
+          - answer_kind
+          - status
+          - knowledge
+          properties:
+            answer_kind:
+              const: knowledge
+            status:
+              const: answered
+            knowledge:
+              type: object
+              required:
+              - claims
+              properties:
+                claims:
+                  type: array
+                  contains:
+                    type: object
+                    required:
+                    - predicate
+                    - tail
+                    - consistency
+                    - other_end
+                    - relation_status
+                    properties:
+                      predicate:
+                        const: derived_from
+                      tail:
+                        type: object
+                        required:
+                        - name
+                        properties:
+                          name:
+                            const: erp_raw_shipments
+                      consistency:
+                        const: not_in_catalog
+                      other_end:
+                        type: object
+                        required:
+                        - status
+                        properties:
+                          status:
+                            const: not_in_catalog
+                      relation_status:
+                        const: candidate
+  file_count: 6
+  max_turns: 3

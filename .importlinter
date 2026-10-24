@@ -225,6 +225,9 @@ ignore_imports =
     datakeel.catalog.service -> datakeel.storage.catalog_store
     datakeel.catalog.service -> datakeel.storage.database
 # Questions compose registered semantics and read-only compilation, then persist typed answers.
+    datakeel.ask.knowledge_service -> datakeel.storage.database
+    datakeel.ask.knowledge_service -> datakeel.storage.kg_queries
+    datakeel.ask.knowledge_service -> datakeel.storage.link_queries
     datakeel.ask.service -> datakeel.metrics.compiler
     datakeel.ask.service -> datakeel.metrics.execution
     datakeel.ask.service -> datakeel.metrics.projection
@@ -285,6 +288,7 @@ ignore_imports =
     datakeel.worker.kg_runner -> datakeel.extraction_runtime.factory
 # Graph benchmarks drain the same durable worker path as user-triggered actions.
     datakeel.harness.kg_cases -> datakeel.worker.runner
+    datakeel.harness.enterprise_kg -> datakeel.worker.runner
     datakeel.harness.execution -> datakeel.worker.runner
 
 [importlinter:contract:runtime-framework-isolation]

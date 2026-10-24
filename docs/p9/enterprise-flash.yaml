@@ -1,0 +1,372 @@
+# Model: deepseek-flash; recorded: 2026-10-24; prompt: text-kg-v3; source: Recorded DeepSeek outputs on synthetic enterprise documents aligned with the sample enterprise
+model: deepseek-flash
+recorded_at: '2026-10-24'
+prompt_version: text-kg-v3
+source: Recorded DeepSeek outputs on synthetic enterprise documents aligned with the sample enterprise
+records:
+- output:
+    entities:
+    - name: 供应链数据组
+      type: organization
+    - name: 运营中心
+      type: organization
+    - name: 佛山
+      type: location
+    - name: 周岩
+      type: person
+    - name: 出货额
+      type: metric
+    - name: 出货量
+      type: metric
+    - name: shipments
+      type: dataset
+    - name: ERP 夜间同步任务
+      type: system
+    - name: erp_raw_shipments
+      type: dataset
+    - name: 何嘉
+      type: person
+    - name: 财务部
+      type: organization
+    - name: inventory
+      type: dataset
+    - name: 仓储组
+      type: organization
+    - name: 唐蔚
+      type: person
+    relations:
+    - head: 供应链数据组
+      relation: part_of
+      tail: 运营中心
+      evidence: 供应链数据组隶属于运营中心
+    - head: 供应链数据组
+      relation: located_in
+      tail: 佛山
+      evidence: 常驻佛山
+    - head: 周岩
+      relation: works_for
+      tail: 供应链数据组
+      evidence: 组长周岩
+    - head: 周岩
+      relation: owns
+      tail: 出货额
+      evidence: 组长周岩负责出货额和出货量两个指标
+    - head: 周岩
+      relation: owns
+      tail: 出货量
+      evidence: 组长周岩负责出货额和出货量两个指标
+    - head: 出货额
+      relation: computed_from
+      tail: shipments
+      evidence: 出货额基于 shipments 表计算
+    - head: shipments
+      relation: derived_from
+      tail: erp_raw_shipments
+      evidence: shipments 表由 ERP 夜间同步任务从 erp_raw_shipments 抽取而来
+    - head: ERP 夜间同步任务
+      relation: uses
+      tail: erp_raw_shipments
+      evidence: shipments 表由 ERP 夜间同步任务从 erp_raw_shipments 抽取而来
+    - head: 唐蔚
+      relation: works_for
+      tail: 仓储组
+      evidence: inventory 表目前由仓储组的唐蔚维护
+    - head: 唐蔚
+      relation: owns
+      tail: inventory
+      evidence: inventory 表目前由仓储组的唐蔚维护
+  finish_reason: stop
+  input_tokens: 1165
+  output_tokens: 459
+  cache_read_tokens: 896
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: de5f92e3193d92b3fc18e2abb73ba75860e3f57299e99a19f2bd70d9b38ae3b5
+- output:
+    entities:
+    - name: 零售运营部
+      type: organization
+    - name: 韩露
+      type: person
+    - name: 镜湖看板
+      type: system
+    - name: 零售额
+      type: metric
+    - name: 订单数
+      type: metric
+    - name: orders
+      type: dataset
+    - name: retail_summary
+      type: dataset
+    - name: 退款额
+      type: metric
+    - name: returns
+      type: dataset
+    - name: 售后财务组
+      type: organization
+    - name: 邵晨
+      type: person
+    relations:
+    - head: 韩露
+      relation: works_for
+      tail: 零售运营部
+      evidence: 零售运营部的负责人是韩露
+    - head: 零售运营部
+      relation: uses
+      tail: 镜湖看板
+      evidence: 部门目前使用镜湖看板跟踪日报
+    - head: 零售额
+      relation: computed_from
+      tail: orders
+      evidence: 零售额和订单数都基于 orders 表计算
+    - head: 订单数
+      relation: computed_from
+      tail: orders
+      evidence: 零售额和订单数都基于 orders 表计算
+    - head: 韩露
+      relation: owns
+      tail: 零售额
+      evidence: 零售额指标由韩露负责
+    - head: retail_summary
+      relation: derived_from
+      tail: orders
+      evidence: retail_summary 由 orders 表汇总而来
+    - head: 退款额
+      relation: computed_from
+      tail: returns
+      evidence: 退款额基于 returns 表计算
+    - head: 邵晨
+      relation: works_for
+      tail: 售后财务组
+      evidence: 由售后财务组的邵晨负责
+    - head: 邵晨
+      relation: owns
+      tail: 退款额
+      evidence: 退款额基于 returns 表计算，由售后财务组的邵晨负责
+  finish_reason: stop
+  input_tokens: 1165
+  output_tokens: 382
+  cache_read_tokens: 896
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 28d3cadcdf4877b47f1c404501d4b76d749e58dbed491d7cc29c67acf7b6844e
+- output:
+    entities:
+    - name: CRM data team
+      type: organization
+    - name: Commercial Division
+      type: organization
+    - name: Shenzhen
+      type: location
+    - name: Priya Natarajan
+      type: person
+    - name: sales table
+      type: dataset
+    - name: sales_amount
+      type: metric
+    - name: sales_summary
+      type: dataset
+    - name: sales
+      type: dataset
+    - name: Leo Fang
+      type: person
+    - name: customer_count
+      type: metric
+    - name: customers table
+      type: dataset
+    - name: Tom Becker
+      type: person
+    - name: HarborCRM
+      type: system
+    relations:
+    - head: CRM data team
+      relation: part_of
+      tail: Commercial Division
+      evidence: The CRM data team belongs to the Commercial Division
+    - head: CRM data team
+      relation: located_in
+      tail: Shenzhen
+      evidence: is based in Shenzhen
+    - head: Priya Natarajan
+      relation: works_for
+      tail: CRM data team
+      evidence: Priya Natarajan leads the team
+    - head: Priya Natarajan
+      relation: owns
+      tail: sales table
+      evidence: Priya Natarajan leads the team and owns the sales table
+    - head: sales_amount
+      relation: computed_from
+      tail: sales table
+      evidence: The sales_amount metric is computed from the sales table
+    - head: sales_summary
+      relation: derived_from
+      tail: sales
+      evidence: sales_summary is derived from sales
+    - head: Leo Fang
+      relation: owns
+      tail: customer_count
+      evidence: Leo Fang owns the customer_count metric
+    - head: customer_count
+      relation: computed_from
+      tail: customers table
+      evidence: which is computed from the customers table
+    - head: CRM data team
+      relation: uses
+      tail: HarborCRM
+      evidence: The team uses HarborCRM for campaign tracking
+  finish_reason: stop
+  input_tokens: 1180
+  output_tokens: 405
+  cache_read_tokens: 896
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: c34e020997c69d220ce3a39911f621779dc45e06cead9676e59eeee4cca565d5
+- output:
+    entities:
+    - name: 售后服务组
+      type: organization
+    - name: 合肥
+      type: location
+    - name: 客户服务中心
+      type: organization
+    - name: 售后工单数
+      type: metric
+    - name: tickets
+      type: dataset
+    - name: ticket_summary
+      type: dataset
+    - name: 维修费用
+      type: metric
+    - name: repairs
+      type: dataset
+    - name: 维修组
+      type: organization
+    - name: 祁峰
+      type: person
+    relations:
+    - head: 售后服务组
+      relation: located_in
+      tail: 合肥
+      evidence: 售后服务组位于合肥
+    - head: 售后服务组
+      relation: part_of
+      tail: 客户服务中心
+      evidence: 隶属于客户服务中心
+    - head: 售后工单数
+      relation: computed_from
+      tail: tickets
+      evidence: 售后工单数基于 tickets 表计算
+    - head: ticket_summary
+      relation: derived_from
+      tail: tickets
+      evidence: ticket_summary 由 tickets 表汇总而来
+    - head: 维修费用
+      relation: computed_from
+      tail: repairs
+      evidence: 维修费用基于 repairs 表计算
+    - head: 祁峰
+      relation: works_for
+      tail: 维修组
+      evidence: 由维修组的祁峰负责
+    - head: 祁峰
+      relation: owns
+      tail: 维修费用
+      evidence: 由维修组的祁峰负责
+  finish_reason: stop
+  input_tokens: 1147
+  output_tokens: 295
+  cache_read_tokens: 896
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: e89dd390aec4497d20d241823a29980dfde7b8771a4087ffa2b1c3b175c195b6
+- output:
+    entities:
+    - name: Grace Liu
+      type: person
+    - name: finance team
+      type: organization
+    - name: 营业额
+      type: metric
+    - name: payment_amount
+      type: metric
+    - name: payments
+      type: dataset
+    - name: treasury team
+      type: organization
+    - name: Shanghai
+      type: location
+    relations:
+    - head: Grace Liu
+      relation: works_for
+      tail: finance team
+      evidence: Grace Liu of the finance team
+    - head: Grace Liu
+      relation: owns
+      tail: 营业额
+      evidence: Grace Liu of the finance team owns 营业额
+    - head: payment_amount
+      relation: computed_from
+      tail: payments
+      evidence: The payment_amount metric is computed from the payments table
+    - head: treasury team
+      relation: owns
+      tail: payment_amount
+      evidence: is owned by the treasury team
+    - head: treasury team
+      relation: part_of
+      tail: finance team
+      evidence: The treasury team is part of the finance team
+    - head: treasury team
+      relation: located_in
+      tail: Shanghai
+      evidence: works from Shanghai
+  finish_reason: stop
+  input_tokens: 1129
+  output_tokens: 236
+  cache_read_tokens: 896
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 4be34d7321ea3d38dd07b25cc532bf8c8f324d9ca739d8c1dfeeb24f04842c96
+- output:
+    entities:
+    - name: 仓储组
+      type: organization
+    - name: 运营中心
+      type: organization
+    - name: 库存量
+      type: metric
+    - name: inventory_snapshot
+      type: dataset
+    - name: inventory
+      type: dataset
+    - name: 唐蔚
+      type: person
+    relations:
+    - head: 仓储组
+      relation: part_of
+      tail: 运营中心
+      evidence: 仓储组隶属于运营中心
+    - head: 库存量
+      relation: computed_from
+      tail: inventory_snapshot
+      evidence: 库存量基于 inventory_snapshot 表计算
+    - head: inventory_snapshot
+      relation: derived_from
+      tail: inventory
+      evidence: inventory_snapshot 由 inventory 表按日快照生成
+    - head: 唐蔚
+      relation: works_for
+      tail: 仓储组
+      evidence: 仓储组的唐蔚
+    - head: 唐蔚
+      relation: owns
+      tail: 库存量
+      evidence: 仓储组的唐蔚负责库存量指标
+  finish_reason: stop
+  input_tokens: 1117
+  output_tokens: 215
+  cache_read_tokens: 896
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 32c1a0c5734d9af2c12215591d866ed2d78f2462ff7ed352f5490dfcddfb9e92
