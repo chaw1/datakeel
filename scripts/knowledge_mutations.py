@@ -69,17 +69,9 @@ KNOWLEDGE_MUTATIONS = (
     ),
     Mutation(
         name="knowledge-direction-position",
-        path="ask/knowledge_roles.py",
-        before=(
-            "for frame in re.finditer(vocabulary.EN_INPUT_FRAME, marked):\n"
-            '        if frame.start("input") <= subject < frame.end("input"):\n'
-            '            return _frame_result("downstream", frame, mention)'
-        ),
-        after=(
-            "for frame in re.finditer(vocabulary.EN_INPUT_FRAME, marked):\n"
-            '        if frame.start("input") <= subject < frame.end("input"):\n'
-            '            return _frame_result("upstream", frame, mention)'
-        ),
+        path="ask/knowledge_frames.py",
+        before='source, result = frame.group("source"), frame.group("result")',
+        after='source, result = frame.group("result"), frame.group("source")',
         case=(
             "tests/ask/test_knowledge_parser.py::"
             "test_dependency_position_distinguishes_input_subject_from_output_subject"
@@ -116,6 +108,34 @@ KNOWLEDGE_MUTATIONS = (
         case=(
             "tests/ask/test_knowledge_outcomes.py::"
             "test_requested_person_cannot_fall_back_to_metric_values"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="knowledge-topic-question-slot",
+        path="ask/knowledge_frames.py",
+        before=(
+            "if result_ask and not source_ask and re.search(_REFERENCE, source):\n"
+            '        return "downstream"'
+        ),
+        after=(
+            "if result_ask and not source_ask and re.search(_REFERENCE, source):\n"
+            '        return "upstream"'
+        ),
+        case=(
+            "tests/ask/test_knowledge_question_slots.py::"
+            "test_topic_pronoun_direction_cannot_follow_the_topic_position"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="knowledge-group-dimension-route",
+        path="ask/knowledge_routing.py",
+        before="    text, grouped = _strip_grouping(text)",
+        after="    grouped = False",
+        case=(
+            "tests/ask/test_knowledge_group_dimensions.py::"
+            "test_group_dimension_words_cannot_redirect_numeric_requests"
         ),
         runner="pytest",
     ),

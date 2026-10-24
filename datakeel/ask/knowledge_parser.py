@@ -206,7 +206,12 @@ def _owner_focus(text: str, focus: QuestionFocus, direction: QuestionDirection) 
         return True
     if direction.value == "downstream":
         return False
-    explicit_role = direction.rule_id == "K11-subject-role"
+    explicit_role = direction.rule_id in {
+        "K11-subject-role",
+        "K15-question-slot",
+        "K16-counterfactual-slot",
+        "K17-flow-slot",
+    }
     return not (direction.value and direction.reliable and (dependency or explicit_role))
 
 

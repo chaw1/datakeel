@@ -8,6 +8,19 @@ import re
 from datakeel.ask import knowledge_vocabulary as vocabulary
 
 _RELATIVE_PREDICATES = 2
+_NAMING_QUESTION = (
+    r"\b(?:what|how)\s+(?:is|are|was|were)\s+(?:it|they|these|those)\s+called\b[?!.\s]*$"
+)
+
+
+def _naming_tail(text: str) -> str:
+    naming = re.search(_NAMING_QUESTION, text)
+    if naming and re.search(
+        rf"(?:{vocabulary.FLOW_DEPENDENCY})|(?:{vocabulary.NEUTRAL_RELATION})",
+        text[: naming.start()],
+    ):
+        return text[: naming.start()] + " " * (len(text) - naming.start())
+    return text
 
 
 def _supplementary(hit: re.Match[str]) -> str:
@@ -45,6 +58,7 @@ def _topic_subject(text: str) -> str:
 def question_scope(text: str) -> str:
     """Mask supplementary clauses, keeping a main-clause pronoun bound to its subject."""
     original = text
+    text = _naming_tail(text)
     for pattern in vocabulary.SUPPLEMENTARY_CLAUSES:
         text = re.sub(pattern, _supplementary, text)
     if (apposition := re.search(vocabulary.NOMINAL_APPOSITION, text)) and re.search(

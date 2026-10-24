@@ -8,6 +8,7 @@ from typing import Literal
 
 from datakeel.ask import knowledge_vocabulary as vocabulary
 from datakeel.ask.knowledge_focus import QuestionDirection, QuestionFocus
+from datakeel.ask.knowledge_frames import counterfactual_direction, question_frame_direction
 from datakeel.ask.knowledge_names import SubjectMention
 from datakeel.ask.knowledge_scope import clause_scope, question_scope
 
@@ -16,6 +17,7 @@ def _role_direction(text: str, mention: SubjectMention, focus: QuestionFocus) ->
     marked = text[: mention.start] + vocabulary.SUBJECT_MARKER + text[mention.end :]
     for direction in (
         _production_purpose(marked, mention),
+        question_frame_direction(marked, mention),
         _english_arguments(marked, mention, focus),
         _chinese_arguments(marked, mention, focus),
         _recipient_usage(marked, mention, focus),
@@ -51,20 +53,22 @@ def question_direction(
         + " " * (mention.end - mention.start - 1)
         + text[mention.end :]
     )
+    counterfactual = counterfactual_direction(marked, mention)
     text = question_scope(marked)
     if vocabulary.SUBJECT_MARKER not in text:
-        return QuestionDirection()
+        return counterfactual
     position = text.index(vocabulary.SUBJECT_MARKER)
     mention = mention.model_copy(update={"start": position, "end": position + 1})
     text = text.replace(vocabulary.SUBJECT_MARKER, " ")
-    role = _role_direction(text, mention, focus)
+    role = counterfactual if counterfactual.value else _role_direction(text, mention, focus)
     if role.value:
         return role
+    hierarchy_text = re.sub(vocabulary.NEUTRAL_RELATION, lambda hit: " " * len(hit.group()), text)
     for value, pattern in (
         ("downstream", vocabulary.HIERARCHY_DOWN),
         ("upstream", vocabulary.HIERARCHY_UP),
     ):
-        if hit := re.search(pattern, text):
+        if hit := re.search(pattern, hierarchy_text):
             return _modifier_relation(text, mention, focus, hit) or QuestionDirection(
                 value="upstream" if value == "upstream" else "downstream", words=(hit.group(),)
             )

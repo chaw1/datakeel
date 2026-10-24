@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Resolve knowledge direction from the interrogative's source or result role, including topic references, missing-source impacts and flow destinations. Recognize neutral catalog relations and list commands, and preserve metric routing for grouped dimensions and dated metric requests.
 - Recognize explicit destination complements and dashboard display consumers while preserving scalar-value requests.
 - Infer default knowledge direction from table, view and metric levels; recover requested noun-phrase heads separated from question words and prefer explicit active, passive and nominal input/result roles, including usage questions with who or 谁. Bound focus and direction to the main question while preserving subject coordinates and supported pronoun references.
 - Recognize bilingual hierarchy, flow and impact expressions through shared vocabulary. Catalog-object count questions return typed lists and separate system/document counts while business measurements retain numeric routing. Use linked catalog subtypes for table/view counts and explain exclusions when document dataset types are unknown.
@@ -18,7 +19,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
-- Regression mutations detect reversed catalog hierarchy and source/result roles.
+- Regression mutations detect reversed catalog hierarchy, source/result slots with topic references, and grouping dimensions incorrectly routed to knowledge.
 - Independent development and held-out language corpora with 226 knowledge questions and 64 metric counterexamples, plus focus, direction and numeric-safety regression mutations.
 
 ## [0.11.0] - 2026-10-24

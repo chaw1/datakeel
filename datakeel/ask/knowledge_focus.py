@@ -157,6 +157,7 @@ def _adjacent_focus(text: str, prefix: str) -> QuestionFocus | None:
 def question_focus(text: str) -> QuestionFocus:
     """Prefer counted and direct types, then recover nouns separated from a generic ask."""
     text = question_scope(text)
+    text = re.sub(vocabulary.SUBJECT_TYPE_PRONOUN, lambda hit: " " * len(hit.group()), text)
     if counted := _typed_focus(text, vocabulary.COUNT_PREFIX, counted=True) or (
         _nominal_focus(text, counted=True) if re.search(vocabulary.COUNT_TOTAL, text) else None
     ):
@@ -175,7 +176,8 @@ def question_focus(text: str) -> QuestionFocus:
         return _nominal_focus(text) or QuestionFocus(
             kind="list", text=hit.group(), start=hit.start()
         )
-    return QuestionFocus()
+    neutral = _nominal_focus(text) if re.search(vocabulary.NEUTRAL_RELATION, text) else None
+    return neutral or QuestionFocus()
 
 
 def has_relation(text: str) -> bool:

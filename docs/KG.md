@@ -249,7 +249,9 @@ Focus and direction share a bounded main-question scope. Recognized supplementar
 
 Direct restrictive clauses retain the predicate connecting the resolved subject to the requested noun. When the subject occurs inside the relative clause, that clause supplies the relation; when it occurs in the main clause, the noun's relative modifier does not supply the main predicate. This bounded treatment also preserves supported topic references and Chinese attributes without changing subject or focus coordinates.
 
-Catalog levels increase from table to view/summary to metric. A question without a reliable direction uses the relative levels: a higher subject asking for a lower object is upstream; a lower subject asking for a higher object is downstream. Same-level lists still require clarification. Explicit source/result roles take precedence over these defaults: a subject used as input points downstream, while a result asking for its inputs points upstream. Usage questions beginning with 谁 or who follow that dependency direction. A person focus does not turn an explicit request for suppliers or inputs into ownership; a main question that actually asks who owns or maintains the subject retains `owner`. Formula and how-calculated questions follow the upstream definition and source route.
+Catalog levels increase from table to view/summary to metric. A question without a reliable direction uses the relative levels: a higher subject asking for a lower object is upstream; a lower subject asking for a higher object is downstream. Same-level lists still require clarification. Neutral relations such as related, linked, attached, associated and belong underneath, or 相关、有关、关联、对应、挂着, retain the requested catalog type and use these same defaults. Catalog list commands, including show me and 列个清单、给我看看, are knowledge requests. Explicit source/result roles take precedence over these defaults: a subject used as input points downstream, while a result asking for its inputs points upstream. Usage questions beginning with 谁 or who follow that dependency direction. A person focus does not turn an explicit request for suppliers or inputs into ownership; a main question that actually asks who owns or maintains the subject retains `owner`. Formula and how-calculated questions follow the upstream definition and source route.
+
+方向由关系框架中被问的槽位决定：被使用、被依赖或作为基础的一端是来源方；使用者、依赖者、产物或流入目标是结果方。疑问短语占结果方时问下游，占来源方时问上游；主语在句首还是句尾不决定方向。话题可以用逗号、冒号、破折号或 `For` 引出，后续的它、这张表、这个视图、该指标、it、this view、that table、its output 继承该主语身份。指代里的类型名词不作为被问类型。依赖方计数仍返回列表及个数。
 
 | Rule / 规则 | Condition / 条件 | Result / 结果 |
 | --- | --- | --- |
@@ -268,8 +270,11 @@ Catalog levels increase from table to view/summary to metric. A question without
 | `K9-hierarchy-upstream` | Higher catalog subject asks for lower-level objects / 上层目录主语问下层对象，如视图问表 | `upstream` |
 | `K10-hierarchy-downstream` | Lower catalog subject asks for higher-level objects / 下层目录主语问上层对象，如表问报表 | `downstream` |
 | `K11-subject-role` | Grammar identifies the known subject as an input or result / 句式确定主语是输入还是结果 | Input → `downstream`; result → `upstream` |
+| `K15-question-slot` | The interrogative occupies the source or result slot, including a topic's pronoun reference / 疑问短语占来源或结果槽，支持话题指代 | Source → `upstream`; result → `downstream` |
+| `K16-counterfactual-slot` | A known source is removed, retired or stops supplying data; the question asks for affected results / 已知来源缺失、下线、断供，询问受影响的结果 | `downstream` |
+| `K17-flow-slot` | A flow frame asks for its destination or source / 流向框架询问去向或来源 | Destination → `downstream`; source → `upstream` |
 
-The shared vocabulary in `datakeel/ask/knowledge_vocabulary.py` groups these expressions. Rules consume the categories rather than duplicating their words.
+Shared terms live in `datakeel/ask/knowledge_vocabulary.py`; `knowledge_frames.py` combines them with argument templates for source, result, counterfactual and flow questions.
 
 | Category / 类别 | Chinese / 中文 | English / 英文 |
 | --- | --- | --- |
@@ -277,7 +282,7 @@ The shared vocabulary in `datakeel/ask/knowledge_vocabulary.py` groups these exp
 | Flow / 流向 | 来源、源头、输入、基础、依据、去向、下一站、流向、流入、供给 | source, input, basis, foundation, feeds, fed into, powers, supports, supplies |
 | Impact / 影响 | 受牵连、波及、连累、受影响；条件句中的停用、消失、删除 | affects, impacts, breaks, suffers; if/without with removal or unavailability |
 
-Source-role templates include 以/拿/用/把 X 当作来源、输入、基础、依据, `fed by X`, `derived from X`, `built on X` and `pull from X`. Result-role templates include X 的来源/源头 and `X is fed by`. Active and passive dependency or production forms distinguish the input from the result; nominal forms such as `source for X`, `X as input` and `X as output` also retain that distinction. Relative subject position distinguishes `X feeds/powers/supports` from an input described after a dependency verb. A generic source noun alone does not override an explicit subject role or an available cross-level catalog default. 角色不明确的弱来源名词不会覆盖跨层级默认方向。
+Source-role templates include 以/拿/用/把 X 当作来源、输入、基础、依据, `fed by X`, `derived from X`, `built on X` and `pull from X`. Result-role templates include X 的来源/源头 and `X is fed by`. Active and passive dependency or production forms distinguish the input from the result; nominal forms such as `source for X`, `X as input` and `X as output` also retain that distinction. Predicate arguments identify the input and result, with the interrogative phrase selecting the requested side. A generic source noun alone does not override an explicit subject role or an available cross-level catalog default. 角色不明确的弱来源名词不会覆盖跨层级默认方向。
 
 双论元句式分别定位接收对象与输入，例如 `feed/build/supply receiver with/from/using input` 和「用/拿输入生成结果」；已知主语落在输入一端时问下游，落在接收对象或结果一端时问上游。句式中的代词回指也区分「它使用的对象」与「使用它的对象」，不只按依赖词相对主语的位置判断。
 
@@ -298,6 +303,8 @@ Source-role templates include 以/拿/用/把 X 当作来源、输入、基础�
 | Responsibilities / 负责什么 | `周岩负责哪些？` · `What does treasury team own?` | `owns`, subject at head / 主语为头 |
 
 Numeric and ranking cues (including highest/lowest/largest/smallest and 最大/最小) keep the metric route unless the question requests catalog objects. 几个/多少个/多少张 or `how many` followed by a catalog type asks for a knowledge list and its count; `how many orders` and 订单数是多少 remain business measurements. Cues embedded in a registered name are not quantities. 哪几、几张 and 几位 are list expressions. Pure metric phrases remain numerical after removing metric names, time, dimension values, grouping clauses and filler words; grouping by owner or source is still numerical. Typed person/team, table, view, metric-list and source questions never execute a numeric query merely because they ask for object counts. Other wording retains the existing metric parser and its refusals or clarifications.
+
+分组维度中的 owner、source、upstream、downstream、负责人、来源不是知识焦点。`by`、`per`、`for each`、`group by`、`break down by`、`each dimension's metric` 和「按／分／每个维度」保留指标路线；前置分组之后真正询问负责人或来源的主句仍走知识路线。时间修饰可以带所有格；没有知识焦点的时间加指标数值问句走指标路线。无数值线索的主问「谁／哪位／who」仍不能进入指标路线。
 
 明确把 value、amount、quantity、reading 或「数值、读数、金额」作为所求结果的问句走数值路线；`reading` 作读取动作时仍按依赖关系解释。来源、负责人和公式是知识请求，目录类型的数量请求仍保留对象列表与计数，不因句中出现数值名词而改为业务数值。
 

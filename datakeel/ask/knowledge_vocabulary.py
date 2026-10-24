@@ -68,7 +68,7 @@ COUNT_TOTAL = (
 )
 NOUN_FILLER = (
     r"(?:(?:is|are|the|a|an|its|their|all|those|these|of|related|associated|distinct|"
-    r"source|underlying|registered|available|total|one|two|three|four|five|several|few)\s+)*"
+    r"source|base|underlying|registered|available|total|one|two|three|four|five|several|few)\s+)*"
 )
 NOUN_CLAUSE_BOUNDARY = (
     r"[,\uff0c;\uff1b?!\uff1f]|\b(?:that|which|does|do|did|has|have|is|are|for|from|to|in|on)\b"
@@ -111,12 +111,19 @@ VALUE_READING_NOUN = (
 )
 PERSON_QUESTION = r"谁|哪位|负责人|责任人|所有者|\b(?:who|whose|owner)\b"
 LOCATION_QUESTION = r"哪(?:里|儿)|从哪|\bwhere\b"
-LIST_COMMAND = "列出(?:来)?|列一下|列举"
+LIST_COMMAND = r"列出(?:来)?|列一下|列举|列(?:个)?清单|列给|给我看看|\bshow\s+me\b"
+NEUTRAL_RELATION = (
+    r"相关|有关|关联|对应|挂着|"
+    r"\b(?:related|linked|attached|associated|belong(?:s)?\s+underneath)\b"
+)
 LIST_QUESTION = (
     r"(?<!为)什么|哪些|哪几个|哪(?:个|张|份|种|项)|怎么|如何|"
     r"\b(?:what|everything|list|which|how)\b|" + LIST_COMMAND
 )
-SUBJECT_SUFFIX = r"\s*[`'\"”』]?\s*(?:数据表|表|视图|指标|\b(?:table|view|metric)\b)"
+SUBJECT_SUFFIX = (
+    r"\s*[`'\"”』]?\s*(?:(?:这|那|该)(?:张|个)?)?"
+    r"(?:数据表|表|视图|指标|\b(?:table|view|metric)\b)"
+)
 SUBJECT_PREFIX = r"(?:数据表|表|视图|指标|\b(?:table|view|metric))\s*[`'\"“『]?\s*$"
 
 # Hierarchy nouns describe the requested side; only cross-level defaults may resolve a
@@ -183,8 +190,14 @@ NOMINAL_APPOSITION = (
 )
 CONCESSIVE_CLAUSE = r"^\s*although\b[^,]+,|^.*?虽然[^,\uff0c]+[,\uff0c]\s*但"
 TEMPORAL_CLAUSE = r"\b(?:before|after|while)\s+(?:it|they)\b"
-SUBJECT_PRONOUN = r"\b(?:it|its)\b|它|其"
-TOPIC_WITH_SUBJECT = r"^[^,\uff0c]*§[^,\uff0c]*[,\uff0c]\s*"
+SUBJECT_TYPE_PRONOUN = (
+    r"\b(?:this|that)\s+(?:table|view|metric)\b|(?:这|那|该)(?:张|个)?(?:表|视图|指标)"
+)
+SUBJECT_PRONOUN = r"\b(?:its\s+output|it|its)\b|它|其|" + SUBJECT_TYPE_PRONOUN
+TOPIC_WITH_SUBJECT = (
+    r"^[^,\uff0c:\uff1a\u2014\u2013]*§[^,\uff0c:\uff1a\u2014\u2013]*"
+    r"[,\uff0c:\uff1a\u2014\u2013]\s*"
+)
 ABSENCE_PREPOSITION = r"\bwithout\b"
 SOURCE_PREPOSITIONS = {"from", "从"}
 

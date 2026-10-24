@@ -17,17 +17,18 @@ _NUMERIC = re.compile(
 )
 _QUANTITY = re.compile(r"多少|(?<![哪前])几|\b(?:how\s+(?:much|many)|number\s+of)\b")
 _TIME = re.compile(
-    r"\d{4}\s*年(?:\s*\d{1,2}\s*月)?|近\s*\d+\s*天|上(?:个)?季度|"
+    r"(?:\d{4}\s*年(?:\s*\d{1,2}\s*月)?|近\s*\d+\s*天|上(?:个)?季度|"
     r"今年|去年|本月|上个月|上月|今天|昨天|本季度|\btoday\b|\byesterday\b|"
-    r"\b(?:last|this|previous)\s+(?:month|quarter|year|week)|\b\d{4}\b"
+    r"\b(?:last|this|previous)\s+(?:month|quarter|year|week)\b|\b\d{4}\b)(?:['\u2019]s)?"
 )
 _FILLER = re.compile(
-    r"请问|请|看看|查看|查询|看|统计|展示|把|的|是|呢|呀|啊|"
+    r"请问|请|看看|查看|查询|看|统计|展示|给我|把|的|是|呢|呀|啊|"
     r"\b(?:please|show|me|the|a|an|in|during|at|is|are)\b|[\s?\uff1f。.!\uff01,\uff0c:\uff1a;\uff1b'\"“”]+"
 )
 _GROUP = re.compile(
-    r"按[^?\uff1f。!\uff01,\uff0c]+|每[^?\uff1f。!\uff01,\uff0c]+|各[^?\uff1f。!\uff01,\uff0c]+|"
-    r"\b(?:by|per|for)\s+[^?\uff1f。!\uff01,\uff0c]+"
+    r"(?:按|分(?!管)|每|各)[^?\uff1f。!\uff01,\uff0c]+|"
+    r"\b(?:group(?:ed)?\s+by|(?:break\s+)?down\s+by|by|per|for)\s+[^?\uff1f。!\uff01,\uff0c]+|"
+    r"\beach\s+[^?\uff1f。!\uff01,\uff0c]+?['\u2019]s\s+"
 )
 
 
@@ -108,9 +109,7 @@ def pure_metric_phrase(question: str, layer: SemanticLayer) -> bool:
         return False
     timed = _TIME.search(text) is not None
     text = _TIME.sub(" ", text)
-    ungrouped = _GROUP.sub(_group_clause, text)
-    grouped = ungrouped != text
-    text = ungrouped
+    text, grouped = _strip_grouping(text)
     text = re.sub(vocabulary.METRIC_WHERE_FILTER, vocabulary.SUBJECT_MARKER, text)
     if _metric_scalar_head(text, question, timed=timed or grouped):
         return True
@@ -134,11 +133,25 @@ def grouped_request(text: str, focus: QuestionFocus) -> bool:
     return focus.kind == "unknown" and bool(re.search(r"\bshow\b.*\b(?:for|by|per)\b", text))
 
 
+def _strip_grouping(text: str) -> tuple[str, bool]:
+    ungrouped = _GROUP.sub(_group_clause, text)
+    if ungrouped == text:
+        return text, False
+    command = (
+        r"^[\s,\uff0c]*(?:please\s+)?"
+        r"(?:break(?:\s+down)?|group|give(?:\s+me)?|show|display|list)\s+"
+    )
+    return re.sub(command, "", ungrouped), True
+
+
 def _group_clause(match: re.Match[str]) -> str:
     retained = re.search(vocabulary.GROUP_QUESTION_CLAUSE, match.group()) or re.fullmatch(
         vocabulary.GROUPED_SCALAR_OUTPUT, match.group()
     )
-    return match.group() if retained else ""
+    if retained:
+        return match.group()
+    subject = match.group().find(vocabulary.SUBJECT_MARKER)
+    return match.group()[subject:] if subject >= 0 else ""
 
 
 def _metric_scalar_head(text: str, question: str, *, timed: bool) -> bool:
