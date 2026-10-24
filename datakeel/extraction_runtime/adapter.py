@@ -12,15 +12,18 @@ from anthropic import AnthropicError
 from anthropic import APIStatusError as AnthropicStatusError
 from anthropic import APITimeoutError as AnthropicTimeoutError
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages.ai import InputTokenDetails
 from openai import APIStatusError as OpenAIStatusError
 from openai import APITimeoutError as OpenAITimeoutError
 from openai import LengthFinishReasonError, OpenAIError
 from pydantic import Field
 
 from datakeel.core.errors import ProviderError
+from datakeel.core.harness_models import TokenUsage
 from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation
+from datakeel.core.kg_errors import ExtractionProviderError
 from datakeel.core.kg_models import ExtractionResult, RawExtraction
-from datakeel.core.models import BoundaryModel
+from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.extraction_runtime.transport import chat_model, tracing_disabled
 from datakeel.kg.prompt import extraction_prompt, output_schema
 
@@ -92,32 +95,100 @@ def _bind(
     return model.bind(**parameters)
 
 
+def _output(message: AIMessage, profile: ExtractionProfile) -> tuple[RawExtraction, int]:
+    if message.invalid_tool_calls:
+        msg = "Invalid extraction tool arguments"
+        raise ValueError(msg)
+    if profile.output_method == "function_calling":
+        if len(message.tool_calls) != 1 or message.tool_calls[0]["name"] != "KGExtraction":
+            msg = "Expected one extraction tool call"
+            raise ValueError(msg)
+        document = JsonDocument.model_validate(message.tool_calls[0]["args"])
+    else:
+        document = JsonDocument.model_validate_json(message.text)
+    parsed = _RequiredOutput.model_validate(
+        {key: value for key, value in document.root.items() if key in {"entities", "relations"}}
+    )
+    ignored = len(document.keys() - {"entities", "relations"})
+    return RawExtraction(entities=parsed.entities, relations=parsed.relations), ignored
+
+
+def _usage(message: AIMessage, profile: ExtractionProfile) -> TokenUsage | None:
+    usage = message.usage_metadata
+    anthropic = profile.provider == "anthropic"
+    raw = JsonDocument.model_validate(
+        message.response_metadata.get("usage" if anthropic else "token_usage") or {}
+    ).root
+    fields = (
+        ("input_tokens", "output_tokens") if anthropic else ("prompt_tokens", "completion_tokens")
+    )
+    if usage is None or any(
+        not isinstance(value, int) or isinstance(value, bool) or value < 0
+        for value in (raw.get(field) for field in fields)
+    ):
+        return None
+    details = (
+        usage.get("input_token_details", InputTokenDetails()) if usage else InputTokenDetails()
+    )
+    cache_read = details.get("cache_read", 0)
+    cache_hit = raw.get("prompt_cache_hit_tokens")
+    if (
+        "cache_read" not in details
+        and isinstance(cache_hit, int)
+        and not isinstance(cache_hit, bool)
+        and 0 <= cache_hit <= usage["input_tokens"]
+    ):
+        cache_read = cache_hit
+    return TokenUsage(
+        input_tokens=usage["input_tokens"],
+        output_tokens=usage["output_tokens"],
+        cache_read_tokens=cache_read,
+        cache_write_tokens=details.get("cache_creation", 0),
+    )
+
+
 def _result(message: AIMessage, profile: ExtractionProfile) -> ExtractionResult:
     reason = str(
         message.response_metadata.get("finish_reason")
         or message.response_metadata.get("stop_reason")
         or "stop"
     )
-    usage = message.usage_metadata
-    known = usage is not None and message.response_metadata.get("usage", {}) is not None
+    observed = _usage(message, profile)
     output = RawExtraction()
+    ignored = 0
     if reason not in {"length", "max_tokens"}:
-        if message.invalid_tool_calls:
+        try:
+            output, ignored = _output(message, profile)
+        except (ValueError, KeyError, TypeError, IndexError) as error:
             msg = "parse_error"
-            raise ProviderError(msg)
-        if profile.output_method == "function_calling":
-            if len(message.tool_calls) != 1 or message.tool_calls[0]["name"] != "KGExtraction":
-                msg = "parse_error"
-                raise ProviderError(msg)
-            parsed = _RequiredOutput.model_validate(message.tool_calls[0]["args"])
-        else:
-            parsed = _RequiredOutput.model_validate_json(message.text)
-        output = RawExtraction(entities=parsed.entities, relations=parsed.relations)
+            raise ExtractionProviderError(msg, observed_usage=observed) from error
     return ExtractionResult(
         output=output,
         finish_reason=reason,
-        input_tokens=usage["input_tokens"] if known and usage else None,
-        output_tokens=usage["output_tokens"] if known and usage else None,
+        input_tokens=observed.input_tokens if observed else None,
+        output_tokens=observed.output_tokens if observed else None,
+        cache_read_tokens=observed.cache_read_tokens if observed else 0,
+        cache_write_tokens=observed.cache_write_tokens if observed else 0,
+        ignored_top_level_keys=ignored,
+    )
+
+
+def _truncated(error: LengthFinishReasonError) -> ExtractionResult:
+    usage = error.completion.usage
+    raw = JsonDocument.model_validate(usage.model_dump() if usage else {}).root
+    details = raw.get("prompt_tokens_details")
+    details = details if isinstance(details, dict) else {}
+    return ExtractionResult.model_validate(
+        {
+            "output": {},
+            "finish_reason": "length",
+            "input_tokens": raw.get("prompt_tokens"),
+            "output_tokens": raw.get("completion_tokens"),
+            "cache_read_tokens": details.get("cached_tokens")
+            or raw.get("prompt_cache_hit_tokens")
+            or 0,
+            "cache_write_tokens": details.get("cache_write_tokens") or 0,
+        }
     )
 
 
@@ -137,13 +208,7 @@ class LLMExtractor:
                 message = model.invoke([HumanMessage(content=extraction_prompt(block, schema))])
             return _result(message, self.profile)
         except LengthFinishReasonError as error:
-            usage = error.completion.usage
-            return ExtractionResult(
-                output=RawExtraction(),
-                finish_reason="length",
-                input_tokens=usage.prompt_tokens if usage else None,
-                output_tokens=usage.completion_tokens if usage else None,
-            )
+            return _truncated(error)
         except (OpenAITimeoutError, AnthropicTimeoutError) as error:
             msg = "timeout"
             raise ProviderError(msg) from error

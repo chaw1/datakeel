@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING, Protocol
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.core.errors import ProviderError
-from datakeel.core.kg_errors import KGExtractionError
+from datakeel.core.harness_models import TokenUsage
+from datakeel.core.kg_errors import ExtractionProviderError, KGExtractionError
 from datakeel.core.kg_models import ExtractionResult, RawExtraction, Recording
 from datakeel.kg.loader import load_contract
 
@@ -79,6 +80,9 @@ class ReplayExtractor:
             finish_reason=record.finish_reason,
             input_tokens=record.input_tokens,
             output_tokens=record.output_tokens,
+            cache_read_tokens=record.cache_read_tokens,
+            cache_write_tokens=record.cache_write_tokens,
+            ignored_top_level_keys=record.ignored_top_level_keys,
         )
 
 
@@ -88,6 +92,8 @@ def checked_extract(
     """Reject truncation and parse failures before callers write a successful cache entry."""
     try:
         result = adapter.extract(block, schema)
+    except ExtractionProviderError as error:
+        raise KGExtractionError(error.reason, observed_usage=error.observed_usage) from error
     except ProviderError as error:
         raise KGExtractionError(error.reason) from error
     except ModelValidationError as error:
@@ -95,5 +101,15 @@ def checked_extract(
         raise KGExtractionError(reason) from error
     if result.finish_reason in {"length", "max_tokens"}:
         reason = "truncated"
-        raise KGExtractionError(reason)
+        observed = (
+            TokenUsage(
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+                cache_read_tokens=result.cache_read_tokens,
+                cache_write_tokens=result.cache_write_tokens,
+            )
+            if result.input_tokens is not None and result.output_tokens is not None
+            else None
+        )
+        raise KGExtractionError(reason, observed_usage=observed)
     return result

@@ -12,17 +12,22 @@ import httpx
 import pytest
 
 from datakeel.core.errors import ProviderError
+from datakeel.core.harness_models import TokenUsage
 from datakeel.core.kg_contracts import ExtractionProfile
+from datakeel.core.kg_errors import ExtractionProviderError
+from datakeel.core.kg_eval_models import KGCaseSuite
+from datakeel.core.kg_models import Recording, TextBlock
 from datakeel.extraction_runtime.adapter import llm_extractor
+from datakeel.kg.loader import contracts_path, get_schema, load_contract
+from datakeel.kg.prompt import output_schema
 
 if TYPE_CHECKING:
     from pydantic import JsonValue
 
     from datakeel.core.kg_contracts import KGSchema
-    from datakeel.core.kg_models import TextBlock
 
 
-_RESULT = {
+_RESULT: dict[str, JsonValue] = {
     "entities": [{"name": "Cedar", "type": "Company"}, {"name": "Reed", "type": "Product"}],
     "relations": [
         {
@@ -47,7 +52,7 @@ def _profile(provider: str, method: str) -> ExtractionProfile:
             "max_output_tokens": 222,
             "request_parameters": {"thinking": {"type": "disabled"}}
             if provider == "anthropic"
-            else {"enable_thinking": False, "num_ctx": 8192, "reasoning_effort": "none"},
+            else {"enable_thinking": False, "reasoning_effort": "none"},
         }
     )
 
@@ -86,10 +91,12 @@ def _response(provider: str, method: str, *, reason: str = "stop") -> dict[str, 
 def _assert_wire(payload: dict[str, JsonValue], provider: str, method: str) -> None:
     assert "Cedar develops Reed." in str(payload["messages"])
     assert "Company" in str(payload["messages"])
+    assert "additionalProperties" not in str(payload["messages"])
+    assert "two top-level keys: entities and relations" in str(payload["messages"])
     assert payload.get("max_tokens", payload.get("max_completion_tokens")) == 222
     if provider != "anthropic":
         assert payload["enable_thinking"] is False
-        assert payload["num_ctx"] == 8192
+        assert "num_ctx" not in payload
         assert payload["reasoning_effort"] == "none"
     else:
         assert payload["thinking"] == {"type": "disabled"}
@@ -155,6 +162,7 @@ def test_extract_when_truncated_preserves_failure_reason_without_parsing_incompl
         result = extractor.extract(block, schema)
     assert result.finish_reason == reason
     assert result.output.relations == ()
+    assert (result.input_tokens, result.output_tokens) == (13, 5)
 
 
 @pytest.mark.parametrize("provider", ["openai", "anthropic", "ollama"])
@@ -176,6 +184,70 @@ def test_extract_when_billing_absent_marks_usage_unknown(
     ):
         result = extractor.extract(block, schema)
     assert (result.input_tokens, result.output_tokens) == (None, None)
+
+
+@pytest.mark.parametrize("provider", ["openai", "anthropic"])
+def test_extract_when_provider_usage_incomplete_does_not_accept_sdk_default_zero(
+    schema: KGSchema,
+    block: TextBlock,
+    provider: str,
+) -> None:
+    """Missing provider output counts remain unknown despite SDK-filled usage metadata."""
+    payload = _response(provider, "json_mode")
+    payload["usage"] = {"input_tokens" if provider == "anthropic" else "prompt_tokens": 13}
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+        ) as client,
+        llm_extractor(_profile(provider, "json_mode"), "fixture-key", client) as extractor,
+    ):
+        result = extractor.extract(block, schema)
+    assert result.input_tokens is None
+    assert result.output_tokens is None
+
+
+def test_extract_when_compatible_provider_returns_cache_hit_count_retains_discounted_usage(
+    schema: KGSchema,
+    block: TextBlock,
+) -> None:
+    """Compatible cache counters survive even when the SDK does not map them into token details."""
+    payload = _response("openai", "json_mode")
+    payload["usage"] = {"prompt_tokens": 13, "completion_tokens": 5, "prompt_cache_hit_tokens": 3}
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+        ) as client,
+        llm_extractor(_profile("openai", "json_mode"), "fixture-key", client) as extractor,
+    ):
+        result = extractor.extract(block, schema)
+    assert result.input_tokens == 13
+    assert result.cache_read_tokens == 3
+
+
+@pytest.mark.parametrize("standard_details", [False, True])
+def test_extract_when_sdk_rejects_length_finish_preserves_cached_usage(
+    schema: KGSchema,
+    block: TextBlock,
+    *,
+    standard_details: bool,
+) -> None:
+    """SDK-owned length failures retain the cache subset needed for actual settlement."""
+    payload = _response("openai", "json_mode", reason="length")
+    usage: dict[str, JsonValue] = {"prompt_tokens": 13, "completion_tokens": 5}
+    if standard_details:
+        usage["prompt_tokens_details"] = {"cached_tokens": 3}
+    else:
+        usage["prompt_cache_hit_tokens"] = 3
+    payload["usage"] = usage
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+        ) as client,
+        llm_extractor(_profile("openai", "json_mode"), "fixture-key", client) as extractor,
+    ):
+        result = extractor.extract(block, schema)
+    assert result.finish_reason == "length"
+    assert (result.input_tokens, result.output_tokens, result.cache_read_tokens) == (13, 5, 3)
 
 
 @pytest.mark.parametrize(
@@ -204,6 +276,75 @@ def test_extract_when_json_reply_invalid_reports_parse_error(
     ):
         extractor.extract(block, schema)
     assert captured.value.reason == "parse_error"
+
+
+@pytest.mark.parametrize("method", ["json_mode", "json_schema", "function_calling"])
+def test_extract_when_demo_data_has_schema_echo_ignores_and_counts_only_top_level_keys(
+    method: str,
+) -> None:
+    """Recover valid demo claims even when a model copies the enclosing output schema."""
+    schema = get_schema()
+    case = load_contract(contracts_path() / "eval/cases.yaml", KGCaseSuite).cases[0]
+    recorded = load_contract(contracts_path() / "recordings/qwen3.5.yaml", Recording).records[0]
+    echo = {**output_schema(schema), **recorded.output.model_dump(mode="json")}
+    message: dict[str, JsonValue] = {"role": "assistant", "content": json.dumps(echo)}
+    if method == "function_calling":
+        message["tool_calls"] = [
+            {
+                "id": "echo",
+                "type": "function",
+                "function": {"name": "KGExtraction", "arguments": json.dumps(echo)},
+            }
+        ]
+    payload = {"choices": [{"message": message, "finish_reason": "stop"}]}
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+        ) as client,
+        llm_extractor(_profile("openai", method), "fixture-key", client) as extractor,
+    ):
+        result = extractor.extract(TextBlock(text=case.text, start=0, end=len(case.text)), schema)
+    assert result.output == recorded.output
+    assert result.ignored_top_level_keys == len(output_schema(schema))
+
+
+@pytest.mark.parametrize("provider", ["openai", "anthropic"])
+@pytest.mark.parametrize("variant", ["schema_only", "invalid_entities", "invalid_relations"])
+def test_extract_when_schema_echo_lacks_valid_data_preserves_billed_usage_on_parse_error(
+    schema: KGSchema,
+    block: TextBlock,
+    provider: str,
+    variant: str,
+) -> None:
+    """Schema-only replies and invalid nested claims fail without losing completed-call tokens."""
+    echo: dict[str, JsonValue] = output_schema(schema)
+    if variant != "schema_only":
+        echo.update(_RESULT)
+        echo[variant.removeprefix("invalid_")] = [{"unexpected": True}]
+    payload = _response(provider, "json_mode")
+    if provider == "openai":
+        payload["choices"] = [
+            {
+                "message": {"role": "assistant", "content": json.dumps(echo)},
+                "finish_reason": "stop",
+            }
+        ]
+    else:
+        payload["content"] = [{"type": "text", "text": json.dumps(echo)}]
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+        ) as client,
+        llm_extractor(_profile(provider, "json_mode"), "fixture-key", client) as extractor,
+        pytest.raises(ExtractionProviderError) as caught,
+    ):
+        extractor.extract(block, schema)
+    assert caught.value.reason == "parse_error"
+    assert caught.value.observed_usage == TokenUsage(
+        input_tokens=13,
+        output_tokens=5,
+        cache_read_tokens=3 if provider == "anthropic" else 0,
+    )
 
 
 @pytest.mark.parametrize("variant", ["missing", "wrong_name", "malformed", "multiple"])

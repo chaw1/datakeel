@@ -11,8 +11,9 @@ from pydantic import ValidationError
 
 from datakeel.core.errors import ProviderError
 from datakeel.core.evidence_models import ExtractorRef
+from datakeel.core.harness_models import TokenUsage
 from datakeel.core.kg_contracts import ExtractionProfile
-from datakeel.core.kg_errors import KGExtractionError
+from datakeel.core.kg_errors import ExtractionProviderError, KGExtractionError
 from datakeel.core.kg_models import ExtractionResult, RawExtraction, Recording, TextBlock
 from datakeel.kg import cache
 from datakeel.kg.cache import build_cache_key
@@ -194,8 +195,40 @@ def test_prompt_and_schema_include_enum_vocabulary_and_source() -> None:
     prompt = extraction_prompt(_block(), schema)
     assert "Example." in prompt
     assert "untrusted" in prompt
+    assert "two top-level keys: entities and relations" in prompt
+    assert "additionalProperties" not in prompt
+    assert "Example source:" in prompt
+    assert "organization/person -> location" in prompt
     assert "works_for" in str(output_schema(schema))
     assert _block().content_hash == hashlib.sha256(b"Example.").hexdigest()
+
+
+def test_ollama_prompt_with_worst_case_unicode_block_fits_default_context() -> None:
+    """The local profile leaves room beyond a UTF-8 byte upper bound for chat wrappers."""
+    profile = get_profile("ollama")
+    text = "𠀀" * profile.chunk_size
+    prompt = extraction_prompt(_block(text), get_schema())
+    assert len(prompt.encode("utf-8")) + 256 < 4096
+    assert "num_ctx" not in profile.request_parameters
+
+
+@pytest.mark.parametrize("truncated", [False, True])
+def test_checked_extraction_failed_response_preserves_observed_usage(*, truncated: bool) -> None:
+    """Failure translation cannot erase usage returned with invalid or incomplete output."""
+    observed = TokenUsage(input_tokens=13, output_tokens=5, cache_read_tokens=3)
+
+    class InvalidExtractor:
+        def extract(self, block: TextBlock, schema: object) -> ExtractionResult:
+            if not truncated:
+                reason = "parse_error"
+                raise ExtractionProviderError(reason, observed_usage=observed)
+            return ExtractionResult(
+                output=RawExtraction(), finish_reason="length", **observed.model_dump()
+            )
+
+    with pytest.raises(KGExtractionError) as caught:
+        checked_extract(InvalidExtractor(), _block(), get_schema())
+    assert caught.value.observed_usage == observed
 
 
 def test_profile_and_schema_resolve_from_bundled_contracts() -> None:
