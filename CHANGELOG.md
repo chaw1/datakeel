@@ -2,6 +2,17 @@
 
 All notable changes are documented here using the Keep a Changelog format.
 
+## [Unreleased]
+
+### Fixed
+
+- Long source highlights wrap naturally within paragraphs while retaining keyboard activation and visible focus.
+- Extraction approval plans now bind document and block fingerprints without copying source text or recordings into Agent/MCP results. Workers verify all approved inputs before constructing an extractor; existing run history keeps its source snapshots.
+- Accepted and rejected graph relationships and entity mentions retain human decisions when evidence or extraction profiles change, with inherited-decision audit provenance.
+- Structured extraction prompts use concrete examples; valid data accompanying schema echoes is retained with ignored-key counts. Parse failures and truncation retain provider usage, unknown-price token budgets use complete observed usage, and failed runs preserve completed work and costs.
+- The cloud profile uses `deepseek-flash` and a documented conservative peak-price snapshot. Compressed model responses are decoded once, and Ollama uses bounded default chunks with server-side context guidance.
+- Evaluation reports include failed case IDs, offsets and reasons. Entity type spelling is normalized, while unknown types and their relations produce counted schema proposals with samples.
+
 ## [0.10.0] - 2026-10-24
 
 ### Added

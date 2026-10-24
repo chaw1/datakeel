@@ -70,7 +70,7 @@ Profiles under [`contracts/kg/profiles/`](../contracts/kg/profiles/) are selecte
 | `id`, `extractor`, `provider`, `model` | Required identity. Extractor is `replay`, `fake`, `llm` or optional `gliner2`; offline provider matches the extractor. / 必填身份；离线 provider 与 extractor 相同。 |
 | `base_url`, `api_key_env` | Optional endpoint and environment-variable **name**. No key value, URL credential, query or fragment. / 可选地址与密钥环境变量**名称**，不写实际密钥。 |
 | `output_method` | `json_schema`, `function_calling` or `json_mode`; default `json_schema`. / 结构化输出方式。 |
-| `request_parameters` | Only validated `enable_thinking`, `thinking`, `reasoning_effort`, `num_ctx`; no arbitrary headers or body override. / 仅允许这些经过类型校验的参数。 |
+| `request_parameters` | Only validated `enable_thinking`, `thinking`, `reasoning_effort`; no arbitrary headers or body override. / 仅允许这些经过类型校验的参数。 |
 | `temperature`, `max_output_tokens` | Defaults `0`, `4096`; output limit is per block. / 默认值，输出上限按块计。 |
 | `chunk_size`, `chunk_overlap` | Unicode code-point counts; overlap must be smaller than size. / Unicode 码点数，重叠小于块长。 |
 | `recording` | Required for replay; optional for a clearly labelled fake script. / replay 必填，fake 可引用明确标注的脚本录制。 |
@@ -91,12 +91,15 @@ api_key_env: null
 output_method: json_schema
 request_parameters:
   reasoning_effort: none
-  num_ctx: 16384
 temperature: 0
 max_output_tokens: 4096
-chunk_size: 4000
-chunk_overlap: 200
+chunk_size: 256
+chunk_overlap: 32
 ```
+
+The bundled Ollama profile uses 256-code-point chunks and 32-code-point overlap so the built-in prompt plus worst-case Unicode input fits the default 4096-token context. For longer chunks, configure `OLLAMA_CONTEXT_LENGTH` on the Ollama server and restart that server yourself. Its OpenAI-compatible endpoint cannot set context length through a request-level `num_ctx`; Datakeel therefore rejects that parameter. Custom schemas can make prompts larger and need their own context allowance. Provider `prompt_tokens` alone cannot reliably prove input truncation without a matching tokenizer.
+
+内置 Ollama 配置使用 256 码点块、32 码点重叠，为默认 4096 上下文内的提示词与最坏 Unicode 输入留空间。长块需要在 Ollama **服务端**设置 `OLLAMA_CONTEXT_LENGTH` 并自行重启服务；OpenAI 兼容接口不支持通过请求中的 `num_ctx` 调整上下文，配置中已禁止该字段。自定义 schema 会增加提示词长度，需另行核算。没有同模型 tokenizer 时，不能仅凭 `prompt_tokens` 可靠判断输入截断。
 
 ### Compatible cloud endpoint / 兼容云端接口
 
@@ -108,7 +111,7 @@ The [cloud example](../contracts/kg/profiles/cloud.yaml) uses `json_mode` with p
 id: cloud
 extractor: llm
 provider: openai
-model: deepseek-v4-flash
+model: deepseek-flash
 base_url: https://api.deepseek.com
 api_key_env: DATAKEEL_KG_API_KEY
 output_method: json_mode
@@ -120,9 +123,17 @@ chunk_size: 4000
 chunk_overlap: 200
 ```
 
+The cloud profile uses `deepseek-flash`. The historical `deepseek-v4-flash` name in `replay-flash` and its recording remains unchanged; that retired alias currently routes to the newer Flash model. The price snapshot records the supplied 2026-10-24 peak tariff: USD 0.006 cached input, 0.30 uncached input and 1.20 output per million tokens. Off-peak prices are half; peak hours are weekdays UTC 01:00–04:00 and 06:00–10:00. The conservative peak snapshot supports a visible approval cost bound and actual usage settlement.
+
+云端配置改用 `deepseek-flash`；录制与 `replay-flash` 中的历史名称 `deepseek-v4-flash` 保留，旧模型已退役，该别名目前转向新版 Flash。价格按 2026-10-24 提供的高峰价记入快照：每百万 token 缓存输入 0.006、未缓存输入 0.30、输出 1.20 美元；非高峰半价，高峰为工作日 UTC 01:00–04:00、06:00–10:00。签批显示保守费用上限，返回完整用量后以 `actual` 结算。
+
 No fallback silently changes `output_method`. A rejected request becomes a failed block; each actual request has an extraction trace. Automatic retries and SDK tracing are disabled. Rerunning reuses successful cache entries and retries failed blocks. A `length` or `max_tokens` finish reason is a truncation failure, even when its partial JSON parses.
 
 不兼容的输出方式不会被静默替换；拒绝请求会记为失败块，每次实际调用单独计量。自动重试与 SDK 追踪关闭；重新运行复用成功缓存，并重试失败块。即使返回的局部 JSON 能解析，`length` 或 `max_tokens` 结束原因仍按截断失败处理，不写成功缓存。
+
+Prompts show concrete examples and list permitted vocabulary without embedding raw JSON Schema. Provider constraints still receive the schema for `json_schema` and `function_calling`. Extra top-level response keys are ignored and counted in `ignored_top_level_keys`; both `entities` and `relations` remain mandatory and strictly validated. Schema-only echoes fail parsing. Failed parsing and truncated responses retain any reported usage in the extraction trace.
+
+提示词使用具体示例和文字词汇范围，不贴原始 JSON Schema；约束输出仍向 provider 传 schema。响应顶层多余键忽略并计入 `ignored_top_level_keys`，`entities` 和 `relations` 仍必填并严格校验。只有 schema 的回显仍为解析失败；解析失败或截断的已消费用量仍写入抽取 trace。
 
 ## Source checks and identity / 原文核对与身份
 
@@ -134,9 +145,13 @@ UTF-8 解码后统一为 NFC，位置用 Unicode 码点半开区间 `[start, end
 
 `verified` 要求证据句和头尾实体都定位成功。任一未核上仍保留 `needs_review` 候选，明确指出缺证据、头实体或尾实体；即使 schema 能唯一推定未声明端点的类型，也保持待复核。录制中的 Vivo 例子有证据句，但尾实体不在原文。人工接受或拒绝只改复核状态，不会把失败的原文核对改成成功。
 
-Entity asset IDs are deterministic from dataset/type/normalized name and remain stable across dataset versions; `AssetRef.version` selects the version separately. Each distinct source occurrence keeps its own mention assertion, while duplicate copies from overlapping blocks are deduplicated. Equal oriented triples merge evidence anchors across chunks and documents. Review decisions stay append-only. Changed source/configuration invalidates superseded assertions without deleting their history; partial documents preserve prior successful facts. Cache keys include content, schema, model, profile, prompt/extractor versions, chunk settings and recording identity.
+Entity asset IDs are deterministic from dataset/type/normalized name and remain stable across dataset versions; `AssetRef.version` selects the version separately. Each distinct source occurrence keeps its own mention assertion, while duplicate copies from overlapping blocks are deduplicated. Equal oriented triples merge evidence anchors across chunks and documents. Review decisions stay append-only. Within one dataset version, the latest human acceptance or rejection follows the same triple or entity mention across new anchors, selected files and profiles. Inherited decisions record their source assertion and decision IDs; new evidence remains visible. Triples no longer extracted from any document are invalidated. Superseded assertions retain their history; partial documents preserve prior successful facts. Cache keys include content, schema, model, profile, prompt/extractor versions, chunk settings and recording identity.
 
-实体 asset_id 由数据集、类型与归一名称确定，跨数据集版本保持稳定；`AssetRef.version` 单独选择版本。每个不同的原文出现位置保留独立提及断言，重叠块产生的重复副本去重；相同有向三元组跨块、跨文档合并证据位置。人工决定追加记录。源内容或配置变化使旧断言失效但保留历史，部分失败文档保留先前成功事实。缓存包含内容、schema、模型、配置、提示词/抽取器版本、切块参数与录制身份；修改模型名不能命中旧缓存。
+实体 asset_id 由数据集、类型与归一名称确定，跨数据集版本保持稳定；`AssetRef.version` 单独选择版本。每个不同的原文出现位置保留独立提及断言，重叠块产生的重复副本去重；相同有向三元组跨块、跨文档合并证据位置。人工决定追加记录。同一数据集版本内，同一三元组或实体提及在增补证据、改选文件、换配置后继承最新人工接受/拒绝；继承审计注明来源断言和决定 ID，新证据照常可查。全部文档都不再抽到的三元组仍按原规则失效，旧断言历史保留；部分失败文档保留先前成功事实。缓存包含内容、schema、模型、配置、提示词/抽取器版本、切块参数与录制身份；修改模型名不能命中旧缓存。
+
+Entity types are trimmed and matched case-insensitively to the schema spelling. Unknown types become `unknown_entity_type` proposals with entity samples; relations referencing those types carry the same reason. Proposal counts include excluded entities and relations, with each sample list bounded at twenty.
+
+实体类型先去首尾空白、忽略大小写匹配 schema 正式拼写；仍未知的类型进入 `unknown_entity_type` 提案，包含实体样例，引用它们的关系也使用该原因。计数包含被排除的实体和关系，两种样例各最多二十条。
 
 ## Evaluation / 评测
 
@@ -150,6 +165,10 @@ uv run datakeel eval-kg --profile ./local-profile.yaml --cases ./my-cases.yaml \
 The last command explicitly runs the selected profile; an `llm` profile can send text and incur charges immediately. CLI evaluation is an explicit operator invocation, separate from the UI/Agent approval flow. It reserves budget before each call, records `call_type=extraction`, and refuses to save a complete score report after a budget rejection/overrun. Replay's actual tokens and cost are zero; historical recorded usage remains inside the recording metrics. Unpriced or unreported provider billing is `unknown`, not zero.
 
 最后一条命令会立即运行所选配置；若为 `llm`，可能直接外发文本并产生费用。CLI 评测属于操作者显式执行，与 UI/Agent 的签批流程分开。每次调用先预留预算，trace 标记为 `extraction`；预算拒绝或超限不会保存貌似完整的评测。重放实际 token 和费用为 0，历史模型用量单独保留在录制指标中；价格或用量未知显示 `unknown`，不填 0。
+
+Complete provider usage charges the extraction token budget by actual input plus output even when the price is unknown; unknown cost keeps the conservative monetary reservation. Missing usage keeps the worst-case token reservation. Conversation billing is unchanged. Terminal extraction failures retain completed blocks, calls, usage and charges. JSON, CLI and saved evaluation reports list every failed case with `[start, end)` offsets and its reason.
+
+抽取拿到完整用量时，即使价格未知，token 预算也按实际输入加输出扣；未知费用仍按保守金额预留计，未返回用量才继续按最坏 token 预留扣。对话计费语义不变。整体失败保留已经完成的块、调用、token 和费用。JSON、命令行及持久化评测均逐块列明 case id、起止偏移和原因。
 
 Reports show two independent views, each with all/Chinese/English/verified-only slices, strict triples, undirected pairs, typed/untyped entities, trap hits, grounding and failures:
 
@@ -194,7 +213,11 @@ Use the local directory you prepared, not an unreviewed remote model ID. A remot
 
 `run_kg_extraction` is discovered through `tool_search`; `query_kg` and `explain_relation` are also discovered reads and are available through MCP. Actions accept `dataset_id`, `version_id`, `schema_id`, `profile_id`, optional `file_ids`, `budget_tokens` and `max_cost_usd`. Use the existing prepare/approve/execute endpoints and a running worker. Extraction creates candidates; reviews use the existing reversible `decide_assertions` action.
 
-图谱动作和两种只读函数均经工具发现提供给 Agent，MCP 共用同一注册表。抽取沿用既有准备、签批、执行与 worker 流程，不新增直接绕过审批的执行入口。准备时冻结源文本及版本、schema、完整非秘密配置、录制内容、切块、请求参数和计费快照。
+图谱动作和两种只读函数均经工具发现提供给 Agent，MCP 共用同一注册表。抽取沿用既有准备、签批、执行与 worker 流程，不新增直接绕过审批的执行入口。准备时只冻结文件 ID、content_revision、块起止偏移和内容哈希、录制文件哈希、schema、完整非秘密配置、请求参数和计费快照。计划和工具返回不复制文档全文、块文本或录制内容。
+
+Plans contain source and recording fingerprints, never source text or recording responses. After authorization, the worker rereads, decodes and chunks every selected document and hashes the recording; any mismatch fails the entire execution before model construction. Verified source snapshots are stored internally for relation explanations. Existing run history remains readable; old prepared plans containing full content must be prepared again.
+
+授权后的 worker 重新读取、解码、切块并核对所有指纹；任一文件、块或录制不符，整次执行失败，不创建模型适配器、不替换为新内容继续。核对通过的原文快照只在内部保存，供关系抽屉使用。既有抽取历史仍可读；旧版含全文的待执行计划须重新准备。
 
 Only literal loopback destinations (`localhost`, `localhost.`, IPv4 loopback or `::1`) and offline extractors avoid external-transfer approval. A private-network address or arbitrary hostname is external; classification never resolves DNS. The approval card shows destination host, model, document/block counts, input estimate, per-call output cap and cost bound, with unknown cost explicit. Any changed destination, model, method, request parameters or input needs a new plan. Secrets are read only when the explicitly selected real adapter executes, not when planning or listing profiles.
 
