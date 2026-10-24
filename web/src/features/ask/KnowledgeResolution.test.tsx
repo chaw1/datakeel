@@ -31,7 +31,7 @@ it("selects a typed knowledge subject and protects IME Enter confirmation", asyn
     />,
   );
   const candidate = screen.getByRole("button", {
-    name: /出货额 Metric shipment_revenue/,
+    name: /出货额 Metric Catalog asset/,
   });
   const enter = createEvent.keyDown(candidate, {
     key: "Enter",
@@ -161,7 +161,7 @@ it("distinguishes same-name candidates using their source dataset and entity typ
       dataset_name: dataset,
       asset_ref: {
         ...shipmentSubject.asset_ref,
-        asset_id: `person-${String(index)}`,
+        asset_id: `kg-${String(index)}a7c4e9`,
         asset_type: "kg_entity",
       },
     }),
@@ -179,10 +179,11 @@ it("distinguishes same-name candidates using their source dataset and entity typ
   for (const candidate of candidates) {
     const button = screen.getByRole("button", {
       name: new RegExp(
-        `Morgan Graph entity · person Dataset: ${candidate.dataset_name}`,
+        `Morgan Graph entity · person Document entity Dataset: ${candidate.dataset_name}`,
       ),
     });
     expect(within(button).getByText("Graph entity · person")).toBeVisible();
+    expect(button).not.toHaveTextContent(candidate.asset_ref.asset_id);
     await user.click(button);
     expect(choose).toHaveBeenLastCalledWith(candidate);
   }
@@ -228,4 +229,56 @@ it("lists metric, catalog, and graph suggestions for an unknown subject", () => 
   expect(screen.getAllByRole("listitem")).toHaveLength(3);
   expect(screen.getByText("Table")).toBeVisible();
   expect(screen.getByText("Graph entity · person")).toBeVisible();
+});
+
+it("asks for an intent with two choices and protects composition confirmation", async () => {
+  const choose = vi.fn();
+  const user = userEvent.setup();
+  render(
+    <AskAnswerView
+      answer={{
+        ...knowledgeAnswer,
+        status: "clarification",
+        knowledge: {
+          ...ownerKnowledge,
+          reason_code: "ambiguous_intent",
+          intent_candidates: ["upstream", "downstream"],
+        },
+      }}
+      onChooseIntent={choose}
+      onOpenReceipt={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole("heading", { name: "Choose what you want to know" }),
+  ).toBeVisible();
+  expect(
+    screen.getByText("Choose what you want to know", {
+      selector: ".ask-answer-heading .badge",
+    }),
+  ).toBeVisible();
+  expect(
+    screen.queryByText("Choose the subject first"),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("heading", { name: "Possible subjects" }),
+  ).not.toBeInTheDocument();
+  const choices = screen.getByRole("group", {
+    name: "Which relationship would you like to ask about?",
+  });
+  expect(within(choices).getAllByRole("button")).toHaveLength(2);
+  const upstream = within(choices).getByRole("button", { name: "Upstream" });
+  const enter = createEvent.keyDown(upstream, {
+    key: "Enter",
+    isComposing: true,
+    cancelable: true,
+  });
+  fireEvent(upstream, enter);
+  expect(enter.defaultPrevented).toBe(true);
+  fireEvent.compositionStart(upstream);
+  await user.click(upstream);
+  expect(choose).not.toHaveBeenCalled();
+  fireEvent.compositionEnd(upstream);
+  await user.click(upstream);
+  expect(choose).toHaveBeenCalledExactlyOnceWith("upstream");
 });

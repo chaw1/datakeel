@@ -8,7 +8,12 @@ import { AskResolution } from "./AskResolution";
 import { KnowledgeAnswerView } from "./KnowledgeAnswerView";
 import { KnowledgeResolution } from "./KnowledgeResolution";
 
-import type { AskAnswer, AskResult, KnowledgeSubject } from "../../api/ask";
+import type {
+  AskAnswer,
+  AskResult,
+  KnowledgeSubject,
+  SelectedKnowledgeIntent,
+} from "../../api/ask";
 import type { LineageTarget } from "../../app/navigation";
 import type { Translate } from "../../i18n/context";
 
@@ -40,17 +45,23 @@ export function AskAnswerView({
   onOpenReceipt,
   onChooseMetric,
   onChooseSubject,
+  onChooseIntent,
 }: {
   answer: AskAnswer;
   onOpenReceipt: (target: LineageTarget) => void;
   onChooseMetric?: (id: string) => void;
   onChooseSubject?: (subject: KnowledgeSubject) => void;
+  onChooseIntent?: (intent: SelectedKnowledgeIntent) => void;
 }) {
   const { t, locale } = useI18n();
   const result = answer.result;
   const footnotes = answerFootnotes(answer, t);
   const scalar = result?.rows.length === 1 && result.columns.length === 1;
   const knowledgeAnswer = answer.answer_kind === "knowledge";
+  const intentClarification =
+    knowledgeAnswer &&
+    answer.status === "clarification" &&
+    (answer.knowledge?.intent_candidates ?? []).length > 0;
   return (
     <article className={`card ask-answer ask-answer-${answer.status}`}>
       <header className="ask-answer-heading">
@@ -58,9 +69,11 @@ export function AskAnswerView({
           className={`badge ${answer.status === "answered" ? "green" : ""}`}
         >
           {t(
-            (knowledgeAnswer ? knowledgeStatusLabels : statusLabels)[
-              answer.status
-            ],
+            intentClarification
+              ? "knowledgeIntentClarification"
+              : (knowledgeAnswer ? knowledgeStatusLabels : statusLabels)[
+                  answer.status
+                ],
           )}
         </span>
         <span className="ask-muted">
@@ -79,6 +92,7 @@ export function AskAnswerView({
           <KnowledgeResolution
             answer={answer}
             onChooseSubject={onChooseSubject}
+            onChooseIntent={onChooseIntent}
           />
         )
       ) : answer.status === "answered" ? (

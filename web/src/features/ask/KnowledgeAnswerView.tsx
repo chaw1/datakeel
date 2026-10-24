@@ -101,6 +101,10 @@ export function KnowledgeAnswerView({
         <KGRelationDrawer
           key={assertionId}
           assertionId={assertionId}
+          otherEnd={
+            knowledge.claims.find((claim) => claim.assertion_id === assertionId)
+              ?.other_end
+          }
           onClose={() => {
             setAssertionId("");
           }}

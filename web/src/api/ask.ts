@@ -10,6 +10,12 @@ export type AskResult = components["schemas"]["QueryResult"];
 export type KnowledgeAnswer = components["schemas"]["KnowledgeAnswer"];
 export type KnowledgeClaim = components["schemas"]["KnowledgeClaim"];
 export type KnowledgeSubject = components["schemas"]["KnowledgeSubject"];
+export type KnowledgeIntent = KnowledgeAnswer["intent"];
+export type SelectedKnowledgeIntent = NonNullable<
+  AskRequest["knowledge_intent"]
+>;
+export type KnowledgeRecognition =
+  components["schemas"]["KnowledgeRecognition"];
 
 export function askData(request: AskRequest): Promise<AskAnswer> {
   return post<AskAnswer>("/api/ask", request);

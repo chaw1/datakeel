@@ -35,6 +35,13 @@ export function AskPage({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [lastOperation, setLastOperation] = useState<AskOperation | null>(null);
+  const chosenIntent =
+    lastOperation && "request" in lastOperation
+      ? lastOperation.request.knowledge_intent
+      : answer?.knowledge?.reason_code === "ambiguous_subject" &&
+          answer.knowledge.intent !== "related"
+        ? answer.knowledge.intent
+        : undefined;
   async function perform(operation: AskOperation) {
     if (busy || isComposing()) return;
     setBusy(true);
@@ -111,6 +118,21 @@ export function AskPage({
           <AskAnswerView
             answer={answer}
             onOpenReceipt={onOpenReceipt}
+            onChooseIntent={(intent) => {
+              void perform({
+                request: {
+                  actor:
+                    lastOperation && "request" in lastOperation
+                      ? lastOperation.request.actor
+                      : "local-user",
+                  question: answer.question,
+                  reference_instant: answer.reference_instant,
+                  session_id: answer.session_id,
+                  subject_id: answer.knowledge?.subject?.asset_ref.asset_id,
+                  knowledge_intent: intent,
+                },
+              });
+            }}
             onChooseSubject={(subject) => {
               void perform({
                 request: {
@@ -122,6 +144,7 @@ export function AskPage({
                   reference_instant: answer.reference_instant,
                   session_id: answer.session_id,
                   subject_id: subject.asset_ref.asset_id,
+                  ...(chosenIntent ? { knowledge_intent: chosenIntent } : {}),
                 },
               });
             }}

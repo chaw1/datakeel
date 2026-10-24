@@ -31,7 +31,7 @@ it("keeps the original knowledge question when a clarification subject is select
   await user.click(screen.getByRole("button", { name: "Ask data" }));
   await user.click(
     await screen.findByRole("button", {
-      name: /出货额 Metric shipment_revenue/,
+      name: /出货额 Metric Catalog asset/,
     }),
   );
   expect(

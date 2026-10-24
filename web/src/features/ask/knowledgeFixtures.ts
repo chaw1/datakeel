@@ -45,6 +45,7 @@ export const ownerClaim: KnowledgeClaim = {
 };
 export const ownerKnowledge: KnowledgeAnswer = {
   intent: "owner",
+  intent_candidates: [],
   subject: shipmentSubject,
   system_records: [
     {

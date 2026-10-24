@@ -9,14 +9,17 @@ import { useResource } from "../../lib/useResource";
 import { KGBadge } from "./KGBadge";
 import { issueLabels } from "./labels";
 
+import type { KnowledgeClaim } from "../../api/ask";
 import type { KGExplanation } from "../../api/kg";
 
 export function KGRelationDrawer({
   assertionId,
   onClose,
+  otherEnd,
 }: {
   assertionId: string;
   onClose: () => void;
+  otherEnd?: KnowledgeClaim["other_end"];
 }) {
   const { t } = useI18n();
   const isComposing = useCompositionGuard();
@@ -66,6 +69,17 @@ export function KGRelationDrawer({
         </button>
       </header>
       <ResourceState {...resource} onRetry={resource.reload} />
+      {otherEnd?.asset_ref && (
+        <section>
+          <h3>{t("knowledgeOtherEnd")}</h3>
+          <p>
+            {otherEnd.asset_name ??
+              otherEnd.asset_ref.display_name ??
+              otherEnd.entity.name}
+          </p>
+          <code>{otherEnd.asset_ref.asset_id}</code>
+        </section>
+      )}
       {relation && (
         <>
           <div className="kg-detail-meta">

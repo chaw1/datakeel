@@ -18,7 +18,12 @@ export function AnswerProvenance({
   const lineage = answer.lineage;
   const footnotes =
     answer.status === "answered" ? answerFootnotes(answer, t) : [];
-  if (answer.answer_kind === "knowledge" && !lineage && !footnotes.length)
+  if (
+    answer.answer_kind === "knowledge" &&
+    !lineage &&
+    !footnotes.length &&
+    !answer.recognition
+  )
     return null;
   return (
     <section className="ask-provenance" aria-label={t("askProvenance")}>
@@ -39,8 +44,17 @@ export function AnswerProvenance({
           </button>
         )}
       </div>
-      {answer.answer_kind !== "knowledge" && (
-        <QuestionEvidence question={answer.question} matches={answer.matches} />
+      {(answer.answer_kind !== "knowledge" || answer.recognition) && (
+        <QuestionEvidence
+          question={answer.question}
+          matches={answer.matches}
+          recognition={answer.recognition}
+          intent={
+            answer.answer_kind === "knowledge" && answer.status === "answered"
+              ? answer.knowledge?.intent
+              : undefined
+          }
+        />
       )}
       {footnotes.length > 0 && <Footnotes items={footnotes} />}
     </section>

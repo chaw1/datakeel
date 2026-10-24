@@ -2,22 +2,22 @@ import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { objectHref } from "../object/navigation";
 
-import type { AskAnswer, KnowledgeSubject } from "../../api/ask";
+import { knowledgeIntentLabels, knowledgeKindLabels } from "./knowledgeLabels";
 
-const kindLabels = {
-  metric: "knowledgeMetric",
-  table: "knowledgeTable",
-  view: "knowledgeView",
-  owner: "knowledgeRole",
-  kg_entity: "knowledgeEntity",
-} as const;
+import type {
+  AskAnswer,
+  KnowledgeSubject,
+  SelectedKnowledgeIntent,
+} from "../../api/ask";
 
 export function KnowledgeResolution({
   answer,
   onChooseSubject,
+  onChooseIntent,
 }: {
   answer: AskAnswer;
   onChooseSubject?: (subject: KnowledgeSubject) => void;
+  onChooseIntent?: (intent: SelectedKnowledgeIntent) => void;
 }) {
   const { t } = useI18n();
   const isComposing = useCompositionGuard();
@@ -29,10 +29,20 @@ export function KnowledgeResolution({
   const pendingOnly = !clarification && noKnowledge && pending > 0;
   const unsupported = answer.knowledge?.reason_code === "unsupported_phrasing";
   const candidates = answer.subject_candidates;
+  const intents = (answer.knowledge?.intent_candidates ?? []).filter(
+    (intent) => intent !== "related",
+  );
+  const intentClarification = clarification && intents.length > 0;
   return (
     <section className="ask-candidates">
       <h2>
-        {t(clarification ? "knowledgeClarification" : "knowledgeUnanswerable")}
+        {t(
+          intentClarification
+            ? "knowledgeIntentClarification"
+            : clarification
+              ? "knowledgeClarification"
+              : "knowledgeUnanswerable",
+        )}
       </h2>
       <p
         className={
@@ -44,18 +54,43 @@ export function KnowledgeResolution({
         }
       >
         {t(
-          clarification
-            ? "knowledgeChoose"
-            : pendingOnly
-              ? "knowledgePending"
-              : noKnowledge
-                ? "knowledgeNoRecords"
-                : unsupported
-                  ? "knowledgeUnsupported"
-                  : "knowledgeUnknownSubject",
+          intentClarification
+            ? "knowledgeChooseIntent"
+            : clarification
+              ? "knowledgeChoose"
+              : pendingOnly
+                ? "knowledgePending"
+                : noKnowledge
+                  ? "knowledgeNoRecords"
+                  : unsupported
+                    ? "knowledgeUnsupported"
+                    : "knowledgeUnknownSubject",
           { count: pending },
         )}
       </p>
+      {intentClarification && (
+        <div
+          className="ask-examples"
+          role="group"
+          aria-label={t("knowledgeChooseIntent")}
+        >
+          {intents.slice(0, 3).map((intent) => (
+            <button
+              key={intent}
+              type="button"
+              className="button"
+              onKeyDown={(event) => {
+                if (isComposing(event.nativeEvent)) event.preventDefault();
+              }}
+              onClick={() => {
+                if (!isComposing()) onChooseIntent?.(intent);
+              }}
+            >
+              {t(knowledgeIntentLabels[intent])}
+            </button>
+          ))}
+        </div>
+      )}
       {pending > 0 && !pendingOnly && (
         <p className="warning-banner">
           {t("knowledgePending", { count: pending })}
@@ -67,7 +102,7 @@ export function KnowledgeResolution({
           <p>{answer.message}</p>
         </details>
       )}
-      {!noKnowledge && (
+      {!noKnowledge && !intentClarification && (
         <>
           <h3>
             {t(clarification ? "knowledgeCandidates" : "knowledgeClosest")}
@@ -79,10 +114,17 @@ export function KnowledgeResolution({
                   <>
                     <strong>{candidate.name}</strong>
                     <span>
-                      {t(kindLabels[candidate.kind])}
+                      {t(knowledgeKindLabels[candidate.kind])}
                       {candidate.entity_type
                         ? ` · ${candidate.entity_type}`
                         : ""}
+                    </span>
+                    <span>
+                      {t(
+                        candidate.kind === "kg_entity"
+                          ? "knowledgeDocumentEntity"
+                          : "knowledgeCatalogAsset",
+                      )}
                     </span>
                     {candidate.dataset_name && (
                       <span>
@@ -91,7 +133,6 @@ export function KnowledgeResolution({
                         })}
                       </span>
                     )}
-                    <code>{candidate.asset_ref.asset_id}</code>
                   </>
                 );
                 return (

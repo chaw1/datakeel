@@ -128,9 +128,10 @@ it("shows the linked other endpoint and its independent pending link status", ()
       onInspect={vi.fn()}
     />,
   );
-  expect(
-    screen.getByRole("link", { name: "shipment_revenue" }),
-  ).toHaveAttribute("href", "#/object/metric/shipment_revenue?tab=relations");
+  expect(screen.getByRole("link", { name: "出货额" })).toHaveAttribute(
+    "href",
+    "#/object/metric/shipment_revenue?tab=relations",
+  );
   expect(screen.getByText("Asset link awaiting confirmation")).toBeVisible();
 });
 

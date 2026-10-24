@@ -85,13 +85,19 @@ export function KnowledgeClaimCard({
       {other.status === "not_in_catalog" &&
         claim.consistency !== "not_in_catalog" && (
           <p className="kg-missing">
-            {t("knowledgeNotInCatalog")}: {other.entity.name}
+            {t("knowledgeNotInCatalog")}
+            {t("knowledgeLabelSeparator")}
+            {other.entity.name}
           </p>
         )}
+      {other.status === "link_rejected" && (
+        <p className="kg-missing">{t("knowledgeLinkRejected")}</p>
+      )}
       {other.status === "linked" && other.asset_ref && (
         <p className="knowledge-link-context">
           <span>
-            {t("knowledgeOtherEnd")}:{" "}
+            {t("knowledgeOtherEnd")}
+            {t("knowledgeLabelSeparator")}
             <a
               href={objectHref({
                 kind:
@@ -99,7 +105,9 @@ export function KnowledgeClaimCard({
                 id: other.asset_ref.asset_id,
               })}
             >
-              {other.asset_ref.display_name ?? other.asset_ref.asset_id}
+              {other.asset_name ??
+                other.asset_ref.display_name ??
+                other.entity.name}
             </a>
           </span>
           <span className={`kg-badge ${other.link_status ?? "candidate"}`}>

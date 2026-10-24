@@ -1810,6 +1810,7 @@ export interface components {
             metric_card?: components["schemas"]["MetricCard"] | null;
             /** Question */
             question: string;
+            recognition?: components["schemas"]["KnowledgeRecognition"] | null;
             /**
              * Reference Instant
              * Format: date-time
@@ -1841,6 +1842,8 @@ export interface components {
              * @default local-user
              */
             actor: string;
+            /** Knowledge Intent */
+            knowledge_intent?: ("owner" | "upstream" | "downstream" | "owned") | null;
             /** Metric Id */
             metric_id?: string | null;
             /** Question */
@@ -3618,12 +3621,17 @@ export interface components {
              */
             intent: "owner" | "upstream" | "downstream" | "owned" | "related";
             /**
+             * Intent Candidates
+             * @default []
+             */
+            intent_candidates: ("owner" | "upstream" | "downstream" | "owned" | "related")[];
+            /**
              * Pending Ambiguous Links
              * @default 0
              */
             pending_ambiguous_links: number;
             /** Reason Code */
-            reason_code?: ("unknown_subject" | "ambiguous_subject" | "no_knowledge" | "unsupported_phrasing" | "pending_links") | null;
+            reason_code?: ("unknown_subject" | "ambiguous_subject" | "no_knowledge" | "unsupported_phrasing" | "pending_links" | "ambiguous_intent") | null;
             subject?: components["schemas"]["KnowledgeSubject"] | null;
             /**
              * System Message
@@ -3686,6 +3694,8 @@ export interface components {
         KnowledgeOtherEnd: {
             /** Assertion Id */
             assertion_id?: string | null;
+            /** Asset Name */
+            asset_name?: string | null;
             asset_ref?: components["schemas"]["AssetRef"] | null;
             entity: components["schemas"]["KGEntity"];
             /** Link Status */
@@ -3694,7 +3704,38 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "not_applicable" | "linked" | "not_in_catalog";
+            status: "not_applicable" | "linked" | "not_in_catalog" | "link_rejected";
+        };
+        /**
+         * KnowledgeRecognition
+         * @description Record subject, interrogative focus, direction and the deterministic decision rule.
+         */
+        KnowledgeRecognition: {
+            /** Direction */
+            direction?: ("upstream" | "downstream") | null;
+            /**
+             * Direction Text
+             * @default []
+             */
+            direction_text: string[];
+            /**
+             * Focus
+             * @default unknown
+             * @enum {string}
+             */
+            focus: "person" | "table" | "metric" | "location" | "list" | "unknown";
+            /**
+             * Focus Text
+             * @default
+             */
+            focus_text: string;
+            /** Rule Id */
+            rule_id: string;
+            /**
+             * Subjects
+             * @default []
+             */
+            subjects: components["schemas"]["KnowledgeSubjectMatch"][];
         };
         /**
          * KnowledgeSubject
@@ -3730,6 +3771,15 @@ export interface components {
              * @enum {string}
              */
             link_status: "candidate" | "accepted";
+        };
+        /**
+         * KnowledgeSubjectMatch
+         * @description Explain a registered subject name found before interpreting the question.
+         */
+        KnowledgeSubjectMatch: {
+            subject: components["schemas"]["KnowledgeSubject"];
+            /** Text */
+            text: string;
         };
         /**
          * KnowledgeSystemRecord

@@ -1,6 +1,12 @@
 import { useI18n } from "../../i18n/useI18n";
 
-import type { AskMatch } from "../../api/ask";
+import { KnowledgeRecognitionEvidence } from "./KnowledgeRecognitionEvidence";
+
+import type {
+  AskMatch,
+  KnowledgeIntent,
+  KnowledgeRecognition,
+} from "../../api/ask";
 
 const kinds = {
   exact: "askMatchExact",
@@ -43,9 +49,13 @@ function questionSegments(question: string, matches: AskMatch[]) {
 export function QuestionEvidence({
   question,
   matches,
+  recognition,
+  intent,
 }: {
   question: string;
   matches: AskMatch[];
+  recognition?: KnowledgeRecognition | null;
+  intent?: KnowledgeIntent;
 }) {
   const { t } = useI18n();
   return (
@@ -68,6 +78,12 @@ export function QuestionEvidence({
           ),
         )}
       </p>
+      {recognition && (
+        <KnowledgeRecognitionEvidence
+          recognition={recognition}
+          intent={intent}
+        />
+      )}
       {matches.length ? (
         <details className="ask-detail">
           <summary>{t("askMatchSources")}</summary>
@@ -81,9 +97,9 @@ export function QuestionEvidence({
             ))}
           </ul>
         </details>
-      ) : (
+      ) : !recognition ? (
         <p className="ask-muted">{t("askNoMatches")}</p>
-      )}
+      ) : null}
     </section>
   );
 }
