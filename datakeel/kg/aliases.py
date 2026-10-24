@@ -3,6 +3,7 @@
 
 """Generate symmetric pair candidates without making transitive identity claims."""
 
+from collections import defaultdict
 from itertools import combinations
 
 from datakeel.core.evidence_drafts import ObservationDraft
@@ -66,6 +67,47 @@ def _detail(locations: tuple[VerificationLocation, ...]) -> VerificationDetail:
     return VerificationDetail(
         issues=tuple(sorted(issues.values(), key=lambda issue: (issue.code, issue.role or ""))),
         locations=locations,
+    )
+
+
+def _refreshed_pair(
+    draft: ObservationDraft, left: list[ObservationDraft], right: list[ObservationDraft]
+) -> ObservationDraft:
+    if not left or not right:
+        return draft
+    anchors = {
+        anchor.model_dump_json(): anchor
+        for mention in (*left, *right)
+        for anchor in mention.anchors
+    }
+    return draft.model_copy(
+        update={
+            "anchors": tuple(anchors[key] for key in sorted(anchors)),
+            "verification_detail": _detail(_locations(tuple(left), tuple(right))),
+        }
+    )
+
+
+def refresh_reviewed_aliases(
+    drafts: tuple[ObservationDraft, ...], reviewed: tuple[ObservationDraft, ...]
+) -> tuple[ObservationDraft, ...]:
+    """Update reviewed pair sources from current mentions without changing pair authority."""
+    pairs = {
+        (draft.subject.asset_id, draft.object.asset_id)
+        for draft in reviewed
+        if isinstance(draft.object, AssetRef)
+    }
+    mentions: dict[str, list[ObservationDraft]] = defaultdict(list)
+    for draft in drafts:
+        if draft.predicate == "kg.mentions":
+            mentions[draft.subject.asset_id].append(draft)
+    return tuple(
+        _refreshed_pair(draft, mentions[draft.subject.asset_id], mentions[draft.object.asset_id])
+        if draft.predicate == "kg.same_as"
+        and isinstance(draft.object, AssetRef)
+        and (draft.subject.asset_id, draft.object.asset_id) in pairs
+        else draft
+        for draft in drafts
     )
 
 
