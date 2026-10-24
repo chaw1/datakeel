@@ -25,6 +25,8 @@ from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
+# Shared CI runners can be several times slower than a laptop; this only bounds hangs.
+SUBPROCESS_TIMEOUT_SECONDS = 300
 
 
 MUTATIONS = (
@@ -175,7 +177,7 @@ def _evaluate(directory: Path) -> tuple[int, EvalReport]:
         env=local_environment(directory),
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=SUBPROCESS_TIMEOUT_SECONDS,
         check=False,
     )
     if process.returncode not in (0, 1):
@@ -197,7 +199,7 @@ def evaluate_image_test(directory: Path, node_id: str) -> TestMeasurement:
         env=local_environment(directory),
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=SUBPROCESS_TIMEOUT_SECONDS,
         check=False,
     )
     if process.returncode not in (0, 1) or not report.is_file():
