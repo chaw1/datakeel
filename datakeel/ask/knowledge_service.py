@@ -6,6 +6,7 @@
 from typing import Literal
 
 from datakeel.ask.knowledge_claims import SourceReader, document_claims
+from datakeel.ask.knowledge_count import count_message, counted_knowledge
 from datakeel.ask.knowledge_parser import KnowledgeQuestion
 from datakeel.ask.knowledge_subjects import catalog_subject, subject_suggestions
 from datakeel.ask.knowledge_system import system_records
@@ -75,11 +76,25 @@ def knowledge_answer(
     knowledge = _resolved_knowledge(
         subject, request.knowledge_intent or parsed.intent, context, catalog, layer
     )
+    return _resolved_response(request, parsed, knowledge, catalog)
+
+
+def _resolved_response(
+    request: AskRequest,
+    parsed: KnowledgeQuestion,
+    knowledge: KnowledgeAnswer,
+    catalog: CatalogSnapshot,
+) -> AskAnswer:
+    original = knowledge
+    if parsed.count_focus is not None:
+        knowledge = counted_knowledge(knowledge, parsed.count_focus, catalog)
     return _response(
         request,
         knowledge,
         "answered" if knowledge.reason_code is None else "unanswerable",
-        _knowledge_message(knowledge),
+        count_message(knowledge, parsed.count_focus, original)
+        if parsed.count_focus is not None
+        else _knowledge_message(knowledge),
     )
 
 
