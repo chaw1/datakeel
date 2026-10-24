@@ -1,139 +1,195 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Interpret interrogative types and direction relative to already matched subjects."""
+"""Find requested catalog types after hiding resolved names and their type labels."""
 
 import re
 from typing import Literal
 
+from datakeel.ask import knowledge_vocabulary as vocabulary
 from datakeel.ask.knowledge_names import SubjectMention
+from datakeel.ask.knowledge_scope import question_scope
 from datakeel.core.knowledge_models import KnowledgeFocus
 from datakeel.core.models import BoundaryModel
 
 
 class QuestionFocus(BoundaryModel):
-    """Keep the question's requested answer type and its observed wording."""
+    """Retain public focus plus the exact internal catalog type and count request."""
 
     kind: KnowledgeFocus = "unknown"
     text: str = ""
     start: int = -1
+    target_kind: vocabulary.CatalogTarget | None = None
+    counted: bool = False
 
 
 class QuestionDirection(BoundaryModel):
-    """Explain which side of a dependency the registered subject occupies."""
+    """Explain the resolved subject's dependency role without adding public schema."""
 
     value: Literal["upstream", "downstream"] | None = None
     words: tuple[str, ...] = ()
-
-
-_ZH_COUNT = r"(?:[一二两三四五六七八九十百零\d]+|几)?"
-_EN_FILL = (
-    r"(?:(?:is|are)\s+)?(?:the\s+)?"
-    r"(?:(?:one|two|three|four|five|six|seven|eight|nine|ten|several|few|all|\d+)\s+)?"
-)
-_FOCUS: tuple[tuple[KnowledgeFocus, str], ...] = (
-    (
-        "table",
-        (
-            rf"哪{_ZH_COUNT}(?:张|些|个|份|种)(?:原始|基础|源|数据)?(?:表|视图|数据)|什么(?:数据)?表|"
-            rf"\b(?:which|what)\s+{_EN_FILL}(?:(?:source|data|underlying)\s+)?(?:tables?|views?|datasets?)\b"
-        ),
-    ),
-    (
-        "metric",
-        (
-            rf"哪{_ZH_COUNT}(?:些|个|项|种)(?:(?:排名)?(?:前几|前\d+)|的|\s)*指标|什么指标|"
-            rf"\b(?:which|what)\s+{_EN_FILL}(?:(?:top|ranked)\s+\w+\s+)?metrics?\b"
-        ),
-    ),
-    (
-        "person",
-        (
-            rf"谁|哪{_ZH_COUNT}(?:位|些|个|名)(?:同事|人|组|团队|部门|负责人)|哪位|"
-            r"(?:团队|部门|人员)(?:是)?哪(?:个|位)|负责人|责任人|所有者|\b(?:who|whose|owner)\b|"
-            rf"\b(?:which|what)\s+{_EN_FILL}(?:team|person|people|group|department)\b"
-        ),
-    ),
-    ("location", r"哪(?:里|儿)|从哪|\bwhere\b"),
-    ("list", r"(?<!为)什么|哪些|哪几个|怎么|如何|\b(?:what|everything|list|which|how)\b"),
-)
-_RELATION = re.compile(
-    r"负责|维护|分管|管理|归属|上游|下游|来源|源表|来自|取自|依赖|基于|用到|引用|"
-    r"\b(?:owns?|owner|maintains?|manages?|responsible|upstream|downstream|sources?|"
-    r"depends?|uses?|consumes?|feeds?|derived|computed|built|based)\b"
-)
-_EXPLICIT = (
-    ("downstream", r"下游|\bdownstream\b"),
-    ("upstream", r"上游|\bupstream\b"),
-)
-_DEPENDENCY = re.compile(
-    r"依赖|基于|依托|用到|使用|用(?:过|了|着)|用(?=哪|什么|\s)|引用|取自|来自|出自|源于|从|由|"
-    r"\b(?:from|based\s+on|depends?\s+on|uses?|used|using|consumes?|consumed|reads?|read)\b"
-)
-_FEED = re.compile(r"影响|供给|提供给|流向|用于|\b(?:feeds?|sources?\s+for)\b")
-_PASSIVE = re.compile(
-    r"(?:被|由).*?(?:使用|用到|用过|用了|用着|引用|读取|消费|依赖)|"
-    r"\b(?:used|consumed|read|referenced)\s+by\b"
-)
+    rule_id: str = "K4-direction"
+    reliable: bool = True
 
 
 def masked_subjects(text: str, mentions: tuple[SubjectMention, ...]) -> str:
-    """Hide names so embedded relationship words cannot become grammatical evidence."""
+    """Hide registered names and adjacent subject labels while preserving coordinates."""
     chars = list(text)
     for item in mentions:
-        chars[item.start : item.end] = " " * (item.end - item.start)
+        start = item.start
+        end = item.end
+        if prefix := re.search(vocabulary.SUBJECT_PREFIX, text[:start]):
+            interrogative = rf"(?:{vocabulary.TYPED_QUESTION}|{vocabulary.COUNT_QUESTION})$"
+            if not re.search(interrogative, text[: prefix.start()]):
+                start = prefix.start()
+        if suffix := re.match(vocabulary.SUBJECT_SUFFIX, text[end:]):
+            end += suffix.end()
+        chars[start:end] = " " * (end - start)
     return "".join(chars)
 
 
+class _Noun(BoundaryModel):
+    kind: vocabulary.CatalogTarget
+    start: int
+    end: int
+
+
+def _nouns(text: str) -> tuple[_Noun, ...]:
+    found = sorted(
+        (
+            _Noun(kind=kind, start=hit.start(), end=hit.end())
+            for kind, pattern in vocabulary.TYPE_WORDS
+            for hit in re.finditer(pattern, text)
+        ),
+        key=lambda item: (item.start, -item.end),
+    )
+    result: list[_Noun] = []
+    for item in found:
+        if not result or item.start >= result[-1].end:
+            result.append(item)
+    return tuple(result)
+
+
+def _noun_focus(text: str, noun: _Noun, *, counted: bool = False) -> QuestionFocus:
+    return QuestionFocus(
+        kind=vocabulary.FOCUS_KINDS[noun.kind],
+        target_kind=noun.kind,
+        text=text[noun.start : noun.end],
+        start=noun.start,
+        counted=counted,
+    )
+
+
+def _phrase_head(text: str, nouns: tuple[_Noun, ...], start: int) -> _Noun | None:
+    following = tuple(item for item in nouns if item.start >= start)
+    if not following:
+        return None
+    head = following[0]
+    prefix = text[start : head.start]
+    if re.search(vocabulary.NOUN_CLAUSE_BOUNDARY, prefix):
+        return None
+    if re.search(r"[a-z]", prefix) and not re.fullmatch(
+        vocabulary.NOUN_FILLER, prefix.strip() + " "
+    ):
+        return None
+    # Chinese attributes precede their head; English compound noun heads come last.
+    for candidate in following[1:]:
+        between = text[head.end : candidate.start]
+        if _compound_head(between, head, candidate):
+            head = candidate
+        else:
+            break
+    return head
+
+
+def _compound_head(between: str, current: _Noun, candidate: _Noun) -> bool:
+    if re.fullmatch(r"\s*", between):
+        return True
+    # Normalization leaves one space; longer gaps identify hidden registered subjects.
+    if re.search(r"[,\uff0c?\uff1f]|\s{2,}", between):
+        return False
+    if between.rstrip().endswith("的"):
+        return True
+    return (
+        candidate.kind in {"person", "team"}
+        and current.kind not in {"person", "team"}
+        and re.fullmatch(vocabulary.OWNERSHIP, between.strip()) is not None
+    )
+
+
+def _typed_focus(text: str, prefix: str, *, counted: bool = False) -> QuestionFocus | None:
+    nouns = _nouns(text)
+    for anchor in re.finditer(prefix, text):
+        if head := _phrase_head(text, nouns, anchor.end()):
+            if counted and re.search(vocabulary.BUSINESS_COUNT, text[anchor.end() : head.start]):
+                continue
+            return _noun_focus(text, head, counted=counted)
+    return None
+
+
+def _nominal_focus(text: str, *, counted: bool = False) -> QuestionFocus | None:
+    nouns = _nouns(text)
+    if not nouns:
+        return None
+    head = nouns[0]
+    for item in nouns[1:]:
+        between = text[head.end : item.start]
+        if re.search(r"[,\uff0c;\uff1b]", between):
+            break
+        if _compound_head(between, head, item):
+            head = item
+    return _noun_focus(text, head, counted=counted)
+
+
+def _adjacent_focus(text: str, prefix: str) -> QuestionFocus | None:
+    """Retain bounded legacy number/ranking syntax without changing the phrase head."""
+    for target_kind, noun in vocabulary.TYPE_WORDS:
+        if hit := re.search(rf"(?:{prefix})(?:{noun})", text):
+            return QuestionFocus(
+                kind=vocabulary.FOCUS_KINDS[target_kind],
+                target_kind=target_kind,
+                text=hit.group(),
+                start=hit.start(),
+            )
+    return None
+
+
 def question_focus(text: str) -> QuestionFocus:
-    """Prefer typed interrogatives over generic list and relationship descriptors."""
-    for kind, pattern in _FOCUS:
-        if hit := re.search(pattern, text):
-            return QuestionFocus(kind=kind, text=hit.group(), start=hit.start())
+    """Prefer counted and direct types, then recover nouns separated from a generic ask."""
+    text = question_scope(text)
+    if counted := _typed_focus(text, vocabulary.COUNT_PREFIX, counted=True) or (
+        _nominal_focus(text, counted=True) if re.search(vocabulary.COUNT_TOTAL, text) else None
+    ):
+        return counted
+    if typed := _typed_focus(text, vocabulary.TYPE_QUESTION_ANCHOR) or _adjacent_focus(
+        text, vocabulary.TYPED_QUESTION
+    ):
+        return typed
+    if hit := re.search(vocabulary.PERSON_QUESTION, text):
+        return QuestionFocus(
+            kind="person", text=hit.group(), start=hit.start(), target_kind="person"
+        )
+    if hit := re.search(vocabulary.LOCATION_QUESTION, text):
+        return QuestionFocus(kind="location", text=hit.group(), start=hit.start())
+    if hit := re.search(vocabulary.LIST_QUESTION, text):
+        return _nominal_focus(text) or QuestionFocus(
+            kind="list", text=hit.group(), start=hit.start()
+        )
     return QuestionFocus()
 
 
 def has_relation(text: str) -> bool:
-    """Recognize bounded relation phrases, never single-character word fragments."""
-    return _RELATION.search(text) is not None
-
-
-def question_direction(
-    text: str, mention: SubjectMention, focus: QuestionFocus
-) -> QuestionDirection:
-    """Use dependency position and passive voice; explicit direction takes precedence."""
-    for value, pattern in _EXPLICIT:
-        if hit := re.search(pattern, text):
-            return QuestionDirection(
-                value="upstream" if value == "upstream" else "downstream", words=(hit.group(),)
-            )
-    if hit := _PASSIVE.search(text):
-        actor = (
-            hit.start() < mention.start < hit.end()
-            if hit.group().startswith(("被", "由"))
-            else mention.start >= hit.end()
+    """Use the shared hierarchy, flow, impact and ownership vocabulary for safe routing."""
+    return any(
+        re.search(pattern, text)
+        for pattern in (
+            vocabulary.HIERARCHY_UP,
+            vocabulary.HIERARCHY_DOWN,
+            vocabulary.FLOW_DESTINATION,
+            vocabulary.FLOW_DEPENDENCY,
+            vocabulary.SOURCE_NOUNS,
+            vocabulary.OWNERSHIP,
+            vocabulary.IMPACT,
+            vocabulary.COUNTERFACTUAL,
         )
-        return QuestionDirection(
-            value="upstream" if actor else "downstream",
-            words=tuple(part for part in re.split(r"\s{2,}", hit.group()) if part),
-        )
-    if hit := re.search(r"(?:被|由).*?(?:生成|加工|计算|产出|汇总)", text):
-        inside = hit.start() < mention.start < hit.end()
-        return QuestionDirection(value="downstream" if inside else "upstream", words=(hit.group(),))
-    return _verb_direction(text, mention, focus)
-
-
-def _verb_direction(text: str, mention: SubjectMention, focus: QuestionFocus) -> QuestionDirection:
-    if hit := _FEED.search(text):
-        before = mention.end <= hit.start()
-        return QuestionDirection(value="downstream" if before else "upstream", words=(hit.group(),))
-    if hit := _DEPENDENCY.search(text):
-        # In both languages the object after from/use is the input; the subject before it
-        # is the output. A fronted interrogative does not change that grammatical role.
-        after = mention.start >= hit.end() and not (hit.end() <= focus.start < mention.start)
-        return QuestionDirection(value="downstream" if after else "upstream", words=(hit.group(),))
-    if hit := re.search(r"来源|源表|数据源|\bsources?\b", text):
-        return QuestionDirection(value="upstream", words=(hit.group(),))
-    if re.search(r"怎么算|怎么.*算|如何.*(?:算|计算)", text):
-        return QuestionDirection(value="upstream", words=(focus.text,))
-    return QuestionDirection()
+    )

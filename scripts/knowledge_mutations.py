@@ -49,8 +49,18 @@ KNOWLEDGE_MUTATIONS = (
     Mutation(
         name="knowledge-typed-focus",
         path="ask/knowledge_focus.py",
-        before='(\n        "table",\n',
-        after='(\n        "person",\n',
+        before=(
+            "if typed := _typed_focus(text, vocabulary.TYPE_QUESTION_ANCHOR) or _adjacent_focus(\n"
+            "        text, vocabulary.TYPED_QUESTION\n"
+            "    ):\n"
+            "        return typed"
+        ),
+        after=(
+            "if typed := _typed_focus(text, vocabulary.TYPE_QUESTION_ANCHOR) or _adjacent_focus(\n"
+            "        text, vocabulary.TYPED_QUESTION\n"
+            "    ):\n"
+            '        return QuestionFocus(kind="list", text=typed.text, start=typed.start)'
+        ),
         case=(
             "tests/ask/test_knowledge_parser.py::"
             "test_typed_table_focus_is_preserved_before_inferring_relationship"
@@ -59,12 +69,42 @@ KNOWLEDGE_MUTATIONS = (
     ),
     Mutation(
         name="knowledge-direction-position",
-        path="ask/knowledge_focus.py",
-        before='value="downstream" if after else "upstream"',
-        after='value="upstream" if after else "downstream"',
+        path="ask/knowledge_roles.py",
+        before=(
+            "for frame in re.finditer(vocabulary.EN_INPUT_FRAME, marked):\n"
+            '        if frame.start("input") <= subject < frame.end("input"):\n'
+            '            return _frame_result("downstream", frame, mention)'
+        ),
+        after=(
+            "for frame in re.finditer(vocabulary.EN_INPUT_FRAME, marked):\n"
+            '        if frame.start("input") <= subject < frame.end("input"):\n'
+            '            return _frame_result("upstream", frame, mention)'
+        ),
         case=(
             "tests/ask/test_knowledge_parser.py::"
             "test_dependency_position_distinguishes_input_subject_from_output_subject"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="knowledge-hierarchy-direction",
+        path="ask/knowledge_parser.py",
+        before='direction = "upstream" if subject_level > target_level else "downstream"',
+        after='direction = "downstream" if subject_level > target_level else "upstream"',
+        case=(
+            "tests/ask/test_knowledge_direction_mutations.py::"
+            "test_catalog_hierarchy_infers_both_directions_and_preserves_same_layer_ambiguity"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="knowledge-subject-result-role",
+        path="ask/knowledge_roles.py",
+        before='value="upstream", words=_role_words(hit, mention), rule_id="K11-subject-role"',
+        after='value="downstream", words=_role_words(hit, mention), rule_id="K11-subject-role"',
+        case=(
+            "tests/ask/test_knowledge_direction_mutations.py::"
+            "test_subject_source_and_result_roles_override_hierarchy_in_both_languages"
         ),
         runner="pytest",
     ),

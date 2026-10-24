@@ -5,16 +5,18 @@
 
 import re
 
+from datakeel.ask import knowledge_vocabulary as vocabulary
 from datakeel.ask.knowledge_focus import (
     QuestionDirection,
     QuestionFocus,
     has_relation,
     masked_subjects,
-    question_direction,
     question_focus,
 )
 from datakeel.ask.knowledge_names import SubjectMention, normalize_name
+from datakeel.ask.knowledge_roles import question_direction
 from datakeel.ask.knowledge_routing import grouped_request, numeric_route, pure_metric_phrase
+from datakeel.ask.knowledge_scope import question_scope, relation_scope
 from datakeel.ask.knowledge_subjects import subject_mentions
 from datakeel.core.catalog_models import CatalogSnapshot
 from datakeel.core.knowledge_models import (
@@ -37,6 +39,7 @@ class KnowledgeQuestion(BoundaryModel):
     intent_candidates: tuple[KnowledgeIntent, ...] = ()
     recognition: KnowledgeRecognition
     unsupported_phrasing: bool = False
+    count_focus: QuestionFocus | None = None
 
 
 def parse_knowledge_question(
@@ -52,7 +55,9 @@ def parse_knowledge_question(
     mentions = subject_mentions(question, catalog, layer, context or LinkContext())
     numeric_text = masked_subjects(text, mentions)
     numeric_focus = question_focus(numeric_text)
-    if numeric_route(numeric_text, numeric_focus) or pure_metric_phrase(question, layer):
+    if numeric_route(numeric_text, numeric_focus, question=text) or pure_metric_phrase(
+        question, layer
+    ):
         return None
     if subject_id:
         mentions = tuple(
@@ -88,7 +93,7 @@ def metric_recognition(
     focus = question_focus(text)
     rule = (
         "M1-numeric"
-        if numeric_route(text, focus)
+        if numeric_route(text, focus, question=normalize_name(question))
         else "M2-metric-phrase"
         if pure_metric_phrase(question, layer)
         else "M3-metric-fallback"
@@ -111,14 +116,23 @@ def _interpret(
     candidates = tuple(
         {item.asset_ref: item for mention in mentions for item in mention.candidates}.values()
     )
+    if len(candidates) == 1 and mentions:
+        text = relation_scope(text, mentions[0].start, focus.start, focus.start + len(focus.text))
     direction = question_direction(text, mentions[0], focus) if mentions else QuestionDirection()
     intent, options, rule = _intent(candidates, focus, direction, text)
+    if intent in {"upstream", "downstream"} and (not direction.value or not direction.reliable):
+        direction = QuestionDirection(
+            value="upstream" if intent == "upstream" else "downstream",
+            words=(focus.text,),
+            rule_id=rule,
+        )
     return KnowledgeQuestion(
         intent=intent,
         subject=mentions[0].text if mentions else "",
         candidates=candidates,
         intent_candidates=options,
         unsupported_phrasing=bool(options),
+        count_focus=focus if focus.counted else None,
         recognition=KnowledgeRecognition(
             subjects=tuple(
                 KnowledgeSubjectMatch(text=mention.text, subject=item)
@@ -149,41 +163,75 @@ def _intent(
         if not _employment(text, focus):
             return "owned", (), "K2-person-owned"
         return "related", ("owned", "owner"), "K8-ambiguous-intent"
-    return _asset_intent(subject, focus, direction)
+    return _asset_intent(subject, focus, direction, text)
 
 
 def _employment(text: str, focus: QuestionFocus) -> bool:
     if focus.kind in {"table", "metric"}:
         return False
-    if focus.kind in {"person", "location"} and re.search(r"工作|\bwork\b", text):
+    if focus.kind in {"person", "location"} and re.search(vocabulary.WORK_WORDS, text):
         return True
-    return (
-        re.search(
-            r"就职|任职|供职|隶属|所属|属于|汇报|"
-            r"\b(?:work(?:s|ed|ing)?\s+(?:for|at)|reports?\s+to|belongs?\s+to)\b",
-            text,
-        )
-        is not None
-    )
+    return re.search(vocabulary.EMPLOYMENT, text) is not None
 
 
 def _asset_intent(
     subject: KnowledgeSubject,
     focus: QuestionFocus,
     direction: QuestionDirection,
+    text: str,
 ) -> tuple[KnowledgeIntent, tuple[KnowledgeIntent, ...], str]:
-    if focus.kind == "person" and direction.value != "downstream":
+    if focus.kind == "person" and _owner_focus(text, focus, direction):
         return "owner", (), "K3-person-focus"
+    if direction.value and direction.reliable:
+        return direction.value, (), direction.rule_id
+    if default := _default_asset_intent(subject, focus):
+        return default
     if direction.value:
-        return direction.value, (), "K4-direction"
+        return direction.value, (), direction.rule_id
+    options: tuple[KnowledgeIntent, ...] = ("upstream", "downstream")
+    if focus.kind not in {"table", "metric"}:
+        options = (*options, "owner")
+    return "related", options, "K8-ambiguous-intent"
+
+
+def _owner_focus(text: str, focus: QuestionFocus, direction: QuestionDirection) -> bool:
+    text = question_scope(text)
+    ownership = re.search(vocabulary.OWNERSHIP, text)
+    dependency = re.search(vocabulary.PERSON_DEPENDENCY, text)
+    if ownership and (
+        not dependency
+        or ownership.start() < dependency.start()
+        or dependency.start() < focus.start < ownership.start()
+    ):
+        return True
+    if direction.value == "downstream":
+        return False
+    explicit_role = direction.rule_id == "K11-subject-role"
+    return not (direction.value and direction.reliable and (dependency or explicit_role))
+
+
+def _default_asset_intent(
+    subject: KnowledgeSubject, focus: QuestionFocus
+) -> tuple[KnowledgeIntent, tuple[KnowledgeIntent, ...], str] | None:
     metric = subject.kind == "metric" or subject.entity_type == "metric"
     if metric and focus.kind in {"table", "location"}:
         return "upstream", (), "K5-metric-source"
     if not metric and focus.kind == "metric":
         return "downstream", (), "K6-table-metrics"
+    if hierarchy := _hierarchy_intent(subject, focus):
+        return hierarchy
     if focus.kind == "location":
         return "upstream", (), "K7-location-source"
-    options: tuple[KnowledgeIntent, ...] = ("upstream", "downstream")
-    if focus.kind not in {"table", "metric"}:
-        options = (*options, "owner")
-    return "related", options, "K8-ambiguous-intent"
+    return None
+
+
+def _hierarchy_intent(
+    subject: KnowledgeSubject, focus: QuestionFocus
+) -> tuple[KnowledgeIntent, tuple[KnowledgeIntent, ...], str] | None:
+    subject_level = vocabulary.ASSET_LEVELS.get(subject.kind)
+    target_level = vocabulary.ASSET_LEVELS.get(focus.target_kind or "")
+    if subject_level is None or target_level is None or subject_level == target_level:
+        return None
+    direction = "upstream" if subject_level > target_level else "downstream"
+    rule = "K9-hierarchy-upstream" if direction == "upstream" else "K10-hierarchy-downstream"
+    return direction, (), rule
