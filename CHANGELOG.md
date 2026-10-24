@@ -2,6 +2,26 @@
 
 All notable changes are documented here using the Keep a Changelog format.
 
+## [0.10.0] - 2026-10-24
+
+### Added
+
+- Schema-driven text knowledge graphs with UTF-8/NFC source coordinates, bounded paragraph/sentence chunking, deterministic entity identities, merged mention/evidence locations and explicit endpoint checks. Pending-review candidates remain available for human decisions; schema proposals never change the vocabulary automatically.
+- Durable `run_kg_extraction` actions with frozen source/configuration/recording inputs, external-transfer approval, worker lease fencing, successful-block cache reuse, partial-run reports and per-request extraction budgets/traces. Unknown billing remains explicit, and truncated output never becomes a successful cache entry.
+- Shared Agent/MCP `query_kg` and `explain_relation` reads, bounded graph/source/history APIs, and a bilingual Knowledge graph workspace for entities, relations, source highlights, review decisions, graph display, schema proposals and evaluation comparisons.
+- Offline `eval-kg` with independent recording and production-candidate scores, language and verified-only slices, external same-schema cases and opt-in real-provider YAML profiles. Recorded usage is separate from replay's zero model cost. Optional separately installed GLiNER2 extracts entities only.
+- A demo with 24 recorded passages, three attributed fake scripted long documents and one deliberate truncation; four graph goldens and three mutations bring the suites to 36 conversations and 24 mutations without changing the original golden files or mutation anchors.
+
+### Changed
+
+- Graph reads are discovered on demand, preserving the original resident-tool prompt size and existing conversation budgets. Harness observations exclude action runs used only to prepare fixtures.
+- Package, API and frontend versions advance to 0.10.0. Graph contracts ship in wheels; model extraction has a separate 600-line adapter boundary without additions to the locked runtime dependency closure.
+
+### Fixed
+
+- Fresh evaluations normalize external combining-character text before measuring spans, while historical recording inputs retain their original scoring coordinates.
+- Chunk-local evidence selection distinguishes repeated sentences at block boundaries; same-as review changes affect only display grouping, preserving source assertions and audit history.
+
 ## [0.9.0] - 2026-10-24
 
 ### Added

@@ -40,7 +40,7 @@ uv run pyright
 cd web
 npm ci
 npm run screenshots -- http://127.0.0.1:8765
-# 12 页 × 中英文 × 浅深色 → 仓库根目录 artifacts/screenshots/
+# 13 页 × 中英文 × 浅深色 → 仓库根目录 artifacts/screenshots/
 cd ..
 ```
 
@@ -59,7 +59,7 @@ npm --prefix web run smoke:ui -- http://127.0.0.1:8773
 
 安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，在仓库根目录执行前两行。`.python-version` 选择 Python 3.12，uv 可自动安装。默认演示无需 Node、Docker、外部服务或模型配置，Python 包已包含编译后的 React 页面。
 
-演示启动 API 和 worker，创建两个文件数据集，并导入下方的企业目录。**Field notes · generated demo** 保留原来的 200 张 PNG、200 段文本和 11 个算子；两段特意生成的空文本被过滤，第二个版本留下 398 份产物，原始 400 份文件仍可下载。新增的 **Paired scenes · evidence demo** 包含 1,000 个图像/caption/标注配对样本，train 800、val 200，注入 50 处标注冲突、30 个缺失标注 sidecar 和 10 个损坏图像，由同一 worker 和 DAG 执行 5 个确定性证据算子。命令打印地址、耗时和抽取计数。再次运行复用导入数据，并增量读取证据缓存；换一个 `DATAKEEL_HOME` 可独立重跑，`demo --legacy-only` 只运行原场景。
+演示启动 API 和 worker，创建三个文件数据集，并导入下方的企业目录。**Field notes · generated demo** 保留原来的 200 张 PNG、200 段文本和 11 个算子；两段特意生成的空文本被过滤，第二个版本留下 398 份产物，原始 400 份文件仍可下载。新增的 **Paired scenes · evidence demo** 包含 1,000 个图像/caption/标注配对样本，train 800、val 200，注入 50 处标注冲突、30 个缺失标注 sidecar 和 10 个损坏图像，由同一 worker 和 DAG 执行 5 个确定性证据算子。命令打印地址、耗时和抽取计数。再次运行复用导入数据，并增量读取证据缓存；换一个 `DATAKEEL_HOME` 可独立重跑，`demo --legacy-only` 只运行原场景。
 
 页面可切换文件版本、下载产物、点血缘节点查看事件、查看五维质量及六章报告。报告默认采用规则基线；设置 `DATAKEEL_LLM_URL` 后向指定 chat-completions 地址请求正文，2 秒超时或请求失败时回退基线，生成正文后附基线核验。
 
@@ -128,6 +128,19 @@ metrics:
 五个算子为 `evidence.image_phash`、`evidence.caption_mentions`、`evidence.annotation_labels`、`evidence.label_gap`、`evidence.near_duplicate`。[词表](contracts/evidence/lexicon.yaml) 把 `pedestrian`、`行人` 及标注类别别名折叠为 canonical `person`；`night` 等场景概念同样使用 `mentions` 谓词。caption 派生状态只取 `present` 或 `unknown`，缺 sidecar 保持未知。只有 caption 提到某概念且已提供的标注文件漏标时，`label_gap` 才是 `present`；本版只有直接测量的 `corrupt` 可取 `absent`。文本锚点是 NFC 归一化后 Unicode 码点的半开区间 `[start, end)`，图像锚点是原图像素 `xyxy`，附原始宽高。
 
 [近重复合同](contracts/evidence/near_duplicate.yaml) 固定 64 位 dHash、前 4 位分桶、汉明距离 ≤8。每个直接样本对只存一次、双向查询，不做传递扩展或自动合并。前缀分桶可能漏检，下方评测如实报告。模型抽取器接口和 fake 适配器仅做单元测试，不进入抽取 DAG、证据评测或模型预算。
+
+## 抽取与复核文本知识图谱
+
+演示增加 **Business notes · knowledge graph demo**：24 篇录制短文、3 篇明确标注的脚本长文，以及 1 个故意截断的样例。打开「知识图谱」，查找 `Vivo`，查看待复核关系：证据句存在，但尾实体不在原文。通过既有复核动作拒绝它，再确认图中该边变为已拒绝。原文核对和人工判断保持独立。
+
+实体保留全部提及位置；关系跨块、跨文档合并重复证据，保留抽取器和模型来源。Schema 提案只读，不自动改变合同。抽取记录展示成功、缓存、失败及未执行块。默认 replay 与 fake 脚本离线运行；外部配置须先签批冻结的目标、模型、输入和预算，worker 才能执行。Agent 与 MCP 共用 `query_kg`、`explain_relation` 和受控动作 `run_kg_extraction`；Agent 按需发现这些工具。
+
+```bash
+uv run datakeel eval-kg --json
+uv run datakeel eval-kg --profile replay-flash --json
+```
+
+报告分别给出原始录制和实际产品候选的评分、仅核对通过子集与关系过滤原因；重放不会产生模型 token 或费用。[Schema、配置、外部题集、可选本机抽取与外发威胁模型](docs/KG.md)说明如何使用自行授权的文本和模型接口。
 
 ## 确定性工作流与路由
 
@@ -320,7 +333,7 @@ OpenLineage 导出是事件数组，逐个元素用官方 RunEvent Schema 校验
 
 ## MCP 接入
 
-`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **29 个工具**：13 个源数据只读函数（含 `query_evidence`、`get_evidence`、`explain_sample` 及下方四个），14 个**只准备计划**的动作（含 `decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
+`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **32 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），15 个**只准备计划**的动作（含 `run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
 
 Agent 和 MCP 同步提供 `ask_data`、`list_metrics`、`explain_metric`、`impact_of`。`ask_data` 只读源数据，在 Datakeel 保存答案及证据；涉及资产的调用记录 `asset_refs`，空的 `list_metrics` 结果可没有引用。工具、动作与 HTTP 使用同一套类型模型生成 schema。
 
@@ -375,12 +388,13 @@ uv run datakeel eval-evidence
 uv run datakeel eval-evidence --json
 uv run datakeel eval-ask
 uv run datakeel eval-ask --json
+uv run datakeel eval-kg --json
 uv run python scripts/mutate.py --output mutation-results.json
 ```
 
-32 条 golden 保留原有 12 条查询、动作、审批、打转、预算、跨轮指代与 dry-run 等场景，以及证据查询、未知状态解释、按查询结果生成版本和删除待审四条；新增问数、澄清、拒答、受控修改指标后答案变化四条企业场景。另外 12 条覆盖委派、泄漏、注入审批及跨会话记忆。每条用脚本回复驱动真实本机服务与隔离样例。第二次运行显示上次 ID 和通过数、token、成本差值；`--json` 输出完整结果，有失败则退出码非零。`--provider openai` / `--provider anthropic` 会选择真实付费评估，离线门禁不会运行。
+36 条 golden 保留原有 12 条查询、动作、审批、打转、预算、跨轮指代与 dry-run 等场景，以及证据查询、未知状态解释、按查询结果生成版本和删除待审四条；新增问数、澄清、拒答、受控修改指标后答案变化四条企业场景。另外 12 条覆盖委派、泄漏、注入审批及跨会话记忆。另有 4 条图谱场景覆盖查询、缺失端点解释、自动重放和外发签批且对话执行记录为 0。每条用脚本回复驱动真实本机服务与隔离样例。第二次运行显示上次 ID 和通过数、token、成本差值；`--json` 输出完整结果，有失败则退出码非零。`--provider openai` / `--provider anthropic` 会选择真实付费评估，离线门禁不会运行。
 
-变异脚本要求临时源码副本中的 21 处变异全部为 `KILLED`。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。运行时变异还检查签批恢复授权与工具调用幂等。工作流及路由变异检查工作流签批恢复授权、意图得分分差、图的环检测，以及切换备用模型前对失败尝试结算预算。新增 canary、委派深度、工具越权、记忆硬删及每次用户提问的记忆增强去重五个变异。每个隔离子进程仍限时 60 秒。环境或初始化失败不计为成功杀死变异。
+变异脚本要求临时源码副本中的 24 处变异全部为 `KILLED`。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。运行时变异还检查签批恢复授权与工具调用幂等。工作流及路由变异检查工作流签批恢复授权、意图得分分差、图的环检测，以及切换备用模型前对失败尝试结算预算。新增 canary、委派深度、工具越权、记忆硬删及每次用户提问的记忆增强去重五个变异。图谱增加关闭端点核对、丢弃待复核候选、缓存遗漏模型身份三个变异。每个隔离子进程仍限时 60 秒。环境或初始化失败不计为成功杀死变异。
 
 `eval-evidence` 在隔离的本机进程中新生成 1,000 个样本，运行生产抽取 DAG，再执行 [questions.yaml](contracts/evidence/questions.yaml) 的 15 题：近重复 4 题、冲突 4 题、损坏 4 题、无标注 3 题。baseline 只用标签、路径和已有质量事实，with_evidence 加入断言与直接近重复关系。报告包含每题 precision/recall、宏平均、pair 指标、三态计数、抽取计数与耗时，复用 `eval_runs` 表，`provider=evidence`，`suite_digest` 是题集文件 SHA-256。临时样例随评测结束清理，保留报告和 gold 摘要；`--questions path.yaml` 可指定另一份通过校验的题集。
 

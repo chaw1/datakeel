@@ -10,7 +10,7 @@ On first use, run `uv sync --locked` from the repository root to install depende
 DATAKEEL_HOME=$(mktemp -d) uv run datakeel demo --port 8773
 ```
 
-Open <http://127.0.0.1:8773/> and wait for both initialization pipelines to finish. The screenshots use **Chinese UI text and the Light theme**; choose 中文 to match them. English labels are included below. All data is generated, and IDs and timestamps vary between runs. The tour changes this temporary workspace. Press Ctrl+C in the launch terminal when finished; use the launcher again for a fresh replay.
+Open <http://127.0.0.1:8773/> and wait for the initialization tasks to finish. The screenshots use **Chinese UI text and the Light theme**; choose 中文 to match them. English labels are included below. All data is generated, and IDs and timestamps vary between runs. The tour changes this temporary workspace. Press Ctrl+C in the launch terminal when finished; use the launcher again for a fresh replay.
 
 ## If you already have local configuration
 
@@ -160,6 +160,18 @@ Open **Memory** and add a global entry: `Catalog reports use the approved active
 
 Return to Memory, delete that entry and confirm. Start another conversation and ask the same question; the deleted entry must no longer appear as used. Historical references show it as deleted. Try `Delegate a catalog review` and expand the specialist's tools and tokens. The [Agent reference](AGENT.md) explains retrieval and deletion boundaries.
 
+## 10. Reject a relation that needs review (1 minute)
+
+Open **Knowledge graph** and select **Business notes · knowledge graph demo**. Search for `Vivo` in **Find an entity**, then choose **Inspect relation**. The drawer highlights the evidence sentence and identifies the tail entity that could not be located in the source. The recorded claim remains visible for review.
+
+![Recorded relationship with a missing tail entity](images/demo/19-kg-source.jpg)
+
+Close the drawer, select that relation and click **Reject selected**. Switch to **Graph**: the edge is now red and dashed with **Rejected** status; the original source check still says **Needs review**. **Extraction runs** also shows the deliberately truncated block, while **Schema proposals** lists excluded claims. The three long documents are clearly attributed to a fake script, not a real model.
+
+![Rejected graph edge remains visible with its independent verification state](images/demo/20-kg-rejected.jpg)
+
+See the [knowledge graph reference](KG.md) for schema configuration, offline evaluation and consent before external extraction.
+
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.
@@ -171,4 +183,4 @@ npm --prefix web exec -- playwright install chromium
 npm --prefix web run smoke:tour -- http://127.0.0.1:8773
 ```
 
-The script writes 18 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. The cleanup step also checks two quarantined files, explicit continuation after approval, one deletion record, one remaining file, and the unchanged original 400-file dataset. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.
+The script writes 20 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. The cleanup step also checks two quarantined files, explicit continuation after approval, one deletion record, one remaining file, and the unchanged original 400-file dataset. The graph step checks missing-tail evidence and the persisted rejection style. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.

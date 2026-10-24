@@ -29,7 +29,7 @@ Agent 全程用对话操作，但只能走受控动作；harness 让 Agent 可�
 | 算子 | manifest 驱动 + 类型化槽位 DAG（条件/路由节点） | 保持算子职责明确、可组合、可独立测试 |
 | 确认门 | Action 声明影响面与可逆性；门控不可逆与外发操作；审批 token 绑定参数一次性；落库 | 审批绑定冻结计划与执行人，持久化决策和消费状态 |
 | Harness | 每次模型调用一条 trace（分段 token/成本/缓存命中）；预算持久化；golden set + 变异测试 | 对调用成本、预算约束和行为回归提供可核验记录 |
-| Agent 执行 | LangGraph 同步持久化图；LangChain chat model 适配；框架依赖仅在 `runtime/` | 中断后从已落盘节点继续，Datakeel 保持动作授权、审计与预算的事实源 |
+| Agent 执行 | LangGraph 同步持久化图；模型适配分别在 `runtime/` 与 `extraction_runtime/` | 中断后从已落盘节点继续，抽取不借用会话图，Datakeel 保持动作授权、审计与预算的事实源 |
 
 ## 3. 目录结构
 
@@ -49,6 +49,9 @@ datakeel/
     api/                    # FastAPI 路由；/admin 只读看板
     agent/                  # 会话、上下文、工具发现、确认门、预算计量
     runtime/                # LangGraph 图、chat model 适配和同步 checkpoint saver
+    kg/                     # 文本切块、schema、核对、实体身份与候选断言
+    extraction_runtime/     # 抽取模型适配；显式配置及注入传输
+    kg_eval/                # 独立录制评分与产品候选评分
     harness/                # 二期：trace、成本、golden runner
     mcp/                    # 二期：FastMCP server
     cli.py                  # `datakeel demo | api | worker | migrate`
@@ -79,7 +82,7 @@ datakeel/
 
 ## 6. Agent 执行与恢复
 
-`agent/` 暴露 Datakeel 的冻结类型接口，负责会话、上下文、工具发现、打转检测和模型调用计量；`runtime/` 负责 LangGraph 节点调度和 LangChain chat model 适配。Fake/Demo provider 保持原生类型，经 runtime 内的 `ScriptedChatModel` 包装，harness 仍直接使用同一脚本接口。框架包及 SDK 的直接导入只允许出现在 runtime，import-linter 对整个应用强制这一边界。
+`agent/` 暴露 Datakeel 的冻结类型接口，负责会话、上下文、工具发现、打转检测和模型调用计量；`runtime/` 负责 LangGraph 节点调度和会话模型适配。Fake/Demo provider 保持原生类型，经 runtime 内的 `ScriptedChatModel` 包装，harness 仍直接使用同一脚本接口。框架及 SDK 导入限制在 runtime 与下文的 extraction_runtime 两个适配边界，其它包只消费 Datakeel 类型；import-linter 对整个应用强制这一边界。
 
 每次模型调用仍单独 reserve/settle 并写一条 trace。模型 SDK 自动重试关闭，输入上界和分段 token 仍由 Datakeel 估算；观测用量已包含缓存 token，缓存读写只作为子集记录。无用量响应保留保守预留并标记 `billing_status=unknown`。LangSmith 追踪在 runtime 强制关闭，环境中的第三方追踪开关不能启用它。
 
@@ -145,3 +148,15 @@ SSE reuses existing event types with defaulted path/name/usage fields. Child res
 每次用户提问中，同一条记忆仅在首次实际 provider 尝试后增强 0.5；失败尝试也计入。根会话、多步工具调用、备用模型和全部委派子会话共用去重范围。`MemoryUseRow` 按根会话 ID、用户消息序号与记忆 ID 持久化取用标记，并在记忆写事务中原子去重，因此进程重启或 checkpoint 恢复不会重复增强。每次实际取用仍更新 `last_used_at` 和本次响应的取用 ID，仅首次增强更新 `reinforced_at`。新用户消息开启新的增强范围；审批恢复不追加用户消息，沿用原范围。模型尝试前被预算拒绝不记录取用。
 
 Consolidation merges only within one scope, keeps the strongest entry, unions provenance, then archives excess weak entries. Hard deletion recursively removes archived source entries and writes an ID-only audit. Checkpoints and response events store only used memory IDs; the UI resolves current entries so deleted content is unavailable there. Original user speech and explicit tool parameters retain normal transcript semantics; deletion does not rewrite prior speech. Retrieval never uses archived or deleted entries, and no automatic conversation summarization writes memory.
+
+## 12. Text knowledge graphs / 文本知识图谱
+
+`kg/` owns frozen schema/profile loading, NFC source coordinates, bounded chunking, endpoint resolution, source verification, deterministic entity identity and candidate assembly. It depends on core models, not chat frameworks or the conversation runtime. `extraction_runtime/` owns the narrow model boundary, with injected synchronous transports and lazy credential reads. Application code constructs adapters and injects the typed `ExtractorAdapter`; replay and fake paths do not construct model SDK clients. `kg_eval/` owns independent gold alignment and recording scores, then calls the actual product assembly for a separate candidate view. Size limits are 1500 lines each for `kg` and `kg_eval`, and 600 for `extraction_runtime`; all three have independent coverage gates.
+
+实体注册为 `kg_entity`，带数据集和版本作用域。提及使用 `kg.mentions`，关系使用 schema 中允许的 `kg.<relation>`，均为既有证据断言，复用来源锚点、人工决定和重建流程。实体 asset_id 由数据集、类型、归一名称确定，跨数据集版本稳定，`AssetRef.version` 单独携带版本；断言身份同时覆盖来源位置和抽取配置。每个不同出现位置保留独立提及断言，跨块重复副本去重；重复三元组合并多篇原文的位置，模型与配置变化不能冒充旧抽取。`status` 表达人审状态，`verification` 与 detail 表达原文核对，二者独立。
+
+An `evidence.kg` COMPLETE lineage event records source assets, the schema and extractor attribution, graph entities and a knowledge bundle. Assertions and append-only decisions remain the evidence fact source. The entity table and bounded graph are projections; they do not add inferred relations. Accepted explicit same-as pairs merge only display nodes. Rejected decisions remain visible and preserve the underlying entity identities. Rebuilding evidence re-registers dynamic schemas from stored events before replaying typed assertions.
+
+`run_kg_extraction` 复用受控动作及现有任务队列。准备冻结文本、清单版本、schema、配置、录制、切块和计费估算；外发由服务端按字面主机分类，不查 DNS。worker 在真实授权之后才创建抽取器，每块请求先预留预算再结算，trace 使用 `call_type=extraction`，不会增加会话轮数。未知价格保留保守预算占用与显式 unknown，不伪造真实费用。租约围栏同时保护成功缓存及事实发布；截断和解析失败不进入缓存。重跑复用成功块，完整替换文档才使旧断言失效，部分失败仍保留先前成功事实与失败说明。
+
+`query_kg` and `explain_relation` share the ontology registry with MCP. Agent discovers these reads and `run_kg_extraction` through `tool_search`, preserving the original resident-tool prompt size. HTTP exposes bounded queries, exact source explanations, run reports and saved evaluation comparisons. Evaluation history uses `kg_eval_runs` so the original conversation/evidence/ask report schemas remain unchanged. Four additional goldens and three mutations exercise the new boundaries; the original 32 YAML cases and 21 mutation anchors remain unchanged. See [KG.md](KG.md) for the bilingual configuration and threat model.

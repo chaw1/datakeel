@@ -40,7 +40,7 @@ To reproduce the screenshot matrix against an isolated local demo:
 cd web
 npm ci
 npm run screenshots -- http://127.0.0.1:8765
-# 12 pages × English/Chinese × light/dark → artifacts/screenshots/ at repository root
+# 13 pages × English/Chinese × light/dark → artifacts/screenshots/ at repository root
 cd ..
 ```
 
@@ -59,7 +59,7 @@ Both scripts accept an optional output directory after the demo URL. See [code s
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run the first two commands above from this checkout. Python 3.12 is selected by `.python-version`; uv can install it. Node, Docker, external services, and model credentials are unnecessary for the default demo. A compiled React application is included in the Python package.
 
-The demo starts an API and a worker, creates two file datasets, and imports the enterprise catalog described below. **Field notes · generated demo** retains the original 200 PNG images, 200 text files and eleven operators. Two intentionally empty texts are filtered, leaving 398 artifacts in a second version; the original 400 files remain downloadable. **Paired scenes · evidence demo** adds 1,000 image/caption/annotation samples: 800 train and 200 val, with 50 annotation conflicts, 30 missing annotation sidecars and 10 corrupt images. Five deterministic evidence operators run through the same worker and DAG. The command prints URLs, completion time and extraction counters. Repeating it reuses imported datasets and runs evidence extraction against its incremental cache. Use a fresh `DATAKEEL_HOME` for an independent run, or `demo --legacy-only` for the original scenario.
+The demo starts an API and a worker, creates three file datasets, and imports the enterprise catalog described below. **Field notes · generated demo** retains the original 200 PNG images, 200 text files and eleven operators. Two intentionally empty texts are filtered, leaving 398 artifacts in a second version; the original 400 files remain downloadable. **Paired scenes · evidence demo** adds 1,000 image/caption/annotation samples: 800 train and 200 val, with 50 annotation conflicts, 30 missing annotation sidecars and 10 corrupt images. Five deterministic evidence operators run through the same worker and DAG. The command prints URLs, completion time and extraction counters. Repeating it reuses imported datasets and runs evidence extraction against its incremental cache. Use a fresh `DATAKEEL_HOME` for an independent run, or `demo --legacy-only` for the original scenario.
 
 Browse the dataset, switch file versions, download artifacts, inspect a lineage node's event, and read the five quality dimensions and six report chapters. No model is required. `DATAKEEL_LLM_URL` optionally names a chat-completions endpoint; a two-second request limit and failure fallback preserve the complete baseline, with baseline verification appended to generated prose.
 
@@ -131,6 +131,19 @@ When a source version contains paired-sample metadata but has not been extracted
 The five operators are `evidence.image_phash`, `evidence.caption_mentions`, `evidence.annotation_labels`, `evidence.label_gap` and `evidence.near_duplicate`. The [lexicon](contracts/evidence/lexicon.yaml) maps `pedestrian`, `行人` and annotation aliases to canonical `person`; scene concepts such as `night` use the same `mentions` predicate. Caption-derived observations are `present` or `unknown`; missing sidecars remain unknown. A label gap is `present` only when a caption mentions a concept and a supplied annotation file omits it. Only directly measured `corrupt` observations can be `absent` in this release. Text spans use NFC-normalized Unicode code points, `[start, end)`; image boxes use original-pixel `xyxy` with original width/height.
 
 The [near-duplicate contract](contracts/evidence/near_duplicate.yaml) fixes 64-bit dHash, four prefix bits for blocking, and Hamming distance ≤8. Each direct pair is stored once and queried in both directions. There is no transitive expansion or automatic merge. Prefix blocking can miss pairs; the evaluation below reports those misses. The model-extractor interface and fake adapter have unit tests only; neither runs in the extraction DAG, evidence evaluation or model budget.
+
+## Extract and review a text knowledge graph
+
+The demo includes **Business notes · knowledge graph demo**: 24 recorded passages, three clearly labelled scripted long documents and one deliberate truncation. Open **Knowledge graph**, search for `Vivo`, and inspect the pending-review relation. The evidence sentence is present; the tail entity is not. Reject it through the existing review action and confirm the graph shows a rejected edge. Source verification and human review remain separate.
+
+Entities retain all mention positions. Relations merge repeated evidence across chunks and documents, preserve extractor/model attribution, and expose read-only schema proposals. Extraction reports show successful, cached, failed and unexecuted blocks. The default replay and fake scripts are offline; external profiles require approval of a frozen destination, model, input and budget before worker execution. Agent and MCP share `query_kg`, `explain_relation` and the controlled `run_kg_extraction` action; Agent discovers these tools on demand.
+
+```bash
+uv run datakeel eval-kg --json
+uv run datakeel eval-kg --profile replay-flash --json
+```
+
+The report separates original recording scores from actual product-candidate scores, including verified-only subsets and excluded-relation reasons. Replay incurs no model tokens or charges. [Schema, profiles, external cases, optional local extraction and the outbound threat model](docs/KG.md) explain how to use your own authorized text and endpoints.
 
 ## Deterministic workflows and routing
 
@@ -208,6 +221,9 @@ datakeel/
   semantic/      Generated contract snapshots and resolver
   operators/     file/, image/, text/, evidence/ operators and schemas
   evidence/      Assertions, anchors, queries and extraction contracts
+  kg/            Text chunks, schema checks, entity identity and source verification
+  kg_eval/       Independent benchmark scoring and product-path evaluation
+  extraction_runtime/  Typed adapters for explicitly selected model transports
   catalog/       SQLite reflection, SQL field lineage and catalog imports
   metrics/       YAML definitions, resolution and read-only SQL compilation
   ask/           Deterministic questions, evidence and isolated evaluation
@@ -225,7 +241,7 @@ datakeel/
   runtime/       LangGraph execution, LangChain chat adapters and checkpoint saver
   harness/       Persistent budgets, traces and golden evaluation
   mcp/           FastMCP tools over stdio or SSE
-  cli/           demo, api, worker, migrate, export, ask, eval, eval-evidence, eval-ask,
+  cli/           demo, api, worker, migrate, export, ask, eval, eval-evidence, eval-ask, eval-kg,
                  rebuild-evidence, rebuild-catalog, mcp
 web/             React + TypeScript + Vite source
 contracts/       Operator/evidence contracts, semantic layer, question/golden corpora
@@ -332,7 +348,7 @@ Templates accept JSON Schema or a `fields` mapping with required/enum/pattern co
 
 ## MCP clients
 
-`uv run datakeel mcp` starts the stdio server; a client owns its stdin/stdout lifecycle. It exposes **29 tools**: thirteen read functions (including `query_evidence`, `get_evidence`, `explain_sample` and the four below), fourteen action tools that **prepare plans only** (including `decide_assertions`, catalog imports/restores, metric updates/rollbacks and term updates/rollbacks), and explicit `approve_plan` / `execute_plan` controls. Every invocation records status, asset references and caller attribution. An external MCP host must keep approval decisions under human control; the built-in Agent uses the UI approval flow above.
+`uv run datakeel mcp` starts the stdio server; a client owns its stdin/stdout lifecycle. It exposes **32 tools**: fifteen read functions (including `query_kg`, `explain_relation`, `query_evidence`, `get_evidence`, `explain_sample` and the four below), fifteen action tools that **prepare plans only** (including `run_kg_extraction`, `decide_assertions`, catalog imports/restores, metric updates/rollbacks and term updates/rollbacks), and explicit `approve_plan` / `execute_plan` controls. Every invocation records status, asset references and caller attribution. An external MCP host must keep approval decisions under human control; the built-in Agent uses the UI approval flow above.
 
 The Agent and MCP share `ask_data`, `list_metrics`, `explain_metric` and `impact_of`. `ask_data` reads source data and persists its answer/evidence in Datakeel. Calls involving assets retain their `asset_refs`; an empty `list_metrics` result may have no references. Tool and action schemas come from the same typed models as HTTP.
 
@@ -387,12 +403,13 @@ uv run datakeel eval-evidence
 uv run datakeel eval-evidence --json
 uv run datakeel eval-ask
 uv run datakeel eval-ask --json
+uv run datakeel eval-kg --json
 uv run python scripts/mutate.py --output mutation-results.json
 ```
 
-The 32 golden cases retain the twelve original cases covering reads, actions, approvals, loops, budgets, cross-turn references and dry-run, plus the four evidence cases for queries, unknown-state explanations, selected-version creation and deletion approval. Four enterprise cases cover an answer, clarification, refusal and an answer changed by a controlled metric update. Twelve advanced cases cover delegation, canary leaks, injection approval and cross-conversation memory. Each executes real local services against isolated generated fixtures with scripted model replies. A second run reports the previous run ID and changes in passed cases, tokens and cost; `--json` emits the full report. Failed cases return a nonzero exit status. `--provider openai` and `--provider anthropic` opt into real paid evaluation and are not run by offline checks.
+The 36 golden cases retain the twelve original cases covering reads, actions, approvals, loops, budgets, cross-turn references and dry-run, plus the four evidence cases for queries, unknown-state explanations, selected-version creation and deletion approval. Four enterprise cases cover an answer, clarification, refusal and an answer changed by a controlled metric update. Twelve advanced cases cover delegation, canary leaks, injection approval and cross-conversation memory. Four graph cases cover queries, missing-endpoint explanations, automatic replay and external approval with zero conversation executions. Each executes real local services against isolated generated fixtures with scripted model replies. A second run reports the previous run ID and changes in passed cases, tokens and cost; `--json` emits the full report. Failed cases return a nonzero exit status. `--provider openai` and `--provider anthropic` opt into real paid evaluation and are not run by offline checks.
 
-The mutation script requires all 21 mutations to be `KILLED` in temporary source copies. For missing-annotation `unknown → absent`, production assertion validation first rejects the malformed value; an explicitly recorded bypass only in the temporary mutant then lets the real `explain_sample` result reach its golden content check, which must fail. Raising the near-duplicate threshold by four is killed by an actual-image chain test: A–B and B–C have distance 6, A–C has distance 12. Two enterprise mutations test the candidate-ID boundary against model-supplied SQL and reject numeric guesses in an unanswerable answer. These are focused production-boundary tests, not a live model path. Runtime checks also cover signed resume authorization and tool-call idempotency. Workflow and routing checks cover signed workflow resume, the intent score margin, graph cycle detection, and settling the failed attempt before a fallback. Five advanced mutations remove the canary, delegation depth, tool scope, memory hard-delete and per-question memory reinforcement guards. Each isolated subprocess retains its 60-second limit. Setup failures do not count as a successful mutation kill.
+The mutation script requires all 24 mutations to be `KILLED` in temporary source copies. For missing-annotation `unknown → absent`, production assertion validation first rejects the malformed value; an explicitly recorded bypass only in the temporary mutant then lets the real `explain_sample` result reach its golden content check, which must fail. Raising the near-duplicate threshold by four is killed by an actual-image chain test: A–B and B–C have distance 6, A–C has distance 12. Two enterprise mutations test the candidate-ID boundary against model-supplied SQL and reject numeric guesses in an unanswerable answer. These are focused production-boundary tests, not a live model path. Runtime checks also cover signed resume authorization and tool-call idempotency. Workflow and routing checks cover signed workflow resume, the intent score margin, graph cycle detection, and settling the failed attempt before a fallback. Five advanced mutations remove the canary, delegation depth, tool scope, memory hard-delete and per-question memory reinforcement guards. Three graph mutations remove endpoint verification, discard pending-review candidates and omit the model from cache identity. Each isolated subprocess retains its 60-second limit. Setup failures do not count as a successful mutation kill.
 
 `eval-evidence` generates a fresh 1,000-sample corpus in an isolated local process and runs the production extraction DAG. It measures the 15 questions in [questions.yaml](contracts/evidence/questions.yaml): four near-duplicate, four conflict, four corrupt-image and three missing-annotation queries. The baseline uses labels, paths and existing quality facts; the evidence expression adds assertions and direct neighbors. The report includes each query's precision/recall, macro averages, pair metrics, three-state counts, extraction counters and elapsed times. It records `provider=evidence` in the existing `eval_runs` table, with the question file's SHA-256 as `suite_digest`. The temporary corpus is discarded; its report and gold digest remain. `--questions path.yaml` selects an alternative validated question suite.
 
