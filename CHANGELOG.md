@@ -4,23 +4,12 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
-### Fixed
-
-- Extraction prompt v3 preserves every schema example's full source, entities and relations while keeping approval estimates and model requests on the same prompt.
-- The bundled Ollama profile uses 1000-code-point chunks with 100-code-point overlap to retain cross-sentence context within a conservative input allowance.
-- Long source highlights wrap naturally within paragraphs while retaining keyboard activation and visible focus.
-- Extraction approval plans now bind document and block fingerprints without copying source text or recordings into Agent/MCP results. Workers verify all approved inputs before constructing an extractor; existing run history keeps its source snapshots.
-- Accepted and rejected graph relationships and entity mentions retain human decisions when evidence or extraction profiles change, with inherited-decision audit provenance.
-- Structured extraction prompts use concrete examples; valid data accompanying schema echoes is retained with ignored-key counts. Parse failures and truncation retain provider usage, unknown-price token budgets use complete observed usage, and failed runs preserve completed work and costs.
-- The cloud profile uses `deepseek-flash` and a documented conservative peak-price snapshot. Compressed model responses are decoded once, and Ollama uses bounded default chunks with server-side context guidance.
-- Evaluation reports include failed case IDs, offsets and reasons. Entity type spelling is normalized, while unknown types and their relations produce counted schema proposals with samples.
-
 ## [0.10.0] - 2026-10-24
 
 ### Added
 
 - Schema-driven text knowledge graphs with UTF-8/NFC source coordinates, bounded paragraph/sentence chunking, deterministic entity identities, merged mention/evidence locations and explicit endpoint checks. Pending-review candidates remain available for human decisions; schema proposals never change the vocabulary automatically.
-- Durable `run_kg_extraction` actions with frozen source/configuration/recording inputs, external-transfer approval, worker lease fencing, successful-block cache reuse, partial-run reports and per-request extraction budgets/traces. Unknown billing remains explicit, and truncated output never becomes a successful cache entry.
+- Durable `run_kg_extraction` actions with fingerprint-bound source/configuration/recording inputs, external-transfer approval, worker lease fencing, successful-block cache reuse, partial-run reports and per-request extraction budgets/traces. Unknown billing remains explicit, and truncated output never becomes a successful cache entry.
 - Shared Agent/MCP `query_kg` and `explain_relation` reads, bounded graph/source/history APIs, and a bilingual Knowledge graph workspace for entities, relations, source highlights, review decisions, graph display, schema proposals and evaluation comparisons.
 - Offline `eval-kg` with independent recording and production-candidate scores, language and verified-only slices, external same-schema cases and opt-in real-provider YAML profiles. Recorded usage is separate from replay's zero model cost. Optional separately installed GLiNER2 extracts entities only.
 - A demo with 24 recorded passages, three attributed fake scripted long documents and one deliberate truncation; four graph goldens and three mutations bring the suites to 36 conversations and 24 mutations without changing the original golden files or mutation anchors.
@@ -34,6 +23,14 @@ All notable changes are documented here using the Keep a Changelog format.
 
 - Fresh evaluations normalize external combining-character text before measuring spans, while historical recording inputs retain their original scoring coordinates.
 - Chunk-local evidence selection distinguishes repeated sentences at block boundaries; same-as review changes affect only display grouping, preserving source assertions and audit history.
+- Extraction prompt v3 preserves every schema example's full source, entities and relations while keeping approval estimates and model requests on the same prompt.
+- The bundled Ollama profile uses 1000-code-point chunks with 100-code-point overlap to retain cross-sentence context within a conservative input allowance.
+- Long source highlights wrap naturally within paragraphs while retaining keyboard activation and visible focus.
+- Extraction approval plans now bind document and block fingerprints without copying source text or recordings into Agent/MCP results. Workers verify all approved inputs before constructing an extractor; existing run history keeps its source snapshots.
+- Accepted and rejected graph relationships and entity mentions retain human decisions when evidence or extraction profiles change, with inherited-decision audit provenance.
+- Structured extraction prompts use concrete examples; valid data accompanying schema echoes is retained with ignored-key counts. Parse failures and truncation retain provider usage, unknown-price token budgets use complete observed usage, and failed runs preserve completed work and costs.
+- The cloud profile uses `deepseek-flash` and a documented conservative peak-price snapshot. Compressed model responses are decoded once, and Ollama uses bounded default chunks with server-side context guidance.
+- Evaluation reports include failed case IDs, offsets and reasons. Entity type spelling is normalized, while unknown types and their relations produce counted schema proposals with samples.
 
 ## [0.9.0] - 2026-10-24
 
