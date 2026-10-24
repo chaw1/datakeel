@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 from typing import TYPE_CHECKING, Literal
 
@@ -411,3 +412,43 @@ def test_provider_when_usage_absent_preserves_conservative_reservation_in_trace(
     assert trace.usage == TokenUsage()
     assert trace.accounted_tokens > config.max_output_tokens
     assert trace.cost_usd > 0
+
+
+@pytest.mark.parametrize("kind", ["openai", "anthropic"])
+def test_provider_when_response_gzip_encoded_sdk_parses_decoded_body_once(
+    model_request: ModelRequest,
+    kind: Literal["openai", "anthropic"],
+) -> None:
+    """Compressed responses survive the bridge with decoded bytes and corrected headers."""
+    payload = (
+        {"choices": [{"message": {"role": "assistant", "content": "Done."}}]}
+        if kind == "openai"
+        else {
+            "id": "message-fixture",
+            "type": "message",
+            "role": "assistant",
+            "model": "fixture-model",
+            "content": [{"type": "text", "text": "Done."}],
+            "stop_reason": "end_turn",
+            "usage": {"input_tokens": 3, "output_tokens": 1},
+        }
+    )
+    body = gzip.compress(json.dumps(payload).encode())
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    content=body,
+                    headers={"content-encoding": "gzip", "content-length": str(len(body))},
+                )
+            )
+        ) as client,
+        model_provider(
+            ConversationCreate(provider=kind),
+            Settings.model_validate({f"{kind}_api_key": "fixture"}),
+            client,
+        ) as provider,
+    ):
+        result = provider.complete(model_request)
+    assert result.content == "Done."

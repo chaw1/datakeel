@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import gzip
+import json
 import socket
 from typing import TYPE_CHECKING
 
@@ -247,3 +249,28 @@ def test_transport_when_vendor_environment_hostile_keeps_only_explicit_protocol_
     ):
         extractor.extract(block, schema)
     assert len(requests) == 1
+
+
+@pytest.mark.parametrize("provider", ["openai", "anthropic"])
+def test_transport_when_response_gzip_encoded_sdk_receives_decoded_content_once(
+    schema: KGSchema,
+    block: TextBlock,
+    provider: str,
+) -> None:
+    """Bridging already decoded HTTP content must discard the old encoding and length."""
+    body = gzip.compress(json.dumps(_empty_reply(provider)).encode())
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    content=body,
+                    headers={"content-encoding": "gzip", "content-length": str(len(body))},
+                )
+            )
+        ) as client,
+        llm_extractor(_profile(provider), "fixture-key", client) as extractor,
+    ):
+        result = extractor.extract(block, schema)
+    assert result.output.entities == ()
+    assert result.output.relations == ()

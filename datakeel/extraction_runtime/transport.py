@@ -62,7 +62,13 @@ class _Transport(httpx2.BaseTransport):
             message = "Extraction transport failed"
             raise httpx2.ConnectError(message, request=request) from error
         return httpx2.Response(
-            response.status_code, headers=response.headers.multi_items(), content=response.content
+            response.status_code,
+            headers=[
+                (name, value)
+                for name, value in response.headers.multi_items()
+                if name.lower() not in {"content-encoding", "content-length"}
+            ],
+            content=response.content,
         )
 
 
