@@ -30,6 +30,7 @@ const recording = { all: metrics, zh: metrics, en: metrics, verified: metrics };
 const report: KGEvaluation = {
   id: "eval-1",
   blocked_relations: [],
+  failures: [],
   metric_convention: "Independent benchmark",
   provider: "kg",
   schema_version: "1.0",

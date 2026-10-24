@@ -151,6 +151,7 @@ export const kgRun: KGRun = {
     failed: 1,
     unexecuted: 0,
     model_calls: 2,
+    ignored_top_level_keys: 0,
     entities: 2,
     relations: 2,
     verified: 1,
@@ -178,6 +179,7 @@ export const kgRun: KGRun = {
     proposals: [
       {
         reason: "unknown_relation",
+        entity_samples: [],
         count: 1,
         samples: [
           {

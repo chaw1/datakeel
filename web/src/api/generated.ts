@@ -3056,6 +3056,20 @@ export interface components {
             target_host: string | null;
         };
         /**
+         * KGEvalFailure
+         * @description Identify an unsuccessful source block without copying its text or provider body.
+         */
+        KGEvalFailure: {
+            /** Case Id */
+            case_id: string;
+            /** End */
+            end: number;
+            /** Reason */
+            reason: string;
+            /** Start */
+            start: number;
+        };
+        /**
          * KGEvalReport
          * @description Persist independent recording and production-path scores from one execution.
          */
@@ -3074,6 +3088,11 @@ export interface components {
             created_at?: string;
             /** Elapsed Seconds */
             elapsed_seconds: number;
+            /**
+             * Failures
+             * @default []
+             */
+            failures: components["schemas"]["KGEvalFailure"][];
             /** Id */
             id?: string;
             /**
@@ -3355,6 +3374,11 @@ export interface components {
              * @default []
              */
             failures: components["schemas"]["KGBlockFailure"][];
+            /**
+             * Ignored Top Level Keys
+             * @default 0
+             */
+            ignored_top_level_keys: number;
             /**
              * Input Tokens
              * @default 0
@@ -4398,6 +4422,11 @@ export interface components {
         SchemaProposal: {
             /** Count */
             count: number;
+            /**
+             * Entity Samples
+             * @default []
+             */
+            entity_samples: components["schemas"]["ExtractedEntity"][];
             /**
              * Reason
              * @enum {string}

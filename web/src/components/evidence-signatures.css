@@ -33,6 +33,7 @@
 }
 .evidence-anchor {
   display: inline;
+  cursor: pointer;
   border: 0;
   border-bottom: 1px solid var(--pencil);
   padding: 0;
@@ -53,7 +54,8 @@
   line-height: var(--line-solid);
   padding-left: 1px;
 }
-.evidence-anchor.is-linked {
+.evidence-anchor.is-linked,
+.evidence-anchor:focus-visible {
   outline: 2px solid var(--pencil);
   outline-offset: 2px;
 }

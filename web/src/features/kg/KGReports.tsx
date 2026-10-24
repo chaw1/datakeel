@@ -43,6 +43,15 @@ export function KGReports({
                 {t(proposalLabels[proposal.reason])} · {t("kgCount")}:{" "}
                 {proposal.count} · {run.profile_id}
               </summary>
+              {!!proposal.entity_samples.length && (
+                <ul>
+                  {proposal.entity_samples.map((entity, at) => (
+                    <li key={at}>
+                      {entity.name} · {entity.type}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="table-scroll">
                 <table>
                   <thead>

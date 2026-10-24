@@ -40,3 +40,26 @@ it("leaves text intact when supplied intervals are invalid instead of clamping t
   expect(container).toHaveTextContent(/^abc$/);
   expect(screen.queryByRole("button")).not.toBeInTheDocument();
 });
+it("keeps inline highlights focusable and supports Enter and Space activation", () => {
+  const active = vi.fn();
+  render(
+    <Anchor
+      text="A long quotation wraps naturally across the source paragraph."
+      ranges={[{ start: 2, end: 56, id: "quote", number: 1 }]}
+      onActive={active}
+    />,
+  );
+  const anchor = screen.getByRole("button");
+  expect(anchor).toHaveAttribute("tabindex", "0");
+  fireEvent.focus(anchor);
+  expect(active).toHaveBeenLastCalledWith("quote");
+  active.mockClear();
+  fireEvent.keyDown(anchor, { key: "Escape" });
+  expect(active).not.toHaveBeenCalled();
+  fireEvent.keyDown(anchor, { key: "Enter" });
+  fireEvent.keyDown(anchor, { key: " " });
+  expect(active).toHaveBeenCalledTimes(2);
+  expect(active).toHaveBeenLastCalledWith("quote");
+  fireEvent.blur(anchor);
+  expect(active).toHaveBeenLastCalledWith("");
+});

@@ -50,8 +50,9 @@ export function Anchor({
           ...new Set(part.ranges.map((range) => range.number)),
         ].join(",");
         return (
-          <button
-            type="button"
+          <span
+            role="button"
+            tabIndex={0}
             key={part.start}
             className={`evidence-anchor${part.ranges.some((range) => range.id === activeId) ? " is-linked" : ""}`}
             data-anchor-id={first.id}
@@ -65,10 +66,16 @@ export function Anchor({
             onFocus={() => onActive?.(first.id)}
             onBlur={() => onActive?.("")}
             onClick={() => onActive?.(first.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onActive?.(first.id);
+              }
+            }}
           >
             <mark>{part.text}</mark>
             <sup>{numbers}</sup>
-          </button>
+          </span>
         );
       })}
     </span>
