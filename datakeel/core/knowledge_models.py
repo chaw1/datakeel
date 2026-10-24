@@ -12,6 +12,7 @@ from datakeel.core.models import AssetRef, BoundaryModel
 
 KnowledgeIntent = Literal["owner", "upstream", "downstream", "owned", "related"]
 LinkStatus = Literal["candidate", "accepted"]
+KnowledgeFocus = Literal["person", "table", "metric", "location", "list", "unknown"]
 
 
 class KnowledgeSubject(BoundaryModel):
@@ -33,6 +34,24 @@ class KnowledgeSystemRecord(BoundaryModel):
     relation: Literal["owner", "upstream", "downstream", "owned"]
 
 
+class KnowledgeSubjectMatch(BoundaryModel):
+    """Explain a registered subject name found before interpreting the question."""
+
+    text: str = Field(min_length=1)
+    subject: KnowledgeSubject
+
+
+class KnowledgeRecognition(BoundaryModel):
+    """Record subject, interrogative focus, direction and the deterministic decision rule."""
+
+    subjects: tuple[KnowledgeSubjectMatch, ...] = ()
+    focus: KnowledgeFocus = "unknown"
+    focus_text: str = ""
+    direction: Literal["upstream", "downstream"] | None = None
+    direction_text: tuple[str, ...] = ()
+    rule_id: str = Field(min_length=1)
+
+
 class KnowledgeSubjectLink(BoundaryModel):
     """Explain the exact entity-to-asset assertion used to join a document claim."""
 
@@ -45,11 +64,12 @@ class KnowledgeSubjectLink(BoundaryModel):
 class KnowledgeOtherEnd(BoundaryModel):
     """Distinguish a linked data asset from missing and inapplicable catalog identities."""
 
-    status: Literal["not_applicable", "linked", "not_in_catalog"]
+    status: Literal["not_applicable", "linked", "not_in_catalog", "link_rejected"]
     entity: KGEntity
     asset_ref: AssetRef | None = None
     assertion_id: str | None = None
     link_status: LinkStatus | None = None
+    asset_name: str | None = None
 
     @model_validator(mode="after")
     def linked_evidence(self) -> Self:
@@ -98,6 +118,7 @@ class KnowledgeAnswer(BoundaryModel):
     system_message: str = ""
     claims: tuple[KnowledgeClaim, ...] = ()
     pending_ambiguous_links: int = Field(default=0, ge=0)
+    intent_candidates: tuple[KnowledgeIntent, ...] = Field(default=(), max_length=3)
     reason_code: (
         Literal[
             "unknown_subject",
@@ -105,6 +126,18 @@ class KnowledgeAnswer(BoundaryModel):
             "no_knowledge",
             "unsupported_phrasing",
             "pending_links",
+            "ambiguous_intent",
         ]
         | None
     ) = None
+
+    @model_validator(mode="after")
+    def distinct_intents(self) -> Self:
+        """Offer two or three distinct actionable choices, or no intent clarification."""
+        choices = self.intent_candidates
+        if choices and (
+            len(choices) == 1 or len(set(choices)) != len(choices) or "related" in choices
+        ):
+            msg = "Intent clarification requires distinct actionable choices"
+            raise ValueError(msg)
+        return self

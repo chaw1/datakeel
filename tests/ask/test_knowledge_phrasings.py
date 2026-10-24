@@ -5,7 +5,7 @@
 
 import pytest
 
-from datakeel.ask.knowledge_parser import parse_knowledge_question
+from tests.ask.parsing_helpers import registered_question
 
 POSITIVE_PHRASINGS = [
     ("谁是退款额的负责人", "owner", "退款额"),
@@ -86,6 +86,8 @@ POSITIVE_PHRASINGS = [
     ("inventory_units uses what?", "upstream", "inventory_units"),
     ("inventory_units depends on what?", "upstream", "inventory_units"),
     ("inventory_units is used by what?", "downstream", "inventory_units"),
+    ("谁负责的销售总额", "owner", "销售总额"),
+    ("负责人维护哪些排名前几的指标", "owned", "负责人"),
 ]
 
 NUMERIC_PHRASINGS = [
@@ -98,18 +100,17 @@ NUMERIC_PHRASINGS = [
     "谁负责的门店销售额最高",
     "who owns the most orders",
     "哪位负责的门店订单最少",
-    "谁负责的销售总额",
     "按负责人统计合计出货额",
     "依赖渠道有几个客户",
     "来源渠道的销售额排名",
     "下游客户数量最低的是哪个渠道",
-    "负责人维护哪些排名前几的指标",
     "How much revenue comes from downstream channels?",
     "How many orders does Morgan own?",
     "What is the total revenue for this owner?",
     "Which owner has the least revenue?",
     "Who owns the top stores?",
     "谁负责的门店销售额最多",
+    "Show sales for downstream channels",
 ]
 
 
@@ -118,15 +119,17 @@ def test_composed_paraphrases_resolve_intent_and_subject(
     question: str, intent: str, subject: str
 ) -> None:
     """Relation vocabulary composes with actor, direction, filler and subject clauses."""
-    parsed = parse_knowledge_question(question)
+    parsed = registered_question(question, subject)
     assert parsed is not None
-    assert (parsed.intent, parsed.subject, parsed.unsupported_phrasing) == (intent, subject, False)
+    assert (parsed.intent, parsed.unsupported_phrasing) == (intent, False)
+    assert len(parsed.candidates) == 1
+    assert parsed.candidates[0].name == subject
 
 
 @pytest.mark.parametrize("question", NUMERIC_PHRASINGS)
 def test_quantity_and_ranking_always_take_metric_route(question: str) -> None:
     """Quantitative cues win even when interrogatives and ownership words are present."""
-    assert parse_knowledge_question(question) is None
+    assert registered_question(question) is None
 
 
 @pytest.mark.parametrize(
@@ -137,20 +140,35 @@ def test_quantity_and_ranking_always_take_metric_route(question: str) -> None:
         "由谁负责的",
         "谁能解释这个异常",
         "哪位可以说明这个情况",
-        "Who could help with inventory_units?",
-        "Show sales for downstream channels",
         "来源?",
         "Tell me about the owner",
-        "库存量来源还有哪些细节需要核实",
         "We need to know what depends on",
     ],
 )
 def test_strong_knowledge_clues_never_fall_through_to_numeric_execution(question: str) -> None:
-    """Incomplete grammar requests an explicit knowledge refusal instead of a numeric answer."""
-    parsed = parse_knowledge_question(question)
+    """Knowledge cues without a registered subject request suggestions, never metric execution."""
+    parsed = registered_question(question)
     assert parsed is not None
-    assert parsed.unsupported_phrasing
+    assert parsed.recognition.rule_id == "K0-unknown-subject"
+    assert parsed.candidates == ()
     assert parsed.subject == ""
+
+
+@pytest.mark.parametrize(
+    ("question", "subject", "intent"),
+    [
+        ("Who could help with inventory_units?", "inventory_units", "owner"),
+        ("库存量来源还有哪些细节需要核实", "库存量", "upstream"),
+    ],
+)
+def test_registered_subject_and_typed_focus_do_not_require_a_known_verb(
+    question: str, subject: str, intent: str
+) -> None:
+    """Requested answer types and explicit directions can resolve unfamiliar phrasing."""
+    parsed = registered_question(question, subject)
+    assert parsed is not None
+    assert parsed.intent == intent
+    assert parsed.intent_candidates == ()
 
 
 @pytest.mark.parametrize(
@@ -164,6 +182,6 @@ def test_strong_knowledge_clues_never_fall_through_to_numeric_execution(question
 )
 def test_particle_combinations_do_not_change_graph_subject(prefix: str, suffix: str) -> None:
     """A quoted entity remains intact across optional framing and verb aspect particles."""
-    parsed = parse_knowledge_question(f"{prefix}哪些表用到了『季度库存摘要』{suffix}")
+    parsed = registered_question(f"{prefix}哪些表用到了『季度库存摘要』{suffix}", "季度库存摘要")
     assert parsed is not None
     assert (parsed.intent, parsed.subject) == ("downstream", "季度库存摘要")

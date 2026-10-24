@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from datakeel.core.ask_models import AskAnswer
+from datakeel.core.ask_models import AskAnswer, AskRequest
 from datakeel.core.errors import ConflictError, ExecutionError, NotFoundError, ValidationError
 from datakeel.core.evidence_models import (
     Assertion,
@@ -16,6 +16,8 @@ from datakeel.core.evidence_models import (
     TextSpan,
     Whole,
 )
+from datakeel.core.knowledge_models import KnowledgeAnswer, KnowledgeSubject
+from datakeel.core.models import AssetRef
 from datakeel.core.question_models import QuestionProperties, question_revision
 from datakeel.storage.ask_evidence import publish_answer_evidence
 from datakeel.storage.ask_rows import AskAnswerRow, AskSessionRow
@@ -108,6 +110,69 @@ def test_storage_when_metric_pin_conflicts_with_answer_rejects_before_publicatio
     with pytest.raises(ValidationError, match="explicitly selected metric"):
         store_answer(db, request.model_copy(update={"metric_id": "different"}), draft)
     assert _counts(db)[:2] == (0, 0)
+
+
+def _knowledge_case() -> tuple[AskRequest, AskAnswer]:
+    request, draft = refusal_case()
+    subject = KnowledgeSubject(
+        asset_ref=AssetRef(asset_type="metric", asset_id="revenue", version="1"),
+        name="Revenue",
+        kind="metric",
+    )
+    knowledge = KnowledgeAnswer(intent="upstream", subject=subject, reason_code="no_knowledge")
+    return request, draft.model_copy(update={"answer_kind": "knowledge", "knowledge": knowledge})
+
+
+@pytest.mark.parametrize(
+    ("selection", "error"),
+    [
+        ({"subject_id": "another-metric"}, "selected knowledge subject"),
+        ({"knowledge_intent": "owner"}, "selected knowledge intent"),
+    ],
+)
+def test_knowledge_selection_must_match_before_any_publication(
+    db: Database, selection: dict[str, str], error: str
+) -> None:
+    """A forged selected subject or intent cannot be saved as the user's requested answer."""
+    request, draft = _knowledge_case()
+    with pytest.raises(ValidationError, match=error):
+        store_answer(db, request.model_copy(update=selection), draft)
+    assert _counts(db) == (0, 0, 0, 0)
+
+
+def test_matching_knowledge_selection_round_trips_in_the_saved_request(db: Database) -> None:
+    """Resolved no-fact replies preserve a valid subject and intent selection on replay."""
+    request, draft = _knowledge_case()
+    request = request.model_copy(update={"subject_id": "revenue", "knowledge_intent": "upstream"})
+    saved = store_answer(db, request, draft)
+    assert get_answer(db, saved.id) == saved
+    with db.session() as session:
+        row = session.get(AskAnswerRow, saved.id)
+        assert row is not None
+        assert row.request_payload["subject_id"] == "revenue"
+        assert row.request_payload["knowledge_intent"] == "upstream"
+
+
+def test_unknown_knowledge_subject_can_refuse_an_invalid_pinned_selection(db: Database) -> None:
+    """A missing selected subject remains a refusal rather than a fabricated resolved subject."""
+    request, draft = _knowledge_case()
+    request = request.model_copy(update={"subject_id": "missing", "knowledge_intent": "owner"})
+    draft = draft.model_copy(
+        update={"knowledge": KnowledgeAnswer(intent="related", reason_code="unknown_subject")}
+    )
+    saved = store_answer(db, request, draft)
+    assert saved.knowledge is not None
+    assert saved.knowledge.subject is None
+    assert saved.knowledge.reason_code == "unknown_subject"
+
+
+def test_metric_answers_ignore_knowledge_only_selection_fields(db: Database) -> None:
+    """Knowledge pins cannot redirect or invalidate an otherwise valid numerical request."""
+    request, draft = answer_case(db)
+    request = request.model_copy(update={"subject_id": "unused", "knowledge_intent": "owner"})
+    saved = store_answer(db, request, draft)
+    assert saved.result == draft.result
+    assert saved.answer_kind == "metric"
 
 
 def test_answer_rejects_request_mismatch_and_caller_supplied_assertions(db: Database) -> None:

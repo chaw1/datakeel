@@ -21,7 +21,9 @@ class ExpectedClaim(BoundaryModel):
     verification: Literal["verified", "needs_review"] = "verified"
     subject_link_status: Literal["candidate", "accepted"] | None = None
     subject_entity: str | None = None
-    other_end_status: Literal["not_applicable", "linked", "not_in_catalog"] | None = None
+    other_end_status: (
+        Literal["not_applicable", "linked", "not_in_catalog", "link_rejected"] | None
+    ) = None
     other_end_asset: str | None = None
     consistency: Literal["consistent", "not_in_system", "not_in_catalog"] | None = None
 

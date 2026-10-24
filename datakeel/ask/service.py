@@ -6,7 +6,7 @@
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.ask.dimensions import parse_dimensions
-from datakeel.ask.knowledge_parser import parse_knowledge_question
+from datakeel.ask.knowledge_parser import metric_recognition, parse_knowledge_question
 from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
 from datakeel.ask.models import QueryContext
 from datakeel.ask.parser import parse_question
@@ -28,6 +28,7 @@ from datakeel.metrics.projection import resolved_metric_cards, semantic_layer
 from datakeel.storage.ask_store import store_answer
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.database import Database
+from datakeel.storage.link_queries import read_link_context
 
 
 def ask_data(db: Database, request: AskRequest) -> AskAnswer:
@@ -35,10 +36,21 @@ def ask_data(db: Database, request: AskRequest) -> AskAnswer:
     with db.session() as session:
         snapshot = read_snapshot(session)
     context = QueryContext(snapshot=snapshot, layer=semantic_layer(snapshot))
-    knowledge = parse_knowledge_question(request.question)
+    graph = read_link_context(db)
+    knowledge = parse_knowledge_question(
+        request.question,
+        snapshot,
+        context.layer,
+        graph,
+        subject_id=request.subject_id or request.metric_id,
+    )
     if knowledge is not None:
         return store_answer(
-            db, request, knowledge_answer(db, request, knowledge, snapshot, context.layer)
+            db,
+            request,
+            knowledge_answer(db, request, knowledge, snapshot, context.layer, graph).model_copy(
+                update={"recognition": knowledge.recognition}
+            ),
         )
     parsed = parse_question(request, context.layer)
     resolution = resolve_metric(parsed, resolved_metric_cards(snapshot), request.metric_id)
@@ -46,7 +58,10 @@ def ask_data(db: Database, request: AskRequest) -> AskAnswer:
         answer = _nonanswer(request, parsed, resolution)
     else:
         answer = _answer(request, parsed, resolution, context)
-        answer = related_knowledge(db, answer, snapshot)
+        answer = related_knowledge(db, answer, snapshot, graph)
+    answer = answer.model_copy(
+        update={"recognition": metric_recognition(request.question, snapshot, context.layer)}
+    )
     return store_answer(db, request, answer)
 
 

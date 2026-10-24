@@ -12,7 +12,6 @@ from datakeel.ask.knowledge_service import related_knowledge
 from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskAnswer, AskRequest
 from datakeel.core.catalog_models import CatalogSnapshot
-from datakeel.core.errors import NotFoundError
 from datakeel.core.kg_execution import KGDocument
 from datakeel.core.kg_queries import KGSourceText
 from datakeel.core.link_models import LinkContext
@@ -114,11 +113,11 @@ def test_related_document_context_is_limited_to_five_without_changing_query(
         return context
 
     monkeypatch.setattr(knowledge_service, "read_link_context", context_reader)
-    if missing_revision:
-        with pytest.raises(NotFoundError, match="source revision"):
-            related_knowledge(db, answer, catalog)
-        return
     result = related_knowledge(db, answer, catalog)
+    if missing_revision:
+        assert result == answer
+        assert result.knowledge is None
+        return
     assert result.knowledge is not None
     assert len(result.knowledge.claims) == 5
     assert {claim.evidence[0].text for claim in result.knowledge.claims} == {SOURCE.text[:32]}
@@ -147,6 +146,57 @@ def test_bilingual_knowledge_tool_result_has_complete_assertion_citations(
         assert claim.subject_link is not None
         assert claim.subject_link.assertion_id in cited
     assert get_answer(db, answer.id) == answer
+
+
+def test_related_context_skips_missing_source_without_discarding_available_claims(
+    db: Database, layer: SemanticLayer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A missing optional document cannot suppress a metric result or another valid citation."""
+    answer = answered_fixture(layer)
+    catalog = build_snapshot(layer, CatalogSnapshot(scope="empty"))
+    _subject, context = claim_context()
+    assert answer.metric_card is not None
+    link = context.links[0]
+    link = link.model_copy(
+        update={
+            "target": link.target.model_copy(
+                update={
+                    "asset_ref": AssetRef(
+                        asset_type="metric", asset_id=answer.metric_card.definition.id, version="1"
+                    )
+                }
+            )
+        }
+    )
+    available = context.assertions[1]
+    missing = available.model_copy(
+        update={
+            "id": "missing-document-claim",
+            "anchors": (ANCHOR.model_copy(update={"content_revision": "b" * 64}),),
+        }
+    )
+    context = context.model_copy(
+        update={
+            "links": (link,),
+            "assertions": (missing, available),
+            "documents": (
+                KGDocument(
+                    asset_ref=SOURCE.asset_ref,
+                    filename=SOURCE.filename,
+                    text=SOURCE.text,
+                    content_revision=ANCHOR.content_revision,
+                    blocks=(),
+                ),
+            ),
+        }
+    )
+    monkeypatch.setattr(knowledge_service, "read_link_context", lambda _db: context)
+    result = related_knowledge(db, answer, catalog)
+    assert result.knowledge is not None
+    assert tuple(claim.assertion_id for claim in result.knowledge.claims) == (available.id,)
+    assert result.result == answer.result
+    assert result.sql == answer.sql
+    assert result.metric_card == answer.metric_card
 
 
 def test_answer_sources_reuse_current_graph_documents_without_event_rescans(

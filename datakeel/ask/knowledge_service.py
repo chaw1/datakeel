@@ -7,7 +7,7 @@ from typing import Literal
 
 from datakeel.ask.knowledge_claims import SourceReader, document_claims
 from datakeel.ask.knowledge_parser import KnowledgeQuestion
-from datakeel.ask.knowledge_subjects import catalog_subject, subject_candidates, subject_suggestions
+from datakeel.ask.knowledge_subjects import catalog_subject, subject_suggestions
 from datakeel.ask.knowledge_system import system_records
 from datakeel.core.ask_models import AskAnswer, AskRequest
 from datakeel.core.catalog_models import CatalogSnapshot
@@ -28,25 +28,11 @@ def knowledge_answer(
     parsed: KnowledgeQuestion,
     catalog: CatalogSnapshot,
     layer: SemanticLayer,
+    context: LinkContext | None = None,
 ) -> AskAnswer:
     """Resolve one subject and retain separate catalog and document sections for every state."""
-    if parsed.unsupported_phrasing:
-        return _response(
-            request,
-            KnowledgeAnswer(intent=parsed.intent, reason_code="unsupported_phrasing"),
-            "unanswerable",
-            "这是知识类问题, 但暂时无法确定主语和关系。"
-            "请明确资产或实体, 以及负责人、上游或下游关系。",
-        )
-    context = read_link_context(db)
-    candidates = subject_candidates(
-        parsed.subject,
-        catalog,
-        layer,
-        context.entities,
-        links=context.links,
-        entity_sources=context.entity_sources,
-    )
+    context = context or read_link_context(db)
+    candidates = parsed.candidates
     pinned = request.subject_id or request.metric_id
     if pinned:
         candidates = tuple(item for item in candidates if item.asset_ref.asset_id == pinned)
@@ -57,18 +43,38 @@ def knowledge_answer(
             "unanswerable",
             "无法定位主语。以下是最接近的指标、表或图谱实体。",
             subject_suggestions(
-                parsed.subject, catalog, context.entities, entity_sources=context.entity_sources
+                parsed.subject or request.question,
+                catalog,
+                context.entities,
+                entity_sources=context.entity_sources,
             ),
         )
     if len(candidates) > 1:
         return _response(
             request,
-            KnowledgeAnswer(intent=parsed.intent, reason_code="ambiguous_subject"),
+            KnowledgeAnswer(
+                intent=request.knowledge_intent or parsed.intent, reason_code="ambiguous_subject"
+            ),
             "clarification",
             "问题对应多个主语, 请选择要查询的资产或实体。",
             candidates,
         )
-    knowledge = _resolved_knowledge(next(iter(candidates)), parsed.intent, context, catalog, layer)
+    subject = next(iter(candidates))
+    if parsed.intent_candidates and request.knowledge_intent is None:
+        return _response(
+            request,
+            KnowledgeAnswer(
+                intent=parsed.intent,
+                subject=subject,
+                reason_code="ambiguous_intent",
+                intent_candidates=parsed.intent_candidates,
+            ),
+            "clarification",
+            "请明确要查询负责人、上游还是下游。",
+        )
+    knowledge = _resolved_knowledge(
+        subject, request.knowledge_intent or parsed.intent, context, catalog, layer
+    )
     return _response(
         request,
         knowledge,
@@ -114,7 +120,9 @@ def _knowledge_message(knowledge: KnowledgeAnswer) -> str:
     return f"{name} {location}, 但系统和文档都没有登记本题所需的记录。"
 
 
-def related_knowledge(db: Database, answer: AskAnswer, catalog: CatalogSnapshot) -> AskAnswer:
+def related_knowledge(
+    db: Database, answer: AskAnswer, catalog: CatalogSnapshot, context: LinkContext | None = None
+) -> AskAnswer:
     """Attach at most five owner and upstream claims while preserving metric execution fields."""
     if answer.status != "answered" or answer.metric_card is None:
         return answer
@@ -124,7 +132,20 @@ def related_knowledge(db: Database, answer: AskAnswer, catalog: CatalogSnapshot)
         if item.asset_ref.asset_id == answer.metric_card.definition.id
     )
     subject = catalog_subject(item)
-    context = read_link_context(db)
+    context = context or read_link_context(db)
+    available = {(document.asset_ref, document.content_revision) for document in context.documents}
+    context = context.model_copy(
+        update={
+            "assertions": tuple(
+                assertion
+                for assertion in context.assertions
+                if all(
+                    (anchor.asset_ref, anchor.content_revision) in available
+                    for anchor in assertion.anchors
+                )
+            )
+        }
+    )
     claims, pending = document_claims(
         subject,
         "related",

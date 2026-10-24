@@ -16,16 +16,42 @@ from datakeel.storage.database import Database
 from datakeel.storage.evidence_store import list_assertions
 
 
-def test_unsupported_knowledge_question_cannot_fall_back_to_metric_values(
+def test_person_focus_with_unfamiliar_verb_answers_owner_without_metric_values(
     db: Database, enterprise_sample: EnterpriseSample
 ) -> None:
-    """A recognized metric name cannot turn an unsupported who-question into a numeric answer."""
+    """An unfamiliar relationship verb still uses the registered subject and requested person."""
     answer = ask_data(db, AskRequest(question="出货额该找谁拍板"))
     assert answer.answer_kind == "knowledge"
-    assert answer.status == "unanswerable"
+    assert answer.status == "answered"
     assert answer.result is None
     assert answer.knowledge is not None
-    assert answer.knowledge.reason_code == "unsupported_phrasing"
+    assert answer.knowledge.reason_code is None
+    assert answer.knowledge.intent == "owner"
+    assert answer.knowledge.system_records
+
+
+def test_ambiguous_intent_cannot_fall_back_to_metric_values(
+    db: Database, enterprise_sample: EnterpriseSample
+) -> None:
+    """A recognized subject with an unresolved relationship asks for an intent, never a value."""
+    answer = ask_data(db, AskRequest(question="出货额有哪些?"))
+    assert answer.answer_kind == "knowledge"
+    assert answer.status == "clarification"
+    assert answer.result is None
+    assert answer.knowledge is not None
+    assert answer.knowledge.reason_code == "ambiguous_intent"
+    assert answer.knowledge.intent_candidates == ("upstream", "downstream", "owner")
+
+
+def test_requested_person_cannot_fall_back_to_metric_values(
+    db: Database, enterprise_sample: EnterpriseSample
+) -> None:
+    """Explicitly requesting a person is a hard guard against returning the metric's number."""
+    answer = ask_data(db, AskRequest(question="出货额由哪位同事保管"))
+    assert answer.answer_kind == "knowledge"
+    assert answer.result is None
+    assert answer.knowledge is not None
+    assert answer.knowledge.intent == "owner"
 
 
 @pytest.mark.parametrize(
@@ -34,7 +60,8 @@ def test_unsupported_knowledge_question_cannot_fall_back_to_metric_values(
         ("出货额谁负责", "answered", None),
         ("营业额谁负责", "clarification", "ambiguous_subject"),
         ("unregistered_metric 谁负责", "unanswerable", "unknown_subject"),
-        ("谁?", "unanswerable", "unsupported_phrasing"),
+        ("谁?", "unanswerable", "unknown_subject"),
+        ("出货额有哪些?", "clarification", "ambiguous_intent"),
         ("Grace Liu 负责哪些?", "unanswerable", "pending_links"),
     ],
 )

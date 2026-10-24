@@ -9,7 +9,11 @@ import pytest
 from pydantic import ValidationError
 
 from datakeel.core.ask_models import AskAnswer
-from datakeel.core.knowledge_models import KnowledgeAnswer, KnowledgeOtherEnd
+from datakeel.core.knowledge_models import (
+    KnowledgeAnswer,
+    KnowledgeOtherEnd,
+    KnowledgeRecognition,
+)
 from datakeel.core.models import JsonDocument
 from tests.ask.knowledge_helpers import claim_context
 
@@ -73,3 +77,68 @@ def test_other_endpoint_requires_exactly_the_linked_receipt_fields() -> None:
         KnowledgeOtherEnd(status="linked", entity=entity)
     with pytest.raises(ValidationError, match="cannot assert"):
         KnowledgeOtherEnd(status="not_in_catalog", entity=entity, asset_ref=subject.asset_ref)
+
+
+@pytest.mark.parametrize(
+    "candidates",
+    [
+        ("upstream",),
+        ("upstream", "upstream"),
+        ("upstream", "downstream", "owner", "owned"),
+        ("upstream", "related"),
+    ],
+)
+def test_intent_choices_reject_duplicate_incomplete_or_noninteractive_options(
+    candidates: tuple[str, ...],
+) -> None:
+    """A clarification must offer two or three distinct actionable intent choices."""
+    with pytest.raises(ValidationError):
+        KnowledgeAnswer.model_validate({"intent": "related", "intent_candidates": candidates})
+
+
+@pytest.mark.parametrize(
+    "candidates", [(), ("upstream", "downstream"), ("owner", "owned", "upstream")]
+)
+def test_intent_choices_accept_legacy_empty_or_distinct_button_options(
+    candidates: tuple[str, ...],
+) -> None:
+    """Old saved knowledge payloads and valid button groups remain accepted."""
+    answer = KnowledgeAnswer.model_validate({"intent": "related", "intent_candidates": candidates})
+    assert answer.intent_candidates == candidates
+    assert KnowledgeAnswer.model_validate({"intent": "owner"}).intent_candidates == ()
+
+
+def test_recognition_requires_a_nonempty_rule_identifier() -> None:
+    """A claimed recognition must identify the deterministic rule that produced it."""
+    with pytest.raises(ValidationError):
+        KnowledgeRecognition(rule_id="")
+    assert KnowledgeRecognition(rule_id="K8-ambiguous-intent").subjects == ()
+
+
+def test_intent_clarification_needs_multiple_real_choices_without_subject_candidates() -> None:
+    """Distinct intent choices support clarification without inventing ambiguous subjects."""
+    payload: dict[str, object] = dict(_answer().root)
+    payload.update(
+        {
+            "status": "clarification",
+            "knowledge": {
+                "intent": "related",
+                "reason_code": "ambiguous_intent",
+                "intent_candidates": ["upstream", "downstream"],
+            },
+        }
+    )
+    answer = AskAnswer.model_validate(payload)
+    assert answer.subject_candidates == ()
+    assert answer.knowledge is not None
+    assert answer.knowledge.intent_candidates == ("upstream", "downstream")
+
+
+def test_old_knowledge_answers_replay_without_recognition_or_intent_choices() -> None:
+    """New optional explanation and clarification fields do not invalidate saved answers."""
+    payload: dict[str, object] = dict(_answer().root)
+    payload["knowledge"] = {"intent": "owner", "reason_code": "unknown_subject"}
+    answer = AskAnswer.model_validate(payload)
+    assert answer.recognition is None
+    assert answer.knowledge is not None
+    assert answer.knowledge.intent_candidates == ()

@@ -6,6 +6,7 @@
 from collections.abc import Callable
 from typing import Literal
 
+from datakeel.ask.knowledge_names import normalize_name
 from datakeel.core.evidence_models import Assertion, EvidenceAnchor, TextSpan
 from datakeel.core.kg_product import KGEntity
 from datakeel.core.kg_queries import KGSourceText
@@ -23,10 +24,21 @@ from datakeel.core.models import AssetRef
 SourceReader = Callable[[EvidenceAnchor], KGSourceText]
 
 
-def usable_link(link: EntityLink) -> bool:
-    """Use accepted links and unique candidates, never rejected or ambiguous candidates."""
+def usable_link(link: EntityLink, siblings: tuple[EntityLink, ...]) -> bool:
+    """Use reviewed links or a candidate with only one surviving catalog destination."""
     return link.assertion.status == "accepted" or (
-        link.assertion.status == "candidate" and link.match_kind == "unique"
+        link.assertion.status == "candidate"
+        and (
+            link.match_kind == "unique"
+            or len(
+                {
+                    item.target.asset_ref.asset_id
+                    for item in siblings
+                    if item.assertion.status != "rejected"
+                }
+            )
+            == 1
+        )
     )
 
 
@@ -51,7 +63,7 @@ def document_claims(
             or assertion.object.asset_id not in entities
         ):
             continue
-        direct = subject.kind == "kg_entity" and endpoint.asset_id == subject.asset_ref.asset_id
+        direct = _direct_subject(entities[endpoint.asset_id], subject)
         link, ambiguous = _subject_path(endpoint, subject, context.links)
         if not direct and link is None:
             if ambiguous:
@@ -89,18 +101,27 @@ def document_claims(
     ), len(pending)
 
 
+def _direct_subject(entity: KGEntity, subject: KnowledgeSubject) -> bool:
+    if subject.kind == "kg_entity":
+        return entity.asset_ref.asset_id == subject.asset_ref.asset_id
+    return (
+        subject.kind == "owner"
+        and entity.type in {"person", "organization"}
+        and normalize_name(entity.name) == normalize_name(subject.name)
+    )
+
+
 def _subject_path(
     endpoint: AssetRef, subject: KnowledgeSubject, links: tuple[EntityLink, ...]
 ) -> tuple[EntityLink | None, bool]:
-    matching = tuple(
-        link
-        for link in links
-        if link.entity.asset_ref.asset_id == endpoint.asset_id
-        and link.target.asset_ref.asset_id == subject.asset_ref.asset_id
+    matching = tuple(link for link in links if link.entity.asset_ref.asset_id == endpoint.asset_id)
+    relevant = tuple(
+        link for link in matching if link.target.asset_ref.asset_id == subject.asset_ref.asset_id
     )
-    selected = next((link for link in matching if usable_link(link)), None)
+    selected = next((link for link in relevant if usable_link(link, matching)), None)
     ambiguous = any(
-        link.assertion.status == "candidate" and link.match_kind == "ambiguous" for link in matching
+        link.assertion.status == "candidate" and not usable_link(link, matching)
+        for link in relevant
     )
     return selected, ambiguous
 
@@ -109,22 +130,17 @@ def _resolve_other_end(
     other: KGEntity, links: tuple[EntityLink, ...]
 ) -> tuple[KnowledgeOtherEnd | None, bool]:
     matching = tuple(
-        link
-        for link in links
-        if link.entity.asset_ref.asset_id == other.asset_ref.asset_id
-        and link.assertion.status != "rejected"
+        link for link in links if link.entity.asset_ref.asset_id == other.asset_ref.asset_id
     )
-    selected = next((link for link in matching if usable_link(link)), None)
+    selected = next((link for link in matching if usable_link(link, matching)), None)
+    candidates = tuple(link for link in matching if link.assertion.status == "candidate")
     if (
         other.type not in {"person", "organization", "location", "system"}
-        and matching
+        and candidates
         and selected is None
     ):
-        return None, any(
-            link.assertion.status == "candidate" and link.match_kind == "ambiguous"
-            for link in matching
-        )
-    return _other_end(other, selected), False
+        return None, True
+    return _other_end(other, selected, rejected=bool(matching) and selected is None), False
 
 
 def _endpoint(assertion: Assertion, intent: KnowledgeIntent) -> AssetRef | None:
@@ -154,16 +170,19 @@ def _subject_link(link: EntityLink) -> KnowledgeSubjectLink:
     )
 
 
-def _other_end(entity: KGEntity, link: EntityLink | None) -> KnowledgeOtherEnd:
+def _other_end(entity: KGEntity, link: EntityLink | None, *, rejected: bool) -> KnowledgeOtherEnd:
     if entity.type in {"person", "organization", "location", "system"}:
         return KnowledgeOtherEnd(status="not_applicable", entity=entity)
     if link is None:
-        return KnowledgeOtherEnd(status="not_in_catalog", entity=entity)
+        return KnowledgeOtherEnd(
+            status="link_rejected" if rejected else "not_in_catalog", entity=entity
+        )
     resolved = _subject_link(link)
     return KnowledgeOtherEnd(
         status="linked",
         entity=entity,
         asset_ref=resolved.asset_ref,
+        asset_name=link.target.name,
         assertion_id=resolved.assertion_id,
         link_status=resolved.link_status,
     )

@@ -13,6 +13,7 @@ from datakeel.core.models import JsonDocument
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.ontology.tooling import invoke_tool
+from datakeel.storage.ask_store import get_answer
 from datakeel.storage.tool_invocations import list_invocations
 from tests.enterprise_support import enterprise_fixture
 
@@ -69,18 +70,20 @@ def test_catalog_functions_when_reading_assets_audit_actual_references(
     assert all(item.asset_refs for item in list_invocations(db))
 
 
-def test_ask_function_when_answered_or_unanswerable_preserves_question_identity(
+def test_ask_function_preserves_saved_answers_and_explicit_null_state_fields(
     db: Database, tmp_path: Path
 ) -> None:
-    """Even refused questions bind a saved question asset instead of invented metric evidence."""
+    """All answer states round-trip; unresolved tool results explicitly exclude numeric data."""
     enterprise_fixture(db, tmp_path / "enterprise")
-    for question in ("上个季度华东区零售额是多少", "退货率为什么上升"):
+    for question in ("上个季度华东区零售额是多少", "退货率为什么上升", "上个季度营业额是多少"):
         result = invoke_function(
             db,
             "ask_data",
             JsonDocument({"question": question, "reference_instant": "2026-10-01T00:00:00Z"}),
         )
         answer = AskAnswer.model_validate(result.data)
+        assert answer == get_answer(db, answer.id)
+        assert answer.recognition is not None
         assert any(
             ref.asset_type == "question" and ref.asset_id == answer.id for ref in result.asset_refs
         )
@@ -88,3 +91,6 @@ def test_ask_function_when_answered_or_unanswerable_preserves_question_identity(
             assert {"metric", "table", "column"} <= {ref.asset_type for ref in result.asset_refs}
         else:
             assert {ref.asset_type for ref in result.asset_refs} == {"question"}
+            assert isinstance(result.data, dict)
+            assert all(key in result.data for key in ("metric_card", "sql", "result"))
+            assert all(result.data[key] is None for key in ("metric_card", "sql", "result"))

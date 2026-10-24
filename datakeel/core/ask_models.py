@@ -10,7 +10,11 @@ from typing import Literal, Self
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from datakeel.core.evidence_models import Assertion
-from datakeel.core.knowledge_models import KnowledgeAnswer, KnowledgeSubject
+from datakeel.core.knowledge_models import (
+    KnowledgeAnswer,
+    KnowledgeRecognition,
+    KnowledgeSubject,
+)
 from datakeel.core.metric_models import CompiledQuery, MetricCard, QueryResult, TimeRange
 from datakeel.core.models import BoundaryModel, new_id, utcnow
 
@@ -47,6 +51,7 @@ class AskRequest(BoundaryModel):
     question: str = Field(min_length=1, max_length=2000)
     metric_id: str | None = Field(default=None, min_length=1, max_length=200)
     subject_id: str | None = Field(default=None, min_length=1, max_length=500)
+    knowledge_intent: Literal["owner", "upstream", "downstream", "owned"] | None = None
     session_id: str | None = Field(default=None, min_length=1, max_length=100)
     reference_instant: AwareDatetime = Field(default_factory=utcnow)
     actor: str = Field(default="local-user", min_length=1, max_length=100)
@@ -98,6 +103,7 @@ class AskAnswer(BoundaryModel):
     answer_kind: Literal["metric", "knowledge"] = "metric"
     knowledge: KnowledgeAnswer | None = None
     subject_candidates: tuple[KnowledgeSubject, ...] = ()
+    recognition: KnowledgeRecognition | None = None
 
     @model_validator(mode="after")
     def evidence_matches_state(self) -> Self:
@@ -138,8 +144,12 @@ class AskAnswer(BoundaryModel):
         ):
             msg = "Answered knowledge questions require a subject and at least one fact"
             raise ValueError(msg)
-        if self.status == "clarification" and len(self.subject_candidates) <= 1:
-            msg = "Knowledge clarification requires multiple subject candidates"
+        if (
+            self.status == "clarification"
+            and len(self.subject_candidates) <= 1
+            and len(self.knowledge.intent_candidates) <= 1
+        ):
+            msg = "Knowledge clarification requires multiple subject or intent candidates"
             raise ValueError(msg)
         if self.status == "unanswerable" and self.knowledge.reason_code is None:
             msg = "Knowledge refusals require an explicit reason code"

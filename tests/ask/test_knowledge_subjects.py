@@ -8,7 +8,7 @@ import pytest
 from datakeel.ask.knowledge_parser import parse_knowledge_question
 from datakeel.ask.knowledge_subjects import subject_candidates, subject_suggestions
 from datakeel.core.catalog_models import CatalogObject, CatalogSnapshot
-from datakeel.core.link_models import EntityLink, LinkEntitySource
+from datakeel.core.link_models import EntityLink, LinkContext, LinkEntitySource
 from datakeel.core.metric_models import SemanticLayer
 from datakeel.core.models import AssetRef
 from datakeel.metrics.projection import build_snapshot
@@ -47,7 +47,7 @@ def test_unlinked_whole_graph_names_remain_candidates_beside_catalog_names(
     roles = subject_candidates(
         "供应链负责人", catalog, layer, (entity("person", "供应链负责人", "person"),)
     )
-    assert len(roles) == 2
+    assert len(roles) == 1
     assert roles[0].kind == "owner"
 
 
@@ -114,9 +114,9 @@ def test_complete_graph_subjects_win_over_incidental_metric_or_table_tokens(
         entity("orders-team", "orders 团队", "organization"),
     )
     for question, item in zip(("出货额日报从哪来", "orders 团队负责哪些"), entities, strict=True):
-        parsed = parse_knowledge_question(question)
+        parsed = parse_knowledge_question(question, catalog, layer, LinkContext(entities=entities))
         assert parsed is not None
-        candidates = subject_candidates(parsed.subject, catalog, layer, entities)
+        candidates = parsed.candidates
         assert len(candidates) == 1
         assert candidates[0].asset_ref == item.asset_ref
         assert candidates[0].kind == "kg_entity"
@@ -134,12 +134,12 @@ def test_relation_boundaries_resolve_complete_graph_subjects(
     question: str, name: str, kind: str
 ) -> None:
     """Question particles must not leak into exact graph names after subject extraction."""
-    parsed = parse_knowledge_question(question)
-    assert parsed is not None
     item = entity("subject", name, kind)
-    found = subject_candidates(
-        parsed.subject, CatalogSnapshot(scope="empty"), SemanticLayer(), (item,)
+    parsed = parse_knowledge_question(
+        question, CatalogSnapshot(scope="empty"), SemanticLayer(), LinkContext(entities=(item,))
     )
+    assert parsed is not None
+    found = parsed.candidates
     assert len(found) == 1
     assert found[0].asset_ref == item.asset_ref
 

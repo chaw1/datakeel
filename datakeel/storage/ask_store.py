@@ -56,6 +56,27 @@ def _check_request(request: AskRequest, answer: AskAnswer) -> None:
     ):
         msg = "Stored answer must match the explicitly selected metric"
         raise ValidationError(msg)
+    _check_knowledge_request(request, answer)
+
+
+def _check_knowledge_request(request: AskRequest, answer: AskAnswer) -> None:
+    knowledge = answer.knowledge
+    if answer.answer_kind != "knowledge" or knowledge is None:
+        return
+    if (
+        request.subject_id is not None
+        and knowledge.subject is not None
+        and request.subject_id != knowledge.subject.asset_ref.asset_id
+    ):
+        msg = "Stored answer must match the explicitly selected knowledge subject"
+        raise ValidationError(msg)
+    if (
+        request.knowledge_intent is not None
+        and knowledge.reason_code != "unknown_subject"
+        and request.knowledge_intent != knowledge.intent
+    ):
+        msg = "Stored answer must match the explicitly selected knowledge intent"
+        raise ValidationError(msg)
 
 
 def _session(session: Session, request: AskRequest, answer: AskAnswer) -> None:

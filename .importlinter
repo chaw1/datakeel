@@ -233,6 +233,8 @@ ignore_imports =
     datakeel.ask.service -> datakeel.storage.ask_store
     datakeel.ask.service -> datakeel.storage.catalog_store
     datakeel.ask.service -> datakeel.storage.database
+# Question recognition and answer assembly share one frozen current-graph read.
+    datakeel.ask.service -> datakeel.storage.link_queries
 # Catalog functions expose the same typed query and answer services to every tool transport.
     datakeel.ontology.catalog_functions -> datakeel.ask.service
     datakeel.ontology.catalog_functions -> datakeel.storage.metric_store

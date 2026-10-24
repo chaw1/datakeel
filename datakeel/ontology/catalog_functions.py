@@ -32,10 +32,13 @@ def _ask(db: Database, arguments: JsonDocument) -> FunctionResult:
         if (answer.answer_kind == "metric" and answer.knowledge is None)
         else set()
     )
+    # Legacy tool contracts require explicit top-level nulls; nested defaults can be omitted.
+    payload = answer.model_dump(mode="json", exclude=omitted)
+    compact = answer.model_dump(mode="json", exclude=omitted, exclude_none=True)
     return FunctionResult(
         function="ask_data",
         asset_refs=refs,
-        data=answer.model_dump(mode="json", exclude=omitted),
+        data=payload | compact,
     )
 
 

@@ -1,24 +1,24 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Resolve whole subjects across vocabularies before scanning individual catalog tiers."""
+"""Find longest nonoverlapping registered subjects before interpreting relationship language."""
 
-import unicodedata
 from difflib import SequenceMatcher
 
-from datakeel.ask.matching import metric_matches, occurrences
+from datakeel.ask.knowledge_names import (
+    SubjectMention,
+    SubjectName,
+    name_occurrences,
+    name_variants,
+    normalize_name,
+)
 from datakeel.core.catalog_models import CatalogObject, CatalogSnapshot, TableProperties
-from datakeel.core.catalog_vocabulary import catalog_identifiers, normalized_subject_name
+from datakeel.core.evidence_models import TextSpan
 from datakeel.core.kg_product import KGEntity
 from datakeel.core.knowledge_models import KnowledgeSubject
 from datakeel.core.link_matching import catalog_names
-from datakeel.core.link_models import EntityLink, LinkEntitySource
+from datakeel.core.link_models import EntityLink, LinkContext, LinkEntitySource
 from datakeel.core.metric_models import SemanticLayer
-
-
-def normalized_name(text: str) -> str:
-    """Apply graph identity normalization without fuzzy or substring comparisons."""
-    return " ".join(unicodedata.normalize("NFKC", text).strip().lower().split())
 
 
 def catalog_subject(item: CatalogObject) -> KnowledgeSubject:
@@ -42,7 +42,7 @@ def catalog_subject(item: CatalogObject) -> KnowledgeSubject:
 
 
 def entity_subject(entity: KGEntity, source: LinkEntitySource | None = None) -> KnowledgeSubject:
-    """Retain graph identity and type for an entity outside the registered catalog."""
+    """Retain graph identity, type and dataset for document subjects."""
     return KnowledgeSubject(
         asset_ref=entity.asset_ref,
         name=entity.name,
@@ -51,6 +51,139 @@ def entity_subject(entity: KGEntity, source: LinkEntitySource | None = None) -> 
         dataset_id=source.dataset_id if source else None,
         dataset_name=source.dataset_name if source else None,
     )
+
+
+def _metric_names(catalog: CatalogSnapshot, layer: SemanticLayer) -> list[SubjectName]:
+    targets = {
+        item.asset_ref.asset_id: catalog_subject(item)
+        for item in catalog.objects
+        if item.asset_ref.asset_type == "metric"
+    }
+    names: list[SubjectName] = []
+    for metric in layer.metrics:
+        if metric.id not in targets:
+            continue
+        names.extend(
+            SubjectName(name=value, subject=targets[metric.id], rank=rank)
+            for rank, values in ((2, (metric.name, metric.id)), (1, metric.synonyms))
+            for value in values
+        )
+        for term in layer.terms:
+            if (term.means.kind == "metric" and term.means.id == metric.id) or (
+                term.means.kind == "column" and term.means.id == metric.measure.column
+            ):
+                names.extend(
+                    SubjectName(name=value, subject=targets[metric.id], rank=1)
+                    for value in (term.term, *term.synonyms)
+                )
+    return names
+
+
+def _graph_names(context: LinkContext) -> list[SubjectName]:
+    sources = {item.entity_id: item for item in context.entity_sources}
+    entities = {item.asset_ref: item for item in context.entities}
+    names = [
+        SubjectName(
+            name=item.name, subject=entity_subject(item, sources.get(item.asset_ref.asset_id))
+        )
+        for item in context.entities
+    ]
+    documents = {(doc.asset_ref, doc.content_revision): doc.text for doc in context.documents}
+    for assertion in context.assertions:
+        if assertion.predicate != "kg.mentions" or assertion.status == "rejected":
+            continue
+        entity = entities.get(assertion.subject)
+        if entity is None:
+            continue
+        for anchor in assertion.anchors:
+            text = documents.get((anchor.asset_ref, anchor.content_revision))
+            if text is not None and isinstance(anchor.selector, TextSpan):
+                names.append(
+                    SubjectName(
+                        name=text[anchor.selector.start : anchor.selector.end],
+                        subject=entity_subject(entity, sources.get(entity.asset_ref.asset_id)),
+                    )
+                )
+    return names
+
+
+def _vocabulary(
+    catalog: CatalogSnapshot, layer: SemanticLayer, context: LinkContext
+) -> tuple[SubjectName, ...]:
+    names = _metric_names(catalog, layer)
+    for item in catalog.objects:
+        if item.asset_ref.asset_type not in {"table", "owner"}:
+            continue
+        subject = catalog_subject(item)
+        values = catalog_names(item) if subject.kind in {"table", "view"} else (item.name,)
+        for value in values:
+            names.append(SubjectName(name=value, subject=subject))
+            if subject.kind in {"table", "view"}:
+                names.extend(
+                    SubjectName(name=value + suffix, subject=subject) for suffix in (" table", "表")
+                )
+    return (*names, *_graph_names(context))
+
+
+def _collapsed(
+    names: list[SubjectName], links: tuple[EntityLink, ...]
+) -> tuple[KnowledgeSubject, ...]:
+    strongest = max((item.rank for item in names), default=0)
+    candidates = tuple(
+        {
+            item.subject.asset_ref: item.subject
+            for item in names
+            if item.subject.kind != "metric" or item.rank == strongest
+        }.values()
+    )
+    assets = {item.asset_ref.asset_id for item in candidates if item.kind != "kg_entity"}
+    roles = {normalize_name(item.name) for item in candidates if item.kind == "owner"}
+    return tuple(
+        item
+        for item in candidates
+        if not (
+            item.kind == "kg_entity"
+            and (
+                (
+                    item.entity_type in {"person", "organization"}
+                    and normalize_name(item.name) in roles
+                )
+                or any(
+                    link.entity.asset_ref == item.asset_ref
+                    and link.target.asset_ref.asset_id in assets
+                    and link.assertion.status != "rejected"
+                    for link in links
+                )
+            )
+        )
+    )
+
+
+def subject_mentions(
+    question: str, catalog: CatalogSnapshot, layer: SemanticLayer, context: LinkContext
+) -> tuple[SubjectMention, ...]:
+    """Choose longest spans across every vocabulary, retaining equal-span identity ambiguity."""
+    text = normalize_name(question)
+    spans: dict[tuple[int, int], list[SubjectName]] = {}
+    for item in _vocabulary(catalog, layer, context):
+        for name in name_variants(item.name):
+            for span in name_occurrences(text, name):
+                spans.setdefault(span, []).append(item)
+    selected: list[SubjectMention] = []
+    for (start, end), names in sorted(
+        spans.items(), key=lambda item: (item[0][0] - item[0][1], item[0][0])
+    ):
+        if any(start < item.end and end > item.start for item in selected):
+            continue
+        selected.append(
+            SubjectMention(
+                start=start,
+                end=end,
+                text=text[start:end],
+                candidates=_collapsed(names, context.links),
+            )
+        )
+    return tuple(sorted(selected, key=lambda item: item.start))
 
 
 def subject_candidates(
@@ -62,97 +195,15 @@ def subject_candidates(
     links: tuple[EntityLink, ...] = (),
     entity_sources: tuple[LinkEntitySource, ...] = (),
 ) -> tuple[KnowledgeSubject, ...]:
-    """Prefer complete names across tiers and preserve genuinely distinct graph candidates."""
-    name = normalized_subject_name(text)
-    if not name:
-        return ()
-    metrics = _metric_candidates(name, catalog, layer, exact=True)
-    named = _named_candidates(name, catalog, exact=True)
-    sources = {item.entity_id: item for item in entity_sources}
-    graph = tuple(
-        entity_subject(entity, sources.get(entity.asset_ref.asset_id))
-        for entity in entities
-        if normalized_subject_name(entity.name) == name
-        and not _linked_to(entity, (*metrics, *named), links)
+    """Expose the same subject-first match used by the production question route."""
+    mentions = subject_mentions(
+        text,
+        catalog,
+        layer,
+        LinkContext(entities=entities, links=links, entity_sources=entity_sources),
     )
-    if metrics or named or graph:
-        return (*metrics, *named, *graph)
-    return _metric_candidates(name, catalog, layer, exact=False) or _named_candidates(
-        name, catalog, exact=False
-    )
-
-
-def _linked_to(
-    entity: KGEntity, subjects: tuple[KnowledgeSubject, ...], links: tuple[EntityLink, ...]
-) -> bool:
-    return any(
-        link.entity.asset_ref == entity.asset_ref
-        and link.target.asset_ref.asset_id in {item.asset_ref.asset_id for item in subjects}
-        and link.assertion.status != "rejected"
-        for link in links
-    )
-
-
-def _metric_candidates(
-    text: str, catalog: CatalogSnapshot, layer: SemanticLayer, *, exact: bool
-) -> tuple[KnowledgeSubject, ...]:
-    ranks = {"exact": 3, "synonym": 2, "prefix": 1}
-    scores = _exact_metric_scores(text, layer)
-    for match in () if exact else metric_matches(text, layer):
-        if match.metric_id:
-            scores[match.metric_id] = max(scores.get(match.metric_id, 0), ranks[match.match_kind])
-    for metric in () if exact else layer.metrics:
-        if occurrences(text, metric.id):
-            scores[metric.id] = 3
-    strongest = max(scores.values(), default=0)
     return tuple(
-        catalog_subject(item)
-        for item in catalog.objects
-        if item.asset_ref.asset_type == "metric"
-        and scores.get(item.asset_ref.asset_id) == strongest
-    )
-
-
-def _exact_metric_scores(text: str, layer: SemanticLayer) -> dict[str, int]:
-    scores: dict[str, int] = {}
-    for metric in layer.metrics:
-        if text in {normalized_subject_name(value) for value in (metric.name, metric.id)}:
-            scores[metric.id] = 3
-        elif text in {normalized_subject_name(value) for value in metric.synonyms}:
-            scores[metric.id] = 2
-    for term in layer.terms:
-        rank = (
-            3
-            if normalized_subject_name(term.term) == text
-            else 2
-            if text in {normalized_subject_name(value) for value in term.synonyms}
-            else 0
-        )
-        for metric in layer.metrics:
-            if rank and (
-                (term.means.kind == "metric" and term.means.id == metric.id)
-                or (term.means.kind == "column" and term.means.id == metric.measure.column)
-            ):
-                scores[metric.id] = max(scores.get(metric.id, 0), rank)
-    return scores
-
-
-def _named_candidates(
-    text: str, catalog: CatalogSnapshot, *, exact: bool
-) -> tuple[KnowledgeSubject, ...]:
-    identifiers = set(catalog_identifiers(text))
-    return tuple(
-        catalog_subject(item)
-        for item in catalog.objects
-        if (
-            item.asset_ref.asset_type == "table"
-            and (
-                text in {normalized_subject_name(name) for name in catalog_names(item)}
-                if exact
-                else identifiers.intersection(catalog_names(item))
-            )
-        )
-        or (item.asset_ref.asset_type == "owner" and text == normalized_subject_name(item.name))
+        {item.asset_ref: item for mention in mentions for item in mention.candidates}.values()
     )
 
 
@@ -163,7 +214,7 @@ def subject_suggestions(
     *,
     entity_sources: tuple[LinkEntitySource, ...] = (),
 ) -> tuple[KnowledgeSubject, ...]:
-    """Use similarity only for at most three suggestions after exact resolution failed."""
+    """Use similarity only for bounded suggestions after exact subject matching failed."""
     candidates = [
         catalog_subject(item)
         for item in catalog.objects
@@ -171,14 +222,14 @@ def subject_suggestions(
     ]
     sources = {item.entity_id: item for item in entity_sources}
     candidates.extend(
-        entity_subject(entity, sources.get(entity.asset_ref.asset_id)) for entity in entities
+        entity_subject(item, sources.get(item.asset_ref.asset_id)) for item in entities
     )
     return tuple(
         sorted(
             candidates,
             key=lambda item: (
                 -max(
-                    SequenceMatcher(None, normalized_name(text), normalized_name(label)).ratio()
+                    SequenceMatcher(None, normalize_name(text), normalize_name(label)).ratio()
                     for label in (item.name, item.asset_ref.asset_id)
                 ),
                 item.asset_ref.asset_id,

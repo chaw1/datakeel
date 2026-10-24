@@ -5,7 +5,7 @@
 
 import pytest
 
-from datakeel.ask.knowledge_parser import parse_knowledge_question
+from tests.ask.parsing_helpers import registered_question
 
 
 @pytest.mark.parametrize(
@@ -45,9 +45,11 @@ def test_interrogatives_capture_subject_without_full_question_noise(
     subject: str,
 ) -> None:
     """Sentence structure selects direction independently of the registered vocabulary."""
-    parsed = parse_knowledge_question(question)
+    parsed = registered_question(question, subject)
     assert parsed is not None
-    assert (parsed.intent, parsed.subject) == (intent, subject)
+    assert parsed.intent == intent
+    assert len(parsed.candidates) == 1
+    assert parsed.candidates[0].name == subject
 
 
 @pytest.mark.parametrize(
@@ -64,4 +66,20 @@ def test_interrogatives_capture_subject_without_full_question_noise(
 )
 def test_non_interrogative_relationship_words_do_not_steal_metric_route(question: str) -> None:
     """Explicit numerical questions retain their route despite relationship vocabulary."""
-    assert parse_knowledge_question(question) is None
+    assert registered_question(question) is None
+
+
+def test_typed_table_focus_is_preserved_before_inferring_relationship() -> None:
+    """A request for an input table must not be reinterpreted as an owner question."""
+    parsed = registered_question("退款额依托哪份数据", "退款额")
+    assert parsed is not None
+    assert parsed.recognition.focus == "table"
+    assert parsed.intent == "upstream"
+
+
+def test_dependency_position_distinguishes_input_subject_from_output_subject() -> None:
+    """An input after from is downstream-facing even when the focus appears first."""
+    parsed = registered_question("Which metrics are built from inventory?", "inventory")
+    assert parsed is not None
+    assert parsed.intent == "downstream"
+    assert parsed.recognition.direction == "downstream"
