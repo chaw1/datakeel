@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Recognize explicit destination complements and dashboard display consumers while preserving scalar-value requests.
 - Infer default knowledge direction from table, view and metric levels; recover requested noun-phrase heads separated from question words and prefer explicit active, passive and nominal input/result roles, including usage questions with who or 谁. Bound focus and direction to the main question while preserving subject coordinates and supported pronoun references.
 - Recognize bilingual hierarchy, flow and impact expressions through shared vocabulary. Catalog-object count questions return typed lists and separate system/document counts while business measurements retain numeric routing. Use linked catalog subtypes for table/view counts and explain exclusions when document dataset types are unknown.
 - Route explicit value, reading, amount and quantity requests to metrics while preserving catalog counts and reading as a dependency verb. Treat formula questions and explicit supplier/input roles as upstream, preserve main ownership requests, and distinguish receivers from inputs in production clauses and supported pronoun references.

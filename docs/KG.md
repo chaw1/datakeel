@@ -274,7 +274,7 @@ The shared vocabulary in `datakeel/ask/knowledge_vocabulary.py` groups these exp
 | Category / 类别 | Chinese / 中文 | English / 英文 |
 | --- | --- | --- |
 | Hierarchy / 层级 | 上游、上一层、底下、下游、下一层 | upstream, underneath, underlying, beneath, downstream |
-| Flow / 流向 | 来源、源头、输入、基础、依据、去向、下一站、流向、供给 | source, input, basis, foundation, feeds, powers, supports, supplies |
+| Flow / 流向 | 来源、源头、输入、基础、依据、去向、下一站、流向、流入、供给 | source, input, basis, foundation, feeds, fed into, powers, supports, supplies |
 | Impact / 影响 | 受牵连、波及、连累、受影响；条件句中的停用、消失、删除 | affects, impacts, breaks, suffers; if/without with removal or unavailability |
 
 Source-role templates include 以/拿/用/把 X 当作来源、输入、基础、依据, `fed by X`, `derived from X`, `built on X` and `pull from X`. Result-role templates include X 的来源/源头 and `X is fed by`. Active and passive dependency or production forms distinguish the input from the result; nominal forms such as `source for X`, `X as input` and `X as output` also retain that distinction. Relative subject position distinguishes `X feeds/powers/supports` from an input described after a dependency verb. A generic source noun alone does not override an explicit subject role or an available cross-level catalog default. 角色不明确的弱来源名词不会覆盖跨层级默认方向。
@@ -284,6 +284,8 @@ Source-role templates include 以/拿/用/把 X 当作来源、输入、基础�
 被问对象前的层级形容词不会覆盖同一主问句中明确绑定主语的使用、生产、被动或条件角色；直接询问上下游及弱来源介词仍保持原方向。中文主题前置并省略宾语的使用问句，以及使役和接收者句式，也按使用者与被使用对象区分方向。单字使用动词需要对应的句式或明确词边界，不把「读数」「用途」等词中的单字当作方向词。
 
 条件句中的缺失或停用事件只在条件分句内定位，不取结果分句里的同类动词。主题前置和逗号保留主语角色；事件背景只有在主问明确询问影响时才作为来源线索。英语 `used to/for/when` 生产目的句区分直接结果名词与来源介词补语，并保留主动使用者和被动资源的差别。
+
+明确的「流入」和 `fed into` 按主语相对目标补语的位置区分来源与接收方；「给/为主语提供数据」把主语识别为接收方。`subject appears on` 和「看板/报表/视图显示主语」识别展示消费关系；明确询问显示数值时仍保持指标路线。
 
 `AskAnswer.recognition` 保存匹配片段及主语类型、焦点词、方向词和规则编号；界面的「问题中的匹配证据」展示这些记录。知识推断不确定时使用反问，`knowledge.intent_candidates` 给出可选意图；点击按钮通过可选 `knowledge_intent` 重问，并保留原问题和已选主语。
 

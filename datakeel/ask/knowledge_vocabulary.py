@@ -125,8 +125,8 @@ HIERARCHY_UP = r"上游|上一层|前一层|底层|底下|\b(?:upstream|undernea
 HIERARCHY_DOWN = r"下游|下一层|后一层|\bdownstream\b"
 SOURCE_NOUNS = r"来源|源头|源表|数据源|输入|基础|依据|\b(?:sources?|inputs?|basis|foundation)\b"
 FLOW_DESTINATION = (
-    r"去向|下一站|流向|流到|送到|供给|提供给|供数|支撑|用于|供(?=谁|哪|什么|多少|几)|"
-    r"\b(?:feeds?|powers?|supports?|supplies|supply|produces?|generates?|sources?\s+for)\b"
+    r"去向|下一站|流向|流到|流入|送到|供给|提供给|供数|支撑|用于|供(?=谁|哪|什么|多少|几)|"
+    r"\b(?:fed\s+into|feeds?|powers?|supports?|supplies|supply|produces?|generates?|sources?\s+for)\b"
 )
 BARE_USAGE_ZH = r"(?:用|读)(?=\s|[?!.\u3002\uff1f\uff01\uff0c,;\uff1b]|$)"
 FLOW_DEPENDENCY = (
@@ -192,6 +192,8 @@ SOURCE_PREPOSITIONS = {"from", "从"}
 # never complete questions or catalog-specific names.
 SUBJECT_MARKER = "§"
 SOURCE_ROLES = (
+    r"§\s+appears?\s+on\b",
+    r"(?:看板|报表|视图)\s*(?:会|可|可以|正在)?\s*显示\s*§",
     rf"(?:以|拿|用|把)\s*§\s*(?:拿来|用来)?\s*(?:当(?:作)?|作(?:为)?|为)\s*(?:{SOURCE_NOUNS})",
     rf"§\s*(?:作(?:为)?|充当)\s*(?:{SOURCE_NOUNS})",
     rf"\b(?:use|uses|using|take|takes|taking|treat|treats|treating)\s+§\s+as\s+(?:an?\s+|the\s+)?(?:{SOURCE_NOUNS})",
@@ -205,6 +207,7 @@ SOURCE_ROLES = (
     rf"§\s*(?:当(?:作)?|为)\s*(?:{SOURCE_NOUNS})",
 )
 RESULT_ROLES = (
+    r"(?:给|为)\s*§\s*提供数据",
     rf"§\s*(?:的|之)\s*(?:{SOURCE_NOUNS})",
     rf"(?:{SOURCE_NOUNS})\s+(?:of|for|to)\s+§",
     r"§\s+(?:is\s+|was\s+)?(?:fed\s+by|derived\s+from|built\s+(?:on|from))",
