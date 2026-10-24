@@ -1,3 +1,13 @@
+export const workspaceTabs = {
+  relations: "kgRelations",
+  entities: "kgEntities",
+  links: "kgAssetLinks",
+  graph: "kgGraph",
+  runs: "kgRuns",
+  proposals: "kgProposals",
+  evaluations: "kgEvaluations",
+} as const;
+
 export const statusLabels = {
   candidate: "kgCandidate",
   accepted: "kgAccepted",

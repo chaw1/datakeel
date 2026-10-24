@@ -8,6 +8,9 @@ const kinds = {
   prefix: "askMatchPrefix",
   dimension_value: "askMatchDimension",
   time: "askMatchTime",
+  identifier: "askMatchIdentifier",
+  kg_entity: "askMatchEntity",
+  role: "askMatchRole",
 } as const;
 
 function questionSegments(question: string, matches: AskMatch[]) {

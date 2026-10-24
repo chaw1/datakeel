@@ -8,6 +8,7 @@ import { commandEn } from "./commandEn";
 import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
 import { kgEn } from "./kgEn";
+import { knowledgeEn } from "./knowledgeEn";
 import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
 import { workflowEn } from "./workflowEn";
@@ -15,6 +16,7 @@ import { workspaceEn } from "./workspaceEn";
 
 export const en = {
   ...kgEn,
+  ...knowledgeEn,
   ...metricRollbackEn,
   ...approvalsMetricEn,
   ...graphEn,

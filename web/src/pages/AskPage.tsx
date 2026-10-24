@@ -111,6 +111,20 @@ export function AskPage({
           <AskAnswerView
             answer={answer}
             onOpenReceipt={onOpenReceipt}
+            onChooseSubject={(subject) => {
+              void perform({
+                request: {
+                  actor:
+                    lastOperation && "request" in lastOperation
+                      ? lastOperation.request.actor
+                      : "local-user",
+                  question: answer.question,
+                  reference_instant: answer.reference_instant,
+                  session_id: answer.session_id,
+                  subject_id: subject.asset_ref.asset_id,
+                },
+              });
+            }}
             onChooseMetric={(metricId) => {
               void perform({
                 request: {

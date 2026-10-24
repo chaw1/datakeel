@@ -23,6 +23,8 @@ export const retailMetric: AskMetric = {
 };
 
 export const retailAnswer: AskAnswer = {
+  answer_kind: "metric",
+  subject_candidates: [],
   id: "answer-1",
   session_id: "session-1",
   question: "上个季度华东区零售额是多少",
@@ -101,6 +103,8 @@ export const candidateMetrics: AskMetric[] = [
 ];
 
 export const unavailableAnswer: AskAnswer = {
+  answer_kind: "metric",
+  subject_candidates: [],
   id: "answer-2",
   session_id: "session-1",
   question: "退货率为什么上升",

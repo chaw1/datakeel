@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
+import { salesLink } from "../features/kg/linkFixtures";
 import { actionRun } from "../test/actionFixtures";
 import { dataset, version } from "../test/fixtures";
 import {
@@ -26,6 +27,7 @@ function apiFixture() {
     if (path === "/api/kg/profiles") data = [kgProfile];
     if (path.startsWith("/api/kg/runs?")) data = [kgRun];
     if (path === "/api/kg/query") data = result;
+    if (path.startsWith("/api/kg/links?")) data = [salesLink];
     if (path === "/api/evidence/assertions/decide") {
       const body = JSON.parse(
         typeof init?.body === "string" ? init.body : "{}",
@@ -56,6 +58,26 @@ function renderPage() {
     />,
   );
 }
+it("opens the dedicated asset-link review scope without mixing extraction relations", async () => {
+  const fetch = apiFixture();
+  const user = userEvent.setup();
+  renderPage();
+  await screen.findByText("Vapor");
+  await user.click(screen.getByRole("tab", { name: "Corresponding assets" }));
+  expect(
+    await screen.findByRole("table", { name: "Asset links · link.maps_to" }),
+  ).toBeVisible();
+  expect(screen.queryByText("Vapor")).not.toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Asset links use the latest graph version of each dataset.",
+    ),
+  ).toBeVisible();
+  expect(fetch).toHaveBeenCalledWith(
+    `/api/kg/links?dataset_id=${dataset.id}`,
+    expect.anything(),
+  );
+});
 it("selects the graph dataset, prioritizes review, and persists batch decisions", async () => {
   const fetch = apiFixture();
   const user = userEvent.setup();

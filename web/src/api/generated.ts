@@ -963,6 +963,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kg/entities/{entity_id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Associations
+         * @description Show exact catalog matches and human decisions for one graph entity.
+         */
+        get: operations["associations_api_kg_entities__entity_id__links_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kg/evaluations": {
         parameters: {
             query?: never;
@@ -997,6 +1017,46 @@ export interface paths {
          * @description Return a bounded graph with accepted alias display groups.
          */
         post: operations["graph_api_kg_graph_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Links
+         * @description Read reviewable associations from the latest graph of each selected dataset.
+         */
+        get: operations["links_api_kg_links_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/links/rerun": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rerun Links
+         * @description Refresh deterministic catalog associations without calling a model.
+         */
+        post: operations["rerun_links_api_kg_links_rerun_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1716,6 +1776,12 @@ export interface components {
          */
         AskAnswer: {
             /**
+             * Answer Kind
+             * @default metric
+             * @enum {string}
+             */
+            answer_kind: "metric" | "knowledge";
+            /**
              * Assertion Ids
              * @default []
              */
@@ -1732,6 +1798,7 @@ export interface components {
             candidates: components["schemas"]["MetricCard"][];
             /** Id */
             id?: string;
+            knowledge?: components["schemas"]["KnowledgeAnswer"] | null;
             lineage?: components["schemas"]["LineageReference"] | null;
             /**
              * Matches
@@ -1757,6 +1824,11 @@ export interface components {
              * @enum {string}
              */
             status: "answered" | "unanswerable" | "clarification";
+            /**
+             * Subject Candidates
+             * @default []
+             */
+            subject_candidates: components["schemas"]["KnowledgeSubject"][];
             time_range?: components["schemas"]["TimeRange"] | null;
         };
         /**
@@ -1780,6 +1852,8 @@ export interface components {
             reference_instant?: string;
             /** Session Id */
             session_id?: string | null;
+            /** Subject Id */
+            subject_id?: string | null;
         };
         /**
          * Assertion
@@ -2417,6 +2491,22 @@ export interface components {
             score: number;
             /** Weight */
             weight: number;
+        };
+        /**
+         * EntityLink
+         * @description Expose the reviewable assertion and its graph and catalog endpoints.
+         */
+        EntityLink: {
+            assertion: components["schemas"]["Assertion"];
+            /** Basis */
+            basis: string[];
+            entity: components["schemas"]["KGEntity"];
+            /**
+             * Match Kind
+             * @enum {string}
+             */
+            match_kind: "unique" | "ambiguous";
+            target: components["schemas"]["CatalogObject"];
         };
         /**
          * EntityType
@@ -3513,6 +3603,145 @@ export interface components {
             text: string;
         };
         /**
+         * KnowledgeAnswer
+         * @description Keep system records and document claims in separate, auditable collections.
+         */
+        KnowledgeAnswer: {
+            /**
+             * Claims
+             * @default []
+             */
+            claims: components["schemas"]["KnowledgeClaim"][];
+            /**
+             * Intent
+             * @enum {string}
+             */
+            intent: "owner" | "upstream" | "downstream" | "owned" | "related";
+            /**
+             * Pending Ambiguous Links
+             * @default 0
+             */
+            pending_ambiguous_links: number;
+            /** Reason Code */
+            reason_code?: ("unknown_subject" | "ambiguous_subject" | "no_knowledge") | null;
+            subject?: components["schemas"]["KnowledgeSubject"] | null;
+            /**
+             * System Message
+             * @default
+             */
+            system_message: string;
+            /**
+             * System Records
+             * @default []
+             */
+            system_records: components["schemas"]["KnowledgeSystemRecord"][];
+        };
+        /**
+         * KnowledgeClaim
+         * @description Carry one visible document assertion with independent review and source checks.
+         */
+        KnowledgeClaim: {
+            /** Assertion Id */
+            assertion_id: string;
+            /** Consistency */
+            consistency?: ("consistent" | "not_in_system" | "not_in_catalog") | null;
+            /** Evidence */
+            evidence: components["schemas"]["KnowledgeEvidence"][];
+            head: components["schemas"]["KGEntity"];
+            other_end: components["schemas"]["KnowledgeOtherEnd"];
+            /** Predicate */
+            predicate: string;
+            /**
+             * Relation Status
+             * @enum {string}
+             */
+            relation_status: "candidate" | "accepted";
+            subject_link?: components["schemas"]["KnowledgeSubjectLink"] | null;
+            tail: components["schemas"]["KGEntity"];
+            /**
+             * Verification
+             * @enum {string}
+             */
+            verification: "verified" | "needs_review";
+        };
+        /**
+         * KnowledgeEvidence
+         * @description Retain the verified evidence fragment and its immutable source document.
+         */
+        KnowledgeEvidence: {
+            /** Document */
+            document: string;
+            /** End */
+            end?: number | null;
+            source: components["schemas"]["AssetRef"];
+            /** Start */
+            start?: number | null;
+            /** Text */
+            text: string;
+        };
+        /**
+         * KnowledgeOtherEnd
+         * @description Distinguish a linked data asset from missing and inapplicable catalog identities.
+         */
+        KnowledgeOtherEnd: {
+            /** Assertion Id */
+            assertion_id?: string | null;
+            asset_ref?: components["schemas"]["AssetRef"] | null;
+            entity: components["schemas"]["KGEntity"];
+            /** Link Status */
+            link_status?: ("candidate" | "accepted") | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_applicable" | "linked" | "not_in_catalog";
+        };
+        /**
+         * KnowledgeSubject
+         * @description Identify a resolved subject or a safe clarification or suggestion candidate.
+         */
+        KnowledgeSubject: {
+            asset_ref: components["schemas"]["AssetRef"];
+            /** Entity Type */
+            entity_type?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "metric" | "table" | "view" | "owner" | "kg_entity";
+            /** Name */
+            name: string;
+        };
+        /**
+         * KnowledgeSubjectLink
+         * @description Explain the exact entity-to-asset assertion used to join a document claim.
+         */
+        KnowledgeSubjectLink: {
+            /** Assertion Id */
+            assertion_id: string;
+            asset_ref: components["schemas"]["AssetRef"];
+            entity: components["schemas"]["KGEntity"];
+            /**
+             * Link Status
+             * @enum {string}
+             */
+            link_status: "candidate" | "accepted";
+        };
+        /**
+         * KnowledgeSystemRecord
+         * @description Expose a registered asset without conflating it with a document assertion.
+         */
+        KnowledgeSystemRecord: {
+            asset_ref: components["schemas"]["AssetRef"];
+            /** Name */
+            name: string;
+            /**
+             * Relation
+             * @enum {string}
+             */
+            relation: "owner" | "upstream" | "downstream" | "owned";
+        };
+        /**
          * LineageEvent
          * @description Record an immutable attributed transformation or failure.
          */
@@ -3586,6 +3815,20 @@ export interface components {
              * @default 30
              */
             max_nodes: number;
+        };
+        /**
+         * LinkRunResult
+         * @description Summarize an idempotent association refresh without exposing storage rows.
+         */
+        LinkRunResult: {
+            /** Created */
+            created: number;
+            /** Entities */
+            entities: number;
+            /** Invalidated */
+            invalidated: number;
+            /** Links */
+            links: number;
         };
         /**
          * LinkType
@@ -6616,6 +6859,37 @@ export interface operations {
             };
         };
     };
+    associations_api_kg_entities__entity_id__links_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityLink"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     evaluations_api_kg_evaluations_get: {
         parameters: {
             query?: {
@@ -6676,6 +6950,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    links_api_kg_links_get: {
+        parameters: {
+            query?: {
+                dataset_id?: string | null;
+                status?: ("candidate" | "accepted" | "rejected") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityLink"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rerun_links_api_kg_links_rerun_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkRunResult"];
                 };
             };
         };

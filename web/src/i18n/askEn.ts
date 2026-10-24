@@ -1,14 +1,14 @@
 export const askEn = {
   askTitle: "Ask data",
   askIntro:
-    "Explore Fictional Kitchen Co. through registered metrics, with the definition and sources behind every answer.",
+    "Explore Fictional Kitchen Co. through registered metrics and source-backed knowledge about owners and dependencies.",
   askQuestion: "Business question",
   askPlaceholder: "For example: 上个季度华东区零售额是多少",
   askReference: "Calculation reference date (UTC)",
   askReferenceHint:
     "Relative periods use this date. The sample data uses 1 October 2026.",
   askSubmit: "Ask data",
-  askWorking: "Finding the metric and calculating…",
+  askWorking: "Finding records and evidence…",
   askExamples: "Try a sample question",
   askExampleRetail: "East China retail revenue · last quarter",
   askExampleAmbiguous: "Revenue · compare definitions",
@@ -16,9 +16,15 @@ export const askEn = {
   askQuestionRetail: "上个季度华东区零售额是多少",
   askQuestionAmbiguous: "上个季度营业额是多少",
   askQuestionUnavailable: "退货率为什么上升",
+  askExampleOwner: "Shipment revenue · owner",
+  askExampleUpstream: "Inventory quantity · upstream",
+  askExampleDownstream: "Orders table · downstream",
+  askQuestionOwner: "Who owns shipment_amount?",
+  askQuestionUpstream: "What is inventory_units derived from?",
+  askQuestionDownstream: "What uses the orders table?",
   askEmptyTitle: "Start with a business question",
   askEmptyBody:
-    "Choose a sample or enter your own question. Answers include the metric, time range, SQL, and source fields.",
+    "Ask for a metric value, an owner, or upstream and downstream data. Answers show registered records and the evidence behind document claims.",
   askError: "The question could not be completed.",
   askRetry: "Retry",
   askAnswered: "Answered with a registered metric",

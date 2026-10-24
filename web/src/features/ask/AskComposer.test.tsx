@@ -4,6 +4,32 @@ import { expect, it, vi } from "vitest";
 
 import { AskComposer } from "./AskComposer";
 
+it.each([
+  ["Shipment revenue · owner", "Who owns shipment_amount?"],
+  ["Inventory quantity · upstream", "What is inventory_units derived from?"],
+  ["Orders table · downstream", "What uses the orders table?"],
+])(
+  "submits the knowledge example %s and clears a pinned metric",
+  async (label, question) => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(
+      <AskComposer
+        busy={false}
+        initialMetricId="retail_revenue"
+        onSubmit={onSubmit}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: label }));
+    await user.click(screen.getByRole("button", { name: "Ask data" }));
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith({
+      question,
+      reference_instant: "2026-10-01T00:00:00Z",
+      actor: "local-user",
+    });
+  },
+);
+
 it("selects a demo question and submits an editable UTC reference date", async () => {
   const user = userEvent.setup();
   const onSubmit = vi.fn();
@@ -43,7 +69,7 @@ it("normalizes the question and blocks empty input and busy submissions", async 
   rerender(<AskComposer busy={true} onSubmit={onSubmit} />);
   expect(input).toBeDisabled();
   expect(
-    screen.getByRole("button", { name: "Finding the metric and calculating…" }),
+    screen.getByRole("button", { name: "Finding records and evidence…" }),
   ).toBeDisabled();
   expect(
     screen.getByRole("button", { name: "Revenue · compare definitions" }),

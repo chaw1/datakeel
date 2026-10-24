@@ -5,8 +5,10 @@ import { date } from "../../lib/format";
 import { answerFootnotes } from "./answerFootnotes";
 import { AnswerProvenance } from "./AnswerProvenance";
 import { AskResolution } from "./AskResolution";
+import { KnowledgeAnswerView } from "./KnowledgeAnswerView";
+import { KnowledgeResolution } from "./KnowledgeResolution";
 
-import type { AskAnswer, AskResult } from "../../api/ask";
+import type { AskAnswer, AskResult, KnowledgeSubject } from "../../api/ask";
 import type { LineageTarget } from "../../app/navigation";
 import type { Translate } from "../../i18n/context";
 
@@ -14,6 +16,11 @@ const statusLabels = {
   answered: "askAnswered",
   unanswerable: "askUnanswerable",
   clarification: "askClarification",
+} as const;
+const knowledgeStatusLabels = {
+  answered: "knowledgeAnswered",
+  unanswerable: "knowledgeUnanswerable",
+  clarification: "knowledgeClarification",
 } as const;
 
 function displayValue(
@@ -32,22 +39,29 @@ export function AskAnswerView({
   answer,
   onOpenReceipt,
   onChooseMetric,
+  onChooseSubject,
 }: {
   answer: AskAnswer;
   onOpenReceipt: (target: LineageTarget) => void;
   onChooseMetric?: (id: string) => void;
+  onChooseSubject?: (subject: KnowledgeSubject) => void;
 }) {
   const { t, locale } = useI18n();
   const result = answer.result;
   const footnotes = answerFootnotes(answer, t);
   const scalar = result?.rows.length === 1 && result.columns.length === 1;
+  const knowledgeAnswer = answer.answer_kind === "knowledge";
   return (
     <article className={`card ask-answer ask-answer-${answer.status}`}>
       <header className="ask-answer-heading">
         <span
           className={`badge ${answer.status === "answered" ? "green" : ""}`}
         >
-          {t(statusLabels[answer.status])}
+          {t(
+            (knowledgeAnswer ? knowledgeStatusLabels : statusLabels)[
+              answer.status
+            ],
+          )}
         </span>
         <span className="ask-muted">
           {t("askReferenceUsed")}
@@ -58,7 +72,16 @@ export function AskAnswerView({
           </time>
         </span>
       </header>
-      {answer.status === "answered" ? (
+      {knowledgeAnswer ? (
+        answer.status === "answered" && answer.knowledge ? (
+          <KnowledgeAnswerView knowledge={answer.knowledge} />
+        ) : (
+          <KnowledgeResolution
+            answer={answer}
+            onChooseSubject={onChooseSubject}
+          />
+        )
+      ) : answer.status === "answered" ? (
         <>
           <div className="ask-result">
             <span className="eyebrow">
@@ -123,6 +146,9 @@ export function AskAnswerView({
               <p className="ask-muted">{t("askTruncated")}</p>
             )}
           </div>
+          {answer.knowledge && (
+            <KnowledgeAnswerView knowledge={answer.knowledge} />
+          )}
         </>
       ) : (
         <AskResolution

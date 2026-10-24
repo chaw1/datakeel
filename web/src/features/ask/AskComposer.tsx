@@ -9,6 +9,9 @@ const examples = [
   ["askExampleRetail", "askQuestionRetail"],
   ["askExampleAmbiguous", "askQuestionAmbiguous"],
   ["askExampleUnavailable", "askQuestionUnavailable"],
+  ["askExampleOwner", "askQuestionOwner"],
+  ["askExampleUpstream", "askQuestionUpstream"],
+  ["askExampleDownstream", "askQuestionDownstream"],
 ] as const;
 
 export function AskComposer({

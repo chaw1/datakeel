@@ -6,6 +6,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { useResource } from "../../lib/useResource";
 
+import { KGAssetLinks } from "./KGAssetLinks";
 import { KGEntities } from "./KGEntities";
 import { KGEntityDrawer } from "./KGEntityDrawer";
 import { KGEvaluations } from "./KGEvaluations";
@@ -15,6 +16,7 @@ import { KGGraphPanel } from "./KGGraphPanel";
 import { KGRelationDrawer } from "./KGRelationDrawer";
 import { KGRelations } from "./KGRelations";
 import { KGReports } from "./KGReports";
+import { workspaceTabs as tabs } from "./labels";
 import { useKGQuery } from "./useKGQuery";
 import "./kg.css";
 
@@ -27,15 +29,6 @@ import type {
 } from "../../api/kg";
 import type { Version } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
-
-const tabs = {
-  relations: "kgRelations",
-  entities: "kgEntities",
-  graph: "kgGraph",
-  runs: "kgRuns",
-  proposals: "kgProposals",
-  evaluations: "kgEvaluations",
-} as const;
 
 export function KGWorkspace({
   datasetId,
@@ -255,6 +248,13 @@ export function KGWorkspace({
             onInspect={setEntity}
           />
         )}
+        {tab === "links" && (
+          <KGAssetLinks
+            key={`${datasetId}:${String(revision)}`}
+            datasetId={datasetId}
+            onChanged={onDataChanged}
+          />
+        )}
         {tab === "graph" && (
           <KGGraphPanel
             query={query}
@@ -287,6 +287,7 @@ export function KGWorkspace({
           key={entity.asset_ref.asset_id}
           entity={entity}
           versionId={versionId}
+          onChanged={refresh}
           onClose={() => {
             setEntity(null);
           }}

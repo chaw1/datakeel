@@ -7,6 +7,9 @@ export type AskRequest = components["schemas"]["AskRequest"];
 export type AskMetric = components["schemas"]["MetricCard"];
 export type AskMatch = components["schemas"]["MatchEvidence"];
 export type AskResult = components["schemas"]["QueryResult"];
+export type KnowledgeAnswer = components["schemas"]["KnowledgeAnswer"];
+export type KnowledgeClaim = components["schemas"]["KnowledgeClaim"];
+export type KnowledgeSubject = components["schemas"]["KnowledgeSubject"];
 
 export function askData(request: AskRequest): Promise<AskAnswer> {
   return post<AskAnswer>("/api/ask", request);

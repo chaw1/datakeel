@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
+import { KGAssetLinks } from "./KGAssetLinks";
 import { KGSourcePreview } from "./KGSourcePreview";
 
 import type { KGEntity } from "../../api/kg";
@@ -11,10 +12,12 @@ export function KGEntityDrawer({
   entity,
   versionId,
   onClose,
+  onChanged,
 }: {
   entity: KGEntity;
   versionId: string;
   onClose: () => void;
+  onChanged?: () => void;
 }) {
   const { t } = useI18n();
   const isComposing = useCompositionGuard();
@@ -60,6 +63,12 @@ export function KGEntityDrawer({
           ×
         </button>
       </header>
+      {["dataset", "metric"].includes(entity.type.toLowerCase()) && (
+        <KGAssetLinks
+          entityId={entity.asset_ref.asset_id}
+          onChanged={onChanged}
+        />
+      )}
       {!files.length && <p>{t("kgEmptyMentions")}</p>}
       {files.map((id) => (
         <KGSourcePreview

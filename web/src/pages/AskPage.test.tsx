@@ -2,10 +2,55 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
+import {
+  knowledgeAnswer,
+  shipmentSubject,
+} from "../features/ask/knowledgeFixtures";
 import { retailAnswer, unavailableAnswer } from "../features/ask/testFixtures";
 import { I18nProvider } from "../i18n/I18nProvider";
 
 import { AskPage } from "./AskPage";
+
+it("keeps the original knowledge question when a clarification subject is selected", async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ...knowledgeAnswer,
+          status: "clarification",
+          subject_candidates: [shipmentSubject],
+        }),
+      ),
+    )
+    .mockResolvedValue(new Response(JSON.stringify(knowledgeAnswer)));
+  vi.stubGlobal("fetch", fetch);
+  const user = userEvent.setup();
+  render(<AskPage onOpenReceipt={vi.fn()} />);
+  await user.type(screen.getByRole("textbox"), knowledgeAnswer.question);
+  await user.click(screen.getByRole("button", { name: "Ask data" }));
+  await user.click(
+    await screen.findByRole("button", {
+      name: /出货额 Metric shipment_revenue/,
+    }),
+  );
+  expect(
+    await screen.findByRole("region", { name: "System records" }),
+  ).toBeVisible();
+  expect(fetch).toHaveBeenLastCalledWith(
+    "/api/ask",
+    expect.objectContaining({
+      body: JSON.stringify({
+        actor: "local-user",
+        question: knowledgeAnswer.question,
+        reference_instant: knowledgeAnswer.reference_instant,
+        session_id: knowledgeAnswer.session_id,
+        subject_id: shipmentSubject.asset_ref.asset_id,
+      }),
+    }),
+  );
+  expect(screen.queryByLabelText("Calculated result")).not.toBeInTheDocument();
+});
 
 it("asks a sample question, follows catalog lineage, and replays the saved result", async () => {
   const fetch = vi.fn(() =>
@@ -79,7 +124,7 @@ it("shows a pending request, rejects duplicate input, and replaces old numerical
   );
   await user.click(screen.getByRole("button", { name: "Ask data" }));
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Finding the metric and calculating…",
+    "Finding records and evidence…",
   );
   expect(screen.getByRole("textbox")).toBeDisabled();
   expect(screen.queryByLabelText("Calculated result")).not.toBeInTheDocument();

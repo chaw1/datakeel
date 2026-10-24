@@ -112,6 +112,30 @@
   color: var(--muted);
   font-size: var(--font-xs);
 }
+.kg-link-table {
+  min-width: 780px;
+}
+.kg-link-table caption {
+  text-align: left;
+  color: var(--muted);
+  padding-block: calc(var(--space) * 2);
+}
+.kg-link-table small {
+  display: block;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.kg-link-table ul {
+  padding-left: calc(var(--space) * 4);
+}
+.kg-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 2);
+}
+.kg-asset-links {
+  padding-block: calc(var(--space) * 4);
+}
 .kg-badge {
   display: inline-block;
   white-space: nowrap;
