@@ -45,9 +45,9 @@ def resolve_endpoints(
     head, head_new = _resolve(relation.head, entities, definition.domain)
     tail, tail_new = _resolve(relation.tail, entities, definition.range)
     if head is None or tail is None:
-        return ResolvedEndpoints(reason="endpoint_ambiguous")
+        return ResolvedEndpoints(head=head, tail=tail, reason="endpoint_ambiguous")
     if head.type not in definition.domain or tail.type not in definition.range:
-        return ResolvedEndpoints(reason="domain_range")
+        return ResolvedEndpoints(head=head, tail=tail, reason="domain_range")
     roles: list[Literal["head", "tail"]] = []
     if head_new:
         roles.append("head")

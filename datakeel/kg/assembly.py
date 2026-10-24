@@ -124,15 +124,49 @@ def _relation_draft(
     )
 
 
+def _normalized_entities(raw: RawExtraction, schema: KGSchema) -> tuple[ExtractedEntity, ...]:
+    types = {item.name.casefold(): item.name for item in schema.entity_types}
+    return tuple(
+        entity.model_copy(
+            update={
+                "type": types.get(entity.type.strip().casefold(), entity.type.strip().casefold())
+            }
+        )
+        if entity.type.strip()
+        else entity
+        for entity in raw.entities
+    )
+
+
+def _proposals(
+    relations: dict[str, list[ExtractedRelation]], unknown: tuple[ExtractedEntity, ...]
+) -> tuple[SchemaProposal, ...]:
+    if unknown:
+        relations.setdefault("unknown_entity_type", [])
+    return tuple(
+        SchemaProposal.model_validate(
+            {
+                "reason": reason,
+                "count": len(items) + (len(unknown) if reason == "unknown_entity_type" else 0),
+                "samples": items[:20],
+                "entity_samples": unknown[:20] if reason == "unknown_entity_type" else (),
+            }
+        )
+        for reason, items in sorted(relations.items())
+    )
+
+
 def assemble_extraction(
     raw: RawExtraction, schema: KGSchema, source: KGSource
 ) -> ProductExtraction:
     """Preserve unverified candidates and report every schema-excluded relation."""
     register_kg_schema(schema)
     types = {item.name for item in schema.entity_types}
+    normalized = _normalized_entities(raw, schema)
+    unknown = tuple(entity for entity in normalized if entity.type not in types)
     entities = {
         (entity.type, normalize_name(entity.name)): entity
-        for entity in raw.entities
+        for entity in normalized
         if entity.type in types
     }
     drafts: list[ObservationDraft] = []
@@ -143,7 +177,13 @@ def assemble_extraction(
         if definition is None:
             proposals["unknown_relation"].append(relation)
             continue
-        resolved = resolve_endpoints(relation, definition, raw.entities)
+        resolved = resolve_endpoints(relation, definition, normalized)
+        if any(
+            entity is not None and entity.type not in types
+            for entity in (resolved.head, resolved.tail)
+        ):
+            proposals["unknown_entity_type"].append(relation)
+            continue
         if resolved.reason:
             proposals[resolved.reason].append(relation)
             continue
@@ -164,10 +204,5 @@ def assemble_extraction(
             for entity in ordered
         ),
         drafts=merge_drafts(tuple(drafts)),
-        proposals=tuple(
-            SchemaProposal.model_validate(
-                {"reason": reason, "count": len(items), "samples": items[:20]}
-            )
-            for reason, items in sorted(proposals.items())
-        ),
+        proposals=_proposals(proposals, unknown),
     )

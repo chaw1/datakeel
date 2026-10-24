@@ -9,7 +9,7 @@ from pydantic import Field
 
 from datakeel.core.evidence_drafts import ObservationDraft
 from datakeel.core.evidence_models import ContentRevision, ExtractorRef
-from datakeel.core.kg_contracts import ExtractedRelation
+from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation
 from datakeel.core.models import AssetRef, BoundaryModel
 
 
@@ -40,6 +40,7 @@ class SchemaProposal(BoundaryModel):
     reason: Literal["unknown_relation", "domain_range", "endpoint_ambiguous", "unknown_entity_type"]
     count: int = Field(ge=1)
     samples: tuple[ExtractedRelation, ...] = Field(max_length=20)
+    entity_samples: tuple[ExtractedEntity, ...] = Field(default=(), max_length=20)
 
 
 class ProductExtraction(BoundaryModel):

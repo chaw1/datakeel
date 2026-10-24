@@ -37,6 +37,9 @@ def merge_products(job: KGJob, values: list[ProductExtraction]) -> ProductExtrac
                     "reason": reason,
                     "count": sum(item.count for item in group),
                     "samples": tuple(sample for item in group for sample in item.samples)[:20],
+                    "entity_samples": tuple(
+                        sample for item in group for sample in item.entity_samples
+                    )[:20],
                 }
             )
             for reason, group in sorted(proposals.items())
