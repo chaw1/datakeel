@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.harness_models import ModelCallTrace
 from datakeel.core.kg_contracts import ExtractionProfile, KGSchema
 from datakeel.core.kg_eval_models import KGEvalReport
@@ -19,13 +20,38 @@ from datakeel.core.kg_queries import (
     KGRelationExplanation,
     KGSourceText,
 )
+from datakeel.core.link_models import EntityLink, LinkRunResult
 from datakeel.kg.loader import contracts_path, load_profile, load_schema
 from datakeel.storage import kg_queries
 from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_evaluations import list_evaluations
 from datakeel.storage.kg_store import get_job, list_runs
+from datakeel.storage.link_queries import entity_links, list_links
+from datakeel.storage.link_store import relink
 
 router = APIRouter(prefix="/api/kg", tags=["knowledge graph"])
+
+
+@router.get("/links")
+def links(
+    db: DatabaseDependency,
+    dataset_id: str | None = None,
+    status: AssertionStatus | None = None,
+) -> tuple[EntityLink, ...]:
+    """Read reviewable associations from the latest graph of each selected dataset."""
+    return list_links(db, dataset_id, status)
+
+
+@router.get("/entities/{entity_id}/links")
+def associations(entity_id: str, db: DatabaseDependency) -> tuple[EntityLink, ...]:
+    """Show exact catalog matches and human decisions for one graph entity."""
+    return entity_links(db, entity_id)
+
+
+@router.post("/links/rerun")
+def rerun_links(db: DatabaseDependency) -> LinkRunResult:
+    """Refresh deterministic catalog associations without calling a model."""
+    return relink(db)
 
 
 @router.post("/query")

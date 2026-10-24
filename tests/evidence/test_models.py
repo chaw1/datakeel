@@ -80,7 +80,19 @@ def test_assertion_three_states_and_predicate_registry_are_explicit() -> None:
         )
         assert isinstance(assertion.object, EvidenceValue)
         assert assertion.object.value == state
-    assert len(PREDICATES) == 8
+    assert tuple(item.id for item in PREDICATES) == (
+        "mentions",
+        "annotated_as",
+        "label_gap",
+        "near_duplicate_of",
+        "corrupt",
+        "ask.answers_with",
+        "ask.matched_term",
+        "ask.unanswerable",
+        "link.maps_to",
+        "ask.cites_asset",
+        "ask.cites_assertion",
+    )
     assert predicate("near_duplicate_of").symmetric
     assert not predicate("near_duplicate_of").transitive
     assert not predicate("mentions").symmetric
@@ -205,4 +217,40 @@ def test_cache_identity_changes_for_contracts_and_subject_versions() -> None:
     with pytest.raises(ValidationError, match="version"):
         EvidenceCacheEntry(
             subject=AssetRef(asset_id="unversioned"), key=entry.key, assertion_ids=()
+        )
+
+
+@pytest.mark.parametrize(
+    ("predicate_id", "subject_kind", "object_kind"),
+    [
+        ("link.maps_to", "kg_entity", "table"),
+        ("link.maps_to", "kg_entity", "metric"),
+        ("ask.cites_asset", "question", "metric"),
+        ("ask.cites_asset", "question", "table"),
+        ("ask.cites_asset", "question", "owner"),
+        ("ask.cites_asset", "question", "kg_entity"),
+        ("ask.cites_assertion", "question", "assertion"),
+    ],
+)
+def test_link_and_knowledge_predicates_reject_unrelated_subjects_and_objects(
+    predicate_id: str,
+    subject_kind: str,
+    object_kind: str,
+) -> None:
+    """New citation predicates preserve explicit endpoint constraints at the assertion boundary."""
+    original = KnowledgeBundle.model_validate(
+        extraction_event().params["knowledge_bundle"]
+    ).assertions[0]
+    payload = {
+        **original.model_dump(),
+        "predicate": predicate_id,
+        "subject": AssetRef(asset_type=subject_kind, asset_id="subject", version="subject"),
+        "object": AssetRef(asset_type=object_kind, asset_id="target", version="target"),
+    }
+    assert Assertion.model_validate(payload).predicate == predicate_id
+    with pytest.raises(ValidationError, match=r"requires a .* subject"):
+        Assertion.model_validate({**payload, "subject": original.subject})
+    with pytest.raises(ValidationError, match="requires object types"):
+        Assertion.model_validate(
+            {**payload, "object": AssetRef(asset_type="file", asset_id="unrelated", version="1")}
         )

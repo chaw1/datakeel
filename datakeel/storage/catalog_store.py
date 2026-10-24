@@ -20,6 +20,7 @@ from datakeel.storage.catalog_projection import project_snapshot
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.database import Database
 from datakeel.storage.events import all_events, append_event
+from datakeel.storage.link_store import relink_in_session
 
 
 def _versioned(snapshot: CatalogSnapshot, prior: CatalogSnapshot, event_id: str) -> CatalogSnapshot:
@@ -84,6 +85,7 @@ def publish_snapshot_in_session(
     prior = history[-1] if history else CatalogSnapshot(scope=snapshot.scope)
     report = _report(snapshot, prior, len(history))
     if canonical_content(snapshot) == canonical_content(prior):
+        relink_in_session(session)
         return report
     event_id = new_id()
     version = len(history) + 1
@@ -101,6 +103,7 @@ def publish_snapshot_in_session(
     append_event(session, event)
     project_snapshot(session, snapshot)
     session.flush()
+    relink_in_session(session)
     return report.model_copy(update={"event_id": event_id, "snapshot_version": version})
 
 

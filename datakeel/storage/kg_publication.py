@@ -19,6 +19,7 @@ from datakeel.kg.aliases import refresh_reviewed_aliases, same_as_drafts
 from datakeel.kg.cache import extraction_identity
 from datakeel.kg.identity import assertion_identity, merge_drafts
 from datakeel.kg.retention import preserve_unselected
+from datakeel.storage.catalog_locks import lock_catalog
 from datakeel.storage.events import all_events
 from datakeel.storage.evidence_decisions import append_decision, assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
@@ -26,6 +27,7 @@ from datakeel.storage.evidence_store import record_extraction_in_session
 from datakeel.storage.kg_provenance import prior_bundle_inputs
 from datakeel.storage.kg_reviews import inherit_reviews
 from datakeel.storage.kg_rows import KGRunRow
+from datakeel.storage.link_store import relink_in_session
 
 
 def _prior_graph(
@@ -225,6 +227,7 @@ def publish_completion(session: Session, completion: KGCompletion, task_id: str)
     ):
         msg = "Graph completion changed its frozen dataset scope"
         raise ConflictError(msg)
+    lock_catalog(session)
     if session.get_bind().dialect.name == "postgresql":
         session.execute(
             text("SELECT pg_advisory_xact_lock(hashtext(:scope))"),
@@ -245,3 +248,4 @@ def publish_completion(session: Session, completion: KGCompletion, task_id: str)
     _replacement_audit(session, event, old, products.drafts)
     inherit_reviews(session, event, current)
     row.payload = job.model_copy(update={"run": completion.run}).model_dump(mode="json")
+    relink_in_session(session)

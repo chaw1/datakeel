@@ -59,6 +59,30 @@ _PREDICATES = {
             description="No registered metric can answer the question",
             subject_asset_type="question",
         ),
+        Predicate(
+            id="link.maps_to",
+            description="A graph entity corresponds to a catalog table or semantic metric",
+            object_kind="asset",
+            object_asset_types=("table", "metric"),
+            subject_asset_type="kg_entity",
+            existence=False,
+        ),
+        Predicate(
+            id="ask.cites_asset",
+            description="A knowledge answer cites a registered system or graph asset",
+            object_kind="asset",
+            object_asset_types=("metric", "table", "owner", "kg_entity"),
+            subject_asset_type="question",
+            existence=False,
+        ),
+        Predicate(
+            id="ask.cites_assertion",
+            description="A knowledge answer cites a relationship or association assertion",
+            object_kind="asset",
+            object_asset_types=("assertion",),
+            subject_asset_type="question",
+            existence=False,
+        ),
     )
 }
 
