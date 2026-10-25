@@ -48,6 +48,9 @@ class PythonProject(ManifestModel):
 
     name: str
     dependencies: tuple[str, ...] = ()
+    optional_dependencies: dict[str, tuple[str, ...]] = Field(
+        default_factory=dict, alias="optional-dependencies"
+    )
 
 
 class SelectedPythonPackage(BoundaryModel):

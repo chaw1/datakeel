@@ -106,8 +106,10 @@ def _selected_package(lock: PythonLock, dependency: LockedDependency) -> LockedP
     return candidates[0]
 
 
-def _runtime_selection(lock: PythonLock, project_name: str) -> tuple[SelectedPythonPackage, ...]:
-    pending = deque([LockedDependency(name=project_name)])
+def _runtime_selection(
+    lock: PythonLock, project_name: str, root_extras: tuple[str, ...] = ()
+) -> tuple[SelectedPythonPackage, ...]:
+    pending = deque([LockedDependency(name=project_name, extra=root_extras)])
     visited: set[tuple[str, str, tuple[str, ...]]] = set()
     selected: dict[str, LockedPackage] = {}
     extras: dict[str, set[str]] = {}
@@ -186,16 +188,24 @@ def declared_license(distribution: metadata.Distribution) -> tuple[str, str]:
     return "UNKNOWN", "no unambiguous license in installed METADATA"
 
 
-def python_packages(root: Path) -> tuple[LicensePackage, ...]:
+def python_packages(root: Path, *, extras: tuple[str, ...] = ()) -> tuple[LicensePackage, ...]:
     """Read locked runtime packages and require matching locally installed metadata."""
     lock = PythonLock.model_validate(tomllib.loads((root / "uv.lock").read_text()))
     project = ProjectManifest.model_validate(tomllib.loads((root / "pyproject.toml").read_text()))
-    selection = _runtime_selection(lock, project.project.name)
+    selection = _runtime_selection(lock, project.project.name, extras)
     packages: list[LicensePackage] = []
     for item in selection:
         package = item.package
         if canonicalize_name(package.name) == canonicalize_name(project.project.name):
-            validate_requirements(item, project.project.dependencies, selection)
+            requirements = (
+                *project.project.dependencies,
+                *(
+                    value
+                    for extra in extras
+                    for value in project.project.optional_dependencies[extra]
+                ),
+            )
+            validate_requirements(item, requirements, selection)
             continue
         try:
             installed = metadata.distribution(package.name)
