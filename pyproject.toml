@@ -31,9 +31,6 @@ dependencies = [
   "langchain-anthropic==1.7.6",
 ]
 
-[project.optional-dependencies]
-ocr = ["rapidocr==3.10.0", "onnxruntime>=1.18,<2"]
-
 [project.scripts]
 datakeel = "datakeel.cli:main"
 

@@ -1,6 +1,10 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
-# Optional CPU OCR: install datakeel[ocr]; default models are bundled with rapidocr==3.10.0.
+# User-installed CPU OCR: pip install rapidocr==3.10.0 onnxruntime
+# These packages are not Datakeel dependencies and are outside its license audit.
+# Some OpenCV wheels (for example macOS) bundle GPL codecs; ONNX Runtime includes
+# MPL-2.0 Eigen. Assess third-party licenses yourself before redistribution.
+# OCR 第三方包由用户自行安装，不属于 Datakeel 依赖或许可审计范围；再分发须自行评估。
 id: rapidocr-local
 backend: ocr
 mode: ocr

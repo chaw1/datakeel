@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 from PIL import Image
 
 from datakeel.core.errors import ValidationError
+from datakeel.core.transcription_errors import TranscriptionUnavailableError
 from datakeel.core.transcription_models import (
     ImageInput,
     OCRLine,
@@ -70,9 +71,10 @@ class RapidOCRTranscriber:
                 self.engine = module.RapidOCR()
             except ImportError as error:
                 message = (
-                    "Image OCR requires the optional installation: pip install 'datakeel[ocr]'"
+                    "Image OCR requires user-installed packages: "
+                    "pip install rapidocr==3.10.0 onnxruntime"
                 )
-                raise ValidationError(message) from error
+                raise TranscriptionUnavailableError(message, reason="ocr_not_installed") from error
         return self.engine
 
     def transcribe(

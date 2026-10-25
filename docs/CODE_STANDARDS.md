@@ -89,12 +89,12 @@ cli
 - 可变 pydantic 模型要在类 docstring 里写明理由。
 
 
-## 9. Optional OCR / 可选 OCR
+## 9. User-installed OCR / 用户自行安装 OCR
 
-Core runtime auditing keeps its existing policy and closure. `datakeel[ocr]` pins `rapidocr==3.10.0` and explicitly includes ONNX Runtime. Audit optional installations separately with `python -m scripts.license_ocr`; the only additional exception is the exact `tqdm` expression `MPL-2.0 AND MIT`. MPL-2.0 is file-level weak copyleft, the component is optional, and its upstream files and notices remain unchanged. This exception never applies to core dependencies or other packages.
+RapidOCR remains a lazily loaded adapter. Users who choose local OCR install its third-party packages themselves with `pip install rapidocr==3.10.0 onnxruntime`. These packages are not Datakeel dependencies and are outside Datakeel's license audit. Replay and scripted fixtures need no OCR installation.
 
-核心运行时审计与许可白名单不变。OCR 的独立审计只对可选 tqdm 的精确许可表达式增加已批准例外，保留上游许可；不得把该例外扩散至核心或其它包。
+OCR 的第三方包由用户自行安装，不属于 Datakeel 的依赖，也不在 Datakeel 的许可审计范围内。缺少这些包时，单张图片报告有类型的失败及安装提示；回放与脚本无需安装。
 
-OpenCV package metadata alone is insufficient: ordinary prebuilt headless wheels can bundle FFmpeg and other LGPL binaries. `sh scripts/install_ocr.sh /absolute/path/to/ocr-env` reproduces an isolated source build with video/FFmpeg/GStreamer disabled, then runs the optional audit. This removes the observed OpenCV codec issue, but the current ONNX Runtime 1.31.0 CPU wheel also includes Eigen under MPL-2.0, as documented in its [upstream notices](https://github.com/microsoft/onnxruntime/blob/v1.31.0/ThirdPartyNotices.txt). The optional policy has no Eigen exception: **the audit still fails, and this is not an approved installation path**. The script needs local build tools and package downloads; it does not contact any model service.
+Some platforms, including macOS, ship OpenCV prebuilt wheels with GPL codecs such as x264 and x265. ONNX Runtime includes Eigen under MPL-2.0. Anyone redistributing these third-party packages must assess their licenses independently. Datakeel supplies no OCR extra, source-build installer or separate OCR license exceptions; the core audit and its existing policy remain unchanged.
 
-普通 `pip install 'datakeel[ocr]'` 可能拉取含 LGPL 组件的 OpenCV wheel。上述隔离源码构建只消除已发现的 OpenCV 视频库问题；ONNX Runtime 1.31.0 实际二进制仍包含 MPL-2.0 的 Eigen，未获独立例外。因此当前可选安装许可未通过，脚本最后的审计会拒绝安装结果，不能将其描述为已通过的安装方案。核心环境、许可白名单及既有例外均不变。
+部分平台（例如 macOS）的 OpenCV 预编译包捆绑 x264、x265 等 GPL 编解码库；ONNX Runtime 含 MPL-2.0 的 Eigen。需要再分发这些第三方包时，用户须自行评估。Datakeel 不提供 OCR extra、源码安装脚本或 OCR 独立许可例外；核心许可审计及既有政策保持不变。

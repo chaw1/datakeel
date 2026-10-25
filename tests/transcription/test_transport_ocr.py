@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import base64
 import json
+import sys
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
@@ -16,7 +17,7 @@ import pytest
 from pydantic import SecretStr
 
 from datakeel.core.errors import ValidationError
-from datakeel.core.transcription_errors import TranscriptionFailure
+from datakeel.core.transcription_errors import TranscriptionFailure, TranscriptionUnavailableError
 from datakeel.transcription.adapters import FakeTranscriber
 from datakeel.transcription.factory import create_transcriber, prepare_transcriber
 from datakeel.transcription.loader import get_profile
@@ -89,7 +90,8 @@ def test_transport_when_success_sends_clean_pixels_and_retains_usage(
     [
         ("timeout", "timeout"),
         ("connection", "provider_error"),
-        ("quota", "账户只允许免费额度\uff0c且已用完"),
+        ("quota", "服务商额度不足"),
+        ("quota_openai", "服务商额度不足"),
         ("status", "http_429"),
         ("invalid", "invalid_response"),
         ("missing", "invalid_response"),
@@ -114,6 +116,8 @@ def test_transport_when_failure_preserves_category_without_retry(
             raise httpx.ConnectError(message, request=request)
         if failure == "quota":
             return httpx.Response(403, json={"error": {"code": "AllocationQuota.FreeTierOnly"}})
+        if failure == "quota_openai":
+            return httpx.Response(429, json={"error": {"code": "insufficient_quota"}})
         if failure == "status":
             return httpx.Response(429)
         if failure == "invalid":
@@ -231,18 +235,22 @@ def test_factory_when_sparse_ocr_and_local_native_endpoint_succeeds(
         assert checked_transcribe(adapter, image_input).text == "A complete readable paragraph."
 
 
+@pytest.mark.parametrize("package", ["onnxruntime", "rapidocr"])
 def test_ocr_when_optional_engine_missing_reports_installation(
-    image_input: ImageInput, monkeypatch: pytest.MonkeyPatch
+    image_input: ImageInput, monkeypatch: pytest.MonkeyPatch, package: str
 ) -> None:
     """Do not require OCR packages for normal imports or hide missing installation failures."""
-
-    def absent(_: str) -> object:
-        raise ImportError
-
-    monkeypatch.setattr("datakeel.transcription.ocr.import_module", absent)
+    if package == "rapidocr":
+        monkeypatch.setitem(
+            sys.modules, "onnxruntime", SimpleNamespace(disable_telemetry_events=lambda: None)
+        )
+    monkeypatch.setitem(sys.modules, package, None)
     with create_transcriber(get_profile("rapidocr-local")) as adapter:
-        with pytest.raises(ValidationError, match="datakeel\\[ocr\\]"):
+        with pytest.raises(
+            TranscriptionUnavailableError, match=r"pip install rapidocr==3\.10\.0 onnxruntime"
+        ) as failure:
             adapter.transcribe(image_input)
+        assert failure.value.reason == "ocr_not_installed"
         with pytest.raises(ValidationError, match="only ocr"):
             adapter.transcribe(image_input, "vlm")
 
