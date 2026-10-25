@@ -19,8 +19,9 @@ class KGImageSource(BoundaryModel):
 
     asset_ref: AssetRef
     content_revision: ContentRevision
-    width: int = Field(gt=0)
-    height: int = Field(gt=0)
+    width: int = Field(ge=0)
+    height: int = Field(ge=0)
+    decode_error: Literal["image_decode_error"] | None = None
     mode: Literal["ocr", "vlm"]
     profile_id: str = ""
     profile_digest: str = ""

@@ -94,13 +94,15 @@ def _response(
     response: httpx.Response, profile: TranscriptionProfile, ocr: TranscriptionResult
 ) -> TranscriptionResult:
     if response.is_error:
-        message = (
-            "账户只允许免费额度\uff0c且已用完"
-            if response.status_code == 403  # noqa: PLR2004  # Provider quota response status.
-            and "AllocationQuota.FreeTierOnly" in response.text
-            else f"http_{response.status_code}"
-        )
-        return ocr.model_copy(update={"text": "", "error": message})
+        if "AllocationQuota.FreeTierOnly" in response.text or "insufficient_quota" in response.text:
+            return ocr.model_copy(
+                update={
+                    "text": "",
+                    "error": "服务商额度不足",
+                    "quality_issues": ("provider_quota_exhausted",),
+                }
+            )
+        return ocr.model_copy(update={"text": "", "error": f"http_{response.status_code}"})
     try:
         parsed = _Response.model_validate_json(response.content)
     except ValidationError:

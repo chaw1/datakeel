@@ -3,7 +3,6 @@
 
 """Run independently metered image evaluation and save both score conventions."""
 
-from decimal import Decimal
 from pathlib import Path
 
 from rich.console import Console
@@ -13,6 +12,7 @@ from datakeel.cli.kg_evaluation import display_evaluation, load_evaluation_profi
 from datakeel.core.errors import BudgetError
 from datakeel.core.harness_models import BudgetLimits
 from datakeel.core.kg_contracts import KGSchema
+from datakeel.core.kg_costs import known_cost
 from datakeel.core.kg_eval_models import KGEvalReport
 from datakeel.core.kg_execution import KGEstimate, KGJob, KGMeteringConfig, KGPrepared, KGRun
 from datakeel.core.kg_image_request import ImageEvaluationRequest
@@ -93,6 +93,11 @@ def _job(config: KGMeteringConfig, schema: KGSchema, profile: TranscriptionProfi
 
 def _display(report: KGEvalReport, console: Console) -> None:
     display_evaluation(report, console)
+    for stage, cost in (
+        ("Transcription", report.transcription_cost_usd),
+        ("Extraction", report.extraction_cost_usd),
+    ):
+        console.print(f"{stage} cost USD: {cost if cost is not None else 'unknown'}")
     table = Table("Image scoring", "Group", "F1", "Box IoU hits", "CER", "Identifiers", "Failures")
     for label, view in (("Recording", report.image_recording), ("Product", report.image_product)):
         for group in view.groups if view else ():
@@ -140,9 +145,9 @@ def evaluate(
             "id": config.run_id,
             "input_tokens": sum(item.input_tokens for item in usage),
             "output_tokens": sum(item.output_tokens for item in usage),
-            "cost_usd": None
-            if any(trace.billing_status == "unknown" for trace in traces)
-            else sum((trace.cost_usd for trace in traces), start=Decimal(0)),
+            "cost_usd": known_cost(traces),
+            "transcription_cost_usd": known_cost(traces, "transcription"),
+            "extraction_cost_usd": known_cost(traces, "extraction"),
         }
     )
     save_evaluation(db, report)

@@ -23,7 +23,7 @@ from datakeel.storage.kg_context import KGContext, graph_events, read_context
 from datakeel.storage.kg_graph import project_graph
 from datakeel.storage.kg_image_attribution import relation_transcriptions
 from datakeel.storage.kg_image_sources import image_source
-from datakeel.storage.kg_store import get_job
+from datakeel.storage.kg_source_documents import frozen_text_source
 
 
 def _matches(entity: KGEntity, query: KGQuery) -> bool:
@@ -140,12 +140,8 @@ def get_source_text(
         )
     )
     for identifier in identifiers:
-        job = get_job(db, identifier)
-        for document in job.documents:
-            if document.asset_ref.asset_id == file_id and document.asset_ref.version == version_id:
-                return KGSourceText(
-                    asset_ref=document.asset_ref, filename=document.filename, text=document.text
-                )
+        if (source := frozen_text_source(db, identifier, file_id, version_id)) is not None:
+            return source
     msg = "Knowledge-graph source document was not found for the requested version"
     raise NotFoundError(msg)
 

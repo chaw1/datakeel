@@ -6,6 +6,7 @@
 from collections import deque
 
 from datakeel.core.errors import ValidationError
+from datakeel.core.transcription_errors import TranscriptionUnavailableError
 from datakeel.core.transcription_models import (
     ImageInput,
     TranscriptionMode,
@@ -36,7 +37,7 @@ class ReplayTranscriber:
         record = self.records.get(image.image_hash)
         if record is None:
             message = "No transcription recording for this image content hash"
-            raise ValidationError(message)
+            raise TranscriptionUnavailableError(message, reason="recording_missing")
         if (record.width, record.height) != (image.width, image.height):
             message = "Transcription recording dimensions do not match the corrected image"
             raise ValidationError(message)
@@ -53,9 +54,9 @@ class ReplayTranscriber:
                 input_tokens=0,
                 output_tokens=0,
             )
-        if mode == "vlm" and record.backend == "ocr":
+        if (mode or self.mode) == "vlm" and record.backend == "ocr":
             message = "This recording has no visual-model transcription for vlm mode"
-            raise ValidationError(message)
+            raise TranscriptionUnavailableError(message, reason="mode_mismatch")
         return TranscriptionResult.model_validate(data)
 
 

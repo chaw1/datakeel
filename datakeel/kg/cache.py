@@ -14,10 +14,18 @@ from datakeel.core.models import BoundaryModel
 from datakeel.kg.prompt import PROMPT_VERSION
 
 
-def content_hash(model: BoundaryModel) -> str:
-    """Hash validated model content in a canonical field order."""
+def content_hash(model: BoundaryModel, *, image: bool = False) -> str:
+    """Hash schema semantics, retaining image-only person annotations only for image extraction."""
+    payload = model.model_dump(mode="json")
+    if isinstance(model, KGSchema):
+        payload["entity_types"] = [
+            entity.model_dump(
+                mode="json", exclude={"person"} if not image or not entity.person else set()
+            )
+            for entity in model.entity_types
+        ]
     return hashlib.sha256(
-        json.dumps(model.model_dump(mode="json"), sort_keys=True, separators=(",", ":")).encode()
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
 
 
@@ -30,6 +38,8 @@ def build_cache_key(
 ) -> KGCacheKey:
     """Bind content to schema, prompt, model, parameters, chunking and replay bytes."""
     configuration = profile.model_dump(mode="json", exclude={"id", "recording", "api_key_env"})
+    if profile.prompt_version == "text-kg-v3":
+        configuration.pop("prompt_version")
     configuration["model"] = profile.model
     configuration["recording_hash"] = recording_hash
     profile_hash = hashlib.sha256(
@@ -37,7 +47,7 @@ def build_cache_key(
     ).hexdigest()
     return KGCacheKey(
         text_hash=block.content_hash,
-        schema_hash=content_hash(schema),
+        schema_hash=content_hash(schema, image=profile.prompt_version == "image-kg-v1"),
         prompt_version=PROMPT_VERSION
         if profile.prompt_version == "text-kg-v3"
         else profile.prompt_version,

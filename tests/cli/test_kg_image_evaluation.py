@@ -20,6 +20,7 @@ from datakeel.core.errors import BudgetError
 from datakeel.core.harness_models import BudgetLimits
 from datakeel.core.kg_image_request import ImageEvaluationRequest
 from datakeel.core.transcription_models import TranscriptionResult
+from datakeel.kg.extractors import FakeExtractor
 from datakeel.kg.loader import contracts_path, get_schema
 from datakeel.kg_eval.image_loader import image_path, load_image_cases
 from datakeel.storage.database import Database
@@ -28,6 +29,7 @@ from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_evaluations import get_evaluation, list_evaluations
 from datakeel.transcription.adapters import FakeTranscriber
 from datakeel.transcription.loader import get_profile
+from tests.kg.integration_helpers import pair_result
 from tests.kg.test_image_evaluation import archive, external_case
 
 
@@ -174,3 +176,48 @@ def test_simulated_visual_and_extraction_calls_share_ordered_budget_accounting(
     assert report.input_tokens == 80
     assert report.output_tokens == 120
     assert report.cost_usd is None
+    assert report.transcription_cost_usd is None
+    assert report.extraction_cost_usd == 0
+
+
+def test_unknown_transcription_cost_preserves_known_extraction_cost(
+    db: Database,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Actual extraction pricing remains visible beside an independently unknown visual tariff."""
+    results = _visual_pair(tmp_path)
+
+    @contextmanager
+    def visual(_profile: object) -> Iterator[FakeTranscriber]:
+        yield FakeTranscriber(results)
+
+    output = pair_result().model_copy(update={"input_tokens": 1000, "output_tokens": 100})
+
+    @contextmanager
+    def extraction(_profile: object) -> Iterator[FakeExtractor]:
+        yield FakeExtractor((output, output))
+
+    monkeypatch.setattr("datakeel.cli.kg_image_evaluation.create_transcriber", visual)
+    monkeypatch.setattr("datakeel.cli.kg_image_evaluation.create_extractor", extraction)
+    report = evaluate(
+        db,
+        ImageEvaluationRequest(
+            profile="cloud",
+            cases=tmp_path,
+            transcription_profile=str(tmp_path / "profile.yaml"),
+        ),
+    )
+    traces = list_traces(db, report.id)
+    assert report.cost_usd is None
+    assert report.transcription_cost_usd is None
+    assert report.extraction_cost_usd is not None
+    assert report.extraction_cost_usd > 0
+    assert report.extraction_cost_usd == sum(
+        trace.cost_usd for trace in traces if trace.call_type == "extraction"
+    )
+    output_text = capsys.readouterr().out
+    assert "Transcription cost USD: unknown" in output_text
+    assert f"Extraction cost USD: {report.extraction_cost_usd}" in output_text
+    assert get_evaluation(db, report.id) == report

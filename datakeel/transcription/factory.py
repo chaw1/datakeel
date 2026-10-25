@@ -12,6 +12,7 @@ import httpx
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.settings import get_settings
+from datakeel.core.transcription_errors import TranscriptionUnavailableError
 from datakeel.transcription.adapters import FakeTranscriber, ReplayTranscriber
 from datakeel.transcription.loader import read_recording
 from datakeel.transcription.ocr import RapidOCRTranscriber
@@ -55,7 +56,7 @@ class VLMTranscriber:
             key = get_settings().extraction_key(self.profile.api_key_env)
             if key is None and is_external(self.profile):
                 message = "No transcription API key configured for the selected external provider"
-                raise ValidationError(message)
+                raise TranscriptionUnavailableError(message, reason="api_key_missing")
             credentials = key.get_secret_value() if key else ""
         self.prepared_hash, self.prepared_mode = image.image_hash, selected
         self.prepared_result, self.credentials = result, credentials

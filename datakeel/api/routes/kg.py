@@ -20,6 +20,7 @@ from datakeel.core.kg_queries import (
     KGQueryResult,
     KGRelationExplanation,
     KGSourceText,
+    KGTranscriptionSelection,
 )
 from datakeel.core.link_models import EntityLink, LinkRunResult
 from datakeel.core.transcription_models import TranscriptionProfile
@@ -29,6 +30,7 @@ from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_evaluations import list_evaluations
 from datakeel.storage.kg_image_sources import image_bytes
 from datakeel.storage.kg_store import get_job, list_runs
+from datakeel.storage.kg_transcription_selection import transcription_selection
 from datakeel.storage.link_queries import entity_links, list_links
 from datakeel.storage.link_store import relink
 from datakeel.transcription.loader import load_profile as load_transcription_profile
@@ -131,12 +133,32 @@ def traces(extraction_id: str, db: DatabaseDependency) -> tuple[ModelCallTrace, 
 def list_transcription_profiles() -> tuple[TranscriptionProfile, ...]:
     """List validated image transcription configurations without reading credentials."""
     return tuple(
-        load_transcription_profile(path)
+        profile
         for path in sorted((contracts_path() / "transcription-profiles").glob("*.yaml"))
+        if (profile := load_transcription_profile(path)).backend != "fake"
+        and not profile.id.endswith("-failure")
     )
 
 
-@router.get("/images/{file_id}")
+@router.get("/transcription-selection")
+def select_transcription(
+    db: DatabaseDependency,
+    dataset_id: Annotated[str, Query(min_length=1)],
+    version_id: Annotated[str, Query(min_length=1)],
+) -> KGTranscriptionSelection:
+    """Show whether the complete version can safely default to the packaged image replay."""
+    return transcription_selection(db, dataset_id, version_id)
+
+
+@router.get(
+    "/images/{file_id}",
+    response_class=Response,
+    responses={
+        200: {"content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}},
+        404: {"description": "Image or extraction run not found"},
+        422: {"description": "Invalid image request or image revision"},
+    },
+)
 def image_content(
     file_id: str, version_id: str, extraction_id: str, db: DatabaseDependency
 ) -> Response:

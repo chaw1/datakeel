@@ -93,7 +93,7 @@ def test_geometry_when_rotated_or_out_of_bounds_encloses_then_validates() -> Non
     [
         ({"text": " **  "}, "empty"),
         ({"finish_reason": "length"}, "truncated"),
-        ({"text": "Alpha\nAlpha\nAlpha"}, "repeated"),
+        ({"text": "Alpha beta gamma\n" * 3}, "repeated"),
         ({"text": "abcdefgh" * 4}, "repeated"),
         ({"error": "timeout"}, "timeout"),
         ({"error": "http_500"}, "provider_error"),
@@ -106,7 +106,7 @@ def test_quality_when_bad_output_fails_explicitly_and_retains_usage(
     expected: str,
 ) -> None:
     """Every quality category becomes an actionable failure after observed usage is retained."""
-    result = transcription_result.model_copy(update={**change, "output_tokens": 17})
+    result = transcription_result.model_copy(update={**change, "output_tokens": 17, "mode": "vlm"})
     with pytest.raises(TranscriptionFailure) as captured:
         checked_transcribe(FakeTranscriber((result,)), image_input)
     assert captured.value.reason == expected
@@ -117,7 +117,7 @@ def test_quality_when_ocr_sparse_allows_normal_visual_transcription(
     image_input: ImageInput, transcription_result: TranscriptionResult
 ) -> None:
     """Empty OCR must not create a spurious length-ratio failure for legible VLM output."""
-    result = transcription_result.model_copy(update={"lines": (), "backend": "vlm"})
+    result = transcription_result.model_copy(update={"lines": (), "backend": "vlm", "mode": "vlm"})
     assert checked_transcribe(FakeTranscriber((result,)), image_input) == result
     result = result.model_copy(update={"text": "one normal paragraph with many distinct words"})
     assert quality_issues(result) == ()
@@ -131,7 +131,7 @@ def test_quality_when_ocr_long_enforces_two_and_half_ratio(
     """Apply the ratio only once normalized OCR reaches the declared minimum length."""
     text = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHJKL"
     result = transcription_result.model_copy(
-        update={"text": text, "lines": (_line("abcdefghijklmnopqrs"),)}
+        update={"text": text, "lines": (_line("abcdefghijklmnopqrs"),), "mode": "vlm"}
     )
     assert quality_issues(result) == ()
     result = result.model_copy(

@@ -99,9 +99,9 @@ def test_visual_quota_message_survives_cli_and_history_without_provider_body(
         json_output=json_output,
     )
     output = capsys.readouterr().out
-    expected = None if unsafe else "账户只允许免费额度\uff0c且已用完"
+    expected = "服务商额度不足"
     assert len(requests) == 1
-    assert report.failures[0].reason == "transcription:provider_error"
+    assert report.failures[0].reason == "transcription:provider_quota_exhausted"
     assert report.failures[0].message == expected
     assert report.product.all.relation_strict.tp == 0
     assert get_evaluation(db, report.id) == report
@@ -109,11 +109,7 @@ def test_visual_quota_message_survives_cli_and_history_without_provider_body(
     assert "AllocationQuota.FreeTierOnly" not in output + report.model_dump_json()
     if json_output:
         failure = json.loads(output)["failures"][0]
-        if unsafe:
-            assert "message" not in failure
-            assert "message" not in report.failures[0].model_dump()
-        else:
-            assert failure["message"] == expected
+        assert failure["message"] == expected
     else:
         assert expected is not None
         assert expected in output

@@ -14,8 +14,9 @@ from datakeel.core.kg_execution import KGDocument, KGPrepared
 from datakeel.core.kg_images import KGImageSource, TranscriptionEstimate
 from datakeel.core.kg_models import TextBlock
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.core.transcription_errors import TranscriptionUnavailableError
 from datakeel.core.transcription_models import TranscriptionMode, TranscriptionProfile
-from datakeel.kg.prompt import extraction_prompt
+from datakeel.kg.prompt import IMAGE_PROMPT_VERSION, extraction_prompt
 from datakeel.storage.transcription_pricing import (
     transcription_external,
     transcription_host,
@@ -38,24 +39,30 @@ def image_document(
     if profile.backend == "ocr" and selected_mode != "ocr":
         msg = "The ocr backend supports only ocr mode"
         raise ValidationError(msg)
-    image = normalize_image(Path(file.path).read_bytes())
-    if file.sha256 and file.sha256 != image.image_hash:
+    content = Path(file.path).read_bytes()
+    revision = hashlib.sha256(content).hexdigest()
+    if file.sha256 and file.sha256 != revision:
         msg = "Graph image no longer matches its immutable manifest"
         raise ValidationError(msg)
+    try:
+        image = normalize_image(content)
+    except TranscriptionUnavailableError:
+        image = None
     ref = AssetRef(
-        asset_type="file", asset_id=file.id, version=image.image_hash, display_name=file.filename
+        asset_type="file", asset_id=file.id, version=revision, display_name=file.filename
     )
     return KGDocument(
         asset_ref=ref,
         filename=file.filename,
         text="",
-        content_revision=image.image_hash,
+        content_revision=revision,
         blocks=(),
         image=KGImageSource(
             asset_ref=ref,
-            content_revision=image.image_hash,
-            width=image.width,
-            height=image.height,
+            content_revision=revision,
+            width=image.width if image else 0,
+            height=image.height if image else 0,
+            decode_error=None if image else "image_decode_error",
             mode=selected_mode,
             profile_id=profile.id,
             profile_digest=profile_digest(profile, recording_hash, selected_mode),
@@ -93,6 +100,7 @@ def prepare_images(
     return prepared.model_copy(
         update={
             "transcription_profile": profile,
+            "image_prompt_version": IMAGE_PROMPT_VERSION,
             "transcription_recording_hash": recording_hash,
             "transcription_accounting_price": config.price,
             "transcription_accounting_version": config.price_version,
@@ -142,7 +150,7 @@ def _extraction_bound(
         extraction_prompt(
             TextBlock(text="", start=0, end=0),
             prepared.schema_definition,
-            prepared.profile.prompt_version,
+            IMAGE_PROMPT_VERSION,
         )
     )
     # Every output token is conservatively budgeted as up to four UTF-8 bytes.

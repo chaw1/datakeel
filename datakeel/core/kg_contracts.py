@@ -138,7 +138,7 @@ class ExtractionProfile(BoundaryModel):
     chunk_size: int = Field(default=12000, gt=0)
     chunk_overlap: int = Field(default=0, ge=0)
     recording: str | None = None
-    prompt_version: str = Field(default="text-kg-v3", min_length=1)
+    prompt_version: Literal["text-kg-v3", "image-kg-v1"] = "text-kg-v3"
 
     @field_validator("request_parameters")
     @classmethod

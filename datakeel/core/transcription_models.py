@@ -13,7 +13,19 @@ from datakeel.core.models import BoundaryModel
 
 TranscriptionMode = Literal["ocr", "vlm"]
 TranscriptionBackend = Literal["ocr", "vlm", "replay", "fake"]
-TranscriptionIssue = Literal["empty", "truncated", "repeated", "timeout", "provider_error"]
+TranscriptionIssue = Literal[
+    "empty",
+    "truncated",
+    "repeated",
+    "timeout",
+    "provider_error",
+    "provider_quota_exhausted",
+    "recording_missing",
+    "ocr_not_installed",
+    "api_key_missing",
+    "mode_mismatch",
+    "image_decode_error",
+]
 
 
 class TranscriptionProfile(BoundaryModel):
@@ -26,7 +38,7 @@ class TranscriptionProfile(BoundaryModel):
     interface: Literal["openai", "ollama"] = "openai"
     base_url: str | None = None
     api_key_env: str | None = Field(default=None, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
-    prompt_version: str = Field(default="image-transcription-v1", min_length=1)
+    prompt_version: Literal["image-transcription-v1"] = "image-transcription-v1"
     max_output_tokens: int = Field(default=4096, gt=0)
     timeout_seconds: float = Field(default=120, gt=0, allow_inf_nan=False)
     request_parameters: dict[str, JsonValue] = Field(default_factory=dict)

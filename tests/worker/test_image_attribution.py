@@ -176,8 +176,8 @@ def test_free_tier_failure_preserves_safe_report_message_and_provider_category(
     run = execute_graph(db, plan)
     assert len(requests) == 1
     assert run.status == "partial"
-    assert run.report.failures[0].reason == "transcription:provider_error"
-    assert run.report.transcriptions[0].error == "账户只允许免费额度\uff0c且已用完"
+    assert run.report.failures[0].reason == "transcription:provider_quota_exhausted"
+    assert run.report.transcriptions[0].error == "服务商额度不足"
     assert run.report.transcriptions[0].status == "failed"
     assert "provider-body-must-stay-private" not in run.model_dump_json()
     assert "AllocationQuota.FreeTierOnly" not in run.model_dump_json()

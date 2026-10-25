@@ -82,7 +82,7 @@ def _read_images(
     identifiers = {
         document.asset_ref.asset_id: document.content_revision
         for document in documents
-        if document.image
+        if document.image and not document.image.decode_error
     }
     if not identifiers:
         return ()

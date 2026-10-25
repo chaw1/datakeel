@@ -28,6 +28,15 @@ def image_profile(profile: ExtractionProfile) -> ExtractionProfile:
     return profile.model_copy(update={"prompt_version": IMAGE_PROMPT_VERSION})
 
 
+def document_profile(profile: ExtractionProfile, *, image: bool) -> ExtractionProfile:
+    """Keep text extraction semantics independent of other files in the same dataset."""
+    return (
+        image_profile(profile)
+        if image
+        else profile.model_copy(update={"prompt_version": PROMPT_VERSION})
+    )
+
+
 def output_schema(schema: KGSchema) -> dict[str, JsonValue]:
     """Constrain declared entity and relation vocabulary in provider structured output."""
     entity: dict[str, JsonValue] = {
@@ -108,7 +117,15 @@ def extraction_prompt(
         + "\n".join(schema.rules)
         + "\n"
         + examples
-        + ("\n" + IMAGE_DIRECTION_RULE if prompt_version == IMAGE_PROMPT_VERSION else "")
+        + (
+            "\n" + IMAGE_DIRECTION_RULE
+            if prompt_version == IMAGE_PROMPT_VERSION
+            and any(
+                item.name == "derived_from" and "dataset" in item.domain and "dataset" in item.range
+                for item in schema.relations
+            )
+            else ""
+        )
         + "\n<source_text>\n"
         + block.text
         + "\n</source_text>"

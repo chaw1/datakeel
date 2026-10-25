@@ -26,10 +26,16 @@ class KGExecution:
     """Keep successful products and visible failures for one leased worker attempt."""
 
     def __init__(
-        self, queue: DatabaseQueue, lease: Lease, job: KGJob, adapter: MeteredExtractor
+        self,
+        queue: DatabaseQueue,
+        lease: Lease,
+        job: KGJob,
+        adapter: MeteredExtractor,
+        image_adapter: MeteredExtractor | None = None,
     ) -> None:
         """Bind extraction to the immutable job and current queue fence."""
         self.queue, self.lease, self.job, self.adapter = queue, lease, job, adapter
+        self.adapters = {False: adapter, True: image_adapter or adapter}
         self.fence = KGLeaseFence(task_id=lease.task_id, shard_id=lease.shard_id, owner=lease.owner)
         self.products: list[ProductExtraction] = []
         self.failures: list[KGBlockFailure] = list(job.run.report.failures)
@@ -37,9 +43,11 @@ class KGExecution:
         self.ignored_top_level_keys = 0
         self.stopped = any(not failure.attempted for failure in self.failures)
         prepared = job.prepared
-        self.extractor = extraction_identity(
-            prepared.schema_definition, prepared.profile, prepared.recording_hash
-        )
+        self.profiles = {image: prepared.extraction_profile(image=image) for image in (False, True)}
+        self.extractors = {
+            image: extraction_identity(prepared.schema_definition, profile, prepared.recording_hash)
+            for image, profile in self.profiles.items()
+        }
 
     def _failure(
         self, document: KGDocument, block: TextBlock, reason: str, *, attempted: bool = True
@@ -66,7 +74,7 @@ class KGExecution:
             file=document.asset_ref,
             text=document.text,
             content_revision=document.content_revision,
-            extractor=self.extractor,
+            extractor=self.extractors[document.image is not None],
             block_start=block.start,
             block_end=block.end,
         )
@@ -85,8 +93,8 @@ class KGExecution:
         key = build_cache_key(
             block,
             prepared.schema_definition,
-            prepared.profile,
-            self.extractor,
+            self.profiles[document.image is not None],
+            self.extractors[document.image is not None],
             prepared.recording_hash,
         )
         result = cached_block(self.queue.db, key)
@@ -99,7 +107,9 @@ class KGExecution:
                 msg = "Graph worker lease was lost before a model request"
                 raise ConflictError(msg)
             try:
-                result = checked_extract(self.adapter, block, prepared.schema_definition)
+                result = checked_extract(
+                    self.adapters[document.image is not None], block, prepared.schema_definition
+                )
             except BudgetError:
                 self.stopped = True
                 return self._failure(document, block, "budget_exceeded", attempted=False)
@@ -155,7 +165,7 @@ class KGExecution:
         )
         status = (
             "budget_exceeded"
-            if self.stopped or self.adapter.exceeded
+            if self.stopped or any(adapter.exceeded for adapter in self.adapters.values())
             else "partial"
             if self.failures
             else "completed"

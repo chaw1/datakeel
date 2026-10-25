@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import sys
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
@@ -17,6 +18,7 @@ from datakeel.core.transcription_models import TranscriptionProfile
 from datakeel.storage.harness_service import list_traces
 from datakeel.storage.transcription_store import cached_transcription, save_transcription
 from datakeel.transcription.factory import VLMTranscriber
+from datakeel.transcription.ocr import RapidOCRTranscriber
 from tests.kg.integration_helpers import execute_graph, install_adapter, pair_result
 from tests.worker.image_helpers import image_dataset, prepare_image, transcript, use_profile
 
@@ -24,23 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
 
-    from datakeel.core.transcription_models import (
-        ImageInput,
-        TranscriptionMode,
-        TranscriptionResult,
-    )
     from datakeel.storage.database import Database
-
-
-class MissingOCR:
-    """Represent an unavailable optional engine before any visual request can start."""
-
-    def transcribe(
-        self, image: ImageInput, mode: TranscriptionMode | None = None
-    ) -> TranscriptionResult:
-        """Fail locally without credential access or model transport."""
-        message = "Optional OCR engine is unavailable"
-        raise ImportError(message)
 
 
 def test_ocr_preflight_failure_has_no_model_trace_or_extraction(
@@ -64,15 +50,17 @@ def test_ocr_preflight_failure_has_no_model_trace_or_extraction(
         with httpx.Client(
             transport=httpx.MockTransport(lambda _: pytest.fail("Model request"))
         ) as client:
-            yield VLMTranscriber(profile, client, MissingOCR())
+            yield VLMTranscriber(profile, client, RapidOCRTranscriber())
 
     monkeypatch.setattr("datakeel.worker.kg_transcription.create_transcriber", factory)
     monkeypatch.setattr(
         "datakeel.transcription.factory.get_settings", lambda: pytest.fail("Credential read")
     )
+    monkeypatch.setitem(sys.modules, "onnxruntime", None)
     extraction = install_adapter(monkeypatch, (pair_result(),))
     run = execute_graph(db, prepare_image(db, dataset))
-    assert run.report.transcriptions[0].error == "ocr_not_installed"
+    assert "pip install rapidocr==3.10.0 onnxruntime" in (run.report.transcriptions[0].error or "")
+    assert run.report.failures[0].reason == "transcription:ocr_not_installed"
     assert run.report.transcription_failed == 1
     assert run.report.cloud_calls == 0
     assert not list_traces(db, run.id)

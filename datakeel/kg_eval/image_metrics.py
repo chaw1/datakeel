@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from itertools import pairwise
 from typing import TYPE_CHECKING
 
 from datakeel.core.kg_eval_models import ImageGroupMetrics, ImageScoringView
@@ -23,30 +22,18 @@ type Box = tuple[float, float, float, float]
 _IOU_THRESHOLD = 0.5
 
 
-def union_area(boxes: tuple[Box, ...]) -> float:
-    """Compute the area of a rectangle union without filling gaps between evidence regions."""
-    xs = sorted({value for box in boxes for value in (box[0], box[2])})
-    area = 0.0
-    for left, right in pairwise(xs):
-        intervals = sorted((b[1], b[3]) for b in boxes if b[0] < right and b[2] > left)
-        high = float("-inf")
-        height = 0.0
-        for bottom, top in intervals:
-            height += max(0.0, top - max(bottom, high))
-            high = max(high, top)
-        area += (right - left) * height
-    return area
-
-
 def region_iou(regions: tuple[Box, ...], gold: Box) -> float:
-    """Compare the true geometric union of image regions with an independent gold rectangle."""
-    clipped = tuple(
-        (max(b[0], gold[0]), max(b[1], gold[1]), min(b[2], gold[2]), min(b[3], gold[3]))
-        for b in regions
-        if max(b[0], gold[0]) < min(b[2], gold[2]) and max(b[1], gold[1]) < min(b[3], gold[3])
+    """Compare the enclosing rectangle of every relation region with one gold rectangle."""
+    if not regions:
+        return 0.0
+    left, bottom = min(box[0] for box in regions), min(box[1] for box in regions)
+    right, top = max(box[2] for box in regions), max(box[3] for box in regions)
+    intersection = max(0.0, min(right, gold[2]) - max(left, gold[0])) * max(
+        0.0, min(top, gold[3]) - max(bottom, gold[1])
     )
-    intersection = union_area(clipped)
-    total = union_area(regions) + union_area((gold,)) - intersection
+    total = (
+        (right - left) * (top - bottom) + (gold[2] - gold[0]) * (gold[3] - gold[1]) - intersection
+    )
     return intersection / total if total else 0.0
 
 

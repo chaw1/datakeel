@@ -35,6 +35,7 @@ if TYPE_CHECKING:
         {"backend": "unknown"},
         {"mode": "auto"},
         {"cloud_locator": True},
+        {"prompt_version": "image-transcription-unknown"},
         {"api_key_env": "not a variable name"},
         {"base_url": "https://user:password@fixture.invalid/v1"},
         {"base_url": "https://fixture.invalid?query=synthetic"},
@@ -158,7 +159,7 @@ def test_replay_when_hash_matches_uses_archive_without_profile_key(
     )
     for profile in (get_profile(), get_profile("fake")):
         with create_transcriber(profile, recording=archive) as adapter:
-            assert adapter.transcribe(image_input).text == record.text
+            assert adapter.transcribe(image_input, "ocr").text == record.text
     adapter = ReplayTranscriber(archive)
     with pytest.raises(ValidationError, match="no visual-model"):
         adapter.transcribe(image_input, "vlm")
@@ -211,3 +212,11 @@ def test_replay_when_recording_loaded_in_factory_uses_packaged_bytes(
         create_transcriber(get_profile()),
     ):
         pytest.fail("Must not yield an unconfigured adapter")
+
+
+def test_profile_loader_when_prompt_version_unknown_rejects(tmp_path: Path) -> None:
+    """Reject unknown prompt semantics when loading YAML before any transcriber exists."""
+    path = tmp_path / "unsupported.yaml"
+    path.write_text("id: fixture\nbackend: fake\nmodel: fixture\nprompt_version: unknown-version\n")
+    with pytest.raises(ValidationError, match="invalid transcription profile"):
+        load_profile(path)

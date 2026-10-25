@@ -163,9 +163,7 @@ class KGEvalFailure(BoundaryModel):
     start: int = Field(ge=0)
     end: int = Field(ge=0)
     reason: str
-    message: Literal["账户只允许免费额度\uff0c且已用完"] | None = Field(
-        default=None, exclude_if=lambda value: value is None
-    )
+    message: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ImageGroupMetrics(BoundaryModel):
@@ -209,6 +207,8 @@ class KGEvalReport(BoundaryModel):
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
     cost_usd: Decimal | None = None
+    transcription_cost_usd: Decimal | None = None
+    extraction_cost_usd: Decimal | None = None
     metric_convention: str = (
         "Independent benchmark normalization and aliases; tolerated triples contribute neither TP "
         "nor FP; unmapped endpoints count as FP; empty precision and recall are zero. "

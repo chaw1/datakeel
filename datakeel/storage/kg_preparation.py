@@ -22,7 +22,7 @@ from datakeel.core.models import AssetRef, FileItem
 from datakeel.core.transcription_models import TranscriptionProfile
 from datakeel.kg.loader import contracts_path, get_profile, get_schema
 from datakeel.kg.policy import is_external, target_host
-from datakeel.kg.prompt import extraction_prompt, image_profile
+from datakeel.kg.prompt import document_profile, extraction_prompt
 from datakeel.kg.text import chunk_text, decode_text
 from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.datasets import materialize_files
@@ -160,9 +160,8 @@ def _prepared(
 def prepare_kg_params(session: Session, params: RunKGExtractionParams) -> RunKGExtractionParams:
     """Recompute every supplied snapshot before it enters a signed plan digest."""
     profile, schema = get_profile(params.profile_id), get_schema(params.schema_id)
+    profile = document_profile(profile, image=False)
     documents = read_documents(session, params, profile)
-    if any(document.image is not None for document in documents):
-        profile = image_profile(profile)
     prepared = _prepared(documents, schema, profile)
     if any(document.image is not None for document in documents):
         prepared = prepare_images(

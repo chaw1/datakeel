@@ -20,7 +20,7 @@ from datakeel.core.kg_execution import KGDocument
 from datakeel.core.kg_images import KGImageSource
 from datakeel.core.kg_product import KGSource, ProductExtraction
 from datakeel.core.models import AssetRef, BoundaryModel
-from datakeel.core.transcription_errors import TranscriptionFailure
+from datakeel.core.transcription_errors import TranscriptionFailure, TranscriptionUnavailableError
 from datakeel.core.transcription_models import TranscriptionResult
 from datakeel.evidence.kg_images import enrich_image_product
 from datakeel.kg.assembly import assemble_extraction
@@ -170,37 +170,50 @@ class ImageCaseRunner:
             transcript=transcript,
         )
 
+    def _failed(self, case: KGImageCase, error: TranscriptionFailure) -> ImageCaseExecution:
+        record = ScoredRecord(pid=case.id, error=f"transcription:{error.reason}", failed_blocks=1)
+        return ImageCaseExecution(
+            raw=record,
+            product=record,
+            blocked=(),
+            failures=(
+                KGEvalFailure(
+                    case_id=case.id,
+                    start=0,
+                    end=0,
+                    reason=record.error or "transcription_failed",
+                    message="服务商额度不足"
+                    if "provider_quota_exhausted" in error.result.quality_issues
+                    else None,
+                ),
+            ),
+            transcript=error.result,
+        )
+
     def execute(self, case: KGImageCase, path: Path) -> ImageCaseExecution:
         """Keep transcription failure visible and never extract from rejected output."""
-        image = normalize_image(path.read_bytes())
-        if (case.width and case.width != image.width) or (
-            case.height and case.height != image.height
-        ):
-            msg = "Image case dimensions differ from orientation-corrected pixels"
-            raise ValidationError(msg)
         try:
+            image = normalize_image(path.read_bytes())
+            if (case.width and case.width != image.width) or (
+                case.height and case.height != image.height
+            ):
+                msg = "Image case dimensions differ from orientation-corrected pixels"
+                raise ValidationError(msg)
             transcript = checked_transcribe(self.transcriber, image, self.transcription.mode)
+        except TranscriptionUnavailableError as error:
+            result = TranscriptionResult(
+                text="",
+                width=case.width or 1,
+                height=case.height or 1,
+                backend=self.transcription.backend,
+                model=self.transcription.model,
+                mode=self.transcription.mode,
+                error=str(error),
+                quality_issues=(error.reason,),
+            )
+            return self._failed(case, TranscriptionFailure(error.reason, result))
         except TranscriptionFailure as error:
-            record = ScoredRecord(
-                pid=case.id, error=f"transcription:{error.reason}", failed_blocks=1
-            )
-            return ImageCaseExecution(
-                raw=record,
-                product=record,
-                blocked=(),
-                failures=(
-                    KGEvalFailure(
-                        case_id=case.id,
-                        start=0,
-                        end=0,
-                        reason=record.error or "transcription_failed",
-                        message="账户只允许免费额度\uff0c且已用完"
-                        if error.result.error == "账户只允许免费额度\uff0c且已用完"
-                        else None,
-                    ),
-                ),
-                transcript=error.result,
-            )
+            return self._failed(case, error)
         if (transcript.width, transcript.height) != (image.width, image.height):
             msg = "Transcription geometry differs from orientation-corrected pixels"
             raise ValidationError(msg)

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import hashlib
+import unicodedata
 from decimal import Decimal
 from time import perf_counter
 from typing import TYPE_CHECKING
@@ -42,7 +43,8 @@ def _recorded(
     records: list[ScoredRecord] = []
     for execution in executions:
         transcript = execution.transcript
-        original = originals.get(hashlib.sha256(transcript.text.encode()).hexdigest())
+        text = unicodedata.normalize("NFC", transcript.text)
+        original = originals.get(hashlib.sha256(text.encode()).hexdigest())
         record = ScoredRecord.model_validate(original) if original is not None else execution.raw
         relations: list[ScoredRelation] = []
         for relation in record.relations:
@@ -100,10 +102,12 @@ def evaluate_image(
         failures=tuple(item for execution in executions for item in execution.failures),
         elapsed_seconds=perf_counter() - started,
         cost_usd=Decimal(0) if offline else None,
+        transcription_cost_usd=Decimal(0) if transcription.backend != "vlm" else None,
+        extraction_cost_usd=Decimal(0) if profile.extractor != "llm" else None,
         metric_convention=(
             "Independent recording scores merge each quote's OCR fragments into one rectangle. "
-            "Product scores read back persisted candidates and compare the geometric union "
-            "of all ImageRegion rectangles with gold at IoU >= 0.5. Missing gold boxes "
+            "Product scores read back persisted candidates and compare the enclosing rectangle "
+            "of all ImageRegion rectangles with any gold box at IoU >= 0.5. Missing gold boxes "
             "are excluded from localisation denominators. Identical transcript hashes "
             "retain the smallest case ID."
         ),

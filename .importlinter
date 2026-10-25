@@ -304,6 +304,8 @@ ignore_imports =
     datakeel.storage.kg_inputs -> datakeel.transcription.loader
     datakeel.storage.kg_preparation -> datakeel.transcription.loader
     datakeel.storage.kg_image_sources -> datakeel.transcription.images
+# UI replay recommendations compare frozen file hashes with validated recordings only.
+    datakeel.storage.kg_transcription_selection -> datakeel.transcription.loader
 # Successful transcript persistence enforces the same pure quality policy as execution.
     datakeel.storage.transcription_store -> datakeel.transcription.quality
     datakeel.evidence.kg_images -> datakeel.transcription.alignment

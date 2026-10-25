@@ -21,7 +21,7 @@ from datakeel.kg.extractors import FakeExtractor, ReplayExtractor
 from datakeel.kg.loader import contracts_path, get_profile, get_schema, load_contract
 from datakeel.kg.prompt import IMAGE_DIRECTION_RULE, extraction_prompt
 from datakeel.kg_eval.image_loader import image_path, load_image_cases
-from datakeel.kg_eval.image_metrics import image_scores, region_iou, union_area
+from datakeel.kg_eval.image_metrics import image_scores, region_iou
 from datakeel.kg_eval.image_service import evaluate_image
 from datakeel.transcription.adapters import FakeTranscriber, ReplayTranscriber
 from datakeel.transcription.loader import get_profile as get_transcription_profile
@@ -128,13 +128,14 @@ def test_recording_deduplication_preserves_smallest_case_and_error() -> None:
         adapter.extract(TextBlock(text=text, start=0, end=len(text)), get_schema())
 
 
-def test_product_box_iou_uses_geometric_union_without_filling_gaps() -> None:
-    """Two narrow regions cannot claim the empty space inside their enclosing rectangle."""
+def test_product_box_iou_merges_all_regions_into_enclosing_rectangle() -> None:
+    """Separated source fragments use the same enclosing-box convention as gold geometry."""
     regions = ((0.0, 0.0, 1.0, 10.0), (9.0, 0.0, 10.0, 10.0))
-    assert union_area(regions) == 20
-    assert region_iou(regions, (0.0, 0.0, 10.0, 10.0)) == 0.2
-    assert union_area(((0, 0, 5, 5), (2, 2, 8, 8))) == 52
+    assert region_iou(regions, (0.0, 0.0, 10.0, 10.0)) == 1
+    assert region_iou(regions, (0.0, 0.0, 5.0, 10.0)) == 0.5
+    assert region_iou(regions, (20.0, 20.0, 30.0, 30.0)) == 0
     assert region_iou((), (0, 0, 0, 0)) == 0
+    assert region_iou(((0, 0, 0, 0),), (0, 0, 0, 0)) == 0
 
 
 def test_missing_gold_boxes_are_excluded_and_missing_transcript_is_failed() -> None:

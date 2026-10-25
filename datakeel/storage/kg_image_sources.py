@@ -6,7 +6,7 @@
 from pathlib import Path
 from urllib.parse import urlencode
 
-from sqlalchemy import select
+from sqlalchemy import JSON, and_, exists, func, or_, select, type_coerce
 from sqlalchemy.orm import Session
 
 from datakeel.core.errors import NotFoundError, ValidationError
@@ -23,6 +23,40 @@ from datakeel.transcription.images import normalize_image
 
 def _jobs(session: Session, extraction_id: str | None = None) -> tuple[KGJob, ...]:
     statement = select(KGRunRow).order_by(KGRunRow.created_at.desc(), KGRunRow.id)
+    if extraction_id:
+        statement = statement.where(KGRunRow.id == extraction_id)
+    return tuple(KGJob.model_validate(row.payload) for row in session.scalars(statement))
+
+
+def _source_jobs(
+    session: Session, asset_id: str, version_id: str, extraction_id: str | None
+) -> tuple[KGJob, ...]:
+    # Filter in SQL so unrelated frozen documents are neither loaded nor validated.
+    expand = (
+        func.json_each if session.get_bind().dialect.name == "sqlite" else func.json_array_elements
+    )
+    documents = expand(KGRunRow.payload["documents"]).table_valued("value")
+    document = type_coerce(documents.c.value, JSON)
+    original = document["image"]["asset_ref"]
+    transcript = document["asset_ref"]
+    matching = exists(
+        select(1)
+        .select_from(documents)
+        .where(
+            document["image"]["asset_ref"]["asset_id"].as_string().is_not(None),
+            or_(
+                and_(
+                    original["asset_id"].as_string() == asset_id,
+                    original["version"].as_string() == version_id,
+                ),
+                and_(
+                    transcript["asset_id"].as_string() == asset_id,
+                    transcript["version"].as_string() == version_id,
+                ),
+            ),
+        )
+    )
+    statement = select(KGRunRow).where(matching).order_by(KGRunRow.created_at.desc(), KGRunRow.id)
     if extraction_id:
         statement = statement.where(KGRunRow.id == extraction_id)
     return tuple(KGJob.model_validate(row.payload) for row in session.scalars(statement))
@@ -48,7 +82,7 @@ def image_source(
 ) -> KGSourceText | None:
     """Read exact transcript content or its corrected original image presentation."""
     with db.session() as session:
-        for job in _jobs(session, extraction_id):
+        for job in _source_jobs(session, asset_id, version_id, extraction_id):
             for document in job.documents:
                 image = document.image
                 if image is None:

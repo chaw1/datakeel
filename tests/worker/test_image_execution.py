@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 import pytest
@@ -100,7 +101,7 @@ def test_transcription_quality_failure_is_partial_and_never_cached(
     changes = {
         "empty": {"text": ""},
         "truncated": {"finish_reason": "length"},
-        "repeated": {"text": "Repeated line\n" * 3},
+        "repeated": {"text": "Repeated line\n" * 3, "mode": "vlm"},
         "timeout": {"error": "timeout"},
     }
     install_transcriber(
@@ -227,6 +228,13 @@ def test_unknown_visual_price_settles_observed_usage_and_cloud_trace(
     assert visual.accounted_tokens == 30
     assert run.report.cloud_calls == 1
     assert run.report.cloud_cost_usd is None
+    assert run.report.cost_usd is None
+    assert run.report.transcription_cost_usd is None
+    if width == 200:
+        assert run.report.extraction_cost_usd == sum(
+            (trace.cost_usd for trace in traces if trace.call_type == "extraction"),
+            start=Decimal(0),
+        )
     assert get_job(db, run.id).documents[0].image is not None
 
 

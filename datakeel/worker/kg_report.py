@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from datakeel.core.evidence_models import ImageRegion
 from datakeel.core.harness_models import ModelCallTrace
+from datakeel.core.kg_costs import known_cost
 from datakeel.core.kg_execution import KGBlockFailure, KGJob, KGReport
 from datakeel.core.kg_product import ProductExtraction, SchemaProposal
 from datakeel.kg.aliases import same_as_drafts
@@ -80,9 +81,7 @@ def base_report(
         located_relations=located,
         unlocated_relations=image_relations - located,
         cloud_calls=len(cloud),
-        cloud_cost_usd=None
-        if any(trace.billing_status == "unknown" for trace in cloud)
-        else sum((trace.cost_usd for trace in cloud), start=Decimal(0)),
+        cloud_cost_usd=known_cost(cloud),
         documents=len(job.prepared.documents),
         blocks=sum(len(document.blocks) for document in job.documents)
         + job.run.report.transcription_failed,
@@ -98,7 +97,9 @@ def base_report(
         input_tokens=sum(usage.input_tokens for usage in usages),
         output_tokens=sum(usage.output_tokens for usage in usages),
         accounted_cost_usd=accounted,
-        cost_usd=None if any(trace.billing_status == "unknown" for trace in traces) else accounted,
+        cost_usd=known_cost(traces),
+        transcription_cost_usd=known_cost(traces, "transcription"),
+        extraction_cost_usd=known_cost(traces, "extraction"),
         failed=sum(failure.attempted for failure in failures),
         unexecuted=sum(not failure.attempted for failure in failures),
         failures=tuple(failures),

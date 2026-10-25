@@ -14,6 +14,7 @@ from pydantic import ValidationError as ModelValidationError
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import ImageRegion
 from datakeel.core.kg_image_eval import KGImageSuite
+from datakeel.core.transcription_errors import TranscriptionUnavailableError
 from datakeel.kg.loader import contracts_path, load_contract
 from datakeel.kg_eval.loader import validate_case
 from datakeel.transcription.images import normalize_image
@@ -52,7 +53,11 @@ def load_image_cases(
         if case.image_hash and hashlib.sha256(content).hexdigest() != case.image_hash:
             msg = "Image case content differs from its recorded hash"
             raise ValidationError(msg)
-        image = normalize_image(content)
+        digest.update(content)
+        try:
+            image = normalize_image(content)
+        except TranscriptionUnavailableError:
+            continue
         try:
             for relation in case.relations:
                 for box in relation.boxes:
@@ -60,5 +65,4 @@ def load_image_cases(
         except ModelValidationError as error:
             msg = "Image gold box lies outside corrected image pixels"
             raise ValidationError(msg) from error
-        digest.update(content)
     return suite, digest.hexdigest(), directory

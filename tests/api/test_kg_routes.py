@@ -9,10 +9,15 @@ from typing import TYPE_CHECKING
 
 from datakeel.api.app import create_app
 from datakeel.core import predicate_registry
+from datakeel.kg.loader import contracts_path
+from datakeel.storage.dataset_service import import_paths, list_versions
 from tests.asgi_client import TestClient
 from tests.kg.helpers import graph_product, seed_graph
+from tests.worker.image_helpers import image_dataset
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pytest
 
     from datakeel.storage.database import Database
@@ -65,3 +70,72 @@ def test_cold_non_graph_evidence_query_recovers_graph_vocabulary(
         response = client.post("/api/evidence/query", json={})
     assert response.status_code == 200, response.text
     assert "kg.uses" in {item.id for item in predicate_registry.registered_predicates()}
+
+
+def test_transcription_profiles_hide_scripted_backends_and_failures(db: Database) -> None:
+    """Only usable configurations are advertised, while packaged demo replay remains selectable."""
+    with TestClient(create_app(db)) as client:
+        profiles = client.get("/api/kg/transcription-profiles").json()
+    assert any(profile["id"] == "replay-image-demo" for profile in profiles)
+    assert all(profile["backend"] != "fake" for profile in profiles)
+    assert all(not profile["id"].endswith("-failure") for profile in profiles)
+
+
+def test_image_openapi_documents_png_and_expected_failures(db: Database) -> None:
+    """Binary PNG success and domain/validation failures are visible to generated clients."""
+    with TestClient(create_app(db)) as client:
+        schema = client.get("/api/openapi.json").json()
+        responses = schema["paths"]["/api/kg/images/{file_id}"]["get"]["responses"]
+        assert set(responses["200"]["content"]) == {"image/png"}
+        assert {"404", "422"} <= responses.keys()
+        assert client.get("/api/kg/images/missing").status_code == 422
+        assert (
+            client.get("/api/kg/images/missing?version_id=v&extraction_id=missing").status_code
+            == 404
+        )
+
+
+def test_transcription_default_requires_complete_recording_coverage(
+    db: Database, tmp_path: Path
+) -> None:
+    """One unknown image prevents the demo default; text files neither require nor block it."""
+    generated = image_dataset(db, tmp_path)
+    text = tmp_path / "document.txt"
+    text.write_text("Acme uses Widget.", encoding="utf-8")
+    recorded = contracts_path() / "eval/image/images/en01_clean.png"
+    choices = (
+        ("Recorded and text", [recorded, text], "replay-image-demo", 1),
+        ("Mixed known and unknown", [recorded, tmp_path / "image-0.png"], None, 2),
+        ("Text only", [text], None, 0),
+    )
+    with TestClient(create_app(db)) as client:
+        unknown = client.get(
+            "/api/kg/transcription-selection",
+            params={
+                "dataset_id": generated.dataset_id,
+                "version_id": generated.version_id,
+            },
+        )
+        assert unknown.json() == {"image_count": 1, "default_profile_id": None}
+        for name, paths, default, count in choices:
+            dataset = import_paths(db, name, paths)
+            version = list_versions(db, dataset.id)[0]
+            response = client.get(
+                "/api/kg/transcription-selection",
+                params={
+                    "dataset_id": dataset.id,
+                    "version_id": version.id,
+                },
+            )
+            assert response.status_code == 200
+            assert response.json() == {"image_count": count, "default_profile_id": default}
+        assert (
+            client.get(
+                "/api/kg/transcription-selection",
+                params={
+                    "dataset_id": generated.dataset_id,
+                    "version_id": "missing",
+                },
+            ).status_code
+            == 404
+        )

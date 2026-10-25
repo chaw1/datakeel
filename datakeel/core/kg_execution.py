@@ -107,6 +107,14 @@ class KGPrepared(BoundaryModel):
     transcription_accounting_price: ModelPrice | None = None
     transcription_accounting_version: str | None = None
     handwriting: bool = False
+    image_prompt_version: Literal["image-kg-v1"] | None = None
+
+    def extraction_profile(self, *, image: bool) -> ExtractionProfile:
+        """Select the consent-bound image prompt while preserving legacy text semantics."""
+        version = (
+            (self.image_prompt_version or self.profile.prompt_version) if image else "text-kg-v3"
+        )
+        return self.profile.model_copy(update={"prompt_version": version})
 
 
 class KGBlockFailure(BoundaryModel):
@@ -142,6 +150,8 @@ class KGReport(BoundaryModel):
     input_tokens: int = 0
     output_tokens: int = 0
     cost_usd: Decimal | None = None
+    transcription_cost_usd: Decimal | None = None
+    extraction_cost_usd: Decimal | None = None
     accounted_cost_usd: Decimal = Decimal(0)
     elapsed_seconds: float = 0
     error: str | None = None

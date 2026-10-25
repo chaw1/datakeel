@@ -8,7 +8,7 @@ from contextlib import ExitStack
 from datakeel.core.errors import BudgetError, ConflictError, ValidationError
 from datakeel.core.kg_execution import KGBlockFailure, KGDocument, KGInputs, KGJob, KGLeaseFence
 from datakeel.core.kg_images import TranscriptionObservation
-from datakeel.core.transcription_errors import TranscriptionFailure
+from datakeel.core.transcription_errors import TranscriptionFailure, TranscriptionUnavailableError
 from datakeel.core.transcription_models import ImageInput, TranscriptionProfile, TranscriptionResult
 from datakeel.kg.text import chunk_text, decode_text
 from datakeel.storage.kg_image_preparation import transcript_ref
@@ -48,7 +48,12 @@ class ImageTranscription:
             )
         return self.adapter
 
-    def _result(self, document: KGDocument, image: ImageInput) -> tuple[TranscriptionResult, bool]:
+    def _result(
+        self, document: KGDocument, image: ImageInput | None
+    ) -> tuple[TranscriptionResult, bool]:
+        if image is None:
+            msg = "Image could not be decoded"
+            raise TranscriptionUnavailableError(msg, reason="image_decode_error")
         profile, source = self.job.prepared.transcription_profile, document.image
         if profile is None or source is None:
             msg = "Image transcription requires a prepared profile and image"
@@ -71,7 +76,7 @@ class ImageTranscription:
             raise ConflictError(msg)
         return result, False
 
-    def _document(self, document: KGDocument, image: ImageInput) -> KGDocument | None:
+    def _document(self, document: KGDocument, image: ImageInput | None) -> KGDocument | None:
         source = document.image
         if source is None:
             return document
@@ -84,39 +89,13 @@ class ImageTranscription:
         )
         try:
             result, cached = self._result(document, image)
-        except (TranscriptionFailure, BudgetError, TimeoutError, ImportError) as error:
-            reason = (
-                error.reason
-                if isinstance(error, TranscriptionFailure)
-                else (
-                    "budget_exceeded"
-                    if isinstance(error, BudgetError)
-                    else "timeout"
-                    if isinstance(error, TimeoutError)
-                    else "ocr_not_installed"
-                )
-            )
-            attempted = not isinstance(error, BudgetError)
-            self.failures.append(
-                KGBlockFailure(
-                    file_id=source.asset_ref.asset_id,
-                    filename=document.filename,
-                    start=0,
-                    end=0,
-                    reason=f"transcription:{reason}",
-                    attempted=attempted,
-                )
-            )
-            self.observations.append(
-                observation.model_copy(
-                    update={
-                        "status": "failed" if attempted else "unexecuted",
-                        "error": (error.result.error or reason)
-                        if isinstance(error, TranscriptionFailure)
-                        else reason,
-                    }
-                )
-            )
+        except (
+            TranscriptionFailure,
+            TranscriptionUnavailableError,
+            BudgetError,
+            TimeoutError,
+        ) as error:
+            self._failed(observation, error)
             return None
         self.observations.append(
             observation.model_copy(
@@ -131,6 +110,40 @@ class ImageTranscription:
             )
         )
         return self._derived(document, result)
+
+    def _failed(
+        self,
+        observation: TranscriptionObservation,
+        error: TranscriptionFailure | TranscriptionUnavailableError | BudgetError | TimeoutError,
+    ) -> None:
+        reason = (
+            error.reason
+            if isinstance(error, (TranscriptionFailure, TranscriptionUnavailableError))
+            else ("budget_exceeded" if isinstance(error, BudgetError) else "timeout")
+        )
+        attempted = not isinstance(error, BudgetError)
+        self.failures.append(
+            KGBlockFailure(
+                file_id=observation.file_id,
+                filename=observation.filename,
+                start=0,
+                end=0,
+                reason=f"transcription:{reason}",
+                attempted=attempted,
+            )
+        )
+        self.observations.append(
+            observation.model_copy(
+                update={
+                    "status": "failed" if attempted else "unexecuted",
+                    "error": (error.result.error or reason)
+                    if isinstance(error, TranscriptionFailure)
+                    else str(error)
+                    if isinstance(error, TranscriptionUnavailableError)
+                    else reason,
+                }
+            )
+        )
 
     def _derived(self, document: KGDocument, result: TranscriptionResult) -> KGDocument:
         source = document.image
@@ -167,7 +180,7 @@ class ImageTranscription:
             if document.image is None:
                 documents.append(document)
             elif (
-                derived := self._document(document, images[document.asset_ref.asset_id])
+                derived := self._document(document, images.get(document.asset_ref.asset_id))
             ) is not None:
                 documents.append(derived)
         report = self.job.run.report.model_copy(

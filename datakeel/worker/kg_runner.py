@@ -55,6 +55,17 @@ class _DeferredMetering(MeteredExtractor):
         return super().extract(block, schema)
 
 
+def _adapter(
+    db: Database,
+    config: KGMeteringConfig,
+    prepared: KGPrepared,
+    recording: Recording | None,
+    stack: ExitStack,
+) -> _DeferredMetering:
+    selected = prepared.model_copy(update={"profile": config.profile})
+    return _DeferredMetering(db, config, _DeferredAdapter(selected, recording, stack))
+
+
 def execute_kg(queue: DatabaseQueue, lease: Lease) -> bool:
     """Publish a complete or partial graph report under the existing queue fence."""
     job = get_job(queue.db, lease.kg_run_id or "")
@@ -67,7 +78,7 @@ def execute_kg(queue: DatabaseQueue, lease: Lease) -> bool:
     prepared = job.prepared
     config = KGMeteringConfig(
         run_id=job.run.id,
-        profile=prepared.profile,
+        profile=prepared.extraction_profile(image=False),
         price=prepared.accounting_price,
         price_version=prepared.accounting_price_version,
         known_price=prepared.estimate.price is not None,
@@ -80,10 +91,16 @@ def execute_kg(queue: DatabaseQueue, lease: Lease) -> bool:
         with ExitStack() as stack:
             if prepared.transcription_profile is not None:
                 job = ImageTranscription(queue, lease, job, stack).run(inputs)
-            adapter = _DeferredMetering(
-                queue.db, config, _DeferredAdapter(prepared, inputs.recording, stack)
+            adapter = _adapter(queue.db, config, prepared, inputs.recording, stack)
+            profile = prepared.extraction_profile(image=True)
+            image_adapter = _adapter(
+                queue.db,
+                config.model_copy(update={"profile": profile}),
+                prepared.model_copy(update={"profile": profile}),
+                inputs.recording,
+                stack,
             )
-            completion = KGExecution(queue, lease, job, adapter).run()
+            completion = KGExecution(queue, lease, job, adapter, image_adapter).run()
         return queue.finish(lease, lease.inputs, [], evidence=completion)
     except Exception as error:
         logger.exception("Graph worker failed", extra={"extraction_id": job.run.id})

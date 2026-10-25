@@ -68,6 +68,13 @@ class KGSourceText(BoundaryModel):
     transcription_profile_id: str | None = None
 
 
+class KGTranscriptionSelection(BoundaryModel):
+    """Offer a replay default only when every selected image has a matching recording."""
+
+    image_count: int = Field(ge=0)
+    default_profile_id: str | None = None
+
+
 class KGRelationExplanation(BoundaryModel):
     """Keep all checks and original documents together for a human review drawer."""
 
