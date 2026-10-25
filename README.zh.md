@@ -434,3 +434,5 @@ S3 提供客户端契约测试，不自动连接真实 S3。LLM 成功分支用�
 ## 图片知识图谱
 
 导入截图、扫描件或结构图，在「知识图谱」选择转写配置与文本抽取配置。关系先作为候选，保留转写原文和 OCR 证据框；图上未定位与手写人名标记待复核。demo 包含真实录制图片和明确标注的脚本失败样例。运行 `uv run datakeel eval-kg --suite image --json` 即可离线评测内置 60 张图，详见[图片配置、来源与签批](docs/KG.md#images-and-scans--图片与扫描件)。
+
+本地 OCR 的第三方包由用户自行安装：`pip install rapidocr==3.10.0 onnxruntime`。它们不是 Datakeel 的依赖，也不在 Datakeel 的许可审计范围内。部分平台（例如 macOS）的 OpenCV 预编译包捆绑 x264/x265 等 GPL 编解码库，ONNX Runtime 含 MPL-2.0 的 Eigen；需要再分发时须自行评估。离线回放无需安装这些包。

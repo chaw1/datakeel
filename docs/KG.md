@@ -330,19 +330,23 @@ Document claims expose the assertion ID, endpoints, predicate, `relation_status`
 
 ## Images and scans / 图片与扫描件
 
-`run_kg_extraction` accepts images alongside text. Set `transcription_profile_id` (default `replay-image-demo`) independently from `profile_id`, the **text extractor**. Select `replay-image-flash` for the bundled qwen visual transcripts. `mode_overrides` maps selected image file IDs to `ocr` or `vlm`. There is no automatic routing or cloud localization in this release.
+`run_kg_extraction` accepts images alongside text. Set `transcription_profile_id` independently from `profile_id`, the **text extractor**. The UI defaults to `replay-image-demo` only when every image has a matching recording; other images require an explicit transcription choice. Pair `replay-image-demo` transcription with `replay-image-flash` extraction for the bundled qwen visual transcripts. `mode_overrides` maps selected image file IDs to `ocr` or `vlm`. There is no automatic routing or cloud localization in this release.
 
-`run_kg_extraction` 复用现有签批与任务队列。图片先转写，再走原有文本切块、三处核对和候选断言；`transcription_profile_id` 指转写配置，`profile_id` 仍指文本抽取配置。按文件覆盖通过 `mode_overrides: {文件ID: ocr或vlm}`。本期只提供显式模式，不做自动分流或云端框定位。
+`run_kg_extraction` 复用现有签批与任务队列。图片先转写，再走原有文本切块、三处核对和候选断言；`transcription_profile_id` 指转写配置，`profile_id` 仍指文本抽取配置。按文件覆盖通过 `mode_overrides: {文件ID: ocr或vlm}`。本期只提供显式模式，不做自动分流或云端框定位。界面仅在所有图片均匹配 demo 录制时默认选中，否则必须选择转写配置。
 
 ```bash
-uv run datakeel eval-kg --suite image --json
-uv run datakeel eval-kg --suite image --profile replay-image-qwen --transcription-profile replay-image-demo --json
-uv run datakeel eval-kg --suite image --profile replay-image-rapidocr-qwen --transcription-profile replay-image-rapidocr --json
+uv run datakeel eval-kg --suite image --json  # defaults: replay-image-flash + replay-image-demo
+uv run datakeel eval-kg --suite image --profile replay-image-rapidocr-qwen --transcription-profile replay-image-ocr --json
+uv run datakeel eval-kg --suite image --profile replay-image-cloud-flash --transcription-profile replay-image-flash --json
 ```
 
-Image evaluation defaults to offline replay. It stores both original-recording scores and scores read from persisted product assertions in evaluation history. Reports separate clean text, scans, diagrams, Chinese and English, and include strict/entity-pair F1, traps, localization, character error rate, exact identifier preservation and failures. Recording localization compares one enclosing OCR rectangle; product localization compares the geometric union of all image rectangles with gold at IoU ≥ 0.5. A clean/scan pair with identical transcript bytes shares one extraction recording, retaining the lexicographically first case ID. Original failed extraction recordings remain failures with zero predictions.
+Image evaluation defaults to offline replay. It stores both original-recording scores and scores read from persisted product assertions in evaluation history. Reports separate clean text, scans, diagrams, Chinese and English, and include strict/entity-pair F1, traps, localization, character error rate, exact identifier preservation and failures. Both localization views enclose each relationship's image rectangles in one bounding rectangle and compare it with any gold rectangle at IoU ≥ 0.5. A clean/scan pair with identical transcript bytes shares one extraction recording, retaining the lexicographically first case ID. Original failed extraction recordings remain failures with zero predictions.
 
-评测默认离线回放，记录口径与产品口径同时入库。录制口径把一条关系的多个框合成外接矩形；产品口径使用全部框的几何并集，IoU ≥ 0.5 才算命中。清晰/扫描转写逐字相同的用例按 case ID 字典序最小保留抽取录制，原始报错录制按失败和零预测处理。标识符指标逐字比较，不抹掉下划线。评测集为 60 张合成图片，保留原版 b09，不包含真实手写数据、字体文件或生成脚本。
+评测默认离线回放，记录口径与产品口径同时入库。录制和产品口径均把一条关系的全部图框合成一个外接矩形，与任一标准框的 IoU ≥ 0.5 才算命中。清晰/扫描转写逐字相同的用例按 case ID 字典序最小保留抽取录制，原始报错录制按失败和零预测处理。标识符指标逐字比较，不抹掉下划线。评测集为 60 张合成图片，保留原版 b09，不包含真实手写数据、字体文件或生成脚本。
+
+The three commands above cover the same 60-image suite with matching transcription/extraction recordings. A matched recording can still contain an original failed response. The separate `replay-image-qwen` extraction profile contains only the 12 diagram recordings; using it on the full suite reports the 48 missing text/scan recordings as failures.
+
+上述三个命令使用配对录制覆盖同一套 60 张图；匹配到录制仍可能是原始失败响应。另一个抽取配置 `replay-image-qwen` 只有 12 张结构图的录制，全套运行时其余 48 张文字/扫描图会如实报告缺少录制。
 
 For external cases, pass `--cases ./image-cases` with a `cases.yaml` and images using the same format as [`contracts/kg/eval/image/cases.yaml`](../contracts/kg/eval/image/cases.yaml). Gold boxes are optional; absent boxes are excluded from localization denominators. `--profile` and `--transcription-profile` also accept explicit YAML files for isolated experiments. Real profiles are opt-in and may contact the configured provider; ordinary demo and CI use replay/fake.
 
@@ -350,7 +354,7 @@ For external cases, pass `--cases ./image-cases` with a `cases.yaml` and images 
 
 ### Transcription profiles / 转写配置
 
-Profiles live under `contracts/kg/transcription-profiles/`. Every profile is frozen and rejects unknown fields, raw secret values, unsupported backends/modes and non-allowlisted request parameters. `api_key_env` names an environment variable; its value is read only when a visual request actually executes. Request parameters permit `enable_thinking`, `reasoning_effort`, and native Ollama `num_ctx`; they cannot override destination, credentials or output limits.
+Profiles live under `contracts/kg/transcription-profiles/`. Every profile is frozen and rejects unknown prompt versions, unknown fields, raw secret values, unsupported backends/modes and non-allowlisted request parameters. `api_key_env` names an environment variable; its value is read only when a visual request actually executes. Request parameters permit `enable_thinking`, `reasoning_effort`, and native Ollama `num_ctx`; they cannot override destination, credentials or output limits.
 
 转写配置位于上述目录，未知字段、密钥值和白名单外参数加载即拒绝。模型、提示词版本、模式、参数、OCR 版本与录制文件哈希都会影响缓存。转写录制只按原图内容哈希查找，成功结果持久化；同样输入重跑时转写和文本抽取都从缓存读取。
 
@@ -369,13 +373,17 @@ request_parameters:
   enable_thinking: false
 ```
 
-Native Ollama preserves `num_ctx` and maps `done_reason` to the common finish reason. To use a compatible cloud endpoint, use `interface: openai`, an explicit `base_url`, `model: qwen3.5-flash` and `api_key_env: DASHSCOPE_API_KEY`; see the bundled cloud example. The client ignores proxy environment variables, does not follow redirects and never retries `403 AllocationQuota.FreeTierOnly`, reported as “账户只允许免费额度，且已用完”.
+Native Ollama preserves `num_ctx` and maps `done_reason` to the common finish reason. To use a compatible cloud endpoint, use `interface: openai`, an explicit `base_url`, `model: qwen3.5-flash` and `api_key_env: DASHSCOPE_API_KEY`; see the bundled cloud example. The client ignores proxy environment variables, does not follow redirects and never retries quota rejection, reported generically as “服务商额度不足”.
 
-Ollama 原生接口支持 `num_ctx`，避免兼容接口默认上下文截断。百炼示例使用 OpenAI 兼容接口与环境变量名；不会把密钥写入配置、计划或录制。免费额度限制返回明确说明，不作为网络故障重试。
+Ollama 原生接口支持 `num_ctx`，避免兼容接口默认上下文截断。百炼示例使用 OpenAI 兼容接口与环境变量名；不会把密钥写入配置、计划或录制。服务商额度不足会返回明确的 `provider_quota_exhausted` 失败，不作为网络故障重试。
 
-RapidOCR is loaded lazily and pinned to 3.10.0; ONNX Runtime is explicitly included in the optional `ocr` extra. Missing OCR reports an installation instruction. Visual mode still runs local OCR to obtain line geometry; replay and fake carry their own frozen OCR lines. The optional dependency audit currently fails: rebuilding OpenCV without FFmpeg resolves its codec finding, but ONNX Runtime still bundles Eigen under MPL-2.0 without an approved exception. See the exact installation and license limits in [code standards](CODE_STANDARDS.md).
+RapidOCR is loaded lazily. Users install the third-party OCR packages themselves with `pip install rapidocr==3.10.0 onnxruntime`; these are not Datakeel dependencies and are outside Datakeel's license audit. Missing packages produce a typed per-image failure with this installation hint. Visual mode still runs local OCR for line geometry; replay and fake carry their own frozen OCR lines and need no OCR installation.
 
-RapidOCR 仅进入可选安装，固定 3.10.0 及其随包模型；真实 VLM 转写仍需 OCR 行框。缺少可选库会明确提示安装，回放与脚本无需安装 OCR。当前可选依赖许可未通过：OpenCV 禁视频源码构建可消除其编解码库问题，但 ONNX Runtime 所含 Eigen 的 MPL-2.0 尚无批准例外。具体证据与可复现命令见代码规范。
+RapidOCR 懒加载；用户自行安装 `rapidocr==3.10.0` 和 `onnxruntime`。这些第三方包不是 Datakeel 的依赖，也不在 Datakeel 的许可审计范围内。未安装时报有类型的逐图失败与上述安装提示；真实视觉转写仍需本地 OCR 行框，回放和脚本自带冻结行框。
+
+Some OpenCV prebuilt packages, for example on macOS, bundle GPL codecs such as x264/x265. ONNX Runtime includes Eigen under MPL-2.0. Users who redistribute these packages must assess the licenses themselves; see [code standards](CODE_STANDARDS.md#9-user-installed-ocr--用户自行安装-ocr). Datakeel does not supply an OCR extra or a source-build installation path.
+
+部分平台（例如 macOS）的 OpenCV 预编译包捆绑 x264/x265 等 GPL 编解码库；ONNX Runtime 含 MPL-2.0 的 Eigen。需要再分发时须自行评估。Datakeel 不提供 OCR extra 或源码安装方案，核心许可审计保持不变。
 
 User-hosted OCR models can use the same OpenAI-compatible boundary. Example profile substitutions: `model: PaddleOCR-VL` or `model: HunyuanOCR`, `interface: openai`, `base_url: http://127.0.0.1:8000/v1`, `backend: vlm`, `mode: vlm`. Run these servers separately; they are not dependencies of Datakeel. These document OCR models are unsuitable for diagrams that require arrow, style and legend transcription. HunyuanOCR's community license does not authorize use in the EU, UK or South Korea; users must check the applicable model license before deployment.
 
@@ -383,7 +391,7 @@ User-hosted OCR models can use the same OpenAI-compatible boundary. Example prof
 
 ### Provenance, quality and consent / 来源、质量与签批
 
-All coordinates use original pixels **after EXIF orientation correction**. Before any external transfer, the image is re-encoded without EXIF/GPS metadata. Text spans bind the derived `image_transcript` asset, whose ID is deterministic from the image and profile and whose version is the text hash. Image regions bind the original image content revision. Changing the transcriber creates new derived provenance and invalidates replaced assertions with an audit; human decisions survive using the existing review rules.
+All coordinates use original pixels **after EXIF orientation correction**. Transparent images are composited on white before RGB conversion. Before any external transfer, the image is re-encoded without EXIF/GPS metadata. Text spans bind the derived `image_transcript` asset, whose ID is deterministic from the image and profile and whose version is the text hash. Image regions bind the original image content revision. Changing the transcriber creates new derived provenance and invalidates replaced assertions with an audit; human decisions survive using the existing review rules.
 
 坐标统一为 EXIF 转正后的原图像素。外发前重编码去掉 EXIF/GPS；转写稿是独立资产，文字位置绑定转写稿，图框绑定原图内容版本。换转写配置生成新的来源与断言，保留旧断言的失效审计和原有人工结论。`rebuild-evidence` 从持久化证据重建，不调用模型，重建前后规范化哈希一致。
 
@@ -391,10 +399,14 @@ Evidence fragments are aligned to OCR text after whitespace/markdown normalizati
 
 图片证据框只来自 OCR 行，不采信模型自报坐标。未匹配到框时保留关系并标待复核；转写稿仍可高亮证据句和头尾实体。导入时可通过数据集 metadata 设置 `handwriting: true`；schema 用 `person: true` 指定人物类，这类提及及关联关系始终需要人工核对姓名。
 
-Empty output, truncation, timeout, three consecutive identical lines or repeated long fragments become explicit failed image blocks and a partial report. The 2.5× output/OCR length check applies only when normalized OCR text has at least 20 characters; empty OCR plus valid visual transcription is allowed. Failed results never enter the successful cache.
+Empty output, truncation and timeout become explicit failed image blocks and a partial report. Visual results are also checked for three consecutive identical lines or repeated long fragments after removing markdown table separators and filler runs; OCR mode skips repetition checks. The 2.5× output/OCR length check applies only when normalized OCR text has at least 20 characters; empty OCR plus valid visual transcription is allowed. Failed results never enter the successful cache.
 
-空输出、截断、重复、超时都进入失败报告；OCR 文字不足 20 字时不使用 2.5 倍规则。失败图片不会静默消失，也不污染成功缓存。报告列出每张图片的路线、缓存、失败原因、已定位/未定位关系以及外发调用和费用。
+空输出、截断、重复、超时都进入失败报告；OCR 文字不足 20 字时不使用 2.5 倍规则。失败图片不会静默消失，也不污染成功缓存。报告列出每张图片的路线、缓存、失败原因、已定位/未定位关系以及外发调用和费用。转写费用与抽取费用分开报告；其中一项未知不掩盖另一项已知金额。缺录制、缺 OCR、缺密钥、模式不匹配或解码失败只影响对应图片，其余图片与文本文档继续完成。
 
 Preparation reads no transcription backend. Consent binds image hashes, both profiles and both recording hashes. Either non-loopback endpoint requires approval. The card lists image destination/model/count, `ceil(width × height / 1024 + 2)` image tokens, output limit and known/unknown cost; extraction is explicitly estimated from the transcription upper bound, conservatively accounting for UTF-8 bytes and chunk prompt overhead. Visual calls use the same durable reserve/settle budget as extraction, with `call_type: transcription`.
 
 签批前绝不转写。转写端和抽取端分别判断外发，任一非回环端点都要签批；卡片显示主机、模型、图片数、图片 token、单次输出上限、费用上限，查不到价格写未知。抽取输入按转写上限保守估计，并计入提示词及切块开销；两阶段共用预算，转写 trace 单独标记。
+
+Only blocks derived from image transcripts use `image-kg-v1`; ordinary text keeps `text-kg-v3` and its existing cache identity, including in mixed datasets.
+
+只有图片转写稿的块使用 `image-kg-v1`；混合数据集里的普通文本仍使用 `text-kg-v3` 及原缓存身份。
