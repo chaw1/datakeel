@@ -88,7 +88,7 @@ class GoldenCase(BoundaryModel):
     id: str
     description: str
     fixture_kind: Literal[
-        "legacy", "evidence", "enterprise", "injection", "kg", "enterprise_kg"
+        "legacy", "evidence", "enterprise", "injection", "kg", "enterprise_kg", "image_kg"
     ] = "legacy"
     fixture_reviewed: bool = False
     config: ConversationCreate = Field(default_factory=ConversationCreate)

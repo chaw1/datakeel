@@ -7,6 +7,7 @@ import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { useResource } from "../../lib/useResource";
 
 import { KGBadge } from "./KGBadge";
+import { KGImageSource } from "./KGImageSource";
 import { issueLabels } from "./labels";
 
 import type { KnowledgeClaim } from "../../api/ask";
@@ -90,6 +91,22 @@ export function KGRelationDrawer({
           <p>
             {t("kgExtractor")}: {relation.extractor} · {relation.model}
           </p>
+          {relation.transcriber && (
+            <p>
+              {t("kgTranscriber")}: {relation.transcriber} ·{" "}
+              {relation.transcription_model}
+              {relation.transcription_profile_id
+                ? ` · ${relation.transcription_profile_id}`
+                : ""}
+            </p>
+          )}
+          {relation.image_located != null && (
+            <p className={relation.image_located ? "" : "kg-missing"}>
+              {t(
+                relation.image_located ? "kgImageLocated" : "kgImageUnlocated",
+              )}
+            </p>
+          )}
           {!!detail?.issues.length && (
             <ul className="kg-review-issues">
               {detail.issues.map((issue, index) => (
@@ -104,6 +121,14 @@ export function KGRelationDrawer({
           )}
           <p className="muted">{t("kgSourceLegend")}</p>
           {resource.value?.sources.map((source) => {
+            if (source.image_url)
+              return (
+                <KGImageSource
+                  key={source.asset_ref.asset_id}
+                  source={source}
+                  anchors={relation.assertion.anchors}
+                />
+              );
             const locations = (detail?.locations ?? []).filter(
               (location) =>
                 location.source.asset_id === source.asset_ref.asset_id,
@@ -130,7 +155,12 @@ export function KGRelationDrawer({
             );
             return (
               <section className="kg-source" key={source.asset_ref.asset_id}>
-                <h3>{source.filename}</h3>
+                <h3>
+                  {source.filename}
+                  {source.asset_ref.asset_type === "image_transcript"
+                    ? ` · ${t("kgTranscript")}`
+                    : ""}
+                </h3>
                 <p className="kg-source-text">
                   <Anchor
                     text={source.text}

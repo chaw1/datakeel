@@ -341,3 +341,33 @@
     width: 100vw;
   }
 }
+
+.kg-image {
+  position: relative;
+  width: 100%;
+}
+.kg-image > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.kg-image-region {
+  position: absolute;
+  border: 2px solid;
+  pointer-events: none;
+}
+.kg-image-region > span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: calc(var(--space) * 4);
+  line-height: var(--line-loose);
+  text-align: center;
+  font-weight: 700;
+  background: var(--sheet);
+}
+.kg-image-coordinates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 6);
+}

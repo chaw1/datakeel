@@ -128,7 +128,7 @@ def observe_case(db: Database, case: GoldenCase, fake: FakeProvider | None) -> C
     baseline_run_ids = {run.id for run in list_runs(db)}
     conversation = create_conversation(db, case.config)
     events, operations, plans = _run_turns(db, case, conversation.id, fake)
-    if case.fixture_kind == "kg":
+    if case.fixture_kind in {"kg", "image_kg"}:
         run_worker(db, once=True)
     memory = get_conversation(db, conversation.id)
     context = fake.requests[-1].messages if fake is not None and fake.requests else memory.messages

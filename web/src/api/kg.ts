@@ -13,6 +13,8 @@ export type KGGraph = components["schemas"]["KGGraph"];
 export type KGRun = components["schemas"]["KGRun"];
 export type KGEvaluation = components["schemas"]["KGEvalReport"];
 export type KGSchema = components["schemas"]["KGSchema"];
+export type KGTranscriptionProfile =
+  components["schemas"]["TranscriptionProfile"];
 export type KGProfile = components["schemas"]["ExtractionProfile"];
 export type EntityLink = components["schemas"]["EntityLink"];
 

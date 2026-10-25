@@ -1,0 +1,81 @@
+id: 41-image-kg-explain
+description: Explain an image relationship with original pixels, transcript spans and both model attributions.
+fixture_kind: image_kg
+turns:
+- input: Explain this image relationship and show both the transcript evidence and original image location.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: explain_relation
+      id: 41-discover
+  - tool_calls:
+    - name: explain_relation
+      arguments:
+        assertion_id: '{{relation_id}}'
+      id: 41-explain
+  - content: This candidate is located on the image. Review the transcript spans and image regions before accepting the relation.
+expect:
+  tool_sequence: [tool_search, explain_relation]
+  tool_results:
+  - name: explain_relation
+    content_schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [relation, sources]
+          properties:
+            relation:
+              type: object
+              required: [assertion, image_located, transcriber, transcription_model, extractor, model]
+              properties:
+                image_located: {const: true}
+                transcriber: {type: string, minLength: 1}
+                transcription_model: {type: string, minLength: 1}
+                extractor: {type: string, minLength: 1}
+                model: {type: string, minLength: 1}
+                assertion:
+                  type: object
+                  required: [status, anchors]
+                  properties:
+                    status: {const: candidate}
+                    anchors:
+                      type: array
+                      allOf:
+                      - contains:
+                          type: object
+                          required: [asset_ref, selector]
+                          properties:
+                            asset_ref:
+                              properties:
+                                asset_type: {const: image_transcript}
+                            selector:
+                              properties:
+                                type: {const: text_span}
+                      - contains:
+                          type: object
+                          required: [selector]
+                          properties:
+                            selector:
+                              properties:
+                                type: {const: image_region}
+            sources:
+              type: array
+              allOf:
+              - contains:
+                  type: object
+                  required: [text]
+                  properties:
+                    text: {type: string, minLength: 1}
+              - contains:
+                  type: object
+                  required: [image_url, width, height]
+                  properties:
+                    image_url: {type: string, minLength: 1}
+                    width: {type: integer, minimum: 1}
+                    height: {type: integer, minimum: 1}
+  answer_contains: [candidate, transcript, image]
+  file_count: 2
+  max_turns: 3

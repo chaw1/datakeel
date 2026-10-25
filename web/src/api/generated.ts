@@ -1023,6 +1023,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kg/images/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Image Content
+         * @description Serve orientation-corrected original pixels in the same coordinate system as evidence.
+         */
+        get: operations["image_content_api_kg_images__file_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kg/links": {
         parameters: {
             query?: never;
@@ -1195,6 +1215,26 @@ export interface paths {
          * @description Read the frozen normalized text underlying displayed code-point offsets.
          */
         get: operations["source_api_kg_sources__file_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kg/transcription-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Transcription Profiles
+         * @description List validated image transcription configurations without reading credentials.
+         */
+        get: operations["list_transcription_profiles_api_kg_transcription_profiles_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1555,6 +1595,7 @@ export interface components {
             object_count: number;
             /** Total Bytes */
             total_bytes: number;
+            transcription_estimate?: components["schemas"]["TranscriptionEstimate"] | null;
         };
         /**
          * ActionPlan
@@ -2524,6 +2565,11 @@ export interface components {
             description: string;
             /** Name */
             name: string;
+            /**
+             * Person
+             * @default false
+             */
+            person: boolean;
         };
         /**
          * EventRecorded
@@ -2785,6 +2831,11 @@ export interface components {
              * @enum {string}
              */
             output_method: "json_schema" | "function_calling" | "json_mode";
+            /**
+             * Prompt Version
+             * @default text-kg-v3
+             */
+            prompt_version: string;
             /** Provider */
             provider: string;
             /** Recording */
@@ -2991,6 +3042,30 @@ export interface components {
             version_field?: string | null;
         };
         /**
+         * ImageGroupMetrics
+         * @description Report an explicit image group or language slice with geometric and text quality.
+         */
+        ImageGroupMetrics: {
+            /** Box Hit Rate */
+            box_hit_rate: number;
+            /** Box Hits */
+            box_hits: number;
+            /** Box True Positives */
+            box_true_positives: number;
+            /** Cer */
+            cer?: number | null;
+            /** Identifier Preservation */
+            identifier_preservation?: number | null;
+            metrics: components["schemas"]["KGMetrics"];
+            /** Name */
+            name: string;
+            /**
+             * Transcription Failures
+             * @default 0
+             */
+            transcription_failures: number;
+        };
+        /**
          * ImageRegion
          * @description Locate an xyxy box in the original image pixel coordinate system.
          */
@@ -3011,6 +3086,14 @@ export interface components {
             type: "image_region";
             /** Width */
             width: number;
+        };
+        /**
+         * ImageScoringView
+         * @description Keep clean, scan, diagram and bilingual slices in stable display order.
+         */
+        ImageScoringView: {
+            /** Groups */
+            groups: components["schemas"]["ImageGroupMetrics"][];
         };
         /**
          * ImpactResult
@@ -3136,6 +3219,8 @@ export interface components {
             cost_upper_usd?: string | null;
             /** Documents */
             documents: number;
+            /** Extraction Input Basis */
+            extraction_input_basis?: "transcription_limit" | null;
             /** Input Tokens */
             input_tokens: number;
             /** Max Output Tokens */
@@ -3188,6 +3273,8 @@ export interface components {
             failures: components["schemas"]["KGEvalFailure"][];
             /** Id */
             id?: string;
+            image_product?: components["schemas"]["ImageScoringView"] | null;
+            image_recording?: components["schemas"]["ImageScoringView"] | null;
             /**
              * Input Tokens
              * @default 0
@@ -3221,8 +3308,16 @@ export interface components {
              * @constant
              */
             schema_version: "1.0";
+            /**
+             * Suite
+             * @default text
+             * @enum {string}
+             */
+            suite: "text" | "image";
             /** Suite Digest */
             suite_digest: string;
+            /** Transcription Profile */
+            transcription_profile?: string | null;
         };
         /**
          * KGGraph
@@ -3399,9 +3494,17 @@ export interface components {
             /** Extractor */
             extractor: string;
             head: components["schemas"]["KGEntity"];
+            /** Image Located */
+            image_located?: boolean | null;
             /** Model */
             model: string;
             tail: components["schemas"]["KGEntity"];
+            /** Transcriber */
+            transcriber?: string | null;
+            /** Transcription Model */
+            transcription_model?: string | null;
+            /** Transcription Profile Id */
+            transcription_profile_id?: string | null;
         };
         /**
          * KGReport
@@ -3423,6 +3526,13 @@ export interface components {
              * @default 0
              */
             cached: number;
+            /**
+             * Cloud Calls
+             * @default 0
+             */
+            cloud_calls: number;
+            /** Cloud Cost Usd */
+            cloud_cost_usd?: string | null;
             /** Cost Usd */
             cost_usd?: string | null;
             /**
@@ -3478,6 +3588,11 @@ export interface components {
              */
             input_tokens: number;
             /**
+             * Located Relations
+             * @default 0
+             */
+            located_relations: number;
+            /**
              * Model Calls
              * @default 0
              */
@@ -3518,10 +3633,25 @@ export interface components {
              */
             relations_verified: number;
             /**
+             * Transcription Failed
+             * @default 0
+             */
+            transcription_failed: number;
+            /**
+             * Transcriptions
+             * @default []
+             */
+            transcriptions: components["schemas"]["TranscriptionObservation"][];
+            /**
              * Unexecuted
              * @default 0
              */
             unexecuted: number;
+            /**
+             * Unlocated Relations
+             * @default 0
+             */
+            unlocated_relations: number;
             /**
              * Verified
              * @default 0
@@ -3602,8 +3732,20 @@ export interface components {
             asset_ref: components["schemas"]["AssetRef"];
             /** Filename */
             filename: string;
+            /** Height */
+            height?: number | null;
+            /** Image Url */
+            image_url?: string | null;
             /** Text */
             text: string;
+            /** Transcriber */
+            transcriber?: string | null;
+            /** Transcription Model */
+            transcription_model?: string | null;
+            /** Transcription Profile Id */
+            transcription_profile_id?: string | null;
+            /** Width */
+            width?: number | null;
         };
         /**
          * KnowledgeAnswer
@@ -4244,7 +4386,7 @@ export interface components {
              * @default conversation
              * @enum {string}
              */
-            call_type: "conversation" | "intent_classifier" | "extraction";
+            call_type: "conversation" | "intent_classifier" | "extraction" | "transcription";
             /** Conversation Id */
             conversation_id: string;
             /** Cost Usd */
@@ -4998,6 +5140,116 @@ export interface components {
             type: "tool";
         };
         /**
+         * TranscriptionEstimate
+         * @description Show the image transfer envelope independently from downstream extraction.
+         */
+        TranscriptionEstimate: {
+            /** Cost Upper Usd */
+            cost_upper_usd?: string | null;
+            /** Image Tokens */
+            image_tokens: number;
+            /** Images */
+            images: number;
+            /** Max Output Tokens */
+            max_output_tokens: number;
+            /** Model */
+            model: string;
+            price?: components["schemas"]["ModelPrice"] | null;
+            /** Price Version */
+            price_version?: string | null;
+            /** Target Host */
+            target_host: string | null;
+        };
+        /**
+         * TranscriptionObservation
+         * @description Expose one selected route, cache outcome and explicit quality failure per image.
+         */
+        TranscriptionObservation: {
+            /** Backend */
+            backend: string;
+            /**
+             * Cached
+             * @default false
+             */
+            cached: boolean;
+            /** Error */
+            error?: string | null;
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "ocr" | "vlm";
+            /** Model */
+            model: string;
+            /**
+             * Status
+             * @default completed
+             * @enum {string}
+             */
+            status: "completed" | "failed" | "unexecuted";
+        };
+        /**
+         * TranscriptionProfile
+         * @description Select a backend without embedding credentials or unrestricted request options.
+         */
+        TranscriptionProfile: {
+            /** Api Key Env */
+            api_key_env?: string | null;
+            /**
+             * Backend
+             * @enum {string}
+             */
+            backend: "ocr" | "vlm" | "replay" | "fake";
+            /** Base Url */
+            base_url?: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Interface
+             * @default openai
+             * @enum {string}
+             */
+            interface: "openai" | "ollama";
+            /**
+             * Max Output Tokens
+             * @default 4096
+             */
+            max_output_tokens: number;
+            /**
+             * Mode
+             * @default ocr
+             * @enum {string}
+             */
+            mode: "ocr" | "vlm";
+            /** Model */
+            model: string;
+            /**
+             * Ocr Model Version
+             * @default rapidocr-3.10.0-defaults
+             */
+            ocr_model_version: string;
+            /**
+             * Prompt Version
+             * @default image-transcription-v1
+             */
+            prompt_version: string;
+            /** Recording */
+            recording?: string | null;
+            /** Request Parameters */
+            request_parameters?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Timeout Seconds
+             * @default 120
+             */
+            timeout_seconds: number;
+        };
+        /**
          * UploadFile
          * @description One basename and base64-encoded upload payload.
          */
@@ -5048,7 +5300,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "evidence" | "head" | "tail" | "endpoint_undeclared";
+            code: "evidence" | "head" | "tail" | "endpoint_undeclared" | "image_unlocated" | "handwriting_name";
             /** Role */
             role?: ("head" | "tail") | null;
         };
@@ -7008,6 +7260,40 @@ export interface operations {
             };
         };
     };
+    image_content_api_kg_images__file_id__get: {
+        parameters: {
+            query: {
+                version_id: string;
+                extraction_id: string;
+            };
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     links_api_kg_links_get: {
         parameters: {
             query?: {
@@ -7258,6 +7544,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_transcription_profiles_api_kg_transcription_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionProfile"][];
                 };
             };
         };

@@ -21,7 +21,11 @@ export function KnowledgeGraphPage({
   const [chosen, setChosen] = useState("");
   const active =
     chosen ||
-    datasets.find((item) => item.metadata.kg_samples === true)?.id ||
+    datasets.find(
+      (item) =>
+        item.metadata.kg_samples === true &&
+        item.metadata.image_kg_samples !== true,
+    )?.id ||
     datasetId ||
     datasets[0]?.id ||
     "";

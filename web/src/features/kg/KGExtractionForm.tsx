@@ -6,7 +6,7 @@ import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { ActionReceipt } from "../actions/ActionReceipt";
 import { PlanCard } from "../actions/PlanCard";
 
-import type { KGProfile, KGSchema } from "../../api/kg";
+import type { KGProfile, KGSchema, KGTranscriptionProfile } from "../../api/kg";
 import type { ActionPlan, ActionRun } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
@@ -15,6 +15,7 @@ export function KGExtractionForm({
   versionId,
   schemas,
   profiles,
+  transcriptionProfiles = [],
   onChanged,
   onOpenReceipt,
 }: {
@@ -22,6 +23,7 @@ export function KGExtractionForm({
   versionId: string;
   schemas: KGSchema[];
   profiles: KGProfile[];
+  transcriptionProfiles?: KGTranscriptionProfile[];
   onChanged: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
@@ -29,6 +31,7 @@ export function KGExtractionForm({
   const isComposing = useCompositionGuard();
   const [schema, setSchema] = useState("");
   const [profile, setProfile] = useState("");
+  const [transcription, setTranscription] = useState("");
   const [budget, setBudget] = useState("");
   const [cost, setCost] = useState("");
   const [plan, setPlan] = useState<ActionPlan | null>(null);
@@ -54,6 +57,7 @@ export function KGExtractionForm({
           version_id: versionId,
           schema_id: activeSchema,
           profile_id: activeProfile,
+          ...(transcription ? { transcription_profile_id: transcription } : {}),
           ...(budget ? { budget_tokens: Number(budget) } : {}),
           ...(cost ? { max_cost_usd: cost } : {}),
         }),
@@ -115,6 +119,30 @@ export function KGExtractionForm({
               ))}
             </select>
           </label>
+          {!!transcriptionProfiles.length && (
+            <label>
+              {t("kgTranscriptionProfile")}
+              <select
+                aria-label={t("kgTranscriptionProfile")}
+                value={transcription}
+                onBlur={(event) => {
+                  setTranscription(event.target.value);
+                }}
+                disabled={!!plan || busy}
+                onChange={(event) => {
+                  setTranscription(event.target.value);
+                }}
+              >
+                <option value="">{t("kgTranscriptionDefault")}</option>
+                {transcriptionProfiles.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.id} · {item.model}
+                  </option>
+                ))}
+              </select>
+              <small>{t("kgTranscriptionHint")}</small>
+            </label>
+          )}
           <label>
             {t("kgBudget")}
             <input

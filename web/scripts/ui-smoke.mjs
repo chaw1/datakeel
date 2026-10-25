@@ -12,6 +12,7 @@ import { advancedSmoke } from "./advanced-smoke.mjs";
 import { enterpriseSmoke } from "./enterprise-smoke.mjs";
 import { evidenceSmoke } from "./evidence-smoke.mjs";
 import { kgSmoke } from "./kg-smoke.mjs";
+import { imageKGSmoke } from "./image-kg-smoke.mjs";
 import { extractionSmoke } from "./extraction-smoke.mjs";
 import { polishSmoke } from "./polish-smoke.mjs";
 import { refinementSmoke } from "./refinement-smoke.mjs";
@@ -398,6 +399,7 @@ try {
   await screenshot("ontology-zh");
   checks.push("approval queue and ontology render with Chinese labels");
   const knowledgeGraph = await kgSmoke({ page, json, screenshot, checks });
+  await imageKGSmoke({ page, json, post, screenshot, checks });
   const evidence = await evidenceSmoke({
     page,
     json,

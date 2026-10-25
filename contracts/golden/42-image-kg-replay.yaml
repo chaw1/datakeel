@@ -1,0 +1,27 @@
+id: 42-image-kg-replay
+description: Replay transcribes and extracts a batch of images automatically through the real action worker.
+fixture_kind: image_kg
+turns:
+- input: Extract this batch of images using the offline replay image profiles.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments: {query: run_kg_extraction}
+      id: 42-discover
+  - tool_calls:
+    - name: run_kg_extraction
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        version_id: '{{version_id}}'
+        profile_id: replay-image-flash
+        transcription_profile_id: replay-image-demo
+      id: 42-action
+  - content: Submitted the offline image batch for transcription and extraction.
+expect:
+  tool_sequence: [tool_search, run_kg_extraction]
+  actions:
+  - action_type: run_kg_extraction
+    requires_approval: false
+    executions: 1
+  file_count: 2
+  max_turns: 3

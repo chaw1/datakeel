@@ -74,7 +74,10 @@ export function KGEntityDrawer({
         <KGSourcePreview
           key={id}
           fileId={id}
-          versionId={versionId}
+          versionId={
+            anchors.find((anchor) => anchor.asset_ref.asset_id === id)
+              ?.asset_ref.version ?? versionId
+          }
           anchors={anchors.filter((anchor) => anchor.asset_ref.asset_id === id)}
         />
       ))}

@@ -3,6 +3,8 @@ import { ResourceState } from "../../components/ResourceState";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 
+import { KGImageSource } from "./KGImageSource";
+
 import type { KGSource } from "../../api/kg";
 import type { Assertion } from "../../api/types";
 
@@ -30,12 +32,19 @@ export function KGSourcePreview({
         ]
       : [],
   );
+  if (source.value?.image_url)
+    return <KGImageSource source={source.value} anchors={anchors} />;
   return (
     <section className="kg-source">
       <ResourceState {...source} onRetry={source.reload} />
       {source.value && (
         <>
-          <h4>{source.value.filename}</h4>
+          <h4>
+            {source.value.filename}
+            {source.value.asset_ref.asset_type === "image_transcript"
+              ? ` · ${t("kgTranscript")}`
+              : ""}
+          </h4>
           <p className="kg-source-text">
             <Anchor text={source.value.text} ranges={ranges} />
           </p>

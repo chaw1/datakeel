@@ -3,6 +3,8 @@ import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { useResource } from "../../lib/useResource";
 
+import { KGImageEvaluations } from "./KGImageEvaluations";
+
 import type { KGEvaluation } from "../../api/kg";
 
 export function KGEvaluations() {
@@ -104,6 +106,7 @@ export function KGEvaluations() {
               </tbody>
             </table>
           </div>
+          <KGImageEvaluations run={run} />
           <dl className="kg-metrics">
             <div>
               <dt>{t("kgInputTokens")}</dt>

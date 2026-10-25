@@ -1,5 +1,7 @@
 import { useI18n } from "../../i18n/useI18n";
 
+import { KGTranscriptionEstimate } from "./KGTranscriptionEstimate";
+
 import type { ActionPlan } from "../../api/types";
 
 export function KGApprovalEstimate({ plan }: { plan: ActionPlan }) {
@@ -8,6 +10,13 @@ export function KGApprovalEstimate({ plan }: { plan: ActionPlan }) {
   if (!estimate) return null;
   return (
     <section className="kg-approval-estimate" aria-label={t("kgPrepare")}>
+      <KGTranscriptionEstimate plan={plan} />
+      {plan.impact.transcription_estimate && (
+        <h4>{t("kgExtractionEstimate")}</h4>
+      )}
+      {estimate.extraction_input_basis === "transcription_limit" && (
+        <p>{t("kgTranscriptionLimitBasis")}</p>
+      )}
       <dl className="approval-fields">
         <div>
           <dt>{t("kgTargetHost")}</dt>

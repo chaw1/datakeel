@@ -1,0 +1,27 @@
+id: 43-image-kg-external
+description: External vision transcription stops at consent with zero conversation action executions.
+fixture_kind: image_kg
+turns:
+- input: Prepare image transcription with the external vision example and offline extraction.
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments: {query: run_kg_extraction}
+      id: 43-discover
+  - tool_calls:
+    - name: run_kg_extraction
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        version_id: '{{version_id}}'
+        profile_id: replay-image-flash
+        transcription_profile_id: bailian-qwen35-flash
+      id: 43-action
+expect:
+  tool_sequence: [tool_search, run_kg_extraction]
+  actions:
+  - action_type: run_kg_extraction
+    requires_approval: true
+    executions: 0
+  stop_contains: [approval_required]
+  file_count: 2
+  max_turns: 3

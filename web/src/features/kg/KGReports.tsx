@@ -2,6 +2,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 
 import { KGBadge } from "./KGBadge";
+import { KGTranscriptions } from "./KGTranscriptions";
 import { proposalLabels } from "./labels";
 
 import type { KGRun } from "../../api/kg";
@@ -115,6 +116,7 @@ export function KGReports({
               <dd>{(run.report?.elapsed_seconds ?? 0).toFixed(2)}</dd>
             </div>
           </dl>
+          <KGTranscriptions report={run.report} />
           {!!run.report?.partial_documents.length && (
             <>
               <h4>{t("kgPartialDocuments")}</h4>

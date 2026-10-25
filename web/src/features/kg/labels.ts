@@ -26,6 +26,8 @@ export const issueLabels = {
   head: "kgMissingHead",
   tail: "kgMissingTail",
   endpoint_undeclared: "kgUndeclared",
+  image_unlocated: "kgImageUnlocated",
+  handwriting_name: "kgHandwritingName",
 } as const;
 export const proposalLabels = {
   unknown_relation: "kgUnknownRelation",

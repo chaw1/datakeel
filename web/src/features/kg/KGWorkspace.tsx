@@ -10,7 +10,7 @@ import { KGAssetLinks } from "./KGAssetLinks";
 import { KGEntities } from "./KGEntities";
 import { KGEntityDrawer } from "./KGEntityDrawer";
 import { KGEvaluations } from "./KGEvaluations";
-import { KGExtractionForm } from "./KGExtractionForm";
+import { KGExtractionConfiguration } from "./KGExtractionConfiguration";
 import { KGFilters } from "./KGFilters";
 import { KGGraphPanel } from "./KGGraphPanel";
 import { KGRelationDrawer } from "./KGRelationDrawer";
@@ -20,13 +20,7 @@ import { workspaceTabs as tabs } from "./labels";
 import { useKGQuery } from "./useKGQuery";
 import "./kg.css";
 
-import type {
-  KGEntity,
-  KGProfile,
-  KGQuery,
-  KGRun,
-  KGSchema,
-} from "../../api/kg";
+import type { KGEntity, KGQuery, KGRun, KGSchema } from "../../api/kg";
 import type { Version } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
@@ -59,7 +53,6 @@ export function KGWorkspace({
   );
   const versionId = version || orderedVersions[0]?.id || "";
   const schemas = useResource<KGSchema[]>("/api/kg/schemas");
-  const profiles = useResource<KGProfile[]>("/api/kg/profiles");
   const query = {
     ...filters,
     dataset_id: datasetId,
@@ -152,13 +145,11 @@ export function KGWorkspace({
       </div>
       <ResourceState {...versions} onRetry={versions.reload} />
       <ResourceState {...schemas} onRetry={schemas.reload} />
-      <ResourceState {...profiles} onRetry={profiles.reload} />
-      <KGExtractionForm
+      <KGExtractionConfiguration
         key={`${datasetId}:${versionId}`}
         datasetId={datasetId}
         versionId={versionId}
         schemas={schemas.value ?? []}
-        profiles={profiles.value ?? []}
         onChanged={refresh}
         onOpenReceipt={onOpenReceipt}
       />

@@ -108,8 +108,13 @@ export const kgSchema: KGSchema = {
   id: "business",
   version: "1.0",
   entity_types: [
-    { name: "Organization", description: "Company", aliases: {} },
-    { name: "Product", description: "Product", aliases: {} },
+    {
+      name: "Organization",
+      description: "Company",
+      aliases: {},
+      person: false,
+    },
+    { name: "Product", description: "Product", aliases: {}, person: false },
   ],
   relations: [
     {
@@ -132,6 +137,7 @@ export const kgProfile: KGProfile = {
   chunk_overlap: 200,
   max_output_tokens: 2048,
   temperature: 0,
+  prompt_version: "1.0",
 };
 export const kgRun: KGRun = {
   id: "kg-run-1",
@@ -145,6 +151,11 @@ export const kgRun: KGRun = {
   created_at: "2026-10-24T00:00:00Z",
   report: {
     documents: 1,
+    transcriptions: [],
+    transcription_failed: 0,
+    located_relations: 0,
+    unlocated_relations: 0,
+    cloud_calls: 0,
     blocks: 2,
     cached: 0,
     extracted: 1,

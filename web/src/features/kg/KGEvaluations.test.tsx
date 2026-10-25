@@ -28,6 +28,7 @@ const metrics: KGEvaluation["recording"]["all"] = {
 };
 const recording = { all: metrics, zh: metrics, en: metrics, verified: metrics };
 const report: KGEvaluation = {
+  suite: "text",
   id: "eval-1",
   blocked_relations: [],
   failures: [],
@@ -76,4 +77,40 @@ it("compares independent recording and product scores across saved runs", async 
   expect(screen.getAllByText("Chinese F1")[0]).toBeVisible();
   expect(screen.getAllByText("Typed entity F1")[0]).toBeVisible();
   expect(screen.getAllByText("Unknown")[0]).toBeVisible();
+});
+
+it("shows independent image scoring views, image groups and transcription quality", async () => {
+  const group = {
+    name: "A_clean",
+    metrics,
+    box_true_positives: 10,
+    box_hits: 8,
+    box_hit_rate: 0.8,
+    cer: 0.025,
+    identifier_preservation: 0.95,
+    transcription_failures: 1,
+  };
+  const imageReport = {
+    ...report,
+    suite: "image",
+    transcription_profile: "replay-image-demo",
+    image_recording: {
+      groups: [group, { ...group, name: "A_scan" }, { ...group, name: "B" }],
+    },
+    image_product: { groups: [{ ...group, box_hit_rate: 0.7 }] },
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(new Response(JSON.stringify([imageReport])))),
+  );
+  render(<KGEvaluations />);
+  const label = await screen.findByText("Image evaluation");
+  const imageSection = label.closest("section");
+  expect(imageSection).toHaveTextContent("Clear text");
+  expect(imageSection).toHaveTextContent("Scanned text");
+  expect(imageSection).toHaveTextContent("Diagrams");
+  expect(imageSection).toHaveTextContent("80.0%");
+  expect(imageSection).toHaveTextContent("70.0%");
+  expect(imageSection).toHaveTextContent("2.50%");
+  expect(imageSection).toHaveTextContent("95.0%");
 });

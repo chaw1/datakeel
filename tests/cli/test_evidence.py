@@ -53,7 +53,7 @@ def test_demo_with_evidence_reuses_sources_and_reports_complete_second_run_cache
     output.truncate()
     demo_module.demo(argparse.Namespace(once=True, legacy_only=False))
     second = json.loads(output.getvalue())
-    assert len(list_datasets(db)) == 4
+    assert len(list_datasets(db)) == 5
     assert first["dataset_id"] == second["dataset_id"]
     assert first["evidence"]["dataset_id"] == second["evidence"]["dataset_id"]
     assert (
