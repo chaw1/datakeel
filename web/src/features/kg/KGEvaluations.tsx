@@ -128,6 +128,22 @@ export function KGEvaluations() {
               <dt>{t("kgElapsed")}</dt>
               <dd>{run.elapsed_seconds.toFixed(2)}</dd>
             </div>
+            {(run.suite === "image"
+              ? ([
+                  ["transcription_cost_usd", "kgTranscriptionCost"],
+                  ["extraction_cost_usd", "kgExtractionCost"],
+                ] as const)
+              : []
+            ).map(([field, label]) => (
+              <div key={field}>
+                <dt>{t(label)}</dt>
+                <dd>
+                  {run[field] == null
+                    ? t("kgUnknown")
+                    : Number(run[field]).toFixed(6)}
+                </dd>
+              </div>
+            ))}
           </dl>
         </details>
       ))}

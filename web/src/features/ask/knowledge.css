@@ -5,6 +5,7 @@
 .knowledge-answer > h2 {
   margin-top: 0;
   font-family: var(--font-serif);
+  font-size: var(--font-xl);
 }
 .knowledge-columns {
   display: grid;

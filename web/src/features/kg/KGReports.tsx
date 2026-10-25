@@ -115,6 +115,22 @@ export function KGReports({
               <dt>{t("kgElapsed")}</dt>
               <dd>{(run.report?.elapsed_seconds ?? 0).toFixed(2)}</dd>
             </div>
+            {(run.report?.transcriptions.length
+              ? ([
+                  ["transcription_cost_usd", "kgTranscriptionCost"],
+                  ["extraction_cost_usd", "kgExtractionCost"],
+                ] as const)
+              : []
+            ).map(([field, label]) => (
+              <div key={field}>
+                <dt>{t(label)}</dt>
+                <dd>
+                  {run.report?.[field] == null
+                    ? t("kgUnknown")
+                    : Number(run.report[field]).toFixed(6)}
+                </dd>
+              </div>
+            ))}
           </dl>
           <KGTranscriptions report={run.report} />
           {!!run.report?.partial_documents.length && (

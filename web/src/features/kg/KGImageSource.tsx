@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { useI18n } from "../../i18n/useI18n";
 
 import type { KGSource } from "../../api/kg";
@@ -11,6 +13,8 @@ export function KGImageSource({
   anchors: Assertion["anchors"];
 }) {
   const { t } = useI18n();
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const failed = !source.image_url || failedUrl === source.image_url;
   const regions = anchors.flatMap((anchor) =>
     anchor.asset_ref.asset_id === source.asset_ref.asset_id &&
     anchor.selector?.type === "image_region"
@@ -21,12 +25,25 @@ export function KGImageSource({
   return (
     <section className="kg-source kg-image-source">
       <h3>{source.filename}</h3>
-      <p className={regions.length ? "" : "kg-missing"}>
-        {t(regions.length ? "kgImageLocated" : "kgImageUnlocated")}
-      </p>
-      {source.image_url && (
+      {failed ? (
+        <p className="kg-missing" role="status">
+          {t("kgImageLoadFailed")}
+        </p>
+      ) : (
+        <p className={regions.length ? "" : "kg-missing"}>
+          {t(regions.length ? "kgImageLocated" : "kgImageUnlocated")}
+        </p>
+      )}
+      {!failed && source.image_url && (
         <div className="kg-image">
-          <img src={source.image_url} alt={source.filename} loading="lazy" />
+          <img
+            src={source.image_url}
+            alt={source.filename}
+            loading="lazy"
+            onError={() => {
+              setFailedUrl(source.image_url ?? null);
+            }}
+          />
           {regions.map((region, index) => (
             <span
               className="kg-image-region"
@@ -50,13 +67,15 @@ export function KGImageSource({
       <p className="muted">
         {t("kgImageCoordinates")} · {source.width} × {source.height}
       </p>
-      <ol className="kg-image-coordinates">
-        {regions.map((region, index) => (
-          <li key={index}>
-            <code>{region.bbox.join(", ")}</code>
-          </li>
-        ))}
-      </ol>
+      {!failed && (
+        <ol className="kg-image-coordinates">
+          {regions.map((region, index) => (
+            <li key={index}>
+              <code>{region.bbox.join(", ")}</code>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }

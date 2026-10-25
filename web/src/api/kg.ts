@@ -9,6 +9,8 @@ export type KGEntity = components["schemas"]["KGEntityView"];
 export type KGRelation = components["schemas"]["KGRelationView"];
 export type KGExplanation = components["schemas"]["KGRelationExplanation"];
 export type KGSource = components["schemas"]["KGSourceText"];
+export type KGTranscriptionSelection =
+  components["schemas"]["KGTranscriptionSelection"];
 export type KGGraph = components["schemas"]["KGGraph"];
 export type KGRun = components["schemas"]["KGRun"];
 export type KGEvaluation = components["schemas"]["KGEvalReport"];

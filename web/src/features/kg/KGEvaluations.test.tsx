@@ -77,6 +77,8 @@ it("compares independent recording and product scores across saved runs", async 
   expect(screen.getAllByText("Chinese F1")[0]).toBeVisible();
   expect(screen.getAllByText("Typed entity F1")[0]).toBeVisible();
   expect(screen.getAllByText("Unknown")[0]).toBeVisible();
+  expect(screen.queryByText("Transcription cost (USD)")).toBeNull();
+  expect(screen.queryByText("Extraction cost (USD)")).toBeNull();
 });
 
 it("shows independent image scoring views, image groups and transcription quality", async () => {
@@ -113,4 +115,8 @@ it("shows independent image scoring views, image groups and transcription qualit
   expect(imageSection).toHaveTextContent("70.0%");
   expect(imageSection).toHaveTextContent("2.50%");
   expect(imageSection).toHaveTextContent("95.0%");
+  await userEvent
+    .setup()
+    .click(screen.getByText(/Evaluation details · replay-demo/));
+  expect(screen.getByText("Transcription cost (USD)")).toBeVisible();
 });

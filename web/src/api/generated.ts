@@ -1243,6 +1243,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/kg/transcription-selection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Select Transcription
+         * @description Show whether the complete version can safely default to the packaged image replay.
+         */
+        get: operations["select_transcription_api_kg_transcription_selection_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lineage/events": {
         parameters: {
             query?: never;
@@ -2834,8 +2854,9 @@ export interface components {
             /**
              * Prompt Version
              * @default text-kg-v3
+             * @enum {string}
              */
-            prompt_version: string;
+            prompt_version: "text-kg-v3" | "image-kg-v1";
             /** Provider */
             provider: string;
             /** Recording */
@@ -3243,7 +3264,7 @@ export interface components {
             /** End */
             end: number;
             /** Message */
-            message?: "账户只允许免费额度，且已用完" | null;
+            message?: string | null;
             /** Reason */
             reason: string;
             /** Start */
@@ -3268,6 +3289,8 @@ export interface components {
             created_at?: string;
             /** Elapsed Seconds */
             elapsed_seconds: number;
+            /** Extraction Cost Usd */
+            extraction_cost_usd?: string | null;
             /**
              * Failures
              * @default []
@@ -3318,6 +3341,8 @@ export interface components {
             suite: "text" | "image";
             /** Suite Digest */
             suite_digest: string;
+            /** Transcription Cost Usd */
+            transcription_cost_usd?: string | null;
             /** Transcription Profile */
             transcription_profile?: string | null;
         };
@@ -3569,6 +3594,8 @@ export interface components {
              * @default 0
              */
             extracted: number;
+            /** Extraction Cost Usd */
+            extraction_cost_usd?: string | null;
             /**
              * Failed
              * @default 0
@@ -3634,6 +3661,8 @@ export interface components {
              * @default 0
              */
             relations_verified: number;
+            /** Transcription Cost Usd */
+            transcription_cost_usd?: string | null;
             /**
              * Transcription Failed
              * @default 0
@@ -3748,6 +3777,16 @@ export interface components {
             transcription_profile_id?: string | null;
             /** Width */
             width?: number | null;
+        };
+        /**
+         * KGTranscriptionSelection
+         * @description Offer a replay default only when every selected image has a matching recording.
+         */
+        KGTranscriptionSelection: {
+            /** Default Profile Id */
+            default_profile_id?: string | null;
+            /** Image Count */
+            image_count: number;
         };
         /**
          * KnowledgeAnswer
@@ -5237,8 +5276,9 @@ export interface components {
             /**
              * Prompt Version
              * @default image-transcription-v1
+             * @constant
              */
-            prompt_version: string;
+            prompt_version: "image-transcription-v1";
             /** Recording */
             recording?: string | null;
             /** Request Parameters */
@@ -7282,17 +7322,22 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "image/png": string;
                 };
             };
-            /** @description Validation Error */
+            /** @description Image or extraction run not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid image request or image revision */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
         };
     };
@@ -7566,6 +7611,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranscriptionProfile"][];
+                };
+            };
+        };
+    };
+    select_transcription_api_kg_transcription_selection_get: {
+        parameters: {
+            query: {
+                dataset_id: string;
+                version_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KGTranscriptionSelection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

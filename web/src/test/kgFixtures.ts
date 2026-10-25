@@ -137,7 +137,7 @@ export const kgProfile: KGProfile = {
   chunk_overlap: 200,
   max_output_tokens: 2048,
   temperature: 0,
-  prompt_version: "1.0",
+  prompt_version: "text-kg-v3",
 };
 export const kgRun: KGRun = {
   id: "kg-run-1",

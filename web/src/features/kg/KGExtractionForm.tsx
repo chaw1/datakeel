@@ -6,7 +6,12 @@ import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { ActionReceipt } from "../actions/ActionReceipt";
 import { PlanCard } from "../actions/PlanCard";
 
-import type { KGProfile, KGSchema, KGTranscriptionProfile } from "../../api/kg";
+import type {
+  KGProfile,
+  KGSchema,
+  KGTranscriptionProfile,
+  KGTranscriptionSelection,
+} from "../../api/kg";
 import type { ActionPlan, ActionRun } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
@@ -16,6 +21,8 @@ export function KGExtractionForm({
   schemas,
   profiles,
   transcriptionProfiles = [],
+  transcriptionSelection = null,
+  selectionPending = false,
   onChanged,
   onOpenReceipt,
 }: {
@@ -24,6 +31,8 @@ export function KGExtractionForm({
   schemas: KGSchema[];
   profiles: KGProfile[];
   transcriptionProfiles?: KGTranscriptionProfile[];
+  transcriptionSelection?: KGTranscriptionSelection | null;
+  selectionPending?: boolean;
   onChanged: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
@@ -31,7 +40,7 @@ export function KGExtractionForm({
   const isComposing = useCompositionGuard();
   const [schema, setSchema] = useState("");
   const [profile, setProfile] = useState("");
-  const [transcription, setTranscription] = useState("");
+  const [transcription, setTranscription] = useState<string | null>(null);
   const [budget, setBudget] = useState("");
   const [cost, setCost] = useState("");
   const [plan, setPlan] = useState<ActionPlan | null>(null);
@@ -44,8 +53,20 @@ export function KGExtractionForm({
     profiles.find((item) => item.id === "replay-demo")?.id ||
     profiles[0]?.id ||
     "";
+  const activeTranscription =
+    transcription ?? transcriptionSelection?.default_profile_id ?? "";
+  const requiresTranscription =
+    !!transcriptionSelection?.image_count && !activeTranscription;
   async function prepare() {
-    if (busy || !versionId || !activeSchema || !activeProfile || isComposing())
+    if (
+      busy ||
+      !versionId ||
+      !activeSchema ||
+      !activeProfile ||
+      selectionPending ||
+      requiresTranscription ||
+      isComposing()
+    )
       return;
     setBusy(true);
     setError("");
@@ -57,7 +78,9 @@ export function KGExtractionForm({
           version_id: versionId,
           schema_id: activeSchema,
           profile_id: activeProfile,
-          ...(transcription ? { transcription_profile_id: transcription } : {}),
+          ...(activeTranscription
+            ? { transcription_profile_id: activeTranscription }
+            : {}),
           ...(budget ? { budget_tokens: Number(budget) } : {}),
           ...(cost ? { max_cost_usd: cost } : {}),
         }),
@@ -124,7 +147,7 @@ export function KGExtractionForm({
               {t("kgTranscriptionProfile")}
               <select
                 aria-label={t("kgTranscriptionProfile")}
-                value={transcription}
+                value={activeTranscription}
                 onBlur={(event) => {
                   setTranscription(event.target.value);
                 }}
@@ -141,6 +164,9 @@ export function KGExtractionForm({
                 ))}
               </select>
               <small>{t("kgTranscriptionHint")}</small>
+              {requiresTranscription && (
+                <small role="status">{t("kgTranscriptionRequired")}</small>
+              )}
             </label>
           )}
           <label>
@@ -174,7 +200,13 @@ export function KGExtractionForm({
           className="button primary"
           type="submit"
           disabled={
-            !!plan || busy || !versionId || !activeSchema || !activeProfile
+            !!plan ||
+            busy ||
+            !versionId ||
+            !activeSchema ||
+            !activeProfile ||
+            selectionPending ||
+            requiresTranscription
           }
         >
           {t(busy ? "kgPreparing" : "kgPrepare")}
