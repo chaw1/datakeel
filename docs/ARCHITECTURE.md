@@ -160,3 +160,14 @@ An `evidence.kg` COMPLETE lineage event records source assets, the schema and ex
 `run_kg_extraction` 复用受控动作及现有任务队列。准备冻结文件修订号、块位置与哈希、录制哈希、schema、配置和计费估算，不在计划或工具消息中复制全文；授权后重新读取并核对全部指纹，校验通过的原文快照内部保留供来源展示；外发由服务端按字面主机分类，不查 DNS。worker 在真实授权之后才创建抽取器，每块请求先预留预算再结算，trace 使用 `call_type=extraction`，不会增加会话轮数。未知价格保留保守费用占用与显式 unknown；有完整用量时 token 预算按实际扣，无用量才保留最坏 token 预留。租约围栏同时保护成功缓存及事实发布；截断和解析失败不进入缓存。重跑复用成功块，完整替换文档才使旧断言失效，部分失败仍保留先前成功事实与失败说明。
 
 `query_kg` and `explain_relation` share the ontology registry with MCP. Agent discovers these reads and `run_kg_extraction` through `tool_search`, preserving the original resident-tool prompt size. HTTP exposes bounded queries, exact source explanations, run reports and saved evaluation comparisons. Evaluation history uses `kg_eval_runs` so the original conversation/evidence/ask report schemas remain unchanged. Four additional goldens and three mutations exercise the new boundaries; the original 32 YAML cases and 21 mutation anchors remain unchanged. See [KG.md](KG.md) for the bilingual configuration and threat model.
+
+
+## 13. Image knowledge graphs / 图片知识图谱
+
+`transcription/` owns typed profile/recording loaders, optional CPU OCR, injected HTTP visual transports, corrected image decoding, quality policy and OCR alignment. It is a framework-free domain package with a 1500-line ceiling and at least 90% coverage, including its transactional `storage/transcription_*.py` adapters. Core runtime requirements do not change.
+
+图片复用 `run_kg_extraction`：准备只冻结原始内容哈希、校正尺寸、两阶段配置与录制哈希，任何非回环端点都使整个动作需要签批。授权后的 worker 先转写再走既有文本抽取；两阶段共享持久预算，视觉调用独立标记 `transcription`。成功转写进入新表，失败保持逐图报告与部分完成。
+
+Transcripts are deterministic `image_transcript` assets with content-hash versions. Text spans reference the transcript; image regions reference original image content in EXIF-corrected pixel coordinates. Image responses and external requests strip metadata. OCR matching supplies all rectangles. Missing locations and explicitly marked handwritten person types add structured review issues without promoting candidates to accepted facts.
+
+来源展示读取冻结运行快照；人审将派生资产解析回同数据集版本的原始 manifest，避免同内容图片跨版本错指。替换来源时同步作废旧转写稿断言并保留审计与人工结论。证据重建复用持久化的 knowledge bundle，不构造转写或抽取客户端。图片评测分别报告录制评分与实际写入后读回的候选断言评分；外部用例与内置录制采用同一质量和对齐规则。

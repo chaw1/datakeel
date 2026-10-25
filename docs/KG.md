@@ -1,4 +1,4 @@
-# Text knowledge graphs / 文本知识图谱
+# Text and image knowledge graphs / 文本与图片知识图谱
 
 Datakeel extracts entities and directed relation candidates from UTF-8 text. Every retained claim keeps its source document, evidence checks, extractor and model. The default demo and evaluation replay bundled recordings locally; they do not call a model or read credentials.
 
@@ -326,3 +326,75 @@ Document claims expose the assertion ID, endpoints, predicate, `relation_status`
 演示另外导入「企业文档 · Enterprise documents」六篇虚构文档，通过 `replay-enterprise` 离线抽取。原文与录制逐字保存在 `docs/p9/`；写入抽取文档时不附加换行。`eval-ask` 保留原 20 条指标用例的纯目录夹具和统计，另跑 23 条知识/反例用例的初始、审后两种状态；审后严格依次人审、重关联、同版本重抽。报告的 `knowledge.states` 保存逐条答案和检查结果，知识用例要求两态全过。
 
 关联上下文在 SQL 中只读取相关实体的活跃 `kg.%`、`link.maps_to` 断言及 `evidence.kg` 抽取事件；无关问答审计不会随提问次数进入读取结果。回答复用这些事件的冻结文档，以文件 id、版本及内容修订精确选择原文；不会拿其他修订替代缺失证据，也不再为每条说法扫描历史事件。人审夹具的关系及关联决定存放于 `contracts/ask/enterprise-reviews.yaml`，由冻结模型加载，执行代码不包含用例姓名和指标名。
+
+
+## Images and scans / 图片与扫描件
+
+`run_kg_extraction` accepts images alongside text. Set `transcription_profile_id` (default `replay-image-demo`) independently from `profile_id`, the **text extractor**. Select `replay-image-flash` for the bundled qwen visual transcripts. `mode_overrides` maps selected image file IDs to `ocr` or `vlm`. There is no automatic routing or cloud localization in this release.
+
+`run_kg_extraction` 复用现有签批与任务队列。图片先转写，再走原有文本切块、三处核对和候选断言；`transcription_profile_id` 指转写配置，`profile_id` 仍指文本抽取配置。按文件覆盖通过 `mode_overrides: {文件ID: ocr或vlm}`。本期只提供显式模式，不做自动分流或云端框定位。
+
+```bash
+uv run datakeel eval-kg --suite image --json
+uv run datakeel eval-kg --suite image --profile replay-image-qwen --transcription-profile replay-image-demo --json
+uv run datakeel eval-kg --suite image --profile replay-image-rapidocr-qwen --transcription-profile replay-image-rapidocr --json
+```
+
+Image evaluation defaults to offline replay. It stores both original-recording scores and scores read from persisted product assertions in evaluation history. Reports separate clean text, scans, diagrams, Chinese and English, and include strict/entity-pair F1, traps, localization, character error rate, exact identifier preservation and failures. Recording localization compares one enclosing OCR rectangle; product localization compares the geometric union of all image rectangles with gold at IoU ≥ 0.5. A clean/scan pair with identical transcript bytes shares one extraction recording, retaining the lexicographically first case ID. Original failed extraction recordings remain failures with zero predictions.
+
+评测默认离线回放，记录口径与产品口径同时入库。录制口径把一条关系的多个框合成外接矩形；产品口径使用全部框的几何并集，IoU ≥ 0.5 才算命中。清晰/扫描转写逐字相同的用例按 case ID 字典序最小保留抽取录制，原始报错录制按失败和零预测处理。标识符指标逐字比较，不抹掉下划线。评测集为 60 张合成图片，保留原版 b09，不包含真实手写数据、字体文件或生成脚本。
+
+For external cases, pass `--cases ./image-cases` with a `cases.yaml` and images using the same format as [`contracts/kg/eval/image/cases.yaml`](../contracts/kg/eval/image/cases.yaml). Gold boxes are optional; absent boxes are excluded from localization denominators. `--profile` and `--transcription-profile` also accept explicit YAML files for isolated experiments. Real profiles are opt-in and may contact the configured provider; ordinary demo and CI use replay/fake.
+
+外部评测目录放 `cases.yaml` 和图片，实体类型、关系词必须属于所选 schema；标准框可不填。真实评测配置由使用者显式选择。默认 demo、测试和打包验证均使用离线录制，不读取模型密钥。
+
+### Transcription profiles / 转写配置
+
+Profiles live under `contracts/kg/transcription-profiles/`. Every profile is frozen and rejects unknown fields, raw secret values, unsupported backends/modes and non-allowlisted request parameters. `api_key_env` names an environment variable; its value is read only when a visual request actually executes. Request parameters permit `enable_thinking`, `reasoning_effort`, and native Ollama `num_ctx`; they cannot override destination, credentials or output limits.
+
+转写配置位于上述目录，未知字段、密钥值和白名单外参数加载即拒绝。模型、提示词版本、模式、参数、OCR 版本与录制文件哈希都会影响缓存。转写录制只按原图内容哈希查找，成功结果持久化；同样输入重跑时转写和文本抽取都从缓存读取。
+
+```yaml
+id: local-vision
+backend: vlm
+mode: vlm
+model: qwen3.5:9b
+interface: ollama
+base_url: http://127.0.0.1:11434
+prompt_version: image-transcription-v1
+max_output_tokens: 4096
+timeout_seconds: 120
+request_parameters:
+  num_ctx: 16384
+  enable_thinking: false
+```
+
+Native Ollama preserves `num_ctx` and maps `done_reason` to the common finish reason. To use a compatible cloud endpoint, use `interface: openai`, an explicit `base_url`, `model: qwen3.5-flash` and `api_key_env: DASHSCOPE_API_KEY`; see the bundled cloud example. The client ignores proxy environment variables, does not follow redirects and never retries `403 AllocationQuota.FreeTierOnly`, reported as “账户只允许免费额度，且已用完”.
+
+Ollama 原生接口支持 `num_ctx`，避免兼容接口默认上下文截断。百炼示例使用 OpenAI 兼容接口与环境变量名；不会把密钥写入配置、计划或录制。免费额度限制返回明确说明，不作为网络故障重试。
+
+RapidOCR is loaded lazily and pinned to 3.10.0; ONNX Runtime is explicitly included in the optional `ocr` extra. Missing OCR reports an installation instruction. Visual mode still runs local OCR to obtain line geometry; replay and fake carry their own frozen OCR lines. The optional dependency audit currently fails: rebuilding OpenCV without FFmpeg resolves its codec finding, but ONNX Runtime still bundles Eigen under MPL-2.0 without an approved exception. See the exact installation and license limits in [code standards](CODE_STANDARDS.md).
+
+RapidOCR 仅进入可选安装，固定 3.10.0 及其随包模型；真实 VLM 转写仍需 OCR 行框。缺少可选库会明确提示安装，回放与脚本无需安装 OCR。当前可选依赖许可未通过：OpenCV 禁视频源码构建可消除其编解码库问题，但 ONNX Runtime 所含 Eigen 的 MPL-2.0 尚无批准例外。具体证据与可复现命令见代码规范。
+
+User-hosted OCR models can use the same OpenAI-compatible boundary. Example profile substitutions: `model: PaddleOCR-VL` or `model: HunyuanOCR`, `interface: openai`, `base_url: http://127.0.0.1:8000/v1`, `backend: vlm`, `mode: vlm`. Run these servers separately; they are not dependencies of Datakeel. These document OCR models are unsuitable for diagrams that require arrow, style and legend transcription. HunyuanOCR's community license does not authorize use in the EU, UK or South Korea; users must check the applicable model license before deployment.
+
+用户自建 PaddleOCR-VL 或 HunyuanOCR 服务可使用相同接口，独立运行，不安装到平台核心环境；它们不适合箭头、虚线、图例等结构图。HunyuanOCR 社区许可不授权欧盟、英国、韩国使用，部署前核对模型许可。
+
+### Provenance, quality and consent / 来源、质量与签批
+
+All coordinates use original pixels **after EXIF orientation correction**. Before any external transfer, the image is re-encoded without EXIF/GPS metadata. Text spans bind the derived `image_transcript` asset, whose ID is deterministic from the image and profile and whose version is the text hash. Image regions bind the original image content revision. Changing the transcriber creates new derived provenance and invalidates replaced assertions with an audit; human decisions survive using the existing review rules.
+
+坐标统一为 EXIF 转正后的原图像素。外发前重编码去掉 EXIF/GPS；转写稿是独立资产，文字位置绑定转写稿，图框绑定原图内容版本。换转写配置生成新的来源与断言，保留旧断言的失效审计和原有人工结论。`rebuild-evidence` 从持久化证据重建，不调用模型，重建前后规范化哈希一致。
+
+Evidence fragments are aligned to OCR text after whitespace/markdown normalization. Exact matches take priority, fuzzy matching uses threshold 0.8, and adjacent OCR lines can match one fragment. Arrows, pipes, ellipses and newlines split fragments; repeated labels choose the occurrence closest to the rarest fragment. A successful text extraction without an image match remains a candidate with `image_unlocated` (“图上未定位”), never an invented rectangle. Dataset metadata `handwriting: true` additionally marks mentions and relations involving entity types declared `person: true` with `handwriting_name` (“手写人名需复核”). Schemas without that marker do not apply this rule.
+
+图片证据框只来自 OCR 行，不采信模型自报坐标。未匹配到框时保留关系并标待复核；转写稿仍可高亮证据句和头尾实体。导入时可通过数据集 metadata 设置 `handwriting: true`；schema 用 `person: true` 指定人物类，这类提及及关联关系始终需要人工核对姓名。
+
+Empty output, truncation, timeout, three consecutive identical lines or repeated long fragments become explicit failed image blocks and a partial report. The 2.5× output/OCR length check applies only when normalized OCR text has at least 20 characters; empty OCR plus valid visual transcription is allowed. Failed results never enter the successful cache.
+
+空输出、截断、重复、超时都进入失败报告；OCR 文字不足 20 字时不使用 2.5 倍规则。失败图片不会静默消失，也不污染成功缓存。报告列出每张图片的路线、缓存、失败原因、已定位/未定位关系以及外发调用和费用。
+
+Preparation reads no transcription backend. Consent binds image hashes, both profiles and both recording hashes. Either non-loopback endpoint requires approval. The card lists image destination/model/count, `ceil(width × height / 1024 + 2)` image tokens, output limit and known/unknown cost; extraction is explicitly estimated from the transcription upper bound, conservatively accounting for UTF-8 bytes and chunk prompt overhead. Visual calls use the same durable reserve/settle budget as extraction, with `call_type: transcription`.
+
+签批前绝不转写。转写端和抽取端分别判断外发，任一非回环端点都要签批；卡片显示主机、模型、图片数、图片 token、单次输出上限、费用上限，查不到价格写未知。抽取输入按转写上限保守估计，并计入提示词及切块开销；两阶段共用预算，转写 trace 单独标记。

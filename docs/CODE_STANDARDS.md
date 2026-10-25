@@ -28,7 +28,7 @@ uv run python scripts/license_audit.py
 - pyright `typeCheckingMode = "strict"`，0 error 0 warning。公共函数签名不得出现未标注的 `Any`。
 - `datakeel/runtime/` 是图与模型框架的适配边界，仅在该目录的 pyright executionEnvironment 中关闭两条诊断：`reportMissingTypeStubs`（锁定 LangGraph 的图构造入口没有完整 stub）和 `reportUnknownMemberType`（`add_node`、`compile`、`stream` 等泛型成员包含第三方未精确标注的类型）。参数、返回值和模块边界仍须显式类型化，其余 strict 规则继续生效；后置根目录 executionEnvironment 保持其它包全部 strict 诊断，禁止包外新增 suppression。
 - 复杂度与规模：`mccabe max-complexity = 10`；`PLR0915 max-statements = 40`；参数 ≤ 6（PLR0913）；单文件 ≤ 400 行（测试文件 ≤ 600）、单函数 ≤ 60 行由 `scripts/check_size.py` 检查并列入 `make check`。超限就拆。
-- `agent`、`runtime`、`workflows`、`routing`、`delegation`、`memory`、`kg` 与 `kg_eval` 各自最多 1500 行，`extraction_runtime` 最多 600 行，分别由对应的 `*_PACKAGE_LIMIT` 检查，不能互相借用额度。
+- `agent`、`runtime`、`workflows`、`routing`、`delegation`、`memory`、`kg`、`transcription` 与 `kg_eval` 各自最多 1500 行，`extraction_runtime` 最多 600 行，分别由对应的 `*_PACKAGE_LIMIT` 检查，不能互相借用额度。
 - 公共模块、类、函数必须有 Google 风格 docstring（ruff D 规则）；私有（下划线开头）可省。
 - 错误处理：自定义异常层级 `datakeel.core.errors`（`DatakeelError` 根，按领域派生）；禁止裸 `except:`、禁止 `except Exception` 吞异常不重抛（BLE001）。HTTP 层统一异常到状态码的映射在一处。
 - 日志：`structlog` 或标准 `logging` 的 JSON 格式，禁止 `print`（T201），CLI 的用户输出走 `rich.console`。
@@ -54,7 +54,7 @@ cli
 ## 4. 测试
 
 - `tests/` 目录结构镜像 `datakeel/`；每个公共模块至少一个测试文件。
-- 覆盖率总体 ≥ 85%（`--cov-fail-under`）；`core`、`lineage`、`actions`、`worker`、`harness`、`agent`、`runtime`、`workflows`、`routing`、`delegation`、`memory`、`kg`、`kg_eval`、`extraction_runtime`、`ontology`、`evidence`、`operators/evidence`、`catalog`、`metrics`、`ask` 与 `cli/evidence_benchmark.py` 各 ≥ 90%，由 `scripts/check_coverage.py` 读 coverage.xml 判定并列入 `make check`。领域在 storage 层的事务实现同时计入相应模块，`checkpoint_*.py` 归入 runtime，`workflow_*.py` 归入 workflows，`memory_*.py` 归入 memory，`conversation_children.py` 归入 delegation，`kg_*.py` 归入 kg，`kg_eval*.py` 同时归入 kg_eval；报告缺失目标模块也判为失败。
+- 覆盖率总体 ≥ 85%（`--cov-fail-under`）；`core`、`lineage`、`actions`、`worker`、`harness`、`agent`、`runtime`、`workflows`、`routing`、`delegation`、`memory`、`kg`、`kg_eval`、`transcription`、`extraction_runtime`、`ontology`、`evidence`、`operators/evidence`、`catalog`、`metrics`、`ask` 与 `cli/evidence_benchmark.py` 各 ≥ 90%，由 `scripts/check_coverage.py` 读 coverage.xml 判定并列入 `make check`。领域在 storage 层的事务实现同时计入相应模块，`checkpoint_*.py` 归入 runtime，`workflow_*.py` 归入 workflows，`memory_*.py` 归入 memory，`conversation_children.py` 归入 delegation，`kg_*.py` 归入 kg，`kg_eval*.py` 同时归入 kg_eval；报告缺失目标模块也判为失败。
 - 不用真实网络、真实 LLM、真实对象存储；全部走本机 fixture。真实服务集成测试单独标记 `@pytest.mark.integration`，默认不跑。
 - 每个 bug 修复附回归测试；每个 golden 用例过变异测试（故意改坏实现必须变红）。
 
@@ -87,3 +87,14 @@ cli
 - 测试命名 `test_<行为>_<条件>_<预期>`；一个测试尽量只断言一件事。
 - 关键交互（审批卡确认/拒绝、血缘节点点击、SSE 断线恢复）要有行为测试，验收时抽查。
 - 可变 pydantic 模型要在类 docstring 里写明理由。
+
+
+## 9. Optional OCR / 可选 OCR
+
+Core runtime auditing keeps its existing policy and closure. `datakeel[ocr]` pins `rapidocr==3.10.0` and explicitly includes ONNX Runtime. Audit optional installations separately with `python -m scripts.license_ocr`; the only additional exception is the exact `tqdm` expression `MPL-2.0 AND MIT`. MPL-2.0 is file-level weak copyleft, the component is optional, and its upstream files and notices remain unchanged. This exception never applies to core dependencies or other packages.
+
+核心运行时审计与许可白名单不变。OCR 的独立审计只对可选 tqdm 的精确许可表达式增加已批准例外，保留上游许可；不得把该例外扩散至核心或其它包。
+
+OpenCV package metadata alone is insufficient: ordinary prebuilt headless wheels can bundle FFmpeg and other LGPL binaries. `sh scripts/install_ocr.sh /absolute/path/to/ocr-env` reproduces an isolated source build with video/FFmpeg/GStreamer disabled, then runs the optional audit. This removes the observed OpenCV codec issue, but the current ONNX Runtime 1.31.0 CPU wheel also includes Eigen under MPL-2.0, as documented in its [upstream notices](https://github.com/microsoft/onnxruntime/blob/v1.31.0/ThirdPartyNotices.txt). The optional policy has no Eigen exception: **the audit still fails, and this is not an approved installation path**. The script needs local build tools and package downloads; it does not contact any model service.
+
+普通 `pip install 'datakeel[ocr]'` 可能拉取含 LGPL 组件的 OpenCV wheel。上述隔离源码构建只消除已发现的 OpenCV 视频库问题；ONNX Runtime 1.31.0 实际二进制仍包含 MPL-2.0 的 Eigen，未获独立例外。因此当前可选安装许可未通过，脚本最后的审计会拒绝安装结果，不能将其描述为已通过的安装方案。核心环境、许可白名单及既有例外均不变。

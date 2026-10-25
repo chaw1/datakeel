@@ -4,6 +4,20 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-25
+
+### Added
+
+- Image and scan knowledge extraction through a separate, versioned transcript asset followed by the existing text pipeline. OCR, OpenAI-compatible visual endpoints, native Ollama, offline replay and scripted fixtures share explicit OCR/VLM modes, per-file overrides and quality failures.
+- OCR-grounded image evidence with multiple rectangles, transcript evidence/head/tail highlights, structured unlocated and handwritten-name review reasons, source APIs and deterministic evidence rebuilding. Extracted relationships remain candidates until reviewed.
+- Independent transcription consent estimates and fingerprints, metadata-free EXIF-corrected pixels, durable transcript reuse and budget traces. Either outbound endpoint requires human approval before any model executes.
+- A packaged 60-image offline benchmark with recording and persisted-product scores, per-group/language metrics, OCR/transcription quality measurements and external case directories. Original image bytes and model attributions are preserved.
+- Bilingual image demo, source drawers, route/failure reports and approval cards, plus three image goldens and three regression mutations.
+
+### Changed
+
+- Version advances to 0.12.0. Core runtime requirements remain unchanged; RapidOCR is an optional installation. Automatic routing, cloud localization, handwriting benchmarks and the redrawn diagram are deferred.
+
 ## [0.11.0] - 2026-10-25
 
 ### Added
