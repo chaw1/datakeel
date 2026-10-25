@@ -60,7 +60,9 @@ class ImageRegion(BoundaryModel):
 class VerificationIssue(BoundaryModel):
     """Identify the exact source check that needs human review."""
 
-    code: Literal["evidence", "head", "tail", "endpoint_undeclared"]
+    code: Literal[
+        "evidence", "head", "tail", "endpoint_undeclared", "image_unlocated", "handwriting_name"
+    ]
     role: Literal["head", "tail"] | None = None
 
 

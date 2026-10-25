@@ -1,0 +1,8 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+id: replay-image-flash
+backend: replay
+mode: vlm
+model: qwen3.5-flash
+recording: recordings/qwen-flash-image.yaml
+prompt_version: image-transcription-v1

@@ -6,12 +6,15 @@
 from collections import defaultdict
 from decimal import Decimal
 
+from datakeel.core.evidence_models import ImageRegion
 from datakeel.core.harness_models import ModelCallTrace
 from datakeel.core.kg_execution import KGBlockFailure, KGJob, KGReport
 from datakeel.core.kg_product import ProductExtraction, SchemaProposal
 from datakeel.kg.aliases import same_as_drafts
 from datakeel.kg.cache import extraction_identity
 from datakeel.kg.identity import merge_drafts
+from datakeel.kg.policy import is_external
+from datakeel.storage.transcription_pricing import transcription_external
 
 
 def merge_products(job: KGJob, values: list[ProductExtraction]) -> ProductExtraction:
@@ -62,9 +65,27 @@ def base_report(
     }
     usages = [trace.observed_usage or trace.usage for trace in traces]
     accounted = sum((trace.cost_usd for trace in traces), start=Decimal(0))
+    located = sum(
+        any(isinstance(anchor.selector, ImageRegion) for anchor in item.anchors)
+        for item in relations
+    )
+    image_relations = sum(
+        any(anchor.asset_ref.asset_type == "image_transcript" for anchor in item.anchors)
+        for item in relations
+    )
+    cloud = _cloud_traces(job, traces)
     return KGReport(
+        transcriptions=job.run.report.transcriptions,
+        transcription_failed=job.run.report.transcription_failed,
+        located_relations=located,
+        unlocated_relations=image_relations - located,
+        cloud_calls=len(cloud),
+        cloud_cost_usd=None
+        if any(trace.billing_status == "unknown" for trace in cloud)
+        else sum((trace.cost_usd for trace in cloud), start=Decimal(0)),
         documents=len(job.prepared.documents),
-        blocks=job.prepared.estimate.blocks,
+        blocks=sum(len(document.blocks) for document in job.documents)
+        + job.run.report.transcription_failed,
         model_calls=len(traces),
         entities=len(products.entities),
         relations=len(relations),
@@ -84,3 +105,15 @@ def base_report(
         partial_documents=tuple(sorted({item.file_id for item in failures})),
         proposals=products.proposals,
     )
+
+
+def _cloud_traces(job: KGJob, traces: list[ModelCallTrace]) -> list[ModelCallTrace]:
+    return [
+        trace
+        for trace in traces
+        if (
+            transcription_external(job.prepared.transcription_profile)
+            if trace.call_type == "transcription" and job.prepared.transcription_profile
+            else is_external(job.prepared.profile)
+        )
+    ]

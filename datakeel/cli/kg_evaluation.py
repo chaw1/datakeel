@@ -27,8 +27,12 @@ from datakeel.worker.kg_metering import MeteredExtractor
 def register_parser(commands: CommandGroup) -> None:
     """Expose deterministic replay by default with external same-schema cases as an option."""
     command = commands.add_parser("eval-kg")
-    command.add_argument("--profile", default="replay-demo", help="Bundled profile ID or YAML file")
+    command.add_argument(
+        "--profile", default="replay-demo", help="Bundled extraction profile ID or YAML file"
+    )
     command.add_argument("--schema", default="business-knowledge")
+    command.add_argument("--suite", choices=("text", "image"), default="text")
+    command.add_argument("--transcription-profile", default="replay-image-demo")
     command.add_argument(
         "--cases", type=Path, help="External evaluation YAML in the documented format"
     )
@@ -37,7 +41,8 @@ def register_parser(commands: CommandGroup) -> None:
     command.add_argument("--max-cost-usd", type=Decimal, default=Decimal(5))
 
 
-def _profile(value: str) -> ExtractionProfile:
+def load_evaluation_profile(value: str) -> ExtractionProfile:
+    """Resolve a bundled extraction ID or an explicit local configuration file."""
     path = Path(value)
     if path.is_file():
         profile = load_profile(path)
@@ -49,7 +54,8 @@ def _profile(value: str) -> ExtractionProfile:
     return get_profile(value)
 
 
-def _display(report: KGEvalReport, console: Console) -> None:
+def display_evaluation(report: KGEvalReport, console: Console) -> None:
+    """Display the shared recording and production score summary."""
     console.print(f"Knowledge graph: {report.profile}; model={report.model}", markup=False)
     table = Table("Scoring path", "Precision", "Recall", "F1", "Traps", "Failed blocks")
     for name, metrics in (
@@ -99,7 +105,7 @@ def evaluate(
     # Load vendor SDKs only when this evaluation command explicitly executes.
     from datakeel.extraction_runtime.factory import create_extractor  # noqa: PLC0415
 
-    configuration = _profile(profile)
+    configuration = load_evaluation_profile(profile)
     vocabulary = get_schema(schema)
     identifier = new_id()
     metering = metering_config(configuration, identifier)
@@ -135,5 +141,5 @@ def evaluate(
             report.model_dump_json(indent=2), markup=False, highlight=False, soft_wrap=True
         )
     else:
-        _display(report, console)
+        display_evaluation(report, console)
     return report

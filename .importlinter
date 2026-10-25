@@ -8,7 +8,7 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
@@ -273,6 +273,7 @@ ignore_imports =
     datakeel.storage.kg_preparation -> datakeel.actions.parameters
     datakeel.storage.kg_preparation -> datakeel.kg.loader
     datakeel.storage.kg_preparation -> datakeel.kg.policy
+    datakeel.storage.kg_progress -> datakeel.kg.policy
     datakeel.storage.kg_preparation -> datakeel.kg.prompt
     datakeel.storage.kg_preparation -> datakeel.kg.text
     datakeel.storage.kg_pricing -> datakeel.kg.loader
@@ -291,6 +292,24 @@ ignore_imports =
     datakeel.harness.kg_cases -> datakeel.worker.runner
     datakeel.harness.enterprise_kg -> datakeel.worker.runner
     datakeel.harness.execution -> datakeel.worker.runner
+
+# Image preparation freezes typed provenance without invoking any model adapters.
+    datakeel.storage.transcription_pricing -> datakeel.kg.policy
+    datakeel.storage.kg_image_preparation -> datakeel.kg.prompt
+    datakeel.storage.kg_image_preparation -> datakeel.transcription.loader
+    datakeel.storage.kg_image_preparation -> datakeel.transcription.cache
+    datakeel.storage.kg_image_preparation -> datakeel.transcription.images
+    datakeel.storage.kg_image_preparation -> datakeel.transcription.prompt
+    datakeel.storage.kg_inputs -> datakeel.transcription.images
+    datakeel.storage.kg_inputs -> datakeel.transcription.loader
+    datakeel.storage.kg_preparation -> datakeel.transcription.loader
+    datakeel.storage.kg_image_sources -> datakeel.transcription.images
+# Successful transcript persistence enforces the same pure quality policy as execution.
+    datakeel.storage.transcription_store -> datakeel.transcription.quality
+    datakeel.evidence.kg_images -> datakeel.transcription.alignment
+# Image evaluation persists the same product identities; offline goldens drain real worker tasks.
+    datakeel.storage.kg_image_eval_store -> datakeel.kg.identity
+    datakeel.harness.image_kg_cases -> datakeel.worker.runner
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

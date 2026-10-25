@@ -55,7 +55,9 @@ class MeteredExtractor:
             BudgetRequest(
                 conversation_id=config.run_id,
                 model=config.profile.model,
-                input_tokens=estimate_tokens(extraction_prompt(block, schema)),
+                input_tokens=estimate_tokens(
+                    extraction_prompt(block, schema, self.config.profile.prompt_version)
+                ),
                 max_output_tokens=config.profile.max_output_tokens,
                 limits=BudgetLimits(
                     conversation_tokens=config.budget_tokens, conversation_usd=config.max_cost_usd
@@ -73,7 +75,13 @@ class MeteredExtractor:
         offline = config.profile.extractor != "llm"
         unknown = not offline and (not config.known_price or observed is None)
         usage = observed if observed is not None and not unknown and not offline else TokenUsage()
-        self.turn += 1
+        self.turn = (
+            max(
+                self.turn,
+                max((trace.turn for trace in list_traces(self.db, config.run_id)), default=0),
+            )
+            + 1
+        )
         trace = settle(
             self.db,
             reservation_id,

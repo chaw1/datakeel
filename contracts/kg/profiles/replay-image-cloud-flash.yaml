@@ -1,0 +1,9 @@
+id: replay-image-cloud-flash
+extractor: replay
+provider: replay
+model: deepseek-flash
+prompt_version: image-kg-v1
+max_output_tokens: 4096
+chunk_size: 12000
+chunk_overlap: 0
+recording: recordings/image-cloud-flash.yaml

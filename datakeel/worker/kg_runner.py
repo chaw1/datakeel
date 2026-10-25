@@ -19,6 +19,7 @@ from datakeel.storage.kg_store import get_job, start_run
 from datakeel.worker.heartbeat import pulse
 from datakeel.worker.kg_execution import KGExecution
 from datakeel.worker.kg_metering import MeteredExtractor
+from datakeel.worker.kg_transcription import ImageTranscription
 from datakeel.worker.queue import DatabaseQueue, Lease
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,8 @@ def execute_kg(queue: DatabaseQueue, lease: Lease) -> bool:
         inputs = restore_inputs(queue.db, job, fence)
         job = job.model_copy(update={"documents": inputs.documents})
         with ExitStack() as stack:
+            if prepared.transcription_profile is not None:
+                job = ImageTranscription(queue, lease, job, stack).run(inputs)
             adapter = _DeferredMetering(
                 queue.db, config, _DeferredAdapter(prepared, inputs.recording, stack)
             )

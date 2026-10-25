@@ -10,6 +10,7 @@ from typing import Literal
 from pydantic import Field, JsonValue
 
 from datakeel.core.kg_execution import KGEstimate
+from datakeel.core.kg_images import TranscriptionEstimate
 from datakeel.core.models import AssetRef, BoundaryModel, LineageEvent
 from datakeel.ontology.models import FrozenManifest
 
@@ -53,6 +54,9 @@ class ActionImpact(BoundaryModel):
     total_bytes: int
     external: bool
     kg_estimate: KGEstimate | None = Field(default=None, exclude_if=lambda value: value is None)
+    transcription_estimate: TranscriptionEstimate | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class ActionPlan(BoundaryModel):

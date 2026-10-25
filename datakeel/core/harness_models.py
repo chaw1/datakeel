@@ -94,7 +94,9 @@ class TraceInput(BoundaryModel):
     stop_reason: str
     tool_calls: int = Field(ge=0)
     billing_status: Literal["actual", "unknown"] = "actual"
-    call_type: Literal["conversation", "intent_classifier", "extraction"] = "conversation"
+    call_type: Literal["conversation", "intent_classifier", "extraction", "transcription"] = (
+        "conversation"
+    )
     model_route: ModelRouteDecision | None = None
     accounting_conversation_id: str | None = None
     agent_path: str = "main"
@@ -111,7 +113,10 @@ class TraceInput(BoundaryModel):
         if self.billing_status == "unknown" and self.usage != TokenUsage():
             msg = "Unknown billing cannot claim observed token usage"
             raise ValueError(msg)
-        if self.observed_usage is not None and self.call_type != "extraction":
+        if self.observed_usage is not None and self.call_type not in {
+            "extraction",
+            "transcription",
+        }:
             msg = "Separate observed usage is reserved for extraction accounting"
             raise ValueError(msg)
         return self

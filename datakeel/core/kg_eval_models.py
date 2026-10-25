@@ -27,6 +27,8 @@ class GoldRelation(BoundaryModel):
     relation: str = Field(min_length=1)
     tail: str = Field(min_length=1)
 
+    boxes: tuple[tuple[float, float, float, float], ...] = ()
+
     def triple(self) -> tuple[str, str, str]:
         """Return the benchmark set identity."""
         return self.head, self.relation, self.tail
@@ -73,6 +75,7 @@ class ScoredRelation(BoundaryModel):
     head_span: tuple[int | None, int | None] | None = None
     tail_span: tuple[int | None, int | None] | None = None
     verification: Literal["verified", "needs_review"] | None = None
+    regions: tuple[tuple[float, float, float, float], ...] = ()
 
 
 class RecordedUsage(BoundaryModel):
@@ -162,10 +165,33 @@ class KGEvalFailure(BoundaryModel):
     reason: str
 
 
+class ImageGroupMetrics(BoundaryModel):
+    """Report an explicit image group or language slice with geometric and text quality."""
+
+    name: str
+    metrics: KGMetrics
+    box_true_positives: int = Field(ge=0)
+    box_hits: int = Field(ge=0)
+    box_hit_rate: float = Field(ge=0, le=1)
+    cer: float | None = Field(default=None, ge=0)
+    identifier_preservation: float | None = Field(default=None, ge=0, le=1)
+    transcription_failures: int = Field(default=0, ge=0)
+
+
+class ImageScoringView(BoundaryModel):
+    """Keep clean, scan, diagram and bilingual slices in stable display order."""
+
+    groups: tuple[ImageGroupMetrics, ...]
+
+
 class KGEvalReport(BoundaryModel):
     """Persist independent recording and production-path scores from one execution."""
 
     schema_version: Literal["1.0"] = "1.0"
+    suite: Literal["text", "image"] = "text"
+    transcription_profile: str | None = None
+    image_recording: ImageScoringView | None = None
+    image_product: ImageScoringView | None = None
     id: str = Field(default_factory=new_id)
     provider: Literal["kg"] = "kg"
     created_at: datetime = Field(default_factory=utcnow)

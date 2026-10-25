@@ -17,7 +17,7 @@ def register_kg_schema(schema: KGSchema) -> None:
             id="kg.mentions",
             description="An entity occurs in a source document",
             object_kind="asset",
-            object_asset_types=("file",),
+            object_asset_types=("file", "image_transcript"),
             subject_asset_type="kg_entity",
             existence=False,
         )

@@ -3,6 +3,7 @@ id: business-knowledge
 version: '1.0'
 entity_types:
 - name: person
+  person: true
   description: 人名 / a person
   aliases: {}
 - name: organization

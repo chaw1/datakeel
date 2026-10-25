@@ -1,0 +1,14 @@
+# Scripted failure demonstration; not a recorded model response.
+id: replay-image-demo-failure
+backend: replay
+mode: ocr
+model: scripted-truncation-v1
+interface: openai
+base_url: null
+api_key_env: null
+prompt_version: image-transcription-v1
+max_output_tokens: 4096
+timeout_seconds: 120.0
+request_parameters: {}
+recording: demo/image-truncated.yaml
+ocr_model_version: rapidocr-3.10.0-defaults

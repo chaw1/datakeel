@@ -1,0 +1,9 @@
+id: replay-image-rapidocr-qwen
+extractor: replay
+provider: replay
+model: qwen3.5:9b
+prompt_version: image-kg-v1
+max_output_tokens: 4096
+chunk_size: 12000
+chunk_overlap: 0
+recording: recordings/image-rapidocr-qwen.yaml

@@ -70,7 +70,7 @@ def _account_trace(
     row: BudgetReservationRow, trace: TraceInput, accounts: list[BudgetAccountRow]
 ) -> ModelCallTrace:
     unknown = trace.billing_status == "unknown"
-    observed = trace.observed_usage if trace.call_type == "extraction" else None
+    observed = trace.observed_usage if trace.call_type in {"extraction", "transcription"} else None
     measured = observed or trace.usage
     tokens = (
         row.tokens

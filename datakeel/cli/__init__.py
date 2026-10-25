@@ -11,7 +11,7 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
-from datakeel.cli import kg_evaluation, routing, workflow
+from datakeel.cli import kg_evaluation, kg_image_evaluation, routing, workflow
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -22,6 +22,7 @@ from datakeel.cli.evidence_evaluation import evaluate_evidence
 from datakeel.cli.mcp import serve
 from datakeel.core.errors import NotFoundError
 from datakeel.core.harness_models import BudgetLimits
+from datakeel.core.kg_image_request import ImageEvaluationRequest
 from datakeel.core.logging import configure_logging
 from datakeel.core.settings import get_settings
 from datakeel.routing.config import load_config
@@ -150,6 +151,20 @@ def _evaluation_command(db: Database, args: argparse.Namespace) -> None:
         evaluate(db, args.provider, args.golden_dir, json_output=args.json_output)
     elif args.command == "eval-evidence":
         evaluate_evidence(db, args.questions, json_output=args.json_output)
+    elif args.command == "eval-kg" and args.suite == "image":
+        kg_image_evaluation.evaluate(
+            db,
+            ImageEvaluationRequest(
+                profile="replay-image-flash" if args.profile == "replay-demo" else args.profile,
+                transcription_profile=args.transcription_profile,
+                schema_id=args.schema,
+                cases=args.cases,
+            ),
+            json_output=args.json_output,
+            limits=BudgetLimits(
+                conversation_tokens=args.budget_tokens, conversation_usd=args.max_cost_usd
+            ),
+        )
     elif args.command == "eval-kg":
         kg_evaluation.evaluate(
             db,

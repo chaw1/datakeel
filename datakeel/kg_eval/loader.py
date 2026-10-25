@@ -28,11 +28,12 @@ def load_cases(schema: KGSchema, path: Path | None = None) -> tuple[KGCaseSuite,
         msg = f"{path.name}:cases.id: duplicate case identity"
         raise ValidationError(msg)
     for index, case in enumerate(suite.cases):
-        _validate_case(case, schema, f"{path.name}:cases.{index}")
+        validate_case(case, schema, f"{path.name}:cases.{index}")
     return suite, hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _validate_case(case: KGCase, schema: KGSchema, location: str) -> None:
+def validate_case(case: KGCase, schema: KGSchema, location: str) -> None:
+    """Reject undeclared entities, labels and incompatible endpoint types in gold cases."""
     types = {entity.name for entity in schema.entity_types}
     relations = {relation.name: relation for relation in schema.relations}
     names = {entity.name: entity.type for entity in case.entities}

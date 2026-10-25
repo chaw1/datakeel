@@ -12,9 +12,16 @@ from pydantic import Field, model_validator
 from datakeel.core.evidence_models import ContentRevision
 from datakeel.core.harness_pricing import ModelPrice
 from datakeel.core.kg_contracts import ExtractionProfile, KGSchema
+from datakeel.core.kg_images import (
+    KGImageInput,
+    KGImageSource,
+    TranscriptionEstimate,
+    TranscriptionObservation,
+)
 from datakeel.core.kg_models import Recording, TextBlock
 from datakeel.core.kg_product import ProductExtraction, SchemaProposal
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
+from datakeel.core.transcription_models import TranscriptionProfile
 
 
 class KGDocument(BoundaryModel):
@@ -25,6 +32,7 @@ class KGDocument(BoundaryModel):
     text: str
     content_revision: ContentRevision
     blocks: tuple[TextBlock, ...]
+    image: KGImageSource | None = None
 
 
 class KGBlockFingerprint(BoundaryModel):
@@ -42,6 +50,7 @@ class KGDocumentFingerprint(BoundaryModel):
     filename: str
     content_revision: ContentRevision
     blocks: tuple[KGBlockFingerprint, ...]
+    image: KGImageSource | None = None
 
     @classmethod
     def from_document(cls, document: KGDocument) -> "KGDocumentFingerprint":
@@ -49,6 +58,7 @@ class KGDocumentFingerprint(BoundaryModel):
         return cls(
             asset_ref=document.asset_ref,
             filename=document.filename,
+            image=document.image,
             content_revision=document.content_revision,
             blocks=tuple(
                 KGBlockFingerprint(start=b.start, end=b.end, content_hash=b.content_hash)
@@ -62,11 +72,13 @@ class KGInputs(BoundaryModel):
 
     documents: tuple[KGDocument, ...]
     recording: Recording | None = None
+    images: tuple[KGImageInput, ...] = ()
 
 
 class KGEstimate(BoundaryModel):
     """Bind visible outbound impact and its exact price snapshot to the plan digest."""
 
+    extraction_input_basis: Literal["transcription_limit"] | None = None
     target_host: str | None
     model: str
     documents: int = Field(ge=0)
@@ -89,6 +101,12 @@ class KGPrepared(BoundaryModel):
     accounting_price: ModelPrice
     accounting_price_version: str
     external: bool
+    transcription_profile: TranscriptionProfile | None = None
+    transcription_recording_hash: str | None = None
+    transcription_estimate: TranscriptionEstimate | None = None
+    transcription_accounting_price: ModelPrice | None = None
+    transcription_accounting_version: str | None = None
+    handwriting: bool = False
 
 
 class KGBlockFailure(BoundaryModel):
@@ -130,6 +148,12 @@ class KGReport(BoundaryModel):
     failures: tuple[KGBlockFailure, ...] = ()
     partial_documents: tuple[str, ...] = ()
     proposals: tuple[SchemaProposal, ...] = ()
+    transcriptions: tuple[TranscriptionObservation, ...] = ()
+    transcription_failed: int = 0
+    located_relations: int = 0
+    unlocated_relations: int = 0
+    cloud_calls: int = 0
+    cloud_cost_usd: Decimal | None = None
 
 
 class KGRun(BoundaryModel):

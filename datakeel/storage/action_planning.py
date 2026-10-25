@@ -121,6 +121,7 @@ def _new_plan(
                 total_bytes=manifest.total_bytes,
                 external=external,
                 kg_estimate=kg.estimate if kg else None,
+                transcription_estimate=kg.transcription_estimate if kg else None,
             ),
             "actor": context.actor,
             "agent_id": context.agent_id,

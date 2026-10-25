@@ -19,14 +19,19 @@ from datakeel.core.kg_contracts import ExtractionProfile, KGSchema
 from datakeel.core.kg_execution import KGDocument, KGDocumentFingerprint, KGEstimate, KGPrepared
 from datakeel.core.kg_models import Recording
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.core.transcription_models import TranscriptionProfile
 from datakeel.kg.loader import contracts_path, get_profile, get_schema
 from datakeel.kg.policy import is_external, target_host
-from datakeel.kg.prompt import extraction_prompt
+from datakeel.kg.prompt import extraction_prompt, image_profile
 from datakeel.kg.text import chunk_text, decode_text
-from datakeel.storage.database import VersionRow
+from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.datasets import materialize_files
+from datakeel.storage.evidence_import import IMAGE_SUFFIXES
+from datakeel.storage.kg_image_preparation import image_document, prepare_images
 from datakeel.storage.kg_pricing import metering_config
 from datakeel.storage.object_queries import evaluate_in_session
+from datakeel.transcription.loader import get_profile as get_transcription_profile
+from datakeel.transcription.loader import read_recording as read_transcription_recording
 
 
 def _document(file: FileItem, version_id: str, profile: ExtractionProfile) -> KGDocument:
@@ -55,7 +60,10 @@ def _document(file: FileItem, version_id: str, profile: ExtractionProfile) -> KG
 
 
 def read_documents(
-    session: Session, params: RunKGExtractionParams, profile: ExtractionProfile
+    session: Session,
+    params: RunKGExtractionParams,
+    profile: ExtractionProfile,
+    transcription_profile: TranscriptionProfile | None = None,
 ) -> tuple[KGDocument, ...]:
     """Decode the exact selected immutable manifest without exposing storage rows."""
     version = session.get(VersionRow, params.version_id)
@@ -72,7 +80,31 @@ def read_documents(
     if not selected:
         msg = "Graph extraction requires at least one source document"
         raise ValidationError(msg)
-    return tuple(_document(file, version.id, profile) for file in materialize_files(selected))
+    transcription = transcription_profile
+    if transcription is None and any(
+        Path(file.filename).suffix.lower() in IMAGE_SUFFIXES for file in selected
+    ):
+        transcription = get_transcription_profile(params.transcription_profile_id)
+    recording_hash = read_transcription_recording(transcription)[0] if transcription else None
+    result: list[KGDocument] = []
+    for file in materialize_files(selected):
+        if Path(file.filename).suffix.lower() in IMAGE_SUFFIXES and transcription:
+            mode = params.mode_overrides.get(file.id, transcription.mode)
+            result.append(
+                image_document(
+                    file,
+                    transcription,
+                    recording_hash,
+                    mode,
+                )
+            )
+        else:
+            result.append(_document(file, version.id, profile))
+    image_ids = {document.asset_ref.asset_id for document in result if document.image}
+    if set(params.mode_overrides) - image_ids:
+        msg = "Transcription mode overrides must refer to selected image file IDs"
+        raise ValidationError(msg)
+    return tuple(result)
 
 
 def read_recording(profile: ExtractionProfile) -> tuple[str | None, Recording | None]:
@@ -95,7 +127,10 @@ def _prepared(
 ) -> KGPrepared:
     config = metering_config(profile, "prepare")
     blocks = tuple(block for document in documents for block in document.blocks)
-    tokens = sum(estimate_tokens(extraction_prompt(block, schema)) for block in blocks)
+    tokens = sum(
+        estimate_tokens(extraction_prompt(block, schema, profile.prompt_version))
+        for block in blocks
+    )
     cost = nanos_to_usd(
         reservation_cost(config.price, tokens, len(blocks) * profile.max_output_tokens)
     )
@@ -126,4 +161,15 @@ def prepare_kg_params(session: Session, params: RunKGExtractionParams) -> RunKGE
     """Recompute every supplied snapshot before it enters a signed plan digest."""
     profile, schema = get_profile(params.profile_id), get_schema(params.schema_id)
     documents = read_documents(session, params, profile)
-    return params.model_copy(update={"prepared": _prepared(documents, schema, profile)})
+    if any(document.image is not None for document in documents):
+        profile = image_profile(profile)
+    prepared = _prepared(documents, schema, profile)
+    if any(document.image is not None for document in documents):
+        prepared = prepare_images(
+            prepared, documents, get_transcription_profile(params.transcription_profile_id)
+        )
+    dataset = session.get(DatasetRow, params.dataset_id)
+    prepared = prepared.model_copy(
+        update={"handwriting": bool(dataset and dataset.metadata_values.get("handwriting") is True)}
+    )
+    return params.model_copy(update={"prepared": prepared})

@@ -18,6 +18,7 @@ _KINDS: dict[str, type[BaseModel] | None] = {
     **dict.fromkeys(CATALOG_KINDS, CatalogObject),
     "question": QuestionProperties,
     "kg_entity": KGEntity,
+    "image_transcript": None,
     "assertion": None,
 }
 

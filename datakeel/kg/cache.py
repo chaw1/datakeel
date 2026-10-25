@@ -38,7 +38,9 @@ def build_cache_key(
     return KGCacheKey(
         text_hash=block.content_hash,
         schema_hash=content_hash(schema),
-        prompt_version=PROMPT_VERSION,
+        prompt_version=PROMPT_VERSION
+        if profile.prompt_version == "text-kg-v3"
+        else profile.prompt_version,
         profile_hash=profile_hash,
         chunk_size=profile.chunk_size,
         chunk_overlap=profile.chunk_overlap,

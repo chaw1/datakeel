@@ -1,0 +1,1334 @@
+model: qwen3.5:9b
+recorded_at: '2026-10-24'
+prompt_version: image-kg-v1
+source: Recorded extraction from synthetic image transcripts. Identical transcript hashes retain the lexicographically
+  first case ID. Original errors are preserved as failed blocks.
+records:
+- text_hash: 47b18b24493b26a99c7586d258cf31437304bf9b9f9118fab1b3066bebbfd57e
+  output:
+    entities:
+    - name: ods_order
+      type: dataset
+    - name: dwd_order_wide
+      type: dataset
+    - name: ods_payment
+      type: dataset
+    - name: dws_trade_daily
+      type: dataset
+    - name: ads_gmv_report
+      type: dataset
+    - name: ads_member_ltv
+      type: dataset
+    relations:
+    - head: dwd_order_wide
+      relation: derived_from
+      tail: ods_order
+      evidence: ods_order --清洗--> dwd_order_wide
+    - head: dwd_order_wide
+      relation: derived_from
+      tail: ods_payment
+      evidence: ods_payment --清洗--> dwd_order_wide
+    - head: dws_trade_daily
+      relation: derived_from
+      tail: dwd_order_wide
+      evidence: dwd_order_wide --按天汇总--> dws_trade_daily
+    - head: ads_gmv_report
+      relation: derived_from
+      tail: dws_trade_daily
+      evidence: dws_trade_daily --汇总--> ads_gmv_report
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: ods_order
+      type: dataset
+    - name: dwd_order_wide
+      type: dataset
+    - name: ods_payment
+      type: dataset
+    - name: dws_trade_daily
+      type: dataset
+    - name: ads_gmv_report
+      type: dataset
+    - name: ads_member_ltv
+      type: dataset
+    relations:
+    - head: dwd_order_wide
+      relation: derived_from
+      tail: ods_order
+      evidence: ods_order --清洗--> dwd_order_wide
+    - head: dwd_order_wide
+      relation: derived_from
+      tail: ods_payment
+      evidence: ods_payment --清洗--> dwd_order_wide
+    - head: dws_trade_daily
+      relation: derived_from
+      tail: dwd_order_wide
+      evidence: dwd_order_wide --按天汇总--> dws_trade_daily
+    - head: ads_gmv_report
+      relation: derived_from
+      tail: dws_trade_daily
+      evidence: dws_trade_daily --汇总--> ads_gmv_report
+    error: null
+    latency_s: 6.36
+    usage:
+      input_tokens: 1334
+      output_tokens: 264
+      total_tokens: 1598
+      input_token_details:
+        cache_read: 0
+      output_token_details: {}
+    pid: b01
+- text_hash: 6043ca84e87872ef15de060d4b94369c7de3ace3e07d6b4ed8622c6405033318
+  output:
+    entities:
+    - name: raw_web_events
+      type: dataset
+    - name: stg_events
+      type: dataset
+    - name: legacy_sessions
+      type: dataset
+    - name: fct_sessions
+      type: dataset
+    - name: agg_daily_traffic
+      type: dataset
+    - name: Bounce Rate
+      type: metric
+    relations:
+    - head: stg_events
+      relation: derived_from
+      tail: raw_web_events
+      evidence: raw_web_events --parse--> stg_events
+    - head: fct_sessions
+      relation: derived_from
+      tail: stg_events
+      evidence: stg_events --sessionize--> fct_sessions
+    - head: agg_daily_traffic
+      relation: derived_from
+      tail: fct_sessions
+      evidence: fct_sessions --aggregate--> agg_daily_traffic
+    - head: Bounce Rate
+      relation: computed_from
+      tail: fct_sessions
+      evidence: fct_sessions --compute--> Bounce Rate
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: raw_web_events
+      type: dataset
+    - name: stg_events
+      type: dataset
+    - name: legacy_sessions
+      type: dataset
+    - name: fct_sessions
+      type: dataset
+    - name: agg_daily_traffic
+      type: dataset
+    - name: Bounce Rate
+      type: metric
+    relations:
+    - head: stg_events
+      relation: derived_from
+      tail: raw_web_events
+      evidence: raw_web_events --parse--> stg_events
+    - head: fct_sessions
+      relation: derived_from
+      tail: stg_events
+      evidence: stg_events --sessionize--> fct_sessions
+    - head: agg_daily_traffic
+      relation: derived_from
+      tail: fct_sessions
+      evidence: fct_sessions --aggregate--> agg_daily_traffic
+    - head: Bounce Rate
+      relation: computed_from
+      tail: fct_sessions
+      evidence: fct_sessions --compute--> Bounce Rate
+    error: null
+    latency_s: 5.14
+    usage:
+      input_tokens: 1313
+      output_tokens: 245
+      total_tokens: 1558
+      input_token_details:
+        cache_read: 822
+      output_token_details: {}
+    pid: b02
+- text_hash: 3b94c9afc3d16d4558019391049190f62a74c9608c77fbb458a5d2404b3f8563
+  output:
+    entities:
+    - name: 星海科技
+      type: organization
+    - name: 杭州
+      type: location
+    - name: 数据中台事业部
+      type: organization
+    - name: 数据平台部
+      type: organization
+    - name: 王磊
+      type: person
+    - name: 数据治理组
+      type: organization
+    - name: 李娜
+      type: person
+    - name: BI 分析组
+      type: organization
+    - name: 刘洋
+      type: person
+    relations:
+    - head: 星海科技
+      relation: located_in
+      tail: 杭州
+      evidence: 总部：杭州
+    - head: 数据中台事业部
+      relation: part_of
+      tail: 星海科技
+      evidence: 组织架构... 数据中台事业部
+    - head: 数据平台部
+      relation: part_of
+      tail: 数据中台事业部
+      evidence: '数据中台事业部
+
+        数据平台部'
+    - head: 王磊
+      relation: works_for
+      tail: 数据平台部
+      evidence: 负责人：王磊
+    - head: 数据治理组
+      relation: part_of
+      tail: 数据中台事业部
+      evidence: '数据平台部
+
+        数据治理组'
+    - head: 李娜
+      relation: works_for
+      tail: 数据治理组
+      evidence: 负责人：李娜
+    - head: BI 分析组
+      relation: part_of
+      tail: 数据中台事业部
+      evidence: '数据治理组
+
+        BI 分析组'
+    - head: 刘洋
+      relation: works_for
+      tail: BI 分析组
+      evidence: 负责人：刘洋
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: 星海科技
+      type: organization
+    - name: 杭州
+      type: location
+    - name: 数据中台事业部
+      type: organization
+    - name: 数据平台部
+      type: organization
+    - name: 王磊
+      type: person
+    - name: 数据治理组
+      type: organization
+    - name: 李娜
+      type: person
+    - name: BI 分析组
+      type: organization
+    - name: 刘洋
+      type: person
+    relations:
+    - head: 星海科技
+      relation: located_in
+      tail: 杭州
+      evidence: 总部：杭州
+    - head: 数据中台事业部
+      relation: part_of
+      tail: 星海科技
+      evidence: 组织架构... 数据中台事业部
+    - head: 数据平台部
+      relation: part_of
+      tail: 数据中台事业部
+      evidence: '数据中台事业部
+
+        数据平台部'
+    - head: 王磊
+      relation: works_for
+      tail: 数据平台部
+      evidence: 负责人：王磊
+    - head: 数据治理组
+      relation: part_of
+      tail: 数据中台事业部
+      evidence: '数据平台部
+
+        数据治理组'
+    - head: 李娜
+      relation: works_for
+      tail: 数据治理组
+      evidence: 负责人：李娜
+    - head: BI 分析组
+      relation: part_of
+      tail: 数据中台事业部
+      evidence: '数据治理组
+
+        BI 分析组'
+    - head: 刘洋
+      relation: works_for
+      tail: BI 分析组
+      evidence: 负责人：刘洋
+    error: null
+    latency_s: 8.22
+    usage:
+      input_tokens: 1294
+      output_tokens: 407
+      total_tokens: 1701
+      input_token_details:
+        cache_read: 822
+      output_token_details: {}
+    pid: b03
+- text_hash: 889a2d637027cc6798ac5af6bacfd143b17fe20ea2a7481edb5c27d6ddd8e995
+  output:
+    entities:
+    - name: Northwind Analytics
+      type: organization
+    - name: Toronto
+      type: location
+    - name: Maya Chen
+      type: person
+    - name: Priya Nair
+      type: person
+    - name: Omar Haddad
+      type: person
+    - name: Lena Fischer
+      type: person
+    relations:
+    - head: Northwind Analytics
+      relation: located_in
+      tail: Toronto
+      evidence: 'HQ: Toronto'
+    - head: Maya Chen
+      relation: works_for
+      tail: Data Engineering
+      evidence: 'Lead: Maya Chen'
+    - head: Priya Nair
+      relation: works_for
+      tail: Data Science
+      evidence: 'Lead: Priya Nair'
+    - head: Omar Haddad
+      relation: works_for
+      tail: Platform Team
+      evidence: 'Lead: Omar Haddad'
+    - head: Lena Fischer
+      relation: works_for
+      tail: Ingestion Team
+      evidence: 'Lead: Lena Fischer'
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: Northwind Analytics
+      type: organization
+    - name: Toronto
+      type: location
+    - name: Maya Chen
+      type: person
+    - name: Priya Nair
+      type: person
+    - name: Omar Haddad
+      type: person
+    - name: Lena Fischer
+      type: person
+    relations:
+    - head: Northwind Analytics
+      relation: located_in
+      tail: Toronto
+      evidence: 'HQ: Toronto'
+    - head: Maya Chen
+      relation: works_for
+      tail: Data Engineering
+      evidence: 'Lead: Maya Chen'
+    - head: Priya Nair
+      relation: works_for
+      tail: Data Science
+      evidence: 'Lead: Priya Nair'
+    - head: Omar Haddad
+      relation: works_for
+      tail: Platform Team
+      evidence: 'Lead: Omar Haddad'
+    - head: Lena Fischer
+      relation: works_for
+      tail: Ingestion Team
+      evidence: 'Lead: Lena Fischer'
+    error: null
+    latency_s: 5.58
+    usage:
+      input_tokens: 1310
+      output_tokens: 260
+      total_tokens: 1570
+      input_token_details:
+        cache_read: 822
+      output_token_details: {}
+    pid: b04
+- text_hash: a5d9c60a9a494c31acd7ce39e82ba5c969f9250914a26fabe2dc13c416cd428a
+  output:
+    entities:
+    - name: dwd_user_event
+      type: dataset
+    - name: 赵一鸣
+      type: person
+    - name: 用户增长部
+      type: organization
+    - name: ods_tracking_log
+      type: dataset
+    - name: dws_user_daily
+      type: dataset
+    - name: 钱佳
+      type: person
+    - name: dim_member
+      type: dataset
+    - name: 孙浩
+      type: person
+    - name: 会员中心
+      type: organization
+    - name: ods_member
+      type: dataset
+    - name: ads_retention
+      type: dataset
+    relations:
+    - head: 赵一鸣
+      relation: owns
+      tail: dwd_user_event
+      evidence: dwd_user_event | 赵一鸣
+    - head: 赵一鸣
+      relation: works_for
+      tail: 用户增长部
+      evidence: 赵一鸣 | 用户增长部
+    - head: dwd_user_event
+      relation: derived_from
+      tail: ods_tracking_log
+      evidence: dwd_user_event | ods_tracking_log
+    - head: 钱佳
+      relation: owns
+      tail: dws_user_daily
+      evidence: dws_user_daily | 钱佳
+    - head: 钱佳
+      relation: works_for
+      tail: 用户增长部
+      evidence: dws_user_daily | 用户增长部
+    - head: dws_user_daily
+      relation: derived_from
+      tail: dwd_user_event
+      evidence: dws_user_daily | dwd_user_event
+    - head: 孙浩
+      relation: owns
+      tail: dim_member
+      evidence: dim_member | 孙浩
+    - head: 孙浩
+      relation: works_for
+      tail: 会员中心
+      evidence: dim_member | 会员中心
+    - head: dim_member
+      relation: derived_from
+      tail: ods_member
+      evidence: dim_member | ods_member
+    - head: 钱佳
+      relation: owns
+      tail: ads_retention
+      evidence: ads_retention | 钱佳
+    - head: 钱佳
+      relation: works_for
+      tail: 用户增长部
+      evidence: ads_retention | 用户增长部
+    - head: ads_retention
+      relation: derived_from
+      tail: dws_user_daily
+      evidence: ads_retention | dws_user_daily
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: dwd_user_event
+      type: dataset
+    - name: 赵一鸣
+      type: person
+    - name: 用户增长部
+      type: organization
+    - name: ods_tracking_log
+      type: dataset
+    - name: dws_user_daily
+      type: dataset
+    - name: 钱佳
+      type: person
+    - name: dim_member
+      type: dataset
+    - name: 孙浩
+      type: person
+    - name: 会员中心
+      type: organization
+    - name: ods_member
+      type: dataset
+    - name: ads_retention
+      type: dataset
+    relations:
+    - head: 赵一鸣
+      relation: owns
+      tail: dwd_user_event
+      evidence: dwd_user_event | 赵一鸣
+    - head: 赵一鸣
+      relation: works_for
+      tail: 用户增长部
+      evidence: 赵一鸣 | 用户增长部
+    - head: dwd_user_event
+      relation: derived_from
+      tail: ods_tracking_log
+      evidence: dwd_user_event | ods_tracking_log
+    - head: 钱佳
+      relation: owns
+      tail: dws_user_daily
+      evidence: dws_user_daily | 钱佳
+    - head: 钱佳
+      relation: works_for
+      tail: 用户增长部
+      evidence: dws_user_daily | 用户增长部
+    - head: dws_user_daily
+      relation: derived_from
+      tail: dwd_user_event
+      evidence: dws_user_daily | dwd_user_event
+    - head: 孙浩
+      relation: owns
+      tail: dim_member
+      evidence: dim_member | 孙浩
+    - head: 孙浩
+      relation: works_for
+      tail: 会员中心
+      evidence: dim_member | 会员中心
+    - head: dim_member
+      relation: derived_from
+      tail: ods_member
+      evidence: dim_member | ods_member
+    - head: 钱佳
+      relation: owns
+      tail: ads_retention
+      evidence: ads_retention | 钱佳
+    - head: 钱佳
+      relation: works_for
+      tail: 用户增长部
+      evidence: ads_retention | 用户增长部
+    - head: ads_retention
+      relation: derived_from
+      tail: dws_user_daily
+      evidence: ads_retention | dws_user_daily
+    error: null
+    latency_s: 11.72
+    usage:
+      input_tokens: 1397
+      output_tokens: 583
+      total_tokens: 1980
+      input_token_details:
+        cache_read: 822
+      output_token_details: {}
+    pid: b05
+- text_hash: bd51f8949c4e8babf1adf8d38d75be7f10c38af22da2185736ee711fdb1d48c1
+  output:
+    entities:
+    - name: fct_orders
+      type: dataset
+    - name: Alice Wong
+      type: person
+    - name: Commerce Data
+      type: organization
+    - name: stg_orders
+      type: dataset
+    - name: raw_orders
+      type: dataset
+    - name: fct_refunds
+      type: dataset
+    - name: Ben Ortiz
+      type: person
+    - name: Finance Data
+      type: organization
+    - name: stg_payments
+      type: dataset
+    - name: dim_customer
+      type: dataset
+    - name: Chen Lu
+      type: person
+    - name: CRM Data
+      type: organization
+    - name: raw_crm_contacts
+      type: dataset
+    relations:
+    - head: fct_orders
+      relation: owns
+      tail: Alice Wong
+      evidence: fct_orders | Alice Wong
+    - head: Commerce Data
+      relation: works_for
+      tail: Alice Wong
+      evidence: Commerce Data
+    - head: stg_orders
+      relation: derived_from
+      tail: raw_orders
+      evidence: stg_orders | raw_orders
+    - head: fct_refunds
+      relation: owns
+      tail: Ben Ortiz
+      evidence: ~~fct_refunds~~ | ~~Ben Ortiz~~
+    - head: Finance Data
+      relation: works_for
+      tail: Ben Ortiz
+      evidence: ~~Finance Data~~
+    - head: stg_payments
+      relation: derived_from
+      tail: fct_refunds
+      evidence: ~~stg_payments~~
+    - head: dim_customer
+      relation: owns
+      tail: Chen Lu
+      evidence: dim_customer | Chen Lu
+    - head: CRM Data
+      relation: works_for
+      tail: Chen Lu
+      evidence: CRM Data
+    - head: raw_crm_contacts
+      relation: derived_from
+      tail: dim_customer
+      evidence: raw_crm_contacts
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: fct_orders
+      type: dataset
+    - name: Alice Wong
+      type: person
+    - name: Commerce Data
+      type: organization
+    - name: stg_orders
+      type: dataset
+    - name: raw_orders
+      type: dataset
+    - name: fct_refunds
+      type: dataset
+    - name: Ben Ortiz
+      type: person
+    - name: Finance Data
+      type: organization
+    - name: stg_payments
+      type: dataset
+    - name: dim_customer
+      type: dataset
+    - name: Chen Lu
+      type: person
+    - name: CRM Data
+      type: organization
+    - name: raw_crm_contacts
+      type: dataset
+    relations:
+    - head: fct_orders
+      relation: owns
+      tail: Alice Wong
+      evidence: fct_orders | Alice Wong
+    - head: Commerce Data
+      relation: works_for
+      tail: Alice Wong
+      evidence: Commerce Data
+    - head: stg_orders
+      relation: derived_from
+      tail: raw_orders
+      evidence: stg_orders | raw_orders
+    - head: fct_refunds
+      relation: owns
+      tail: Ben Ortiz
+      evidence: ~~fct_refunds~~ | ~~Ben Ortiz~~
+    - head: Finance Data
+      relation: works_for
+      tail: Ben Ortiz
+      evidence: ~~Finance Data~~
+    - head: stg_payments
+      relation: derived_from
+      tail: fct_refunds
+      evidence: ~~stg_payments~~
+    - head: dim_customer
+      relation: owns
+      tail: Chen Lu
+      evidence: dim_customer | Chen Lu
+    - head: CRM Data
+      relation: works_for
+      tail: Chen Lu
+      evidence: CRM Data
+    - head: raw_crm_contacts
+      relation: derived_from
+      tail: dim_customer
+      evidence: raw_crm_contacts
+    error: null
+    latency_s: 9.78
+    usage:
+      input_tokens: 1346
+      output_tokens: 482
+      total_tokens: 1828
+      input_token_details:
+        cache_read: 885
+      output_token_details: {}
+    pid: b06
+- text_hash: 33a12cbe58e08fb0516478316a728d5fd627cf2a9bdd7c9c354704e355e29aeb
+  output:
+    entities:
+    - name: 周敏
+      type: person
+    - name: 财务分析组
+      type: organization
+    - name: 吴婷
+      type: person
+    - name: 会员运营组
+      type: organization
+    - name: GMV
+      type: metric
+    - name: 复购率
+      type: metric
+    - name: 客单价
+      type: metric
+    - name: dws_trade_daily
+      type: dataset
+    - name: dws_user_order
+      type: dataset
+    relations:
+    - head: 周敏
+      relation: works_for
+      tail: 财务分析组
+      evidence: 负责人：周敏（财务分析组）
+    - head: 吴婷
+      relation: works_for
+      tail: 会员运营组
+      evidence: 负责人：吴婷（会员运营组）
+    - head: GMV
+      relation: computed_from
+      tail: dws_trade_daily
+      evidence: 计算来源：dws_trade_daily
+    - head: 复购率
+      relation: computed_from
+      tail: dws_user_order
+      evidence: 计算来源：dws_user_order
+    - head: 客单价
+      relation: computed_from
+      tail: dws_trade_daily
+      evidence: 计算来源：dws_trade_daily
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: 周敏
+      type: person
+    - name: 财务分析组
+      type: organization
+    - name: 吴婷
+      type: person
+    - name: 会员运营组
+      type: organization
+    - name: GMV
+      type: metric
+    - name: 复购率
+      type: metric
+    - name: 客单价
+      type: metric
+    - name: dws_trade_daily
+      type: dataset
+    - name: dws_user_order
+      type: dataset
+    relations:
+    - head: 周敏
+      relation: works_for
+      tail: 财务分析组
+      evidence: 负责人：周敏（财务分析组）
+    - head: 吴婷
+      relation: works_for
+      tail: 会员运营组
+      evidence: 负责人：吴婷（会员运营组）
+    - head: GMV
+      relation: computed_from
+      tail: dws_trade_daily
+      evidence: 计算来源：dws_trade_daily
+    - head: 复购率
+      relation: computed_from
+      tail: dws_user_order
+      evidence: 计算来源：dws_user_order
+    - head: 客单价
+      relation: computed_from
+      tail: dws_trade_daily
+      evidence: 计算来源：dws_trade_daily
+    error: null
+    latency_s: 6.53
+    usage:
+      input_tokens: 1338
+      output_tokens: 316
+      total_tokens: 1654
+      input_token_details:
+        cache_read: 885
+      output_token_details: {}
+    pid: b07
+- text_hash: bdf3ed1fd7a1926356eee20b723e28d907fe3cc144c4bfe06ba56050a0748711
+  output:
+    entities:
+    - name: Checkout Conversion
+      type: metric
+    - name: Liam Park
+      type: person
+    - name: Growth Analytics
+      type: organization
+    - name: fct_sessions
+      type: dataset
+    - name: Weekly Active Users
+      type: metric
+    - name: Growth Analytics team
+      type: organization
+    - name: fct_user_activity
+      type: dataset
+    - name: Churn Rate
+      type: metric
+    - name: fct_subscriptions
+      type: dataset
+    relations:
+    - head: Liam Park
+      relation: owns
+      tail: Checkout Conversion
+      evidence: 'Owner: Liam Park'
+    - head: Growth Analytics
+      relation: owns
+      tail: Checkout Conversion
+      evidence: 'Source: fct_sessions (implied ownership by team context, but strictly text says Owner:
+        Liam Park. However, looking at the schema ''owns'' can be person or org. Let''s stick to explicit
+        text. Text says ''Owner: Liam Park''. It also lists ''Growth Analytics'' as a separate entity
+        name in the list? No, the text has ''Growth Analytics'' and ''Growth Analytics team''. I will
+        treat them as distinct if written so, or merge if clearly same. The prompt says ''Use entity names
+        exactly as written''. So ''Growth Analytics'' and ''Growth Analytics team'' are different strings.
+        But usually they refer to the same group. Let''s look at the text: ''Owner: Liam Park (Growth
+        Analytics)'' implies Liam works for Growth Analytics. Then ''Owner: Growth Analytics team''. I
+        will create relations based on explicit ''Owner'' lines.'
+    - head: Liam Park
+      relation: works_for
+      tail: Growth Analytics
+      evidence: 'Owner: Liam Park (Growth Analytics)'
+    - head: Growth Analytics team
+      relation: owns
+      tail: Weekly Active Users
+      evidence: 'Owner: Growth Analytics team'
+    - head: Growth Analytics team
+      relation: owns
+      tail: Churn Rate
+      evidence: 'Owner: Growth Analytics team'
+    - head: Checkout Conversion
+      relation: computed_from
+      tail: fct_sessions
+      evidence: 'Source: fct_sessions'
+    - head: Weekly Active Users
+      relation: computed_from
+      tail: fct_user_activity
+      evidence: 'Source: fct_user_activity'
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: Checkout Conversion
+      type: metric
+    - name: Liam Park
+      type: person
+    - name: Growth Analytics
+      type: organization
+    - name: fct_sessions
+      type: dataset
+    - name: Weekly Active Users
+      type: metric
+    - name: Growth Analytics team
+      type: organization
+    - name: fct_user_activity
+      type: dataset
+    - name: Churn Rate
+      type: metric
+    - name: fct_subscriptions
+      type: dataset
+    relations:
+    - head: Liam Park
+      relation: owns
+      tail: Checkout Conversion
+      evidence: 'Owner: Liam Park'
+    - head: Growth Analytics
+      relation: owns
+      tail: Checkout Conversion
+      evidence: 'Source: fct_sessions (implied ownership by team context, but strictly text says Owner:
+        Liam Park. However, looking at the schema ''owns'' can be person or org. Let''s stick to explicit
+        text. Text says ''Owner: Liam Park''. It also lists ''Growth Analytics'' as a separate entity
+        name in the list? No, the text has ''Growth Analytics'' and ''Growth Analytics team''. I will
+        treat them as distinct if written so, or merge if clearly same. The prompt says ''Use entity names
+        exactly as written''. So ''Growth Analytics'' and ''Growth Analytics team'' are different strings.
+        But usually they refer to the same group. Let''s look at the text: ''Owner: Liam Park (Growth
+        Analytics)'' implies Liam works for Growth Analytics. Then ''Owner: Growth Analytics team''. I
+        will create relations based on explicit ''Owner'' lines.'
+    - head: Liam Park
+      relation: works_for
+      tail: Growth Analytics
+      evidence: 'Owner: Liam Park (Growth Analytics)'
+    - head: Growth Analytics team
+      relation: owns
+      tail: Weekly Active Users
+      evidence: 'Owner: Growth Analytics team'
+    - head: Growth Analytics team
+      relation: owns
+      tail: Churn Rate
+      evidence: 'Owner: Growth Analytics team'
+    - head: Checkout Conversion
+      relation: computed_from
+      tail: fct_sessions
+      evidence: 'Source: fct_sessions'
+    - head: Weekly Active Users
+      relation: computed_from
+      tail: fct_user_activity
+      evidence: 'Source: fct_user_activity'
+    error: null
+    latency_s: 11.37
+    usage:
+      input_tokens: 1324
+      output_tokens: 553
+      total_tokens: 1877
+      input_token_details:
+        cache_read: 885
+      output_token_details: {}
+    pid: b08
+- text_hash: 459c4cc8be04074a3cd36dc89b5375109dab03c66c08a940fa70c0954e88db3c
+  output:
+    entities:
+    - name: ods_click_log
+      type: dataset
+    - name: dwd_click
+      type: dataset
+    - name: dws_ad_effect
+      type: dataset
+    - name: dim_ad_plan
+      type: dataset
+    - name: dwd_click_old
+      type: dataset
+    - name: 广告 ROI
+      type: metric
+    relations:
+    - head: ods_click_log
+      relation: derived_from
+      tail: dwd_click
+      evidence: ods_click_log --解析--> dwd_click
+    - head: dwd_click
+      relation: derived_from
+      tail: dws_ad_effect
+      evidence: dwd_click --关联--> dws_ad_effect
+    - head: dim_ad_plan
+      relation: derived_from
+      tail: dws_ad_effect
+      evidence: dim_ad_plan --关联--> dws_ad_effect（带叉号）
+    - head: dwd_click_old
+      relation: derived_from
+      tail: dws_ad_effect
+      evidence: dwd_click_old --关联--> dws_ad_effect
+    - head: 广告 ROI
+      relation: computed_from
+      tail: dws_ad_effect
+      evidence: dws_ad_effect --计算--> 广告 ROI
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: ods_click_log
+      type: dataset
+    - name: dwd_click
+      type: dataset
+    - name: dws_ad_effect
+      type: dataset
+    - name: dim_ad_plan
+      type: dataset
+    - name: dwd_click_old
+      type: dataset
+    - name: 广告 ROI
+      type: metric
+    relations:
+    - head: ods_click_log
+      relation: derived_from
+      tail: dwd_click
+      evidence: ods_click_log --解析--> dwd_click
+    - head: dwd_click
+      relation: derived_from
+      tail: dws_ad_effect
+      evidence: dwd_click --关联--> dws_ad_effect
+    - head: dim_ad_plan
+      relation: derived_from
+      tail: dws_ad_effect
+      evidence: dim_ad_plan --关联--> dws_ad_effect（带叉号）
+    - head: dwd_click_old
+      relation: derived_from
+      tail: dws_ad_effect
+      evidence: dwd_click_old --关联--> dws_ad_effect
+    - head: 广告 ROI
+      relation: computed_from
+      tail: dws_ad_effect
+      evidence: dws_ad_effect --计算--> 广告 ROI
+    error: null
+    latency_s: 6.09
+    usage:
+      input_tokens: 1329
+      output_tokens: 298
+      total_tokens: 1627
+      input_token_details:
+        cache_read: 885
+      output_token_details: {}
+    pid: b09
+- text_hash: 3fbd4bbb2d14fa55aca1640e07fe79656b2bf5d409a5dabae7a4511425c27fe6
+  output:
+    entities:
+    - name: Singapore office
+      type: location
+    - name: Risk Platform Team
+      type: organization
+    - name: Flink
+      type: system
+    - name: Kafka
+      type: system
+    - name: Fraud Analytics
+      type: organization
+    - name: Spark
+      type: system
+    - name: Hive
+      type: system
+    - name: Payments Data Team
+      type: organization
+    - name: Airflow
+      type: system
+    relations:
+    - head: Risk Platform Team
+      relation: uses
+      tail: Flink
+      evidence: Risk Platform Team --> Flink
+    - head: Risk Platform Team
+      relation: uses
+      tail: Kafka
+      evidence: Risk Platform Team --> Kafka
+    - head: Fraud Analytics
+      relation: uses
+      tail: Spark
+      evidence: Fraud Analytics --> Spark
+    - head: Payments Data Team
+      relation: uses
+      tail: Kafka
+      evidence: Payments Data Team --> Kafka
+    - head: Payments Data Team
+      relation: uses
+      tail: Airflow
+      evidence: Payments Data Team --> Airflow
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: Singapore office
+      type: location
+    - name: Risk Platform Team
+      type: organization
+    - name: Flink
+      type: system
+    - name: Kafka
+      type: system
+    - name: Fraud Analytics
+      type: organization
+    - name: Spark
+      type: system
+    - name: Hive
+      type: system
+    - name: Payments Data Team
+      type: organization
+    - name: Airflow
+      type: system
+    relations:
+    - head: Risk Platform Team
+      relation: uses
+      tail: Flink
+      evidence: Risk Platform Team --> Flink
+    - head: Risk Platform Team
+      relation: uses
+      tail: Kafka
+      evidence: Risk Platform Team --> Kafka
+    - head: Fraud Analytics
+      relation: uses
+      tail: Spark
+      evidence: Fraud Analytics --> Spark
+    - head: Payments Data Team
+      relation: uses
+      tail: Kafka
+      evidence: Payments Data Team --> Kafka
+    - head: Payments Data Team
+      relation: uses
+      tail: Airflow
+      evidence: Payments Data Team --> Airflow
+    error: null
+    latency_s: 5.97
+    usage:
+      input_tokens: 1296
+      output_tokens: 289
+      total_tokens: 1585
+      input_token_details:
+        cache_read: 885
+      output_token_details: {}
+    pid: b10
+- text_hash: 9d273da68d68491c7c9afc3df8c4865f14cecbb8009e4186eb861001582e0a3f
+  output:
+    entities:
+    - name: dwd_shipment
+      type: dataset
+    - name: 物流数据组
+      type: organization
+    - name: 广州
+      type: location
+    - name: ods_shipment
+      type: dataset
+    - name: dws_delivery_time
+      type: dataset
+    - name: 调度算法组
+      type: organization
+    - name: 深圳
+      type: location
+    - name: dwd_shipment
+      type: dataset
+    - name: dim_warehouse
+      type: dataset
+    - name: 仓储数据组
+      type: organization
+    - name: 东莞
+      type: location
+    - name: ods_wms_site
+      type: dataset
+    relations:
+    - head: dwd_shipment
+      relation: derived_from
+      tail: ods_shipment
+      evidence: ods_shipment
+    - head: dws_delivery_time
+      relation: derived_from
+      tail: dwd_shipment
+      evidence: dwd_shipment
+    - head: 物流数据组
+      relation: works_for
+      tail: 物流数据组
+      evidence: 维护团队 物流数据组
+    - head: 物流数据组
+      relation: located_in
+      tail: 广州
+      evidence: 团队所在城市 广州
+    - head: 调度算法组
+      relation: works_for
+      tail: 调度算法组
+      evidence: 维护团队 调度算法组
+    - head: 调度算法组
+      relation: located_in
+      tail: 深圳
+      evidence: 团队所在城市 深圳
+    - head: 仓储数据组
+      relation: works_for
+      tail: 仓储数据组
+      evidence: 维护团队 仓储数据组
+    - head: 仓储数据组
+      relation: located_in
+      tail: 东莞
+      evidence: 团队所在城市 东莞
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: dwd_shipment
+      type: dataset
+    - name: 物流数据组
+      type: organization
+    - name: 广州
+      type: location
+    - name: ods_shipment
+      type: dataset
+    - name: dws_delivery_time
+      type: dataset
+    - name: 调度算法组
+      type: organization
+    - name: 深圳
+      type: location
+    - name: dwd_shipment
+      type: dataset
+    - name: dim_warehouse
+      type: dataset
+    - name: 仓储数据组
+      type: organization
+    - name: 东莞
+      type: location
+    - name: ods_wms_site
+      type: dataset
+    relations:
+    - head: dwd_shipment
+      relation: derived_from
+      tail: ods_shipment
+      evidence: ods_shipment
+    - head: dws_delivery_time
+      relation: derived_from
+      tail: dwd_shipment
+      evidence: dwd_shipment
+    - head: 物流数据组
+      relation: works_for
+      tail: 物流数据组
+      evidence: 维护团队 物流数据组
+    - head: 物流数据组
+      relation: located_in
+      tail: 广州
+      evidence: 团队所在城市 广州
+    - head: 调度算法组
+      relation: works_for
+      tail: 调度算法组
+      evidence: 维护团队 调度算法组
+    - head: 调度算法组
+      relation: located_in
+      tail: 深圳
+      evidence: 团队所在城市 深圳
+    - head: 仓储数据组
+      relation: works_for
+      tail: 仓储数据组
+      evidence: 维护团队 仓储数据组
+    - head: 仓储数据组
+      relation: located_in
+      tail: 东莞
+      evidence: 团队所在城市 东莞
+    error: null
+    latency_s: 8.96
+    usage:
+      input_tokens: 1377
+      output_tokens: 441
+      total_tokens: 1818
+      input_token_details:
+        cache_read: 885
+      output_token_details: {}
+    pid: b11
+- text_hash: c10cc24d00ff91cf3bcb0db49df3f74c3ef77474ec64ebd3a2b5e4e9d4a02fe5
+  output:
+    entities:
+    - name: Revenue Analytics
+      type: organization
+    - name: order_facts
+      type: dataset
+    - name: Net Revenue
+      type: metric
+    - name: orders_raw
+      type: dataset
+    - name: orders_clean
+      type: dataset
+    - name: customers_raw
+      type: dataset
+    - name: customers_clean
+      type: dataset
+    - name: forecast_input
+      type: dataset
+    relations:
+    - head: Revenue Analytics
+      relation: owns
+      tail: order_facts
+      evidence: 'Maintained by Revenue Analytics: order_facts'
+    - head: Revenue Analytics
+      relation: owns
+      tail: Net Revenue
+      evidence: 'Maintained by Revenue Analytics: ... Net Revenue'
+    - head: orders_clean
+      relation: derived_from
+      tail: orders_raw
+      evidence: orders_raw --dedupe--> orders_clean
+    - head: customers_clean
+      relation: derived_from
+      tail: customers_raw
+      evidence: customers_raw --standardize--> customers_clean
+    - head: order_facts
+      relation: derived_from
+      tail: orders_clean
+      evidence: orders_clean --join--> order_facts
+    - head: order_facts
+      relation: derived_from
+      tail: customers_clean
+      evidence: customers_clean --join--> order_facts
+    - head: Net Revenue
+      relation: computed_from
+      tail: order_facts
+      evidence: order_facts --compute--> Net Revenue
+  finish_reason: stop
+  error: null
+  input_tokens: 0
+  output_tokens: 0
+  original:
+    entities:
+    - name: Revenue Analytics
+      type: organization
+    - name: order_facts
+      type: dataset
+    - name: Net Revenue
+      type: metric
+    - name: orders_raw
+      type: dataset
+    - name: orders_clean
+      type: dataset
+    - name: customers_raw
+      type: dataset
+    - name: customers_clean
+      type: dataset
+    - name: forecast_input
+      type: dataset
+    relations:
+    - head: Revenue Analytics
+      relation: owns
+      tail: order_facts
+      evidence: 'Maintained by Revenue Analytics: order_facts'
+    - head: Revenue Analytics
+      relation: owns
+      tail: Net Revenue
+      evidence: 'Maintained by Revenue Analytics: ... Net Revenue'
+    - head: orders_clean
+      relation: derived_from
+      tail: orders_raw
+      evidence: orders_raw --dedupe--> orders_clean
+    - head: customers_clean
+      relation: derived_from
+      tail: customers_raw
+      evidence: customers_raw --standardize--> customers_clean
+    - head: order_facts
+      relation: derived_from
+      tail: orders_clean
+      evidence: orders_clean --join--> order_facts
+    - head: order_facts
+      relation: derived_from
+      tail: customers_clean
+      evidence: customers_clean --join--> order_facts
+    - head: Net Revenue
+      relation: computed_from
+      tail: order_facts
+      evidence: order_facts --compute--> Net Revenue
+    error: null
+    latency_s: 7.33
+    usage:
+      input_tokens: 1328
+      output_tokens: 363
+      total_tokens: 1691
+      input_token_details:
+        cache_read: 885
+      output_token_details: {}
+    pid: b12

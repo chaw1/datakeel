@@ -1,0 +1,15 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+# Start your own local vision service. Native Ollama preserves num_ctx; OCR remains local.
+id: ollama-vision-local
+backend: vlm
+mode: vlm
+model: qwen3.5:9b
+interface: ollama
+base_url: http://127.0.0.1:11434
+max_output_tokens: 4096
+timeout_seconds: 120
+request_parameters:
+  enable_thinking: false
+  num_ctx: 16384
+prompt_version: image-transcription-v1

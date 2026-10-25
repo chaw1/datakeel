@@ -75,6 +75,8 @@ class ReplayExtractor:
         if record is None:
             reason = "replay_missing"
             raise KGExtractionError(reason)
+        if record.error:
+            raise KGExtractionError(record.error)
         return ExtractionResult(
             output=record.output,
             finish_reason=record.finish_reason,

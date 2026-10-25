@@ -17,6 +17,7 @@ class EntityType(BoundaryModel):
     name: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9_]*$")
     description: str = Field(min_length=1)
     aliases: dict[str, tuple[str, ...]] = Field(default_factory=dict)
+    person: bool = False
 
 
 class RelationType(BoundaryModel):
@@ -137,6 +138,7 @@ class ExtractionProfile(BoundaryModel):
     chunk_size: int = Field(default=12000, gt=0)
     chunk_overlap: int = Field(default=0, ge=0)
     recording: str | None = None
+    prompt_version: str = Field(default="text-kg-v3", min_length=1)
 
     @field_validator("request_parameters")
     @classmethod

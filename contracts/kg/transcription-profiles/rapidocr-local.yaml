@@ -1,0 +1,8 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+# Optional CPU OCR: install datakeel[ocr]; default models are bundled with rapidocr==3.10.0.
+id: rapidocr-local
+backend: ocr
+mode: ocr
+model: rapidocr-3.10.0-defaults
+prompt_version: image-transcription-v1

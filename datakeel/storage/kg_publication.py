@@ -24,6 +24,8 @@ from datakeel.storage.events import all_events
 from datakeel.storage.evidence_decisions import append_decision, assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.evidence_store import record_extraction_in_session
+from datakeel.storage.kg_image_attribution import transcription_sources
+from datakeel.storage.kg_image_sources import replaced_transcripts
 from datakeel.storage.kg_provenance import prior_bundle_inputs
 from datakeel.storage.kg_reviews import inherit_reviews
 from datakeel.storage.kg_rows import KGRunRow
@@ -141,6 +143,9 @@ def _event(job: KGJob, products: ProductExtraction, prior_inputs: list[AssetRef]
             AssetRef(asset_type="knowledge_bundle", asset_id=identifier, version="1.0"),
         ],
         params={
+            "kg_transcription_sources": [
+                source.model_dump(mode="json") for source in transcription_sources(job)
+            ],
             "run_id": job.run.id,
             "kg_dataset_id": job.run.dataset_id,
             "kg_version_id": job.run.version_id,
@@ -234,6 +239,11 @@ def publish_completion(session: Session, completion: KGCompletion, task_id: str)
             {"scope": f"kg-publish:{job.run.dataset_id}:{job.run.version_id}"},
         )
     entities, old = _prior_graph(session, job)
+    completion = completion.model_copy(
+        update={
+            "replace_file_ids": replaced_transcripts(session, job, completion.replace_file_ids),
+        }
+    )
     products = _products(job, completion, entities, old)
     current = {assertion_identity(draft) for draft in products.drafts}
     reused = tuple(

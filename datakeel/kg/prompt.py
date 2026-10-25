@@ -5,10 +5,27 @@
 
 from pydantic import JsonValue
 
-from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation, KGSchema, SchemaExample
+from datakeel.core.kg_contracts import (
+    ExtractedEntity,
+    ExtractedRelation,
+    ExtractionProfile,
+    KGSchema,
+    SchemaExample,
+)
 from datakeel.core.kg_models import RawExtraction, TextBlock
 
 PROMPT_VERSION = "text-kg-v3"
+IMAGE_PROMPT_VERSION = "image-kg-v1"
+IMAGE_DIRECTION_RULE = (
+    "A --label--> B means data flows from upstream A to downstream B: "
+    "the relation is (B, derived_from, A). Legend items marked planned, disabled, revoked, "
+    "struck through, crossed out, dashed, or grey are not current facts."
+)
+
+
+def image_profile(profile: ExtractionProfile) -> ExtractionProfile:
+    """Bind image extraction to the direction-aware prompt before consent or provider setup."""
+    return profile.model_copy(update={"prompt_version": IMAGE_PROMPT_VERSION})
 
 
 def output_schema(schema: KGSchema) -> dict[str, JsonValue]:
@@ -65,7 +82,9 @@ def _fallback_example(schema: KGSchema) -> SchemaExample:
     )
 
 
-def extraction_prompt(block: TextBlock, schema: KGSchema) -> str:
+def extraction_prompt(
+    block: TextBlock, schema: KGSchema, prompt_version: str = PROMPT_VERSION
+) -> str:
     """Render the identical prompt for approval estimates and actual model requests."""
     examples = "\n\n".join(
         f"Example {index} source:\n{sample.text}\nExample {index} output: "
@@ -89,6 +108,7 @@ def extraction_prompt(block: TextBlock, schema: KGSchema) -> str:
         + "\n".join(schema.rules)
         + "\n"
         + examples
+        + ("\n" + IMAGE_DIRECTION_RULE if prompt_version == IMAGE_PROMPT_VERSION else "")
         + "\n<source_text>\n"
         + block.text
         + "\n</source_text>"

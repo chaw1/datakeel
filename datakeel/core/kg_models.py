@@ -57,6 +57,7 @@ class RecordingRecord(ExtractionResult):
 
     text_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     original: JsonValue | None = None
+    error: str | None = None
 
 
 class Recording(BoundaryModel):

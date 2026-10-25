@@ -11,6 +11,7 @@ from datakeel.core.kg_execution import KGBlockFailure, KGCompletion, KGDocument,
 from datakeel.core.kg_models import ExtractionResult, TextBlock
 from datakeel.core.kg_product import KGSource, ProductExtraction
 from datakeel.core.models import utcnow
+from datakeel.evidence.kg_images import enrich_image_product
 from datakeel.kg.assembly import assemble_extraction
 from datakeel.kg.cache import build_cache_key, extraction_identity
 from datakeel.kg.extractors import checked_extract
@@ -31,10 +32,10 @@ class KGExecution:
         self.queue, self.lease, self.job, self.adapter = queue, lease, job, adapter
         self.fence = KGLeaseFence(task_id=lease.task_id, shard_id=lease.shard_id, owner=lease.owner)
         self.products: list[ProductExtraction] = []
-        self.failures: list[KGBlockFailure] = []
+        self.failures: list[KGBlockFailure] = list(job.run.report.failures)
         self.cached = self.extracted = 0
         self.ignored_top_level_keys = 0
-        self.stopped = False
+        self.stopped = any(not failure.attempted for failure in self.failures)
         prepared = job.prepared
         self.extractor = extraction_identity(
             prepared.schema_definition, prepared.profile, prepared.recording_hash
@@ -45,7 +46,9 @@ class KGExecution:
     ) -> bool:
         self.failures.append(
             KGBlockFailure(
-                file_id=document.asset_ref.asset_id,
+                file_id=document.image.asset_ref.asset_id
+                if document.image
+                else document.asset_ref.asset_id,
                 filename=document.filename,
                 start=block.start,
                 end=block.end,
@@ -68,7 +71,13 @@ class KGExecution:
             block_end=block.end,
         )
         self.products.append(
-            assemble_extraction(result.output, self.job.prepared.schema_definition, source)
+            enrich_image_product(
+                assemble_extraction(result.output, self.job.prepared.schema_definition, source),
+                document,
+                self.job.prepared.schema_definition,
+                handwriting=self.job.prepared.handwriting,
+                raw=result.output,
+            )
         )
 
     def _block(self, document: KGDocument, block: TextBlock) -> bool:
@@ -128,7 +137,11 @@ class KGExecution:
                 outcomes.append(self._block(document, block))
                 self._progress(started)
             if all(outcomes):
-                complete.append(document.asset_ref.asset_id)
+                complete.append(
+                    document.image.asset_ref.asset_id
+                    if document.image
+                    else document.asset_ref.asset_id
+                )
         products = merge_products(self.job, self.products)
         report = base_report(
             self.job, products, self.failures, list_traces(self.queue.db, self.job.run.id)

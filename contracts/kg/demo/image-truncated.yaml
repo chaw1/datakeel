@@ -1,0 +1,18 @@
+model: scripted-truncation-v1
+recorded_at: '2026-10-25'
+prompt_version: image-transcription-v1
+source: Scripted fixture; no real model output.
+records:
+- text: 'Scripted fixture: deliberately truncated transcript.'
+  lines: []
+  width: 760
+  height: 180
+  backend: fake
+  model: scripted-truncation-v1
+  mode: ocr
+  finish_reason: length
+  input_tokens: null
+  output_tokens: null
+  error: null
+  quality_issues: []
+  image_hash: f8a4f0e318c1f40b12d670d85ff61efc5b93f9a694011b90b20b866de98dc0d9

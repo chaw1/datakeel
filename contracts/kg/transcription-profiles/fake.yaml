@@ -1,0 +1,7 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+id: fake
+backend: fake
+mode: ocr
+model: scripted
+prompt_version: image-transcription-v1

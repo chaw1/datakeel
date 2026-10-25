@@ -1,0 +1,4092 @@
+model: RapidOCR 3.10.0 defaults
+recorded_at: '2026-10-24'
+prompt_version: image-transcription-v1
+source: Recorded outputs on 60 synthetic bilingual business images. OCR lines preserve their original
+  order and coordinates.
+records:
+- image_hash: 2ee2e27cd3685ccceba7379a7984125b73b4bba7c4586b8609e786ec287f8e8c
+  text: '订单域数据血缘
+
+    ods_order
+
+    ads_gmv_report
+
+    清洗
+
+    汇总
+
+    dwd_order_wide
+
+    按天汇总
+
+    dws_trade_daily
+
+    清洗
+
+    关联
+
+    ods_payment
+
+    ads_member_ltv
+
+    图例
+
+    实线：已上线
+
+    一———虚线：计划中，尚未开发
+
+    箭头方向：上游表→下游表'
+  lines:
+  - text: 订单域数据血缘
+    bbox:
+    - 57.0
+    - 47.0
+    - 286.0
+    - 84.0
+    confidence: 0.999
+  - text: ods_order
+    bbox:
+    - 119.0
+    - 172.0
+    - 242.0
+    - 202.0
+    confidence: 1.0
+  - text: ads_gmv_report
+    bbox:
+    - 1137.0
+    - 174.0
+    - 1323.0
+    - 204.0
+    confidence: 1.0
+  - text: 清洗
+    bbox:
+    - 334.0
+    - 223.0
+    - 386.0
+    - 256.0
+    confidence: 1.0
+  - text: 汇总
+    bbox:
+    - 1039.0
+    - 223.0
+    - 1088.0
+    - 254.0
+    confidence: 1.0
+  - text: dwd_order_wide
+    bbox:
+    - 444.0
+    - 279.0
+    - 634.0
+    - 306.0
+    confidence: 1.0
+  - text: 按天汇总
+    bbox:
+    - 676.0
+    - 278.0
+    - 781.0
+    - 306.0
+    confidence: 1.0
+  - text: dws_trade_daily
+    bbox:
+    - 806.0
+    - 278.0
+    - 992.0
+    - 308.0
+    confidence: 1.0
+  - text: 清洗
+    bbox:
+    - 333.0
+    - 329.0
+    - 385.0
+    - 359.0
+    confidence: 1.0
+  - text: 关联
+    bbox:
+    - 1040.0
+    - 347.0
+    - 1091.0
+    - 381.0
+    confidence: 1.0
+  - text: ods_payment
+    bbox:
+    - 101.0
+    - 381.0
+    - 260.0
+    - 414.0
+    confidence: 1.0
+  - text: ads_member_ltv
+    bbox:
+    - 1136.0
+    - 424.0
+    - 1323.0
+    - 451.0
+    confidence: 0.999
+  - text: 图例
+    bbox:
+    - 54.0
+    - 601.0
+    - 109.0
+    - 635.0
+    confidence: 1.0
+  - text: 实线：已上线
+    bbox:
+    - 137.0
+    - 647.0
+    - 267.0
+    - 674.0
+    confidence: 1.0
+  - text: 一———虚线：计划中，尚未开发
+    bbox:
+    - 397.0
+    - 646.0
+    - 706.0
+    - 674.0
+    confidence: 0.911
+  - text: 箭头方向：上游表→下游表
+    bbox:
+    - 58.0
+    - 702.0
+    - 311.0
+    - 729.0
+    confidence: 0.999
+  width: 1400
+  height: 800
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 202a449de2a0a8301cbeae615e242331c7a4934c5a8245d2ce65500b259d045a
+  text: 'Web analytics lineage
+
+    agg_daily_traffic
+
+    aggregate
+
+    stg_events
+
+    sessionize
+
+    fct_sessions
+
+    parse
+
+    compute
+
+    raw_web_events
+
+    Bounce Rate
+
+    sessionize v1
+
+    legacy_sessions
+
+    Legend
+
+    dataset
+
+    metric
+
+    grey = deprecated, no longer produced
+
+    Arrows point from upstream to downstream.'
+  lines:
+  - text: Web analytics lineage
+    bbox:
+    - 55.0
+    - 45.0
+    - 406.0
+    - 87.0
+    confidence: 0.999
+  - text: agg_daily_traffic
+    bbox:
+    - 1133.0
+    - 141.0
+    - 1326.0
+    - 174.0
+    confidence: 1.0
+  - text: aggregate
+    bbox:
+    - 1011.0
+    - 168.0
+    - 1119.0
+    - 200.0
+    confidence: 0.999
+  - text: stg_events
+    bbox:
+    - 475.0
+    - 191.0
+    - 604.0
+    - 224.0
+    confidence: 1.0
+  - text: sessionize
+    bbox:
+    - 669.0
+    - 196.0
+    - 781.0
+    - 220.0
+    confidence: 1.0
+  - text: fct_sessions
+    bbox:
+    - 827.0
+    - 192.0
+    - 969.0
+    - 222.0
+    confidence: 1.0
+  - text: parse
+    bbox:
+    - 328.0
+    - 256.0
+    - 389.0
+    - 283.0
+    confidence: 0.997
+  - text: compute
+    bbox:
+    - 1020.0
+    - 275.0
+    - 1110.0
+    - 303.0
+    confidence: 1.0
+  - text: raw_web_events
+    bbox:
+    - 83.0
+    - 314.0
+    - 274.0
+    - 341.0
+    confidence: 0.981
+  - text: Bounce Rate
+    bbox:
+    - 1157.0
+    - 354.0
+    - 1302.0
+    - 381.0
+    confidence: 0.998
+  - text: sessionize v1
+    bbox:
+    - 296.0
+    - 380.0
+    - 421.0
+    - 406.0
+    confidence: 0.97
+  - text: legacy_sessions
+    bbox:
+    - 446.0
+    - 441.0
+    - 633.0
+    - 476.0
+    confidence: 1.0
+  - text: Legend
+    bbox:
+    - 55.0
+    - 592.0
+    - 145.0
+    - 624.0
+    confidence: 1.0
+  - text: dataset
+    bbox:
+    - 113.0
+    - 637.0
+    - 195.0
+    - 665.0
+    confidence: 1.0
+  - text: metric
+    bbox:
+    - 313.0
+    - 637.0
+    - 388.0
+    - 665.0
+    confidence: 0.997
+  - text: grey = deprecated, no longer produced
+    bbox:
+    - 514.0
+    - 637.0
+    - 880.0
+    - 668.0
+    confidence: 0.998
+  - text: Arrows point from upstream to downstream.
+    bbox:
+    - 57.0
+    - 694.0
+    - 477.0
+    - 720.0
+    confidence: 0.99
+  width: 1400
+  height: 800
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 1a2aea83af2b05536a7f65e232500e2b76a57364acc8d69b07f6b4fe2e07e814
+  text: '星海科技组织架构
+
+    星海科技
+
+    总部：杭州
+
+    数据中台事业部
+
+    数据平台部
+
+    数据治理组
+
+    BI 分析组
+
+    负责人：王磊
+
+    负责人：李娜
+
+    负责人：刘洋
+
+    图例
+
+    蓝色：现有部门
+
+    灰色：已撤销的部门'
+  lines:
+  - text: 星海科技组织架构
+    bbox:
+    - 56.0
+    - 45.0
+    - 319.0
+    - 85.0
+    confidence: 1.0
+  - text: 星海科技
+    bbox:
+    - 651.0
+    - 128.0
+    - 749.0
+    - 159.0
+    confidence: 1.0
+  - text: 总部：杭州
+    bbox:
+    - 648.0
+    - 162.0
+    - 750.0
+    - 189.0
+    confidence: 1.0
+  - text: 数据中台事业部
+    bbox:
+    - 618.0
+    - 293.0
+    - 781.0
+    - 322.0
+    confidence: 1.0
+  - text: 数据平台部
+    bbox:
+    - 221.0
+    - 448.0
+    - 339.0
+    - 479.0
+    confidence: 1.0
+  - text: 数据治理组
+    bbox:
+    - 640.0
+    - 448.0
+    - 758.0
+    - 479.0
+    confidence: 1.0
+  - text: BI 分析组
+    bbox:
+    - 1069.0
+    - 448.0
+    - 1169.0
+    - 479.0
+    confidence: 0.91
+  - text: 负责人：王磊
+    bbox:
+    - 219.0
+    - 482.0
+    - 341.0
+    - 512.0
+    confidence: 1.0
+  - text: 负责人：李娜
+    bbox:
+    - 639.0
+    - 483.0
+    - 761.0
+    - 510.0
+    confidence: 1.0
+  - text: 负责人：刘洋
+    bbox:
+    - 1060.0
+    - 483.0
+    - 1180.0
+    - 510.0
+    confidence: 1.0
+  - text: 图例
+    bbox:
+    - 55.0
+    - 642.0
+    - 109.0
+    - 674.0
+    confidence: 1.0
+  - text: 蓝色：现有部门
+    bbox:
+    - 114.0
+    - 686.0
+    - 264.0
+    - 716.0
+    confidence: 0.933
+  - text: 灰色：已撤销的部门
+    bbox:
+    - 386.0
+    - 687.0
+    - 574.0
+    - 714.0
+    confidence: 1.0
+  width: 1400
+  height: 820
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: e46c839df1f3788188887a659d7ac59ba221b3124ccc5f42e92daee148984413
+  text: 'Northwind Analytics org chart
+
+    Northwind Analytics
+
+    HQ: Toronto
+
+    Data Engineering
+
+    Data Science
+
+    Lead: Maya Chen
+
+    Lead: Priya Nair
+
+    Platform Team
+
+    Ingestion Team
+
+    ML Ops Team
+
+    Lead: Omar Haddad
+
+    Lead: Lena Fischer
+
+    Lead: TBD
+
+    Legend
+
+    solid box = existing team
+
+    []
+
+    dashed box = planned team, not formed yet'
+  lines:
+  - text: Northwind Analytics org chart
+    bbox:
+    - 55.0
+    - 46.0
+    - 538.0
+    - 87.0
+    confidence: 1.0
+  - text: Northwind Analytics
+    bbox:
+    - 594.0
+    - 118.0
+    - 823.0
+    - 148.0
+    confidence: 1.0
+  - text: 'HQ: Toronto'
+    bbox:
+    - 651.0
+    - 155.0
+    - 768.0
+    - 179.0
+    confidence: 0.991
+  - text: Data Engineering
+    bbox:
+    - 352.0
+    - 279.0
+    - 547.0
+    - 309.0
+    confidence: 1.0
+  - text: Data Science
+    bbox:
+    - 895.0
+    - 279.0
+    - 1044.0
+    - 309.0
+    confidence: 1.0
+  - text: 'Lead: Maya Chen'
+    bbox:
+    - 370.0
+    - 315.0
+    - 528.0
+    - 341.0
+    confidence: 1.0
+  - text: 'Lead: Priya Nair'
+    bbox:
+    - 895.0
+    - 313.0
+    - 1044.0
+    - 342.0
+    confidence: 0.999
+  - text: Platform Team
+    bbox:
+    - 145.0
+    - 460.0
+    - 314.0
+    - 487.0
+    confidence: 0.998
+  - text: Ingestion Team
+    bbox:
+    - 483.0
+    - 459.0
+    - 658.0
+    - 489.0
+    confidence: 1.0
+  - text: ML Ops Team
+    bbox:
+    - 893.0
+    - 460.0
+    - 1046.0
+    - 490.0
+    confidence: 0.993
+  - text: 'Lead: Omar Haddad'
+    bbox:
+    - 135.0
+    - 493.0
+    - 320.0
+    - 520.0
+    confidence: 0.967
+  - text: 'Lead: Lena Fischer'
+    bbox:
+    - 483.0
+    - 494.0
+    - 657.0
+    - 520.0
+    confidence: 0.998
+  - text: 'Lead: TBD'
+    bbox:
+    - 919.0
+    - 491.0
+    - 1018.0
+    - 521.0
+    confidence: 0.987
+  - text: Legend
+    bbox:
+    - 54.0
+    - 641.0
+    - 145.0
+    - 676.0
+    confidence: 1.0
+  - text: solid box = existing team
+    bbox:
+    - 113.0
+    - 687.0
+    - 350.0
+    - 716.0
+    confidence: 0.988
+  - text: '[]'
+    bbox:
+    - 416.0
+    - 683.0
+    - 474.0
+    - 716.0
+    confidence: 0.643
+  - text: dashed box = planned team, not formed yet
+    bbox:
+    - 464.0
+    - 687.0
+    - 885.0
+    - 717.0
+    confidence: 0.987
+  width: 1400
+  height: 860
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 5e10dde785faf5bf2d5012b262ecedc0517cfa4945476c4a97d8c1dd434bb386
+  text: '数据表负责人登记表（2026 Q3）
+
+    数据表
+
+    负责人
+
+    负责人所属团队
+
+    上游表
+
+    状态
+
+    dwd_user_event
+
+    赵一鸣
+
+    用户增长部
+
+    ods_tracking_log
+
+    在线
+
+    dws_user_daily
+
+    钱佳
+
+    用户增长部
+
+    dwd_user_event
+
+    在线
+
+    dim_member
+
+    孙浩
+
+    会员中心
+
+    ods_member
+
+    已下线
+
+    ads_retention
+
+    钱佳
+
+    用户增长部
+
+    dws_user_daily
+
+    在线
+
+    注：状态为「已下线」的表已停止维护，仅保留归档。'
+  lines:
+  - text: 数据表负责人登记表（2026 Q3）
+    bbox:
+    - 54.0
+    - 43.0
+    - 523.0
+    - 88.0
+    confidence: 0.971
+  - text: 数据表
+    bbox:
+    - 66.0
+    - 119.0
+    - 145.0
+    - 158.0
+    confidence: 1.0
+  - text: 负责人
+    bbox:
+    - 366.0
+    - 119.0
+    - 444.0
+    - 158.0
+    confidence: 1.0
+  - text: 负责人所属团队
+    bbox:
+    - 540.0
+    - 123.0
+    - 693.0
+    - 154.0
+    confidence: 1.0
+  - text: 上游表
+    bbox:
+    - 788.0
+    - 119.0
+    - 865.0
+    - 158.0
+    confidence: 1.0
+  - text: 状态
+    bbox:
+    - 1084.0
+    - 119.0
+    - 1145.0
+    - 159.0
+    confidence: 1.0
+  - text: dwd_user_event
+    bbox:
+    - 69.0
+    - 179.0
+    - 244.0
+    - 211.0
+    confidence: 1.0
+  - text: 赵一鸣
+    bbox:
+    - 366.0
+    - 176.0
+    - 444.0
+    - 214.0
+    confidence: 0.997
+  - text: 用户增长部
+    bbox:
+    - 539.0
+    - 178.0
+    - 654.0
+    - 212.0
+    confidence: 1.0
+  - text: ods_tracking_log
+    bbox:
+    - 789.0
+    - 179.0
+    - 972.0
+    - 212.0
+    confidence: 1.0
+  - text: 在线
+    bbox:
+    - 1085.0
+    - 176.0
+    - 1144.0
+    - 215.0
+    confidence: 1.0
+  - text: dws_user_daily
+    bbox:
+    - 70.0
+    - 236.0
+    - 232.0
+    - 267.0
+    confidence: 1.0
+  - text: 钱佳
+    bbox:
+    - 366.0
+    - 232.0
+    - 424.0
+    - 270.0
+    confidence: 0.999
+  - text: 用户增长部
+    bbox:
+    - 538.0
+    - 234.0
+    - 653.0
+    - 267.0
+    confidence: 1.0
+  - text: dwd_user_event
+    bbox:
+    - 788.0
+    - 234.0
+    - 966.0
+    - 266.0
+    confidence: 1.0
+  - text: 在线
+    bbox:
+    - 1085.0
+    - 232.0
+    - 1144.0
+    - 270.0
+    confidence: 1.0
+  - text: dim_member
+    bbox:
+    - 70.0
+    - 291.0
+    - 212.0
+    - 322.0
+    confidence: 1.0
+  - text: 孙浩
+    bbox:
+    - 364.0
+    - 287.0
+    - 425.0
+    - 327.0
+    confidence: 0.999
+  - text: 会员中心
+    bbox:
+    - 537.0
+    - 288.0
+    - 634.0
+    - 326.0
+    confidence: 1.0
+  - text: ods_member
+    bbox:
+    - 789.0
+    - 290.0
+    - 931.0
+    - 323.0
+    confidence: 1.0
+  - text: 已下线
+    bbox:
+    - 1088.0
+    - 289.0
+    - 1163.0
+    - 325.0
+    confidence: 0.998
+  - text: ads_retention
+    bbox:
+    - 69.0
+    - 348.0
+    - 218.0
+    - 378.0
+    confidence: 1.0
+  - text: 钱佳
+    bbox:
+    - 366.0
+    - 343.0
+    - 424.0
+    - 382.0
+    confidence: 1.0
+  - text: 用户增长部
+    bbox:
+    - 538.0
+    - 346.0
+    - 653.0
+    - 380.0
+    confidence: 1.0
+  - text: dws_user_daily
+    bbox:
+    - 788.0
+    - 345.0
+    - 954.0
+    - 381.0
+    confidence: 1.0
+  - text: 在线
+    bbox:
+    - 1085.0
+    - 343.0
+    - 1145.0
+    - 383.0
+    confidence: 1.0
+  - text: 注：状态为「已下线」的表已停止维护，仅保留归档。
+    bbox:
+    - 57.0
+    - 423.0
+    - 554.0
+    - 450.0
+    confidence: 0.994
+  width: 1400
+  height: 560
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 109eb66b7b94e4cf001c147c619634acfb1b949db1b604498ebcef78a531f625
+  text: 'Dataset ownership register
+
+    Table
+
+    Owner
+
+    Owner''s team
+
+    Built from
+
+    fct_orders
+
+    Alice Wong
+
+    Commerce Data
+
+    stg_orders
+
+    stg_orders
+
+    Alice Wong
+
+    Commerce Data
+
+    raw_orders
+
+    eeueds
+
+    Benn iz
+
+    Ffie Dnata
+
+    stg_payments
+
+    dim_customer
+
+    Chen Lu
+
+    CRM Data
+
+    raw_crm_contacts
+
+    Note: struck-through rows are retired datasets.'
+  lines:
+  - text: Dataset ownership register
+    bbox:
+    - 54.0
+    - 43.0
+    - 496.0
+    - 89.0
+    confidence: 1.0
+  - text: Table
+    bbox:
+    - 66.0
+    - 121.0
+    - 140.0
+    - 157.0
+    confidence: 1.0
+  - text: Owner
+    bbox:
+    - 367.0
+    - 122.0
+    - 450.0
+    - 156.0
+    confidence: 0.999
+  - text: Owner's team
+    bbox:
+    - 630.0
+    - 125.0
+    - 781.0
+    - 153.0
+    confidence: 0.999
+  - text: Built from
+    bbox:
+    - 929.0
+    - 122.0
+    - 1042.0
+    - 154.0
+    confidence: 0.999
+  - text: fct_orders
+    bbox:
+    - 68.0
+    - 178.0
+    - 182.0
+    - 212.0
+    confidence: 1.0
+  - text: Alice Wong
+    bbox:
+    - 366.0
+    - 177.0
+    - 490.0
+    - 213.0
+    confidence: 1.0
+  - text: Commerce Data
+    bbox:
+    - 629.0
+    - 179.0
+    - 796.0
+    - 209.0
+    confidence: 0.996
+  - text: stg_orders
+    bbox:
+    - 928.0
+    - 179.0
+    - 1045.0
+    - 213.0
+    confidence: 1.0
+  - text: stg_orders
+    bbox:
+    - 68.0
+    - 234.0
+    - 186.0
+    - 269.0
+    confidence: 1.0
+  - text: Alice Wong
+    bbox:
+    - 366.0
+    - 233.0
+    - 490.0
+    - 269.0
+    confidence: 0.982
+  - text: Commerce Data
+    bbox:
+    - 630.0
+    - 237.0
+    - 796.0
+    - 265.0
+    confidence: 1.0
+  - text: raw_orders
+    bbox:
+    - 928.0
+    - 235.0
+    - 1052.0
+    - 266.0
+    confidence: 1.0
+  - text: eeueds
+    bbox:
+    - 65.0
+    - 290.0
+    - 198.0
+    - 323.0
+    confidence: 0.617
+  - text: Benn iz
+    bbox:
+    - 364.0
+    - 290.0
+    - 477.0
+    - 323.0
+    confidence: 0.686
+  - text: Ffie Dnata
+    bbox:
+    - 624.0
+    - 291.0
+    - 775.0
+    - 323.0
+    confidence: 0.603
+  - text: stg_payments
+    bbox:
+    - 925.0
+    - 291.0
+    - 1085.0
+    - 325.0
+    confidence: 0.999
+  - text: dim_customer
+    bbox:
+    - 69.0
+    - 348.0
+    - 224.0
+    - 379.0
+    confidence: 1.0
+  - text: Chen Lu
+    bbox:
+    - 366.0
+    - 344.0
+    - 461.0
+    - 381.0
+    confidence: 1.0
+  - text: CRM Data
+    bbox:
+    - 628.0
+    - 346.0
+    - 733.0
+    - 379.0
+    confidence: 1.0
+  - text: raw_crm_contacts
+    bbox:
+    - 929.0
+    - 350.0
+    - 1122.0
+    - 377.0
+    confidence: 1.0
+  - text: 'Note: struck-through rows are retired datasets.'
+    bbox:
+    - 56.0
+    - 422.0
+    - 529.0
+    - 452.0
+    confidence: 0.997
+  width: 1400
+  height: 560
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 7f9282ecc107ffd9289f357538dccc62f3474c831e9582b08d18e712fa79165f
+  text: '核心指标卡片
+
+    GMV
+
+    复购率
+
+    客单价
+
+    ¥1.28亿
+
+    23.4%
+
+    ¥186
+
+    负责人：周敏（财务分析组）
+
+    负责人：吴婷（会员运营组）
+
+    负责人：周敏
+
+    计算来源：dws_trade_daily
+
+    计算来源：dws_user_order
+
+    计算来源：dws_trade_daily
+
+    状态：在用
+
+    状态：在用
+
+    状态：已停用
+
+    灰色卡片：已停用的指标，不再更新'
+  lines:
+  - text: 核心指标卡片
+    bbox:
+    - 57.0
+    - 37.0
+    - 252.0
+    - 75.0
+    confidence: 1.0
+  - text: GMV
+    bbox:
+    - 80.0
+    - 127.0
+    - 152.0
+    - 161.0
+    confidence: 1.0
+  - text: 复购率
+    bbox:
+    - 519.0
+    - 123.0
+    - 613.0
+    - 164.0
+    confidence: 1.0
+  - text: 客单价
+    bbox:
+    - 959.0
+    - 124.0
+    - 1053.0
+    - 164.0
+    confidence: 0.998
+  - text: ¥1.28亿
+    bbox:
+    - 78.0
+    - 179.0
+    - 247.0
+    - 228.0
+    confidence: 0.987
+  - text: 23.4%
+    bbox:
+    - 520.0
+    - 181.0
+    - 652.0
+    - 226.0
+    confidence: 1.0
+  - text: ¥186
+    bbox:
+    - 959.0
+    - 182.0
+    - 1064.0
+    - 225.0
+    confidence: 0.989
+  - text: 负责人：周敏（财务分析组）
+    bbox:
+    - 81.0
+    - 253.0
+    - 345.0
+    - 280.0
+    confidence: 0.946
+  - text: 负责人：吴婷（会员运营组）
+    bbox:
+    - 522.0
+    - 253.0
+    - 785.0
+    - 281.0
+    confidence: 0.971
+  - text: 负责人：周敏
+    bbox:
+    - 962.0
+    - 253.0
+    - 1093.0
+    - 282.0
+    confidence: 1.0
+  - text: 计算来源：dws_trade_daily
+    bbox:
+    - 81.0
+    - 297.0
+    - 356.0
+    - 326.0
+    confidence: 0.999
+  - text: 计算来源：dws_user_order
+    bbox:
+    - 522.0
+    - 298.0
+    - 794.0
+    - 325.0
+    confidence: 0.999
+  - text: 计算来源：dws_trade_daily
+    bbox:
+    - 961.0
+    - 297.0
+    - 1236.0
+    - 326.0
+    confidence: 0.998
+  - text: 状态：在用
+    bbox:
+    - 81.0
+    - 341.0
+    - 192.0
+    - 370.0
+    confidence: 0.993
+  - text: 状态：在用
+    bbox:
+    - 520.0
+    - 340.0
+    - 633.0
+    - 371.0
+    confidence: 0.991
+  - text: 状态：已停用
+    bbox:
+    - 960.0
+    - 342.0
+    - 1091.0
+    - 370.0
+    confidence: 0.999
+  - text: 灰色卡片：已停用的指标，不再更新
+    bbox:
+    - 117.0
+    - 483.0
+    - 442.0
+    - 508.0
+    confidence: 1.0
+  width: 1400
+  height: 560
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 2bc5c2ab659eca914e3ba52a64c76cc7ab309d2ac8ab7ce04c423a4b8defc8af
+  text: 'Growth metrics
+
+    Checkout Conversion
+
+    Weekly Active Users
+
+    Churn Rate
+
+    3.8%
+
+    412K
+
+    Owner: Liam Park (Growth Analytics)
+
+    Owner: Growth Analytics team
+
+    Owner: Growth Analytics team
+
+    Source: fct_sessions
+
+    Source: fct_user_activity
+
+    Source: fct_subscriptions
+
+    Status: live
+
+    Status: live
+
+    Status: planned
+
+    [_]
+
+    dashed card = planned metric, not published yet'
+  lines:
+  - text: Growth metrics
+    bbox:
+    - 57.0
+    - 37.0
+    - 308.0
+    - 72.0
+    confidence: 0.998
+  - text: Checkout Conversion
+    bbox:
+    - 80.0
+    - 126.0
+    - 382.0
+    - 161.0
+    confidence: 1.0
+  - text: Weekly Active Users
+    bbox:
+    - 520.0
+    - 127.0
+    - 803.0
+    - 162.0
+    confidence: 1.0
+  - text: Churn Rate
+    bbox:
+    - 961.0
+    - 127.0
+    - 1121.0
+    - 160.0
+    confidence: 1.0
+  - text: 3.8%
+    bbox:
+    - 78.0
+    - 180.0
+    - 189.0
+    - 227.0
+    confidence: 1.0
+  - text: 412K
+    bbox:
+    - 518.0
+    - 180.0
+    - 631.0
+    - 226.0
+    confidence: 1.0
+  - text: 'Owner: Liam Park (Growth Analytics)'
+    bbox:
+    - 81.0
+    - 253.0
+    - 447.0
+    - 282.0
+    confidence: 1.0
+  - text: 'Owner: Growth Analytics team'
+    bbox:
+    - 521.0
+    - 253.0
+    - 828.0
+    - 282.0
+    confidence: 1.0
+  - text: 'Owner: Growth Analytics team'
+    bbox:
+    - 961.0
+    - 253.0
+    - 1268.0
+    - 281.0
+    confidence: 0.997
+  - text: 'Source: fct_sessions'
+    bbox:
+    - 81.0
+    - 297.0
+    - 290.0
+    - 324.0
+    confidence: 0.999
+  - text: 'Source: fct_user_activity'
+    bbox:
+    - 520.0
+    - 296.0
+    - 773.0
+    - 326.0
+    confidence: 0.99
+  - text: 'Source: fct_subscriptions'
+    bbox:
+    - 959.0
+    - 297.0
+    - 1221.0
+    - 326.0
+    confidence: 0.998
+  - text: 'Status: live'
+    bbox:
+    - 81.0
+    - 342.0
+    - 197.0
+    - 368.0
+    confidence: 1.0
+  - text: 'Status: live'
+    bbox:
+    - 520.0
+    - 342.0
+    - 637.0
+    - 368.0
+    confidence: 1.0
+  - text: 'Status: planned'
+    bbox:
+    - 961.0
+    - 342.0
+    - 1123.0
+    - 368.0
+    confidence: 0.994
+  - text: '[_]'
+    bbox:
+    - 59.0
+    - 479.0
+    - 117.0
+    - 510.0
+    confidence: 0.752
+  - text: dashed card = planned metric, not published yet
+    bbox:
+    - 106.0
+    - 482.0
+    - 567.0
+    - 511.0
+    confidence: 0.998
+  width: 1400
+  height: 560
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: fb829bba0450ffc886b4705f6c9042b3deadfe9537ef54930e0deacf6d41b03e
+  text: '广告域数据链路
+
+    ods_click_log
+
+    解析
+
+    dwd_click
+
+    关联
+
+    dws_ad_effect
+
+    计算
+
+    广告 ROI
+
+    关联
+
+    关联
+
+    dim_aCplan
+
+    dwd_click_old
+
+    图例
+
+    箭头：上游→下游
+
+    红色叉号：依赖已断开，不再使用
+
+    蓝色：数据表
+
+    橙色：指标'
+  lines:
+  - text: 广告域数据链路
+    bbox:
+    - 57.0
+    - 47.0
+    - 285.0
+    - 84.0
+    confidence: 1.0
+  - text: ods_click_log
+    bbox:
+    - 101.0
+    - 172.0
+    - 261.0
+    - 205.0
+    confidence: 0.993
+  - text: 解析
+    bbox:
+    - 334.0
+    - 171.0
+    - 417.0
+    - 202.0
+    confidence: 0.995
+  - text: dwd_click
+    bbox:
+    - 480.0
+    - 172.0
+    - 601.0
+    - 202.0
+    confidence: 1.0
+  - text: 关联
+    bbox:
+    - 694.0
+    - 223.0
+    - 747.0
+    - 255.0
+    confidence: 1.0
+  - text: dws_ad_effect
+    bbox:
+    - 817.0
+    - 277.0
+    - 984.0
+    - 307.0
+    confidence: 1.0
+  - text: 计算
+    bbox:
+    - 1036.0
+    - 276.0
+    - 1109.0
+    - 308.0
+    confidence: 1.0
+  - text: 广告 ROI
+    bbox:
+    - 1180.0
+    - 275.0
+    - 1280.0
+    - 310.0
+    confidence: 0.928
+  - text: 关联
+    bbox:
+    - 697.0
+    - 330.0
+    - 744.0
+    - 357.0
+    confidence: 0.997
+  - text: 关联
+    bbox:
+    - 514.0
+    - 356.0
+    - 567.0
+    - 385.0
+    confidence: 1.0
+  - text: dim_aCplan
+    bbox:
+    - 464.0
+    - 383.0
+    - 613.0
+    - 414.0
+    confidence: 0.939
+  - text: dwd_click_old
+    bbox:
+    - 99.0
+    - 495.0
+    - 260.0
+    - 519.0
+    confidence: 1.0
+  - text: 图例
+    bbox:
+    - 54.0
+    - 621.0
+    - 109.0
+    - 655.0
+    confidence: 1.0
+  - text: 箭头：上游→下游
+    bbox:
+    - 138.0
+    - 666.0
+    - 316.0
+    - 696.0
+    confidence: 0.999
+  - text: 红色叉号：依赖已断开，不再使用
+    bbox:
+    - 415.0
+    - 659.0
+    - 808.0
+    - 697.0
+    confidence: 1.0
+  - text: 蓝色：数据表
+    bbox:
+    - 114.0
+    - 715.0
+    - 245.0
+    - 745.0
+    confidence: 1.0
+  - text: 橙色：指标
+    bbox:
+    - 382.0
+    - 714.0
+    - 495.0
+    - 747.0
+    confidence: 1.0
+  width: 1400
+  height: 800
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 7e078d841a38bf3c92fa99e3df900213695c16447b41a43d682d04859d7b4982
+  text: 'Team tooling map
+
+    Singapore office
+
+    Berlin office
+
+    Risk Platform Team
+
+    Fraud Analytics
+
+    Payments Data Team
+
+    中
+
+    Flink
+
+    Kafka
+
+    Spark
+
+    Hive
+
+    Airflow
+
+    Legend
+
+    arrow = team uses tool
+
+    grey tool = decommissioned'
+  lines:
+  - text: Team tooling map
+    bbox:
+    - 55.0
+    - 35.0
+    - 350.0
+    - 78.0
+    confidence: 1.0
+  - text: Singapore office
+    bbox:
+    - 65.0
+    - 113.0
+    - 253.0
+    - 146.0
+    confidence: 0.986
+  - text: Berlin office
+    bbox:
+    - 745.0
+    - 113.0
+    - 885.0
+    - 143.0
+    confidence: 0.99
+  - text: Risk Platform Team
+    bbox:
+    - 105.0
+    - 243.0
+    - 325.0
+    - 270.0
+    confidence: 1.0
+  - text: Fraud Analytics
+    bbox:
+    - 437.0
+    - 244.0
+    - 612.0
+    - 271.0
+    confidence: 1.0
+  - text: Payments Data Team
+    bbox:
+    - 919.0
+    - 241.0
+    - 1159.0
+    - 273.0
+    confidence: 0.99
+  - text: 中
+    bbox:
+    - 150.0
+    - 534.0
+    - 170.0
+    - 558.0
+    confidence: 0.522
+  - text: Flink
+    bbox:
+    - 117.0
+    - 581.0
+    - 184.0
+    - 613.0
+    confidence: 0.999
+  - text: Kafka
+    bbox:
+    - 383.0
+    - 581.0
+    - 456.0
+    - 612.0
+    confidence: 1.0
+  - text: Spark
+    bbox:
+    - 651.0
+    - 581.0
+    - 730.0
+    - 616.0
+    confidence: 1.0
+  - text: Hive
+    bbox:
+    - 929.0
+    - 581.0
+    - 990.0
+    - 613.0
+    confidence: 1.0
+  - text: Airflow
+    bbox:
+    - 1184.0
+    - 581.0
+    - 1274.0
+    - 612.0
+    confidence: 1.0
+  - text: Legend
+    bbox:
+    - 52.0
+    - 689.0
+    - 146.0
+    - 727.0
+    confidence: 1.0
+  - text: arrow = team uses tool
+    bbox:
+    - 139.0
+    - 739.0
+    - 358.0
+    - 765.0
+    confidence: 0.991
+  - text: grey tool = decommissioned
+    bbox:
+    - 526.0
+    - 739.0
+    - 794.0
+    - 766.0
+    confidence: 0.981
+  width: 1400
+  height: 820
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: d0ecf839dc57778ca7304a34e59495379e1e83874b71f228c98be5d9a168e314
+  text: '物流域数据资产登记
+
+    数据集
+
+    维护团队
+
+    团队所在城市
+
+    来源数据集
+
+    状态
+
+    dwd_shipment
+
+    物流数据组
+
+    广州
+
+    ods_shipment
+
+    在线
+
+    dws_delivery_time
+
+    物流数据组
+
+    广州
+
+    dwd_shipment
+
+    在线
+
+    dws_route_cost
+
+    调度算法组
+
+    深圳
+
+    dwd_shipment
+
+    计划中
+
+    dim_warehouse
+
+    仓储数据组
+
+    东莞
+
+    ods_wms_site
+
+    在线
+
+    注：状态为「计划中」的数据集尚未开发。'
+  lines:
+  - text: 物流域数据资产登记
+    bbox:
+    - 58.0
+    - 47.0
+    - 350.0
+    - 83.0
+    confidence: 1.0
+  - text: 数据集
+    bbox:
+    - 65.0
+    - 118.0
+    - 144.0
+    - 159.0
+    confidence: 1.0
+  - text: 维护团队
+    bbox:
+    - 367.0
+    - 120.0
+    - 463.0
+    - 155.0
+    confidence: 1.0
+  - text: 团队所在城市
+    bbox:
+    - 590.0
+    - 123.0
+    - 723.0
+    - 154.0
+    confidence: 1.0
+  - text: 来源数据集
+    bbox:
+    - 809.0
+    - 122.0
+    - 924.0
+    - 155.0
+    confidence: 1.0
+  - text: 状态
+    bbox:
+    - 1104.0
+    - 119.0
+    - 1165.0
+    - 159.0
+    confidence: 1.0
+  - text: dwd_shipment
+    bbox:
+    - 69.0
+    - 179.0
+    - 229.0
+    - 212.0
+    confidence: 1.0
+  - text: 物流数据组
+    bbox:
+    - 369.0
+    - 178.0
+    - 484.0
+    - 212.0
+    confidence: 1.0
+  - text: 广州
+    bbox:
+    - 585.0
+    - 175.0
+    - 645.0
+    - 215.0
+    confidence: 1.0
+  - text: ods_shipment
+    bbox:
+    - 809.0
+    - 180.0
+    - 961.0
+    - 211.0
+    confidence: 1.0
+  - text: 在线
+    bbox:
+    - 1106.0
+    - 176.0
+    - 1164.0
+    - 215.0
+    confidence: 1.0
+  - text: dws_delivery_time
+    bbox:
+    - 70.0
+    - 236.0
+    - 266.0
+    - 266.0
+    confidence: 1.0
+  - text: 物流数据组
+    bbox:
+    - 369.0
+    - 234.0
+    - 484.0
+    - 268.0
+    confidence: 1.0
+  - text: 广州
+    bbox:
+    - 585.0
+    - 232.0
+    - 643.0
+    - 271.0
+    confidence: 1.0
+  - text: dwd_shipment
+    bbox:
+    - 809.0
+    - 236.0
+    - 969.0
+    - 266.0
+    confidence: 1.0
+  - text: 在线
+    bbox:
+    - 1106.0
+    - 232.0
+    - 1164.0
+    - 270.0
+    confidence: 1.0
+  - text: dws_route_cost
+    bbox:
+    - 70.0
+    - 291.0
+    - 239.0
+    - 322.0
+    confidence: 1.0
+  - text: 调度算法组
+    bbox:
+    - 370.0
+    - 291.0
+    - 483.0
+    - 323.0
+    confidence: 1.0
+  - text: 深圳
+    bbox:
+    - 586.0
+    - 288.0
+    - 644.0
+    - 326.0
+    confidence: 1.0
+  - text: dwd_shipment
+    bbox:
+    - 809.0
+    - 291.0
+    - 969.0
+    - 323.0
+    confidence: 1.0
+  - text: 计划中
+    bbox:
+    - 1106.0
+    - 287.0
+    - 1184.0
+    - 327.0
+    confidence: 1.0
+  - text: dim_warehouse
+    bbox:
+    - 70.0
+    - 348.0
+    - 238.0
+    - 378.0
+    confidence: 1.0
+  - text: 仓储数据组
+    bbox:
+    - 370.0
+    - 346.0
+    - 484.0
+    - 380.0
+    confidence: 1.0
+  - text: 东莞
+    bbox:
+    - 585.0
+    - 342.0
+    - 645.0
+    - 383.0
+    confidence: 1.0
+  - text: ods_wms_site
+    bbox:
+    - 809.0
+    - 348.0
+    - 959.0
+    - 378.0
+    confidence: 1.0
+  - text: 在线
+    bbox:
+    - 1106.0
+    - 344.0
+    - 1164.0
+    - 383.0
+    confidence: 1.0
+  - text: 注：状态为「计划中」的数据集尚未开发。
+    bbox:
+    - 57.0
+    - 423.0
+    - 448.0
+    - 450.0
+    confidence: 0.998
+  width: 1400
+  height: 560
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 78b170b462209f351d150ce8fe92f694ed1222223daf7fe3178a98303d6ed1ef
+  text: 'Revenue pipeline
+
+    Maintained by Revenue Analytics: order_facts, Net Revenue
+
+    orders_raw
+
+    dedupe
+
+    orders_clean
+
+    Net Revenue
+
+    join
+
+    compute
+
+    order_facts
+
+    - join
+
+    aggregate
+
+    customers_raw
+
+    standardize
+
+    customers_clean
+
+    forecast_input
+
+    Legend
+
+    solid = in production
+
+    dashed = planned
+
+    Arrows point from upstream to downstream.'
+  lines:
+  - text: Revenue pipeline
+    bbox:
+    - 57.0
+    - 38.0
+    - 338.0
+    - 75.0
+    confidence: 0.999
+  - text: 'Maintained by Revenue Analytics: order_facts, Net Revenue'
+    bbox:
+    - 57.0
+    - 85.0
+    - 661.0
+    - 114.0
+    confidence: 0.993
+  - text: orders_raw
+    bbox:
+    - 112.0
+    - 193.0
+    - 248.0
+    - 223.0
+    confidence: 1.0
+  - text: dedupe
+    bbox:
+    - 314.0
+    - 191.0
+    - 418.0
+    - 225.0
+    confidence: 1.0
+  - text: orders_clean
+    bbox:
+    - 464.0
+    - 194.0
+    - 614.0
+    - 221.0
+    confidence: 1.0
+  - text: Net Revenue
+    bbox:
+    - 1155.0
+    - 192.0
+    - 1303.0
+    - 221.0
+    confidence: 1.0
+  - text: join
+    bbox:
+    - 694.0
+    - 254.0
+    - 744.0
+    - 289.0
+    confidence: 0.999
+  - text: compute
+    bbox:
+    - 1019.0
+    - 257.0
+    - 1110.0
+    - 285.0
+    confidence: 1.0
+  - text: order_facts
+    bbox:
+    - 833.0
+    - 317.0
+    - 967.0
+    - 347.0
+    confidence: 1.0
+  - text: '- join'
+    bbox:
+    - 688.0
+    - 376.0
+    - 743.0
+    - 414.0
+    confidence: 0.923
+  - text: aggregate
+    bbox:
+    - 1013.0
+    - 390.0
+    - 1115.0
+    - 423.0
+    confidence: 1.0
+  - text: customers_raw
+    bbox:
+    - 91.0
+    - 445.0
+    - 267.0
+    - 471.0
+    confidence: 0.983
+  - text: standardize
+    bbox:
+    - 301.0
+    - 444.0
+    - 418.0
+    - 471.0
+    confidence: 1.0
+  - text: customers_clean
+    bbox:
+    - 443.0
+    - 444.0
+    - 636.0
+    - 471.0
+    confidence: 1.0
+  - text: forecast_input
+    bbox:
+    - 1144.0
+    - 461.0
+    - 1316.0
+    - 494.0
+    confidence: 1.0
+  - text: Legend
+    bbox:
+    - 54.0
+    - 621.0
+    - 146.0
+    - 655.0
+    confidence: 1.0
+  - text: solid = in production
+    bbox:
+    - 137.0
+    - 667.0
+    - 337.0
+    - 696.0
+    confidence: 0.99
+  - text: dashed = planned
+    bbox:
+    - 498.0
+    - 668.0
+    - 669.0
+    - 695.0
+    confidence: 0.979
+  - text: Arrows point from upstream to downstream.
+    bbox:
+    - 57.0
+    - 719.0
+    - 476.0
+    - 745.0
+    confidence: 0.991
+  width: 1400
+  height: 820
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 143bffabc0c35f02b0ff19f6d97c2393e9c8e961cb4dbb84fa8b58ea6cc2d803
+  text: 'Northwind Analytics is headquartered in Austin, Texas. Its Data Platform
+
+    team, part of the Engineering division, maintains the customer master
+
+    table dim_customer. Priya Raman leads the Data Platform team.'
+  lines:
+  - text: Northwind Analytics is headquartered in Austin, Texas. Its Data Platform
+    bbox:
+    - 45.0
+    - 53.0
+    - 925.0
+    - 88.0
+    confidence: 0.993
+  - text: team, part of the Engineering division, maintains the customer master
+    bbox:
+    - 43.0
+    - 100.0
+    - 901.0
+    - 134.0
+    confidence: 0.995
+  - text: table dim_customer. Priya Raman leads the Data Platform team.
+    bbox:
+    - 44.0
+    - 145.0
+    - 832.0
+    - 180.0
+    confidence: 0.994
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 53b1770f3bfd082a5fecbb51ecc5c1840e5a87b9ab6e7698871e62f3a5aa6c01
+  text: 'Northwind Analytics is headquartered in Austin, Texas. Its Data Platform
+
+    team, part of the Engineering division, maintains the customer master
+
+    table dim_customer. Priya Raman leads the Data Platform team.'
+  lines:
+  - text: Northwind Analytics is headquartered in Austin, Texas. Its Data Platform
+    bbox:
+    - 31.0
+    - 29.0
+    - 649.0
+    - 68.0
+    confidence: 0.995
+  - text: team, part of the Engineering division, maintains the customer master
+    bbox:
+    - 29.0
+    - 61.0
+    - 632.0
+    - 101.0
+    confidence: 0.997
+  - text: table dim_customer. Priya Raman leads the Data Platform team.
+    bbox:
+    - 29.0
+    - 93.0
+    - 582.0
+    - 131.0
+    confidence: 0.994
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: b68e75d673a0eabf208fb582bea1f57d94bcd86f2819f2e8b754e6ea5014f5dc
+  text: 'The churn rate metric is owned by Marcus Lee from the Retention
+
+    Analytics group. Churn rate is computed from fct_subscription_events,
+
+    not from the legacy table subs_legacy. fct_subscription_events is built
+
+    from raw_billing_events.'
+  lines:
+  - text: The churn rate metric is owned by Marcus Lee from the Retention
+    bbox:
+    - 46.0
+    - 55.0
+    - 839.0
+    - 86.0
+    confidence: 0.994
+  - text: Analytics group. Churn rate is computed from fct_subscription_events,
+    bbox:
+    - 45.0
+    - 101.0
+    - 907.0
+    - 133.0
+    confidence: 0.992
+  - text: not from the legacy table subs_legacy. fct_subscription_events is built
+    bbox:
+    - 45.0
+    - 146.0
+    - 902.0
+    - 179.0
+    confidence: 0.997
+  - text: from raw_billing_events.
+    bbox:
+    - 45.0
+    - 191.0
+    - 353.0
+    - 226.0
+    confidence: 0.999
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 41c80d33bd1f11c45a01b11145226720c8a35fe26fbccf9a62186dd6a0e8e3c8
+  text: 'The churn rate metric is owned by Marcus Lee from the Retention
+
+    Analytics group. Churn rate is computed from fct_subscription_events,
+
+    not from the legacy table subs_legacy. fct_subscription_events is built
+
+    from raw_billing_events.'
+  lines:
+  - text: The churn rate metric is owned by Marcus Lee from the Retention
+    bbox:
+    - 30.0
+    - 29.0
+    - 586.0
+    - 71.0
+    confidence: 0.997
+  - text: Analytics group. Churn rate is computed from fct_subscription_events,
+    bbox:
+    - 30.0
+    - 59.0
+    - 636.0
+    - 105.0
+    confidence: 0.987
+  - text: not from the legacy table subs_legacy. fct_subscription_events is built
+    bbox:
+    - 31.0
+    - 91.0
+    - 634.0
+    - 138.0
+    confidence: 0.991
+  - text: from raw_billing_events.
+    bbox:
+    - 32.0
+    - 138.0
+    - 249.0
+    - 167.0
+    confidence: 0.982
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 99557016a50d50601debc554577d87ed686414a5abb7efe4b0e63bbc2072d9b4
+  text: 'The Growth team currently runs its experiments on Optimizely. They are
+
+    evaluating a move to GrowthBook next quarter, but no decision has been
+
+    made. Experiment results land in the table exp_results, which Hannah Cho
+
+    maintains.'
+  lines:
+  - text: The Growth team currently runs its experiments on Optimizely. They are
+    bbox:
+    - 45.0
+    - 54.0
+    - 922.0
+    - 88.0
+    confidence: 0.998
+  - text: evaluating a move to GrowthBook next quarter, but no decision has been
+    bbox:
+    - 46.0
+    - 101.0
+    - 937.0
+    - 133.0
+    confidence: 0.991
+  - text: made. Experiment results land in the table exp_results, which Hannah Cho
+    bbox:
+    - 46.0
+    - 146.0
+    - 949.0
+    - 179.0
+    confidence: 0.988
+  - text: maintains.
+    bbox:
+    - 48.0
+    - 194.0
+    - 178.0
+    - 222.0
+    confidence: 1.0
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 4da4385761931eb344accd1f701546c74bcef7ea2eb83c8ca5b7b60ca295f7f5
+  text: 'The Growth team currently runs its experiments on Optimizely. They are
+
+    evaluating a move to GrowthBook next quarter, but no decision has been
+
+    made. Experiment results land in the table exp_results, which Hannah Cho
+
+    maintains.'
+  lines:
+  - text: The Growth team currently runs its experiments on Optimizely. They are
+    bbox:
+    - 32.0
+    - 28.0
+    - 648.0
+    - 70.0
+    confidence: 0.998
+  - text: evaluating a move to GrowthBook next quarter, but no decision has been
+    bbox:
+    - 31.0
+    - 61.0
+    - 657.0
+    - 101.0
+    confidence: 0.988
+  - text: made. Experiment results land in the table exp_results, which Hannah Cho
+    bbox:
+    - 29.0
+    - 92.0
+    - 666.0
+    - 135.0
+    confidence: 0.986
+  - text: maintains.
+    bbox:
+    - 31.0
+    - 127.0
+    - 124.0
+    - 149.0
+    confidence: 1.0
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 064bd98825bab86245e9e00848939c4ca428830c6e4b4c57c019af077ea57104
+  text: 'Until last year, the fraud score model service was owned by Diego Alvarez.
+
+    Ownership has since moved to the Risk Engineering team in Toronto. The
+
+    service, called FraudGuard, reads features from Redis and logs decisions to
+
+    fraud_decisions.'
+  lines:
+  - text: Until last year, the fraud score model service was owned by Diego Alvarez.
+    bbox:
+    - 45.0
+    - 50.0
+    - 942.0
+    - 88.0
+    confidence: 0.997
+  - text: Ownership has since moved to the Risk Engineering team in Toronto. The
+    bbox:
+    - 45.0
+    - 100.0
+    - 937.0
+    - 134.0
+    confidence: 0.991
+  - text: service, called FraudGuard, reads features from Redis and logs decisions to
+    bbox:
+    - 45.0
+    - 146.0
+    - 952.0
+    - 178.0
+    confidence: 0.995
+  - text: fraud_decisions.
+    bbox:
+    - 46.0
+    - 193.0
+    - 249.0
+    - 223.0
+    confidence: 1.0
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 3ed0ba9922c18dd4d39449117b9f8f83a1051a009b26e5ff8ea6c316f58bae99
+  text: 'Until last year, the fraud score model service was owned by Diego Alvarez.
+
+    Ownership has since moved to the Risk Engineering team in Toronto. The
+
+    service, called FraudGuard, reads features from Redis and logs decisions to
+
+    fraud_decisions.'
+  lines:
+  - text: Until last year, the fraud score model service was owned by Diego Alvarez.
+    bbox:
+    - 30.0
+    - 30.0
+    - 658.0
+    - 68.0
+    confidence: 0.997
+  - text: Ownership has since moved to the Risk Engineering team in Toronto. The
+    bbox:
+    - 29.0
+    - 63.0
+    - 657.0
+    - 99.0
+    confidence: 0.982
+  - text: service, called FraudGuard, reads features from Redis and logs decisions to
+    bbox:
+    - 30.0
+    - 95.0
+    - 667.0
+    - 131.0
+    confidence: 0.993
+  - text: fraud_decisions.
+    bbox:
+    - 32.0
+    - 137.0
+    - 176.0
+    - 163.0
+    confidence: 1.0
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 1d540f07d71cde91989f83293abc8e75b47e7a95bc9ea77da81f692a27e02f60
+  text: 'The marketing attribution table mart_attribution is derived from
+
+    stg_touchpoints and stg_orders. stg_touchpoints, in turn, is cleaned from
+
+    the raw clickstream table raw_clicks. The Marketing Science team, based
+
+    in London, owns mart_attribution.'
+  lines:
+  - text: The marketing attribution table mart_attribution is derived from
+    bbox:
+    - 46.0
+    - 54.0
+    - 833.0
+    - 86.0
+    confidence: 1.0
+  - text: stg_touchpoints and stg_orders. stg_touchpoints, in turn, is cleaned from
+    bbox:
+    - 45.0
+    - 100.0
+    - 942.0
+    - 134.0
+    confidence: 0.999
+  - text: the raw clickstream table raw_clicks. The Marketing Science team, based
+    bbox:
+    - 45.0
+    - 146.0
+    - 929.0
+    - 179.0
+    confidence: 0.999
+  - text: in London, owns mart_attribution.
+    bbox:
+    - 46.0
+    - 192.0
+    - 471.0
+    - 225.0
+    confidence: 0.998
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 138881b4eb1bb0916022218fa43115998e1c19ebe6d4fa7192177fcb914b6271
+  text: 'The marketing attribution table mart_attribution is derived from
+
+    stg_touchpoints and stg_orders. stg_touchpoints, in turn, is cleaned from
+
+    the raw clickstream table raw_clicks. The Marketing Science team, based
+
+    in London, owns mart_attribution.'
+  lines:
+  - text: The marketing attribution table mart_attribution is derived from
+    bbox:
+    - 32.0
+    - 29.0
+    - 585.0
+    - 67.0
+    confidence: 0.999
+  - text: stg_touchpoints and stg_orders. stg_touchpoints, in turn, is cleaned from
+    bbox:
+    - 30.0
+    - 61.0
+    - 662.0
+    - 102.0
+    confidence: 0.998
+  - text: the raw clickstream table raw_clicks. The Marketing Science team, based
+    bbox:
+    - 30.0
+    - 92.0
+    - 651.0
+    - 133.0
+    confidence: 0.992
+  - text: in London, owns mart_attribution.
+    bbox:
+    - 30.0
+    - 126.0
+    - 330.0
+    - 157.0
+    confidence: 0.984
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: a23fc42a970562535ef4da12712405d79b6341c984eb19002b13ba8e0ca26e53
+  text: 'At Helios Energy, analysts Omar Haddad and Lena Fischer both work in the
+
+    Grid Insights unit. Omar owns the outage frequency metric, which is
+
+    computed from fct_outages. Lena owns average restoration time, which is
+
+    also computed from fct_outages. Grid Insights is part of the Operations
+
+    department.'
+  lines:
+  - text: At Helios Energy, analysts Omar Haddad and Lena Fischer both work in the
+    bbox:
+    - 44.0
+    - 54.0
+    - 954.0
+    - 88.0
+    confidence: 1.0
+  - text: Grid Insights unit. Omar owns the outage frequency metric, which is
+    bbox:
+    - 46.0
+    - 101.0
+    - 871.0
+    - 134.0
+    confidence: 0.995
+  - text: computed from fct_outages. Lena owns average restoration time, which is
+    bbox:
+    - 46.0
+    - 147.0
+    - 949.0
+    - 179.0
+    confidence: 0.997
+  - text: also computed from fct_outages. Grid Insights is part of the Operations
+    bbox:
+    - 47.0
+    - 192.0
+    - 911.0
+    - 225.0
+    confidence: 0.986
+  - text: department.
+    bbox:
+    - 47.0
+    - 240.0
+    - 201.0
+    - 270.0
+    confidence: 1.0
+  width: 1000
+  height: 326
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 57b7f167e5399108aeac3b82d57c68fe13094a50648f68a353b1ea8243406de3
+  text: 'At Helios Energy, analysts Omar Haddad and Lena Fischer both work in the
+
+    Grid Insights unit. Omar owns the outage frequency metric, which is
+
+    computed from fct_outages. Lena owns average restoration time, which is
+
+    also computed from fct_outages. Grid Insights is part of the Operations
+
+    department.'
+  lines:
+  - text: At Helios Energy, analysts Omar Haddad and Lena Fischer both work in the
+    bbox:
+    - 28.0
+    - 28.0
+    - 667.0
+    - 71.0
+    confidence: 0.998
+  - text: Grid Insights unit. Omar owns the outage frequency metric, which is
+    bbox:
+    - 30.0
+    - 62.0
+    - 610.0
+    - 102.0
+    confidence: 0.998
+  - text: computed from fct_outages. Lena owns average restoration time, which is
+    bbox:
+    - 31.0
+    - 92.0
+    - 665.0
+    - 135.0
+    confidence: 0.997
+  - text: also computed from fct_outages. Grid Insights is part of the Operations
+    bbox:
+    - 32.0
+    - 126.0
+    - 639.0
+    - 167.0
+    confidence: 0.989
+  - text: department.
+    bbox:
+    - 33.0
+    - 173.0
+    - 143.0
+    - 197.0
+    confidence: 1.0
+  width: 700
+  height: 228
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: eb34d816642b553fdee9156f203e441b6ec45fb2c7f54f4ac0d17b45d8756884
+  text: 'Atlas, the internal search platform, is built on OpenSearch and uses Kafka
+
+    to ingest document updates. The Search Infrastructure team in Dublin
+
+    maintains Atlas. Atlas does not use Elasticsearch anymore since the
+
+    migration in 2025.'
+  lines:
+  - text: Atlas, the internal search platform, is built on OpenSearch and uses Kafka
+    bbox:
+    - 45.0
+    - 54.0
+    - 936.0
+    - 86.0
+    confidence: 0.996
+  - text: to ingest document updates. The Search Infrastructure team in Dublin
+    bbox:
+    - 45.0
+    - 100.0
+    - 899.0
+    - 133.0
+    confidence: 0.979
+  - text: maintains Atlas. Atlas does not use Elasticsearch anymore since the
+    bbox:
+    - 46.0
+    - 146.0
+    - 865.0
+    - 179.0
+    confidence: 0.995
+  - text: migration in 2025.
+    bbox:
+    - 46.0
+    - 192.0
+    - 267.0
+    - 225.0
+    confidence: 0.994
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 533669baf1b03d782cab85a79871908d46f41eede2fd3c1f6f21b0828fa27212
+  text: 'Atlas, the internal search platform, is built on OpenSearch and uses Kafka
+
+    to ingest document updates. The Search Infrastructure team in Dublin
+
+    maintains Atlas. Atlas does not use Elasticsearch anymore since the
+
+    migration in 2025.'
+  lines:
+  - text: Atlas, the internal search platform, is built on OpenSearch and uses Kafka
+    bbox:
+    - 31.0
+    - 28.0
+    - 658.0
+    - 69.0
+    confidence: 0.999
+  - text: to ingest document updates. The Search Infrastructure team in Dublin
+    bbox:
+    - 30.0
+    - 61.0
+    - 631.0
+    - 99.0
+    confidence: 0.997
+  - text: maintains Atlas. Atlas does not use Elasticsearch anymore since the
+    bbox:
+    - 29.0
+    - 92.0
+    - 607.0
+    - 132.0
+    confidence: 0.999
+  - text: migration in 2025.
+    bbox:
+    - 31.0
+    - 127.0
+    - 186.0
+    - 152.0
+    confidence: 0.995
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 6b01f47b0e386652fef5f05970cfd2a3b6496b0aa311538ac6d8c22752b31878
+  text: 'Aiko Tanaka works remotely from Osaka. She is a data engineer at Kestrel
+
+    Logistics and maintains the shipment events table fct_shipments, which is
+
+    loaded from the carrier feed raw_carrier_feed.'
+  lines:
+  - text: Aiko Tanaka works remotely from Osaka. She is a data engineer at Kestrel
+    bbox:
+    - 44.0
+    - 52.0
+    - 941.0
+    - 88.0
+    confidence: 0.995
+  - text: Logistics and maintains the shipment events table fct_shipments, which is
+    bbox:
+    - 46.0
+    - 100.0
+    - 949.0
+    - 133.0
+    confidence: 0.998
+  - text: loaded from the carrier feed raw_carrier_feed.
+    bbox:
+    - 46.0
+    - 146.0
+    - 608.0
+    - 178.0
+    confidence: 1.0
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: a9076ec2ac050b4e51bd81387eec66111a323cfe1e97ba4a87bce8d8aaab8993
+  text: 'Aiko Tanaka works remotely from Osaka. She is a data engineer at Kestrel
+
+    Logistics and maintains the shipment events table fct_shipments, which is
+
+    loaded from the carrier feed raw_carrier_feed.'
+  lines:
+  - text: Aiko Tanaka works remotely from Osaka. She is a data engineer at Kestrel
+    bbox:
+    - 29.0
+    - 30.0
+    - 659.0
+    - 67.0
+    confidence: 0.993
+  - text: Logistics and maintains the shipment events table fct_shipments, which is
+    bbox:
+    - 30.0
+    - 62.0
+    - 666.0
+    - 100.0
+    confidence: 0.989
+  - text: loaded from the carrier feed raw_carrier_feed.
+    bbox:
+    - 31.0
+    - 100.0
+    - 427.0
+    - 130.0
+    confidence: 0.984
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 30b6c2686dfd88416696e063f1ae05a172cf186eab02f687c8e56424c9d7325a
+  text: 'The labeling vendor team at Orbit Vision uses Label Studio for
+
+    bounding-box annotation. Their output, the dataset ped-boxes-v4, is
+
+    generated from the raw dashcam collection dashcam-raw-0801. Ravi
+
+    Menon, the team''s QA lead, owns ped-boxes-v4. The team considered
+
+    CVAT but chose not to adopt it.'
+  lines:
+  - text: The labeling vendor team at Orbit Vision uses Label Studio for
+    bbox:
+    - 45.0
+    - 54.0
+    - 798.0
+    - 87.0
+    confidence: 0.993
+  - text: bounding-box annotation. Their output, the dataset ped-boxes-v4, is
+    bbox:
+    - 47.0
+    - 101.0
+    - 882.0
+    - 132.0
+    confidence: 1.0
+  - text: generated from the raw dashcam collection dashcam-raw-0801. Ravi
+    bbox:
+    - 45.0
+    - 144.0
+    - 882.0
+    - 180.0
+    confidence: 0.999
+  - text: Menon, the team's QA lead, owns ped-boxes-v4. The team considered
+    bbox:
+    - 47.0
+    - 194.0
+    - 887.0
+    - 224.0
+    confidence: 0.987
+  - text: CVAT but chose not to adopt it.
+    bbox:
+    - 46.0
+    - 238.0
+    - 427.0
+    - 270.0
+    confidence: 0.994
+  width: 1000
+  height: 326
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 0083f6bda221ae0af8cd24e6603bcaaf648caf0d661a4fc5f78f78470a979556
+  text: 'The labeling vendor team at Orbit Vision uses Label Studio for
+
+    bounding-box annotation. Their output, the dataset ped-boxes-v4, is
+
+    generated from the raw dashcam collection dashcam-raw-0801. Ravi
+
+    Menon, the team''s QA lead, owns ped-boxes-v4. The team considered
+
+    CVAT but chose not to adopt it.'
+  lines:
+  - text: The labeling vendor team at Orbit Vision uses Label Studio for
+    bbox:
+    - 32.0
+    - 31.0
+    - 561.0
+    - 65.0
+    confidence: 0.995
+  - text: bounding-box annotation. Their output, the dataset ped-boxes-v4, is
+    bbox:
+    - 31.0
+    - 63.0
+    - 620.0
+    - 99.0
+    confidence: 0.998
+  - text: generated from the raw dashcam collection dashcam-raw-0801. Ravi
+    bbox:
+    - 30.0
+    - 95.0
+    - 618.0
+    - 130.0
+    confidence: 0.982
+  - text: Menon, the team's QA lead, owns ped-boxes-v4. The team considered
+    bbox:
+    - 30.0
+    - 127.0
+    - 623.0
+    - 163.0
+    confidence: 0.997
+  - text: CVAT but chose not to adopt it.
+    bbox:
+    - 31.0
+    - 160.0
+    - 298.0
+    - 188.0
+    confidence: 0.997
+  width: 700
+  height: 228
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 1062511474d5cdb64a9d5b7478682af157860c6666555a0d6f4cd1706e056538
+  text: 'In Q2 2026, Brightline Bank opened a new analytics hub in Kraków with 40
+
+    engineers. The hub belongs to the bank''s Data & Al division and is led by
+
+    Tomasz Nowak. It maintains the credit exposure metric, computed from
+
+    fct_loan_balances.'
+  lines:
+  - text: In Q2 2026, Brightline Bank opened a new analytics hub in Kraków with 40
+    bbox:
+    - 44.0
+    - 49.0
+    - 944.0
+    - 89.0
+    confidence: 0.996
+  - text: engineers. The hub belongs to the bank's Data & Al division and is led by
+    bbox:
+    - 45.0
+    - 100.0
+    - 923.0
+    - 133.0
+    confidence: 0.998
+  - text: Tomasz Nowak. It maintains the credit exposure metric, computed from
+    bbox:
+    - 45.0
+    - 147.0
+    - 920.0
+    - 179.0
+    confidence: 0.993
+  - text: fct_loan_balances.
+    bbox:
+    - 45.0
+    - 192.0
+    - 280.0
+    - 224.0
+    confidence: 1.0
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: a2a9537a39e057ac5a9e823f874bec81d6568364bc265fc27256f4dc614ff48f
+  text: 'In Q2 2026, Brightline Bank opened a new analytics hub in Kraków with 40
+
+    engineers. The hub belongs to the bank''s Data & Al division and is led by
+
+    Tomasz Nowak. It maintains the credit exposure metric, computed from
+
+    fct_loan_balances.'
+  lines:
+  - text: In Q2 2026, Brightline Bank opened a new analytics hub in Kraków with 40
+    bbox:
+    - 29.0
+    - 27.0
+    - 660.0
+    - 72.0
+    confidence: 0.998
+  - text: engineers. The hub belongs to the bank's Data & Al division and is led by
+    bbox:
+    - 30.0
+    - 60.0
+    - 647.0
+    - 103.0
+    confidence: 0.997
+  - text: Tomasz Nowak. It maintains the credit exposure metric, computed from
+    bbox:
+    - 30.0
+    - 93.0
+    - 646.0
+    - 135.0
+    confidence: 0.999
+  - text: fct_loan_balances.
+    bbox:
+    - 32.0
+    - 138.0
+    - 198.0
+    - 166.0
+    confidence: 1.0
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 9de025914ff3a84cc24fa8a22ebcc059b43f293a617801cf0d69882a5a869903
+  text: 'The revenue dashboard used to read from Snowflake, but since March it
+
+    reads from ClickHouse. The dashboard is built in Metabase and is owned
+
+    by the Finance Analytics team in Singapore. The revenue metric shown on
+
+    it is computed from fct_invoices.'
+  lines:
+  - text: The revenue dashboard used to read from Snowflake, but since March it
+    bbox:
+    - 45.0
+    - 52.0
+    - 920.0
+    - 86.0
+    confidence: 0.997
+  - text: reads from ClickHouse. The dashboard is built in Metabase and is owned
+    bbox:
+    - 46.0
+    - 101.0
+    - 925.0
+    - 130.0
+    confidence: 0.991
+  - text: by the Finance Analytics team in Singapore. The revenue metric shown on
+    bbox:
+    - 46.0
+    - 147.0
+    - 943.0
+    - 178.0
+    confidence: 0.998
+  - text: it is computed from fct_invoices.
+    bbox:
+    - 46.0
+    - 193.0
+    - 445.0
+    - 224.0
+    confidence: 0.998
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 4a005bccc35102e13175116f5a2650e94ff290e38ec8d461f23bce024ac4e7b1
+  text: 'The revenue dashboard used to read from Snowflake, but since March it
+
+    reads from ClickHouse. The dashboard is built in Metabase and is owned
+
+    by the Finance Analytics team in Singapore. The revenue metric shown on
+
+    it is computed from fct_invoices.'
+  lines:
+  - text: The revenue dashboard used to read from Snowflake, but since March it
+    bbox:
+    - 33.0
+    - 30.0
+    - 646.0
+    - 65.0
+    confidence: 0.996
+  - text: reads from ClickHouse. The dashboard is built in Metabase and is owned
+    bbox:
+    - 31.0
+    - 63.0
+    - 649.0
+    - 98.0
+    confidence: 0.999
+  - text: by the Finance Analytics team in Singapore. The revenue metric shown on
+    bbox:
+    - 30.0
+    - 94.0
+    - 661.0
+    - 132.0
+    confidence: 0.984
+  - text: it is computed from fct_invoices.
+    bbox:
+    - 30.0
+    - 128.0
+    - 312.0
+    - 156.0
+    confidence: 0.998
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 82ed264a5dfda06a632099800055e2dfe425d4f1a3d893314d0838c16200c402
+  text: 'Dr. Elena Petrova, a researcher at the University of Lisbon, published a
+
+    bend          blic
+
+    datasets, OpenTab and WikiTables. Her lab, the Tabular Learning Lab, uses
+
+    PyTorch and hosts its code on GitHub.'
+  lines:
+  - text: Dr. Elena Petrova, a researcher at the University of Lisbon, published a
+    bbox:
+    - 46.0
+    - 55.0
+    - 897.0
+    - 86.0
+    confidence: 0.997
+  - text: bend          blic
+    bbox:
+    - 45.0
+    - 99.0
+    - 893.0
+    - 133.0
+    confidence: 0.798
+  - text: datasets, OpenTab and WikiTables. Her lab, the Tabular Learning Lab, uses
+    bbox:
+    - 45.0
+    - 146.0
+    - 954.0
+    - 179.0
+    confidence: 0.999
+  - text: PyTorch and hosts its code on GitHub.
+    bbox:
+    - 46.0
+    - 193.0
+    - 512.0
+    - 224.0
+    confidence: 0.995
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 5ece138b10ea9430192c48c9a3cc609e1c62664385807d1893850834d9cf8d2c
+  text: 'Dr. Elena Petrova, a researcher at the University of Lisbon, published a
+
+    benchmark called TabEval in 2025. TabEval is derived from two public
+
+    datasets, OpenTab and WikiTables. Her lab, the Tabular Learning Lab, uses
+
+    PyTorch and hosts its code on GitHub.'
+  lines:
+  - text: Dr. Elena Petrova, a researcher at the University of Lisbon, published a
+    bbox:
+    - 29.0
+    - 28.0
+    - 628.0
+    - 70.0
+    confidence: 0.985
+  - text: benchmark called TabEval in 2025. TabEval is derived from two public
+    bbox:
+    - 30.0
+    - 61.0
+    - 625.0
+    - 101.0
+    confidence: 0.994
+  - text: datasets, OpenTab and WikiTables. Her lab, the Tabular Learning Lab, uses
+    bbox:
+    - 31.0
+    - 92.0
+    - 670.0
+    - 134.0
+    confidence: 0.996
+  - text: PyTorch and hosts its code on GitHub.
+    bbox:
+    - 33.0
+    - 132.0
+    - 362.0
+    - 166.0
+    confidence: 0.993
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 54a034ef06fed5d5bf4675823dfee8134355a566c443599fa065bb674924570b
+  text: '星河零售的数据平台部位于杭州滨江，隶属于集团技术中心。部门负责人是林
+
+    晓雯，她主导维护订单宽表 dwd_order_wide。该宽表由原始订单表
+
+    ods_order和支付流水表 ods_payment 清洗合并而来。'
+  lines:
+  - text: 星河零售的数据平台部位于杭州滨江，隶属于集团技术中心。部门负责人是林
+    bbox:
+    - 46.0
+    - 53.0
+    - 934.0
+    - 85.0
+    confidence: 1.0
+  - text: 晓雯，她主导维护订单宽表 dwd_order_wide。该宽表由原始订单表
+    bbox:
+    - 46.0
+    - 98.0
+    - 836.0
+    - 133.0
+    confidence: 0.989
+  - text: ods_order和支付流水表 ods_payment 清洗合并而来。
+    bbox:
+    - 46.0
+    - 144.0
+    - 684.0
+    - 181.0
+    confidence: 0.981
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 3559393870b7bb343cbe3a17aec83c77a0277de3132c33054e6734f4fb2f82f1
+  text: '星河零售的数据平台部位于杭州滨江，隶属于集团技术中心。部门负责人是林
+
+    晓雯，她主导维护订单宽表dwd_order_wide。该宽表由原始订单表
+
+    ods_order和支付流水表ods_payment清洗合并而来。'
+  lines:
+  - text: 星河零售的数据平台部位于杭州滨江，隶属于集团技术中心。部门负责人是林
+    bbox:
+    - 32.0
+    - 26.0
+    - 656.0
+    - 70.0
+    confidence: 1.0
+  - text: 晓雯，她主导维护订单宽表dwd_order_wide。该宽表由原始订单表
+    bbox:
+    - 30.0
+    - 58.0
+    - 586.0
+    - 101.0
+    confidence: 0.999
+  - text: ods_order和支付流水表ods_payment清洗合并而来。
+    bbox:
+    - 29.0
+    - 90.0
+    - 479.0
+    - 131.0
+    confidence: 0.999
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 441f4d4a59d43329fba8d0ed9c634088469254d56dc63e4ff568204fc0461267
+  text: '财务分析组的周敏负责 GMV 指标。GMV 按 dws_trade_daily 汇总表计算，而
+
+    不是基于 dwd_order_wide 直接计算。dws_trade_daily 由 dwd_order_wide
+
+    按天汇总生成。团队目前用 Superset 做报表，去年曾试用过 Tableau，后来停
+
+    用了。'
+  lines:
+  - text: 财务分析组的周敏负责 GMV 指标。GMV 按 dws_trade_daily 汇总表计算，而
+    bbox:
+    - 45.0
+    - 52.0
+    - 938.0
+    - 87.0
+    confidence: 0.969
+  - text: 不是基于 dwd_order_wide 直接计算。dws_trade_daily 由 dwd_order_wide
+    bbox:
+    - 45.0
+    - 98.0
+    - 952.0
+    - 134.0
+    confidence: 0.981
+  - text: 按天汇总生成。团队目前用 Superset 做报表，去年曾试用过 Tableau，后来停
+    bbox:
+    - 45.0
+    - 145.0
+    - 951.0
+    - 178.0
+    confidence: 0.977
+  - text: 用了。
+    bbox:
+    - 45.0
+    - 191.0
+    - 114.0
+    - 224.0
+    confidence: 0.999
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 820e9e7e7754a591a46ae9cd0caf1d305d1b5ed6849a92f8f55cecc2d220a818
+  text: '财务分析组的周敏负责GMV指标。GMV按dws_trade_daily汇总表计算，而
+
+    不是基于 dwd_order_wide 直接计算。dws_trade_daily 由dwd_order_wide
+
+    按天汇总生成。团队目前用Superset做报表，去年曾试用过Tableau，后来停
+
+    用了。'
+  lines:
+  - text: 财务分析组的周敏负责GMV指标。GMV按dws_trade_daily汇总表计算，而
+    bbox:
+    - 29.0
+    - 25.0
+    - 656.0
+    - 72.0
+    confidence: 0.999
+  - text: 不是基于 dwd_order_wide 直接计算。dws_trade_daily 由dwd_order_wide
+    bbox:
+    - 30.0
+    - 59.0
+    - 666.0
+    - 102.0
+    confidence: 0.984
+  - text: 按天汇总生成。团队目前用Superset做报表，去年曾试用过Tableau，后来停
+    bbox:
+    - 30.0
+    - 90.0
+    - 667.0
+    - 136.0
+    confidence: 0.999
+  - text: 用了。
+    bbox:
+    - 31.0
+    - 140.0
+    - 83.0
+    - 168.0
+    confidence: 0.996
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 98b94d10199d43def046a32d248a04af78c44ed4f5e5dd3f2447d1492fd42e10
+  text: '云栖智造总部坐落于苏州工业园区，在深圳南山设有研发中心。研发中心下设
+
+    视觉算法团队，该团队由陈泽宇带领，长期维护缺陷图像数据集 defect-img-v3'
+  lines:
+  - text: 云栖智造总部坐落于苏州工业园区，在深圳南山设有研发中心。研发中心下设
+    bbox:
+    - 46.0
+    - 52.0
+    - 935.0
+    - 86.0
+    confidence: 1.0
+  - text: 视觉算法团队，该团队由陈泽宇带领，长期维护缺陷图像数据集 defect-img-v3
+    bbox:
+    - 45.0
+    - 96.0
+    - 953.0
+    - 135.0
+    confidence: 0.988
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 83f519b6e93686680757361f44cb5546e17b0d2f6e0b8fa6cac53b6fc5a80951
+  text: '云栖智造总部坐落于苏州工业园区，在深圳南山设有研发中心。研发中心下设
+
+    视觉算法团队，该团队由陈泽宇带领，长期维护缺陷图像数据集defect-img-v3'
+  lines:
+  - text: 云栖智造总部坐落于苏州工业园区，在深圳南山设有研发中心。研发中心下设
+    bbox:
+    - 32.0
+    - 27.0
+    - 656.0
+    - 69.0
+    confidence: 1.0
+  - text: 视觉算法团队，该团队由陈泽宇带领，长期维护缺陷图像数据集defect-img-v3
+    bbox:
+    - 30.0
+    - 57.0
+    - 668.0
+    - 104.0
+    confidence: 0.999
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: b3dec6ce51eef948f486819a250d71fc6ca13c00fae4f6c704623e4ec8ec374b
+  text: '用户增长部计划明年把埋点数据从 Kafka 迁移到 Pulsar，目前埋点仍通过
+
+    Kafka 接入。部门的数据工程师赵一鸣维护日活指标 DAU，DAU 基于
+
+    dwd_user_event 计算；dwd_user_event 由 ods_tracking_log 解析得到。'
+  lines:
+  - text: 用户增长部计划明年把埋点数据从 Kafka 迁移到 Pulsar，目前埋点仍通过
+    bbox:
+    - 45.0
+    - 52.0
+    - 889.0
+    - 86.0
+    confidence: 0.98
+  - text: Kafka 接入。部门的数据工程师赵一鸣维护日活指标 DAU，DAU 基于
+    bbox:
+    - 45.0
+    - 99.0
+    - 841.0
+    - 131.0
+    confidence: 0.972
+  - text: dwd_user_event 计算；dwd_user_event 由 ods_tracking_log 解析得到。
+    bbox:
+    - 45.0
+    - 144.0
+    - 911.0
+    - 181.0
+    confidence: 0.974
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 898cc26eb4ca17acbc79f9d8c0e14d8e1a15518cd6480e158d60d2ac5efd8f27
+  text: '用户增长部计划明年把埋点数据从Kafka迁移到Pulsar，目前埋点仍通过
+
+    Kafka接入。部门的数据工程师赵一鸣维护日活指标DAU，DAU基于
+
+    dwd_user_event 计算；dwd_user_event 由ods_tracking_log 解析得到。'
+  lines:
+  - text: 用户增长部计划明年把埋点数据从Kafka迁移到Pulsar，目前埋点仍通过
+    bbox:
+    - 29.0
+    - 28.0
+    - 622.0
+    - 69.0
+    confidence: 0.998
+  - text: Kafka接入。部门的数据工程师赵一鸣维护日活指标DAU，DAU基于
+    bbox:
+    - 30.0
+    - 61.0
+    - 590.0
+    - 101.0
+    confidence: 0.998
+  - text: dwd_user_event 计算；dwd_user_event 由ods_tracking_log 解析得到。
+    bbox:
+    - 30.0
+    - 91.0
+    - 640.0
+    - 137.0
+    confidence: 0.981
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 339aa3a59a4e22e2b72ddf8394684b65054b353b1268688ae85326509ffbdae9
+  text: '会员系统 MemberHub 原本由王磊负责，上个月起改由刘佳接手；王磊已调往
+
+    供应链团队。MemberHub 使用 Redis 缓存会员等级。会员维表 dim_member
+
+    每晚从 MemberHub 的导出表 ods_member_snapshot同步。'
+  lines:
+  - text: 会员系统 MemberHub 原本由王磊负责，上个月起改由刘佳接手；王磊已调往
+    bbox:
+    - 46.0
+    - 52.0
+    - 940.0
+    - 85.0
+    confidence: 0.977
+  - text: 供应链团队。MemberHub 使用 Redis 缓存会员等级。会员维表 dim_member
+    bbox:
+    - 45.0
+    - 98.0
+    - 949.0
+    - 132.0
+    confidence: 0.991
+  - text: 每晚从 MemberHub 的导出表 ods_member_snapshot同步。
+    bbox:
+    - 45.0
+    - 144.0
+    - 758.0
+    - 180.0
+    confidence: 0.975
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: b61510088227ab1df35fed13cdeb933b6839c2b356547e8b8a544e97aa798499
+  text: '会员系统MemberHub原本由王磊负责，上个月起改由刘佳接手；王磊已调往
+
+    供应链团队。MemberHub使用Redis缓存会员等级。会员维表dim_member
+
+    每晚从MemberHub的导出表ods_member_snapshot同步。'
+  lines:
+  - text: 会员系统MemberHub原本由王磊负责，上个月起改由刘佳接手；王磊已调往
+    bbox:
+    - 32.0
+    - 28.0
+    - 659.0
+    - 68.0
+    confidence: 0.997
+  - text: 供应链团队。MemberHub使用Redis缓存会员等级。会员维表dim_member
+    bbox:
+    - 31.0
+    - 59.0
+    - 666.0
+    - 102.0
+    confidence: 1.0
+  - text: 每晚从MemberHub的导出表ods_member_snapshot同步。
+    bbox:
+    - 29.0
+    - 91.0
+    - 532.0
+    - 132.0
+    confidence: 0.999
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 0c9400a657f52803e3221566fc7817d5c1118c3b3b2c6c25265d370cc72b58c5
+  text: '华东大区销售运营中心设在上海，归属销售事业部。中心有两名分析师：郑可
+
+    和孙浩。郑可负责复购率指标，复购率基于 dws_member_order 计算；孙浩
+
+    负责客单价指标，客单价同样基于dws_member_order计算。'
+  lines:
+  - text: 华东大区销售运营中心设在上海，归属销售事业部。中心有两名分析师：郑可
+    bbox:
+    - 46.0
+    - 52.0
+    - 933.0
+    - 85.0
+    confidence: 1.0
+  - text: 和孙浩。郑可负责复购率指标，复购率基于 dws_member_order 计算；孙浩
+    bbox:
+    - 44.0
+    - 99.0
+    - 933.0
+    - 133.0
+    confidence: 0.978
+  - text: 负责客单价指标，客单价同样基于dws_member_order计算。
+    bbox:
+    - 45.0
+    - 144.0
+    - 762.0
+    - 180.0
+    confidence: 1.0
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: a4e6319c7bfbdf4972879c231ca7cd86f19066d3e8a61fd13d3f2d644d73823e
+  text: '华东大区销售运营中心设在上海，归属销售事业部。中心有两名分析师：郑可
+
+    和孙浩。郑可负责复购率指标，复购率基于dws_member_order计算；孙浩
+
+    负责客单价指标，客单价同样基于dws_member_order计算。'
+  lines:
+  - text: 华东大区销售运营中心设在上海，归属销售事业部。中心有两名分析师：郑可
+    bbox:
+    - 31.0
+    - 28.0
+    - 652.0
+    - 68.0
+    confidence: 1.0
+  - text: 和孙浩。郑可负责复购率指标，复购率基于dws_member_order计算；孙浩
+    bbox:
+    - 29.0
+    - 59.0
+    - 655.0
+    - 103.0
+    confidence: 0.997
+  - text: 负责客单价指标，客单价同样基于dws_member_order计算。
+    bbox:
+    - 32.0
+    - 96.0
+    - 534.0
+    - 134.0
+    confidence: 0.999
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 7f5b5610b340c3569a26450de411116d491ed8ca388ca8b3bc81f3f853220d9f
+  text: '2026年3月，风控平台 Sentinel完成升级，日均处理1.2亿次请求。Sentinel
+
+    依赖 Flink 做实时计算，规则配置存放在 PostgreSQL 中。平台由风控技术部维
+
+    护，部门位于北京望京。'
+  lines:
+  - text: 2026年3月，风控平台 Sentinel完成升级，日均处理1.2亿次请求。Sentinel
+    bbox:
+    - 45.0
+    - 53.0
+    - 945.0
+    - 85.0
+    confidence: 0.99
+  - text: 依赖 Flink 做实时计算，规则配置存放在 PostgreSQL 中。平台由风控技术部维
+    bbox:
+    - 44.0
+    - 97.0
+    - 951.0
+    - 135.0
+    confidence: 0.969
+  - text: 护，部门位于北京望京。
+    bbox:
+    - 45.0
+    - 144.0
+    - 320.0
+    - 178.0
+    confidence: 1.0
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: f0ea90ffc8747457213e90a9ed3ca54e4f5ddd74ac0b7f641e9f41609556890a
+  text: '2026年3月，风控平台Sentinel完成升级，日均处理1.2亿次请求。Sentinel
+
+    依赖Flink做实时计算，规则配置存放在PostgreSQL中。平台由风控技术部维
+
+    护，部门位于北京望京。'
+  lines:
+  - text: 2026年3月，风控平台Sentinel完成升级，日均处理1.2亿次请求。Sentinel
+    bbox:
+    - 31.0
+    - 28.0
+    - 663.0
+    - 67.0
+    confidence: 0.999
+  - text: 依赖Flink做实时计算，规则配置存放在PostgreSQL中。平台由风控技术部维
+    bbox:
+    - 30.0
+    - 60.0
+    - 667.0
+    - 102.0
+    confidence: 1.0
+  - text: 护，部门位于北京望京。
+    bbox:
+    - 30.0
+    - 92.0
+    - 224.0
+    - 123.0
+    confidence: 0.999
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 7bc050dce456fd65e10bfc7d5ba3f13862a5feea5bc4b341e2a094b7ff519903
+  text: '推荐团队的训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志
+
+    ods_exposure 拼接生成。feat_user_item 又是从行为宽表
+
+    dwd_behavior_wide聚合得到的。样本表的负责人是推荐团队的何静。'
+  lines:
+  - text: 推荐团队的训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志
+    bbox:
+    - 43.0
+    - 50.0
+    - 937.0
+    - 90.0
+    confidence: 0.992
+  - text: ods_exposure 拼接生成。feat_user_item 又是从行为宽表
+    bbox:
+    - 46.0
+    - 97.0
+    - 729.0
+    - 134.0
+    confidence: 0.987
+  - text: dwd_behavior_wide聚合得到的。样本表的负责人是推荐团队的何静。
+    bbox:
+    - 46.0
+    - 143.0
+    - 860.0
+    - 179.0
+    confidence: 1.0
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 8c5662fc5eb94684656a11324854e712e525e1334dfb9230a31af65608017afe
+  text: '推荐团队的训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志
+
+    ods_exposure拼接生成。feat_user_item又是从行为宽表
+
+    dwd_behavior_wide聚合得到的。样本表的负责人是推荐团队的何静。'
+  lines:
+  - text: 推荐团队的训练样本表 sample_rec_v2 由特征表 feat_user_item 与曝光日志
+    bbox:
+    - 28.0
+    - 24.0
+    - 655.0
+    - 73.0
+    confidence: 0.971
+  - text: ods_exposure拼接生成。feat_user_item又是从行为宽表
+    bbox:
+    - 30.0
+    - 61.0
+    - 513.0
+    - 105.0
+    confidence: 1.0
+  - text: dwd_behavior_wide聚合得到的。样本表的负责人是推荐团队的何静。
+    bbox:
+    - 31.0
+    - 91.0
+    - 605.0
+    - 137.0
+    confidence: 0.999
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 2f07becded6b4e7a15ebf8be34d29c7a40e38fc7879a66044c83018aebeb8d76
+  text: '标注组位于成都高新区，隶属于数据服务中心。组长吴婷负责车道线标注集
+
+    lane-anno-2026，该标注集基于原始路采数据 road-raw-0915 抽帧生成。标注
+
+    组使用 CVAT 进行标注，并不使用 Label Studio。'
+  lines:
+  - text: 标注组位于成都高新区，隶属于数据服务中心。组长吴婷负责车道线标注集
+    bbox:
+    - 46.0
+    - 53.0
+    - 907.0
+    - 85.0
+    confidence: 1.0
+  - text: lane-anno-2026，该标注集基于原始路采数据 road-raw-0915 抽帧生成。标注
+    bbox:
+    - 45.0
+    - 98.0
+    - 949.0
+    - 132.0
+    confidence: 0.982
+  - text: 组使用 CVAT 进行标注，并不使用 Label Studio。
+    bbox:
+    - 45.0
+    - 145.0
+    - 607.0
+    - 177.0
+    confidence: 0.983
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 99f99effb627435490b796f6fa0677f55d1f6de692d9d404759b9b3d927e8cb3
+  text: '标注组位于成都高新区，隶属于数据服务中心。组长吴婷负责车道线标注集
+
+    lane-anno-2026，该标注集基于原始路采数据road-raw-0915抽帧生成。标注
+
+    组使用CVAT进行标注，并不使用Label Studio。'
+  lines:
+  - text: 标注组位于成都高新区，隶属于数据服务中心。组长吴婷负责车道线标注集
+    bbox:
+    - 31.0
+    - 28.0
+    - 636.0
+    - 67.0
+    confidence: 1.0
+  - text: lane-anno-2026，该标注集基于原始路采数据road-raw-0915抽帧生成。标注
+    bbox:
+    - 29.0
+    - 59.0
+    - 665.0
+    - 102.0
+    confidence: 0.998
+  - text: 组使用CVAT进行标注，并不使用Label Studio。
+    bbox:
+    - 30.0
+    - 92.0
+    - 425.0
+    - 127.0
+    confidence: 0.985
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 0f58bc0dc649ec1e09785c883496634d30c45bb4f2b9b86799898f0d0d43319c
+  text: '范志远常驻新加坡，他在海外业务部工作，主要维护东南亚订单表
+
+    dwd_order_sea。这张表来自各国站点上报的 ods_order_sea_raw。海外业
+
+    务部用 BigQuery存放这些数据。'
+  lines:
+  - text: 范志远常驻新加坡，他在海外业务部工作，主要维护东南亚订单表
+    bbox:
+    - 46.0
+    - 53.0
+    - 804.0
+    - 85.0
+    confidence: 1.0
+  - text: dwd_order_sea。这张表来自各国站点上报的 ods_order_sea_raw。海外业
+    bbox:
+    - 43.0
+    - 94.0
+    - 932.0
+    - 136.0
+    confidence: 0.993
+  - text: 务部用 BigQuery存放这些数据。
+    bbox:
+    - 45.0
+    - 144.0
+    - 419.0
+    - 180.0
+    confidence: 0.986
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 39c160c52abe3a076cd10b762a773c633bdef5338c22a3bee9afa125e12a3f7a
+  text: '范志远常驻新加坡，他在海外业务部工作，主要维护东南亚订单表
+
+    dwd_order_sea。这张表来自各国站点上报的ods_order_sea_raw。海外业
+
+    务部用BigQuery存放这些数据。'
+  lines:
+  - text: 范志远常驻新加坡，他在海外业务部工作，主要维护东南亚订单表
+    bbox:
+    - 30.0
+    - 31.0
+    - 563.0
+    - 67.0
+    confidence: 1.0
+  - text: dwd_order_sea。这张表来自各国站点上报的ods_order_sea_raw。海外业
+    bbox:
+    - 29.0
+    - 60.0
+    - 653.0
+    - 102.0
+    confidence: 0.999
+  - text: 务部用BigQuery存放这些数据。
+    bbox:
+    - 31.0
+    - 101.0
+    - 295.0
+    - 134.0
+    confidence: 1.0
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: f99ae2cc15cc923ca40ceb12125841e570c8837ddf06a1237da9884b19b352bd
+  text: '库存周转天数由供应链分析组的钱多多负责，计算时同时用到库存快照表
+
+    dws_inventory_snapshot 和出库明细表 dwd_outbound。该指标以前也引用
+
+    过采购表 dwd_purchase，现已不再使用。供应链分析组隶属于运营管理部。'
+  lines:
+  - text: 库存周转天数由供应链分析组的钱多多负责，计算时同时用到库存快照表
+    bbox:
+    - 45.0
+    - 52.0
+    - 882.0
+    - 85.0
+    confidence: 1.0
+  - text: dws_inventory_snapshot 和出库明细表 dwd_outbound。该指标以前也引用
+    bbox:
+    - 45.0
+    - 96.0
+    - 951.0
+    - 135.0
+    confidence: 0.997
+  - text: 过采购表 dwd_purchase，现已不再使用。供应链分析组隶属于运营管理部。
+    bbox:
+    - 44.0
+    - 143.0
+    - 923.0
+    - 181.0
+    confidence: 0.992
+  width: 1000
+  height: 234
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: d2bec5232cd287a69e3a9e885cc7368fe332e1807e8fc24bea9b07a1eef20c4f
+  text: '库存周转天数由供应链分析组的钱多多负责，计算时同时用到库存快照表
+
+    dws_inventory_snapshot和出库明细表dwd_outbound。该指标以前也引用
+
+    过采购表dwd_purchase，现已不再使用。供应链分析组隶属于运营管理部。'
+  lines:
+  - text: 库存周转天数由供应链分析组的钱多多负责，计算时同时用到库存快照表
+    bbox:
+    - 32.0
+    - 27.0
+    - 619.0
+    - 68.0
+    confidence: 1.0
+  - text: dws_inventory_snapshot和出库明细表dwd_outbound。该指标以前也引用
+    bbox:
+    - 30.0
+    - 60.0
+    - 666.0
+    - 102.0
+    confidence: 0.993
+  - text: 过采购表dwd_purchase，现已不再使用。供应链分析组隶属于运营管理部。
+    bbox:
+    - 29.0
+    - 91.0
+    - 646.0
+    - 136.0
+    confidence: 0.999
+  width: 700
+  height: 164
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: e883be67e5038a34a27996a6c8b83f99b7afbbe3209c035d973b56f02c7ca6cd
+  text: '质量中台QualityHub由数据治理委员会统一管理，日常运维交给平台工程组
+
+    。QualityHub 调用 Great Expectations 执行校验规则，校验结果写入
+
+    dq_result 表；dq_result 汇总后生成每日质量报告表 dq_report_daily。平台
+
+    工程组位于武汉光谷。'
+  lines:
+  - text: 质量中台QualityHub由数据治理委员会统一管理，日常运维交给平台工程组
+    bbox:
+    - 46.0
+    - 52.0
+    - 928.0
+    - 87.0
+    confidence: 1.0
+  - text: 。QualityHub 调用 Great Expectations 执行校验规则，校验结果写入
+    bbox:
+    - 45.0
+    - 98.0
+    - 854.0
+    - 134.0
+    confidence: 0.994
+  - text: dq_result 表；dq_result 汇总后生成每日质量报告表 dq_report_daily。平台
+    bbox:
+    - 45.0
+    - 143.0
+    - 938.0
+    - 181.0
+    confidence: 0.994
+  - text: 工程组位于武汉光谷。
+    bbox:
+    - 48.0
+    - 192.0
+    - 293.0
+    - 223.0
+    confidence: 0.999
+  width: 1000
+  height: 280
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null
+- image_hash: 419ca28ed6e7ca8add6685ea117f5001126e8e078418f0982bc8638db7004b19
+  text: '质量中台QualityHub由数据治理委员会统一管理，日常运维交给平台工程组
+
+    。QualityHub 调用 Great Expectations 执行校验规则，校验结果写入
+
+    dq_result 表；dq_result 汇总后生成每日质量报告表 dq_report_daily。平台
+
+    工程组位于武汉光谷。'
+  lines:
+  - text: 质量中台QualityHub由数据治理委员会统一管理，日常运维交给平台工程组
+    bbox:
+    - 29.0
+    - 28.0
+    - 650.0
+    - 69.0
+    confidence: 1.0
+  - text: 。QualityHub 调用 Great Expectations 执行校验规则，校验结果写入
+    bbox:
+    - 27.0
+    - 60.0
+    - 598.0
+    - 103.0
+    confidence: 0.974
+  - text: dq_result 表；dq_result 汇总后生成每日质量报告表 dq_report_daily。平台
+    bbox:
+    - 30.0
+    - 92.0
+    - 659.0
+    - 134.0
+    confidence: 0.973
+  - text: 工程组位于武汉光谷。
+    bbox:
+    - 32.0
+    - 136.0
+    - 209.0
+    - 165.0
+    confidence: 1.0
+  width: 700
+  height: 196
+  backend: ocr
+  model: RapidOCR 3.10.0 defaults
+  finish_reason: stop
+  input_tokens: null
+  output_tokens: null
+  error: null

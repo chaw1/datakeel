@@ -21,6 +21,8 @@ from datakeel.storage.database import Database
 from datakeel.storage.evidence_store import read_assertions
 from datakeel.storage.kg_context import KGContext, graph_events, read_context
 from datakeel.storage.kg_graph import project_graph
+from datakeel.storage.kg_image_attribution import relation_transcriptions
+from datakeel.storage.kg_image_sources import image_source
 from datakeel.storage.kg_store import get_job
 
 
@@ -45,6 +47,7 @@ def _relation(assertion: Assertion, context: KGContext) -> KGRelationView | None
     event = next(
         (item for item in context.events if item.event_id == assertion.producer_event_id), None
     )
+    transcriptions = relation_transcriptions(assertion, context.events)
     return KGRelationView(
         assertion=assertion,
         head=entities[assertion.subject.asset_id],
@@ -54,6 +57,13 @@ def _relation(assertion: Assertion, context: KGContext) -> KGRelationView | None
         else assertion.extractor.id,
         model=str(event.params.get("kg_model", "unknown")) if event else "unknown",
         extraction_id=assertion.run_id,
+        transcriber=", ".join(sorted({source.backend for source in transcriptions})) or None,
+        transcription_model=", ".join(sorted({source.model for source in transcriptions})) or None,
+        transcription_profile_id=", ".join(sorted({source.profile_id for source in transcriptions}))
+        or None,
+        image_located=any(anchor.selector.type == "image_region" for anchor in assertion.anchors)
+        if any(anchor.asset_ref.asset_type == "image_transcript" for anchor in assertion.anchors)
+        else None,
     )
 
 
@@ -112,6 +122,8 @@ def get_source_text(
     db: Database, file_id: str, version_id: str, extraction_id: str | None = None
 ) -> KGSourceText:
     """Read frozen normalized text, never a mutable current file path."""
+    if (source := image_source(db, file_id, version_id, extraction_id)) is not None:
+        return source
     events = graph_events(db)
     identifiers = (
         (extraction_id,)
@@ -148,6 +160,8 @@ def _summary(assertion: Assertion) -> str:
         "evidence": "the evidence quotation could not be verified",
         "head": "the head entity could not be located",
         "tail": "the tail entity could not be located",
+        "image_unlocated": "the evidence is not located on the image",
+        "handwriting_name": "a handwritten person name requires review",
     }
     reasons = tuple(
         dict.fromkeys(

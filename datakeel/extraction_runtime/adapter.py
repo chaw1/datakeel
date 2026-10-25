@@ -205,7 +205,13 @@ class LLMExtractor:
         try:
             with tracing_disabled():
                 model = _bind(self.model, self.profile, schema)
-                message = model.invoke([HumanMessage(content=extraction_prompt(block, schema))])
+                message = model.invoke(
+                    [
+                        HumanMessage(
+                            content=extraction_prompt(block, schema, self.profile.prompt_version)
+                        )
+                    ]
+                )
             return _result(message, self.profile)
         except LengthFinishReasonError as error:
             return _truncated(error)

@@ -38,6 +38,10 @@ class KGRelationView(BoundaryModel):
     extractor: str
     model: str
     extraction_id: str
+    transcriber: str | None = None
+    transcription_model: str | None = None
+    transcription_profile_id: str | None = None
+    image_located: bool | None = None
 
 
 class KGQueryResult(BoundaryModel):
@@ -56,6 +60,12 @@ class KGSourceText(BoundaryModel):
     asset_ref: AssetRef
     filename: str
     text: str
+    image_url: str | None = None
+    width: int | None = None
+    height: int | None = None
+    transcriber: str | None = None
+    transcription_model: str | None = None
+    transcription_profile_id: str | None = None
 
 
 class KGRelationExplanation(BoundaryModel):

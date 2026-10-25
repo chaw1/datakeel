@@ -19,6 +19,7 @@ from datakeel.storage.ask_review import question_references, question_review_dig
 from datakeel.storage.catalog_action_state import catalog_manifest
 from datakeel.storage.evidence_decisions import assertion_view, decide_in_session
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow
+from datakeel.storage.kg_image_sources import image_review_references
 from datakeel.storage.object_projection import content_digest
 from datakeel.storage.object_queries import evaluate_in_session
 
@@ -41,7 +42,7 @@ def _assertions(session: Session, params: DecideAssertionsParams) -> list[Assert
     return [assertion_view(row) for row in rows]
 
 
-def _references(assertions: list[Assertion]) -> list[AssetRef]:
+def _references(session: Session, assertions: list[Assertion]) -> list[AssetRef]:
     refs: dict[tuple[str, str, str], AssetRef] = {}
     for assertion in assertions:
         if assertion.subject.asset_type == "question":
@@ -50,7 +51,7 @@ def _references(assertions: list[Assertion]) -> list[AssetRef]:
             continue
         targets = [assertion.subject]
         if assertion.subject.asset_type == "kg_entity":
-            targets = [anchor.asset_ref for anchor in assertion.anchors]
+            targets = image_review_references(session, assertion)
         if isinstance(assertion.object, AssetRef) and assertion.subject.asset_type != "kg_entity":
             targets.append(assertion.object)
         for ref in targets:
@@ -67,7 +68,9 @@ def decision_manifest(
     """Bind question facts separately while freezing only genuine file endpoints."""
     assertions = _assertions(session, params)
     questions = [item for item in assertions if item.subject.asset_type == "question"]
-    refs = _references([item for item in assertions if item.subject.asset_type != "question"])
+    refs = _references(
+        session, [item for item in assertions if item.subject.asset_type != "question"]
+    )
     manifest = _file_manifest(session, refs, query)
     if questions:
         manifest = manifest.model_copy(
@@ -197,7 +200,7 @@ def decide_action(
         ),
     )
     return OperationResult(
-        outputs=_references(after),
+        outputs=_references(session, after),
         details={
             "assertion_ids": list(params.assertion_ids),
             "before": {value.id: value.status for value in before},

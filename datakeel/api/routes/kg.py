@@ -6,6 +6,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Query
+from fastapi.responses import Response
 
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.evidence_models import AssertionStatus
@@ -21,13 +22,16 @@ from datakeel.core.kg_queries import (
     KGSourceText,
 )
 from datakeel.core.link_models import EntityLink, LinkRunResult
+from datakeel.core.transcription_models import TranscriptionProfile
 from datakeel.kg.loader import contracts_path, load_profile, load_schema
 from datakeel.storage import kg_queries
 from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_evaluations import list_evaluations
+from datakeel.storage.kg_image_sources import image_bytes
 from datakeel.storage.kg_store import get_job, list_runs
 from datakeel.storage.link_queries import entity_links, list_links
 from datakeel.storage.link_store import relink
+from datakeel.transcription.loader import load_profile as load_transcription_profile
 
 router = APIRouter(prefix="/api/kg", tags=["knowledge graph"])
 
@@ -121,3 +125,20 @@ def traces(extraction_id: str, db: DatabaseDependency) -> tuple[ModelCallTrace, 
     """List every metered model attempt belonging to one existing extraction run."""
     get_job(db, extraction_id)
     return tuple(list_traces(db, extraction_id))
+
+
+@router.get("/transcription-profiles")
+def list_transcription_profiles() -> tuple[TranscriptionProfile, ...]:
+    """List validated image transcription configurations without reading credentials."""
+    return tuple(
+        load_transcription_profile(path)
+        for path in sorted((contracts_path() / "transcription-profiles").glob("*.yaml"))
+    )
+
+
+@router.get("/images/{file_id}")
+def image_content(
+    file_id: str, version_id: str, extraction_id: str, db: DatabaseDependency
+) -> Response:
+    """Serve orientation-corrected original pixels in the same coordinate system as evidence."""
+    return Response(image_bytes(db, file_id, version_id, extraction_id), media_type="image/png")
