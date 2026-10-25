@@ -194,6 +194,9 @@ class ImageCaseRunner:
                         start=0,
                         end=0,
                         reason=record.error or "transcription_failed",
+                        message="账户只允许免费额度\uff0c且已用完"
+                        if error.result.error == "账户只允许免费额度\uff0c且已用完"
+                        else None,
                     ),
                 ),
                 transcript=error.result,

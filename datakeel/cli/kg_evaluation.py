@@ -89,6 +89,8 @@ def display_evaluation(report: KGEvalReport, console: Console) -> None:
             f"Failed block: {failure.case_id} [{failure.start}, {failure.end}): {failure.reason}",
             markup=False,
         )
+        if failure.message:
+            console.print(failure.message, markup=False)
     console.print(f"Saved evaluation: {report.id}", markup=False)
 
 

@@ -163,6 +163,9 @@ class KGEvalFailure(BoundaryModel):
     start: int = Field(ge=0)
     end: int = Field(ge=0)
     reason: str
+    message: Literal["账户只允许免费额度\uff0c且已用完"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class ImageGroupMetrics(BoundaryModel):

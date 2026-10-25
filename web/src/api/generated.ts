@@ -3242,6 +3242,8 @@ export interface components {
             case_id: string;
             /** End */
             end: number;
+            /** Message */
+            message?: "账户只允许免费额度，且已用完" | null;
             /** Reason */
             reason: string;
             /** Start */
