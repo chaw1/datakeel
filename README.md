@@ -451,3 +451,5 @@ The offline demo also imports **企业文档 · Enterprise documents**, six fict
 Import screenshots, scans or diagrams, then select an image transcription profile and a text extractor in **Knowledge graph**. Candidate relationships retain transcript quotations and OCR evidence rectangles; missing image locations and handwritten names require review. The demo includes recorded images and an explicitly scripted failure. Run `uv run datakeel eval-kg --suite image --json` for the packaged, offline 60-image benchmark. See [image setup, provenance and consent](docs/KG.md#images-and-scans--图片与扫描件).
 
 Local OCR requires user-installed third-party packages: `pip install rapidocr==3.10.0 onnxruntime`. They are not Datakeel dependencies and are outside its license audit. Some OpenCV prebuilt packages (including macOS wheels) bundle GPL codecs such as x264/x265; ONNX Runtime includes MPL-2.0 Eigen. Assess these licenses yourself before redistribution. Offline replay needs none of these packages.
+
+See [table and time-series profiling](docs/TIMESERIES.md) for a one-command generated sensor week, deterministic detection rules and controlled catalog profiles.

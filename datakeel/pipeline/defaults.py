@@ -9,7 +9,7 @@ from datakeel.pipeline.models import Pipeline
 
 
 def default_pipeline() -> Pipeline:
-    """Return the canonical thirteen-node image/text demonstration DAG."""
+    """Return the canonical image, text and supported-table demonstration DAG."""
     nodes: list[dict[str, JsonValue]] = []
 
     def add(identifier: str, operator: str, source: str, **params: JsonValue) -> None:
@@ -37,10 +37,17 @@ def default_pipeline() -> Pipeline:
     add("redact", "text.pii_redact", "encoding.files")
     add("text_dedup", "text.dedup", "redact.files")
     add("text_quality", "text.quality", "text_dedup.files")
+    add("table_profile", "table.profile", "modality.table")
     return Pipeline.model_validate(
         {
             "nodes": nodes,
-            "outputs": ["convert.files", "text_quality.files", "modality.other", "nonempty.false"],
+            "outputs": [
+                "convert.files",
+                "text_quality.files",
+                "table_profile.files",
+                "modality.other",
+                "nonempty.false",
+            ],
             "max_workers": 4,
         }
     )

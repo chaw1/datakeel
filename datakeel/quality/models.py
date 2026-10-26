@@ -6,6 +6,7 @@
 from pydantic import JsonValue
 
 from datakeel.core.models import Record
+from datakeel.quality.tabular_models import TabularAssessment
 
 
 class IssueView(Record):
@@ -49,6 +50,7 @@ class QualityView(Record):
     issues: list[IssueView]
     file_count: int
     config: QualityConfig
+    tabular: TabularAssessment | None = None
 
 
 class ChapterView(Record):

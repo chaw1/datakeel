@@ -10,6 +10,7 @@ from datakeel.ask.knowledge_parser import metric_recognition, parse_knowledge_qu
 from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
 from datakeel.ask.models import QueryContext
 from datakeel.ask.parser import parse_question
+from datakeel.ask.profile import parse_profile_question, profile_answer
 from datakeel.ask.resolution import resolve_metric
 from datakeel.core.ask_models import (
     AskAnswer,
@@ -29,10 +30,14 @@ from datakeel.storage.ask_store import store_answer
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.database import Database
 from datakeel.storage.link_queries import read_link_context
+from datakeel.storage.profile_queries import read_profiles
 
 
 def ask_data(db: Database, request: AskRequest) -> AskAnswer:
     """Answer only from registered metadata and store every outcome with its evidence."""
+    profile = parse_profile_question(request)
+    if profile is not None:
+        return store_answer(db, request, profile_answer(request, profile, read_profiles(db)))
     with db.session() as session:
         snapshot = read_snapshot(session)
     context = QueryContext(snapshot=snapshot, layer=semantic_layer(snapshot))

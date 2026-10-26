@@ -11,7 +11,7 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
-from datakeel.cli import kg_evaluation, kg_image_evaluation, routing, workflow
+from datakeel.cli import kg_evaluation, kg_image_evaluation, routing, timeseries_demo, workflow
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -51,6 +51,7 @@ def parser() -> argparse.ArgumentParser:
     worker.add_argument("--once", action="store_true", help="Drain pending work and exit")
     worker.add_argument("--queue", choices=["cpu", "io", "gpu"], default="cpu")
     commands.add_parser("migrate")
+    timeseries_demo.add_parser(commands)
     evidence_rebuild = commands.add_parser("rebuild-evidence")
     evidence_rebuild.add_argument("--expected-hash")
     catalog_rebuild = commands.add_parser("rebuild-catalog")
@@ -143,6 +144,8 @@ def _database_command(db: Database, args: argparse.Namespace) -> None:
         rebuild_catalog(db, args.expected_hash)
     elif args.command == "ask":
         ask(db, args.question, args.reference_instant)
+    elif args.command == "timeseries-demo":
+        timeseries_demo.demo(db, args.output)
 
 
 def _evaluation_command(db: Database, args: argparse.Namespace) -> None:

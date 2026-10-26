@@ -146,6 +146,7 @@ class TableProperties(BoundaryModel):
     primary_key: tuple[str, ...] = ()
     foreign_keys: tuple[ForeignKey, ...] = ()
     sql: str | None = None
+    table_profile: JsonDocument | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ColumnProperties(BoundaryModel):
@@ -156,6 +157,7 @@ class ColumnProperties(BoundaryModel):
     primary_key: bool = False
     comment: str | None = None
     ordinal: int = Field(ge=0)
+    profile: JsonDocument | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class CatalogRebuildResult(BoundaryModel):

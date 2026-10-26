@@ -1,4 +1,24 @@
 export const askEn = {
+  askProfileTitle: "Recorded sensor profile",
+  askProfileAnswered: "Answered from published profiles",
+  askProfileUnavailable: "No reliable profile ranking available",
+  askProfileChoose: "Choose a dataset for the profile",
+  askProfilePublishedVersion: "Published version",
+  askProfileSourceVersion: "Original source version",
+  askProfileRanking: "Devices with recorded sampling gaps",
+  askProfileDevice: "Device",
+  askProfileCount: "Gap intervals",
+  askProfileDuration: "Total missing duration (seconds)",
+  askProfileSortCount:
+    "Sorted by gap interval count; total duration breaks ties.",
+  askProfileSortDuration:
+    "Sorted by total missing duration; device name breaks ties.",
+  askProfileScope:
+    "These measurements describe the table's sampling time axis. They do not establish missing values specific to the temperature column. Devices without recorded gaps are omitted.",
+  askProfileIntervals: "Source intervals",
+  askProfileCoordinates:
+    "Rows are the original CSV source row numbers, retained through sorting via the source-row mapping. Interval endpoints are UTC.",
+  askProfileRows: "Original CSV rows",
   askTitle: "Ask data",
   askIntro:
     "Explore Fictional Kitchen Co. through registered metrics and source-backed knowledge about owners and dependencies.",

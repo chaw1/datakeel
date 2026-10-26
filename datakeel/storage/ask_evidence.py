@@ -20,6 +20,7 @@ from datakeel.core.evidence_models import (
 )
 from datakeel.core.knowledge_citations import knowledge_citations
 from datakeel.core.models import AssetRef, LineageEvent, new_id
+from datakeel.core.profile_models import profile_citations
 from datakeel.core.question_models import QuestionProperties
 from datakeel.metrics.projection import resolved_metric_cards
 from datakeel.storage.catalog_store import read_snapshot
@@ -170,6 +171,7 @@ def publish_answer_evidence(
     assertions = _facts(answer, question, event_id, catalog)
     references = [question.asset_ref()]
     references.extend(item.object for item in assertions if isinstance(item.object, AssetRef))
+    references.extend(profile_citations(answer.profile))
     event = LineageEvent(
         event_id=event_id,
         idempotency_key=f"ask:{answer.id}",

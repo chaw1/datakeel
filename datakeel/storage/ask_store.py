@@ -57,6 +57,14 @@ def _check_request(request: AskRequest, answer: AskAnswer) -> None:
         msg = "Stored answer must match the explicitly selected metric"
         raise ValidationError(msg)
     _check_knowledge_request(request, answer)
+    if (
+        answer.profile is not None
+        and answer.profile.dataset is not None
+        and request.subject_id is not None
+        and answer.profile.dataset.dataset_id != request.subject_id
+    ):
+        msg = "Stored profile answer must match the explicitly selected dataset"
+        raise ValidationError(msg)
 
 
 def _check_knowledge_request(request: AskRequest, answer: AskAnswer) -> None:

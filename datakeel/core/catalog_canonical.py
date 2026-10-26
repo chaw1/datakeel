@@ -25,8 +25,12 @@ def object_content(item: CatalogObject) -> JsonDocument:
     properties = dict(item.properties.root)
     if item.asset_ref.asset_type == "column":
         properties = {key: properties.get(key) for key in ("data_type", "nullable", "comment")}
+        if "profile" in item.properties.root:
+            properties["profile"] = item.properties.root["profile"]
     elif item.asset_ref.asset_type == "table":
         properties = {key: properties.get(key) for key in ("columns", "primary_key", "comment")}
+        if "table_profile" in item.properties.root:
+            properties["table_profile"] = item.properties.root["table_profile"]
     value["properties"] = properties
     return JsonDocument(value)
 

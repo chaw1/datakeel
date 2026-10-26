@@ -7,6 +7,7 @@ import { Versions } from "../versions/Versions";
 import { ObjectEvidence } from "./ObjectEvidence";
 import { ObjectFileQuality } from "./ObjectFileQuality";
 import { ObjectHistory } from "./ObjectHistory";
+import { ObjectProfile } from "./ObjectProfile";
 import { ObjectRelations } from "./ObjectRelations";
 
 import type { ObjectTarget } from "./navigation";
@@ -63,6 +64,7 @@ export function ObjectSections({
         >
           <h2>{t("objSourceRecord")}</h2>
           <p>{data.metric?.definition.description ?? data.name}</p>
+          <ObjectProfile object={data.catalog ?? data.table?.table} />
           <details>
             <summary>{t("objProperties")}</summary>
             <pre>

@@ -17,6 +17,7 @@ from datakeel.core.knowledge_models import (
 )
 from datakeel.core.metric_models import CompiledQuery, MetricCard, QueryResult, TimeRange
 from datakeel.core.models import BoundaryModel, new_id, utcnow
+from datakeel.core.profile_models import ProfileAnswer
 
 ASK_DATA_DESCRIPTION = (
     "Read metric values, owners, upstream or downstream; document evidence includes review status."
@@ -100,14 +101,21 @@ class AskAnswer(BoundaryModel):
     lineage: LineageReference | None = None
     assertion_ids: tuple[str, ...] = ()
     assertions: tuple[Assertion, ...] = ()
-    answer_kind: Literal["metric", "knowledge"] = "metric"
+    answer_kind: Literal["metric", "knowledge", "profile"] = "metric"
     knowledge: KnowledgeAnswer | None = None
     subject_candidates: tuple[KnowledgeSubject, ...] = ()
     recognition: KnowledgeRecognition | None = None
+    profile: ProfileAnswer | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def evidence_matches_state(self) -> Self:
         """Forbid guessed values and ensure every text anchor addresses the saved question."""
+        if self.answer_kind == "profile":
+            self._validate_profile()
+            return self
+        if self.profile is not None:
+            msg = "Profile measurements require the profile answer kind"
+            raise ValueError(msg)
         if self.answer_kind == "knowledge":
             self._validate_knowledge()
             return self
@@ -124,6 +132,41 @@ class AskAnswer(BoundaryModel):
         else:
             self._validate_answer()
         return self
+
+    def _validate_profile(self) -> None:
+        if not unicodedata.is_normalized("NFC", self.question) or any(
+            self.question[item.start : item.end] != item.text for item in self.matches
+        ):
+            msg = "Profile match evidence must address the normalized question"
+            raise ValueError(msg)
+        if self.profile is None or any(
+            value is not None for value in (self.sql, self.result, self.metric_card, self.knowledge)
+        ):
+            msg = "Profile answers require only a typed profile payload"
+            raise ValueError(msg)
+        profile = self.profile
+        if self.status != "answered":
+            if profile.ranking or profile.reason_code is None:
+                msg = "Non-answer profile states cannot assert numeric rankings"
+                raise ValueError(msg)
+            if self.status == "clarification" and len(profile.candidates) <= 1:
+                msg = "Profile clarification requires multiple dataset candidates"
+                raise ValueError(msg)
+            return
+        if profile.dataset is None or not profile.ranking or profile.reason_code is not None:
+            msg = "Answered profile questions require a dataset and measured interval ranking"
+            raise ValueError(msg)
+        if len({rank.device for rank in profile.ranking}) != len(profile.ranking):
+            msg = "Profile rankings require distinct devices"
+            raise ValueError(msg)
+        if any(
+            (item.dataset_id, item.version_id)
+            != (profile.dataset.dataset_id, profile.dataset.version_id)
+            for rank in profile.ranking
+            for item in rank.evidence
+        ):
+            msg = "Profile evidence must match the selected published dataset version"
+            raise ValueError(msg)
 
     def _validate_knowledge(self) -> None:
         if not unicodedata.is_normalized("NFC", self.question):

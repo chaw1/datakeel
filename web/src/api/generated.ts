@@ -1841,7 +1841,7 @@ export interface components {
              * @default metric
              * @enum {string}
              */
-            answer_kind: "metric" | "knowledge";
+            answer_kind: "metric" | "knowledge" | "profile";
             /**
              * Assertion Ids
              * @default []
@@ -1869,6 +1869,7 @@ export interface components {
             /** Message */
             message: string;
             metric_card?: components["schemas"]["MetricCard"] | null;
+            profile?: components["schemas"]["ProfileAnswer"] | null;
             /** Question */
             question: string;
             recognition?: components["schemas"]["KnowledgeRecognition"] | null;
@@ -2534,6 +2535,20 @@ export interface components {
              * @enum {string}
              */
             status: "candidate" | "accepted" | "rejected";
+        };
+        /**
+         * DeviceGapRank
+         * @description Expose only aggregates reproduced exactly by the attached source intervals.
+         */
+        DeviceGapRank: {
+            /** Device */
+            device: string;
+            /** Evidence */
+            evidence: components["schemas"]["ProfileGapEvidence"][];
+            /** Interval Count */
+            interval_count: number;
+            /** Total Gap Ms */
+            total_gap_ms: number;
         };
         /**
          * DimensionView
@@ -4685,6 +4700,117 @@ export interface components {
             outputs: string[];
         };
         /**
+         * ProfileAnswer
+         * @description Keep sampling-axis measurements distinct from per-column missing-value claims.
+         */
+        ProfileAnswer: {
+            /**
+             * Candidates
+             * @default []
+             */
+            candidates: components["schemas"]["ProfileDataset"][];
+            dataset?: components["schemas"]["ProfileDataset"] | null;
+            /**
+             * Intent
+             * @default device_gaps
+             * @constant
+             */
+            intent: "device_gaps";
+            /**
+             * Ranking
+             * @default []
+             */
+            ranking: components["schemas"]["DeviceGapRank"][];
+            /** Reason Code */
+            reason_code?: ("no_profile" | "ambiguous_dataset" | "unknown_subject" | "unknown_column" | "incomplete_profile" | "no_recorded_gaps") | null;
+            /** Requested Column */
+            requested_column?: string | null;
+            /**
+             * Scope
+             * @default sampling_time_axis
+             * @constant
+             */
+            scope: "sampling_time_axis";
+            /**
+             * Sort By
+             * @default gap_count
+             * @enum {string}
+             */
+            sort_by: "gap_count" | "total_gap_ms";
+        };
+        /**
+         * ProfileColumnBrief
+         * @description Describe a column using aggregate profile evidence only.
+         */
+        ProfileColumnBrief: {
+            /** Inferred Type */
+            inferred_type: string;
+            /** Name */
+            name: string;
+            /** Null Rate */
+            null_rate: number;
+            /**
+             * Pii Kinds
+             * @default []
+             */
+            pii_kinds: string[];
+            /** Unique Rate */
+            unique_rate: number;
+        };
+        /**
+         * ProfileDataset
+         * @description Pin a dataset candidate to its current immutable published version.
+         */
+        ProfileDataset: {
+            /** Dataset Id */
+            dataset_id: string;
+            /** Dataset Name */
+            dataset_name: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * ProfileGapEvidence
+         * @description Bind one sampling-axis gap to a file version, bounding rows and UTC interval.
+         */
+        ProfileGapEvidence: {
+            /** Dataset Id */
+            dataset_id: string;
+            /** Device */
+            device: string;
+            /** End Ms */
+            end_ms: number;
+            /** Expected Interval Ms */
+            expected_interval_ms: number;
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Gap Ms */
+            gap_ms: number;
+            /**
+             * Row Coordinates
+             * @default original_source
+             * @constant
+             */
+            row_coordinates: "original_source";
+            /** Rows */
+            rows: [
+                number,
+                number
+            ];
+            /** Source File Id */
+            source_file_id: string;
+            /** Source Version Id */
+            source_version_id: string;
+            /** Start Ms */
+            start_ms: number;
+            /** Time Column */
+            time_column: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
          * PropertyFilter
          * @description Constrain one public property using an explicit bounded operator.
          */
@@ -4771,6 +4897,7 @@ export interface components {
             grade: string;
             /** Issues */
             issues: components["schemas"]["IssueView"][];
+            tabular?: components["schemas"]["TabularAssessment"] | null;
             /** Total */
             total: number;
         };
@@ -4949,6 +5076,101 @@ export interface components {
             ordinal: number;
             /** State */
             state: string;
+        };
+        /**
+         * TabularAssessment
+         * @description Carry all profiled file evidence between scoring and report assembly.
+         */
+        TabularAssessment: {
+            /**
+             * Files
+             * @default []
+             */
+            files: components["schemas"]["TabularFileAssessment"][];
+            /** Scores */
+            scores: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * TabularFileAssessment
+         * @description Expose deterministic per-file scores and report aggregates.
+         */
+        TabularFileAssessment: {
+            /**
+             * Anomaly Intervals
+             * @default 0
+             */
+            anomaly_intervals: number;
+            /**
+             * Columns
+             * @default []
+             */
+            columns: components["schemas"]["ProfileColumnBrief"][];
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Findings
+             * @default []
+             */
+            findings: components["schemas"]["TabularFinding"][];
+            /** Row Count */
+            row_count: number;
+            /** Scores */
+            scores: {
+                [key: string]: number;
+            };
+            /**
+             * Total Gap Ms
+             * @default 0
+             */
+            total_gap_ms: number;
+        };
+        /**
+         * TabularFinding
+         * @description Retain a precise recorded reason without retaining sensitive source cell values.
+         */
+        TabularFinding: {
+            /** Column */
+            column: string;
+            /** Detail */
+            detail: string;
+            /**
+             * Device
+             * @default
+             */
+            device: string;
+            /**
+             * Dimension
+             * @enum {string}
+             */
+            dimension: "completeness" | "consistency" | "uniqueness" | "distribution";
+            /** End Ms */
+            end_ms?: number | null;
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Recommendation */
+            recommendation: string;
+            /**
+             * Rows
+             * @default []
+             */
+            rows: number[];
+            /** Rule */
+            rule: string;
+            /** Start Ms */
+            start_ms?: number | null;
+            /** Threshold */
+            threshold?: number | null;
+            /**
+             * Window
+             * @default 1
+             */
+            window: number;
         };
         /**
          * TaskInput

@@ -8,10 +8,15 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
+# Sensor inspection composes typed operators; scoring consumes their frozen measurements.
+    datakeel.pipeline.tabular -> datakeel.operators.base
+    datakeel.pipeline.tabular -> datakeel.operators.timeseries.models
+    datakeel.quality.tabular -> datakeel.operators.table.models
+    datakeel.quality.tabular -> datakeel.operators.timeseries.models
 # Explicit memory services retain only typed projections across storage and tool boundaries.
     datakeel.memory.service -> datakeel.operators.text.pii_redact
     datakeel.memory.service -> datakeel.storage.memory_store
@@ -222,9 +227,14 @@ ignore_imports =
 # Semantic persistence publishes typed metric snapshots using pure projection helpers.
     datakeel.storage.metric_store -> datakeel.metrics.projection
 # Catalog import services publish typed snapshots through the transactional fact store.
+    datakeel.catalog.importers.tabular -> datakeel.operators.table.models
+    datakeel.catalog.importers.tabular -> datakeel.operators.table.profile
     datakeel.catalog.service -> datakeel.storage.catalog_store
     datakeel.catalog.service -> datakeel.storage.database
 # Questions compose registered semantics and read-only compilation, then persist typed answers.
+    datakeel.ask.service -> datakeel.storage.profile_queries
+    datakeel.storage.profile_queries -> datakeel.operators.table.models
+    datakeel.storage.profile_queries -> datakeel.operators.timeseries.models
     datakeel.ask.knowledge_service -> datakeel.storage.database
     datakeel.ask.knowledge_service -> datakeel.storage.link_queries
     datakeel.ask.service -> datakeel.metrics.compiler

@@ -58,7 +58,7 @@ def test_default_executes_all_operators_and_events(tmp_path: Path) -> None:
     ]
     events = []
     output = run_pipeline(files, tmp_path / "output", on_event=events.append)
-    assert len(events) == 11
+    assert len(events) == 12
     assert {event["operator"] for event in events} == {
         node.operator for node in default_pipeline().nodes if node.kind == "operator"
     }

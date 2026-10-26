@@ -7,6 +7,7 @@ import { AnswerProvenance } from "./AnswerProvenance";
 import { AskResolution } from "./AskResolution";
 import { KnowledgeAnswerView } from "./KnowledgeAnswerView";
 import { KnowledgeResolution } from "./KnowledgeResolution";
+import { ProfileAnswerView } from "./ProfileAnswerView";
 
 import type {
   AskAnswer,
@@ -27,6 +28,11 @@ const knowledgeStatusLabels = {
   unanswerable: "knowledgeUnanswerable",
   clarification: "knowledgeClarification",
 } as const;
+const profileStatusLabels = {
+  answered: "askProfileAnswered",
+  unanswerable: "askProfileUnavailable",
+  clarification: "askProfileChoose",
+} as const;
 
 function displayValue(
   value: AskResult["rows"][number][number],
@@ -46,18 +52,26 @@ export function AskAnswerView({
   onChooseMetric,
   onChooseSubject,
   onChooseIntent,
+  onChooseProfileDataset,
 }: {
   answer: AskAnswer;
   onOpenReceipt: (target: LineageTarget) => void;
   onChooseMetric?: (id: string) => void;
   onChooseSubject?: (subject: KnowledgeSubject) => void;
   onChooseIntent?: (intent: SelectedKnowledgeIntent) => void;
+  onChooseProfileDataset?: (id: string) => void;
 }) {
   const { t, locale } = useI18n();
   const result = answer.result;
   const footnotes = answerFootnotes(answer, t);
   const scalar = result?.rows.length === 1 && result.columns.length === 1;
   const knowledgeAnswer = answer.answer_kind === "knowledge";
+  const profileAnswer = answer.answer_kind === "profile";
+  const labels = profileAnswer
+    ? profileStatusLabels
+    : knowledgeAnswer
+      ? knowledgeStatusLabels
+      : statusLabels;
   const intentClarification =
     knowledgeAnswer &&
     answer.status === "clarification" &&
@@ -71,9 +85,7 @@ export function AskAnswerView({
           {t(
             intentClarification
               ? "knowledgeIntentClarification"
-              : (knowledgeAnswer ? knowledgeStatusLabels : statusLabels)[
-                  answer.status
-                ],
+              : labels[answer.status],
           )}
         </span>
         <span className="ask-muted">
@@ -85,7 +97,12 @@ export function AskAnswerView({
           </time>
         </span>
       </header>
-      {knowledgeAnswer ? (
+      {profileAnswer ? (
+        <ProfileAnswerView
+          answer={answer}
+          onChooseDataset={onChooseProfileDataset}
+        />
+      ) : knowledgeAnswer ? (
         answer.status === "answered" && answer.knowledge ? (
           <KnowledgeAnswerView knowledge={answer.knowledge} />
         ) : (
