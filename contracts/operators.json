@@ -465,16 +465,32 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Expose the selected implementation version as a reproducible DAG parameter.",
+      "description": "Allow an explicit matching mode while retaining the versioned contract default.",
       "properties": {
         "extractor_version": {
           "default": "1.0",
           "minLength": 1,
           "title": "Extractor Version",
           "type": "string"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "prefix",
+                "exact"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
         }
       },
-      "title": "EvidenceParams",
+      "title": "NearDuplicateParams",
       "type": "object"
     },
     "queue": "cpu"

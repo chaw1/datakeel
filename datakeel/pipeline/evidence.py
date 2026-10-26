@@ -3,6 +3,8 @@
 
 """Build the explicit five-node deterministic evidence extraction preset."""
 
+from typing import Literal
+
 from datakeel.operators.evidence import (
     annotation_labels,
     caption_mentions,
@@ -13,7 +15,7 @@ from datakeel.operators.evidence import (
 from datakeel.pipeline.models import Node, Pipeline
 
 
-def evidence_pipeline() -> Pipeline:
+def evidence_pipeline(mode: Literal["prefix", "exact"] | None = None) -> Pipeline:
     """Resolve each extractor version independently without changing upstream content."""
     nodes = [Node(id="evidence_images", kind="route", inputs={"files": "$input.files"})]
     source = "evidence_images.image"
@@ -24,7 +26,10 @@ def evidence_pipeline() -> Pipeline:
                 id=identifier,
                 operator=module.OPERATOR.manifest.id,
                 inputs={"files": source},
-                params={"extractor_version": module.VERSION},
+                params={
+                    "extractor_version": module.VERSION,
+                    **({"mode": mode} if module is near_duplicate and mode is not None else {}),
+                },
             )
         )
         source = f"{identifier}.files"

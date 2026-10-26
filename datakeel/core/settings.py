@@ -6,6 +6,7 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,6 +18,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DATAKEEL_", extra="forbid", frozen=True)
 
     home: Path = Path(".datakeel")
+    accel: Literal["auto", "off", "required"] = "auto"
     database_url: str | None = None
     test_database_url: str | None = None
     s3_bucket: str | None = None

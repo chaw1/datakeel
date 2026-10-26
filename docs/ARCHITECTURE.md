@@ -15,7 +15,7 @@ Agent 全程用对话操作，但只能走受控动作；harness 让 Agent 可�
 | 决策 | 选择 | 理由 |
 |---|---|---|
 | 形态 | 模块化单体，进程只有两个：`api` 和 `worker` | api 无状态加副本=高可用；worker 用 DB 行锁领任务加副本=并发；一期不引 MQ/Temporal，接口留好 |
-| 语言 | Python 3.12 为主；Go 只在将来高并发入口（直传网关、MCP 网关）考虑 | 数据面与控制面共享 Python 生态和 pydantic 模型 |
+| 语言 | Python 3.12 为主；可选独立 Rust 扩展只加速 64 位近重复哈希比较；Go 只在将来高并发入口（直传网关、MCP 网关）考虑 | 数据面与控制面共享 Python 生态和 pydantic 模型 |
 | 事实源 | PostgreSQL 唯一事实源；开发/demo 用 SQLite | 血缘事件、审计、任务、元数据全在一处；图/搜索/向量都是可重建的派生索引 |
 | 对象存储 | S3 协议；本地用 MinIO 或本地目录后端 | 一期不接 LakeFS（BSL、重）；版本用 manifest 快照 |
 | 队列 | PostgreSQL `FOR UPDATE SKIP LOCKED` 分片领取 + reaper 兜底 | 用数据库行锁与租约恢复保证领取一致性；量上来再换 NATS/Temporal |
