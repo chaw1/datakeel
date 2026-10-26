@@ -77,4 +77,44 @@ AUTO_ROUTING_MUTATIONS = (
         "test_auto_runtime_ocr_failure_does_not_abort_remaining_images",
         runner="pytest",
     ),
+    Mutation(
+        name="auto-neighbour-grey-comparison-disabled",
+        path="transcription/auto_rows.py",
+        before="if _row_pair(np.asarray([first, second]), pixels, config):",
+        after="if False:",
+        case="tests/transcription/test_auto_rows.py::"
+        "test_aligned_adjacent_grey_background_is_row_state[170]",
+        runner="pytest",
+    ),
+    Mutation(
+        name="auto-whole-page-grey-misread-as-row-state",
+        path="transcription/auto_rows.py",
+        before="    rows = boxes[np.argsort(boxes[:, 1])]",
+        after=(
+            "    if np.median(pixels) <= config.grey_max_brightness:\n"
+            "        return True\n"
+            "    rows = boxes[np.argsort(boxes[:, 1])]"
+        ),
+        case="tests/transcription/test_auto_photographs.py::"
+        "test_grey_noisy_scan_with_dark_surround_stays_local[190-8-37]",
+        runner="pytest",
+    ),
+    Mutation(
+        name="auto-photo-density-counts-exterior-area",
+        path="transcription/auto.py",
+        before="and area / max(1, document_area) < config.min_text_area_ratio",
+        after="and area / pixels.size < config.min_text_area_ratio",
+        case="tests/transcription/test_auto_photographs.py::"
+        "test_short_card_on_large_background_is_not_sparse[stripes]",
+        runner="pytest",
+    ),
+    Mutation(
+        name="auto-cancellation-overrun-misread-as-texture",
+        path="core/transcription_auto.py",
+        before="strike_max_extension_ratio: float = Field(default=1.0,",
+        after="strike_max_extension_ratio: float = Field(default=0.2,",
+        case="tests/transcription/test_auto_rows.py::"
+        "test_true_cancellation_can_extend_slightly_beyond_text_box[1-4]",
+        runner="pytest",
+    ),
 )
