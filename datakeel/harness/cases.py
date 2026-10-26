@@ -19,6 +19,7 @@ from datakeel.harness.image_kg_cases import seed_image_kg_case
 from datakeel.harness.injection_cases import seed_injection_case
 from datakeel.harness.kg_cases import seed_kg_case
 from datakeel.harness.resources import contract_path
+from datakeel.harness.standard_cases import seed_standard_case
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths, list_files
 
@@ -42,7 +43,14 @@ def seed_case(
     db: Database,
     directory: Path,
     kind: Literal[
-        "legacy", "evidence", "enterprise", "injection", "kg", "enterprise_kg", "image_kg"
+        "legacy",
+        "evidence",
+        "enterprise",
+        "injection",
+        "kg",
+        "enterprise_kg",
+        "image_kg",
+        "standards",
     ] = "legacy",
     *,
     reviewed: bool = False,
@@ -53,8 +61,12 @@ def seed_case(
         if reviewed:
             review_enterprise_kg(db, fixture)
         return fixture
-    if kind in {"kg", "image_kg"}:
-        return {"kg": seed_kg_case, "image_kg": seed_image_kg_case}[kind](db, directory)
+    if kind in {"kg", "image_kg", "standards"}:
+        return {
+            "kg": seed_kg_case,
+            "image_kg": seed_image_kg_case,
+            "standards": seed_standard_case,
+        }[kind](db, directory)
     if kind == "enterprise":
         return seed_enterprise_case(db, directory)
     if kind == "injection":

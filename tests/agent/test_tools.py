@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 def test_catalog_when_constructed_has_only_read_tools_and_deferred_actions() -> None:
     """Never expose approve_plan or execute_plan through either discovery list."""
     assert len(resident_tools()) == 10
-    assert len(deferred_tools()) == 23
+    assert len(deferred_tools()) == 30
     assert not {"approve_plan", "execute_plan"}.intersection(
         tool.name for tool in resident_tools() + deferred_tools()
     )
@@ -108,6 +108,8 @@ def test_catalog_when_all_new_reads_discovered_never_loads_execution_authority(
         "impact_of",
         "query_kg",
         "explain_relation",
+        "query_standard_coverage",
+        "list_standard_usage",
     ):
         assert catalog.invoke(db, ToolCall(name=name), ToolCallContext()).status == "FAILED"
         search = catalog.invoke(

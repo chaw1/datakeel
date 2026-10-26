@@ -8,10 +8,29 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_standards | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
+# Standards keep pure rules separate from typed source reads and controlled transactions.
+    datakeel.standards.checks -> datakeel.operators.text.pii_redact
+    datakeel.storage.standard_changes -> datakeel.actions.models
+    datakeel.storage.standard_changes -> datakeel.actions.standard_parameters
+    datakeel.storage.standard_changes -> datakeel.actions.references
+    datakeel.storage.catalog_action_state -> datakeel.actions.standard_parameters
+    datakeel.storage.catalog_action_state -> datakeel.storage.standard_changes
+    datakeel.storage.action_snapshot -> datakeel.actions.standard_parameters
+    datakeel.storage.action_operations -> datakeel.actions.standard_parameters
+    datakeel.storage.standard_observations -> datakeel.metrics.sql_safety
+    datakeel.storage.standard_observations -> datakeel.standards.names
+    datakeel.storage.standard_queries -> datakeel.standards.checks
+    datakeel.storage.standard_queries -> datakeel.standards.coverage
+    datakeel.storage.standard_queries -> datakeel.standards.mapping
+    datakeel.ontology.standard_functions -> datakeel.storage.database
+    datakeel.ontology.standard_functions -> datakeel.storage.standard_queries
+    datakeel.ontology.standard_functions -> datakeel.storage.standard_store
+# The standards demo derives only generated customer rows from the enterprise sample.
+    datakeel.sample_standards -> datakeel.sample_enterprise.crm
 # Explicit memory services retain only typed projections across storage and tool boundaries.
     datakeel.memory.service -> datakeel.operators.text.pii_redact
     datakeel.memory.service -> datakeel.storage.memory_store
