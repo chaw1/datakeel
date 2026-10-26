@@ -88,6 +88,11 @@ def test_image_openapi_documents_png_and_expected_failures(db: Database) -> None
         responses = schema["paths"]["/api/kg/images/{file_id}"]["get"]["responses"]
         assert set(responses["200"]["content"]) == {"image/png"}
         assert {"404", "422"} <= responses.keys()
+        assert responses["422"]["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/HTTPValidationError"
+        }
+        assert responses["422"]["description"] == "Invalid image request or image revision"
+        assert "HTTPValidationError" in schema["components"]["schemas"]
         assert client.get("/api/kg/images/missing").status_code == 422
         assert (
             client.get("/api/kg/images/missing?version_id=v&extraction_id=missing").status_code

@@ -1,0 +1,8 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+# This generated replay never reads credentials or contacts a model service.
+id: replay-image-auto
+backend: replay
+mode: auto
+model: scripted-auto-fixture
+recording: recordings/auto-transcription.yaml

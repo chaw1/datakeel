@@ -59,7 +59,9 @@ def schedule_extraction(
         created_at=utcnow(),
         task_id=task.id,
         report=KGReport(
-            documents=len(params.prepared.documents), blocks=params.prepared.estimate.blocks
+            documents=len(params.prepared.documents),
+            blocks=params.prepared.estimate.blocks,
+            transcription_cost_upper_usd=params.prepared.transcription_cost_upper_usd,
         ),
     )
     job = KGJob(

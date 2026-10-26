@@ -1,0 +1,20 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+# Worst-case external transfers require approval before local OCR runs.
+id: bailian-qwen35-flash-auto
+backend: vlm
+mode: auto
+model: qwen3.5-flash
+interface: openai
+base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+api_key_env: DATAKEEL_VISION_API_KEY
+max_output_tokens: 4096
+timeout_seconds: 120
+request_parameters:
+  enable_thinking: false
+prompt_version: image-transcription-v2
+auto_routing:
+  version: auto-v1
+  min_mean_confidence: 0.85
+# All omitted routing thresholds use the frozen AutoRoutingConfig defaults.
+# Add a verified qwen3.5-flash tariff to contracts/model-prices.yaml for known costs.

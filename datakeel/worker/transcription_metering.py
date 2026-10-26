@@ -20,6 +20,7 @@ from datakeel.core.transcription_models import ImageInput, TranscriptionMode, Tr
 from datakeel.storage.budget_service import reserve
 from datakeel.storage.database import Database
 from datakeel.storage.harness_service import list_traces, settle
+from datakeel.transcription.auto_adapter import AutoTranscriber
 from datakeel.transcription.factory import prepare_transcriber
 from datakeel.transcription.prompt import input_token_bound
 from datakeel.transcription.quality import TranscriberAdapter
@@ -87,7 +88,10 @@ class MeteredTranscriber:
         if profile is None or price is None:
             msg = "Transcription metering requires prepared inputs"
             raise ValueError(msg)
-        if profile.backend != "vlm" or (mode or profile.mode) == "ocr":
+        selected = mode or profile.mode
+        if selected == "auto" and isinstance(self.adapter, AutoTranscriber):
+            selected = self.adapter.resolve(image).route
+        if profile.backend != "vlm" or selected == "ocr":
             return self.adapter.transcribe(image, mode)
         if self.exceeded:
             msg = "Transcription budget exceeded after observed provider usage"
@@ -101,7 +105,7 @@ class MeteredTranscriber:
             BudgetRequest(
                 conversation_id=self.job.run.id,
                 model=profile.model,
-                input_tokens=input_token_bound(image.width, image.height),
+                input_tokens=input_token_bound(image.width, image.height, profile.prompt_version),
                 max_output_tokens=profile.max_output_tokens,
                 limits=BudgetLimits(
                     conversation_tokens=self.job.budget_tokens,

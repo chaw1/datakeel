@@ -36,7 +36,7 @@ def test_transport_when_success_sends_clean_pixels_and_retains_usage(
     """Each interface uses its actual context and finish fields with exactly one request."""
     profile = get_profile(
         "ollama-vision-local" if interface == "ollama" else "bailian-qwen35-flash"
-    )
+    ).model_copy(update={"prompt_version": "image-transcription-v1"})
     observed: list[httpx.Request] = []
 
     def respond(request: httpx.Request) -> httpx.Response:

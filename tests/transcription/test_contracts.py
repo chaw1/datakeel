@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     [
         {"api_key": "synthetic-secret"},
         {"backend": "unknown"},
-        {"mode": "auto"},
+        {"mode": "unknown"},
         {"cloud_locator": True},
         {"prompt_version": "image-transcription-unknown"},
         {"api_key_env": "not a variable name"},
@@ -71,6 +71,8 @@ def test_profiles_when_bundled_load_all_offline() -> None:
     assert len(digest) == 64
     assert recording is not None
     assert len(recording.records) == 60
+    assert get_profile("bailian-qwen35-flash").prompt_version == "image-transcription-v2"
+    assert get_profile("ollama-vision-local").prompt_version == "image-transcription-v2"
 
 
 def test_loader_when_missing_or_invalid_reports_safe_errors(tmp_path: Path) -> None:

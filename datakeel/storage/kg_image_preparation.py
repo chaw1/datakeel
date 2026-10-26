@@ -11,7 +11,7 @@ from datakeel.core.context_tokens import estimate_tokens
 from datakeel.core.errors import ValidationError
 from datakeel.core.harness_pricing import nanos_to_usd, reservation_cost
 from datakeel.core.kg_execution import KGDocument, KGPrepared
-from datakeel.core.kg_images import KGImageSource, TranscriptionEstimate
+from datakeel.core.kg_images import ImageTransfer, KGImageSource, TranscriptionEstimate
 from datakeel.core.kg_models import TextBlock
 from datakeel.core.models import AssetRef, FileItem
 from datakeel.core.transcription_errors import TranscriptionUnavailableError
@@ -77,13 +77,16 @@ def prepare_images(
 ) -> KGPrepared:
     """Add both outbound fingerprints and a conservative extraction-input upper bound."""
     images = tuple(document.image for document in documents if document.image is not None)
-    remote_images = tuple(image for image in images if image.mode == "vlm")
+    remote_images = tuple(image for image in images if image.mode in {"vlm", "auto"})
     config = transcription_metering(profile, "prepare")
     image_tokens = sum(ceil(image.width * image.height / 1024 + 2) for image in images)
     transcription_cost = nanos_to_usd(
         reservation_cost(
             config.price,
-            sum(input_token_bound(image.width, image.height) for image in remote_images),
+            sum(
+                input_token_bound(image.width, image.height, profile.prompt_version)
+                for image in remote_images
+            ),
             len(remote_images) * profile.max_output_tokens,
         )
     )
@@ -96,12 +99,11 @@ def prepare_images(
             (estimate.blocks + blocks) * prepared.profile.max_output_tokens,
         )
     )
-    recording_hash, _ = read_recording(profile)
     return prepared.model_copy(
         update={
             "transcription_profile": profile,
             "image_prompt_version": IMAGE_PROMPT_VERSION,
-            "transcription_recording_hash": recording_hash,
+            "transcription_recording_hash": read_recording(profile)[0],
             "transcription_accounting_price": config.price,
             "transcription_accounting_version": config.price_version,
             "external": prepared.external
@@ -125,8 +127,27 @@ def prepare_images(
                 else None,
                 price=config.price if config.known_price else None,
                 price_version=config.price_version if config.known_price else None,
+                auto_images=sum(image.mode == "auto" for image in images),
+                possible_external_images=_transfers(documents, profile),
             ),
         }
+    )
+
+
+def _transfers(
+    documents: tuple[KGDocument, ...], profile: TranscriptionProfile
+) -> tuple[ImageTransfer, ...]:
+    if not transcription_external(profile):
+        return ()
+    return tuple(
+        ImageTransfer(
+            file_id=document.image.asset_ref.asset_id,
+            filename=document.filename,
+            image_hash=document.image.content_revision,
+            mode=document.image.mode,
+        )
+        for document in documents
+        if document.image is not None and document.image.mode in {"vlm", "auto"}
     )
 
 

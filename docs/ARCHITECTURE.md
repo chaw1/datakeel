@@ -168,6 +168,10 @@ An `evidence.kg` COMPLETE lineage event records source assets, the schema and ex
 
 图片复用 `run_kg_extraction`：准备只冻结原始内容哈希、校正尺寸、两阶段配置与录制哈希，任何非回环端点都使整个动作需要签批。授权后的 worker 先转写再走既有文本抽取；两阶段共享持久预算，视觉调用独立标记 `transcription`。成功转写进入新表，失败保持逐图报告与部分完成。
 
-Transcripts are deterministic `image_transcript` assets with content-hash versions. Text spans reference the transcript; image regions reference original image content in EXIF-corrected pixel coordinates. Image responses and external requests strip metadata. OCR matching supplies all rectangles. Missing locations and explicitly marked handwritten person types add structured review issues without promoting candidates to accepted facts.
+Transcripts are deterministic `image_transcript` assets with content-hash versions. Text spans reference the transcript; image regions reference original image content in EXIF-corrected pixel coordinates. Image responses and external requests strip metadata. OCR matching and validated v2 visual transcription lines supply rectangles; malformed visual coordinates retain text without inventing positions. Missing locations and explicitly marked handwritten person types add structured review issues without promoting candidates to accepted facts.
 
 来源展示读取冻结运行快照；人审将派生资产解析回同数据集版本的原始 manifest，避免同内容图片跨版本错指。替换来源时同步作废旧转写稿断言并保留审计与人工结论。证据重建复用持久化的 knowledge bundle，不构造转写或抽取客户端。图片评测分别报告录制评分与实际写入后读回的候选断言评分；外部用例与内置录制采用同一质量和对齐规则。
+
+Auto transcription is local OCR followed by a versioned pure routing policy. The profile owns every threshold; the signed plan and auto cache identity bind the complete configuration. Preparation invokes no transcription or routing backend and lists every potentially outbound image at worst-case cost. The worker validates each selected file ID and image hash against that envelope before a visual request, with per-image failures and independent OCR reference text excluded from extraction. Explicit batch/per-image modes override the profile default.
+
+auto 先本地 OCR，再按纯函数规则决定是否转交视觉模型；版本和全部阈值冻结在配置、签批和缓存中。逐图签批清单按最坏情况准备，执行前再次核对身份与哈希。实际路线、原因、外发数及两阶段费用单独报告，失败保持逐图隔离。

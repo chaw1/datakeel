@@ -9,6 +9,7 @@ from typing import Literal
 
 from pydantic import Field, JsonValue
 
+from datakeel.core.kg_image_auto_eval import ImageAutoMetrics
 from datakeel.core.models import BoundaryModel, new_id, utcnow
 
 
@@ -193,6 +194,7 @@ class KGEvalReport(BoundaryModel):
     transcription_profile: str | None = None
     image_recording: ImageScoringView | None = None
     image_product: ImageScoringView | None = None
+    image_auto: ImageAutoMetrics | None = None
     id: str = Field(default_factory=new_id)
     provider: Literal["kg"] = "kg"
     created_at: datetime = Field(default_factory=utcnow)

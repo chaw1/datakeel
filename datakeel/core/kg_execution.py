@@ -109,6 +109,12 @@ class KGPrepared(BoundaryModel):
     handwriting: bool = False
     image_prompt_version: Literal["image-kg-v1"] | None = None
 
+    @property
+    def transcription_cost_upper_usd(self) -> Decimal | None:
+        """Expose the original approved transcription envelope in every run state."""
+        estimate = self.transcription_estimate
+        return estimate.cost_upper_usd if estimate is not None else None
+
     def extraction_profile(self, *, image: bool) -> ExtractionProfile:
         """Select the consent-bound image prompt while preserving legacy text semantics."""
         version = (
@@ -151,6 +157,7 @@ class KGReport(BoundaryModel):
     output_tokens: int = 0
     cost_usd: Decimal | None = None
     transcription_cost_usd: Decimal | None = None
+    transcription_cost_upper_usd: Decimal | None = None
     extraction_cost_usd: Decimal | None = None
     accounted_cost_usd: Decimal = Decimal(0)
     elapsed_seconds: float = 0
@@ -160,6 +167,7 @@ class KGReport(BoundaryModel):
     proposals: tuple[SchemaProposal, ...] = ()
     transcriptions: tuple[TranscriptionObservation, ...] = ()
     transcription_failed: int = 0
+    transcription_external_images: int = 0
     located_relations: int = 0
     unlocated_relations: int = 0
     cloud_calls: int = 0

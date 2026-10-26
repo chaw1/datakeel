@@ -371,3 +371,16 @@
   flex-wrap: wrap;
   gap: calc(var(--space) * 6);
 }
+
+.kg-transcription-modes {
+  margin-block: calc(var(--space) * 4);
+}
+.kg-transcription-modes label {
+  display: grid;
+  gap: var(--space);
+  margin-block: calc(var(--space) * 2);
+}
+.kg-transcriptions pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

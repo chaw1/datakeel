@@ -89,7 +89,9 @@ def read_documents(
     result: list[KGDocument] = []
     for file in materialize_files(selected):
         if Path(file.filename).suffix.lower() in IMAGE_SUFFIXES and transcription:
-            mode = params.mode_overrides.get(file.id, transcription.mode)
+            mode = params.mode_overrides.get(
+                file.id, params.transcription_mode or transcription.mode
+            )
             result.append(
                 image_document(
                     file,

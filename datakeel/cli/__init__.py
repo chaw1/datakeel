@@ -157,6 +157,7 @@ def _evaluation_command(db: Database, args: argparse.Namespace) -> None:
             ImageEvaluationRequest(
                 profile="replay-image-flash" if args.profile == "replay-demo" else args.profile,
                 transcription_profile=args.transcription_profile,
+                transcription_mode=args.transcription_mode,
                 schema_id=args.schema,
                 cases=args.cases,
             ),

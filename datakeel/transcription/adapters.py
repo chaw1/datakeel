@@ -13,6 +13,7 @@ from datakeel.core.transcription_models import (
     TranscriptionRecording,
     TranscriptionResult,
 )
+from datakeel.transcription.coordinates import decode_coordinates
 
 
 class ReplayTranscriber:
@@ -44,8 +45,13 @@ class ReplayTranscriber:
         data = record.model_dump(exclude={"image_hash"})
         data.update(model=record.model or self.recording.model, mode=mode or self.mode)
         if (mode or self.mode) == "ocr" and record.backend == "vlm":
+            visual_geometry = self.recording.prompt_version == "image-transcription-v2"
+            reference = record.ocr_reference
             data.update(
-                text="\n".join(line.text for line in record.lines),
+                text=(reference.text if reference else "")
+                if visual_geometry
+                else "\n".join(line.text for line in record.lines),
+                lines=() if visual_geometry else record.lines,
                 backend="ocr",
                 model=self.ocr_model,
                 finish_reason="stop",
@@ -57,6 +63,14 @@ class ReplayTranscriber:
         if (mode or self.mode) == "vlm" and record.backend == "ocr":
             message = "This recording has no visual-model transcription for vlm mode"
             raise TranscriptionUnavailableError(message, reason="mode_mismatch")
+        if (
+            (mode or self.mode) == "vlm"
+            and self.recording.prompt_version == "image-transcription-v2"
+            and not record.lines
+            and record.text.lstrip().startswith("{")
+        ):
+            located = decode_coordinates(record.text, image.width, image.height)
+            data.update(text=located.text, lines=located.lines)
         return TranscriptionResult.model_validate(data)
 
 

@@ -10,8 +10,9 @@ from pydantic import Field, JsonValue, field_validator, model_validator
 
 from datakeel.core.evidence_models import ContentRevision, ImageRegion
 from datakeel.core.models import BoundaryModel
+from datakeel.core.transcription_auto import AutoRouteDecision, AutoRoutingConfig, OCRReference
 
-TranscriptionMode = Literal["ocr", "vlm"]
+TranscriptionMode = Literal["ocr", "vlm", "auto"]
 TranscriptionBackend = Literal["ocr", "vlm", "replay", "fake"]
 TranscriptionIssue = Literal[
     "empty",
@@ -25,6 +26,7 @@ TranscriptionIssue = Literal[
     "api_key_missing",
     "mode_mismatch",
     "image_decode_error",
+    "outbound_not_approved",
 ]
 
 
@@ -38,7 +40,10 @@ class TranscriptionProfile(BoundaryModel):
     interface: Literal["openai", "ollama"] = "openai"
     base_url: str | None = None
     api_key_env: str | None = Field(default=None, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
-    prompt_version: Literal["image-transcription-v1"] = "image-transcription-v1"
+    prompt_version: Literal["image-transcription-v1", "image-transcription-v2"] = (
+        "image-transcription-v1"
+    )
+    auto_routing: AutoRoutingConfig = Field(default_factory=AutoRoutingConfig)
     max_output_tokens: int = Field(default=4096, gt=0)
     timeout_seconds: float = Field(default=120, gt=0, allow_inf_nan=False)
     request_parameters: dict[str, JsonValue] = Field(default_factory=dict)
@@ -129,6 +134,8 @@ class TranscriptionResult(BoundaryModel):
     output_tokens: int | None = Field(default=None, ge=0)
     error: str | None = None
     quality_issues: tuple[TranscriptionIssue, ...] = ()
+    auto_decision: AutoRouteDecision | None = None
+    ocr_reference: OCRReference | None = None
 
     @model_validator(mode="after")
     def validate_boxes(self) -> Self:

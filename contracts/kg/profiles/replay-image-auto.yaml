@@ -1,0 +1,10 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+id: replay-image-auto
+extractor: replay
+provider: replay
+model: scripted-auto-fixture
+prompt_version: image-kg-v1
+chunk_size: 12000
+chunk_overlap: 0
+recording: recordings/auto-extraction.yaml

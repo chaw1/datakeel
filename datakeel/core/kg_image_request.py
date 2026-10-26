@@ -6,6 +6,7 @@
 from pathlib import Path
 
 from datakeel.core.models import BoundaryModel
+from datakeel.core.transcription_models import TranscriptionMode
 
 
 class ImageEvaluationRequest(BoundaryModel):
@@ -13,5 +14,6 @@ class ImageEvaluationRequest(BoundaryModel):
 
     profile: str = "replay-image-flash"
     transcription_profile: str = "replay-image-demo"
+    transcription_mode: TranscriptionMode | None = None
     schema_id: str = "business-knowledge"
     cases: Path | None = None

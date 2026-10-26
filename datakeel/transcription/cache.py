@@ -16,6 +16,8 @@ def profile_digest(
 ) -> str:
     """Bind model, OCR version, prompt, options, mode and exact replay bytes."""
     data = profile.model_dump(mode="json", exclude={"id", "recording", "api_key_env"})
+    if (mode or profile.mode) != "auto":
+        data.pop("auto_routing", None)
     data["model"] = profile.model
     data["mode"] = mode or profile.mode
     data["recording_hash"] = recording_hash

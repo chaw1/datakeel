@@ -11,7 +11,9 @@ from typing import TYPE_CHECKING
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
 
-from datakeel.transcription.prompt import TRANSCRIBE_PROMPT
+from datakeel.core.transcription_auto import OCRReference
+from datakeel.transcription.coordinates import decode_coordinates
+from datakeel.transcription.prompt import transcription_prompt
 
 if TYPE_CHECKING:
     from datakeel.core.transcription_models import (
@@ -52,11 +54,12 @@ class _Response(_WireModel):
 
 def _body(profile: TranscriptionProfile, image: ImageInput) -> dict[str, JsonValue]:
     encoded = base64.b64encode(image.png).decode("ascii")
+    prompt = transcription_prompt(profile.prompt_version, image.width, image.height)
     if profile.interface == "ollama":
         body: dict[str, JsonValue] = {
             "model": profile.model,
             "stream": False,
-            "messages": [{"role": "user", "content": TRANSCRIBE_PROMPT, "images": [encoded]}],
+            "messages": [{"role": "user", "content": prompt, "images": [encoded]}],
             "options": {
                 "temperature": 0,
                 "num_predict": profile.max_output_tokens,
@@ -65,6 +68,8 @@ def _body(profile: TranscriptionProfile, image: ImageInput) -> dict[str, JsonVal
         }
         if "enable_thinking" in profile.request_parameters:
             body["think"] = profile.request_parameters["enable_thinking"]
+        if profile.prompt_version == "image-transcription-v2":
+            body["format"] = "json"
         return body
     return {
         "model": profile.model,
@@ -74,11 +79,16 @@ def _body(profile: TranscriptionProfile, image: ImageInput) -> dict[str, JsonVal
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": TRANSCRIBE_PROMPT},
+                    {"type": "text", "text": prompt},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}},
                 ],
             }
         ],
+        **(
+            {"response_format": {"type": "json_object"}}
+            if profile.prompt_version == "image-transcription-v2"
+            else {}
+        ),
         **profile.request_parameters,
     }
 
@@ -115,9 +125,15 @@ def _response(
             return ocr.model_copy(update={"text": "", "error": "invalid_response"})
         text, finish = parsed.choices[0].message.content, parsed.choices[0].finish_reason
         input_tokens, output_tokens = parsed.usage.prompt_tokens, parsed.usage.completion_tokens
+    located = (
+        decode_coordinates(text, ocr.width, ocr.height)
+        if profile.prompt_version == "image-transcription-v2"
+        else None
+    )
     return ocr.model_copy(
         update={
-            "text": text,
+            "text": located.text if located else text,
+            "lines": located.lines if located else ocr.lines,
             "finish_reason": finish or "stop",
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
@@ -140,6 +156,11 @@ def request_transcription(
             "mode": "vlm",
             "input_tokens": None,
             "output_tokens": None,
+            "error": None,
+            "quality_issues": (),
+            "ocr_reference": OCRReference(text=ocr.text, error=ocr.error)
+            if profile.prompt_version == "image-transcription-v2"
+            else ocr.ocr_reference,
         }
     )
     headers = {"accept": "application/json"}

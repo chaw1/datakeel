@@ -11,7 +11,8 @@ from pydantic import Field
 from datakeel.core.evidence_models import ContentRevision
 from datakeel.core.harness_pricing import ModelPrice
 from datakeel.core.models import AssetRef, BoundaryModel
-from datakeel.core.transcription_models import ImageInput, OCRLine
+from datakeel.core.transcription_auto import AutoReason, OCRReference
+from datakeel.core.transcription_models import ImageInput, OCRLine, TranscriptionMode
 
 
 class KGImageSource(BoundaryModel):
@@ -22,7 +23,7 @@ class KGImageSource(BoundaryModel):
     width: int = Field(ge=0)
     height: int = Field(ge=0)
     decode_error: Literal["image_decode_error"] | None = None
-    mode: Literal["ocr", "vlm"]
+    mode: TranscriptionMode
     profile_id: str = ""
     profile_digest: str = ""
     backend: str = ""
@@ -44,7 +45,16 @@ class KGTranscriptionSource(BoundaryModel):
     backend: str
     model: str
     profile_id: str
-    mode: Literal["ocr", "vlm"]
+    mode: TranscriptionMode
+
+
+class ImageTransfer(BoundaryModel):
+    """Bind every potentially outbound image to the consent envelope."""
+
+    file_id: str
+    filename: str
+    image_hash: ContentRevision
+    mode: TranscriptionMode
 
 
 class TranscriptionEstimate(BoundaryModel):
@@ -58,6 +68,8 @@ class TranscriptionEstimate(BoundaryModel):
     cost_upper_usd: Decimal | None = None
     price: ModelPrice | None = None
     price_version: str | None = None
+    possible_external_images: tuple[ImageTransfer, ...] = ()
+    auto_images: int = Field(default=0, ge=0)
 
 
 class TranscriptionObservation(BoundaryModel):
@@ -66,8 +78,11 @@ class TranscriptionObservation(BoundaryModel):
     file_id: str
     filename: str
     backend: str
-    mode: Literal["ocr", "vlm"]
+    mode: TranscriptionMode
     model: str
     cached: bool = False
     status: Literal["completed", "failed", "unexecuted"] = "completed"
     error: str | None = None
+    reasons: tuple[AutoReason, ...] = ()
+    external: bool = False
+    ocr_reference: OCRReference | None = None

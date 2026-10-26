@@ -1,0 +1,183 @@
+id: generated-auto-routing
+version: '1.0'
+cases:
+- id: text-staff
+  lang: en
+  text: 'Current organisation and data register
+
+    Ari works for Cedar Labs.
+
+    This register lists current facts only.
+
+    Reviewed and approved for this example.'
+  entities:
+  - name: Ari
+    type: person
+    aliases: []
+  - name: Cedar Labs
+    type: organization
+    aliases: []
+  relations:
+  - head: Ari
+    relation: works_for
+    tail: Cedar Labs
+    boxes: []
+  optional: []
+  traps: []
+  group: A_clean
+  image: images/text-staff.png
+  image_hash: 4c9d1d29a0cd6b334cc2c23342b252f693903ce5f0beedb22dfa002c24fd5888
+  width: 900
+  height: 420
+  expected_route: ocr
+- id: text-location
+  lang: en
+  text: 'Current organisation and data register
+
+    Maple Team is located in Oslo.
+
+    This register lists current facts only.
+
+    Reviewed and approved for this example.'
+  entities:
+  - name: Maple Team
+    type: organization
+    aliases: []
+  - name: Oslo
+    type: location
+    aliases: []
+  relations:
+  - head: Maple Team
+    relation: located_in
+    tail: Oslo
+    boxes: []
+  optional: []
+  traps: []
+  group: A_clean
+  image: images/text-location.png
+  image_hash: 6cdd7e2e17d32590e47434b59a5feb46beac6cd133fff0aa5d23894e2b8ff05f
+  width: 900
+  height: 420
+  expected_route: ocr
+- id: text-lineage
+  lang: en
+  text: 'Current organisation and data register
+
+    daily_sales is derived from raw_sales.
+
+    This register lists current facts only.
+
+    Reviewed and approved for this example.'
+  entities:
+  - name: daily_sales
+    type: dataset
+    aliases: []
+  - name: raw_sales
+    type: dataset
+    aliases: []
+  relations:
+  - head: daily_sales
+    relation: derived_from
+    tail: raw_sales
+    boxes: []
+  optional: []
+  traps: []
+  group: A_clean
+  image: images/text-lineage.png
+  image_hash: 05adf662a01aab8215248c810c5a4474c1b5d4a69227175c0fc939d6d08965e7
+  width: 900
+  height: 420
+  expected_route: ocr
+- id: connector
+  lang: en
+  text: Field Ops is part of Operations.
+  entities:
+  - name: Field Ops
+    type: organization
+    aliases: []
+  - name: Operations
+    type: organization
+    aliases: []
+  relations:
+  - head: Field Ops
+    relation: part_of
+    tail: Operations
+    boxes: []
+  optional: []
+  traps: []
+  group: B
+  image: images/connector.png
+  image_hash: 6069de2e74dc5f5b5fbaaa6aba925cb827611f3da075c81c74f24dd5d6313010
+  width: 900
+  height: 420
+  expected_route: vlm
+- id: strike
+  lang: en
+  text: 'Rina owns current_orders.
+
+    Cancelled: Milo owns legacy_orders.'
+  entities:
+  - name: Rina
+    type: person
+    aliases: []
+  - name: current_orders
+    type: dataset
+    aliases: []
+  - name: Milo
+    type: person
+    aliases: []
+  - name: legacy_orders
+    type: dataset
+    aliases: []
+  relations:
+  - head: Rina
+    relation: owns
+    tail: current_orders
+    boxes: []
+  optional: []
+  traps:
+  - head: Milo
+    relation: owns
+    tail: legacy_orders
+    boxes: []
+  group: B
+  image: images/strike.png
+  image_hash: 125401a8822b569244b15af1aa49fe624e61011e32d6898fa21ce2e3778036c2
+  width: 900
+  height: 420
+  expected_route: vlm
+- id: grey
+  lang: en
+  text: 'Nora owns active_inventory.
+
+    Cancelled: Owen owns retired_inventory.'
+  entities:
+  - name: Nora
+    type: person
+    aliases: []
+  - name: active_inventory
+    type: dataset
+    aliases: []
+  - name: Owen
+    type: person
+    aliases: []
+  - name: retired_inventory
+    type: dataset
+    aliases: []
+  relations:
+  - head: Nora
+    relation: owns
+    tail: active_inventory
+    boxes: []
+  optional: []
+  traps:
+  - head: Owen
+    relation: owns
+    tail: retired_inventory
+    boxes: []
+  group: B
+  image: images/grey.png
+  image_hash: 07b31e4027e1954aba3ca1cb09ba2e1a000639795962a234bc34262bfed6b6e1
+  width: 900
+  height: 420
+  expected_route: vlm

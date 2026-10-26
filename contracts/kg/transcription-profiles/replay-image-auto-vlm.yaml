@@ -1,0 +1,7 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+id: replay-image-auto-vlm
+backend: replay
+mode: vlm
+model: scripted-auto-fixture
+recording: recordings/auto-transcription.yaml

@@ -1,0 +1,215 @@
+model: scripted-auto-fixture
+recorded_at: '2026-10-26'
+prompt_version: image-kg-v1
+source: Scripted extraction illustrates flattened OCR and retained visual structure.
+records:
+- output:
+    entities:
+    - name: Ari
+      type: person
+    - name: Cedar Labs
+      type: organization
+    relations:
+    - head: Ari
+      relation: works_for
+      tail: Cedar Labs
+      evidence: 'Current organisation and data register
+
+        Ari works for Cedar Labs.
+
+        This register lists current facts only.
+
+        Reviewed and approved for this example.'
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: f27e902fb44e2756c775fffd385464e3ec9c021ea08671d4307058511d3eafa9
+- output:
+    entities:
+    - name: Maple Team
+      type: organization
+    - name: Oslo
+      type: location
+    relations:
+    - head: Maple Team
+      relation: located_in
+      tail: Oslo
+      evidence: 'Current organisation and data register
+
+        Maple Team is located in Oslo.
+
+        This register lists current facts only.
+
+        Reviewed and approved for this example.'
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 3720a2c9e6c701949ad5c22bba1b0051902d804f0f6c51e82fc0d22724593c86
+- output:
+    entities:
+    - name: daily_sales
+      type: dataset
+    - name: raw_sales
+      type: dataset
+    relations:
+    - head: daily_sales
+      relation: derived_from
+      tail: raw_sales
+      evidence: 'Current organisation and data register
+
+        daily_sales is derived from raw_sales.
+
+        This register lists current facts only.
+
+        Reviewed and approved for this example.'
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 0895c99831b322be063f911412cf839ed702cc8889433862f708c27b7898d4aa
+- output:
+    entities:
+    - name: Field Ops
+      type: organization
+    - name: Operations
+      type: organization
+    relations: []
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: cd9f101da55d40e7a8250026097505fda13c986fa62079cff8331240d3852d2b
+- output:
+    entities:
+    - name: Field Ops
+      type: organization
+    - name: Operations
+      type: organization
+    relations:
+    - head: Field Ops
+      relation: part_of
+      tail: Operations
+      evidence: Field Ops is part of Operations.
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 79c85d3733239903f471dd709e0922c657f4de513341eed36a886ea5ab68b3e3
+- output:
+    entities:
+    - name: Rina
+      type: person
+    - name: current_orders
+      type: dataset
+    - name: Milo
+      type: person
+    - name: legacy_orders
+      type: dataset
+    relations:
+    - head: Rina
+      relation: owns
+      tail: current_orders
+      evidence: 'Current organisation and data register
+
+        Rina owns current_orders.
+
+        Milo owns legacy_orders.
+
+        Struck or shaded rows are cancelled.'
+    - head: Milo
+      relation: owns
+      tail: legacy_orders
+      evidence: 'Current organisation and data register
+
+        Rina owns current_orders.
+
+        Milo owns legacy_orders.
+
+        Struck or shaded rows are cancelled.'
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 3c1b99be20833f7c91968908be9d5e8d1c0d33f3e5f530cc5a7ecbdcfb48bb89
+- output:
+    entities:
+    - name: Rina
+      type: person
+    - name: current_orders
+      type: dataset
+    - name: Milo
+      type: person
+    - name: legacy_orders
+      type: dataset
+    relations:
+    - head: Rina
+      relation: owns
+      tail: current_orders
+      evidence: 'Rina owns current_orders.
+
+        Cancelled: Milo owns legacy_orders.'
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 74a9c6d88099940e2651d9e231224c34942d28a434874b4db0ee9fac340b9fdf
+- output:
+    entities:
+    - name: Nora
+      type: person
+    - name: active_inventory
+      type: dataset
+    - name: Owen
+      type: person
+    - name: retired_inventory
+      type: dataset
+    relations:
+    - head: Nora
+      relation: owns
+      tail: active_inventory
+      evidence: 'Current organisation and data register
+
+        Nora owns active_inventory.
+
+        Owen owns retired_inventory.
+
+        Struck or shaded rows are cancelled.'
+    - head: Owen
+      relation: owns
+      tail: retired_inventory
+      evidence: 'Current organisation and data register
+
+        Nora owns active_inventory.
+
+        Owen owns retired_inventory.
+
+        Struck or shaded rows are cancelled.'
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: db6e8cf009dd0b02729aa180057500aedf18712493039e76cf0eadac153f4824
+- output:
+    entities:
+    - name: Nora
+      type: person
+    - name: active_inventory
+      type: dataset
+    - name: Owen
+      type: person
+    - name: retired_inventory
+      type: dataset
+    relations:
+    - head: Nora
+      relation: owns
+      tail: active_inventory
+      evidence: 'Nora owns active_inventory.
+
+        Cancelled: Owen owns retired_inventory.'
+  finish_reason: stop
+  cache_read_tokens: 0
+  cache_write_tokens: 0
+  ignored_top_level_keys: 0
+  text_hash: 8c83f4091f129a5914b50a12344371bb400dacc6971ffb94a36453de0c3755ad

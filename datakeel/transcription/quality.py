@@ -65,7 +65,10 @@ def quality_issues(result: TranscriptionResult) -> tuple[TranscriptionIssue, ...
     """Apply the same rules to scripted, replay and live output, including sparse OCR."""
     issues = list(result.quality_issues)
     text = normalize(result.text)
-    ocr = normalize("\n".join(line.text for line in result.lines))
+    reference = result.ocr_reference
+    ocr = normalize(reference.text if reference else "\n".join(line.text for line in result.lines))
+    if reference and reference.error:
+        ocr = ""
     if result.error and not issues:
         issues.append("timeout" if result.error == "timeout" else "provider_error")
     if not text:

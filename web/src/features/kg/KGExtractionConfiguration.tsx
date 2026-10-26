@@ -9,6 +9,7 @@ import type {
   KGTranscriptionProfile,
   KGTranscriptionSelection,
 } from "../../api/kg";
+import type { FileItem } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
 export function KGExtractionConfiguration({
@@ -33,11 +34,17 @@ export function KGExtractionConfiguration({
       ? `/api/kg/transcription-selection?${new URLSearchParams({ dataset_id: datasetId, version_id: versionId })}`
       : null,
   );
+  const files = useResource<FileItem[]>(
+    versionId
+      ? `/api/datasets/${encodeURIComponent(datasetId)}/files?${new URLSearchParams({ version: versionId })}`
+      : null,
+  );
   return (
     <>
       <ResourceState {...profiles} onRetry={profiles.reload} />
       <ResourceState {...transcriptions} onRetry={transcriptions.reload} />
       <ResourceState {...selection} onRetry={selection.reload} />
+      <ResourceState {...files} onRetry={files.reload} />
       <KGExtractionForm
         key={`${datasetId}:${versionId}`}
         datasetId={datasetId}
@@ -46,7 +53,15 @@ export function KGExtractionConfiguration({
         profiles={profiles.value ?? []}
         transcriptionProfiles={transcriptions.value ?? []}
         transcriptionSelection={selection.value}
-        selectionPending={selection.loading || !!selection.error}
+        selectionPending={
+          selection.loading ||
+          !!selection.error ||
+          files.loading ||
+          !!files.error
+        }
+        imageFiles={(files.value ?? []).filter(
+          (file) => file.modality === "image",
+        )}
         onChanged={onChanged}
         onOpenReceipt={onOpenReceipt}
       />

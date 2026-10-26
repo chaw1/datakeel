@@ -20,6 +20,7 @@ class KGImageCase(KGCase):
     image_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     width: int | None = Field(default=None, gt=0)
     height: int | None = Field(default=None, gt=0)
+    expected_route: Literal["ocr", "vlm"] | None = None
 
 
 class KGImageSuite(BoundaryModel):

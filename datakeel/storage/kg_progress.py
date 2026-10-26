@@ -39,6 +39,7 @@ def failed_report(session: Session, job: KGJob, reason: str) -> KGReport:
     return report.model_copy(
         update={
             "model_calls": len(traces),
+            "transcription_cost_upper_usd": job.prepared.transcription_cost_upper_usd,
             "cloud_calls": len(cloud),
             "cloud_cost_usd": None
             if any(trace.billing_status == "unknown" for trace in cloud)

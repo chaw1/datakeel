@@ -12,4 +12,4 @@ max_output_tokens: 4096
 timeout_seconds: 120
 request_parameters:
   enable_thinking: false
-prompt_version: image-transcription-v1
+prompt_version: image-transcription-v2
