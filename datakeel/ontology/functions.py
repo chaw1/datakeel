@@ -6,12 +6,14 @@
 from pydantic import BaseModel, JsonValue
 
 from datakeel.core.ask_models import AskRequest
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError
 from datakeel.core.kg_queries import KGExplainQuery, KGQuery
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.ontology.catalog_functions import invoke_catalog
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
+from datakeel.ontology.data_asset_access import requested_refs
 from datakeel.ontology.evidence_functions import invoke_evidence
 from datakeel.ontology.kg_functions import invoke_kg
 from datakeel.ontology.models import FunctionResult, FunctionType, ObjectSet, PropertyFilter
@@ -23,6 +25,8 @@ from datakeel.ontology.parameters import (
     SearchFilesParams,
     TaskParams,
 )
+from datakeel.ontology.tool_refs import extract_refs
+from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
 from datakeel.storage.governance_service import get_quality, get_report
@@ -130,8 +134,31 @@ def _lineage(db: Database, arguments: JsonDocument) -> FunctionResult:
     )
 
 
-def invoke_function(db: Database, name: str, arguments: JsonDocument) -> FunctionResult:
+def invoke_function(
+    db: Database,
+    name: str,
+    arguments: JsonDocument,
+    *,
+    access: AccessContext | None = None,
+) -> FunctionResult:
     """Validate and execute an allowlisted read without granting mutation capabilities."""
+    caller = access or AccessContext(actor="local", entry="agent", scope="query")
+    if name in PARAMETER_MODELS:
+        PARAMETER_MODELS[name].model_validate(arguments.root)
+    require_access(db, requested_refs(name, arguments), caller, record=False)
+    if name == "ask_data":
+        result = invoke_catalog(db, name, arguments, access=caller)
+    elif name in {"query_kg", "explain_relation"}:
+        result = invoke_kg(db, name, arguments, access=caller)
+    elif name in {"query_evidence", "get_evidence", "explain_sample"}:
+        result = invoke_evidence(db, name, arguments, access=caller)
+    else:
+        result = _invoke_function(db, name, arguments)
+    require_access(db, (*result.asset_refs, *extract_refs(result.data)), caller)
+    return result
+
+
+def _invoke_function(db: Database, name: str, arguments: JsonDocument) -> FunctionResult:
     if name == "list_datasets":
         return _list_datasets(db, arguments)
     if name == "search_files":

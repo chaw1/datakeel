@@ -3,12 +3,12 @@
 
 """Within-conversation memory and fresh controlled-action observations."""
 
-from datakeel.actions.service import get_plan, list_runs
 from datakeel.agent.models import AgentEvent, ConversationView
 from datakeel.core.agent_models import ChatMessage, Conversation
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.storage import conversation_store
+from datakeel.storage.action_store import get_plan, list_runs
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
 

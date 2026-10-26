@@ -11,7 +11,7 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
-from datakeel.cli import kg_evaluation, kg_image_evaluation, routing, workflow
+from datakeel.cli import data_assets, kg_evaluation, kg_image_evaluation, routing, workflow
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -76,7 +76,7 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
-    for module in (workflow, routing, kg_evaluation):
+    for module in (workflow, routing, kg_evaluation, data_assets):
         module.register_parser(commands)
     return result
 
@@ -141,6 +141,8 @@ def _database_command(db: Database, args: argparse.Namespace) -> None:
         rebuild(db, args.expected_hash)
     elif args.command == "rebuild-catalog":
         rebuild_catalog(db, args.expected_hash)
+    elif args.command == "data-assets":
+        data_assets.dispatch(db, args)
     elif args.command == "ask":
         ask(db, args.question, args.reference_instant)
 

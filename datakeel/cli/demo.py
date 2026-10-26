@@ -13,8 +13,10 @@ from contextlib import suppress
 from types import FrameType
 
 import httpx
+from pydantic import JsonValue
 from rich.console import Console
 
+from datakeel.cli.asset_demo import seed_asset_demo
 from datakeel.cli.enterprise import seed_enterprise_demo
 from datakeel.cli.evidence import seed_evidence_demo
 from datakeel.cli.image_kg_demo import seed_image_kg_demo
@@ -103,6 +105,14 @@ def _interrupt(_signum: int, _frame: FrameType | None) -> None:
     raise KeyboardInterrupt
 
 
+def _evidence_summary(
+    db: Database, evidence: tuple[str, str] | None
+) -> dict[str, JsonValue] | None:
+    if evidence is None:
+        return None
+    return {"dataset_id": evidence[0], **extraction_report(db, evidence[1]).model_dump(mode="json")}
+
+
 def _serve(
     db: Database,
     task_id: str,
@@ -154,6 +164,7 @@ def demo(args: argparse.Namespace) -> None:
     dataset_id, task_id = seed_demo(db)
     evidence = None if getattr(args, "legacy_only", False) else seed_evidence_demo(db)
     enterprise = None if getattr(args, "legacy_only", False) else seed_enterprise_demo(db)
+    assets = seed_asset_demo(db, dataset_id) if enterprise else ()
     graph = None if getattr(args, "legacy_only", False) else seed_kg_demo(db)
     image_graph = None if getattr(args, "legacy_only", False) else seed_image_kg_demo(db)
     documents = (
@@ -186,6 +197,7 @@ def demo(args: argparse.Namespace) -> None:
                 "state": "COMPLETED",
                 "elapsed_seconds": round(time.monotonic() - started, 3),
                 "enterprise": enterprise.model_dump(mode="json") if enterprise else None,
+                "data_assets": [asset.model_dump(mode="json") for asset in assets],
                 "enterprise_documents": documents.model_dump(mode="json") if documents else None,
                 "knowledge_graph": [run.model_dump(mode="json") for run in demo_reports(db, graph)]
                 if graph
@@ -195,12 +207,7 @@ def demo(args: argparse.Namespace) -> None:
                 ]
                 if image_graph
                 else None,
-                "evidence": {
-                    "dataset_id": evidence[0],
-                    **extraction_report(db, evidence[1]).model_dump(mode="json"),
-                }
-                if evidence
-                else None,
+                "evidence": _evidence_summary(db, evidence),
             }
         ),
         markup=False,

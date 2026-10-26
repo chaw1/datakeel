@@ -5,6 +5,7 @@
 
 from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskRequest
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.knowledge_citations import knowledge_citations
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
@@ -13,8 +14,10 @@ from datakeel.storage import catalog_queries, metric_store
 from datakeel.storage.database import Database
 
 
-def _ask(db: Database, arguments: JsonDocument) -> FunctionResult:
-    answer = ask_data(db, AskRequest.model_validate(arguments.root))
+def _ask(db: Database, arguments: JsonDocument, access: AccessContext | None) -> FunctionResult:
+    answer = ask_data(
+        db, AskRequest.model_validate(arguments.root), access=access, record_usage=False
+    )
     refs = [AssetRef(asset_type="question", asset_id=answer.id, version=answer.id)]
     if answer.metric_card is not None:
         metric = answer.metric_card.definition
@@ -73,10 +76,16 @@ def _metrics(db: Database, arguments: JsonDocument) -> FunctionResult:
     )
 
 
-def invoke_catalog(db: Database, name: str, arguments: JsonDocument) -> FunctionResult:
+def invoke_catalog(
+    db: Database,
+    name: str,
+    arguments: JsonDocument,
+    *,
+    access: AccessContext | None = None,
+) -> FunctionResult:
     """Validate registered metadata reads and preserve all addressed asset identities."""
     if name == "ask_data":
-        return _ask(db, arguments)
+        return _ask(db, arguments, access)
     if name == "list_metrics":
         return _metrics(db, arguments)
     if name == "explain_metric":

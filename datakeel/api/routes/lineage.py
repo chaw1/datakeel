@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Query, Request
 
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import JsonDocument, LineageEvent
 from datakeel.lineage.models import GraphQuery, GraphView
 from datakeel.storage import lineage_service as service
@@ -45,6 +46,9 @@ def export(
     dataset_id: str | None = None,
 ) -> JsonDocument | list[JsonDocument]:
     """Export observations or a selected dataset using a standard vocabulary."""
+    access = AccessContext(
+        actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="export", scope="export"
+    )
     if export_format == "openlineage":
-        return service.export_events(db, dataset_id)
-    return service.export_dataset(db, dataset_id, str(request.base_url))
+        return service.export_events(db, dataset_id, access=access)
+    return service.export_dataset(db, dataset_id, str(request.base_url), access=access)

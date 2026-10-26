@@ -11,14 +11,16 @@ from pydantic import ValidationError as ModelValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_inputs import sample_sidecars
-from datakeel.core.models import FileItem, JsonDocument, LineageEvent
+from datakeel.core.models import AssetRef, FileItem, JsonDocument, LineageEvent
 from datakeel.lineage.collapse import collapse_graph
 from datakeel.lineage.exports import export_croissant, export_openlineage
 from datakeel.lineage.models import GraphNode, GraphOverlay, GraphQuery, GraphView
 from datakeel.lineage.service import all_events, append_event, graph
 from datakeel.storage.catalog_store import read_snapshot
+from datakeel.storage.data_asset_access import require_access_in_session
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.datasets import dataset_dict
@@ -90,7 +92,9 @@ def get_graph(
         return name_graph(session, result.model_copy(update={"nodes": nodes}))
 
 
-def export_events(db: Database, dataset_id: str | None = None) -> list[JsonDocument]:
+def export_events(
+    db: Database, dataset_id: str | None = None, *, access: AccessContext | None = None
+) -> list[JsonDocument]:
     """Export recorded events, optionally scoped to a dataset lineage component."""
     with db.session() as session:
         events = all_events(session)
@@ -98,22 +102,43 @@ def export_events(db: Database, dataset_id: str | None = None) -> list[JsonDocum
             require_dataset(session, dataset_id)
             scoped = {value["event_id"] for value in graph(events, dataset_id)["events"]}
             events = [event for event in events if event.event_id in scoped]
-        return [JsonDocument.model_validate(value) for value in export_openlineage(events)]
+        refs = tuple(ref for event in events for ref in (*event.inputs, *event.outputs))
+        if dataset_id:
+            refs += (AssetRef(asset_id=dataset_id),)
+        require_access_in_session(
+            session,
+            refs,
+            (
+                access or AccessContext(actor="local-user", entry="export", scope="export")
+            ).model_copy(update={"entry": "export", "scope": "export"}),
+        )
+        result = [JsonDocument.model_validate(value) for value in export_openlineage(events)]
+        session.commit()
+        return result
 
 
-def export_dataset(db: Database, dataset_id: str | None, base_url: str) -> JsonDocument:
+def export_dataset(
+    db: Database, dataset_id: str | None, base_url: str, *, access: AccessContext | None = None
+) -> JsonDocument:
     """Export a dataset manifest as a portable Croissant document."""
     if not dataset_id:
         message = "dataset_id is required for Croissant"
         raise ValidationError(message)
     with db.session() as session:
         row = require_dataset(session, dataset_id)
+        require_access_in_session(
+            session,
+            (AssetRef(asset_id=dataset_id),),
+            (
+                access or AccessContext(actor="local-user", entry="export", scope="export")
+            ).model_copy(update={"entry": "export", "scope": "export"}),
+        )
         data = {
             **dataset_dict(row),
             "base_url": base_url.rstrip("/"),
             "url": base_url.rstrip("/") + f"/api/datasets/{row.id}",
         }
-        return JsonDocument.model_validate(
+        result = JsonDocument.model_validate(
             export_croissant(
                 data,
                 overlay_files(
@@ -121,6 +146,8 @@ def export_dataset(db: Database, dataset_id: str | None, base_url: str) -> JsonD
                 ),
             )
         )
+        session.commit()
+        return result
 
 
 def _files(item: FileItem) -> tuple[FileItem, ...]:

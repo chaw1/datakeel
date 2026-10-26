@@ -10,9 +10,11 @@ from typing import TYPE_CHECKING
 
 from fastmcp import Client
 
+from datakeel.core.models import AssetRef
 from datakeel.mcp import create_server
 from datakeel.storage.tool_invocations import list_invocations
 from scripts.check_readme import local_environment, verify_enterprise_stdio
+from tests.assets.entry_helpers import publish
 from tests.enterprise_support import enterprise_fixture
 
 if TYPE_CHECKING:
@@ -23,11 +25,12 @@ if TYPE_CHECKING:
     from datakeel.storage.database import Database
 
 
-def test_readme_enterprise_checks_measure_four_actual_audited_tools(
+def test_readme_enterprise_checks_measure_permitted_reads_and_restricted_catalog(
     db: Database, tmp_path: Path
 ) -> None:
     """The README checker validates generated facts through the production MCP dispatcher."""
     enterprise_fixture(db, tmp_path / "enterprise")
+    publish(db, AssetRef(asset_type="metric", asset_id="customer_count"))
 
     async def scenario() -> None:
         async with Client(create_server(db), mode="legacy") as client:
@@ -41,8 +44,14 @@ def test_readme_enterprise_checks_measure_four_actual_audited_tools(
         "explain_metric",
         "impact_of",
     }
-    assert len(invocations) == 4
-    assert all(item.status == "SUCCEEDED" and item.asset_refs for item in invocations)
+    assert len(invocations) == 5
+    allowed = [item for item in invocations if item.status == "SUCCEEDED"]
+    denied = [item for item in invocations if item.status == "FAILED"]
+    assert len(allowed) == 4
+    assert all(item.asset_refs for item in allowed)
+    assert len(denied) == 1
+    assert denied[0].name == "list_metrics"
+    assert "apply for access" in (denied[0].error or "")
 
 
 def test_readme_commands_discard_inherited_service_settings(

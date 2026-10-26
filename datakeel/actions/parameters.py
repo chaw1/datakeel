@@ -15,6 +15,7 @@ from datakeel.actions.catalog_parameters import (
     UpdateMetricParams,
     UpdateTermParams,
 )
+from datakeel.actions.data_asset_parameters import DATA_ASSET_PARAMETER_TYPES
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
@@ -78,6 +79,7 @@ class ExportParams(BoundaryModel):
 
 
 PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
+    **DATA_ASSET_PARAMETER_TYPES,
     "quarantine_files": SelectionParams,
     "unquarantine_files": SelectionParams,
     "delete_files": SelectionParams,

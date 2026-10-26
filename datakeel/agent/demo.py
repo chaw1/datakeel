@@ -43,10 +43,14 @@ class DemoProvider:
     def _respond(
         self, request: ModelRequest, text: str, facts: JsonDocument, tools: list[ChatMessage]
     ) -> ModelResponse:
-        evidence = respond_delegation(request, text, tools) or (
-            ModelResponse(content="工具调用失败。请检查工具结果后重试。")
-            if tools and ToolOutcome.model_validate_json(tools[-1].content).status == "FAILED"
-            else respond_evidence(request, text, facts, tools)
+        evidence = (
+            _access_refusal(tools)
+            or respond_delegation(request, text, tools)
+            or (
+                ModelResponse(content="工具调用失败。请检查工具结果后重试。")
+                if tools and ToolOutcome.model_validate_json(tools[-1].content).status == "FAILED"
+                else respond_evidence(request, text, facts, tools)
+            )
         )
         if evidence is not None:
             return evidence
@@ -100,6 +104,16 @@ class DemoProvider:
         if action in {"export_dataset", "run_pipeline"}:
             return _call(action, {"dataset_id": selection.root["dataset_id"]})
         return _call(action, {"selection": selection.root})
+
+
+def _access_refusal(tools: list[ChatMessage]) -> ModelResponse | None:
+    if tools and "apply for access" in (
+        ToolOutcome.model_validate_json(tools[-1].content).error or ""
+    ):
+        return ModelResponse(
+            content="该资产需要有效授权。请前往资产市场填写用途和期限申请使用, 获批后重试。"
+        )
+    return None
 
 
 def _dataset(facts: JsonDocument) -> str | None:

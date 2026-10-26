@@ -5,10 +5,11 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.harness_models import ModelCallTrace
 from datakeel.core.kg_contracts import ExtractionProfile, KGSchema
@@ -61,32 +62,35 @@ def rerun_links(db: DatabaseDependency) -> LinkRunResult:
 
 
 @router.post("/query")
-def query(body: KGQuery, db: DatabaseDependency) -> KGQueryResult:
+def query(body: KGQuery, db: DatabaseDependency, request: Request) -> KGQueryResult:
     """Read filtered entities and candidate or decided relationships."""
-    return kg_queries.query_kg(db, body)
+    return kg_queries.query_kg(db, body, access=_query_access(request))
 
 
 @router.get("/relations/{assertion_id}")
-def relation(assertion_id: str, db: DatabaseDependency) -> KGRelationExplanation:
+def relation(assertion_id: str, db: DatabaseDependency, request: Request) -> KGRelationExplanation:
     """Explain the exact source checks and model attribution for one relationship."""
-    return kg_queries.explain_relation(db, assertion_id)
+    return kg_queries.explain_relation(db, assertion_id, access=_query_access(request))
 
 
 @router.post("/graph")
-def graph(body: KGQuery, db: DatabaseDependency) -> KGGraph:
+def graph(body: KGQuery, db: DatabaseDependency, request: Request) -> KGGraph:
     """Return a bounded graph with accepted alias display groups."""
-    return kg_queries.graph_kg(db, body)
+    return kg_queries.graph_kg(db, body, access=_query_access(request))
 
 
 @router.get("/sources/{file_id}")
 def source(
     file_id: str,
     db: DatabaseDependency,
+    request: Request,
     version_id: Annotated[str, Query(min_length=1)],
     extraction_id: Annotated[str | None, Query(min_length=1)] = None,
 ) -> KGSourceText:
     """Read the frozen normalized text underlying displayed code-point offsets."""
-    return kg_queries.get_source_text(db, file_id, version_id, extraction_id)
+    return kg_queries.get_source_text(
+        db, file_id, version_id, extraction_id, access=_query_access(request)
+    )
 
 
 @router.get("/schemas")
@@ -160,7 +164,20 @@ def select_transcription(
     },
 )
 def image_content(
-    file_id: str, version_id: str, extraction_id: str, db: DatabaseDependency
+    file_id: str, version_id: str, extraction_id: str, db: DatabaseDependency, request: Request
 ) -> Response:
     """Serve orientation-corrected original pixels in the same coordinate system as evidence."""
-    return Response(image_bytes(db, file_id, version_id, extraction_id), media_type="image/png")
+    access = AccessContext(
+        actor=request.headers.get("X-Datakeel-Actor", "local-user"),
+        entry="download",
+        scope="download",
+    )
+    return Response(
+        image_bytes(db, file_id, version_id, extraction_id, access=access), media_type="image/png"
+    )
+
+
+def _query_access(request: Request) -> AccessContext:
+    return AccessContext(
+        actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
+    )

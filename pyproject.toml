@@ -76,6 +76,7 @@ packages = ["datakeel"]
 "contracts/routing" = "datakeel/_contracts/routing"
 "contracts/agents" = "datakeel/_contracts/agents"
 "contracts/kg" = "datakeel/_contracts/kg"
+"contracts/assets" = "datakeel/_contracts/assets"
 "docs/p9" = "datakeel/docs/p9"
 
 [tool.ruff]

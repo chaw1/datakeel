@@ -8,10 +8,15 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.assets | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
+# Asset market and policy facades consume only typed transactional storage contracts.
+    datakeel.assets.service -> datakeel.storage.database
+    datakeel.assets.service -> datakeel.storage.data_asset_cards
+    datakeel.assets.access -> datakeel.storage.data_asset_access
+    datakeel.storage.data_asset_quality -> datakeel.quality.scoring
 # Explicit memory services retain only typed projections across storage and tool boundaries.
     datakeel.memory.service -> datakeel.operators.text.pii_redact
     datakeel.memory.service -> datakeel.storage.memory_store
@@ -105,7 +110,6 @@ ignore_imports =
     datakeel.actions.parameters -> datakeel.pipeline
     datakeel.actions.planning -> datakeel.storage.action_planning
     datakeel.actions.registry -> datakeel.ontology.models
-    datakeel.actions.service -> datakeel.storage.action_store
     datakeel.actions.worker -> datakeel.storage.action_worker
 # Read-only ontology functions use typed storage projections; object schemas reuse public views.
     datakeel.ontology.functions -> datakeel.storage.database
@@ -312,6 +316,32 @@ ignore_imports =
 # Image evaluation persists the same product identities; offline goldens drain real worker tasks.
     datakeel.storage.kg_image_eval_store -> datakeel.kg.identity
     datakeel.harness.image_kg_cases -> datakeel.worker.runner
+
+# Native reads and cached tool results share one transactional grant policy.
+    datakeel.ontology.tooling -> datakeel.storage.data_asset_access
+    datakeel.ontology.functions -> datakeel.storage.data_asset_access
+    datakeel.ask.service -> datakeel.storage.data_asset_access
+# Asset plans freeze and mutate domain facts in the existing controlled transaction.
+    datakeel.storage.action_planning -> datakeel.actions.data_asset_parameters
+    datakeel.storage.action_operations -> datakeel.actions.data_asset_parameters
+    datakeel.storage.action_snapshot -> datakeel.actions.data_asset_parameters
+    datakeel.storage.evidence_actions -> datakeel.actions.data_asset_parameters
+    datakeel.storage.data_asset_action_state -> datakeel.actions.data_asset_parameters
+    datakeel.storage.data_asset_actions -> datakeel.actions.data_asset_parameters
+    datakeel.storage.data_asset_actions -> datakeel.actions.models
+
+# Delegated summaries retain their actual descendant read identities for current-grant replay.
+    datakeel.delegation.service -> datakeel.storage.conversation_asset_refs
+    datakeel.delegation.service -> datakeel.storage.data_asset_access
+
+# Source-bearing action views and cached tool outcomes share native asset authorization.
+    datakeel.actions.service -> datakeel.storage.action_access
+    datakeel.actions.service -> datakeel.storage.action_reads
+    datakeel.storage.action_access -> datakeel.actions.models
+    datakeel.storage.action_reads -> datakeel.actions.models
+
+# Recovery inspects receipt identities internally; current-plan disclosure stays guarded.
+    datakeel.agent.recovery -> datakeel.storage.action_store
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

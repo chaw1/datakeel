@@ -30,7 +30,7 @@ async def dispatch(
 ) -> ToolResult:
     """Audit schema failures and business outcomes through the single domain entry point."""
     outcome = await to_thread.run_sync(
-        partial(invoke_tool, db, name, arguments, caller_context(context))
+        partial(invoke_tool, db, name, arguments, caller_context(context), entry="mcp")
     )
     return ToolResult(
         content=outcome.model_dump_json(),

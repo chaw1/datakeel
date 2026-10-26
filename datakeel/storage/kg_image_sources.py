@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 from sqlalchemy import JSON, and_, exists, func, or_, select, type_coerce
 from sqlalchemy.orm import Session
 
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.evidence_models import Assertion
 from datakeel.core.kg_execution import KGJob
@@ -104,7 +105,14 @@ def image_source(
     return None
 
 
-def image_bytes(db: Database, asset_id: str, version_id: str, extraction_id: str) -> bytes:
+def image_bytes(
+    db: Database,
+    asset_id: str,
+    version_id: str,
+    extraction_id: str,
+    *,
+    access: AccessContext | None = None,
+) -> bytes:
     """Return metadata-free corrected pixels only when the requested content still matches."""
     with db.session() as session:
         jobs = _jobs(session, extraction_id)
@@ -116,7 +124,9 @@ def image_bytes(db: Database, asset_id: str, version_id: str, extraction_id: str
                 version_id,
             ):
                 continue
-            path = resolve_download(db, job.run.dataset_id, asset_id, job.run.version_id).path
+            path = resolve_download(
+                db, job.run.dataset_id, asset_id, job.run.version_id, access=access
+            ).path
             corrected = normalize_image(Path(path).read_bytes())
             if corrected.image_hash != image.content_revision:
                 msg = "Image content no longer matches its evidence revision"

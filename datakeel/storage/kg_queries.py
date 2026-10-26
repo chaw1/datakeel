@@ -3,6 +3,7 @@
 
 """Read graph candidates, source locations and bounded display projections."""
 
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError
 from datakeel.core.evidence_models import Assertion
 from datakeel.core.kg_product import KGEntity
@@ -17,6 +18,7 @@ from datakeel.core.kg_queries import (
 )
 from datakeel.core.models import AssetRef
 from datakeel.kg.text import normalize_name
+from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_store import read_assertions
 from datakeel.storage.kg_context import KGContext, graph_events, read_context
@@ -113,15 +115,40 @@ def _query(context: KGContext, query: KGQuery) -> KGQueryResult:
     )
 
 
-def query_kg(db: Database, query: KGQuery) -> KGQueryResult:
-    """Filter one graph version and keep pending source checks first in relation results."""
-    return _query(read_context(db, query), query)
+def query_kg(db: Database, query: KGQuery, *, access: AccessContext | None = None) -> KGQueryResult:
+    """Filter one authorized graph version, keeping pending source checks first."""
+    result = _query(read_context(db, query), query)
+    authorize_query(db, _result_refs(result), access)
+    return result
+
+
+def _result_refs(result: KGQueryResult) -> tuple[AssetRef, ...]:
+    refs = [entity.asset_ref for entity in result.entities]
+    refs.extend(
+        anchor.asset_ref for relation in result.relations for anchor in relation.assertion.anchors
+    )
+    if result.dataset_id:
+        refs.append(AssetRef(asset_id=result.dataset_id, version=result.version_id))
+    return tuple(refs)
 
 
 def get_source_text(
+    db: Database,
+    file_id: str,
+    version_id: str,
+    extraction_id: str | None = None,
+    *,
+    access: AccessContext | None = None,
+) -> KGSourceText:
+    """Read an authorized frozen source using the same query scope as its evidence."""
+    source = _source_text(db, file_id, version_id, extraction_id)
+    authorize_query(db, (source.asset_ref,), access)
+    return source
+
+
+def _source_text(
     db: Database, file_id: str, version_id: str, extraction_id: str | None = None
 ) -> KGSourceText:
-    """Read frozen normalized text, never a mutable current file path."""
     if (source := image_source(db, file_id, version_id, extraction_id)) is not None:
         return source
     events = graph_events(db)
@@ -170,7 +197,9 @@ def _summary(assertion: Assertion) -> str:
     return "Needs review: " + "; ".join(reasons) + "."
 
 
-def explain_relation(db: Database, assertion_id: str) -> KGRelationExplanation:
+def explain_relation(
+    db: Database, assertion_id: str, *, access: AccessContext | None = None
+) -> KGRelationExplanation:
     """Explain an exact relationship with every original document and missing check."""
     events = graph_events(db)
     with db.session() as session:
@@ -199,13 +228,14 @@ def explain_relation(db: Database, assertion_id: str) -> KGRelationExplanation:
         msg = "The assertion is not a graph relationship"
         raise NotFoundError(msg)
     refs = {(anchor.asset_ref.asset_id, anchor.asset_ref.version) for anchor in assertion.anchors}
-    sources = tuple(
-        get_source_text(db, file_id, version or "") for file_id, version in sorted(refs)
-    )
+    sources = tuple(_source_text(db, file_id, version or "") for file_id, version in sorted(refs))
+    authorize_query(db, tuple(source.asset_ref for source in sources), access)
     return KGRelationExplanation(relation=relation, sources=sources, summary=_summary(assertion))
 
 
-def graph_kg(db: Database, query: KGQuery) -> KGGraph:
-    """Merge accepted aliases for display while keeping rejected pairs separated."""
+def graph_kg(db: Database, query: KGQuery, *, access: AccessContext | None = None) -> KGGraph:
+    """Merge authorized accepted aliases while keeping rejected pairs separated."""
     context = read_context(db, query)
-    return project_graph(_query(context, query), context.entities, context.assertions, query.limit)
+    result = _query(context, query)
+    authorize_query(db, _result_refs(result), access)
+    return project_graph(result, context.entities, context.assertions, query.limit)

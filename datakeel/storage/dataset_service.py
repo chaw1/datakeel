@@ -12,8 +12,11 @@ from pydantic import Field, JsonValue
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
-from datakeel.core.models import FileItem
+from datakeel.core.models import AssetRef, FileItem
+from datakeel.storage.data_asset_access import require_access_in_session
+from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.datasets import dataset_dict, import_dataset
 from datakeel.storage.file_state import FileStateRow, get_file_state, overlay_files
@@ -113,7 +116,13 @@ def create_dataset(db: Database, body: DatasetInput) -> DatasetView:
             return result
 
 
-def list_files(db: Database, identifier: str, version: str | None = None) -> list[FileView]:
+def list_files(
+    db: Database,
+    identifier: str,
+    version: str | None = None,
+    *,
+    access: AccessContext | None = None,
+) -> list[FileView]:
     """List original files or a selected immutable version."""
     with db.session() as session:
         values = require_dataset(session, identifier).files
@@ -126,14 +135,22 @@ def list_files(db: Database, identifier: str, version: str | None = None) -> lis
         visible = overlay_files(
             session, identifier, [FileItem.model_validate(item) for item in values]
         )
-        return public_files([item.model_dump(mode="json") for item in visible])
+        result = public_files([item.model_dump(mode="json") for item in visible])
+    refs = [AssetRef(asset_id=identifier, version=version)]
+    refs.extend(AssetRef(asset_type="file", asset_id=item.id, version=version) for item in result)
+    if version:
+        refs.append(AssetRef(asset_type="version", asset_id=version, version=version))
+    authorize_query(db, tuple(refs), access)
+    return result
 
 
-def list_versions(db: Database, identifier: str) -> list[VersionView]:
+def list_versions(
+    db: Database, identifier: str, *, access: AccessContext | None = None
+) -> list[VersionView]:
     """List all immutable snapshots belonging to a dataset."""
     with db.session() as session:
         require_dataset(session, identifier)
-        return [
+        result = [
             VersionView(
                 id=row.id,
                 created_at=row.created_at,
@@ -146,10 +163,25 @@ def list_versions(db: Database, identifier: str) -> list[VersionView]:
                 .order_by(VersionRow.created_at)
             )
         ]
+    refs = tuple(
+        ref
+        for item in result
+        for ref in (
+            AssetRef(asset_id=identifier, version=item.id),
+            AssetRef(asset_type="version", asset_id=item.id, version=item.id),
+        )
+    )
+    authorize_query(db, refs or (AssetRef(asset_id=identifier),), access)
+    return result
 
 
 def resolve_download(
-    db: Database, identifier: str, file_id: str, version: str | None = None
+    db: Database,
+    identifier: str,
+    file_id: str,
+    version: str | None = None,
+    *,
+    access: AccessContext | None = None,
 ) -> DownloadView:
     """Resolve a public file, preserving exact version ownership when explicitly pinned."""
     with db.session() as session:
@@ -177,7 +209,19 @@ def resolve_download(
         if not isinstance(key, str):
             message = "File object not found"
             raise NotFoundError(message)
-        return DownloadView(path=object_store().materialize(key), filename=value.filename)
+        require_access_in_session(
+            session,
+            (
+                AssetRef(asset_id=identifier, version=version),
+                AssetRef(asset_type="file", asset_id=file_id, version=version),
+            ),
+            (
+                access or AccessContext(actor="local-user", entry="download", scope="download")
+            ).model_copy(update={"entry": "download", "scope": "download"}),
+        )
+        result = DownloadView(path=object_store().materialize(key), filename=value.filename)
+        session.commit()
+        return result
 
 
 def task_artifacts(db: Database, identifier: str) -> list[FileView]:

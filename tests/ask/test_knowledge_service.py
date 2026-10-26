@@ -12,6 +12,7 @@ from datakeel.ask.knowledge_service import related_knowledge
 from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskAnswer, AskRequest
 from datakeel.core.catalog_models import CatalogSnapshot
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.kg_execution import KGDocument
 from datakeel.core.kg_queries import KGSourceText
 from datakeel.core.link_models import LinkContext
@@ -190,7 +191,11 @@ def test_related_context_skips_missing_source_without_discarding_available_claim
             ),
         }
     )
-    monkeypatch.setattr(knowledge_service, "read_link_context", lambda _db: context)
+
+    def frozen_link_context(_db: Database) -> LinkContext:
+        return context
+
+    monkeypatch.setattr(knowledge_service, "read_link_context", frozen_link_context)
     result = related_knowledge(db, answer, catalog)
     assert result.knowledge is not None
     assert tuple(claim.assertion_id for claim in result.knowledge.claims) == (available.id,)
@@ -205,7 +210,14 @@ def test_answer_sources_reuse_current_graph_documents_without_event_rescans(
     """Metric context and knowledge claims read sources from the already-loaded frozen graph."""
     seed_enterprise_kg(db, tmp_path)
 
-    def unexpected_source_read(_db: Database, _identity: str, _version: str) -> KGSourceText:
+    def unexpected_source_read(
+        _db: Database,
+        _identity: str,
+        _version: str,
+        _extraction_id: str | None = None,
+        *,
+        access: AccessContext | None = None,
+    ) -> KGSourceText:
         pytest.fail("A current graph source must not rescan extraction history")
 
     monkeypatch.setattr("datakeel.storage.kg_queries.get_source_text", unexpected_source_read)

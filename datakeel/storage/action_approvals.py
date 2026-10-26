@@ -7,14 +7,22 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.actions.models import ActionPlan, ApprovalDecision
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError, ConflictError
+from datakeel.storage.action_access import authorize_plans_in_session
 from datakeel.storage.action_planning import verify_plan
 from datakeel.storage.action_rows import ApprovalRow
 from datakeel.storage.action_store import audit, locked_plan
 from datakeel.storage.database import Database
 
 
-def approve_plan(db: Database, plan_id: str, decision: ApprovalDecision) -> ActionPlan:
+def approve_plan(
+    db: Database,
+    plan_id: str,
+    decision: ApprovalDecision,
+    *,
+    access: AccessContext | None = None,
+) -> ActionPlan:
     """Approve or reject the exact displayed plan once, before it expires."""
     with db.session() as session:
         db.lock_writes(session)
@@ -26,6 +34,7 @@ def approve_plan(db: Database, plan_id: str, decision: ApprovalDecision) -> Acti
         if not plan.requires_approval:
             msg = "Reversible local actions do not require approval"
             raise ConflictError(msg)
+        authorize_plans_in_session(session, (plan,), access, actor=decision.actor)
         status = "APPROVED" if decision.approve else "REJECTED"
         session.add(
             ApprovalRow(

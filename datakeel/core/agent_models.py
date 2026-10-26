@@ -9,7 +9,7 @@ from typing import Literal, Protocol
 from pydantic import Field
 
 from datakeel.core.harness_models import BudgetLimits, TokenUsage
-from datakeel.core.models import BoundaryModel, JsonDocument, new_id, utcnow
+from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument, new_id, utcnow
 
 
 class ToolCall(BoundaryModel):
@@ -126,6 +126,13 @@ class ConversationAudit(BoundaryModel):
     created_at: datetime
 
 
+class MemorySourceSnapshot(BoundaryModel):
+    """Retain content-free resource attribution after a consumed memory is hard-deleted."""
+
+    memory_id: str
+    asset_refs: tuple[AssetRef, ...] = ()
+
+
 class Conversation(BoundaryModel):
     """The durable within-session history and its configuration."""
 
@@ -143,6 +150,7 @@ class Conversation(BoundaryModel):
     depth: int = Field(default=0, ge=0)
     parent_tool_call_id: str | None = None
     allowed_tools: list[str] | None = None
+    memory_sources: tuple[MemorySourceSnapshot, ...] = ()
 
 
 class ConversationLease(BoundaryModel):

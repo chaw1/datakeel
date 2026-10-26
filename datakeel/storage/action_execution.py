@@ -12,8 +12,10 @@ from datakeel.actions.models import ActionPlan, ActionRun, ExecuteRequest, Opera
 from datakeel.actions.parameters import ExportParams, parse_params
 from datakeel.actions.policy import digest
 from datakeel.actions.receipts import receipt
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError
 from datakeel.core.models import JsonDocument, new_id, utcnow
+from datakeel.storage.action_access import authorize_plans_in_session
 from datakeel.storage.action_approvals import consume_approval
 from datakeel.storage.action_export import export_action, rollback_export
 from datakeel.storage.action_locks import lock_action_targets
@@ -108,7 +110,9 @@ def _record_failure(
         session.commit()
 
 
-def execute_plan(db: Database, plan_id: str, request: ExecuteRequest) -> ActionRun:
+def execute_plan(
+    db: Database, plan_id: str, request: ExecuteRequest, *, access: AccessContext | None = None
+) -> ActionRun:
     """Atomically revalidate, consume approval, mutate, audit, and publish a receipt."""
     attempted = False
     authorized = False
@@ -120,8 +124,11 @@ def execute_plan(db: Database, plan_id: str, request: ExecuteRequest) -> ActionR
             lock_action_targets(db, session)
             row, plan = locked_plan(session, plan_id)
             validate_execution_request(plan, request)
+            authorize_plans_in_session(session, (plan,), access, actor=request.actor, record=False)
             prior = replay_operation(session, plan, request)
             if prior is not None:
+                authorize_plans_in_session(session, (plan,), access, actor=request.actor)
+                session.commit()
                 return prior
             record_attempt = True
             consume_approval(session, plan)
@@ -129,6 +136,7 @@ def execute_plan(db: Database, plan_id: str, request: ExecuteRequest) -> ActionR
             verify_plan(session, plan, request.plan_digest, request.actor)
             attempted = True
             params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
+            authorize_plans_in_session(session, (plan,), access, actor=request.actor)
             result = (
                 export_action(session, plan, params)
                 if isinstance(params, ExportParams)

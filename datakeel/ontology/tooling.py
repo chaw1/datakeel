@@ -13,7 +13,8 @@ from datakeel.actions.models import ActionContext, ActionPlan, ApprovalDecision,
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.actions.policy import digest
 from datakeel.actions.references import plan_refs
-from datakeel.core.errors import DatakeelError, NotFoundError
+from datakeel.core.data_asset_models import AccessContext, AccessEntry
+from datakeel.core.errors import AuthorizationError, DatakeelError, NotFoundError
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.functions import PARAMETER_MODELS, invoke_function
 from datakeel.ontology.tool_models import (
@@ -24,6 +25,7 @@ from datakeel.ontology.tool_models import (
     ToolOutcome,
 )
 from datakeel.ontology.tool_refs import argument_refs, extract_refs, reconcile_refs
+from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
 from datakeel.storage.tool_invocations import (
     begin_invocation,
@@ -46,15 +48,21 @@ def _plan_outcome(name: str, plan: ActionPlan) -> ToolOutcome:
     )
 
 
-def _control(db: Database, name: str, arguments: JsonDocument) -> ToolOutcome:
+def _control(
+    db: Database, name: str, arguments: JsonDocument, access: AccessContext
+) -> ToolOutcome:
     if name == "approve_plan":
         approval = ApproveToolParams.model_validate(arguments.root)
         plan = service.approve_plan(
             db,
             approval.plan_id,
             ApprovalDecision(
-                plan_digest=approval.plan_digest, approve=approval.approve, reason=approval.reason
+                plan_digest=approval.plan_digest,
+                approve=approval.approve,
+                reason=approval.reason,
+                actor=access.actor,
             ),
+            access=access,
         )
         return _plan_outcome(name, plan)
     if name == "execute_plan":
@@ -62,7 +70,12 @@ def _control(db: Database, name: str, arguments: JsonDocument) -> ToolOutcome:
         run = service.execute_plan(
             db,
             request.plan_id,
-            ExecuteRequest(plan_digest=request.plan_digest, operation_id=request.operation_id),
+            ExecuteRequest(
+                plan_digest=request.plan_digest,
+                operation_id=request.operation_id,
+                actor=access.actor,
+            ),
+            access=access,
         )
         return ToolOutcome(
             name=name,
@@ -76,10 +89,15 @@ def _control(db: Database, name: str, arguments: JsonDocument) -> ToolOutcome:
 
 
 def _dispatch(
-    db: Database, name: str, arguments: JsonDocument, context: ToolCallContext
+    db: Database, name: str, arguments: JsonDocument, context: ToolCallContext, entry: AccessEntry
 ) -> ToolOutcome:
     if name in PARAMETER_MODELS:
-        result = invoke_function(db, name, arguments)
+        result = invoke_function(
+            db,
+            name,
+            arguments,
+            access=AccessContext(actor=context.actor, entry=entry, scope="query"),
+        )
         return ToolOutcome(
             name=name,
             status="SUCCEEDED",
@@ -87,9 +105,17 @@ def _dispatch(
             content=JsonDocument.model_validate(result.model_dump(mode="json")),
         )
     if name in PARAMETER_TYPES:
-        plan = service.prepare_action(db, name, arguments, ActionContext(**context.model_dump()))
+        plan = service.prepare_action(
+            db,
+            name,
+            arguments,
+            ActionContext(**context.model_dump()),
+            access=AccessContext(actor=context.actor, entry=entry, scope="query"),
+        )
         return _plan_outcome(name, plan)
-    return _control(db, name, arguments)
+    return _control(
+        db, name, arguments, AccessContext(actor=context.actor, entry=entry, scope="query")
+    )
 
 
 def _finish(
@@ -108,6 +134,22 @@ def _finish(
     return result
 
 
+def _replay_access(
+    db: Database, previous: ToolOutcome, context: ToolCallContext, entry: AccessEntry
+) -> ToolOutcome:
+    caller = AccessContext(actor=context.actor, entry=entry, scope="query")
+    try:
+        if previous.plan is not None:
+            service.authorize_plan(db, previous.plan, caller)
+        elif previous.run is not None:
+            service.authorize_run(db, previous.run, caller)
+        elif previous.name in PARAMETER_MODELS and previous.status == "SUCCEEDED":
+            require_access(db, tuple(previous.asset_refs), caller)
+    except AuthorizationError as error:
+        return ToolOutcome(name=previous.name, status="FAILED", error=str(error))
+    return previous
+
+
 def invoke_tool(
     db: Database,
     name: str,
@@ -115,13 +157,14 @@ def invoke_tool(
     context: ToolCallContext,
     *,
     call_id: str | None = None,
+    entry: AccessEntry = "agent",
 ) -> ToolOutcome:
     """Persist every attempt; action tools only prepare and require explicit execution."""
     started = perf_counter()
     identity = invocation_identity(context.session_id, call_id)
     previous = replay_invocation(db, identity, name, digest(arguments.root))
     if previous is not None:
-        return previous
+        return _replay_access(db, previous, context, entry)
     identifier = begin_invocation(
         db,
         ToolInvocationStart(
@@ -134,7 +177,7 @@ def invoke_tool(
         ),
     )
     try:
-        outcome = _dispatch(db, name, arguments, context)
+        outcome = _dispatch(db, name, arguments, context, entry)
     except (DatakeelError, ModelValidationError) as error:
         outcome = ToolOutcome(name=name, status="FAILED", error=str(error))
     except Exception as error:

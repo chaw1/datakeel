@@ -41,6 +41,15 @@ from datakeel.storage.conversation_rows import (
     ConversationResumeRow,
     ConversationRow,
 )
+from datakeel.storage.data_asset_rows import (
+    AssetApplicationRow,
+    AssetControlRow,
+    AssetGrantRow,
+    AssetUsageRow,
+    DataAssetHistoryRow,
+    DataAssetRow,
+    install_asset_constraints,
+)
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
 from datakeel.storage.file_state import FileStateRow
@@ -64,6 +73,12 @@ if TYPE_CHECKING:
 
 # Loading each mapping registers it in the single migration metadata collection.
 _REGISTERED_MODELS = (
+    AssetApplicationRow,
+    AssetControlRow,
+    AssetGrantRow,
+    AssetUsageRow,
+    DataAssetHistoryRow,
+    DataAssetRow,
     ActionAuditRow,
     ActionOperationRow,
     ActionPlanRow,
@@ -248,6 +263,7 @@ class Database:
             Base.metadata.create_all(connection)
             add_nullable_columns(connection)
             install_evidence_constraints(connection, sqlite=self.sqlite)
+            install_asset_constraints(connection, sqlite=self.sqlite)
             if self.sqlite:
                 for operation in ("UPDATE", "DELETE"):
                     connection.execute(

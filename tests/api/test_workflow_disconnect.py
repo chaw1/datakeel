@@ -25,12 +25,28 @@ from datakeel.workflows.execution import WorkflowHooks
 from tests.workflows.conftest import create_dataset
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
     from pathlib import Path
 
     from starlette.types import Message, Scope
 
     from datakeel.storage.database import Database
+
+
+def _ready_stream(
+    events: Generator[WorkflowEvent, None, None], target: Callable[[WorkflowEvent], bool]
+) -> Generator[WorkflowEvent, None, None]:
+    """Complete real workflow setup before measuring its ASGI disconnect handling."""
+    try:
+        for event in events:
+            if target(event):
+                yield event
+                yield from events
+                return
+        msg = "Workflow never reached the disconnect test target"
+        raise AssertionError(msg)
+    finally:
+        events.close()
 
 
 async def _disconnect(
@@ -48,7 +64,7 @@ async def _disconnect(
         nonlocal disconnected_at
         await ready.wait()
         if polling is not None:
-            await asyncio.sleep(0.1)
+            await asyncio.to_thread(polling.wait, 3)
             assert polling.is_set(), "The real wait node never entered its polling sleep"
         disconnected_at = monotonic()
         return {"type": "http.disconnect"}
@@ -79,12 +95,19 @@ def _call_disconnected(
 ) -> tuple[list[WorkflowEvent], float]:
     """Bound a broken listener without allowing the fixture to wait for its 60-second timeout."""
     rescue = Timer(3, response.cancelled.set)
-    rescue.start()
+
+    def ready_target(event: WorkflowEvent) -> bool:
+        matched = target(event)
+        if matched and rescue.ident is None:
+            rescue.start()
+        return matched
+
     try:
-        return asyncio.run(_disconnect(response, spec_version, target, polling))
+        return asyncio.run(_disconnect(response, spec_version, ready_target, polling))
     finally:
         rescue.cancel()
-        rescue.join()
+        if rescue.ident is not None:
+            rescue.join()
 
 
 @pytest.mark.parametrize("spec_version", ["2.3", "2.4"])
@@ -99,6 +122,11 @@ def test_http_disconnect_interrupts_real_wait_without_worker(
         polling.set()
         sleep(seconds)
 
+    def wait_started(event: WorkflowEvent) -> bool:
+        return event.step_id == "wait" and any(
+            step.id == "wait" and step.status == "RUNNING" for step in event.run.steps
+        )
+
     events = start_workflow(
         db,
         "dataset-health",
@@ -108,12 +136,9 @@ def test_http_disconnect_interrupts_real_wait_without_worker(
         hooks=WorkflowHooks(sleep=real_sleep, cancelled=cancelled.is_set),
     )
     observed, elapsed = _call_disconnected(
-        WorkflowStreamResponse(events, cancelled),
+        WorkflowStreamResponse(_ready_stream(events, wait_started), cancelled),
         spec_version,
-        lambda event: (
-            event.step_id == "wait"
-            and any(step.id == "wait" and step.status == "RUNNING" for step in event.run.steps)
-        ),
+        wait_started,
         polling,
     )
     assert elapsed <= 2
@@ -136,6 +161,10 @@ def test_http_disconnect_preserves_a_durable_approval_pause(
     """Closing a paused stream must retain its signed-resume checkpoint and pending plan."""
     dataset = create_dataset(db, tmp_path / "approval-disconnect")
     cancelled = Event()
+
+    def paused(event: WorkflowEvent) -> bool:
+        return event.run.status == "PAUSED"
+
     events = start_workflow(
         db,
         "low-quality-cleanup",
@@ -146,9 +175,9 @@ def test_http_disconnect_preserves_a_durable_approval_pause(
         hooks=WorkflowHooks(cancelled=cancelled.is_set),
     )
     observed, elapsed = _call_disconnected(
-        WorkflowStreamResponse(events, cancelled),
+        WorkflowStreamResponse(_ready_stream(events, paused), cancelled),
         spec_version,
-        lambda event: event.run.status == "PAUSED",
+        paused,
     )
     assert elapsed <= 2
     run = get_run(db, observed[-1].run.id)
