@@ -57,11 +57,12 @@ export const standardsEn = {
   stdSaved: "Change saved. Coverage and checks have been refreshed.",
   stdPrepareFailed: "Could not prepare this change.",
   stdMappingIntro:
-    "Rules suggest up to three matches. A suggestion takes effect only after you confirm its frozen action plan.",
+    "Rules return up to three candidates. Low-confidence matches need careful review. A mapping takes effect only after you approve its frozen action plan.",
   stdSearchColumns: "Search columns",
   stdColumn: "Column",
   stdStandard: "Standard",
   stdScore: "Match score",
+  stdLowConfidence: "Low confidence · review required",
   stdReasons: "Scoring reasons",
   stdConfirmMapping: "Review mapping",
   stdMapped: "Confirmed: {code}",

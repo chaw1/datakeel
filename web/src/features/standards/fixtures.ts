@@ -66,6 +66,7 @@ export const suggestions: MappingSuggestion[] = [
       {
         standard_code: "customer_id",
         score: 0.95,
+        low_confidence: false,
         reasons: [
           "Column tokens match customer identifier",
           "string type is compatible",
@@ -128,6 +129,7 @@ export const history: StandardsHistory = {
     contract: {
       standards: [{ ...standard, version: revision }],
       code_lists: [codeList],
+      synonyms: [],
     },
     mappings: standardsReport.mappings,
     plan_id: "plan-1",

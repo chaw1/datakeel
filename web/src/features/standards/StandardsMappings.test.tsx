@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
-import { mockStandardsFetch } from "./fixtures";
+import { mockStandardsFetch, suggestions } from "./fixtures";
 import { StandardsMappings } from "./StandardsMappings";
 
 it("explains rule candidates and requires a signed frozen plan before confirming a mapping", async () => {
@@ -78,5 +78,36 @@ it("filters columns and keeps a failed preparation reviewable", async () => {
   await user.click(screen.getByRole("button", { name: "Review mapping" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Standard was deprecated",
+  );
+});
+
+it("labels low-confidence candidates and leaves confirmation behind explicit review", async () => {
+  const fetch = mockStandardsFetch();
+  const original = fetch.getMockImplementation();
+  fetch.mockImplementation((input, init) =>
+    input === "/api/standards/suggestions"
+      ? Promise.resolve(
+          new Response(
+            JSON.stringify([
+              {
+                ...suggestions[0],
+                candidates: suggestions[0].candidates.map((candidate) => ({
+                  ...candidate,
+                  score: 0.42,
+                  low_confidence: true,
+                })),
+              },
+            ]),
+          ),
+        )
+      : (original?.(input, init) ?? Promise.reject(new Error("Missing mock"))),
+  );
+  render(<StandardsMappings onChanged={vi.fn()} onOpenReceipt={vi.fn()} />);
+  expect(
+    await screen.findByText("Low confidence · review required"),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "Review mapping" })).toBeEnabled();
+  expect(fetch.mock.calls.every(([, init]) => init?.method === "GET")).toBe(
+    true,
   );
 });

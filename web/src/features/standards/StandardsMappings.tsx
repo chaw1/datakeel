@@ -129,6 +129,9 @@ export function StandardsMappings({
                       {candidate.standard_code} · {t("stdScore")}:{" "}
                       {percentage(candidate.score)}
                     </strong>
+                    {candidate.low_confidence && (
+                      <p className="badge">{t("stdLowConfidence")}</p>
+                    )}
                     <ul aria-label={t("stdReasons")}>
                       {candidate.reasons.map((reason) => (
                         <li key={reason}>{reason}</li>

@@ -2392,6 +2392,16 @@ export interface components {
             daily_usd: string;
         };
         /**
+         * BusinessSynonyms
+         * @description Declare interchangeable business terms without broadening field aliases.
+         */
+        BusinessSynonyms: {
+            /** Alternatives */
+            alternatives: string[];
+            /** Canonical */
+            canonical: string;
+        };
+        /**
          * CallTree
          * @description Return independently auditable nodes and their individual model-call traces.
          */
@@ -4591,6 +4601,11 @@ export interface components {
          * @description Explain one deterministic recommendation without confirming a mapping.
          */
         MappingCandidate: {
+            /**
+             * Low Confidence
+             * @default false
+             */
+            low_confidence: boolean;
             /** Reasons */
             reasons: string[];
             /** Score */
@@ -4600,7 +4615,7 @@ export interface components {
         };
         /**
          * MappingSuggestion
-         * @description Return at most three sufficiently supported candidates for one column.
+         * @description Return at most three candidates, distinguishing weak evidence for human review.
          */
         MappingSuggestion: {
             /**
@@ -5536,6 +5551,11 @@ export interface components {
              * @default []
              */
             standards: components["schemas"]["FieldStandard"][];
+            /**
+             * Synonyms
+             * @default []
+             */
+            synonyms: components["schemas"]["BusinessSynonyms"][];
         };
         /**
          * StandardsCoverage
