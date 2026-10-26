@@ -45,7 +45,7 @@ def test_eval_evidence_when_threshold_false_prints_and_persists_without_nonzero_
     monkeypatch.setattr(
         evidence_evaluation,
         "isolated_evidence_evaluation",
-        lambda _questions: measured_report.model_copy(update={"id": new_id()}),
+        lambda _questions, **_options: measured_report.model_copy(update={"id": new_id()}),
     )
     invoke("eval-evidence", "--json")
     report = json.loads(capsys.readouterr().out)
@@ -114,10 +114,13 @@ def test_benchmark_main_writes_typed_report_and_disposes_database(
     monkeypatch.setattr(evidence_benchmark, "Database", lambda: db)
     monkeypatch.setattr(db.engine, "dispose", lambda: disposed.append(True))
 
-    def evaluate(database: Database, directory: Path, contract: Path | None) -> EvidenceEvalReport:
+    def evaluate(
+        database: Database, directory: Path, contract: Path | None, **options: object
+    ) -> EvidenceEvalReport:
         assert database is db
         assert directory == evidence_benchmark.data_dir() / "samples"
         assert contract == questions
+        assert options == {"mode": None}
         return measured_report
 
     monkeypatch.setattr(evidence_benchmark, "run_benchmark", evaluate)
@@ -136,7 +139,7 @@ def test_benchmark_main_on_extraction_failure_disposes_without_writing_report(
     monkeypatch.setattr(evidence_benchmark, "Database", lambda: db)
     monkeypatch.setattr(db.engine, "dispose", lambda: disposed.append(True))
 
-    def fail(*_args: object) -> EvidenceEvalReport:
+    def fail(*_args: object, **_options: object) -> EvidenceEvalReport:
         message = "Synthetic failed extraction"
         raise ExecutionError(message)
 
@@ -154,3 +157,25 @@ def test_benchmark_when_worker_does_not_finish_rejects_partial_observations(
     monkeypatch.setattr(evidence_benchmark, "execute", lambda *_args: False)
     with pytest.raises(ExecutionError, match="did not complete"):
         run_benchmark(db, tmp_path / "samples", samples=100)
+
+
+def test_benchmark_exact_recovers_all_generated_pairs(db: Database, tmp_path: Path) -> None:
+    """Run exact mode through the real production DAG, including cross-prefix neighbors."""
+    report = run_benchmark(db, tmp_path / "samples", samples=100, mode="exact")
+    assert report.near_duplicate_mode == "exact"
+    assert report.near_duplicate_pairs.recall == 1.0
+    assert report.val_to_train_pairs.recall == 1.0
+
+
+def test_isolated_benchmark_forwards_exact_mode(
+    measured_report: EvidenceEvalReport, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The parent's explicit mode must reach the isolated comparison process."""
+
+    def child(command: list[str], **_options: object) -> subprocess.CompletedProcess[str]:
+        assert command[command.index("--mode") + 1] == "exact"
+        Path(command[command.index("--output") + 1]).write_text(measured_report.model_dump_json())
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(evidence_evaluation.subprocess, "run", child)
+    assert evidence_evaluation.isolated_evidence_evaluation(mode="exact") == measured_report

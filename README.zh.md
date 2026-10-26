@@ -127,7 +127,7 @@ metrics:
 
 五个算子为 `evidence.image_phash`、`evidence.caption_mentions`、`evidence.annotation_labels`、`evidence.label_gap`、`evidence.near_duplicate`。[词表](contracts/evidence/lexicon.yaml) 把 `pedestrian`、`行人` 及标注类别别名折叠为 canonical `person`；`night` 等场景概念同样使用 `mentions` 谓词。caption 派生状态只取 `present` 或 `unknown`，缺 sidecar 保持未知。只有 caption 提到某概念且已提供的标注文件漏标时，`label_gap` 才是 `present`；本版只有直接测量的 `corrupt` 可取 `absent`。文本锚点是 NFC 归一化后 Unicode 码点的半开区间 `[start, end)`，图像锚点是原图像素 `xyxy`，附原始宽高。
 
-[近重复合同](contracts/evidence/near_duplicate.yaml) 固定 64 位 dHash、前 4 位分桶、汉明距离 ≤8。每个直接样本对只存一次、双向查询，不做传递扩展或自动合并。前缀分桶可能漏检，下方评测如实报告。模型抽取器接口和 fake 适配器仅做单元测试，不进入抽取 DAG、证据评测或模型预算。
+[近重复合同](contracts/evidence/near_duplicate.yaml) 固定 64 位 dHash、汉明距离 ≤8。默认 `mode: prefix` 按前 4 位分桶，可能漏掉跨桶样本对；`mode: exact` 用互不重叠的多段索引找全阈值内的直接样本对，增加索引与比较成本。每个直接样本对只存一次、双向查询，不做传递扩展或自动合并。可选 `datakeel-accel` 包用 Rust 执行相同的整数比较；`DATAKEEL_ACCEL=auto|off|required` 控制实现，`auto` 未安装时回退 Python。[构建步骤、实测性能和实现报告](docs/RUST_ACCEL.md)说明具体用法。模型抽取器接口和 fake 适配器仅做单元测试，不进入抽取 DAG、证据评测或模型预算。
 
 ## 抽取与复核文本知识图谱
 
@@ -398,7 +398,9 @@ uv run python scripts/mutate.py --output mutation-results.json
 
 `eval-evidence` 在隔离的本机进程中新生成 1,000 个样本，运行生产抽取 DAG，再执行 [questions.yaml](contracts/evidence/questions.yaml) 的 15 题：近重复 4 题、冲突 4 题、损坏 4 题、无标注 3 题。baseline 只用标签、路径和已有质量事实，with_evidence 加入断言与直接近重复关系。报告包含每题 precision/recall、宏平均、pair 指标、三态计数、抽取计数与耗时，复用 `eval_runs` 表，`provider=evidence`，`suite_digest` 是题集文件 SHA-256。临时样例随评测结束清理，保留报告和 gold 摘要；`--questions path.yaml` 可指定另一份通过校验的题集。
 
-在内置合成数据及当前题集上，实测宏平均 precision 为 **0.336567 → 1.000000**，recall 为 **0.933333 → 0.989542**。直接样本对命中 **48/52**，precision 1.0、recall 0.923077；val→train 命中 **47/51**，recall 0.921569。`threshold_met=true`：recall 增益 ≥0.05、precision 下降 ≤0.02、pair precision ≥0.9、pair recall ≥0.8。宏平均 recall 增益主要来自 `missing-car`：无标注时，仅靠标签的 baseline 无法确认 car。这些数值只说明本生成集和所声明 baseline 的结果，不代表真实数据上的泛化能力。所有结果（包括 `threshold_met: false`）均如实落库并打印，指标未达门槛不让命令失败；执行或校验错误仍会失败。该评测不包含模型抽取、模型 token 或模型费用。
+默认 `prefix` 模式在内置合成数据及当前题集上，实测宏平均 precision 为 **0.336567 → 1.000000**，recall 为 **0.933333 → 0.989542**。直接样本对命中 **48/52**，precision 1.0、recall 0.923077；val→train 命中 **47/51**，recall 0.921569。`threshold_met=true`：recall 增益 ≥0.05、precision 下降 ≤0.02、pair precision ≥0.9、pair recall ≥0.8。宏平均 recall 增益主要来自 `missing-car`：无标注时，仅靠标签的 baseline 无法确认 car。这些数值只说明本生成集和所声明 baseline 的结果，不代表真实数据上的泛化能力。所有结果（包括 `threshold_met: false`）均如实落库并打印，指标未达门槛不让命令失败；执行或校验错误仍会失败。该评测不包含模型抽取、模型 token 或模型费用。
+
+运行 `uv run datakeel eval-evidence --mode exact --json`，在相同生成数据上评测不漏检模式。实测 exact 直接样本对命中 **52/52**、val→train 命中 **51/51**，两者 precision/recall 均为 **1.0**；证据宏平均 precision/recall 也均为 **1.0**。报告记录 `near_duplicate_mode` 以及近重复算子实际使用的实现和版本。这些是生成夹具上的结果，不代表真实数据的泛化表现。
 
 `eval-ask` 新建隔离本机企业数据，对照生成器独立 gold 执行 [20 道题](contracts/ask/questions.yaml)：14 道可答（`ok-`）、4 道不可答（`ua-`）、2 道澄清（`cl-`），参考时刻固定为 `2026-10-01T00:00:00Z`。数值相对误差允许 0.5%；证据按状态检查，可答要求指标、SQL、表字段、匹配证据等齐全，拒答和澄清要求对应断言与候选。报告逐题保留答案、正确性、证据完整性、耗时和题集/gold 摘要，写入既有 `eval_runs`，`provider=ask`。报告门槛为答对至少 13/14、拒答 4/4、证据完整 20/20，另报澄清数量；`threshold_met=false` 如实打印和保存，不让命令失败。题集非法及单题评测之外的执行失败仍会报错。`--questions path.yaml` 可指定另一份合法题集；整个评测不调用模型，不计 token 或模型费用。
 

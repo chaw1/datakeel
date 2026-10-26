@@ -111,6 +111,13 @@ def _checked_extraction(
     return report
 
 
+def _comparison_mode(extraction: EvidenceRunReport) -> Literal["prefix", "exact"]:
+    for operator in extraction.operators:
+        if operator.operator == "evidence.near_duplicate" and operator.match_mode is not None:
+            return operator.match_mode
+    return "prefix"
+
+
 def evaluate_evidence_dataset(
     db: Database,
     dataset_id: str,
@@ -142,6 +149,7 @@ def evaluate_evidence_dataset(
         baseline_macro=baseline,
         with_evidence_macro=evidence,
         near_duplicate_pairs=pairs,
+        near_duplicate_mode=_comparison_mode(extraction),
         val_to_train_pairs=retrieval_metrics(
             observed_pairs(assertions, paths, gold, cross_split=True),
             gold_pairs(gold, cross_split=True),

@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Literal
 
 from rich.console import Console
 
@@ -18,7 +19,9 @@ from datakeel.storage.database import Database
 from datakeel.storage.evidence_evaluations import save_evidence_evaluation
 
 
-def isolated_evidence_evaluation(questions: Path | None = None) -> EvidenceEvalReport:
+def isolated_evidence_evaluation(
+    questions: Path | None = None, *, mode: Literal["prefix", "exact"] | None = None
+) -> EvidenceEvalReport:
     """Launch a fresh local-only benchmark without inheriting any process configuration."""
     with TemporaryDirectory(prefix="datakeel-evidence-eval-") as temporary:
         directory = Path(temporary)
@@ -32,6 +35,8 @@ def isolated_evidence_evaluation(questions: Path | None = None) -> EvidenceEvalR
             "--questions",
             str((questions or contract_path("evidence/questions.yaml")).resolve()),
         ]
+        if mode is not None:
+            command.extend(["--mode", mode])
         result = subprocess.run(  # noqa: S603  # Fixed module and argv; no shell or inherited settings.
             command,
             env={
@@ -51,10 +56,14 @@ def isolated_evidence_evaluation(questions: Path | None = None) -> EvidenceEvalR
 
 
 def evaluate_evidence(
-    db: Database, questions: Path | None = None, *, json_output: bool = False
+    db: Database,
+    questions: Path | None = None,
+    *,
+    json_output: bool = False,
+    mode: Literal["prefix", "exact"] | None = None,
 ) -> None:
     """Persist complete measurements and display unmet thresholds without failing the command."""
-    report = save_evidence_evaluation(db, isolated_evidence_evaluation(questions))
+    report = save_evidence_evaluation(db, isolated_evidence_evaluation(questions, mode=mode))
     console = Console()
     if json_output:
         console.print(

@@ -6,6 +6,7 @@
 import argparse
 from pathlib import Path
 from time import perf_counter
+from typing import Literal
 
 from datakeel.core.errors import ExecutionError
 from datakeel.core.evidence_eval import EvidenceEvalReport
@@ -19,14 +20,19 @@ from datakeel.worker.runner import execute
 
 
 def run_benchmark(
-    db: Database, directory: Path, questions: Path | None = None, *, samples: int = 1000
+    db: Database,
+    directory: Path,
+    questions: Path | None = None,
+    *,
+    samples: int = 1000,
+    mode: Literal["prefix", "exact"] | None = None,
 ) -> EvidenceEvalReport:
     """Generate a fresh corpus and run the production worker before measuring its observations."""
     started = perf_counter()
     generate_samples(directory, samples=samples)
     dataset = import_evidence_samples(db, "Generated evidence benchmark", directory)
     queue = DatabaseQueue(db)
-    task = queue.submit(dataset.id, "evidence-benchmark", evidence_pipeline())
+    task = queue.submit(dataset.id, "evidence-benchmark", evidence_pipeline(mode=mode))
     lease = queue.claim()
     if lease is None or lease.task_id != task or not execute(queue, lease):
         msg = "Fresh evidence benchmark extraction did not complete"
@@ -42,11 +48,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--questions", type=Path)
+    parser.add_argument("--mode", choices=["prefix", "exact"])
     args = parser.parse_args()
     db = Database()
     db.migrate()
     try:
-        result = run_benchmark(db, data_dir() / "samples", args.questions)
+        result = run_benchmark(db, data_dir() / "samples", args.questions, mode=args.mode)
         args.output.write_text(result.model_dump_json(indent=2) + "\n", encoding="utf-8")
     finally:
         db.engine.dispose()
