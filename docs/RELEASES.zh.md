@@ -96,6 +96,4 @@ uv run datakeel release-reconcile RELEASE_ID --json
 
 分片暂存于配置的 `DATAKEEL_HOME`，完成或失败后仍保留；本版没有自动过期清理或清理接口。磁盘容量须覆盖保留分片及整文件临时组装。持久文件系统不变时，客户端或进程重启后仍可续传。多个 API 主机须共用暂存卷和数据库，或将同一上传固定路由至原主机；只共用 PostgreSQL 不会共享分片字节。进程锁防止重叠写入，不负责复制暂存文件。
 
-可对独立本地 API 执行 `uv run python scripts/verify_resumable_upload.py --url http://127.0.0.1:8816`。脚本生成稀疏文件，关闭首次客户端后只补缺片，并核对最终下载哈希；它会将生成数据导入该 API 工作区。
-
 使用 `npm --prefix web run smoke:release -- http://127.0.0.1:8816 OUTPUT_DIRECTORY` 重放发布浏览器流程：创建生成样本、对比两个版本、从界面签批发布、下载并核对交付包、修改一个字节，最后确认平台存档报告刷新后仍在。截图及结构化结果写入指定输出目录。脚本仅允许请求给定回环地址，要求浏览器零错误。
