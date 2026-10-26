@@ -173,6 +173,24 @@ def _case(fixture: Fixture, content: bytes, text: str) -> KGImageCase:
     )
 
 
+def _dump_fixture(model: KGImageSuite | TranscriptionRecording | Recording) -> str:
+    # Keep the established pixel-only recordings reproducible without new default metadata.
+    return yaml.safe_dump(
+        model.model_dump(
+            mode="json",
+            exclude_none=True,
+            exclude={
+                "coordinate_space": True,
+                "records": {"__all__": {"coordinate_space", "ignored_field_count"}},
+            }
+            if isinstance(model, TranscriptionRecording)
+            else None,
+        ),
+        allow_unicode=True,
+        sort_keys=False,
+    )
+
+
 def main() -> None:
     """Write portable labels and explicitly synthetic replay observations deterministically."""
     directory = ROOT / "eval" / "image-auto"
@@ -226,13 +244,7 @@ def main() -> None:
         (ROOT / "recordings" / "auto-transcription.yaml", archive),
         (ROOT / "recordings" / "auto-extraction.yaml", recording),
     ):
-        path.write_text(
-            yaml.safe_dump(
-                model.model_dump(mode="json", exclude_none=True),
-                allow_unicode=True,
-                sort_keys=False,
-            )
-        )
+        path.write_text(_dump_fixture(model))
 
 
 if __name__ == "__main__":
