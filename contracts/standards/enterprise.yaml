@@ -1,0 +1,935 @@
+standards:
+- code: record_id
+  name_zh: 记录编号
+  name_en: record id
+  description: 记录编号的统一业务定义 / Canonical record id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - id
+  - primary key
+  - 记录ID
+- code: record_name
+  name_zh: 记录名称
+  name_en: record name
+  description: 记录名称的统一业务定义 / Canonical record name.
+  data_type: string
+  length: 120
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - name
+  - 名称
+- code: customer_id
+  name_zh: 客户编号
+  name_en: customer id
+  description: 客户编号的统一业务定义 / Canonical customer id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: order_id
+  name_zh: 订单编号
+  name_en: order id
+  description: 订单编号的统一业务定义 / Canonical order id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: product_id
+  name_zh: 产品编号
+  name_en: product id
+  description: 产品编号的统一业务定义 / Canonical product id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: store_id
+  name_zh: 门店编号
+  name_en: store id
+  description: 门店编号的统一业务定义 / Canonical store id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: warehouse_id
+  name_zh: 仓库编号
+  name_en: warehouse id
+  description: 仓库编号的统一业务定义 / Canonical warehouse id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: region_id
+  name_zh: 区域编号
+  name_en: region id
+  description: 区域编号的统一业务定义 / Canonical region id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: customer_name
+  name_zh: 客户姓名
+  name_en: customer name
+  description: 客户姓名的统一业务定义 / Canonical customer name.
+  data_type: string
+  length: 80
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: confidential
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - client name
+  - 客户名称
+- code: customer_email
+  name_zh: 客户邮箱
+  name_en: customer email
+  description: 客户邮箱的统一业务定义 / Canonical customer email.
+  data_type: string
+  length: 120
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: '[^\s@]+@[^\s@]+\.[^\s@]+'
+  unit: null
+  required: false
+  sensitivity: confidential
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - customer email address
+  - 客户电子邮件
+- code: customer_phone
+  name_zh: 客户电话
+  name_en: customer phone
+  description: 客户电话的统一业务定义 / Canonical customer phone.
+  data_type: string
+  length: 30
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: confidential
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - customer mobile
+  - 客户手机号
+- code: customer_age
+  name_zh: 客户年龄
+  name_en: customer age
+  description: 客户年龄的统一业务定义 / Canonical customer age.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 0.0
+  maximum: 150.0
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: customer_status
+  name_zh: 客户状态
+  name_en: customer status
+  description: 客户状态的统一业务定义 / Canonical customer status.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: customer_status
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: customer_type
+  name_zh: 客户类型
+  name_en: customer type
+  description: 客户类型的统一业务定义 / Canonical customer type.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: customer_types
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: region
+  name_zh: 业务区域
+  name_en: region
+  description: 业务区域的统一业务定义 / Canonical region.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: regions
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 区域
+  - 地区
+- code: channel
+  name_zh: 销售渠道
+  name_en: channel
+  description: 销售渠道的统一业务定义 / Canonical channel.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: channels
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 渠道
+- code: category
+  name_zh: 产品类别
+  name_en: category
+  description: 产品类别的统一业务定义 / Canonical category.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: categories
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 类别
+  - 分类
+- code: quantity
+  name_zh: 业务数量
+  name_en: quantity
+  description: 业务数量的统一业务定义 / Canonical quantity.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 0.0
+  maximum: 1000000.0
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 数量
+  - qty
+- code: status
+  name_zh: 业务状态
+  name_en: status
+  description: 业务状态的统一业务定义 / Canonical status.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: business_status
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 状态
+- code: date
+  name_zh: 业务日期
+  name_en: date
+  description: 业务日期的统一业务定义 / Canonical date.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: \d{4}-\d{2}-\d{2}
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 日期
+  - dt
+- code: order_date
+  name_zh: 订单日期
+  name_en: order date
+  description: 订单日期的统一业务定义 / Canonical order date.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: \d{4}-\d{2}-\d{2}
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: joined_date
+  name_zh: 加入日期
+  name_en: joined date
+  description: 加入日期的统一业务定义 / Canonical joined date.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: \d{4}-\d{2}-\d{2}
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - join date
+- code: product_code
+  name_zh: 产品编码
+  name_en: product code
+  description: 产品编码的统一业务定义 / Canonical product code.
+  data_type: string
+  length: 12
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: P\d{3}
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 商品编码
+- code: amount
+  name_zh: 业务金额
+  name_en: amount
+  description: 业务金额的统一业务定义 / Canonical amount.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 金额
+- code: paid_amount
+  name_zh: 实付金额
+  name_en: paid amount
+  description: 实付金额的统一业务定义 / Canonical paid amount.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: list_amount
+  name_zh: 标价金额
+  name_en: list amount
+  description: 标价金额的统一业务定义 / Canonical list amount.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: refund_amount
+  name_zh: 退款金额
+  name_en: refund amount
+  description: 退款金额的统一业务定义 / Canonical refund amount.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: shipped_amount
+  name_zh: 发货金额
+  name_en: shipped amount
+  description: 发货金额的统一业务定义 / Canonical shipped amount.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: invoiced_amount
+  name_zh: 开票金额
+  name_en: invoiced amount
+  description: 开票金额的统一业务定义 / Canonical invoiced amount.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: discount_amount
+  name_zh: 折扣金额
+  name_en: discount amount
+  description: 折扣金额的统一业务定义 / Canonical discount amount.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: unit_price
+  name_zh: 产品单价
+  name_en: unit price
+  description: 产品单价的统一业务定义 / Canonical unit price.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: budget
+  name_zh: 活动预算
+  name_en: budget
+  description: 活动预算的统一业务定义 / Canonical budget.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: revenue
+  name_zh: 营业收入
+  name_en: revenue
+  description: 营业收入的统一业务定义 / Canonical revenue.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: CNY
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - sales revenue
+  - 收入
+- code: record_code
+  name_zh: 记录代码
+  name_en: record code
+  description: 记录代码的统一业务定义 / Canonical record code.
+  data_type: string
+  length: 32
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - code
+  - 代码
+- code: description
+  name_zh: 业务描述
+  name_en: description
+  description: 业务描述的统一业务定义 / Canonical description.
+  data_type: string
+  length: 500
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 描述
+- code: unit_cost
+  name_zh: 单位成本
+  name_en: unit cost
+  description: 单位成本的统一业务定义 / Canonical unit cost.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: labor_cost
+  name_zh: 人工成本
+  name_en: labor cost
+  description: 人工成本的统一业务定义 / Canonical labor cost.
+  data_type: number
+  length: null
+  precision: 12
+  scale: 2
+  code_list: null
+  minimum: 0.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: ticket_id
+  name_zh: 工单编号
+  name_en: ticket id
+  description: 工单编号的统一业务定义 / Canonical ticket id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: part_id
+  name_zh: 零件编号
+  name_en: part id
+  description: 零件编号的统一业务定义 / Canonical part id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: failure_code_id
+  name_zh: 故障代码编号
+  name_en: failure code id
+  description: 故障代码编号的统一业务定义 / Canonical failure code id.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 1.0
+  maximum: null
+  pattern: null
+  unit: null
+  required: true
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: start_date
+  name_zh: 开始日期
+  name_en: start date
+  description: 开始日期的统一业务定义 / Canonical start date.
+  data_type: string
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: null
+  maximum: null
+  pattern: \d{4}-\d{2}-\d{2}
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases: []
+- code: months
+  name_zh: 有效月数
+  name_en: months
+  description: 有效月数的统一业务定义 / Canonical months.
+  data_type: integer
+  length: null
+  precision: null
+  scale: null
+  code_list: null
+  minimum: 0.0
+  maximum: 1200.0
+  pattern: null
+  unit: null
+  required: false
+  sensitivity: internal
+  owner: data-steward
+  version: 1
+  status: active
+  aliases:
+  - 月数
+code_lists:
+- code: regions
+  name: 业务区域
+  entries:
+  - value: 华东
+    label_zh: 华东
+    label_en: East China
+  - value: 华南
+    label_zh: 华南
+    label_en: South China
+  - value: 华北
+    label_zh: 华北
+    label_en: North China
+  - value: 西部
+    label_zh: 西部
+    label_en: Western China
+  version: 1
+  status: active
+- code: channels
+  name: 销售渠道
+  entries:
+  - value: 线上
+    label_zh: 线上
+    label_en: Online
+  - value: 门店
+    label_zh: 门店
+    label_en: Retail store
+  - value: 经销商
+    label_zh: 经销商
+    label_en: Distributor
+  version: 1
+  status: active
+- code: categories
+  name: 商品类别
+  entries:
+  - value: 油烟机
+    label_zh: 油烟机
+    label_en: Range hood
+  - value: 洗碗机
+    label_zh: 洗碗机
+    label_en: Dishwasher
+  - value: 燃气灶
+    label_zh: 燃气灶
+    label_en: Gas stove
+  - value: 蒸烤箱
+    label_zh: 蒸烤箱
+    label_en: Steam oven
+  version: 1
+  status: active
+- code: business_status
+  name: 业务状态
+  entries:
+  - value: draft
+    label_zh: 草稿
+    label_en: Draft
+  - value: booked
+    label_zh: 已入账
+    label_en: Booked
+  - value: cancelled
+    label_zh: 已取消
+    label_en: Cancelled
+  - value: completed
+    label_zh: 已完成
+    label_en: Completed
+  - value: pending
+    label_zh: 待处理
+    label_en: Pending
+  - value: approved
+    label_zh: 已批准
+    label_en: Approved
+  - value: paid
+    label_zh: 已支付
+    label_en: Paid
+  - value: shipped
+    label_zh: 已发货
+    label_en: Shipped
+  - value: open
+    label_zh: 待处理
+    label_en: Open
+  - value: closed
+    label_zh: 已关闭
+    label_en: Closed
+  version: 1
+  status: active
+- code: customer_status
+  name: 客户状态
+  entries:
+  - value: active
+    label_zh: 有效
+    label_en: Active
+  - value: inactive
+    label_zh: 停用
+    label_en: Inactive
+  version: 1
+  status: active
+- code: customer_types
+  name: 客户类型
+  entries:
+  - value: 个人
+    label_zh: 个人
+    label_en: Individual
+  - value: 企业
+    label_zh: 企业
+    label_en: Business
+  version: 1
+  status: active

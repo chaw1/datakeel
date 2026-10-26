@@ -1,0 +1,298 @@
+{
+  "$defs": {
+    "CodeEntry": {
+      "additionalProperties": false,
+      "description": "Assign bilingual business labels to one scalar reference value.",
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/Scalar"
+        },
+        "label_zh": {
+          "minLength": 1,
+          "title": "Label Zh",
+          "type": "string"
+        },
+        "label_en": {
+          "default": "",
+          "title": "Label En",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "label_zh"
+      ],
+      "title": "CodeEntry",
+      "type": "object"
+    },
+    "CodeList": {
+      "additionalProperties": false,
+      "description": "Version a reference code list independently of field standards.",
+      "properties": {
+        "code": {
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "entries": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CodeEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        },
+        "version": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/StandardStatus",
+          "default": "draft"
+        }
+      },
+      "required": [
+        "code",
+        "name"
+      ],
+      "title": "CodeList",
+      "type": "object"
+    },
+    "FieldStandard": {
+      "additionalProperties": false,
+      "description": "Describe the approved business meaning and permitted shape of a field.",
+      "properties": {
+        "code": {
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "name_zh": {
+          "minLength": 1,
+          "title": "Name Zh",
+          "type": "string"
+        },
+        "name_en": {
+          "minLength": 1,
+          "title": "Name En",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "data_type": {
+          "minLength": 1,
+          "title": "Data Type",
+          "type": "string"
+        },
+        "length": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Length"
+        },
+        "precision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precision"
+        },
+        "scale": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scale"
+        },
+        "code_list": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Code List"
+        },
+        "minimum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum"
+        },
+        "maximum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum"
+        },
+        "pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/Sensitivity",
+          "default": "internal"
+        },
+        "owner": {
+          "default": "",
+          "title": "Owner",
+          "type": "string"
+        },
+        "version": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/StandardStatus",
+          "default": "draft"
+        },
+        "aliases": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "name_zh",
+        "name_en",
+        "description",
+        "data_type"
+      ],
+      "title": "FieldStandard",
+      "type": "object"
+    },
+    "Scalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Sensitivity": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted"
+      ],
+      "type": "string"
+    },
+    "StandardStatus": {
+      "enum": [
+        "draft",
+        "active",
+        "deprecated"
+      ],
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Combine strict field and reference-data declarations in one YAML document.",
+  "properties": {
+    "standards": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FieldStandard"
+      },
+      "title": "Standards",
+      "type": "array"
+    },
+    "code_lists": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CodeList"
+      },
+      "title": "Code Lists",
+      "type": "array"
+    }
+  },
+  "title": "StandardsContract",
+  "type": "object"
+}
