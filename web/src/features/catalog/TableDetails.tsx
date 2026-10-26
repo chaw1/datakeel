@@ -6,6 +6,7 @@ import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 import { objectHref } from "../object/navigation";
+import { StandardsChecks } from "../standards/StandardsChecks";
 
 import { ImpactTree } from "./ImpactTree";
 import { linkLabels, propertyText } from "./values";
@@ -146,6 +147,7 @@ export function TableDetails({
               <p className="muted">{t("catEmpty")}</p>
             )}
           </section>
+          <StandardsChecks tableId={tableId} />
           <details>
             <summary>{t("catRelationships")}</summary>
             {detail.neighbors.links.length ? (

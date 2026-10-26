@@ -6,6 +6,7 @@ import { bytes } from "../../lib/format";
 import { isObjectKind, objectHref } from "../object/navigation";
 
 import { ApprovalMetricObject } from "./ApprovalMetricObject";
+import { ApprovalStandardObjects } from "./ApprovalStandardObjects";
 import { isMetricPlan } from "./metricObject";
 
 import type { ActionPlan } from "../../api/types";
@@ -14,6 +15,16 @@ export function ApprovalObjects({ plan }: { plan: ActionPlan }) {
   const { t, locale } = useI18n();
   const [limit, setLimit] = useState(5);
   const objects = plan.manifest.objects;
+  if (
+    [
+      "import_standards",
+      "update_standard",
+      "update_code_list",
+      "confirm_standard_mapping",
+      "rollback_standards",
+    ].includes(plan.action_type)
+  )
+    return <ApprovalStandardObjects key={plan.plan_digest} plan={plan} />;
   if (isMetricPlan(plan))
     return <ApprovalMetricObject key={plan.plan_digest} plan={plan} />;
   return (

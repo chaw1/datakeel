@@ -11,11 +11,13 @@ import { kgZh } from "./kgZh";
 import { knowledgeZh } from "./knowledgeZh";
 import { metricRollbackZh } from "./metricRollbackZh";
 import { objectZh } from "./objectZh";
+import { standardsZh } from "./standardsZh";
 import { workflowZh } from "./workflowZh";
 import { workspaceZh } from "./workspaceZh";
 
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
+  ...standardsZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,

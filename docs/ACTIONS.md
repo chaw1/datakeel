@@ -1,8 +1,8 @@
 # Controlled action outcomes / 受控动作结果
 
-Every action starts with a frozen plan. Irreversible and outbound actions require explicit human approval bound to that plan. Execution consumes the approval once.
+Every action starts with a frozen plan. Irreversible, outbound and data standard governance actions require explicit human approval bound to that plan. Execution consumes the approval once.
 
-每个动作都先生成冻结计划。不可逆或外发动作必须获得绑定该计划的人工审批；执行时审批只能消费一次。
+每个动作都先生成冻结计划。不可逆、外发或数据标准治理动作必须获得绑定该计划的人工审批；执行时审批只能消费一次。
 
 | Attempt / 执行条件 | Run status / 运行状态 | `reason` |
 | --- | --- | --- |
@@ -21,9 +21,9 @@ The first unauthorized `POST /api/actions/{plan_id}/execute` retains its HTTP 40
 
 ## Resuming a paused Agent / 恢复暂停的 Agent
 
-The Agent persists a synchronous checkpoint when a plan requires approval. A process restart does not discard this pause. Reversible actions still execute automatically unless the conversation is in dry-run mode.
+The Agent persists a synchronous checkpoint when a plan requires approval. A process restart does not discard this pause. Reversible actions execute automatically when approval is not required and the conversation is not in dry-run mode. Standard and code-list changes, restores and mapping confirmations always require human approval.
 
-Agent 在计划需要审批时同步保存暂停 checkpoint，进程重启不会丢失该断点。可逆动作仍自动执行，dry-run 会话除外。
+Agent 在计划需要审批时同步保存暂停 checkpoint，进程重启不会丢失该断点。可逆动作在不要求签批且非 dry-run 会话时自动执行。标准和码表变更、历史恢复及映射确认始终需要人工审批。
 
 After approving the plan through the existing approval endpoint or sheet, send `POST /api/agent/conversations/{id}/resume` with the body below. Use a unique key for this resume attempt; replaying the same completed key returns the stored response. The response uses the existing SSE event format and acquires its own conversation response lease. It does not append a user message.
 

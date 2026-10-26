@@ -5,6 +5,8 @@ import { ApiError } from "../../api/client";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
+import { requiresHumanApproval } from "./requiresApproval";
+
 import type { ActionPlan, ActionRun } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
@@ -30,7 +32,7 @@ export function useApproval({
   const [rejected, setRejected] = useState(false);
   const [authorized, setAuthorized] = useState(plan.status === "APPROVED");
   const [run, setRun] = useState<ActionRun | null>(null);
-  const requiresApproval = !plan.reversible || plan.external;
+  const requiresApproval = requiresHumanApproval(plan);
   const terminal =
     rejected || run !== null || !["PREPARED", "APPROVED"].includes(plan.status);
   const status = rejected

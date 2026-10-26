@@ -1363,6 +1363,286 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/standards/analysis-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Analysis Report
+         * @description Build the deterministic analysis report from the same checked column population.
+         */
+        get: operations["analysis_report_api_standards_analysis_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Checks
+         * @description Read redacted rule violations for the currently confirmed mappings.
+         */
+        get: operations["checks_api_standards_checks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/code-lists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Code Lists
+         * @description Search reference data names and bilingual value labels by lifecycle status.
+         */
+        get: operations["code_lists_api_standards_code_lists_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contract
+         * @description Read the effective YAML-compatible contract without internal connection metadata.
+         */
+        get: operations["contract_api_standards_contract_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Coverage
+         * @description Group mapped-column coverage and compliance by source, table and owner.
+         */
+        get: operations["coverage_api_standards_coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export
+         * @description Export the same strict field and code-list definitions as portable YAML.
+         */
+        get: operations["export_api_standards_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fields
+         * @description Search bilingual field standards and optionally select their lifecycle status.
+         */
+        get: operations["fields_api_standards_fields_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * History
+         * @description Read append-only versions with exact action and actor attribution.
+         */
+        get: operations["history_api_standards_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mappings
+         * @description List only associations explicitly confirmed through controlled actions.
+         */
+        get: operations["mappings_api_standards_mappings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Profiles
+         * @description Read column metadata and observed counts without exposing source sample values.
+         */
+        get: operations["profiles_api_standards_profiles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quality
+         * @description Score observed completeness, consistency and domain rules for confirmed mappings.
+         */
+        get: operations["quality_api_standards_quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report
+         * @description Read conformance checks and grouped coverage for all columns or one table.
+         */
+        get: operations["report_api_standards_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Schema
+         * @description Return the JSON Schema applied to contract import and controlled edits.
+         */
+        get: operations["schema_api_standards_schema_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/standards/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggestions
+         * @description Explain up to three rule candidates per column without confirming them.
+         */
+        get: operations["suggestions_api_standards_suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks": {
         parameters: {
             query?: never;
@@ -1626,7 +1906,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -1680,7 +1960,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -2244,6 +2524,145 @@ export interface components {
             tool_calls?: components["schemas"]["ToolCall"][];
         };
         /**
+         * CodeEntry
+         * @description Assign bilingual business labels to one scalar reference value.
+         */
+        CodeEntry: {
+            /**
+             * Label En
+             * @default
+             */
+            label_en: string;
+            /** Label Zh */
+            label_zh: string;
+            value: components["schemas"]["Scalar"];
+        };
+        /**
+         * CodeList
+         * @description Version a reference code list independently of field standards.
+         */
+        CodeList: {
+            /** Code */
+            code: string;
+            /**
+             * Entries
+             * @default []
+             */
+            entries: components["schemas"]["CodeEntry"][];
+            /** Name */
+            name: string;
+            /** @default draft */
+            status: components["schemas"]["StandardStatus"];
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /**
+         * ColumnCheck
+         * @description Report checks over observations; row_count defines the checked population.
+         */
+        ColumnCheck: {
+            /**
+             * Checked Rules
+             * @default []
+             */
+            checked_rules: components["schemas"]["ViolationRule"][];
+            /** Column Id */
+            column_id: string;
+            /**
+             * Compliant
+             * @description Return whether every evaluated constraint passed.
+             */
+            readonly compliant: boolean;
+            /**
+             * Fully Checked
+             * @description Return whether every declared constraint had sufficient evidence.
+             */
+            readonly fully_checked: boolean;
+            /** Row Count */
+            row_count: number;
+            /**
+             * Skipped Rules
+             * @default []
+             */
+            skipped_rules: string[];
+            /** Standard Code */
+            standard_code: string;
+            /**
+             * Violations
+             * @default []
+             */
+            violations: components["schemas"]["StandardViolation"][];
+        };
+        /**
+         * ColumnMapping
+         * @description Represent a human-confirmed column-to-standard association.
+         */
+        ColumnMapping: {
+            /** Column Id */
+            column_id: string;
+            /** Standard Code */
+            standard_code: string;
+        };
+        /**
+         * ColumnProfile
+         * @description Carry bounded observations without retaining database handles or row objects.
+         */
+        ColumnProfile: {
+            /** Column Id */
+            column_id: string;
+            /** Data Type */
+            data_type: string;
+            /** Length */
+            length?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Null Count
+             * @default 0
+             */
+            null_count: number;
+            /**
+             * Owner
+             * @default
+             */
+            owner: string;
+            /** Precision */
+            precision?: number | null;
+            /**
+             * Row Count
+             * @default 0
+             */
+            row_count: number;
+            /** Scale */
+            scale?: number | null;
+            sensitivity?: components["schemas"]["Sensitivity"] | null;
+            /**
+             * Source Id
+             * @default
+             */
+            source_id: string;
+            /**
+             * Table Id
+             * @default
+             */
+            table_id: string;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /** Unit */
+            unit?: string | null;
+            /**
+             * Values
+             * @default []
+             */
+            values: components["schemas"]["StandardValue"][];
+        };
+        /**
          * CompiledQuery
          * @description Carry compiler-generated SELECT SQL, bound parameters, and evidence.
          */
@@ -2440,6 +2859,24 @@ export interface components {
              * @default 0
              */
             unknown_cost_usd: string;
+        };
+        /**
+         * CoverageGroup
+         * @description Summarize coverage and mapped-column compliance within one metadata group.
+         */
+        CoverageGroup: {
+            /** Compliance */
+            compliance: number;
+            /** Compliant Columns */
+            compliant_columns: number;
+            /** Coverage */
+            coverage: number;
+            /** Key */
+            key: string;
+            /** Mapped Columns */
+            mapped_columns: number;
+            /** Total Columns */
+            total_columns: number;
         };
         /**
          * DatasetInput
@@ -2880,6 +3317,62 @@ export interface components {
             id: string;
             /** Version */
             version: string;
+        };
+        /**
+         * FieldStandard
+         * @description Describe the approved business meaning and permitted shape of a field.
+         */
+        FieldStandard: {
+            /**
+             * Aliases
+             * @default []
+             */
+            aliases: string[];
+            /** Code */
+            code: string;
+            /** Code List */
+            code_list?: string | null;
+            /** Data Type */
+            data_type: string;
+            /** Description */
+            description: string;
+            /** Length */
+            length?: number | null;
+            /** Maximum */
+            maximum?: number | null;
+            /** Minimum */
+            minimum?: number | null;
+            /** Name En */
+            name_en: string;
+            /** Name Zh */
+            name_zh: string;
+            /**
+             * Owner
+             * @default
+             */
+            owner: string;
+            /** Pattern */
+            pattern?: string | null;
+            /** Precision */
+            precision?: number | null;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** Scale */
+            scale?: number | null;
+            /** @default internal */
+            sensitivity: components["schemas"]["Sensitivity"];
+            /** @default draft */
+            status: components["schemas"]["StandardStatus"];
+            /** Unit */
+            unit?: string | null;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
         };
         /**
          * FileView
@@ -4094,6 +4587,31 @@ export interface components {
             version: string;
         };
         /**
+         * MappingCandidate
+         * @description Explain one deterministic recommendation without confirming a mapping.
+         */
+        MappingCandidate: {
+            /** Reasons */
+            reasons: string[];
+            /** Score */
+            score: number;
+            /** Standard Code */
+            standard_code: string;
+        };
+        /**
+         * MappingSuggestion
+         * @description Return at most three sufficiently supported candidates for one column.
+         */
+        MappingSuggestion: {
+            /**
+             * Candidates
+             * @default []
+             */
+            candidates: components["schemas"]["MappingCandidate"][];
+            /** Column Id */
+            column_id: string;
+        };
+        /**
          * MatchEvidence
          * @description Locate a semantic match in NFC-normalized question code points.
          */
@@ -4936,6 +5454,8 @@ export interface components {
             /** Version Id */
             version_id?: string | null;
         };
+        /** @enum {string} */
+        Sensitivity: "public" | "internal" | "confidential" | "restricted";
         /**
          * ShardView
          * @description Public progress for one shard, excluding internal lease tokens.
@@ -4949,6 +5469,176 @@ export interface components {
             ordinal: number;
             /** State */
             state: string;
+        };
+        /**
+         * StandardDimension
+         * @description Score the fraction of evaluated column rules that passed in one dimension.
+         */
+        StandardDimension: {
+            /** Checked Rules */
+            checked_rules: number;
+            /** Failed Rules */
+            failed_rules: number;
+            /** Score */
+            score: number | null;
+            /** Violation Count */
+            violation_count: number;
+            /** Weight */
+            weight: number;
+        };
+        /**
+         * StandardQualityIssue
+         * @description Locate a measured standards issue without copying source values.
+         */
+        StandardQualityIssue: {
+            /** Column Id */
+            column_id: string;
+            /** Count */
+            count: number;
+            /** Dimension */
+            dimension: string;
+            /** Message */
+            message: string;
+            /** Rule */
+            rule: string;
+        };
+        /** @enum {string} */
+        StandardStatus: "draft" | "active" | "deprecated";
+        StandardValue: components["schemas"]["Scalar"] | string;
+        /**
+         * StandardViolation
+         * @description Count one failed constraint and expose only redacted representative values.
+         */
+        StandardViolation: {
+            /** Count */
+            count: number;
+            /** Message */
+            message: string;
+            rule: components["schemas"]["ViolationRule"];
+            /**
+             * Samples
+             * @default []
+             */
+            samples: string[];
+        };
+        /**
+         * StandardsContract
+         * @description Combine strict field and reference-data declarations in one YAML document.
+         */
+        StandardsContract: {
+            /**
+             * Code Lists
+             * @default []
+             */
+            code_lists: components["schemas"]["CodeList"][];
+            /**
+             * Standards
+             * @default []
+             */
+            standards: components["schemas"]["FieldStandard"][];
+        };
+        /**
+         * StandardsCoverage
+         * @description Expose global, database, table and owner coverage plus bounded violations.
+         */
+        StandardsCoverage: {
+            overall: components["schemas"]["CoverageGroup"];
+            /**
+             * Owners
+             * @default []
+             */
+            owners: components["schemas"]["CoverageGroup"][];
+            /**
+             * Sources
+             * @default []
+             */
+            sources: components["schemas"]["CoverageGroup"][];
+            /**
+             * Tables
+             * @default []
+             */
+            tables: components["schemas"]["CoverageGroup"][];
+            /**
+             * Violation Top
+             * @default []
+             */
+            violation_top: components["schemas"]["ViolationSummary"][];
+        };
+        /** @enum {string} */
+        StandardsGrade: "unmeasured" | "excellent" | "good" | "fair" | "poor";
+        /**
+         * StandardsHistory
+         * @description Expose every committed standards revision in ascending order.
+         */
+        StandardsHistory: {
+            /** Revisions */
+            revisions: components["schemas"]["StandardsRevision"][];
+        };
+        /**
+         * StandardsQuality
+         * @description Keep column quality distinct from the existing file-manifest quality contract.
+         */
+        StandardsQuality: {
+            /** Column Count */
+            column_count: number;
+            /** Dimensions */
+            dimensions: {
+                [key: string]: components["schemas"]["StandardDimension"];
+            };
+            /** Fully Checked Columns */
+            fully_checked_columns: number;
+            grade: components["schemas"]["StandardsGrade"];
+            /** Issues */
+            issues: components["schemas"]["StandardQualityIssue"][];
+            /** Mapped Columns */
+            mapped_columns: number;
+            /** Skipped Rules */
+            skipped_rules: number;
+            /** Total */
+            total: number | null;
+        };
+        /**
+         * StandardsReport
+         * @description Combine metadata, confirmed associations, checks and coverage without raw values.
+         */
+        StandardsReport: {
+            /** Checks */
+            checks: components["schemas"]["ColumnCheck"][];
+            coverage: components["schemas"]["StandardsCoverage"];
+            /** Mappings */
+            mappings: components["schemas"]["ColumnMapping"][];
+            /** Profiles */
+            profiles: components["schemas"]["ColumnProfile"][];
+        };
+        /**
+         * StandardsRevision
+         * @description Attribute one immutable state transition to its controlled action.
+         */
+        StandardsRevision: {
+            /** Action Type */
+            action_type: string;
+            /** Actor */
+            actor: string;
+            contract?: components["schemas"]["StandardsContract"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Event Id */
+            event_id: string;
+            /**
+             * Mappings
+             * @default []
+             */
+            mappings: components["schemas"]["ColumnMapping"][];
+            /** Plan Id */
+            plan_id: string;
+            /**
+             * Revision
+             * @default 0
+             */
+            revision: number;
         };
         /**
          * TaskInput
@@ -5374,6 +6064,22 @@ export interface components {
             id: string;
             /** Manifest */
             manifest: components["schemas"]["FileView"][];
+        };
+        /** @enum {string} */
+        ViolationRule: "type" | "length" | "precision" | "code_list" | "range" | "pattern" | "required" | "unit" | "sensitivity";
+        /**
+         * ViolationSummary
+         * @description Rank columns by observed violations without including raw sample values.
+         */
+        ViolationSummary: {
+            /** Column Id */
+            column_id: string;
+            /** Rules */
+            rules: components["schemas"]["ViolationRule"][];
+            /** Standard Code */
+            standard_code: string;
+            /** Violation Count */
+            violation_count: number;
         };
         /**
          * WaitStep
@@ -7800,6 +8506,354 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analysis_report_api_standards_analysis_report_get: {
+        parameters: {
+            query?: {
+                table_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    checks_api_standards_checks_get: {
+        parameters: {
+            query?: {
+                table_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ColumnCheck"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    code_lists_api_standards_code_lists_get: {
+        parameters: {
+            query?: {
+                search?: string;
+                status?: components["schemas"]["StandardStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeList"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contract_api_standards_contract_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardsContract"];
+                };
+            };
+        };
+    };
+    coverage_api_standards_coverage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardsCoverage"];
+                };
+            };
+        };
+    };
+    export_api_standards_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+        };
+    };
+    fields_api_standards_fields_get: {
+        parameters: {
+            query?: {
+                search?: string;
+                status?: components["schemas"]["StandardStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldStandard"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_api_standards_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardsHistory"];
+                };
+            };
+        };
+    };
+    mappings_api_standards_mappings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ColumnMapping"][];
+                };
+            };
+        };
+    };
+    profiles_api_standards_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ColumnProfile"][];
+                };
+            };
+        };
+    };
+    quality_api_standards_quality_get: {
+        parameters: {
+            query?: {
+                table_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardsQuality"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_api_standards_report_get: {
+        parameters: {
+            query?: {
+                table_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardsReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    schema_api_standards_schema_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JsonDocument"];
+                };
+            };
+        };
+    };
+    suggestions_api_standards_suggestions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MappingSuggestion"][];
                 };
             };
         };

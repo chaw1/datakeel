@@ -18,6 +18,7 @@ const pages: Page[] = [
   "workbench",
   "datasets",
   "catalog",
+  "standards",
   "ask",
   "evidence",
   "kg",

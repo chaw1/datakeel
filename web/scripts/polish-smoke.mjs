@@ -158,6 +158,7 @@ export async function polishSmoke({ page, json, screenshot, checks }) {
     ["evidence", "#/evidence", ".evidence-sample-row"],
     ["ask", "#/ask", ".ask-composer"],
     ["catalog", "#/catalog", ".catalog-browser"],
+    ["standards", "#/standards", ".catalog-object-list button"],
     [
       "table",
       `#/object/table/${encodeURIComponent(table.id)}?tab=relations`,
@@ -197,7 +198,7 @@ export async function polishSmoke({ page, json, screenshot, checks }) {
     await page.setViewportSize({ width: 1440, height: 900 });
   }
   checks.push(
-    "computed fonts obey the 18px serif boundary across all major pages; all nine layouts fit 390px without horizontal page scrolling",
+    "computed fonts obey the 18px serif boundary across all major pages; all ten layouts fit 390px without horizontal page scrolling",
   );
   return { typography, mobile };
 }

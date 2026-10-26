@@ -16,6 +16,7 @@ import { imageKGSmoke } from "./image-kg-smoke.mjs";
 import { extractionSmoke } from "./extraction-smoke.mjs";
 import { polishSmoke } from "./polish-smoke.mjs";
 import { refinementSmoke } from "./refinement-smoke.mjs";
+import { standardsSmoke } from "./standards-smoke.mjs";
 import { workspaceSmoke } from "./workspace-smoke.mjs";
 import {
   cleanupFixture,
@@ -414,6 +415,7 @@ try {
     screenshot,
     checks,
   });
+  const standards = await standardsSmoke({ page, json, screenshot, checks });
   const workspace = await workspaceSmoke({
     page,
     json,
@@ -477,6 +479,7 @@ try {
         evidence,
         knowledgeGraph,
         enterprise,
+        standards,
         workspace,
         polish,
         refinement,
