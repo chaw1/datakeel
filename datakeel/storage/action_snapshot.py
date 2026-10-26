@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import DecideAssertionsParams, ExportParams
+from datakeel.actions.standard_parameters import StandardActionParams
 from datakeel.core.models import BoundaryModel
 from datakeel.core.settings import get_settings
 from datakeel.lineage.service import graph
@@ -20,6 +21,7 @@ from datakeel.storage.catalog_action_state import catalog_state
 from datakeel.storage.events import all_events
 from datakeel.storage.evidence_actions import decision_snapshot
 from datakeel.storage.object_queries import evaluate_in_session
+from datakeel.storage.standard_store import standards_state
 
 
 def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> str:
@@ -27,6 +29,8 @@ def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenMan
     values = [manifest.state_digest]
     if isinstance(params, CatalogActionParams):
         values.append(catalog_state(session))
+    if isinstance(params, StandardActionParams):
+        values.append(standards_state(session))
     if isinstance(params, DecideAssertionsParams):
         values.append(decision_snapshot(session, params))
     if isinstance(params, ExportParams):

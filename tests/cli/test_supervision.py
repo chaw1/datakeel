@@ -86,7 +86,7 @@ def test_supervision_when_startup_deadline_elapsed_stops_children(
 ) -> None:
     """Verify supervision when startup deadline elapsed stops children."""
     children = [Child(), Child()]
-    pending, timestamps = iter(children), iter([0, 70])
+    pending, timestamps = iter(children), iter([0, 0, 70])
     monkeypatch.setattr(module.subprocess, "Popen", lambda *_args: next(pending))
     monkeypatch.setattr(module, "time", SimpleNamespace(monotonic=lambda: next(timestamps)))
     with pytest.raises(ExecutionError, match="within 60 seconds"):

@@ -16,6 +16,13 @@ from datakeel.actions.catalog_parameters import (
     UpdateTermParams,
 )
 from datakeel.actions.kg_parameters import RunKGExtractionParams
+from datakeel.actions.standard_parameters import (
+    ConfirmStandardMappingParams,
+    ImportStandardsParams,
+    RollbackStandardsParams,
+    UpdateCodeListParams,
+    UpdateStandardParams,
+)
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.models import BoundaryModel, JsonDocument
@@ -93,6 +100,11 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "rollback_metric": RollbackMetricParams,
     "update_term": UpdateTermParams,
     "rollback_term": RollbackTermParams,
+    "import_standards": ImportStandardsParams,
+    "update_standard": UpdateStandardParams,
+    "update_code_list": UpdateCodeListParams,
+    "confirm_standard_mapping": ConfirmStandardMappingParams,
+    "rollback_standards": RollbackStandardsParams,
 }
 
 

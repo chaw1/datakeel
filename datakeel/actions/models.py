@@ -30,6 +30,11 @@ ActionName = Literal[
     "update_term",
     "rollback_term",
     "run_kg_extraction",
+    "import_standards",
+    "update_standard",
+    "update_code_list",
+    "confirm_standard_mapping",
+    "rollback_standards",
 ]
 PlanStatus = Literal["PREPARED", "APPROVED", "REJECTED", "EXECUTED", "FAILED"]
 RunStatus = Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED"]
@@ -83,8 +88,19 @@ class ActionPlan(BoundaryModel):
 
     @property
     def requires_approval(self) -> bool:
-        """Gate irreversible or outbound operations on an explicit user decision."""
-        return not self.reversible or self.external
+        """Gate irreversible, outbound and standards governance changes on human review."""
+        return (
+            not self.reversible
+            or self.external
+            or self.action_type
+            in {
+                "import_standards",
+                "update_standard",
+                "update_code_list",
+                "confirm_standard_mapping",
+                "rollback_standards",
+            }
+        )
 
 
 class ApprovalDecision(BoundaryModel):

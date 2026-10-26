@@ -35,6 +35,11 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
     "rollback_metric": ("metrics:write", True, "semantic_change"),
     "update_term": ("terms:write", True, "semantic_change"),
     "rollback_term": ("terms:write", True, "semantic_change"),
+    "import_standards": ("standards:write", True, "semantic_change"),
+    "update_standard": ("standards:write", True, "semantic_change"),
+    "update_code_list": ("standards:write", True, "semantic_change"),
+    "confirm_standard_mapping": ("standards:write", True, "semantic_change"),
+    "rollback_standards": ("standards:write", True, "semantic_change"),
     "run_kg_extraction": ("kg:extract", True, "Extract candidate graph facts with source evidence"),
 }
 
@@ -67,6 +72,11 @@ def action_definition(action_type: str) -> ActionType:
             "rollback_metric": "update_metric",
             "update_term": "rollback_term",
             "rollback_term": "update_term",
+            "import_standards": "rollback_standards",
+            "update_standard": "rollback_standards",
+            "update_code_list": "rollback_standards",
+            "confirm_standard_mapping": "rollback_standards",
+            "rollback_standards": "rollback_standards",
         }.get(action_type),
         handler=f"datakeel.actions.execute:{action_type}",
     )

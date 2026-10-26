@@ -11,6 +11,7 @@ from datakeel.actions.catalog_parameters import (
     RestoreCatalogParams,
     UpdateMetricParams,
 )
+from datakeel.actions.standard_parameters import StandardActionParams
 from datakeel.catalog.service import prepare_import
 from datakeel.core.catalog_canonical import document_hash
 from datakeel.core.catalog_models import CatalogSnapshot
@@ -21,10 +22,13 @@ from datakeel.ontology.models import FrozenManifest, ObjectSet
 from datakeel.storage.catalog_store import lock_catalog, read_snapshot
 from datakeel.storage.events import all_events
 from datakeel.storage.metric_store import validate_metric_update
+from datakeel.storage.standard_changes import next_state, standard_impact
 
 
 def prepare_catalog_params(session: Session, params: BoundaryModel) -> BoundaryModel:
     """Validate controlled semantics and reflect import snapshots from the server."""
+    if isinstance(params, StandardActionParams):
+        next_state(session, params)
     if isinstance(params, UpdateMetricParams):
         validate_metric_update(session, params.definition)
     if isinstance(params, ImportCatalogParams):
@@ -59,6 +63,8 @@ def source_snapshot(session: Session, scope: str, version: int) -> CatalogSnapsh
 
 def catalog_impact(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
     """Count metadata targets independently from legacy frozen file objects."""
+    if isinstance(params, StandardActionParams):
+        return standard_impact(session, params)
     if isinstance(params, ImportCatalogParams) and params.snapshot is not None:
         return _scope_impact(session, params.snapshot)
     if isinstance(params, RestoreCatalogParams):
