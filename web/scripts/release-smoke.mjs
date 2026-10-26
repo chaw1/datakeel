@@ -80,7 +80,7 @@ function recipient(source) {
     {
       cwd: fileURLToPath(new URL("../../", import.meta.url)),
       env: {
-      PATH: process.env.PATH ?? "/usr/bin:/bin",
+        PATH: process.env.PATH ?? "/usr/bin:/bin",
         DATAKEEL_DATABASE_URL: "unsupported://offline",
         NO_COLOR: "1",
       },
