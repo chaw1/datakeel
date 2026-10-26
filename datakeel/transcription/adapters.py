@@ -26,9 +26,7 @@ class ReplayTranscriber:
         ocr_model: str = "rapidocr-3.10.0-defaults",
     ) -> None:
         """Index validated records and retain the recorded model attribution."""
-        self.recording = recording
-        self.mode = mode
-        self.ocr_model = ocr_model
+        self.recording, self.mode, self.ocr_model = recording, mode, ocr_model
         self.records = {record.image_hash: record for record in recording.records}
 
     def transcribe(
@@ -42,7 +40,7 @@ class ReplayTranscriber:
         if (record.width, record.height) != (image.width, image.height):
             message = "Transcription recording dimensions do not match the corrected image"
             raise ValidationError(message)
-        data = record.model_dump(exclude={"image_hash"})
+        data = record.model_dump(exclude={"image_hash", "raw_output"})
         data.update(model=record.model or self.recording.model, mode=mode or self.mode)
         if (mode or self.mode) == "ocr" and record.backend == "vlm":
             visual_geometry = self.recording.prompt_version == "image-transcription-v2"
@@ -66,11 +64,19 @@ class ReplayTranscriber:
         if (
             (mode or self.mode) == "vlm"
             and self.recording.prompt_version == "image-transcription-v2"
-            and not record.lines
-            and record.text.lstrip().startswith("{")
+            and (
+                record.raw_output is not None
+                or (not record.lines and record.text.lstrip().startswith("{"))
+            )
         ):
-            located = decode_coordinates(record.text, image.width, image.height)
-            data.update(text=located.text, lines=located.lines)
+            space = self.recording.coordinate_space
+            located = decode_coordinates(
+                record.raw_output if record.raw_output is not None else record.text,
+                image.width,
+                image.height,
+                space,
+            )
+            data.update(**located.model_dump(), coordinate_space=space)
         return TranscriptionResult.model_validate(data)
 
 

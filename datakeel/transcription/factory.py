@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager, nullcontext
+from contextlib import ExitStack, contextmanager
 from typing import TYPE_CHECKING
 
 import httpx
@@ -26,12 +26,12 @@ if TYPE_CHECKING:
 
     from datakeel.core.transcription_models import (
         ImageInput,
+        TranscriberAdapter,
         TranscriptionMode,
         TranscriptionProfile,
         TranscriptionRecording,
         TranscriptionResult,
     )
-    from datakeel.transcription.quality import TranscriberAdapter
 
 
 class VLMTranscriber:
@@ -110,30 +110,31 @@ def create_transcriber(
 ) -> Generator[TranscriberAdapter]:
     """Own only factory-created clients and never construct them for offline backends."""
     require_current_auto_policy(profile.auto_routing, automatic=profile.mode == "auto")
-    if profile.backend in {"replay", "fake"}:
-        archive = recording or read_recording(profile)[1]
-        if archive is not None:
-            adapter = ReplayTranscriber(archive, profile.mode, profile.ocr_model_version)
-        elif profile.backend == "fake":
-            adapter = FakeTranscriber()
+    with ExitStack() as stack:
+        adapter: TranscriberAdapter
+        if profile.backend in {"replay", "fake"}:
+            archive = recording or read_recording(profile)[1]
+            if archive is not None:
+                adapter = ReplayTranscriber(archive, profile.mode, profile.ocr_model_version)
+            elif profile.backend == "fake":
+                adapter = FakeTranscriber()
+            else:
+                message = "Replay transcription requires a recording"
+                raise ValidationError(message)
         else:
-            message = "Replay transcription requires a recording"
-            raise ValidationError(message)
-        yield AutoTranscriber(adapter, profile.auto_routing) if profile.mode == "auto" else adapter
-        return
-    engine = ocr or RapidOCRTranscriber(profile.ocr_model_version)
-    if profile.backend == "ocr":
-        yield engine
-        return
-    owned = (
-        httpx.Client(trust_env=False, follow_redirects=False)
-        if client is None
-        else nullcontext(client)
-    )
-    with owned as transport:
-        visual = VLMTranscriber(profile, transport, engine)
+            adapter = ocr or RapidOCRTranscriber(profile.ocr_model_version)
+            if profile.backend == "vlm":
+                transport = client or stack.enter_context(
+                    httpx.Client(trust_env=False, follow_redirects=False)
+                )
+                adapter = VLMTranscriber(profile, transport, adapter)
         yield (
-            AutoTranscriber(visual, profile.auto_routing, visual.seed_ocr)
+            AutoTranscriber(
+                adapter,
+                profile.auto_routing,
+                adapter.seed_ocr if isinstance(adapter, VLMTranscriber) else None,
+                coordinate_min_median_iou=profile.coordinate_min_median_iou,
+            )
             if profile.mode == "auto"
-            else visual
+            else adapter
         )

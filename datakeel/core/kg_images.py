@@ -12,7 +12,12 @@ from datakeel.core.evidence_models import ContentRevision
 from datakeel.core.harness_pricing import ModelPrice
 from datakeel.core.models import AssetRef, BoundaryModel
 from datakeel.core.transcription_auto import AutoReason, OCRReference
-from datakeel.core.transcription_models import ImageInput, OCRLine, TranscriptionMode
+from datakeel.core.transcription_models import (
+    ImageInput,
+    OCRLine,
+    TranscriptionIssue,
+    TranscriptionMode,
+)
 
 
 class KGImageSource(BoundaryModel):
@@ -86,3 +91,5 @@ class TranscriptionObservation(BoundaryModel):
     reasons: tuple[AutoReason, ...] = ()
     external: bool = False
     ocr_reference: OCRReference | None = None
+    quality_issues: tuple[TranscriptionIssue, ...] = ()
+    ignored_field_count: int = Field(default=0, ge=0)

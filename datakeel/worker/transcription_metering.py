@@ -105,7 +105,9 @@ class MeteredTranscriber:
             BudgetRequest(
                 conversation_id=self.job.run.id,
                 model=profile.model,
-                input_tokens=input_token_bound(image.width, image.height, profile.prompt_version),
+                input_tokens=input_token_bound(
+                    image.width, image.height, profile.prompt_version, profile.coordinate_space
+                ),
                 max_output_tokens=profile.max_output_tokens,
                 limits=BudgetLimits(
                     conversation_tokens=self.job.budget_tokens,

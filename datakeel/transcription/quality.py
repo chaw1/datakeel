@@ -5,16 +5,18 @@
 
 import re
 from itertools import pairwise
-from typing import Protocol
 
 from datakeel.core.transcription_errors import TranscriptionFailure
 from datakeel.core.transcription_models import (
     ImageInput,
+    TranscriberAdapter,
     TranscriptionIssue,
     TranscriptionMode,
     TranscriptionResult,
 )
 from datakeel.transcription.alignment import normalize
+
+__all__ = ["TranscriberAdapter", "checked_transcribe", "quality_issues"]
 
 _FILLERS = re.compile(r"[_\.\-\u2014\u2013]{4,}|…{2,}")
 _TABLE_SEPARATOR = re.compile(r"\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?")
@@ -25,16 +27,6 @@ _REPEAT_LOOSE_LINES = 8
 _SHORT_LINE = 8
 _MIN_OCR_LENGTH = 20
 _MAX_LENGTH_RATIO = 2.5
-
-
-class TranscriberAdapter(Protocol):
-    """Expose one typed attempt so callers can reserve and settle each model invocation."""
-
-    def transcribe(
-        self, image: ImageInput, mode: TranscriptionMode | None = None
-    ) -> TranscriptionResult:
-        """Return raw text, OCR geometry and usage, preserving failed output."""
-        ...
 
 
 def _repeated(text: str) -> bool:
@@ -63,7 +55,9 @@ def _loose(line: str, cleaned: str) -> bool:
 
 def quality_issues(result: TranscriptionResult) -> tuple[TranscriptionIssue, ...]:
     """Apply the same rules to scripted, replay and live output, including sparse OCR."""
-    issues = list(result.quality_issues)
+    issues: list[TranscriptionIssue] = [
+        issue for issue in result.quality_issues if issue != "coordinates_unreliable"
+    ]
     text = normalize(result.text)
     reference = result.ocr_reference
     ocr = normalize(reference.text if reference else "\n".join(line.text for line in result.lines))
@@ -90,5 +84,6 @@ def checked_transcribe(
     result = adapter.transcribe(image, mode)
     issues = quality_issues(result)
     if issues:
-        raise TranscriptionFailure(issues[0], result.model_copy(update={"quality_issues": issues}))
+        flags = tuple(dict.fromkeys((*result.quality_issues, *issues)))
+        raise TranscriptionFailure(issues[0], result.model_copy(update={"quality_issues": flags}))
     return result

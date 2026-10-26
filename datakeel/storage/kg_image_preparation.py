@@ -83,6 +83,17 @@ def _current_images(
     return images
 
 
+def _transcription_input_bound(
+    images: tuple[KGImageSource, ...], profile: TranscriptionProfile
+) -> int:
+    return sum(
+        input_token_bound(
+            image.width, image.height, profile.prompt_version, profile.coordinate_space
+        )
+        for image in images
+    )
+
+
 def prepare_images(
     prepared: KGPrepared, documents: tuple[KGDocument, ...], profile: TranscriptionProfile
 ) -> KGPrepared:
@@ -94,10 +105,7 @@ def prepare_images(
     transcription_cost = nanos_to_usd(
         reservation_cost(
             config.price,
-            sum(
-                input_token_bound(image.width, image.height, profile.prompt_version)
-                for image in remote_images
-            ),
+            _transcription_input_bound(remote_images, profile),
             len(remote_images) * profile.max_output_tokens,
         )
     )

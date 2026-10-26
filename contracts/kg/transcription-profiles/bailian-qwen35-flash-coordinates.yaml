@@ -1,6 +1,6 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
-# External transfer requires approval. Coordinates use EXIF-corrected original pixels.
+# External transfer requires approval. Normalized coordinates are converted to corrected pixels.
 id: bailian-qwen35-flash-coordinates
 backend: vlm
 mode: vlm
@@ -13,3 +13,4 @@ timeout_seconds: 120
 request_parameters:
   enable_thinking: false
 prompt_version: image-transcription-v2
+coordinate_space: normalized_1000

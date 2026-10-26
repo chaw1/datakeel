@@ -147,6 +147,8 @@ class ImageTranscription:
                     "mode": result.mode,
                     "reasons": result.auto_decision.reasons if result.auto_decision else (),
                     "ocr_reference": result.ocr_reference,
+                    "quality_issues": result.quality_issues,
+                    "ignored_field_count": result.ignored_field_count,
                     "external": observation.file_id in self.external_files,
                     "backend": source.backend
                     if source.backend in {"replay", "fake"}
@@ -189,6 +191,12 @@ class ImageTranscription:
                     else str(error)
                     if isinstance(error, TranscriptionUnavailableError)
                     else reason,
+                    "quality_issues": error.result.quality_issues
+                    if isinstance(error, TranscriptionFailure)
+                    else (),
+                    "ignored_field_count": error.result.ignored_field_count
+                    if isinstance(error, TranscriptionFailure)
+                    else 0,
                 }
             )
         )

@@ -3,7 +3,7 @@
 
 """Frozen configuration, image inputs and portable image transcription recordings."""
 
-from typing import Literal, Self
+from typing import Literal, Protocol, Self
 from urllib.parse import urlsplit
 
 from pydantic import Field, JsonValue, field_validator, model_validator
@@ -14,6 +14,7 @@ from datakeel.core.transcription_auto import AutoRouteDecision, AutoRoutingConfi
 
 TranscriptionMode = Literal["ocr", "vlm", "auto"]
 TranscriptionBackend = Literal["ocr", "vlm", "replay", "fake"]
+CoordinateSpace = Literal["pixel", "normalized_1000", "normalized_1"]
 TranscriptionIssue = Literal[
     "empty",
     "truncated",
@@ -27,6 +28,8 @@ TranscriptionIssue = Literal[
     "mode_mismatch",
     "image_decode_error",
     "outbound_not_approved",
+    "coordinates_unreliable",
+    "unparseable_structured_output",
 ]
 
 
@@ -44,6 +47,8 @@ class TranscriptionProfile(BoundaryModel):
         "image-transcription-v1"
     )
     auto_routing: AutoRoutingConfig = Field(default_factory=AutoRoutingConfig)
+    coordinate_space: CoordinateSpace = "pixel"
+    coordinate_min_median_iou: float = Field(default=0.3, ge=0, le=1, allow_inf_nan=False)
     max_output_tokens: int = Field(default=4096, gt=0)
     timeout_seconds: float = Field(default=120, gt=0, allow_inf_nan=False)
     request_parameters: dict[str, JsonValue] = Field(default_factory=dict)
@@ -120,10 +125,12 @@ class OCRLine(BoundaryModel):
 
 
 class TranscriptionResult(BoundaryModel):
-    """Preserve output, geometry, provenance and billing even for failed generations."""
+    """Keep pixel geometry and its source coordinate declaration, provenance and billing."""
 
     text: str
     lines: tuple[OCRLine, ...] = ()
+    coordinate_space: CoordinateSpace = "pixel"
+    ignored_field_count: int = Field(default=0, ge=0)
     width: int = Field(gt=0)
     height: int = Field(gt=0)
     backend: TranscriptionBackend
@@ -145,10 +152,21 @@ class TranscriptionResult(BoundaryModel):
         return self
 
 
+class TranscriberAdapter(Protocol):
+    """Expose one typed transcription attempt with geometry and billing preserved."""
+
+    def transcribe(
+        self, image: ImageInput, mode: TranscriptionMode | None = None
+    ) -> TranscriptionResult:
+        """Return output and usage, retaining failed generations for settlement."""
+        ...
+
+
 class TranscriptionRecord(TranscriptionResult):
     """Index recorded text and OCR geometry by the original image bytes only."""
 
     image_hash: ContentRevision
+    raw_output: str | None = None
 
 
 class TranscriptionRecording(BoundaryModel):
@@ -158,6 +176,7 @@ class TranscriptionRecording(BoundaryModel):
     recorded_at: str
     prompt_version: str
     source: str
+    coordinate_space: CoordinateSpace = "pixel"
     records: tuple[TranscriptionRecord, ...]
 
     @model_validator(mode="after")

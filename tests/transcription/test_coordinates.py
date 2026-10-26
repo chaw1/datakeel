@@ -70,11 +70,12 @@ def test_visual_json_when_geometry_valid_retains_original_pixels(bbox: list[floa
 @pytest.mark.parametrize(
     "text", ["Alpha owns Beta.", '{"text":"Alpha"}', '{"lines":[{"text":42}]}', "not JSON"]
 )
-def test_visual_json_when_schema_missing_returns_unlocated_legacy_text(text: str) -> None:
+def test_visual_json_when_schema_missing_reports_unparseable_output(text: str) -> None:
     """Unexpected model formats cannot manufacture geometry from OCR or the image extent."""
     parsed = decode_coordinates(text, 120, 80)
-    assert parsed.text == text
+    assert parsed.text == ""
     assert parsed.lines == ()
+    assert parsed.quality_issues == ("unparseable_structured_output",)
 
 
 def test_visual_json_when_rectangles_missing_keeps_all_lines_unlocated() -> None:
@@ -101,7 +102,7 @@ def test_visual_transport_when_coordinate_version_requests_json_and_replaces_ocr
 ) -> None:
     """Both injected transports consume the same versioned JSON without retaining old OCR boxes."""
     profile = get_profile("bailian-qwen35-flash-coordinates").model_copy(
-        update={"interface": interface}
+        update={"interface": interface, "coordinate_space": "pixel"}
     )
     content = '{"lines":[{"text":"Alpha --> Beta","bbox":[5,10,110,70]}]}'
 
@@ -145,7 +146,10 @@ def test_visual_transport_when_coordinates_absent_does_not_reuse_ocr_boxes(
             client,
             "",
         )
-    assert result.text == ("Alpha" if content.startswith("{") else content)
+    assert result.text == ("Alpha" if content.startswith("{") else "")
+    assert result.quality_issues == (
+        () if content.startswith("{") else ("unparseable_structured_output",)
+    )
     assert result.lines == ()
 
 
@@ -194,7 +198,7 @@ def test_replay_when_legacy_record_lacks_geometry_preserves_original_content(
         records=(record,),
     )
     result = ReplayTranscriber(archive, mode="vlm").transcribe(image_input)
-    assert result.model_dump() == record.model_dump(exclude={"image_hash"})
+    assert result.model_dump() == record.model_dump(exclude={"image_hash", "raw_output"})
 
 
 def test_replay_when_v2_record_already_materialized_preserves_valid_typed_coordinates(
@@ -216,7 +220,7 @@ def test_replay_when_v2_record_already_materialized_preserves_valid_typed_coordi
         records=(record,),
     )
     result = ReplayTranscriber(archive, mode="vlm").transcribe(image_input)
-    assert result.model_dump() == record.model_dump(exclude={"image_hash"})
+    assert result.model_dump() == record.model_dump(exclude={"image_hash", "raw_output"})
     local = ReplayTranscriber(archive, mode="ocr").transcribe(image_input)
     assert local.text == ""
     assert local.lines == ()
@@ -317,3 +321,32 @@ def test_replay_when_materialized_text_is_json_keeps_its_verified_coordinates(
     result = ReplayTranscriber(archive, mode="vlm").transcribe(image_input)
     assert result.text == text
     assert result.lines == (line,)
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["Alpha [active] --> Beta", "Alpha {active} --> Beta", "```example```", "Alpha --> Beta"],
+)
+def test_replay_when_legacy_v2_text_is_materialized_keeps_punctuation(
+    image_input: ImageInput, text: str
+) -> None:
+    """Only explicit raw responses use new wire decoding; old unlocated prose stays text."""
+    record = TranscriptionRecord(
+        image_hash=image_input.image_hash,
+        text=text,
+        width=image_input.width,
+        height=image_input.height,
+        backend="vlm",
+        mode="vlm",
+    )
+    archive = TranscriptionRecording(
+        model="fixture",
+        recorded_at="2026-10-26",
+        prompt_version="image-transcription-v2",
+        source="generated fixture",
+        records=(record,),
+    )
+    result = ReplayTranscriber(archive, mode="vlm").transcribe(image_input)
+    assert result.text == text
+    assert result.quality_issues == ()
+    assert result.lines == ()

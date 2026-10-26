@@ -9,6 +9,7 @@ from datakeel.core.transcription_auto import AutoRouteDecision, AutoRoutingConfi
 from datakeel.core.transcription_errors import TranscriptionFailure, TranscriptionUnavailableError
 from datakeel.core.transcription_models import ImageInput, TranscriptionMode, TranscriptionResult
 from datakeel.transcription.auto import decide_auto_route
+from datakeel.transcription.coordinates import check_coordinates
 from datakeel.transcription.quality import TranscriberAdapter, checked_transcribe
 
 
@@ -20,9 +21,12 @@ class AutoTranscriber:
         adapter: TranscriberAdapter,
         config: AutoRoutingConfig,
         seed: Callable[[ImageInput, TranscriptionResult], None] | None = None,
+        *,
+        coordinate_min_median_iou: float = 0.3,
     ) -> None:
         """Use the same offline or visual adapter for the explicitly selected final route."""
         self.adapter, self.config, self.seed = adapter, config, seed
+        self.coordinate_min_median_iou = coordinate_min_median_iou
         self.image_hash: str | None = None
         self.ocr: TranscriptionResult | None = None
         self.decision: AutoRouteDecision | None = None
@@ -54,10 +58,21 @@ class AutoTranscriber:
         if mode is not None and mode != "auto":
             return self.adapter.transcribe(image, mode)
         decision = self.resolve(image)
-        result = self.ocr if decision.route == "ocr" else self.adapter.transcribe(image, "vlm")
+        try:
+            result = self.ocr if decision.route == "ocr" else self.adapter.transcribe(image, "vlm")
+        except TranscriptionFailure as error:
+            error.result = self._complete(error.result, decision)
+            raise
         if result is None:
             message = "Automatic transcription has no OCR result"
             raise ValueError(message)
+        if decision.route == "vlm" and self.ocr is not None:
+            result = check_coordinates(result, self.ocr, self.coordinate_min_median_iou)
+        return self._complete(result, decision)
+
+    def _complete(
+        self, result: TranscriptionResult, decision: AutoRouteDecision
+    ) -> TranscriptionResult:
         return result.model_copy(
             update={
                 "mode": decision.route,

@@ -1,49 +1,58 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Validate visual JSON and retain readable text when a model cannot locate a line."""
+"""Reject visual geometry contradicted by text-matched original OCR rectangles."""
 
-from pydantic import JsonValue, StrictFloat, ValidationError
+from difflib import SequenceMatcher
+from statistics import median
 
-from datakeel.core.evidence_models import ImageRegion
-from datakeel.core.models import BoundaryModel
-from datakeel.core.transcription_models import OCRLine
+from datakeel.core.transcription_coordinates import LocatedTranscript
+from datakeel.core.transcription_models import TranscriptionResult
+from datakeel.transcription.alignment import normalize
 
+decode_coordinates = LocatedTranscript.decode
 
-class _VisualLine(BoundaryModel):
-    text: str
-    # Geometry is checked separately so malformed coordinates cannot discard visible text.
-    bbox: JsonValue = None
-
-
-class _VisualOutput(BoundaryModel):
-    lines: tuple[_VisualLine, ...]
+_MIN_SIMILARITY = 0.8
 
 
-class _PixelRegion(ImageRegion):
-    bbox: tuple[StrictFloat, StrictFloat, StrictFloat, StrictFloat]
+def _iou(first: tuple[float, ...], second: tuple[float, ...]) -> float:
+    intersection = max(0, min(first[2], second[2]) - max(first[0], second[0])) * max(
+        0, min(first[3], second[3]) - max(first[1], second[1])
+    )
+    return intersection / (
+        (first[2] - first[0]) * (first[3] - first[1])
+        + (second[2] - second[0]) * (second[3] - second[1])
+        - intersection
+    )
 
 
-class LocatedTranscript(BoundaryModel):
-    """Return model text with only schema-validated, in-image pixel rectangles."""
+def check_coordinates(
+    result: TranscriptionResult, reference: TranscriptionResult, threshold: float
+) -> TranscriptionResult:
+    """Drop all visual boxes when one-to-one OCR matches have insufficient median IoU.
 
-    text: str
-    lines: tuple[OCRLine, ...] = ()
-
-
-def decode_coordinates(text: str, width: int, height: int) -> LocatedTranscript:
-    """Keep legacy plain text unlocated and never substitute OCR or invented geometry."""
-    try:
-        output = _VisualOutput.model_validate_json(text)
-    except ValidationError:
-        return LocatedTranscript(text=text)
-    lines: list[OCRLine] = []
-    for line in output.lines:
-        try:
-            region = _PixelRegion.model_validate(
-                {"bbox": line.bbox, "width": width, "height": height}
-            )
-        except ValidationError:
-            continue
-        lines.append(OCRLine(text=line.text, bbox=region.bbox, confidence=1))
-    return LocatedTranscript(text="\n".join(line.text for line in output.lines), lines=tuple(lines))
+    Equal text scores prefer overlap for repeated labels. Without comparable text,
+    retain range-validated boxes; OCR never replaces missing visual locations.
+    """
+    pairs: list[tuple[float, float, int, int]] = []
+    for visual_index, visual in enumerate(result.lines):
+        text = normalize(visual.text)
+        for ocr_index, ocr in enumerate(reference.lines):
+            other = normalize(ocr.text)
+            if not text or not other:
+                continue
+            similarity = SequenceMatcher(None, text, other, autojunk=False).ratio()
+            if similarity >= _MIN_SIMILARITY:
+                pairs.append((similarity, _iou(visual.bbox, ocr.bbox), visual_index, ocr_index))
+    visual_used: set[int] = set()
+    ocr_used: set[int] = set()
+    overlaps: list[float] = []
+    for _, overlap, visual_index, ocr_index in sorted(pairs, reverse=True):
+        if visual_index not in visual_used and ocr_index not in ocr_used:
+            visual_used.add(visual_index)
+            ocr_used.add(ocr_index)
+            overlaps.append(overlap)
+    if overlaps and median(overlaps) < threshold:
+        issues = tuple(dict.fromkeys((*result.quality_issues, "coordinates_unreliable")))
+        return result.model_copy(update={"lines": (), "quality_issues": issues})
+    return result
