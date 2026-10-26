@@ -35,7 +35,7 @@ AUTO_ROUTING_MUTATIONS = (
     Mutation(
         name="auto-sparse-text-disabled",
         path="transcription/auto.py",
-        before="if _is_sparse(pixels, ink, boxes, characters, config):",
+        before="if _is_sparse(pixels, ink, boxes, characters, config, document_area):",
         after="if False:",
         case=_TESTS + "test_sparse_text_oversized_recognition_box_routes_to_vision",
         runner="pytest",

@@ -13,12 +13,13 @@ import numpy as np
 from PIL import Image
 
 from datakeel.core.transcription_auto import AutoReason, AutoRouteDecision, AutoRoutingConfig
+from datakeel.transcription.auto_document import document_view
 from datakeel.transcription.auto_rows import has_grey_row, has_strike, longest_run
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-    from datakeel.core.transcription_models import ImageInput, OCRLine, TranscriptionResult
+    from datakeel.core.transcription_models import ImageInput, TranscriptionResult
 
 _ARROW = re.compile(r"[←-⇿⟵-⟿]|-{1,3}>|<-{1,3}")
 
@@ -27,21 +28,31 @@ def _pixels(image: ImageInput, config: AutoRoutingConfig) -> tuple[NDArray[np.ui
     with Image.open(BytesIO(image.png)) as source:
         grey = source.convert("L")
         scale = min(1.0, config.analysis_max_side / max(grey.size))
-        if scale < 1:
-            grey = grey.resize(
-                (max(1, round(grey.width * scale)), max(1, round(grey.height * scale)))
-            )
+        grey = grey.resize((max(1, round(grey.width * scale)), max(1, round(grey.height * scale))))
         return np.asarray(grey, dtype=np.uint8), scale
 
 
-def _boxes(lines: tuple[OCRLine, ...], scale: float) -> NDArray[np.float64]:
-    return np.asarray([tuple(value * scale for value in line.bbox) for line in lines])
+def _dark_pixels(
+    pixels: NDArray[np.uint8],
+    boxes: NDArray[np.float64],
+    config: AutoRoutingConfig,
+    *,
+    text: bool = False,
+) -> NDArray[np.bool_]:
+    x1, y1 = np.floor(np.min(boxes[:, :2], axis=0)).astype(np.intp)
+    x2, y2 = np.ceil(np.max(boxes[:, 2:], axis=0)).astype(np.intp)
+    region = pixels[y1:y2, x1:x2]
+    contrast, percentile = config.grey_min_contrast, config.background_percentile
+    threshold = float(np.percentile(region, percentile)) - contrast
+    if text and (foreground := region[region < threshold]).size:
+        threshold = float(np.percentile(foreground, 100 - percentile)) + contrast
+    return pixels < min(config.dark_pixel_threshold, threshold)
 
 
 def _masked_ink(
     pixels: NDArray[np.uint8], boxes: NDArray[np.float64], config: AutoRoutingConfig
 ) -> NDArray[np.bool_]:
-    ink = pixels < config.dark_pixel_threshold
+    ink = _dark_pixels(pixels, boxes, config)
     for x1, y1, x2, y2 in boxes:
         padding = (y2 - y1) * config.text_mask_padding_ratio
         left, top = max(0, int(x1 - padding)), max(0, int(y1 - padding))
@@ -85,14 +96,8 @@ def _connector(
         return False
     fractions = np.linspace(0, 1, max(2, int(np.ceil(distance))), dtype=np.float64)
     samples: NDArray[np.float64] = centers[0] + fractions[:, None] * delta
-    outside = np.ones(len(samples), dtype=np.bool_)
-    for x1, y1, x2, y2 in pair:
-        outside &= ~(
-            (samples[:, 0] >= x1)
-            & (samples[:, 0] <= x2)
-            & (samples[:, 1] >= y1)
-            & (samples[:, 1] <= y2)
-        )
+    inside = (samples[:, None, :] >= pair[None, :, :2]) & (samples[:, None, :] <= pair[None, :, 2:])
+    outside = ~np.any(np.all(inside, axis=2), axis=1)
     indices = samples[outside].astype(np.intp)
     if len(indices) < height * config.connector_min_height_ratio:
         return False
@@ -127,15 +132,17 @@ def _is_sparse(
     boxes: NDArray[np.float64],
     characters: int,
     config: AutoRoutingConfig,
+    document_area: int,
 ) -> bool:
     area = float(np.sum((boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])))
     height = float(np.median(boxes[:, 3] - boxes[:, 1]))
-    dark = int(np.count_nonzero(pixels < config.dark_pixel_threshold))
-    unmatched = int(np.count_nonzero(ink)) / max(1, dark)
+    foreground = _dark_pixels(pixels, boxes, config, text=True)
+    dark = int(np.count_nonzero(foreground))
+    unmatched = int(np.count_nonzero(ink & foreground)) / max(1, dark)
     return (
         (
             characters <= config.sparse_max_characters
-            and area / pixels.size < config.min_text_area_ratio
+            and area / max(1, document_area) < config.min_text_area_ratio
         )
         or area / max(1, characters * height**2) > config.max_box_area_per_character
         or (dark > 0 and unmatched > config.max_unmatched_ink_fraction)
@@ -171,13 +178,14 @@ def decide_auto_route(
     if confidence < config.min_mean_confidence:
         reasons.append("low_confidence")
     pixels, scale = _pixels(image, config)
-    boxes = _boxes(lines, scale)
+    boxes = np.asarray([tuple(value * scale for value in line.bbox) for line in lines])
+    pixels, document_area = document_view(pixels, boxes, config)
     ink = _masked_ink(pixels, boxes, config)
     if _ARROW.search(ocr.text) or _has_structure(ink, boxes, config):
         reasons.append("structure_diagram")
     if has_strike(pixels, boxes, config) or has_grey_row(pixels, boxes, config):
         reasons.append("struck_or_greyed_rows")
-    if _is_sparse(pixels, ink, boxes, characters, config):
+    if _is_sparse(pixels, ink, boxes, characters, config, document_area):
         reasons.append("sparse_text")
     return AutoRouteDecision(
         route="vlm" if reasons else "ocr", reasons=tuple(reasons) or ("clean_text",)
