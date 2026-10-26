@@ -2019,6 +2019,10 @@ export interface components {
          *
          *     Image analysis is bounded by downsampling, never by source filename or identity.
          *     Ratios use OCR line heights so the same signals survive image resizing.
+         *     Document padding bounds the sparse-text denominator around OCR content; contrast
+         *     rejects surrounding dark scenery. Grey-row comparisons require aligned nearby
+         *     rows and abrupt local background changes; strike limits reject thick or extended
+         *     background lines.
          */
         AutoRoutingConfig: {
             /**
@@ -2057,15 +2061,60 @@ export interface components {
              */
             dark_pixel_threshold: number;
             /**
+             * Document Analysis Max Side
+             * @default 256
+             */
+            document_analysis_max_side: number;
+            /**
+             * Document Min Component Area Ratio
+             * @default 0.5
+             */
+            document_min_component_area_ratio: number;
+            /**
+             * Document Min Contrast
+             * @default 25
+             */
+            document_min_contrast: number;
+            /**
+             * Document Padding Height Ratio
+             * @default 3
+             */
+            document_padding_height_ratio: number;
+            /**
+             * Grey Alignment Height Ratio
+             * @default 1
+             */
+            grey_alignment_height_ratio: number;
+            /**
+             * Grey Background Step Height Ratio
+             * @default 0.2
+             */
+            grey_background_step_height_ratio: number;
+            /**
              * Grey Context Height Ratio
              * @default 0.5
              */
             grey_context_height_ratio: number;
             /**
+             * Grey Edge Probe Height Ratio
+             * @default 0.05
+             */
+            grey_edge_probe_height_ratio: number;
+            /**
              * Grey Max Brightness
              * @default 235
              */
             grey_max_brightness: number;
+            /**
+             * Grey Max Line Height Ratio
+             * @default 1.6
+             */
+            grey_max_line_height_ratio: number;
+            /**
+             * Grey Max Neighbor Height Ratio
+             * @default 8
+             */
+            grey_max_neighbor_height_ratio: number;
             /**
              * Grey Min Brightness
              * @default 100
@@ -2076,6 +2125,11 @@ export interface components {
              * @default 15
              */
             grey_min_contrast: number;
+            /**
+             * Grey Min Edge Concentration
+             * @default 0.75
+             */
+            grey_min_edge_concentration: number;
             /**
              * Grey Min Row Fraction
              * @default 0.6
@@ -2117,6 +2171,16 @@ export interface components {
              */
             sparse_max_characters: number;
             /**
+             * Strike Max Extension Ratio
+             * @default 1
+             */
+            strike_max_extension_ratio: number;
+            /**
+             * Strike Max Thickness Ratio
+             * @default 0.2
+             */
+            strike_max_thickness_ratio: number;
+            /**
              * Strike Min Width Ratio
              * @default 0.75
              */
@@ -2133,10 +2197,10 @@ export interface components {
             text_mask_padding_ratio: number;
             /**
              * Version
-             * @default auto-v1
-             * @constant
+             * @default auto-v2
+             * @enum {string}
              */
-            version: "auto-v1";
+            version: "auto-v1" | "auto-v2";
         };
         /**
          * BranchStep

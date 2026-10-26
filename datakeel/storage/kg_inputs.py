@@ -18,6 +18,7 @@ from datakeel.core.kg_execution import (
 )
 from datakeel.core.kg_images import KGImageInput
 from datakeel.core.models import FileItem
+from datakeel.core.transcription_auto import require_current_auto_policy
 from datakeel.storage.database import Database, VersionRow
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.kg_preparation import read_documents, read_recording
@@ -30,6 +31,11 @@ from datakeel.transcription.loader import read_recording as read_transcription_r
 def restore_inputs(db: Database, job: KGJob, fence: KGLeaseFence) -> KGInputs:
     """Verify every source and recording before persisting authorized source snapshots."""
     prepared = job.prepared
+    if prepared.transcription_profile is not None:
+        require_current_auto_policy(
+            prepared.transcription_profile.auto_routing,
+            automatic=any(item.image and item.image.mode == "auto" for item in prepared.documents),
+        )
     params = RunKGExtractionParams(
         dataset_id=job.run.dataset_id,
         version_id=job.run.version_id,

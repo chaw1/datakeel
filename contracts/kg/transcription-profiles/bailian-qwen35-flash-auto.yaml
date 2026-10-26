@@ -14,7 +14,7 @@ request_parameters:
   enable_thinking: false
 prompt_version: image-transcription-v2
 auto_routing:
-  version: auto-v1
+  version: auto-v2
   min_mean_confidence: 0.85
 # All omitted routing thresholds use the frozen AutoRoutingConfig defaults.
 # Add a verified qwen3.5-flash tariff to contracts/model-prices.yaml for known costs.

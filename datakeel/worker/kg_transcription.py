@@ -52,6 +52,8 @@ class ImageTranscription:
                 item.image and item.image.mode == "auto" for item in self.job.prepared.documents
             )
             selected = profile.model_copy(update={"mode": "auto"}) if automatic else profile
+            if not automatic and document.image is not None:
+                selected = profile.model_copy(update={"mode": document.image.mode})
             self.adapter = self.stack.enter_context(
                 create_transcriber(selected, recording=recording)
             )

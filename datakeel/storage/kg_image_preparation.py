@@ -14,6 +14,7 @@ from datakeel.core.kg_execution import KGDocument, KGPrepared
 from datakeel.core.kg_images import ImageTransfer, KGImageSource, TranscriptionEstimate
 from datakeel.core.kg_models import TextBlock
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.core.transcription_auto import require_current_auto_policy
 from datakeel.core.transcription_errors import TranscriptionUnavailableError
 from datakeel.core.transcription_models import TranscriptionMode, TranscriptionProfile
 from datakeel.kg.prompt import IMAGE_PROMPT_VERSION, extraction_prompt
@@ -72,11 +73,21 @@ def image_document(
     )
 
 
+def _current_images(
+    documents: tuple[KGDocument, ...], profile: TranscriptionProfile
+) -> tuple[KGImageSource, ...]:
+    images = tuple(document.image for document in documents if document.image is not None)
+    require_current_auto_policy(
+        profile.auto_routing, automatic=any(image.mode == "auto" for image in images)
+    )
+    return images
+
+
 def prepare_images(
     prepared: KGPrepared, documents: tuple[KGDocument, ...], profile: TranscriptionProfile
 ) -> KGPrepared:
     """Add both outbound fingerprints and a conservative extraction-input upper bound."""
-    images = tuple(document.image for document in documents if document.image is not None)
+    images = _current_images(documents, profile)
     remote_images = tuple(image for image in images if image.mode in {"vlm", "auto"})
     config = transcription_metering(profile, "prepare")
     image_tokens = sum(ceil(image.width * image.height / 1024 + 2) for image in images)

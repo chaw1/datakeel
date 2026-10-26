@@ -12,6 +12,7 @@ import httpx
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.settings import get_settings
+from datakeel.core.transcription_auto import require_current_auto_policy
 from datakeel.core.transcription_errors import TranscriptionUnavailableError
 from datakeel.transcription.adapters import FakeTranscriber, ReplayTranscriber
 from datakeel.transcription.auto_adapter import AutoTranscriber
@@ -108,19 +109,17 @@ def create_transcriber(
     ocr: TranscriberAdapter | None = None,
 ) -> Generator[TranscriberAdapter]:
     """Own only factory-created clients and never construct them for offline backends."""
+    require_current_auto_policy(profile.auto_routing, automatic=profile.mode == "auto")
     if profile.backend in {"replay", "fake"}:
         archive = recording or read_recording(profile)[1]
         if archive is not None:
-            replay = ReplayTranscriber(archive, profile.mode, profile.ocr_model_version)
-            yield (
-                AutoTranscriber(replay, profile.auto_routing) if profile.mode == "auto" else replay
-            )
+            adapter = ReplayTranscriber(archive, profile.mode, profile.ocr_model_version)
         elif profile.backend == "fake":
-            fake = FakeTranscriber()
-            yield AutoTranscriber(fake, profile.auto_routing) if profile.mode == "auto" else fake
+            adapter = FakeTranscriber()
         else:
             message = "Replay transcription requires a recording"
             raise ValidationError(message)
+        yield AutoTranscriber(adapter, profile.auto_routing) if profile.mode == "auto" else adapter
         return
     engine = ocr or RapidOCRTranscriber(profile.ocr_model_version)
     if profile.backend == "ocr":

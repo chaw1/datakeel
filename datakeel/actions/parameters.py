@@ -19,6 +19,7 @@ from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.core.transcription_auto import require_current_auto_policy
 from datakeel.ontology.models import ObjectSet, PropertyFilter
 from datakeel.pipeline import Pipeline, validate_pipeline
 
@@ -103,6 +104,15 @@ def parse_params(action_type: str, params: JsonDocument) -> BoundaryModel:
         msg = f"Unknown action: {action_type}"
         raise ValidationError(msg)
     value = schema.model_validate(params.root)
+    if isinstance(value, RunKGExtractionParams) and value.prepared is not None:
+        prepared = value.prepared
+        if prepared.transcription_profile is not None:
+            require_current_auto_policy(
+                prepared.transcription_profile.auto_routing,
+                automatic=any(
+                    item.image and item.image.mode == "auto" for item in prepared.documents
+                ),
+            )
     if isinstance(value, PipelineParams) and value.pipeline is not None:
         validate_pipeline(value.pipeline)
     return value

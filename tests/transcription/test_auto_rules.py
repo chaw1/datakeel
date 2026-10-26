@@ -341,5 +341,5 @@ def test_configuration_forbids_unknown_fields_and_unversioned_policy() -> None:
     with pytest.raises(ValidationError):
         AutoRoutingConfig.model_validate({"minimum_confidence": 0.5})
     with pytest.raises(ValidationError):
-        AutoRoutingConfig.model_validate({"version": "auto-v2"})
+        AutoRoutingConfig.model_validate({"version": "auto-v3"})
     assert OCRReference(text="Local attempt", error="ocr_not_installed").text == "Local attempt"

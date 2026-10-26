@@ -41,8 +41,8 @@ def _profile() -> TranscriptionProfile:
 
 def _changed_value(value: object) -> str | int | float:
     if isinstance(value, str):
-        # Simulate a future policy in raw stored JSON; current configuration rejects it.
-        return "auto-v2"
+        # Simulate a historical policy in raw stored JSON; automatic execution rejects it.
+        return "auto-v1"
     if isinstance(value, int):
         return value + 1
     assert isinstance(value, float)
@@ -149,4 +149,4 @@ def test_auto_profile_yaml_overrides_routing_configuration(tmp_path: Path) -> No
     loaded = load_profile(path)
     assert loaded.auto_routing.min_mean_confidence == 0.9
     assert loaded.auto_routing.strike_min_width_ratio == 0.8
-    assert loaded.auto_routing.version == "auto-v1"
+    assert loaded.auto_routing.version == "auto-v2"

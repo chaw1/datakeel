@@ -70,7 +70,7 @@ def assert_frozen_auto_plan(
     assert prepared is not None
     assert prepared.transcription_profile is not None
     assert prepared.transcription_profile.auto_routing == profile.auto_routing
-    assert prepared.transcription_profile.auto_routing.version == "auto-v1"
+    assert prepared.transcription_profile.auto_routing.version == "auto-v2"
     modes = {
         document.asset_ref.asset_id: document.image.mode
         for document in prepared.documents
