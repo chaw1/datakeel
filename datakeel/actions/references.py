@@ -91,5 +91,9 @@ def standard_refs(params: StandardActionParams) -> list[AssetRef]:
                 AssetRef(asset_type="code_list", asset_id=item.code)
                 for item in params.contract.code_lists
             ),
+            *(
+                AssetRef(asset_type="standard_synonyms", asset_id=item.canonical)
+                for item in params.contract.synonyms
+            ),
         ]
     return [AssetRef(asset_type="standards", asset_id="contract")]

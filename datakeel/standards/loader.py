@@ -13,7 +13,12 @@ from yaml.nodes import MappingNode, ScalarNode
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import BoundaryModel, JsonDocument
-from datakeel.core.standard_models import CodeList, FieldStandard, StandardsContract
+from datakeel.core.standard_models import (
+    BusinessSynonyms,
+    CodeList,
+    FieldStandard,
+    StandardsContract,
+)
 
 
 class _StrictLoader(yaml.SafeLoader):
@@ -35,6 +40,7 @@ class _StrictLoader(yaml.SafeLoader):
 class _ContractFragment(BoundaryModel):
     standards: tuple[FieldStandard, ...] = ()
     code_lists: tuple[CodeList, ...] = ()
+    synonyms: tuple[BusinessSynonyms, ...] = ()
 
 
 def _fragment(path: Path) -> _ContractFragment:
@@ -54,6 +60,7 @@ def load_contract(path: Path) -> StandardsContract:
         return StandardsContract(
             standards=tuple(item for contract in contracts for item in contract.standards),
             code_lists=tuple(item for contract in contracts for item in contract.code_lists),
+            synonyms=tuple(item for contract in contracts for item in contract.synonyms),
         )
     except (OSError, yaml.YAMLError, ModelValidationError) as exc:
         msg = f"Invalid standards contract: {exc}"

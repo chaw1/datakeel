@@ -110,11 +110,44 @@ class FieldStandard(BoundaryModel):
         return self
 
 
+class BusinessSynonyms(BoundaryModel):
+    """Declare interchangeable business terms without broadening field aliases."""
+
+    canonical: str = Field(min_length=1)
+    alternatives: tuple[str, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def distinct_terms(self) -> Self:
+        """Reject blank and case-insensitive duplicate terms, including whitespace variants."""
+        terms = [" ".join(term.split()).casefold() for term in (self.canonical, *self.alternatives)]
+        if not all(terms):
+            msg = "Business synonym terms must not be blank"
+            raise ValueError(msg)
+        if len(terms) != len(set(terms)):
+            msg = "Duplicate business synonym term"
+            raise ValueError(msg)
+        return self
+
+
 class StandardsContract(BoundaryModel):
     """Combine strict field and reference-data declarations in one YAML document."""
 
     standards: tuple[FieldStandard, ...] = ()
     code_lists: tuple[CodeList, ...] = ()
+    synonyms: tuple[BusinessSynonyms, ...] = ()
+
+    @model_validator(mode="after")
+    def unambiguous_synonyms(self) -> Self:
+        """Require every synonym term to resolve to exactly one business group."""
+        terms = [
+            " ".join(term.split()).casefold()
+            for group in self.synonyms
+            for term in (group.canonical, *group.alternatives)
+        ]
+        if len(terms) != len(set(terms)):
+            msg = "Conflicting business synonym groups"
+            raise ValueError(msg)
+        return self
 
     @model_validator(mode="after")
     def unique_and_resolved(self) -> Self:

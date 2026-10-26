@@ -18,7 +18,12 @@ from datakeel.actions.standard_parameters import (
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import AssetRef, LineageEvent, new_id, utcnow
 from datakeel.core.standard_history_models import StandardsRevision, StandardsState
-from datakeel.core.standard_models import CodeList, FieldStandard, StandardsContract
+from datakeel.core.standard_models import (
+    BusinessSynonyms,
+    CodeList,
+    FieldStandard,
+    StandardsContract,
+)
 from datakeel.storage.catalog_store import lock_catalog, read_snapshot
 from datakeel.storage.events import append_event
 from datakeel.storage.standard_store import revisions_in_session, state_in_session
@@ -60,7 +65,21 @@ def _contract(
         code_lists=_replacement(
             current.code_lists, incoming.code_lists, versions[1], restoring=restoring
         ),
+        synonyms=_synonyms(current.synonyms, incoming.synonyms, restoring=restoring),
     )
+
+
+def _synonyms(
+    current: tuple[BusinessSynonyms, ...],
+    incoming: tuple[BusinessSynonyms, ...],
+    *,
+    restoring: bool,
+) -> tuple[BusinessSynonyms, ...]:
+    if restoring:
+        return incoming
+    groups = {" ".join(item.canonical.split()).casefold(): item for item in current}
+    groups.update({" ".join(item.canonical.split()).casefold(): item for item in incoming})
+    return tuple(groups[key] for key in sorted(groups))
 
 
 def _historical_versions(session: Session) -> tuple[dict[str, int], dict[str, int]]:
@@ -133,6 +152,12 @@ def standard_impact(session: Session, params: StandardActionParams) -> int:
                 {item.code for item in (*current.contract.code_lists, *target.contract.code_lists)}
             )
             + len({item.column_id for item in (*current.mappings, *target.mappings)})
+            + len(
+                {
+                    " ".join(item.canonical.split()).casefold()
+                    for item in (*current.contract.synonyms, *target.contract.synonyms)
+                }
+            )
         )
     return len(standard_refs(params))
 

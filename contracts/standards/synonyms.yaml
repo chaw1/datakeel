@@ -1,0 +1,43 @@
+# Business vocabulary is maintained separately from field names and lexical rules.
+# Import the directory to include these groups in the approved standards snapshot.
+synonyms:
+  - canonical: customer
+    alternatives: [client, buyer, consumer, shopper, patron]
+  - canonical: email
+    alternatives: [mail, e mail, mailbox, email address]
+  - canonical: phone
+    alternatives: [mobile, telephone, tel, cellphone, cell phone]
+  - canonical: store
+    alternatives: [shop, outlet, branch]
+  - canonical: product
+    alternatives: [item, goods, merchandise]
+  - canonical: product code
+    alternatives: [sku, stock keeping unit, item code, merchandise code]
+  - canonical: order
+    alternatives: [purchase, sales order]
+  - canonical: warehouse
+    alternatives: [depot, stockroom, distribution center]
+  - canonical: quantity
+    alternatives: [count, units]
+  - canonical: inventory
+    alternatives: [stock, on hand]
+  - canonical: amount
+    alternatives: [total, value]
+  - canonical: paid
+    alternatives: [settled, remitted]
+  - canonical: shipped
+    alternatives: [dispatched, delivered, fulfilled]
+  - canonical: refund
+    alternatives: [reimbursement, reimbursed]
+  - canonical: ticket
+    alternatives: [tkt, tckt, case, service request, support request]
+  - canonical: part
+    alternatives: [component, spare, spare part]
+  - canonical: failure
+    alternatives: [fault, defect, malfunction]
+  - canonical: description
+    alternatives: [details, narrative, explanation]
+  - canonical: joined
+    alternatives: [enrolled, registered, signup]
+  - canonical: revenue
+    alternatives: [turnover, earnings]

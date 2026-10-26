@@ -1,5 +1,30 @@
 {
   "$defs": {
+    "BusinessSynonyms": {
+      "additionalProperties": false,
+      "description": "Declare interchangeable business terms without broadening field aliases.",
+      "properties": {
+        "canonical": {
+          "minLength": 1,
+          "title": "Canonical",
+          "type": "string"
+        },
+        "alternatives": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Alternatives",
+          "type": "array"
+        }
+      },
+      "required": [
+        "canonical",
+        "alternatives"
+      ],
+      "title": "BusinessSynonyms",
+      "type": "object"
+    },
     "CodeEntry": {
       "additionalProperties": false,
       "description": "Assign bilingual business labels to one scalar reference value.",
@@ -290,6 +315,14 @@
         "$ref": "#/$defs/CodeList"
       },
       "title": "Code Lists",
+      "type": "array"
+    },
+    "synonyms": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BusinessSynonyms"
+      },
+      "title": "Synonyms",
       "type": "array"
     }
   },
