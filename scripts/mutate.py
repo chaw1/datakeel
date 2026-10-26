@@ -23,6 +23,7 @@ from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
+from scripts.release_mutations import RELEASE_MUTATIONS
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -137,6 +138,7 @@ MUTATIONS = (
     *KG_MUTATIONS,
     *KNOWLEDGE_MUTATIONS,
     *IMAGE_KG_MUTATIONS,
+    *RELEASE_MUTATIONS,
 )
 
 
