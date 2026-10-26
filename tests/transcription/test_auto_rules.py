@@ -246,7 +246,8 @@ def test_grey_rows_contrasting_background_routes_to_vision(brightness: int) -> N
     canvas = Image.new("RGB", (700, 300), "white")
     ImageDraw.Draw(canvas).rectangle((15, 50, 680, 120), fill=(brightness,) * 3)
     line = _line(canvas, "Disabled ownership of the old register", (30, 70))
-    assert "struck_or_greyed_rows" in decide_auto_route(*_inputs(canvas, (line,))).reasons
+    active = _line(canvas, "Active ownership of the current register", (30, 170))
+    assert "struck_or_greyed_rows" in decide_auto_route(*_inputs(canvas, (line, active))).reasons
 
 
 @pytest.mark.parametrize("brightness", [180, 230, 255])

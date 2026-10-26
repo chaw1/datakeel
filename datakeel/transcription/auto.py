@@ -13,6 +13,7 @@ import numpy as np
 from PIL import Image
 
 from datakeel.core.transcription_auto import AutoReason, AutoRouteDecision, AutoRoutingConfig
+from datakeel.transcription.auto_rows import has_grey_row, has_strike, longest_run
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -49,12 +50,6 @@ def _masked_ink(
     return ink
 
 
-def _longest_run(values: NDArray[np.bool_]) -> int:
-    padded = np.concatenate((np.array([False]), values, np.array([False])))
-    changes = np.flatnonzero(padded[1:] != padded[:-1])
-    return int(np.max(changes[1::2] - changes[::2], initial=0))
-
-
 def _axis_connector(
     ink: NDArray[np.bool_], pair: NDArray[np.float64], config: AutoRoutingConfig
 ) -> bool:
@@ -70,7 +65,7 @@ def _axis_connector(
             continue
         area = ink[start:end, left:right] if axis == 1 else ink[left:right, start:end].T
         if any(
-            _longest_run(column) >= (end - start) * config.connector_min_coverage
+            longest_run(column) >= (end - start) * config.connector_min_coverage
             for column in area.T
         ):
             return True
@@ -110,7 +105,7 @@ def _connector(
             x = np.clip(points[:, 0], 0, ink.shape[1] - 1)
             y = np.clip(points[:, 1], 0, ink.shape[0] - 1)
             hits |= ink[y, x]
-    return _longest_run(hits) >= len(hits) * config.connector_min_coverage
+    return longest_run(hits) >= len(hits) * config.connector_min_coverage
 
 
 def _has_structure(
@@ -124,45 +119,6 @@ def _has_structure(
             if other > index and _connector(ink, boxes[[index, other]], config):
                 return True
     return False
-
-
-def _has_strike(
-    pixels: NDArray[np.uint8], boxes: NDArray[np.float64], config: AutoRoutingConfig
-) -> bool:
-    for x1, y1, x2, y2 in boxes:
-        margin = (y2 - y1) * config.strike_vertical_margin
-        area = pixels[int(y1 + margin) : int(y2 - margin) + 1, int(x1) : int(np.ceil(x2))]
-        if any(
-            _longest_run(row < config.dark_pixel_threshold)
-            >= (x2 - x1) * config.strike_min_width_ratio
-            for row in area
-        ):
-            return True
-    return False
-
-
-def _has_grey_row(
-    pixels: NDArray[np.uint8], boxes: NDArray[np.float64], config: AutoRoutingConfig
-) -> bool:
-    background = float(np.percentile(pixels, config.background_percentile))
-    text_brightness: list[float] = []
-    for x1, y1, x2, y2 in boxes:
-        context = (y2 - y1) * config.grey_context_height_ratio
-        left, right = max(0, int(x1 - context)), min(pixels.shape[1], int(x2 + context))
-        top, bottom = max(0, int(y1 - context)), min(pixels.shape[0], int(y2 + context) + 1)
-        area = pixels[top:bottom, left:right]
-        grey = (area >= config.grey_min_brightness) & (
-            area <= min(config.grey_max_brightness, background - config.grey_min_contrast)
-        )
-        if grey.size and float(np.mean(grey)) >= config.grey_min_row_fraction:
-            return True
-        text = pixels[int(y1) : int(np.ceil(y2)), int(x1) : int(np.ceil(x2))]
-        foreground = text[text < background - config.grey_min_contrast]
-        if foreground.size:
-            text_brightness.append(float(np.median(foreground)))
-    return bool(text_brightness) and max(text_brightness) >= max(
-        config.grey_min_text_brightness, min(text_brightness) + config.grey_min_contrast
-    )
 
 
 def _is_sparse(
@@ -219,7 +175,7 @@ def decide_auto_route(
     ink = _masked_ink(pixels, boxes, config)
     if _ARROW.search(ocr.text) or _has_structure(ink, boxes, config):
         reasons.append("structure_diagram")
-    if _has_strike(pixels, boxes, config) or _has_grey_row(pixels, boxes, config):
+    if has_strike(pixels, boxes, config) or has_grey_row(pixels, boxes, config):
         reasons.append("struck_or_greyed_rows")
     if _is_sparse(pixels, ink, boxes, characters, config):
         reasons.append("sparse_text")

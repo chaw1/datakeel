@@ -27,7 +27,7 @@ AUTO_ROUTING_MUTATIONS = (
     Mutation(
         name="auto-row-state-disabled",
         path="transcription/auto.py",
-        before="if _has_strike(pixels, boxes, config) or _has_grey_row(pixels, boxes, config):",
+        before="if has_strike(pixels, boxes, config) or has_grey_row(pixels, boxes, config):",
         after="if False:",
         case=_TESTS + "test_struck_rows_long_central_stroke_routes_to_vision[1.0]",
         runner="pytest",
