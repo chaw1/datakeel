@@ -113,7 +113,7 @@ See [WORKFLOWS.md](WORKFLOWS.md) for declarations, endpoints, events and example
 
 ## 8. 意图与模型路由 / Intent and model routing
 
-Intent scoring uses only vocabulary, exclusions, thresholds and score margins declared in workflow YAML. A clear winner produces a suggestion; ambiguous scores use an independent classifier; insufficient or failed classification returns to the free Agent. The offline classifier does not consume the scripted Agent queue. Real classification uses the configured conversation model, has its own reserve/settle trace marked `intent_classifier`, and does not increment Agent turns. No new tools, context segments or ChatMessage fields are introduced.
+Intent scoring first filters each workflow's request scope for negation, inactive topics, read-only requests and step restrictions, then uses vocabulary, exclusions, thresholds and score margins declared in workflow YAML. A clear winner produces a suggestion; ambiguous scores and positive partial matches use an independent classifier limited to the top three candidates. Incomplete keyword conjunctions retain fractional scores, and broader declarative entity/action/scope groups can also establish partial eligibility without promoting it to a direct route. A classifier choice must pass a literal critical entity-or-verb check; abstention or failed verification returns to the free Agent. Decisions retain scores, classifier usage and choice, verification outcome and confirmation policy. A classified workflow with writes or approval steps keeps conversational reads available but blocks writes and delegation until the user explicitly starts the workflow. The offline classifier does not consume the scripted Agent queue. Real classification uses the configured conversation model, has its own reserve/settle trace marked `intent_classifier`, and does not increment Agent turns. No new tools, context segments or ChatMessage fields are introduced.
 
 会话路由只建议，执行仍由用户显式启动。命中建议以 `route` 事件在 `done` 前发出；自由路由决策保存在 `done.route`，可经会话路由接口查询。恢复请求不重新路由。预填只来自会话的 dataset_id，不从用户文本推断额外执行参数。
 
@@ -128,6 +128,8 @@ Each conversation has a private `dkc_` sentinel with 24 random hexadecimal chara
 模型节点在计费完成后、追加 assistant 消息前检测泄漏：忽略大小写与空白，完整值或随机部分连续 16 位均触发 `stopped` / `canary_leak`。该回复不产生 text 或工具执行，审计只记 `CANARY_LEAK` 和原因，不存秘密。计费记录仍保留真实用量。
 
 Tool history is encoded as `["data-only", tool_name, payload]` only when assembling a prompt; stored tool results retain their original JSON. The envelope's fixed overhead is 17 UTF-8 bytes, plus source-tool name and any JSON encoding required for non-JSON text. The canary segment consumes 66 units under the conservative byte estimator, including its 16-unit segment allowance. Empty context segments are omitted.
+
+Tool discovery keeps complete schemas in the transcript for recovery and audit. At the prompt boundary, a historical discovery result omits only the duplicate parameters of a definition identical to one in the current request's native tools. Different, unknown and legacy definitions remain intact. Accounting uses the resulting prompt with the same UTF-8 byte bound and unchanged budget limits.
 
 威胁模型：信封区分数据和指令，canary 检测部分提示泄漏；二者不保证模型完全免受提示注入。恶意 caption 或元数据仍可能诱导可逆动作自动执行，这些动作有审计和回滚。不可逆动作始终由受控动作签批边界保护，没有人类签批不能执行。各项测试只用独立生成样例和离线模型。
 

@@ -253,6 +253,10 @@ Catalog levels increase from table to view/summary to metric. A question without
 
 方向由关系框架中被问的槽位决定：被使用、被依赖或作为基础的一端是来源方；使用者、依赖者、产物或流入目标是结果方。疑问短语占结果方时问下游，占来源方时问上游；主语在句首还是句尾不决定方向。话题可以用逗号、冒号、破折号或 `For` 引出，后续的它、这张表、这个视图、该指标、it、this view、that table、its output 继承该主语身份。指代里的类型名词不作为被问类型。依赖方计数仍返回列表及个数。
 
+Topic questions such as `inventory 有谁在读取？` ask for consumers even when the object is omitted. Passive usage assigns the resource and reader to separate slots: `inventory is read by which reports?` asks downstream, while `which tables are read by inventory?` asks upstream. Flow verbs such as `end up` and 最后到了 resolve the destination; `from` reverses the flow slot. Counterfactuals including `went away`, 不再供数 and 停掉以后 ask downstream only when the known subject is the missing source and the question requests affected results. Asking for missing inputs or the responsible owner keeps its original direction or ownership intent.
+
+「有谁在」不改变后续动词的角色：「有谁在使用」问使用者，「有谁在给它供数」问输入方。反事实背景也不会覆盖主问句中明确的来源或负责人；这些句式与普通数值请求沿用同一知识/指标边界。
+
 | Rule / 规则 | Condition / 条件 | Result / 结果 |
 | --- | --- | --- |
 | `M1-numeric` | Explicit value requests, business quantities or rankings, excluding catalog-object list/count requests / 明确数值请求、业务数量或排名，排除目录对象列表及计数 | Metric route / 指标路线 |
