@@ -3,6 +3,7 @@
 
 """Score weighted business-token evidence without letting generic or system fields through."""
 
+import re
 from functools import lru_cache
 
 from datakeel.core.models import BoundaryModel
@@ -95,6 +96,24 @@ _TECHNICAL_CLOCK = frozenset(
         "process",
     }
 )
+_SYSTEM_WORDS = ("version", "revision", "tenant", "deleted", "removed", "latitude", "longitude")
+_COMPLETE_SKELETON_WEIGHT = 0.85
+_CONTEXTUAL = frozenset({"amount", "date", "status", "time"})
+
+
+@lru_cache(maxsize=4096)
+def _system_variant(token: str) -> bool:
+    if re.fullmatch(r"(?:row|record|sys|system|db)(?:version|revision|hash|checksum)", token):
+        return True
+    return any(
+        match is not None
+        and (
+            match.rule == "morphology"
+            or (match.rule == "consonant" and match.weight >= _COMPLETE_SKELETON_WEIGHT)
+        )
+        for word in _SYSTEM_WORDS
+        for match in (match_token(token, word),)
+    )
 
 
 class NameEvidence(BoundaryModel):
@@ -107,7 +126,7 @@ class NameEvidence(BoundaryModel):
 def business_tokens(name: str) -> frozenset[str]:
     """Return usable name tokens, abstaining on infrastructure and bare generic fields."""
     tokens = name_tokens(name, expand_aliases=False)
-    if tokens & _SYSTEM or not tokens - _GENERIC:
+    if tokens & _SYSTEM or any(_system_variant(token) for token in tokens) or not tokens - _GENERIC:
         return frozenset()
     if tokens & _TECHNICAL_CLOCK and tokens & {"date", "time", "timestamp", "ts", "at"}:
         return frozenset()
@@ -177,7 +196,9 @@ def _matches(observed: frozenset[str], expected: frozenset[str]) -> tuple[TokenM
 @lru_cache(maxsize=8192)
 def _score(observed: frozenset[str], expected: frozenset[str]) -> NameEvidence:
     matches = _matches(observed, expected)
-    if not any(item.expected not in _GENERIC for item in matches):
+    business_hit = any(item.expected not in _GENERIC | _CONTEXTUAL for item in matches)
+    complete_context = observed == expected and bool(expected - _GENERIC)
+    if not business_hit and not complete_context:
         return NameEvidence()
     total = sum(item.weight for item in matches)
     score = 0.82 * total / max(len(observed), len(expected))

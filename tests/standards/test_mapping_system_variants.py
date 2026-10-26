@@ -34,6 +34,28 @@ from datakeel.standards.mapping import suggest
         "value_type_code",
         "customer_etl_load_dttm",
         "purchase_order_hash",
+        "customer_vrsn",
+        "store_rvsn",
+        "customer_versioned",
+        "buyer_tnnt_id",
+        "product_dltd_flag",
+        "warehouse_rmvd_flag",
+        "store_lttd",
+        "warehouse_lngtd",
+        "customer_rowversion",
+        "customer_recordrevision",
+        "order_rowhash",
+        "store_systemchecksum",
+        "客户版本号",
+        "客户修订号",
+        "客户租户编号",
+        "订单逻辑删除标志",
+        "门店行哈希",
+        "仓库经度",
+        "门店纬度",
+        "订单校验和",
+        "客户调试标志",
+        "商品缓存标志",
     ],
 )
 def test_business_named_system_variants_do_not_produce_candidates(
@@ -92,3 +114,32 @@ def test_generic_value_does_not_create_competing_business_meaning(
         ColumnProfile(column_id="x", name="turnover_value", data_type="decimal"), contract
     )
     assert [item.standard_code for item in result.candidates] == ["revenue"]
+
+
+@pytest.mark.parametrize("name", ["rev_amt", "rvn_amt", "revenue_amount"])
+def test_revenue_abbreviations_do_not_become_revision_system_markers(
+    contract: StandardsContract, name: str
+) -> None:
+    """Only complete system skeletons override revenue's distinct business abbreviations."""
+    result = suggest(ColumnProfile(column_id="x", name=name, data_type="number"), contract)
+    assert result.candidates[0].standard_code == "revenue"
+
+
+def test_complete_version_skeleton_overrides_a_business_prefix(contract: StandardsContract) -> None:
+    """A new version consonant skeleton never turns the customer prefix into a mapping."""
+    result = suggest(ColumnProfile(column_id="x", name="customer_vrsn", data_type="text"), contract)
+    assert not result.candidates
+
+
+def test_business_meaning_outweighs_a_shared_measure_suffix(contract: StandardsContract) -> None:
+    """An amount suffix cannot outrank the observed revenue business abbreviation."""
+    result = suggest(ColumnProfile(column_id="x", name="rev_amt", data_type="number"), contract)
+    assert [item.standard_code for item in result.candidates] == ["revenue"]
+
+
+def test_chinese_system_words_override_customer_business_prefix(
+    contract: StandardsContract,
+) -> None:
+    """Chinese system metadata is normalized before considering its apparent business prefix."""
+    result = suggest(ColumnProfile(column_id="x", name="客户版本号", data_type="text"), contract)
+    assert not result.candidates

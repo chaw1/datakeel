@@ -44,6 +44,17 @@ _WORDS: dict[str, str] = {
     "timestamp": "time",
 }
 _CHINESE: dict[str, str] = {
+    "版本": "version",
+    "修订": "revision",
+    "租户": "tenant",
+    "逻辑删除": "delete",
+    "删除": "delete",
+    "经度": "longitude",
+    "纬度": "latitude",
+    "哈希": "hash",
+    "校验和": "checksum",
+    "调试": "debug",
+    "缓存": "cache",
     "客户": "customer",
     "顾客": "customer",
     "用户": "user",

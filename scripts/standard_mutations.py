@@ -130,4 +130,37 @@ STANDARD_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="standards-system-word-variants",
+        path="standards/matching.py",
+        before="any(_system_variant(token) for token in tokens)",
+        after="False",
+        case=(
+            "tests/standards/test_mapping_system_variants.py::"
+            "test_complete_version_skeleton_overrides_a_business_prefix"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-contextual-measure-suffix",
+        path="standards/matching.py",
+        before="_CONTEXTUAL = frozenset(",
+        after="_CONTEXTUAL = frozenset() if True else frozenset(",
+        case=(
+            "tests/standards/test_mapping_system_variants.py::"
+            "test_business_meaning_outweighs_a_shared_measure_suffix"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-chinese-system-boundary",
+        path="standards/names.py",
+        before='"版本": "version",',
+        after='"版本": "edition",',
+        case=(
+            "tests/standards/test_mapping_system_variants.py::"
+            "test_chinese_system_words_override_customer_business_prefix"
+        ),
+        runner="pytest",
+    ),
 )
