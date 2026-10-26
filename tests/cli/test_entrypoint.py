@@ -24,15 +24,16 @@ def test_module_entrypoint_when_executed_dispatches_main(monkeypatch: pytest.Mon
     assert calls == ["main"]
 
 
-def test_offline_cli_import_does_not_load_servers() -> None:
-    """Keep transport servers and HTTP route registration out of offline command startup."""
+def test_offline_cli_import_does_not_load_servers_or_model_sdks() -> None:
+    """Keep server registration and model SDK loading out of offline command startup."""
     subprocess.run(
         [
             sys.executable,
             "-c",
             (
                 "import sys; import datakeel.cli; "
-                "assert not {'fastmcp', 'datakeel.api.app'} & sys.modules.keys()"
+                "assert not {'fastmcp', 'datakeel.api.app', 'datakeel.harness.evaluation', "
+                "'openai', 'anthropic'} & sys.modules.keys()"
             ),
         ],
         check=True,
