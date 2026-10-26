@@ -7,6 +7,17 @@ from scripts.mutation_models import Mutation
 
 KNOWLEDGE_MUTATIONS = (
     Mutation(
+        name="knowledge-flow-destination-slot",
+        path="ask/knowledge_frames.py",
+        before='return "downstream" if from_source else "upstream"',
+        after='return "upstream" if from_source else "downstream"',
+        case=(
+            "tests/ask/test_knowledge_long_tail.py::"
+            "test_flow_preposition_and_interrogative_slots_cannot_be_reversed"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="knowledge-candidate-label",
         path="ask/knowledge_claims.py",
         before="relation_status=assertion.status,",

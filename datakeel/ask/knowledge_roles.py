@@ -172,7 +172,9 @@ def _event_source(text: str, mention: SubjectMention) -> QuestionDirection:
     event = re.search(vocabulary.SOURCE_EVENT_PREFIX, marked)
     if event:
         after = marked[event.end() :]
-        if re.search(vocabulary.QUESTION_ANCHOR, after) and re.search(vocabulary.IMPACT, after):
+        if re.search(vocabulary.QUESTION_ANCHOR, after) and re.search(
+            vocabulary.DEPENDENCY_CONSEQUENCE, after
+        ):
             return _frame_result("downstream", event, mention)
     return QuestionDirection()
 

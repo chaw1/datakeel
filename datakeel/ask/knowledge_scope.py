@@ -26,7 +26,7 @@ def _naming_tail(text: str) -> str:
 def _supplementary(hit: re.Match[str]) -> str:
     clause = hit.group()
     body = re.sub(r"^,\s*(?:which|that)\s+", "", clause)
-    noun = "|".join(pattern for _, pattern in vocabulary.TYPE_WORDS)
+    noun = "|".join([*(pattern for _, pattern in vocabulary.TYPE_WORDS), vocabulary.SOURCE_NOUNS])
     if re.match(rf"{vocabulary.NOUN_FILLER}(?:{noun})|{vocabulary.QUESTION_PLACEHOLDER}", body):
         return clause
     return " " * len(clause)

@@ -21,6 +21,32 @@ _DERIVATION = r"\b(?:derived|built|made|created|generated|produced)\s+(?:from|on
 _BASIS = r"基础|依据|来源|输入|\b(?:basis|base|foundation|input|source)\b"
 _ROLE_FRAMES = (
     (
+        rf"\bby\s+(?P<result>{_CLAUSE}?)\b(?:is|are|was|were)\b"
+        rf"(?P<source>{_CLAUSE}?)\b(?:{vocabulary.USAGE_EN_PAST})\b"
+    ),
+    (
+        rf"\bby\s+(?P<source>{_CLAUSE}?)\b(?:is|are|was|were)\b"
+        rf"(?P<result>{_CLAUSE}?)\b(?:{vocabulary.PRODUCTION_EN_PAST})\b"
+    ),
+    (
+        rf"(?P<source>{_CLAUSE}?)\b(?:{vocabulary.USAGE_EN_PAST})\s+as\s+"
+        rf"(?:(?:an?|the)\s+)?(?:{_BASIS})\s+(?:for|to)\b(?P<result>{_CLAUSE})"
+    ),
+    (
+        rf"(?P<result>{_CLAUSE}?)\b(?:{vocabulary.PRODUCTION_EN_PAST})\s+by\b"
+        rf"(?P<source>{_CLAUSE})"
+    ),
+    (
+        rf"(?P<source>{_CLAUSE}?)\b(?:{vocabulary.USAGE_EN_PAST})\s+by\b"
+        rf"(?P<result>{_CLAUSE})"
+    ),
+    rf"(?P<source>{_CLAUSE}?)(?:被)(?P<result>{_CLAUSE}?)(?:{vocabulary.USAGE_ZH})",
+    (
+        rf"(?P<source>{_CLAUSE}?)\b(?:supplies|supply|supplying)\b"
+        rf"(?P<result>{_CLAUSE})"
+    ),
+    rf"(?P<source>{_CLAUSE}?)(?:给|为)(?P<result>{_CLAUSE}?)(?:供数|提供数据)",
+    (
         rf"(?P<result>{_CLAUSE}?\bwhose)\s+(?:inputs?|sources?|basis|foundation)\s+"
         rf"(?:is|are)\s+(?P<source>{_CLAUSE})"
     ),
@@ -45,12 +71,13 @@ _ABSENCE = (
     vocabulary.ABSENCE_WORDS
     + r"|断供|停掉|停供|\b(?:retir(?:e|es|ed)|drop(?:s|ped)?|remove[ds]?)\b"
 )
-_CONSEQUENCE = (
-    vocabulary.IMPACT + r"|会坏|无法(?:更新|生成)|不能(?:更新|生成)|"
-    r"\b(?:fail\w*|stop\s+(?:working|refreshing)|lose\w*\s+(?:its\s+)?(?:data\s+)?feed)\b"
+_FLOW = (
+    r"流向|流到|流入|去向|下一站|(?:最后|最终)\s*到(?:了|达)?|"
+    r"\b(?:flow(?:s|ed|ing)?|go(?:es)?\s+next|end(?:s|ed)?\s+up)\b"
 )
-_FLOW = r"流向|流到|流入|去向|下一站|\b(?:flows?|go(?:es)?\s+next)\b"
 _INVERSION = r"\b(?:does|do|did|is|are|was|were|has|have|can|could|would|will)\s+§"
+_FRONTED_SOURCE = rf"(?:\bfrom\s+|\bout\s+of\s+|从\s*)(?:{_QUESTION})"
+_CONDITION = vocabulary.CONDITION_WORDS + r"|\b(?:when|once)\b"
 
 
 def question_frame_direction(marked: str, mention: SubjectMention) -> QuestionDirection:
@@ -68,6 +95,8 @@ def _asked_slot(frame: re.Match[str]) -> Literal["upstream", "downstream"] | Non
     source, result = frame.group("source"), frame.group("result")
     source_ask = re.search(_QUESTION, source)
     result_ask = re.search(_QUESTION, result)
+    if source_ask and re.search(_INVERSION, source[source_ask.end() :]):
+        return "downstream"
     if (
         source_ask
         and not result_ask
@@ -86,11 +115,16 @@ def _asked_slot(frame: re.Match[str]) -> Literal["upstream", "downstream"] | Non
 def _flow_slot(marked: str) -> Literal["upstream", "downstream"] | None:
     for flow in re.finditer(_FLOW, marked):
         before, after = marked[: flow.start()], marked[flow.end() :]
-        if not re.search(_REFERENCE, before) or not re.search(vocabulary.LOCATION_QUESTION, marked):
+        if "end" in flow.group() and re.match(r"\s+(?:being\s+)?[a-z]+ing\b", after):
             continue
-        if re.match(r"\s+(?:(?:in|out)\s+)?(?:from|out\s+of)\b", after):
-            return "upstream"
-        return "downstream"
+        if not re.search(_QUESTION, marked):
+            continue
+        from_source = re.match(r"\s+(?:(?:in|out)\s+)?(?:from|out\s+of)\b", after)
+        after_reference = "§" in after or ("§" not in before and re.search(_REFERENCE, after))
+        if after_reference and re.search(_QUESTION, before):
+            return "downstream" if from_source else "upstream"
+        if re.search(_REFERENCE, before):
+            return "upstream" if from_source or re.search(_FRONTED_SOURCE, before) else "downstream"
     return None
 
 
@@ -98,7 +132,7 @@ def counterfactual_direction(marked: str, mention: SubjectMention) -> QuestionDi
     """Treat an absent source and its affected result as separate argument slots."""
     if not re.search(_QUESTION, marked):
         return QuestionDirection()
-    for condition in re.finditer(vocabulary.CONDITION_WORDS, marked):
+    for condition in re.finditer(_CONDITION, marked):
         source = marked[condition.end() :]
         boundary = re.search(vocabulary.CLAUSE_DELIMITER, source)
         if boundary:
@@ -113,7 +147,11 @@ def counterfactual_direction(marked: str, mention: SubjectMention) -> QuestionDi
             and not re.search(_QUESTION, topic)
             and re.fullmatch(r"[\s,:\uff1a\uff0c\u2014\u2013]*", topic[topic.index("§") + 1 :])
         )
-        if known_source and re.search(_QUESTION, result) and re.search(_CONSEQUENCE, result):
+        if (
+            known_source
+            and re.search(_QUESTION, result)
+            and re.search(vocabulary.DEPENDENCY_CONSEQUENCE, result)
+        ):
             return _result("downstream", marked, mention, "K16-counterfactual-slot")
     return QuestionDirection()
 
