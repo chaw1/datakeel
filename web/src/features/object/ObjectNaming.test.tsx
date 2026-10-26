@@ -161,3 +161,42 @@ it("falls back to the identity when the object has no name", () => {
     screen.getByRole("heading", { level: 1, name: target.id }),
   ).toBeVisible();
 });
+
+it.each(["en", "zh"] as const)(
+  "uses optional English object metadata while keeping a non-UUID ID complete in %s",
+  (locale) => {
+    const target: ObjectTarget = { kind: "metric", id: "retail_revenue" };
+    const name = "自定义营业额";
+    const englishName = "Custom turnover";
+    render(
+      <I18nContext.Provider
+        value={{ locale, setLocale: vi.fn(), t: translator(locale) }}
+      >
+        <ObjectHeader
+          data={{ ...objectData, name, englishName }}
+          target={target}
+        />
+      </I18nContext.Provider>,
+    );
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: locale === "en" ? englishName : name,
+      }),
+    ).toBeVisible();
+    expect(document.querySelector(".object-id code")).toHaveTextContent(
+      /^retail_revenue$/,
+    );
+    const node = {
+      namespace: "default",
+      asset_id: target.id,
+      asset_type: target.kind,
+      id: target.id,
+      label: name,
+      english_name: englishName,
+    };
+    expect(safeNodeName(node, locale)).toBe(
+      locale === "en" ? englishName : name,
+    );
+  },
+);

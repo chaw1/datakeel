@@ -1,5 +1,14 @@
 import type { Task } from "../api/types";
 import type { Locale } from "../i18n/context";
+
+export function shortId(value: string): string {
+  return /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(
+    value,
+  )
+    ? value.slice(0, 8)
+    : value;
+}
+
 export function display(value: unknown, fallback = "—"): string {
   if (value === null || value === undefined || value === "") return fallback;
   if (typeof value === "string") return value;

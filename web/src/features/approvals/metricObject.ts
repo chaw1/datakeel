@@ -15,10 +15,13 @@ export function metricObject(plan: ActionPlan) {
   ) {
     const id = "id" in definition ? definition.id : null;
     const name = "name" in definition ? definition.name : null;
+    const englishName =
+      "english_name" in definition ? definition.english_name : null;
     const version = "version" in definition ? definition.version : null;
     return {
       id: typeof id === "string" ? id : "",
       name: typeof name === "string" ? name : "",
+      englishName: typeof englishName === "string" ? englishName : null,
       version: typeof version === "number" ? version : null,
     };
   }
@@ -26,6 +29,7 @@ export function metricObject(plan: ActionPlan) {
   return {
     id: typeof id === "string" ? id : "",
     name: typeof id === "string" ? id : "",
+    englishName: null,
     version: null,
   };
 }

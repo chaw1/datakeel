@@ -38,6 +38,7 @@ export function ImpactTree({
                 item.asset_ref.asset_type,
                 item.name,
                 locale,
+                item.english_name,
               )}
             </button>
             <small className="mono">{item.asset_ref.asset_id}</small>

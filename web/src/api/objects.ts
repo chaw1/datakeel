@@ -25,6 +25,7 @@ export type MetricHistory = components["schemas"]["MetricHistory"];
 export type ObjectData = {
   target: ObjectTarget;
   name: string;
+  englishName?: string | null;
   graph: Graph;
   dataset?: Dataset;
   file?: FileItem;
@@ -171,6 +172,7 @@ async function catalogData(target: ObjectTarget): Promise<Partial<ObjectData>> {
       catalog: table.table,
       catalogNeighbors: table.neighbors,
       name: table.table.name,
+      englishName: table.table.english_name,
     };
   }
   if (target.kind === "metric") {
@@ -184,13 +186,19 @@ async function catalogData(target: ObjectTarget): Promise<Partial<ObjectData>> {
       metricHistory,
       catalogNeighbors,
       name: metric.definition.name,
+      englishName: metric.definition.english_name,
     };
   }
   const [catalog, catalogNeighbors] = await Promise.all([
     get<CatalogObject>(`/api/catalog/objects/${encoded}`),
     get<ImpactResult>(`/api/catalog/neighbors?asset_id=${encoded}`),
   ]);
-  return { catalog, catalogNeighbors, name: catalog.name };
+  return {
+    catalog,
+    catalogNeighbors,
+    name: catalog.name,
+    englishName: catalog.english_name,
+  };
 }
 async function actionData(target: ObjectTarget): Promise<Partial<ObjectData>> {
   const runs = await get<ActionRun[]>("/api/actions/runs");

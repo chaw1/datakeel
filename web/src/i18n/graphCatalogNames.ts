@@ -19,6 +19,7 @@ export function localizedObjectName(
   kind: string,
   name: string,
   locale: Locale,
+  englishName?: string | null,
 ): string {
   if (
     locale !== "en" ||
@@ -33,6 +34,7 @@ export function localizedObjectName(
     ].includes(kind)
   )
     return name;
+  if (englishName?.trim()) return englishName.trim();
   const t = translator(locale);
   return kind === "column"
     ? name

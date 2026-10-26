@@ -1,5 +1,6 @@
 import { get } from "../../api/client";
 import { objectGraphPath } from "../../api/objects";
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 import { RelationGraph } from "../graph/RelationGraph";
@@ -21,7 +22,7 @@ export function ObjectRelations({
   target: ObjectTarget;
   onOpen: (target: ObjectTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const relation = target.relation;
   const sourceId = relation === "source" ? data.catalog?.source_id : undefined;
   const source = useResource<CatalogObject>(
@@ -95,10 +96,31 @@ export function ObjectRelations({
           <h2>{t(relation === "source" ? "objSource" : "objOwner")}</h2>
           <p>
             {relation === "source"
-              ? (source.value?.name ?? sourceId ?? t("objNoSource"))
-              : (data.metric?.definition.owner ??
-                data.table?.owners.map((owner) => owner.name).join(", ") ??
-                t("objNoSource"))}
+              ? source.value
+                ? localizedObjectName(
+                    "source",
+                    source.value.name,
+                    locale,
+                    source.value.english_name,
+                  )
+                : (sourceId ?? t("objNoSource"))
+              : data.metric
+                ? localizedObjectName(
+                    "owner",
+                    data.metric.definition.owner,
+                    locale,
+                    data.metric.owner_english_name,
+                  )
+                : (data.table?.owners
+                    .map((owner) =>
+                      localizedObjectName(
+                        "owner",
+                        owner.name,
+                        locale,
+                        owner.english_name,
+                      ),
+                    )
+                    .join(", ") ?? t("objNoSource"))}
           </p>
           {source.value && (
             <dl>

@@ -1,6 +1,6 @@
 import { lineageHref } from "../../app/lineageNavigation";
 import { useI18n } from "../../i18n/useI18n";
-import { date } from "../../lib/format";
+import { date, shortId } from "../../lib/format";
 import { MetricHistory } from "../catalog/MetricHistory";
 
 import { eventsFor } from "./descriptors";
@@ -85,7 +85,7 @@ export function ObjectHistory({
                       tab: "facts",
                     })}
                   >
-                    <code>{ref.asset_id.slice(0, 8)}</code>
+                    <code>{shortId(ref.asset_id)}</code>
                   </a>
                 ))}
             </div>

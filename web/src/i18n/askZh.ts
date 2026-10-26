@@ -61,6 +61,7 @@ export const askZh: Record<keyof typeof askEn, string> = {
   askMatchSources: "匹配来源",
   askMatchExact: "指标精确匹配",
   askMatchSynonym: "同义词",
+  askNormalized: "指标 ID 词形",
   askMatchPrefix: "前缀匹配",
   askMatchDimension: "维度值",
   askMatchTime: "时间表达",

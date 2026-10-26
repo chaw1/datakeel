@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
+import { shortId } from "../../lib/format";
 
 import { kindLabels, objectStatus } from "./descriptors";
 import { objectHref } from "./navigation";
@@ -17,7 +18,12 @@ export function ObjectHeader({
   target: ObjectTarget;
 }) {
   const { t, locale } = useI18n();
-  const name = localizedObjectName(target.kind, data.name || target.id, locale);
+  const name = localizedObjectName(
+    target.kind,
+    data.name || target.id,
+    locale,
+    data.englishName,
+  );
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   const chatDataset =
@@ -51,7 +57,7 @@ export function ObjectHeader({
             void copyId();
           }}
         >
-          <code>{target.id.slice(0, 8)}</code>
+          <code>{shortId(target.id)}</code>
           <span>{t(copied ? "objCopied" : "objCopyId")}</span>
         </button>
         {failed && (

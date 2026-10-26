@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { ResourceState } from "../../components/ResourceState";
+import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 
 import { objectHref, readObjectTarget } from "./navigation";
@@ -35,13 +36,22 @@ export function ObjectPage({
   onDataChanged?: () => void;
   onNameChange?: (target: ObjectTarget, name: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const resource = useObject(target);
   const data = resource.value;
   const tab = target.tab ?? "relations";
   useEffect(() => {
-    if (data) onNameChange?.(data.target, data.name);
-  }, [data, onNameChange]);
+    if (data)
+      onNameChange?.(
+        data.target,
+        localizedObjectName(
+          data.target.kind,
+          data.name,
+          locale,
+          data.englishName,
+        ),
+      );
+  }, [data, onNameChange, locale]);
   useEffect(() => {
     const ids = [
       target.eventId && `object-event-${target.eventId}`,

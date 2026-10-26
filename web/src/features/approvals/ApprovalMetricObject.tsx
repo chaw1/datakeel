@@ -10,7 +10,7 @@ import type { MetricHistory } from "../../api/objects";
 import type { ActionPlan } from "../../api/types";
 
 export function ApprovalMetricObject({ plan }: { plan: ActionPlan }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const target = metricObject(plan);
   const history = useResource<MetricHistory>(
     plan.action_type === "rollback_metric" && target.id
@@ -22,6 +22,7 @@ export function ApprovalMetricObject({ plan }: { plan: ActionPlan }) {
     : null;
   const version = definition?.version ?? target.version;
   const label = definition?.name ?? target.name;
+  const englishName = definition?.english_name ?? target.englishName;
   return (
     <section
       className="approval-objects"
@@ -31,7 +32,9 @@ export function ApprovalMetricObject({ plan }: { plan: ActionPlan }) {
       <ol>
         <li>
           <a href={objectHref({ kind: "metric", id: target.id, tab: "facts" })}>
-            {localizedCatalogName(label, t)}
+            {locale === "en" && englishName
+              ? englishName
+              : localizedCatalogName(label, t)}
           </a>
           <span>
             {version !== null

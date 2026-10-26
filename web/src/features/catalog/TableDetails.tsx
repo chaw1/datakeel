@@ -35,7 +35,14 @@ export function TableDetails({
         <>
           <div className="section-heading">
             <div>
-              <h2>{localizedObjectName("table", detail.table.name, locale)}</h2>
+              <h2>
+                {localizedObjectName(
+                  "table",
+                  detail.table.name,
+                  locale,
+                  detail.table.english_name,
+                )}
+              </h2>
               <a
                 className="text-button"
                 href={objectHref({ kind: "table", id: tableId })}
@@ -59,7 +66,14 @@ export function TableDetails({
             <strong>{t("catOwner")}</strong>
             {": "}
             {detail.owners
-              .map((item) => localizedObjectName("owner", item.name, locale))
+              .map((item) =>
+                localizedObjectName(
+                  "owner",
+                  item.name,
+                  locale,
+                  item.english_name,
+                ),
+              )
               .join(", ") || t("catNotSet")}
           </p>
           <div className="catalog-table-scroll">
@@ -84,7 +98,12 @@ export function TableDetails({
                         })}
                       >
                         <strong>
-                          {localizedObjectName("column", column.name, locale)}
+                          {localizedObjectName(
+                            "column",
+                            column.name,
+                            locale,
+                            column.english_name,
+                          )}
                         </strong>
                       </a>
                     </td>
@@ -102,7 +121,7 @@ export function TableDetails({
                     <td>
                       <button
                         className="text-button"
-                        aria-label={`${t("catImpact")}: ${localizedObjectName("column", column.name, locale)}`}
+                        aria-label={`${t("catImpact")}: ${localizedObjectName("column", column.name, locale, column.english_name)}`}
                         onClick={() => {
                           setFieldId(column.asset_ref.asset_id);
                         }}
@@ -137,7 +156,12 @@ export function TableDetails({
                         });
                       }}
                     >
-                      {localizedObjectName("metric", metric.name, locale)}
+                      {localizedObjectName(
+                        "metric",
+                        metric.name,
+                        locale,
+                        metric.english_name,
+                      )}
                     </button>
                   </li>
                 ))}

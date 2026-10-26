@@ -69,6 +69,7 @@ export function CatalogList({
                       item.asset_ref.asset_type,
                       item.name,
                       locale,
+                      item.english_name,
                     )}
                   </strong>
                   <span className="mono small">{item.asset_ref.asset_id}</span>

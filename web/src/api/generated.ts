@@ -2166,6 +2166,8 @@ export interface components {
          */
         CatalogObject: {
             asset_ref: components["schemas"]["AssetRef"];
+            /** English Name */
+            english_name?: string | null;
             /** Name */
             name: string;
             /** Producer Event Id */
@@ -2998,6 +3000,8 @@ export interface components {
             deleted?: boolean | null;
             /** Display Name */
             display_name?: string | null;
+            /** English Name */
+            english_name?: string | null;
             /** Id */
             id: string;
             /** Label */
@@ -4106,7 +4110,7 @@ export interface components {
              * Match Kind
              * @enum {string}
              */
-            match_kind: "exact" | "synonym" | "prefix" | "dimension_value" | "time";
+            match_kind: "exact" | "synonym" | "normalized" | "prefix" | "dimension_value" | "time";
             /** Metric Id */
             metric_id?: string | null;
             /** Source */
@@ -4314,6 +4318,8 @@ export interface components {
          */
         MetricCard: {
             definition: components["schemas"]["MetricDefinition"];
+            /** Owner English Name */
+            owner_english_name?: string | null;
             /** Reasons */
             reasons?: string[];
             /**
@@ -4334,6 +4340,8 @@ export interface components {
             description: string;
             /** Dimensions */
             dimensions?: string[];
+            /** English Name */
+            english_name?: string | null;
             /** Filters */
             filters?: components["schemas"]["MetricFilter"][];
             /** Id */
@@ -4857,14 +4865,28 @@ export interface components {
             branch: "keyword" | "classifier" | "free_agent";
             /** Candidates */
             candidates: components["schemas"]["RouteCandidate"][];
+            /** Classifier Selection */
+            classifier_selection?: string | null;
+            /**
+             * Classifier Used
+             * @default false
+             */
+            classifier_used: boolean;
             inputs?: components["schemas"]["RouteInputs"];
             /** Reason */
             reason: string;
+            /**
+             * Requires Confirmation
+             * @default false
+             */
+            requires_confirmation: boolean;
             /**
              * Score
              * @default 0
              */
             score: number;
+            /** Verification Passed */
+            verification_passed?: boolean | null;
             /** Workflow Id */
             workflow_id?: string | null;
         };
@@ -4922,6 +4944,8 @@ export interface components {
         SearchResult: {
             /** Dataset Id */
             dataset_id?: string | null;
+            /** English Name */
+            english_name?: string | null;
             /** Id */
             id: string;
             /**
@@ -5580,6 +5604,8 @@ export interface components {
          * @description Declare multilingual routing vocabulary and auditable score thresholds.
          */
         WorkflowTriggers: {
+            /** Classification Groups */
+            classification_groups?: string[][];
             /** Classification Keywords */
             classification_keywords?: string[];
             /** Excluded Groups */
@@ -5600,6 +5626,8 @@ export interface components {
              * @default 1
              */
             threshold: number;
+            /** Verification Keywords */
+            verification_keywords?: string[];
         };
     };
     responses: never;
