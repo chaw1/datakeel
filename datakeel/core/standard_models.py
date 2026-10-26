@@ -201,10 +201,11 @@ class MappingCandidate(BoundaryModel):
     standard_code: str
     score: float = Field(ge=0, le=1)
     reasons: tuple[str, ...]
+    low_confidence: bool = False
 
 
 class MappingSuggestion(BoundaryModel):
-    """Return at most three sufficiently supported candidates for one column."""
+    """Return at most three candidates, distinguishing weak evidence for human review."""
 
     column_id: str
     candidates: tuple[MappingCandidate, ...] = Field(default=(), max_length=3)

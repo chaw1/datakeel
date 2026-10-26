@@ -4,6 +4,7 @@
 """Normalize multilingual field vocabulary and physical database type names."""
 
 import re
+from functools import lru_cache
 
 _WORDS: dict[str, str] = {
     "cust": "customer",
@@ -118,7 +119,8 @@ def _compact_words(word: str) -> tuple[str, ...]:
     return tuple(pieces)
 
 
-def name_tokens(name: str) -> frozenset[str]:
+@lru_cache(maxsize=4096)
+def name_tokens(name: str, *, expand_aliases: bool = True) -> frozenset[str]:
     """Split camel case, abbreviations and Chinese business words into shared tokens."""
     split = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", name)
     split = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", split).lower()
@@ -129,7 +131,10 @@ def name_tokens(name: str) -> frozenset[str]:
         for match in re.finditer(r"[a-z]+|[\u4e00-\u9fff]+", split)
         for word in _compact_words(match[0])
     )
-    tokens = frozenset(_WORDS.get(word, word) for word in words)
+    identity = {"num", "pk", "primarykey", "number", "no", "identifier", "cd", "nm", "dt"}
+    tokens = frozenset(
+        _WORDS.get(word, word) if expand_aliases or word in identity else word for word in words
+    )
     if "email" in tokens:
         tokens -= {"address"}
     return tokens - {"id"} if "phone" in tokens else tokens

@@ -17,6 +17,9 @@ from datakeel.standards.mapping import suggest
 
 def _check(profile: ColumnProfile, contract: StandardsContract) -> None:
     suggestion = suggest(profile, contract)
+    if profile.name in {"id", "name", "code", "type"}:
+        assert not suggestion.candidates, profile.column_id
+        return
     assert suggestion.candidates, profile.column_id
     definition = next(
         item for item in contract.standards if item.code == suggestion.candidates[0].standard_code
@@ -27,7 +30,7 @@ def _check(profile: ColumnProfile, contract: StandardsContract) -> None:
 def test_all_enterprise_tables_and_views_receive_clean_explainable_recommendations(
     contract: StandardsContract,
 ) -> None:
-    """All four unchanged source generators have complete suggestions and zero false violations."""
+    """Business columns receive clean matches while bare generic fields require manual mapping."""
     checked = 0
     for source in (build_crm(), build_ecommerce(), build_erp(), build_service()):
         types: dict[str, str] = {}

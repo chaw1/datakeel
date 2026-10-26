@@ -201,11 +201,14 @@ def test_incompatible_type_is_explained_without_hiding_exact_name_match(
     assert "Type differs: TEXT / integer" in result.candidates[0].reasons
 
 
-def test_weak_common_name_with_conflicting_type_abstains(contract: StandardsContract) -> None:
-    """Weak name overlap plus incompatible type does not clear the confidence threshold."""
-    assert not suggest(
-        ColumnProfile(column_id="x", name="crm_cust_no", data_type="TEXT"), contract
-    ).candidates
+def test_weak_common_name_with_conflicting_type_requires_review(
+    contract: StandardsContract,
+) -> None:
+    """Business abbreviation evidence survives as low confidence when the type conflicts."""
+    result = suggest(ColumnProfile(column_id="x", name="crm_cust_no", data_type="TEXT"), contract)
+    assert result.candidates[0].standard_code == "customer_id"
+    assert result.candidates[0].score < SUGGESTION_THRESHOLD
+    assert all(candidate.low_confidence for candidate in result.candidates)
 
 
 @pytest.mark.parametrize(
