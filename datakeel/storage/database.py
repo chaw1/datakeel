@@ -52,6 +52,7 @@ from datakeel.storage.metric_audit import MetricAuditRow
 from datakeel.storage.migrations import add_nullable_columns
 from datakeel.storage.tool_rows import ToolInvocationRow
 from datakeel.storage.transcription_rows import TranscriptionRow
+from datakeel.storage.upload_rows import UploadRow
 from datakeel.storage.workflow_rows import (
     WorkflowAuditRow,
     WorkflowResumeRow,
@@ -87,6 +88,7 @@ _REGISTERED_MODELS = (
     MemoryAuditRow,
     ToolInvocationRow,
     TranscriptionRow,
+    UploadRow,
     AssertionRow,
     AssertionDecisionRow,
     EvidenceCacheRow,

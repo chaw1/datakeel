@@ -24,6 +24,7 @@ from datakeel.api.routes import (
     search,
     system,
     tasks,
+    uploads,
     workflow_runs,
 )
 from datakeel.routing.config import load_config
@@ -45,6 +46,7 @@ def create_app(db: Database | None = None) -> FastAPI:
     for router in (
         system.router,
         datasets.router,
+        uploads.router,
         catalog.router,
         ask.router,
         evidence.router,

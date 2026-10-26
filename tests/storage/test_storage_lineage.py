@@ -21,6 +21,7 @@ from datakeel.lineage.service import all_events, append_event, graph
 from datakeel.storage.database import EventRow, VersionRow
 from datakeel.storage.datasets import import_dataset, materialize_files
 from datakeel.storage.objects import LocalStore, S3Store
+from tests.storage.s3_fixture import ConditionalS3
 
 
 def test_manifest_is_content_addressed_and_import_is_replayable(
@@ -33,6 +34,7 @@ def test_manifest_is_content_addressed_and_import_is_replayable(
         dataset = import_dataset(session, "notes", [source])
         session.commit()
         version = session.scalar(select(VersionRow))
+        assert version is not None
         assert version.manifest[0]["sha256"]
         original = version.manifest[0]["sha256"]
         source.write_text("changed source")
@@ -82,19 +84,13 @@ def test_s3_backend_roundtrip_with_client_contract(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Verify s3 backend roundtrip with client contract."""
-    objects = {}
+    client = ConditionalS3()
 
-    class Client:
-        def upload_file(self, filename: str, bucket: str, key: str) -> None:
-            """Provide the upload file test fixture."""
-            objects[(bucket, key)] = Path(filename).read_bytes()
-
-        def download_file(self, bucket: str, key: str, filename: str) -> None:
-            """Provide the download file test fixture."""
-            Path(filename).write_bytes(objects[(bucket, key)])
+    def factory(*_args: object, **_kwargs: object) -> ConditionalS3:
+        return client
 
     monkeypatch.setenv("DATAKEEL_HOME", str(tmp_path / "cache"))
-    monkeypatch.setattr("datakeel.storage.objects.boto3.client", lambda *_a, **_k: Client())
+    monkeypatch.setattr("datakeel.storage.objects.boto3.client", factory)
     source = tmp_path / "text.txt"
     source.write_text("s3 sample")
     store = S3Store("test-bucket")
