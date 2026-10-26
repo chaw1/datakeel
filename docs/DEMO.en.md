@@ -94,13 +94,13 @@ Open Ask (问数), keep the demo reference date `2026-10-01`, and try three ques
 
 1. Ask `上个季度华东区零售额是多少` (last quarter's East China retail revenue), then submit with 开始问数. The answer is `4,979,475`, with metric version 1, source references, filters, and query evidence.
 2. Ask `上个季度营业额是多少` (last quarter's turnover). More than one business definition matches, so the page presents alternatives before calculating. Select a candidate to continue.
-3. Reopen Ask and enter `退货率为什么上升` (why the return rate increased). The registered catalog does not support this explanation. The page reports that it cannot answer and offers nearby metrics.
+3. Reopen Ask and enter `下个月零售额是多少` (retail revenue next month). The time parser does not support this interval. The page reports that it cannot answer, preserves the registered definition, and executes no query. Unknown concepts such as return rate may suggest protected metrics; those disclosures require an approved grant.
 
 ![An answer with traceable sources and metric definition](images/demo/08-ask-answer.jpg)
 
 ![An ambiguous business term requires clarification](images/demo/09-ask-clarification.jpg)
 
-![An unsupported question receives an explicit unanswerable result](images/demo/10-ask-unanswerable.jpg)
+![An unsupported time interval receives an explicit unanswerable result](images/demo/10-ask-unanswerable.jpg)
 
 ## 6. Change a metric, then restore its definition (2 minutes)
 
@@ -190,3 +190,16 @@ The script writes 20 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, e
 After demo initialization, open Ask data and select the owner, upstream or downstream examples, then enter `shipments 表从哪来？` or `营业额谁负责？` for further questions. The first separates the registered supply-chain role from the candidate document claim about 周岩; the second marks `erp_raw_shipments` as missing from the catalog; the third asks you to choose 销售额 or 零售额.
 
 演示初始化后，在问数页点击负责人例句并作答，再手动输入 shipments 上游、营业额负责人两个问题。第一题把系统角色和文档中周岩的说法分开展示；第二题标明原始表「目录里没有」；第三题请用户选择歧义指标。点击文档说法进入原文关系抽屉。切到知识图谱，选择「企业文档 · Enterprise documents」，打开实体的「对应资产」并接受或拒绝关联。审阅后重问可以看到状态变化；重关联、同版本重抽取仍保留人审。全部来自六篇虚构文档的离线录制，不需要模型密钥。
+
+## Data assets: discover, apply, use and audit
+
+The default demo publishes six fictional enterprise assets through controlled actions, covering datasets, tables, metrics and all four classifications. It does not issue hidden grants.
+
+1. Open **Asset market**, search `Shipment`, filter **Request access** and the `enterprise` tag, and open the shipment amount card. Inspect its definition, sanitized sample, quality evidence, lineage and related metrics.
+2. Apply as operator `local`, enter a purpose such as quarterly analysis, select query scope and a future expiry. The request shows **Pending**.
+3. Choose **Approve application**, review and approve the plan, then explicitly execute it. The grant shows its subject, scope, expiry and ID. Approving a plan alone does not create a grant.
+4. Open **Ask data**, use operator `local`, ask `上个季度华东区出货额是多少` with reference instant `2026-10-01T00:00:00Z`, and inspect the registered metric's real read-only result. An ungranted operator is refused and directed to apply.
+5. Return to the card's usage audit, filter `local`, and verify the `ask` entry and grant ID. The global person filter searches usage across assets.
+6. Revoke the grant through another reviewed, approved and executed plan. New questions and old-answer replay now refuse access. Expiry has the same effect without a background job; earlier audit remains.
+
+**Create asset draft** packages an existing object; publication, edits and withdrawal retain all revisions. See [Data assets](DATA_ASSETS.en.md) for configuration and API/CLI details.
