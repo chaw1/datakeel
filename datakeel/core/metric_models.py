@@ -49,6 +49,9 @@ class MetricDefinition(BoundaryModel):
 
     id: str = Field(min_length=1)
     name: str = Field(min_length=1)
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
     synonyms: list[str] = Field(default_factory=list)
     description: str
     owner: str = Field(min_length=1)
@@ -65,6 +68,9 @@ class DimensionDefinition(BoundaryModel):
 
     id: str = Field(min_length=1)
     name: str = Field(min_length=1)
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
     synonyms: list[str] = Field(default_factory=list)
     column: str
     values: list[str] = Field(default_factory=list)
@@ -81,8 +87,20 @@ class TermDefinition(BoundaryModel):
     """Map a business term and synonyms to a typed semantic target."""
 
     term: str = Field(min_length=1)
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
     synonyms: list[str] = Field(default_factory=list)
     means: TermTarget
+
+
+class OwnerDefinition(BoundaryModel):
+    """Add optional display metadata to an owner referenced by its original name."""
+
+    name: str = Field(min_length=1)
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
 
 
 class SemanticLayer(BoundaryModel):
@@ -91,12 +109,14 @@ class SemanticLayer(BoundaryModel):
     metrics: list[MetricDefinition] = Field(default_factory=list[MetricDefinition])
     dimensions: list[DimensionDefinition] = Field(default_factory=list[DimensionDefinition])
     terms: list[TermDefinition] = Field(default_factory=list[TermDefinition])
+    owners: list[OwnerDefinition] = Field(default_factory=list[OwnerDefinition])
 
 
 class MetricCard(BoundaryModel):
     """Expose a metric revision and explicit reference resolution failures."""
 
     definition: MetricDefinition
+    owner_english_name: str | None = Field(default=None, exclude_if=lambda value: value is None)
     status: Literal["resolved", "unresolved"] = "resolved"
     reasons: list[str] = Field(default_factory=list)
 

@@ -89,22 +89,28 @@ def _catalog(session: Session) -> list[SearchResult]:
     ):
         item = CatalogObject.model_validate(row.payload)
         result.append(
-            SearchResult(kind=cast("SearchKind", row.kind), id=row.asset_id, name=item.name)
+            SearchResult(
+                kind=cast("SearchKind", row.kind),
+                id=row.asset_id,
+                name=item.name,
+                english_name=item.english_name,
+            )
         )
     return result
 
 
 def _rank(item: SearchResult, query: str) -> tuple[int, str, str, str]:
     identity, name = item.id.casefold(), unicodedata.normalize("NFC", item.name).casefold()
+    names = (name, unicodedata.normalize("NFC", item.english_name or "").casefold())
     rank = (
         0
         if identity == query
         else 1
         if identity.startswith(query)
         else 2
-        if name == query
+        if query in names
         else 3
-        if name.startswith(query)
+        if any(value.startswith(query) for value in names)
         else 4
     )
     return rank, name, item.kind, item.id
@@ -130,6 +136,7 @@ def search_objects(db: Database, query: SearchQuery) -> list[SearchResult]:
             for item in items
             if needle in item.id.casefold()
             or needle in unicodedata.normalize("NFC", item.name).casefold()
+            or needle in unicodedata.normalize("NFC", item.english_name or "").casefold()
         ]
         return sorted(matches, key=lambda item: _rank(item, needle))[: query.limit]
     groups = [

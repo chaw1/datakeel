@@ -37,6 +37,7 @@ class SearchResult(BoundaryModel):
     kind: SearchKind
     id: str
     name: str
+    english_name: str | None = None
     dataset_id: str | None = None
     version_id: str | None = None
     status: str | None = None

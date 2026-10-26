@@ -1,0 +1,22 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+owners:
+  - name: 供应链负责人
+    english_name: Supply chain owner
+  - name: 财务负责人
+    english_name: Finance owner
+  - name: 零售运营负责人
+    english_name: Retail operations owner
+  - name: 售后财务负责人
+    english_name: After-sales finance owner
+  - name: 仓储负责人
+    english_name: Warehouse owner
+  - name: 客户运营负责人
+    english_name: Customer operations owner
+  - name: 售后服务负责人
+    english_name: Service owner
+  - name: 维修负责人
+    english_name: Repair owner
+  - name: 资金负责人
+    english_name: Treasury owner

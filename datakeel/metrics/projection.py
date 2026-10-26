@@ -7,6 +7,8 @@ from datakeel.core.catalog_models import CatalogLink, CatalogObject, CatalogSnap
 from datakeel.core.metric_models import (
     DimensionDefinition,
     MetricCard,
+    MetricDefinition,
+    OwnerDefinition,
     SemanticLayer,
     TermDefinition,
 )
@@ -40,6 +42,12 @@ def semantic_layer(snapshot: CatalogSnapshot) -> SemanticLayer:
             for item in snapshot.objects
             if item.asset_ref.asset_type == "term"
         ],
+        owners=[
+            OwnerDefinition(name=item.name, english_name=item.english_name)
+            for item in snapshot.objects
+            if item.asset_ref.asset_type == "owner"
+            and (item.properties.root or item.english_name is not None)
+        ],
     )
 
 
@@ -47,7 +55,7 @@ def resolved_metric_cards(snapshot: CatalogSnapshot) -> list[MetricCard]:
     """Revalidate current dependencies without changing stored semantic revisions or history."""
     layer = semantic_layer(snapshot)
     assets = [item.asset_ref for item in snapshot.objects]
-    return [resolve_metric(metric, layer, assets) for metric in layer.metrics]
+    return [_metric_card(metric, layer, assets) for metric in layer.metrics]
 
 
 def build_snapshot(layer: SemanticLayer, catalog: CatalogSnapshot) -> CatalogSnapshot:
@@ -57,28 +65,27 @@ def build_snapshot(layer: SemanticLayer, catalog: CatalogSnapshot) -> CatalogSna
     links: list[CatalogLink] = []
     assets = [item.asset_ref for item in catalog.objects]
     for metric in layer.metrics:
-        card = resolve_metric(metric, layer, assets)
+        card = _metric_card(metric, layer, assets)
         ref = AssetRef(asset_type="metric", asset_id=metric.id, version=str(metric.version))
         objects.append(
             CatalogObject(
                 asset_ref=ref,
                 name=metric.name,
+                english_name=metric.english_name,
                 source_id=metric.measure.table.split("/")[0],
                 table_id=metric.measure.table,
                 properties=JsonDocument(card.model_dump(mode="json")),
             )
         )
         links.extend(_metric_links(card))
-    objects.extend(
-        CatalogObject(asset_ref=AssetRef(asset_type="owner", asset_id=f"owner/{owner}"), name=owner)
-        for owner in sorted({item.owner for item in layer.metrics})
-    )
+    objects.extend(_owners(layer))
     for dimension in layer.dimensions:
         ref = AssetRef(asset_type="dimension", asset_id=dimension.id)
         objects.append(
             CatalogObject(
                 asset_ref=ref,
                 name=dimension.name,
+                english_name=dimension.english_name,
                 properties=JsonDocument(dimension.model_dump(mode="json")),
             )
         )
@@ -88,6 +95,7 @@ def build_snapshot(layer: SemanticLayer, catalog: CatalogSnapshot) -> CatalogSna
             CatalogObject(
                 asset_ref=ref,
                 name=term.term,
+                english_name=term.english_name,
                 properties=JsonDocument(term.model_dump(mode="json")),
             )
         )
@@ -102,6 +110,30 @@ def build_snapshot(layer: SemanticLayer, catalog: CatalogSnapshot) -> CatalogSna
             )
         )
     return CatalogSnapshot(scope=SEMANTIC_SCOPE, objects=tuple(objects), links=tuple(links))
+
+
+def _metric_card(
+    metric: MetricDefinition, layer: SemanticLayer, assets: list[AssetRef]
+) -> MetricCard:
+    owner = next((item for item in layer.owners if item.name == metric.owner), None)
+    return resolve_metric(metric, layer, assets).model_copy(
+        update={"owner_english_name": owner.english_name if owner else None}
+    )
+
+
+def _owners(layer: SemanticLayer) -> list[CatalogObject]:
+    owners = {item.name: item for item in layer.owners}
+    return [
+        CatalogObject(
+            asset_ref=AssetRef(asset_type="owner", asset_id=f"owner/{owner}"),
+            name=owner,
+            english_name=owners[owner].english_name if owner in owners else None,
+            properties=JsonDocument(owners[owner].model_dump(mode="json"))
+            if owner in owners
+            else JsonDocument({}),
+        )
+        for owner in sorted({item.owner for item in layer.metrics} | owners.keys())
+    ]
 
 
 def _metric_links(card: MetricCard) -> list[CatalogLink]:
