@@ -535,6 +535,210 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/data-assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market
+         * @description Search measured asset cards using the declared deterministic sort contract.
+         */
+        get: operations["market_api_data_assets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Applications
+         * @description Read request progress by asset or the existing operator identity.
+         */
+        get: operations["applications_api_data_assets_applications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/applications/{application_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Application
+         * @description Read one durable request and its granted authorization identity.
+         */
+        get: operations["application_api_data_assets_applications__application_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Audit
+         * @description Filter append-only allowed uses by asset and operator.
+         */
+        get: operations["audit_api_data_assets_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Grants
+         * @description Read issued grants, retaining revoked and expired records as history.
+         */
+        get: operations["grants_api_data_assets_grants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/grants/{grant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Grant
+         * @description Read the exact granted scope, expiry, subject and revocation attribution.
+         */
+        get: operations["grant_api_data_assets_grants__grant_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Card
+         * @description Aggregate current quality, lineage, freshness, related metrics and usage.
+         */
+        get: operations["card_api_data_assets__asset_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/{asset_id}/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Asset Applications
+         * @description Read the request and approval progress displayed beside a card.
+         */
+        get: operations["asset_applications_api_data_assets__asset_id__applications_get"];
+        put?: never;
+        /**
+         * Apply
+         * @description Submit a purpose and bounded expiry; approval remains a controlled action.
+         */
+        post: operations["apply_api_data_assets__asset_id__applications_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/{asset_id}/control-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Controls
+         * @description Read append-only request and authorization decisions for an asset.
+         */
+        get: operations["controls_api_data_assets__asset_id__control_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data-assets/{asset_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * History
+         * @description Read every frozen card revision and its controlled operation attribution.
+         */
+        get: operations["history_api_data_assets__asset_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets": {
         parameters: {
             query?: never;
@@ -1571,6 +1775,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        AccessEntry: "ask" | "export" | "download" | "mcp" | "agent";
+        /** @enum {string} */
+        AccessScope: "query" | "export" | "download";
         /**
          * ActionContext
          * @description Declare the local actor, tool attribution, and enforced request limits.
@@ -1626,7 +1834,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -1680,7 +1888,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -1992,6 +2200,159 @@ export interface components {
             value?: ("present" | "absent" | "unknown") | null;
         };
         /**
+         * AssetApplication
+         * @description Track a usage request and its explicit controlled approval decision.
+         */
+        AssetApplication: {
+            /** Applicant */
+            applicant: string;
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided At */
+            decided_at?: string | null;
+            /** Decided By */
+            decided_by?: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Grant Id */
+            grant_id?: string | null;
+            /** Id */
+            id: string;
+            /** Purpose */
+            purpose: string;
+            /** Scopes */
+            scopes: components["schemas"]["AccessScope"][];
+            /**
+             * Status
+             * @default pending
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "rejected";
+        };
+        /**
+         * AssetApplicationCreate
+         * @description Carry the existing local operator identity and requested usage terms.
+         */
+        AssetApplicationCreate: {
+            /**
+             * Applicant
+             * @default local-user
+             */
+            applicant: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Operation Id */
+            operation_id?: string | null;
+            /** Purpose */
+            purpose: string;
+            /** Scopes */
+            scopes: components["schemas"]["AccessScope"][];
+        };
+        /** @enum {string} */
+        AssetClassification: "public" | "internal" | "request" | "restricted";
+        /**
+         * AssetControlEvent
+         * @description Preserve append-only application and grant decisions alongside asset history.
+         */
+        AssetControlEvent: {
+            /** Action */
+            action: string;
+            /** Actor */
+            actor: string;
+            /** Asset Id */
+            asset_id: string;
+            /** Id */
+            id: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Operation Id */
+            operation_id: string;
+            /** Subject Id */
+            subject_id: string;
+        };
+        /**
+         * AssetGrant
+         * @description Authorize exactly one subject, asset, and set of scopes until expiry.
+         */
+        AssetGrant: {
+            /** Application Id */
+            application_id: string;
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Granted By */
+            granted_by: string;
+            /** Id */
+            id: string;
+            /** Revoked At */
+            revoked_at?: string | null;
+            /** Revoked By */
+            revoked_by?: string | null;
+            /** Scopes */
+            scopes: components["schemas"]["AccessScope"][];
+            /** Subject */
+            subject: string;
+        };
+        /**
+         * AssetHistory
+         * @description Retain an immutable full asset snapshot for every controlled revision.
+         */
+        AssetHistory: {
+            /** Action */
+            action: string;
+            /** Actor */
+            actor: string;
+            asset: components["schemas"]["DataAsset"];
+            /** Asset Id */
+            asset_id: string;
+            /** Id */
+            id: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Operation Id */
+            operation_id: string;
+        };
+        /**
+         * AssetMarketPage
+         * @description Return deterministic market ordering and the complete matching count.
+         */
+        AssetMarketPage: {
+            /** Items */
+            items: components["schemas"]["DataAssetCard"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /**
          * AssetRef
          * @description Identify an asset in the sole authoritative storage namespace.
          */
@@ -2012,6 +2373,31 @@ export interface components {
             namespace: string;
             /** Version */
             version?: string | null;
+        };
+        /** @enum {string} */
+        AssetSort: "popular" | "freshness" | "quality" | "downstream" | "name";
+        /** @enum {string} */
+        AssetStatus: "draft" | "published" | "withdrawn";
+        /**
+         * AssetUsage
+         * @description Record one allowed asset use; stored records can never be updated or deleted.
+         */
+        AssetUsage: {
+            /** Actor */
+            actor: string;
+            /** Asset Id */
+            asset_id: string;
+            entry: components["schemas"]["AccessEntry"];
+            /** Grant Id */
+            grant_id?: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            scope: components["schemas"]["AccessScope"];
         };
         /**
          * BranchStep
@@ -2440,6 +2826,128 @@ export interface components {
              * @default 0
              */
             unknown_cost_usd: string;
+        };
+        /**
+         * DataAsset
+         * @description Expose one current asset revision without mutable persistence records.
+         */
+        DataAsset: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            definition: components["schemas"]["DataAssetDefinition"];
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** @default draft */
+            status: components["schemas"]["AssetStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * DataAssetCard
+         * @description Aggregate measured quality, lineage, freshness and factual usage statistics.
+         */
+        DataAssetCard: {
+            asset: components["schemas"]["DataAsset"];
+            /**
+             * Downstream
+             * @default []
+             */
+            downstream: components["schemas"]["AssetRef"][];
+            /**
+             * Downstream Count
+             * @default 0
+             */
+            downstream_count: number;
+            /** Freshness Seconds */
+            freshness_seconds?: number | null;
+            /** Quality Score */
+            quality_score?: number | null;
+            /**
+             * Quality Trend
+             * @default []
+             */
+            quality_trend: components["schemas"]["QualityPoint"][];
+            /**
+             * Related Metrics
+             * @default []
+             */
+            related_metrics: components["schemas"]["AssetRef"][];
+            /** Standard Coverage */
+            standard_coverage?: number | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /**
+             * Upstream
+             * @default []
+             */
+            upstream: components["schemas"]["AssetRef"][];
+            /**
+             * Usage Count
+             * @default 0
+             */
+            usage_count: number;
+            /**
+             * User Count
+             * @default 0
+             */
+            user_count: number;
+            version_release?: components["schemas"]["JsonDocument"] | null;
+        };
+        /**
+         * DataAssetDefinition
+         * @description Package an existing resource with business-facing, sanitized documentation.
+         */
+        DataAssetDefinition: {
+            /** @default internal */
+            classification: components["schemas"]["AssetClassification"];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Instructions
+             * @default
+             */
+            instructions: string;
+            /** Name */
+            name: string;
+            /**
+             * Name En
+             * @default
+             */
+            name_en: string;
+            /** Owner */
+            owner: string;
+            /**
+             * Sample
+             * @default
+             */
+            sample: string;
+            /**
+             * Scenarios
+             * @default []
+             */
+            scenarios: string[];
+            /**
+             * Synonyms
+             * @default []
+             */
+            synonyms: string[];
+            /**
+             * Tags
+             * @default []
+             */
+            tags: string[];
+            target: components["schemas"]["AssetRef"];
         };
         /**
          * DatasetInput
@@ -4756,6 +5264,19 @@ export interface components {
             } | null;
         };
         /**
+         * QualityPoint
+         * @description Associate a measured quality score with its evidence timestamp.
+         */
+        QualityPoint: {
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Score */
+            score: number;
+        };
+        /**
          * QualityView
          * @description Five-dimensional quality evaluation.
          */
@@ -6475,6 +6996,362 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    market_api_data_assets_get: {
+        parameters: {
+            query?: {
+                search?: string;
+                classification?: components["schemas"]["AssetClassification"] | null;
+                tag?: string | null;
+                status?: components["schemas"]["AssetStatus"] | null;
+                sort?: components["schemas"]["AssetSort"];
+                offset?: number;
+                limit?: number;
+                include_unpublished?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetMarketPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    applications_api_data_assets_applications_get: {
+        parameters: {
+            query?: {
+                asset_id?: string | null;
+                applicant?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetApplication"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    application_api_data_assets_applications__application_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetApplication"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audit_api_data_assets_audit_get: {
+        parameters: {
+            query?: {
+                asset_id?: string | null;
+                actor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetUsage"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grants_api_data_assets_grants_get: {
+        parameters: {
+            query?: {
+                asset_id?: string | null;
+                subject?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetGrant"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grant_api_data_assets_grants__grant_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetGrant"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    card_api_data_assets__asset_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataAssetCard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    asset_applications_api_data_assets__asset_id__applications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetApplication"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_api_data_assets__asset_id__applications_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetApplicationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetApplication"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    controls_api_data_assets__asset_id__control_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetControlEvent"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_api_data_assets__asset_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetHistory"][];
                 };
             };
             /** @description Validation Error */

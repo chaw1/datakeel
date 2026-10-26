@@ -27,7 +27,10 @@ it("keeps the original knowledge question when a clarification subject is select
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   render(<AskPage onOpenReceipt={vi.fn()} />);
-  await user.type(screen.getByRole("textbox"), knowledgeAnswer.question);
+  await user.type(
+    screen.getByRole("textbox", { name: "Business question" }),
+    knowledgeAnswer.question,
+  );
   await user.click(screen.getByRole("button", { name: "Ask data" }));
   await user.click(
     await screen.findByRole("button", {
@@ -126,7 +129,9 @@ it("shows a pending request, rejects duplicate input, and replaces old numerical
   expect(screen.getByRole("status")).toHaveTextContent(
     "Finding records and evidence…",
   );
-  expect(screen.getByRole("textbox")).toBeDisabled();
+  expect(
+    screen.getByRole("textbox", { name: "Business question" }),
+  ).toBeDisabled();
   expect(screen.queryByLabelText("Calculated result")).not.toBeInTheDocument();
   expect(fetch).toHaveBeenLastCalledWith(
     "/api/ask",
@@ -145,7 +150,9 @@ it("shows a pending request, rejects duplicate input, and replaces old numerical
       name: "No registered metric can answer this question",
     }),
   ).toBeVisible();
-  expect(screen.getByRole("textbox")).toBeEnabled();
+  expect(
+    screen.getByRole("textbox", { name: "Business question" }),
+  ).toBeEnabled();
   expect(screen.queryByLabelText("Calculated result")).not.toBeInTheDocument();
 });
 

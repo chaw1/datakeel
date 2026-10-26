@@ -17,6 +17,7 @@ export type Page =
   | "evidence"
   | "kg"
   | "agent"
+  | "data-assets"
   | "catalog"
   | "ask"
   | "traces"
@@ -33,6 +34,7 @@ export const tabs: { id: Page; label: MessageKey }[] = [
 ];
 
 export const operationPages = [
+  { id: "data-assets", label: "assetMarket", icon: "database" },
   { id: "workflows", label: "workflowsNav", icon: "activity" },
   { id: "catalog", label: "catalogNav", icon: "database" },
   { id: "ask", label: "askNav", icon: "message" },

@@ -15,6 +15,7 @@ const groups = [
     items: [
       { id: "datasets", label: "dataLibraryLabel", icon: "database" },
       { id: "catalog", label: "catalogNav", icon: "database" },
+      { id: "data-assets", label: "assetMarket", icon: "database" },
       { id: "ask", label: "askNav", icon: "message" },
     ],
   },

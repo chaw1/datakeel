@@ -76,12 +76,12 @@ export async function enterpriseTour({ page, base, capture, report }) {
   await page.locator(".ask-candidate").first().click();
   assert.equal((await (await clarified).json()).status, "answered");
   await page.goto(`${base.origin}/#/ask`);
-  const unavailable = await ask("退货率为什么上升");
+  const unavailable = await ask("下个月零售额是多少");
   assert.equal(unavailable.status, "unanswerable");
   assert.equal(unavailable.sql, null);
   await capture(
     "10-ask-unanswerable",
-    "询问退货率上升原因，查看无法回答的边界与相近指标",
+    "询问不支持的下个月零售额，查看时间解析边界与已登记口径",
     { answerId: unavailable.id, status: unavailable.status },
   );
   await openMetric(page, base);

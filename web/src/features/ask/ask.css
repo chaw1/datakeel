@@ -16,6 +16,19 @@
   font-weight: 600;
   margin-bottom: calc(var(--space) * 2);
 }
+.ask-composer .ask-actor {
+  width: min(100%, 360px);
+  padding: calc(var(--space) * 2) calc(var(--space) * 3);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: var(--font-sm);
+}
+.ask-composer > .muted {
+  margin: calc(var(--space) * 2) 0 calc(var(--space) * 4);
+  font-size: var(--font-xs);
+}
 .ask-composer textarea {
   width: 100%;
   padding: calc(var(--space) * 4);
