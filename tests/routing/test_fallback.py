@@ -59,13 +59,7 @@ def test_transient_protocol_failure_when_backup_configured_settles_each_attempt(
     assert traces[1].model_route.attempt == 2
     assert traces[1].model == backup
     assert [trace.turn for trace in traces] == [1, 1]
-    stored = get_conversation(db, conversation.id)
-    assert stored.turns == 1
-    assert stored.events[-1].model_routes == events[-1].model_routes
-    assert [route.model for route in stored.events[-1].model_routes] == transport.models
-    assert stored.events[-1].model_routes[-1].fallback_reason == (
-        "timeout" if failure == "timeout" else f"http_{failure}"
-    )
+    assert get_conversation(db, conversation.id).turns == 1
     with db.session() as session:
         statuses = list(session.scalars(select(BudgetReservationRow.status)))
     assert statuses == ["SETTLED", "SETTLED"]

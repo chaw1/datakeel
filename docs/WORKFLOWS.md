@@ -273,10 +273,6 @@ Model configuration lives in [`contracts/routing/models.yaml`](../contracts/rout
 
 模型配置位于上述 YAML，可用 `DATAKEEL_MODEL_ROUTING_FILE` 指向另一份配置。每个 provider 声明三个档位以及主模型到下一模型的 `fallbacks` 映射；默认配置不启用备用链。每个引用模型都必须在价格表中具有同 provider 的价格。
 
-[`examples/model-routing.yaml`](../examples/model-routing.yaml) shows three distinct primary aliases with a shared backup. Replace the aliases with models served by the same configured endpoint and add explicit tariff records before selecting the file. Price fields remain commented placeholders; validation rejects the example until prices are supplied. It makes no provider requests. Keep `model: auto` on the conversation to select by tier.
-
-上述示例给出三个独立主模型及一个共享备用。先将别名替换为同一已配置端点提供的模型，再补齐显式价目记录，最后通过 `DATAKEEL_MODEL_ROUTING_FILE` 启用。价格字段保留为注释占位；未填写时校验拒绝启动，不发送模型请求。会话使用 `model: auto` 才按档位选择。
-
 Before each call, loaded controlled actions or an already produced plan select `high_risk`; otherwise an earlier tool result in this response selects `multi_step`; otherwise the tier is `simple`. An explicit conversation model stays pinned. Only `model: auto` selects by tier. Fake conversations always use their configured model.
 
 每次调用前，已加载受控动作或本轮已产生计划时选 `high_risk`；否则，本轮已产生工具结果时选 `multi_step`；其余选 `simple`。会话显式指定的模型优先，只有 `model: auto` 按档位选择；fake 会话始终使用会话模型。
