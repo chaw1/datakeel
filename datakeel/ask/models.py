@@ -17,7 +17,7 @@ class MetricLexeme(BoundaryModel):
     text: str
     source: str
     metric_id: str
-    match_kind: Literal["exact", "synonym", "prefix"]
+    match_kind: Literal["exact", "synonym", "normalized", "prefix"]
     term_id: str | None = None
 
 

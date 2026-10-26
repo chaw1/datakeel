@@ -22,6 +22,7 @@ from scripts.advanced_mutations import ADVANCED_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
+from scripts.metric_mutations import METRIC_MUTATIONS
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
@@ -136,6 +137,7 @@ MUTATIONS = (
     *ADVANCED_MUTATIONS,
     *KG_MUTATIONS,
     *KNOWLEDGE_MUTATIONS,
+    *METRIC_MUTATIONS,
     *IMAGE_KG_MUTATIONS,
 )
 

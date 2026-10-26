@@ -17,8 +17,8 @@ def test_exact_metric_and_repeated_synonym_resolve_once(layer: SemanticLayer) ->
     assert [card.definition.id for card in result.candidates] == ["retail_revenue"]
 
 
-def test_exact_candidate_outranks_synonym_and_prefix(layer: SemanticLayer) -> None:
-    """The deterministic ordering is exact, then synonym, then prefix."""
+def test_registered_candidates_share_priority_above_prefix(layer: SemanticLayer) -> None:
+    """Registered names and synonyms share a tier and both outrank truncated names."""
     matches = tuple(
         MatchEvidence(
             start=0,
@@ -34,7 +34,11 @@ def test_exact_candidate_outranks_synonym_and_prefix(layer: SemanticLayer) -> No
         ParsedQuestion(question="x", matches=matches),
         [MetricCard(definition=item) for item in layer.metrics],
     )
-    assert [card.definition.id for card in result.candidates] == [layer.metrics[0].id]
+    assert result.status == "clarification"
+    assert {card.definition.id for card in result.candidates} == {
+        layer.metrics[0].id,
+        layer.metrics[1].id,
+    }
 
 
 def test_distinct_exact_candidates_and_shared_synonym_require_clarification(

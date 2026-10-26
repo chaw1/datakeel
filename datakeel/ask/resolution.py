@@ -8,7 +8,7 @@ from difflib import SequenceMatcher
 from datakeel.core.ask_models import MetricResolution, ParsedQuestion
 from datakeel.core.metric_models import MetricCard
 
-_RANK = {"exact": 3, "synonym": 2, "prefix": 1}
+_RANK = {"exact": 3, "synonym": 3, "normalized": 2, "prefix": 1}
 _SUGGESTION_LIMIT = 3
 
 
@@ -83,7 +83,9 @@ def nearest_metrics(question: str, cards: list[MetricCard]) -> tuple[MetricCard,
     """Return at most three stable suggestions without asserting any answer value."""
 
     def similarity(card: MetricCard) -> float:
-        labels = [card.definition.name, *card.definition.synonyms]
+        labels = [card.definition.name, card.definition.id, *card.definition.synonyms]
+        if card.definition.english_name:
+            labels.append(card.definition.english_name)
         return max(
             SequenceMatcher(None, question.casefold(), label.casefold()).ratio() for label in labels
         )

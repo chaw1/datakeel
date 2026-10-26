@@ -2,7 +2,12 @@
 metrics:
 - id: shipment_amount
   name: 出货额
+  english_name: Shipment amount
   synonyms:
+  - shipping value
+  - shipping values
+  - dispatched value
+  - dispatched values
   - 发货金额
   - 出库金额
   description: 以ERP已出库商品的出货价计量，未扣终端促销及退款。
@@ -26,7 +31,12 @@ metrics:
     granularity: day
 - id: sales_amount
   name: 销售额
+  english_name: Sales amount
   synonyms:
+  - invoiced sales
+  - invoiced sale
+  - sales revenue
+  - sales revenues
   - 开票销售额
   - 营业额
   description: 以CRM已入账销售单的开票金额计量，含经销渠道。
@@ -51,7 +61,11 @@ metrics:
     granularity: day
 - id: retail_revenue
   name: 零售额
+  english_name: Retail revenue
   synonyms:
+  - retail sales
+  - retail sale
+  - consumer spending
   - 终端零售额
   - 实付零售额
   - 营业额
@@ -78,7 +92,12 @@ metrics:
     granularity: day
 - id: order_count
   name: 订单数
+  english_name: Order count
   synonyms:
+  - number of orders
+  - number of order
+  - completed orders
+  - completed order
   - 成交订单数
   - 订单量
   description: 已完成终端订单的数量。
@@ -103,7 +122,12 @@ metrics:
     granularity: day
 - id: refund_amount
   name: 退款额
+  english_name: Refund amount
   synonyms:
+  - refund value
+  - refund values
+  - refunded total
+  - refunded totals
   - 退款金额
   - 退回金额
   description: 已批准退款单的金额，不代表退货率或原因。
@@ -126,7 +150,12 @@ metrics:
     granularity: day
 - id: inventory_units
   name: 库存量
+  english_name: Inventory units
   synonyms:
+  - stock quantity
+  - stock quantities
+  - available stock
+  - available stocks
   - 库存件数
   - 在库数量
   description: 2026年9月30日库存快照中的可用件数。
@@ -146,7 +175,12 @@ metrics:
     granularity: day
 - id: customer_count
   name: 客户数
+  english_name: Customer count
   synonyms:
+  - number of customers
+  - number of customer
+  - registered customers
+  - registered customer
   - 客户数量
   - 客户总数
   description: CRM中登记的客户数，含个人及企业。
@@ -166,7 +200,12 @@ metrics:
     granularity: day
 - id: ticket_count
   name: 售后工单数
+  english_name: Ticket count
   synonyms:
+  - support ticket count
+  - support ticket counts
+  - number of service tickets
+  - number of service ticket
   - 工单数
   - 售后单量
   description: 所有已登记售后工单数，含未关闭工单。
@@ -186,7 +225,12 @@ metrics:
     granularity: day
 - id: repair_cost
   name: 维修费用
+  english_name: Repair cost
   synonyms:
+  - repair expense
+  - repair expenses
+  - maintenance labor cost
+  - maintenance labor costs
   - 维修人工费
   - 维修成本
   description: 维修记录中的人工费用，不含零件费用。
@@ -206,7 +250,12 @@ metrics:
     granularity: day
 - id: payment_amount
   name: 收款额
+  english_name: Payment amount
   synonyms:
+  - collected payments
+  - collected payment
+  - payment value
+  - payment values
   - 支付金额
   - 到账金额
   description: 已完成支付流水的收款金额。
@@ -229,7 +278,12 @@ metrics:
     granularity: day
 - id: sales_units
   name: 销售量
+  english_name: Sales units
   synonyms:
+  - sales volume
+  - sales volumes
+  - invoiced units
+  - invoiced unit
   - 销售件数
   - 开票件数
   description: CRM已入账销售单的商品件数。
@@ -253,7 +307,12 @@ metrics:
     granularity: day
 - id: shipment_units
   name: 出货量
+  english_name: Shipment units
   synonyms:
+  - shipped quantity
+  - shipped quantities
+  - dispatched units
+  - dispatched unit
   - 出货件数
   - 发货数量
   description: ERP已出库商品件数。
@@ -276,7 +335,12 @@ metrics:
     granularity: day
 - id: retail_units
   name: 零售量
+  english_name: Retail units
   synonyms:
+  - retail volume
+  - retail volumes
+  - retail item quantity
+  - retail item quantities
   - 零售件数
   - 成交件数
   description: 已完成终端订单中的商品件数。

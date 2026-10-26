@@ -8,7 +8,7 @@ import unicodedata
 
 from datakeel.ask.models import MetricLexeme
 from datakeel.core.ask_models import MatchEvidence
-from datakeel.core.metric_models import SemanticLayer, TermDefinition
+from datakeel.core.metric_models import MetricDefinition, SemanticLayer, TermDefinition
 
 _MIN_PREFIX = 2
 _PREFIX_END = r"(?=$|[?\uff1f。\uff0c,\uff01!\s]|是多少|多少|怎么样|如何|呢)"
@@ -28,7 +28,7 @@ def occurrences(question: str, phrase: str) -> list[re.Match[str]]:
 
 
 def metric_matches(question: str, layer: SemanticLayer) -> tuple[MatchEvidence, ...]:
-    """Match names, synonyms, and glossary mappings before conservative name prefixes."""
+    """Match registered names, normalized identifiers, then conservative name prefixes."""
     matches = [
         _evidence(hit, lexeme)
         for lexeme in _lexemes(layer)
@@ -37,6 +37,16 @@ def metric_matches(question: str, layer: SemanticLayer) -> tuple[MatchEvidence, 
     matched = {item.metric_id for item in matches}
     for metric in layer.metrics:
         if metric.id in matched:
+            continue
+        lexeme = MetricLexeme(
+            text=metric.id,
+            source=f"metric:{metric.id}.id:normalized",
+            metric_id=metric.id,
+            match_kind="normalized",
+        )
+        hits = list(re.finditer(_identifier_pattern(metric.id), question, re.IGNORECASE))
+        if hits:
+            matches.extend(_evidence(hit, lexeme) for hit in hits)
             continue
         name = unicodedata.normalize("NFC", metric.name)
         for length in range(len(name) - 1, max(_MIN_PREFIX, len(name) // 2) - 1, -1):
@@ -57,25 +67,7 @@ def metric_matches(question: str, layer: SemanticLayer) -> tuple[MatchEvidence, 
 def _lexemes(layer: SemanticLayer) -> list[MetricLexeme]:
     lexemes: list[MetricLexeme] = []
     for metric in layer.metrics:
-        lexemes.append(
-            MetricLexeme(
-                text=metric.name,
-                source=f"metric:{metric.id}.name",
-                metric_id=metric.id,
-                match_kind="exact",
-                term_id=_term_for(layer.terms, metric.id, metric.name),
-            )
-        )
-        lexemes.extend(
-            MetricLexeme(
-                text=name,
-                source=f"metric:{metric.id}.synonyms[{index}]",
-                metric_id=metric.id,
-                match_kind="synonym",
-                term_id=_term_for(layer.terms, metric.id, name),
-            )
-            for index, name in enumerate(metric.synonyms)
-        )
+        lexemes.extend(_metric_lexemes(metric, layer.terms))
     for term in layer.terms:
         for metric_id in _term_metrics(term, layer):
             lexemes.append(
@@ -98,6 +90,54 @@ def _lexemes(layer: SemanticLayer) -> list[MetricLexeme]:
                 for index, name in enumerate(term.synonyms)
             )
     return lexemes
+
+
+def _metric_lexemes(metric: MetricDefinition, terms: list[TermDefinition]) -> list[MetricLexeme]:
+    names = [("name", metric.name)]
+    if metric.english_name:
+        names.append(("english_name", metric.english_name))
+    return [
+        *(
+            MetricLexeme(
+                text=name,
+                source=f"metric:{metric.id}.{field}",
+                metric_id=metric.id,
+                match_kind="exact",
+                term_id=_term_for(terms, metric.id, name),
+            )
+            for field, name in names
+        ),
+        *(
+            MetricLexeme(
+                text=name,
+                source=f"metric:{metric.id}.synonyms[{index}]",
+                metric_id=metric.id,
+                match_kind="synonym",
+                term_id=_term_for(terms, metric.id, name),
+            )
+            for index, name in enumerate(metric.synonyms)
+        ),
+    ]
+
+
+def _identifier_pattern(identifier: str) -> str:
+    words = re.split(r"[_\-\s]+", identifier.casefold())
+    if not all(words):
+        return r"(?!)"
+    tokens = ["(?:" + "|".join(map(re.escape, _word_forms(word))) + ")" for word in words]
+    return r"(?<![A-Za-z0-9_])" + r"[_\-\s]+".join(tokens) + r"(?![A-Za-z0-9_])"
+
+
+def _word_forms(word: str) -> tuple[str, ...]:
+    if not word.isascii() or not word.isalpha():
+        return (word,)
+    base = word
+    if word.endswith("es") and word[:-2].endswith(("s", "x", "z", "ch", "sh", "o")):
+        base = word[:-2]
+    elif len(word) > 1 and word.endswith("s") and not word.endswith(("ss", "us", "is")):
+        base = word[:-1]
+    plural = base + ("es" if base.endswith(("s", "x", "z", "ch", "sh", "o")) else "s")
+    return tuple(sorted({word, base, plural}, key=lambda value: (-len(value), value)))
 
 
 def _term_metrics(term: TermDefinition, layer: SemanticLayer) -> list[str]:

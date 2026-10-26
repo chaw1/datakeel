@@ -30,7 +30,7 @@ class MatchEvidence(BoundaryModel):
     end: int = Field(gt=0)
     text: str = Field(min_length=1)
     source: str = Field(min_length=1)
-    match_kind: Literal["exact", "synonym", "prefix", "dimension_value", "time"]
+    match_kind: Literal["exact", "synonym", "normalized", "prefix", "dimension_value", "time"]
     metric_id: str | None = None
     dimension_id: str | None = None
     term_id: str | None = None
