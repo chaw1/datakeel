@@ -79,6 +79,16 @@ export function KGTranscriptions({ report }: { report: KGRun["report"] }) {
                             ? "kgUnexecuted"
                             : "kgCompleted",
                       )}
+                  {item.quality_issues.includes("coordinates_unreliable") && (
+                    <p>{t("kgCoordinatesUnreliable")}</p>
+                  )}
+                  {item.ignored_field_count > 0 && (
+                    <p>
+                      {t("kgIgnoredTranscriptionFields", {
+                        count: item.ignored_field_count,
+                      })}
+                    </p>
+                  )}
                 </td>
                 <td>
                   {item.reasons.map((reason) => (
@@ -99,7 +109,11 @@ export function KGTranscriptions({ report }: { report: KGRun["report"] }) {
                 <td>
                   {t(item.external ? "kgExternalSent" : "kgExternalLocal")}
                 </td>
-                <td>{item.error ?? "—"}</td>
+                <td>
+                  {item.quality_issues.includes("unparseable_structured_output")
+                    ? t("kgUnparseableTranscription")
+                    : (item.error ?? "—")}
+                </td>
               </tr>
             ))}
           </tbody>

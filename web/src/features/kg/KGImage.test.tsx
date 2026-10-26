@@ -202,6 +202,8 @@ it("freezes the selected transcription profile without executing an external pla
           interface: "openai",
           base_url: "https://vision.example.com/v1",
           prompt_version: "image-transcription-v1",
+          coordinate_space: "pixel",
+          coordinate_min_median_iou: 0.3,
           max_output_tokens: 4096,
           timeout_seconds: 120,
           request_parameters: {},

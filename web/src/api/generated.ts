@@ -5507,6 +5507,11 @@ export interface components {
             /** Filename */
             filename: string;
             /**
+             * Ignored Field Count
+             * @default 0
+             */
+            ignored_field_count: number;
+            /**
              * Mode
              * @enum {string}
              */
@@ -5514,6 +5519,11 @@ export interface components {
             /** Model */
             model: string;
             ocr_reference?: components["schemas"]["OCRReference"] | null;
+            /**
+             * Quality Issues
+             * @default []
+             */
+            quality_issues: ("empty" | "truncated" | "repeated" | "timeout" | "provider_error" | "provider_quota_exhausted" | "recording_missing" | "ocr_not_installed" | "api_key_missing" | "mode_mismatch" | "image_decode_error" | "outbound_not_approved" | "coordinates_unreliable" | "unparseable_structured_output")[];
             /**
              * Reasons
              * @default []
@@ -5541,6 +5551,17 @@ export interface components {
             backend: "ocr" | "vlm" | "replay" | "fake";
             /** Base Url */
             base_url?: string | null;
+            /**
+             * Coordinate Min Median Iou
+             * @default 0.3
+             */
+            coordinate_min_median_iou: number;
+            /**
+             * Coordinate Space
+             * @default pixel
+             * @enum {string}
+             */
+            coordinate_space: "pixel" | "normalized_1000" | "normalized_1";
             /** Id */
             id: string;
             /**

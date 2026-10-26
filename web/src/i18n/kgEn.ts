@@ -151,6 +151,11 @@ export const kgEn = {
   kgTranscriptionRoute: "Transcription route",
   kgTranscriptionStatus: "Transcription status",
   kgTranscriptionCached: "Reused transcription",
+  kgCoordinatesUnreliable:
+    "Model coordinates differ from OCR; boxes discarded. Review locations.",
+  kgIgnoredTranscriptionFields: "Ignored extra fields: {count}",
+  kgUnparseableTranscription:
+    "Could not parse the image transcript. Retry or use OCR.",
   kgLocatedRelations: "Located image relations",
   kgUnlocatedRelations: "Unlocated image relations",
   kgTranscriptionFailed: "Transcription failures",

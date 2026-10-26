@@ -15,6 +15,8 @@ const replay: KGTranscriptionProfile = {
   model: "recorded-model",
   interface: "openai",
   prompt_version: "image-transcription-v1",
+  coordinate_space: "pixel",
+  coordinate_min_median_iou: 0.3,
   max_output_tokens: 4096,
   timeout_seconds: 120,
   request_parameters: {},

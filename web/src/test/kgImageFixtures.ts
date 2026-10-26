@@ -103,6 +103,8 @@ export const imageRun: KGRun = {
       {
         external: false,
         reasons: [],
+        quality_issues: [],
+        ignored_field_count: 0,
         file_id: "image-1",
         filename: "diagram.png",
         backend: "replay",
@@ -114,6 +116,8 @@ export const imageRun: KGRun = {
       {
         external: false,
         reasons: [],
+        quality_issues: ["truncated"],
+        ignored_field_count: 0,
         file_id: "image-2",
         filename: "scripted-truncated.png",
         backend: "fake",
