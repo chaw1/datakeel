@@ -1,6 +1,8 @@
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
+import { metricName } from "./metricLabels";
+
 import type { AskAnswer } from "../../api/ask";
 
 export function AskHistory({
@@ -12,7 +14,7 @@ export function AskHistory({
   currentId?: string;
   onReplay: (id: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isComposing = useCompositionGuard();
   if (!answers.length) return null;
   return (
@@ -32,7 +34,7 @@ export function AskHistory({
           <div>
             <strong>{answer.question}</strong>
             <p>
-              {answer.metric_card?.definition.name}{" "}
+              {answer.metric_card && metricName(answer.metric_card, locale)}{" "}
               {answer.metric_card &&
                 t("askVersion", {
                   version: answer.metric_card.definition.version,

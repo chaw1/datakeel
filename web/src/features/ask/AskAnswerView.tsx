@@ -7,6 +7,7 @@ import { AnswerProvenance } from "./AnswerProvenance";
 import { AskResolution } from "./AskResolution";
 import { KnowledgeAnswerView } from "./KnowledgeAnswerView";
 import { KnowledgeResolution } from "./KnowledgeResolution";
+import { metricName } from "./metricLabels";
 
 import type {
   AskAnswer,
@@ -99,7 +100,7 @@ export function AskAnswerView({
         <>
           <div className="ask-result">
             <span className="eyebrow">
-              {answer.metric_card?.definition.name}
+              {answer.metric_card && metricName(answer.metric_card, locale)}
             </span>
             {scalar ? (
               <div className="ask-number-line">
