@@ -30,3 +30,7 @@ examples/sample-data/gold.json
 examples/enterprise/generated/
 artifacts/evidence-p6/
 artifacts/
+
+# Local Rust extension build products.
+accel/target/
+accel/dist/

@@ -6,16 +6,19 @@ Datakeel 将数据导入、处理、质量、血缘、证据与受控动作连�
 
 ## Set up locally / 本地开发
 
-Use Python 3.12+, `uv`, Node.js 22 and npm. From a checkout of the repository, run:
+Use Python 3.12+, `uv`, Node.js 22, npm, and Rust 1.96 with rustfmt and clippy. From a checkout of the repository, run:
 
-准备 Python 3.12+、`uv`、Node.js 22 和 npm，在仓库根目录执行：
+准备 Python 3.12+、`uv`、Node.js 22、npm，以及带 rustfmt 和 clippy 的 Rust 1.96，在仓库根目录执行：
 
 ```sh
 uv sync --locked
 (cd web && npm ci)
 uv run pre-commit install
+make check-rust
 uv run datakeel demo
 ```
+
+The optional Rust extension is built locally by `make check-rust`; see [acceleration](docs/RUST_ACCEL.md).
 
 The demo uses generated local samples and the fake model provider. The [English README](README.md) and [中文 README](README.zh.md) describe the UI, command-line tools and local configuration. Use a separate data directory for experiments and an available port when another demo is already running.
 

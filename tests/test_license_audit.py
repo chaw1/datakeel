@@ -169,12 +169,14 @@ def test_cli_writes_reviewable_report_and_returns_policy_status(
     assert str(tmp_path) not in notices
 
 
-def test_audit_combines_both_dependency_closures(
+def test_audit_combines_all_dependency_closures(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Runtime reporting retains allowed and rejected packages from both ecosystems."""
+    """Runtime reporting retains allowed and rejected packages from all ecosystems."""
     python = package("MIT")
     frontend = package("GPL-3.0").model_copy(update={"ecosystem": "frontend"})
+
+    rust = package("MIT OR Apache-2.0").model_copy(update={"ecosystem": "rust"})
 
     def python_packages(_root: Path) -> tuple[LicensePackage, ...]:
         return (python,)
@@ -182,9 +184,42 @@ def test_audit_combines_both_dependency_closures(
     def frontend_packages(_root: Path) -> tuple[LicensePackage, ...]:
         return (frontend,)
 
+    def rust_packages(_root: Path) -> tuple[LicensePackage, ...]:
+        return (rust,)
+
+    monkeypatch.setattr(license_audit, "rust_packages", rust_packages)
     monkeypatch.setattr(license_audit, "python_packages", python_packages)
     monkeypatch.setattr(license_audit, "frontend_packages", frontend_packages)
     report = license_audit.audit(tmp_path)
-    assert report.packages == (python, frontend)
+    assert report.packages == (python, frontend, rust)
     assert len(report.findings) == 1
     assert report.findings[0].ecosystem == "frontend"
+
+
+@pytest.mark.parametrize("license_id", sorted(license_audit.RUST_ALLOWED_LICENSES))
+def test_rust_license_policy_accepts_only_declared_permissive_terms(license_id: str) -> None:
+    """Rust's approved identifiers are independent of the main runtime allowlist."""
+    rust = package(license_id).model_copy(update={"ecosystem": "rust"})
+    assert license_audit.license_findings(rust) == ()
+
+
+@pytest.mark.parametrize(
+    "license_id", ["MPL-2.0", "MIT-0", "ISC", "Zlib", "UNKNOWN", "", "MIT OR GPL-3.0-only"]
+)
+def test_rust_license_policy_rejects_unknown_or_broadened_terms(license_id: str) -> None:
+    """Neither main-package allowances nor package exceptions admit Rust dependencies."""
+    rust = package(license_id, "certifi").model_copy(update={"ecosystem": "rust"})
+    assert license_audit.license_findings(rust)
+
+
+def test_rust_apache_compiled_artifact_exception_is_exact_and_ecosystem_bound() -> None:
+    """The permissive Apache artifact exception cannot broaden other terms or ecosystems."""
+    rust = package("Apache-2.0 WITH LLVM-exception").model_copy(update={"ecosystem": "rust"})
+    assert license_audit.license_findings(rust) == ()
+    for changed in (
+        rust.model_copy(update={"ecosystem": "python"}),
+        rust.model_copy(update={"ecosystem": "frontend"}),
+        rust.model_copy(update={"license": "Apache-2.0 WITH LLVM-exception AND GPL-3.0-only"}),
+        rust.model_copy(update={"license": "MIT WITH LLVM-exception"}),
+    ):
+        assert license_audit.license_findings(changed)

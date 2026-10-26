@@ -4,10 +4,11 @@
 
 ## 1. 一条命令
 
-`make check` 依次执行，任一失败即失败：
+`make check` 依次执行，任一失败即失败。Rust 工具链（cargo、rustfmt、clippy）必须安装；缺失时明确失败并给出安装指引：
 
 ```
 uv run python scripts/check_public_worktree.py
+make check-rust  # fmt, clippy, tests, locked release wheel, install, backend consistency
 uv run ruff format --check .
 uv run ruff check .
 uv run pyright
@@ -98,3 +99,24 @@ OCR 的第三方包由用户自行安装，不属于 Datakeel 的依赖，也不
 Some platforms, including macOS, ship OpenCV prebuilt wheels with GPL codecs such as x264 and x265. ONNX Runtime includes Eigen under MPL-2.0. Anyone redistributing these third-party packages must assess their licenses independently. Datakeel supplies no OCR extra, source-build installer or separate OCR license exceptions; the core audit and its existing policy remain unchanged.
 
 部分平台（例如 macOS）的 OpenCV 预编译包捆绑 x264、x265 等 GPL 编解码库；ONNX Runtime 含 MPL-2.0 的 Eigen。需要再分发这些第三方包时，用户须自行评估。Datakeel 不提供 OCR extra、源码安装脚本或 OCR 独立许可例外；核心许可审计及既有政策保持不变。
+
+
+## 10. Optional Rust acceleration / 可选 Rust 加速
+
+`accel/` is a separate PyO3 + maturin distribution with Python 3.12 abi3 wheels. The main
+`datakeel` wheel remains pure Python and has no acceleration dependency. Rust receives only
+unsigned 64-bit hashes; Pillow decoding and dHash generation stay in Python. Both match modes
+must produce the same sorted direct index pairs as Python. See [build and modes](RUST_ACCEL.md).
+
+`make check-rust` requires `cargo fmt --check`, `cargo clippy --locked -- -D warnings`,
+`cargo test --locked`, a release extension build, and installed-backend consistency tests.
+`Cargo.lock` is committed; the license audit follows every locked build and target dependency.
+Rust permits MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, Unicode-DFS-2016 and Unicode-3.0.
+The exact `Apache-2.0 WITH LLVM-exception` expression is also permitted: the exception grants
+additional permissions for compiled artifacts. Other exceptions and unknown licenses fail.
+This Rust policy does not expand the Python or frontend policy. Upstream license and notice
+texts are regenerated from locked sources and included in the extension wheel.
+
+`accel/` 是独立可选包，主包不增加运行时依赖；Rust 只比较整数哈希，不参与图片解码或 dHash。
+两模式都以 Python 结果和小规模暴力法交叉核对。Rust 工具、构建、一致性和完整依赖许可审计
+纳入门禁；锁文件固定依赖，上游许可原文随扩展分发，未知许可阻断。

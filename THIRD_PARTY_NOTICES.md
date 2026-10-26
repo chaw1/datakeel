@@ -8,6 +8,12 @@ The frontend inventory follows production, optional, and peer dependencies, incl
 nested packages. It also includes every package measured by the current Vite build,
 including development dependencies actually bundled. Unbundled build tools are excluded.
 
+The Rust inventory includes every locked dependency, including build and target edges.
+Rust SPDX identifiers: Apache-2.0, BSD-2-Clause, BSD-3-Clause, MIT, Unicode-3.0, Unicode-DFS-2016.
+Rust also permits the exact Apache-2.0 WITH LLVM-exception expression: the upstream
+exception grants additional permissions for compiled artifacts. Other WITH terms fail.
+Rust has no package exceptions; unknown and missing licenses fail.
+
 Licenses are read from installed metadata and checked against exact locked versions.
 Ambiguous legacy metadata is accepted only with a reviewed license-file SHA-256 match.
 For python-dateutil, the verified BSD terms explicitly apply to all its code.
@@ -22,6 +28,7 @@ Approved exception: Python `regex` uses `Apache-2.0 AND CNRI-Python`; CNRI-Pytho
 permissive. These exact package exceptions do not permit other MPL or CNRI dependencies.
 Upstream license texts remain in
 installed distributions; frontend texts are in `web/public/THIRD-PARTY-LICENSES.txt`.
+Rust license texts and notices are retained in the extension wheel.
 
 | Ecosystem | Package | Version | SPDX license | Evidence |
 | --- | --- | --- | --- | --- |
@@ -144,5 +151,25 @@ installed distributions; frontend texts are in `web/public/THIRD-PARTY-LICENSES.
 | frontend | react-dom | 19.3.1 | MIT | package-lock.json and node_modules/react-dom/package.json |
 | frontend | scheduler | 0.28.0 | MIT | package-lock.json and node_modules/scheduler/package.json |
 | frontend | vite | 7.3.7 | MIT | package-lock.json and node_modules/vite/package.json |
+| rust | crossbeam-deque | 0.8.8 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | crossbeam-epoch | 0.9.21 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | crossbeam-utils | 0.8.23 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | either | 1.19.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | heck | 0.5.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | libc | 0.2.191 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | once_cell | 1.21.4 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | portable-atomic | 1.15.0 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | proc-macro2 | 1.0.107 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | pyo3 | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | pyo3-build-config | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | pyo3-ffi | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | pyo3-macros | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | pyo3-macros-backend | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | quote | 1.0.47 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | rayon | 1.11.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | rayon-core | 1.13.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | syn | 3.0.9 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | target-lexicon | 0.13.5 | Apache-2.0 WITH LLVM-exception | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 
 Policy findings: 0.
