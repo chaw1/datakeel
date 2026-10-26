@@ -11,10 +11,12 @@ import { kgEn } from "./kgEn";
 import { knowledgeEn } from "./knowledgeEn";
 import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
+import { releaseEn } from "./releaseEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  ...releaseEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,

@@ -67,6 +67,7 @@ exclude = [
 packages = ["datakeel"]
 
 [tool.hatch.build.targets.wheel.force-include]
+"contracts/delivery-manifest.schema.json" = "datakeel/_contracts/delivery-manifest.schema.json"
 "contracts/model-prices.yaml" = "datakeel/_contracts/model-prices.yaml"
 "contracts/golden" = "datakeel/_contracts/golden"
 "contracts/evidence" = "datakeel/_contracts/evidence"

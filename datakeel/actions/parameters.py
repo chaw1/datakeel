@@ -16,6 +16,7 @@ from datakeel.actions.catalog_parameters import (
     UpdateTermParams,
 )
 from datakeel.actions.kg_parameters import RunKGExtractionParams
+from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.models import BoundaryModel, JsonDocument
@@ -84,6 +85,7 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "create_version_from_selection": VersionParams,
     "run_pipeline": PipelineParams,
     "run_kg_extraction": RunKGExtractionParams,
+    "publish_release": PublishReleaseParams,
     "save_metadata": MetadataParams,
     "export_dataset": ExportParams,
     "decide_assertions": DecideAssertionsParams,

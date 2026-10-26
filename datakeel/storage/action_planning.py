@@ -19,6 +19,7 @@ from datakeel.actions.parameters import (
 from datakeel.actions.policy import authorize, digest, plan_digest
 from datakeel.actions.references import parameter_refs
 from datakeel.actions.registry import action_definition
+from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import BoundaryModel, JsonDocument, new_id, utcnow
 from datakeel.ontology.models import FrozenManifest
@@ -33,9 +34,12 @@ from datakeel.storage.catalog_action_state import catalog_impact, prepare_catalo
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
+from datakeel.storage.release_actions import publication_impact
 
 
 def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
+    if isinstance(params, PublishReleaseParams):
+        return publication_impact(manifest)
     count = catalog_impact(session, params, manifest)
     return (
         max(count, len(params.assertion_ids))

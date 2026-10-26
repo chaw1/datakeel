@@ -2,7 +2,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { Files } from "../files/Files";
 import Quality from "../quality/Quality";
 import { ReportView } from "../reports/ReportView";
-import { Versions } from "../versions/Versions";
+import { VersionWorkspace } from "../versions/VersionWorkspace";
 
 import { ObjectEvidence } from "./ObjectEvidence";
 import { ObjectFileQuality } from "./ObjectFileQuality";
@@ -42,9 +42,10 @@ export function ObjectSections({
       );
     case "versions":
       return (
-        <Versions
+        <VersionWorkspace
           versions={data.versions}
           datasetId={data.dataset?.id ?? target.id}
+          onChanged={reload}
         />
       );
     case "quality":

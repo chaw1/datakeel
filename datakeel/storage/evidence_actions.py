@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import DecideAssertionsParams, selection_for
+from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_models import Assertion, AssertionDecisionRequest
 from datakeel.core.models import AssetRef, BoundaryModel
@@ -22,6 +23,7 @@ from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow
 from datakeel.storage.kg_image_sources import image_review_references
 from datakeel.storage.object_projection import content_digest
 from datakeel.storage.object_queries import evaluate_in_session
+from datakeel.storage.release_actions import publication_manifest
 
 
 def _assertions(session: Session, params: DecideAssertionsParams) -> list[Assertion]:
@@ -149,6 +151,8 @@ def action_manifest(
     session: Session, params: BoundaryModel, query: ObjectSet | None = None
 ) -> FrozenManifest:
     """Use exact assertion endpoints for reviews and ordinary ObjectSets for other actions."""
+    if isinstance(params, PublishReleaseParams):
+        return publication_manifest(session, params)
     if isinstance(params, CatalogActionParams):
         return catalog_manifest()
     if isinstance(params, DecideAssertionsParams):

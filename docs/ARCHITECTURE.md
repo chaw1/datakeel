@@ -8,7 +8,7 @@
 数据进来 → 语义识别（文件是什么）→ 预处理算子链 → 质量评分 → 元数据/标准 → 血缘事件 → 分析报告。
 Agent 全程用对话操作，但只能走受控动作；harness 让 Agent 可量、可回放、可跑分。
 
-企业版的东西不要：多租户/统一认证、项目/考培/任务大厅、标注工具矩阵、桌面端、离线交付、k8s/GitOps、模型服务治理。
+企业版的东西不要：多租户/统一认证、项目/考培/任务大厅、标注工具矩阵、桌面端、k8s/GitOps、模型服务治理。
 
 ## 2. 定了的决策
 
@@ -171,3 +171,14 @@ An `evidence.kg` COMPLETE lineage event records source assets, the schema and ex
 Transcripts are deterministic `image_transcript` assets with content-hash versions. Text spans reference the transcript; image regions reference original image content in EXIF-corrected pixel coordinates. Image responses and external requests strip metadata. OCR matching supplies all rectangles. Missing locations and explicitly marked handwritten person types add structured review issues without promoting candidates to accepted facts.
 
 来源展示读取冻结运行快照；人审将派生资产解析回同数据集版本的原始 manifest，避免同内容图片跨版本错指。替换来源时同步作废旧转写稿断言并保留审计与人工结论。证据重建复用持久化的 knowledge bundle，不构造转写或抽取客户端。图片评测分别报告录制评分与实际写入后读回的候选断言评分；外部用例与内置录制采用同一质量和对齐规则。
+
+
+## 14. Dataset releases and recipient verification / 数据集发布与收货对账
+
+Version comparison expands legacy JSON manifests inside the database and merges two streams ordered by stable file identity. Each request retains only its bounded result page and constant-size summaries; metadata classification preserves JSON types. New releases use the existing irreversible controlled-action and approval protocol. Private object keys stay in storage; frozen public file facts and dataset metadata form separate release rows. Database constraints seal entries when their release header is inserted and reject later source-version, header or entry mutations. Content-addressed local objects and conditional S3 writes reject replacement with different bytes.
+
+`delivery/` is a framework-free domain package for canonical manifests, safe tar reading and six independent recipient checks. The exported JSON Schema lives in `contracts/` and is also included in the wheel. `storage/delivery_service.py` materializes actual backend objects, validates exports and archives platform reconciliation receipts. The CLI dispatches recipient verification before settings, routing or database initialization. `MANIFEST.json` records expected facts; `RECORDS.json` supplies receipt-side metadata and annotation statistics, without trying to infer annotation semantics from arbitrary payloads. The manifest checksum provides integrity; it is not a sender signature.
+
+版本清单和已有生成版本行为保持兼容。发布冻结文件事实、来源、元数据及统计；后续变更必须生成其他版本。离线交付包只携带相对路径、公开元数据和版本血缘，不携带对象键或凭证。平台对账和收货命令调用同一套六类规则，平台结果独立存档。
+
+Resumable uploads stage bounded, atomically committed chunks under the configured local home. Shared process-released locks serialize writers and cap concurrent streams; whole-file and freshly read backend hashes are checked before a dataset transaction commits. The same declaration key resumes one upload, identical chunks merge, and conflicting retries are rejected. Multiple hosts require shared durable staging or sticky routing. Completed staging is retained; automatic cleanup is outside this implementation. See [the release guide](RELEASES.md) and [中文说明](RELEASES.zh.md).

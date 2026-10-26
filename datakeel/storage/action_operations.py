@@ -16,6 +16,7 @@ from datakeel.actions.parameters import (
     PipelineParams,
     parse_params,
 )
+from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.governance import compliance_score, validate_metadata
@@ -26,6 +27,7 @@ from datakeel.storage.database import DatasetRow, MetadataChangeRow, ShardRow, T
 from datakeel.storage.datasets import latest_files
 from datakeel.storage.evidence_actions import decide_action
 from datakeel.storage.kg_store import schedule_extraction
+from datakeel.storage.release_actions import publish_release
 
 
 def _metadata(session: Session, params: MetadataParams) -> OperationResult:
@@ -85,6 +87,8 @@ def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> Ope
 def execute_business(session: Session, plan: ActionPlan) -> OperationResult:
     """Mutate a validated plan without opening or committing another transaction."""
     params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
+    if isinstance(params, PublishReleaseParams):
+        return publish_release(session, plan, params)
     if isinstance(params, CatalogActionParams):
         return execute_catalog_action(session, plan, params)
     if isinstance(params, DecideAssertionsParams):

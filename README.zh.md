@@ -333,7 +333,7 @@ OpenLineage 导出是事件数组，逐个元素用官方 RunEvent Schema 校验
 
 ## MCP 接入
 
-`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **32 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），15 个**只准备计划**的动作（含 `run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
+`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **33 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），16 个**只准备计划**的动作（含 `publish_release`、`run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
 
 Agent 和 MCP 同步提供 `ask_data`、`list_metrics`、`explain_metric`、`impact_of`。`ask_data` 只读源数据，在 Datakeel 保存答案及证据；涉及资产的调用记录 `asset_refs`，空的 `list_metrics` 结果可没有引用。工具、动作与 HTTP 使用同一套类型模型生成 schema。
 

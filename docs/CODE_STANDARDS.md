@@ -43,7 +43,7 @@ uv run python scripts/license_audit.py
 ```
 cli
 └── api / worker / agent / runtime / extraction_runtime / kg_eval / mcp / harness
-    └── kg / pipeline / quality / lineage / governance / semantic / operators / storage / ontology / actions / evidence / catalog / metrics / ask / workflows / routing / delegation / memory
+    └── delivery / kg / pipeline / quality / lineage / governance / semantic / operators / storage / ontology / actions / evidence / catalog / metrics / ask / workflows / routing / delegation / memory
         └── core                                 （模型、错误、ID、时间，无任何向上依赖）
 ```
 

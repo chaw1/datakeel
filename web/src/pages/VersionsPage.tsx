@@ -1,9 +1,10 @@
-import { Versions } from "../features/versions/Versions";
+import { VersionWorkspace } from "../features/versions/VersionWorkspace";
 import { useI18n } from "../i18n/useI18n";
 
 import type { DatasetData } from "../api/types";
 export function VersionsPage({
   data,
+  selectedId,
 }: {
   data: DatasetData;
   selectedId: string;
@@ -25,7 +26,7 @@ export function VersionsPage({
           {t("snapshots", { count: data.versions.length })}{" "}
         </span>
       </div>
-      <Versions versions={data.versions} />
+      <VersionWorkspace versions={data.versions} datasetId={selectedId} />
     </section>
   );
 }
