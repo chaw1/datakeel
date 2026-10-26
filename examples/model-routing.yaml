@@ -1,0 +1,39 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+# Template: replace these four openai-compatible model aliases with models served
+# by one configured provider endpoint. The bundled default remains unchanged.
+# Add each alias to contracts/model-prices.yaml before enabling this file.
+# Each price entry needs the following fields; fill verified tariffs locally:
+# - model: reader-primary
+#   provider: openai
+#   input:        # USD per million uncached input tokens
+#   output:       # USD per million output tokens
+#   cache_read:   # USD per million cache-read tokens
+#   cache_write:  # USD per million cache-write tokens
+#   source:       # Public price reference and date
+# Repeat the price entry for planner-primary, controller-primary and shared-backup.
+# Missing prices deliberately fail routing validation; no requests are sent.
+version: 1
+providers:
+  fake:
+    tiers:
+      simple: fake-demo
+      multi_step: fake-demo
+      high_risk: fake-demo
+    fallbacks: {}
+  openai:
+    tiers:
+      simple: reader-primary
+      multi_step: planner-primary
+      high_risk: controller-primary
+    fallbacks:
+      reader-primary: shared-backup
+      planner-primary: shared-backup
+      controller-primary: shared-backup
+  anthropic:
+    tiers:
+      simple: claude-haiku-4-5-20251001
+      multi_step: claude-haiku-4-5-20251001
+      high_risk: claude-haiku-4-5-20251001
+    fallbacks: {}
