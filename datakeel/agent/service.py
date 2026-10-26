@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from datakeel.agent.factory import provider_session
 from datakeel.agent.memory import close_interrupted, conversation_view
 from datakeel.agent.models import AgentEvent, ConversationView
+from datakeel.agent.providers import FakeProvider
 from datakeel.core.agent_models import (
     ConversationCreate,
     ConversationLease,
@@ -128,7 +129,17 @@ def _response_events(
     try:
         with provider_session(config, provider) as selected:
             graph.provider = selected
-            route = route_message(db, conversation, selected) if resume is None else None
+            route = (
+                route_message(
+                    db,
+                    conversation,
+                    selected,
+                    offline_classifier=isinstance(selected, FakeProvider),
+                )
+                if resume is None
+                else None
+            )
+            graph.workflow_confirmation_required = route is not None and route.requires_confirmation
             yield from events
             if route is not None and route.workflow_id is not None:
                 yield AgentEvent(event="route", route=route)

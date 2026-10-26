@@ -28,13 +28,15 @@ class WorkflowTriggers(BoundaryModel):
 
     keywords: list[list[str]] = Field(min_length=1)
     classification_keywords: list[str] = Field(default_factory=list[str])
+    classification_groups: list[list[str]] = Field(default_factory=list[list[str]])
+    verification_keywords: list[str] = Field(default_factory=list[str])
     excluded_keywords: list[str] = Field(default_factory=list[str])
     excluded_prefixes: list[str] = Field(default_factory=list[str])
     excluded_groups: list[list[str]] = Field(default_factory=list[list[str]])
     threshold: float = Field(default=1, gt=0)
     margin: float = Field(default=1, gt=0)
 
-    @field_validator("keywords", "excluded_groups")
+    @field_validator("keywords", "classification_groups", "excluded_groups")
     @classmethod
     def validate_groups(cls, groups: list[list[str]]) -> list[list[str]]:
         """Reject empty concepts so every declared conjunction requires real vocabulary."""
@@ -45,7 +47,9 @@ class WorkflowTriggers(BoundaryModel):
             cls.validate_terms(group)
         return groups
 
-    @field_validator("classification_keywords", "excluded_keywords", "excluded_prefixes")
+    @field_validator(
+        "classification_keywords", "verification_keywords", "excluded_keywords", "excluded_prefixes"
+    )
     @classmethod
     def validate_terms(cls, terms: list[str]) -> list[str]:
         """Require a nonempty literal on both sides of every synonym separator."""

@@ -71,7 +71,10 @@ def evaluate_routes(directory: Path | None = None) -> RouteEvaluation:
         result = keyword_route(case.input, workflows)
         if result.branch == "classifier":
             result = classified_route(
-                result, classify_offline(case.input, result.candidates, workflows)
+                result,
+                classify_offline(case.input, result.candidates, workflows),
+                case.input,
+                workflows,
             )
         _record(
             workflow_matrix,

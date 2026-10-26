@@ -17,6 +17,7 @@ const reasons: Partial<Record<string, MessageKey>> = {
   tool_failures: "failureStopped",
   max_turns: "turnsStopped",
   approval_required: "waitingApproval",
+  workflow_confirmation_required: "workflowConfirmationStopped",
   dry_run: "dryRunPlansOnly",
 };
 export function AgentObservation({

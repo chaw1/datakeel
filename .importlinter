@@ -64,6 +64,8 @@ ignore_imports =
 # Routing reads workflow vocabulary and controlled action declarations without dispatching them.
     datakeel.routing.classifier -> datakeel.workflows.models
     datakeel.routing.intent -> datakeel.workflows.models
+    datakeel.routing.scopes -> datakeel.workflows.models
+    datakeel.routing.intent -> datakeel.actions.registry
     datakeel.routing.evaluation -> datakeel.workflows.loader
     datakeel.routing.service -> datakeel.workflows.loader
     datakeel.routing.service -> datakeel.workflows.models

@@ -17,6 +17,7 @@ from datakeel.routing.models import IntentSuite
 from datakeel.routing.tiers import classify_tier, model_chain, select_model
 from datakeel.workflows.loader import list_workflows
 from datakeel.workflows.models import WorkflowTriggers
+from tests.routing.intent_helpers import resolve_route
 
 
 def test_frozen_routes_when_evaluated_match_every_label() -> None:
@@ -31,8 +32,8 @@ def test_frozen_routes_when_evaluated_match_every_label() -> None:
     assert result.branch_confusion["classifier"] == {"classifier": 6}
 
 
-def test_golden_inputs_when_routed_never_require_classifier() -> None:
-    """Keep all 57 original user inputs exactly represented without extra model traces."""
+def test_golden_inputs_when_routed_keep_frozen_workflow_and_branch() -> None:
+    """Keep all 57 original user inputs and final decisions exactly represented."""
     suite = IntentSuite.model_validate(
         yaml.safe_load(contract_path("routing/intent-cases.yaml").read_text())
     )
@@ -42,7 +43,8 @@ def test_golden_inputs_when_routed_never_require_classifier() -> None:
         filename, turn = case.source.split("#turns/")
         document = yaml.safe_load(Path(filename).read_text())
         assert document["turns"][int(turn)]["input"] == case.input
-        assert keyword_route(case.input, list_workflows()).branch != "classifier"
+        result = resolve_route(case.input)
+        assert (result.workflow_id, result.branch) == (case.expected_workflow, case.expected_branch)
 
 
 @pytest.mark.parametrize(
@@ -68,7 +70,7 @@ def test_golden_inputs_when_routed_never_require_classifier() -> None:
 )
 def test_single_step_holdout_when_no_full_workflow_requested_stays_free(message: str) -> None:
     """Independent bilingual requests must not gain extra workflow actions."""
-    decision = keyword_route(message, list_workflows())
+    decision = resolve_route(message)
     assert (decision.workflow_id, decision.branch) == (None, "free_agent")
 
 

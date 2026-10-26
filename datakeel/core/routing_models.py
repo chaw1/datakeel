@@ -43,6 +43,10 @@ class RouteDecision(BoundaryModel):
     branch: RouteBranch
     candidates: list[RouteCandidate]
     inputs: RouteInputs = Field(default_factory=RouteInputs)
+    classifier_used: bool = False
+    classifier_selection: str | None = None
+    verification_passed: bool | None = None
+    requires_confirmation: bool = False
 
 
 class ModelRouteDecision(BoundaryModel):

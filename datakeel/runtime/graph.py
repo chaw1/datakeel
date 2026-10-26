@@ -23,6 +23,7 @@ from datakeel.core.canary import response_leaks
 from datakeel.core.errors import BudgetError, ConflictError, DatakeelError, ValidationError
 from datakeel.core.models import BoundaryModel
 from datakeel.delegation.policy import ancestor_leak
+from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.runtime import DURABILITY
 from datakeel.runtime.chat import complete
@@ -83,6 +84,7 @@ class AgentGraph:
             provider,
         )
         self.guard = LoopGuard()
+        self.workflow_confirmation_required = False
         self.conversation = memory.get(db, conversation_id)
         self.maximum = self.conversation.config.max_turns
         self.saver = SQLAlchemySaver(db)
@@ -253,7 +255,7 @@ class AgentGraph:
         pending_call = ""
         for index, call in enumerate(calls):
             events.append(AgentEvent(event="tool_call", call=call))
-            results, reason = dispatcher.dispatch(call, dry_run=dry_run, local=delegated.invoke)
+            results, reason = self._dispatch_tool(dispatcher, call, delegated, dry_run=dry_run)
             events.extend(delegated.drain())
             reason = delegated.stop_reason or reason
             events.extend(results)
@@ -286,6 +288,24 @@ class AgentGraph:
                 }
             )
         return self._stop(state, reason) if reason else self._continue(state)
+
+    def _dispatch_tool(
+        self,
+        dispatcher: ToolDispatcher,
+        call: ToolCall,
+        delegated: DelegationExecutor,
+        *,
+        dry_run: bool,
+    ) -> tuple[list[AgentEvent], str | None]:
+        if self.workflow_confirmation_required and call.name not in {
+            *PARAMETER_MODELS,
+            "tool_search",
+        }:
+            reason = "workflow_confirmation_required"
+            outcome = ToolOutcome(name=call.name, status="FAILED", error=reason)
+            dispatcher.tool_message(call, outcome)
+            return [AgentEvent(event="tool_result", outcome=outcome)], reason
+        return dispatcher.dispatch(call, dry_run=dry_run, local=delegated.invoke)
 
     def _continue(self, state: GraphState) -> GraphState:
         if state.turn >= self.maximum:

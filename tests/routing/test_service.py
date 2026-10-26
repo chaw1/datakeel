@@ -100,6 +100,38 @@ def test_classification_when_provider_fails_still_answers(
     assert all(account.reserved_tokens == 0 for account in list_accounts(db))
 
 
+def test_classification_when_reply_lacks_critical_anchor_records_failed_verification(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A classifier replay cannot promote a shared generic verb into a write workflow."""
+
+    def choose(_self: OfflineClassifier, _request: ModelRequest) -> ModelResponse:
+        return ModelResponse(content="metric-change")
+
+    monkeypatch.setattr(OfflineClassifier, "complete", choose)
+    conversation = create_conversation(db, ConversationCreate(model="fake-script"))
+    events = list(
+        send_message(
+            db,
+            conversation.id,
+            MessageInput(content="run"),
+            provider=FakeProvider([ModelResponse(content="Please specify the operation.")]),
+        )
+    )
+    decision = events[-1].route
+    assert decision is not None
+    assert decision.workflow_id is None
+    assert decision.classifier_used is True
+    assert decision.classifier_selection == "metric-change"
+    assert decision.verification_passed is False
+    assert decision.reason == "classifier_verification_failed"
+    assert any(event.text == "Please specify the operation." for event in events)
+    assert [trace.call_type for trace in list_traces(db, conversation.id)] == [
+        "intent_classifier",
+        "conversation",
+    ]
+
+
 def test_classification_when_reservation_rejected_still_answers(
     db: Database, monkeypatch: pytest.MonkeyPatch
 ) -> None:

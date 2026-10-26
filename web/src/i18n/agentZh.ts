@@ -83,6 +83,7 @@ export const agentZh: Record<keyof typeof agentEn, string> = {
   tokenBudget: "{count} 词元",
   dailyBudget: "每日预算",
   waitingApproval: "等待你审批",
+  workflowConfirmationStopped: "请确认工作流后再执行更改。",
   budgetStopped: "已达到配置的预算上限。",
   repeatStopped: "检测到重复的工具调用。",
   progressStopped: "会话未能继续取得进展。",

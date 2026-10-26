@@ -10,6 +10,7 @@ from datakeel.core.routing_models import RouteCandidate
 from datakeel.routing.intent import classify_offline, keyword_route
 from datakeel.workflows.loader import list_workflows
 from datakeel.workflows.models import WorkflowTriggers
+from tests.routing.intent_helpers import resolve_route
 
 
 @pytest.mark.parametrize(
@@ -60,7 +61,7 @@ def test_composed_intent_when_synonyms_and_word_order_vary_routes(
 )
 def test_composed_intent_when_single_step_or_information_only_abstains(message: str) -> None:
     """Informational workflow mentions and metadata edits never add workflow actions."""
-    result = keyword_route(message, list_workflows())
+    result = resolve_route(message)
     assert (result.workflow_id, result.branch) == (None, "free_agent")
 
 
@@ -70,12 +71,12 @@ def test_composed_intent_when_single_step_or_information_only_abstains(message: 
         ("inspect records", 1),
         ("audit entries", 1),
         ("inspect audit records entries", 1),
-        ("inspect", 0),
-        ("auditor records", 0),
+        ("inspect", 0.5),
+        ("auditor records", 0.5),
     ],
 )
-def test_synonym_group_when_any_alternative_matches_counts_once(message: str, score: int) -> None:
-    """Alternatives are OR within one concept and concepts remain AND within a group."""
+def test_synonym_group_when_any_alternative_matches_counts_once(message: str, score: float) -> None:
+    """Alternatives count once; incomplete conjunctions retain a fractional candidate score."""
     workflow = list_workflows()[0].model_copy(
         update={"triggers": WorkflowTriggers(keywords=[["inspect|audit", "records|entries"]])}
     )
@@ -105,6 +106,9 @@ def test_classifier_when_synonyms_occur_uses_earliest_actual_position() -> None:
         ("keywords", [["data| "]]),
         ("keywords", [["|data"]]),
         ("excluded_groups", [[]]),
+        ("classification_groups", [[]]),
+        ("classification_groups", [["run||check"]]),
+        ("verification_keywords", ["|anchor"]),
         ("excluded_groups", [["read||report"]]),
         ("excluded_keywords", [" "]),
         ("excluded_prefixes", ["view|"]),

@@ -37,7 +37,17 @@ triggers:
   - 度量字段
   - definition change
   - measure column
+  classification_groups:
+  - - 指标口径|指标计算|计算字段|计算列|度量字段|度量表达式|metric calculation|metric formula|metric definition|calculation
+      field|measure column
+    - 调整|替换|换掉|重设|改动|revise|alter|rework|swap|different
+    - 再算|重问|对照|比较|前后|recompute|rerun|compare|contrast
+  verification_keywords:
+  - 指标|度量|计算字段|计算列|metric|measure column|calculation field
   excluded_keywords:
+  - 谁|负责人|who|owner|where|哪里|如果|假如|if|suppose
+  - 别清理|别删除|别修改|别改|先别|暂时别|不修改|不更改|无需|without
+  - 备注|名称|名字|说明文档|description|documentation|name|label|layout|formatting
   - explain
   - what is
   - what does
@@ -52,12 +62,12 @@ triggers:
   - 只查看
   - 介绍|说明|如何|怎么|how to|how do
   - 描述|释义|description|documentation|负责人|owner|名称|名字|name|label
-  - 什么|哪些|为什么|是否|需不需要|what|why|how|does|should
+  - 什么|哪些|为什么|是否|需不需要|what|why|how|does
   excluded_prefixes:
-  - 查看|查询|列出|显示|展示|获取|show|list|display|find|get|tell
+  - 查看|查询|列出|显示|展示|获取|show|list|display|find|get|tell|read|describe|should
   excluded_groups:
-  - - 查看|查询|列出|显示|展示|show|list|display|find|get
-    - 历史|记录|日志|状态|进度|上次|history|record|records|log|logs|status|progress|previous|last
+  - - 查看|查询|列出|显示|展示|看看|看一下|read|look at|bring up|show|list|display|find|get
+    - 历史|记录|日志|状态|进度|上次|最近一次|history|record|records|log|logs|status|progress|previous|last|latest
   threshold: 1
   margin: 1
 entry: current
