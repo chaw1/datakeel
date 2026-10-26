@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import asyncio
-from threading import Event, Timer
+from threading import Event
 from time import monotonic, sleep
 from typing import TYPE_CHECKING, cast
 
@@ -32,6 +32,10 @@ if TYPE_CHECKING:
 
     from datakeel.storage.database import Database
 
+_PREPARATION_SECONDS = 30
+_DISCONNECT_SECONDS = 2
+_CLEANUP_SECONDS = 30
+
 
 async def _disconnect(
     response: WorkflowStreamResponse,
@@ -41,6 +45,7 @@ async def _disconnect(
 ) -> tuple[list[WorkflowEvent], float]:
     """Notify the actual response after a target SSE event, including a blocked next call."""
     ready = asyncio.Event()
+    disconnected = asyncio.Event()
     observed: list[WorkflowEvent] = []
     disconnected_at = 0.0
 
@@ -48,9 +53,10 @@ async def _disconnect(
         nonlocal disconnected_at
         await ready.wait()
         if polling is not None:
-            await asyncio.sleep(0.1)
-            assert polling.is_set(), "The real wait node never entered its polling sleep"
+            entered = await asyncio.to_thread(polling.wait, _PREPARATION_SECONDS)
+            assert entered, "The real wait node never entered its polling sleep"
         disconnected_at = monotonic()
+        disconnected.set()
         return {"type": "http.disconnect"}
 
     async def send(message: Message) -> None:
@@ -66,7 +72,17 @@ async def _disconnect(
                     await asyncio.Future[None]()
 
     scope: Scope = {"type": "http", "asgi": {"version": "3.0", "spec_version": spec_version}}
-    await asyncio.wait_for(response(scope, receive, send), timeout=4)
+    execution = asyncio.create_task(response(scope, receive, send))
+    try:
+        await asyncio.wait_for(disconnected.wait(), timeout=_PREPARATION_SECONDS)
+        await asyncio.wait_for(asyncio.shield(execution), timeout=_DISCONNECT_SECONDS)
+    finally:
+        response.cancelled.set()
+        if not execution.done():
+            execution.cancel()
+        await asyncio.wait_for(
+            asyncio.gather(execution, return_exceptions=True), timeout=_CLEANUP_SECONDS
+        )
     assert disconnected_at > 0, "The response completed before the injected disconnect"
     return observed, monotonic() - disconnected_at
 
@@ -77,14 +93,8 @@ def _call_disconnected(
     target: Callable[[WorkflowEvent], bool],
     polling: Event | None = None,
 ) -> tuple[list[WorkflowEvent], float]:
-    """Bound a broken listener without allowing the fixture to wait for its 60-second timeout."""
-    rescue = Timer(3, response.cancelled.set)
-    rescue.start()
-    try:
-        return asyncio.run(_disconnect(response, spec_version, target, polling))
-    finally:
-        rescue.cancel()
-        rescue.join()
+    """Bound preparation separately while joining response cleanup before fixture teardown."""
+    return asyncio.run(_disconnect(response, spec_version, target, polling))
 
 
 @pytest.mark.parametrize("spec_version", ["2.3", "2.4"])
