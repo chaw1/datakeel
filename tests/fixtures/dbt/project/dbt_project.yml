@@ -1,0 +1,10 @@
+name: p22_shop
+version: '1.0'
+config-version: 2
+profile: p22_shop
+model-paths: [models]
+seed-paths: [seeds]
+snapshot-paths: [snapshots]
+models:
+  p22_shop:
+    +materialized: view

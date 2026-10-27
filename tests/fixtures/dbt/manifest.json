@@ -1,0 +1,1067 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+    "dbt_version": "1.8.9",
+    "generated_at": "2026-10-26T19:47:54.810171Z",
+    "invocation_id": "4f72b4dd-3fc7-451e-a6d3-0b7d67a678f6",
+    "env": {},
+    "project_name": "p22_shop",
+    "project_id": "e17daded39941153634f6a9a5773a87c",
+    "user_id": null,
+    "send_anonymous_usage_stats": false,
+    "adapter_type": "duckdb"
+  },
+  "nodes": {
+    "model.p22_shop.orders": {
+      "database": "shop",
+      "schema": "main",
+      "name": "orders",
+      "resource_type": "model",
+      "package_name": "p22_shop",
+      "path": "orders.sql",
+      "original_file_path": "models/orders.sql",
+      "unique_id": "model.p22_shop.orders",
+      "fqn": [
+        "p22_shop",
+        "orders"
+      ],
+      "alias": "Orders Daily",
+      "checksum": {
+        "name": "sha256",
+        "checksum": "c2d0b0ca882b5b0460e0548df5ab8c4583d8c94a793b02f1f51df6a280c86564"
+      },
+      "config": {
+        "enabled": true,
+        "alias": "Orders Daily",
+        "schema": null,
+        "database": null,
+        "tags": [
+          "finance"
+        ],
+        "meta": {
+          "owner": "Finance"
+        },
+        "group": null,
+        "materialized": "view",
+        "incremental_strategy": null,
+        "persist_docs": {},
+        "post-hook": [],
+        "pre-hook": [],
+        "quoting": {},
+        "column_types": {},
+        "full_refresh": null,
+        "unique_key": null,
+        "on_schema_change": "ignore",
+        "on_configuration_change": "apply",
+        "grants": {},
+        "packages": [],
+        "docs": {
+          "show": true,
+          "node_color": null
+        },
+        "contract": {
+          "enforced": false,
+          "alias_types": true
+        },
+        "access": "protected"
+      },
+      "tags": [
+        "finance"
+      ],
+      "description": "Daily fictional orders",
+      "columns": {
+        "order_id": {
+          "name": "order_id",
+          "description": "Stable order identifier",
+          "meta": {},
+          "data_type": null,
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        },
+        "amount": {
+          "name": "amount",
+          "description": "Revenue amount",
+          "meta": {},
+          "data_type": null,
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        },
+        "ordered_at": {
+          "name": "ordered_at",
+          "description": "Revenue date",
+          "meta": {},
+          "data_type": null,
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "description": "Last update",
+          "meta": {},
+          "data_type": null,
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        }
+      },
+      "meta": {
+        "owner": "Finance"
+      },
+      "group": null,
+      "docs": {
+        "show": true,
+        "node_color": null
+      },
+      "patch_path": "p22_shop://models/schema.yml",
+      "build_path": null,
+      "unrendered_config": {
+        "materialized": "view",
+        "alias": "Orders Daily",
+        "tags": [
+          "finance"
+        ],
+        "meta": {
+          "owner": "Finance"
+        }
+      },
+      "created_at": 1793044076.9103959,
+      "relation_name": "\"shop\".\"main\".\"Orders Daily\"",
+      "raw_code": "{{ config(alias='Orders Daily', tags=['finance'], meta={'owner': 'Finance'}) }}\nselect order_id, amount, ordered_at, updated_at\nfrom {{ source('shop', 'orders') }}",
+      "language": "sql",
+      "refs": [],
+      "sources": [
+        [
+          "shop",
+          "orders"
+        ]
+      ],
+      "metrics": [],
+      "depends_on": {
+        "macros": [],
+        "nodes": [
+          "source.p22_shop.shop.orders"
+        ]
+      },
+      "compiled_path": "target/compiled/p22_shop/models/orders.sql",
+      "compiled": true,
+      "compiled_code": "\nselect order_id, amount, ordered_at, updated_at\nfrom \"shop\".\"main\".\"raw_orders\"",
+      "extra_ctes_injected": true,
+      "extra_ctes": [],
+      "contract": {
+        "enforced": false,
+        "alias_types": true,
+        "checksum": null
+      },
+      "access": "protected",
+      "constraints": [],
+      "version": null,
+      "latest_version": null,
+      "deprecation_date": null
+    },
+    "model.p22_shop.metricflow_time_spine": {
+      "database": "shop",
+      "schema": "main",
+      "name": "metricflow_time_spine",
+      "resource_type": "model",
+      "package_name": "p22_shop",
+      "path": "metricflow_time_spine.sql",
+      "original_file_path": "models/metricflow_time_spine.sql",
+      "unique_id": "model.p22_shop.metricflow_time_spine",
+      "fqn": [
+        "p22_shop",
+        "metricflow_time_spine"
+      ],
+      "alias": "metricflow_time_spine",
+      "checksum": {
+        "name": "sha256",
+        "checksum": "92ed7d2d55213281cd1d3fcea6d439573371387ccd3bb272c9bae41001f82694"
+      },
+      "config": {
+        "enabled": true,
+        "alias": null,
+        "schema": null,
+        "database": null,
+        "tags": [],
+        "meta": {},
+        "group": null,
+        "materialized": "table",
+        "incremental_strategy": null,
+        "persist_docs": {},
+        "post-hook": [],
+        "pre-hook": [],
+        "quoting": {},
+        "column_types": {},
+        "full_refresh": null,
+        "unique_key": null,
+        "on_schema_change": "ignore",
+        "on_configuration_change": "apply",
+        "grants": {},
+        "packages": [],
+        "docs": {
+          "show": true,
+          "node_color": null
+        },
+        "contract": {
+          "enforced": false,
+          "alias_types": true
+        },
+        "access": "protected"
+      },
+      "tags": [],
+      "description": "",
+      "columns": {},
+      "meta": {},
+      "group": null,
+      "docs": {
+        "show": true,
+        "node_color": null
+      },
+      "patch_path": null,
+      "build_path": null,
+      "unrendered_config": {
+        "materialized": "table"
+      },
+      "created_at": 1793044076.039826,
+      "relation_name": "\"shop\".\"main\".\"metricflow_time_spine\"",
+      "raw_code": "{{ config(materialized='table') }}\nselect cast('2026-01-01' as date) as date_day",
+      "language": "sql",
+      "refs": [],
+      "sources": [],
+      "metrics": [],
+      "depends_on": {
+        "macros": [],
+        "nodes": []
+      },
+      "compiled_path": "target/compiled/p22_shop/models/metricflow_time_spine.sql",
+      "compiled": true,
+      "compiled_code": "\nselect cast('2026-01-01' as date) as date_day",
+      "extra_ctes_injected": true,
+      "extra_ctes": [],
+      "contract": {
+        "enforced": false,
+        "alias_types": true,
+        "checksum": null
+      },
+      "access": "protected",
+      "constraints": [],
+      "version": null,
+      "latest_version": null,
+      "deprecation_date": null
+    },
+    "snapshot.p22_shop.order_history": {
+      "database": "shop",
+      "schema": "history",
+      "name": "order_history",
+      "resource_type": "snapshot",
+      "package_name": "p22_shop",
+      "path": "order_history.sql",
+      "original_file_path": "snapshots/order_history.sql",
+      "unique_id": "snapshot.p22_shop.order_history",
+      "fqn": [
+        "p22_shop",
+        "order_history",
+        "order_history"
+      ],
+      "alias": "order_history",
+      "checksum": {
+        "name": "sha256",
+        "checksum": "0e9e1d58db2fc7e65e01e27204aecf4eb0ca80e2f7413dec44b79e590be4e99e"
+      },
+      "config": {
+        "enabled": true,
+        "alias": null,
+        "schema": null,
+        "database": null,
+        "tags": [],
+        "meta": {},
+        "group": null,
+        "materialized": "snapshot",
+        "incremental_strategy": null,
+        "persist_docs": {},
+        "post-hook": [],
+        "pre-hook": [],
+        "quoting": {},
+        "column_types": {},
+        "full_refresh": null,
+        "unique_key": "order_id",
+        "on_schema_change": "ignore",
+        "on_configuration_change": "apply",
+        "grants": {},
+        "packages": [],
+        "docs": {
+          "show": true,
+          "node_color": null
+        },
+        "contract": {
+          "enforced": false,
+          "alias_types": true
+        },
+        "strategy": "timestamp",
+        "target_schema": "history",
+        "target_database": null,
+        "updated_at": "updated_at",
+        "check_cols": null
+      },
+      "tags": [],
+      "description": "Fictional order history",
+      "columns": {},
+      "meta": {},
+      "group": null,
+      "docs": {
+        "show": true,
+        "node_color": null
+      },
+      "patch_path": "p22_shop://models/schema.yml",
+      "build_path": null,
+      "unrendered_config": {
+        "target_schema": "history",
+        "unique_key": "order_id",
+        "strategy": "timestamp",
+        "updated_at": "updated_at"
+      },
+      "created_at": 1793044077.083631,
+      "relation_name": "\"shop\".\"history\".\"order_history\"",
+      "raw_code": "\n{{ config(target_schema='history', unique_key='order_id', strategy='timestamp', updated_at='updated_at') }}\nselect * from {{ source('shop', 'orders') }}\n",
+      "language": "sql",
+      "refs": [],
+      "sources": [
+        [
+          "shop",
+          "orders"
+        ]
+      ],
+      "metrics": [],
+      "depends_on": {
+        "macros": [],
+        "nodes": [
+          "source.p22_shop.shop.orders"
+        ]
+      },
+      "compiled_path": null,
+      "compiled": true,
+      "compiled_code": "\n\nselect * from \"shop\".\"main\".\"raw_orders\"",
+      "extra_ctes_injected": true,
+      "extra_ctes": [],
+      "contract": {
+        "enforced": false,
+        "alias_types": true,
+        "checksum": null
+      }
+    },
+    "seed.p22_shop.raw_orders": {
+      "database": "shop",
+      "schema": "main",
+      "name": "raw_orders",
+      "resource_type": "seed",
+      "package_name": "p22_shop",
+      "path": "raw_orders.csv",
+      "original_file_path": "seeds/raw_orders.csv",
+      "unique_id": "seed.p22_shop.raw_orders",
+      "fqn": [
+        "p22_shop",
+        "raw_orders"
+      ],
+      "alias": "raw_orders",
+      "checksum": {
+        "name": "sha256",
+        "checksum": "705b75b9fd8c1124c773e10a13aea017e9416181fb5a439b4a02837bf43e5b99"
+      },
+      "config": {
+        "enabled": true,
+        "alias": null,
+        "schema": null,
+        "database": null,
+        "tags": [],
+        "meta": {},
+        "group": null,
+        "materialized": "seed",
+        "incremental_strategy": null,
+        "persist_docs": {},
+        "post-hook": [],
+        "pre-hook": [],
+        "quoting": {},
+        "column_types": {},
+        "full_refresh": null,
+        "unique_key": null,
+        "on_schema_change": "ignore",
+        "on_configuration_change": "apply",
+        "grants": {},
+        "packages": [],
+        "docs": {
+          "show": true,
+          "node_color": null
+        },
+        "contract": {
+          "enforced": false,
+          "alias_types": true
+        },
+        "delimiter": ",",
+        "quote_columns": null
+      },
+      "tags": [],
+      "description": "Generated fictional order input",
+      "columns": {},
+      "meta": {},
+      "group": null,
+      "docs": {
+        "show": true,
+        "node_color": null
+      },
+      "patch_path": "p22_shop://models/schema.yml",
+      "build_path": null,
+      "unrendered_config": {},
+      "created_at": 1793044077.083091,
+      "relation_name": "\"shop\".\"main\".\"raw_orders\"",
+      "raw_code": "",
+      "root_path": ".",
+      "depends_on": {
+        "macros": []
+      }
+    },
+    "test.p22_shop.not_null_orders_order_id.cf6c17daed": {
+      "database": "shop",
+      "schema": "main_dbt_test__audit",
+      "name": "not_null_orders_order_id",
+      "resource_type": "test",
+      "package_name": "p22_shop",
+      "path": "not_null_orders_order_id.sql",
+      "original_file_path": "models/schema.yml",
+      "unique_id": "test.p22_shop.not_null_orders_order_id.cf6c17daed",
+      "fqn": [
+        "p22_shop",
+        "not_null_orders_order_id"
+      ],
+      "alias": "not_null_orders_order_id",
+      "checksum": {
+        "name": "none",
+        "checksum": ""
+      },
+      "config": {
+        "enabled": true,
+        "alias": null,
+        "schema": "dbt_test__audit",
+        "database": null,
+        "tags": [],
+        "meta": {},
+        "group": null,
+        "materialized": "test",
+        "severity": "ERROR",
+        "store_failures": null,
+        "store_failures_as": null,
+        "where": null,
+        "limit": null,
+        "fail_calc": "count(*)",
+        "warn_if": "!= 0",
+        "error_if": "!= 0"
+      },
+      "tags": [],
+      "description": "",
+      "columns": {},
+      "meta": {},
+      "group": null,
+      "docs": {
+        "show": true,
+        "node_color": null
+      },
+      "patch_path": null,
+      "build_path": null,
+      "unrendered_config": {},
+      "created_at": 1793044077.036215,
+      "relation_name": null,
+      "raw_code": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+      "language": "sql",
+      "refs": [
+        {
+          "name": "orders",
+          "package": null,
+          "version": null
+        }
+      ],
+      "sources": [],
+      "metrics": [],
+      "depends_on": {
+        "macros": [
+          "macro.dbt.test_not_null",
+          "macro.dbt.get_where_subquery"
+        ],
+        "nodes": [
+          "model.p22_shop.orders"
+        ]
+      },
+      "compiled_path": "target/compiled/p22_shop/models/schema.yml/not_null_orders_order_id.sql",
+      "compiled": true,
+      "compiled_code": "\n    \n    \n\n\n\nselect order_id\nfrom \"shop\".\"main\".\"Orders Daily\"\nwhere order_id is null\n\n\n",
+      "extra_ctes_injected": true,
+      "extra_ctes": [],
+      "contract": {
+        "enforced": false,
+        "alias_types": true,
+        "checksum": null
+      },
+      "column_name": "order_id",
+      "file_key_name": "models.orders",
+      "attached_node": "model.p22_shop.orders",
+      "test_metadata": {
+        "name": "not_null",
+        "kwargs": {
+          "column_name": "order_id",
+          "model": "{{ get_where_subquery(ref('orders')) }}"
+        },
+        "namespace": null
+      }
+    },
+    "test.p22_shop.unique_orders_order_id.fed79b3a6e": {
+      "database": "shop",
+      "schema": "main_dbt_test__audit",
+      "name": "unique_orders_order_id",
+      "resource_type": "test",
+      "package_name": "p22_shop",
+      "path": "unique_orders_order_id.sql",
+      "original_file_path": "models/schema.yml",
+      "unique_id": "test.p22_shop.unique_orders_order_id.fed79b3a6e",
+      "fqn": [
+        "p22_shop",
+        "unique_orders_order_id"
+      ],
+      "alias": "unique_orders_order_id",
+      "checksum": {
+        "name": "none",
+        "checksum": ""
+      },
+      "config": {
+        "enabled": true,
+        "alias": null,
+        "schema": "dbt_test__audit",
+        "database": null,
+        "tags": [],
+        "meta": {},
+        "group": null,
+        "materialized": "test",
+        "severity": "ERROR",
+        "store_failures": null,
+        "store_failures_as": null,
+        "where": null,
+        "limit": null,
+        "fail_calc": "count(*)",
+        "warn_if": "!= 0",
+        "error_if": "!= 0"
+      },
+      "tags": [],
+      "description": "",
+      "columns": {},
+      "meta": {},
+      "group": null,
+      "docs": {
+        "show": true,
+        "node_color": null
+      },
+      "patch_path": null,
+      "build_path": null,
+      "unrendered_config": {},
+      "created_at": 1793044077.037618,
+      "relation_name": null,
+      "raw_code": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+      "language": "sql",
+      "refs": [
+        {
+          "name": "orders",
+          "package": null,
+          "version": null
+        }
+      ],
+      "sources": [],
+      "metrics": [],
+      "depends_on": {
+        "macros": [
+          "macro.dbt.test_unique",
+          "macro.dbt.get_where_subquery"
+        ],
+        "nodes": [
+          "model.p22_shop.orders"
+        ]
+      },
+      "compiled_path": "target/compiled/p22_shop/models/schema.yml/unique_orders_order_id.sql",
+      "compiled": true,
+      "compiled_code": "\n    \n    \n\nselect\n    order_id as unique_field,\n    count(*) as n_records\n\nfrom \"shop\".\"main\".\"Orders Daily\"\nwhere order_id is not null\ngroup by order_id\nhaving count(*) > 1\n\n\n",
+      "extra_ctes_injected": true,
+      "extra_ctes": [],
+      "contract": {
+        "enforced": false,
+        "alias_types": true,
+        "checksum": null
+      },
+      "column_name": "order_id",
+      "file_key_name": "models.orders",
+      "attached_node": "model.p22_shop.orders",
+      "test_metadata": {
+        "name": "unique",
+        "kwargs": {
+          "column_name": "order_id",
+          "model": "{{ get_where_subquery(ref('orders')) }}"
+        },
+        "namespace": null
+      }
+    },
+    "test.p22_shop.source_not_null_shop_orders_order_id.f17f370b4b": {
+      "database": "shop",
+      "schema": "main_dbt_test__audit",
+      "name": "source_not_null_shop_orders_order_id",
+      "resource_type": "test",
+      "package_name": "p22_shop",
+      "path": "source_not_null_shop_orders_order_id.sql",
+      "original_file_path": "models/schema.yml",
+      "unique_id": "test.p22_shop.source_not_null_shop_orders_order_id.f17f370b4b",
+      "fqn": [
+        "p22_shop",
+        "source_not_null_shop_orders_order_id"
+      ],
+      "alias": "source_not_null_shop_orders_order_id",
+      "checksum": {
+        "name": "none",
+        "checksum": ""
+      },
+      "config": {
+        "enabled": true,
+        "alias": null,
+        "schema": "dbt_test__audit",
+        "database": null,
+        "tags": [],
+        "meta": {},
+        "group": null,
+        "materialized": "test",
+        "severity": "ERROR",
+        "store_failures": null,
+        "store_failures_as": null,
+        "where": null,
+        "limit": null,
+        "fail_calc": "count(*)",
+        "warn_if": "!= 0",
+        "error_if": "!= 0"
+      },
+      "tags": [
+        "raw"
+      ],
+      "description": "",
+      "columns": {},
+      "meta": {},
+      "group": null,
+      "docs": {
+        "show": true,
+        "node_color": null
+      },
+      "patch_path": null,
+      "build_path": null,
+      "unrendered_config": {},
+      "created_at": 1793044077.3378718,
+      "relation_name": null,
+      "raw_code": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+      "language": "sql",
+      "refs": [],
+      "sources": [
+        [
+          "shop",
+          "orders"
+        ]
+      ],
+      "metrics": [],
+      "depends_on": {
+        "macros": [
+          "macro.dbt.test_not_null",
+          "macro.dbt.get_where_subquery"
+        ],
+        "nodes": [
+          "source.p22_shop.shop.orders"
+        ]
+      },
+      "compiled_path": "target/compiled/p22_shop/models/schema.yml/source_not_null_shop_orders_order_id.sql",
+      "compiled": true,
+      "compiled_code": "\n    \n    \n\n\n\nselect order_id\nfrom \"shop\".\"main\".\"raw_orders\"\nwhere order_id is null\n\n\n",
+      "extra_ctes_injected": true,
+      "extra_ctes": [],
+      "contract": {
+        "enforced": false,
+        "alias_types": true,
+        "checksum": null
+      },
+      "column_name": "order_id",
+      "file_key_name": "sources.shop",
+      "attached_node": null,
+      "test_metadata": {
+        "name": "not_null",
+        "kwargs": {
+          "column_name": "order_id",
+          "model": "{{ get_where_subquery(source('shop', 'orders')) }}"
+        },
+        "namespace": null
+      }
+    }
+  },
+  "sources": {
+    "source.p22_shop.shop.orders": {
+      "database": "shop",
+      "schema": "main",
+      "name": "orders",
+      "resource_type": "source",
+      "package_name": "p22_shop",
+      "path": "models/schema.yml",
+      "original_file_path": "models/schema.yml",
+      "unique_id": "source.p22_shop.shop.orders",
+      "fqn": [
+        "p22_shop",
+        "shop",
+        "orders"
+      ],
+      "source_name": "shop",
+      "source_description": "",
+      "loader": "",
+      "identifier": "raw_orders",
+      "quoting": {
+        "database": null,
+        "schema": null,
+        "identifier": null,
+        "column": null
+      },
+      "loaded_at_field": null,
+      "freshness": {
+        "warn_after": {
+          "count": null,
+          "period": null
+        },
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null
+      },
+      "external": null,
+      "description": "Raw fictional orders",
+      "columns": {
+        "order_id": {
+          "name": "order_id",
+          "description": "Order identifier",
+          "meta": {},
+          "data_type": null,
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        },
+        "amount": {
+          "name": "amount",
+          "description": "Amount before tax",
+          "meta": {},
+          "data_type": null,
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        },
+        "ordered_at": {
+          "name": "ordered_at",
+          "description": "Order date",
+          "meta": {},
+          "data_type": null,
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "description": "Last modification date",
+          "meta": {},
+          "data_type": null,
+          "constraints": [],
+          "quote": null,
+          "tags": []
+        }
+      },
+      "meta": {
+        "owner": "Operations"
+      },
+      "source_meta": {
+        "owner": "Operations"
+      },
+      "tags": [
+        "raw"
+      ],
+      "config": {
+        "enabled": true
+      },
+      "patch_path": null,
+      "unrendered_config": {},
+      "relation_name": "\"shop\".\"main\".\"raw_orders\"",
+      "created_at": 1793044077.3405418
+    }
+  },
+  "macros": {},
+  "docs": {},
+  "exposures": {
+    "exposure.p22_shop.revenue_dashboard": {
+      "name": "revenue_dashboard",
+      "resource_type": "exposure",
+      "package_name": "p22_shop",
+      "path": "schema.yml",
+      "original_file_path": "models/schema.yml",
+      "unique_id": "exposure.p22_shop.revenue_dashboard",
+      "fqn": [
+        "p22_shop",
+        "revenue_dashboard"
+      ],
+      "type": "dashboard",
+      "owner": {
+        "email": "reporting@example.test",
+        "name": "Reporting"
+      },
+      "description": "Finance revenue dashboard",
+      "label": null,
+      "maturity": null,
+      "meta": {},
+      "tags": [],
+      "config": {
+        "enabled": true
+      },
+      "unrendered_config": {},
+      "url": null,
+      "depends_on": {
+        "macros": [],
+        "nodes": [
+          "model.p22_shop.orders"
+        ]
+      },
+      "refs": [
+        {
+          "name": "orders",
+          "package": null,
+          "version": null
+        }
+      ],
+      "sources": [],
+      "metrics": [],
+      "created_at": 1793044077.221236
+    }
+  },
+  "metrics": {
+    "metric.p22_shop.total_revenue": {
+      "name": "total_revenue",
+      "resource_type": "metric",
+      "package_name": "p22_shop",
+      "path": "schema.yml",
+      "original_file_path": "models/schema.yml",
+      "unique_id": "metric.p22_shop.total_revenue",
+      "fqn": [
+        "p22_shop",
+        "total_revenue"
+      ],
+      "description": "Total fictional order revenue",
+      "label": "Total revenue",
+      "type": "simple",
+      "type_params": {
+        "measure": {
+          "name": "revenue",
+          "filter": null,
+          "alias": null,
+          "join_to_timespine": false,
+          "fill_nulls_with": null
+        },
+        "input_measures": [
+          {
+            "name": "revenue",
+            "filter": null,
+            "alias": null,
+            "join_to_timespine": false,
+            "fill_nulls_with": null
+          }
+        ],
+        "numerator": null,
+        "denominator": null,
+        "expr": null,
+        "window": null,
+        "grain_to_date": null,
+        "metrics": [],
+        "conversion_type_params": null
+      },
+      "filter": null,
+      "metadata": null,
+      "meta": {
+        "owner": "Finance"
+      },
+      "tags": [],
+      "config": {
+        "enabled": true,
+        "group": null,
+        "meta": {
+          "owner": "Finance"
+        }
+      },
+      "unrendered_config": {
+        "meta": {
+          "owner": "Finance"
+        }
+      },
+      "sources": [],
+      "depends_on": {
+        "macros": [],
+        "nodes": [
+          "semantic_model.p22_shop.order_semantics"
+        ]
+      },
+      "refs": [],
+      "metrics": [],
+      "created_at": 1793044077.300931,
+      "group": null
+    }
+  },
+  "groups": {},
+  "selectors": {},
+  "disabled": {},
+  "parent_map": {
+    "model.p22_shop.orders": [
+      "source.p22_shop.shop.orders"
+    ],
+    "model.p22_shop.metricflow_time_spine": [],
+    "snapshot.p22_shop.order_history": [
+      "source.p22_shop.shop.orders"
+    ],
+    "seed.p22_shop.raw_orders": [],
+    "test.p22_shop.not_null_orders_order_id.cf6c17daed": [
+      "model.p22_shop.orders"
+    ],
+    "test.p22_shop.unique_orders_order_id.fed79b3a6e": [
+      "model.p22_shop.orders"
+    ],
+    "test.p22_shop.source_not_null_shop_orders_order_id.f17f370b4b": [
+      "source.p22_shop.shop.orders"
+    ],
+    "source.p22_shop.shop.orders": [],
+    "exposure.p22_shop.revenue_dashboard": [
+      "model.p22_shop.orders"
+    ],
+    "metric.p22_shop.total_revenue": [
+      "semantic_model.p22_shop.order_semantics"
+    ],
+    "semantic_model.p22_shop.order_semantics": [
+      "model.p22_shop.orders"
+    ]
+  },
+  "child_map": {
+    "model.p22_shop.orders": [
+      "exposure.p22_shop.revenue_dashboard",
+      "semantic_model.p22_shop.order_semantics",
+      "test.p22_shop.not_null_orders_order_id.cf6c17daed",
+      "test.p22_shop.unique_orders_order_id.fed79b3a6e"
+    ],
+    "model.p22_shop.metricflow_time_spine": [],
+    "snapshot.p22_shop.order_history": [],
+    "seed.p22_shop.raw_orders": [],
+    "test.p22_shop.not_null_orders_order_id.cf6c17daed": [],
+    "test.p22_shop.unique_orders_order_id.fed79b3a6e": [],
+    "test.p22_shop.source_not_null_shop_orders_order_id.f17f370b4b": [],
+    "source.p22_shop.shop.orders": [
+      "model.p22_shop.orders",
+      "snapshot.p22_shop.order_history",
+      "test.p22_shop.source_not_null_shop_orders_order_id.f17f370b4b"
+    ],
+    "exposure.p22_shop.revenue_dashboard": [],
+    "metric.p22_shop.total_revenue": [],
+    "semantic_model.p22_shop.order_semantics": [
+      "metric.p22_shop.total_revenue"
+    ]
+  },
+  "group_map": {},
+  "saved_queries": {},
+  "semantic_models": {
+    "semantic_model.p22_shop.order_semantics": {
+      "name": "order_semantics",
+      "resource_type": "semantic_model",
+      "package_name": "p22_shop",
+      "path": "schema.yml",
+      "original_file_path": "models/schema.yml",
+      "unique_id": "semantic_model.p22_shop.order_semantics",
+      "fqn": [
+        "p22_shop",
+        "order_semantics"
+      ],
+      "model": "ref('orders')",
+      "node_relation": {
+        "alias": "Orders Daily",
+        "schema_name": "main",
+        "database": "shop",
+        "relation_name": "\"shop\".\"main\".\"Orders Daily\""
+      },
+      "description": "Order revenue semantics",
+      "label": null,
+      "defaults": {
+        "agg_time_dimension": "ordered_at"
+      },
+      "entities": [
+        {
+          "name": "order_id",
+          "type": "primary",
+          "description": null,
+          "label": null,
+          "role": null,
+          "expr": null
+        }
+      ],
+      "measures": [
+        {
+          "name": "revenue",
+          "agg": "sum",
+          "description": null,
+          "label": null,
+          "create_metric": false,
+          "expr": "amount",
+          "agg_params": null,
+          "non_additive_dimension": null,
+          "agg_time_dimension": null
+        }
+      ],
+      "dimensions": [
+        {
+          "name": "ordered_at",
+          "type": "time",
+          "description": null,
+          "label": null,
+          "is_partition": false,
+          "type_params": {
+            "time_granularity": "day",
+            "validity_params": null
+          },
+          "expr": null,
+          "metadata": null
+        }
+      ],
+      "metadata": null,
+      "depends_on": {
+        "macros": [],
+        "nodes": [
+          "model.p22_shop.orders"
+        ]
+      },
+      "refs": [
+        {
+          "name": "orders",
+          "package": null,
+          "version": null
+        }
+      ],
+      "created_at": 1793044077.3345191,
+      "config": {
+        "enabled": true,
+        "group": null,
+        "meta": {
+          "owner": "Finance"
+        }
+      },
+      "unrendered_config": {
+        "meta": {
+          "owner": "Finance"
+        }
+      },
+      "primary_entity": null,
+      "group": null
+    }
+  },
+  "unit_tests": {}
+}

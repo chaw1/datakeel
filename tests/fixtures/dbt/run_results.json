@@ -1,0 +1,245 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+    "dbt_version": "1.8.9",
+    "generated_at": "2026-10-26T19:47:14.720126Z",
+    "invocation_id": "d7646616-75ff-459c-aa50-fe687e2f7b05",
+    "env": {}
+  },
+  "results": [
+    {
+      "status": "success",
+      "timing": [
+        {
+          "name": "compile",
+          "started_at": "2026-10-26T19:47:14.081951Z",
+          "completed_at": "2026-10-26T19:47:14.089085Z"
+        },
+        {
+          "name": "execute",
+          "started_at": "2026-10-26T19:47:14.090699Z",
+          "completed_at": "2026-10-26T19:47:14.188602Z"
+        }
+      ],
+      "thread_id": "Thread-1 (worker)",
+      "execution_time": 0.11896610260009766,
+      "adapter_response": {
+        "_message": "OK"
+      },
+      "message": "OK",
+      "failures": null,
+      "unique_id": "model.p22_shop.metricflow_time_spine",
+      "compiled": true,
+      "compiled_code": "\nselect cast('2026-01-01' as date) as date_day",
+      "relation_name": "\"shop\".\"main\".\"metricflow_time_spine\""
+    },
+    {
+      "status": "success",
+      "timing": [
+        {
+          "name": "compile",
+          "started_at": "2026-10-26T19:47:14.205056Z",
+          "completed_at": "2026-10-26T19:47:14.205060Z"
+        },
+        {
+          "name": "execute",
+          "started_at": "2026-10-26T19:47:14.205264Z",
+          "completed_at": "2026-10-26T19:47:14.290298Z"
+        }
+      ],
+      "thread_id": "Thread-1 (worker)",
+      "execution_time": 0.09152507781982422,
+      "adapter_response": {
+        "_message": "INSERT 3",
+        "code": "INSERT",
+        "rows_affected": 3
+      },
+      "message": "INSERT 3",
+      "failures": null,
+      "unique_id": "seed.p22_shop.raw_orders",
+      "compiled": null,
+      "compiled_code": null,
+      "relation_name": null
+    },
+    {
+      "status": "pass",
+      "timing": [
+        {
+          "name": "compile",
+          "started_at": "2026-10-26T19:47:14.297964Z",
+          "completed_at": "2026-10-26T19:47:14.309535Z"
+        },
+        {
+          "name": "execute",
+          "started_at": "2026-10-26T19:47:14.309937Z",
+          "completed_at": "2026-10-26T19:47:14.363671Z"
+        }
+      ],
+      "thread_id": "Thread-1 (worker)",
+      "execution_time": 0.07895231246948242,
+      "adapter_response": {
+        "_message": "OK"
+      },
+      "message": null,
+      "failures": 0,
+      "unique_id": "test.p22_shop.source_not_null_shop_orders_order_id.f17f370b4b",
+      "compiled": true,
+      "compiled_code": "\n    \n    \n\n\n\nselect order_id\nfrom \"shop\".\"main\".\"raw_orders\"\nwhere order_id is null\n\n\n",
+      "relation_name": null
+    },
+    {
+      "status": "success",
+      "timing": [
+        {
+          "name": "compile",
+          "started_at": "2026-10-26T19:47:14.386928Z",
+          "completed_at": "2026-10-26T19:47:14.389606Z"
+        },
+        {
+          "name": "execute",
+          "started_at": "2026-10-26T19:47:14.390106Z",
+          "completed_at": "2026-10-26T19:47:14.431410Z"
+        }
+      ],
+      "thread_id": "Thread-1 (worker)",
+      "execution_time": 0.05800008773803711,
+      "adapter_response": {
+        "_message": "OK"
+      },
+      "message": "OK",
+      "failures": null,
+      "unique_id": "model.p22_shop.orders",
+      "compiled": true,
+      "compiled_code": "\nselect order_id, amount, ordered_at, updated_at\nfrom \"shop\".\"main\".\"raw_orders\"",
+      "relation_name": "\"shop\".\"main\".\"Orders Daily\""
+    },
+    {
+      "status": "success",
+      "timing": [
+        {
+          "name": "compile",
+          "started_at": "2026-10-26T19:47:14.448705Z",
+          "completed_at": "2026-10-26T19:47:14.453440Z"
+        },
+        {
+          "name": "execute",
+          "started_at": "2026-10-26T19:47:14.453841Z",
+          "completed_at": "2026-10-26T19:47:14.572112Z"
+        }
+      ],
+      "thread_id": "Thread-1 (worker)",
+      "execution_time": 0.13294625282287598,
+      "adapter_response": {
+        "_message": "OK"
+      },
+      "message": "OK",
+      "failures": null,
+      "unique_id": "snapshot.p22_shop.order_history",
+      "compiled": true,
+      "compiled_code": "\n\nselect * from \"shop\".\"main\".\"raw_orders\"",
+      "relation_name": "\"shop\".\"history\".\"order_history\""
+    },
+    {
+      "status": "pass",
+      "timing": [
+        {
+          "name": "compile",
+          "started_at": "2026-10-26T19:47:14.582915Z",
+          "completed_at": "2026-10-26T19:47:14.585845Z"
+        },
+        {
+          "name": "execute",
+          "started_at": "2026-10-26T19:47:14.586388Z",
+          "completed_at": "2026-10-26T19:47:14.620400Z"
+        }
+      ],
+      "thread_id": "Thread-1 (worker)",
+      "execution_time": 0.04303479194641113,
+      "adapter_response": {
+        "_message": "OK"
+      },
+      "message": null,
+      "failures": 0,
+      "unique_id": "test.p22_shop.not_null_orders_order_id.cf6c17daed",
+      "compiled": true,
+      "compiled_code": "\n    \n    \n\n\n\nselect order_id\nfrom \"shop\".\"main\".\"Orders Daily\"\nwhere order_id is null\n\n\n",
+      "relation_name": null
+    },
+    {
+      "status": "pass",
+      "timing": [
+        {
+          "name": "compile",
+          "started_at": "2026-10-26T19:47:14.628276Z",
+          "completed_at": "2026-10-26T19:47:14.636140Z"
+        },
+        {
+          "name": "execute",
+          "started_at": "2026-10-26T19:47:14.636579Z",
+          "completed_at": "2026-10-26T19:47:14.667841Z"
+        }
+      ],
+      "thread_id": "Thread-1 (worker)",
+      "execution_time": 0.046655893325805664,
+      "adapter_response": {
+        "_message": "OK"
+      },
+      "message": null,
+      "failures": 0,
+      "unique_id": "test.p22_shop.unique_orders_order_id.fed79b3a6e",
+      "compiled": true,
+      "compiled_code": "\n    \n    \n\nselect\n    order_id as unique_field,\n    count(*) as n_records\n\nfrom \"shop\".\"main\".\"Orders Daily\"\nwhere order_id is not null\ngroup by order_id\nhaving count(*) > 1\n\n\n",
+      "relation_name": null
+    }
+  ],
+  "elapsed_time": 1.3733620643615723,
+  "args": {
+    "defer": false,
+    "include_saved_query": false,
+    "print": true,
+    "cache_selected_only": false,
+    "use_colors": false,
+    "use_colors_file": false,
+    "source_freshness_run_project_hooks": false,
+    "vars": {},
+    "favor_state": false,
+    "show_resource_report": false,
+    "write_json": true,
+    "quiet": false,
+    "version_check": true,
+    "partial_parse": false,
+    "strict_mode": false,
+    "indirect_selection": "eager",
+    "macro_debugging": false,
+    "populate_cache": true,
+    "enable_legacy_logger": false,
+    "printer_width": 80,
+    "require_resource_names_without_spaces": false,
+    "log_level_file": "debug",
+    "log_format_file": "debug",
+    "select": [],
+    "empty": false,
+    "invocation_command": "dbt --no-use-colors --no-partial-parse build --profiles-dir profiles",
+    "which": "build",
+    "project_dir": ".",
+    "exclude": [],
+    "warn_error_options": {
+      "include": [],
+      "exclude": []
+    },
+    "exclude_resource_types": [],
+    "require_explicit_package_overrides_for_builtin_materializations": true,
+    "log_file_max_bytes": 10485760,
+    "profiles_dir": "profiles",
+    "export_saved_queries": false,
+    "log_path": "./logs",
+    "static_parser": true,
+    "log_level": "info",
+    "partial_parse_file_diff": true,
+    "introspect": true,
+    "log_format": "default",
+    "resource_types": [],
+    "show": false,
+    "send_anonymous_usage_stats": false
+  }
+}

@@ -1,0 +1,129 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    description: Landing tables loaded from the trip logger
+    meta:
+      owner: ingest-team
+    tables:
+      - name: trips
+        identifier: raw_trip_log
+        description: Raw trip log rows
+        columns:
+          - name: trip_id
+            description: Logger trip key
+            tests:
+              - unique
+              - not_null
+      - name: drivers
+        identifier: raw_driver_roster
+        description: Driver roster export
+        columns:
+          - name: driver_id
+            tests: [unique]
+
+seeds:
+  - name: vehicle_types
+    description: Vehicle capacity reference
+    columns:
+      - name: vehicle_type
+        description: Vehicle class code
+        tests: [unique, not_null]
+
+models:
+  - name: stg_trips
+    description: Cleaned trips with non-negative distance
+    meta:
+      owner: ops-analytics
+    tags: ["staging"]
+    columns:
+      - name: trip_id
+        description: Trip key
+        tests: [unique, not_null]
+      - name: vehicle_type
+        description: Vehicle class
+        tests:
+          - accepted_values:
+              values: ["van", "sedan", "truck"]
+  - name: stg_drivers
+    description: Ephemeral driver projection
+  - name: fct_trips
+    description: One row per valid trip with driver and capacity
+    config:
+      tags: ["finance"]
+    columns:
+      - name: trip_id
+        description: Trip key
+        tests: [not_null]
+      - name: driver_id
+        description: Driver key
+        tests:
+          - relationships:
+              to: source('raw', 'drivers')
+              field: driver_id
+      - name: distance_km
+        description: Distance in kilometres
+      - name: trip_date
+        description: Calendar day of the trip
+  - name: driver_daily
+    description: Daily distance per driver
+    config:
+      meta:
+        owner: fleet-finance
+    columns:
+      - name: total_km
+        description: Sum of distance
+  - name: metricflow_time_spine
+    description: Daily spine for metrics
+
+exposures:
+  - name: fleet_dashboard
+    type: dashboard
+    maturity: high
+    url: https://bi.example/fleet
+    description: Weekly fleet utilisation dashboard
+    owner:
+      email: bi-owner@example.org
+    depends_on:
+      - ref('fct_trips')
+      - ref('driver_daily')
+
+semantic_models:
+  - name: trips
+    model: ref('fct_trips')
+    description: Trip facts
+    defaults:
+      agg_time_dimension: trip_date
+    entities:
+      - name: trip
+        type: primary
+        expr: trip_id
+    dimensions:
+      - name: trip_date
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: total_distance
+        agg: sum
+        expr: distance_km
+      - name: trips_counted
+        agg: count
+        expr: trip_id
+
+metrics:
+  - name: fleet_distance
+    label: Fleet distance
+    description: Total kilometres travelled
+    type: simple
+    type_params:
+      measure: total_distance
+    meta:
+      owner: fleet-finance
+  - name: long_trip_count
+    label: Long trips
+    type: simple
+    type_params:
+      measure: trips_counted
+    filter: "{{ Dimension('trip__trip_date') }} >= '2026-10-02'"

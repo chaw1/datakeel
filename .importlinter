@@ -224,6 +224,10 @@ ignore_imports =
 # Catalog import services publish typed snapshots through the transactional fact store.
     datakeel.catalog.service -> datakeel.storage.catalog_store
     datakeel.catalog.service -> datakeel.storage.database
+# Artifact services share typed incremental publication and catalog reads.
+    datakeel.catalog.metadata_service -> datakeel.storage.metadata_store
+    datakeel.catalog.metadata_service -> datakeel.storage.catalog_reads
+    datakeel.catalog.metadata_service -> datakeel.storage.database
 # Questions compose registered semantics and read-only compilation, then persist typed answers.
     datakeel.ask.knowledge_service -> datakeel.storage.database
     datakeel.ask.knowledge_service -> datakeel.storage.link_queries

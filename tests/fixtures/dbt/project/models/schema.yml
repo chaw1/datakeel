@@ -1,0 +1,80 @@
+version: 2
+sources:
+  - name: shop
+    schema: main
+    meta:
+      owner: Operations
+    tags: [raw]
+    tables:
+      - name: orders
+        identifier: raw_orders
+        description: Raw fictional orders
+        columns:
+          - name: order_id
+            description: Order identifier
+            tests: [not_null]
+          - name: amount
+            description: Amount before tax
+          - name: ordered_at
+            description: Order date
+          - name: updated_at
+            description: Last modification date
+models:
+  - name: orders
+    description: Daily fictional orders
+    columns:
+      - name: order_id
+        description: Stable order identifier
+        tests: [not_null, unique]
+      - name: amount
+        description: Revenue amount
+      - name: ordered_at
+        description: Revenue date
+      - name: updated_at
+        description: Last update
+seeds:
+  - name: raw_orders
+    description: Generated fictional order input
+snapshots:
+  - name: order_history
+    description: Fictional order history
+exposures:
+  - name: revenue_dashboard
+    type: dashboard
+    description: Finance revenue dashboard
+    depends_on:
+      - ref('orders')
+    owner:
+      name: Reporting
+      email: reporting@example.test
+semantic_models:
+  - name: order_semantics
+    description: Order revenue semantics
+    model: ref('orders')
+    defaults:
+      agg_time_dimension: ordered_at
+    entities:
+      - name: order_id
+        type: primary
+    dimensions:
+      - name: ordered_at
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: revenue
+        agg: sum
+        expr: amount
+    config:
+      meta:
+        owner: Finance
+metrics:
+  - name: total_revenue
+    description: Total fictional order revenue
+    label: Total revenue
+    type: simple
+    type_params:
+      measure: revenue
+    config:
+      meta:
+        owner: Finance

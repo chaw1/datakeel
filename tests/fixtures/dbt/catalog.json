@@ -1,0 +1,250 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/catalog/v1.json",
+    "dbt_version": "1.8.9",
+    "generated_at": "2026-10-26T19:47:58.138790Z",
+    "invocation_id": "4f72b4dd-3fc7-451e-a6d3-0b7d67a678f6",
+    "env": {}
+  },
+  "nodes": {
+    "snapshot.p22_shop.order_history": {
+      "metadata": {
+        "type": "BASE TABLE",
+        "schema": "history",
+        "name": "order_history",
+        "database": "shop",
+        "comment": null,
+        "owner": ""
+      },
+      "columns": {
+        "order_id": {
+          "type": "INTEGER",
+          "index": 1,
+          "name": "order_id",
+          "comment": null
+        },
+        "amount": {
+          "type": "DOUBLE",
+          "index": 2,
+          "name": "amount",
+          "comment": null
+        },
+        "ordered_at": {
+          "type": "DATE",
+          "index": 3,
+          "name": "ordered_at",
+          "comment": null
+        },
+        "updated_at": {
+          "type": "DATE",
+          "index": 4,
+          "name": "updated_at",
+          "comment": null
+        },
+        "dbt_scd_id": {
+          "type": "VARCHAR",
+          "index": 5,
+          "name": "dbt_scd_id",
+          "comment": null
+        },
+        "dbt_updated_at": {
+          "type": "DATE",
+          "index": 6,
+          "name": "dbt_updated_at",
+          "comment": null
+        },
+        "dbt_valid_from": {
+          "type": "DATE",
+          "index": 7,
+          "name": "dbt_valid_from",
+          "comment": null
+        },
+        "dbt_valid_to": {
+          "type": "DATE",
+          "index": 8,
+          "name": "dbt_valid_to",
+          "comment": null
+        }
+      },
+      "stats": {
+        "has_stats": {
+          "id": "has_stats",
+          "label": "Has Stats?",
+          "value": false,
+          "include": false,
+          "description": "Indicates whether there are statistics for this table"
+        }
+      },
+      "unique_id": "snapshot.p22_shop.order_history"
+    },
+    "model.p22_shop.orders": {
+      "metadata": {
+        "type": "VIEW",
+        "schema": "main",
+        "name": "Orders Daily",
+        "database": "shop",
+        "comment": null,
+        "owner": ""
+      },
+      "columns": {
+        "order_id": {
+          "type": "INTEGER",
+          "index": 1,
+          "name": "order_id",
+          "comment": null
+        },
+        "amount": {
+          "type": "DOUBLE",
+          "index": 2,
+          "name": "amount",
+          "comment": null
+        },
+        "ordered_at": {
+          "type": "DATE",
+          "index": 3,
+          "name": "ordered_at",
+          "comment": null
+        },
+        "updated_at": {
+          "type": "DATE",
+          "index": 4,
+          "name": "updated_at",
+          "comment": null
+        }
+      },
+      "stats": {
+        "has_stats": {
+          "id": "has_stats",
+          "label": "Has Stats?",
+          "value": false,
+          "include": false,
+          "description": "Indicates whether there are statistics for this table"
+        }
+      },
+      "unique_id": "model.p22_shop.orders"
+    },
+    "model.p22_shop.metricflow_time_spine": {
+      "metadata": {
+        "type": "BASE TABLE",
+        "schema": "main",
+        "name": "metricflow_time_spine",
+        "database": "shop",
+        "comment": null,
+        "owner": ""
+      },
+      "columns": {
+        "date_day": {
+          "type": "DATE",
+          "index": 1,
+          "name": "date_day",
+          "comment": null
+        }
+      },
+      "stats": {
+        "has_stats": {
+          "id": "has_stats",
+          "label": "Has Stats?",
+          "value": false,
+          "include": false,
+          "description": "Indicates whether there are statistics for this table"
+        }
+      },
+      "unique_id": "model.p22_shop.metricflow_time_spine"
+    },
+    "seed.p22_shop.raw_orders": {
+      "metadata": {
+        "type": "BASE TABLE",
+        "schema": "main",
+        "name": "raw_orders",
+        "database": "shop",
+        "comment": null,
+        "owner": ""
+      },
+      "columns": {
+        "order_id": {
+          "type": "INTEGER",
+          "index": 1,
+          "name": "order_id",
+          "comment": null
+        },
+        "amount": {
+          "type": "DOUBLE",
+          "index": 2,
+          "name": "amount",
+          "comment": null
+        },
+        "ordered_at": {
+          "type": "DATE",
+          "index": 3,
+          "name": "ordered_at",
+          "comment": null
+        },
+        "updated_at": {
+          "type": "DATE",
+          "index": 4,
+          "name": "updated_at",
+          "comment": null
+        }
+      },
+      "stats": {
+        "has_stats": {
+          "id": "has_stats",
+          "label": "Has Stats?",
+          "value": false,
+          "include": false,
+          "description": "Indicates whether there are statistics for this table"
+        }
+      },
+      "unique_id": "seed.p22_shop.raw_orders"
+    }
+  },
+  "sources": {
+    "source.p22_shop.shop.orders": {
+      "metadata": {
+        "type": "BASE TABLE",
+        "schema": "main",
+        "name": "raw_orders",
+        "database": "shop",
+        "comment": null,
+        "owner": ""
+      },
+      "columns": {
+        "order_id": {
+          "type": "INTEGER",
+          "index": 1,
+          "name": "order_id",
+          "comment": null
+        },
+        "amount": {
+          "type": "DOUBLE",
+          "index": 2,
+          "name": "amount",
+          "comment": null
+        },
+        "ordered_at": {
+          "type": "DATE",
+          "index": 3,
+          "name": "ordered_at",
+          "comment": null
+        },
+        "updated_at": {
+          "type": "DATE",
+          "index": 4,
+          "name": "updated_at",
+          "comment": null
+        }
+      },
+      "stats": {
+        "has_stats": {
+          "id": "has_stats",
+          "label": "Has Stats?",
+          "value": false,
+          "include": false,
+          "description": "Indicates whether there are statistics for this table"
+        }
+      },
+      "unique_id": "source.p22_shop.shop.orders"
+    }
+  },
+  "errors": null
+}

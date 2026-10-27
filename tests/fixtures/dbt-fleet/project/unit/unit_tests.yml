@@ -1,0 +1,11 @@
+unit_tests:
+  - name: drops_negative_distance
+    model: stg_trips
+    given:
+      - input: source('raw', 'trips')
+        rows:
+          - {trip_id: 1, driver_id: 10, vehicle_type: van, distance_km: 2.0, started_at: "2026-10-01 08:00:00"}
+          - {trip_id: 2, driver_id: 10, vehicle_type: van, distance_km: -2.0, started_at: "2026-10-01 08:00:00"}
+    expect:
+      rows:
+        - {trip_id: 1}
