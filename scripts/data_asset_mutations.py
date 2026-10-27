@@ -81,4 +81,50 @@ DATA_ASSET_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="asset-entity-version",
+        path="storage/data_asset_native.py",
+        before='if ref.asset_type == "kg_entity" and ref.version is not None:',
+        after="if False:",
+        case=(
+            "tests/assets/test_image_relation_guard.py::"
+            "test_entity_and_revision_refs_when_dataset_protected_resolve_to_dataset"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="asset-content-revision",
+        path="storage/data_asset_native.py",
+        before=(
+            "pinned = ref.version is not None and session.get(VersionRow, ref.version) is not None"
+        ),
+        after="pinned = ref.version is not None",
+        case=(
+            "tests/assets/test_image_relation_guard.py::"
+            "test_entity_and_revision_refs_when_dataset_protected_resolve_to_dataset"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="asset-relaxation-approval",
+        path="storage/action_planning.py",
+        before='"reversible": definition.reversible and not relaxes_asset_access(session, parsed),',
+        after='"reversible": definition.reversible,',
+        case=(
+            "tests/assets/test_asset_relaxation.py::"
+            "test_agent_relaxing_protected_asset_requires_human_approval[public-restricted]"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="asset-lineage-content",
+        path="storage/lineage_service.py",
+        before="authorize_query(db, refs, access)",
+        after="None",
+        case=(
+            "tests/assets/test_http_graph_reads.py::"
+            "test_graph_runs_and_lineage_when_protected_hide_extracted_names"
+        ),
+        runner="pytest",
+    ),
 )
