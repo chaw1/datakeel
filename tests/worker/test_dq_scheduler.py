@@ -11,8 +11,8 @@ from typing import Literal
 import pytest
 from sqlalchemy import func, select
 
-from datakeel.core.dq_cron import cron_matches, validate_cron
-from datakeel.core.dq_models import DqResult
+from datakeel.core.dq_cron import cron_matches, latest_match, validate_cron
+from datakeel.core.dq_models import DqResult, DqRule
 from datakeel.core.dq_monitor import DqCompletion, DqRun
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.storage.database import Database, ShardRow, TaskRow, VersionRow
@@ -55,8 +55,8 @@ def test_cron_ranges_steps_weekdays_and_standard_day_or() -> None:
     assert not cron_matches("15 9 * 2 *", sunday)
 
 
-def test_two_schedulers_use_one_slot_and_skip_missed_minutes(db: Database) -> None:
-    """Both workers enqueue one task for the current minute and never backfill gaps."""
+def test_two_schedulers_use_one_slot_and_coalesce_missed_minutes(db: Database) -> None:
+    """Both workers enqueue one task for the current minute; skipped hours collapse into one."""
     rule = definition().model_copy(update={"cron": "0 * * * *"})
     with db.session() as session:
         upsert_rule(session, rule, None, "reviewer")
@@ -179,7 +179,6 @@ def test_two_workers_claim_same_slot_once_and_merge_distinct_failures(db: Databa
         lease, run_id = job
         result = DqResult(rule_id="orders-required", status="failed", started_at=instant)
         return queue.finish(lease, [], [], evidence=DqCompletion(run_id=run_id, result=result))
-
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         assert all(pool.map(finish, jobs))
@@ -420,6 +419,58 @@ def test_late_exhausted_job_does_not_override_newer_pass(db: Database) -> None:
     assert [result.status for result in read_results(db, rule.id)] == ["passed", "error"]
     assert read_summary(db).passed == 1
     assert read_issues(db) == ()
+
+
+def _accept_at(db: Database, monkeypatch: pytest.MonkeyPatch, rule: DqRule, at: datetime) -> None:
+    monkeypatch.setattr("datakeel.storage.dq_store.utcnow", lambda: at)
+    with db.session() as session:
+        upsert_rule(session, rule, None, "reviewer")
+        session.commit()
+
+
+def test_missed_minutes_coalesce_into_newest_slot_within_window(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A busy or restarted worker runs the newest missed minute once; >24h misses are skipped."""
+    start = datetime(2030, 1, 1, 9, tzinfo=UTC)
+    _accept_at(db, monkeypatch, definition().model_copy(update={"cron": "*/15 * * * *"}), start)
+    assert [run.slot for run in schedule_due(db, start)] == [start.isoformat()]
+    late = schedule_due(db, start + timedelta(minutes=47, seconds=30))
+    assert [run.slot for run in late] == [(start + timedelta(minutes=45)).isoformat()]
+    assert schedule_due(db, start + timedelta(minutes=48)) == ()
+    resumed = schedule_due(db, start + timedelta(days=3, minutes=7))
+    assert [run.slot for run in resumed] == [(start + timedelta(days=3)).isoformat()]
+    with db.session() as session:
+        assert session.scalar(select(func.count()).select_from(DqRunRow)) == 3
+
+
+def test_catch_up_never_schedules_minutes_before_revision_acceptance(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A daily rule accepted after today's minute waits for tomorrow, then catches up once."""
+    accepted = datetime(2030, 1, 1, 9, 30, tzinfo=UTC)
+    _accept_at(db, monkeypatch, definition().model_copy(update={"cron": "0 9 * * *"}), accepted)
+    assert schedule_due(db, accepted + timedelta(hours=1)) == ()
+    tomorrow = datetime(2030, 1, 2, 9, tzinfo=UTC)
+    restarted = schedule_due(db, tomorrow + timedelta(hours=2))
+    assert [run.slot for run in restarted] == [tomorrow.isoformat()]
+    assert schedule_due(db, tomorrow + timedelta(hours=3)) == ()
+
+
+def test_latest_match_skips_hours_days_and_month_boundaries() -> None:
+    """Backward search honours each field and the window's lower bound."""
+    latest = datetime(2030, 3, 2, 10, 5, tzinfo=UTC)
+    week = timedelta(days=7)
+    assert latest_match("0 9 1 * *", latest, latest - week) == datetime(2030, 3, 1, 9, tzinfo=UTC)
+    assert latest_match("30 23 * 2 *", latest, latest - week) == datetime(
+        2030, 2, 28, 23, 30, tzinfo=UTC
+    )
+    assert latest_match("*/20 * * * *", latest, latest - week) == datetime(
+        2030, 3, 2, 10, tzinfo=UTC
+    )
+    assert latest_match("0 9 1 * *", latest, latest - timedelta(hours=20)) is None
+    assert latest_match("5 10 * * *", latest, latest) == latest
+
 
 def test_consecutive_failures_alert_once_and_state_changes_alert_again(db: Database) -> None:
     """Merged failures raise the issue count only; recovery and relapse each send one alert."""

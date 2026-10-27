@@ -52,6 +52,17 @@ DQ_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="dq-missed-minute-catch-up",
+        path="storage/dq_jobs.py",
+        before="        minute = latest_match(rule.cron, current, current - CATCH_UP_WINDOW)",
+        after="        minute = latest_match(rule.cron, current, current)",
+        case=(
+            "tests/worker/test_dq_scheduler.py::"
+            "test_missed_minutes_coalesce_into_newest_slot_within_window"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="dq-alert-on-transition-only",
         path="storage/dq_results.py",
         before="    if issue is None or issue.status == prior:",
