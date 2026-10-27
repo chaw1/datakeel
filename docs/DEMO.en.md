@@ -172,6 +172,14 @@ Close the drawer, select that relation and click **Reject selected**. Switch to 
 
 See the [knowledge graph reference](KG.md) for schema configuration, offline evaluation and consent before external extraction.
 
+## 11. Review annotation agreement and sampling acceptance (1 minute)
+
+Open the dataset **Aster harbor · annotation quality demo** and choose the **Annotation quality** tab. The top card compares three fictional reviewers: Fleiss' κ, Krippendorff's α, pairwise Cohen's κ with raw agreement, and an expandable K×K confusion matrix, followed by box match rate, mean IoU and span F1. Select **Initial harbor annotations** in the batch list: **Sampling acceptance** shows the approved AQL 6.5 rejection (sample 8, Ac 1, 2 defective), and **Suspected annotation errors** lists 19 review items with reasons and evidence, exportable as rework JSON or CSV. Switch back to **Reworked harbor annotations**: the rework comparison shows 19 corrected findings, 1 new finding, and both rejected units changed.
+
+![Annotation agreement, inspection history and rework comparison](images/demo/21-annotation-quality.jpg)
+
+See the [annotation quality reference](ANNOTATION_QA.md) for metric definitions, the AQL table and the suspicion rules.
+
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.
@@ -183,7 +191,7 @@ npm --prefix web exec -- playwright install chromium
 npm --prefix web run smoke:tour -- http://127.0.0.1:8773
 ```
 
-The script writes 20 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. The cleanup step also checks two quarantined files, explicit continuation after approval, one deletion record, one remaining file, and the unchanged original 400-file dataset. The graph step checks missing-tail evidence and the persisted rejection style. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.
+The script writes 21 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. The cleanup step also checks two quarantined files, explicit continuation after approval, one deletion record, one remaining file, and the unchanged original 400-file dataset. The graph step checks missing-tail evidence and the persisted rejection style; the annotation step checks that the reworked batch and Fleiss' κ are shown. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.
 
 ## Knowledge questions / 知识问数
 
