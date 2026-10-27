@@ -170,16 +170,14 @@ def test_two_workers_claim_same_slot_once_and_merge_distinct_failures(db: Databa
     assert other is not None
     jobs = [(leases[0], first.id), (other, second.id)]
 
+    # Equal observation times: commit order, not construction order, decides the latest result.
+    instant = datetime(2026, 1, 1, tzinfo=UTC)
+
     def finish(job: tuple[Lease, str]) -> bool:
         lease, run_id = job
-        return queue.finish(
-            lease,
-            [],
-            [],
-            evidence=DqCompletion(
-                run_id=run_id, result=DqResult(rule_id="orders-required", status="failed")
-            ),
-        )
+        result = DqResult(rule_id="orders-required", status="failed", started_at=instant)
+        return queue.finish(lease, [], [], evidence=DqCompletion(run_id=run_id, result=result))
+
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         assert all(pool.map(finish, jobs))
