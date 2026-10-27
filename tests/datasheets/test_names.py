@@ -105,3 +105,19 @@ def test_recorded_identities_and_natural_paragraphs_are_retained(
 ) -> None:
     """The stronger name boundary preserves cited quantities and real bilingual owners."""
     assert _check(text, value)
+
+
+@pytest.mark.parametrize(
+    ("text", "kept"),
+    [
+        ("数据集负责人为星河团队。", True),
+        ("该数据集的负责人是星河团队。", True),
+        ("数据集负责人为 Cedar Unit。", True),
+        ("数据集负责人为银河团队。", False),
+        ("数据集负责人为 Acorn Unit。", False),
+        ("银河团队负责维护数据集。", False),
+    ],
+)
+def test_owner_noun_is_not_read_as_the_verb_responsible(text: str, *, kept: bool) -> None:
+    """「负责人」 names a role; only the recorded owner after it is checked as an identity."""
+    assert _check(text, ["星河团队", "Cedar Unit"]) is kept

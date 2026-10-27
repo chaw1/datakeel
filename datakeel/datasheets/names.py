@@ -49,7 +49,10 @@ _ROLE_PATTERNS = (
         r"(?:名称|名字|" + _CHINESE_ROLES + r")(?:是|为|叫做|叫|名为|[:\uff1a])\s*(" + _END + ")"
     ),
     re.compile(r"由(.+?)(?:负责)?(?:维护|创建|采集|收集|提供|分发|管理|发布)"),
-    re.compile(r"^(.+?)(?:负责(?:维护|创建|采集|收集|审阅)?|(?:是|为)(?:" + _CHINESE_ROLES + "))"),
+    # 「负责人」 is the role noun, not the verb 「负责」; its value is checked by the role pattern.
+    re.compile(
+        r"^(.+?)(?:负责(?!人)(?:维护|创建|采集|收集|审阅)?|(?:是|为)(?:" + _CHINESE_ROLES + "))"
+    ),
     re.compile(r"^(.+?)(?:负责)?(?:创建|维护|管理|提供)(?:了)?(?:该|本)?数据集"),
 )
 _NUMERAL_ONLY = re.compile(r"[\d零\u3007一二两三四五六七八九十百千万亿]+")
