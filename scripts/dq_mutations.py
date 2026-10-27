@@ -51,4 +51,15 @@ DQ_MUTATIONS = (
         case="tests/harness/test_dq_golden.py::test_table_quality_golden_uses_real_history",
         runner="pytest",
     ),
+    Mutation(
+        name="dq-alert-on-transition-only",
+        path="storage/dq_results.py",
+        before="    if issue is None or issue.status == prior:",
+        after="    if issue is None:",
+        case=(
+            "tests/worker/test_dq_scheduler.py::"
+            "test_consecutive_failures_alert_once_and_state_changes_alert_again"
+        ),
+        runner="pytest",
+    ),
 )

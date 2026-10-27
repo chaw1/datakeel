@@ -3,8 +3,10 @@
 
 """Injected UTC clocks, concurrent schedule uniqueness and ordinary lease fencing."""
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 
 import pytest
 from sqlalchemy import func, select
@@ -418,3 +420,36 @@ def test_late_exhausted_job_does_not_override_newer_pass(db: Database) -> None:
     assert [result.status for result in read_results(db, rule.id)] == ["passed", "error"]
     assert read_summary(db).passed == 1
     assert read_issues(db) == ()
+
+def test_consecutive_failures_alert_once_and_state_changes_alert_again(db: Database) -> None:
+    """Merged failures raise the issue count only; recovery and relapse each send one alert."""
+    with db.session() as session:
+        rule = upsert_rule(session, definition(), None, "reviewer")
+        session.commit()
+    queue = DatabaseQueue(db)
+    instant = datetime(2030, 1, 1, tzinfo=UTC)
+    outcomes: tuple[Literal["passed", "failed", "error"], ...] = (
+        "failed",
+        "failed",
+        "error",
+        "passed",
+        "passed",
+        "failed",
+    )
+    for minute, status in enumerate(outcomes):
+        with db.session() as session:
+            run = schedule_rule(session, rule.id, f"alert-{minute}")
+            session.commit()
+        lease = queue.claim()
+        assert lease is not None
+        result = DqResult(
+            rule_id=rule.id, status=status, started_at=instant + timedelta(minutes=minute)
+        )
+        assert queue.finish(lease, [], [], evidence=DqCompletion(run_id=run.id, result=result))
+    with db.session() as session:
+        events = [
+            json.loads(row.body)["event_type"]
+            for row in session.scalars(select(DqWebhookRow).order_by(DqWebhookRow.due_at))
+        ]
+    assert events == ["quality.failed", "quality.recovered", "quality.failed"]
+    assert read_issues(db)[0].failures == 4

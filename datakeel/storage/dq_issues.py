@@ -100,6 +100,14 @@ def change_issue(
     )
 
 
+def active_status(session: Session, rule_id: str) -> DqIssueStatus | None:
+    """Read the current episode state before an observation changes it."""
+    row = session.scalar(
+        select(DqIssueRow).where(DqIssueRow.rule_id == rule_id, DqIssueRow.active.is_(True))
+    )
+    return DqIssue.model_validate(row.payload).status if row is not None else None
+
+
 def observe_result(session: Session, result: DqResult, now: datetime) -> DqIssue | None:
     """Merge ongoing failures; mark a passing episode recovered pending confirmation."""
     if result.status not in {"failed", "error", "passed"}:

@@ -12,7 +12,7 @@ from datakeel.core.dq_models import DqResult, DqRule
 from datakeel.core.dq_monitor import DqAlert, DqCompletion
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.models import new_id, utcnow
-from datakeel.storage.dq_issues import observe_result
+from datakeel.storage.dq_issues import active_status, observe_result
 from datakeel.storage.dq_rows import DqResultRow, DqRuleRow, DqRunRow, DqWebhookRow
 
 
@@ -71,8 +71,10 @@ def publish_completion(session: Session, completion: DqCompletion, task_id: str)
 
 def _incident(session: Session, rule: DqRule, result: DqResult) -> None:
     now = utcnow()
+    prior = active_status(session, result.rule_id)
     issue = observe_result(session, result, now)
-    if issue is None:
+    # Alert on episode transitions only; merged failures just raise the issue's count.
+    if issue is None or issue.status == prior:
         return
     event = DqAlert(
         event_id=new_id(),
