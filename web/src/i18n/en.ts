@@ -1,5 +1,6 @@
 import { advancedEn } from "./advancedEn";
 import { agentEn } from "./agentEn";
+import { annotationEn } from "./annotationEn";
 import { approvalEn } from "./approvalEn";
 import { approvalsMetricEn } from "./approvalsMetricEn";
 import { askEn } from "./askEn";
@@ -15,6 +16,7 @@ import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  ...annotationEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,

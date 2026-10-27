@@ -559,6 +559,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{dataset_id}/annotation-quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Overview
+         * @description Read metrics, findings, repair comparisons and approved inspection history.
+         */
+        get: operations["overview_api_datasets__dataset_id__annotation_quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{dataset_id}/annotation-quality/acceptance/prepare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Prepare Acceptance
+         * @description Prepare a typed inspection plan whose approval and execution use existing actions.
+         */
+        post: operations["prepare_acceptance_api_datasets__dataset_id__annotation_quality_acceptance_prepare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{dataset_id}/annotation-quality/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Batch
+         * @description Append a frozen imported annotation batch; acceptance is a separate signed action.
+         */
+        post: operations["import_batch_api_datasets__dataset_id__annotation_quality_batches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{dataset_id}/annotation-quality/rework/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rework Export
+         * @description Export suspected errors and signed rejected-unit details for a repair review.
+         */
+        get: operations["rework_export_api_datasets__dataset_id__annotation_quality_rework__batch_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{dataset_id}/annotation-quality/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sample
+         * @description Freeze reproducible unit selection without declaring acceptance or rejection.
+         */
+        post: operations["sample_api_datasets__dataset_id__annotation_quality_samples_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{identifier}": {
         parameters: {
             query?: never;
@@ -1626,7 +1726,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "annotation_acceptance";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -1680,7 +1780,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "annotation_acceptance";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -1791,6 +1891,246 @@ export interface components {
             tokens: number;
             /** Used Memory Ids */
             used_memory_ids?: string[];
+        };
+        /**
+         * AgreementValue
+         * @description Represent an estimate or an explicit undefined estimate without NaN.
+         */
+        AgreementValue: {
+            /** Observed Agreement */
+            observed_agreement?: number | null;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Sample Count
+             * @default 0
+             */
+            sample_count: number;
+            /** Value */
+            value: number | null;
+        };
+        /**
+         * AnnotationAcceptanceParams
+         * @description Review every frozen sampled unit through the signed controlled action boundary.
+         */
+        AnnotationAcceptanceParams: {
+            /** Batch Id */
+            batch_id: string;
+            /** Checks */
+            checks: components["schemas"]["InspectionCheck"][];
+            /** Dataset Id */
+            dataset_id: string;
+            /** Sampling Id */
+            sampling_id: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * AnnotationBatch
+         * @description Freeze distinct sample/annotator records and review policy.
+         *
+         *     ``label_mode`` declares whether one sample may carry several labels; ``auto``
+         *     infers single-select behaviour from the batch itself.
+         */
+        AnnotationBatch: {
+            /** Annotations */
+            annotations: components["schemas"]["AnnotationRecord"][];
+            /**
+             * Exclusive Label Groups
+             * @default []
+             */
+            exclusive_label_groups: string[][];
+            /**
+             * Iou Threshold
+             * @default 0.5
+             */
+            iou_threshold: number;
+            /**
+             * Label Mode
+             * @default auto
+             * @enum {string}
+             */
+            label_mode: "auto" | "single" | "multi";
+            /**
+             * Near Duplicates
+             * @default []
+             */
+            near_duplicates: components["schemas"]["NearDuplicatePair"][];
+        };
+        /**
+         * AnnotationBox
+         * @description Preserve an xyxy box, including invalid coordinates for rule review.
+         */
+        AnnotationBox: {
+            /** Category */
+            category: string;
+            /** X1 */
+            x1: number;
+            /** X2 */
+            x2: number;
+            /** Y1 */
+            y1: number;
+            /** Y2 */
+            y2: number;
+        };
+        /**
+         * AnnotationFinding
+         * @description Provide a stable repair identity and human-readable evidence for a suspicion.
+         */
+        AnnotationFinding: {
+            /** Annotator Id */
+            annotator_id: string;
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "minority_label" | "near_duplicate_conflict" | "bbox_size_outlier" | "bbox_aspect_outlier" | "invalid_bbox" | "multilabel_conflict" | "invalid_span" | "bbox_category_minority" | "bbox_missing" | "bbox_extra" | "duplicate_bbox" | "span_category_minority" | "span_boundary_minority" | "span_missing" | "span_extra" | "duplicate_span" | "span_length_outlier" | "rare_category";
+            /** Evidence */
+            evidence: string[];
+            /** Finding Id */
+            finding_id: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Related Sample Ids
+             * @default []
+             */
+            related_sample_ids: string[];
+            /** Sample Id */
+            sample_id: string;
+        };
+        /**
+         * AnnotationImportRequest
+         * @description Append one immutable annotation revision with an explicit retry identity.
+         */
+        AnnotationImportRequest: {
+            batch: components["schemas"]["AnnotationBatch"];
+            /** Idempotency Key */
+            idempotency_key: string;
+            /**
+             * Name
+             * @default Annotation batch
+             */
+            name: string;
+            /** Rework Of */
+            rework_of?: string | null;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * AnnotationQAResult
+         * @description Bundle deterministic metrics and review candidates for one frozen batch.
+         */
+        AnnotationQAResult: {
+            /** Annotator Count */
+            annotator_count: number;
+            /**
+             * Boxes
+             * @default []
+             */
+            boxes: components["schemas"]["BoxAgreement"][];
+            classification: components["schemas"]["ClassificationAgreement"];
+            /**
+             * Findings
+             * @default []
+             */
+            findings: components["schemas"]["AnnotationFinding"][];
+            /** Sample Count */
+            sample_count: number;
+            /**
+             * Spans
+             * @default []
+             */
+            spans: components["schemas"]["SpanAgreement"][];
+        };
+        /**
+         * AnnotationQualityOverview
+         * @description Read a dataset or exact version's annotation and inspection audit history.
+         */
+        AnnotationQualityOverview: {
+            /**
+             * Batches
+             * @default []
+             */
+            batches: components["schemas"]["AnnotationQualityReport"][];
+            /** Dataset Id */
+            dataset_id: string;
+            /**
+             * Inspections
+             * @default []
+             */
+            inspections: components["schemas"]["SamplingInspection"][];
+            latest?: components["schemas"]["AnnotationQualityReport"] | null;
+            /**
+             * Sampling Plans
+             * @default []
+             */
+            sampling_plans: components["schemas"]["SamplingPlan"][];
+            /** Version Id */
+            version_id: string | null;
+        };
+        /**
+         * AnnotationQualityReport
+         * @description Expose saved metrics and repair comparison without mutable database rows.
+         */
+        AnnotationQualityReport: {
+            /** Annotation Count */
+            annotation_count: number;
+            /** Batch Digest */
+            batch_digest: string;
+            comparison?: components["schemas"]["ReworkComparison"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            result: components["schemas"]["AnnotationQAResult"];
+            /** Rework Of */
+            rework_of?: string | null;
+            /** Sample Count */
+            sample_count: number;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * AnnotationRecord
+         * @description Describe one annotator's work; None is missing and an empty tuple is reviewed empty.
+         */
+        AnnotationRecord: {
+            /** Annotator Id */
+            annotator_id: string;
+            /** Boxes */
+            boxes?: components["schemas"]["AnnotationBox"][] | null;
+            /** Image Height */
+            image_height?: number | null;
+            /** Image Width */
+            image_width?: number | null;
+            /** Labels */
+            labels?: string[] | null;
+            /** Sample Id */
+            sample_id: string;
+            /** Spans */
+            spans?: components["schemas"]["AnnotationSpan"][] | null;
+            /** Text Length */
+            text_length?: number | null;
+        };
+        /**
+         * AnnotationSpan
+         * @description Preserve a half-open character span for agreement and boundary review.
+         */
+        AnnotationSpan: {
+            /** Category */
+            category: string;
+            /** End */
+            end: number;
+            /** Start */
+            start: number;
         };
         /**
          * ApprovalDecision
@@ -2012,6 +2352,30 @@ export interface components {
             namespace: string;
             /** Version */
             version?: string | null;
+        };
+        /**
+         * BoxAgreement
+         * @description Summarize descending-IoU greedy one-to-one matches across shared samples.
+         */
+        BoxAgreement: {
+            /** Annotator A */
+            annotator_a: string;
+            /** Annotator B */
+            annotator_b: string;
+            /** Box Count A */
+            box_count_a: number;
+            /** Box Count B */
+            box_count_b: number;
+            /** Category Agreement */
+            category_agreement: number | null;
+            /** Match Rate */
+            match_rate: number | null;
+            /** Matched Count */
+            matched_count: number;
+            /** Mean Iou */
+            mean_iou: number | null;
+            /** Sample Count */
+            sample_count: number;
         };
         /**
          * BranchStep
@@ -2242,6 +2606,65 @@ export interface components {
             tool_call_id?: string | null;
             /** Tool Calls */
             tool_calls?: components["schemas"]["ToolCall"][];
+        };
+        /**
+         * ClassConfusion
+         * @description Expose a per-label binary confusion matrix with the left annotator as reference.
+         */
+        ClassConfusion: {
+            /** Category */
+            category: string;
+            /** False Negative */
+            false_negative: number;
+            /** False Positive */
+            false_positive: number;
+            /** True Negative */
+            true_negative: number;
+            /** True Positive */
+            true_positive: number;
+        };
+        /**
+         * ClassificationAgreement
+         * @description Report nominal label-set agreement; Fleiss uses equal-sized rating panels.
+         */
+        ClassificationAgreement: {
+            fleiss_kappa: components["schemas"]["AgreementValue"];
+            krippendorff_alpha: components["schemas"]["AgreementValue"];
+            /**
+             * Pairs
+             * @default []
+             */
+            pairs: components["schemas"]["ClassificationPair"][];
+        };
+        /**
+         * ClassificationPair
+         * @description Report Cohen kappa over complete nominal label sets and per-class membership.
+         *
+         *     ``matrix[i][j]`` counts samples that annotator_a put in ``categories[i]`` and
+         *     annotator_b put in ``categories[j]``; a multilabel set is one category joined
+         *     with ``+`` and a reviewed empty set is ``(empty)``.
+         */
+        ClassificationPair: {
+            /** Annotator A */
+            annotator_a: string;
+            /** Annotator B */
+            annotator_b: string;
+            /**
+             * Categories
+             * @default []
+             */
+            categories: string[];
+            cohen_kappa: components["schemas"]["AgreementValue"];
+            /**
+             * Confusion
+             * @default []
+             */
+            confusion: components["schemas"]["ClassConfusion"][];
+            /**
+             * Matrix
+             * @default []
+             */
+            matrix: number[][];
         };
         /**
          * CompiledQuery
@@ -3132,6 +3555,21 @@ export interface components {
              * @default false
              */
             truncated: boolean;
+        };
+        /**
+         * InspectionCheck
+         * @description Record one reviewed sampled unit; multiple errors count as one defective unit.
+         */
+        InspectionCheck: {
+            /** Defective */
+            defective: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /** Sample Id */
+            sample_id: string;
         };
         /**
          * IssueView
@@ -4524,6 +4962,21 @@ export interface components {
             reason: string;
         };
         /**
+         * NearDuplicatePair
+         * @description Identify a reviewed or computed near-duplicate relation, not a proven error.
+         */
+        NearDuplicatePair: {
+            /** Other Sample Id */
+            other_sample_id: string;
+            /** Sample Id */
+            sample_id: string;
+            /**
+             * Similarity
+             * @default 1
+             */
+            similarity: number;
+        };
+        /**
          * Node
          * @description Declare typed input slots and validated operator parameters.
          */
@@ -4836,6 +5289,78 @@ export interface components {
             plan_id: string;
         };
         /**
+         * ReworkComparison
+         * @description Compare rule findings only on preserved sample/annotator review identities.
+         *
+         *     Record counts compare sample/annotator records directly. Inspection counts
+         *     cover units that an approved inspection of the original batch marked
+         *     defective, and how many of those units have any changed record after rework.
+         */
+        ReworkComparison: {
+            /**
+             * Added Records
+             * @default 0
+             */
+            added_records: number;
+            /** After Count */
+            after_count: number;
+            /** Before Count */
+            before_count: number;
+            /**
+             * Changed Records
+             * @default 0
+             */
+            changed_records: number;
+            /**
+             * Corrected
+             * @default []
+             */
+            corrected: components["schemas"]["AnnotationFinding"][];
+            /** Corrected Count */
+            corrected_count: number;
+            /**
+             * Inspection Defects
+             * @default 0
+             */
+            inspection_defects: number;
+            /**
+             * Inspection Defects Changed
+             * @default 0
+             */
+            inspection_defects_changed: number;
+            /**
+             * Introduced
+             * @default []
+             */
+            introduced: components["schemas"]["AnnotationFinding"][];
+            /** Introduced Count */
+            introduced_count: number;
+            /**
+             * Remaining
+             * @default []
+             */
+            remaining: components["schemas"]["AnnotationFinding"][];
+            /** Remaining Count */
+            remaining_count: number;
+            /**
+             * Removed Records
+             * @default 0
+             */
+            removed_records: number;
+            /**
+             * Unassessed
+             * @default []
+             */
+            unassessed: components["schemas"]["AnnotationFinding"][];
+            /** Unassessed Count */
+            unassessed_count: number;
+            /**
+             * Unchanged Records
+             * @default 0
+             */
+            unchanged_records: number;
+        };
+        /**
          * RouteCandidate
          * @description Expose the deterministic keyword score for one registered workflow.
          */
@@ -4875,6 +5400,113 @@ export interface components {
         RouteInputs: {
             /** Dataset Id */
             dataset_id?: string | null;
+        };
+        /**
+         * SamplingInspection
+         * @description Archive the approved inspection decision and complete error details.
+         */
+        SamplingInspection: {
+            /** Acceptance Number */
+            acceptance_number: number;
+            /** Accepted */
+            accepted: boolean;
+            /** Action Plan Id */
+            action_plan_id: string;
+            /** Actor */
+            actor: string;
+            /** Batch Id */
+            batch_id: string;
+            /** Checks */
+            checks: components["schemas"]["InspectionCheck"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Defective Count */
+            defective_count: number;
+            /** Id */
+            id: string;
+            /** Sampling Id */
+            sampling_id: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * SamplingPlan
+         * @description Bind reproducible selected units and table lookup to an immutable batch digest.
+         */
+        SamplingPlan: {
+            /** Acceptance Number */
+            acceptance_number: number;
+            /** Aql */
+            aql?: number | null;
+            /** Batch Digest */
+            batch_digest: string;
+            /** Batch Id */
+            batch_id: string;
+            /** Code Letter */
+            code_letter?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Effective Code Letter */
+            effective_code_letter?: string | null;
+            /** Id */
+            id: string;
+            /** Lot Size */
+            lot_size: number;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "aql" | "ratio";
+            /** Ratio */
+            ratio?: number | null;
+            /** Rejection Number */
+            rejection_number: number;
+            /** Sample Ids */
+            sample_ids: string[];
+            /** Sample Size */
+            sample_size: number;
+            /** Seed */
+            seed: number;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * SamplingRequest
+         * @description Choose normal single AQL inspection or a separately declared fixed fraction.
+         */
+        SamplingRequest: {
+            /** Acceptance Number */
+            acceptance_number?: number | null;
+            /**
+             * Aql
+             * @default 2.5
+             */
+            aql: number;
+            /** Batch Id */
+            batch_id: string;
+            /**
+             * Method
+             * @default aql
+             * @enum {string}
+             */
+            method: "aql" | "ratio";
+            /** Ratio */
+            ratio?: number | null;
+            /**
+             * Seed
+             * @default 0
+             */
+            seed: number;
         };
         Scalar: string | number | boolean | null;
         /**
@@ -4949,6 +5581,30 @@ export interface components {
             ordinal: number;
             /** State */
             state: string;
+        };
+        /**
+         * SpanAgreement
+         * @description Summarize exact and positive-overlap maximum-cardinality matching F1.
+         */
+        SpanAgreement: {
+            /** Annotator A */
+            annotator_a: string;
+            /** Annotator B */
+            annotator_b: string;
+            /** Exact F1 */
+            exact_f1: number | null;
+            /** Exact Matches */
+            exact_matches: number;
+            /** Overlap F1 */
+            overlap_f1: number | null;
+            /** Overlap Matches */
+            overlap_matches: number;
+            /** Sample Count */
+            sample_count: number;
+            /** Span Count A */
+            span_count_a: number;
+            /** Span Count B */
+            span_count_b: number;
         };
         /**
          * TaskInput
@@ -6539,6 +7195,179 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_datasets__dataset_id__annotation_quality_get: {
+        parameters: {
+            query?: {
+                version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnotationQualityOverview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    prepare_acceptance_api_datasets__dataset_id__annotation_quality_acceptance_prepare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnotationAcceptanceParams"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_batch_api_datasets__dataset_id__annotation_quality_batches_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnotationImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnotationQualityReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rework_export_api_datasets__dataset_id__annotation_quality_rework__batch_id__get: {
+        parameters: {
+            query?: {
+                format?: "json" | "csv";
+            };
+            header?: never;
+            path: {
+                dataset_id: string;
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sample_api_datasets__dataset_id__annotation_quality_samples_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SamplingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SamplingPlan"];
                 };
             };
             /** @description Validation Error */

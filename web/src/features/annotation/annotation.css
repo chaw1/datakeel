@@ -1,0 +1,51 @@
+.annotation-quality {
+  display: grid;
+  gap: calc(var(--space) * 4);
+}
+.annotation-quality h2,
+.annotation-quality h3 {
+  margin-top: 0;
+}
+.annotation-statistics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 6);
+}
+.annotation-statistics dt {
+  color: var(--muted);
+  font-size: var(--font-md);
+}
+.annotation-statistics dd {
+  margin: var(--space) 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-xl);
+}
+.annotation-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 3);
+  align-items: end;
+  margin-block: calc(var(--space) * 3);
+}
+.annotation-form label {
+  display: grid;
+  gap: var(--space);
+  font-size: var(--font-md);
+}
+.annotation-quality .table-wrap {
+  overflow-x: auto;
+  margin-block: calc(var(--space) * 3);
+}
+.annotation-quality table {
+  width: 100%;
+  font-size: var(--font-md);
+}
+.annotation-quality td,
+.annotation-quality th {
+  padding: calc(var(--space) * 2);
+  text-align: left;
+  vertical-align: top;
+}
+.annotation-quality ul {
+  padding-left: calc(var(--space) * 4);
+}

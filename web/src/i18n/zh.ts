@@ -1,5 +1,6 @@
 import { advancedZh } from "./advancedZh";
 import { agentZh } from "./agentZh";
+import { annotationZh } from "./annotationZh";
 import { approvalsMetricZh } from "./approvalsMetricZh";
 import { approvalZh } from "./approvalZh";
 import { askZh } from "./askZh";
@@ -16,6 +17,7 @@ import { workspaceZh } from "./workspaceZh";
 
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
+  ...annotationZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,
