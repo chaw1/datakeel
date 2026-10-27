@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.catalog_canonical import canonical_content, document_hash
 from datakeel.core.catalog_models import CatalogRebuildResult, CatalogSnapshot
-from datakeel.core.catalog_projection import snapshot_events
+from datakeel.core.catalog_projection import project_catalog, snapshot_events
 from datakeel.core.models import JsonDocument
 from datakeel.storage.catalog_locks import lock_catalog
 from datakeel.storage.catalog_reads import read_snapshot
@@ -20,9 +20,14 @@ PROJECTOR_VERSION = "1.0"
 
 
 def project_snapshot(session: Session, snapshot: CatalogSnapshot) -> None:
-    """Replace a scope's disposable rows while preserving every historical event."""
-    session.execute(delete(CatalogEdgeRow).where(CatalogEdgeRow.scope == snapshot.scope))
-    session.execute(delete(CatalogObjectRow).where(CatalogObjectRow.scope == snapshot.scope))
+    """Rebuild the merged projection after a scope's authoritative event was appended."""
+    current = project_catalog(all_events(session))
+    _write_projection(session, current.model_copy(update={"scope": snapshot.scope}))
+
+
+def _write_projection(session: Session, snapshot: CatalogSnapshot) -> None:
+    session.execute(delete(CatalogEdgeRow))
+    session.execute(delete(CatalogObjectRow))
     session.flush()
     for item in snapshot.objects:
         session.add(
@@ -84,8 +89,7 @@ def rebuild_catalog(db: Database, expected_hash: str | None = None) -> CatalogRe
         history = snapshot_events(all_events(session))
         session.execute(delete(CatalogEdgeRow))
         session.execute(delete(CatalogObjectRow))
-        for _event, snapshot in history:
-            project_snapshot(session, snapshot)
+        _write_projection(session, project_catalog(event for event, _snapshot in history))
         current = read_snapshot(session)
         after = normalized_hash(session)
         result = CatalogRebuildResult(

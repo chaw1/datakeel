@@ -38,7 +38,13 @@ def _schema(snapshot: CatalogSnapshot) -> dict[str, dict[str, dict[str, str]]]:
         if item.asset_ref.asset_type == "column" and item.table_id and item.schema_name:
             table = catalog_segments(item.table_id)[-1]
             result.setdefault(item.schema_name, {}).setdefault(table, {})[item.name] = (
-                ColumnProperties.model_validate(item.properties.root).data_type
+                ColumnProperties.model_validate(
+                    {
+                        key: value
+                        for key, value in item.properties.root.items()
+                        if key in ColumnProperties.model_fields
+                    }
+                ).data_type
             )
     return result
 
@@ -59,17 +65,20 @@ def _query(definition: SqlDefinition) -> tuple[str, exp.Query]:
 
 
 def _existing_column(snapshot: CatalogSnapshot, identity: str) -> CatalogObject | None:
-    parts = tuple(part.casefold() for part in catalog_segments(identity))
-    return next(
-        (
-            item
-            for item in snapshot.objects
-            if item.asset_ref.asset_type == "column"
-            and tuple(part.casefold() for part in catalog_segments(item.asset_ref.asset_id))
-            == parts
-        ),
-        None,
+    parts = catalog_segments(identity)
+    columns = tuple(item for item in snapshot.objects if item.asset_ref.asset_type == "column")
+    exact = next(
+        (item for item in columns if catalog_segments(item.asset_ref.asset_id) == parts), None
     )
+    if exact:
+        return exact
+    folded = tuple(part.casefold() for part in parts)
+    matches = [
+        item
+        for item in columns
+        if tuple(part.casefold() for part in catalog_segments(item.asset_ref.asset_id)) == folded
+    ]
+    return matches[0] if len(matches) == 1 else None
 
 
 def _leaves(root: Node, table_id: str, snapshot: CatalogSnapshot) -> set[str]:
@@ -89,6 +98,13 @@ def _leaves(root: Node, table_id: str, snapshot: CatalogSnapshot) -> set[str]:
     return result
 
 
+def _output_name(output: str, names: tuple[str, ...]) -> str:
+    if output in names:
+        return output
+    matches = [name for name in names if name.casefold() == output.casefold()]
+    return matches[0] if len(matches) == 1 else output
+
+
 def _derive(definition: SqlDefinition, snapshot: CatalogSnapshot) -> CatalogSnapshot:
     table_id, query = _query(definition)
     _source, schema, table_name = catalog_segments(table_id)
@@ -101,9 +117,9 @@ def _derive(definition: SqlDefinition, snapshot: CatalogSnapshot) -> CatalogSnap
     )
     additions: list[CatalogObject] = [] if table_id in objects else [table]
     links: list[CatalogLink] = [] if table_id in objects else [contains(source, table)]
-    original_names = {name.casefold(): name for name in query.named_selects}
+    original_names = tuple(query.named_selects)
     for index, (output, root) in enumerate(roots.items()):
-        column = original_names.get(output.casefold(), output)
+        column = _output_name(output, original_names)
         target_id = catalog_id(*catalog_segments(table_id), column)
         target = _existing_column(snapshot, target_id) or metadata_object(
             "column", target_id, column, ColumnProperties(data_type="UNKNOWN", ordinal=index)
