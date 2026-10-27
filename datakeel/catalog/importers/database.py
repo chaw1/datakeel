@@ -1,11 +1,11 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Read-only SQLAlchemy reflection for the P4 SQLite source adapter."""
+"""Read-only SQLAlchemy reflection for authorized SQLite and PostgreSQL sources."""
 
 from pathlib import Path
 
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.exc import SQLAlchemyError
@@ -29,8 +29,10 @@ from datakeel.core.models import AssetRef
 
 def _connection_url(url: str) -> str:
     parsed = make_url(url)
+    if parsed.get_backend_name() == "postgresql":
+        return parsed.set(drivername="postgresql+pg8000").render_as_string(hide_password=False)
     if parsed.get_backend_name() != "sqlite":
-        msg = "P4 catalog reflection supports only SQLite sources"
+        msg = "Catalog reflection supports SQLite and PostgreSQL sources"
         raise ValidationError(msg)
     if parsed.database is not None and parsed.database != ":memory:":
         path = Path(parsed.database).resolve()
@@ -115,11 +117,7 @@ def _reflect(inspector: Inspector, request: CatalogImportRequest) -> ImportBatch
     objects = [source]
     links: list[CatalogLink] = []
     definitions: list[SqlDefinition] = []
-    schemas = request.schemas or tuple(
-        name
-        for name in inspector.get_schema_names()
-        if name not in {"information_schema", "pg_catalog"}
-    )
+    schemas = _schemas(inspector, request)
     for schema in schemas:
         views = set(inspector.get_view_names(schema))
         for name in sorted(set(inspector.get_table_names(schema)) | views):
@@ -135,7 +133,7 @@ def _reflect(inspector: Inspector, request: CatalogImportRequest) -> ImportBatch
                         origin=table.asset_ref.asset_id,
                         table_id=table.asset_ref.asset_id,
                         sql=sql,
-                        dialect=dialect,
+                        dialect="postgres" if dialect == "postgresql" else dialect,
                     )
                 )
     return ImportBatch(
@@ -146,16 +144,36 @@ def _reflect(inspector: Inspector, request: CatalogImportRequest) -> ImportBatch
     )
 
 
+def _schemas(inspector: Inspector, request: CatalogImportRequest) -> tuple[str, ...]:
+    schemas = request.schemas
+    if not schemas:
+        schemas = (
+            (inspector.default_schema_name or "public",)
+            if inspector.bind.dialect.name == "postgresql"
+            else tuple(inspector.get_schema_names())
+        )
+    if any(name == "information_schema" or name.startswith("pg_") for name in schemas):
+        msg = "System schemas cannot be imported as business sources"
+        raise ValidationError(msg)
+    return schemas
+
+
 def reflect_database(request: CatalogImportRequest) -> ImportBatch:
     """Reflect table, column, key, comment, and view metadata without modifying its source."""
     if not request.connection_url:
         msg = "Database reflection requires connection_url"
         raise ValidationError(msg)
-    engine = create_engine(_connection_url(request.connection_url))
+    engine = create_engine(_connection_url(request.connection_url), connect_args={"timeout": 5})
     try:
         with engine.connect() as connection:
+            if connection.dialect.name == "postgresql":
+                connection.execute(text("SET TRANSACTION READ ONLY"))
+                connection.execute(
+                    text("SELECT set_config('statement_timeout', :timeout, true)"),
+                    {"timeout": "5000"},
+                )
             return _reflect(inspect(connection), request)
-    except SQLAlchemyError as error:
+    except (SQLAlchemyError, OSError) as error:
         msg = f"Source reflection failed: {type(error).__name__}"
         raise ValidationError(msg) from error
     finally:
