@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+from datakeel.core.errors import ExecutionError
 from datakeel.core.models import FileItem
 from datakeel.operators import REGISTRY, OperatorResult
 from datakeel.pipeline.defaults import default_pipeline
@@ -52,7 +53,11 @@ def _observation(
     return PipelineObservation(
         node_id=node.id,
         operator=str(node.operator),
-        params=REGISTRY[str(node.operator)].params_type.model_validate(node.params).model_dump(),
+        params=(
+            node.params
+            if str(node.operator).startswith("custom.")
+            else REGISTRY[str(node.operator)].params_type.model_validate(node.params).model_dump()
+        ),
         input_count=len(selected),
         inputs=[file.id for file in selected],
         output_count=len(output),
@@ -70,6 +75,9 @@ def _operator_node(
 ) -> tuple[SlotFiles, dict[str, Any]]:
     if node.kind != "operator":
         return _execute_node(node, selected, output), {}
+    if str(node.operator).startswith("custom.") and operator_executor is None:
+        msg = "Custom operators require the approved sandbox worker executor"
+        raise ExecutionError(msg)
     result = (
         operator_executor(node, selected, output / node.id)
         if operator_executor is not None

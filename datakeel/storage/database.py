@@ -41,6 +41,7 @@ from datakeel.storage.conversation_rows import (
     ConversationResumeRow,
     ConversationRow,
 )
+from datakeel.storage.custom_rows import CustomOperatorRow, CustomRunRow
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
 from datakeel.storage.file_state import FileStateRow
@@ -69,6 +70,8 @@ _REGISTERED_MODELS = (
     ActionPlanRow,
     ActionRunRow,
     ApprovalRow,
+    CustomOperatorRow,
+    CustomRunRow,
     FileStateRow,
     BudgetAccountRow,
     BudgetReservationRow,

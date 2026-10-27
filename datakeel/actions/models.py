@@ -30,6 +30,7 @@ ActionName = Literal[
     "update_term",
     "rollback_term",
     "run_kg_extraction",
+    "submit_custom_operator",
 ]
 PlanStatus = Literal["PREPARED", "APPROVED", "REJECTED", "EXECUTED", "FAILED"]
 RunStatus = Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED"]
