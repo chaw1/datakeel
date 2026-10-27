@@ -18,6 +18,7 @@ ignore_imports =
     datakeel.storage.dq_actions -> datakeel.actions.dq_parameters
     datakeel.storage.dq_actions -> datakeel.actions.models
     datakeel.storage.dq_actions -> datakeel.quality.dq_source
+    datakeel.storage.dq_actions -> datakeel.quality.dq_types
     datakeel.storage.dq_views -> datakeel.quality.models
     datakeel.storage.action_planning -> datakeel.actions.dq_parameters
     datakeel.storage.action_operations -> datakeel.actions.dq_parameters

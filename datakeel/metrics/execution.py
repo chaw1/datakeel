@@ -3,11 +3,12 @@
 
 """Execute compiler output through read-only connections with strict resource caps."""
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 from time import monotonic
 from typing import TYPE_CHECKING, cast
+from uuid import UUID
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection, make_url
@@ -83,7 +84,9 @@ def _scalar(value: object) -> Scalar:
         return value
     if isinstance(value, Decimal):
         return float(value)
-    if isinstance(value, date | datetime):
+    if isinstance(value, date | datetime | time):
         return value.isoformat()
+    if isinstance(value, UUID):
+        return str(value)
     msg = f"Unsupported query result scalar: {type(value).__name__}"
     raise ExecutionError(msg)

@@ -85,6 +85,28 @@ DQ_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="dq-column-type-preparation",
+        path="storage/dq_actions.py",
+        before="    _check_types(snapshot, rule, table, source)\n",
+        after="",
+        case=(
+            "tests/quality/test_dq_column_types.py::"
+            "test_special_columns_run_or_are_refused_at_preparation"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="dq-null-check-projection",
+        path="quality/dq_source.py",
+        before="    if column and not reference and nulls_only(rule):",
+        after="    if False:",
+        case=(
+            "tests/quality/test_dq_column_types.py::"
+            "test_special_columns_run_or_are_refused_at_preparation"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="dq-alert-on-transition-only",
         path="storage/dq_results.py",
         before="    if issue is None or issue.status == prior:",

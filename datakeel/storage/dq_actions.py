@@ -15,11 +15,12 @@ from datakeel.actions.dq_parameters import (
 )
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.core.catalog_canonical import document_hash
-from datakeel.core.catalog_models import SourceProperties, TableProperties
+from datakeel.core.catalog_models import CatalogSnapshot, SourceProperties, TableProperties
 from datakeel.core.dq_models import DqRule
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 from datakeel.quality.dq_source import validate_assertion
+from datakeel.quality.dq_types import check_column_types
 from datakeel.storage.catalog_action_state import catalog_state
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.dataset_service import require_dataset
@@ -27,27 +28,57 @@ from datakeel.storage.dq_issues import change_issue, get_issue
 from datakeel.storage.dq_store import delete_rule, get_rule, rule_revision, upsert_rule
 
 
-def _resolve_target(session: Session, rule: DqRule) -> DqRule:
-    if rule.dataset_id is not None:
-        require_dataset(session, rule.dataset_id)
-    snapshot = read_snapshot(session)
+def _catalog_table(
+    snapshot: CatalogSnapshot, source_id: str, name: str, schema: str | None, role: str
+) -> tuple[TableProperties, str | None]:
     candidates = [
         item
         for item in snapshot.objects
         if item.asset_ref.asset_type == "table"
-        and item.source_id == rule.target.source_id
-        and item.name == rule.target.table
-        and (rule.target.schema_name is None or item.schema_name == rule.target.schema_name)
+        and item.source_id == source_id
+        and item.name == name
+        and (schema is None or item.schema_name == schema)
     ]
     if len(candidates) != 1:
-        msg = "Quality target table must resolve to exactly one catalog table"
+        msg = f"Quality {role} table must resolve to exactly one catalog table"
         raise ValidationError(msg)
-    table = TableProperties.model_validate(candidates[0].properties.root)
+    return TableProperties.model_validate(candidates[0].properties.root), candidates[0].schema_name
+
+
+def _check_types(
+    snapshot: CatalogSnapshot, rule: DqRule, table: TableProperties, source: SourceProperties
+) -> None:
+    """Refuse column kinds whose values the read-only executor cannot evaluate."""
+    if rule.target.column is None:
+        return
+    reference_type = None
+    if rule.params.reference_table and rule.params.reference_column:
+        reference, _ = _catalog_table(
+            snapshot,
+            rule.target.source_id,
+            rule.params.reference_table,
+            rule.params.reference_schema or rule.target.schema_name,
+            "reference",
+        )
+        if rule.params.reference_column not in reference.columns:
+            msg = "Quality reference column is not in the catalog table"
+            raise ValidationError(msg)
+        reference_type = reference.columns[rule.params.reference_column]
+    check_column_types(rule, table.columns[rule.target.column], source.dialect, reference_type)
+
+
+def _resolve_target(session: Session, rule: DqRule) -> DqRule:
+    if rule.dataset_id is not None:
+        require_dataset(session, rule.dataset_id)
+    snapshot = read_snapshot(session)
+    table, schema = _catalog_table(
+        snapshot, rule.target.source_id, rule.target.table, rule.target.schema_name, "target"
+    )
     if rule.target.column is not None and rule.target.column not in table.columns:
         msg = "Quality target column is not in the catalog table"
         raise ValidationError(msg)
     rule = rule.model_copy(
-        update={"target": rule.target.model_copy(update={"schema_name": candidates[0].schema_name})}
+        update={"target": rule.target.model_copy(update={"schema_name": schema})}
     )
     sources = [
         item
@@ -63,6 +94,7 @@ def _resolve_target(session: Session, rule: DqRule) -> DqRule:
         raise ValidationError(msg)
     if rule.kind == "sql_assertion":
         validate_assertion(rule, source)
+    _check_types(snapshot, rule, table, source)
     return rule
 
 

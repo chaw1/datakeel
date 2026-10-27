@@ -24,6 +24,7 @@ from datakeel.quality.dq_evaluation import (
 )
 from datakeel.quality.dq_regex import regex_violations
 from datakeel.quality.dq_source import execute_assertion, read_rule_table
+from datakeel.quality.dq_types import nulls_only
 
 
 def execute_rule(
@@ -70,6 +71,9 @@ def _evaluate(
     validate_distribution_values(rule, values)
     baseline = _baseline(rule, history, now)
     metrics = observation(values, _histogram_edges(rule, baseline, values))
+    if nulls_only(rule):
+        # NULL-only scans project markers, so no business value statistics exist.
+        metrics = DqMetrics(row_count=metrics.row_count, null_rate=metrics.null_rate)
     if rule.kind in {"volume_change", "distribution_drift"}:
         return _historical(rule, metrics, baseline, now)
     if rule.kind == "freshness":

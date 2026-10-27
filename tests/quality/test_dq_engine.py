@@ -398,7 +398,7 @@ def test_baseline_insufficient_observations_can_warm_start(tmp_path: Path) -> No
 def test_extreme_finite_values_do_not_overflow_rule_statistics(tmp_path: Path) -> None:
     """Valid finite business numbers cannot crash an otherwise ordinary row rule."""
     source = business_source(tmp_path, (1e308, 1e308))
-    result = execute_rule(rule_of("not_null"), source, now=NOW)
+    result = execute_rule(rule_of("range", DqParameters(minimum=0)), source, now=NOW)
     assert result.passed is True
     assert result.metrics.mean == 1e308
 

@@ -13,6 +13,7 @@ from datakeel.core.errors import ExecutionError, ValidationError
 from datakeel.core.metric_models import CompiledQuery, QueryResult, Scalar
 from datakeel.metrics.execution import execute_query
 from datakeel.metrics.sql_safety import validate_select
+from datakeel.quality.dq_types import nulls_only
 
 # Side-effect-free built-ins that sqlglot does not model as typed function expressions.
 _PURE_FUNCTIONS = {
@@ -35,7 +36,12 @@ def read_rule_table(
     if not table:
         msg = "A reference table is required"
         raise ValidationError(msg)
-    selection = exp.column(column, quoted=True) if column else exp.Literal.number(1)
+    selection: exp.Expr = exp.column(column, quoted=True) if column else exp.Literal.number(1)
+    if column and not reference and nulls_only(rule):
+        # NULL checks never fetch values, so JSON, array and binary columns stay evaluable.
+        selection = (
+            exp.Case().when(selection.is_(exp.null()), exp.null()).else_(exp.Literal.number(1))
+        )
     query = exp.select(selection).from_(exp.table_(table, db=schema, quoted=True))
     query = query.limit(rule.max_rows + 1)
     result = _execute(rule, source, query.sql(dialect=_dialect(source)))
