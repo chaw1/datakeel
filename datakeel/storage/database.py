@@ -41,6 +41,8 @@ from datakeel.storage.conversation_rows import (
     ConversationResumeRow,
     ConversationRow,
 )
+from datakeel.storage.datasheet_job_rows import DatasheetJobRow
+from datakeel.storage.datasheet_rows import DatasheetRow
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
 from datakeel.storage.file_state import FileStateRow
@@ -70,6 +72,7 @@ _REGISTERED_MODELS = (
     ActionRunRow,
     ApprovalRow,
     FileStateRow,
+    DatasheetJobRow,
     BudgetAccountRow,
     BudgetReservationRow,
     ConversationRequestRow,
@@ -95,6 +98,7 @@ _REGISTERED_MODELS = (
     MetricAuditRow,
     AskSessionRow,
     AskAnswerRow,
+    DatasheetRow,
     CheckpointRow,
     CheckpointWriteRow,
     WorkflowRunRow,
@@ -161,6 +165,7 @@ class TaskRow(Base):
     error: Mapped[str | None] = mapped_column(String, nullable=True)
     input_version_id: Mapped[str | None] = mapped_column(String, nullable=True)
     kg_run_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    datasheet_job_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
 
 class ShardRow(Base):
