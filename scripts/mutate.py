@@ -19,6 +19,7 @@ from rich.console import Console
 
 from datakeel.core.harness_eval import EvalCaseResult, EvalReport
 from scripts.advanced_mutations import ADVANCED_MUTATIONS
+from scripts.guard_mutations import GUARD_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
@@ -139,6 +140,7 @@ MUTATIONS = (
     *KNOWLEDGE_MUTATIONS,
     *METRIC_MUTATIONS,
     *IMAGE_KG_MUTATIONS,
+    *GUARD_MUTATIONS,
 )
 
 
