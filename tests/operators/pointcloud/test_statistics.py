@@ -17,6 +17,21 @@ def test_exact_neighbor_scores_match_independent_distance_reference() -> None:
     np.testing.assert_allclose(neighbor_distances(xyz, 5), expected)
 
 
+def test_large_cloud_approximation_stays_close_on_flat_noisy_ground() -> None:
+    """A thin axis must not be stretched to full Morton resolution and scramble locality."""
+    rng = np.random.default_rng(1828)
+    xyz = rng.uniform([0, 0, 0], [100, 100, 0.5], (4000, 3))
+    exact = np.empty(len(xyz))
+    for start in range(0, len(xyz), 400):
+        block = np.linalg.norm(xyz[start : start + 400, None] - xyz[None, :], axis=-1)
+        block[np.arange(len(block)), np.arange(start, start + len(block))] = np.inf
+        exact[start : start + 400] = np.sort(block, axis=1)[:, :16].mean(axis=1)
+    ratio = neighbor_distances(xyz, 16) / exact
+    assert ratio.min() >= 1 - 1e-12
+    assert np.median(ratio) < 1.2
+    assert np.quantile(ratio, 0.95) < 2
+
+
 def test_tiny_and_repeated_clouds_produce_no_spurious_outliers() -> None:
     """No division by zero or self-neighbor rejection occurs on tiny or identical clouds."""
     assert not neighbor_distances(np.zeros((1, 3))).any()

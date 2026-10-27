@@ -22,9 +22,15 @@ def _interleave(values: NDArray[np.uint64]) -> NDArray[np.uint64]:
 
 
 def spatial_order(xyz: NDArray[np.float64]) -> NDArray[np.intp]:
-    """Sort into a Morton locality curve using bounded 20-bit coordinates."""
+    """Sort into a Morton locality curve using bounded 20-bit coordinates.
+
+    One isotropic scale (the largest axis extent) keeps grid cells cubic in
+    source units. Normalizing each axis separately would stretch a thin axis,
+    such as the sensor noise of a flat ground scan, across every bit level and
+    break the spatial locality the neighbor window depends on.
+    """
     low, high = xyz.min(axis=0), xyz.max(axis=0)
-    scale = np.maximum(high - low, np.finfo(np.float64).tiny)
+    scale = max(float((high - low).max()), np.finfo(np.float64).tiny)
     grid = np.floor(np.clip((xyz - low) / scale, 0, 1) * ((1 << _MORTON_BITS) - 1))
     unsigned = grid.astype(np.uint64)
     codes = _interleave(unsigned[:, 0])
