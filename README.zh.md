@@ -333,7 +333,7 @@ OpenLineage 导出是事件数组，逐个元素用官方 RunEvent Schema 校验
 
 ## MCP 接入
 
-`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **32 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），15 个**只准备计划**的动作（含 `run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
+`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **34 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），17 个**只准备计划**的动作（含 `run_kg_extraction`、`generate_datasheet`、`publish_datasheet`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
 
 Agent 和 MCP 同步提供 `ask_data`、`list_metrics`、`explain_metric`、`impact_of`。`ask_data` 只读源数据，在 Datakeel 保存答案及证据；涉及资产的调用记录 `asset_refs`，空的 `list_metrics` 结果可没有引用。工具、动作与 HTTP 使用同一套类型模型生成 schema。
 
@@ -436,3 +436,7 @@ S3 提供客户端契约测试，不自动连接真实 S3。LLM 成功分支用�
 导入截图、扫描件或结构图，在「知识图谱」选择转写配置与文本抽取配置。关系先作为候选，保留转写原文和 OCR 证据框；图上未定位与手写人名标记待复核。demo 包含真实录制图片和明确标注的脚本失败样例。运行 `uv run datakeel eval-kg --suite image --json` 即可离线评测内置 60 张图，详见[图片配置、来源与签批](docs/KG.md#images-and-scans--图片与扫描件)。
 
 本地 OCR 的第三方包由用户自行安装：`pip install rapidocr==3.10.0 onnxruntime`。它们不是 Datakeel 的依赖，也不在 Datakeel 的许可审计范围内。部分平台（例如 macOS）的 OpenCV 预编译包捆绑 x264/x265 等 GPL 编解码库，ONNX Runtime 含 MPL-2.0 的 Eigen；需要再分发时须自行评估。离线回放无需安装这些包。
+
+## 数据集说明书
+
+打开数据集并进入「说明书」页签，可为某个数据集版本生成七章说明书（动机、构成、采集、预处理、用途、分发、维护）。系统先冻结带稳定 ID 和来源的平台事实；保留的每句话都引用事实，没有引用、引用不存在的事实，或数字、日期、专有名词得不到被引用事实支持的句子会被删除并记录原因。缺事实的章节明确标出。离线模板不需要模型；可选的已配置模型沿用现有预算与外发签批规则。生成草稿走受控动作，发布须签批；数据集有新版本后旧说明书标为已过期。Markdown 与 HTML 下载保留逐句依据。详见[说明书参考](docs/DATASHEETS.md)。

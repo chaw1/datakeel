@@ -171,3 +171,10 @@ An `evidence.kg` COMPLETE lineage event records source assets, the schema and ex
 Transcripts are deterministic `image_transcript` assets with content-hash versions. Text spans reference the transcript; image regions reference original image content in EXIF-corrected pixel coordinates. Image responses and external requests strip metadata. OCR matching supplies all rectangles. Missing locations and explicitly marked handwritten person types add structured review issues without promoting candidates to accepted facts.
 
 来源展示读取冻结运行快照；人审将派生资产解析回同数据集版本的原始 manifest，避免同内容图片跨版本错指。替换来源时同步作废旧转写稿断言并保留审计与人工结论。证据重建复用持久化的 knowledge bundle，不构造转写或抽取客户端。图片评测分别报告录制评分与实际写入后读回的候选断言评分；外部用例与内置录制采用同一质量和对齐规则。
+
+
+## 14. Dataset datasheets / 数据集说明书
+
+`datasheets/` is a framework-free domain package: fixed chapter vocabulary, offline templates, the untrusted-data model prompt, Markdown/HTML rendering and the independent citation validator. `storage/datasheet_*.py` extracts version-pinned facts (manifest, metadata, quality, compliance, scoped lineage, evidence counts, review decisions and graph entities) and stores immutable documents. Each fact ID hashes its source type, source ID and field. Generation and publication are controlled actions; template drafts are written inside the action transaction, while model drafts use the existing task queue, shard lease, persistent budget and trace (`call_type=extraction`, `agent_path=datasheets`). The model adapter lives in `runtime/datasheet_model.py`.
+
+说明书分两段：先确定性抽取并冻结事实，再由模板或可选模型写句子。无论哪一种，保存前都经同一校验器逐句检查：引用必须存在且至少一条属于本章；数字（含千分位、百分比、中英文数词）、日期和专有名词须能在被引用事实中找到；不通过的句子删除并记入删句记录。外发模型冻结目的地址、价表与预算上界，非回环地址需要签批；发布动作不可逆，必须签批。新版本只给旧说明书加「已过期」标记，不改写旧事实与正文。校验是保守的字面支持检查，不做语义蕴含判断。详见 [DATASHEETS.md](DATASHEETS.md)。
