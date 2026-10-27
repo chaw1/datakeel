@@ -24,6 +24,7 @@ ActionName = Literal[
     "export_dataset",
     "decide_assertions",
     "import_catalog",
+    "confirm_metric_draft",
     "restore_catalog",
     "update_metric",
     "rollback_metric",
@@ -84,7 +85,7 @@ class ActionPlan(BoundaryModel):
     @property
     def requires_approval(self) -> bool:
         """Gate irreversible or outbound operations on an explicit user decision."""
-        return not self.reversible or self.external
+        return not self.reversible or self.external or self.action_type == "confirm_metric_draft"
 
 
 class ApprovalDecision(BoundaryModel):

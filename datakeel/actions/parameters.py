@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from pydantic import Field, JsonValue, field_validator
 
 from datakeel.actions.catalog_parameters import (
+    ConfirmMetricDraftParams,
     ImportCatalogParams,
     RestoreCatalogParams,
     RollbackMetricParams,
@@ -88,6 +89,7 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "export_dataset": ExportParams,
     "decide_assertions": DecideAssertionsParams,
     "import_catalog": ImportCatalogParams,
+    "confirm_metric_draft": ConfirmMetricDraftParams,
     "restore_catalog": RestoreCatalogParams,
     "update_metric": UpdateMetricParams,
     "rollback_metric": RollbackMetricParams,

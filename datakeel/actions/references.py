@@ -4,6 +4,7 @@
 """Expose metadata identities without placing them in legacy frozen manifests."""
 
 from datakeel.actions.catalog_parameters import (
+    ConfirmMetricDraftParams,
     ImportCatalogParams,
     RestoreCatalogParams,
     RollbackMetricParams,
@@ -19,6 +20,8 @@ from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 
 def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
     """Read typed action targets independently of legacy ObjectSet membership."""
+    if isinstance(params, ConfirmMetricDraftParams):
+        return [AssetRef(asset_type="metric_draft", asset_id=params.draft_id)]
     if isinstance(params, ImportCatalogParams) and params.snapshot is not None:
         return [item.asset_ref for item in params.snapshot.objects]
     if isinstance(params, RestoreCatalogParams):

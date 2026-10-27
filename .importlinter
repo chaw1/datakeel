@@ -228,6 +228,10 @@ ignore_imports =
     datakeel.catalog.metadata_service -> datakeel.storage.metadata_store
     datakeel.catalog.metadata_service -> datakeel.storage.catalog_reads
     datakeel.catalog.metadata_service -> datakeel.storage.database
+# Draft confirmation composes signed action parameters with semantic snapshot publication.
+    datakeel.storage.metric_drafts -> datakeel.actions.catalog_parameters
+    datakeel.storage.metric_drafts -> datakeel.actions.models
+    datakeel.storage.metric_drafts -> datakeel.metrics.projection
 # Questions compose registered semantics and read-only compilation, then persist typed answers.
     datakeel.ask.knowledge_service -> datakeel.storage.database
     datakeel.ask.knowledge_service -> datakeel.storage.link_queries

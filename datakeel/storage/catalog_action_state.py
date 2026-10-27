@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.actions.catalog_parameters import (
     CatalogActionParams,
+    ConfirmMetricDraftParams,
     ImportCatalogParams,
     RestoreCatalogParams,
     UpdateMetricParams,
@@ -20,11 +21,14 @@ from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.ontology.models import FrozenManifest, ObjectSet
 from datakeel.storage.catalog_store import lock_catalog, read_snapshot
 from datakeel.storage.events import all_events
+from datakeel.storage.metric_drafts import prepare_confirmation
 from datakeel.storage.metric_store import validate_metric_update
 
 
 def prepare_catalog_params(session: Session, params: BoundaryModel) -> BoundaryModel:
     """Validate controlled semantics and reflect import snapshots from the server."""
+    if isinstance(params, ConfirmMetricDraftParams):
+        return prepare_confirmation(session, params)
     if isinstance(params, UpdateMetricParams):
         validate_metric_update(session, params.definition)
     if isinstance(params, ImportCatalogParams):

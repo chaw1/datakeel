@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.actions.catalog_parameters import (
     CatalogActionParams,
+    ConfirmMetricDraftParams,
     ImportCatalogParams,
     RestoreCatalogParams,
     RollbackMetricParams,
@@ -20,6 +21,7 @@ from datakeel.core.models import AssetRef
 from datakeel.storage.catalog_action_state import source_snapshot
 from datakeel.storage.catalog_store import publish_snapshot_in_session
 from datakeel.storage.metric_audit import record_metric_audit
+from datakeel.storage.metric_drafts import confirm_draft
 from datakeel.storage.metric_store import rollback_metric_in_session, update_metric_in_session
 from datakeel.storage.term_changes import change_term, current_term, historical_term
 
@@ -67,6 +69,8 @@ def execute_catalog_action(
     session: Session, plan: ActionPlan, params: CatalogActionParams
 ) -> OperationResult:
     """Dispatch metadata actions after the shared plan and snapshot checks pass."""
+    if isinstance(params, ConfirmMetricDraftParams):
+        return confirm_draft(session, plan, params)
     if isinstance(params, ImportCatalogParams | RestoreCatalogParams):
         return _import(session, plan, params)
     if isinstance(params, UpdateTermParams | RollbackTermParams):

@@ -35,6 +35,13 @@ class UpdateMetricParams(CatalogActionParams):
     definition: MetricDefinition
 
 
+class ConfirmMetricDraftParams(CatalogActionParams):
+    """Approve an imported draft with an explicit or server-proposed complete definition."""
+
+    draft_id: str = Field(min_length=1)
+    definition: MetricDefinition | None = None
+
+
 class RollbackMetricParams(CatalogActionParams):
     """Restore historical semantics while retaining the intervening revisions."""
 
