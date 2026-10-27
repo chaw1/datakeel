@@ -11,10 +11,9 @@ export async function annotationTour({ page, base, api, capture, report }) {
   );
   const panel = page.locator(".annotation-quality");
   await panel.waitFor();
-  // Batch names live in <option> elements, which are never visible; read the selection instead.
-  const batch = panel.locator("select", {
-    has: page.locator("option", { hasText: "Reworked harbor annotations" }),
-  });
+  // Batch names live in <option> elements, which are never visible; read the selection of the
+  // batch picker (the import form's rework-baseline picker lists the same batches).
+  const batch = panel.getByRole("combobox", { name: /^标注批次/ });
   await batch.waitFor();
   assert.match(
     await batch.evaluate((element) => element.selectedOptions[0].text),
