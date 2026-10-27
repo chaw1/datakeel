@@ -9,13 +9,15 @@ from pydantic import ConfigDict, Field, JsonValue
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from datakeel.core.models import JsonDocument
+from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.settings import get_settings
 from datakeel.governance import compliance_score, validate_metadata
 from datakeel.governance.models import ComplianceView
 from datakeel.quality import build_report, score_quality
+from datakeel.quality.annotation import apply_annotation_quality
 from datakeel.quality.models import QualityView, ReportView
-from datakeel.storage.database import Database, DatasetRow, MetadataChangeRow
+from datakeel.storage.annotation_store import read_annotation_quality
+from datakeel.storage.database import Database, DatasetRow, MetadataChangeRow, VersionRow
 from datakeel.storage.dataset_service import list_datasets, require_dataset
 from datakeel.storage.datasets import dataset_dict, latest_files
 from datakeel.storage.views import (
@@ -51,6 +53,19 @@ class QualityInput(View):
     allowed_formats: dict[str, list[str]] | None = None
 
 
+def _measured_quality(session: Session, row: DatasetRow, files: list[FileItem]) -> QualityView:
+    result = score_quality(files, row.quality_config)
+    version = session.scalar(
+        select(VersionRow)
+        .where(VersionRow.dataset_id == row.id)
+        .order_by(VersionRow.created_at.desc())
+        .limit(1)
+    )
+    if version is None:
+        return result
+    return apply_annotation_quality(result, read_annotation_quality(session, row.id, version.id))
+
+
 def get_quality(db: Database, identifier: str, *, quarantined: bool | None = None) -> QualityView:
     """Evaluate quality using the latest published manifest."""
     with db.session() as session:
@@ -60,7 +75,11 @@ def get_quality(db: Database, identifier: str, *, quarantined: bool | None = Non
             files = [
                 item for item in files if bool(item.metadata.get("quarantined")) == quarantined
             ]
-        return QualityView.model_validate(score_quality(files, row.quality_config))
+        return (
+            QualityView.model_validate(score_quality(files, row.quality_config))
+            if quarantined is not None
+            else _measured_quality(session, row, files)
+        )
 
 
 def dataset_quality_summaries(db: Database) -> list[DatasetQualityView]:
@@ -83,8 +102,9 @@ def save_quality(db: Database, identifier: str, body: QualityInput) -> QualityVi
         db.lock_writes(session)
         row = require_dataset(session, identifier, lock=True)
         config = body.model_dump(exclude_unset=True)
-        result = QualityView.model_validate(score_quality(latest_files(session, row), config))
+        score_quality(latest_files(session, row), config)
         row.quality_config = config
+        result = _measured_quality(session, row, latest_files(session, row))
         session.commit()
         return result
 
@@ -93,7 +113,7 @@ def get_report(db: Database, identifier: str) -> ReportView:
     """Build an evidence-based report from the current dataset snapshot."""
     with db.session() as session:
         row = require_dataset(session, identifier)
-        result = score_quality(latest_files(session, row), row.quality_config)
+        result = _measured_quality(session, row, latest_files(session, row))
         return ReportView.model_validate(
             build_report(dataset_dict(row), result, get_settings().llm_url)
         )

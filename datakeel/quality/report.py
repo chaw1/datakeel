@@ -10,7 +10,8 @@ from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from datakeel.core.errors import ValidationError
-from datakeel.core.models import Record
+from datakeel.core.models import JsonDocument, Record
+from datakeel.quality.annotation_report import annotation_summary
 from datakeel.quality.models import QualityView, ReportView
 
 MAX_RESPONSE_BYTES = 1_048_576
@@ -52,7 +53,16 @@ def _baseline(
             "Add and audit labels before supervised learning; "
             "an excluded annotation score is not label validation."
         )
-    return _chapters(name, count, score, grade, measured, (issue_text, recommendations))
+    chapters = _chapters(name, count, score, grade, measured, (issue_text, recommendations))
+    details = quality.get("dimensions", {}).get("annotation", {}).get("details", {})
+    if "batch_id" in details:
+        chapters.append(
+            {
+                "title": "标注质量 / Annotation quality",
+                "body": annotation_summary(JsonDocument.model_validate(details).root),
+            }
+        )
+    return chapters
 
 
 def build_report(
