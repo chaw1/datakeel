@@ -14,6 +14,7 @@ from datakeel.api.routes import (
     ask,
     catalog,
     datasets,
+    datasheets,
     evidence,
     governance,
     harness,
@@ -45,6 +46,7 @@ def create_app(db: Database | None = None) -> FastAPI:
     for router in (
         system.router,
         datasets.router,
+        datasheets.router,
         catalog.router,
         ask.router,
         evidence.router,
