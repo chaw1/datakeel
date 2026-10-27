@@ -169,6 +169,7 @@ STANDARD_MUTATIONS = (
 )
 
 DELETIONS = "tests/standards/test_mapping_deletions.py::"
+LIFECYCLE = "tests/standards/test_mapping_lifecycle_synonyms.py::"
 PRIORITY = "tests/standards/test_mapping_priority.py::"
 
 # Lexical recall rules and the precision guards that bound them.
@@ -203,6 +204,22 @@ LEXICAL_RULE_MUTATIONS = (
         before="return 0.5 + 0.14 * coverage",
         after="return 0.9 + 0.05 * coverage",
         case=DELETIONS + "test_deletion_ranks_below_prefix_and_consonant_skeleton",
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-audit-modified-verb",
+        path="standards/matching.py",
+        before='"modified",',
+        after="",
+        case=LIFECYCLE + "test_modified_audit_date_is_not_an_order_date",
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-audit-author-suffix",
+        path="standards/matching.py",
+        before='"on", "by", "last"',
+        after='"on", "last"',
+        case=LIFECYCLE + "test_audit_author_suffix_blocks_business_prefix",
         runner="pytest",
     ),
     Mutation(

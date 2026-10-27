@@ -72,6 +72,8 @@ def _derived_forms(word: str) -> set[str]:
                     forms.add(_undouble(root))
             else:
                 forms.update((root, _undouble(root), root + "e"))
+    if word.endswith("ied") and len(word) > _MIN_SUFFIXED_LENGTH + 1:
+        forms.add(word[:-3] + "y")
     return forms
 
 

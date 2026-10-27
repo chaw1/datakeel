@@ -96,11 +96,21 @@ _TECHNICAL_CLOCK = frozenset(
         "sync",
         "refresh",
         "process",
+        "modify",
+        "modified",
+        "modification",
+        "changed",
+        "edited",
+        "amended",
+        "insert",
+        "inserted",
     }
 )
 _SYSTEM_WORDS = ("version", "revision", "tenant", "deleted", "removed", "latitude", "longitude")
 _COMPLETE_SKELETON_WEIGHT = 0.85
 _CONTEXTUAL = frozenset({"amount", "date", "status", "time"})
+# Audit columns pair a record-maintenance verb with when (at, on, last) or who (by) changed it.
+_AUDIT_COMPANIONS = frozenset({"date", "time", "timestamp", "ts", "at", "on", "by", "last"})
 _KNOWN_DISCOUNT = 0.8
 _SYNONYM_DISCOUNT = 0.86
 
@@ -157,7 +167,7 @@ def business_tokens(name: str) -> frozenset[str]:
     tokens = name_tokens(name, expand_aliases=False)
     if tokens & _SYSTEM or any(_system_variant(token) for token in tokens) or not tokens - _GENERIC:
         return frozenset()
-    if tokens & _TECHNICAL_CLOCK and tokens & {"date", "time", "timestamp", "ts", "at"}:
+    if tokens & _TECHNICAL_CLOCK and tokens & _AUDIT_COMPANIONS:
         return frozenset()
     return tokens
 

@@ -41,3 +41,21 @@ synonyms:
     alternatives: [enrolled, registered, signup]
   - canonical: revenue
     alternatives: [turnover, earnings]
+  # Lifecycle dates and status verbs shared by CRM, ERP, order and service-desk schemas.
+  # Audit clocks such as updated_at or modified_by stay system columns despite these groups.
+  - canonical: start
+    alternatives: [begin, commence, commencement, kickoff, inception, onset, go live]
+  - canonical: end
+    alternatives: [finish, completion, conclusion, termination, expiry, expiration, cessation]
+  - canonical: update
+    alternatives: [modify, modification, amend, amendment, edit, change]
+  - canonical: cancel
+    alternatives: [void, revoke, abort, rescind, annul]
+  - canonical: approve
+    alternatives: [authorize, accept, sanction, endorse]
+  - canonical: reject
+    alternatives: [decline, deny, refuse, disapprove]
+  - canonical: close
+    alternatives: [resolve, shut]
+  - canonical: suspend
+    alternatives: [pause, hold]
