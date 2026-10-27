@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 import { advancedSmoke } from "./advanced-smoke.mjs";
+import { datasheetSmoke } from "./datasheet-smoke.mjs";
 import { enterpriseSmoke } from "./enterprise-smoke.mjs";
 import { evidenceSmoke } from "./evidence-smoke.mjs";
 import { kgSmoke } from "./kg-smoke.mjs";
@@ -463,6 +464,7 @@ try {
     checks,
     datasetId: workflows.datasetId,
   });
+  const datasheet = await datasheetSmoke({ page, json, screenshot, checks });
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(output, "evidence.json"),
@@ -484,6 +486,7 @@ try {
         workflows,
         routing,
         advanced,
+        datasheet,
         checks,
         errors,
       },
