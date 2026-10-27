@@ -1,5 +1,599 @@
 [
   {
+    "id": "audio.probe",
+    "modality": "audio",
+    "category": "inspection",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Declare an operator with no configurable parameters.",
+      "properties": {},
+      "title": "EmptyParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.vad",
+    "modality": "audio",
+    "category": "quality",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Estimate activity from short-time RMS, without a speech recognition model.",
+      "properties": {
+        "threshold_dbfs": {
+          "default": -40.0,
+          "maximum": 0,
+          "minimum": -100,
+          "title": "Threshold Dbfs",
+          "type": "number"
+        },
+        "frame_ms": {
+          "default": 20,
+          "maximum": 100,
+          "minimum": 5,
+          "title": "Frame Ms",
+          "type": "integer"
+        },
+        "min_activity_ms": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Min Activity Ms",
+          "type": "integer"
+        },
+        "min_silence_ms": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Min Silence Ms",
+          "type": "integer"
+        }
+      },
+      "title": "ActivityParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.trim_silence",
+    "modality": "audio",
+    "category": "transformation",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Trim leading and trailing silence while preserving internal timing.",
+      "properties": {
+        "threshold_dbfs": {
+          "default": -40.0,
+          "maximum": 0,
+          "minimum": -100,
+          "title": "Threshold Dbfs",
+          "type": "number"
+        },
+        "frame_ms": {
+          "default": 20,
+          "maximum": 100,
+          "minimum": 5,
+          "title": "Frame Ms",
+          "type": "integer"
+        },
+        "min_activity_ms": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Min Activity Ms",
+          "type": "integer"
+        },
+        "min_silence_ms": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Min Silence Ms",
+          "type": "integer"
+        },
+        "padding_ms": {
+          "default": 20,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Padding Ms",
+          "type": "integer"
+        }
+      },
+      "title": "TrimParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.loudness",
+    "modality": "audio",
+    "category": "quality",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Measure EBU R128 loudness and optionally create a normalized PCM artifact.",
+      "properties": {
+        "normalize": {
+          "default": false,
+          "title": "Normalize",
+          "type": "boolean"
+        },
+        "target_lufs": {
+          "default": -23.0,
+          "maximum": -5,
+          "minimum": -70,
+          "title": "Target Lufs",
+          "type": "number"
+        },
+        "loudness_tolerance_lu": {
+          "default": 3.0,
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Loudness Tolerance Lu",
+          "type": "number"
+        },
+        "true_peak_dbfs": {
+          "default": -1.0,
+          "maximum": 0,
+          "minimum": -9,
+          "title": "True Peak Dbfs",
+          "type": "number"
+        },
+        "loudness_range_lu": {
+          "default": 7.0,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Loudness Range Lu",
+          "type": "number"
+        }
+      },
+      "title": "LoudnessParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.clipping",
+    "modality": "audio",
+    "category": "quality",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Find full-scale plateaus and near-full-scale dwelling without downmixing channels.",
+      "properties": {
+        "threshold": {
+          "default": 0.999,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "min_consecutive_samples": {
+          "default": 3,
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Min Consecutive Samples",
+          "type": "integer"
+        },
+        "saturation_level": {
+          "default": 0.85,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Saturation Level",
+          "type": "number"
+        },
+        "saturation_occupancy": {
+          "default": 0.45,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Saturation Occupancy",
+          "type": "number"
+        },
+        "window_ms": {
+          "default": 20,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Window Ms",
+          "type": "integer"
+        },
+        "merge_gap_ms": {
+          "default": 50,
+          "maximum": 5000,
+          "minimum": 0,
+          "title": "Merge Gap Ms",
+          "type": "integer"
+        }
+      },
+      "title": "ClippingParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.dedup",
+    "modality": "audio",
+    "category": "deduplication",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Compare MFCC spectral shape and fluctuation time course within a duration tolerance.\n\nVarying sound is a copy when its MFCC fluctuations correlate within ``max_lag_ms``;\nsteady tones are compared by spectral shape alone.",
+      "properties": {
+        "correlation_threshold": {
+          "default": 0.6,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Correlation Threshold",
+          "type": "number"
+        },
+        "shape_threshold": {
+          "default": 0.75,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Shape Threshold",
+          "type": "number"
+        },
+        "stationary_threshold": {
+          "default": 0.95,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Stationary Threshold",
+          "type": "number"
+        },
+        "max_lag_ms": {
+          "default": 200,
+          "maximum": 5000,
+          "minimum": 0,
+          "title": "Max Lag Ms",
+          "type": "integer"
+        },
+        "duration_tolerance": {
+          "default": 0.05,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Duration Tolerance",
+          "type": "number"
+        },
+        "remove": {
+          "default": true,
+          "title": "Remove",
+          "type": "boolean"
+        }
+      },
+      "title": "DedupParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.probe",
+    "modality": "video",
+    "category": "inspection",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Declare an operator with no configurable parameters.",
+      "properties": {},
+      "title": "EmptyParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.invalid_frames",
+    "modality": "video",
+    "category": "quality",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Configure signal thresholds at the documented 160 by 90 sample scale.",
+      "properties": {
+        "sample_fps": {
+          "default": 5.0,
+          "maximum": 30,
+          "minimum": 1,
+          "title": "Sample Fps",
+          "type": "number"
+        },
+        "black_threshold": {
+          "default": 16.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Black Threshold",
+          "type": "number"
+        },
+        "solid_std_threshold": {
+          "default": 2.0,
+          "maximum": 128,
+          "minimum": 0,
+          "title": "Solid Std Threshold",
+          "type": "number"
+        },
+        "freeze_difference": {
+          "default": 0.75,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Freeze Difference",
+          "type": "number"
+        },
+        "freeze_duration_ms": {
+          "default": 1000,
+          "minimum": 100,
+          "title": "Freeze Duration Ms",
+          "type": "integer"
+        },
+        "blur_variance_threshold": {
+          "default": 8.0,
+          "minimum": 0,
+          "title": "Blur Variance Threshold",
+          "type": "number"
+        },
+        "minimum_interval_ms": {
+          "default": 200,
+          "minimum": 0,
+          "title": "Minimum Interval Ms",
+          "type": "integer"
+        },
+        "remove": {
+          "default": false,
+          "title": "Remove",
+          "type": "boolean"
+        },
+        "invalid_ratio_threshold": {
+          "default": 0.99,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Invalid Ratio Threshold",
+          "type": "number"
+        }
+      },
+      "title": "InvalidFramesParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.dedup",
+    "modality": "video",
+    "category": "deduplication",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Search repeated windows frame by frame and extend each match to its real extent.\n\nRepeats lasting at least 1.5 windows are located wherever they start.",
+      "properties": {
+        "window_ms": {
+          "default": 2000,
+          "maximum": 60000,
+          "minimum": 500,
+          "title": "Window Ms",
+          "type": "integer"
+        },
+        "sample_fps": {
+          "default": 30.0,
+          "maximum": 60,
+          "minimum": 1,
+          "title": "Sample Fps",
+          "type": "number"
+        },
+        "max_hamming": {
+          "default": 6.0,
+          "maximum": 32,
+          "minimum": 0,
+          "title": "Max Hamming",
+          "type": "number"
+        },
+        "max_brightness_difference": {
+          "default": 16.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Max Brightness Difference",
+          "type": "number"
+        },
+        "max_spatial_difference": {
+          "default": 2.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Max Spatial Difference",
+          "type": "number"
+        },
+        "minimum_clip_ms": {
+          "default": 250,
+          "minimum": 0,
+          "title": "Minimum Clip Ms",
+          "type": "integer"
+        },
+        "remove": {
+          "default": false,
+          "title": "Remove",
+          "type": "boolean"
+        }
+      },
+      "title": "DedupParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.segment",
+    "modality": "video",
+    "category": "segmentation",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Choose fixed time windows, preserving a shorter final segment by default.\n\nWith ``skip_issues`` the windows are laid only inside ranges free of the\nissue intervals already annotated on the file (invalid frames, duplicates).",
+      "properties": {
+        "window_ms": {
+          "default": 10000,
+          "maximum": 3600000,
+          "minimum": 100,
+          "title": "Window Ms",
+          "type": "integer"
+        },
+        "minimum_duration_ms": {
+          "default": 100,
+          "minimum": 1,
+          "title": "Minimum Duration Ms",
+          "type": "integer"
+        },
+        "skip_issues": {
+          "default": false,
+          "title": "Skip Issues",
+          "type": "boolean"
+        }
+      },
+      "title": "SegmentParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.normalize",
+    "modality": "video",
+    "category": "normalization",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Declare an MPEG-4/AAC MP4 with square pixels and letterboxed content.",
+      "properties": {
+        "width": {
+          "default": 640,
+          "maximum": 4096,
+          "minimum": 2,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "default": 360,
+          "maximum": 4096,
+          "minimum": 2,
+          "title": "Height",
+          "type": "integer"
+        },
+        "frame_rate": {
+          "default": 30.0,
+          "maximum": 120,
+          "minimum": 1,
+          "title": "Frame Rate",
+          "type": "number"
+        }
+      },
+      "title": "NormalizeParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "media.align",
+    "modality": "any",
+    "category": "alignment",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Bound the lag search and require distinct, strongly matching signals.",
+      "properties": {
+        "max_offset_seconds": {
+          "default": 30.0,
+          "exclusiveMinimum": 0,
+          "maximum": 300,
+          "title": "Max Offset Seconds",
+          "type": "number"
+        },
+        "min_overlap_ms": {
+          "default": 500,
+          "maximum": 60000,
+          "minimum": 100,
+          "title": "Min Overlap Ms",
+          "type": "integer"
+        },
+        "min_correlation": {
+          "default": 0.55,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Min Correlation",
+          "type": "number"
+        },
+        "max_secondary_ratio": {
+          "default": 0.9,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Max Secondary Ratio",
+          "type": "number"
+        },
+        "max_analysis_seconds": {
+          "default": 120.0,
+          "maximum": 600,
+          "minimum": 1,
+          "title": "Max Analysis Seconds",
+          "type": "number"
+        }
+      },
+      "title": "AlignParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
     "id": "file.dedup",
     "modality": "any",
     "category": "deduplication",

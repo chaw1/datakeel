@@ -31,6 +31,8 @@ def _execute_node(node: Node, selected: list[FileItem], output: Path) -> SlotFil
         return {
             "image": [file for file in selected if file.modality == "image"],
             "text": [file for file in selected if file.modality == "text"],
+            "audio": [file for file in selected if file.modality == "audio"],
+            "video": [file for file in selected if file.modality == "video"],
             "other": [file for file in selected if file.modality not in {"image", "text"}],
         }
     operator = REGISTRY[str(node.operator)]
