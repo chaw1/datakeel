@@ -113,6 +113,7 @@ class OperatorManifest(Record):
     """Describe typed input/output slots and JSON parameter schemas."""
 
     id: str
+    version: str = "1.0.0"
     modality: str
     category: str
     inputs: dict[str, str]

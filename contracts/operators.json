@@ -1,6 +1,7 @@
 [
   {
     "id": "file.dedup",
+    "version": "1.0.0",
     "modality": "any",
     "category": "deduplication",
     "inputs": {
@@ -20,6 +21,7 @@
   },
   {
     "id": "file.corrupt_check",
+    "version": "1.0.0",
     "modality": "any",
     "category": "validation",
     "inputs": {
@@ -45,6 +47,7 @@
   },
   {
     "id": "file.empty_check",
+    "version": "1.0.0",
     "modality": "any",
     "category": "validation",
     "inputs": {
@@ -70,6 +73,7 @@
   },
   {
     "id": "image.quality",
+    "version": "1.0.0",
     "modality": "image",
     "category": "quality",
     "inputs": {
@@ -144,6 +148,7 @@
   },
   {
     "id": "image.resize",
+    "version": "1.0.0",
     "modality": "image",
     "category": "transform",
     "inputs": {
@@ -183,6 +188,7 @@
   },
   {
     "id": "image.thumbnail",
+    "version": "1.0.0",
     "modality": "image",
     "category": "preview",
     "inputs": {
@@ -210,6 +216,7 @@
   },
   {
     "id": "image.convert",
+    "version": "1.0.0",
     "modality": "image",
     "category": "transform",
     "inputs": {
@@ -247,6 +254,7 @@
   },
   {
     "id": "text.encoding_fix",
+    "version": "1.0.0",
     "modality": "text",
     "category": "transform",
     "inputs": {
@@ -277,6 +285,7 @@
   },
   {
     "id": "text.pii_redact",
+    "version": "1.0.0",
     "modality": "text",
     "category": "privacy",
     "inputs": {
@@ -314,6 +323,7 @@
   },
   {
     "id": "text.dedup",
+    "version": "1.0.0",
     "modality": "text",
     "category": "deduplication",
     "inputs": {
@@ -346,6 +356,7 @@
   },
   {
     "id": "text.quality",
+    "version": "1.0.0",
     "modality": "text",
     "category": "quality",
     "inputs": {
@@ -379,6 +390,7 @@
   },
   {
     "id": "pointcloud.probe",
+    "version": "1.0.0",
     "modality": "point-cloud",
     "category": "quality",
     "inputs": {
@@ -450,6 +462,7 @@
   },
   {
     "id": "pointcloud.clean",
+    "version": "1.0.0",
     "modality": "point-cloud",
     "category": "transform",
     "inputs": {
@@ -525,6 +538,7 @@
   },
   {
     "id": "pointcloud.downsample",
+    "version": "1.0.0",
     "modality": "point-cloud",
     "category": "transform",
     "inputs": {
@@ -551,6 +565,7 @@
   },
   {
     "id": "pointcloud.outliers",
+    "version": "1.0.0",
     "modality": "point-cloud",
     "category": "transform",
     "inputs": {
@@ -585,6 +600,7 @@
   },
   {
     "id": "pointcloud.unit_check",
+    "version": "1.0.0",
     "modality": "point-cloud",
     "category": "validation",
     "inputs": {
@@ -636,6 +652,7 @@
   },
   {
     "id": "pointcloud.preview",
+    "version": "1.0.0",
     "modality": "point-cloud",
     "category": "visualization",
     "inputs": {
@@ -672,6 +689,7 @@
   },
   {
     "id": "evidence.image_phash",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -698,6 +716,7 @@
   },
   {
     "id": "evidence.caption_mentions",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -724,6 +743,7 @@
   },
   {
     "id": "evidence.annotation_labels",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -750,6 +770,7 @@
   },
   {
     "id": "evidence.label_gap",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -776,6 +797,7 @@
   },
   {
     "id": "evidence.near_duplicate",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
