@@ -7,6 +7,7 @@ import { Versions } from "../versions/Versions";
 import { ObjectEvidence } from "./ObjectEvidence";
 import { ObjectFileQuality } from "./ObjectFileQuality";
 import { ObjectHistory } from "./ObjectHistory";
+import { ObjectMedia } from "./ObjectMedia";
 import { ObjectRelations } from "./ObjectRelations";
 
 import type { ObjectTarget } from "./navigation";
@@ -49,7 +50,10 @@ export function ObjectSections({
       );
     case "quality":
       return target.kind === "file" ? (
-        <ObjectFileQuality data={data} />
+        <>
+          <ObjectMedia data={data} target={target} />
+          <ObjectFileQuality data={data} />
+        </>
       ) : (
         <Quality quality={data.quality} />
       );
@@ -57,28 +61,31 @@ export function ObjectSections({
       return <ReportView report={data.report} />;
     case "facts":
       return (
-        <section
-          id="object-section-source-record"
-          className="object-source-evidence"
-        >
-          <h2>{t("objSourceRecord")}</h2>
-          <p>{data.metric?.definition.description ?? data.name}</p>
-          <details>
-            <summary>{t("objProperties")}</summary>
-            <pre>
-              {JSON.stringify(
-                data.file ??
-                  data.version ??
-                  data.catalog ??
-                  data.metric?.definition ??
-                  data.action ??
-                  data.dataset,
-                null,
-                2,
-              )}
-            </pre>
-          </details>
-        </section>
+        <>
+          <ObjectMedia data={data} target={target} />
+          <section
+            id="object-section-source-record"
+            className="object-source-evidence"
+          >
+            <h2>{t("objSourceRecord")}</h2>
+            <p>{data.metric?.definition.description ?? data.name}</p>
+            <details>
+              <summary>{t("objProperties")}</summary>
+              <pre>
+                {JSON.stringify(
+                  data.file ??
+                    data.version ??
+                    data.catalog ??
+                    data.metric?.definition ??
+                    data.action ??
+                    data.dataset,
+                  null,
+                  2,
+                )}
+              </pre>
+            </details>
+          </section>
+        </>
       );
   }
 }
