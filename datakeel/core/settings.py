@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     model_routing_file: Path | None = None
     openlineage_token: SecretStr | None = None
     openlineage_namespaces: dict[str, OpenLineageNamespace] = Field(default_factory=dict)
+    airflow_url: str | None = None
+    airflow_token: SecretStr | None = None
+    airflow_username: str | None = None
+    airflow_password: SecretStr | None = None
+    airflow_timeout: float = Field(default=30, gt=0, le=120)
+    airflow_run_limit: int = Field(default=10, ge=1, le=100)
     delegation_max_depth: int = Field(default=2, ge=1, le=8)
     delegation_max_parallel: int = Field(default=3, ge=1, le=16)
 

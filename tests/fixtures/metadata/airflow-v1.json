@@ -1,0 +1,62 @@
+{
+  "dags": [
+    {
+      "dag_id": "daily_orders",
+      "owners": ["analytics"],
+      "description": "Refresh curated order reporting",
+      "schedule_interval": {"__type": "CronExpression", "value": "0 6 * * *"},
+      "timetable_description": "Every day at 06:00",
+      "is_paused": false,
+      "is_active": true,
+      "tags": [{"name": "finance"}],
+      "fileloc": "dags/daily_orders.py"
+    }
+  ],
+  "total_entries": 1,
+  "tasks": {
+    "daily_orders": {
+      "tasks": [
+        {
+          "task_id": "extract",
+          "owner": "data-platform",
+          "downstream_task_ids": ["build"],
+          "inlets": [{"uri": "postgres://warehouse.example:5432/analytics.raw.orders"}],
+          "outlets": ["postgres://warehouse.example:5432/analytics.staging.orders"]
+        },
+        {
+          "task_id": "build",
+          "owner": "analytics",
+          "doc_md": "Build the reporting table",
+          "inlets": ["postgres://warehouse.example:5432/analytics.staging.orders"],
+          "outlets": [{"uri": "postgres://warehouse.example:5432/analytics.public.orders"}]
+        }
+      ]
+    }
+  },
+  "dag_runs": {
+    "daily_orders": {
+      "dag_runs": [
+        {"dag_run_id": "scheduled__first", "state": "success", "start_date": "2026-10-25T06:00:00Z", "end_date": "2026-10-25T06:10:00Z"},
+        {"dag_run_id": "scheduled__second", "state": "failed", "start_date": "2026-10-26T06:00:00Z", "end_date": "2026-10-26T06:03:00Z"}
+      ],
+      "total_entries": 2
+    }
+  },
+  "task_instances": {
+    "daily_orders": {
+      "task_instances": [
+        {"dag_run_id": "scheduled__first", "task_id": "extract", "state": "success", "end_date": "2026-10-25T06:02:00Z"},
+        {"dag_run_id": "scheduled__first", "task_id": "build", "state": "success", "end_date": "2026-10-25T06:10:00Z"},
+        {"dag_run_id": "scheduled__second", "task_id": "build", "state": "failed", "end_date": "2026-10-26T06:03:00Z"}
+      ]
+    }
+  },
+  "datasets": [
+    {
+      "id": 1,
+      "uri": "postgres://warehouse.example:5432/analytics.public.orders",
+      "producing_tasks": [{"dag_id": "daily_orders", "task_id": "build"}],
+      "consuming_dags": [{"dag_id": "daily_orders"}]
+    }
+  ]
+}
