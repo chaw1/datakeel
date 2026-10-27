@@ -39,6 +39,8 @@ ENTRIES: tuple[tuple[AccessEntry, AccessScope], ...] = (
     ("mcp", "query"),
     ("agent", "query"),
 )
+# HTTP dataset reads that summarize files; each records one query usage under the ask entry.
+DATASET_READS = ("report", "quality")
 
 
 def _http(db: Database, resources: EntryResources, entry: AccessEntry) -> bool:
@@ -72,6 +74,16 @@ def _http(db: Database, resources: EntryResources, entry: AccessEntry) -> bool:
     return response.status_code == 200
 
 
+def _dataset_read(db: Database, resources: EntryResources, read: str) -> bool:
+    with TestClient(create_app(db), headers={"X-Datakeel-Actor": "local"}) as client:
+        response = client.get(f"/api/datasets/{resources.dataset_id}/{read}")
+    assert response.status_code in {200, 403}, response.text
+    if response.status_code == 403:
+        assert "apply for access" in response.text
+        assert "Generated asset access sample" not in response.text
+    return response.status_code == 200
+
+
 def _tool(db: Database, resources: EntryResources, entry: AccessEntry) -> bool:
     arguments = JsonDocument({"dataset_id": resources.dataset_id})
     if entry == "mcp":
@@ -97,7 +109,7 @@ def _tool(db: Database, resources: EntryResources, entry: AccessEntry) -> bool:
 def test_all_native_entries_enforce_persistent_grants(
     db: Database, tmp_path: Path, classification: AssetClassification, state: GrantState
 ) -> None:
-    """Every entry denies missing/expired/revoked/wrong scopes and allows an active exact grant."""
+    """Every entry and dataset report/quality read denies invalid grants and allows exact ones."""
     resources = seed_resources(db, tmp_path)
     dataset_asset = publish(db, AssetRef(asset_id=resources.dataset_id), classification)
     metric_asset = publish(
@@ -114,9 +126,15 @@ def test_all_native_entries_enforce_persistent_grants(
         assert allowed == (state == "valid"), (classification, state, entry)
         if grant_id and state != "revoked":
             revoke(db, grant_id)
+    for read in DATASET_READS:
+        grant_id = grant(db, dataset_asset, state, "query")
+        allowed = _dataset_read(db, resources, read)
+        assert allowed == (state == "valid"), (classification, state, read)
+        if grant_id and state != "revoked":
+            revoke(db, grant_id)
     usages = list_usage(db, AssetUsageQuery(actor="local"))
     assert {item.entry for item in usages} == (
         {entry for entry, _ in ENTRIES} if state == "valid" else set()
     )
-    assert len(usages) == (5 if state == "valid" else 0)
+    assert len(usages) == (len(ENTRIES) + len(DATASET_READS) if state == "valid" else 0)
     assert all(item.grant_id for item in usages)

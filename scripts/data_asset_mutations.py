@@ -127,4 +127,15 @@ DATA_ASSET_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="asset-dataset-report",
+        path="api/routes/governance.py",
+        before=(
+            "    # Quality findings and reports describe dataset files, "
+            "so they share the query guard.\n"
+        ),
+        after="    return\n",
+        case=f"{_MATRIX}[none-restricted]",
+        runner="pytest",
+    ),
 )

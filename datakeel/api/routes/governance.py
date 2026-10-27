@@ -3,13 +3,16 @@
 
 """Quality evaluations, reports, templates, and audited metadata changes."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from datakeel.api.dependencies import DatabaseDependency
-from datakeel.core.models import JsonDocument
+from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.governance.models import ComplianceView
 from datakeel.quality.models import QualityView, ReportView
 from datakeel.storage import governance_service as service
+from datakeel.storage.data_asset_reads import authorize_query
+from datakeel.storage.database import Database
 from datakeel.storage.governance_service import MetadataInput, QualityInput
 from datakeel.storage.views import (
     MetadataChangeView,
@@ -23,10 +26,12 @@ router = APIRouter(prefix="/api/datasets/{identifier}", tags=["governance"])
 
 @router.get("/quality", response_model_exclude_none=True)
 def quality(
-    identifier: str, db: DatabaseDependency, *, quarantined: bool | None = None
+    identifier: str, db: DatabaseDependency, request: Request, *, quarantined: bool | None = None
 ) -> QualityView:
     """Read the latest manifest quality evaluation."""
-    return service.get_quality(db, identifier, quarantined=quarantined)
+    result = service.get_quality(db, identifier, quarantined=quarantined)
+    _authorize_dataset(db, identifier, request)
+    return result
 
 
 @router.put("/quality/config", response_model_exclude_none=True)
@@ -36,9 +41,11 @@ def quality_config(identifier: str, config: QualityInput, db: DatabaseDependency
 
 
 @router.get("/report", response_model_exclude_none=True)
-def report(identifier: str, db: DatabaseDependency) -> ReportView:
+def report(identifier: str, db: DatabaseDependency, request: Request) -> ReportView:
     """Read the evidence-based dataset report."""
-    return service.get_report(db, identifier)
+    result = service.get_report(db, identifier)
+    _authorize_dataset(db, identifier, request)
+    return result
 
 
 @router.put("/template", response_model_exclude_none=True)
@@ -69,3 +76,14 @@ def changes(identifier: str, db: DatabaseDependency) -> list[MetadataChangeView]
 def compliance(identifier: str, db: DatabaseDependency) -> ComplianceView:
     """Read naming, directory, and metadata compliance."""
     return service.get_compliance(db, identifier)
+
+
+def _authorize_dataset(db: Database, identifier: str, request: Request) -> None:
+    # Quality findings and reports describe dataset files, so they share the query guard.
+    authorize_query(
+        db,
+        (AssetRef(asset_id=identifier),),
+        AccessContext(
+            actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
+        ),
+    )
