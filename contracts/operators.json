@@ -378,6 +378,299 @@
     "queue": "cpu"
   },
   {
+    "id": "pointcloud.probe",
+    "modality": "point-cloud",
+    "category": "quality",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Control statistical probe, sparse-coverage and unit-suspicion thresholds.",
+      "properties": {
+        "neighbors": {
+          "default": 16,
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Neighbors",
+          "type": "integer"
+        },
+        "distance_ratio": {
+          "default": 4.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Distance Ratio",
+          "type": "number"
+        },
+        "min_density": {
+          "default": 1.0,
+          "minimum": 0,
+          "title": "Min Density",
+          "type": "number"
+        },
+        "expected_max_extent": {
+          "default": 1000.0,
+          "exclusiveMinimum": 0,
+          "title": "Expected Max Extent",
+          "type": "number"
+        },
+        "reference_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Extent"
+        },
+        "scale_ratio": {
+          "default": 1000.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Ratio",
+          "type": "number"
+        },
+        "scale_tolerance": {
+          "default": 2.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Tolerance",
+          "type": "number"
+        }
+      },
+      "title": "ProbeParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.clean",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Remove invalid coordinates and optionally clip an inclusive source-unit box.",
+      "properties": {
+        "remove_invalid": {
+          "default": true,
+          "title": "Remove Invalid",
+          "type": "boolean"
+        },
+        "min_bound": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Bound"
+        },
+        "max_bound": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Bound"
+        }
+      },
+      "title": "CleanParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.downsample",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Select the source-unit voxel size for stable first-point sampling.",
+      "properties": {
+        "voxel_size": {
+          "default": 0.1,
+          "exclusiveMinimum": 0,
+          "title": "Voxel Size",
+          "type": "number"
+        }
+      },
+      "title": "DownsampleParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.outliers",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Reject points whose mean neighbor distance exceeds a multiple of the median.",
+      "properties": {
+        "neighbors": {
+          "default": 16,
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Neighbors",
+          "type": "integer"
+        },
+        "distance_ratio": {
+          "default": 4.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Distance Ratio",
+          "type": "number"
+        }
+      },
+      "title": "OutlierParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.unit_check",
+    "modality": "point-cloud",
+    "category": "validation",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Flag implausibly large extents without rewriting ambiguous coordinates.",
+      "properties": {
+        "expected_max_extent": {
+          "default": 1000.0,
+          "exclusiveMinimum": 0,
+          "title": "Expected Max Extent",
+          "type": "number"
+        },
+        "reference_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Extent"
+        },
+        "scale_ratio": {
+          "default": 1000.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Ratio",
+          "type": "number"
+        },
+        "scale_tolerance": {
+          "default": 2.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Tolerance",
+          "type": "number"
+        }
+      },
+      "title": "UnitCheckParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.preview",
+    "modality": "point-cloud",
+    "category": "visualization",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Bound a deterministic top-down PNG projection.",
+      "properties": {
+        "size": {
+          "default": 512,
+          "maximum": 2048,
+          "minimum": 32,
+          "title": "Size",
+          "type": "integer"
+        },
+        "color_by": {
+          "default": "height",
+          "enum": [
+            "height",
+            "intensity"
+          ],
+          "title": "Color By",
+          "type": "string"
+        }
+      },
+      "title": "PreviewParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
     "id": "evidence.image_phash",
     "modality": "image",
     "category": "evidence",

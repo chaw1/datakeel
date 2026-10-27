@@ -16,6 +16,12 @@ from datakeel.operators.image.convert import OPERATOR as CONVERT
 from datakeel.operators.image.quality import OPERATOR as IMAGE_QUALITY
 from datakeel.operators.image.resize import OPERATOR as RESIZE
 from datakeel.operators.image.thumbnail import OPERATOR as THUMBNAIL
+from datakeel.operators.pointcloud.clean import OPERATOR as POINTCLOUD_CLEAN
+from datakeel.operators.pointcloud.downsample import OPERATOR as POINTCLOUD_DOWNSAMPLE
+from datakeel.operators.pointcloud.outliers import OPERATOR as POINTCLOUD_OUTLIERS
+from datakeel.operators.pointcloud.preview import OPERATOR as POINTCLOUD_PREVIEW
+from datakeel.operators.pointcloud.probe import OPERATOR as POINTCLOUD_PROBE
+from datakeel.operators.pointcloud.unit_check import OPERATOR as POINTCLOUD_UNIT_CHECK
 from datakeel.operators.text.dedup import OPERATOR as TEXT_DEDUP
 from datakeel.operators.text.encoding_fix import OPERATOR as ENCODING_FIX
 from datakeel.operators.text.pii_redact import OPERATOR as PII_REDACT
@@ -35,6 +41,12 @@ REGISTRY: dict[str, Operator] = {
         PII_REDACT,
         TEXT_DEDUP,
         TEXT_QUALITY,
+        POINTCLOUD_PROBE,
+        POINTCLOUD_CLEAN,
+        POINTCLOUD_DOWNSAMPLE,
+        POINTCLOUD_OUTLIERS,
+        POINTCLOUD_UNIT_CHECK,
+        POINTCLOUD_PREVIEW,
         IMAGE_PHASH,
         CAPTION_MENTIONS,
         ANNOTATION_LABELS,

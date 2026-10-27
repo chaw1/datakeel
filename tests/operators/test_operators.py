@@ -154,7 +154,7 @@ def test_text_quality_reports_unreadable_and_short(
 
 def test_manifest_schemas_and_validation(make_file: FileFactory, output_dir: Path) -> None:
     """Verify manifest schemas and validation."""
-    assert len(manifests()) == 16
+    assert len(manifests()) == 22
     snapshot = Path(__file__).resolve().parents[2] / "contracts/operators.json"
     assert json.loads(snapshot.read_text()) == [value.model_dump() for value in manifests()]
     for manifest in manifests():
