@@ -65,7 +65,7 @@ npm --prefix web run smoke:ui -- http://127.0.0.1:8773
 
 ## 企业目录与可追溯问数
 
-同一个 demo 还生成虚构厨电公司 **Fictional Kitchen Co.**，包含 ERP、CRM、电商、售后四个 SQLite 数据源：20 张表和 4 个视图在目录里对应 **24 个表对象、128 个字段、13 个指标、12 个维度、32 条术语**。生成器写入 51,992 行，并独立计算 `gold.json`；重跑得到相同的 SQLite `.dump` 文本与 gold 字节。SQLite 反射产生包含关系和外键引用；字段派生关系仅来自视图或用户 SQL 的解析，使用 `sqlglot` 30.24.0（MIT）。本版其他文件导入器只保留接口。
+同一个 demo 还生成虚构厨电公司 **Fictional Kitchen Co.**，包含 ERP、CRM、电商、售后四个 SQLite 数据源：20 张表和 4 个视图在目录里对应 **24 个表对象、128 个字段、13 个指标、12 个维度、32 条术语**。生成器写入 51,992 行，并独立计算 `gold.json`；重跑得到相同的 SQLite `.dump` 文本与 gold 字节。SQLite 反射产生包含关系和外键引用；字段派生关系仅来自视图或用户 SQL 的解析，使用 `sqlglot` 30.24.0（MIT）。工程元数据还可从 dbt 产物、Airflow REST API v1（实时拉取或离线导出）及 OpenLineage 事件导入，详见下文。
 
 打开 **数据目录**，按数据源 → 表 → 字段浏览，查看表负责人、相邻关系及使用该表的指标。指标目录和术语表支持搜索、分页；指标卡展示口径、负责人、版本、caveats 和引用无法解析的原因。**下游影响** 显示有界的字段、表、指标、维度、术语树。**查看血缘** 打开对象档案的关系 tab，指定 `include_catalog=true`、两跳、最多 25 个可见节点；目录关系使用独立边类型，各类对象按列布局。
 
@@ -114,6 +114,8 @@ metrics:
 目录版本是唯一权威，YAML `version` 仅作导入时的期望当前版本校验，不能覆盖历史；重跑 demo 保留已有指标修改。进入 **数据目录 → 指标 → 修改定义**，修改金额字段、过滤条件或业务描述，点 **审阅修改** 准备 `update_metric`，核对计划后再执行动作。成功回执对应一个新版本。将 `retail_revenue` 从 `paid_amount` 改为 `list_amount`，同一示例问题变为 **5,255,975 元**。其声明的 `inverse_of` 动作 `rollback_metric` 可把旧定义恢复为又一个新版本：通过 `POST /api/actions/rollback_metric/prepare` 传入 `metric_id` 和历史 `version`，再用既有动作执行接口执行返回的计划。**查看历史版本（JSON）** 链接到 [`GET /api/catalog/metrics/retail_revenue/history`](http://127.0.0.1:8765/api/catalog/metrics/retail_revenue/history)，记录含 `plan_id`、actor、前后版本。术语变更同样使用 `update_term` / `rollback_term`。
 
 源导入使用 `import_catalog` / `restore_catalog`。显式重新 prepare+execute 未变化的源时，回执显示 `unchanged`，不增加目录事件，统计包含 `parse_failures`。`rebuild-catalog` 从事件重建对象与关系边，校验含投影器版本的规范化哈希；可用 `--expected-hash` 传入此前保存的哈希。question 资产及注册谓词 `ask.answers_with`、`ask.matched_term`、`ask.unanswerable` 复用证据来源、审核和 `rebuild-evidence`；目录及 question 对象不进入文件选择 manifest。
+
+本地 dbt 产物、Airflow REST v1 实时拉取或离线导出、鉴权 OpenLineage 事件与指标草稿确认见[元数据导入说明](docs/METADATA_IMPORTS.md)。
 
 ## 检查证据与选择样本
 
@@ -333,7 +335,7 @@ OpenLineage 导出是事件数组，逐个元素用官方 RunEvent Schema 校验
 
 ## MCP 接入
 
-`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **32 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），15 个**只准备计划**的动作（含 `run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
+`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **33 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），16 个**只准备计划**的动作（含 `run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
 
 Agent 和 MCP 同步提供 `ask_data`、`list_metrics`、`explain_metric`、`impact_of`。`ask_data` 只读源数据，在 Datakeel 保存答案及证据；涉及资产的调用记录 `asset_refs`，空的 `list_metrics` 结果可没有引用。工具、动作与 HTTP 使用同一套类型模型生成 schema。
 

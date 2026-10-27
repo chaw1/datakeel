@@ -172,6 +172,21 @@ Close the drawer, select that relation and click **Reject selected**. Switch to 
 
 See the [knowledge graph reference](KG.md) for schema configuration, offline evaluation and consent before external extraction.
 
+## Import dbt and orchestration metadata
+
+Import the fictional dbt project artifacts into the current local workspace:
+
+```sh
+uv run datakeel import dbt --source-id shop \
+  --manifest tests/fixtures/dbt/manifest.json \
+  --catalog tests/fixtures/dbt/catalog.json \
+  --run-results tests/fixtures/dbt/run_results.json
+```
+
+Open **Catalog → Import metadata**. Reuse your database source ID, select a local `manifest.json`, and optionally include `catalog.json` and `run_results.json`. Import the artifacts and inspect the new, changed, deleted-at-source, and unchanged counts. Switch to Airflow to import an offline REST v1 DAG export. The imported-object browser filters DAGs, tasks, consumers, and metric drafts; select an object to inspect its schedule, ownership, latest state, freshness, and lineage.
+
+Metric drafts remain outside the semantic layer until their complete definition is reviewed and explicitly approved in the standard confirmation plan. Repeating an identical import should report unchanged objects. Removed source objects keep their deletion marker. See [Metadata imports](METADATA_IMPORTS.en.md) for CLI, HTTP, export formats, and OpenLineage authentication.
+
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.

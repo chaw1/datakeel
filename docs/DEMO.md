@@ -190,3 +190,18 @@ npm --prefix web run smoke:tour -- http://127.0.0.1:8773
 After demo initialization, open Ask data and select the owner, upstream or downstream examples, then enter `shipments 表从哪来？` or `营业额谁负责？` for further questions. The first separates the registered supply-chain role from the candidate document claim about 周岩; the second marks `erp_raw_shipments` as missing from the catalog; the third asks you to choose 销售额 or 零售额.
 
 演示初始化后，在问数页点击负责人例句并作答，再手动输入 shipments 上游、营业额负责人两个问题。第一题把系统角色和文档中周岩的说法分开展示；第二题标明原始表「目录里没有」；第三题请用户选择歧义指标。点击文档说法进入原文关系抽屉。切到知识图谱，选择「企业文档 · Enterprise documents」，打开实体的「对应资产」并接受或拒绝关联。审阅后重问可以看到状态变化；重关联、同版本重抽取仍保留人审。全部来自六篇虚构文档的离线录制，不需要模型密钥。
+
+## 导入 dbt 与调度元数据
+
+仓库中的虚构 dbt 项目产物可直接导入当前本地工作区：
+
+```sh
+uv run datakeel import dbt --source-id shop \
+  --manifest tests/fixtures/dbt/manifest.json \
+  --catalog tests/fixtures/dbt/catalog.json \
+  --run-results tests/fixtures/dbt/run_results.json
+```
+
+在目录页选择“导入元数据”。沿用数据库来源 ID，选择本地 `manifest.json`，并按需添加 `catalog.json`、`run_results.json`；点击“导入产物”后查看新增、变更、来源已删除和未变摘要。切换 Airflow 可导入离线 REST v1 DAG JSON。下方“已导入对象”支持筛选 DAG、任务、消费者和指标草稿，打开对象可查看调度、负责人、最近状态、新鲜度及血缘。
+
+指标草稿先留在草稿区。审阅完整定义并生成确认计划后，在签批单中明确签批，才进入语义层。重复导入相同文件应主要显示“未变”；从来源移除的对象保留“来源已删除”标记。CLI、HTTP、文件格式和 OpenLineage 鉴权配置见[元数据导入说明](METADATA_IMPORTS.md)。
