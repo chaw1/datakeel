@@ -1,0 +1,54 @@
+id: 44-quality-failures
+description: Read persisted failures from actual bounded order quality scans.
+fixture_kind: quality
+turns:
+  - input: Which quality rules are failing?
+    script:
+      - tool_calls:
+          - name: tool_search
+            arguments: {query: list_quality_rules}
+            id: 44-discover
+      - tool_calls:
+          - name: list_quality_rules
+            arguments: {status: failed}
+            id: 44-failures
+      - content: One order amount rule is failing; its last scan found a negative amount.
+expect:
+  tool_sequence: [tool_search, list_quality_rules]
+  tool_results:
+    - name: list_quality_rules
+      content_schema:
+        type: object
+        required: [data]
+        properties:
+          data:
+            type: object
+            required: [items, total]
+            properties:
+              total: {const: 1}
+              items:
+                type: array
+                minItems: 1
+                maxItems: 1
+                items:
+                  type: object
+                  required: [rule, latest_result]
+                  properties:
+                    rule:
+                      type: object
+                      properties:
+                        id: {const: orders-amount}
+                    latest_result:
+                      type: object
+                      required: [status, failed_count, samples]
+                      properties:
+                        status: {const: failed}
+                        failed_count: {const: 1}
+                        samples:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              value: {const: '[REDACTED]'}
+  file_count: 1
+  max_turns: 3

@@ -1,0 +1,50 @@
+id: 45-quality-table-history
+description: Explain order quality from measured rule history and a persisted score.
+fixture_kind: quality
+turns:
+  - input: How has the orders table quality looked recently?
+    script:
+      - tool_calls:
+          - name: tool_search
+            arguments: {query: get_table_quality}
+            id: 45-discover
+      - tool_calls:
+          - name: get_table_quality
+            arguments: {source_id: quality-demo, table: orders}
+            id: 45-table
+      - content: Orders quality is 50 percent. The amount rule failed twice and the required order ID rule passed twice.
+expect:
+  tool_sequence: [tool_search, get_table_quality]
+  tool_results:
+    - name: get_table_quality
+      content_schema:
+        type: object
+        required: [data]
+        properties:
+          data:
+            type: object
+            required: [summary, trends]
+            properties:
+              summary:
+                type: object
+                required: [score, total, failed, passed, open_issues]
+                properties:
+                  score: {const: 50}
+                  total: {const: 2}
+                  failed: {const: 1}
+                  passed: {const: 1}
+                  open_issues: {const: 1}
+              trends:
+                type: array
+                minItems: 2
+                maxItems: 2
+                items:
+                  type: object
+                  required: [rule_id, results]
+                  properties:
+                    results:
+                      type: array
+                      minItems: 2
+                      maxItems: 2
+  file_count: 1
+  max_turns: 3

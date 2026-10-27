@@ -12,6 +12,7 @@ from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.ontology.catalog_functions import invoke_catalog
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
+from datakeel.ontology.dq_functions import QualityRulesParams, TableQualityParams, invoke_quality
 from datakeel.ontology.evidence_functions import invoke_evidence
 from datakeel.ontology.kg_functions import invoke_kg
 from datakeel.ontology.models import FunctionResult, FunctionType, ObjectSet, PropertyFilter
@@ -46,6 +47,8 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "impact_of": ImpactParams,
     "query_kg": KGQuery,
     "explain_relation": KGExplainQuery,
+    "list_quality_rules": QualityRulesParams,
+    "get_table_quality": TableQualityParams,
 }
 
 
@@ -150,9 +153,13 @@ def invoke_function(db: Database, name: str, arguments: JsonDocument) -> Functio
         "impact_of",
         "query_kg",
         "explain_relation",
+        "list_quality_rules",
+        "get_table_quality",
     }:
         handler = (
-            invoke_kg
+            invoke_quality
+            if name in {"list_quality_rules", "get_table_quality"}
+            else invoke_kg
             if name in {"query_kg", "explain_relation"}
             else invoke_evidence
             if name in {"query_evidence", "get_evidence", "explain_sample"}
