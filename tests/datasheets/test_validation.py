@@ -282,6 +282,28 @@ def test_spaced_chinese_dates_are_compared_as_calendar_days(
     assert tuple(reason for item in result.dropped_sentences for reason in item.reasons) == reasons
 
 
+@pytest.mark.parametrize(
+    ("text", "value", "kept"),
+    [
+        (
+            "质量问题包括consistency_below_target和annotation_excluded。",
+            [{"code": "consistency_below_target"}, {"code": "annotation_excluded"}],
+            True,
+        ),
+        ("负责人为 Cedar Unit 和 Acorn Unit。", ["Cedar Unit", "Acorn Unit"], True),
+        ("文件包括 north.png 与 south.png。", ["north.png", "south.png"], True),
+        ("负责人为 Cedar Acorn。", ["Cedar Unit", "Acorn Unit"], False),
+        ("文件包括 north south.png。", ["north.png", "south.png"], False),
+    ],
+)
+def test_chinese_connectors_separate_english_phrases(
+    text: str, value: JsonValue, *, kept: bool
+) -> None:
+    """Terms joined by 和/与 are separate phrases; directly adjacent terms must still co-occur."""
+    result = checked(text, (fact(value),))
+    assert (result.dropped_sentences == ()) is kept
+
+
 def test_invented_named_date_is_removed() -> None:
     """Month names cannot conceal a fabricated day or year from numeric date checks."""
     result = checked("Collection date: February 2, 2026.", (fact("2026-01-02"),))

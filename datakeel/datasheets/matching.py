@@ -205,7 +205,8 @@ def _proper_phrases(text: str, evidence: tuple[str, ...]) -> bool:
 
 def _content_phrases(text: str, evidence: tuple[str, ...]) -> bool:
     # Adjacent recorded name tokens must occur together, even when the model lowercases them.
-    for group in re.findall(r"[\w'-]+(?:[ \t]+[\w'-]+)*", text):
+    # Chinese text between Latin terms (和, 与, 包括) separates them like punctuation does.
+    for group in re.findall(r"[\w'-]+(?:[ \t]+[\w'-]+)*", _HAN.sub("\n", text)):
         phrase: list[str] = []
         for word in (*_words(group), "and"):
             if word not in ENGLISH_GRAMMAR:
