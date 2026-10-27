@@ -33,7 +33,10 @@ from datakeel.storage.action_snapshot import snapshot_digest
 from datakeel.storage.action_store import audit
 from datakeel.storage.action_targets import current_manifest
 from datakeel.storage.catalog_action_state import catalog_impact, prepare_catalog_params
-from datakeel.storage.data_asset_action_state import prepare_data_asset_params
+from datakeel.storage.data_asset_action_state import (
+    prepare_data_asset_params,
+    relaxes_asset_access,
+)
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
@@ -123,7 +126,7 @@ def _new_plan(
             "state_digest": snapshot_digest(session, parsed, manifest),
             "created_at": created,
             "expires_at": created + timedelta(seconds=context.ttl_seconds),
-            "reversible": definition.reversible,
+            "reversible": definition.reversible and not relaxes_asset_access(session, parsed),
             "external": external,
             "impact": ActionImpact(
                 object_count=_impact_count(session, parsed, manifest),
