@@ -14,6 +14,12 @@ from datakeel.core.metric_models import CompiledQuery, QueryResult, Scalar
 from datakeel.metrics.execution import execute_query
 from datakeel.metrics.sql_safety import validate_select
 
+# Side-effect-free built-ins that sqlglot does not model as typed function expressions.
+_PURE_FUNCTIONS = {
+    "sqlite": frozenset({"datetime", "julianday", "time", "total", "unixepoch"}),
+    "postgres": frozenset({"age", "json_typeof", "jsonb_typeof", "make_date"}),
+}
+
 
 def read_rule_table(
     rule: DqRule, source: SourceProperties, *, reference: bool = False
@@ -44,9 +50,22 @@ def validate_assertion(rule: DqRule, source: SourceProperties) -> None:
     _assertion_sql(rule, source)
 
 
+def _reject_unsafe_calls(parsed: exp.Select, dialect: str) -> None:
+    # Read-only transactions still allow calls such as pg_terminate_backend or query_to_xml,
+    # so assertions may only use functions sqlglot recognises plus a few pure date helpers.
+    for node in parsed.walk():
+        if isinstance(node, exp.Dot) and isinstance(node.expression, exp.Func):
+            msg = "SQL assertions cannot call schema-qualified functions"
+            raise ValidationError(msg)
+        if isinstance(node, exp.Anonymous) and node.name.lower() not in _PURE_FUNCTIONS[dialect]:
+            msg = f"SQL assertions may only call built-in read-only functions, not {node.name}"
+            raise ValidationError(msg)
+
+
 def _assertion_sql(rule: DqRule, source: SourceProperties) -> str:
     sql = rule.params.sql or ""
     parsed = validate_select(sql, _dialect(source))
+    _reject_unsafe_calls(parsed, _dialect(source))
     tables = tuple(parsed.find_all(exp.Table))
     if any(
         table.catalog

@@ -74,6 +74,17 @@ DQ_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="dq-assertion-function-allowlist",
+        path="quality/dq_source.py",
+        before="    _reject_unsafe_calls(parsed, _dialect(source))\n",
+        after="",
+        case=(
+            "tests/quality/test_dq_sql_functions.py::"
+            "test_rejected_function_never_reaches_the_business_source"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="dq-alert-on-transition-only",
         path="storage/dq_results.py",
         before="    if issue is None or issue.status == prior:",
