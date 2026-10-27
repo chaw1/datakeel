@@ -17,6 +17,7 @@ from datakeel.storage.datasets import materialize_files, persist_files
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.worker.heartbeat import pulse as _pulse
 from datakeel.worker.kg_runner import execute_kg
+from datakeel.worker.media_observations import published_media_events
 from datakeel.worker.observations import Observations
 from datakeel.worker.queue import DatabaseQueue, Lease
 
@@ -53,13 +54,18 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
             operator_executor=evidence.execute_node,
         )
         persisted = persist_files(outputs)
-        return queue.finish(lease, persisted, observations.events, evidence=tuple(evidence.pending))
+        return queue.finish(
+            lease,
+            persisted,
+            published_media_events(observations.events, persisted),
+            evidence=tuple(evidence.pending),
+        )
     except Exception as exc:
         logger.exception("Shard execution failed", extra={"shard_id": lease.shard_id})
         accepted = queue.finish(
             lease,
             [],
-            observations.events,
+            published_media_events(observations.events, []),
             error=f"{type(exc).__name__}: {exc}",
             evidence=tuple(evidence.pending),
         )

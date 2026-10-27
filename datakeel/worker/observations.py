@@ -8,6 +8,7 @@ import threading
 from datakeel.core.models import AssetRef, LineageEvent
 from datakeel.pipeline import Node, Pipeline, PipelineObservation
 from datakeel.storage.task_queue import Lease
+from datakeel.worker.media_observations import media_events
 
 
 class Observations:
@@ -49,6 +50,7 @@ class Observations:
             for reference in node.inputs.values():
                 for ref in self.ancestors(reference):
                     upstream[ref.asset_id] = ref
+            self.events.extend(media_events(self.lease, value, self._artifact(node)))
             self.events.append(
                 LineageEvent(
                     idempotency_key=f"shard:{self.lease.shard_id}:node:{identifier}",
