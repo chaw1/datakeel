@@ -14,9 +14,11 @@ from pathlib import Path
 from packaging.licenses import InvalidLicenseExpression, canonicalize_license_expression
 from rich.console import Console
 
+from scripts.license_base import base_python_packages, validate_base_inventory
 from scripts.license_frontend import frontend_packages
 from scripts.license_models import LicenseFinding, LicensePackage, LicenseReport
 from scripts.license_python import python_packages
+from scripts.license_sandbox import sandbox_packages
 
 ALLOWED_LICENSES = frozenset(
     {
@@ -70,7 +72,11 @@ def license_findings(package: LicensePackage) -> tuple[LicenseFinding, ...]:
 
 def audit(root: Path) -> LicenseReport:
     """Collect both runtime closures from their locks and installed package metadata."""
-    packages = (*python_packages(root), *frontend_packages(root))
+    python = python_packages(root)
+    sandbox = sandbox_packages(root, python)
+    if (root / "sandbox/Dockerfile").is_file():
+        sandbox = base_python_packages(validate_base_inventory(root, python))
+    packages = (*python, *frontend_packages(root), *sandbox)
     return LicenseReport(
         python_target=f"Python {platform.python_version()} / {sys.platform} / {platform.machine()}",
         packages=packages,
@@ -105,6 +111,15 @@ def render_notices(report: LicenseReport) -> str:
         "permissive. These exact package exceptions do not permit other MPL or CNRI dependencies.",
         "Upstream license texts remain in",
         "installed distributions; frontend texts are in `web/public/THIRD-PARTY-LICENSES.txt`.",
+        "",
+        "Sandbox Python dependencies are fixed in `sandbox/Dockerfile` and checked against",
+        "the same locked versions and license evidence. Upstream wheel license files are retained.",
+        "The official Python slim base is separately pinned; its OS distribution licensing",
+        "and notices remain in the image. This inventory does not relicense base OS packages.",
+        "The interpreter, installed wheels (including base tooling), and every Debian package have",
+        "versioned copyright-file evidence in",
+        "[the base inventory](sandbox/BASE_IMAGE_INVENTORY.json).",
+        "Debian license declarations are retained separately from the Python allowlist.",
         "",
         "| Ecosystem | Package | Version | SPDX license | Evidence |",
         "| --- | --- | --- | --- | --- |",
