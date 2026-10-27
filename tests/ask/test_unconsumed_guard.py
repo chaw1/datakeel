@@ -75,10 +75,32 @@ def no_execution(monkeypatch: pytest.MonkeyPatch) -> list[CompiledQuery]:
     return executed
 
 
-@pytest.mark.parametrize(
-    ("question", "fragment"),
-    [*_TIME_FRAGMENTS, *_FILTER_FRAGMENTS, *_GROUP_FRAGMENTS, *_CALCULATION_FRAGMENTS],
-)
+_ALL_FRAGMENTS = [*_TIME_FRAGMENTS, *_FILTER_FRAGMENTS, *_GROUP_FRAGMENTS, *_CALCULATION_FRAGMENTS]
+_UNPARSED_TIME = _TIME_FRAGMENTS[:9]
+
+
+def _assert_blocked(
+    db: Database, executed: list[CompiledQuery], question: str, fragment: str
+) -> None:
+    """Refuse before any SQL runs and name the fragment that blocked the answer."""
+    answer = ask_data(db, AskRequest(question=question, reference_instant=REFERENCE))
+    assert answer.status in {"clarification", "unanswerable"}, question
+    assert executed == [], question
+    assert answer.result is None
+    assert answer.sql is None
+    assert fragment in answer.message, answer.message
+
+
+def _assert_time_refusal(db: Database, question: str, fragment: str) -> None:
+    """Report an unparsed time word as a time problem, not as a dropped filter."""
+    answer = ask_data(db, AskRequest(question=question, reference_instant=REFERENCE))
+    assert answer.status == "unanswerable", question
+    assert answer.message.startswith("无法可靠解析时间条件"), answer.message
+    assert answer.interpretation is not None
+    assert any(fragment in item for item in answer.interpretation.unconsumed), question
+
+
+@pytest.mark.parametrize(("question", "fragment"), _ALL_FRAGMENTS)
 def test_unconsumed_fragments_never_execute_or_return_numbers(
     db: Database,
     enterprise_sample: EnterpriseSample,
@@ -88,25 +110,34 @@ def test_unconsumed_fragments_never_execute_or_return_numbers(
 ) -> None:
     """Each category of unparsed fragment refuses before any SQL runs and names the fragment."""
     assert enterprise_sample.sources
-    answer = ask_data(db, AskRequest(question=question, reference_instant=REFERENCE))
-    assert answer.status in {"clarification", "unanswerable"}, question
-    assert no_execution == []
-    assert answer.result is None
-    assert answer.sql is None
-    assert fragment in answer.message, answer.message
+    _assert_blocked(db, no_execution, question, fragment)
 
 
-@pytest.mark.parametrize(("question", "fragment"), _TIME_FRAGMENTS[:9])
+def test_no_fragment_category_reaches_execution(
+    db: Database, enterprise_sample: EnterpriseSample, no_execution: list[CompiledQuery]
+) -> None:
+    """One sweep over every category, so a weakened guard fails a single measurable test."""
+    assert enterprise_sample.sources
+    for question, fragment in _ALL_FRAGMENTS:
+        _assert_blocked(db, no_execution, question, fragment)
+
+
+@pytest.mark.parametrize(("question", "fragment"), _UNPARSED_TIME)
 def test_time_fragments_refuse_as_time(
     db: Database, enterprise_sample: EnterpriseSample, question: str, fragment: str
 ) -> None:
     """Unparsed time words are reported as time problems, not silently dropped as filters."""
     assert enterprise_sample.sources
-    answer = ask_data(db, AskRequest(question=question, reference_instant=REFERENCE))
-    assert answer.status == "unanswerable"
-    assert answer.message.startswith("无法可靠解析时间条件")
-    assert answer.interpretation is not None
-    assert any(fragment in item for item in answer.interpretation.unconsumed)
+    _assert_time_refusal(db, question, fragment)
+
+
+def test_every_unparsed_time_word_is_reported_as_time(
+    db: Database, enterprise_sample: EnterpriseSample
+) -> None:
+    """One sweep over the unparsed time words for guard mutations."""
+    assert enterprise_sample.sources
+    for question, fragment in _UNPARSED_TIME:
+        _assert_time_refusal(db, question, fragment)
 
 
 def test_interpretation_records_what_an_answer_used(

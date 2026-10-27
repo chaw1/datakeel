@@ -14,7 +14,7 @@ GUARD_MUTATIONS = (
         path="ask/service.py",
         before="    if leftovers.times:",
         after="    if False:",
-        case=_GUARD + "test_time_fragments_refuse_as_time",
+        case=_GUARD + "test_every_unparsed_time_word_is_reported_as_time",
         runner="pytest",
     ),
     Mutation(
@@ -22,7 +22,7 @@ GUARD_MUTATIONS = (
         path="ask/consumption.py",
         before="    times = [hit.group().strip() for hit in TIME_LIKE.finditer(text)]",
         after="    times: list[str] = []",
-        case=_GUARD + "test_time_fragments_refuse_as_time",
+        case=_GUARD + "test_every_unparsed_time_word_is_reported_as_time",
         runner="pytest",
     ),
     Mutation(
@@ -41,7 +41,7 @@ GUARD_MUTATIONS = (
             '*(f"未理解「{item}」" for item in leftovers.conditions)]'
         ),
         after="    issues = [*dimensions.issues]",
-        case=_GUARD + "test_unconsumed_fragments_never_execute_or_return_numbers",
+        case=_GUARD + "test_no_fragment_category_reaches_execution",
         runner="pytest",
     ),
     Mutation(
@@ -49,7 +49,7 @@ GUARD_MUTATIONS = (
         path="ask/consumption.py",
         before="    conditions = [*_english_conditions(text), *_chinese_conditions(text)]",
         after="    conditions = [*_chinese_conditions(text)]",
-        case=_GUARD + "test_unconsumed_fragments_never_execute_or_return_numbers",
+        case=_GUARD + "test_no_fragment_category_reaches_execution",
         runner="pytest",
     ),
     Mutation(
@@ -57,7 +57,7 @@ GUARD_MUTATIONS = (
         path="ask/service.py",
         before="    unsupported = [*leftovers.calculations, *rankings]",
         after="    unsupported: list[str] = []",
-        case=_GUARD + "test_unconsumed_fragments_never_execute_or_return_numbers",
+        case=_GUARD + "test_no_fragment_category_reaches_execution",
         runner="pytest",
     ),
     Mutation(
@@ -67,7 +67,7 @@ GUARD_MUTATIONS = (
             "        if cues.NEGATION_BEFORE.search(before) or cues.NEGATION_AFTER.match(after):"
         ),
         after="        if False:",
-        case="tests/ask/test_dimension_roles.py::test_unsupported_dimension_roles_are_reported",
+        case="tests/ask/test_dimension_roles.py::test_no_unsupported_dimension_role_becomes_a_slice",
         runner="pytest",
     ),
     Mutation(
@@ -75,7 +75,7 @@ GUARD_MUTATIONS = (
         path="ask/dimensions.py",
         before="        if _compound(question, item, known):",
         after="        if False:",
-        case=_GUARD + "test_unconsumed_fragments_never_execute_or_return_numbers",
+        case=_GUARD + "test_no_fragment_category_reaches_execution",
         runner="pytest",
     ),
     Mutation(
@@ -86,7 +86,7 @@ GUARD_MUTATIONS = (
             " and atom.interval_start >= reference:"
         ),
         after="        if False:",
-        case="tests/ask/test_time_english.py::test_periods_that_have_not_started_are_refused",
+        case="tests/ask/test_time_english.py::test_no_future_period_is_answered",
         runner="pytest",
     ),
     Mutation(
@@ -94,7 +94,7 @@ GUARD_MUTATIONS = (
         path="routing/intent.py",
         before="    request = requested_text(text)",
         after="    request = text",
-        case=_PARAPHRASE + "test_full_keyword_matches_start_only_when_not_asked_as_a_question",
+        case=_PARAPHRASE + "test_no_full_keyword_question_starts_a_workflow",
         runner="pytest",
     ),
     Mutation(
@@ -104,10 +104,7 @@ GUARD_MUTATIONS = (
             "    scoped = scope_for_workflow(normalize(requested_text(text)), workflow, workflows)"
         ),
         after="    scoped = scope_for_workflow(normalize(text), workflow, workflows)",
-        case=(
-            _PARAPHRASE
-            + "test_questions_about_a_workflow_cannot_be_verified_even_if_a_model_selects_one"
-        ),
+        case=(_PARAPHRASE + "test_no_workflow_question_passes_verification"),
         runner="pytest",
     ),
     Mutation(
@@ -115,7 +112,7 @@ GUARD_MUTATIONS = (
         path="routing/concepts.py",
         before="    if concepts.outcomes:",
         after="    if False:",
-        case=_PARAPHRASE + "test_questions_and_near_misses_never_start_a_workflow",
+        case=_PARAPHRASE + "test_no_negative_message_starts_a_workflow",
         runner="pytest",
     ),
 )

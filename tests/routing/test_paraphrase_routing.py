@@ -60,16 +60,64 @@ def test_offline_classifier_is_deterministic_and_never_picks_another_workflow(
     assert selected == expected
 
 
+_QUESTION_REQUEST_PAIRS = [
+    ("清理低质样本需要审批吗?", "清理低质样本。", "low-quality-cleanup"),
+    (
+        "Does the dataset health check need approval?",
+        "Run a dataset health check.",
+        "dataset-health",
+    ),
+    ("要多久才能做完数据集体检?", "做数据集体检。", "dataset-health"),
+]
+
+
+def _assert_never_started(message: str) -> None:
+    """Neither the rules nor the offline classifier start anything for the message."""
+    workflows = list_workflows()
+    decision = _route(message)
+    assert decision.workflow_id is None, message
+    assert decision.branch == "free_agent", message
+    keyword = keyword_route(message, workflows)
+    assert classify_offline(message, keyword.candidates, workflows) is None, message
+
+
+def _assert_unverifiable(message: str) -> None:
+    """Refuse a workflow question at scoring and again when a model forces any choice."""
+    workflows = list_workflows()
+    decision = keyword_route(message, workflows)
+    assert decision.reason == "workflow_question", message
+    assert all(item.score == 0 for item in decision.candidates)
+    forced = decision.model_copy(
+        update={
+            "branch": "classifier",
+            "candidates": [item.model_copy(update={"score": 0.5}) for item in decision.candidates],
+        }
+    )
+    for workflow in workflows:
+        result = classified_route(forced, workflow.id, message, workflows)
+        assert result.workflow_id is None, (message, workflow.id)
+        assert result.verification_passed is False
+
+
+def _assert_question_refused(question: str, request_text: str, workflow_id: str) -> None:
+    """Start from the request wording and refuse the same vocabulary asked as a question."""
+    workflows = list_workflows()
+    assert keyword_route(question, workflows).workflow_id is None, question
+    started = keyword_route(request_text, workflows)
+    assert started.workflow_id == workflow_id
+    assert started.branch == "keyword"
+
+
 @pytest.mark.parametrize("message", NEGATIVE_MESSAGES)
 def test_questions_and_near_misses_never_start_a_workflow(message: str) -> None:
     """Neither the rules nor the offline classifier start anything for these messages."""
-    workflows = list_workflows()
-    decision = _route(message)
-    assert decision.workflow_id is None
-    assert decision.branch == "free_agent"
-    keyword = keyword_route(message, workflows)
-    offline = classify_offline(message, keyword.candidates, workflows)
-    assert offline is None
+    _assert_never_started(message)
+
+
+def test_no_negative_message_starts_a_workflow() -> None:
+    """One sweep over every negative message for guard mutations."""
+    for message in NEGATIVE_MESSAGES:
+        _assert_never_started(message)
 
 
 @pytest.mark.parametrize("message", WORKFLOW_QUESTIONS)
@@ -77,45 +125,27 @@ def test_questions_about_a_workflow_cannot_be_verified_even_if_a_model_selects_o
     message: str,
 ) -> None:
     """The question guard runs before scoring and again inside post-classifier verification."""
-    workflows = list_workflows()
-    decision = keyword_route(message, workflows)
-    assert decision.reason == "workflow_question"
-    assert all(item.score == 0 for item in decision.candidates)
-    for workflow in workflows:
-        forced = decision.model_copy(
-            update={
-                "branch": "classifier",
-                "candidates": [
-                    item.model_copy(update={"score": 0.5}) for item in decision.candidates
-                ],
-            }
-        )
-        result = classified_route(forced, workflow.id, message, workflows)
-        assert result.workflow_id is None
-        assert result.verification_passed is False
+    _assert_unverifiable(message)
 
 
-@pytest.mark.parametrize(
-    ("question", "request_text", "workflow_id"),
-    [
-        ("清理低质样本需要审批吗?", "清理低质样本。", "low-quality-cleanup"),
-        (
-            "Does the dataset health check need approval?",
-            "Run a dataset health check.",
-            "dataset-health",
-        ),
-        ("要多久才能做完数据集体检?", "做数据集体检。", "dataset-health"),
-    ],
-)
+def test_no_workflow_question_passes_verification() -> None:
+    """One sweep over every workflow question for guard mutations."""
+    for message in WORKFLOW_QUESTIONS:
+        _assert_unverifiable(message)
+
+
+@pytest.mark.parametrize(("question", "request_text", "workflow_id"), _QUESTION_REQUEST_PAIRS)
 def test_full_keyword_matches_start_only_when_not_asked_as_a_question(
     question: str, request_text: str, workflow_id: str
 ) -> None:
     """The same vocabulary starts a workflow as a request and is refused as a question."""
-    workflows = list_workflows()
-    assert keyword_route(question, workflows).workflow_id is None
-    started = keyword_route(request_text, workflows)
-    assert started.workflow_id == workflow_id
-    assert started.branch == "keyword"
+    _assert_question_refused(question, request_text, workflow_id)
+
+
+def test_no_full_keyword_question_starts_a_workflow() -> None:
+    """One sweep over the question and request pairs for guard mutations."""
+    for question, request_text, workflow_id in _QUESTION_REQUEST_PAIRS:
+        _assert_question_refused(question, request_text, workflow_id)
 
 
 @pytest.mark.parametrize(

@@ -74,25 +74,36 @@ def test_value_aliases_with_filter_prepositions_become_slices(
     assert parsed.issues == ()
 
 
-@pytest.mark.parametrize(
-    "question",
-    [
-        "retail revenue excluding East China",
-        "retail revenue except online",
-        "retail revenue outside East China",
-        "除了华东以外的零售额",
-        "retail revenue for each East China",
-        "retail revenue in East China and South China",
-        "refund amount per channel",
-        "retail revenue region",
-    ],
-)
-def test_unsupported_dimension_roles_are_reported(layer: SemanticLayer, question: str) -> None:
-    """Exclusions, per-value grouping, conflicting values and foreign dimensions never vanish."""
+_UNSUPPORTED_ROLES = [
+    "retail revenue excluding East China",
+    "retail revenue except online",
+    "retail revenue outside East China",
+    "除了华东以外的零售额",
+    "retail revenue for each East China",
+    "retail revenue in East China and South China",
+    "refund amount per channel",
+    "retail revenue region",
+]
+
+
+def _assert_reported(layer: SemanticLayer, question: str) -> None:
+    """Keep an unsupported role as an issue and never turn it into a slice."""
     metric_id = "refund_amount" if question.startswith("refund") else "retail_revenue"
     parsed = _parse(question, layer, metric_id)
-    assert parsed.issues
-    assert parsed.slices == ()
+    assert parsed.issues, question
+    assert parsed.slices == (), question
+
+
+@pytest.mark.parametrize("question", _UNSUPPORTED_ROLES)
+def test_unsupported_dimension_roles_are_reported(layer: SemanticLayer, question: str) -> None:
+    """Exclusions, per-value grouping, conflicting values and foreign dimensions never vanish."""
+    _assert_reported(layer, question)
+
+
+def test_no_unsupported_dimension_role_becomes_a_slice(layer: SemanticLayer) -> None:
+    """One sweep over every unsupported role for guard mutations."""
+    for question in _UNSUPPORTED_ROLES:
+        _assert_reported(layer, question)
 
 
 def test_value_aliases_are_read_from_the_contract_not_code(layer: SemanticLayer) -> None:

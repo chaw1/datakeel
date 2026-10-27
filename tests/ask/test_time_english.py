@@ -71,15 +71,34 @@ def test_point_in_time_phrases_share_the_chinese_as_of_semantics(phrase: str) ->
     assert parsed.time_range.end.isoformat() == "2026-07-01"
 
 
-@pytest.mark.parametrize(
-    "phrase",
-    ["next month", "this quarter", "Q4 2026", "Q1 2027", "下个月", "明年", "next year"],
-)
+_FUTURE_PHRASES = [
+    "next month",
+    "this quarter",
+    "Q4 2026",
+    "Q1 2027",
+    "下个月",
+    "明年",
+    "next year",
+]
+
+
+def _assert_future(phrase: str) -> None:
+    """Refuse a period that starts at or after the reference instant."""
+    parsed = parse_time(phrase, REFERENCE)
+    assert parsed.time_range is None, phrase
+    assert any(issue.startswith("Future periods are not supported") for issue in parsed.issues)
+
+
+@pytest.mark.parametrize("phrase", _FUTURE_PHRASES)
 def test_periods_that_have_not_started_are_refused(phrase: str) -> None:
     """A period starting at or after the reference instant has no data to report."""
-    parsed = parse_time(phrase, REFERENCE)
-    assert parsed.time_range is None
-    assert any(issue.startswith("Future periods are not supported") for issue in parsed.issues)
+    _assert_future(phrase)
+
+
+def test_no_future_period_is_answered() -> None:
+    """One sweep over future periods for guard mutations."""
+    for phrase in _FUTURE_PHRASES:
+        _assert_future(phrase)
 
 
 @pytest.mark.parametrize("phrase", ["March 2026 and April 2026", "2026年3月和2026年4月"])
