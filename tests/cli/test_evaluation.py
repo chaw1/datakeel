@@ -45,7 +45,8 @@ def test_default_eval_includes_all_graph_conversations(
     """The normal public command runs all original and graph contracts together."""
     invoke("eval", "--json")
     report = json.loads(capsys.readouterr().out)
-    assert report["passed"] == report["total"] == 43
+    assert report["passed"] == report["total"] == 44
+    assert "44-annotation-quality" in {case["id"] for case in report["cases"]}
     assert len([case for case in report["cases"] if "-kg-" in case["id"]]) == 7
 
 
