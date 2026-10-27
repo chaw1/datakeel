@@ -11,12 +11,21 @@ export async function annotationTour({ page, base, api, capture, report }) {
   );
   const panel = page.locator(".annotation-quality");
   await panel.waitFor();
-  await panel
-    .getByText("Reworked harbor annotations", { exact: true })
-    .first()
-    .waitFor();
-  assert.match(await panel.innerText(), /Fleiss/);
-  assert.match(await panel.innerText(), /κ|kappa/);
+  // Batch names live in <option> elements, which are never visible; read the selection instead.
+  const batch = panel.locator("select", {
+    has: page.locator("option", { hasText: "Reworked harbor annotations" }),
+  });
+  await batch.waitFor();
+  assert.match(
+    await batch.evaluate((element) => element.selectedOptions[0].text),
+    /^Reworked harbor annotations/,
+  );
+  await panel.getByText("Fleiss").first().waitFor();
+  const text = await panel.innerText();
+  assert.match(text, /κ|kappa/);
+  assert.match(text, /返工对比/);
+  assert.match(text, /已修正问题\s*19\s/);
+  assert.match(text, /新引入问题\s*1\s/);
   await capture(
     "21-annotation-quality",
     "打开虚构港口数据集的标注质量，核对三人一致性、抽检历史与返工对比",
