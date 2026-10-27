@@ -9,6 +9,7 @@ import json
 from sqlalchemy.orm import Session
 
 from datakeel.actions.catalog_parameters import CatalogActionParams
+from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import DecideAssertionsParams, ExportParams
 from datakeel.core.models import BoundaryModel
@@ -17,6 +18,7 @@ from datakeel.lineage.service import graph
 from datakeel.ontology.models import FrozenManifest, ObjectSet
 from datakeel.storage.action_targets import current_manifest
 from datakeel.storage.catalog_action_state import catalog_state
+from datakeel.storage.dq_actions import quality_state
 from datakeel.storage.events import all_events
 from datakeel.storage.evidence_actions import decision_snapshot
 from datakeel.storage.object_queries import evaluate_in_session
@@ -25,6 +27,8 @@ from datakeel.storage.object_queries import evaluate_in_session
 def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> str:
     """Bind selected contents plus dataset metadata and exported event observations."""
     values = [manifest.state_digest]
+    if isinstance(params, QualityActionParams):
+        values.append(quality_state(session, params))
     if isinstance(params, CatalogActionParams):
         values.append(catalog_state(session))
     if isinstance(params, DecideAssertionsParams):

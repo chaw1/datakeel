@@ -15,6 +15,13 @@ from datakeel.actions.catalog_parameters import (
     UpdateMetricParams,
     UpdateTermParams,
 )
+from datakeel.actions.dq_parameters import (
+    ChangeQualityIssueParams,
+    CreateQualityRuleParams,
+    DeleteQualityRuleParams,
+    RunQualityRuleParams,
+    UpdateQualityRuleParams,
+)
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
@@ -93,6 +100,11 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "rollback_metric": RollbackMetricParams,
     "update_term": UpdateTermParams,
     "rollback_term": RollbackTermParams,
+    "create_quality_rule": CreateQualityRuleParams,
+    "update_quality_rule": UpdateQualityRuleParams,
+    "delete_quality_rule": DeleteQualityRuleParams,
+    "run_quality_rule": RunQualityRuleParams,
+    "change_quality_issue": ChangeQualityIssueParams,
 }
 
 

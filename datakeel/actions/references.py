@@ -11,6 +11,13 @@ from datakeel.actions.catalog_parameters import (
     UpdateMetricParams,
     UpdateTermParams,
 )
+from datakeel.actions.dq_parameters import (
+    ChangeQualityIssueParams,
+    CreateQualityRuleParams,
+    DeleteQualityRuleParams,
+    RunQualityRuleParams,
+    UpdateQualityRuleParams,
+)
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import parse_params
 from datakeel.core.catalog_identity import catalog_id
@@ -19,6 +26,23 @@ from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 
 def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
     """Read typed action targets independently of legacy ObjectSet membership."""
+    quality = _quality_refs(params)
+    if quality:
+        return quality
+    return _catalog_refs(params)
+
+
+def _quality_refs(params: BoundaryModel) -> list[AssetRef]:
+    if isinstance(params, CreateQualityRuleParams | UpdateQualityRuleParams):
+        return [AssetRef(asset_type="quality_rule", asset_id=params.rule.id)]
+    if isinstance(params, DeleteQualityRuleParams | RunQualityRuleParams):
+        return [AssetRef(asset_type="quality_rule", asset_id=params.rule_id)]
+    if isinstance(params, ChangeQualityIssueParams):
+        return [AssetRef(asset_type="quality_issue", asset_id=params.issue_id)]
+    return []
+
+
+def _catalog_refs(params: BoundaryModel) -> list[AssetRef]:
     if isinstance(params, ImportCatalogParams) and params.snapshot is not None:
         return [item.asset_ref for item in params.snapshot.objects]
     if isinstance(params, RestoreCatalogParams):

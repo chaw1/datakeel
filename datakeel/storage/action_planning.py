@@ -7,6 +7,7 @@ from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
+from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionContext, ActionImpact, ActionPlan
 from datakeel.actions.parameters import (
@@ -31,11 +32,14 @@ from datakeel.storage.action_store import audit
 from datakeel.storage.action_targets import current_manifest
 from datakeel.storage.catalog_action_state import catalog_impact, prepare_catalog_params
 from datakeel.storage.database import Database
+from datakeel.storage.dq_actions import prepare_quality_params
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
 
 
 def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
+    if isinstance(params, QualityActionParams):
+        return 1
     count = catalog_impact(session, params, manifest)
     return (
         max(count, len(params.assertion_ids))
@@ -66,7 +70,9 @@ def verify_target_state(session: Session, plan: ActionPlan) -> None:
 
 
 def _prepare_params(session: Session, action_type: str, params: JsonDocument) -> BoundaryModel:
-    parsed = prepare_catalog_params(session, parse_params(action_type, params))
+    parsed = prepare_quality_params(
+        session, prepare_catalog_params(session, parse_params(action_type, params))
+    )
     if isinstance(parsed, RunKGExtractionParams):
         parsed = prepare_kg_params(session, parsed)
     if isinstance(parsed, PipelineParams) and parsed.pipeline is None:

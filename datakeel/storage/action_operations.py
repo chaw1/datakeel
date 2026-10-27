@@ -8,6 +8,7 @@ import json
 from sqlalchemy.orm import Session
 
 from datakeel.actions.catalog_parameters import CatalogActionParams
+from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import (
@@ -24,6 +25,7 @@ from datakeel.storage.action_selection import change_file_state, selected_files,
 from datakeel.storage.catalog_actions import execute_catalog_action
 from datakeel.storage.database import DatasetRow, MetadataChangeRow, ShardRow, TaskRow, VersionRow
 from datakeel.storage.datasets import latest_files
+from datakeel.storage.dq_actions import execute_quality_action
 from datakeel.storage.evidence_actions import decide_action
 from datakeel.storage.kg_store import schedule_extraction
 
@@ -85,6 +87,8 @@ def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> Ope
 def execute_business(session: Session, plan: ActionPlan) -> OperationResult:
     """Mutate a validated plan without opening or committing another transaction."""
     params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
+    if isinstance(params, QualityActionParams):
+        return execute_quality_action(session, plan, params)
     if isinstance(params, CatalogActionParams):
         return execute_catalog_action(session, plan, params)
     if isinstance(params, DecideAssertionsParams):

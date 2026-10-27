@@ -36,6 +36,11 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
     "update_term": ("terms:write", True, "semantic_change"),
     "rollback_term": ("terms:write", True, "semantic_change"),
     "run_kg_extraction": ("kg:extract", True, "Extract candidate graph facts with source evidence"),
+    "create_quality_rule": ("quality:write", False, "Create an approved quality rule"),
+    "update_quality_rule": ("quality:write", False, "Replace an approved quality rule revision"),
+    "delete_quality_rule": ("quality:write", False, "Archive an approved quality rule"),
+    "run_quality_rule": ("quality:run", True, "Schedule a bounded read-only quality check"),
+    "change_quality_issue": ("quality:write", True, "Claim or confirm a quality issue"),
 }
 
 
