@@ -7,6 +7,7 @@ from pathlib import Path
 
 from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.service import approve_plan, execute_plan, prepare_action
+from datakeel.annotation_qa import changed_samples
 from datakeel.core.annotation_aql import lookup_aql
 from datakeel.core.annotation_models import AnnotationBatch
 from datakeel.core.annotation_sampling import (
@@ -64,29 +65,37 @@ def _bind(batch: AnnotationBatch, identifiers: dict[str, str]) -> AnnotationBatc
     )
 
 
-def _demo_seed(population: tuple[str, ...], flagged: set[str]) -> int:
-    """Pick the first seed from 26 whose AQL sample holds exactly two flagged units.
+def _demo_seed(population: tuple[str, ...], flagged: set[str], repaired: frozenset[str]) -> int:
+    """Pick the first seed from 26 whose AQL sample holds exactly two flagged units, both repaired.
 
     File identities are generated at import, so a fixed seed would draw different
-    units in every workspace; this keeps the demonstrated rejection reproducible.
+    units in every workspace; this keeps the demonstrated rejection reproducible. A
+    near-duplicate conflict flags both sides but the rework edits only one, so the
+    confirmed defects are drawn from units the rework revision actually changes.
     """
     plan = lookup_aql(len(population), DEMO_AQL)
+
+    def hits(seed: int) -> set[str]:
+        return set(select_sample(population, plan.sample_size, seed)) & flagged
+
     return next(
         seed
         for seed in range(26, 10_026)
-        if len(set(select_sample(population, plan.sample_size, seed)) & flagged) == DEMO_DEFECTS
+        if len(hits(seed)) == DEMO_DEFECTS and hits(seed) <= repaired
     )
 
 
-def _inspect(db: Database, report: AnnotationQualityReport, population: tuple[str, ...]) -> None:
+def _inspect(
+    db: Database,
+    report: AnnotationQualityReport,
+    population: tuple[str, ...],
+    repaired: frozenset[str],
+) -> None:
     """Draw the AQL 6.5 sample and confirm every sampled unit that has a rule finding."""
     reasons = {item.sample_id: f"{item.code}: {item.reason}" for item in report.result.findings}
+    seed = _demo_seed(population, set(reasons), repaired)
     sampling = create_sampling_plan(
-        db,
-        report.dataset_id,
-        SamplingRequest(
-            batch_id=report.id, aql=DEMO_AQL, seed=_demo_seed(population, set(reasons))
-        ),
+        db, report.dataset_id, SamplingRequest(batch_id=report.id, aql=DEMO_AQL, seed=seed)
     )
     params = AnnotationAcceptanceParams(
         dataset_id=sampling.dataset_id,
@@ -154,7 +163,10 @@ def seed_annotation_qa_demo(db: Database, directory: Path) -> AnnotationDemoSumm
 
     initial = load(samples.initial, "Initial harbor annotations", None)
     if not get_annotation_quality(db, dataset.id, version).inspections:
-        _inspect(db, initial, tuple(sorted(identifiers.values())))
+        repaired = changed_samples(
+            _bind(samples.initial, identifiers), _bind(samples.reworked, identifiers)
+        )
+        _inspect(db, initial, tuple(sorted(identifiers.values())), repaired)
     reworked = load(samples.reworked, "Reworked harbor annotations", initial.id)
     return AnnotationDemoSummary(
         dataset_id=dataset.id,

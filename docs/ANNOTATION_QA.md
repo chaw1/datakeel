@@ -94,9 +94,9 @@ Export rework lists as CSV or JSON. Import the repaired panel with `rework_of` p
 
 ## Offline demonstration / 离线演示
 
-The normal `uv run datakeel demo` includes **Aster harbor · annotation quality demo**: 24 fictional harbor images with generated notes, three reviewers, classification/boxes/spans and planted errors that produce ten finding types (19 findings). An AQL 6.5 plan (lot 24, letter C, arrow to D: n=8, Ac=1, Re=2) samples two flagged units, which the generated reviewer confirms, so the approved inspection rejects the batch. Because file identities are generated at import, the demo uses the first seed from 26 whose sample shows exactly two flagged units. The rework revision corrects all 19 findings, changes both rejected units and deliberately introduces one new invalid span. No model is initialized.
+The normal `uv run datakeel demo` includes **Aster harbor · annotation quality demo**: 24 fictional harbor images with generated notes, three reviewers, classification/boxes/spans and planted errors that produce ten finding types (19 findings). An AQL 6.5 plan (lot 24, letter C, arrow to D: n=8, Ac=1, Re=2) samples two flagged units, which the generated reviewer confirms, so the approved inspection rejects the batch. Because file identities are generated at import, the demo uses the first seed from 26 whose sample shows exactly two flagged units that the rework revision changes (a near-duplicate conflict flags both samples, but the rework edits only one). The rework revision corrects all 19 findings, changes both rejected units and deliberately introduces one new invalid span. No model is initialized.
 
-普通演示包含 **Aster harbor · annotation quality demo**：24 张虚构港口图及生成文字，三名标注员，分类、框和片段，埋入的错误产生十类共 19 条疑似。按 AQL 6.5 抽检（批量 24，字码 C 按箭头取 D：n=8，Ac=1，Re=2），抽中两件有疑似的样本并确认不合格，签批后判定拒收。文件身份在导入时生成，演示取从 26 起第一个恰好抽中两件疑似样本的种子。返工修正全部 19 条疑似、改动了两件不合格样本，并故意引入一条新的片段错误，全程不初始化模型。
+普通演示包含 **Aster harbor · annotation quality demo**：24 张虚构港口图及生成文字，三名标注员，分类、框和片段，埋入的错误产生十类共 19 条疑似。按 AQL 6.5 抽检（批量 24，字码 C 按箭头取 D：n=8，Ac=1，Re=2），抽中两件有疑似的样本并确认不合格，签批后判定拒收。文件身份在导入时生成，演示取从 26 起第一个恰好抽中两件疑似样本、且这两件都在返工中被改动的种子（近重复冲突会标出两边样本，返工只改其中一边）。返工修正全部 19 条疑似、改动了两件不合格样本，并故意引入一条新的片段错误，全程不初始化模型。
 
 Generate portable panels only:
 
