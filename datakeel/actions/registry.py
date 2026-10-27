@@ -9,6 +9,7 @@ from datakeel.core.models import JsonDocument
 from datakeel.ontology.models import ActionType
 
 POLICIES: dict[str, tuple[str, bool, str]] = {
+    "annotation_acceptance": ("annotations:accept", False, "Archive signed sampling acceptance"),
     "quarantine_files": ("files:write", True, "Set quarantine state"),
     "unquarantine_files": ("files:write", True, "Clear quarantine state"),
     "create_version_from_selection": (

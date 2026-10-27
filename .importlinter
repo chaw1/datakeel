@@ -8,10 +8,14 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
+# Annotation reads and quality overlays share frozen version-scoped projections.
+    datakeel.ontology.annotation_functions -> datakeel.storage.database
+    datakeel.ontology.annotation_functions -> datakeel.storage.annotation_store
+    datakeel.storage.governance_service -> datakeel.quality.annotation
 # Explicit memory services retain only typed projections across storage and tool boundaries.
     datakeel.memory.service -> datakeel.operators.text.pii_redact
     datakeel.memory.service -> datakeel.storage.memory_store
@@ -312,6 +316,14 @@ ignore_imports =
 # Image evaluation persists the same product identities; offline goldens drain real worker tasks.
     datakeel.storage.kg_image_eval_store -> datakeel.kg.identity
     datakeel.harness.image_kg_cases -> datakeel.worker.runner
+
+# Annotation reports are computed by the framework-free annotation_qa package at import time.
+    datakeel.storage.annotation_store -> datakeel.annotation_qa
+# Annotation imports adapt existing sidecar models and freeze approval state in one transaction.
+    datakeel.storage.annotation_legacy -> datakeel.operators.evidence.annotation_labels
+    datakeel.storage.annotation_legacy -> datakeel.operators.evidence.facts
+    datakeel.storage.annotation_actions -> datakeel.actions.models
+    datakeel.storage.annotation_actions -> datakeel.ontology.models
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

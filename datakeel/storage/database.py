@@ -30,6 +30,11 @@ from datakeel.storage.action_rows import (
     ActionRunRow,
     ApprovalRow,
 )
+from datakeel.storage.annotation_rows import (
+    AnnotationBatchRow,
+    AnnotationInspectionRow,
+    AnnotationSamplingRow,
+)
 from datakeel.storage.ask_rows import AskAnswerRow, AskSessionRow
 from datakeel.storage.base import Base
 from datakeel.storage.budget_rows import BudgetAccountRow, BudgetReservationRow
@@ -64,6 +69,9 @@ if TYPE_CHECKING:
 
 # Loading each mapping registers it in the single migration metadata collection.
 _REGISTERED_MODELS = (
+    AnnotationBatchRow,
+    AnnotationSamplingRow,
+    AnnotationInspectionRow,
     ActionAuditRow,
     ActionOperationRow,
     ActionPlanRow,

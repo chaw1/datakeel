@@ -16,6 +16,7 @@ from datakeel.actions.catalog_parameters import (
     UpdateTermParams,
 )
 from datakeel.actions.kg_parameters import RunKGExtractionParams
+from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.models import BoundaryModel, JsonDocument
@@ -78,6 +79,7 @@ class ExportParams(BoundaryModel):
 
 
 PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
+    "annotation_acceptance": AnnotationAcceptanceParams,
     "quarantine_files": SelectionParams,
     "unquarantine_files": SelectionParams,
     "delete_files": SelectionParams,

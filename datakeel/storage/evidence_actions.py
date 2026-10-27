@@ -11,10 +11,12 @@ from sqlalchemy.orm import Session
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import DecideAssertionsParams, selection_for
+from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_models import Assertion, AssertionDecisionRequest
 from datakeel.core.models import AssetRef, BoundaryModel
 from datakeel.ontology.models import FrozenManifest, ObjectSet, PropertyFilter
+from datakeel.storage.annotation_actions import inspection_manifest
 from datakeel.storage.ask_review import question_references, question_review_digest
 from datakeel.storage.catalog_action_state import catalog_manifest
 from datakeel.storage.evidence_decisions import assertion_view, decide_in_session
@@ -149,6 +151,8 @@ def action_manifest(
     session: Session, params: BoundaryModel, query: ObjectSet | None = None
 ) -> FrozenManifest:
     """Use exact assertion endpoints for reviews and ordinary ObjectSets for other actions."""
+    if isinstance(params, AnnotationAcceptanceParams):
+        return inspection_manifest(session, params)
     if isinstance(params, CatalogActionParams):
         return catalog_manifest()
     if isinstance(params, DecideAssertionsParams):
