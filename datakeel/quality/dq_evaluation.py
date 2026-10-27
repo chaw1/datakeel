@@ -31,24 +31,36 @@ def validate_distribution_values(rule: DqRule, values: tuple[Scalar, ...]) -> No
         raise ExecutionError(msg)
 
 
-def observation(rule: DqRule, values: tuple[Scalar, ...]) -> DqMetrics:
-    """Produce non-sensitive numeric aggregates and fixed-bin histogram frequencies."""
-    numbers = tuple(
+def _numbers(values: tuple[Scalar, ...]) -> tuple[float, ...]:
+    return tuple(
         float(value)
         for value in values
         if isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
     )
-    histogram = [0.0] * (len(rule.params.bin_edges) + 1)
+
+
+def observation(values: tuple[Scalar, ...], edges: tuple[float, ...]) -> DqMetrics:
+    """Produce non-sensitive numeric aggregates and fixed-bin histogram frequencies."""
+    numbers = _numbers(values)
+    histogram = [0.0] * (len(edges) + 1)
     for number in numbers:
-        histogram[bisect_right(rule.params.bin_edges, number)] += 1 / len(numbers)
+        histogram[bisect_right(edges, number)] += 1 / len(numbers)
     return DqMetrics(
         row_count=len(values),
         mean=stable_mean(numbers) if numbers else None,
         stddev=pstdev(numbers) if numbers else None,
         null_rate=sum(value is None for value in values) / len(values) if values else 0,
         histogram=tuple(histogram),
-        bin_edges=rule.params.bin_edges,
+        bin_edges=edges,
     )
+
+
+def decile_edges(values: tuple[Scalar, ...]) -> tuple[float, ...]:
+    """Derive distinct decile cut points so adaptive PSI bins follow the column's scale."""
+    numbers = sorted(_numbers(values))
+    if not numbers:
+        return ()
+    return tuple(sorted({numbers[len(numbers) * decile // 10] for decile in range(1, 10)}))
 
 
 def stable_mean(values: tuple[float, ...]) -> float:

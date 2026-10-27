@@ -119,13 +119,7 @@
           "type": "string"
         },
         "bin_edges": {
-          "default": [
-            -100.0,
-            0.0,
-            10.0,
-            100.0,
-            1000.0
-          ],
+          "default": [],
           "items": {
             "type": "number"
           },

@@ -13,6 +13,7 @@ from datakeel.core.errors import ExecutionError, ValidationError
 from datakeel.core.metric_models import Scalar
 from datakeel.core.models import utcnow
 from datakeel.quality.dq_evaluation import (
+    decile_edges,
     freshness_age,
     observation,
     population_stability,
@@ -67,9 +68,10 @@ def _evaluate(
     rows = read_rule_table(_remaining(rule, deadline), source)
     values = tuple(row[0] for row in rows.rows)
     validate_distribution_values(rule, values)
-    metrics = observation(rule, values)
+    baseline = _baseline(rule, history, now)
+    metrics = observation(values, _histogram_edges(rule, baseline, values))
     if rule.kind in {"volume_change", "distribution_drift"}:
-        return _historical(rule, metrics, history, now)
+        return _historical(rule, metrics, baseline, now)
     if rule.kind == "freshness":
         return _freshness(rule, values, metrics, now)
     reference = ()
@@ -132,10 +134,8 @@ def _freshness(
     return _result(rule, now, metrics, (), age)
 
 
-def _historical(
-    rule: DqRule, metrics: DqMetrics, history: tuple[DqResult, ...], now: datetime
-) -> DqResult:
-    recent = sorted(
+def _baseline(rule: DqRule, history: tuple[DqResult, ...], now: datetime) -> list[DqResult]:
+    return sorted(
         (
             item
             for item in history
@@ -147,6 +147,23 @@ def _historical(
         key=lambda item: item.started_at,
         reverse=True,
     )[: rule.params.baseline_runs]
+
+
+def _histogram_edges(
+    rule: DqRule, baseline: list[DqResult], values: tuple[Scalar, ...]
+) -> tuple[float, ...]:
+    if rule.params.bin_edges or rule.kind != "distribution_drift" or rule.params.statistic != "psi":
+        return rule.params.bin_edges
+    # Adaptive bins are fixed by the revision's first numeric observation and then reused.
+    for item in baseline:
+        if item.metrics.bin_edges:
+            return item.metrics.bin_edges
+    return decile_edges(values)
+
+
+def _historical(
+    rule: DqRule, metrics: DqMetrics, recent: list[DqResult], now: datetime
+) -> DqResult:
     if len(recent) < rule.params.baseline_runs:
         return DqResult(
             rule_id=rule.id,

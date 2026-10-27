@@ -94,11 +94,17 @@ def test_unsafe_or_invalid_regex_is_rejected(pattern: str) -> None:
         DqParameters(pattern=pattern)
 
 
-@pytest.mark.parametrize("edges", [(), (1, 1), (2, 1)])
+@pytest.mark.parametrize("edges", [(1, 1), (2, 1)])
 def test_psi_bins_require_strict_order(edges: tuple[float, ...]) -> None:
-    """Historical histograms always share explicit strictly increasing bins."""
+    """Explicit histogram bins must be strictly increasing to stay comparable."""
     with pytest.raises(ModelValidationError):
         DqParameters(bin_edges=edges)
+
+
+def test_psi_bins_default_to_adaptive_baseline_deciles() -> None:
+    """No hard-coded scale is assumed; an empty edge list selects adaptive bins."""
+    assert DqParameters().bin_edges == ()
+    assert DqParameters(bin_edges=(0.5,)).bin_edges == (0.5,)
 
 
 def test_schedule_is_canonicalized_and_models_are_frozen() -> None:

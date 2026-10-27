@@ -309,7 +309,8 @@ def test_long_regex_cells_are_not_silently_truncated(tmp_path: Path) -> None:
 
 def test_psi_rejects_changed_histogram_bins(tmp_path: Path) -> None:
     """Historical bins cannot be silently paired by position after configuration changes."""
-    rule = rule_of("distribution_drift", DqParameters(statistic="psi", baseline_runs=1))
+    params = DqParameters(statistic="psi", baseline_runs=1, bin_edges=(0, 5))
+    rule = rule_of("distribution_drift", params)
     source = business_source(tmp_path, (1, 2))
     old = execute_rule(rule, source, now=NOW - timedelta(days=1))
     old = old.model_copy(update={"metrics": old.metrics.model_copy(update={"bin_edges": (1, 3)})})
@@ -493,3 +494,33 @@ def test_whole_rule_deadline_rejects_verdict_after_scalar_computation(
     result = execute_rule(rule_of("not_null"), source, now=NOW)
     assert result.status == "error"
     assert "execution timeout" in result.message
+
+
+def test_adaptive_psi_bins_follow_baseline_scale(tmp_path: Path) -> None:
+    """Without explicit edges, baseline deciles fix the bins, so drift shows at any scale."""
+    rule = rule_of("distribution_drift", DqParameters(statistic="psi"), 0.25)
+    for scale in (0.001, 1, 100000):
+        folders = tuple(tmp_path / f"{name}-{scale}" for name in ("baseline", "similar", "shifted"))
+        for folder in folders:
+            folder.mkdir()
+        baseline = tuple(scale * index / 100 for index in range(100))
+        similar = tuple(scale * (index + 0.5) / 100 for index in range(100))
+        shifted = tuple(value + scale / 2 for value in baseline)
+        history = history_for(rule, baseline, folders[0])
+        edges = history[0].metrics.bin_edges
+        assert len(edges) == 9
+        assert all(item.metrics.bin_edges == edges for item in history)
+        steady = execute_rule(rule, business_source(folders[1], similar), history, NOW)
+        assert (steady.status, steady.actual_value) == ("passed", 0)
+        drifted = execute_rule(rule, business_source(folders[2], shifted), history, NOW)
+        assert (drifted.status, drifted.metrics.bin_edges) == ("failed", edges)
+
+
+def test_adaptive_psi_without_numeric_baseline_is_an_error(tmp_path: Path) -> None:
+    """An empty baseline cannot invent bins that silently pass a later comparison."""
+    rule = rule_of("distribution_drift", DqParameters(statistic="psi", baseline_runs=1))
+    empty = execute_rule(rule, business_source(tmp_path, (None,)), now=NOW - timedelta(days=1))
+    assert (empty.status, empty.metrics.bin_edges) == ("baseline_insufficient", ())
+    other = tmp_path / "numbers"
+    other.mkdir()
+    assert execute_rule(rule, business_source(other, (1, 2)), (empty,), NOW).status == "error"

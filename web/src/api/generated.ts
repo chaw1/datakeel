@@ -2800,13 +2800,7 @@ export interface components {
             baseline_runs: number;
             /**
              * Bin Edges
-             * @default [
-             *       -100,
-             *       0,
-             *       10,
-             *       100,
-             *       1000
-             *     ]
+             * @default []
              */
             bin_edges: number[];
             /** Bindings */

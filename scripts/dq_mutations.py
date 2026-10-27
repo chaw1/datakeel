@@ -52,6 +52,17 @@ DQ_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="dq-adaptive-psi-bins",
+        path="quality/dq_evaluation.py",
+        before=(
+            "    return tuple(sorted({numbers[len(numbers) * decile // 10] "
+            "for decile in range(1, 10)}))"
+        ),
+        after="    return ()",
+        case="tests/quality/test_dq_engine.py::test_adaptive_psi_bins_follow_baseline_scale",
+        runner="pytest",
+    ),
+    Mutation(
         name="dq-missed-minute-catch-up",
         path="storage/dq_jobs.py",
         before="        minute = latest_match(rule.cron, current, current - CATCH_UP_WINDOW)",

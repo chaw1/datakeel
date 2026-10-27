@@ -52,18 +52,17 @@ class DqParameters(BoundaryModel):
     reference_schema: str | None = None
     baseline_runs: int = Field(default=3, ge=1, le=100)
     statistic: Literal["mean", "stddev", "null_rate", "psi"] = "mean"
-    bin_edges: tuple[float, ...] = (-100.0, 0.0, 10.0, 100.0, 1000.0)
+    # Empty means adaptive: the revision's first numeric observation fixes decile bins.
+    bin_edges: tuple[float, ...] = ()
     sql: str | None = Field(default=None, max_length=20000)
     bindings: dict[str, Scalar] = Field(default_factory=dict[str, Scalar])
 
     @field_validator("bin_edges")
     @classmethod
     def ordered_edges(cls, value: tuple[float, ...]) -> tuple[float, ...]:
-        """Require stable nonempty ordered bins for comparable PSI observations."""
-        if (
-            not value
-            or not all(math.isfinite(edge) for edge in value)
-            or any(left >= right for left, right in pairwise(value))
+        """Require explicit PSI bins to be finite and strictly increasing; empty is adaptive."""
+        if not all(math.isfinite(edge) for edge in value) or any(
+            left >= right for left, right in pairwise(value)
         ):
             msg = "PSI bin edges must be strictly increasing"
             raise ValueError(msg)
