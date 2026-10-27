@@ -157,3 +157,57 @@ def test_airflow_dataset_freshness_uses_latest_producer_across_consumers() -> No
     )
     metadata = ExternalMetadata.model_validate(table.properties["integration"])
     assert metadata.details["last_success"] == "2026-10-27T02:00:00+00:00"
+
+
+def test_airflow_latest_state_follows_logical_date_for_never_started_runs() -> None:
+    """A queued run or upstream_failed instance in the newest run outranks an older success."""
+    document = JsonDocument(
+        {
+            "dags": [
+                {
+                    "dag_id": "nightly",
+                    "tasks": [{"task_id": "publish"}],
+                    "dag_runs": [
+                        {
+                            "dag_run_id": "scheduled__2026-10-26",
+                            "logical_date": "2026-10-26T02:30:00Z",
+                            "start_date": "2026-10-27T02:30:00Z",
+                            "end_date": "2026-10-27T02:47:00Z",
+                            "state": "success",
+                        },
+                        {
+                            "dag_run_id": "scheduled__2026-10-27",
+                            "logical_date": "2026-10-27T02:30:00Z",
+                            "state": "queued",
+                        },
+                    ],
+                    "task_instances": [
+                        {
+                            "task_id": "publish",
+                            "dag_run_id": "scheduled__2026-10-26",
+                            "execution_date": "2026-10-26T02:30:00Z",
+                            "start_date": "2026-10-27T02:45:00Z",
+                            "end_date": "2026-10-27T02:47:00Z",
+                            "state": "success",
+                        },
+                        {
+                            "task_id": "publish",
+                            "dag_run_id": "scheduled__2026-10-27",
+                            "execution_date": "2026-10-27T02:30:00Z",
+                            "state": "upstream_failed",
+                        },
+                    ],
+                }
+            ]
+        }
+    )
+    objects = {
+        item.asset_ref.asset_id: ExternalMetadata.model_validate(item.properties["integration"])
+        for item in prepare_airflow(request(document)).snapshot.objects
+    }
+    dag = objects["warehouse/dag/nightly"]
+    task = objects["warehouse/dag/nightly/publish"]
+    assert dag.details["state"] == "queued"
+    assert dag.details["last_success"] == "2026-10-27T02:47:00+00:00"
+    assert task.details["state"] == "upstream_failed"
+    assert task.details["last_success"] == "2026-10-27T02:47:00+00:00"

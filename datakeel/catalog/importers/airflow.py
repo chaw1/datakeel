@@ -34,8 +34,17 @@ def _run_time(run: AirflowRun) -> datetime:
     )
 
 
+def _run_order(run: AirflowRun) -> tuple[datetime, datetime]:
+    """Order runs by their logical date, as Airflow and the v1 order_by do.
+
+    Never-started runs or instances (queued, upstream_failed) only carry the logical
+    date; comparing it with another run's end time would hide the newest state.
+    """
+    return (run.logical_date or run.execution_date or _run_time(run), _run_time(run))
+
+
 def _run_details(runs: tuple[AirflowRun, ...]) -> JsonDocument:
-    latest = max(runs, key=_run_time) if runs else None
+    latest = max(runs, key=_run_order) if runs else None
     successes = [run for run in runs if run.state == "success"]
     last_success = max(successes, key=_run_time) if successes else None
     return JsonDocument(
