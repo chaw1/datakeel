@@ -202,7 +202,7 @@ def test_transformed_image_metadata_matches_scoring_evidence(
     assert final.size == Path(final.path).stat().st_size
     assert (
         score_quality([original], {"min_image_width": 16})["dimensions"]["completeness"]["score"]
-        == 100
+        == original.metadata["image_quality"]["overall_score"]
     )
     assert (
         score_quality([final], {"min_image_width": 16})["dimensions"]["completeness"]["score"] == 0

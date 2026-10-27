@@ -11,7 +11,8 @@ from typing import Any, cast
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
-from datakeel.quality.models import QualityConfig, QualityView
+from datakeel.quality.media import MediaAssessment, assess_file
+from datakeel.quality.models import IssueView, QualityConfig, QualityView
 
 MAX_SCORE = 100
 
@@ -128,7 +129,26 @@ def score_quality(
         * distribution_coverage,
     }
     details = _evidence(files, resolved, complete, annotations, known_hashes, groups)
-    return _summarize(raw, details, resolved, annotations, count)
+    media = _media_evidence(files, raw, details)
+    result = _summarize(raw, details, resolved, annotations, count)
+    return result.model_copy(update={"issues": [*result.issues, *media]})
+
+
+def _media_evidence(
+    files: list[FileItem], raw: dict[str, float], details: dict[str, Any]
+) -> list[IssueView]:
+    assessments: list[MediaAssessment] = [assess_file(file) for file in files]
+    for dimension in ("completeness", "consistency", "distribution"):
+        if assessments:
+            raw[dimension] *= sum(getattr(item, dimension) for item in assessments) / len(files)
+        observations = [
+            {"file_id": file.id, "filename": file.filename, **item.observations}
+            for file, item in zip(files, assessments, strict=True)
+            if item.observations
+        ]
+        if observations:
+            details[dimension]["media"] = observations
+    return [issue for item in assessments for issue in item.issues]
 
 
 def _validate_numbers(result: dict[str, Any]) -> None:
