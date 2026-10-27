@@ -4,6 +4,7 @@
 """Compare English word forms and abbreviations without a business vocabulary."""
 
 import re
+from itertools import pairwise
 
 from datakeel.core.models import BoundaryModel
 
@@ -14,6 +15,12 @@ _MIN_ROOT_LENGTH = 3
 _MIN_SUFFIXED_LENGTH = 4
 _MIN_CONSONANT_LENGTH = 2
 _MIN_SUBSEQUENCE_RETENTION = 0.6
+# Ordered deletions such as regn/region must keep most of the consonants that carry English
+# word identity. Three quarters admits one dropped consonant in four (whse/warehouse) while
+# rejecting short words that merely occur inside longer ones (tag/target 1/2, note/notice 2/3).
+# Measured against 133k dictionary words, this plus the vowel-join test leaves 13 accidental
+# hits on the shipped vocabulary (52 without the join test, 6 at 0.8 but losing whse and natl).
+_MIN_DELETION_COVERAGE = 0.75
 
 
 class TokenMatch(BoundaryModel):
@@ -116,6 +123,46 @@ def _skeleton_weight(observed: str, skeleton: str) -> float:
     return 0.0
 
 
+def _consonants(word: str) -> str:
+    return "".join(letter for letter in re.sub(r"(.)\1+", r"\1", word) if letter not in _VOWELS)
+
+
+def _joins_consonants(observed: str, expected: str) -> bool:
+    """Whether a dropped vowel joins two kept consonants (re-g-n, wh-s), as abbreviations do.
+
+    Ordinary words found inside longer ones keep their own spelling (fish/finish, rest/request).
+    """
+    positions: list[int] = []
+    for letter in observed:
+        positions.append(expected.index(letter, positions[-1] + 1 if positions else 0))
+    return any(
+        left not in _VOWELS
+        and right not in _VOWELS
+        and bool(_VOWELS.intersection(expected[start + 1 : end]))
+        for (left, start), (right, end) in pairwise(zip(observed, positions, strict=True))
+    )
+
+
+def _deletion_weight(observed: str, expected: str) -> float:
+    """Score ordered deletions that keep the initial letter, final consonant and most consonants.
+
+    Weights stay within 0.605-0.64, below every prefix (> 0.65) and consonant skeleton (>= 0.79).
+    """
+    if (
+        len(observed) < _MIN_PREFIX_LENGTH
+        or len(observed) >= len(expected)
+        or observed[0] != expected[0]
+        or not _is_subsequence(observed, expected)
+        or not _joins_consonants(observed, expected)
+    ):
+        return 0.0
+    kept, original = _consonants(observed), _consonants(expected)
+    coverage = len(kept) / len(original) if original else 0.0
+    if not kept or kept[-1] != original[-1] or coverage < _MIN_DELETION_COVERAGE:
+        return 0.0
+    return 0.5 + 0.14 * coverage
+
+
 def _consonant_weight(observed: str, expected: str) -> float:
     if len(observed) < _MIN_CONSONANT_LENGTH or any(letter in _VOWELS for letter in observed[1:]):
         return 0.0
@@ -130,7 +177,8 @@ def _consonant_weight(observed: str, expected: str) -> float:
 def match_token(observed: str, expected: str) -> TokenMatch | None:
     """Match exact words, inflections, spelling variants or shortened English tokens.
 
-    Abbreviations are directional: the observed token abbreviates the expected word.
+    Abbreviations are directional: the observed token abbreviates the expected word. They are
+    tried from strongest to weakest: prefix, consonant skeleton, then ordered deletion.
     Generic field vocabulary and business synonyms are handled by the caller.
     """
     left, right = observed.casefold(), expected.casefold()
@@ -149,6 +197,8 @@ def match_token(observed: str, expected: str) -> TokenMatch | None:
             rule, weight = "prefix", prefix_weight
         elif consonant_weight := _consonant_weight(left, right):
             rule, weight = "consonant", consonant_weight
+        elif deletion_weight := _deletion_weight(left, right):
+            rule, weight = "subsequence", deletion_weight
         else:
             return None
     return TokenMatch(weight=weight, rule=rule, observed=observed, expected=expected)

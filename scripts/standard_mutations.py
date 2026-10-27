@@ -164,3 +164,41 @@ STANDARD_MUTATIONS = (
         runner="pytest",
     ),
 )
+
+DELETIONS = "tests/standards/test_mapping_deletions.py::"
+
+# Lexical recall rules and the precision guards that bound them.
+LEXICAL_RULE_MUTATIONS = (
+    Mutation(
+        name="standards-deletion-recall",
+        path="standards/lexical.py",
+        before="elif deletion_weight := _deletion_weight(left, right):",
+        after="elif deletion_weight := 0.0:",
+        case=DELETIONS + "test_deletion_rule_is_required_for_unregistered_channel",
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-deletion-vowel-join",
+        path="standards/lexical.py",
+        before="or not _joins_consonants(observed, expected)",
+        after="or False",
+        case=DELETIONS + "test_deletion_requires_a_dropped_vowel_between_kept_consonants",
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-deletion-coverage",
+        path="standards/lexical.py",
+        before="_MIN_DELETION_COVERAGE = 0.75",
+        after="_MIN_DELETION_COVERAGE = 0.5",
+        case=DELETIONS + "test_deletion_requires_most_consonants",
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-deletion-below-prefix",
+        path="standards/lexical.py",
+        before="return 0.5 + 0.14 * coverage",
+        after="return 0.9 + 0.05 * coverage",
+        case=DELETIONS + "test_deletion_ranks_below_prefix_and_consonant_skeleton",
+        runner="pytest",
+    ),
+)
