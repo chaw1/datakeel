@@ -63,3 +63,28 @@ def test_nonrelational_dataset_names_keep_dots_and_uri_path() -> None:
     assert resolved.relation.name == "events/2026.json"
     assert resolved.relation.schema_name == "default"
     assert dataset_from_uri("opaque-dataset").namespace == "airflow-dataset"
+
+
+@pytest.mark.parametrize(
+    ("namespace", "name"),
+    [
+        ("file", "/srv/exports/visits.v2.csv"),
+        ("file://etl-host", "/srv/exports/visits.v2.csv"),
+        ("dbfs://clinic-workspace", "/mnt/exports/visits.delta"),
+    ],
+)
+def test_path_dataset_names_from_naming_spec_are_not_split_on_dots(
+    namespace: str, name: str
+) -> None:
+    """Local and DBFS file paths keep the whole path as the dataset name."""
+    resolved = resolve_dataset(OpenLineageDataset(namespace=namespace, name=name), {})
+    assert resolved.relation.name == name
+    assert resolved.relation.schema_name == "default"
+    assert resolved.relation.database is None
+
+
+def test_airflow_file_uri_without_host_keeps_the_local_path() -> None:
+    """file:///path dataset URIs map to the bare local-file namespace, not one opaque name."""
+    dataset = dataset_from_uri("file:///srv/exports/visits.v2.csv")
+    assert (dataset.namespace, dataset.name) == ("file", "/srv/exports/visits.v2.csv")
+    assert resolve_dataset(dataset, {}).relation.name == "/srv/exports/visits.v2.csv"

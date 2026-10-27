@@ -20,6 +20,10 @@ from datakeel.core.orchestration import (
 
 _DATABASE_PARTS = 3
 _SCHEMA_PARTS = 2
+# OpenLineage naming: file systems, object stores and topics name a path or topic, never
+# database.schema.table. "file" and "dbfs" also appear as bare, scheme-less namespaces.
+_PATH_SCHEMES = frozenset({"s3", "gs", "hdfs", "file", "abfss", "wasbs", "dbfs", "kafka"})
+_PATH_NAMESPACES = frozenset({"file", "dbfs"})
 
 
 class ResolvedDataset(BoundaryModel):
@@ -60,7 +64,7 @@ def resolve_dataset(
         None,
     )
     scheme = urlsplit(dataset.namespace).scheme
-    relational = scheme not in {"s3", "gs", "hdfs", "file", "abfss", "kafka"}
+    relational = scheme not in _PATH_SCHEMES and dataset.namespace not in _PATH_NAMESPACES
     parts = dataset.name.split(".") if relational else [dataset.name]
     database = parts[-3] if len(parts) >= _DATABASE_PARTS else mapped.database if mapped else None
     schema = parts[-2] if len(parts) >= _SCHEMA_PARTS else "default"
@@ -89,6 +93,9 @@ def dataset_from_uri(uri: str) -> OpenLineageDataset:
     if parts.scheme and parts.netloc:
         namespace = f"{parts.scheme}://{parts.netloc}"
         name = unquote(parts.path.lstrip("/"))
+    elif parts.scheme == "file" and parts.path:
+        namespace = "file"
+        name = unquote(parts.path)
     else:
         namespace = "airflow-dataset"
         name = uri
