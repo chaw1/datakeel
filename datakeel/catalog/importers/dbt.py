@@ -15,6 +15,7 @@ from datakeel.catalog.importers.dbt_models import (
     DbtManifest,
     DbtNode,
     DbtUnitTest,
+    stable_resource,
 )
 from datakeel.catalog.importers.dbt_objects import (
     integrated_object,
@@ -74,7 +75,7 @@ def _collection(document: JsonDocument, name: str) -> dict[str, JsonDocument]:
     if not isinstance(value, dict):
         msg = f"dbt artifact {name} must be an object"
         raise ValidationError(msg)
-    return {key: JsonDocument.model_validate(item) for key, item in value.items()}
+    return {key: stable_resource(JsonDocument.model_validate(item)) for key, item in value.items()}
 
 
 def _results(document: JsonDocument | None) -> dict[str, JsonDocument]:

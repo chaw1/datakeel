@@ -5,6 +5,19 @@
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
+from datakeel.core.models import JsonDocument
+
+# Parse bookkeeping, not project metadata: dbt rewrites these on every fresh parse
+# (CI checkout, dbt clean, a different --target-path) of otherwise unchanged code.
+VOLATILE_RESOURCE_FIELDS = frozenset({"created_at", "compiled_path", "build_path", "root_path"})
+
+
+def stable_resource(raw: JsonDocument) -> JsonDocument:
+    """Keep a raw resource as evidence without the fields a reparse rewrites."""
+    return JsonDocument(
+        {key: value for key, value in raw.root.items() if key not in VOLATILE_RESOURCE_FIELDS}
+    )
+
 
 class ArtifactModel(BaseModel):
     """Accept dbt's evolving resource vocabulary and freeze the fields used by the adapter."""

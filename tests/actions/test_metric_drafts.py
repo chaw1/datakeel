@@ -6,16 +6,18 @@
 from __future__ import annotations
 
 import sqlite3
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
 from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.service import approve_plan, execute_plan, prepare_action
+from datakeel.catalog.metadata_service import import_dbt
 from datakeel.catalog.service import import_catalog
 from datakeel.core.catalog_models import CatalogImportRequest, CatalogObject, CatalogSnapshot
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
-from datakeel.core.metadata_imports import MetadataImportBatch, MetricDraft
+from datakeel.core.metadata_imports import DbtImportRequest, MetadataImportBatch, MetricDraft
 from datakeel.core.metric_models import Measure, MetricDefinition, MetricTime
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.storage.catalog_queries import get_object
@@ -23,9 +25,9 @@ from datakeel.storage.metadata_store import publish_metadata
 from datakeel.storage.metric_store import list_metrics
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from datakeel.storage.database import Database
+
+_DBT_FIXTURES = Path(__file__).parents[1] / "fixtures" / "dbt"
 
 
 @pytest.fixture
@@ -219,3 +221,43 @@ def test_metric_draft_when_dependency_fingerprint_changes_resets_confirmation(
     assert saved.definition.owner == "New owner"
     assert list_metrics(db)[0].definition.owner != "New owner"
     assert prepare_action(db, "confirm_metric_draft", params).requires_approval
+
+
+def _fixture_request(manifest: JsonDocument) -> DbtImportRequest:
+    return DbtImportRequest(
+        source_id="shop",
+        manifest=manifest,
+        catalog=JsonDocument.model_validate_json((_DBT_FIXTURES / "catalog.json").read_text()),
+    )
+
+
+def _reparsed(manifest: JsonDocument) -> JsonDocument:
+    """Simulate a fresh dbt parse: new parse timestamps and a different target path."""
+    root = dict(manifest.root)
+    for collection in ("nodes", "sources", "exposures", "metrics", "semantic_models"):
+        resources = root.get(collection)
+        if isinstance(resources, dict):
+            root[collection] = {
+                key: {**value, "created_at": 1.9e9, "compiled_path": f"ci-target/{key}.sql"}
+                if isinstance(value, dict)
+                else value
+                for key, value in resources.items()
+            }
+    return JsonDocument(root)
+
+
+def test_metric_draft_when_dbt_reparses_unchanged_project_keeps_confirmation(
+    db: Database,
+) -> None:
+    """Parse bookkeeping is not metadata: approval survives and nothing is reported changed."""
+    manifest = JsonDocument.model_validate_json((_DBT_FIXTURES / "manifest.json").read_text())
+    first = import_dbt(db, _fixture_request(manifest))
+    draft_id = "shop/dbt-draft/metric.p22_shop.total_revenue"
+    plan = prepare_action(db, "confirm_metric_draft", JsonDocument({"draft_id": draft_id}))
+    approve_plan(db, plan.id, ApprovalDecision(approve=True, plan_digest=plan.plan_digest))
+    execute_plan(db, plan.id, ExecuteRequest(plan_digest=plan.plan_digest))
+    again = import_dbt(db, _fixture_request(_reparsed(manifest)))
+    assert get_object(db, draft_id).properties.root["status"] == "confirmed"
+    assert again.changed == 0
+    assert again.unchanged == first.new
+    assert again.event_id is None

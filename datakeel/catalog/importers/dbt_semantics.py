@@ -5,7 +5,7 @@
 
 from pydantic import Field
 
-from datakeel.catalog.importers.dbt_models import ArtifactModel, DbtNode
+from datakeel.catalog.importers.dbt_models import ArtifactModel, DbtNode, stable_resource
 from datakeel.catalog.importers.dbt_objects import resource_owner
 from datakeel.core.catalog_canonical import document_hash
 from datakeel.core.catalog_identity import catalog_id, catalog_segments
@@ -48,7 +48,7 @@ def _resources(request: DbtImportRequest, key: str) -> tuple[JsonDocument, ...]:
     if not isinstance(resources, dict):
         msg = f"dbt manifest {key} must be an object"
         raise ValidationError(msg)
-    return tuple(JsonDocument.model_validate(raw) for raw in resources.values())
+    return tuple(stable_resource(JsonDocument.model_validate(raw)) for raw in resources.values())
 
 
 def _simple_measure(raw: JsonDocument) -> str | None:
