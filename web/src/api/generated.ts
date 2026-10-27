@@ -415,6 +415,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/import/airflow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Airflow
+         * @description Import one offline Airflow REST v1 export supplied by the caller.
+         */
+        post: operations["airflow_api_catalog_import_airflow_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/import/dbt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dbt
+         * @description Import decoded dbt artifacts without reading paths on the HTTP server.
+         */
+        post: operations["dbt_api_catalog_import_dbt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/import/objects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Objects
+         * @description Browse imported orchestration and consumer nodes without changing old filters.
+         */
+        get: operations["objects_api_catalog_import_objects_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/catalog/metrics/{metric_id}": {
         parameters: {
             query?: never;
@@ -1343,6 +1403,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/openlineage/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest
+         * @description Record one standard run transition and enrich its mapped catalog objects.
+         */
+        post: operations["ingest_api_openlineage_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/search": {
         parameters: {
             query?: never;
@@ -1626,7 +1706,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -1680,7 +1760,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -1791,6 +1871,20 @@ export interface components {
             tokens: number;
             /** Used Memory Ids */
             used_memory_ids?: string[];
+        };
+        /**
+         * AirflowImportRequest
+         * @description Supply an offline Airflow REST v1 export and a stable import source identity.
+         */
+        AirflowImportRequest: {
+            document: components["schemas"]["JsonDocument"];
+            /**
+             * Name
+             * @default Airflow
+             */
+            name: string;
+            /** Source Id */
+            source_id: string;
         };
         /**
          * ApprovalDecision
@@ -2516,6 +2610,22 @@ export interface components {
             template: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /**
+         * DbtImportRequest
+         * @description Supply decoded dbt artifacts and the matching physical catalog source identity.
+         */
+        DbtImportRequest: {
+            catalog?: components["schemas"]["JsonDocument"] | null;
+            manifest: components["schemas"]["JsonDocument"];
+            /**
+             * Name
+             * @default dbt
+             */
+            name: string;
+            run_results?: components["schemas"]["JsonDocument"] | null;
+            /** Source Id */
+            source_id: string;
         };
         /**
          * DecideAssertionsParams
@@ -4242,6 +4352,61 @@ export interface components {
             source: string;
         };
         /**
+         * MetadataImportReport
+         * @description Add explicit soft deletion and semantic draft counts to an import summary.
+         */
+        MetadataImportReport: {
+            /**
+             * Changed
+             * @default 0
+             */
+            changed: number;
+            /**
+             * Deleted
+             * @default 0
+             */
+            deleted: number;
+            /**
+             * Drafts
+             * @default 0
+             */
+            drafts: number;
+            /** Event Id */
+            event_id?: string | null;
+            /**
+             * Failed Sql Count
+             * @description Count individually reported failed SQL statements.
+             */
+            readonly failed_sql_count: number;
+            /**
+             * Link Count
+             * @default 0
+             */
+            link_count: number;
+            /**
+             * New
+             * @default 0
+             */
+            new: number;
+            /** Object Count */
+            object_count: number;
+            /**
+             * Parse Failures
+             * @default []
+             */
+            parse_failures: components["schemas"]["SqlFailure"][];
+            /**
+             * Snapshot Version
+             * @default 0
+             */
+            snapshot_version: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged: number;
+        };
+        /**
          * MetadataInput
          * @description Replacement metadata with an explicit audit reason.
          */
@@ -4637,6 +4802,101 @@ export interface components {
             version: string;
         };
         /**
+         * OpenLineageDataset
+         * @description Preserve schema and run-specific facets on a dataset reference.
+         */
+        OpenLineageDataset: {
+            facets?: components["schemas"]["JsonDocument"];
+            inputFacets?: components["schemas"]["JsonDocument"] | null;
+            /** Name */
+            name: string;
+            /** Namespace */
+            namespace: string;
+            outputFacets?: components["schemas"]["JsonDocument"] | null;
+        };
+        /**
+         * OpenLineageEntity
+         * @description Read standard extensible job/dataset entities, ignoring producer extensions.
+         */
+        OpenLineageEntity: {
+            facets?: components["schemas"]["JsonDocument"];
+            /** Name */
+            name: string;
+            /** Namespace */
+            namespace: string;
+        };
+        /**
+         * OpenLineageReceipt
+         * @description Report durable insertion and the effective state after out-of-order delivery.
+         */
+        OpenLineageReceipt: {
+            /** Event Id */
+            event_id: string;
+            /** Inserted */
+            inserted: boolean;
+            /** Job Id */
+            job_id: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Run Id */
+            run_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "START" | "RUNNING" | "COMPLETE" | "ABORT" | "FAIL" | "OTHER";
+        };
+        /**
+         * OpenLineageRun
+         * @description Read a standard run identity and its extensible facet document.
+         */
+        OpenLineageRun: {
+            facets?: components["schemas"]["JsonDocument"];
+            /** Runid */
+            runId: string;
+        };
+        /**
+         * OpenLineageRunEvent
+         * @description Accept standard run transitions with camel-case interchange fields.
+         *
+         *     START/RUNNING are in progress; COMPLETE/ABORT/FAIL are terminal; OTHER only
+         *     carries metadata and never changes an observed run state.
+         *
+         *     OpenLineage permits producer extensions; unknown interchange properties are
+         *     ignored while all metadata kept across internal boundaries remains typed.
+         */
+        OpenLineageRunEvent: {
+            /**
+             * Eventtime
+             * Format: date-time
+             */
+            eventTime: string;
+            /**
+             * Eventtype
+             * @enum {string}
+             */
+            eventType: "START" | "RUNNING" | "COMPLETE" | "ABORT" | "FAIL" | "OTHER";
+            /**
+             * Inputs
+             * @default []
+             */
+            inputs: components["schemas"]["OpenLineageDataset"][];
+            job: components["schemas"]["OpenLineageEntity"];
+            /**
+             * Outputs
+             * @default []
+             */
+            outputs: components["schemas"]["OpenLineageDataset"][];
+            /** Producer */
+            producer: string;
+            run: components["schemas"]["OpenLineageRun"];
+            /** Schemaurl */
+            schemaURL: string;
+        };
+        /**
          * OutputStep
          * @description Finish a path with a JSON template using only pure expressions.
          */
@@ -4949,6 +5209,16 @@ export interface components {
             ordinal: number;
             /** State */
             state: string;
+        };
+        /**
+         * SqlFailure
+         * @description Keep the SQL origin and actionable parsing reason in import statistics.
+         */
+        SqlFailure: {
+            /** Origin */
+            origin: string;
+            /** Reason */
+            reason: string;
         };
         /**
          * TaskInput
@@ -6282,6 +6552,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpactResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    airflow_api_catalog_import_airflow_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AirflowImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataImportReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dbt_api_catalog_import_dbt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DbtImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataImportReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    objects_api_catalog_import_objects_get: {
+        parameters: {
+            query?: {
+                kind?: ("source" | "table" | "column" | "dag" | "airflow_task" | "exposure" | "metric_draft" | "job") | null;
+                source_id?: string | null;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPage"];
                 };
             };
             /** @description Validation Error */
@@ -7759,6 +8129,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FrozenManifest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_api_openlineage_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenLineageRunEvent"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenLineageReceipt"];
                 };
             };
             /** @description Validation Error */

@@ -8,6 +8,7 @@ import { useResource } from "../../lib/useResource";
 import { objectHref } from "../object/navigation";
 
 import { ImpactTree } from "./ImpactTree";
+import { MetadataEvidence } from "./MetadataEvidence";
 import { linkLabels, propertyText } from "./values";
 
 import type { CatalogTableDetail } from "../../api/catalog";
@@ -62,6 +63,7 @@ export function TableDetails({
               .map((item) => localizedObjectName("owner", item.name, locale))
               .join(", ") || t("catNotSet")}
           </p>
+          <MetadataEvidence item={detail.table} />
           <div className="catalog-table-scroll">
             <table>
               <thead>

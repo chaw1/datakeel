@@ -30,7 +30,10 @@ export function useApproval({
   const [rejected, setRejected] = useState(false);
   const [authorized, setAuthorized] = useState(plan.status === "APPROVED");
   const [run, setRun] = useState<ActionRun | null>(null);
-  const requiresApproval = !plan.reversible || plan.external;
+  const requiresApproval =
+    !plan.reversible ||
+    plan.external ||
+    plan.action_type === "confirm_metric_draft";
   const terminal =
     rejected || run !== null || !["PREPARED", "APPROVED"].includes(plan.status);
   const status = rejected

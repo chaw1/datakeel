@@ -3,6 +3,8 @@ import { useState } from "react";
 import { CatalogBrowser } from "../features/catalog/CatalogBrowser";
 import { FilteredMetricCatalog } from "../features/catalog/FilteredMetricCatalog";
 import { Glossary } from "../features/catalog/Glossary";
+import { ImportedObjects } from "../features/catalog/ImportedObjects";
+import { MetadataImportForm } from "../features/catalog/MetadataImportForm";
 import { MetricCatalog } from "../features/catalog/MetricCatalog";
 import { useI18n } from "../i18n/useI18n";
 import { useResource } from "../lib/useResource";
@@ -16,6 +18,7 @@ const tabs = [
   ["tables", "catBrowse"],
   ["metrics", "catMetrics"],
   ["terms", "catTerms"],
+  ["imports", "metadataImports"],
 ] as const;
 
 export function CatalogPage({
@@ -29,15 +32,20 @@ export function CatalogPage({
   const params = new URLSearchParams(window.location.hash.split("?")[1]);
   const initial = params.get("kind");
   const [chosen, setTab] = useState<(typeof tabs)[number][0] | null>(null);
+  const [importRevision, setImportRevision] = useState(0);
   const [filteredCount, setFilteredCount] = useState(0);
   const tab =
     chosen ??
-    (initial === "metric"
-      ? "metrics"
-      : initial === "term"
-        ? "terms"
-        : "tables");
-  const count = useResource<CatalogResult>(`/api/catalog/${tab}?limit=1`);
+    (initial === "imports"
+      ? "imports"
+      : initial === "metric"
+        ? "metrics"
+        : initial === "term"
+          ? "terms"
+          : "tables");
+  const count = useResource<CatalogResult>(
+    `/api/catalog/${tab === "imports" ? "import/objects" : tab}?limit=1`,
+  );
   const table = params.get("table") ?? "";
   const column = params.get("column") ?? "";
   return (
@@ -69,6 +77,18 @@ export function CatalogPage({
           </button>
         ))}
       </nav>
+      {tab === "imports" && (
+        <>
+          <MetadataImportForm
+            onImported={() => {
+              setImportRevision((value) => value + 1);
+              count.reload();
+              onDataChanged?.();
+            }}
+          />
+          <ImportedObjects key={importRevision} onOpenReceipt={onOpenReceipt} />
+        </>
+      )}
       {tab === "tables" && <CatalogBrowser onOpenReceipt={onOpenReceipt} />}
       {tab === "metrics" && (table || column) ? (
         <FilteredMetricCatalog

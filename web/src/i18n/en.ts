@@ -9,12 +9,14 @@ import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
 import { kgEn } from "./kgEn";
 import { knowledgeEn } from "./knowledgeEn";
+import { metadataEn } from "./metadataEn";
 import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  ...metadataEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,
