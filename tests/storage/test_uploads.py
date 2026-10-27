@@ -117,9 +117,11 @@ def test_idempotency_declaration_conflict_and_unknown_upload(db: Database) -> No
         put_chunk(db, "../unknown", 0, b"abcd")
 
 
-@pytest.mark.parametrize("filename", ["../bad", "..", "a\\b", "/absolute"])
+@pytest.mark.parametrize(
+    "filename", ["../bad", "..", "a\\b", "/absolute", "nul\x00byte.txt", "é" * 128]
+)
 def test_upload_rejects_unsafe_filename(filename: str) -> None:
-    """Filename validation prevents caller-controlled staging paths."""
+    """Names that no staging file system can hold are refused before any chunk is sent."""
     with pytest.raises(ModelValidationError):
         declaration(filename=filename)
 

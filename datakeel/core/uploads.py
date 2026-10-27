@@ -9,6 +9,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, model_validator
 
 _MAX_CHUNKS = 100_000
+# Common file systems cap one path component at 255 bytes, not 255 characters.
+_MAX_FILENAME_BYTES = 255
 
 
 class UploadInput(BaseModel):
@@ -27,9 +29,12 @@ class UploadInput(BaseModel):
     @field_validator("filename")
     @classmethod
     def plain_filename(cls, value: str) -> str:
-        """Keep upload names independent of private filesystem paths."""
+        """Keep upload names independent of private paths and storable as one staging file."""
         if PurePosixPath(value).name != value or value in {".", ".."} or "\\" in value:
             message = "Filename must be a plain basename"
+            raise ValueError(message)
+        if "\0" in value or len(value.encode()) > _MAX_FILENAME_BYTES:
+            message = "Filename must not contain NUL and must fit in 255 UTF-8 bytes"
             raise ValueError(message)
         return value
 
