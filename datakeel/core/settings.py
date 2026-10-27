@@ -6,8 +6,9 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,6 +36,15 @@ class Settings(BaseSettings):
     model_routing_file: Path | None = None
     delegation_max_depth: int = Field(default=2, ge=1, le=8)
     delegation_max_parallel: int = Field(default=3, ge=1, le=16)
+    sandbox_backend: Literal["container", "subprocess"] = "container"
+    sandbox_allow_subprocess: bool = False
+    sandbox_image: str = ""
+    sandbox_docker_host: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "DATAKEEL_SANDBOX_DOCKER_HOST", "DOCKER_HOST", "sandbox_docker_host"
+        ),
+    )
 
     def extraction_key(self, environment_name: str | None) -> SecretStr | None:
         """Resolve an explicitly selected extraction credential only when it is needed."""
@@ -51,7 +61,9 @@ def _environment_snapshot() -> tuple[tuple[str, str], ...]:
     """Capture the prefixed variables so a changed environment yields fresh settings."""
     return tuple(
         sorted(
-            (key, value) for key, value in os.environ.items() if key.upper().startswith("DATAKEEL_")
+            (key, value)
+            for key, value in os.environ.items()
+            if key.upper().startswith("DATAKEEL_") or key == "DOCKER_HOST"
         )
     )
 
