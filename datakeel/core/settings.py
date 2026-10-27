@@ -10,6 +10,8 @@ from pathlib import Path
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from datakeel.core.orchestration import OpenLineageNamespace
+
 
 class Settings(BaseSettings):
     """Read the local process environment; callers share one instance per environment snapshot."""
@@ -33,6 +35,8 @@ class Settings(BaseSettings):
     anthropic_url: str = "https://api.anthropic.com/v1/messages"
     provider_timeout: float = Field(default=30, gt=0, le=120)
     model_routing_file: Path | None = None
+    openlineage_token: SecretStr | None = None
+    openlineage_namespaces: dict[str, OpenLineageNamespace] = Field(default_factory=dict)
     delegation_max_depth: int = Field(default=2, ge=1, le=8)
     delegation_max_parallel: int = Field(default=3, ge=1, le=16)
 
