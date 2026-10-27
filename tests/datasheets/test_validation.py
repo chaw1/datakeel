@@ -264,6 +264,24 @@ def test_named_dates_match_a_cited_iso_date(date_text: str) -> None:
     assert len(result.sections[1].sentences) == 1
 
 
+@pytest.mark.parametrize(
+    ("date_text", "reasons"),
+    [
+        ("2026 年 1 月 2 日", ()),
+        ("2026年 1月 2日", ()),
+        ("2026 年 01 月 02 日", ()),
+        ("2026 年 1 月 3 日", ("unsupported_date",)),
+        ("2025 年 1 月 2 日", ("unsupported_date",)),
+    ],
+)
+def test_spaced_chinese_dates_are_compared_as_calendar_days(
+    date_text: str, reasons: tuple[str, ...]
+) -> None:
+    """Spaces around 年/月/日 neither delete a supported date nor hide an invented one."""
+    result = checked(f"采集日期为{date_text}。", (fact("2026-01-02"),))
+    assert tuple(reason for item in result.dropped_sentences for reason in item.reasons) == reasons
+
+
 def test_invented_named_date_is_removed() -> None:
     """Month names cannot conceal a fabricated day or year from numeric date checks."""
     result = checked("Collection date: February 2, 2026.", (fact("2026-01-02"),))

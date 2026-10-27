@@ -20,7 +20,11 @@ from datakeel.datasheets.vocabulary import CHINESE_GRAMMAR, ENGLISH_GRAMMAR, fie
 _NUMBER = re.compile(
     r"(?<![A-Za-z0-9_.])[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?%?"
 )
-_DATE = re.compile(r"(?<!\d)(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?(?!\d)")
+# Chinese dates may space their 年/月/日 markers; numeric separators stay unspaced.
+_DATE = re.compile(
+    r"(?<!\d)(\d{4})(?:[-/.]|[ \t]*年[ \t]*)(\d{1,2})(?:[-/.]|[ \t]*月[ \t]*)(\d{1,2})"
+    r"(?:[ \t]*日)?(?!\d)"
+)
 _MONTHS = {
     name: number
     for number, names in enumerate(
