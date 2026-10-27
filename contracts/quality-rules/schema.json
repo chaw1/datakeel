@@ -1,0 +1,354 @@
+{
+  "$defs": {
+    "DqKind": {
+      "enum": [
+        "not_null",
+        "unique",
+        "range",
+        "accepted_values",
+        "regex",
+        "referential_integrity",
+        "freshness",
+        "volume_change",
+        "distribution_drift",
+        "sql_assertion"
+      ],
+      "type": "string"
+    },
+    "DqParameters": {
+      "additionalProperties": false,
+      "description": "Type all optional rule parameters, with kind-specific invariants on the rule.",
+      "properties": {
+        "minimum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum"
+        },
+        "maximum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum"
+        },
+        "values": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Scalar"
+          },
+          "title": "Values",
+          "type": "array"
+        },
+        "pattern": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "reference_table": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Table"
+        },
+        "reference_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Column"
+        },
+        "reference_schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Schema"
+        },
+        "baseline_runs": {
+          "default": 3,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Baseline Runs",
+          "type": "integer"
+        },
+        "statistic": {
+          "default": "mean",
+          "enum": [
+            "mean",
+            "stddev",
+            "null_rate",
+            "psi"
+          ],
+          "title": "Statistic",
+          "type": "string"
+        },
+        "bin_edges": {
+          "default": [
+            -100.0,
+            0.0,
+            10.0,
+            100.0,
+            1000.0
+          ],
+          "items": {
+            "type": "number"
+          },
+          "title": "Bin Edges",
+          "type": "array"
+        },
+        "sql": {
+          "anyOf": [
+            {
+              "maxLength": 20000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sql"
+        },
+        "bindings": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Scalar"
+          },
+          "title": "Bindings",
+          "type": "object"
+        }
+      },
+      "title": "DqParameters",
+      "type": "object"
+    },
+    "DqRule": {
+      "additionalProperties": false,
+      "description": "Version a complete YAML or web quality rule and its execution limits.",
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/DqTarget"
+        },
+        "kind": {
+          "$ref": "#/$defs/DqKind"
+        },
+        "params": {
+          "$ref": "#/$defs/DqParameters"
+        },
+        "revision": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "severity": {
+          "default": "error",
+          "enum": [
+            "warn",
+            "error"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "threshold": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "cron": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cron"
+        },
+        "owner": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Owner",
+          "type": "string"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "timeout_ms": {
+          "default": 5000,
+          "maximum": 60000,
+          "minimum": 1,
+          "title": "Timeout Ms",
+          "type": "integer"
+        },
+        "max_rows": {
+          "default": 10000,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Max Rows",
+          "type": "integer"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "target",
+        "kind",
+        "owner"
+      ],
+      "title": "DqRule",
+      "type": "object"
+    },
+    "DqTarget": {
+      "additionalProperties": false,
+      "description": "Identify a table in an existing catalog business source.",
+      "properties": {
+        "source_id": {
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "table": {
+          "minLength": 1,
+          "title": "Table",
+          "type": "string"
+        },
+        "column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "schema_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema Name"
+        }
+      },
+      "required": [
+        "source_id",
+        "table"
+      ],
+      "title": "DqTarget",
+      "type": "object"
+    },
+    "Scalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "description": "Load an atomic versioned collection of quality rules.",
+  "properties": {
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "rules": {
+      "items": {
+        "$ref": "#/$defs/DqRule"
+      },
+      "title": "Rules",
+      "type": "array"
+    }
+  },
+  "required": [
+    "rules"
+  ],
+  "title": "DqContract",
+  "type": "object"
+}

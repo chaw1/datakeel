@@ -26,6 +26,7 @@ def execute_query(
 ) -> QueryResult:
     """Run a validated SELECT using database-enforced read-only permissions."""
     limits = limits or QueryLimits()
+    deadline = monotonic() + limits.timeout_ms / 1000
     validate_select(query.sql, query.dialect)
     url = make_url(source_url)
     if url.get_backend_name() == "sqlite":
@@ -39,9 +40,14 @@ def execute_query(
     else:
         msg = "Metric execution supports SQLite and PostgreSQL sources"
         raise ValidationError(msg)
-    engine = create_engine(url)
+    engine = create_engine(url, connect_args={"timeout": limits.timeout_ms / 1000})
     try:
         with engine.connect() as connection:
+            remaining = int((deadline - monotonic()) * 1000)
+            if remaining < 1:
+                msg = "Read-only query connection exceeded its timeout"
+                raise ExecutionError(msg)
+            limits = limits.model_copy(update={"timeout_ms": remaining})
             _protect(connection, limits)
             result = connection.execute(text(query.sql), query.parameters)
             rows = result.fetchmany(limits.max_rows + 1)
@@ -50,7 +56,7 @@ def execute_query(
                 rows=[[_scalar(value) for value in row] for row in rows[: limits.max_rows]],
                 truncated=len(rows) > limits.max_rows,
             )
-    except SQLAlchemyError as exc:
+    except (SQLAlchemyError, OSError) as exc:
         msg = f"Read-only metric query failed: {type(exc).__name__}"
         raise ExecutionError(msg) from exc
     finally:
@@ -61,6 +67,7 @@ def _protect(connection: Connection, limits: QueryLimits) -> None:
     if connection.dialect.name == "sqlite":
         raw = cast("sqlite3.Connection", connection.connection.driver_connection)
         raw.execute("PRAGMA query_only=ON")
+        raw.execute(f"PRAGMA busy_timeout={limits.timeout_ms}")
         deadline = monotonic() + limits.timeout_ms / 1000
         raw.set_progress_handler(lambda: int(monotonic() >= deadline), 1000)
     else:
