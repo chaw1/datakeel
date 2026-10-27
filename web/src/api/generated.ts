@@ -1859,6 +1859,7 @@ export interface components {
             candidates: components["schemas"]["MetricCard"][];
             /** Id */
             id?: string;
+            interpretation?: components["schemas"]["AskInterpretation"] | null;
             knowledge?: components["schemas"]["KnowledgeAnswer"] | null;
             lineage?: components["schemas"]["LineageReference"] | null;
             /**
@@ -1892,6 +1893,32 @@ export interface components {
              */
             subject_candidates: components["schemas"]["KnowledgeSubject"][];
             time_range?: components["schemas"]["TimeRange"] | null;
+        };
+        /**
+         * AskInterpretation
+         * @description Record how a numeric question was understood, including fragments left unexplained.
+         */
+        AskInterpretation: {
+            /**
+             * Group By
+             * @default []
+             */
+            group_by: string[];
+            /** Metric Id */
+            metric_id?: string | null;
+            /**
+             * Slices
+             * @default []
+             */
+            slices: components["schemas"]["DimensionSlice"][];
+            /** Time Basis */
+            time_basis?: ("period" | "as_of") | null;
+            time_range?: components["schemas"]["TimeRange"] | null;
+            /**
+             * Unconsumed
+             * @default []
+             */
+            unconsumed: string[];
         };
         /**
          * AskRequest
@@ -2536,6 +2563,15 @@ export interface components {
              * @enum {string}
              */
             status: "candidate" | "accepted" | "rejected";
+        };
+        /**
+         * DimensionSlice
+         * @description Select a single dimension value by registered dimension identity.
+         */
+        DimensionSlice: {
+            /** Dimension Id */
+            dimension_id: string;
+            value: components["schemas"]["Scalar"];
         };
         /**
          * DimensionView
@@ -5462,6 +5498,21 @@ export interface components {
             run_id: string;
         };
         /**
+         * WorkflowConcepts
+         * @description Declare a workflow's objects, requesting verbs and required follow-ups, with paraphrases.
+         *
+         *     ``outcomes`` lists what a request must also ask for when the workflow bundles more than
+         *     one action, so that a request for the first action alone stays a single step.
+         */
+        WorkflowConcepts: {
+            /** Actions */
+            actions?: string[];
+            /** Entities */
+            entities?: string[];
+            /** Outcomes */
+            outcomes?: string[];
+        };
+        /**
          * WorkflowDefinition
          * @description Bind input declarations, routing vocabulary, and an acyclic step graph.
          */
@@ -5608,6 +5659,7 @@ export interface components {
             classification_groups?: string[][];
             /** Classification Keywords */
             classification_keywords?: string[];
+            concepts?: components["schemas"]["WorkflowConcepts"] | null;
             /** Excluded Groups */
             excluded_groups?: string[][];
             /** Excluded Keywords */
