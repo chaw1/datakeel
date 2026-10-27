@@ -39,7 +39,7 @@ uv run datakeel release-export RELEASE_ID --output delivery-directory
 - `RECORDS.json`：收货侧独立核对的数据集元数据，以及逐文件元数据、标注及标签统计和血缘。
 - `files/`：实际文件内容。
 
-两个 JSON 文件须与文件内容一同交付。路径均为相对路径，不携带凭证或内部物理存储位置。导出时根据 [contracts/delivery-manifest.schema.json](../contracts/delivery-manifest.schema.json) 校验清单。清单哈希用于发现清单损坏，不是证明发件人身份的数字签名；需要核验真实性时另行保留可信哈希副本。
+两个 JSON 文件须与文件内容一同交付。路径均为相对路径，不携带凭证或内部物理存储位置。元数据按字段角色和取值结构过滤：去掉声明为位置的字段（`path`、以 `path` 结尾的字段如 `source_path`、`object_key`、`storage_uri`）、凭证字段、`file://` 或 `s3://` 等存储 URI，以及带凭证的 URL；其他取值原样保留，以 `/` 开头的标签（如 `/m/01yrx`）不会被删除，也计入标签数。导出时根据 [contracts/delivery-manifest.schema.json](../contracts/delivery-manifest.schema.json) 校验清单。清单哈希用于发现清单损坏，不是证明发件人身份的数字签名；需要核验真实性时另行保留可信哈希副本。
 
 文件路径使用序号目录及百分号编码后的文件名，过长编码名会缩短并附加摘要后缀。请按 `MANIFEST.json` 登记的原样路径核对，不要先解码或重命名。Web 中的来源发布快照哈希与交付清单规范化哈希覆盖不同序列化内容，不能互相替代。交付清单哈希使用对象键排序、紧凑分隔符及不转义 Unicode 的 UTF-8 JSON，仅排除顶层 `manifest_sha256` 字段，导出会写入 schema 默认值，对账按实际收到的字段计算，删除默认字段也会被发现；比较交付清单时须使用预期交付清单中的哈希。
 

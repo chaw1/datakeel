@@ -41,7 +41,14 @@ def release(db: Database, tmp_path: Path) -> str:
         version = session.scalar(select(VersionRow).where(VersionRow.dataset_id == dataset.id))
         assert version is not None
         version.manifest = [
-            {**item, "metadata": {**item["metadata"], "labels": ["a"], "annotations": ["box"]}}
+            {
+                **item,
+                "metadata": {
+                    **item["metadata"],
+                    "labels": ["/m/01yrx", "a"],
+                    "annotations": ["box"],
+                },
+            }
             for item in version.manifest
         ]
         identifier = version.id
@@ -77,6 +84,9 @@ def test_export_release_passes_offline_and_has_no_storage_locations(
     assert "token" not in document
     assert str(tmp_path) not in document
     assert json.loads(document)["metadata"] == {"purpose": "example"}
+    for item in json.loads(document)["files"]:
+        assert item["metadata"]["labels"] == ["/m/01yrx", "a"]
+        assert item["label_count"] == 2
     with pytest.raises(ConflictError, match="already exists"):
         export_release(db, release, destination)
 

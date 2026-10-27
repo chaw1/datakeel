@@ -71,4 +71,18 @@ RELEASE_MUTATIONS = (
         case="tests/storage/test_uploads.py::test_missing_chunk_and_hash_failure_never_publish",
         runner="pytest",
     ),
+    Mutation(
+        name="portable-metadata-slash-labels",
+        path="core/portable_metadata.py",
+        before="return isinstance(value, str) and _private_uri(value.strip())",
+        after=(
+            "return isinstance(value, str) and "
+            '(value.strip().startswith("/") or _private_uri(value.strip()))'
+        ),
+        case=(
+            "tests/delivery/test_portable_metadata.py::"
+            "test_slash_prefixed_labels_survive_with_their_counts"
+        ),
+        runner="pytest",
+    ),
 )

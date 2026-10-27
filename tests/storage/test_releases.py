@@ -134,11 +134,17 @@ def test_portable_metadata_removes_nested_locations_and_credentials() -> None:
             "object_key": "private",
             "source_path": "/private/example",
             "nested": {"token": "example", "label": "normal"},
-            "items": ["/private/example", {"password": "example", "value": 1}],
-            "windows": "C:\\private\\example",
+            "items": ["file:///private/example", {"password": "example", "value": 1}],
+            "windows_path": "C:\\private\\example",
+            "label": "/m/01yrx",
         }
     )
-    assert result == {"purpose": "example", "nested": {"label": "normal"}, "items": [{"value": 1}]}
+    assert result == {
+        "purpose": "example",
+        "nested": {"label": "normal"},
+        "items": [{"value": 1}],
+        "label": "/m/01yrx",
+    }
     assert annotation_statistics({"annotation_count": 4, "labels": ["a", "b"]}) == (4, 2)
     assert annotation_statistics({"annotation": {"label": "a"}, "label": "a"}) == (1, 1)
 

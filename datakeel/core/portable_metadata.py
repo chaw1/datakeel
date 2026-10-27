@@ -42,16 +42,11 @@ def portable_metadata(metadata: dict[str, JsonValue]) -> dict[str, JsonValue]:
 
 
 def _private(key: str, value: JsonValue) -> bool:
+    # A leading slash is not evidence of a location: vocabularies such as /m/01yrx are labels.
+    # Locations are recognized by a declared field role or an explicit URI structure.
     if _private_key(key):
         return True
-    if not isinstance(value, str):
-        return False
-    location = value.strip()
-    return (
-        location.startswith(("/", "\\", "~/", "~\\"))
-        or location[1:3] in {":\\", ":/"}
-        or _credential_url(location)
-    )
+    return isinstance(value, str) and _private_uri(value.strip())
 
 
 def _private_key(key: str) -> bool:
@@ -71,9 +66,11 @@ def _portable(value: JsonValue) -> JsonValue:
     return value
 
 
-def _credential_url(value: str) -> bool:
+def _private_uri(value: str) -> bool:
     try:
         parsed = urlsplit(value)
+        if not parsed.scheme and not parsed.netloc:
+            return False
         return (
             parsed.scheme.casefold() in {"file", "s3", "s3a", "s3n"}
             or bool(parsed.username or parsed.password)
