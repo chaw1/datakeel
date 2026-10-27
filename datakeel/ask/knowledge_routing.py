@@ -4,14 +4,19 @@
 """Keep numerical and grouped metric phrases separate from typed knowledge questions."""
 
 import re
+from datetime import date
 
+from datakeel.ask import dimension_cues
 from datakeel.ask import knowledge_vocabulary as vocabulary
+from datakeel.ask.dimensions import dimension_mentions
 from datakeel.ask.knowledge_focus import QuestionFocus, has_relation, question_focus
 from datakeel.ask.knowledge_names import normalize_name
 from datakeel.ask.knowledge_scope import question_scope
 from datakeel.ask.matching import metric_matches
+from datakeel.ask.time import time_spans
 from datakeel.core.metric_models import SemanticLayer
 
+_SPAN_REFERENCE = date(2000, 1, 1)
 _NUMERIC = re.compile(
     r"多少|(?<!哪)几(?!张|位|些)|总额|合计|最高|最低|最多|最少|排名|前几|最大|最小|"
     r"\b(?:how\s+(?:much|many)|total|most|least|top|highest|lowest|largest|smallest)\b"
@@ -105,7 +110,8 @@ def pure_metric_phrase(question: str, layer: SemanticLayer) -> bool:
     text = _masked_metrics(normalize_name(question), layer)
     if text is None or _requested_person(text):
         return False
-    timed = _TIME.search(text) is not None
+    text, conditioned = _masked_conditions(text, layer)
+    timed = conditioned or _TIME.search(text) is not None
     text = _TIME.sub(" ", text)
     text, grouped = _strip_grouping(text)
     text = re.sub(vocabulary.METRIC_WHERE_FILTER, vocabulary.SUBJECT_MARKER, text)
@@ -126,6 +132,20 @@ def pure_metric_phrase(question: str, layer: SemanticLayer) -> bool:
         for value in dimension.values:
             text = text.replace(normalize_name(value), " ")
     return not _FILLER.sub("", text)
+
+
+def _masked_conditions(text: str, layer: SemanticLayer) -> tuple[str, bool]:
+    """Blank parsed periods and registered filter values with their attached prepositions."""
+    spans = list(time_spans(text, _SPAN_REFERENCE))
+    timed = bool(spans)
+    for item in dimension_mentions(text, layer):
+        if item.value is not None:
+            lead = dimension_cues.FILTER_BEFORE.search(text[: item.start])
+            spans.append((lead.start() if lead else item.start, item.end))
+    characters = list(text)
+    for start, end in spans:
+        characters[start:end] = " " * (end - start)
+    return "".join(characters), timed
 
 
 def _masked_metrics(text: str, layer: SemanticLayer) -> str | None:

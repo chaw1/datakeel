@@ -53,6 +53,16 @@ class DimensionParse(BoundaryModel):
     group_by: tuple[str, ...] = ()
     matches: tuple[MatchEvidence, ...] = ()
     issues: tuple[str, ...] = ()
+    consumed: tuple[tuple[int, int], ...] = ()
+
+
+class Leftovers(BoundaryModel):
+    """Report question fragments that look temporal or conditional but were not understood."""
+
+    times: tuple[str, ...] = ()
+    conditions: tuple[str, ...] = ()
+    calculations: tuple[str, ...] = ()
+    rankings: tuple[str, ...] = ()
 
 
 class QueryContext(BoundaryModel):

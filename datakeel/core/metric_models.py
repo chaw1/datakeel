@@ -74,6 +74,21 @@ class DimensionDefinition(BoundaryModel):
     synonyms: list[str] = Field(default_factory=list)
     column: str
     values: list[str] = Field(default_factory=list)
+    value_synonyms: dict[str, list[str]] = Field(
+        default_factory=dict[str, list[str]], exclude_if=lambda value: not value
+    )
+
+    @model_validator(mode="after")
+    def registered_value_synonyms(self) -> Self:
+        """Allow aliases, in any language, only for values the dimension declares."""
+        unknown = sorted(set(self.value_synonyms) - set(self.values))
+        if unknown:
+            msg = f"Value synonyms reference undeclared values: {', '.join(unknown)}"
+            raise ValueError(msg)
+        if any(not alias.strip() for aliases in self.value_synonyms.values() for alias in aliases):
+            msg = "Value synonyms must be nonempty"
+            raise ValueError(msg)
+        return self
 
 
 class TermTarget(BoundaryModel):
