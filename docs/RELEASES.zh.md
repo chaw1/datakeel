@@ -31,7 +31,7 @@ uv run datakeel release-export RELEASE_ID --output delivery.tar.gz
 uv run datakeel release-export RELEASE_ID --output delivery-directory
 ```
 
-对应 HTTP 接口为 `POST /api/releases/{release_id}/export`，返回媒体类型为 `application/gzip` 的 tar 压缩包。
+对应 HTTP 接口为 `POST /api/releases/{release_id}/export`，返回媒体类型为 `application/gzip` 的 tar 压缩包。归档是可复现的：成员按路径排序，属主和属组名为空、uid/gid 为 0、权限为 `0644`、修改时间为 0，gzip 头不含文件名和时间，因此同一发布重复导出得到逐字节相同的文件，也不会带出服务器的系统账户名。
 
 交付包包含：
 

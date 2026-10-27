@@ -91,6 +91,26 @@ def test_export_release_passes_offline_and_has_no_storage_locations(
         export_release(db, release, destination)
 
 
+@pytest.mark.parametrize("name", ["delivery.tar", "delivery.tar.gz"])
+def test_archives_are_reproducible_without_host_owner_or_time(
+    db: Database, release: str, tmp_path: Path, name: str
+) -> None:
+    """Exports of one release are byte-identical and carry no account names or timestamps."""
+    first = export_release(db, release, tmp_path / "first" / name)
+    second = export_release(db, release, tmp_path / "second" / name)
+    assert first.read_bytes() == second.read_bytes()
+    if name.endswith(".gz"):
+        header = first.read_bytes()[:10]
+        assert int.from_bytes(header[4:8], "little") == 0
+        assert not header[3] & 0x08
+    with tarfile.open(first) as archive:
+        members = archive.getmembers()
+    assert {member.name for member in members} >= {"MANIFEST.json", "RECORDS.json"}
+    for member in members:
+        assert (member.uid, member.gid, member.uname, member.gname) == (0, 0, "", "")
+        assert (member.mtime, member.mode) == (0, 0o644)
+
+
 @pytest.mark.parametrize("fault", ["byte", "missing"])
 def test_platform_reconciliation_archives_actual_object_corruption(
     db: Database, release: str, fault: str

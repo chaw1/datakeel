@@ -31,7 +31,7 @@ uv run datakeel release-export RELEASE_ID --output delivery.tar.gz
 uv run datakeel release-export RELEASE_ID --output delivery-directory
 ```
 
-The HTTP equivalent is `POST /api/releases/{release_id}/export`, which returns the tar archive with media type `application/gzip`.
+The HTTP equivalent is `POST /api/releases/{release_id}/export`, which returns the tar archive with media type `application/gzip`. Archives are reproducible: members are sorted by path, owner and group names are empty, uid/gid are 0, permissions are `0644`, modification times are 0, and the gzip header carries no file name or timestamp. Repeated exports of one release are byte-identical and never reveal the server's system account names.
 
 The package contains:
 

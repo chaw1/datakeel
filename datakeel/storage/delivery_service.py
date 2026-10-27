@@ -3,6 +3,7 @@
 
 """Export frozen releases and archive reconciliation of actual backend objects."""
 
+import gzip
 import hashlib
 import mimetypes
 import os
@@ -10,6 +11,7 @@ import shutil
 import tarfile
 import tempfile
 from pathlib import Path
+from typing import BinaryIO
 from urllib.parse import quote
 
 from sqlalchemy import select
@@ -35,6 +37,7 @@ _FIRST_PRINTABLE = 32
 _MAX_BASENAME = 200
 _NAME_PREFIX = 160
 _SUFFIX_LIMIT = 20
+_ARCHIVE_FILE_MODE = 0o644
 
 
 def _payload_path(ordinal: int, filename: str) -> str:
@@ -127,6 +130,37 @@ def _copy_payload(
         raise ConflictError(message)
 
 
+def _neutral_member(member: tarfile.TarInfo) -> tarfile.TarInfo:
+    """Drop host accounts, permissions and times so one release always archives identically."""
+    member.uid = member.gid = 0
+    member.uname = member.gname = ""
+    member.mtime = 0
+    member.mode = _ARCHIVE_FILE_MODE
+    return member
+
+
+def _write_archive(directory: Path, archive: Path, *, compress: bool) -> None:
+    with archive.open("wb") as raw:
+        if not compress:
+            _add_members(directory, raw)
+            return
+        # No embedded filename or timestamp in the gzip header either.
+        with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as sink:
+            _add_members(directory, sink)
+
+
+def _add_members(directory: Path, sink: BinaryIO | gzip.GzipFile) -> None:
+    with tarfile.open(fileobj=sink, mode="w", format=tarfile.PAX_FORMAT) as stream:
+        for path in sorted(directory.rglob("*")):
+            if path.is_file():
+                stream.add(
+                    path,
+                    arcname=path.relative_to(directory).as_posix(),
+                    recursive=False,
+                    filter=_neutral_member,
+                )
+
+
 def export_release(db: Database, identifier: str, output: Path) -> Path:
     """Atomically create a new directory or tar delivery, refusing to overwrite receipts."""
     if output.exists():
@@ -139,13 +173,7 @@ def export_release(db: Database, identifier: str, output: Path) -> Path:
         _write_delivery(db, identifier, directory, strict=True)
         if output.name.endswith((".tar", ".tar.gz", ".tgz")):
             archive = Path(temporary) / "delivery.tar"
-            mode = "w" if output.suffix == ".tar" else "w:gz"
-            with tarfile.open(archive, mode) as stream:
-                for path in sorted(directory.rglob("*")):
-                    if path.is_file():
-                        stream.add(
-                            path, arcname=path.relative_to(directory).as_posix(), recursive=False
-                        )
+            _write_archive(directory, archive, compress=output.suffix != ".tar")
             os.link(archive, output)
         else:
             directory.rename(output)
