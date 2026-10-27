@@ -21,6 +21,7 @@ from datakeel.lineage.models import GraphNode, GraphOverlay, GraphQuery, GraphVi
 from datakeel.lineage.service import all_events, append_event, graph
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.data_asset_access import require_access_in_session
+from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.datasets import dataset_dict
@@ -90,6 +91,33 @@ def get_graph(
             for node in result.nodes
         ]
         return name_graph(session, result.model_copy(update={"nodes": nodes}))
+
+
+# Node kinds whose display names quote source data; hash-labelled bundles do not.
+_SOURCE_CONTENT = frozenset({"artifact", "file", "image_transcript", "kg_entity", "text"})
+
+
+def read_graph(
+    db: Database, query: GraphQuery, *, access: AccessContext | None = None
+) -> GraphView:
+    """Project lineage for a caller without disclosing unreadable protected source content.
+
+    Catalog metadata nodes stay visible like asset cards. File names, graph entities
+    and transcripts quote source data and pass the query-scope guard.
+    """
+    result = get_graph(db, query=query)
+    refs = tuple(
+        AssetRef(
+            asset_type=node.asset_type,
+            asset_id=node.asset_id,
+            namespace=node.namespace,
+            version=node.version,
+        )
+        for node in result.nodes
+        if node.asset_type in _SOURCE_CONTENT
+    )
+    authorize_query(db, refs, access)
+    return result
 
 
 def export_events(

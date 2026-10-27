@@ -30,7 +30,8 @@ from datakeel.storage import kg_queries
 from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_evaluations import list_evaluations
 from datakeel.storage.kg_image_sources import image_bytes
-from datakeel.storage.kg_store import get_job, list_runs
+from datakeel.storage.kg_run_reads import list_readable_runs
+from datakeel.storage.kg_store import get_job
 from datakeel.storage.kg_transcription_selection import transcription_selection
 from datakeel.storage.link_queries import entity_links, list_links
 from datakeel.storage.link_store import relink
@@ -118,12 +119,13 @@ def evaluations(
 @router.get("/runs")
 def runs(
     db: DatabaseDependency,
+    request: Request,
     dataset_id: str | None = None,
     version_id: str | None = None,
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ) -> tuple[KGRun, ...]:
-    """Read extraction reports without exposing private frozen request data."""
-    return list_runs(db, dataset_id, version_id, limit)
+    """Read extraction reports of currently readable sources without private request data."""
+    return list_readable_runs(db, dataset_id, version_id, limit, access=_query_access(request))
 
 
 @router.get("/runs/{extraction_id}/traces")

@@ -33,9 +33,16 @@ def event(body: LineageEvent, db: DatabaseDependency) -> EventRecorded:
 def lineage(
     db: DatabaseDependency,
     query: Annotated[GraphQuery, Query()],
+    request: Request,
 ) -> GraphView:
-    """Read a depth-bounded asset lineage projection."""
-    return service.get_graph(db, query=query)
+    """Read a depth-bounded asset lineage projection under the source-content guard."""
+    return service.read_graph(
+        db,
+        query,
+        access=AccessContext(
+            actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
+        ),
+    )
 
 
 @router.get("/export")
