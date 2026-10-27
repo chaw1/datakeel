@@ -44,19 +44,27 @@ def _version_targets(session: Session, ref: AssetRef) -> tuple[AssetRef, ...]:
         row = session.get(VersionRow, ref.asset_id)
         if row:
             return (AssetRef(asset_id=row.dataset_id, version=row.id),)
+    if ref.asset_type == "kg_entity" and ref.version is not None:
+        # Graph entity identities carry the dataset version they were extracted from.
+        row = session.get(VersionRow, ref.version)
+        if row:
+            return (AssetRef(asset_id=row.dataset_id, version=row.id),)
     return ()
 
 
 def _file_targets(session: Session, ref: AssetRef) -> list[AssetRef]:
+    # Image-region anchors pin a content revision rather than a version identity;
+    # match such revisions conservatively, like an unversioned file read.
+    pinned = ref.version is not None and session.get(VersionRow, ref.version) is not None
     statement = select(VersionRow)
-    if ref.version:
+    if pinned:
         statement = statement.where(VersionRow.id == ref.version)
     result = [
         AssetRef(asset_id=version.dataset_id, version=version.id)
         for version in session.scalars(statement)
         if any(FileItem.model_validate(raw).id == ref.asset_id for raw in version.manifest)
     ]
-    if not result and ref.version is None:
+    if not result and not pinned:
         result.extend(
             AssetRef(asset_id=dataset.id)
             for dataset in session.scalars(select(DatasetRow))
