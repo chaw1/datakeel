@@ -22,7 +22,9 @@ from scripts.advanced_mutations import ADVANCED_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
+from scripts.metadata_mutations import METADATA_MUTATIONS
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
+from scripts.orchestration_mutations import ORCHESTRATION_MUTATIONS
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -137,6 +139,8 @@ MUTATIONS = (
     *KG_MUTATIONS,
     *KNOWLEDGE_MUTATIONS,
     *IMAGE_KG_MUTATIONS,
+    *METADATA_MUTATIONS,
+    *ORCHESTRATION_MUTATIONS,
 )
 
 
