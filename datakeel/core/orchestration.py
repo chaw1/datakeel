@@ -52,6 +52,7 @@ class OpenLineageRun(BoundaryModel):
 
 RunEventType = Literal["START", "RUNNING", "COMPLETE", "ABORT", "FAIL", "OTHER"]
 TERMINAL_EVENTS = frozenset({"COMPLETE", "ABORT", "FAIL"})
+_CONTAINER_SCHEMES = frozenset({"abfss", "abfs", "wasbs", "wasb"})
 
 
 class OpenLineageRunEvent(BoundaryModel):
@@ -101,18 +102,22 @@ def normalized_namespace(value: str) -> str:
     parts = urlsplit(value)
     if not parts.scheme or not parts.netloc:
         return value.rstrip("/")
-    if parts.username or parts.password:
+    scheme = parts.scheme.lower()
+    # Azure lake namespaces name the container before "@": abfss://{container}@{account}.
+    container = parts.username if scheme in _CONTAINER_SCHEMES and parts.password is None else None
+    if parts.password is not None or (parts.username and container is None):
         msg = "Namespace URIs must not contain credentials"
         raise ValueError(msg)
     host = (parts.hostname or "").lower()
     if ":" in host:
         host = f"[{host}]"
     port = parts.port
-    scheme = parts.scheme.lower()
     if scheme == "postgresql":
         scheme = "postgres"
     defaults = {"postgres": 5432, "mysql": 3306, "http": 80, "https": 443}
     authority = f"{host}:{port}" if port and port != defaults.get(scheme) else host
+    if container:
+        authority = f"{container}@{authority}"
     return urlunsplit((scheme, authority, parts.path.rstrip("/"), parts.query, parts.fragment))
 
 

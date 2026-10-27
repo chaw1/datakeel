@@ -88,3 +88,31 @@ def test_airflow_file_uri_without_host_keeps_the_local_path() -> None:
     dataset = dataset_from_uri("file:///srv/exports/visits.v2.csv")
     assert (dataset.namespace, dataset.name) == ("file", "/srv/exports/visits.v2.csv")
     assert resolve_dataset(dataset, {}).relation.name == "/srv/exports/visits.v2.csv"
+
+
+@pytest.mark.parametrize(
+    ("namespace", "expected"),
+    [
+        (
+            "abfss://raw@ClinicLake.dfs.core.windows.net/",
+            "abfss://raw@cliniclake.dfs.core.windows.net",
+        ),
+        (
+            "wasbs://exports@clinic.dfs.core.windows.net",
+            "wasbs://exports@clinic.dfs.core.windows.net",
+        ),
+    ],
+)
+def test_azure_lake_namespace_keeps_container_instead_of_rejecting_it(
+    namespace: str, expected: str
+) -> None:
+    """The naming spec puts the container before "@"; it is not a credential."""
+    assert normalized_namespace(namespace) == expected
+    dataset = OpenLineageDataset(namespace=namespace, name="daily/visits.v2.parquet")
+    assert resolve_dataset(dataset, {}).relation.name == "daily/visits.v2.parquet"
+
+
+def test_azure_lake_namespace_with_password_is_still_rejected() -> None:
+    """Only the container may precede the account; a password is still a credential."""
+    with pytest.raises(ValueError, match="must not"):
+        normalized_namespace("abfss://raw:secret@lake.dfs.core.windows.net")
