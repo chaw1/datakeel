@@ -241,17 +241,22 @@ def leftover_fragments(
     )
 
 
+def _folded(word: str) -> str:
+    """Compare words case-insensitively with typographic apostrophes read as ASCII ones."""
+    return word.casefold().replace("\u2019", "'")
+
+
 def _english_conditions(text: str) -> list[str]:
     found = [
         hit.group()
         for hit in _EN_CONDITION.finditer(text)
-        if hit.group("word").casefold() not in _NEUTRAL
-        and hit.group("word").casefold().removesuffix("'s") not in _NEUTRAL
+        if _folded(hit.group("word")) not in _NEUTRAL
+        and _folded(hit.group("word")).removesuffix("'s") not in _NEUTRAL
     ]
     found.extend(
         hit.group()
         for hit in _CAPITAL.finditer(text)
-        if hit.group().casefold() not in _FUNCTION_WORDS and hit.group() != "May"
+        if _folded(hit.group()) not in _FUNCTION_WORDS and hit.group() != "May"
     )
     return found
 

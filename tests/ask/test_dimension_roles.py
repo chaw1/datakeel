@@ -165,6 +165,9 @@ def test_shipped_contract_gives_every_dimension_and_value_an_english_alias(
         ("retail revenue in East China last quarter", "上个季度华东区零售额"),
         ("online retail revenue in Q2 2026", "2026年第二季度线上零售额"),
         ("sales amount per channel in March 2026", "2026年3月按渠道销售额"),
+        ("What's the retail revenue in the North?", "华北区零售额"),
+        ("What is the retail revenue in the North?", "华北区零售额"),
+        ("What\u2019s the retail revenue last quarter?", "上个季度零售额"),
     ],
 )
 def test_english_filters_and_groups_equal_the_chinese_answers(
@@ -177,6 +180,24 @@ def test_english_filters_and_groups_equal_the_chinese_answers(
     assert expected.status == answer.status == "answered", (english, answer.message)
     assert answer.result == expected.result
     assert answer.interpretation == expected.interpretation
+
+
+@pytest.mark.parametrize(
+    ("question", "intent"),
+    [
+        ("What's upstream of retail revenue?", "upstream"),
+        ("Who's the owner of retail revenue?", "owner"),
+    ],
+)
+def test_contracted_relation_questions_stay_knowledge_questions(
+    db: Database, enterprise_sample: EnterpriseSample, question: str, intent: str
+) -> None:
+    """Reading "what's" as "what is" routes values, never relation questions, to metrics."""
+    assert enterprise_sample.sources
+    answer = ask_data(db, AskRequest(question=question, reference_instant=REFERENCE))
+    assert answer.knowledge is not None
+    assert answer.knowledge.intent == intent
+    assert answer.result is None
 
 
 def test_custom_contract_alias_reaches_the_answer(

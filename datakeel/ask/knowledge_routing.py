@@ -135,9 +135,11 @@ def pure_metric_phrase(question: str, layer: SemanticLayer) -> bool:
 
 
 def _masked_conditions(text: str, layer: SemanticLayer) -> tuple[str, bool]:
-    """Blank parsed periods and registered filter values with their attached prepositions."""
+    """Blank parsed periods and registered filter values with their attached prepositions.
+
+    A period or a filter value both mark a value question: definitions take neither.
+    """
     spans = list(time_spans(text, _SPAN_REFERENCE))
-    timed = bool(spans)
     for item in dimension_mentions(text, layer):
         if item.value is not None:
             lead = dimension_cues.FILTER_BEFORE.search(text[: item.start])
@@ -145,7 +147,7 @@ def _masked_conditions(text: str, layer: SemanticLayer) -> tuple[str, bool]:
     characters = list(text)
     for start, end in spans:
         characters[start:end] = " " * (end - start)
-    return "".join(characters), timed
+    return "".join(characters), bool(spans)
 
 
 def _masked_metrics(text: str, layer: SemanticLayer) -> str | None:
