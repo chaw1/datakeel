@@ -19,6 +19,7 @@ from datakeel.storage.datasets import import_dataset
 from datakeel.storage.objects import object_store
 from datakeel.storage.upload_files import (
     assemble_file,
+    discard_chunks,
     expected_bytes,
     persist_chunk,
     received_chunks,
@@ -114,6 +115,8 @@ def complete_upload(db: Database, identifier: str) -> UploadView:
         db.lock_writes(session)
         row = _require(session, identifier)
         if row.dataset_id:
+            # A retry also finishes cleanup that a crash after commit may have interrupted.
+            discard_chunks(identifier)
             return _view(row)
         body = UploadInput.model_validate(row.declaration)
         with tempfile.TemporaryDirectory(prefix="datakeel-upload-") as directory:
@@ -125,4 +128,5 @@ def complete_upload(db: Database, identifier: str) -> UploadView:
         row.dataset_id = dataset.id
         result = _view(row)
         session.commit()
+        discard_chunks(identifier)
         return result

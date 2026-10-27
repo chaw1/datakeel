@@ -29,6 +29,11 @@ def received_chunks(identifier: str, body: UploadInput) -> list[int]:
     return [index for index in range(body.chunk_count) if (directory / str(index)).is_file()]
 
 
+def discard_chunks(identifier: str) -> None:
+    """Delete staged chunks once their verified dataset publication is committed."""
+    shutil.rmtree(upload_directory(identifier), ignore_errors=True)
+
+
 def expected_bytes(body: UploadInput, ordinal: int) -> int:
     """Reject invalid ordinals and compute the exact final-chunk size."""
     if ordinal < 0 or ordinal >= body.chunk_count:

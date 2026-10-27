@@ -94,7 +94,44 @@ def test_missing_chunk_and_hash_failure_never_publish(db: Database) -> None:
     with db.session() as session:
         assert session.scalar(select(func.count()).select_from(DatasetRow)) == 0
         assert session.scalar(select(func.count()).select_from(VersionRow)) == 0
-    assert get_upload(db, upload.id).state == "UPLOADING"
+    failed = get_upload(db, upload.id)
+    assert failed.state == "UPLOADING"
+    # Unpublished uploads keep their staged chunks; there is no abort or expiry in this release.
+    assert failed.received_chunks == [0, 1, 2]
+
+
+def test_completion_discards_staged_chunks(db: Database) -> None:
+    """A verified, committed publication no longer needs its staged chunk bytes."""
+    upload = start_upload(db, declaration())
+    for ordinal, content in enumerate((b"abcd", b"efgh", b"ij")):
+        put_chunk(db, upload.id, ordinal, content)
+    completed = complete_upload(db, upload.id)
+    assert not upload_directory(upload.id).exists()
+    assert get_upload(db, upload.id) == completed
+    assert completed.missing_chunks == []
+    with pytest.raises(ConflictError, match="immutable"):
+        put_chunk(db, upload.id, 0, b"abcd")
+    assert not upload_directory(upload.id).exists()
+
+
+def test_completion_retry_finishes_interrupted_chunk_cleanup(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chunks left by a crash after commit are removed by the idempotent completion retry."""
+    upload = start_upload(db, declaration())
+    for ordinal, content in enumerate((b"abcd", b"efgh", b"ij")):
+        put_chunk(db, upload.id, ordinal, content)
+    discard = upload_service.discard_chunks
+
+    def crash_before_cleanup(_identifier: str) -> None:
+        """Simulate a process that stopped after the dataset transaction committed."""
+
+    monkeypatch.setattr(upload_service, "discard_chunks", crash_before_cleanup)
+    completed = complete_upload(db, upload.id)
+    assert upload_directory(upload.id).is_dir()
+    monkeypatch.setattr(upload_service, "discard_chunks", discard)
+    assert complete_upload(db, upload.id) == completed
+    assert not upload_directory(upload.id).exists()
 
 
 def test_empty_file_is_verified_and_published(db: Database) -> None:
