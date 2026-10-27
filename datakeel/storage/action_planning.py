@@ -7,6 +7,7 @@ from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
+from datakeel.actions.datasheet_parameters import GenerateDatasheetParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionContext, ActionImpact, ActionPlan
 from datakeel.actions.parameters import (
@@ -31,6 +32,7 @@ from datakeel.storage.action_store import audit
 from datakeel.storage.action_targets import current_manifest
 from datakeel.storage.catalog_action_state import catalog_impact, prepare_catalog_params
 from datakeel.storage.database import Database
+from datakeel.storage.datasheet_actions import prepare_datasheet
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
 
@@ -66,7 +68,9 @@ def verify_target_state(session: Session, plan: ActionPlan) -> None:
 
 
 def _prepare_params(session: Session, action_type: str, params: JsonDocument) -> BoundaryModel:
-    parsed = prepare_catalog_params(session, parse_params(action_type, params))
+    parsed = prepare_datasheet(
+        session, prepare_catalog_params(session, parse_params(action_type, params))
+    )
     if isinstance(parsed, RunKGExtractionParams):
         parsed = prepare_kg_params(session, parsed)
     if isinstance(parsed, PipelineParams) and parsed.pipeline is None:
@@ -92,7 +96,16 @@ def _new_plan(
     if isinstance(parsed, VersionParams | PipelineParams | ExportParams | RunKGExtractionParams):
         require_unique_file_sources(manifest)
     kg = parsed.prepared if isinstance(parsed, RunKGExtractionParams) else None
-    external = action_type == "export_dataset" or bool(kg and kg.external)
+    external = (
+        action_type == "export_dataset"
+        or bool(kg and kg.external)
+        or (
+            isinstance(parsed, GenerateDatasheetParams)
+            and parsed.mode == "model"
+            and parsed.prepared is not None
+            and parsed.prepared.external
+        )
+    )
     created = utcnow()
     plan = ActionPlan.model_validate(
         {

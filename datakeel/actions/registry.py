@@ -36,6 +36,8 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
     "update_term": ("terms:write", True, "semantic_change"),
     "rollback_term": ("terms:write", True, "semantic_change"),
     "run_kg_extraction": ("kg:extract", True, "Extract candidate graph facts with source evidence"),
+    "generate_datasheet": ("datasets:write", True, "Generate a versioned cited datasheet draft"),
+    "publish_datasheet": ("datasets:export", False, "Publish the approved immutable datasheet"),
 }
 
 

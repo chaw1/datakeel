@@ -8,10 +8,27 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.datasheets | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 ignore_imports =
+# Datasheet facts use existing assessments; controlled changes retain typed frozen inputs.
+    datakeel.storage.datasheet_facts -> datakeel.quality
+    datakeel.storage.datasheet_facts -> datakeel.governance
+    datakeel.storage.datasheet_actions -> datakeel.actions.datasheet_parameters
+    datakeel.storage.datasheet_actions -> datakeel.actions.models
+    datakeel.storage.datasheet_actions -> datakeel.datasheets.templates
+    datakeel.storage.datasheet_actions -> datakeel.datasheets.prompt
+    datakeel.storage.datasheet_actions -> datakeel.datasheets.destination
+    datakeel.storage.datasheet_actions -> datakeel.routing.config
+    datakeel.storage.datasheet_jobs -> datakeel.actions.datasheet_parameters
+    datakeel.storage.datasheet_jobs -> datakeel.actions.models
+    datakeel.storage.datasheet_jobs -> datakeel.datasheets.validation
+    datakeel.storage.action_planning -> datakeel.actions.datasheet_parameters
+    datakeel.storage.action_operations -> datakeel.actions.datasheet_parameters
+# Approved model workers reuse the existing provider factory and persistent budget boundary.
+    datakeel.worker.datasheet_runner -> datakeel.runtime.datasheet_model
+    datakeel.runtime.datasheet_model -> datakeel.agent.factory
 # Explicit memory services retain only typed projections across storage and tool boundaries.
     datakeel.memory.service -> datakeel.operators.text.pii_redact
     datakeel.memory.service -> datakeel.storage.memory_store

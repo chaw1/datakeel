@@ -17,6 +17,7 @@ from datakeel.lineage.service import graph
 from datakeel.ontology.models import FrozenManifest, ObjectSet
 from datakeel.storage.action_targets import current_manifest
 from datakeel.storage.catalog_action_state import catalog_state
+from datakeel.storage.datasheet_actions import datasheet_state
 from datakeel.storage.events import all_events
 from datakeel.storage.evidence_actions import decision_snapshot
 from datakeel.storage.object_queries import evaluate_in_session
@@ -25,6 +26,9 @@ from datakeel.storage.object_queries import evaluate_in_session
 def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> str:
     """Bind selected contents plus dataset metadata and exported event observations."""
     values = [manifest.state_digest]
+    datasheet = datasheet_state(session, params)
+    if datasheet:
+        values.append(datasheet)
     if isinstance(params, CatalogActionParams):
         values.append(catalog_state(session))
     if isinstance(params, DecideAssertionsParams):

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
 from datakeel.storage.database import OutboxRow, ShardRow, TaskRow, VersionRow
+from datakeel.storage.datasheet_jobs import finish_failed as fail_datasheet
 from datakeel.storage.kg_store import finish_failed
 
 
@@ -24,7 +25,7 @@ def complete_task(session: Session, task: TaskRow, error: str | None) -> None:
             for sibling in sorted(siblings, key=lambda item: item.ordinal)
             for item in sibling.outputs
         ]
-        if task.kg_run_id is None:
+        if task.kg_run_id is None and task.datasheet_job_id is None:
             session.add(VersionRow(dataset_id=task.dataset_id, task_id=task.id, manifest=manifest))
     if task.state in ("COMPLETED", "FAILED"):
         _publish_terminal(session, task)
@@ -47,18 +48,37 @@ def _cancel_shards(siblings: list[ShardRow]) -> None:
 
 
 def _publish_terminal(session: Session, task: TaskRow) -> None:
+    if task.datasheet_job_id and task.state in {"FAILED", "CANCELLED"}:
+        fail_datasheet(
+            session,
+            task.datasheet_job_id,
+            task.error or "Datasheet task cancelled",
+            cancelled=task.state == "CANCELLED",
+        )
     if task.kg_run_id and task.state in {"FAILED", "CANCELLED"}:
         finish_failed(session, task.kg_run_id, task.error or "Graph task cancelled")
     task.finished_at = utcnow().timestamp()
     terminal = LineageEvent(
         idempotency_key=f"task:{task.id}:terminal",
         event_type="TASK_TERMINAL",
-        operator="kg.complete" if task.kg_run_id else "pipeline.complete",
+        operator=(
+            "datasheet.complete"
+            if task.datasheet_job_id
+            else "kg.complete"
+            if task.kg_run_id
+            else "pipeline.complete"
+        ),
         run_state=task.state,
         source_module="worker",
         source_ref=task.id,
         inputs=[AssetRef(asset_id=task.dataset_id)],
-        outputs=[AssetRef(asset_type="task", asset_id=task.id, display_name="Pipeline run")],
+        outputs=[
+            AssetRef(
+                asset_type="task",
+                asset_id=task.id,
+                display_name="Datasheet generation" if task.datasheet_job_id else "Pipeline run",
+            )
+        ],
         quality={"shards": task.total_shards},
     )
     session.add(

@@ -15,6 +15,7 @@ from datakeel.actions.catalog_parameters import (
     UpdateMetricParams,
     UpdateTermParams,
 )
+from datakeel.actions.datasheet_parameters import GenerateDatasheetParams, PublishDatasheetParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
@@ -84,6 +85,8 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "create_version_from_selection": VersionParams,
     "run_pipeline": PipelineParams,
     "run_kg_extraction": RunKGExtractionParams,
+    "generate_datasheet": GenerateDatasheetParams,
+    "publish_datasheet": PublishDatasheetParams,
     "save_metadata": MetadataParams,
     "export_dataset": ExportParams,
     "decide_assertions": DecideAssertionsParams,
@@ -129,7 +132,7 @@ def selection_for(params: BoundaryModel) -> ObjectSet:
         )
     if isinstance(params, ExportParams):
         return ObjectSet(dataset_id=params.dataset_id, limit=10000)
-    if isinstance(params, MetadataParams):
+    if isinstance(params, MetadataParams | GenerateDatasheetParams | PublishDatasheetParams):
         return ObjectSet(
             object_type="dataset",
             dataset_id=params.dataset_id,
