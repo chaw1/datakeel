@@ -63,6 +63,7 @@ ignore_imports =
     datakeel.storage.approval_evidence -> datakeel.actions.recovery
 # Routing reads workflow vocabulary and controlled action declarations without dispatching them.
     datakeel.routing.classifier -> datakeel.workflows.models
+    datakeel.routing.concepts -> datakeel.workflows.models
     datakeel.routing.intent -> datakeel.workflows.models
     datakeel.routing.scopes -> datakeel.workflows.models
     datakeel.routing.intent -> datakeel.actions.registry

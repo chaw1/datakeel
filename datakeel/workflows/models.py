@@ -23,10 +23,32 @@ class WorkflowInput(BoundaryModel):
     default: JsonValue = None
 
 
+class WorkflowConcepts(BoundaryModel):
+    """Declare a workflow's objects, requesting verbs and required follow-ups, with paraphrases.
+
+    ``outcomes`` lists what a request must also ask for when the workflow bundles more than
+    one action, so that a request for the first action alone stays a single step.
+    """
+
+    entities: list[str] = Field(default_factory=list[str])
+    actions: list[str] = Field(default_factory=list[str])
+    outcomes: list[str] = Field(default_factory=list[str])
+
+    @field_validator("entities", "actions", "outcomes")
+    @classmethod
+    def validate_alternatives(cls, terms: list[str]) -> list[str]:
+        """Require every declared phrasing to contain visible text."""
+        if any(not term.strip() for term in terms):
+            msg = "concept alternatives must not be empty"
+            raise ValueError(msg)
+        return terms
+
+
 class WorkflowTriggers(BoundaryModel):
     """Declare multilingual routing vocabulary and auditable score thresholds."""
 
     keywords: list[list[str]] = Field(min_length=1)
+    concepts: WorkflowConcepts | None = Field(default=None, exclude_if=lambda value: value is None)
     classification_keywords: list[str] = Field(default_factory=list[str])
     classification_groups: list[list[str]] = Field(default_factory=list[list[str]])
     verification_keywords: list[str] = Field(default_factory=list[str])

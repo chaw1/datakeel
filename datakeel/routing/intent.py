@@ -7,15 +7,19 @@ import re
 
 from datakeel.actions.registry import action_definitions
 from datakeel.core.routing_models import RouteCandidate, RouteDecision
+from datakeel.routing.concepts import (
+    concept_match,
+    concept_terms,
+    inflected_position,
+    normalize,
+    position,
+    verification_terms,
+)
+from datakeel.routing.questions import requested_text
 from datakeel.routing.scopes import scope_for_workflow, workflow_scope
 from datakeel.workflows.models import ApprovalStep, ToolStep, WorkflowDefinition
 
 CLASSIFIER_CANDIDATE_LIMIT = 3
-
-
-def normalize(text: str) -> str:
-    """Match Unicode case-insensitively with normalized whitespace."""
-    return " ".join(text.casefold().split())
 
 
 def classifier_candidates(decision: RouteDecision) -> list[RouteCandidate]:
@@ -27,8 +31,13 @@ def classifier_candidates(decision: RouteDecision) -> list[RouteCandidate]:
 
 
 def keyword_route(text: str, workflows: list[WorkflowDefinition]) -> RouteDecision:
-    """Route clear complete matches directly and classify plausible partial matches."""
-    normalized = normalize(text)
+    """Route clear complete matches directly and classify plausible partial matches.
+
+    Sentences that ask about a workflow (approval, duration, effects, history) are removed
+    before scoring, so a question never starts a workflow even when every keyword matches.
+    """
+    request = requested_text(text)
+    normalized = normalize(request)
     definitions = {workflow.id: workflow for workflow in workflows}
     candidates = sorted(
         [
@@ -42,8 +51,9 @@ def keyword_route(text: str, workflows: list[WorkflowDefinition]) -> RouteDecisi
     top = candidates[0]
     trigger = definitions[top.workflow_id].triggers
     if top.score < trigger.threshold:
+        idle = "workflow_question" if normalize(text) and not normalized else "below_threshold"
         return RouteDecision(
-            reason="partial_keyword_match" if top.score > 0 else "below_threshold",
+            reason="partial_keyword_match" if top.score > 0 else idle,
             branch="classifier" if top.score > 0 else "free_agent",
             score=top.score,
             candidates=candidates,
@@ -81,16 +91,22 @@ def _excluded(text: str, workflow: WorkflowDefinition) -> bool:
         "",
         text,
     )
+    action_first = any(
+        inflected_position(request, word) == 0 for word in concept_terms(triggers, "actions")
+    )
     return (
-        any(_position(request, word) == 0 for word in triggers.excluded_prefixes)
-        or any(_position(text, word) is not None for word in triggers.excluded_keywords)
+        (
+            not action_first
+            and any(position(request, word) == 0 for word in triggers.excluded_prefixes)
+        )
+        or any(position(text, word) is not None for word in triggers.excluded_keywords)
         or _matches_groups(text, triggers.excluded_groups)
     )
 
 
 def _matches_groups(text: str, groups: list[list[str]], *, inflections: bool = False) -> bool:
-    position = _inflected_position if inflections else _position
-    return any(all(position(text, term) is not None for term in group) for group in groups)
+    locate = inflected_position if inflections else position
+    return any(all(locate(text, term) is not None for term in group) for group in groups)
 
 
 def _score(text: str, workflow: WorkflowDefinition, workflows: list[WorkflowDefinition]) -> float:
@@ -99,58 +115,38 @@ def _score(text: str, workflow: WorkflowDefinition, workflows: list[WorkflowDefi
         return 0
     triggers = workflow.triggers
     score = sum(
-        all(_position(text, term) is not None for term in group) for group in triggers.keywords
+        all(position(text, term) is not None for term in group) for group in triggers.keywords
     )
     if score:
         return score
     partial = max(
-        sum(_position(text, term) is not None for term in group) / len(group)
+        sum(position(text, term) is not None for term in group) / len(group)
         for group in triggers.keywords
     )
-    semantic = 0.5 if _matches_groups(text, triggers.classification_groups, inflections=True) else 0
+    semantic = (
+        0.5
+        if _matches_groups(text, triggers.classification_groups, inflections=True)
+        or concept_match(text, triggers)
+        else 0
+    )
     return max(partial, semantic) * triggers.threshold
 
 
 def _critical_match(
     text: str, workflow: WorkflowDefinition, workflows: list[WorkflowDefinition]
 ) -> bool:
-    terms = workflow.triggers.verification_keywords or workflow.triggers.classification_keywords
     scoped = scope_for_workflow(text, workflow, workflows)
-    return any(_inflected_position(scoped, term) is not None for term in terms)
-
-
-def _position(text: str, expression: str) -> int | None:
-    positions: list[int] = []
-    for alternative in expression.split("|"):
-        term = normalize(alternative)
-        prefix = r"(?<![a-z0-9_])" if term[0].isascii() and term[0].isalnum() else ""
-        suffix = r"(?![a-z0-9_])" if term[-1].isascii() and term[-1].isalnum() else ""
-        match = re.search(prefix + re.escape(term) + suffix, text)
-        if match:
-            positions.append(match.start())
-    return min(positions) if positions else None
-
-
-def _inflected_position(text: str, expression: str) -> int | None:
-    alternatives: list[str] = []
-    for alternative in expression.split("|"):
-        term = normalize(alternative)
-        alternatives.append(term)
-        ending = re.search(r"[a-z]+$", term)
-        if ending is not None:
-            word = ending[0]
-            prefix = term[: ending.start()]
-            past = word + "d" if word.endswith("e") else word + "ed"
-            stem = word.removesuffix("e")
-            alternatives.extend([prefix + past, prefix + stem + "ing"])
-    return _position(text, "|".join(alternatives))
+    return any(
+        inflected_position(scoped, term) is not None
+        for term in verification_terms(workflow.triggers)
+    )
 
 
 def classify_offline(
     text: str, candidates: list[RouteCandidate], workflows: list[WorkflowDefinition]
 ) -> str | None:
     """Choose the earliest eligible intent deterministically without external model calls."""
-    normalized = normalize(text)
+    normalized = normalize(requested_text(text))
     bounded = sorted(candidates, key=lambda candidate: (-candidate.score, candidate.workflow_id))[
         :CLASSIFIER_CANDIDATE_LIMIT
     ]
@@ -166,17 +162,21 @@ def classify_offline(
         triggers = workflow.triggers
         groups = triggers.classification_groups
         partial = scores[workflow.id] < triggers.threshold
+        concept = concept_match(scoped, triggers)
         if (
             partial
             and groups
+            and not concept
             and not _matches_groups(scoped, [*groups, *triggers.keywords], inflections=True)
         ):
             continue
         signals = [term for group in groups for term in group] if partial else []
+        if partial and concept:
+            signals.extend(concept_terms(triggers))
         positions = [
-            position
+            found
             for word in [*triggers.classification_keywords, *signals]
-            if (position := _inflected_position(scoped, word)) is not None
+            if (found := inflected_position(scoped, word)) is not None
         ]
         if positions:
             ranked.append((scope.deferred, scope.position + min(positions), workflow.id))
@@ -209,10 +209,10 @@ def classified_route(
         return decision.model_copy(
             update={**audit, "branch": "free_agent", "reason": "classifier_unverified"}
         )
-    terms = workflow.triggers.verification_keywords or workflow.triggers.classification_keywords
-    scoped = scope_for_workflow(normalize(text), workflow, workflows)
+    scoped = scope_for_workflow(normalize(requested_text(text)), workflow, workflows)
     verified = not _excluded(scoped, workflow) and any(
-        _inflected_position(scoped, term) is not None for term in terms
+        inflected_position(scoped, term) is not None
+        for term in verification_terms(workflow.triggers)
     )
     if not verified:
         return decision.model_copy(
@@ -230,12 +230,13 @@ def classified_route(
             "score": matching.score,
             "reason": "classified",
             "verification_passed": True,
-            "requires_confirmation": _writes_data(workflow),
+            "requires_confirmation": writes_data(workflow),
         }
     )
 
 
-def _writes_data(workflow: WorkflowDefinition) -> bool:
+def writes_data(workflow: WorkflowDefinition) -> bool:
+    """Return whether any step runs a registered write action or waits for approval."""
     actions = {action.id for action in action_definitions()}
     return any(
         isinstance(step, ApprovalStep) or (isinstance(step, ToolStep) and step.tool in actions)

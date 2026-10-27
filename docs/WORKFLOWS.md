@@ -154,6 +154,14 @@ The direct-route score is the count of matched `keywords` groups. A candidate re
 
 直接路由分数是 `keywords` 命中组数之和，达到阈值且领先第二名至少 `margin` 才直接推荐。可选 `classification_groups` 以实体、操作及范围/后续步骤组成更广的合取概念组；概念组成立但未完整命中直接路由组时，至少给阈值一半的分数，保留更高的部分合取命中比例，必须经过分类。其余未完整命中的关键词组，以最大概念命中比例乘阈值得到部分分数，因此旧定义无需补字段也可进入分类。仅泛化执行词产生的部分候选不干扰明确优胜者；具有自身关键实体或动词的部分候选仍参与分差判定。概念词使用相同的字面匹配及排除规则，不登记整句测试题。
 
+Optional `triggers.concepts` declares the same request in paraphrase form: `entities` (what the workflow acts on), `actions` (verbs that ask for it, including phrasal and colloquial verbs such as `get rid of`, `weed out`, 清掉, 口径改一下) and, for workflows that bundle several actions, `outcomes` that a request must also ask for (for example comparing the answers after a metric change). An entity, an action and any declared outcome together give a partial score of half the threshold, so the request goes to the classifier. English verbs in concepts also match their `-s/-ed/-ing` and common irregular forms. After a classifier selects a workflow, verification accepts any declared entity or action of that workflow (plus legacy `verification_keywords`); there is no separate, narrower verification list. Definitions without `concepts` load and route exactly as before.
+
+可选 `triggers.concepts` 用改写形式声明同一请求：`entities` 是工作流作用的对象，`actions` 是请求它的动词（含短语动词与口语说法，如 `get rid of`、`weed out`、清掉、口径改一下），对打包多个动作的工作流还可声明 `outcomes`，即请求必须同时提出的后续要求（如指标口径改完后对比答案）。实体、动作及已声明的后续要求同时命中时得阈值一半的部分分，交给分类器判断。英文动词自动匹配 `-s/-ed/-ing` 和常见不规则变化。分类器选中后，核对只要求命中该工作流声明的任一实体或动作（兼容旧的 `verification_keywords`），不再另设更窄的核对词表。未填写 `concepts` 的旧定义加载和路由行为不变。
+
+Sentences that ask about a workflow rather than request it — whether it needs approval, how long it takes, what it does or changes, past runs and results, or who approves it — are removed before scoring and again before verification, so they never start a workflow even when every keyword matches (`reason: workflow_question`). Interrogative sentences count as questions unless they are polite requests such as `Can you …`, `Could you …`, 能帮我…吗 or 请…; embedded inquiries such as `how long`, `whether`, 多久, 要不要 always count as questions.
+
+询问工作流本身的句子（是否需要审批、要多久、会做什么或改什么、上次运行与结果、由谁审批）在打分前和核对前都会被剔除，因此即使关键词全部命中也不会启动（`reason: workflow_question`）。疑问句一律视为提问，礼貌请求除外，如 `Can you …`、`Could you …`、能帮我…吗、请…；含 `how long`、`whether`、多久、要不要等内嵌询问的句子始终视为提问。
+
 ## Invalid definitions / 错误示例
 
 Errors identify the file and either a schema field or a named step. For example, replacing `tool: get_quality` in the example with `tool: missing_tool` reports:

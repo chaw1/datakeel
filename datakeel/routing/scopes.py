@@ -6,6 +6,7 @@
 import re
 
 from datakeel.core.models import BoundaryModel
+from datakeel.routing.concepts import anchor_terms
 from datakeel.workflows.models import WorkflowDefinition
 
 _CLAUSE = re.compile(r"[^,\uff0c;\uff1b\u3002.!?\uff01\uff1f\n]+")
@@ -20,8 +21,10 @@ _NEGATION = re.compile(
 )
 _INFO_PREFIX = re.compile(
     r"^\s*(?:(?:please|can you|could you|would you)\s+|请|麻烦|帮我|先)*\s*"
-    r"(?:(?:read|view|show|list|display|find|get|tell|describe|explain|look at|bring up|"
-    r"regarding|concerning|about)\b|查看|查询|列出|显示|展示|获取|读取|看看|看一下|看|解释|关于)"
+    r"(?:(?:read|view|show|list|display|find|get(?!\s+rid\b)|tell|describe|explain|look at|"
+    r"bring up|regarding|concerning|about|export|download|print|share|send|email|save|open|copy|"
+    r"attach|archive|rename)\b|查看|查询|列出|显示|展示|获取|读取|看看|看一下|看|解释|关于|导出|下载|打印|"
+    r"分享|发送|保存|打开|复制|归档|重命名)"
 )
 _READ_INTENT = re.compile(
     r"\b(?:want|need|wish|would\s+like)\s+to\s+(?:read|view|see)\b|"
@@ -58,7 +61,7 @@ def _has_anchor(text: str, workflow: WorkflowDefinition) -> bool:
     triggers = workflow.triggers
     expressions = [
         *triggers.classification_keywords,
-        *triggers.verification_keywords,
+        *anchor_terms(triggers),
         *(group[0] for group in triggers.classification_groups),
     ]
     return any(_literal(text, term) for expression in expressions for term in expression.split("|"))

@@ -1,12 +1,20 @@
 id: dataset-health
 name: 新数据集体检 / Dataset health check
-description: Process an imported dataset, inspect quality and evidence, and produce
-  a deterministic conclusion.
+description: Run the full health check of an imported dataset. Start its preprocessing pipeline,
+  wait for the worker, read the quality score, report and evidence, and conclude whether it
+  is healthy. Writes preprocessing results; deletes nothing.
 inputs:
   dataset_id:
     type: string
     description: Already imported dataset identifier / 已导入的数据集 ID
 triggers:
+  concepts:
+    entities:
+    - 数据集|这批数据|这份数据|这些数据|这套数据|这个数据|整批数据|数据包|语料|语料库
+    - dataset|datasets|data set|data sets|this data|the data|these data|corpus|corpora|data batch|batch of data
+    actions:
+    - 体检|健康检查|全面检查|整体检查|完整检查|全面诊断|诊断|摸底|摸个底|摸摸底|摸一下底|把关|把把关|过一遍|过一下|评估
+    - health check|health-check|checkup|check-up|check up on|diagnose|diagnostic|diagnostics|vet|once-over|sanity check|sanity-check|go over|look over|run through|audit|assess|assessment|evaluate|evaluation|appraise|full check|thorough check|full review|thorough review
   keywords:
   - - 数据集|dataset|datasets
     - 体检|健康检查|health check|checkup
@@ -27,9 +35,6 @@ triggers:
     - 质量|quality
     - 证据|报告|结论|evidence|report|conclusion
     - 检查|评估|处理|inspect|assess|process|processing|summarize
-  verification_keywords:
-  - 数据集|dataset|datasets|这批数据|这份数据
-  - 体检|checkup|health check
   excluded_keywords:
   - 谁|负责人|who|owner|where|哪里|如果|假如|if|suppose
   - 别清理|别删除|别修改|别改|先别|暂时别|不修改|不更改|无需|without
@@ -47,7 +52,9 @@ triggers:
   - 仅查看
   - 只查看
   - 介绍|说明|如何|怎么|how to|how do
-  - 什么|哪些|为什么|是否|需不需要|what|why|how|does
+  - 什么|哪些|为什么|是否|需不需要|why|what is|what are|what was|what were|what does|what did|what will
+    |what would|what happens|how many|how much|how long|how often|how is|how are|how was|how does
+    |how did|how will|how would|how to|how do|does it|does the|does this|does that
   excluded_prefixes:
   - 查看|查询|列出|显示|展示|获取|show|list|display|find|get|tell|read|describe|should
   excluded_groups:
