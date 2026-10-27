@@ -1,0 +1,232 @@
+.dq-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dq-filter {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 20px 0;
+}
+.dq-filter label,
+.dq-assignee,
+.dq-form-grid label {
+  display: grid;
+  gap: 6px;
+  font-size: var(--font-md);
+}
+.dq-filter input {
+  min-width: 300px;
+}
+.dq-rule-meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
+.dq-rule-list td {
+  vertical-align: top;
+}
+.dq-selected {
+  background: var(--ink-wash);
+}
+.dq-status {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: var(--font-sm);
+  line-height: var(--line-table);
+}
+.dq-failed,
+.dq-error {
+  color: var(--red);
+  background: var(--red-wash);
+}
+.dq-passed,
+.dq-recovered {
+  color: var(--ok);
+  background: var(--ok-wash);
+}
+.dq-baseline_insufficient,
+.dq-open,
+.dq-claimed {
+  color: var(--warn);
+  background: var(--warn-wash);
+}
+.dq-selected-actions,
+.dq-plan,
+.dq-editor,
+.dq-details {
+  margin-top: 24px;
+}
+.dq-editor,
+.dq-details {
+  padding: 24px;
+}
+.dq-details > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.dq-details h2,
+.dq-editor h2 {
+  margin: 0 0 12px;
+  font-size: var(--font-xl);
+}
+.dq-details > section,
+.dq-issues {
+  margin-top: 28px;
+}
+.dq-meta,
+.dq-issue-list dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 20px 0;
+}
+.dq-meta dt,
+.dq-issue-list dt {
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
+.dq-meta dd,
+.dq-issue-list dd {
+  margin: 4px 0 0;
+  font-size: var(--font-md);
+}
+.dq-trend {
+  margin: 12px 0;
+  max-width: 780px;
+}
+.dq-trend svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  font-size: var(--font-sm);
+  fill: var(--muted);
+}
+.dq-chart-axis {
+  fill: var(--icon-fill);
+  stroke: var(--line);
+}
+.dq-chart-line,
+.dq-chart-threshold {
+  fill: var(--icon-fill);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.dq-chart-threshold {
+  stroke: var(--warn);
+  stroke-dasharray: 6 4;
+}
+.dq-point {
+  fill: var(--ink);
+}
+.dq-point.dq-failed,
+.dq-point.dq-error {
+  fill: var(--red);
+}
+.dq-point.dq-passed {
+  fill: var(--ok);
+}
+.dq-point.dq-baseline_insufficient {
+  fill: var(--warn);
+}
+.dq-trend figcaption {
+  display: flex;
+  gap: 24px;
+  font-size: var(--font-sm);
+}
+.dq-legend-actual,
+.dq-legend-threshold {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dq-legend-actual::before,
+.dq-legend-threshold::before {
+  content: "";
+  width: 24px;
+  border-top: 2px solid var(--ink);
+}
+.dq-legend-threshold::before {
+  border-top: 2px dashed var(--warn);
+}
+.dq-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.dq-form-grid input,
+.dq-form-grid select,
+.dq-form-grid textarea {
+  width: 100%;
+}
+.dq-form-grid textarea {
+  font-family: var(--font-mono);
+  font-size: var(--font-md);
+}
+.dq-full-row {
+  grid-column: 1 / -1;
+}
+.dq-form-grid .dq-check {
+  display: flex;
+  align-items: center;
+}
+.dq-check input {
+  width: auto;
+}
+.dq-assignee {
+  max-width: 280px;
+  margin-bottom: 16px;
+}
+.dq-issue-list {
+  padding: 0;
+  list-style: none;
+}
+.dq-issue-list li {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.dq-issue-list li > div:first-child {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.dq-table-rules {
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid var(--line);
+}
+.dq-table-rules ul {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+.dq-table-rules li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (max-width: 700px) {
+  .dq-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .dq-filter input {
+    min-width: 0;
+  }
+  .dq-details,
+  .dq-editor {
+    padding: 16px;
+  }
+}

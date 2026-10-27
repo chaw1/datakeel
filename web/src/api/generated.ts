@@ -1343,6 +1343,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quality/issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Issues
+         * @description Read merged failure episodes, recovery, ownership and resolution.
+         */
+        get: operations["issues_api_quality_issues_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quality/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report
+         * @description Explain table quality using persisted observations and deterministic prose.
+         */
+        get: operations["report_api_quality_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quality/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rules
+         * @description List exact current definitions with the latest result of each revision.
+         */
+        get: operations["rules_api_quality_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quality/rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rule
+         * @description Read a rule definition and the exact revision's latest observation.
+         */
+        get: operations["rule_api_quality_rules__rule_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quality/rules/{rule_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * History
+         * @description Read append-only accepted rule revisions, including a deletion tombstone.
+         */
+        get: operations["history_api_quality_rules__rule_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quality/rules/{rule_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Results
+         * @description Read a bounded newest-first trend, including observations of older revisions.
+         */
+        get: operations["results_api_quality_rules__rule_id__results_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quality/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Run
+         * @description Read the durable task and terminal result identity for a scheduled execution.
+         */
+        get: operations["run_api_quality_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quality/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summary
+         * @description Score current evidence without treating missing history as a pass.
+         */
+        get: operations["summary_api_quality_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/search": {
         parameters: {
             query?: never;
@@ -1626,7 +1786,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -1680,7 +1840,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -2555,6 +2715,384 @@ export interface components {
             score: number;
             /** Weight */
             weight: number;
+        };
+        /**
+         * DqIssue
+         * @description Track a contiguous failure episode through human confirmation.
+         */
+        DqIssue: {
+            /** Assignee */
+            assignee?: string | null;
+            /**
+             * Can Resolve
+             * @default false
+             */
+            can_resolve: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Failures */
+            failures: number;
+            /** First Result Id */
+            first_result_id: string;
+            /** Id */
+            id: string;
+            /** Last Result Id */
+            last_result_id: string;
+            /** Revision */
+            revision: number;
+            /** Rule Id */
+            rule_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "claimed" | "recovered" | "resolved";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** @enum {string} */
+        DqKind: "not_null" | "unique" | "range" | "accepted_values" | "regex" | "referential_integrity" | "freshness" | "volume_change" | "distribution_drift" | "sql_assertion";
+        /**
+         * DqMetrics
+         * @description Retain non-sensitive aggregate values for historical baselines.
+         */
+        DqMetrics: {
+            /**
+             * Bin Edges
+             * @default []
+             */
+            bin_edges: number[];
+            /**
+             * Histogram
+             * @default []
+             */
+            histogram: number[];
+            /** Mean */
+            mean?: number | null;
+            /**
+             * Null Rate
+             * @default 0
+             */
+            null_rate: number;
+            /**
+             * Row Count
+             * @default 0
+             */
+            row_count: number;
+            /** Stddev */
+            stddev?: number | null;
+        };
+        /**
+         * DqParameters
+         * @description Type all optional rule parameters, with kind-specific invariants on the rule.
+         */
+        DqParameters: {
+            /**
+             * Baseline Runs
+             * @default 3
+             */
+            baseline_runs: number;
+            /**
+             * Bin Edges
+             * @default [
+             *       -100,
+             *       0,
+             *       10,
+             *       100,
+             *       1000
+             *     ]
+             */
+            bin_edges: number[];
+            /** Bindings */
+            bindings?: {
+                [key: string]: components["schemas"]["Scalar"];
+            };
+            /** Maximum */
+            maximum?: number | null;
+            /** Minimum */
+            minimum?: number | null;
+            /** Pattern */
+            pattern?: string | null;
+            /** Reference Column */
+            reference_column?: string | null;
+            /** Reference Schema */
+            reference_schema?: string | null;
+            /** Reference Table */
+            reference_table?: string | null;
+            /** Sql */
+            sql?: string | null;
+            /**
+             * Statistic
+             * @default mean
+             * @enum {string}
+             */
+            statistic: "mean" | "stddev" | "null_rate" | "psi";
+            /**
+             * Values
+             * @default []
+             */
+            values: components["schemas"]["Scalar"][];
+        };
+        /**
+         * DqReport
+         * @description Provide a model-free analysis report grounded in persisted rule observations.
+         */
+        DqReport: {
+            /** Body */
+            body: string;
+            summary: components["schemas"]["DqSummary"];
+        };
+        /**
+         * DqResult
+         * @description Record one immutable evaluation, including explicit non-verdict states.
+         */
+        DqResult: {
+            /** Actual Value */
+            actual_value?: number | null;
+            /**
+             * Duration Ms
+             * @default 0
+             */
+            duration_ms: number;
+            /**
+             * Failed Count
+             * @default 0
+             */
+            failed_count: number;
+            /** Id */
+            id?: string;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            metrics?: components["schemas"]["DqMetrics"];
+            /**
+             * Passed
+             * @description Distinguish measured verdicts from failures to obtain an observation.
+             */
+            readonly passed: boolean | null;
+            /**
+             * Row Count
+             * @default 0
+             */
+            row_count: number;
+            /** Rule Id */
+            rule_id: string;
+            /**
+             * Rule Revision
+             * @default 1
+             */
+            rule_revision: number;
+            /**
+             * Samples
+             * @default []
+             */
+            samples: components["schemas"]["DqSample"][];
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at?: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "passed" | "failed" | "baseline_insufficient" | "error";
+            /**
+             * Threshold
+             * @default 0
+             */
+            threshold: number;
+        };
+        /**
+         * DqRule
+         * @description Version a complete YAML or web quality rule and its execution limits.
+         */
+        DqRule: {
+            /** Cron */
+            cron?: string | null;
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Id */
+            id: string;
+            kind: components["schemas"]["DqKind"];
+            /**
+             * Max Rows
+             * @default 10000
+             */
+            max_rows: number;
+            /** Name */
+            name: string;
+            /** Owner */
+            owner: string;
+            params?: components["schemas"]["DqParameters"];
+            /**
+             * Revision
+             * @default 1
+             */
+            revision: number;
+            /**
+             * Severity
+             * @default error
+             * @enum {string}
+             */
+            severity: "warn" | "error";
+            target: components["schemas"]["DqTarget"];
+            /**
+             * Threshold
+             * @default 0
+             */
+            threshold: number;
+            /**
+             * Timeout Ms
+             * @default 5000
+             */
+            timeout_ms: number;
+        };
+        /**
+         * DqRuleHistory
+         * @description Preserve each accepted rule mutation and its accountable actor.
+         */
+        DqRuleHistory: {
+            /** Actor */
+            actor: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /**
+             * Operation
+             * @enum {string}
+             */
+            operation: "create" | "update" | "delete";
+            /** Revision */
+            revision: number;
+            rule: components["schemas"]["DqRule"];
+            /** Rule Id */
+            rule_id: string;
+        };
+        /**
+         * DqRuleView
+         * @description Pair a current rule definition with its most recent observation.
+         */
+        DqRuleView: {
+            latest_result?: components["schemas"]["DqResult"] | null;
+            /** Next Due At */
+            next_due_at?: string | null;
+            rule: components["schemas"]["DqRule"];
+        };
+        /**
+         * DqRun
+         * @description Expose one idempotent manual request or scheduled minute slot.
+         */
+        DqRun: {
+            /** Error */
+            error?: string | null;
+            /** Id */
+            id: string;
+            /** Result Id */
+            result_id?: string | null;
+            /** Rule Id */
+            rule_id: string;
+            /** Rule Revision */
+            rule_revision: number;
+            /** Slot */
+            slot: string;
+            /** State */
+            state: string;
+            /** Task Id */
+            task_id: string;
+        };
+        /**
+         * DqSample
+         * @description Expose only row ordinal and a redacted marker, never business cell contents.
+         */
+        DqSample: {
+            /** Column */
+            column?: string | null;
+            /** Row Number */
+            row_number: number;
+            /**
+             * Value
+             * @default [REDACTED]
+             * @constant
+             */
+            value: "[REDACTED]";
+        };
+        /**
+         * DqSummary
+         * @description Score only observed rules while keeping non-verdict states explicit.
+         */
+        DqSummary: {
+            /**
+             * Baseline Insufficient
+             * @default 0
+             */
+            baseline_insufficient: number;
+            /**
+             * Errors
+             * @default 0
+             */
+            errors: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed: number;
+            /**
+             * Open Issues
+             * @default 0
+             */
+            open_issues: number;
+            /**
+             * Passed
+             * @default 0
+             */
+            passed: number;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending: number;
+            /**
+             * Rules
+             * @default []
+             */
+            rules: components["schemas"]["DqRuleView"][];
+            /** Score */
+            score?: number | null;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /**
+         * DqTarget
+         * @description Identify a table in an existing catalog business source.
+         */
+        DqTarget: {
+            /** Column */
+            column?: string | null;
+            /** Schema Name */
+            schema_name?: string | null;
+            /** Source Id */
+            source_id: string;
+            /** Table */
+            table: string;
         };
         /**
          * EntityLink
@@ -4771,6 +5309,7 @@ export interface components {
             grade: string;
             /** Issues */
             issues: components["schemas"]["IssueView"][];
+            rules?: components["schemas"]["DqSummary"] | null;
             /** Total */
             total: number;
         };
@@ -7759,6 +8298,262 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FrozenManifest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    issues_api_quality_issues_get: {
+        parameters: {
+            query?: {
+                rule_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DqIssue"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_api_quality_report_get: {
+        parameters: {
+            query?: {
+                source_id?: string | null;
+                table?: string | null;
+                schema_name?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DqReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rules_api_quality_rules_get: {
+        parameters: {
+            query?: {
+                source_id?: string | null;
+                table?: string | null;
+                schema_name?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DqRuleView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rule_api_quality_rules__rule_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DqRuleView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_api_quality_rules__rule_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DqRuleHistory"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    results_api_quality_rules__rule_id__results_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DqResult"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_api_quality_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DqRun"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_api_quality_summary_get: {
+        parameters: {
+            query?: {
+                source_id?: string | null;
+                table?: string | null;
+                schema_name?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DqSummary"];
                 };
             };
             /** @description Validation Error */

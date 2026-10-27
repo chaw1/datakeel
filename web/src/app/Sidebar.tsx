@@ -24,6 +24,7 @@ const groups = [
       { id: "evidence", label: "evidenceNav", icon: "quality" },
       { id: "kg", label: "kgNav", icon: "grid" },
       { id: "quality", label: "dataQuality", icon: "quality" },
+      { id: "quality-rules", label: "dqNav", icon: "quality" },
     ],
   },
   {

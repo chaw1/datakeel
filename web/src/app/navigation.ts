@@ -10,6 +10,7 @@ export type Page =
   | "tasks"
   | "lineage"
   | "quality"
+  | "quality-rules"
   | "report"
   | "approvals"
   | "action-runs"

@@ -5,6 +5,7 @@ import { approvalZh } from "./approvalZh";
 import { askZh } from "./askZh";
 import { catalogZh } from "./catalogZh";
 import { commandZh } from "./commandZh";
+import { dqZh } from "./dqZh";
 import { evidenceZh } from "./evidenceZh";
 import { graphZh } from "./graphZh";
 import { kgZh } from "./kgZh";
@@ -16,6 +17,7 @@ import { workspaceZh } from "./workspaceZh";
 
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
+  ...dqZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,

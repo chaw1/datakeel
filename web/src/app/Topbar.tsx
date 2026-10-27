@@ -35,8 +35,8 @@ export function Topbar({
           : t("pageObject")
         : page === "runs"
           ? t("runRecords")
-          : page === "quality"
-            ? t("dataQuality")
+          : page === "quality" || page === "quality-rules"
+            ? t(page === "quality" ? "dataQuality" : "dqNav")
             : page === "datasets"
               ? t("dataLibraryLabel")
               : (selected?.name ?? t("workspaceLabel"));

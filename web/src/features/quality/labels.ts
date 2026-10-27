@@ -3,6 +3,7 @@ import type { Translate } from "../../i18n/context";
 import type { MessageKey } from "../../i18n/en";
 
 export const qualityDimensions: Record<string, MessageKey> = {
+  database_rules: "databaseRules",
   completeness: "completeness",
   consistency: "consistency",
   uniqueness: "uniqueness",

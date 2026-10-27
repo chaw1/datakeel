@@ -17,4 +17,9 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   rollback_metric: "approvalMetricRollback",
   update_term: "approvalTermUpdate",
   rollback_term: "approvalTermRollback",
+  create_quality_rule: "dqCreateAction",
+  update_quality_rule: "dqUpdateAction",
+  delete_quality_rule: "dqDeleteAction",
+  run_quality_rule: "dqRunAction",
+  change_quality_issue: "dqIssueAction",
 };
