@@ -39,6 +39,11 @@ def _baseline(
         "\n".join(f"- [{issue['severity']}] {issue['message']}" for issue in problems)
         or "No rule-based issues were detected. Sampling is still required before use."
     )
+    if isinstance(quality, QualityView) and quality.rules is not None:
+        issue_text += "\n\nDatabase rule observations:\n" + "\n".join(
+            f"- {view.rule.id}: {view.latest_result.status if view.latest_result else 'pending'}"
+            for view in quality.rules.rules
+        )
     recommendations = [
         "Keep version manifests and hashes for reproducibility.",
         "Document the data license, creator, intended use and collection method.",

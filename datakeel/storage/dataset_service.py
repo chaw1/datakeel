@@ -76,6 +76,7 @@ def list_datasets(db: Database) -> list[DatasetView]:
         return [
             _dataset_view(session, row)
             for row in session.scalars(select(DatasetRow).order_by(DatasetRow.created_at))
+            if not row.metadata_values.get("internal_quality_monitor")
         ]
 
 

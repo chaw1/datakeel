@@ -18,6 +18,7 @@ from datakeel.quality.models import QualityView, ReportView
 from datakeel.storage.database import Database, DatasetRow, MetadataChangeRow
 from datakeel.storage.dataset_service import list_datasets, require_dataset
 from datakeel.storage.datasets import dataset_dict, latest_files
+from datakeel.storage.dq_views import attach_rule_quality
 from datakeel.storage.views import (
     DatasetQualityView,
     MetadataChangeView,
@@ -60,7 +61,7 @@ def get_quality(db: Database, identifier: str, *, quarantined: bool | None = Non
             files = [
                 item for item in files if bool(item.metadata.get("quarantined")) == quarantined
             ]
-        return QualityView.model_validate(score_quality(files, row.quality_config))
+        return attach_rule_quality(session, identifier, score_quality(files, row.quality_config))
 
 
 def dataset_quality_summaries(db: Database) -> list[DatasetQualityView]:
@@ -71,7 +72,10 @@ def dataset_quality_summaries(db: Database) -> list[DatasetQualityView]:
         result.append(
             DatasetQualityView(
                 **item.model_dump(),
-                quality_score=quality.total if quality.file_count else None,
+                quality_score=quality.total
+                if quality.file_count
+                or (quality.rules is not None and quality.rules.score is not None)
+                else None,
             )
         )
     return result
@@ -83,7 +87,9 @@ def save_quality(db: Database, identifier: str, body: QualityInput) -> QualityVi
         db.lock_writes(session)
         row = require_dataset(session, identifier, lock=True)
         config = body.model_dump(exclude_unset=True)
-        result = QualityView.model_validate(score_quality(latest_files(session, row), config))
+        result = attach_rule_quality(
+            session, identifier, score_quality(latest_files(session, row), config)
+        )
         row.quality_config = config
         session.commit()
         return result
@@ -93,7 +99,9 @@ def get_report(db: Database, identifier: str) -> ReportView:
     """Build an evidence-based report from the current dataset snapshot."""
     with db.session() as session:
         row = require_dataset(session, identifier)
-        result = score_quality(latest_files(session, row), row.quality_config)
+        result = attach_rule_quality(
+            session, identifier, score_quality(latest_files(session, row), row.quality_config)
+        )
         return ReportView.model_validate(
             build_report(dataset_dict(row), result, get_settings().llm_url)
         )
