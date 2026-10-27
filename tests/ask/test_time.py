@@ -40,7 +40,7 @@ def test_time_ranges_are_half_open_utc_intervals(
 
 
 @pytest.mark.parametrize(
-    "question", ["2026年13月", "2026年0月", "近0天", "近99999天", "今年", "下个月"]
+    "question", ["2026年13月", "2026年0月", "近0天", "近99999天", "明年", "下个月"]
 )
 def test_invalid_or_unsupported_time_is_not_silently_ignored(question: str) -> None:
     """Unsupported or invalid dates never degrade into an all-time query."""
