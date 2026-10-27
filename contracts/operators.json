@@ -80,7 +80,7 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Define the image-quality measurement thresholds.",
+      "description": "Define image-quality thresholds in luminance, pixels and robust noise sigma.",
       "properties": {
         "blur_threshold": {
           "default": 50.0,
@@ -106,6 +106,34 @@
           "default": 64,
           "minimum": 1,
           "title": "Min Resolution",
+          "type": "integer"
+        },
+        "max_noise_sigma": {
+          "default": 12.0,
+          "exclusiveMinimum": 0,
+          "maximum": 255,
+          "title": "Max Noise Sigma",
+          "type": "number"
+        },
+        "min_color_stddev": {
+          "default": 5.0,
+          "exclusiveMinimum": 0,
+          "maximum": 128,
+          "title": "Min Color Stddev",
+          "type": "number"
+        },
+        "max_clipped_fraction": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Max Clipped Fraction",
+          "type": "number"
+        },
+        "analysis_size": {
+          "default": 512,
+          "maximum": 2048,
+          "minimum": 32,
+          "title": "Analysis Size",
           "type": "integer"
         }
       },

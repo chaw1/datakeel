@@ -61,12 +61,16 @@ class ConvertParams(Params):
 
 
 class ImageQualityParams(Params):
-    """Define the image-quality measurement thresholds."""
+    """Define image-quality thresholds in luminance, pixels and robust noise sigma."""
 
     blur_threshold: float = Field(default=50.0, ge=0)
     min_brightness: float = Field(default=20.0, ge=0, le=255)
     max_brightness: float = Field(default=235.0, ge=0, le=255)
     min_resolution: int = Field(default=64, ge=1)
+    max_noise_sigma: float = Field(default=12.0, gt=0, le=255)
+    min_color_stddev: float = Field(default=5.0, gt=0, le=128)
+    max_clipped_fraction: float = Field(default=0.5, ge=0, le=1)
+    analysis_size: int = Field(default=512, ge=32, le=2048)
 
     @model_validator(mode="after")
     def bounds(self) -> "ImageQualityParams":
