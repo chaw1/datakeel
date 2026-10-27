@@ -69,7 +69,16 @@ _ROLE_FRAMES = (
 )
 _ABSENCE = (
     vocabulary.ABSENCE_WORDS
-    + r"|断供|停掉|停供|\b(?:retir(?:e|es|ed)|drop(?:s|ped)?|remove[ds]?)\b"
+    + r"|断供|停掉|停供|\b(?:retir(?:e|es|ed)|drop(?:s|ped)?|remove[ds]?)\b|"
+    r"\b(?:shut(?:s|ting)?\s+down|(?:went|go(?:es)?|taken|take[ns]?)\s+offline|offline|"
+    r"turn(?:s|ed)?\s+off|switch(?:es|ed)?\s+off|deprecated?|decommission(?:s|ed)?|"
+    r"discontinu(?:e|es|ed)|delet(?:e|es|ed)|purg(?:e|es|ed)|wip(?:e|es|ed)|"
+    r"(?:had|has|have)\s+an?\s+outage|out\s+of\s+service|stopp?ed\s+updating)\b"
+)
+_SOURCE_REQUEST = (
+    r"来源|从哪|哪里来|替代|代替|替换|改用|"
+    r"\b(?:come|comes|coming)\s+from\b|\bsourced?\s+from\b|\b(?:replace\w*|instead|"
+    r"substitute\w*|fallback|backup)\b"
 )
 _FLOW = (
     r"流向|流到|流入|去向|下一站|(?:最后|最终)\s*到(?:了|达)?|"
@@ -77,7 +86,13 @@ _FLOW = (
 )
 _INVERSION = r"\b(?:does|do|did|is|are|was|were|has|have|can|could|would|will)\s+§"
 _FRONTED_SOURCE = rf"(?:\bfrom\s+|\bout\s+of\s+|从\s*)(?:{_QUESTION})"
-_CONDITION = vocabulary.CONDITION_WORDS + r"|\b(?:when|once)\b"
+_CONDITION = vocabulary.CONDITION_WORDS + r"|\b(?:when|once|suppose|supposing)\b"
+_CONSEQUENCE = (
+    vocabulary.DEPENDENCY_CONSEQUENCE
+    + r"|\b(?:stops?|stopped)\s+(?:working|refreshing|updating)\b|"
+    r"\b(?:hurt|harmed|disrupted|go(?:es)?\s+wrong|notice[sd]?|blocked|"
+    r"would\s+(?:break|fail|suffer))\b|出问题|受损|中断"
+)
 
 
 def question_frame_direction(marked: str, mention: SubjectMention) -> QuestionDirection:
@@ -147,11 +162,11 @@ def counterfactual_direction(marked: str, mention: SubjectMention) -> QuestionDi
             and not re.search(_QUESTION, topic)
             and re.fullmatch(r"[\s,:\uff1a\uff0c\u2014\u2013]*", topic[topic.index("§") + 1 :])
         )
-        if (
-            known_source
-            and re.search(_QUESTION, result)
-            and re.search(vocabulary.DEPENDENCY_CONSEQUENCE, result)
-        ):
+        if not known_source or not re.search(_QUESTION, result):
+            continue
+        if re.search(_SOURCE_REQUEST, result):
+            return _result("upstream", marked, mention, "K16-counterfactual-slot")
+        if re.search(_CONSEQUENCE, result):
             return _result("downstream", marked, mention, "K16-counterfactual-slot")
     return QuestionDirection()
 
