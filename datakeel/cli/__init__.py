@@ -11,7 +11,7 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
-from datakeel.cli import kg_evaluation, kg_image_evaluation, routing, workflow
+from datakeel.cli import kg_evaluation, kg_image_evaluation, media_demo, routing, workflow
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -76,7 +76,7 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
-    for module in (workflow, routing, kg_evaluation):
+    for module in (workflow, routing, kg_evaluation, media_demo):
         module.register_parser(commands)
     return result
 
@@ -126,7 +126,9 @@ def main() -> None:
 
 def _database_command(db: Database, args: argparse.Namespace) -> None:
     """Dispatch commands that share an initialized authoritative fact store."""
-    if args.command == "migrate":
+    if args.command == "demo-media":
+        media_demo.dispatch(db, args)
+    elif args.command == "migrate":
         Console().print("Database schema is current.")
     elif args.command == "worker":
         with suppress(KeyboardInterrupt):
