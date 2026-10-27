@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.datasheet_models import DatasheetChapter, DatasheetFact
 from datakeel.core.errors import NotFoundError
-from datakeel.core.models import FileItem, utcnow
+from datakeel.core.models import FileItem
 from datakeel.governance import compliance_score
 from datakeel.quality import score_quality
 from datakeel.storage.database import DatasetRow, MetadataChangeRow, VersionRow
@@ -97,8 +97,8 @@ def _manifest_facts(dataset: DatasetRow, version: VersionRow) -> tuple[Datasheet
     return tuple(fact for fact in candidates if fact is not None)
 
 
-def _metadata_facts(session: Session, dataset: DatasetRow) -> tuple[DatasheetFact, ...]:
-    changes = {
+def _metadata_changes(session: Session, dataset: DatasetRow) -> dict[str, float]:
+    return {
         row.field: row.occurred_at
         for row in session.scalars(
             select(MetadataChangeRow)
@@ -106,6 +106,9 @@ def _metadata_facts(session: Session, dataset: DatasetRow) -> tuple[DatasheetFac
             .order_by(MetadataChangeRow.occurred_at, MetadataChangeRow.id)
         )
     }
+
+
+def _metadata_facts(dataset: DatasetRow, changes: dict[str, float]) -> tuple[DatasheetFact, ...]:
     facts: list[DatasheetFact] = []
     for chapter, fields in _METADATA_CHAPTERS.items():
         for field in fields:
@@ -125,9 +128,12 @@ def _metadata_facts(session: Session, dataset: DatasetRow) -> tuple[DatasheetFac
     return tuple(facts)
 
 
-def _assessment_facts(dataset: DatasetRow, version: VersionRow) -> tuple[DatasheetFact, ...]:
+def _assessment_facts(
+    dataset: DatasetRow, version: VersionRow, changes: dict[str, float]
+) -> tuple[DatasheetFact, ...]:
     files = [FileItem.model_validate(value) for value in version.manifest]
-    measured_at = utcnow()
+    # Stamp recomputed scores with their latest recorded input, never the extraction clock.
+    measured_at = datetime.fromtimestamp(max((version.created_at, *changes.values())), UTC)
     quality = score_quality(files, dataset.quality_config)
     compliance = compliance_score(dataset.name, files, dataset.metadata_values, dataset.template)
     values: tuple[tuple[DatasheetChapter, str, str, object], ...] = (
@@ -165,14 +171,16 @@ def extract_facts(session: Session, dataset_id: str, version_id: str) -> tuple[D
 
     Immutable manifest values always come from the requested version, without the
     mutable file-state overlay. Dataset metadata is explicitly attributed to its
-    field audit time; newly computed assessments retain their measurement time.
+    field audit time; recomputed assessments carry the latest recorded input time
+    (the version or a metadata audit), so unchanged sources extract byte-identically.
     """
     dataset = require_dataset(session, dataset_id)
     version = require_version(session, dataset_id, version_id)
+    changes = _metadata_changes(session, dataset)
     facts = (
         *_manifest_facts(dataset, version),
-        *_metadata_facts(session, dataset),
-        *_assessment_facts(dataset, version),
+        *_metadata_facts(dataset, changes),
+        *_assessment_facts(dataset, version, changes),
         *source_facts(session, dataset_id, version),
     )
     return tuple(

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from datakeel.core.datasheet_models import DatasheetFact
 from datakeel.core.evidence_models import AssertionDecision
 from datakeel.core.kg_product import KGEntity
-from datakeel.core.models import LineageEvent, utcnow
+from datakeel.core.models import LineageEvent
 from datakeel.storage.database import VersionRow
 from datakeel.storage.datasheet_values import make_fact
 from datakeel.storage.events import all_events
@@ -79,12 +79,22 @@ def _version_assertions(
 
 
 def _assertion_facts(
-    version: VersionRow, assertions: tuple[AssertionRow, ...]
+    version: VersionRow,
+    assertions: tuple[AssertionRow, ...],
+    events: tuple[LineageEvent, ...],
+    decisions: tuple[DatasheetFact, ...],
 ) -> tuple[DatasheetFact, ...]:
     if not assertions:
         return ()
     active = tuple(row for row in assertions if row.active)
-    measured_at = utcnow()
+    # Counts reflect the latest producing extraction or review decision, not the extraction clock.
+    producers = {row.producer_event_id for row in assertions}
+    measured_at = max(
+        (
+            *(event.occurred_at for event in events if event.event_id in producers),
+            *(fact.recorded_at for fact in decisions),
+        )
+    )
     values: tuple[tuple[str, object], ...] = (
         ("assertions.count", len(active)),
         ("assertions.status_counts", dict(sorted(Counter(row.status for row in active).items()))),
@@ -189,9 +199,10 @@ def source_facts(
     """Extract only events and reviewed assertions belonging to one exact version."""
     events = _scoped_events(session, dataset_id, version)
     assertions = _version_assertions(session, version, events)
+    decisions = _decision_facts(session, assertions)
     return (
         *_lineage_facts(events),
-        *_assertion_facts(version, assertions),
-        *_decision_facts(session, assertions),
+        *_assertion_facts(version, assertions, events, decisions),
+        *decisions,
         *_graph_facts(version, events, assertions),
     )

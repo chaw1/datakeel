@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import pytest
@@ -47,6 +48,38 @@ def test_fact_identity_stable_for_same_source_field_and_values_are_public(db: Da
     assert [(fact.id, fact.value) for fact in first] == [(fact.id, fact.value) for fact in second]
     assert len({fact.id for fact in first}) == len(first)
     assert "unmaterialized" not in str(first)
+
+
+def test_repeated_extraction_is_byte_identical_including_assessment_times(db: Database) -> None:
+    """Recomputed scores are stamped with their latest recorded input, not the extraction clock."""
+    dataset_id, before_id, _ = dataset_versions(db)
+    with db.session() as session:
+        first = extract_facts(session, dataset_id, before_id)
+        second = extract_facts(session, dataset_id, before_id)
+    dumps = [
+        json.dumps([fact.model_dump(mode="json") for fact in facts], sort_keys=True)
+        for facts in (first, second)
+    ]
+    assert dumps[0] == dumps[1]
+    by_field = {fact.field: fact for fact in first}
+    for field in ("quality.total", "quality.issues", "compliance.total"):
+        assert by_field[field].recorded_at.timestamp() == 200
+    with db.session() as session:
+        session.add(
+            MetadataChangeRow(
+                dataset_id=dataset_id,
+                field="owner",
+                before=None,
+                after="Research group",
+                source="test",
+                reason="Assigned",
+                occurred_at=450,
+            )
+        )
+        session.commit()
+    with db.session() as session:
+        changed = {fact.field: fact for fact in extract_facts(session, dataset_id, before_id)}
+    assert changed["compliance.total"].recorded_at.timestamp() == 450
 
 
 def test_metadata_owner_retains_its_field_audit_timestamp_and_filters_unsafe_values(

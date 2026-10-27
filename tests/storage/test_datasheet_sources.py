@@ -65,6 +65,7 @@ def test_evidence_facts_include_review_and_exclude_other_manifest_versions(
         session.commit()
     with db.session() as session:
         facts = extract_facts(session, dataset.id, version_id)
+        repeated = extract_facts(session, dataset.id, version_id)
         replacement = VersionRow(dataset_id=dataset.id, manifest=[], created_at=9999999999)
         session.add(replacement)
         session.flush()
@@ -76,6 +77,14 @@ def test_evidence_facts_include_review_and_exclude_other_manifest_versions(
     decisions = [fact.value for fact in facts if fact.source_type == "assertion_decision"]
     assert len(decisions) == 2
     assert any(isinstance(value, dict) and value["action"] == "accept" for value in decisions)
+    # Review counts are stamped with the latest recorded decision, so re-extraction is identical.
+    assert repeated == facts
+    latest_decision = max(
+        fact.recorded_at for fact in facts if fact.source_type == "assertion_decision"
+    )
+    assert {fact.recorded_at for fact in facts if fact.source_type == "version_assertions"} == {
+        latest_decision
+    }
     assert not any(fact.source_type == "version_assertions" for fact in unrelated)
     assert len(build_template(facts).sections) == 7
     assert not any(fact.field == "kg.entities" for fact in facts)
