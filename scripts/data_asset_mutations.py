@@ -138,4 +138,42 @@ DATA_ASSET_MUTATIONS = (
         case=f"{_MATRIX}[none-restricted]",
         runner="pytest",
     ),
+    Mutation(
+        name="asset-tool-decision",
+        path="storage/data_asset_review.py",
+        before=(
+            "if action_type == DECISION_ACTION and access is not None "
+            "and access.entry in _TOOL_ENTRIES:"
+        ),
+        after="if False:",
+        case=(
+            "tests/assets/test_application_review.py::"
+            "test_tools_cannot_prepare_approve_or_execute_application_decisions[mcp]"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="asset-self-review",
+        path="storage/data_asset_review.py",
+        before="if same_identity(application.applicant, reviewer):",
+        after="if False:",
+        case=(
+            "tests/assets/test_application_review.py::"
+            "test_applicant_cannot_review_own_application_even_with_self_reported_identity"
+            "[approved-local]"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="asset-self-review-identity",
+        path="storage/data_asset_review.py",
+        before="return left.strip().casefold() == right.strip().casefold()",
+        after="return left == right",
+        case=(
+            "tests/assets/test_application_review.py::"
+            "test_applicant_cannot_review_own_application_even_with_self_reported_identity"
+            "[approved- LOCAL ]"
+        ),
+        runner="pytest",
+    ),
 )

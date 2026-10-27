@@ -28,6 +28,10 @@ from datakeel.storage.action_requests import (
 )
 from datakeel.storage.action_rows import ActionRunRow, ApprovalRow
 from datakeel.storage.action_store import audit, locked_plan, publish, run_view
+from datakeel.storage.data_asset_review import (
+    refuse_tool_decision,
+    require_independent_reviewer,
+)
 from datakeel.storage.database import Database
 
 logger = logging.getLogger(__name__)
@@ -123,6 +127,7 @@ def execute_plan(
         with db.session() as session:
             lock_action_targets(db, session)
             row, plan = locked_plan(session, plan_id)
+            refuse_tool_decision(plan.action_type, access)
             validate_execution_request(plan, request)
             authorize_plans_in_session(session, (plan,), access, actor=request.actor, record=False)
             prior = replay_operation(session, plan, request)
@@ -132,6 +137,9 @@ def execute_plan(
                 return prior
             record_attempt = True
             consume_approval(session, plan)
+            require_independent_reviewer(
+                session, plan.action_type, plan.canonical_params, request.actor
+            )
             authorized = True
             verify_plan(session, plan, request.plan_digest, request.actor)
             attempted = True

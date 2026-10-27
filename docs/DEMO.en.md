@@ -196,10 +196,10 @@ After demo initialization, open Ask data and select the owner, upstream or downs
 The default demo publishes six fictional enterprise assets through controlled actions, covering datasets, tables, metrics and all four classifications. It does not issue hidden grants.
 
 1. Open **Asset market**, search `Shipment`, filter **Request access** and the `enterprise` tag, and open the shipment amount card. Inspect its definition, sanitized sample, quality evidence, lineage and related metrics.
-2. Apply as operator `local`, enter a purpose such as quarterly analysis, select query scope and a future expiry. The request shows **Pending**.
-3. Choose **Approve application**, review and approve the plan, then explicitly execute it. The grant shows its subject, scope, expiry and ID. Approving a plan alone does not create a grant.
-4. Open **Ask data**, use operator `local`, ask `上个季度华东区出货额是多少` with reference instant `2026-10-01T00:00:00Z`, and inspect the registered metric's real read-only result. An ungranted operator is refused and directed to apply.
-5. Return to the card's usage audit, filter `local`, and verify the `ask` entry and grant ID. The global person filter searches usage across assets.
+2. Apply as operator `analyst`, enter a purpose such as quarterly analysis, select query scope and a future expiry. The request shows **Pending**.
+3. Choose **Approve application**, review and approve the plan, then explicitly execute it. The grant shows its subject, scope, expiry and ID. Approving a plan alone does not create a grant. Web approvals are recorded as `local` and applicants cannot review their own application, so do not apply as `local` in step 2.
+4. Open **Ask data**, use operator `analyst`, ask `上个季度华东区出货额是多少` with reference instant `2026-10-01T00:00:00Z`, and inspect the registered metric's real read-only result. An ungranted operator is refused and directed to apply.
+5. Return to the card's usage audit, filter `analyst`, and verify the `ask` entry and grant ID. The global person filter searches usage across assets.
 6. Revoke the grant through another reviewed, approved and executed plan. New questions and old-answer replay now refuse access. Expiry has the same effect without a background job; earlier audit remains.
 
 **Create asset draft** packages an existing object; publication, edits and withdrawal retain all revisions. See [Data assets](DATA_ASSETS.en.md) for configuration and API/CLI details.

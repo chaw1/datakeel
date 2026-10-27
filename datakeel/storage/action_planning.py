@@ -37,6 +37,10 @@ from datakeel.storage.data_asset_action_state import (
     prepare_data_asset_params,
     relaxes_asset_access,
 )
+from datakeel.storage.data_asset_review import (
+    refuse_tool_decision,
+    require_independent_reviewer,
+)
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
@@ -153,10 +157,12 @@ def prepare_action(
     access: AccessContext | None = None,
 ) -> ActionPlan:
     """Freeze a selected target set and persist the exact reviewable action plan."""
+    refuse_tool_decision(action_type, access)
     with db.session() as session:
         db.lock_writes(session)
         plan = _new_plan(action_type, params, context or ActionContext(), session)
         authorize(plan, plan.actor)
+        require_independent_reviewer(session, plan.action_type, plan.canonical_params, plan.actor)
         authorize_plans_in_session(session, (plan,), access, actor=plan.actor)
         session.add(
             ActionPlanRow(id=plan.id, action_type=action_type, payload=plan.model_dump(mode="json"))

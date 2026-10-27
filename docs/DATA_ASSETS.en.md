@@ -6,7 +6,7 @@ A data asset packages an existing dataset (optionally pinned to a version), cata
 
 The asset market supports name, synonym, tag and owner searches, classification and tag filters, and deterministic sorting. Details aggregate quality and its trend, upstream/downstream lineage, source freshness, related metrics, uses and users. For multiple sources, quality uses the lowest measured source score. The trend starts once all sources with quality evidence have observations, then updates at source-version timestamps. Unknown sources receive no invented score. Missing evidence is shown as unavailable; empty release and standards extensions stay hidden. Withdrawn cards disappear from the default market but retain their underlying access policy. Drafts do not establish read policies.
 
-All card changes prepare ordinary controlled action plans and require explicit execution after review; reversible operations keep the existing automatic approval policy. Changing a published or withdrawn request/restricted card to public or internal opens reading to everyone, so that edit requires human approval and is never executed automatically by the Agent. An application declares purpose, query/export/download scopes and an aware expiry. Approving or rejecting an application and revoking a grant require separate human-approved controlled actions. A grant binds its subject, asset, exact scopes, creation/expiry times and revocation status. Expiry is evaluated on every read without a cleanup job. If several protected cards cover one accessed resource, every policy must authorize it.
+All card changes prepare ordinary controlled action plans and require explicit execution after review; reversible operations keep the existing automatic approval policy. Changing a published or withdrawn request/restricted card to public or internal opens reading to everyone, so that edit requires human approval and is never executed automatically by the Agent. An application declares purpose, query/export/download scopes and an aware expiry. Approving or rejecting an application and revoking a grant require separate human-approved controlled actions. Only a person on the Web UI or CLI can approve or reject an access application; MCP and Agent tools are refused with a reason when they prepare, approve or execute an application decision. Applicants cannot review their own application; operator names are compared ignoring case and surrounding spaces. Web approvals are recorded as `local`, so an application by `local` (the Agent/MCP identity) must be prepared, approved and executed by another reviewer on the CLI with one `--actor`. A grant binds its subject, asset, exact scopes, creation/expiry times and revocation status. Expiry is evaluated on every read without a cleanup job. If several protected cards cover one accessed resource, every policy must authorize it.
 
 Operator identifiers are local attribution, not authentication. Web questions default to `local-user` and expose an operator field. Agent and MCP use the existing `local` actor, overriding nested question parameters. Apply as the same operator used for reading. HTTP downloads, exports, saved-answer replay and evidence reads accept `X-Datakeel-Actor`, defaulting to `local-user`. This service does not provide an identity boundary for untrusted remote users.
 
@@ -29,11 +29,11 @@ uv run datakeel data-assets list --search Shipment
 uv run datakeel data-assets show ASSET_ID
 uv run datakeel data-assets prepare create_data_asset definition.json
 uv run datakeel data-assets execute PLAN_ID --digest PLAN_DIGEST
-uv run datakeel data-assets apply application.json --applicant local
+uv run datakeel data-assets apply application.json --applicant analyst
 uv run datakeel data-assets prepare decide_asset_application decision.json
 uv run datakeel data-assets approve PLAN_ID --digest PLAN_DIGEST
 uv run datakeel data-assets execute PLAN_ID --digest PLAN_DIGEST
-uv run datakeel data-assets audit --actor local
+uv run datakeel data-assets audit --actor analyst
 ```
 
 `definition.json` contains `{"definition":{"target":{"asset_type":"metric","asset_id":"shipment_amount"},"name":"Shipment amount","owner":"Data owner","classification":"request"}}`. An application JSON contains `asset_id`, `purpose`, `scopes:["query"]`, and a future timezone-aware `expires_at`. A decision contains `application_id`, `approve:true`, and an optional reason. See the [demo tour](DEMO.en.md) for the complete flow.

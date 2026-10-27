@@ -6,7 +6,7 @@
 
 在「资产市场」搜索名称、同义词、标签或负责人，按分级或标签筛选，进入详情查看质量趋势、上下游、来源更新时间、相关指标、使用次数和人数。多来源资产的质量分取有测量依据的来源最低分；趋势在所有有质量证据的来源均有观测后，按来源版本时间更新。未知来源不编造质量分。质量没有来源证据时显示暂无数据；版本发布和标准覆盖率扩展位为空时隐藏。下架使卡片退出默认市场，不解除已建立的底层访问策略。草稿尚未建立读取策略。
 
-创建、编辑、上架、下架通过既有受控动作准备计划，审阅后确认执行；可逆操作沿用自动批准规则；但把已上架或已下架的「需申请」「受限」资产改为「公开」「内部」会向所有人开放读取，这类修改必须人工审批，Agent 不会自动执行。申请人填写用途、查询/导出/下载范围和到期时间。批准或拒绝申请、撤销授权必须另行准备动作，经人工审批后显式执行。操作人、资产、范围、起止时间和撤销状态共同决定授权是否有效；到期不需要后台清理任务。多个资产引用同一受保护资源时须分别获得授权。
+创建、编辑、上架、下架通过既有受控动作准备计划，审阅后确认执行；可逆操作沿用自动批准规则；但把已上架或已下架的「需申请」「受限」资产改为「公开」「内部」会向所有人开放读取，这类修改必须人工审批，Agent 不会自动执行。申请人填写用途、查询/导出/下载范围和到期时间。批准或拒绝申请、撤销授权必须另行准备动作，经人工审批后显式执行。访问申请只能由人在 Web 或 CLI 上批准或拒绝；MCP 和 Agent 工具准备、批准或执行申请决定时都会被拒绝并说明原因。申请人不能审批自己的申请，比对操作人标识时忽略大小写和首尾空格；Web 审批固定记为 `local`，所以以 `local`（Agent/MCP 使用的标识）提交的申请，需由另一位审批人在 CLI 用同一个 `--actor` 依次准备、批准和执行。操作人、资产、范围、起止时间和撤销状态共同决定授权是否有效；到期不需要后台清理任务。多个资产引用同一受保护资源时须分别获得授权。
 
 身份沿用本地操作人标识，这不是认证系统。Web 问数可以选择操作人，默认 `local-user`；Agent 与 MCP 固定为既有 `local` 操作人，忽略工具参数中试图改写身份的 `actor`。申请应使用读取时的同一标识。HTTP 下载、导出、保存答案重放和证据阅读可用 `X-Datakeel-Actor` 传递该标识，默认 `local-user`。不要将服务直接作为面向不可信用户的身份认证边界。
 
@@ -29,11 +29,11 @@ uv run datakeel data-assets list --search 出货额
 uv run datakeel data-assets show ASSET_ID
 uv run datakeel data-assets prepare create_data_asset definition.json
 uv run datakeel data-assets execute PLAN_ID --digest PLAN_DIGEST
-uv run datakeel data-assets apply application.json --applicant local
+uv run datakeel data-assets apply application.json --applicant analyst
 uv run datakeel data-assets prepare decide_asset_application decision.json
 uv run datakeel data-assets approve PLAN_ID --digest PLAN_DIGEST
 uv run datakeel data-assets execute PLAN_ID --digest PLAN_DIGEST
-uv run datakeel data-assets audit --actor local
+uv run datakeel data-assets audit --actor analyst
 ```
 
 `definition.json` 包含 `{"definition":{"target":{"asset_type":"metric","asset_id":"shipment_amount"},"name":"出货额","owner":"数据负责人","classification":"request"}}`。`application.json` 包含 `asset_id`、`purpose`、`scopes:["query"]`、未来的带时区 `expires_at`；`decision.json` 包含 `application_id`、`approve:true`，可附审批理由。拒绝和撤销同样保留决定历史。完整示例见[演示导览](DEMO.md)。
