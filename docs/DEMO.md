@@ -14,7 +14,7 @@ DATAKEEL_HOME=$(mktemp -d) uv run datakeel demo --port 8773
 
 ## 如果你本机已有配置
 
-如果之前设置过 `DATAKEEL_*` 环境变量，请用下面的隔离启动方式替代上一行。它清除已有数据库、存储与模型设置，并为这次导览创建新的临时目录。
+如果之前设置过 `DATAKEEL_*` 环境变量，请用下面的隔离启动方式替代上一行。它清除已有数据库、存储与模型设置，并为这次导览创建新的临时目录。仅保留显式设置的沙箱镜像和运行时端点，强制使用 `container` 并关闭开发子进程后端。演练第 11 节时，须先构建镜像、导出摘要，再运行此启动器。
 
 ```bash
 uv run python - <<'PY'
@@ -22,10 +22,13 @@ import os
 import subprocess
 import tempfile
 
+sandbox_keys = {"DATAKEEL_SANDBOX_IMAGE", "DATAKEEL_SANDBOX_DOCKER_HOST"}
 environment = {
     key: value for key, value in os.environ.items()
-    if not key.startswith("DATAKEEL_")
+    if not key.startswith("DATAKEEL_") or key in sandbox_keys
 }
+environment["DATAKEEL_SANDBOX_BACKEND"] = "container"
+environment["DATAKEEL_SANDBOX_ALLOW_SUBPROCESS"] = "false"
 environment["DATAKEEL_HOME"] = tempfile.mkdtemp(prefix="datakeel-tour-")
 environment["DATAKEEL_BASE_URL"] = "http://127.0.0.1:8773"
 subprocess.run(
@@ -171,6 +174,30 @@ JSON
 ![拒绝后的图边保留独立的核对状态](images/demo/20-kg-rejected.jpg)
 
 Schema 配置、离线评测及外发签批边界详见[知识图谱参考](KG.md)。
+
+## 11. 写一个算子，审阅后在沙箱运行（约 3 分钟）
+
+本节另需自行安装的 Docker 兼容运行时。先按[容器配置](CUSTOM_OPERATORS.md#container-setup--容器配置)构建镜像并设置 `DATAKEEL_SANDBOX_IMAGE`，再用相同环境启动本次临时 demo。全程只用下面生成的文本，不需要模型或外部数据。
+
+在第二个终端创建独立的三行文本数据集：
+
+```bash
+curl --fail http://127.0.0.1:8773/api/datasets \
+  -H 'Content-Type: application/json' --data-binary @- <<'JSON'
+{
+  "name": "Custom operator demo",
+  "files": [
+    {"filename": "lines.txt", "content_base64": "a2VlcCBmaXJzdApkaXNjYXJkIHNlY29uZAprZWVwIHRoaXJkCg=="}
+  ]
+}
+JSON
+```
+
+打开仓库的 [filter_lines.py](../examples/custom_operators/filter_lines.py)，读完后复制整个文件。刷新浏览器，打开「自定义算子」，名称填 `filter_lines`、模态选「文本」，粘贴完整代码后点「提交代码审阅」。签批单直接展示完整代码、代码 SHA-256 和静态检查；逐行核对后点「签批并注册自定义算子代码」。静态检查未命中不代表安全，隔离仍由容器提供。
+
+在「已批准版本」选 `Custom operator demo`，参数填 `{"contains":"keep"}`，点「在算子链中运行」。等待 worker 后刷新，确认沙箱记录成功、退出原因及实际镜像摘要。到「数据库」打开该数据集的「关系」，查看本次自定义算子血缘事件，核对 `code_hash` 等于签批时的完整哈希，同时查看参数摘要和资源用量。输出的 `filtered-0.txt` 保留 `keep first`、`keep third` 两行。
+
+在源码末尾添加一行注释并重新提交，确认新签批单的哈希发生变化，原批准版本仍保留；新代码只有再次签批后才可运行。第二个示例 [tag_images.py](../examples/custom_operators/tag_images.py) 使用 `{"label":"generated-fixture"}` 给生成图片附标签。完整文件合同、CLI、输出校验和不防什么见[自定义算子说明](CUSTOM_OPERATORS.md)。本节不包含在下方既有截图回放脚本中。
 
 ## 自动复现与截图
 
