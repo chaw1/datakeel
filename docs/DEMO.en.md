@@ -172,6 +172,16 @@ Close the drawer, select that relation and click **Reject selected**. Switch to 
 
 See the [knowledge graph reference](KG.md) for schema configuration, offline evaluation and consent before external extraction.
 
+## 11. Create a table rule and follow its recovery (2 minutes)
+
+Open **Quality rules → Create rule**. Use ID `tour_orders_amount`, name `Orders have nonnegative paid amounts`, source ID `ecommerce`, schema `main`, table `orders`, and column `paid_amount`. Select **Range**, retain `{"minimum": 0}`, set threshold to `0` and owner to `commerce-team`, and leave the schedule blank. The demo orders table has 18,000 rows: explicitly set **Scan row limit** to `20000`; the default `10000` correctly reports that its budget was exceeded. Choose **Review change**, inspect the frozen definition, then **Approve and create quality rule**.
+
+Select the rule in the list, choose **Run now**, then **Execute action** in the plan. The demo worker runs the task; **Passed** appears within the five-second refresh cycle. Edit the parameters to `{"minimum": 1000000000000}`, review and approve the change, and run again. Generated demo amounts are below this lower bound, so the result is **Failed** and an **Open** issue appears. Enter an assignee, choose **Claim issue**, review and execute its plan. Running another failed check increments the same issue's failure count.
+
+Restore `{"minimum": 0}`, approve the edit and run again. The issue becomes **Recovered, awaiting confirmation**. **Confirm resolution** and execute that plan to close it. Recent results retain each observation; the trend distinguishes actual values from thresholds. Open the `ecommerce/main/orders` table object from **Data catalog** to see its related rules and status. After an edit, latest status uses only the current revision; older results remain available.
+
+See the [quality-rule reference](QUALITY_RULES.md) for YAML, UTC cron, timeouts and scan limits, baselines, signed alerts and scoring. This is a manual extension to the tour; the screenshot replay below still covers the original steps.
+
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.
