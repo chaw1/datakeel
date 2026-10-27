@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.dq_monitor import DqCompletion
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_execution import PendingExtraction
 from datakeel.core.kg_execution import KGCompletion
@@ -16,6 +17,7 @@ from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
 from datakeel.pipeline import Pipeline, validate_pipeline
 from datakeel.pipeline.sharding import validate_shards
 from datakeel.storage.database import Database, DatasetRow, OutboxRow, ShardRow, TaskRow, VersionRow
+from datakeel.storage.dq_results import publish_completion as publish_dq_completion
 from datakeel.storage.events import append_event
 from datakeel.storage.evidence_store import record_extraction_in_session
 from datakeel.storage.kg_publication import publish_completion
@@ -37,6 +39,7 @@ class Lease(BaseModel):
     pipeline: Pipeline | None
     input_version_id: str | None = None
     kg_run_id: str | None = None
+    dq_run_id: str | None = None
 
 
 class TaskSource(Protocol):
@@ -159,6 +162,7 @@ class DatabaseQueue:
                 else None,
                 input_version_id=_source_version(session, task),
                 kg_run_id=task.kg_run_id,
+                dq_run_id=task.dq_run_id,
             )
             session.commit()
             return lease
@@ -184,7 +188,7 @@ class DatabaseQueue:
         error: str | None = None,
         expired_before: float | None = None,
         *,
-        evidence: tuple[PendingExtraction, ...] | KGCompletion = (),
+        evidence: tuple[PendingExtraction, ...] | KGCompletion | DqCompletion = (),
     ) -> bool:
         """Publish outputs and the terminal outbox atomically if the lease is owned."""
         with self.db.session() as session:
@@ -208,7 +212,9 @@ class DatabaseQueue:
             shard.lease_owner = None
             for event in events:
                 append_event(session, event)
-            if isinstance(evidence, KGCompletion):
+            if isinstance(evidence, DqCompletion):
+                publish_dq_completion(session, evidence, task.id)
+            elif isinstance(evidence, KGCompletion):
                 publish_completion(session, evidence, task.id)
             else:
                 for pending in evidence:
