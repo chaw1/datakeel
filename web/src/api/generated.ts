@@ -639,6 +639,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{identifier}/files/{file_id}/pointcloud-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pointcloud Preview
+         * @description View a PNG preview from the same dataset/version scope as its point cloud.
+         */
+        get: operations["pointcloud_preview_api_datasets__identifier__files__file_id__pointcloud_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{identifier}/metadata": {
         parameters: {
             query?: never;
@@ -6668,6 +6688,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pointcloud_preview_api_datasets__identifier__files__file_id__pointcloud_preview_get: {
+        parameters: {
+            query?: {
+                version?: string | null;
+            };
+            header?: never;
+            path: {
+                identifier: string;
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
                 };
             };
             /** @description Validation Error */
