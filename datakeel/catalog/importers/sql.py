@@ -174,6 +174,15 @@ def derive_sql(snapshot: CatalogSnapshot, definitions: tuple[SqlDefinition, ...]
                 failures.append(
                     SqlFailure(origin=f"{definition.origin}#{index}", reason=str(error))
                 )
+            except RecursionError:
+                # Generated SQL (long UNION ALL chains, deeply nested calls) can exceed the
+                # recursive parser's depth; that is one statement's failure, not the import's.
+                failures.append(
+                    SqlFailure(
+                        origin=f"{definition.origin}#{index}",
+                        reason="SQL is nested too deeply to derive column lineage",
+                    )
+                )
     unique = {
         (link.kind, link.source.asset_id, link.target.asset_id): link for link in snapshot.links
     }

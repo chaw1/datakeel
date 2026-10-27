@@ -134,3 +134,30 @@ def test_sql_when_casefold_match_is_unique_keeps_existing_compatibility(register
         link.source.asset_id == f"shop/main/raw/{registered}" and link.kind == "derived"
         for link in batch.snapshot.links
     )
+
+
+def test_sql_when_one_model_nests_too_deeply_reports_failure_and_keeps_others() -> None:
+    """Generated SQL beyond the parser depth fails only its own model, not the whole import."""
+    deep = "SELECT " + "COALESCE(" * 1200 + "value" + ", 0)" * 1200 + " AS result FROM main.raw"
+    batch = prepare_dbt(
+        _request(
+            deep,
+            {
+                "seed.shop.raw": _source("raw", ("value",)),
+                "model.shop.other": {
+                    "name": "other",
+                    "unique_id": "model.shop.other",
+                    "resource_type": "model",
+                    "schema": "main",
+                    "compiled_code": "SELECT value AS total FROM main.raw",
+                },
+            },
+        )
+    )
+    assert [failure.origin for failure in batch.parse_failures] == ["model.shop.result#1"]
+    assert "nested too deeply" in batch.parse_failures[0].reason
+    assert ("shop/main/raw/value", "shop/main/other/total") in {
+        (link.source.asset_id, link.target.asset_id)
+        for link in batch.snapshot.links
+        if link.kind == "derived"
+    }
