@@ -14,7 +14,7 @@ from datakeel.operators.audio.common import annotate_audio, runs
 from datakeel.operators.audio.models import AudioMetrics
 from datakeel.operators.audio.params import ClippingParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
-from datakeel.operators.media.tools import probe_file, run_tool
+from datakeel.operators.media.tools import input_path, probe_file, run_tool
 
 
 def _plateaus(channel: NDArray[np.float64], params: ClippingParams) -> NDArray[np.bool_]:
@@ -56,7 +56,7 @@ def _measure(
             "-v",
             "error",
             "-i",
-            file.path,
+            input_path(file),
             "-map",
             "0:a:0",
             "-c:a",

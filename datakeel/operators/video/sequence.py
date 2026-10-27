@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 
 from datakeel.core.errors import ValidationError
-from datakeel.operators.media.tools import probe_file, run_tool
+from datakeel.operators.media.tools import input_path, probe_file, run_tool
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -69,7 +69,7 @@ def decode_sequence(file: FileItem, max_fps: float) -> Sequence:
             "-v",
             "error",
             "-i",
-            file.path,
+            input_path(file),
             "-map",
             "0:v:0",
             "-an",

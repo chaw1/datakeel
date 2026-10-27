@@ -9,7 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-from datakeel.operators.media.tools import run_tool
+from datakeel.operators.media.tools import input_path, run_tool
 
 if TYPE_CHECKING:
     from datakeel.core.models import FileItem
@@ -23,7 +23,7 @@ def render(
     frame_count: int | None = None,
 ) -> bytes:
     """Accurately decode a time range and preserve the first optional audio stream."""
-    arguments = ["ffmpeg", "-v", "error", "-fflags", "+bitexact", "-i", file.path]
+    arguments = ["ffmpeg", "-v", "error", "-fflags", "+bitexact", "-i", input_path(file)]
     arguments.extend(["-ss", f"{start_ms / 1000:.6f}"])
     if end_ms is not None:
         arguments.extend(["-t", f"{(end_ms - start_ms) / 1000:.6f}"])

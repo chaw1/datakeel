@@ -14,7 +14,7 @@ from datakeel.operators.audio.common import (
 )
 from datakeel.operators.audio.params import TrimParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
-from datakeel.operators.media.tools import media_artifact, run_tool
+from datakeel.operators.media.tools import input_path, media_artifact, run_tool
 
 
 def execute(files: list[FileItem], output_dir: Path, params: TrimParams) -> OperatorResult:
@@ -32,7 +32,7 @@ def execute(files: list[FileItem], output_dir: Path, params: TrimParams) -> Oper
                 "-v",
                 "error",
                 "-i",
-                file.path,
+                input_path(file),
                 "-af",
                 f"atrim=start={start_ms / 1000}:end={end_ms / 1000},asetpts=PTS-STARTPTS",
                 "-map",

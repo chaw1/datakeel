@@ -50,6 +50,15 @@ def _run(arguments: list[str]) -> subprocess.CompletedProcess[bytes]:
     return result
 
 
+def input_path(file: FileItem) -> str:
+    """Name a local recording so ffmpeg never reads it as an option or a protocol.
+
+    A relative name such as ``-take.wav`` is a positional option to ffprobe, and
+    ``cam:1.mp4`` or ``pipe:0`` select protocols; an absolute path is neither.
+    """
+    return str(Path(file.path).absolute())
+
+
 def run_tool(arguments: list[str]) -> bytes:
     """Run one local media command and return its standard output."""
     return _run(arguments).stdout
@@ -64,7 +73,16 @@ def probe_file(file: FileItem) -> MediaProbe:
     """Read local media headers without permitting network protocols."""
     document = json.loads(
         run_tool(
-            ["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", file.path]
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_streams",
+                "-show_format",
+                "-of",
+                "json",
+                input_path(file),
+            ]
         )
     )
     streams = document.get("streams", [])
@@ -103,7 +121,7 @@ def decode_audio(
             "-v",
             "error",
             "-i",
-            file.path,
+            input_path(file),
             "-map",
             "0:a:0",
             "-ar",

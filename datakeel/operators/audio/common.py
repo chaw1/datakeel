@@ -11,7 +11,7 @@ from datakeel.core.models import FileItem
 from datakeel.operators.audio.models import ActivityResult, AudioMetrics
 from datakeel.operators.audio.params import ActivityParams
 from datakeel.operators.base import annotate
-from datakeel.operators.media.tools import probe_file, run_tool
+from datakeel.operators.media.tools import input_path, probe_file, run_tool
 
 SAMPLE_RATE = 16000
 
@@ -25,7 +25,7 @@ def decode_channels(file: FileItem) -> NDArray[np.float64]:
             "-v",
             "error",
             "-i",
-            file.path,
+            input_path(file),
             "-map",
             "0:a:0",
             "-ar",

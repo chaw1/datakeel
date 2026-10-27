@@ -11,7 +11,7 @@ import numpy as np
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.media_models import MediaInterval
-from datakeel.operators.media.tools import run_tool
+from datakeel.operators.media.tools import input_path, run_tool
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -30,7 +30,7 @@ def decode_frames(file: FileItem, sample_fps: float, *, rgb: bool = False) -> ND
             "-v",
             "error",
             "-i",
-            file.path,
+            input_path(file),
             "-map",
             "0:v:0",
             "-an",
@@ -97,7 +97,7 @@ def frame_times(file: FileItem) -> list[float]:
             "frame=best_effort_timestamp_time",
             "-of",
             "csv=p=0",
-            file.path,
+            input_path(file),
         ]
     )
     times = [

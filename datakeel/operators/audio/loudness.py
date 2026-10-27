@@ -17,6 +17,7 @@ from datakeel.operators.audio.models import AudioMetrics, LoudnessMeasurement
 from datakeel.operators.audio.params import LoudnessParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
 from datakeel.operators.media.tools import (
+    input_path,
     media_artifact,
     probe_file,
     run_tool,
@@ -43,7 +44,7 @@ def measure(file: FileItem, params: LoudnessParams) -> LoudnessMeasurement:
             "-v",
             "info",
             "-i",
-            file.path,
+            input_path(file),
             "-map",
             "0:a:0",
             "-af",
@@ -87,7 +88,7 @@ def _normalize(
             "-v",
             "error",
             "-i",
-            file.path,
+            input_path(file),
             "-map",
             "0:a:0",
             "-af",
