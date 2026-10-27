@@ -15,6 +15,7 @@ from pydantic import ConfigDict, Field, JsonValue, model_validator
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem, Record
 from datakeel.operators.image.limits import validate_dimensions
+from datakeel.operators.media.provenance import record_media_result
 
 
 class Params(Record):
@@ -161,7 +162,12 @@ class Operator:
             msg = f"{self.manifest.id} requires {self.manifest.modality} files"
             raise ValidationError(msg)
         output_dir.mkdir(parents=True, exist_ok=True)
-        return self.execute(files, output_dir, validated)
+        result = self.execute(files, output_dir, validated)
+        return (
+            record_media_result(result, self.manifest.id, validated)
+            if self.manifest.id.startswith(("audio.", "video.", "media."))
+            else result
+        )
 
 
 def annotate(file: FileItem, **metadata: JsonValue) -> FileItem:
