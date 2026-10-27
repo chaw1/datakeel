@@ -6,6 +6,7 @@
 from pathlib import Path
 
 import numpy as np
+from numpy.typing import NDArray
 
 from datakeel.core.models import FileItem
 from datakeel.operators.base import Operator, OperatorResult, annotate, summarize
@@ -19,6 +20,21 @@ from datakeel.operators.pointcloud.models import (
 from datakeel.operators.pointcloud.statistics import outlier_mask
 
 _SAMPLE_LIMIT = 8192
+_FLOAT_MAX = float(np.finfo(np.float64).max)
+
+
+def _body_geometry(body: NDArray[np.float64], points: float) -> tuple[float, float]:
+    """Return a finite main-body extent and density for any finite coordinates.
+
+    Extreme but finite values, such as byte-swapped doubles, can overflow an
+    extent or underflow a volume to zero. Both are clamped so measurements stay
+    JSON-compliant and density never divides by an exact zero.
+    """
+    with np.errstate(over="ignore", under="ignore"):
+        extent = np.minimum(body.max(axis=0) - body.min(axis=0), _FLOAT_MAX)
+        volume = float(np.prod(np.where(extent > 0, extent, 1.0)))
+    density = min(points / volume, _FLOAT_MAX) if volume > 0 else _FLOAT_MAX
+    return float(extent.max()), density
 
 
 def unit_suspicion(extent: float, params: ProbeParams) -> tuple[bool, str | None]:
@@ -58,11 +74,7 @@ def inspect_cloud(cloud: PointCloud, params: ProbeParams | None = None) -> Point
         bounds = BoundingBox(
             min=tuple(valid.min(axis=0).tolist()), max=tuple(valid.max(axis=0).tolist())
         )
-        body = sample[~outliers]
-        extent = body.max(axis=0) - body.min(axis=0)
-        body_extent = float(extent.max())
-        volume = float(np.prod(np.where(extent > 0, extent, 1.0)))
-        density = len(valid) * (1 - outlier_ratio) / volume
+        body_extent, density = _body_geometry(sample[~outliers], len(valid) * (1 - outlier_ratio))
         suspected, unit_reason = unit_suspicion(body_extent, selected)
     return PointCloudProbe(
         format=cloud.format,

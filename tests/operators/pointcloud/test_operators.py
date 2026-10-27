@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -15,7 +16,15 @@ from PIL import Image
 from pydantic import ValidationError as PydanticValidationError
 
 from datakeel.core.errors import ValidationError
-from datakeel.operators.pointcloud import clean, downsample, outliers, preview, probe, unit_check
+from datakeel.operators.pointcloud import (
+    clean,
+    downsample,
+    outliers,
+    ply,
+    preview,
+    probe,
+    unit_check,
+)
 from datakeel.operators.pointcloud.io import dump_cloud, load_cloud
 from datakeel.operators.pointcloud.models import (
     CleanParams,
@@ -70,6 +79,34 @@ def test_probe_main_body_ignores_distant_strays_for_density_and_units() -> None:
     assert mixed.body_extent == dense.body_extent == 4
     assert mixed.density == pytest.approx(dense.density)
     assert not mixed.unit_suspected
+
+
+@pytest.mark.parametrize(
+    "xyz",
+    [
+        np.array([[1.7e308, 0.0, 0.0], [-1.7e308, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+        np.array([[1e-300, 0.0, 0.0], [0.0, 1e-300, 0.0], [0.0, 0.0, 1e-300]]),
+    ],
+    ids=["extent-overflow", "volume-underflow"],
+)
+def test_probe_extreme_finite_coordinates_stay_finite(xyz: np.ndarray) -> None:
+    """Overflowing extents and underflowing volumes neither crash nor emit non-JSON floats."""
+    result = probe.inspect_cloud(make_cloud(xyz)).model_dump(mode="json")
+    json.dumps(result, allow_nan=False)
+    assert 0 < result["density"] <= np.finfo(np.float64).max
+    assert 0 < result["body_extent"] <= np.finfo(np.float64).max
+
+
+def test_probe_of_byte_swapped_double_ply_is_json_compliant() -> None:
+    """A big-endian payload mislabeled little-endian yields extreme magnitudes, not a crash."""
+    xyz = np.random.default_rng(11).uniform(-5, 5, (20000, 3))
+    header = (
+        b"ply\nformat binary_little_endian 1.0\nelement vertex 20000\n"
+        b"property double x\nproperty double y\nproperty double z\nend_header\n"
+    )
+    result = probe.inspect_cloud(ply.loads(header + xyz.astype(">f8").tobytes()))
+    json.dumps(result.model_dump(mode="json"), allow_nan=False)
+    assert result.unit_suspected
 
 
 def test_clean_removes_invalid_and_clips_inclusive_bounds_preserving_fields(
