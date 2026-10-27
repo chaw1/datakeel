@@ -16,7 +16,6 @@ from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
 from datakeel.cli.demo import demo, seed_demo
-from datakeel.cli.evaluation import evaluate
 from datakeel.cli.evidence import rebuild
 from datakeel.cli.evidence_evaluation import evaluate_evidence
 from datakeel.cli.mcp import serve
@@ -150,6 +149,8 @@ def _database_command(db: Database, args: argparse.Namespace) -> None:
 def _evaluation_command(db: Database, args: argparse.Namespace) -> None:
     """Select one isolated benchmark while preserving its distinct reporting contract."""
     if args.command == "eval":
+        from datakeel.cli.evaluation import evaluate  # noqa: PLC0415
+
         evaluate(db, args.provider, args.golden_dir, json_output=args.json_output)
     elif args.command == "eval-evidence":
         evaluate_evidence(db, args.questions, json_output=args.json_output)
