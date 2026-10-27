@@ -10,7 +10,9 @@ from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from datakeel.core.errors import ValidationError
+from datakeel.core.media_models import MediaSummary
 from datakeel.core.models import Record
+from datakeel.quality.media import media_chapter
 from datakeel.quality.models import QualityView, ReportView
 
 MAX_RESPONSE_BYTES = 1_048_576
@@ -62,6 +64,8 @@ def build_report(
 ) -> ReportView:
     """Build a baseline with optional bounded chat-completions enrichment."""
     chapters = _baseline(dataset, quality)
+    if quality.get("media") is not None:
+        chapters.append(media_chapter(MediaSummary.model_validate(quality.get("media"))))
     baseline = "\n\n".join(f"## {chapter['title']}\n\n{chapter['body']}" for chapter in chapters)
     verification = (
         f"基线核验: 文件数 {quality.get('file_count', 0)}; "

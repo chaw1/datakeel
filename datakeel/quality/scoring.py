@@ -11,6 +11,7 @@ from typing import Any, cast
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
+from datakeel.quality.media import summarize_media
 from datakeel.quality.models import QualityConfig, QualityView
 
 MAX_SCORE = 100
@@ -128,7 +129,29 @@ def score_quality(
         * distribution_coverage,
     }
     details = _evidence(files, resolved, complete, annotations, known_hashes, groups)
-    return _summarize(raw, details, resolved, annotations, count)
+    media = summarize_media(files)
+    if media is not None:
+        complete_ids = {file.id for file in files if _complete(file, resolved)}
+        for key in ("completeness", "consistency"):
+            deduction = (
+                sum(
+                    100 - file.dimensions[key]
+                    for file in media.files
+                    if key != "completeness" or file.file_id in complete_ids
+                )
+                / count
+            )
+            raw[key] = max(0.0, raw[key] - deduction)
+        duplicates = {
+            file.file_id for file in media.files if file.dimensions["uniqueness"] < MAX_SCORE
+        }
+        retained = {file.sha256 for file in files if file.sha256 and file.id not in duplicates}
+        raw["uniqueness"] = 100 * len(retained) / count
+        details["uniqueness"]["media_duplicate_files"] = sorted(duplicates)
+        details["completeness"]["media"] = media.model_dump(mode="json")
+    return _summarize(raw, details, resolved, annotations, count).model_copy(
+        update={"media": media}
+    )
 
 
 def _validate_numbers(result: dict[str, Any]) -> None:

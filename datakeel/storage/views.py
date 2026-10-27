@@ -4,9 +4,12 @@
 """Validated read models for HTTP and application service boundaries."""
 
 from pathlib import Path
+from typing import Any, cast
 
-from pydantic import ConfigDict, Field, JsonValue
+from pydantic import ConfigDict, Field, JsonValue, model_validator
 
+from datakeel.core.media_metadata import media_metadata
+from datakeel.core.media_models import MediaFileView
 from datakeel.core.models import BoundaryModel
 from datakeel.governance.models import ComplianceView
 
@@ -26,6 +29,19 @@ class FileView(View):
     size: int
     modality: str
     metadata: dict[str, JsonValue] = Field(default_factory=dict)
+    media: MediaFileView | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def measured_media(cls, value: object) -> object:
+        """Derive media consistently for direct construction and parsed responses."""
+        if not isinstance(value, dict):
+            return value
+        data = cast("dict[str, Any]", value)
+        metadata = data.get("metadata", {})
+        if not isinstance(metadata, dict):
+            return data
+        return {**data, "media": media_metadata(cast("dict[str, Any]", metadata))}
 
 
 class DatasetView(View):

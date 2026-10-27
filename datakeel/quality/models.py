@@ -5,6 +5,7 @@
 
 from pydantic import JsonValue
 
+from datakeel.core.media_models import MediaSummary
 from datakeel.core.models import Record
 
 
@@ -49,6 +50,7 @@ class QualityView(Record):
     issues: list[IssueView]
     file_count: int
     config: QualityConfig
+    media: MediaSummary | None = None
 
 
 class ChapterView(Record):
