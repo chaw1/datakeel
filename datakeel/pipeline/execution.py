@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from datakeel.core.models import FileItem
+from datakeel.core.models import FileItem, JsonDocument
 from datakeel.operators import REGISTRY, OperatorResult
 from datakeel.pipeline.defaults import default_pipeline
 from datakeel.pipeline.models import ConditionParams, Node, Pipeline, PipelineObservation
@@ -31,7 +31,10 @@ def _execute_node(node: Node, selected: list[FileItem], output: Path) -> SlotFil
         return {
             "image": [file for file in selected if file.modality == "image"],
             "text": [file for file in selected if file.modality == "text"],
-            "other": [file for file in selected if file.modality not in {"image", "text"}],
+            "pointcloud": [file for file in selected if file.modality == "point-cloud"],
+            "other": [
+                file for file in selected if file.modality not in {"image", "text", "point-cloud"}
+            ],
         }
     operator = REGISTRY[str(node.operator)]
     result = operator.run(selected, output / node.id, node.params)
@@ -56,10 +59,21 @@ def _observation(
         input_count=len(selected),
         inputs=[file.id for file in selected],
         output_count=len(output),
-        outputs=[file.id for file in output],
+        outputs=[file.id for file in output] + _preview_ids(output),
         quality=quality,
         run_state="FAILED" if error else "COMPLETED",
     )
+
+
+def _preview_ids(files: list[FileItem]) -> list[str]:
+    result: list[str] = []
+    for file in files:
+        preview = JsonDocument.model_validate(file.metadata).root.get("pointcloud_preview")
+        if isinstance(preview, dict):
+            identifier = preview.get("artifact_id")
+            if isinstance(identifier, str):
+                result.append(identifier)
+    return result
 
 
 def _operator_node(

@@ -40,7 +40,13 @@ def default_pipeline() -> Pipeline:
     return Pipeline.model_validate(
         {
             "nodes": nodes,
-            "outputs": ["convert.files", "text_quality.files", "modality.other", "nonempty.false"],
+            "outputs": [
+                "convert.files",
+                "text_quality.files",
+                "modality.pointcloud",
+                "modality.other",
+                "nonempty.false",
+            ],
             "max_workers": 4,
         }
     )
