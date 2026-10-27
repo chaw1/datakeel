@@ -25,7 +25,10 @@ def _fact_value(fact: DatasheetFact) -> str:
 
 def _md(value: str) -> str:
     escaped = html.escape(value, quote=False)
-    return re.sub(r"([\\`*\[\]{}_!|])", r"\\\1", escaped).replace("\n", " ")
+    escaped = re.sub(r"([\\`*\[\]{}_!|#~])", r"\\\1", escaped)
+    # One exported line per value: no line breaks, and no list marker where a line starts.
+    inline = " ".join(part.strip() for part in escaped.splitlines() if part.strip())
+    return re.sub(r"^(?:([-+])|(\d+)([.)]))", r"\2\\\1\3", inline)
 
 
 def _heading(document: DatasheetDocument) -> str:

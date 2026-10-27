@@ -119,6 +119,40 @@ def test_exports_escape_untrusted_fact_text_and_rejection_ledger() -> None:
     assert "unsupported\\_term" in markdown
 
 
+@pytest.mark.parametrize(
+    ("text", "unsafe"),
+    [
+        ("## uses", "## uses"),
+        ("~~~ 12 files", "~~~"),
+        ("- 12 files", "- 12"),
+        ("+ 12 files", "+ 12"),
+        ("12. files", "12."),
+        ("12 files\r## uses", "## uses"),
+    ],
+)
+def test_markdown_export_cannot_inject_block_structure_from_a_cited_sentence(
+    text: str, unsafe: str
+) -> None:
+    """A validated sentence stays one inline paragraph: no headings, fences or list items."""
+    section = DatasheetSection(
+        key="composition",
+        title="构成",
+        sentences=(DatasheetSentence(text=text, fact_ids=("fact-count",)),),
+    )
+    checked = validate_sections((section,), (_fact(),), "en")
+    assert not checked.dropped_sentences
+    document = _document().model_copy(
+        update={
+            "sections": checked.sections,
+            "dropped_sentences": (DroppedSentence(text=text, reasons=("unsupported_term",)),),
+        }
+    )
+    lines = render_markdown(document).splitlines()
+    assert sum(line.startswith("## ") for line in lines) == 9
+    assert not any(line.startswith((unsafe, f"- {unsafe}")) for line in lines)
+    assert "\r" not in render_markdown(document)
+
+
 def test_rejected_model_chapter_does_not_claim_platform_has_no_facts() -> None:
     """An empty verified chapter distinguishes model failure from missing evidence."""
     document = _document()
