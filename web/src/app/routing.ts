@@ -29,6 +29,7 @@ const pages: Page[] = [
   "ontology",
   "workflows",
   "memory",
+  "custom-operators",
 ];
 export function readRoute(): Route {
   const hash = window.location.hash;

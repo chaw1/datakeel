@@ -29,6 +29,7 @@ const groups = [
   {
     label: "operationsGroup",
     items: [
+      { id: "custom-operators", label: "customOperatorsNav", icon: "grid" },
       { id: "workflows", label: "workflowsNav", icon: "activity" },
       { id: "approvals", label: "approvalsNav", icon: "check" },
       { id: "runs", label: "runRecords", icon: "activity" },

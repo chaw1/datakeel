@@ -535,6 +535,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/custom-operators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Versions
+         * @description List immutable approved code versions that may enter an operator chain.
+         */
+        get: operations["versions_api_custom_operators_get"];
+        put?: never;
+        /**
+         * Submit
+         * @description Prepare code review; submission alone never authorizes execution.
+         */
+        post: operations["submit_api_custom_operators_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/custom-operators/configuration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Configuration
+         * @description Expose the backend and an explicit warning flag for unsafe local development.
+         */
+        get: operations["configuration_api_custom_operators_configuration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/custom-operators/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Runs
+         * @description Read successful and failed sandbox attempts without exposing host paths.
+         */
+        get: operations["runs_api_custom_operators_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/custom-operators/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Submissions
+         * @description Read submitted code, static findings and the durable review status.
+         */
+        get: operations["submissions_api_custom_operators_submissions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/custom-operators/{code_hash}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Version
+         * @description Read full approved code and its reviewed declarations by content hash.
+         */
+        get: operations["version_api_custom_operators__code_hash__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/custom-operators/{code_hash}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run
+         * @description Enqueue an approved custom version against the selected dataset snapshot.
+         */
+        post: operations["run_api_custom_operators__code_hash__runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets": {
         parameters: {
             query?: never;
@@ -1626,7 +1750,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -1680,7 +1804,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -2440,6 +2564,117 @@ export interface components {
              * @default 0
              */
             unknown_cost_usd: string;
+        };
+        /**
+         * CustomOperatorConfiguration
+         * @description Disclose whether the local service enables the unsafe development backend.
+         */
+        CustomOperatorConfiguration: {
+            /**
+             * Backend
+             * @enum {string}
+             */
+            backend: "container" | "subprocess";
+            /** Container Image */
+            container_image: string;
+            /** Subprocess Enabled */
+            subprocess_enabled: boolean;
+        };
+        /**
+         * CustomOperatorRun
+         * @description Keep immutable execution attribution for successful and failed attempts.
+         */
+        CustomOperatorRun: {
+            /** Attempt Id */
+            attempt_id: string;
+            /**
+             * Backend
+             * @default container
+             * @enum {string}
+             */
+            backend: "container" | "subprocess";
+            /** Code Hash */
+            code_hash: string;
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Exit Reason */
+            exit_reason: string;
+            /** Id */
+            id: string;
+            /** Image Digest */
+            image_digest: string;
+            /** Node Id */
+            node_id: string;
+            /** Operator */
+            operator: string;
+            /** Output Count */
+            output_count: number;
+            /** Params Digest */
+            params_digest: string;
+            resources: components["schemas"]["JsonDocument"];
+            /** Shard Id */
+            shard_id: string;
+            /** Success */
+            success: boolean;
+            /** Task Id */
+            task_id: string;
+        };
+        /**
+         * CustomOperatorSubmission
+         * @description Accept one complete Python source file with schemas declared as literals.
+         */
+        CustomOperatorSubmission: {
+            /** Code */
+            code: string;
+            /**
+             * Modality
+             * @default any
+             * @enum {string}
+             */
+            modality: "any" | "text" | "image";
+            /** Name */
+            name: string;
+        };
+        /**
+         * CustomOperatorVersion
+         * @description Identify an approved source version by its complete content digest.
+         */
+        CustomOperatorVersion: {
+            /**
+             * Approved At
+             * Format: date-time
+             */
+            approved_at: string;
+            /** Approved By */
+            approved_by: string;
+            /** Code */
+            code: string;
+            /** Code Hash */
+            code_hash: string;
+            /** Id */
+            id: string;
+            metadata_schema: components["schemas"]["JsonDocument"];
+            /**
+             * Modality
+             * @default any
+             * @enum {string}
+             */
+            modality: "any" | "text" | "image";
+            /** Name */
+            name: string;
+            parameter_schema: components["schemas"]["JsonDocument"];
+            /** Plan Id */
+            plan_id: string;
+            /** Static Checks */
+            static_checks: components["schemas"]["StaticCheck"][];
         };
         /**
          * DatasetInput
@@ -4876,6 +5111,22 @@ export interface components {
             /** Dataset Id */
             dataset_id?: string | null;
         };
+        /**
+         * RunCustomOperatorRequest
+         * @description Select a dataset snapshot and parameters for one immutable custom operator.
+         */
+        RunCustomOperatorRequest: {
+            /** Dataset Id */
+            dataset_id: string;
+            /** Name */
+            name?: string | null;
+            /** Params */
+            params?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Version Id */
+            version_id?: string | null;
+        };
         Scalar: string | number | boolean | null;
         /**
          * SchemaExample
@@ -4949,6 +5200,20 @@ export interface components {
             ordinal: number;
             /** State */
             state: string;
+        };
+        /**
+         * StaticCheck
+         * @description Display advisory source findings without treating them as containment.
+         */
+        StaticCheck: {
+            /** Code */
+            code: string;
+            /** Column */
+            column: number;
+            /** Line */
+            line: number;
+            /** Message */
+            message: string;
         };
         /**
          * TaskInput
@@ -6475,6 +6740,198 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    versions_api_custom_operators_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomOperatorVersion"][];
+                };
+            };
+        };
+    };
+    submit_api_custom_operators_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomOperatorSubmission"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    configuration_api_custom_operators_configuration_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomOperatorConfiguration"];
+                };
+            };
+        };
+    };
+    runs_api_custom_operators_runs_get: {
+        parameters: {
+            query?: {
+                code_hash?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomOperatorRun"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submissions_api_custom_operators_submissions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionPlan"][];
+                };
+            };
+        };
+    };
+    version_api_custom_operators__code_hash__get: {
+        parameters: {
+            query?: {
+                name?: string | null;
+            };
+            header?: never;
+            path: {
+                code_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomOperatorVersion"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_api_custom_operators__code_hash__runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunCustomOperatorRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionRun"];
                 };
             };
             /** @description Validation Error */

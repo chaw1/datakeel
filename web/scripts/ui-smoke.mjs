@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 
+import { customOperatorSmoke } from "./custom-operator-smoke.mjs";
 import { advancedSmoke } from "./advanced-smoke.mjs";
 import { enterpriseSmoke } from "./enterprise-smoke.mjs";
 import { evidenceSmoke } from "./evidence-smoke.mjs";
@@ -463,6 +464,13 @@ try {
     checks,
     datasetId: workflows.datasetId,
   });
+  const customOperators = await customOperatorSmoke({
+    page,
+    json,
+    post,
+    screenshot,
+    checks,
+  });
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(output, "evidence.json"),
@@ -484,6 +492,7 @@ try {
         workflows,
         routing,
         advanced,
+        customOperators,
         checks,
         errors,
       },
