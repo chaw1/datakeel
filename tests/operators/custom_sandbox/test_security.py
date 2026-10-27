@@ -259,6 +259,28 @@ def test_container_output_bomb_is_bounded(sandbox_settings: Settings) -> None:
     assert not result.outputs
 
 
+@pytest.mark.parametrize("area", ["ctx['output_dir']", "'/status'"])
+def test_container_inflated_archives_are_invalid_output(
+    sandbox_settings: Settings, area: str
+) -> None:
+    """Thousands of empty entries overflow the copy budget and fail as output, not runtime."""
+    result = execute(
+        f"""
+        from pathlib import Path
+        def run(inputs, params, ctx):
+            for index in range(1500):
+                (Path({area}) / f"empty-{{index}}").touch()
+            return []
+    """,
+        sandbox_settings,
+        max_output_bytes=4096,
+        max_file_bytes=2048,
+        max_output_files=1,
+    )
+    assert result.exit_reason == "invalid_output", result.stderr
+    assert not result.outputs
+
+
 @pytest.mark.parametrize("link", ["symlink", "hardlink", "fifo"])
 def test_container_output_links_and_special_files_are_rejected(
     sandbox_settings: Settings, link: str

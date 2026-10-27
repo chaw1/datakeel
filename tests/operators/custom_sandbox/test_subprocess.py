@@ -25,6 +25,17 @@ def request(
     )
 
 
+def test_default_configuration_uses_container_and_disables_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Without explicit configuration the unsafe backend is neither selected nor allowed."""
+    for name in ("DATAKEEL_SANDBOX_BACKEND", "DATAKEEL_SANDBOX_ALLOW_SUBPROCESS"):
+        monkeypatch.delenv(name, raising=False)
+    settings = Settings()
+    assert settings.sandbox_backend == "container"
+    assert settings.sandbox_allow_subprocess is False
+
+
 def test_subprocess_is_disabled_by_default() -> None:
     """Configuration must opt in even for trusted local callers."""
     result = run_sandbox(

@@ -25,6 +25,10 @@ class RuntimeFailureError(DatakeelError):
     """Report an unavailable or unresponsive container runtime."""
 
 
+class RuntimeOutputLimitError(RuntimeFailureError):
+    """Report command output that exceeded its bounded capture buffer."""
+
+
 def command(
     arguments: list[str], environment: dict[str, str], timeout: float = 10, maximum: int = 65536
 ) -> CommandResult:
@@ -68,7 +72,7 @@ def _collect(process: subprocess.Popen[bytes], timeout: float, maximum: int) -> 
                 if sum(map(len, collected.values())) > maximum:
                     process.kill()
                     msg = "Container runtime output exceeds the byte limit"
-                    raise RuntimeFailureError(msg)
+                    raise RuntimeOutputLimitError(msg)
     try:
         code = process.wait(timeout=max(0, deadline - time.monotonic()))
     except subprocess.TimeoutExpired as error:

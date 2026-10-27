@@ -13,7 +13,6 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from datakeel.core.custom_sandbox import SandboxRequest, SandboxResources, SandboxResult
-from datakeel.core.models import BoundaryModel
 from datakeel.operators.custom_job import write_job
 from datakeel.operators.custom_output import (
     OutputRejectedError,
@@ -22,31 +21,19 @@ from datakeel.operators.custom_output import (
     parse_status,
     validated_outputs,
 )
-from datakeel.operators.custom_process import CommandResult, RuntimeFailureError, command
+from datakeel.operators.custom_process import (
+    CommandResult,
+    RuntimeFailureError,
+    RuntimeOutputLimitError,
+    command,
+)
+from datakeel.operators.custom_usage import USAGE_SOURCE, ContainerUsage
 
 _DIGEST = re.compile(r"(?:[^ @]+@)?sha256:[0-9a-f]{64}\Z")
 _LOGGER = logging.getLogger(__name__)
 _OWNER_LABEL = "datakeel.sandbox.owner"
-
-
-class ContainerUsage(BoundaryModel):
-    """Read kernel accounting through an immutable interpreter before freezing processes."""
-
-    events: str
-    peak: str
-    cpu: str
-
-    def measured(self) -> SandboxResources:
-        """Convert kernel counters into truthful cumulative CPU and peak memory measurements."""
-        counters = dict(line.split() for line in self.cpu.splitlines())
-        return SandboxResources(
-            cpu_seconds=int(counters["usage_usec"]) / 1_000_000,
-            memory_peak_bytes=int(self.peak.strip()),
-        )
-
-    def oom(self) -> bool:
-        """Report an actual kernel OOM kill rather than trusting user-written diagnostics."""
-        return int(dict(line.split() for line in self.events.splitlines()).get("oom_kill", "0")) > 0
+# Image, volume, create and start control calls; user code is bounded separately.
+_PREPARE_SECONDS = 30
 
 
 class ContainerSandbox:
@@ -86,19 +73,17 @@ class ContainerSandbox:
         try:
             self.create_volumes(request)
             self.container_attempted = True
-            created = self.call(*self.arguments(request, directory), timeout=30)
+            created = self.call(*self.arguments(request, directory), timeout=_PREPARE_SECONDS)
             if created.code:
                 msg = "Container runtime rejected the secure sandbox configuration"
                 raise RuntimeFailureError(msg)
             self.container_created = True
             self.verify_volumes(request)
-            deadline = time.monotonic() + request.limits.timeout_seconds
-            started = self._deadline_call(deadline, "start", self.name)
-            if started is None:
-                return self._timed_out()
+            started = self.call("start", self.name, timeout=_PREPARE_SECONDS)
             if started.code:
                 msg = "Container runtime could not start the sandbox"
                 raise RuntimeFailureError(msg)
+            deadline = time.monotonic() + request.limits.timeout_seconds
             status = self.wait(deadline)
             if status is None:
                 return self._timed_out()
@@ -182,6 +167,7 @@ class ContainerSandbox:
             "LANG=C.UTF-8",
             self.image,
             str(limits.max_log_bytes),
+            str(limits.timeout_seconds),
         ]
 
     def create_volumes(self, request: SandboxRequest) -> None:
@@ -271,7 +257,7 @@ class ContainerSandbox:
 
     def _settle_create(self) -> bool:
         """Bound late daemon creation without deleting volumes it may still mount."""
-        deadline = time.monotonic() + 30
+        deadline = time.monotonic() + _PREPARE_SECONDS
         template = '{{index .Config.Labels "' + _OWNER_LABEL + '"}}'
         try:
             while time.monotonic() < deadline:
@@ -303,9 +289,7 @@ class ContainerSandbox:
     def wait(self, deadline: float) -> WorkerStatus | None:
         """Enforce a host wall-clock deadline even if every in-container process is hostile."""
         while time.monotonic() < deadline:
-            result = self._deadline_call(
-                deadline, "cp", f"{self.name}:/status/status.json", "-", maximum=131072
-            )
+            result = self.copy_out("/status/status.json", 131072, deadline)
             if result is None:
                 return None
             if not result.code:
@@ -344,15 +328,23 @@ class ContainerSandbox:
             raise
         return result if time.monotonic() < deadline else None
 
+    def copy_out(
+        self, source: str, maximum: int, deadline: float | None = None
+    ) -> CommandResult | None:
+        """Copy a sandbox path; an archive inflated by user code is an output failure."""
+        arguments = ("cp", f"{self.name}:{source}", "-")
+        try:
+            if deadline is None:
+                return self.call(*arguments, maximum=maximum)
+            return self._deadline_call(deadline, *arguments, maximum=maximum)
+        except RuntimeOutputLimitError as error:
+            msg = "Sandbox archive exceeds its byte limit"
+            raise OutputRejectedError(msg) from error
+
     def usage(self, deadline: float) -> ContainerUsage | None:
         """Measure cgroup counters using fixed code that cannot be modified by the worker."""
-        source = (
-            "from pathlib import Path; import json; p=Path('/sys/fs/cgroup'); "
-            "print(json.dumps({'events':(p/'memory.events').read_text(),"
-            "'peak':(p/'memory.peak').read_text(),'cpu':(p/'cpu.stat').read_text()}))"
-        )
         result = self._deadline_call(
-            deadline, "exec", self.name, "/usr/local/bin/python", "-I", "-c", source
+            deadline, "exec", self.name, "/usr/local/bin/python", "-I", "-c", USAGE_SOURCE
         )
         if result is None or result.code:
             return None
@@ -364,13 +356,15 @@ class ContainerSandbox:
     def collect(self, request: SandboxRequest, status: WorkerStatus) -> SandboxResult:
         """Reject links, special files, metadata errors, and limits on the frozen host copy."""
         limits = request.limits
-        logs_result = self.call("cp", f"{self.name}:/status/.", "-", maximum=262144)
-        logs = archive_files(logs_result.stdout, limits.max_log_bytes * 2 + 131072)
+        logs_result = self.copy_out("/status/.", 262144)
+        logs = archive_files(
+            b"" if logs_result is None else logs_result.stdout, limits.max_log_bytes * 2 + 131072
+        )
         stdout = logs.get("stdout", b"")[: limits.max_log_bytes].decode("utf-8", errors="ignore")
         stderr = logs.get("stderr", b"")[: limits.max_log_bytes].decode("utf-8", errors="ignore")
         reason = (
             status.reason
-            if status.reason in {"completed", "code_error", "log_limit", "memory_limit"}
+            if status.reason in {"completed", "code_error", "log_limit", "memory_limit", "timeout"}
             else "invalid_output"
         )
         if status.exit_code or reason != "completed":
@@ -382,8 +376,8 @@ class ContainerSandbox:
                 stderr=stderr,
             )
         budget = limits.max_output_bytes + limits.max_output_files * 2048 + 16384
-        result = self.call("cp", f"{self.name}:/output/.", "-", maximum=budget)
-        if result.code:
+        result = self.copy_out("/output/.", budget)
+        if result is None or result.code:
             msg = "Container outputs could not be copied"
             raise OutputRejectedError(msg)
         outputs = validated_outputs(

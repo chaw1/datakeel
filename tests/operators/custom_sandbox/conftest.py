@@ -4,6 +4,7 @@
 """Build and require the real isolated runtime; missing Docker is a test failure."""
 
 import shutil
+from collections.abc import Iterator
 from pathlib import Path
 from uuid import uuid4
 
@@ -14,7 +15,7 @@ from datakeel.operators.custom_process import RuntimeFailureError, command, runt
 
 
 @pytest.fixture(scope="session")
-def sandbox_settings() -> Settings:
+def sandbox_settings() -> Iterator[Settings]:
     """Require a locally built immutable sandbox image without skipping any security test."""
     executable = shutil.which("docker")
     if executable is None:
@@ -50,6 +51,8 @@ def sandbox_settings() -> Settings:
         )
     except RuntimeFailureError as error:
         pytest.fail("Sandbox security tests require a working container runtime: " + str(error))
-    return settings.model_copy(
+    yield settings.model_copy(
         update={"sandbox_image": image.stdout.decode().strip(), "sandbox_backend": "container"}
     )
+    # Remove only this session's exact tag; the content-addressed image may stay shared.
+    command([executable, "image", "rm", image_name], environment, timeout=60)

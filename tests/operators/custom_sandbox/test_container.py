@@ -3,6 +3,9 @@
 
 """Retain independently measured resources when rejecting untrusted outputs."""
 
+import io
+import tarfile
+import time
 from pathlib import Path
 
 import pytest
@@ -10,7 +13,11 @@ import pytest
 from datakeel.core.custom_sandbox import SandboxLimits, SandboxRequest
 from datakeel.operators.custom_container import ContainerSandbox, ContainerUsage
 from datakeel.operators.custom_output import OutputRejectedError, WorkerStatus
-from datakeel.operators.custom_process import CommandResult, RuntimeFailureError
+from datakeel.operators.custom_process import (
+    CommandResult,
+    RuntimeFailureError,
+    RuntimeOutputLimitError,
+)
 
 
 @pytest.mark.parametrize(("oom", "reason"), [(0, "invalid_output"), (1, "memory_limit")])
@@ -179,7 +186,7 @@ def test_wait_command_deadline_is_bounded_and_cleanup_still_runs(
     assert removed == [runtime.name, *runtime.attempted_volumes]
 
 
-@pytest.mark.parametrize("phase", ["start", "usage", "pause"])
+@pytest.mark.parametrize("phase", ["usage", "pause"])
 def test_shared_deadline_cannot_be_extended_by_forged_completion(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, phase: str
 ) -> None:
@@ -221,9 +228,8 @@ def test_shared_deadline_cannot_be_extended_by_forged_completion(
     result = runtime.execute(request, tmp_path)
     assert result.exit_reason == "timeout"
     assert clock.now == pytest.approx(0.4)
-    assert budgets[0] == ("start", 0.4)
-    if phase != "start":
-        assert budgets[1][1] == pytest.approx(0.05)
+    assert budgets[0] == ("start", 30)
+    assert budgets[1][1] == pytest.approx(0.05)
     if phase == "pause":
         assert budgets[2][1] == pytest.approx(0.03)
     assert (result.resources.cpu_seconds, result.resources.memory_peak_bytes) == (
@@ -328,19 +334,23 @@ def test_replaced_or_unbounded_volume_is_rejected_before_start(
     assert operations == ["create", "volume"]
 
 
-def test_prepare_budget_does_not_expand_user_execution_deadline(
+def test_execution_deadline_starts_after_confirmed_start_without_prepare_credit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Thirty seconds of pre-start preparation grants no extra time to running user code."""
+    """Slow create/start control calls neither consume nor extend the user execution budget."""
     runtime = _runtime()
     clock = _Clock()
     budgets: list[tuple[str, float]] = []
+    supervisor_timeout: list[str] = []
 
     def call(*arguments: str, maximum: int = 65536, timeout: float = 10) -> CommandResult:
         budgets.append((arguments[0], timeout))
         if arguments[0] == "create":
+            supervisor_timeout.append(arguments[-1])
             clock.now += 29
         elif arguments[0] == "start":
+            clock.now += 2
+        elif arguments[0] in {"cp", "inspect"}:
             clock.now += timeout
             msg = "Container runtime command timed out"
             raise RuntimeFailureError(msg)
@@ -351,12 +361,76 @@ def test_prepare_budget_does_not_expand_user_execution_deadline(
     monkeypatch.setattr(runtime, "verify_volumes", lambda _request: None)
     monkeypatch.setattr(runtime, "owned", lambda _resource, _name: True)
     monkeypatch.setattr(runtime, "call", call)
-    result = runtime.execute(
-        SandboxRequest(code="", code_hash="", limits=SandboxLimits(timeout_seconds=0.4)), tmp_path
-    )
+    request = SandboxRequest(code="", code_hash="", limits=SandboxLimits(timeout_seconds=0.4))
+    result = runtime.execute(request, tmp_path)
     assert result.exit_reason == "timeout"
-    assert budgets[0] == ("create", 30)
-    assert budgets[1][0] == "start"
-    assert budgets[1][1] == pytest.approx(0.4)
-    assert clock.now == pytest.approx(29.4)
+    assert supervisor_timeout == ["0.4"]
+    assert budgets[:3] == [("create", 30), ("start", 30), ("cp", pytest.approx(0.4))]
+    assert clock.now == pytest.approx(31.4)
     assert budgets[-1] == ("rm", 10)
+
+
+@pytest.mark.parametrize("failure", ["exit", "timeout"])
+def test_failed_start_raises_and_removes_owned_resources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    """A rejected or unresponsive start never reports success and still cleans up."""
+    runtime = _runtime()
+    removed: list[str] = []
+
+    def call(*arguments: str, maximum: int = 65536, timeout: float = 10) -> CommandResult:
+        if arguments[0] == "start":
+            if failure == "timeout":
+                msg = "Container runtime command timed out"
+                raise RuntimeFailureError(msg)
+            return CommandResult(code=1)
+        if arguments[0] == "rm" or arguments[:2] == ("volume", "rm"):
+            removed.append(arguments[-1])
+        return CommandResult(code=0)
+
+    def create_volumes(request: SandboxRequest) -> None:
+        runtime.attempted_volumes = list(runtime.volume_options(request))
+
+    monkeypatch.setattr(runtime, "create_volumes", create_volumes)
+    monkeypatch.setattr(runtime, "verify_volumes", lambda _request: None)
+    monkeypatch.setattr(runtime, "owned", lambda _resource, _name: True)
+    monkeypatch.setattr(runtime, "call", call)
+    with pytest.raises(RuntimeFailureError):
+        runtime.execute(SandboxRequest(code="", code_hash=""), tmp_path)
+    assert removed == [runtime.name, runtime.name + "-output", runtime.name + "-status"]
+
+
+def test_supervisor_timeout_status_is_reported_as_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The in-container deadline report maps to the host timeout reason without outputs."""
+    runtime = _runtime()
+    logs = io.BytesIO()
+    with tarfile.open(fileobj=logs, mode="w") as archive:
+        entry = tarfile.TarInfo("status/stderr")
+        entry.size = 7
+        archive.addfile(entry, io.BytesIO(b"stopped"))
+    monkeypatch.setattr(
+        runtime,
+        "call",
+        lambda *_arguments, **_kwargs: CommandResult(code=0, stdout=logs.getvalue()),
+    )
+    result = runtime.collect(
+        SandboxRequest(code="", code_hash=""), WorkerStatus(exit_code=-9, reason="timeout")
+    )
+    assert (result.success, result.exit_reason, result.outputs) == (False, "timeout", ())
+    assert result.stderr == "stopped"
+
+
+@pytest.mark.parametrize("source", ["/status/status.json", "/status/.", "/output/."])
+def test_inflated_copy_is_output_rejection_not_runtime_failure(
+    monkeypatch: pytest.MonkeyPatch, source: str
+) -> None:
+    """User-controlled archive size is attributed to invalid output in every copy path."""
+    runtime = _runtime()
+
+    def call(*arguments: str, maximum: int = 65536, timeout: float = 10) -> CommandResult:
+        msg = "Container runtime output exceeds the byte limit"
+        raise RuntimeOutputLimitError(msg)
+
+    monkeypatch.setattr(runtime, "call", call)
+    with pytest.raises(OutputRejectedError, match="byte limit"):
+        runtime.copy_out(source, 1024, None if source.endswith(".") else time.monotonic() + 10)

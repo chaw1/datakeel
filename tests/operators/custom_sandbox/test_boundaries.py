@@ -19,7 +19,12 @@ from datakeel.operators.custom_output import (
     parse_status,
     validated_outputs,
 )
-from datakeel.operators.custom_process import RuntimeFailureError, command, runtime_environment
+from datakeel.operators.custom_process import (
+    RuntimeFailureError,
+    RuntimeOutputLimitError,
+    command,
+    runtime_environment,
+)
 from datakeel.operators.custom_sandbox import run_sandbox
 
 
@@ -107,7 +112,7 @@ def test_runtime_environment_has_only_explicit_allowlist() -> None:
 def test_runtime_command_output_and_time_are_bounded() -> None:
     """A broken external executable cannot grow host capture buffers or run forever."""
     environment = runtime_environment()
-    with pytest.raises(RuntimeFailureError, match="byte limit"):
+    with pytest.raises(RuntimeOutputLimitError, match="byte limit"):
         command(
             [sys.executable, "-I", "-c", "import os; os.write(1, b'x' * 4096)"],
             environment,
