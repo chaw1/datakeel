@@ -1,5 +1,6 @@
 import { Icon } from "../components/Icon";
 import { useI18n } from "../i18n/useI18n";
+import { DatasheetsPage } from "../pages/DatasheetsPage";
 import { FilesPage } from "../pages/FilesPage";
 import { LineagePage } from "../pages/LineagePage";
 import { OverviewPage } from "../pages/OverviewPage";
@@ -183,6 +184,9 @@ export function DatasetWorkspace({
           )}
           {page === "report" && (
             <ReportPage data={data} selectedId={selectedId} />
+          )}
+          {page === "datasheets" && (
+            <DatasheetsPage data={data} selectedId={selectedId} />
           )}
         </>
       )}

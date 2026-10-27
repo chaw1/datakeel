@@ -9,6 +9,8 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   create_version_from_selection: "approvalVersion",
   run_pipeline: "approvalPipeline",
   run_kg_extraction: "kgExtractAction",
+  generate_datasheet: "datasheetGenerationAction",
+  publish_datasheet: "datasheetPublicationAction",
   save_metadata: "approvalMetadata",
   decide_assertions: "approvalAssertions",
   import_catalog: "approvalImport",

@@ -18,6 +18,7 @@ export const objectTabs = [
   "versions",
   "quality",
   "report",
+  "datasheets",
 ] as const;
 export type ObjectTab = (typeof objectTabs)[number];
 export type ObjectTarget = {

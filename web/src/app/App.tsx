@@ -55,6 +55,7 @@ export default function App() {
       files: "files",
       versions: "versions",
       report: "report",
+      datasheets: "datasheets",
       lineage: "relations",
     };
     const tab = tabs[next];
