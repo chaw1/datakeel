@@ -39,7 +39,7 @@ datakeel/
   datakeel/
     core/                   # 领域内核：AssetRef、LineageEvent、Action、语义合同解析、manifest
     semantic/               # 语义合同 YAML + 生成快照 + golden 校验
-    operators/              # 算子：file/ image/ text/ (audio/ video/ 二期)，每个算子一个文件
+    operators/              # 算子：file/ image/ text/ audio/ video/ media/，每个算子一个文件
     pipeline/               # DAG 引擎：槽位类型、拓扑执行、条件、路由
     quality/                # 五维评分、问题分级、规则基线报告
     lineage/                # 事件写入、幂等、投影、图查询、OpenLineage/Croissant 导出
