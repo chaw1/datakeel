@@ -107,6 +107,25 @@ DQ_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="dq-aggregate-pushdown",
+        path="quality/dq_engine.py",
+        before='    if rule.kind in {"volume_change", "freshness"}:',
+        after="    if False:",
+        case=(
+            "tests/quality/test_dq_aggregates.py::"
+            "test_volume_and_freshness_aggregate_beyond_the_scan_cap"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="dq-freshness-invalid-cells",
+        path="quality/dq_source.py",
+        before="_latest(row[1], dialect), _whole(row[2]))",
+        after="_latest(row[1], dialect), 0)",
+        case="tests/quality/test_dq_aggregates.py::test_unparsable_timestamp_cells_fail_freshness",
+        runner="pytest",
+    ),
+    Mutation(
         name="dq-alert-on-transition-only",
         path="storage/dq_results.py",
         before="    if issue is None or issue.status == prior:",

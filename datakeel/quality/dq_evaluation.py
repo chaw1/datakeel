@@ -6,7 +6,6 @@
 import math
 from bisect import bisect_right
 from collections import Counter
-from datetime import UTC, datetime
 from statistics import fmean, pstdev
 
 from datakeel.core.dq_models import DqMetrics, DqRule
@@ -98,22 +97,6 @@ def _outside_range(rule: DqRule, value: Scalar) -> bool:
     return (rule.params.minimum is not None and value < rule.params.minimum) or (
         rule.params.maximum is not None and value > rule.params.maximum
     )
-
-
-def freshness_age(values: tuple[Scalar, ...], now: datetime) -> float | None:
-    """Measure seconds since the latest valid aware timestamp, rejecting invalid cells."""
-    dates: list[datetime] = []
-    for value in values:
-        if value is None:
-            continue
-        if not isinstance(value, str):
-            return None
-        try:
-            stamp = datetime.fromisoformat(value)
-        except ValueError:
-            return None
-        dates.append(stamp.replace(tzinfo=UTC) if stamp.tzinfo is None else stamp)
-    return max(0.0, (now - max(dates)).total_seconds()) if dates else None
 
 
 def relative_change(actual: float, baseline: float) -> float:

@@ -14,7 +14,6 @@ from datakeel.core.metric_models import Scalar
 from datakeel.core.models import utcnow
 from datakeel.quality.dq_evaluation import (
     decile_edges,
-    freshness_age,
     observation,
     population_stability,
     relative_change,
@@ -23,7 +22,12 @@ from datakeel.quality.dq_evaluation import (
     violating_rows,
 )
 from datakeel.quality.dq_regex import regex_violations
-from datakeel.quality.dq_source import execute_assertion, read_rule_table
+from datakeel.quality.dq_source import (
+    TableAggregate,
+    execute_assertion,
+    read_rule_table,
+    read_table_aggregate,
+)
 from datakeel.quality.dq_types import nulls_only
 
 
@@ -66,6 +70,12 @@ def _evaluate(
         rows = execute_assertion(_remaining(rule, deadline), source)
         failed = tuple(range(1, len(rows.rows) + 1))
         return _result(rule, now, DqMetrics(row_count=len(rows.rows)), failed, float(len(failed)))
+    if rule.kind in {"volume_change", "freshness"}:
+        aggregate = read_table_aggregate(_remaining(rule, deadline), source)
+        if rule.kind == "freshness":
+            return _freshness(rule, aggregate, now)
+        metrics = DqMetrics(row_count=aggregate.row_count)
+        return _historical(rule, metrics, _baseline(rule, history, now), now)
     rows = read_rule_table(_remaining(rule, deadline), source)
     values = tuple(row[0] for row in rows.rows)
     validate_distribution_values(rule, values)
@@ -74,10 +84,8 @@ def _evaluate(
     if nulls_only(rule):
         # NULL-only scans project markers, so no business value statistics exist.
         metrics = DqMetrics(row_count=metrics.row_count, null_rate=metrics.null_rate)
-    if rule.kind in {"volume_change", "distribution_drift"}:
+    if rule.kind == "distribution_drift":
         return _historical(rule, metrics, baseline, now)
-    if rule.kind == "freshness":
-        return _freshness(rule, values, metrics, now)
     reference = ()
     if rule.params.reference_table:
         reference = tuple(
@@ -120,11 +128,9 @@ def _result(
     )
 
 
-def _freshness(
-    rule: DqRule, values: tuple[Scalar, ...], metrics: DqMetrics, now: datetime
-) -> DqResult:
-    age = freshness_age(values, now)
-    if age is None:
+def _freshness(rule: DqRule, aggregate: TableAggregate, now: datetime) -> DqResult:
+    metrics = DqMetrics(row_count=aggregate.row_count)
+    if aggregate.invalid or aggregate.latest is None:
         return DqResult(
             rule_id=rule.id,
             rule_revision=rule.revision,
@@ -133,9 +139,13 @@ def _freshness(
             row_count=metrics.row_count,
             metrics=metrics,
             started_at=now,
-            message="No valid latest timestamp is available",
+            message=(
+                f"{aggregate.invalid} non-NULL cells are not valid timestamps"
+                if aggregate.invalid
+                else "No valid latest timestamp is available"
+            ),
         )
-    return _result(rule, now, metrics, (), age)
+    return _result(rule, now, metrics, (), max(0.0, (now - aggregate.latest).total_seconds()))
 
 
 def _baseline(rule: DqRule, history: tuple[DqResult, ...], now: datetime) -> list[DqResult]:

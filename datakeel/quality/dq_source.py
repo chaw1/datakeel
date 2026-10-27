@@ -3,7 +3,9 @@
 
 """Reuse the semantic query boundary for bounded read-only quality scans."""
 
+from datetime import UTC, datetime
 from time import monotonic
+from typing import NamedTuple
 
 from sqlglot import exp
 
@@ -20,6 +22,8 @@ _PURE_FUNCTIONS = {
     "sqlite": frozenset({"datetime", "julianday", "time", "total", "unixepoch"}),
     "postgres": frozenset({"age", "json_typeof", "jsonb_typeof", "make_date"}),
 }
+_UNIX_EPOCH_JULIAN_DAY = 2440587.5
+_ISO_DATE_PREFIX = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*"
 
 
 def read_rule_table(
@@ -49,6 +53,79 @@ def read_rule_table(
         msg = "Quality rule scan row limit exceeded; no partial verdict was produced"
         raise ExecutionError(msg)
     return result
+
+
+class TableAggregate(NamedTuple):
+    """Database-side totals: row count, newest valid timestamp and unparsable timestamp cells."""
+
+    row_count: int
+    latest: datetime | None = None
+    invalid: int = 0
+
+
+def read_table_aggregate(rule: DqRule, source: SourceProperties) -> TableAggregate:
+    """Push COUNT/MAX into one bounded read-only statement, so table size has no row cap."""
+    dialect = _dialect(source)
+    table = exp.table_(rule.target.table, db=rule.target.schema_name, quoted=True)
+    count = exp.Count(this=exp.Star())
+    if rule.kind != "freshness" or not rule.target.column:
+        row = _single_row(rule, source, exp.select(count).from_(table).sql(dialect=dialect))
+        return TableAggregate(_whole(row[0]))
+    column = exp.column(rule.target.column, quoted=True)
+    if dialect == "postgres":
+        # DATE/TIMESTAMP columns only; +/-infinity is not a usable delivery time.
+        valid = exp.Anonymous(this="isfinite", expressions=[column.copy()])
+        latest_value = exp.Case().when(valid, column.copy())
+    else:
+        # SQLite stores timestamps as text; julianday() honours offsets and rejects malformed
+        # text, while the GLOB keeps 'now' or bare Julian numbers from counting as timestamps.
+        valid = exp.and_(
+            exp.EQ(this=exp.Typeof(this=column.copy()), expression=exp.Literal.string("text")),
+            exp.Glob(this=column.copy(), expression=exp.Literal.string(_ISO_DATE_PREFIX)),
+        )
+        latest_value = exp.Case().when(
+            valid, exp.Anonymous(this="julianday", expressions=[column.copy()])
+        )
+    invalid = (
+        exp.Case()
+        .when(
+            exp.and_(exp.not_(column.copy().is_(exp.null())), latest_value.copy().is_(exp.null())),
+            exp.Literal.number(1),
+        )
+        .else_(exp.Literal.number(0))
+    )
+    query = exp.select(count, exp.Max(this=latest_value), exp.Sum(this=invalid)).from_(table)
+    row = _single_row(rule, source, query.sql(dialect=dialect))
+    return TableAggregate(_whole(row[0]), _latest(row[1], dialect), _whole(row[2]))
+
+
+def _single_row(rule: DqRule, source: SourceProperties, sql: str) -> list[Scalar]:
+    result = _execute(rule, source, sql)
+    if len(result.rows) != 1:
+        msg = "Quality aggregate did not return exactly one row"
+        raise ExecutionError(msg)
+    return result.rows[0]
+
+
+def _whole(value: Scalar) -> int:
+    return int(value) if isinstance(value, int | float) and not isinstance(value, bool) else 0
+
+
+def _latest(value: Scalar, dialect: str) -> datetime | None:
+    if dialect == "sqlite":
+        if not isinstance(value, int | float) or isinstance(value, bool):
+            return None
+        # Julian-day doubles carry ~40 µs of error; SQLite itself keeps millisecond precision.
+        seconds = round((float(value) - _UNIX_EPOCH_JULIAN_DAY) * 86400, 3)
+        return datetime.fromtimestamp(seconds, UTC)
+    if not isinstance(value, str):
+        return None
+    # The driver value arrives as ISO text; naive PostgreSQL timestamps are stored as UTC.
+    try:
+        stamp = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return stamp.replace(tzinfo=UTC) if stamp.tzinfo is None else stamp
 
 
 def validate_assertion(rule: DqRule, source: SourceProperties) -> None:
