@@ -67,8 +67,11 @@ STANDARD_MUTATIONS = (
     Mutation(
         name="standards-contract-synonym-recall",
         path="standards/matching.py",
-        before="expanded, synonym_reasons = _synonyms(observed, contract.synonyms)",
-        after="expanded, synonym_reasons = observed, ()",
+        before=(
+            "expanded, reasons, weight = "
+            "_synonyms(observed, contract.synonyms, _Lock(complete, kin))"
+        ),
+        after="expanded, reasons, weight = observed, (), 1.0",
         case=(
             "tests/standards/test_mapping_variants.py::"
             "test_synonym_rule_is_required_for_contract_extension"
@@ -78,8 +81,8 @@ STANDARD_MUTATIONS = (
     Mutation(
         name="standards-synonym-discount",
         path="standards/matching.py",
-        before="score=evidence.score * 0.86,",
-        after="score=evidence.score,",
+        before="_SYNONYM_DISCOUNT = 0.86",
+        after="_SYNONYM_DISCOUNT = 1.0",
         case=(
             "tests/standards/test_mapping_variants.py::"
             "test_synonym_weight_stays_below_an_exact_business_name"
@@ -166,6 +169,7 @@ STANDARD_MUTATIONS = (
 )
 
 DELETIONS = "tests/standards/test_mapping_deletions.py::"
+PRIORITY = "tests/standards/test_mapping_priority.py::"
 
 # Lexical recall rules and the precision guards that bound them.
 LEXICAL_RULE_MUTATIONS = (
@@ -199,6 +203,44 @@ LEXICAL_RULE_MUTATIONS = (
         before="return 0.5 + 0.14 * coverage",
         after="return 0.9 + 0.05 * coverage",
         case=DELETIONS + "test_deletion_ranks_below_prefix_and_consonant_skeleton",
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-complete-word-lock",
+        path="standards/matching.py",
+        before=(
+            "and (match.rule in COMPLETE_RULES or left not in lock.tokens "
+            "or (left, right) in lock.kin)"
+        ),
+        after="and True",
+        case=(
+            PRIORITY + "test_complete_word_is_never_reread_as_abbreviation_of_another_meaning"
+            "[port-harbor-portfolio-label]"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-own-group-abbreviation",
+        path="standards/matching.py",
+        before="kin = _kin(complete, contract.synonyms)",
+        after="kin: frozenset[tuple[str, str]] = frozenset()",
+        case=PRIORITY + "test_word_may_abbreviate_a_word_of_its_own_synonym_group",
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-closest-partial-synonym",
+        path="standards/matching.py",
+        before="hits.sort(key=lambda hit: (-len(hit[0]), -min(item.weight for item in hit[0])))",
+        after="hits.sort(key=lambda hit: -len(hit[0]))",
+        case=PRIORITY + "test_closest_partial_synonym_wins_over_a_longer_listing",
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-partial-ceiling",
+        path="standards/lexical.py",
+        before="_PARTIAL_CEILING = 0.85",
+        after="_PARTIAL_CEILING = 0.95",
+        case=PRIORITY + "test_partial_rules_never_reach_the_complete_synonym_weight",
         runner="pytest",
     ),
 )

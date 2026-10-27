@@ -4,6 +4,7 @@
 """Compare English word forms and abbreviations without a business vocabulary."""
 
 import re
+from functools import lru_cache
 from itertools import pairwise
 
 from datakeel.core.models import BoundaryModel
@@ -21,6 +22,10 @@ _MIN_SUBSEQUENCE_RETENTION = 0.6
 # Measured against 133k dictionary words, this plus the vowel-join test leaves 13 accidental
 # hits on the shipped vocabulary (52 without the join test, 6 at 0.8 but losing whse and natl).
 _MIN_DELETION_COVERAGE = 0.75
+# Partial evidence never reaches the 0.86 discount applied to complete synonym hits, so a whole
+# word or a whole synonym always outranks truncation, consonant skeletons and ordered deletions.
+_PARTIAL_CEILING = 0.85
+COMPLETE_RULES = frozenset({"exact", "morphology", "spelling"})
 
 
 class TokenMatch(BoundaryModel):
@@ -94,7 +99,7 @@ def _prefix_weight(observed: str, expected: str) -> float:
         or not expected.startswith(observed)
     ):
         return 0.0
-    return min(0.9, 0.65 + 0.25 * len(observed) / len(expected))
+    return min(_PARTIAL_CEILING, 0.65 + 0.25 * len(observed) / len(expected))
 
 
 def _consonant_forms(word: str) -> frozenset[str]:
@@ -172,6 +177,18 @@ def _consonant_weight(observed: str, expected: str) -> float:
         for short in observed_forms
         for skeleton in _consonant_forms(expected)
     )
+
+
+@lru_cache(maxsize=8192)
+def complete_forms(word: str) -> frozenset[str]:
+    """Return normalized forms; two words match completely exactly when their forms overlap.
+
+    Complete means exact, inflected or respelled (``COMPLETE_RULES``), never abbreviated.
+    """
+    folded = word.casefold()
+    if not (folded.isascii() and folded.isalpha()):
+        return frozenset({folded})
+    return _spelled_forms(_root_forms(folded))
 
 
 def match_token(observed: str, expected: str) -> TokenMatch | None:

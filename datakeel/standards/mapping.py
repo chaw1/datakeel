@@ -15,7 +15,7 @@ from datakeel.core.standard_models import (
     StandardValue,
     standard_value_key,
 )
-from datakeel.standards.matching import name_evidence
+from datakeel.standards.matching import ColumnTerms, column_terms, name_evidence
 from datakeel.standards.names import compatible_type
 
 SUGGESTION_THRESHOLD = 0.58
@@ -68,9 +68,9 @@ def _in_range(value: StandardValue, standard: FieldStandard) -> bool:
 
 
 def _candidate(
-    profile: ColumnProfile, standard: FieldStandard, contract: StandardsContract
+    profile: ColumnProfile, terms: ColumnTerms, standard: FieldStandard, contract: StandardsContract
 ) -> MappingCandidate | None:
-    lexical = name_evidence(profile.name, standard, contract)
+    lexical = name_evidence(terms, standard, contract)
     if lexical.score <= 0:
         return None
     score, value_reasons = _value_evidence(profile, standard, contract)
@@ -95,11 +95,12 @@ def _candidate(
 
 def suggest(profile: ColumnProfile, contract: StandardsContract) -> MappingSuggestion:
     """Rank three business-supported candidates and label weak evidence for human review."""
+    terms = column_terms(profile.name, contract)
     candidates = [
         candidate
         for standard in contract.standards
         if standard.status == "active"
-        and (candidate := _candidate(profile, standard, contract)) is not None
+        and (candidate := _candidate(profile, terms, standard, contract)) is not None
     ]
     candidates.sort(key=lambda candidate: (-candidate.score, candidate.standard_code))
     return MappingSuggestion(column_id=profile.column_id, candidates=tuple(candidates[:3]))
