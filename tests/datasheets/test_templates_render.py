@@ -66,10 +66,10 @@ def test_template_is_deterministic_for_identical_fact_snapshots() -> None:
 
 
 def test_template_handles_unknown_and_structured_fact_fields() -> None:
-    """Extensible source field names and all JSON values remain represented literally."""
+    """Extensible source field names and every JSON scalar remain represented."""
     fact = _fact().model_copy(update={"field": "custom.field", "value": {"items": [1, True, None]}})
     result = build_template((fact,), "en")
-    assert result.sections[1].sentences[0].text == 'custom.field: {"items": [1, true, null]}'
+    assert result.sections[1].sentences[0].text == "custom.field: items: 1, true, null"
 
 
 def test_markdown_export_preserves_fact_coordinates_and_missing_chapters() -> None:
@@ -214,10 +214,10 @@ def test_template_sentences_with_metadata_punctuation_are_already_validated(
 
 
 @pytest.mark.parametrize("language", ["zh", "en"])
-def test_graph_entity_names_with_abbreviations_stay_in_one_json_sentence(
+def test_graph_entity_names_with_abbreviations_stay_in_one_sentence(
     language: DatasheetLanguage,
 ) -> None:
-    """Quoted graph names are evidence data and must not be split at Dr. or escaped quotes."""
+    """Graph names are evidence data and must not be split at Dr. or embedded quotes."""
     fact = _fact().model_copy(
         update={
             "field": "kg.entities",
