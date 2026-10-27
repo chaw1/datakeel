@@ -84,6 +84,8 @@ uv run datakeel rebuild-catalog
 
 各命令使用相同的 `DATAKEEL_HOME` 和数据库配置。普通 CLI 问数省略 `--reference-instant` 时使用当前时刻；demo 和评测使用固定时刻。时间范围采用半开区间，此基准下“近 30 天”为 `[2026-09-01, 2026-10-01)`。退货率等未登记概念返回 `unanswerable` 和三个相近指标；“营业额”命中冲突口径，返回 `clarification` 和候选。两种状态均不含数值答案或可执行 SQL。匹配流程是确定性的；候选 ID 重排接口与 fake provider 只用于单元测试，不进入 demo、golden 或 `eval-ask`，CLI 没有 `ask --provider` 选项。SQL 只能由编译器从登记指标生成，执行层只接受 SELECT，并强制只读连接、语句超时和行数上限。
 
+英文问题与中文共用同一个时间解析器和拒答护栏。月份全称或缩写加年份、`Q2 2026` / `2026 Q2` / `the second quarter of 2026`、`last|this|previous month|quarter|year`、`from … to …` 区间以及 `as of` / `at the end of`（时点语义，与“截至”一致）均按 `--reference-instant` 解析；中文另支持“第N季度”“N季度”“2026年Q3”。起点不早于基准时刻的期间一律拒答。`by|per|for each|broken down by` 加维度名走分组，`in|for` 加维度取值走筛选。维度与取值的英文别名来自语义层（`english_name`、`synonyms` 及可选的 `value_synonyms`，以已声明取值为键）。每个答案记录 `interpretation`：指标、时间范围与口径、筛选、分组及未消费片段。任何时间、筛选、分组或计算成分未被解析器消费时，返回 `clarification` 或 `unanswerable` 并指出该片段，绝不返回不带条件的数字。
+
 指标匹配依次使用登记名称及别名、规范化 id 词形、保守名称前缀。`refund_amount`、`refund amount`、`refund-amount` 和 `Refund Amounts` 对应同一 id；规范化只处理大小写、分隔符及英文规则 `-s`/`-es` 复数。英文别名显式登记常用单复数拼法；登记含义或 id 词形冲突时要求澄清。`Who owns the highest refund amount?` 等目录负责人问句不执行数值 SQL；业务排名问法保留既有指标语义。
 
 ### 指标 YAML 与受控变更
