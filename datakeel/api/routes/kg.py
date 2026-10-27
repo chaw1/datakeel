@@ -124,7 +124,8 @@ def runs(
     version_id: str | None = None,
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ) -> tuple[KGRun, ...]:
-    """Read extraction reports of currently readable sources without private request data."""
+    """Read extraction reports without exposing private frozen request data."""
+    # Proposal samples quote source text, so only currently readable sources are listed.
     return list_readable_runs(db, dataset_id, version_id, limit, access=_query_access(request))
 
 

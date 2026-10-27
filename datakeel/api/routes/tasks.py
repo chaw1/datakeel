@@ -60,7 +60,8 @@ def task(identifier: str, db: DatabaseDependency) -> TaskView:
 
 @router.get("/{identifier}/artifacts")
 def artifacts(identifier: str, db: DatabaseDependency, request: Request) -> list[FileView]:
-    """Read published artifacts for a completed task under the same query-scope guard."""
+    """Read published artifacts for a completed task."""
+    # Artifacts carry source captions, so they pass the same query-scope guard as search.
     return task_artifacts(
         db,
         identifier,

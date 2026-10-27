@@ -25,11 +25,9 @@ def definitions() -> OntologyRegistry:
 
 @router.post("/object-sets/evaluate")
 def evaluate_objects(body: ObjectSet, db: DatabaseDependency, request: Request) -> FrozenManifest:
-    """Freeze the current matching assets with their observed revisions.
-
-    Frozen object properties disclose source metadata such as captions, so the
-    selection passes the same query-scope asset guard as the search_files tool.
-    """
+    """Freeze the current matching assets with their observed revisions."""
+    # Frozen object properties disclose source metadata such as captions, so the
+    # selection passes the same query-scope asset guard as the search_files tool.
     manifest = evaluate(db, body)
     refs = [item.asset_ref for item in manifest.objects]
     if body.dataset_id:

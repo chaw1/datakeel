@@ -35,7 +35,8 @@ def lineage(
     query: Annotated[GraphQuery, Query()],
     request: Request,
 ) -> GraphView:
-    """Read a depth-bounded asset lineage projection under the source-content guard."""
+    """Read a depth-bounded asset lineage projection."""
+    # Node names can quote source content, which passes the query-scope asset guard.
     return service.read_graph(
         db,
         query,
