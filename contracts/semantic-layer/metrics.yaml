@@ -8,6 +8,11 @@ metrics:
   - shipping values
   - dispatched value
   - dispatched values
+  - shipment value
+  - shipped value
+  - shipping amount
+  - value shipped
+  - outbound value
   - 发货金额
   - 出库金额
   description: 以ERP已出库商品的出货价计量，未扣终端促销及退款。
@@ -37,6 +42,11 @@ metrics:
   - invoiced sale
   - sales revenue
   - sales revenues
+  - sales value
+  - booked sales
+  - invoiced amount
+  - invoice amount
+  - billings
   - 开票销售额
   - 营业额
   description: 以CRM已入账销售单的开票金额计量，含经销渠道。
@@ -66,6 +76,10 @@ metrics:
   - retail sales
   - retail sale
   - consumer spending
+  - retail sales amount
+  - retail turnover
+  - consumer sales
+  - end-customer sales
   - 终端零售额
   - 实付零售额
   - 营业额
@@ -98,6 +112,13 @@ metrics:
   - number of order
   - completed orders
   - completed order
+  - order volume
+  - orders placed
+  - orders completed
+  - how many orders
+  - count of orders
+  - total orders
+  - orders count
   - 成交订单数
   - 订单量
   description: 已完成终端订单的数量。
@@ -128,6 +149,11 @@ metrics:
   - refund values
   - refunded total
   - refunded totals
+  - refunded amount
+  - amount refunded
+  - amount of refunds
+  - refund payouts
+  - refund total
   - 退款金额
   - 退回金额
   description: 已批准退款单的金额，不代表退货率或原因。
@@ -156,6 +182,16 @@ metrics:
   - stock quantities
   - available stock
   - available stocks
+  - inventory level
+  - inventory levels
+  - stock level
+  - stock levels
+  - units in stock
+  - units on hand
+  - stock on hand
+  - inventory on hand
+  - on-hand inventory
+  - inventory quantity
   - 库存件数
   - 在库数量
   description: 2026年9月30日库存快照中的可用件数。
@@ -181,6 +217,12 @@ metrics:
   - number of customer
   - registered customers
   - registered customer
+  - customer base
+  - how many customers
+  - count of customers
+  - total customers
+  - number of clients
+  - client count
   - 客户数量
   - 客户总数
   description: CRM中登记的客户数，含个人及企业。
@@ -206,6 +248,17 @@ metrics:
   - support ticket counts
   - number of service tickets
   - number of service ticket
+  - support tickets
+  - service tickets
+  - after-sales tickets
+  - number of tickets
+  - how many tickets
+  - ticket volume
+  - support ticket volume
+  - service ticket volume
+  - service requests
+  - support cases
+  - number of support cases
   - 工单数
   - 售后单量
   description: 所有已登记售后工单数，含未关闭工单。
@@ -231,6 +284,12 @@ metrics:
   - repair expenses
   - maintenance labor cost
   - maintenance labor costs
+  - repair spend
+  - repair spending
+  - maintenance cost
+  - maintenance costs
+  - repair labor cost
+  - repair labour cost
   - 维修人工费
   - 维修成本
   description: 维修记录中的人工费用，不含零件费用。
@@ -256,6 +315,12 @@ metrics:
   - collected payment
   - payment value
   - payment values
+  - payments received
+  - payments collected
+  - amount collected
+  - cash collected
+  - collections
+  - received payments
   - 支付金额
   - 到账金额
   description: 已完成支付流水的收款金额。
@@ -284,6 +349,9 @@ metrics:
   - sales volumes
   - invoiced units
   - invoiced unit
+  - sales quantity
+  - invoiced quantity
+  - booked units
   - 销售件数
   - 开票件数
   description: CRM已入账销售单的商品件数。
@@ -313,6 +381,11 @@ metrics:
   - shipped quantities
   - dispatched units
   - dispatched unit
+  - units shipped
+  - shipped units
+  - shipment quantity
+  - quantity shipped
+  - shipment volume
   - 出货件数
   - 发货数量
   description: ERP已出库商品件数。
@@ -341,6 +414,9 @@ metrics:
   - retail volumes
   - retail item quantity
   - retail item quantities
+  - retail quantity
+  - retail units sold
+  - consumer units
   - 零售件数
   - 成交件数
   description: 已完成终端订单中的商品件数。
