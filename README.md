@@ -132,6 +132,10 @@ The five operators are `evidence.image_phash`, `evidence.caption_mentions`, `evi
 
 The [near-duplicate contract](contracts/evidence/near_duplicate.yaml) fixes 64-bit dHash, four prefix bits for blocking, and Hamming distance ≤8. Each direct pair is stored once and queried in both directions. There is no transitive expansion or automatic merge. Prefix blocking can miss pairs; the evaluation below reports those misses. The model-extractor interface and fake adapter have unit tests only; neither runs in the extraction DAG, evidence evaluation or model budget.
 
+## Image quality and point clouds
+
+`image.quality` scores blur, exposure, noise, resolution and solid color, with each failed check's measured reason. PLY (ASCII and both binary byte orders) and PCD (ASCII and binary) point clouds can be probed, cleaned, voxel-downsampled, filtered for statistical outliers, checked for suspected unit mismatch and rendered as top-down PNG previews. Results feed the five quality dimensions, reports, lineage and the file object page. Run `uv run python scripts/demo_media.py --output <new-directory>` for an offline end-to-end example; see [image and point-cloud quality](docs/MEDIA_QUALITY.md) for signals, defaults and limits.
+
 ## Extract and review a text knowledge graph
 
 The demo includes **Business notes · knowledge graph demo**: 24 recorded passages, three clearly labelled scripted long documents and one deliberate truncation. Open **Knowledge graph**, search for `Vivo`, and inspect the pending-review relation. The evidence sentence is present; the tail entity is not. Reject it through the existing review action and confirm the graph shows a rejected edge. Source verification and human review remain separate.
