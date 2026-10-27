@@ -59,3 +59,19 @@ def download(
     """Download a file from its dataset, optionally pinned to one immutable version."""
     value = service.resolve_download(db, identifier, file_id, version)
     return FileResponse(value.path, filename=value.filename)
+
+
+@router.get(
+    "/{identifier}/files/{file_id}/pointcloud-preview",
+    response_class=FileResponse,
+    responses={200: {"content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}}},
+)
+def pointcloud_preview(
+    identifier: str,
+    file_id: str,
+    db: DatabaseDependency,
+    version: Annotated[str | None, Query(min_length=1)] = None,
+) -> FileResponse:
+    """View a PNG preview from the same dataset/version scope as its point cloud."""
+    value = service.resolve_pointcloud_preview(db, identifier, file_id, version)
+    return FileResponse(value.path, media_type="image/png", filename=value.filename)

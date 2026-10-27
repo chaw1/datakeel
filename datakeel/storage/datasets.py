@@ -15,6 +15,7 @@ from datakeel.semantic import classify
 from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.events import append_event
 from datakeel.storage.file_state import overlay_files
+from datakeel.storage.media_artifacts import persist_preview
 from datakeel.storage.objects import ObjectStore, digest, object_store
 
 
@@ -24,6 +25,7 @@ def persist_file(item: FileItem, store: ObjectStore | None = None) -> FileItem:
     checksum = digest(path)
     key = f"{checksum[:2]}/{checksum}{path.suffix.lower()}"
     store = store or object_store()
+    item = persist_preview(item, store)
     store.put(path, key)
     return item.model_copy(
         update={
