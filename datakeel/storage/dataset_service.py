@@ -224,14 +224,22 @@ def resolve_download(
         return result
 
 
-def task_artifacts(db: Database, identifier: str) -> list[FileView]:
-    """Return published artifacts of a completed task."""
+def task_artifacts(
+    db: Database, identifier: str, *, access: AccessContext | None = None
+) -> list[FileView]:
+    """Return published artifacts of a completed task under the output version's policy."""
     with db.session() as session:
         row = session.scalar(select(VersionRow).where(VersionRow.task_id == identifier))
         if row is None:
             message = "Completed artifacts not found"
             raise NotFoundError(message)
-        return public_files(row.manifest)
+        result = public_files(row.manifest)
+        refs = (
+            AssetRef(asset_id=row.dataset_id, version=row.id),
+            AssetRef(asset_type="task", asset_id=identifier),
+        )
+    authorize_query(db, refs, access)
+    return result
 
 
 def import_paths(

@@ -5,10 +5,11 @@
 
 from typing import Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import Field
 
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import new_id
 from datakeel.pipeline import Pipeline
 from datakeel.storage.dataset_service import task_artifacts
@@ -58,6 +59,12 @@ def task(identifier: str, db: DatabaseDependency) -> TaskView:
 
 
 @router.get("/{identifier}/artifacts")
-def artifacts(identifier: str, db: DatabaseDependency) -> list[FileView]:
-    """Read published artifacts for a completed task."""
-    return task_artifacts(db, identifier)
+def artifacts(identifier: str, db: DatabaseDependency, request: Request) -> list[FileView]:
+    """Read published artifacts for a completed task under the same query-scope guard."""
+    return task_artifacts(
+        db,
+        identifier,
+        access=AccessContext(
+            actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
+        ),
+    )
