@@ -5,7 +5,7 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
@@ -49,6 +49,7 @@ def lineage(
 @router.get("/export")
 def export(
     request: Request,
+    response: Response,
     db: DatabaseDependency,
     export_format: Annotated[Literal["openlineage", "croissant"], Query(alias="format")],
     dataset_id: str | None = None,
@@ -58,5 +59,12 @@ def export(
         actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="export", scope="export"
     )
     if export_format == "openlineage":
-        return service.export_events(db, dataset_id, access=access)
+        # The body stays a pure RunEvent array; skipped protected events are named in headers.
+        events, skipped = service.export_readable_events(db, dataset_id, access=access)
+        if skipped is not None:
+            response.headers["X-Datakeel-Skipped-Count"] = str(skipped.count)
+            response.headers["X-Datakeel-Skipped-Ids"] = ",".join(skipped.ids)
+            response.headers["X-Datakeel-Skipped-Assets"] = ",".join(skipped.assets)
+            response.headers["X-Datakeel-Skipped-Reason"] = skipped.reason
+        return events
     return service.export_dataset(db, dataset_id, str(request.base_url), access=access)

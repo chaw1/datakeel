@@ -118,6 +118,7 @@ ignore_imports =
     datakeel.ontology.functions -> datakeel.storage.lineage_service
     datakeel.ontology.functions -> datakeel.storage.object_queries
     datakeel.ontology.functions -> datakeel.storage.task_queries
+    datakeel.ontology.functions -> datakeel.lineage.models
     datakeel.ontology.properties -> datakeel.storage.views
     datakeel.ontology.tool_models -> datakeel.actions.models
 # P1 persistence composes typed governance/quality/lineage projections; DAG validation uses operators.
@@ -320,6 +321,7 @@ ignore_imports =
 # Native reads and cached tool results share one transactional grant policy.
     datakeel.ontology.tooling -> datakeel.storage.data_asset_access
     datakeel.ontology.functions -> datakeel.storage.data_asset_access
+    datakeel.ontology.catalog_functions -> datakeel.storage.data_asset_access
     datakeel.ask.service -> datakeel.storage.data_asset_access
 # Asset plans freeze and mutate domain facts in the existing controlled transaction.
     datakeel.storage.action_planning -> datakeel.actions.data_asset_parameters

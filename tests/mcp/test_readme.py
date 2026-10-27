@@ -44,13 +44,15 @@ def test_readme_enterprise_checks_measure_permitted_reads_and_restricted_catalog
         "explain_metric",
         "impact_of",
     }
-    assert len(invocations) == 5
+    assert len(invocations) == 6
     allowed = [item for item in invocations if item.status == "SUCCEEDED"]
     denied = [item for item in invocations if item.status == "FAILED"]
-    assert len(allowed) == 4
+    assert len(allowed) == 5
     assert all(item.asset_refs for item in allowed)
+    assert [item.name for item in allowed].count("list_metrics") == 2
+    assert all(ref.asset_id != "customer_count" for item in allowed for ref in item.asset_refs)
     assert len(denied) == 1
-    assert denied[0].name == "list_metrics"
+    assert denied[0].name == "explain_metric"
     assert "apply for access" in (denied[0].error or "")
 
 

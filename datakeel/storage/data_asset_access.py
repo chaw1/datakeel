@@ -3,6 +3,7 @@
 
 """One grant policy shared by all native reading entrances and immutable usage."""
 
+from collections.abc import Sequence
 from datetime import datetime
 
 from sqlalchemy import select
@@ -14,12 +15,17 @@ from datakeel.core.data_asset_models import (
     AssetUsage,
     AssetUsageQuery,
     DataAsset,
+    SkippedEntries,
 )
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import AssetRef, new_id, utcnow
 from datakeel.storage.data_asset_rows import AssetGrantRow, AssetUsageRow
 from datakeel.storage.data_asset_store import assets_in_session
-from datakeel.storage.data_asset_targets import resolve_access_targets, same_resource
+from datakeel.storage.data_asset_targets import (
+    resolve_access_targets,
+    same_resource,
+    target_index,
+)
 from datakeel.storage.database import Database
 
 
@@ -78,14 +84,7 @@ def require_access_in_session(
     assets = matching_assets(session, refs)
     if not assets:
         return ()
-    grants = tuple(
-        AssetGrant.model_validate(row.payload)
-        for row in session.scalars(
-            select(AssetGrantRow)
-            .where(AssetGrantRow.subject == context.actor)
-            .order_by(AssetGrantRow.id)
-        )
-    )
+    grants = _actor_grants(session, context.actor)
     usages: list[AssetUsage] = []
     for asset in assets:
         grant = valid_grant(grants, asset.id, context, moment)
@@ -116,6 +115,75 @@ def require_access_in_session(
             )
         session.flush()
     return tuple(usages) if record else ()
+
+
+def _actor_grants(session: Session, actor: str) -> tuple[AssetGrant, ...]:
+    return tuple(
+        AssetGrant.model_validate(row.payload)
+        for row in session.scalars(
+            select(AssetGrantRow).where(AssetGrantRow.subject == actor).order_by(AssetGrantRow.id)
+        )
+    )
+
+
+def skip_protected_in_session(
+    session: Session,
+    entries: Sequence[tuple[str, tuple[AssetRef, ...]]],
+    context: AccessContext,
+    *,
+    now: datetime | None = None,
+) -> SkippedEntries | None:
+    """Name the entries of a list-style read that the caller may not read, by ID only.
+
+    Each entry is checked with the same policy as a single read; callers drop the
+    reported entries and authorize the rest, so one protected entry no longer fails
+    the whole listing.
+    """
+    moment = now or utcnow()
+    grants = _actor_grants(session, context.actor)
+    guarded = tuple(
+        asset
+        for asset in assets_in_session(session)
+        if asset.status != "draft"
+        and asset.definition.classification in {"request", "restricted"}
+        and valid_grant(grants, asset.id, context, moment) is None
+    )
+    if not guarded or not entries:
+        return None
+    index = target_index(session)
+    skipped: dict[str, None] = {}
+    blocking: dict[str, None] = {}
+    for identifier, refs in entries:
+        expanded = resolve_access_targets(session, refs, index) if refs else ()
+        matched = [
+            asset.id
+            for asset in guarded
+            if any(same_resource(asset.definition.target, target) for target in expanded)
+        ]
+        if matched:
+            skipped[identifier] = None
+            blocking.update(dict.fromkeys(matched))
+    if not skipped:
+        return None
+    return SkippedEntries(
+        count=len(skipped),
+        ids=list(skipped),
+        assets=sorted(blocking),
+        reason=(
+            f"Protected data assets require an active {context.scope} grant for this "
+            "operator; apply for access to include these entries"
+        ),
+    )
+
+
+def skip_protected(
+    db: Database,
+    entries: Sequence[tuple[str, tuple[AssetRef, ...]]],
+    context: AccessContext,
+) -> SkippedEntries | None:
+    """Check a list-style read in one transaction; see skip_protected_in_session."""
+    with db.session() as session:
+        return skip_protected_in_session(session, entries, context)
 
 
 def require_access(

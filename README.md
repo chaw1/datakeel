@@ -65,7 +65,7 @@ Browse the dataset, switch file versions, download artifacts, inspect a lineage 
 
 The demo also publishes six [data assets](docs/DATA_ASSETS.en.md) across public, internal, request-required and restricted classifications. Open **Asset market** to search, inspect cards, apply with a purpose and expiry, approve through a controlled action, use the grant, and inspect its audit. No grants are issued in advance. Query, export and download scopes are independent; use the same operator identifier when applying and reading (`local-user` for CLI/HTTP defaults; `local` for Agent/MCP).
 
-Reads that include protected resources require grants. In the default demo, an all-lineage export, an unfiltered MCP metric list containing Customer count, and the return-rate question's protected nearby candidates are refused with an application hint. Scope exports to the public dataset or apply for the resources involved. A metric list filtered to `retail` and the Retail revenue question remain available. Follow the [asset tour](docs/DEMO.en.md#data-assets-discover-apply-use-and-audit) for the complete approval flow.
+Reads that include protected resources require grants. In the default demo, an all-lineage export and an unfiltered MCP metric list skip protected entries such as Customer count and report the skipped count, entry IDs and reason; the return-rate question's protected nearby candidates are refused with an application hint. Naming a protected resource directly is refused until you apply for it. A metric list filtered to `retail` and the Retail revenue question remain available. Follow the [asset tour](docs/DEMO.en.md#data-assets-discover-apply-use-and-audit) for the complete approval flow.
 
 ## Explore the enterprise catalog and ask data
 

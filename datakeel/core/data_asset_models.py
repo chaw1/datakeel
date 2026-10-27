@@ -123,6 +123,18 @@ class AccessContext(BoundaryModel):
     scope: AccessScope
 
 
+class SkippedEntries(BoundaryModel):
+    """Identify entries a list-style read left out because the caller lacks a grant.
+
+    Only entry and asset identifiers are reported, never the skipped content.
+    """
+
+    count: int = Field(ge=1)
+    ids: list[str]
+    assets: list[str]
+    reason: str
+
+
 class AssetUsage(BoundaryModel):
     """Record one allowed asset use; stored records can never be updated or deleted."""
 

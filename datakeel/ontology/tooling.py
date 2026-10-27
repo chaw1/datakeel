@@ -102,7 +102,11 @@ def _dispatch(
             name=name,
             status="SUCCEEDED",
             asset_refs=result.asset_refs,
-            content=JsonDocument.model_validate(result.model_dump(mode="json")),
+            content=JsonDocument.model_validate(
+                result.model_dump(
+                    mode="json", exclude={"skipped"} if result.skipped is None else None
+                )
+            ),
         )
     if name in PARAMETER_TYPES:
         plan = service.prepare_action(

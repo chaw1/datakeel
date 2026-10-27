@@ -11,6 +11,7 @@ from datakeel.core.errors import NotFoundError
 from datakeel.core.kg_queries import KGExplainQuery, KGQuery
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.evidence.query_models import EvidenceQuery
+from datakeel.lineage.models import GraphNode, GraphView
 from datakeel.ontology.catalog_functions import invoke_catalog
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
 from datakeel.ontology.data_asset_access import requested_refs
@@ -26,7 +27,7 @@ from datakeel.ontology.parameters import (
     TaskParams,
 )
 from datakeel.ontology.tool_refs import extract_refs
-from datakeel.storage.data_asset_access import require_access
+from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
 from datakeel.storage.governance_service import get_quality, get_report
@@ -71,13 +72,24 @@ def _result(function: str, refs: list[AssetRef], data: JsonValue) -> FunctionRes
     return FunctionResult(function=function, asset_refs=refs, data=data)
 
 
-def _list_datasets(db: Database, arguments: JsonDocument) -> FunctionResult:
+def _list_datasets(db: Database, arguments: JsonDocument, caller: AccessContext) -> FunctionResult:
     params = ListDatasetsParams.model_validate(arguments.root)
-    datasets = list_datasets(db)[: params.limit]
-    return _result(
-        "list_datasets",
-        [AssetRef(asset_id=value.id, display_name=value.name) for value in datasets],
-        [value.model_dump(mode="json") for value in datasets],
+    datasets = list_datasets(db)
+    skipped = skip_protected(
+        db,
+        [
+            (value.id, (AssetRef(asset_id=value.id), *extract_refs(value.model_dump(mode="json"))))
+            for value in datasets
+        ],
+        caller,
+    )
+    hidden: set[str] = set(skipped.ids) if skipped else set()
+    visible = [value for value in datasets if value.id not in hidden][: params.limit]
+    return FunctionResult(
+        function="list_datasets",
+        asset_refs=[AssetRef(asset_id=value.id, display_name=value.name) for value in visible],
+        data=[value.model_dump(mode="json") for value in visible],
+        skipped=skipped,
     )
 
 
@@ -116,22 +128,88 @@ def _dataset_result(db: Database, name: str, arguments: JsonDocument) -> Functio
     return _result(name, [AssetRef(asset_id=params.dataset_id)], value.model_dump(mode="json"))
 
 
-def _lineage(db: Database, arguments: JsonDocument) -> FunctionResult:
+def _node_ref(node: GraphNode) -> AssetRef:
+    return AssetRef(
+        asset_id=node.asset_id,
+        asset_type=node.asset_type,
+        namespace=node.namespace,
+        version=node.version,
+        display_name=node.display_name,
+    )
+
+
+def _connected(value: GraphView, root: str) -> set[str]:
+    """Node IDs still linked to the requested asset after protected nodes are removed."""
+    start = {node.id for node in value.nodes if node.asset_id == root}
+    if not start:
+        return {node.id for node in value.nodes}
+    links: dict[str, set[str]] = {}
+    for edge in value.edges:
+        links.setdefault(edge.source, set()).add(edge.target)
+        links.setdefault(edge.target, set()).add(edge.source)
+    seen, queue = set(start), list(start)
+    while queue:
+        for other in links.get(queue.pop(), set()) - seen:
+            seen.add(other)
+            queue.append(other)
+    return seen
+
+
+def _without(value: GraphView, hidden: set[str]) -> GraphView:
+    """Remove nodes and events by ID, plus every event or edge that touches them."""
+    assets = {node.asset_id for node in value.nodes if node.id in hidden}
+    events = [
+        event
+        for event in value.events
+        if event.event_id not in hidden
+        and not any(ref.asset_id in assets for ref in (*event.inputs, *event.outputs))
+    ]
+    kept = {event.event_id for event in events}
+    return value.model_copy(
+        update={
+            "nodes": [node for node in value.nodes if node.id not in hidden],
+            "events": events,
+            "edges": [
+                edge
+                for edge in value.edges
+                if edge.source not in hidden
+                and edge.target not in hidden
+                and (edge.event_id is None or edge.event_id in kept or edge.kind == "catalog")
+            ],
+        }
+    )
+
+
+def _readable_graph(
+    db: Database, value: GraphView, caller: AccessContext, root: str
+) -> FunctionResult:
+    """Drop protected nodes, the events and edges touching them, and what they disconnect."""
+    entries = [(node.id, (_node_ref(node),)) for node in value.nodes]
+    entries += [
+        (event.event_id, tuple(extract_refs(event.model_dump(mode="json"))))
+        for event in value.events
+    ]
+    skipped = skip_protected(db, entries, caller)
+    graph = value
+    if skipped is not None:
+        graph = _without(value, set(skipped.ids))
+        reachable = _connected(graph, root)
+        graph = _without(graph, {node.id for node in graph.nodes if node.id not in reachable})
+    return FunctionResult(
+        function="get_lineage",
+        asset_refs=[_node_ref(node) for node in graph.nodes],
+        data=graph.model_dump(mode="json"),
+        skipped=skipped,
+    )
+
+
+def _lineage(db: Database, arguments: JsonDocument, caller: AccessContext) -> FunctionResult:
     params = LineageParams.model_validate(arguments.root)
     value = get_graph(db, params.asset_id, params.direction, params.depth)
-    refs = [
-        AssetRef(
-            asset_id=node.asset_id,
-            asset_type=node.asset_type,
-            namespace=node.namespace,
-            version=node.version,
-            display_name=node.display_name,
-        )
-        for node in value.nodes
-    ]
-    return _result(
-        "get_lineage", refs or [AssetRef(asset_id=params.asset_id)], value.model_dump(mode="json")
-    )
+    result = _readable_graph(db, value, caller, params.asset_id)
+    if not result.asset_refs:
+        return result.model_copy(update={"asset_refs": [AssetRef(asset_id=params.asset_id)]})
+    return result
 
 
 def invoke_function(
@@ -146,8 +224,12 @@ def invoke_function(
     if name in PARAMETER_MODELS:
         PARAMETER_MODELS[name].model_validate(arguments.root)
     require_access(db, requested_refs(name, arguments), caller, record=False)
-    if name == "ask_data":
+    if name in {"ask_data", "list_metrics"}:
         result = invoke_catalog(db, name, arguments, access=caller)
+    elif name == "list_datasets":
+        result = _list_datasets(db, arguments, caller)
+    elif name == "get_lineage":
+        result = _lineage(db, arguments, caller)
     elif name in {"query_kg", "explain_relation"}:
         result = invoke_kg(db, name, arguments, access=caller)
     elif name in {"query_evidence", "get_evidence", "explain_sample"}:
@@ -159,20 +241,15 @@ def invoke_function(
 
 
 def _invoke_function(db: Database, name: str, arguments: JsonDocument) -> FunctionResult:
-    if name == "list_datasets":
-        return _list_datasets(db, arguments)
     if name == "search_files":
         return _search_files(db, arguments)
     if name in {"get_quality", "get_report"}:
         return _dataset_result(db, name, arguments)
-    if name == "get_lineage":
-        return _lineage(db, arguments)
     if name in {
         "query_evidence",
         "get_evidence",
         "explain_sample",
         "ask_data",
-        "list_metrics",
         "explain_metric",
         "impact_of",
         "query_kg",

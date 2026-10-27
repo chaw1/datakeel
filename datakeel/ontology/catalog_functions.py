@@ -10,7 +10,9 @@ from datakeel.core.knowledge_citations import knowledge_citations
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
 from datakeel.ontology.models import FunctionResult
+from datakeel.ontology.tool_refs import extract_refs
 from datakeel.storage import catalog_queries, metric_store
+from datakeel.storage.data_asset_access import skip_protected
 from datakeel.storage.database import Database
 
 
@@ -45,7 +47,7 @@ def _ask(db: Database, arguments: JsonDocument, access: AccessContext | None) ->
     )
 
 
-def _metrics(db: Database, arguments: JsonDocument) -> FunctionResult:
+def _metrics(db: Database, arguments: JsonDocument, access: AccessContext | None) -> FunctionResult:
     params = MetricListParams.model_validate(arguments.root)
     cards = [
         card
@@ -57,6 +59,30 @@ def _metrics(db: Database, arguments: JsonDocument) -> FunctionResult:
             or params.search.casefold() in card.definition.id.casefold()
         )
     ]
+    skipped = (
+        skip_protected(
+            db,
+            [
+                (
+                    card.definition.id,
+                    (
+                        AssetRef(
+                            asset_type="metric",
+                            asset_id=card.definition.id,
+                            version=str(card.definition.version),
+                        ),
+                        *extract_refs(card.model_dump(mode="json")),
+                    ),
+                )
+                for card in cards
+            ],
+            access,
+        )
+        if access is not None
+        else None
+    )
+    if skipped is not None:
+        cards = [card for card in cards if card.definition.id not in set(skipped.ids)]
     selected = cards[params.offset : params.offset + params.limit]
     refs = [
         AssetRef(
@@ -73,6 +99,7 @@ def _metrics(db: Database, arguments: JsonDocument) -> FunctionResult:
             "offset": params.offset,
             "limit": params.limit,
         },
+        skipped=skipped,
     )
 
 
@@ -87,7 +114,7 @@ def invoke_catalog(
     if name == "ask_data":
         return _ask(db, arguments, access)
     if name == "list_metrics":
-        return _metrics(db, arguments)
+        return _metrics(db, arguments, access)
     if name == "explain_metric":
         metric = metric_store.get_metric(db, MetricParams.model_validate(arguments.root).metric_id)
         return FunctionResult(

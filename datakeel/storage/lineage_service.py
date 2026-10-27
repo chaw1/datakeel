@@ -11,7 +11,7 @@ from pydantic import ValidationError as ModelValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.data_asset_models import AccessContext, SkippedEntries
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_inputs import sample_sidecars
 from datakeel.core.models import AssetRef, FileItem, JsonDocument, LineageEvent
@@ -20,7 +20,10 @@ from datakeel.lineage.exports import export_croissant, export_openlineage
 from datakeel.lineage.models import GraphNode, GraphOverlay, GraphQuery, GraphView
 from datakeel.lineage.service import all_events, append_event, graph
 from datakeel.storage.catalog_store import read_snapshot
-from datakeel.storage.data_asset_access import require_access_in_session
+from datakeel.storage.data_asset_access import (
+    require_access_in_session,
+    skip_protected_in_session,
+)
 from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.dataset_service import require_dataset
@@ -120,29 +123,44 @@ def read_graph(
     return result
 
 
+def export_readable_events(
+    db: Database, dataset_id: str | None = None, *, access: AccessContext | None = None
+) -> tuple[list[JsonDocument], SkippedEntries | None]:
+    """Export recorded events the caller may read and name the protected ones left out.
+
+    An explicitly requested dataset must itself be readable. Within the exported
+    component or full log, each event touching an unreadable protected asset is
+    skipped by ID instead of failing the whole export.
+    """
+    caller = (
+        access or AccessContext(actor="local-user", entry="export", scope="export")
+    ).model_copy(update={"entry": "export", "scope": "export"})
+    with db.session() as session:
+        events = all_events(session)
+        target: tuple[AssetRef, ...] = ()
+        if dataset_id:
+            require_dataset(session, dataset_id)
+            target = (AssetRef(asset_id=dataset_id),)
+            require_access_in_session(session, target, caller, record=False)
+            scoped = {value["event_id"] for value in graph(events, dataset_id)["events"]}
+            events = [event for event in events if event.event_id in scoped]
+        skipped = skip_protected_in_session(
+            session, [(event.event_id, (*event.inputs, *event.outputs)) for event in events], caller
+        )
+        hidden: set[str] = set(skipped.ids) if skipped else set()
+        events = [event for event in events if event.event_id not in hidden]
+        refs = tuple(ref for event in events for ref in (*event.inputs, *event.outputs))
+        require_access_in_session(session, (*refs, *target), caller)
+        result = [JsonDocument.model_validate(value) for value in export_openlineage(events)]
+        session.commit()
+        return result, skipped
+
+
 def export_events(
     db: Database, dataset_id: str | None = None, *, access: AccessContext | None = None
 ) -> list[JsonDocument]:
-    """Export recorded events, optionally scoped to a dataset lineage component."""
-    with db.session() as session:
-        events = all_events(session)
-        if dataset_id:
-            require_dataset(session, dataset_id)
-            scoped = {value["event_id"] for value in graph(events, dataset_id)["events"]}
-            events = [event for event in events if event.event_id in scoped]
-        refs = tuple(ref for event in events for ref in (*event.inputs, *event.outputs))
-        if dataset_id:
-            refs += (AssetRef(asset_id=dataset_id),)
-        require_access_in_session(
-            session,
-            refs,
-            (
-                access or AccessContext(actor="local-user", entry="export", scope="export")
-            ).model_copy(update={"entry": "export", "scope": "export"}),
-        )
-        result = [JsonDocument.model_validate(value) for value in export_openlineage(events)]
-        session.commit()
-        return result
+    """Export readable recorded events, optionally scoped to a dataset lineage component."""
+    return export_readable_events(db, dataset_id, access=access)[0]
 
 
 def export_dataset(

@@ -3,11 +3,13 @@
 
 """Resolve native reads to every underlying protected asset without external I/O."""
 
+from dataclasses import dataclass
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.catalog_models import CatalogSnapshot
-from datakeel.core.models import AssetRef
+from datakeel.core.models import AssetRef, LineageEvent
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.data_asset_events import data_dependency_events
 from datakeel.storage.data_asset_native import native_targets
@@ -77,11 +79,33 @@ def _dataset_parents(
     return result
 
 
-def resolve_access_targets(session: Session, refs: tuple[AssetRef, ...]) -> tuple[AssetRef, ...]:
-    """Expand metrics, fields, derived outputs and table ownership to native resources."""
+@dataclass(frozen=True)
+class TargetIndex:
+    """One transaction's catalog and lineage graph, reused when resolving many reads."""
+
+    snapshot: CatalogSnapshot
+    adjacency: dict[str, list[AssetRef]]
+    parents: dict[str, tuple[AssetRef, ...]]
+    events: list[LineageEvent]
+
+
+def target_index(session: Session) -> TargetIndex:
+    """Read the catalog and data-flow events once for a batch of access checks."""
     snapshot = read_snapshot(session)
-    adjacency = _adjacency(snapshot)
-    parents = _dataset_parents(session, snapshot)
+    return TargetIndex(
+        snapshot=snapshot,
+        adjacency=_adjacency(snapshot),
+        parents=_dataset_parents(session, snapshot),
+        events=data_dependency_events(session),
+    )
+
+
+def resolve_access_targets(
+    session: Session, refs: tuple[AssetRef, ...], index: TargetIndex | None = None
+) -> tuple[AssetRef, ...]:
+    """Expand metrics, fields, derived outputs and table ownership to native resources."""
+    current = index or target_index(session)
+    snapshot, adjacency, parents = current.snapshot, current.adjacency, current.parents
     direct_datasets = {
         ref.asset_id
         for ref in refs
@@ -94,7 +118,7 @@ def resolve_access_targets(session: Session, refs: tuple[AssetRef, ...]) -> tupl
         if item.asset_ref.asset_type in {"table", "column"}
         and any(parent.asset_id in direct_datasets for parent in parents[item.asset_ref.asset_id])
     )
-    events = data_dependency_events(session)
+    events = current.events
     catalog = {item.asset_ref.asset_id: item.asset_ref for item in snapshot.objects}
     found: dict[tuple[str, str, str, str | None], AssetRef] = {}
     while queue:

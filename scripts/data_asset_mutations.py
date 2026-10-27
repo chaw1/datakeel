@@ -176,4 +176,26 @@ DATA_ASSET_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="asset-skip-entries",
+        path="storage/data_asset_access.py",
+        before="        if matched:\n",
+        after="        if False:\n",
+        case=(
+            "tests/assets/test_listing_skips.py::"
+            "test_list_tools_skip_protected_entries_and_name_them_by_id[agent]"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="asset-skip-export",
+        path="storage/lineage_service.py",
+        before="        events = [event for event in events if event.event_id not in hidden]\n",
+        after="        pass\n",
+        case=(
+            "tests/assets/test_listing_skips.py::"
+            "test_openlineage_export_skips_protected_events_and_reports_them_in_headers"
+        ),
+        runner="pytest",
+    ),
 )

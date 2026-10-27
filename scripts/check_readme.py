@@ -19,6 +19,7 @@ from rich.console import Console
 
 from datakeel.core.ask_models import AskAnswer
 from datakeel.core.catalog_models import ImpactResult
+from datakeel.core.data_asset_models import SkippedEntries
 from datakeel.core.metric_models import MetricCard
 from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.ontology.models import FunctionResult
@@ -114,8 +115,26 @@ async def verified_denial[T: ClientTransport](
         raise RuntimeError(msg)
 
 
+async def verified_skip[T: ClientTransport](
+    client: Client[T], name: str, arguments: JsonDocument
+) -> SkippedEntries:
+    """Require a successful listing that names skipped protected entries without their content."""
+    result = await verified_read(client, name, arguments)
+    skipped = result.skipped
+    returned = result.model_dump_json(exclude={"skipped"})
+    if (
+        skipped is None
+        or skipped.count != len(skipped.ids)
+        or "apply for access" not in skipped.reason
+        or any(identifier in returned for identifier in skipped.ids)
+    ):
+        msg = f"README protected MCP listing did not report its skipped entries: {name}"
+        raise RuntimeError(msg)
+    return skipped
+
+
 async def verify_enterprise_stdio[T: ClientTransport](client: Client[T]) -> None:
-    """Exercise permitted metadata reads and an explicit protected-catalog refusal."""
+    """Exercise permitted metadata reads, a skipped protected listing and a named refusal."""
     result = await verified_read(
         client,
         "ask_data",
@@ -130,7 +149,8 @@ async def verify_enterprise_stdio[T: ClientTransport](client: Client[T]) -> None
     if answer.status != "answered" or answer.result is None or answer.result.rows != [[4979475]]:
         msg = "README MCP question returned an incorrect enterprise answer"
         raise RuntimeError(msg)
-    await verified_denial(client, "list_metrics", JsonDocument({"limit": 2}))
+    skipped = await verified_skip(client, "list_metrics", JsonDocument({"limit": 2}))
+    await verified_denial(client, "explain_metric", JsonDocument({"metric_id": skipped.ids[0]}))
     listed = await verified_read(
         client, "list_metrics", JsonDocument({"limit": 2, "search": "retail_revenue"})
     )
@@ -227,6 +247,20 @@ def verify_denied_command(
     Console().print(f"README protected command refused as expected: {arguments[0]}")
 
 
+def verify_skipped_command(arguments: list[str], environment: dict[str, str], output: Path) -> None:
+    """Require a successful export that reports skipped protected entries by ID and reason."""
+    result = run_command(arguments, environment)
+    if (
+        result.returncode != 0
+        or not output.exists()
+        or "Skipped" not in result.stderr
+        or "apply for access" not in result.stderr
+    ):
+        msg = "README export did not skip protected entries with a stated reason"
+        raise RuntimeError(msg)
+    Console().print(f"README export skipped protected entries as expected: {arguments[0]}")
+
+
 def main() -> None:
     """Validate install-independent demo, export and migration instructions."""
     config = validate_examples()
@@ -240,7 +274,7 @@ def main() -> None:
             msg = "README demo did not identify its generated public dataset"
             raise RuntimeError(msg)
         events = Path(temporary) / "events.json"
-        verify_denied_command(
+        verify_skipped_command(
             ["export", "--format", "openlineage", "--output", str(events)], environment, events
         )
         verify_denied_command(
