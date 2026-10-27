@@ -10,6 +10,8 @@ from datakeel.core.errors import NotFoundError
 from datakeel.core.kg_queries import KGExplainQuery, KGQuery
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.evidence.query_models import EvidenceQuery
+from datakeel.ontology.annotation_functions import invoke_annotation_quality
+from datakeel.ontology.annotation_parameters import AnnotationQualityParams
 from datakeel.ontology.catalog_functions import invoke_catalog
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
 from datakeel.ontology.evidence_functions import invoke_evidence
@@ -46,6 +48,7 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "impact_of": ImpactParams,
     "query_kg": KGQuery,
     "explain_relation": KGExplainQuery,
+    "annotation_quality": AnnotationQualityParams,
 }
 
 
@@ -132,10 +135,12 @@ def _lineage(db: Database, arguments: JsonDocument) -> FunctionResult:
 
 def invoke_function(db: Database, name: str, arguments: JsonDocument) -> FunctionResult:
     """Validate and execute an allowlisted read without granting mutation capabilities."""
-    if name == "list_datasets":
-        return _list_datasets(db, arguments)
-    if name == "search_files":
-        return _search_files(db, arguments)
+    if name in {"list_datasets", "search_files", "annotation_quality"}:
+        return {
+            "list_datasets": _list_datasets,
+            "search_files": _search_files,
+            "annotation_quality": invoke_annotation_quality,
+        }[name](db, arguments)
     if name in {"get_quality", "get_report"}:
         return _dataset_result(db, name, arguments)
     if name == "get_lineage":

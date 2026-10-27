@@ -30,7 +30,15 @@ from datakeel.storage.tool_invocations import (
 )
 
 DEFERRED_READ_FUNCTIONS = frozenset(
-    {"ask_data", "list_metrics", "explain_metric", "impact_of", "query_kg", "explain_relation"}
+    {
+        "ask_data",
+        "list_metrics",
+        "explain_metric",
+        "impact_of",
+        "query_kg",
+        "explain_relation",
+        "annotation_quality",
+    }
 )
 
 

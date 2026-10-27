@@ -12,6 +12,7 @@ from datakeel.core.envelopes import unwrap
 from datakeel.core.harness_models import TokenUsage
 from datakeel.core.models import JsonDocument
 from datakeel.delegation.demo import respond_delegation
+from datakeel.ontology.annotation_demo import respond_annotation_quality
 from datakeel.ontology.tool_models import ToolOutcome
 
 
@@ -43,10 +44,14 @@ class DemoProvider:
     def _respond(
         self, request: ModelRequest, text: str, facts: JsonDocument, tools: list[ChatMessage]
     ) -> ModelResponse:
-        evidence = respond_delegation(request, text, tools) or (
-            ModelResponse(content="工具调用失败。请检查工具结果后重试。")
-            if tools and ToolOutcome.model_validate_json(tools[-1].content).status == "FAILED"
-            else respond_evidence(request, text, facts, tools)
+        evidence = (
+            respond_annotation_quality(request, text, facts, tools)
+            or respond_delegation(request, text, tools)
+            or (
+                ModelResponse(content="工具调用失败。请检查工具结果后重试。")
+                if tools and ToolOutcome.model_validate_json(tools[-1].content).status == "FAILED"
+                else respond_evidence(request, text, facts, tools)
+            )
         )
         if evidence is not None:
             return evidence
