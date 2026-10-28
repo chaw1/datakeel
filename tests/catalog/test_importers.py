@@ -114,12 +114,12 @@ def test_reflect_when_driver_failure_wraps_without_leaking_url(
         reflect_database(source_request)
 
 
-def test_reflect_when_non_sqlite_url_rejects_before_connecting() -> None:
-    """The narrowed P4 adapter declines other dialects without any connection attempt."""
-    with pytest.raises(ValidationError, match="only SQLite"):
+def test_reflect_when_unsupported_url_rejects_before_connecting() -> None:
+    """Unsupported drivers are rejected without any connection attempt."""
+    with pytest.raises(ValidationError, match="SQLite and PostgreSQL"):
         reflect_database(
             CatalogImportRequest(
-                source_id="sample", name="Sample", connection_url="postgresql://localhost/unused"
+                source_id="sample", name="Sample", connection_url="mysql://localhost/unused"
             )
         )
 

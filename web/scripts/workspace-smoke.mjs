@@ -611,7 +611,7 @@ async function workbenchChecks({ page, json, open, screenshot, checks }) {
   const groups = [
     ["workbench", ["workbench"]],
     ["dataGroup", ["datasets", "catalog", "standards", "ask"]],
-    ["evidenceGroup", ["evidence", "kg", "quality"]],
+    ["evidenceGroup", ["evidence", "kg", "quality", "quality-rules"]],
     ["operationsGroup", ["custom-operators", "workflows", "approvals", "runs"]],
     ["agentsGroup", ["agent", "memory", "traces"]],
     ["modelsGroup", ["ontology"]],

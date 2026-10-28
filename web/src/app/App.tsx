@@ -5,6 +5,7 @@ import { objectHref } from "../features/object/navigation";
 import { ObjectPage } from "../features/object/ObjectPage";
 import { useI18n } from "../i18n/useI18n";
 import { LibraryPage } from "../pages/LibraryPage";
+import { QualityRulesPage } from "../pages/QualityRulesPage";
 import { QualityWorkspacePage } from "../pages/QualityWorkspacePage";
 import { RunsPage } from "../pages/RunsPage";
 import { WorkbenchPage } from "../pages/WorkbenchPage";
@@ -117,6 +118,8 @@ export default function App() {
             />
           ) : page === "runs" ? (
             <RunsPage data={dashboard.value} params={route.params} />
+          ) : page === "quality-rules" ? (
+            <QualityRulesPage params={route.params} />
           ) : page === "quality" ? (
             <QualityWorkspacePage
               datasets={dashboard.value.datasets}

@@ -3,8 +3,9 @@
 
 """Typed immutable domain evaluation results."""
 
-from pydantic import JsonValue
+from pydantic import Field, JsonValue
 
+from datakeel.core.dq_views import DqSummary
 from datakeel.core.models import Record
 from datakeel.quality.tabular_models import TabularAssessment
 
@@ -51,6 +52,7 @@ class QualityView(Record):
     file_count: int
     config: QualityConfig
     tabular: TabularAssessment | None = None
+    rules: DqSummary | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ChapterView(Record):

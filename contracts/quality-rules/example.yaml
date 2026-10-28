@@ -1,0 +1,17 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+version: 1
+rules:
+  - id: orders_amount_nonnegative
+    name: Order amount must be nonnegative
+    target:
+      source_id: demo
+      table: orders
+      column: amount
+    kind: range
+    params:
+      minimum: 0
+    severity: error
+    threshold: 0
+    cron: "0 9 * * *"
+    owner: quality-team

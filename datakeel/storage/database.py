@@ -52,6 +52,15 @@ from datakeel.storage.data_asset_rows import (
     install_asset_constraints,
 )
 from datakeel.storage.delivery_rows import ReconciliationRow
+from datakeel.storage.dq_rows import (
+    DqHistoryRow,
+    DqIssueAuditRow,
+    DqIssueRow,
+    DqResultRow,
+    DqRuleRow,
+    DqRunRow,
+    DqWebhookRow,
+)
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
 from datakeel.storage.file_state import FileStateRow
@@ -94,6 +103,13 @@ _REGISTERED_MODELS = (
     ApprovalRow,
     CustomOperatorRow,
     CustomRunRow,
+    DqRuleRow,
+    DqHistoryRow,
+    DqRunRow,
+    DqResultRow,
+    DqIssueRow,
+    DqIssueAuditRow,
+    DqWebhookRow,
     FileStateRow,
     BudgetAccountRow,
     BudgetReservationRow,
@@ -187,6 +203,7 @@ class TaskRow(Base):
     error: Mapped[str | None] = mapped_column(String, nullable=True)
     input_version_id: Mapped[str | None] = mapped_column(String, nullable=True)
     kg_run_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    dq_run_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
 
 class ShardRow(Base):

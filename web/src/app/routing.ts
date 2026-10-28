@@ -24,6 +24,7 @@ const pages: Page[] = [
   "evidence",
   "kg",
   "quality",
+  "quality-rules",
   "approvals",
   "runs",
   "agent",

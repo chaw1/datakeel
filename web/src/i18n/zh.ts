@@ -7,6 +7,7 @@ import { assetZh } from "./assetZh";
 import { catalogZh } from "./catalogZh";
 import { commandZh } from "./commandZh";
 import { customOperatorZh } from "./customOperatorZh";
+import { dqZh } from "./dqZh";
 import { evidenceZh } from "./evidenceZh";
 import { graphZh } from "./graphZh";
 import { kgZh } from "./kgZh";
@@ -24,6 +25,7 @@ export const zh: Record<MessageKey, string> = {
   ...releaseZh,
   ...assetZh,
   ...standardsZh,
+  ...dqZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,

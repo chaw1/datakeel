@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { ResourceState } from "../../components/ResourceState";
 import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
+import { TableQualityRules } from "../qualityRules/TableQualityRules";
 
 import { objectHref, readObjectTarget } from "./navigation";
 import { ObjectFacts } from "./ObjectFacts";
@@ -114,6 +115,9 @@ export function ObjectPage({
         <>
           <ObjectHeader data={data} target={resolved} />
           <ObjectFacts data={data} target={resolved} />
+          {target.kind === "table" && data.catalog && (
+            <TableQualityRules table={data.catalog} />
+          )}
           <nav className="tabs object-tabs" aria-label={t("objTitle")}>
             {tabs.map((value) => (
               <a

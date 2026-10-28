@@ -38,7 +38,7 @@ def test_registry_when_built_exposes_all_declared_asset_and_read_function_types(
         "question",
         "kg_entity",
     }
-    assert len(value.functions) == 17
+    assert len(value.functions) == 19
 
 
 def test_link_definitions_when_built_keep_semantics_distinct() -> None:

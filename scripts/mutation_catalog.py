@@ -7,6 +7,7 @@ from scripts.advanced_mutations import ADVANCED_MUTATIONS
 from scripts.auto_routing_mutations import AUTO_ROUTING_MUTATIONS
 from scripts.coordinate_mutations import COORDINATE_MUTATIONS
 from scripts.data_asset_mutations import DATA_ASSET_MUTATIONS
+from scripts.dq_mutations import DQ_MUTATIONS
 from scripts.guard_mutations import GUARD_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
@@ -32,4 +33,5 @@ FEATURE_MUTATIONS = (
     *DATA_ASSET_MUTATIONS,
     *STANDARD_MUTATIONS,
     *LEXICAL_RULE_MUTATIONS,
+    *DQ_MUTATIONS,
 )

@@ -12,6 +12,7 @@ from PIL import Image
 from datakeel.core.errors import ValidationError
 from datakeel.core.harness_eval import CaseFixture, GoldenCase
 from datakeel.harness.asset_cases import seed_asset_case
+from datakeel.harness.dq_cases import seed_quality_case
 from datakeel.harness.enterprise_cases import seed_enterprise_case
 from datakeel.harness.enterprise_kg import seed_enterprise_kg
 from datakeel.harness.enterprise_reviews import review_enterprise_kg
@@ -53,30 +54,30 @@ def seed_case(
         "image_kg",
         "asset_access",
         "standards",
+        "quality",
     ] = "legacy",
     *,
     reviewed: bool = False,
 ) -> CaseFixture:
     """Import an empty text, healthy text, and tiny image for actual tool effects."""
+    if kind == "quality":
+        return seed_quality_case(db, directory)
     if kind == "enterprise_kg":
         fixture = seed_enterprise_kg(db, directory)
         if reviewed:
             review_enterprise_kg(db, fixture)
         return fixture
-    if kind in {"kg", "image_kg", "standards"}:
-        return {
-            "kg": seed_kg_case,
-            "image_kg": seed_image_kg_case,
-            "standards": seed_standard_case,
-        }[kind](db, directory)
-    if kind in {"enterprise", "asset_access"}:
-        return {"enterprise": seed_enterprise_case, "asset_access": seed_asset_case}[kind](
-            db, directory
-        )
-    if kind == "injection":
-        return seed_injection_case(db, directory)
-    if kind == "evidence":
-        return seed_evidence_case(db, directory)
+    builders = {
+        "kg": seed_kg_case,
+        "image_kg": seed_image_kg_case,
+        "standards": seed_standard_case,
+        "enterprise": seed_enterprise_case,
+        "asset_access": seed_asset_case,
+        "injection": seed_injection_case,
+        "evidence": seed_evidence_case,
+    }
+    if kind in builders:
+        return builders[kind](db, directory)
     empty, healthy, picture = [
         directory / name for name in ("empty.txt", "healthy.txt", "image.png")
     ]

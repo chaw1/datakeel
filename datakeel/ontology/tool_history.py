@@ -21,6 +21,8 @@ DEFERRED_READ_FUNCTIONS = frozenset(
         "explain_relation",
         "query_standard_coverage",
         "list_standard_usage",
+        "list_quality_rules",
+        "get_table_quality",
     }
 )
 

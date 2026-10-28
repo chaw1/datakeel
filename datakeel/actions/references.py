@@ -16,6 +16,13 @@ from datakeel.actions.data_asset_parameters import (
     DataAssetIdentityParams,
     UpdateDataAssetParams,
 )
+from datakeel.actions.dq_parameters import (
+    ChangeQualityIssueParams,
+    CreateQualityRuleParams,
+    DeleteQualityRuleParams,
+    RunQualityRuleParams,
+    UpdateQualityRuleParams,
+)
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import parse_params
 from datakeel.actions.standard_parameters import (
@@ -32,7 +39,7 @@ from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 
 def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
     """Read typed action targets independently of legacy ObjectSet membership."""
-    feature = _feature_refs(params)
+    feature = _feature_refs(params) or _quality_refs(params)
     if feature:
         return feature
     return _catalog_refs(params)
@@ -49,6 +56,16 @@ def _feature_refs(params: BoundaryModel) -> list[AssetRef]:
         ]
     if isinstance(params, StandardActionParams):
         return standard_refs(params)
+    return []
+
+
+def _quality_refs(params: BoundaryModel) -> list[AssetRef]:
+    if isinstance(params, CreateQualityRuleParams | UpdateQualityRuleParams):
+        return [AssetRef(asset_type="quality_rule", asset_id=params.rule.id)]
+    if isinstance(params, DeleteQualityRuleParams | RunQualityRuleParams):
+        return [AssetRef(asset_type="quality_rule", asset_id=params.rule_id)]
+    if isinstance(params, ChangeQualityIssueParams):
+        return [AssetRef(asset_type="quality_issue", asset_id=params.issue_id)]
     return []
 
 

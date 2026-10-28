@@ -8,6 +8,7 @@ from datetime import timedelta
 from sqlalchemy.orm import Session
 
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
+from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionContext, ActionImpact, ActionPlan
 from datakeel.actions.parameters import (
@@ -46,13 +47,14 @@ from datakeel.storage.data_asset_review import (
     require_independent_reviewer,
 )
 from datakeel.storage.database import Database
+from datakeel.storage.dq_actions import prepare_quality_params
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
 from datakeel.storage.release_actions import publication_impact
 
 
 def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
-    if isinstance(params, SubmitCustomOperatorParams):
+    if isinstance(params, SubmitCustomOperatorParams | QualityActionParams):
         return 1
     if isinstance(params, PublishReleaseParams):
         return publication_impact(manifest)
@@ -90,7 +92,9 @@ def verify_target_state(session: Session, plan: ActionPlan) -> None:
 
 
 def _prepare_params(session: Session, action_type: str, params: JsonDocument) -> BoundaryModel:
-    parsed = prepare_catalog_params(session, parse_params(action_type, params))
+    parsed = prepare_quality_params(
+        session, prepare_catalog_params(session, parse_params(action_type, params))
+    )
     if isinstance(parsed, SubmitCustomOperatorParams):
         parsed = prepare_submission(parsed)
     parsed = prepare_data_asset_params(session, parsed)

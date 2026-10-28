@@ -16,6 +16,13 @@ from datakeel.actions.catalog_parameters import (
     UpdateTermParams,
 )
 from datakeel.actions.data_asset_parameters import DATA_ASSET_PARAMETER_TYPES
+from datakeel.actions.dq_parameters import (
+    ChangeQualityIssueParams,
+    CreateQualityRuleParams,
+    DeleteQualityRuleParams,
+    RunQualityRuleParams,
+    UpdateQualityRuleParams,
+)
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.actions.standard_parameters import (
@@ -112,6 +119,11 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "update_code_list": UpdateCodeListParams,
     "confirm_standard_mapping": ConfirmStandardMappingParams,
     "rollback_standards": RollbackStandardsParams,
+    "create_quality_rule": CreateQualityRuleParams,
+    "update_quality_rule": UpdateQualityRuleParams,
+    "delete_quality_rule": DeleteQualityRuleParams,
+    "run_quality_rule": RunQualityRuleParams,
+    "change_quality_issue": ChangeQualityIssueParams,
 }
 
 

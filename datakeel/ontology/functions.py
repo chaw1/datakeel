@@ -16,6 +16,7 @@ from datakeel.lineage.models import GraphNode, GraphView
 from datakeel.ontology.catalog_functions import invoke_catalog
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
 from datakeel.ontology.data_asset_access import requested_refs
+from datakeel.ontology.dq_functions import QualityRulesParams, TableQualityParams, invoke_quality
 from datakeel.ontology.evidence_functions import invoke_evidence
 from datakeel.ontology.kg_functions import invoke_kg
 from datakeel.ontology.models import FunctionResult, FunctionType, ObjectSet, PropertyFilter
@@ -55,6 +56,8 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "explain_relation": KGExplainQuery,
     "query_standard_coverage": StandardCoverageParams,
     "list_standard_usage": StandardUsageParams,
+    "list_quality_rules": QualityRulesParams,
+    "get_table_quality": TableQualityParams,
 }
 
 
@@ -260,10 +263,14 @@ def _invoke_function(db: Database, name: str, arguments: JsonDocument) -> Functi
         "explain_relation",
         "query_standard_coverage",
         "list_standard_usage",
+        "list_quality_rules",
+        "get_table_quality",
     }:
         handler = (
             invoke_standard
             if name in {"query_standard_coverage", "list_standard_usage"}
+            else invoke_quality
+            if name in {"list_quality_rules", "get_table_quality"}
             else invoke_kg
             if name in {"query_kg", "explain_relation"}
             else invoke_evidence

@@ -30,4 +30,9 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   import_standards: "stdImport",
   confirm_standard_mapping: "stdMappingAction",
   rollback_standards: "stdRollbackAction",
+  create_quality_rule: "dqCreateAction",
+  update_quality_rule: "dqUpdateAction",
+  delete_quality_rule: "dqDeleteAction",
+  run_quality_rule: "dqRunAction",
+  change_quality_issue: "dqIssueAction",
 };

@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     openai_url: str = "https://api.openai.com/v1/chat/completions"
     anthropic_url: str = "https://api.anthropic.com/v1/messages"
     provider_timeout: float = Field(default=30, gt=0, le=120)
+    dq_webhook_url: str | None = None
+    dq_webhook_secret: SecretStr | None = None
+    dq_webhook_retry_seconds: float = Field(default=5, gt=0, le=3600)
+    dq_webhook_max_attempts: int = Field(default=8, ge=1, le=20)
     model_routing_file: Path | None = None
     upload_max_chunk_bytes: int = Field(default=8 * 1024 * 1024, ge=1, le=64 * 1024 * 1024)
     upload_max_concurrency: int = Field(default=4, ge=1, le=32)

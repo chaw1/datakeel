@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
+from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import (
@@ -34,6 +35,7 @@ from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.data_asset_actions import execute_data_asset_action
 from datakeel.storage.database import DatasetRow, MetadataChangeRow, ShardRow, TaskRow, VersionRow
 from datakeel.storage.datasets import latest_files
+from datakeel.storage.dq_actions import execute_quality_action
 from datakeel.storage.evidence_actions import decide_action
 from datakeel.storage.kg_store import schedule_extraction
 from datakeel.storage.release_actions import publish_release
@@ -100,6 +102,7 @@ _TYPED_ACTIONS: tuple[
     tuple[type | UnionType, Callable[[Session, ActionPlan, Any], OperationResult]], ...
 ] = (
     (DataAssetActionParams, execute_data_asset_action),
+    (QualityActionParams, execute_quality_action),
     (StandardActionParams, execute_standard_action),
     (SubmitCustomOperatorParams, approve_custom_operator),
     (PublishReleaseParams, publish_release),

@@ -7,7 +7,9 @@ import { isObjectKind, objectHref } from "../object/navigation";
 
 import { ApprovalMetricObject } from "./ApprovalMetricObject";
 import { ApprovalStandardObjects } from "./ApprovalStandardObjects";
+import { ApprovalQualityObject } from "./ApprovalQualityObject";
 import { isMetricPlan } from "./metricObject";
+import { isQualityPlan } from "./qualityObject";
 
 import type { ActionPlan } from "../../api/types";
 
@@ -27,6 +29,8 @@ export function ApprovalObjects({ plan }: { plan: ActionPlan }) {
     return <ApprovalStandardObjects key={plan.plan_digest} plan={plan} />;
   if (isMetricPlan(plan))
     return <ApprovalMetricObject key={plan.plan_digest} plan={plan} />;
+  if (isQualityPlan(plan))
+    return <ApprovalQualityObject key={plan.plan_digest} plan={plan} />;
   return (
     <section
       className="approval-objects"

@@ -11,12 +11,16 @@ from datakeel.actions.worker import reconcile_runs, start_task_run
 from datakeel.core.errors import ExecutionError
 from datakeel.core.evidence_execution import EvidenceExecutionContext
 from datakeel.core.logging import warn_unsafe_subprocess
+from datakeel.core.settings import get_settings
 from datakeel.evidence.execution import EvidenceExecution
 from datakeel.pipeline import Pipeline, default_pipeline, run_pipeline
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.datasets import materialize_files, persist_files
+from datakeel.storage.dq_jobs import schedule_due
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.worker.custom_runner import CustomExecution
+from datakeel.worker.dq_runner import execute_dq
+from datakeel.worker.dq_webhooks import relay_webhooks
 from datakeel.worker.heartbeat import pulse as _pulse
 from datakeel.worker.kg_runner import execute_kg
 from datakeel.worker.observations import Observations
@@ -27,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 def execute(queue: DatabaseQueue, lease: Lease) -> bool:
     """Run one attempt and persist either a fenced result or a durable failure."""
+    if lease.dq_run_id is not None:
+        return execute_dq(queue, lease)
     if lease.kg_run_id is not None:
         return execute_kg(queue, lease)
     stop = threading.Event()
@@ -81,6 +87,8 @@ def run_worker(
     warn_unsafe_subprocess()
     queue = DatabaseQueue(db)
     while True:
+        schedule_due(db)
+        relay_webhooks(db, get_settings())
         queue.reap()
         queue.relay()
         reconcile_runs(db)
