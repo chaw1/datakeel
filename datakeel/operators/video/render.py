@@ -15,6 +15,13 @@ from datakeel.operators.video.frames import seek_plan
 if TYPE_CHECKING:
     from datakeel.core.models import FileItem
 
+# Bit-exact MPEG-4 video and AAC audio in a fast-start MP4, without source metadata.
+_ENCODE = (
+    *("-map_metadata", "-1", "-c:v", "mpeg4", "-q:v", "3", "-threads", "1"),
+    *("-flags:v", "+bitexact", "-c:a", "aac", "-flags:a", "+bitexact"),
+    *("-fflags", "+bitexact", "-movflags", "+faststart", "-f", "mp4"),
+)
+
 
 def render(
     file: FileItem,
@@ -49,36 +56,7 @@ def render(
         arguments.extend(["-t", f"{(end_ms - start_ms + lead) / 1000:.6f}"])
     if frame_count is not None:
         arguments.extend(["-frames:v", str(frame_count)])
-    arguments.extend(
-        [
-            "-map",
-            "0:v:0",
-            "-map",
-            "0:a:0?",
-            "-vf",
-            filters,
-            "-map_metadata",
-            "-1",
-            "-c:v",
-            "mpeg4",
-            "-q:v",
-            "3",
-            "-threads",
-            "1",
-            "-flags:v",
-            "+bitexact",
-            "-c:a",
-            "aac",
-            "-flags:a",
-            "+bitexact",
-            "-fflags",
-            "+bitexact",
-            "-movflags",
-            "+faststart",
-            "-f",
-            "mp4",
-        ]
-    )
+    arguments.extend(["-map", "0:v:0", "-map", "0:a:0?", "-vf", filters, *_ENCODE])
     decoded = span + max(0.0, skip_ms)
     timeout = media_timeout(max(0, round(decoded)), probe.width, probe.height)
     with TemporaryDirectory(prefix="datakeel-video-") as temporary:
