@@ -2724,6 +2724,12 @@ export interface components {
             /** Id */
             id: string;
             /**
+             * Kind
+             * @default text
+             * @enum {string}
+             */
+            kind: "count" | "ratio" | "percent" | "score" | "bytes" | "amount" | "duration" | "date" | "name" | "status" | "text" | "number" | "record";
+            /**
              * Recorded At
              * Format: date-time
              */
@@ -2732,6 +2738,8 @@ export interface components {
             source_id: string;
             /** Source Type */
             source_type: string;
+            /** Unit */
+            unit?: string | null;
             value: components["schemas"]["JsonValue"];
         };
         /**
@@ -3318,6 +3326,10 @@ export interface components {
              * @enum {string}
              */
             provider: "fake" | "openai" | "anthropic";
+            /** Request Parameters */
+            request_parameters?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
             /** Version Id */
             version_id: string;
         };

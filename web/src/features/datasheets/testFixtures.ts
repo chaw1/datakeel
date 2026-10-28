@@ -17,6 +17,7 @@ export const sheet: DatasheetDocument = {
       source_id: "dataset-1",
       field: "name",
       value: "Sample collection",
+      kind: "name",
       recorded_at: "2026-10-27T00:00:00Z",
     },
   ],
