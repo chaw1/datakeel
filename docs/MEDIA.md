@@ -168,6 +168,20 @@ Known limits / 已知边界:
     0.13、9.5 dB 段 0.43、12 dB 0.60、18 dB 0.89；音乐依次 0.09、0.29、0.24、0.56；
     满幅以下 3 dB 削波 0.02–0.11。轻度削波（几 dB、每个峰只削几个样本）基本漏检；音乐只有
     最响的成分被削，18 dB 以下过驱时找到的削波帧不到三分之一。
+  - The voice figures above come from a source-filter synthesizer (glottal pulses through
+    vowel formants, syllables within 6 dB of each other); read them as an upper bound
+    for speech. On an independent holdout of text-to-speech voices clipped 7.6-10.8 dB
+    over full scale at the peak (3-6% of the passage's samples clipped), then coded as
+    MP3 128-160 kbit/s, AAC 96-128 kbit/s or Opus 64 kbit/s, frame recall was 0.02-0.11;
+    band-like music driven 8 dB (10% of samples clipped) 0.18-0.23; music whose drum
+    peaks just touch full scale (3 dB), 0. Seven of those nine lossy files were still
+    flagged at least once (all but the two mildest), so treat the result as a per-file
+    warning, not a map of every clipped passage. / 上面的人声数字来自声门脉冲过元音
+    共振峰的合成器（音节之间电平差不超过 6 dB），对真实语音应看作上限。独立留出集上，
+    TTS 人声峰值过驱 7.6–10.8 dB（段内 3–6% 采样被削），经 MP3 128–160k、AAC 96–128k、
+    Opus 64k 后帧召回 0.02–0.11；类乐队音乐过驱 8 dB（10% 采样被削）0.18–0.23；只有
+    鼓点峰值刚碰满幅的音乐（3 dB）为 0。这 9 个有损文件里 7 个至少报出一处（漏的是最轻
+    的两个），所以结果适合当文件级提示，不能当逐段削波地图。
   - No flag on clean, limited (5 ms attack), loudness-normalized (-9 LUFS),
     compressed-and-limited, organ or loud-noise controls in any of these codecs, nor on
     loud unclipped sines or pink noise. Reported as clipping: signals flat-topped by
