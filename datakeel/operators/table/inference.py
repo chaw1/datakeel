@@ -10,7 +10,7 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from datakeel.operators.text.pii_redact import EMAIL, PHONE
+from datakeel.core.pii import PiiType, detect_pii
 
 if TYPE_CHECKING:
     from datakeel.operators.table.models import ColumnType, PiiKind
@@ -115,10 +115,10 @@ def value_family(value: str) -> str:
 
 
 def pii_kinds(name: str, values: tuple[str, ...]) -> tuple[PiiKind, ...]:
-    """Reuse contact regexes while excluding explicit IDs and date/time columns."""
-    kinds: list[PiiKind] = []
-    if any(EMAIL.search(value) for value in values):
-        kinds.append("email")
+    """Reuse validated privacy rules, disambiguating phone-like scalar columns."""
+    kinds: set[PiiType] = {
+        match.type for value in values for match in detect_pii(value) if match.type != "phone"
+    }
     tokens = _name_tokens(name)
     scalar_name = (
         is_identifier(name)
@@ -127,8 +127,17 @@ def pii_kinds(name: str, values: tuple[str, ...]) -> tuple[PiiKind, ...]:
     )
     phone_name = bool(set(tokens) & _PHONE_NAMES)
     if any(_phone_value(value, phone_name=phone_name, scalar_name=scalar_name) for value in values):
-        kinds.append("phone")
-    return tuple(kinds)
+        kinds.add("phone")
+    order: tuple[PiiType, ...] = (
+        "email",
+        "phone",
+        "china_id",
+        "bank_card",
+        "ip",
+        "secret",
+        "credential_url",
+    )
+    return tuple(kind for kind in order if kind in kinds)
 
 
 def _phone_value(value: str, *, phone_name: bool, scalar_name: bool) -> bool:
@@ -140,7 +149,9 @@ def _phone_value(value: str, *, phone_name: bool, scalar_name: bool) -> bool:
     if integer and scalar_name and not phone_name and not value.startswith("+"):
         return False
     return any(
-        _phone_match(match.group(), value, phone_name=phone_name) for match in PHONE.finditer(value)
+        _phone_match(value[match.start : match.end], value, phone_name=phone_name)
+        for match in detect_pii(value)
+        if match.type == "phone"
     )
 
 

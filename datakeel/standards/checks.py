@@ -8,6 +8,7 @@ import re
 from collections.abc import Sequence
 from decimal import Decimal
 
+from datakeel.core.pii import detect_pii, redact_pii
 from datakeel.core.standard_models import (
     CodeList,
     ColumnCheck,
@@ -18,7 +19,6 @@ from datakeel.core.standard_models import (
     ViolationRule,
     standard_value_key,
 )
-from datakeel.operators.text.pii_redact import EMAIL, PHONE
 from datakeel.standards.names import canonical_type, compatible_type
 
 _SENSITIVITY = {"public": 0, "internal": 1, "confidential": 2, "restricted": 3}
@@ -29,7 +29,7 @@ _MAX_SAMPLE_LENGTH = 80
 def _redact(value: StandardValue, standard: FieldStandard) -> str:
     if standard.sensitivity in {"confidential", "restricted"}:
         return "[REDACTED]"
-    return PHONE.sub("[REDACTED]", EMAIL.sub("[REDACTED]", str(value)))[:_MAX_SAMPLE_LENGTH]
+    return redact_pii(str(value), replacement="[REDACTED]")[:_MAX_SAMPLE_LENGTH]
 
 
 def _violation(
@@ -175,10 +175,7 @@ def _required(profile: ColumnProfile, standard: FieldStandard) -> StandardViolat
 
 def _sensitivity(profile: ColumnProfile, standard: FieldStandard) -> StandardViolation | None:
     detected = _SENSITIVITY[profile.sensitivity] if profile.sensitivity is not None else 0
-    if any(
-        isinstance(value, str) and (EMAIL.search(value) or PHONE.search(value))
-        for value in profile.values
-    ):
+    if any(isinstance(value, str) and detect_pii(value) for value in profile.values):
         detected = max(detected, _SENSITIVITY["confidential"])
     if detected > _SENSITIVITY[standard.sensitivity]:
         return _violation("sensitivity", [], standard, _population(profile))

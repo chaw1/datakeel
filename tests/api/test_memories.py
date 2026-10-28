@@ -26,7 +26,7 @@ def test_memory_api_when_created_listed_and_deleted_keeps_only_content_free_audi
         )
         assert created.status_code == 200
         entry = MemoryEntry.model_validate(created.json())
-        assert entry.content == "revenue metric owner [REDACTED]"
+        assert entry.content == "revenue metric owner [EMAIL]"
         assert entry.current_strength == 1
         assert client.get("/api/agent/memories").json()[0]["id"] == entry.id
         assert client.get(f"/api/agent/memories/{entry.id}").status_code == 200

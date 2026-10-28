@@ -43,9 +43,7 @@ def test_create_when_pii_present_redacts_before_storage_and_preserves_dates(db: 
     """Explicit writing reuses the corrected shared patterns without storing original PII."""
     content = "Contact user@example.org or +1 (415) 555-0123; date 2026-10-24 / 2026/10/24 10:30:00"
     result = create_memory(db, MemoryCreate(content=content), clock=lambda: NOW)
-    assert result.content == (
-        "Contact [REDACTED] or [REDACTED]; date 2026-10-24 / 2026/10/24 10:30:00"
-    )
+    assert result.content == ("Contact [EMAIL] or [PHONE]; date 2026-10-24 / 2026/10/24 10:30:00")
     assert get_memory(db, result.id, clock=lambda: NOW) == result
 
 
