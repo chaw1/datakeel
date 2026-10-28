@@ -64,3 +64,40 @@ it("keeps an unknown duration for legacy completed tasks", () => {
   const row = screen.getAllByRole("row")[1];
   expect(within(row).getAllByRole("cell")[4]).toHaveTextContent("—");
 });
+
+it("marks a partial run and lists its failed recordings in the details", () => {
+  const partial = {
+    ...dashboard.tasks[0],
+    state: "COMPLETED" as const,
+    partial: true,
+    failed_files: [
+      {
+        file_id: "file-2",
+        filename: "broken.mp4",
+        operator: "media.align",
+        reason: "ExecutionError: moov atom not found",
+      },
+    ],
+  };
+  render(
+    <RunsPage
+      data={{ ...dashboard, tasks: [partial] }}
+      params={
+        new URLSearchParams(
+          `type=pipeline&run=${encodeURIComponent(partial.id)}`,
+        )
+      }
+    />,
+  );
+  const row = screen.getAllByRole("row")[1];
+  expect(within(row).getAllByRole("cell")[2]).toHaveTextContent("partial");
+  const details = screen.getByRole("region", { name: "Pipeline details" });
+  expect(
+    within(details).getByText("Partially completed: some recordings failed"),
+  ).toBeVisible();
+  expect(
+    within(details).getByRole("list", { name: "Failed recordings" }),
+  ).toHaveTextContent(
+    "broken.mp4 · media.align: ExecutionError: moov atom not found",
+  );
+});

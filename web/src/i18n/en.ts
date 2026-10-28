@@ -199,8 +199,6 @@ export const en = {
   yourPipelineRunsAndLiveProgressWillAppearHere:
     "Your pipeline runs and live progress will appear here.",
   datasetProcessing: "Dataset processing",
-  partiallyCompleted: "Partially completed: some recordings failed",
-  failedRecordings: "Failed recordings",
   shards: "{count, plural, one {shard} other {shards}}",
   latestLabel: "Latest",
   inspectManifestSnapshot: "Inspect manifest snapshot",

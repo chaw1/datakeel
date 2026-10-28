@@ -60,6 +60,7 @@ export const task: Task = {
   created_at: 1700000000,
   finished_at: null,
   shards: [],
+  partial: false,
 };
 export const event: LineageEvent = {
   event_id: "event-1",

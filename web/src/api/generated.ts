@@ -4184,6 +4184,11 @@ export interface components {
          * @description Explain one recording or clip's measured signal deductions.
          */
         MediaFileScore: {
+            /** Accepted Lufs */
+            accepted_lufs?: [
+                number,
+                number
+            ] | null;
             /** Dimensions */
             dimensions: {
                 [key: string]: number;
@@ -4196,6 +4201,10 @@ export interface components {
             file_id: string;
             /** Filename */
             filename: string;
+            /** Loudness Lufs */
+            loudness_lufs?: number | null;
+            /** Loudness Tolerance Lu */
+            loudness_tolerance_lu?: number | null;
             /** Reasons */
             reasons: string[];
             /** Total */
