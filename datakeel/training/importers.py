@@ -10,6 +10,16 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.training_export_models import CocoDataset, YoloDataset, YoloImage
 
 _YOLO_COLUMNS = 5
+_RESTORATION_ULPS = 4
+
+
+def _restored_coordinate(value: float, extent: int) -> float:
+    tolerance = _RESTORATION_ULPS * math.ulp(float(extent))
+    if -tolerance <= value < 0:
+        return 0.0
+    if extent < value <= extent + tolerance:
+        return float(extent)
+    return value
 
 
 def validate_box(box: AnnotationBox, width: float, height: float) -> None:
@@ -44,10 +54,14 @@ def import_coco(
             message = "COCO annotation references an unknown image or category"
             raise ValidationError(message)
         x, y, width, height = item.bbox
-        box = AnnotationBox(
-            category=categories[item.category_id], x1=x, y1=y, x2=x + width, y2=y + height
-        )
         image = images[item.image_id]
+        box = AnnotationBox(
+            category=categories[item.category_id],
+            x1=x,
+            y1=y,
+            x2=_restored_coordinate(x + width, image.width),
+            y2=_restored_coordinate(y + height, image.height),
+        )
         validate_box(box, image.width, image.height)
         boxes[item.image_id].append(box)
     records = tuple(
@@ -89,10 +103,10 @@ def _yolo_boxes(image: YoloImage, names: tuple[str, ...]) -> tuple[AnnotationBox
             raise ValidationError(message)
         box = AnnotationBox(
             category=names[category],
-            x1=(x - width / 2) * image.width,
-            y1=(y - height / 2) * image.height,
-            x2=(x + width / 2) * image.width,
-            y2=(y + height / 2) * image.height,
+            x1=_restored_coordinate((x - width / 2) * image.width, image.width),
+            y1=_restored_coordinate((y - height / 2) * image.height, image.height),
+            x2=_restored_coordinate((x + width / 2) * image.width, image.width),
+            y2=_restored_coordinate((y + height / 2) * image.height, image.height),
         )
         validate_box(box, image.width, image.height)
         boxes.append(box)

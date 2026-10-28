@@ -275,3 +275,50 @@ def test_text_jsonl_preserves_crlf_and_carriage_return_character_positions(tmp_p
     row = json.loads((package / "train.jsonl").read_bytes())
     assert row["text"] == text
     assert row["text"][3:4] == "猫"
+
+
+@pytest.mark.parametrize("format_name", ["coco", "yolo"])
+def test_fractional_detection_touching_image_boundary_roundtrips(
+    export: TrainingExport, tmp_path: Path, format_name: TrainingFormat
+) -> None:
+    """Normalized floating geometry may exceed the right edge by one ULP after restoration."""
+    source = tmp_path / "fractional.png"
+    Image.new("RGB", (2970, 80), (40, 90, 130)).save(source)
+    original = AnnotationBox(category="cat", x1=2458.086004983466, y1=2.123456789, x2=2970, y2=80)
+    annotation = AnnotationRecord(
+        sample_id="fractional",
+        annotator_id="r",
+        boxes=(original,),
+        image_width=2970,
+        image_height=80,
+    )
+    item = TrainingExportItem(
+        file=_file(source, "fractional", "image"), split="train", annotation=annotation
+    )
+    package = _write(
+        export.model_copy(update={"format": format_name, "items": (item,)}), tmp_path / format_name
+    )
+    if format_name == "coco":
+        records = import_coco(
+            CocoDataset.model_validate_json(
+                (package / "annotations/instances_train.json").read_bytes()
+            ),
+            "r",
+        )
+    else:
+        labels = (package / "labels/train" / Path(filename(item)).with_suffix(".txt")).read_text()
+        records = import_yolo(
+            YoloDataset(
+                names=("cat",),
+                images=(YoloImage(sample_id="fractional", width=2970, height=80, labels=labels),),
+            ),
+            "r",
+        )
+    assert records[0].boxes is not None
+    restored = records[0].boxes[0]
+    assert restored.category == original.category
+    assert (restored.x1, restored.y1, restored.x2, restored.y2) == pytest.approx(
+        (original.x1, original.y1, original.x2, original.y2)
+    )
+    assert restored.x2 == 2970
+    assert restored.y2 == 80

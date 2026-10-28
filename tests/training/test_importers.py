@@ -3,6 +3,8 @@
 
 """Reject malformed training formats while preserving external category and image identities."""
 
+import math
+
 import pytest
 from pydantic import ValidationError as SchemaError
 
@@ -107,3 +109,41 @@ def test_import_request_accepts_only_one_document_matching_format() -> None:
     with pytest.raises(SchemaError, match="matching"):
         TrainingAnnotationImport(format="yolo", idempotency_key="a", coco=_coco())
     assert TrainingAnnotationImport(format="coco", idempotency_key="a", coco=_coco()).coco
+
+
+@pytest.mark.parametrize("overflow", [1e-8, 1.0])
+def test_coco_rejects_real_overflow_after_restoring_xywh(overflow: float) -> None:
+    """The restoration tolerance must never hide a meaningful box error."""
+    document = _coco()
+    annotation = document.annotations[0].model_copy(update={"bbox": (0, 0, 100 + overflow, 80)})
+    with pytest.raises(ValidationError, match="inside image"):
+        import_coco(document.model_copy(update={"annotations": (annotation,)}), "r")
+
+
+def test_coco_restoration_accepts_only_few_ulp_boundary_noise() -> None:
+    """A coordinate produced by adding xywh extents can be restored to the exact image edge."""
+    document = _coco()
+    annotation = document.annotations[0].model_copy(
+        update={"bbox": (0, 0, math.nextafter(100.0, math.inf), 80)}
+    )
+    record = import_coco(document.model_copy(update={"annotations": (annotation,)}), "r")[0]
+    assert record.boxes is not None
+    assert record.boxes[0].x2 == 100
+
+
+def test_yolo_restoration_clamps_few_ulp_negative_edge_only() -> None:
+    """A one-ULP normalized subtraction error is safe; an actually negative box stays invalid."""
+    document = YoloDataset(
+        names=("cat",),
+        images=(
+            YoloImage(
+                sample_id="a", width=100, height=80, labels="0 0.1 0.5 0.20000000000000004 1"
+            ),
+        ),
+    )
+    record = import_yolo(document, "r")[0]
+    assert record.boxes is not None
+    assert record.boxes[0].x1 == 0
+    bad = document.images[0].model_copy(update={"labels": "0 0.1 0.5 0.200000001 1"})
+    with pytest.raises(ValidationError, match="inside image"):
+        import_yolo(document.model_copy(update={"images": (bad,)}), "r")
