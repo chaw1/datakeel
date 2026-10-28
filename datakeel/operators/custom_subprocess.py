@@ -15,13 +15,14 @@ from pathlib import Path
 
 from datakeel.core.custom_sandbox import SandboxLimits, SandboxRequest, SandboxResult
 from datakeel.operators.custom_job import write_job
+from datakeel.operators.custom_memory import memory_exceeded
 from datakeel.operators.custom_output import (
     OutputRejectedError,
     WorkerStatus,
     parse_status,
     validated_outputs,
 )
-from datakeel.operators.custom_process import command, runner_path, runtime_environment
+from datakeel.operators.custom_process import runner_path, runtime_environment
 
 _MAXIMUM_STATUS = 65536
 
@@ -87,7 +88,7 @@ def _wait(
     while process.poll() is None:
         if time.monotonic() >= deadline:
             return "timeout"
-        if _memory_exceeded(process.pid, request.limits.memory_mb):
+        if memory_exceeded(process, request.limits.memory_mb):
             return "memory_limit"
         if any(
             (status / name).stat().st_size > request.limits.max_log_bytes
@@ -98,15 +99,6 @@ def _wait(
             return "output_limit"
         time.sleep(0.01)
     return ""
-
-
-def _memory_exceeded(pid: int, memory_mb: int) -> bool:
-    if sys.platform != "darwin":
-        return False
-    measured = command(
-        ["/bin/ps", "-o", "rss=", "-p", str(pid)], runtime_environment(), timeout=1, maximum=1024
-    )
-    return not measured.code and int(measured.stdout.strip() or b"0") > memory_mb * 1024
 
 
 def _kill_group(pid: int) -> None:
