@@ -20,7 +20,7 @@ from datakeel.core.data_asset_models import (
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.evidence_models import Assertion, EvidenceAnchor, ExtractorRef
 from datakeel.core.models import AssetRef, FileItem, JsonDocument, LineageEvent, new_id
-from datakeel.storage.catalog_projection import project_snapshot
+from datakeel.storage.catalog_store import publish_snapshot_in_session
 from datakeel.storage.data_asset_access import list_usage
 from datakeel.storage.data_asset_grants import decide_application_in_session, submit_application
 from datakeel.storage.data_asset_store import create_asset_in_session, set_status_in_session
@@ -156,7 +156,7 @@ def _catalog(db: Database) -> tuple[AssetRef, AssetRef]:
         ),
     )
     with db.session() as session:
-        project_snapshot(session, snapshot)
+        publish_snapshot_in_session(session, snapshot)
         session.commit()
     return table, metric
 
@@ -306,7 +306,7 @@ def _unrelated_table(db: Database) -> tuple[AssetRef, AssetRef]:
     table = AssetRef(asset_type="table", asset_id="source/main/customers")
     metric = AssetRef(asset_type="metric", asset_id="customer_count", version="1")
     with db.session() as session:
-        project_snapshot(
+        publish_snapshot_in_session(
             session,
             CatalogSnapshot(
                 scope="other-table",
@@ -375,7 +375,7 @@ def test_view_reads_enforce_derived_table_policies_and_combine_source_quality(db
         session.add(
             VersionRow(id="other-v1", dataset_id="other-dataset", manifest=[bad.model_dump()])
         )
-        project_snapshot(
+        publish_snapshot_in_session(
             session,
             CatalogSnapshot(
                 scope="other",
@@ -414,7 +414,7 @@ def _two_metrics(db: Database) -> tuple[AssetRef, AssetRef, str]:
     _table, first = _catalog(db)
     other = AssetRef(asset_type="metric", asset_id="unrelated", version="1")
     with db.session() as session:
-        project_snapshot(
+        publish_snapshot_in_session(
             session,
             CatalogSnapshot(
                 scope="unrelated",
