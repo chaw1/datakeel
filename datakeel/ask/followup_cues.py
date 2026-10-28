@@ -51,6 +51,16 @@ GRAINS: tuple[tuple[TimeGrain, re.Pattern[str]], ...] = tuple(
 SAME_PERIOD = re.compile(
     r"去年同期|(?:the\s+)?same\s+(?:period|quarter|month)\s+last\s+year", re.IGNORECASE
 )
+_CONTINUATION = re.compile(r"^\s*(?:那么|那|what\s+about|how\s+about|and\s+)", re.IGNORECASE)
+_PARTICLE = re.compile(r"呢(?=\s*[?\uff1f。!\uff01]*\s*$)")
+_EDIT_CUES = re.compile(
+    r"那|呢|再|还有|还是|另外|其他|其它|同样|一样|同期|接着|继续|按照|按|每|逐|拆|分开|去掉|"
+    r"只看|只要|换成|改成|换为|改为|切换到|改看|换个|"
+    r"\b(?:what\s+about|how\s+about|again|same|also|instead|else|other|another|compared?|"
+    r"versus|vs|it|that|those|them|by|per|split|break|switch|change|replace|rather|too|only|"
+    r"without|drop|remove)\b",
+    re.IGNORECASE,
+)
 _FILLERS = re.compile(
     r"what\s+about|how\s+about|(?:can|could|would)\s+you|(?:show|give|tell)\s+me|"
     r"\b(?:please|then|now|and|also|instead|switch|change|replace|to|with|use|it|that|"
@@ -73,6 +83,20 @@ def share_spans(question: str, occupied: tuple[tuple[int, int], ...] = ()) -> li
 def switch_spans(question: str) -> list[tuple[int, int]]:
     """Locate explicit edit instructions so they cannot be mistaken for arithmetic."""
     return [hit.span() for hit in _SWITCH.finditer(question)]
+
+
+def continuation_spans(question: str) -> list[tuple[int, int]]:
+    """Locate the leading and trailing particles that only announce a follow-up."""
+    spans = [hit.span() for hit in (_CONTINUATION.match(question),) if hit is not None]
+    particle = _PARTICLE.search(question)
+    if particle is not None and all(particle.start() >= end for _, end in spans):
+        spans.append(particle.span())
+    return spans
+
+
+def edit_cue(question: str) -> bool:
+    """Recognize wording that refers back to the previous query instead of opening a topic."""
+    return _EDIT_CUES.search(question) is not None
 
 
 def metric_switch(question: str) -> bool:

@@ -69,6 +69,28 @@ ASK_CHART_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="ask-followup-fresh-question-gate",
+        path="ask/followup.py",
+        before="    if cues.edit_cue(question) or consumed:\n        return True",
+        after="    return True",
+        case=(
+            "tests/ask/test_followup_chains.py::"
+            "test_unregistered_concepts_in_a_conversation_answer_like_standalone_questions"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="ask-followup-continuation-consumed",
+        path="ask/followup.py",
+        before="        consumed.extend(cues.continuation_spans(request.question))",
+        after="        pass",
+        case=(
+            "tests/ask/test_followup_chains.py::"
+            "test_time_followups_behind_a_continuation_equal_complete_questions"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="ask-comparison-week-alignment",
         path="ask/comparisons.py",
         before='if frame.comparison == "year_over_year" or calendar_aligned',

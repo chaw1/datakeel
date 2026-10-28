@@ -4,7 +4,7 @@
 """Resolve deterministic query edits while preserving the single-question parser guards."""
 
 from datakeel.ask import followup_cues as cues
-from datakeel.ask.dimensions import parse_dimensions
+from datakeel.ask.dimensions import dimension_mentions, parse_dimensions
 from datakeel.ask.followup_frames import inherit_frame
 from datakeel.ask.matching import metric_matches
 from datakeel.ask.models import DimensionParse
@@ -44,9 +44,13 @@ def prepare_metric_turn(
     parsed = parsed.model_copy(
         update={"matches": parsed.matches + _special_matches(request.question, consumed)}
     )
+    if previous is not None:
+        consumed.extend(cues.continuation_spans(request.question))
     has_metric = any(item.metric_id for item in parsed.matches)
     follows = previous is not None and (
-        not has_metric or _continues_metric(request.question, parsed)
+        _continues_metric(request.question, parsed)
+        if has_metric
+        else _continues_frame(request.question, parsed, consumed, layer)
     )
     resolution = _turn_resolution(request, parsed, cards, previous if follows else None)
     if resolution.status != "resolved":
@@ -127,6 +131,22 @@ def _continues_metric(question: str, parsed: ParsedQuestion) -> bool:
     return cues.metric_switch(question) or (suffix and noun_only)
 
 
+def _continues_frame(
+    question: str, parsed: ParsedQuestion, consumed: list[tuple[int, int]], layer: SemanticLayer
+) -> bool:
+    """Edit the saved frame only for sentences that signal an edit or are fully understood."""
+    if cues.edit_cue(question) or consumed:
+        return True
+    mentions = dimension_mentions(question, layer)
+    if any(item.match_kind == "dimension_value" for item in mentions):
+        return True
+    spans = [
+        *((item.start, item.end) for item in parsed.matches),
+        *((item.start, item.end) for item in mentions),
+    ]
+    return not cues.unknown_followup(question, spans)
+
+
 def _turn_resolution(
     request: AskRequest,
     parsed: ParsedQuestion,
@@ -189,12 +209,14 @@ def _inherited_resolution(
 ) -> MetricResolution:
     candidates = tuple(card for card in cards if card.definition.id == identity)
     valid = bool(candidates) and candidates[0].status == "resolved" and not parsed.issues
+    if valid:
+        message = "已复用上一轮指标,并重新检查当前登记口径。"
+    elif parsed.issues:
+        message = "追问的时间条件不可用: " + "; ".join(parsed.issues)
+    else:
+        message = "上一轮指标在当前登记口径下不可用。"
     return MetricResolution(
-        status="resolved" if valid else "clarification",
-        candidates=candidates,
-        message="已复用上一轮指标,并重新检查当前登记口径。"
-        if valid
-        else "上一轮指标或当前时间条件不可用。",
+        status="resolved" if valid else "clarification", candidates=candidates, message=message
     )
 
 
@@ -237,7 +259,10 @@ def _validate_followup(request: AskRequest, turn: MetricTurn) -> MetricTurn:
         *turn.consumed,
     ]
     unknown = cues.unknown_followup(request.question, spans)
-    understood = bool(turn.parsed.matches or turn.dimensions.consumed or turn.consumed)
+    particles = set(cues.continuation_spans(request.question))
+    understood = bool(
+        turn.parsed.matches or turn.dimensions.consumed or set(turn.consumed) - particles
+    )
     if unknown or not understood:
         return turn.model_copy(
             update={

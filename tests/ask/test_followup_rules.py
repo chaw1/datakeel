@@ -6,7 +6,12 @@
 from datetime import UTC, date, datetime
 
 from datakeel.ask.followup import prepare_metric_turn
-from datakeel.ask.followup_cues import comparison_hits, conflicting_edits
+from datakeel.ask.followup_cues import (
+    comparison_hits,
+    conflicting_edits,
+    continuation_spans,
+    edit_cue,
+)
 from datakeel.ask.parser import parse_question
 from datakeel.core.ask_frame_models import AskQueryFrame
 from datakeel.core.ask_models import AskRequest
@@ -145,3 +150,57 @@ def test_removed_registered_filter_value_cannot_survive_inherited_frames(
     )
     assert turn.resolution.status == "clarification"
     assert turn.follows
+
+
+def test_sentences_without_edit_cues_never_inherit_the_previous_metric(
+    layer: SemanticLayer,
+) -> None:
+    """An unregistered concept asked mid-conversation resolves exactly like a fresh question."""
+    cards = [MetricCard(definition=metric) for metric in layer.metrics]
+    for question in (
+        "退货率为什么上升",
+        "客户满意度如何",
+        "下个月市场份额会是多少",
+        "how is customer satisfaction this quarter",
+    ):
+        request = AskRequest(question=question, reference_instant=REFERENCE)
+        turn = prepare_metric_turn(request, layer, cards, _previous())
+        fresh = prepare_metric_turn(request, layer, cards, None)
+        assert not turn.follows, question
+        assert turn.resolution.status == fresh.resolution.status == "unanswerable"
+        assert turn.resolution.message == fresh.resolution.message
+        assert [item.definition.id for item in turn.resolution.candidates] == [
+            item.definition.id for item in fresh.resolution.candidates
+        ]
+        assert turn.frame is None
+
+
+def test_edit_cues_and_fully_understood_fragments_keep_the_conversation(
+    layer: SemanticLayer,
+) -> None:
+    """Particles, edit verbs, negated edits and bare slots all refer back to the saved frame."""
+    cards = [MetricCard(definition=metric) for metric in layer.metrics]
+    for question in ("再详细点", "不要同比", "按周拆开", "华南", "上个月", "monthly", "那边呢"):
+        turn = prepare_metric_turn(
+            AskRequest(question=question, reference_instant=REFERENCE), layer, cards, _previous()
+        )
+        assert turn.follows, question
+    for cued in ("那华南呢", "what about it", "再详细点", "按周拆开", "not by month"):
+        assert edit_cue(cued), cued
+    for fresh in ("退货率为什么上升", "客户满意度如何", "下个月市场份额会是多少"):
+        assert not edit_cue(fresh), fresh
+    assert continuation_spans("那华南呢") == [(0, 1), (3, 4)]
+    assert continuation_spans("what about August 2026?") == [(0, 10)]
+    assert continuation_spans("呢") == [(0, 1)]
+    assert continuation_spans("退货率为什么上升") == []
+
+
+def test_bare_particles_without_an_understood_edit_still_clarify(layer: SemanticLayer) -> None:
+    """Consuming the particle never counts as understanding what should change."""
+    cards = [MetricCard(definition=metric) for metric in layer.metrics]
+    for question in ("那呢", "呢", "what about", "那华南,魔法校正呢"):
+        turn = prepare_metric_turn(
+            AskRequest(question=question, reference_instant=REFERENCE), layer, cards, _previous()
+        )
+        assert turn.follows, question
+        assert turn.resolution.status == "clarification", question

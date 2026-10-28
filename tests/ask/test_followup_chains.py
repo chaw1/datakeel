@@ -86,6 +86,21 @@ CHAINS = (
         "上个季度零售额",
         (("按月拆开", "上个季度按月零售额"), ("换成订单数", "上个季度按月订单数")),
     ),
+    (
+        "last quarter retail revenue in East China",
+        (("what about August 2026", "retail revenue in East China in August 2026"),),
+    ),
+    (
+        "last quarter retail revenue in East China",
+        (("what about 2026 Q3", "retail revenue in East China in 2026 Q3"),),
+    ),
+    (
+        "last quarter retail revenue in East China",
+        (
+            ("what about August 2026", "retail revenue in East China in August 2026"),
+            ("what about September 2026", "retail revenue in East China in September 2026"),
+        ),
+    ),
 )
 
 
@@ -173,6 +188,65 @@ def test_complete_new_topic_clears_previous_frame(
     assert answer.result == standalone.result
     assert answer.query_frame == standalone.query_frame
     assert answer.interpreted_question
+
+
+def test_unregistered_concepts_in_a_conversation_answer_like_standalone_questions(
+    db: Database, enterprise_sample: EnterpriseSample
+) -> None:
+    """A sentence without any edit cue never inherits the previous metric as a follow-up."""
+    for question in (
+        "退货率为什么上升",
+        "客户满意度如何",
+        "下个月市场份额会是多少",
+        "品牌知名度提高了多少",
+    ):
+        first = ask_data(
+            db, AskRequest(question="上个季度华东区零售额是多少", reference_instant=REFERENCE)
+        )
+        answer = ask_data(
+            db,
+            AskRequest(
+                question=question,
+                conversation_id=first.conversation_id,
+                reference_instant=REFERENCE,
+            ),
+        )
+        standalone = ask_data(db, AskRequest(question=question, reference_instant=REFERENCE))
+        assert answer.status == standalone.status == "unanswerable", (question, answer.message)
+        assert answer.message == standalone.message
+        assert len(answer.candidates) == len(standalone.candidates) == 3
+        assert answer.result is None
+        assert answer.query_frame is None
+
+
+def test_time_followups_behind_a_continuation_equal_complete_questions(
+    db: Database, enterprise_sample: EnterpriseSample
+) -> None:
+    """The continuation words never count as an unexplained modifier of the time phrase."""
+    for followup, complete in (
+        ("what about August 2026", "retail revenue in East China in August 2026"),
+        ("what about 2026 Q3", "retail revenue in East China in 2026 Q3"),
+        ("how about last month", "last month retail revenue in East China"),
+        ("那2026年8月呢", "2026年8月华东零售额"),
+    ):
+        first = ask_data(
+            db,
+            AskRequest(
+                question="last quarter retail revenue in East China", reference_instant=REFERENCE
+            ),
+        )
+        answer = ask_data(
+            db,
+            AskRequest(
+                question=followup,
+                conversation_id=first.conversation_id,
+                reference_instant=REFERENCE,
+            ),
+        )
+        standalone = ask_data(db, AskRequest(question=complete, reference_instant=REFERENCE))
+        assert answer.status == standalone.status == "answered", (followup, answer.message)
+        assert answer.result == standalone.result
+        assert answer.query_frame == standalone.query_frame
 
 
 def test_unknown_followup_suffix_requires_clarification(
