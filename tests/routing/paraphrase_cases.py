@@ -63,6 +63,27 @@ POSITIVE_REQUESTS = [
     *PICK_AND_DISPOSE_REQUESTS,
     *COLLOQUIAL_DISPOSAL_REQUESTS,
 ]
+# Category 5: a request followed by a linked question about the outcome of that run.
+RESULT_FOLLOW_UP_REQUESTS = [
+    ("把退款额的口径换成含税\uff0c再看看数字差了多少", "metric-change"),
+    ("把零售额口径换成按实收算, 然后告诉我答案差了多少。", "metric-change"),
+    ("清理一下低质样本, 然后告诉我删了几个。", "low-quality-cleanup"),
+    ("给这批数据做个体检, 做完后告诉我有没有问题。", "dataset-health"),
+    ("把不合格的文件清掉, 再说一下还剩多少。", "low-quality-cleanup"),
+    ("对这个数据集做一次健康检查, 并汇报哪些文件没通过。", "dataset-health"),
+    ("做个数据集体检, 完了告诉我能不能用。", "dataset-health"),
+    ("Clean up the junk samples and then tell me how many were removed.", "low-quality-cleanup"),
+    ("Run a health check on this dataset and tell me which files failed.", "dataset-health"),
+    (
+        (
+            "Switch the retail revenue measure to list amount, then show me how much the answer "
+            "changed."
+        ),
+        "metric-change",
+    ),
+    ("Purge the low-quality files and let me know how many are left.", "low-quality-cleanup"),
+    ("Give the new dataset a full checkup, then tell me whether it's usable.", "dataset-health"),
+]
 
 # Category 4: questions about a workflow itself, many of which match every keyword.
 WORKFLOW_QUESTIONS = [
@@ -84,6 +105,17 @@ WORKFLOW_QUESTIONS = [
     "Can the metric definition change be rolled back?",
     "Should I run a health check on this dataset?",
     "Could you tell me how long the low-quality file cleanup takes?",
+]
+# Category 5 counterpart: the linked question is about the workflow itself, not the outcome.
+WORKFLOW_FOCUS_FOLLOW_UPS = [
+    "清理低质样本, 然后告诉我需不需要审批。",
+    "Clean up the junk samples and tell me who approves it.",
+    "给数据集做个体检, 再说说大概要多久。",
+    "Run a dataset health check and then tell me how long it takes.",
+    "把零售额口径改成按实收算, 并告诉我能不能撤销。",
+    "Change how refund amount is calculated and tell me if it can be rolled back.",
+    "把垃圾样本清掉, 然后告诉我上次清理的结果怎么样。",
+    "Purge the bad files, then tell me what the cleanup will delete.",
 ]
 # Read-only or postponed requests worded with the same colloquial vocabulary.
 READ_ONLY_OR_POSTPONED = [
@@ -122,6 +154,7 @@ NEAR_MISSES = [
 ]
 NEGATIVE_MESSAGES = [
     *WORKFLOW_QUESTIONS,
+    *WORKFLOW_FOCUS_FOLLOW_UPS,
     *NEAR_MISSES,
     *READ_ONLY_OR_POSTPONED,
 ]

@@ -162,6 +162,10 @@ Sentences that ask about a workflow rather than request it — whether it needs 
 
 询问工作流本身的句子（是否需要审批、要多久、会做什么或改什么、上次运行与结果、由谁审批）在打分前和核对前都会被剔除，因此即使关键词全部命中也不会启动（`reason: workflow_question`）。疑问句一律视为提问，礼貌请求除外，如 `Can you …`、`Could you …`、能帮我…吗、请…；含 `how long`、`whether`、多久、要不要等内嵌询问的句子始终视为提问。
 
+A request that is linked to a question about its own outcome stays a request: an imperative clause followed by then, and then, and tell me, 然后, 再 or 并 and a question such as `how many were removed` or 差了多少. The outcome question joins the request clause and only its interrogative and report words are blanked, so its content (for example a comparison) still counts. When the linked question is about the workflow itself — approval, duration, undo, past runs, approvers or prospective effects — the sentence remains a question.
+
+祈使请求后面用 then、and then、and tell me、然后、再、并 等引出的结果问句（如 `how many were removed`、差了多少）仍按请求处理：结果问句并入请求子句，只抹掉其中的疑问词和汇报动词，内容词（如对比、差别）照常计分。若引出的问题针对工作流本身（审批、耗时、撤销、上次运行、谁批、会改什么），整句仍按提问处理。
+
 ## Invalid definitions / 错误示例
 
 Errors identify the file and either a schema field or a named step. For example, replacing `tool: get_quality` in the example with `tool: missing_tool` reports:

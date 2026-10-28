@@ -1,8 +1,9 @@
 id: dataset-health
 name: 新数据集体检 / Dataset health check
-description: Run the full health check of an imported dataset. Start its preprocessing pipeline,
-  wait for the worker, read the quality score, report and evidence, and conclude whether it
-  is healthy. Writes preprocessing results; deletes nothing.
+description: Run, or rerun, the full health check of an imported dataset and produce its health
+  report. Start its preprocessing pipeline, wait for the worker, read the quality score, report
+  and evidence, and conclude whether it is healthy. Writes preprocessing results; deletes
+  nothing. Not for only reading, exporting or sharing an existing report.
 inputs:
   dataset_id:
     type: string
@@ -15,9 +16,10 @@ triggers:
     actions:
     - 体检|健康检查|全面检查|整体检查|完整检查|全面诊断|诊断|摸底|摸个底|摸摸底|摸一下底|把关|把把关|过一遍|过一下|评估
     - health check|health-check|checkup|check-up|check up on|diagnose|diagnostic|diagnostics|vet|once-over|sanity check|sanity-check|go over|look over|run through|audit|assess|assessment|evaluate|evaluation|appraise|full check|thorough check|full review|thorough review
+    - 体检报告|健康报告|质检报告|健康度报告|health report|health-check report|quality report
   keywords:
   - - 数据集|dataset|datasets
-    - 体检|健康检查|health check|checkup
+    - 体检|健康检查|health check|checkup|体检报告|健康报告|health report
     - 做|运行|执行|启动|开展|run|perform|conduct|start|begin|prioritize|do
   classification_keywords:
   - 体检
