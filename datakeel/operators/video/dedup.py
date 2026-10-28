@@ -20,6 +20,7 @@ from datakeel.operators.video.sequence import (
     decode_sequence,
     find_match,
     frame_matches,
+    motion_step,
 )
 
 if TYPE_CHECKING:
@@ -29,7 +30,11 @@ if TYPE_CHECKING:
 class DedupParams(Params):
     """Search repeated windows frame by frame and extend each match to its real extent.
 
-    Repeats lasting at least 1.5 windows are located wherever they start.
+    Repeats lasting at least 1.5 windows are located wherever they start. Frames
+    match when the thumbnail differs little on average (``max_spatial_difference``)
+    and nowhere by much (``max_local_difference``, so a changed clock digit or a
+    subject elsewhere in a static scene is not a match), and when the picture
+    changes the same way; windows of static picture are never reported.
     """
 
     window_ms: int = Field(default=2000, ge=500, le=60000)
@@ -37,6 +42,7 @@ class DedupParams(Params):
     max_hamming: float = Field(default=6.0, ge=0, le=32)
     max_brightness_difference: float = Field(default=16.0, ge=0, le=255)
     max_spatial_difference: float = Field(default=2.0, ge=0, le=255)
+    max_local_difference: float = Field(default=32.0, ge=0, le=255)
     minimum_clip_ms: int = Field(default=250, ge=0)
     remove: bool = False
 
@@ -65,17 +71,38 @@ def _extend(candidate: Sequence, match: Match, floor: int, params: DedupParams) 
         if target < 0 or not frame_matches(candidate, first - 1, match.prior, target, params):
             break
         first -= 1
-    while stop < len(candidate.times):
-        target = candidate.times[stop] + delta
-        mapped = round(target / match.prior.frame_ms)
-        if mapped >= len(match.prior.times) or (same_file and mapped >= first):
-            break
-        if not frame_matches(candidate, stop, match.prior, target, params):
-            break
-        stop += 1
+    stop = _extend_forward(candidate, match.prior, (first, stop), delta, params)
+    # The last frames' motion reaches past the repeat, so they are matched by appearance.
+    stop = _extend_forward(
+        candidate, match.prior, (first, stop), delta, params, limit=motion_step(candidate.frame_ms)
+    )
     prior_first = round((candidate.times[first] + delta) / match.prior.frame_ms)
     prior_last = round((candidate.times[stop - 1] + delta) / match.prior.frame_ms)
     return Match(match.prior, first, stop, prior_first, prior_last)
+
+
+def _extend_forward(
+    candidate: Sequence,
+    prior: Sequence,
+    span: tuple[int, int],
+    delta: float,
+    params: DedupParams,
+    *,
+    limit: int | None = None,
+) -> int:
+    """Extend a match frame by frame; with ``limit``, by appearance for at most that many."""
+    first, stop = span
+    end = len(candidate.times) if limit is None else min(len(candidate.times), stop + limit)
+    same_file = prior.file_id == candidate.file_id
+    while stop < end:
+        target = candidate.times[stop] + delta
+        mapped = round(target / prior.frame_ms)
+        if mapped >= len(prior.times) or (same_file and mapped >= first):
+            break
+        if not frame_matches(candidate, stop, prior, target, params, motion=limit is None):
+            break
+        stop += 1
+    return stop
 
 
 def _duplicates(

@@ -1,26 +1,52 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Frame-accurate thumbnail sequences that locate repeated video at any time offset."""
+"""Frame-accurate thumbnail sequences that locate repeated video at any time offset.
+
+A repeat must reproduce how the picture *changes*, not only how it looks: a static
+camera shows nearly the same picture all the time, so similar-looking frames are
+no evidence of repeated footage. Windows that are mostly static are never
+matched, a match must also reproduce the window's motion (its picture changes over ~100 ms)
+closely relative to the motion's own size, and a window whose content already
+recurs within one window length (periodic content in a static scene) is never
+reported as a repeat.
+"""
 
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING, NamedTuple, Protocol
 
 import numpy as np
-from PIL import Image
 
-from datakeel.core.errors import ValidationError
-from datakeel.operators.media.tools import input_path, probe_file, run_tool
+from datakeel.operators.video.analysis import THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH, analyse
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
     from datakeel.core.models import FileItem
 
-THUMBNAIL_WIDTH = 32
-THUMBNAIL_HEIGHT = 18
 _CHECKS = 8
+_SEARCH_HEIGHT = 9
+_SEARCH_WIDTH = 16
+_MOTION_STEP_MS = 100.0
+# A frame moves when some 16x9 luma pixel changes by more than this many 8-bit levels
+# over the motion step; codec noise in a static picture stays well below it.
+_MOTION_FLOOR = 2.0
+# Share of a window's frames that must be moving for the window to count as footage;
+# a static scene with occasional changes (a clock ticking, a light switching) is not.
+_MOVING_SHARE = 0.5
+# Motion residual relative to the motion energy of both frames; uncorrelated motion
+# (or noise) gives about 1, a repeat of the same motion close to 0.
+_MOTION_RESIDUAL = 0.5
+_CANDIDATES = 8
+_HASH_ROWS = 8
+_HASH_COLUMNS = 9
+_MIN_ENERGY = 1e-6
+# Further copies of a window, at multiples of one short lag, that make it periodic.
+_PERIODIC_COPIES = 2
+# How many windows on either side are searched for further copies of a window.
+_PERIODIC_REACH = 3
 
 
 class Thresholds(Protocol):
@@ -29,6 +55,7 @@ class Thresholds(Protocol):
     max_hamming: float
     max_brightness_difference: float
     max_spatial_difference: float
+    max_local_difference: float
 
 
 class Sequence(NamedTuple):
@@ -37,10 +64,14 @@ class Sequence(NamedTuple):
     file_id: str
     times: NDArray[np.float64]
     frame_ms: float
-    textures: NDArray[np.float32]
+    textures: NDArray[np.uint8]
     brightness: NDArray[np.float64]
     hashes: NDArray[np.uint64]
     duration_ms: int
+    search: NDArray[np.float32]
+    motion: NDArray[np.float32]
+    moving: NDArray[np.bool_]
+    measured: NDArray[np.bool_]
 
 
 class Match(NamedTuple):
@@ -53,88 +84,128 @@ class Match(NamedTuple):
     prior_last: int
 
 
-def _dhash(frame: NDArray[np.uint8]) -> int:
-    image = Image.fromarray(frame).convert("L").resize((9, 8), Image.Resampling.BILINEAR)
-    pixels = np.asarray(image)
-    return int.from_bytes(np.packbits(pixels[:, 1:] > pixels[:, :-1]).tobytes(), "big")
+def _resampler(source: int, target: int) -> NDArray[np.float32]:
+    """Return a bilinear resampling matrix of shape ``(target, source)``."""
+    positions = (np.arange(target) + 0.5) * source / target - 0.5
+    lower = np.clip(np.floor(positions).astype(np.int64), 0, source - 1)
+    upper = np.clip(lower + 1, 0, source - 1)
+    weight = np.clip(positions - lower, 0, 1).astype(np.float32)
+    matrix = np.zeros((target, source), dtype=np.float32)
+    np.add.at(matrix, (np.arange(target), lower), 1 - weight)
+    np.add.at(matrix, (np.arange(target), upper), weight)
+    return matrix
+
+
+def _dhashes(luma: NDArray[np.float32]) -> NDArray[np.uint64]:
+    rows = _resampler(THUMBNAIL_HEIGHT, _HASH_ROWS)
+    columns = _resampler(THUMBNAIL_WIDTH, _HASH_COLUMNS)
+    small = np.einsum("rh,nhw,cw->nrc", rows, luma, columns)
+    bits = (small[:, :, 1:] > small[:, :, :-1]).reshape(len(luma), -1)
+    return np.packbits(bits, axis=1).view(">u8").reshape(-1).astype(np.uint64)
 
 
 def decode_sequence(file: FileItem, max_fps: float) -> Sequence:
-    """Decode every frame up to ``max_fps`` as small RGB thumbnails with exact times."""
-    probe = probe_file(file)
-    rate = min(probe.frame_rate or max_fps, max_fps)
-    content = run_tool(
-        [
-            "ffmpeg",
-            "-v",
-            "error",
-            "-i",
-            input_path(file),
-            "-map",
-            "0:v:0",
-            "-an",
-            "-vf",
-            f"fps={rate:.6f},scale={THUMBNAIL_WIDTH}:{THUMBNAIL_HEIGHT}:flags=area",
-            "-pix_fmt",
-            "rgb24",
-            "-f",
-            "rawvideo",
-            "pipe:1",
-        ]
+    """Build a sequence from the shared single-pass analysis at up to ``max_fps``."""
+    analysis = analyse(file, max_fps)
+    count = analysis.count
+    luma = analysis.luma().reshape(count, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH)
+    search = (
+        luma.reshape(count, _SEARCH_HEIGHT, 2, _SEARCH_WIDTH, 2)
+        .mean(axis=(2, 4))
+        .reshape(count, -1)
     )
-    frame_size = THUMBNAIL_WIDTH * THUMBNAIL_HEIGHT * 3
-    if not content or len(content) % frame_size:
-        msg = "Video contains no decodable frames"
-        raise ValidationError(msg)
-    frames = np.frombuffer(content, dtype=np.uint8).reshape(
-        -1, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH, 3
-    )
-    frame_ms = 1000 / rate
+    step = motion_step(analysis.frame_ms)
+    later = np.arange(count) + step
+    motion = search[np.minimum(later, count - 1)] - search
+    # A uniform brightness change (lighting, exposure) carries no evidence of footage.
+    motion -= motion.mean(axis=1, keepdims=True)
+    textures = analysis.thumbnails.reshape(count, -1)
     return Sequence(
         file_id=file.id,
-        times=np.arange(len(frames), dtype=np.float64) * frame_ms,
-        frame_ms=frame_ms,
-        textures=frames.reshape(len(frames), -1).astype(np.float32),
-        brightness=frames.reshape(len(frames), -1).mean(axis=1, dtype=np.float64),
-        hashes=np.asarray([_dhash(frame) for frame in frames], dtype=np.uint64),
-        duration_ms=probe.duration_ms,
+        times=np.arange(count, dtype=np.float64) * analysis.frame_ms,
+        frame_ms=analysis.frame_ms,
+        textures=textures,
+        brightness=textures.mean(axis=1, dtype=np.float64),
+        hashes=_dhashes(luma),
+        duration_ms=analysis.duration_ms,
+        search=search,
+        motion=motion,
+        moving=np.abs(motion).max(axis=1) > _MOTION_FLOOR,
+        measured=later < count,
     )
 
 
-def _residual(prior: Sequence, indices: NDArray[np.int64], texture: NDArray[np.float32]) -> float:
-    return float(np.min(np.mean(np.abs(prior.textures[indices] - texture), axis=1)))
+def _motion_matches(candidate: Sequence, index: int, prior: Sequence, target: int) -> bool:
+    """Require the same picture change, unless both are static or one runs off the end."""
+    if not (candidate.measured[index] and prior.measured[target]):
+        return True
+    if not candidate.moving[index] and not prior.moving[target]:
+        return True
+    left, right = candidate.motion[index], prior.motion[target]
+    energy = float(left @ left + right @ right)
+    residual = float(np.square(left - right).sum())
+    return residual <= _MOTION_RESIDUAL * energy
+
+
+def motion_step(frame_ms: float) -> int:
+    """Return how many frames ahead a frame's motion is measured (about 100 ms)."""
+    return max(1, round(_MOTION_STEP_MS / frame_ms))
 
 
 def frame_matches(
-    candidate: Sequence, index: int, prior: Sequence, target_ms: float, limits: Thresholds
+    candidate: Sequence,
+    index: int,
+    prior: Sequence,
+    target_ms: float,
+    limits: Thresholds,
+    *,
+    motion: bool = True,
 ) -> bool:
-    """Compare one frame with the prior frame nearest its mapped time, tolerating one frame."""
+    """Compare one frame with the prior frames around its mapped time, tolerating one frame.
+
+    ``motion=False`` compares appearance only, for the last frames of a repeat whose
+    motion is measured against frames after the repeat ends.
+    """
     nearest = int(np.clip(round(target_ms / prior.frame_ms), 0, len(prior.times) - 1))
     if abs(prior.times[nearest] - target_ms) > prior.frame_ms:
         return False
-    neighbours = np.arange(max(0, nearest - 1), min(len(prior.times), nearest + 2))
-    distances = np.abs(prior.textures[neighbours] - candidate.textures[index]).mean(axis=1)
-    best = int(neighbours[int(np.argmin(distances))])
-    hamming = int(np.bitwise_count(prior.hashes[best] ^ candidate.hashes[index]))
+    neighbours = range(max(0, nearest - 1), min(len(prior.times), nearest + 2))
+    return any(
+        _looks_same(candidate, index, prior, other, limits)
+        and (not motion or _motion_matches(candidate, index, prior, other))
+        for other in neighbours
+    )
+
+
+def _looks_same(
+    candidate: Sequence, index: int, prior: Sequence, other: int, limits: Thresholds
+) -> bool:
+    difference = np.abs(prior.textures[other].astype(np.float32) - candidate.textures[index])
+    hamming = int(np.bitwise_count(prior.hashes[other] ^ candidate.hashes[index]))
     return (
-        float(distances.min()) <= limits.max_spatial_difference
+        float(difference.mean()) <= limits.max_spatial_difference
+        and float(difference.max()) <= limits.max_local_difference
         and hamming <= limits.max_hamming
-        and abs(prior.brightness[best] - candidate.brightness[index])
+        and abs(prior.brightness[other] - candidate.brightness[index])
         <= limits.max_brightness_difference
     )
 
 
-def _starts(
-    candidate: Sequence, first: int, stop: int, prior: Sequence, limit: int
-) -> tuple[NDArray[np.int64], NDArray[np.int64], NDArray[np.int64]]:
-    checks = np.unique(np.linspace(first, stop - 1, num=min(_CHECKS, stop - first)).round())
-    offsets = candidate.times[checks.astype(np.int64)] - candidate.times[first]
-    starts = np.arange(limit, dtype=np.int64)
-    mapped = np.rint((prior.times[starts, None] + offsets[None, :]) / prior.frame_ms).astype(
-        np.int64
+def _lead_candidates(
+    candidate: Sequence, lead: int, prior: Sequence, limit: int, limits: Thresholds
+) -> NDArray[np.int64]:
+    """Return prior frames whose appearance and motion both resemble the lead frame."""
+    looks, moves = prior.search[:limit], prior.motion[:limit]
+    target, change = candidate.search[lead], candidate.motion[lead]
+    appearance = np.square(looks - target).mean(axis=1)
+    energy = np.square(moves).sum(axis=1) + float(change @ change)
+    residual = np.square(moves - change).sum(axis=1)
+    allowed = (appearance <= (2 * limits.max_spatial_difference) ** 2) & (
+        residual <= _MOTION_RESIDUAL * energy
     )
-    valid = mapped[:, -1] < limit
-    return starts[valid], mapped[valid], checks.astype(np.int64)
+    found = np.flatnonzero(allowed)
+    order = np.argsort(appearance[found] + residual[found] / np.maximum(energy[found], _MIN_ENERGY))
+    return found[order[:_CANDIDATES]]
 
 
 def find_match(
@@ -143,20 +214,64 @@ def find_match(
     priors: list[tuple[Sequence, int]],
     limits: Thresholds,
 ) -> Match | None:
-    """Find the closest prior frame range repeating every sampled frame of a window."""
+    """Find the closest prior frame range repeating every sampled frame of a moving window."""
     first, stop = window
+    if candidate.moving[first:stop].mean() < _MOVING_SHARE:
+        return None
+    lead = first + int(np.argmax(np.abs(candidate.motion[first:stop]).max(axis=1)))
+    checks = np.unique(np.linspace(first, stop - 1, num=min(_CHECKS, stop - first)).round())
+    checks = checks.astype(np.int64)
     best: tuple[float, Match] | None = None
     for prior, limit in priors:
-        starts, mapped, checks = _starts(candidate, first, stop, prior, limit)
-        if not starts.size:
-            continue
-        coarse = np.abs(prior.textures[mapped[:, 0]] - candidate.textures[first]).mean(axis=1)
-        for row in np.flatnonzero(coarse <= limits.max_spatial_difference * 2):
-            score = _window_score(candidate, checks, prior, mapped[row], limits)
+        for row in _lead_candidates(candidate, lead, prior, limit, limits).tolist():
+            delta = prior.times[row] - candidate.times[lead]
+            mapped = np.rint((candidate.times[checks] + delta) / prior.frame_ms).astype(np.int64)
+            if mapped[0] < 0 or mapped[-1] >= limit:
+                continue
+            score = _window_score(candidate, checks, prior, mapped, limits)
             if score is not None and (best is None or score < best[0]):
-                match = Match(prior, first, stop, int(starts[row]), int(mapped[row, -1]))
-                best = (score, match)
-    return best[1] if best else None
+                best = (score, Match(prior, first, stop, int(mapped[0]), int(mapped[-1])))
+    if best is None or _recurs_within(candidate, checks, stop - first, limits):
+        return None
+    return best[1]
+
+
+def _recurs_within(
+    candidate: Sequence, checks: NDArray[np.int64], span: int, limits: Thresholds
+) -> bool:
+    """Report whether the window keeps recurring nearby, as periodic content does.
+
+    Content that cycles with a period no longer than the window (a blinking light,
+    a fan, a flickering lamp, a running clock's sub-second digits) is a stationary
+    scene: it matches its own recording again and again, so a match elsewhere is no
+    evidence of repeated footage. A clip copied once has a single nearby copy; a
+    window with two or more separate copies within three windows on either side is
+    periodic. Lags shorter than half a window are not tested, because smooth motion
+    looks alike over short lags, and real periods jitter by a frame or two.
+    """
+    lags = range(max(2, (span + 1) // 2), _PERIODIC_REACH * span + 1)
+    offsets = [offset for lag in lags for offset in (-lag, lag)]
+    found = sorted(offset for offset in offsets if _recurs(candidate, checks, offset, limits))
+    separate = sum(1 for before, after in itertools.pairwise(found) if after - before > span // 2)
+    return bool(found) and separate + 1 >= _PERIODIC_COPIES
+
+
+def _recurs(
+    candidate: Sequence, checks: NDArray[np.int64], offset: int, limits: Thresholds
+) -> bool:
+    """Report a near copy of the window, allowing one missed check in eight.
+
+    Periodic content often carries a slowly changing part (a clock's seconds) that
+    breaks single checks; a near copy is enough evidence that the window cycles.
+    """
+    shifted = checks + offset
+    if shifted[0] < 0 or shifted[-1] >= len(candidate.times):
+        return False
+    misses = sum(
+        not frame_matches(candidate, index, candidate, float(candidate.times[target]), limits)
+        for index, target in zip(checks.tolist(), shifted.tolist(), strict=True)
+    )
+    return misses <= len(checks) // _CHECKS
 
 
 def _window_score(
@@ -171,6 +286,6 @@ def _window_score(
         if not frame_matches(candidate, index, prior, float(prior.times[target]), limits):
             return None
         # Score the exact mapping so the true offset beats a neighbouring tolerated one.
-        exact = np.asarray([target], dtype=np.int64)
-        residuals.append(_residual(prior, exact, candidate.textures[index]))
+        texture = candidate.textures[index].astype(np.float32)
+        residuals.append(float(np.abs(prior.textures[target].astype(np.float32) - texture).mean()))
     return float(np.mean(residuals))
