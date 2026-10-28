@@ -39,7 +39,7 @@ def test_shared_privacy_when_new_shape_present_protects_every_existing_consumer(
     assert Path(result.files[0].path).read_text() == f"[{kind.upper()}]"
     assert result.quality["redactions"] == 1
     memory = create_memory(db, MemoryCreate(content=f"Remember {value}"))
-    assert get_memory(db, memory.id).content == f"Remember [{kind.upper()}]"
+    assert get_memory(db, memory.id).content == "Remember [REDACTED]"
     profile = profile_data(
         TableData(columns=("contact",), rows=((value,),), row_numbers=(2,)), ProfileParams()
     )

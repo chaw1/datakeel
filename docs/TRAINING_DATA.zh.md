@@ -91,7 +91,7 @@ PYTHON
 
 近重复候选使用 8 个 MinHash 分带，每带最多 8 个候选，每条记录最多比较 64 个候选。保留首个可保留的原始代表；报告中的重复样例是有上限的「代表—记录」组，不是穷举的传递闭包聚类。候选上限限制了工作量与内存，也可能漏掉密集或特殊语料中的匹配。相近措辞可能表达不同含义，删除前应人工审阅；规则不保证答案的语义质量。
 
-共享 `text.pii_redact` 算子保留原有 `emails`、`phones`、`replacement` 参数 schema。默认字面值 `replacement="[REDACTED]"` 现在选择带类型占位符；其他自定义 replacement 原样使用。邮箱和电话开关仍有效。表格 PII 推断和显式记忆写入复用同一检测器及有效号码校验。
+共享 `text.pii_redact` 算子保留原有 `emails`、`phones`、`replacement` 参数 schema。默认字面值 `replacement="[REDACTED]"` 现在选择带类型占位符；其他自定义 replacement 原样使用。邮箱和电话开关仍有效。表格 PII 推断和显式记忆写入复用同一检测器及有效号码校验。记忆写入保持既有的通用 `[REDACTED]` 标签，以兼容保留上下文；训练清洗继续使用带类型占位符。
 
 报告冻结全部阈值与词表。HTTP 的 `config` 支持 `format`、`max_tokens`、`near_distance`、`near_similarity`、`repetition_threshold`、`refusal_phrases`、`safety_terms`、`contamination_ngram`、`contamination_threshold`、`sample_limit`、`max_line_bytes`。Web 暴露常用选项，其余通过 HTTP 设置。过小 n-gram 或过松阈值可能增加误报，清洗前先审阅逐条清单。
 

@@ -25,6 +25,7 @@ from datakeel.memory.service import (
 )
 from datakeel.storage.conversation_store import create
 from datakeel.storage.dataset_service import DatasetInput, create_dataset
+from tests.core.pii_samples import card, identity
 from tests.memory.helpers import NOW
 
 if TYPE_CHECKING:
@@ -43,8 +44,23 @@ def test_create_when_pii_present_redacts_before_storage_and_preserves_dates(db: 
     """Explicit writing reuses the corrected shared patterns without storing original PII."""
     content = "Contact user@example.org or +1 (415) 555-0123; date 2026-10-24 / 2026/10/24 10:30:00"
     result = create_memory(db, MemoryCreate(content=content), clock=lambda: NOW)
-    assert result.content == ("Contact [EMAIL] or [PHONE]; date 2026-10-24 / 2026/10/24 10:30:00")
+    assert result.content == (
+        "Contact [REDACTED] or [REDACTED]; date 2026-10-24 / 2026/10/24 10:30:00"
+    )
     assert get_memory(db, result.id, clock=lambda: NOW) == result
+
+
+def test_create_when_expanded_pii_present_preserves_legacy_labels_in_storage(db: Database) -> None:
+    """New privacy classes stay concealed without changing existing retained-context labels."""
+    secret = "sk-" + "a1B2c3D4" * 4
+    content = (
+        f"id={identity()} card={card()} ip=2001:db8::5 "
+        f"secret={secret} endpoint=https://user:pass@example.org/data"
+    )
+    result = create_memory(db, MemoryCreate(content=content), clock=lambda: NOW)
+    expected = "id=[REDACTED] card=[REDACTED] ip=[REDACTED] secret=[REDACTED] endpoint=[REDACTED]"
+    assert result.content == expected
+    assert get_memory(db, result.id, clock=lambda: NOW).content == expected
 
 
 def test_create_when_replayed_returns_same_entry_and_rejects_changed_or_deleted_write(

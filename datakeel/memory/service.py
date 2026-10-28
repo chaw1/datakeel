@@ -28,7 +28,7 @@ def create_memory(
     policy: MemoryPolicy | None = None,
 ) -> MemoryEntry:
     """Redact shared privacy classes before any memory content is persisted."""
-    content = redact_pii(request.content)
+    content = redact_pii(request.content, replacement="[REDACTED]")
     return memory_store.create(
         db, request.model_copy(update={"content": content}), clock(), policy or MemoryPolicy()
     )
