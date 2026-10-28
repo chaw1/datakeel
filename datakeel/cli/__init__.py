@@ -51,7 +51,6 @@ def parser() -> argparse.ArgumentParser:
     worker.add_argument("--once", action="store_true", help="Drain pending work and exit")
     worker.add_argument("--queue", choices=["cpu", "io", "gpu"], default="cpu")
     commands.add_parser("migrate")
-    timeseries_demo.add_parser(commands)
     evidence_rebuild = commands.add_parser("rebuild-evidence")
     evidence_rebuild.add_argument("--expected-hash")
     catalog_rebuild = commands.add_parser("rebuild-catalog")
@@ -78,7 +77,7 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
-    for module in (workflow, routing, kg_evaluation):
+    for module in (workflow, routing, kg_evaluation, timeseries_demo):
         module.register_parser(commands)
     return result
 

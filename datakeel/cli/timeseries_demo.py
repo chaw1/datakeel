@@ -112,7 +112,7 @@ def demo(db: Database, output: Path | None = None) -> None:
     Console().print(result.model_dump_json(), markup=False, soft_wrap=True)
 
 
-def add_parser(commands: CommandGroup) -> None:
+def register_parser(commands: CommandGroup) -> None:
     """Register the isolated, one-shot sensor demonstration grammar."""
     command = commands.add_parser("timeseries-demo")
     command.add_argument("--output", type=Path)
