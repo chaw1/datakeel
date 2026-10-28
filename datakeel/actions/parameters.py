@@ -94,8 +94,14 @@ class ExportParams(BoundaryModel):
     """Write a local export artifact under the configured exports directory."""
 
     dataset_id: str
-    format: Literal["croissant", "openlineage"] = "croissant"
+    format: Literal[
+        "croissant", "openlineage", "coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"
+    ] = "croissant"
     destination: str | None = None
+    version_id: str | None = None
+    release_id: str | None = None
+    split_set_id: str | None = None
+    annotator_id: str | None = None
 
 
 PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
@@ -175,7 +181,11 @@ def selection_for(params: BoundaryModel) -> ObjectSet:
             else [],
         )
     if isinstance(params, ExportParams):
-        return ObjectSet(dataset_id=params.dataset_id, limit=10000)
+        return ObjectSet(
+            dataset_id=params.dataset_id,
+            limit=10000,
+            version_ids=[params.version_id] if params.version_id else [],
+        )
     if isinstance(params, MetadataParams | GenerateDatasheetParams | PublishDatasheetParams):
         return ObjectSet(
             object_type="dataset",

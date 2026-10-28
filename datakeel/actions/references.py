@@ -25,7 +25,7 @@ from datakeel.actions.dq_parameters import (
     UpdateQualityRuleParams,
 )
 from datakeel.actions.models import ActionPlan
-from datakeel.actions.parameters import parse_params
+from datakeel.actions.parameters import ExportParams, parse_params
 from datakeel.actions.standard_parameters import (
     ConfirmStandardMappingParams,
     ImportStandardsParams,
@@ -47,6 +47,23 @@ def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
 
 
 def _feature_refs(params: BoundaryModel) -> list[AssetRef]:
+    if isinstance(params, ExportParams) and params.split_set_id and params.version_id:
+        return [
+            AssetRef(asset_id=params.dataset_id, version=params.version_id),
+            AssetRef(asset_type="version", asset_id=params.version_id, version=params.version_id),
+            AssetRef(
+                asset_type="training_split", asset_id=params.split_set_id, version=params.version_id
+            ),
+            *(
+                [
+                    AssetRef(
+                        asset_type="release", asset_id=params.release_id, version=params.version_id
+                    )
+                ]
+                if params.release_id
+                else []
+            ),
+        ]
     if isinstance(params, SubmitCustomOperatorParams):
         return [
             AssetRef(

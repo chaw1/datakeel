@@ -29,6 +29,7 @@ from datakeel.storage.events import all_events
 from datakeel.storage.evidence_actions import decision_snapshot
 from datakeel.storage.object_queries import evaluate_in_session
 from datakeel.storage.standard_store import standards_state
+from datakeel.storage.training_export import training_export_state
 
 
 def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> str:
@@ -50,28 +51,37 @@ def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenMan
     if isinstance(params, DecideAssertionsParams):
         values.append(decision_snapshot(session, params))
     if isinstance(params, ExportParams):
-        dataset = evaluate_in_session(
-            session,
-            ObjectSet(
-                object_type="dataset",
-                dataset_id=params.dataset_id,
-                schema_version=manifest.query.schema_version,
-            ),
-        )
-        values.extend([dataset.state_digest, get_settings().base_url])
-        if params.format == "openlineage":
-            values.append(
-                json.dumps(
-                    [
-                        event.model_dump(mode="json")
-                        for event in graph(all_events(session), params.dataset_id).events
-                    ],
-                    sort_keys=True,
-                    separators=(",", ":"),
-                    allow_nan=False,
-                )
-            )
+        values.extend(_export_state(session, params, manifest))
     return hashlib.sha256(json.dumps(values, separators=(",", ":")).encode()).hexdigest()
+
+
+def _export_state(session: Session, params: ExportParams, manifest: FrozenManifest) -> list[str]:
+    values: list[str] = []
+    training_state = training_export_state(session, params)
+    if training_state:
+        values.append(training_state)
+    dataset = evaluate_in_session(
+        session,
+        ObjectSet(
+            object_type="dataset",
+            dataset_id=params.dataset_id,
+            schema_version=manifest.query.schema_version,
+        ),
+    )
+    values.extend([dataset.state_digest, get_settings().base_url])
+    if params.format == "openlineage":
+        values.append(
+            json.dumps(
+                [
+                    event.model_dump(mode="json")
+                    for event in graph(all_events(session), params.dataset_id).events
+                ],
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+        )
+    return values
 
 
 def current_snapshot_digest(session: Session, plan: ActionPlan, params: BoundaryModel) -> str:
