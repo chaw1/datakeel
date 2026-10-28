@@ -71,14 +71,14 @@ defaults. Operator version is `1.0.0` for this initial implementation.
 | --- | --- |
 | `video.probe` | No parameters; duration, frame rate, resolution, codec, rotation, audio-track count. A file whose header promises noticeably (over 500 ms) more than its stored packets contain reports the readable `duration_ms`, the promise as `declared_duration_ms`, and a critical `truncated_file` interval for the missing tail / 无参数，读取录制属性；头部声明比实际可读多出 500ms 以上时报实际时长、声明时长和缺失尾段的 `truncated_file` 问题 |
 | `video.invalid_frames` | `sample_fps`, `black_threshold`, `solid_std_threshold`, `freeze_difference`, `freeze_local_difference`, `freeze_locality`, `freeze_noise_ratio`, `freeze_duration_ms`, `blur_variance_threshold`, `minimum_interval_ms`, `remove`, `invalid_ratio_threshold`; each frame gets its most specific defect (black, else uniform, else blurred). A frame continues a freeze only when no 16x9 block changed by more than `freeze_local_difference` (and `freeze_locality` times the frame-wide change), the frame-wide change stays below `freeze_noise_ratio` of the recording's median change, and it still matches the first held frame; a keyframe re-encoding the held picture does not end it / 黑、纯色、冻、模糊区间，每帧只记最具体的一类；冻结要求没有分块局部变化、全局变化低于本录制噪声底且与冻结首帧一致，关键帧重编码不打断冻结 |
-| `video.dedup` | `window_ms`, `sample_fps` (maximum analysis rate; slower video is compared frame by frame), `max_hamming`, `max_brightness_difference`, `max_spatial_difference`, `max_local_difference`, `minimum_clip_ms`, `remove`; a repeat must reproduce how the picture changes, not only how it looks: windows that are mostly static are never matched, matched frames must reproduce the ~100 ms motion (uniform brightness change removed), and content that recurs within three windows of itself (a blinking light, a clock's sub-second digits) is periodic, not repeated. Windows are searched at every prior frame offset and each match is extended frame by frame, so repeats of at least 1.5 windows are located wherever they start / 重复必须重现画面变化：大部分静止的窗口不比，运动须吻合，附近反复出现的周期内容不算重复；在任意帧偏移处查找并逐帧扩展到真实起止 |
+| `video.dedup` | `window_ms`, `sample_fps` (maximum analysis rate; slower video is compared frame by frame), `max_hamming`, `max_brightness_difference`, `max_spatial_difference`, `max_local_difference`, `minimum_clip_ms`, `remove`; a repeat must reproduce how the picture changes, not only how it looks: windows that are mostly static are never matched, matched frames must reproduce the ~100 ms motion (uniform brightness change removed; between different frame rates both whole-frame spans around 100 ms are compared, e.g. 80/120 ms at 25 fps and 67/100 ms at 29.97 fps), and content that recurs within three windows of itself (a blinking light, a clock's sub-second digits) is periodic, not repeated. Windows are searched at every prior frame offset and each match is extended frame by frame, so repeats of at least 1.5 windows are located wherever they start / 重复必须重现画面变化：大部分静止的窗口不比，运动须吻合（帧率不同时比较两边约 100 ms 的两种整帧跨度），附近反复出现的周期内容不算重复；在任意帧偏移处查找并逐帧扩展到真实起止 |
 | `video.segment` | `window_ms`, `minimum_duration_ms`, `skip_issues`; fixed-window clips on frame times read from packet timestamps, each decoded from the nearest earlier keyframe, optionally only inside ranges without annotated issues / 按包时间戳定帧的固定窗口切片，从最近关键帧解码；可只切不含已标问题的区间 |
 | `video.normalize` | `width`, `height`, `frame_rate`; MPEG-4/AAC MP4, letterboxing and square pixels; measured issue intervals carry over because the timeline is unchanged / 统一编码、分辨率与帧率，时间轴不变故沿用已测问题区间 |
 | `audio.probe` | No parameters; duration, sample rate, channels and codec; truncation is reported as for video, using the WAV data chunk size when present / 无参数，读取音轨属性；截断同视频，WAV 以 data 块声明为准 |
 | `audio.vad` | `threshold_dbfs`, `frame_ms`, `min_activity_ms`, `min_silence_ms`; energy activity intervals / 能量活动区间 |
 | `audio.trim_silence` | Activity parameters plus `padding_ms`; trim edges while preserving internal timing, remove wholly silent files / 裁首尾静音，保留内部时间顺序 |
 | `audio.loudness` | `acceptable_min_lufs` (-23), `acceptable_max_lufs` (-14), `loudness_tolerance_lu` (1), `target_lufs` (-23, the normalization target), `true_peak_dbfs`, `loudness_range_lu`, `normalize`; EBU R128 measurement, a flag only when integrated loudness lies more than the tolerance outside the accepted range, and optional two-pass normalization. The range, tolerance and deviation are stored in `audio_metrics` and printed in the report / 响度落在可接受区间（默认 -23 到 -14 LUFS，各留 1 LU 容差）外才报；区间、容差和偏离写进指标与报告；可选两遍归一到 `target_lufs` |
-| `audio.clipping` | `threshold`, `min_consecutive_samples`, `saturation_level`, `saturation_occupancy`, `window_ms`, `merge_gap_ms`; flat full-scale plateaus (a run that moves, such as a lossy decoder's overshoot, is not one) plus windows that dwell near full scale (lossy-coded clipping), merged per passage / 满幅平坦平台（有损解码的过冲在动，不算）加近满幅驻留（有损编码后的削波），按段合并 |
+| `audio.clipping` | `threshold`, `min_consecutive_samples`, `saturation_level`, `saturation_occupancy`, `window_ms`, `merge_gap_ms`; three kinds of evidence, merged per passage and reported as `warning`: flat full-scale plateaus (PCM; a lossy decoder's overshoot moves and is not one), windows that dwell near full scale (hard-clipped tones), and clusters of flat-topped peaks near the track's own peak level (voice and music clipped before lossy coding: at least four flat tops in a `window_ms` window and its two neighbours) / 三条证据按段合并、记为 warning：满幅平坦平台（PCM；有损解码的过冲在动，不算）、近满幅驻留（硬削波的音调）、接近本轨峰值电平的成簇平顶（有损编码前被削波的人声和音乐，一个窗口及相邻两窗内至少 4 个平顶） |
 | `audio.dedup` | `correlation_threshold`, `shape_threshold`, `stationary_threshold`, `max_lag_ms`, `duration_tolerance`, `remove`; varying sound matches when its MFCC fluctuations correlate within the lag window (robust to gain and lossy re-encoding), steady tones by spectral shape / 变化的声音比 MFCC 起伏的相关性（抗增益和有损重编码），稳态音比频谱形状 |
 | `media.align` | `max_offset_seconds`, `min_overlap_ms`, `min_correlation`, `max_secondary_ratio`, `max_analysis_seconds`; cross-correlation of both the waveform and its first difference (whitened, so a loud shared hum cannot make the lag look periodic); each must pass the same checks and the more confident success is kept; offsets relative to first input / 原波形与一阶差分（白化）分别互相关并各自过同样的检查，取置信度更高的成功结果；相对首路偏移与置信度 |
 
@@ -145,15 +145,37 @@ Known limits / 已知边界:
 - Loops that repeat three or more times with a period no longer than the window are
   periodic content and are not reported. / 周期不超过窗口且重复三次以上的循环视为
   周期内容，不报重复。
-- Lossy clipping is found by dwelling near full scale. Measured recall on hard-clipped
-  sines (100 Hz-3 kHz, 1.25-4x over full scale) is 0.98-0.99 for WAV, MP3 and AAC at
-  128 kbit/s, with up to one 20 ms window of overhang; loud unclipped sines and pink
-  noise produce no flag. Signals that are flat-topped by design (square waves) are
-  indistinguishable from clipping and are flagged; clipping shorter than one window or
-  softened below `saturation_level` by heavy compression is missed. / 有损削波靠近满幅
-  驻留识别：硬削波正弦在 WAV/MP3/AAC 128k 下召回 0.98–0.99，边界最多多出一个 20ms
-  窗口；响亮未削波信号不报。方波这类本身平顶的信号会被报；短于一个窗口或被强压缩到
-  `saturation_level` 以下的削波会漏。
+- Clipping recall depends on the material and the codec. All figures are measured on
+  generated signals, not recordings; frame recall is the share of 20 ms frames holding a
+  clipped sample that fall inside a reported interval. / 削波召回取决于素材和编码，以下
+  数字都来自合成信号而非真实录音；帧召回指含削波样本的 20ms 帧落在报告区间内的比例。
+  - PCM (16-bit WAV): voice- and music-like signals driven 6-18 dB into full scale,
+    0.83-1.00. Clipping below full scale (a clipped signal turned down 3 dB) is found
+    only by flat tops, 0.07-0.17. / PCM：6–18 dB 过驱到满幅的人声、音乐 0.83–1.00；
+    削波后整体调低 3 dB 只能靠平顶，0.07–0.17。
+  - Hard-clipped steady sines (100 Hz-3 kHz, 1.25-4x over full scale) after MP3 or AAC
+    at 128 kbit/s: 0.98-0.99 with up to one 20 ms window of overhang. This holds for
+    sines only and does not carry over to voice or music. / 硬削波正弦（100Hz–3kHz，
+    1.25–4 倍满幅）经 MP3/AAC 128k 后 0.98–0.99，边界最多多出一个 20ms 窗口；只适用于
+    正弦，不代表人声和音乐。
+  - Voice- and music-like signals clipped, then coded as MP3 (128 and 64 kbit/s), AAC
+    (128 kbit/s) or Opus (96 kbit/s), on seeds not used for tuning: voice 0.13 at 6 dB
+    of drive, 0.43 for a 9.5 dB passage, 0.60 at 12 dB, 0.89 at 18 dB; music 0.09, 0.29,
+    0.24 and 0.56; clipped 3 dB below full scale, 0.02-0.11. Mild clipping (a few dB, a
+    few clipped samples per peak) is mostly missed, and in music, where only the loudest
+    parts clip, fewer than a third of clipped frames are found below 18 dB of drive. /
+    有损（MP3 128k/64k、AAC 128k、Opus 96k）后、未参与调参的种子上：人声 6 dB 过驱
+    0.13、9.5 dB 段 0.43、12 dB 0.60、18 dB 0.89；音乐依次 0.09、0.29、0.24、0.56；
+    满幅以下 3 dB 削波 0.02–0.11。轻度削波（几 dB、每个峰只削几个样本）基本漏检；音乐只有
+    最响的成分被削，18 dB 以下过驱时找到的削波帧不到三分之一。
+  - No flag on clean, limited (5 ms attack), loudness-normalized (-9 LUFS),
+    compressed-and-limited, organ or loud-noise controls in any of these codecs, nor on
+    loud unclipped sines or pink noise. Reported as clipping: signals flat-topped by
+    design (square-wave synths), soft clipping (tanh saturation) and, on some files, a
+    limiter with sub-millisecond attack driven about 12 dB. / 干净、限幅（5ms 启动）、
+    响度归一到 -9 LUFS、压缩加限幅、风琴和响噪声对照在上述编码下都不报，响亮未削波的
+    正弦和粉噪也不报；方波这类本身平顶的信号、软削波（tanh 饱和）以及部分启动时间不到
+    1ms、压下约 12dB 的限幅器会被报为削波。
 - The default loudness range runs from the EBU R128 broadcast target (-23 LUFS) to the
   -14 LUFS normalization of the loudest common streaming platforms, each widened by
   R128's +/-1 LU tolerance; for broadcast delivery set both ends to -23. / 默认响度区间
@@ -161,9 +183,25 @@ Known limits / 已知边界:
   容差；广播交付把两端都设成 -23。
 - Audio operators hold the decoded track in memory (16 kHz float64 for activity,
   trimming and fingerprints; the source rate in float32 for clipping), so their memory
-  grows with duration: fingerprinting a 30-minute mono recording peaks at about 2.4 GB.
-  / 音频算子把整条音轨解码进内存，内存随时长线性增长：30 分钟单声道录音做指纹去重峰值
-  约 2.4 GB。
+  grows with duration: the whole audio pipeline on a 30-minute mono recording peaked at
+  about 4.3 GB, fingerprinting alone at about 2.4 GB. / 音频算子把整条音轨解码进内存，
+  内存随时长线性增长：30 分钟单声道录音跑完整条音频流水线峰值约 4.3 GB，其中指纹去重
+  单独约 2.4 GB。
+- Copies at another frame rate are located to within one frame of the coarser stream
+  (measured on 25 and 29.97 fps copies with hard cuts and moving subjects, 1 s windows).
+  Fine textures (cellular-automaton or fractal patterns) rescaled to another size can
+  differ by more than the hash and thumbnail limits and end a match early. / 不同帧率
+  的副本起止误差在较粗一路的一帧内（25 与 29.97 fps、含硬切和运动目标、1 s 窗口实测）；
+  细纹理画面缩放后可能超出哈希和缩略图阈值，匹配提前结束。
+- An MPEG-TS whose frame rate changes mid-stream, cut directly with `video.segment`,
+  loses frames in its first clip: windows follow the probed rate and clips are
+  constant-rate. The media pipeline normalizes first and is not affected. / 中途换帧率
+  的 TS 直接切片，第一段会被抽帧；流水线先做归一，不受影响。
+- A transport stream with flipped bits decodes with errors while ffmpeg still exits 0,
+  so it is not flagged. / 位翻转的 TS 解码会报错但 ffmpeg 返回 0，不会被标记。
+- Failure reasons quote the local object-store path of the recording, and the report
+  chapter and run page show them; remove the paths before sharing a report. / 失败原因
+  带本机对象库的绝对路径，会出现在报告章节和运行记录页；报告外发前请去掉路径。
 
 ## Quality, provenance and recovery / 质量、血缘与恢复
 
