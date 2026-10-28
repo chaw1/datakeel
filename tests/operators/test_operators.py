@@ -70,7 +70,8 @@ def test_image_quality_detects_issues(make_image: ImageFactory, output_dir: Path
     quality = result.files[0].metadata["image_quality"]
     assert (quality["width"], quality["height"]) == (20, 10)
     assert quality["brightness"] == quality["blur_variance"] == 0
-    assert set(quality["issues"]) == {"blurry", "brightness", "low_resolution"}
+    assert set(quality["issues"]) == {"brightness", "low_resolution"}
+    assert "exposure failed" in quality["checks"]["blur"]["reason"]
 
 
 def test_resize_preserves_aspect_and_original(make_image: ImageFactory, output_dir: Path) -> None:

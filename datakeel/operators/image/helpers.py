@@ -21,6 +21,10 @@ from datakeel.operators.image.limits import (
     validate_dimensions,
 )
 
+_EIGHT_BITS = 8
+_SIXTEEN_BITS = 16
+_SIXTEEN_BIT_STEP = 65535 / 255
+
 
 @contextmanager
 def open_image(file: FileItem) -> Generator[Image.Image]:
@@ -35,12 +39,26 @@ def open_image(file: FileItem) -> Generator[Image.Image]:
         yield image
 
 
-def decode(file: FileItem) -> NDArray[np.uint8]:
-    """Decode oriented image pixels into a NumPy array."""
+def decode_with_depth(file: FileItem) -> tuple[NDArray[np.uint8], int]:
+    """Decode oriented pixels to 8-bit levels and return the decoded bits per sample.
+
+    Pillow keeps 16-bit grayscale in integer modes, and converting those to
+    RGB clips every level above 255, so a normal 16-bit image would turn
+    white. Such samples are rescaled by their bit depth instead.
+    """
     with open_image(file) as image:
         oriented = ImageOps.exif_transpose(image)
+        if oriented.mode.startswith("I"):
+            levels = np.asarray(oriented, dtype=np.float64) / _SIXTEEN_BIT_STEP
+            gray = np.clip(np.round(levels), 0, 255).astype(np.uint8)
+            return np.repeat(gray[..., None], 3, axis=2), _SIXTEEN_BITS
         mode = "RGBA" if "A" in oriented.getbands() or "transparency" in oriented.info else "RGB"
-        return np.array(oriented.convert(mode))
+        return np.array(oriented.convert(mode)), _EIGHT_BITS
+
+
+def decode(file: FileItem) -> NDArray[np.uint8]:
+    """Decode oriented image pixels into an 8-bit NumPy array."""
+    return decode_with_depth(file)[0]
 
 
 def encode(image: NDArray[np.uint8], extension: str, quality: int = 90) -> bytes:

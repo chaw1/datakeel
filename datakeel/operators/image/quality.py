@@ -14,7 +14,7 @@ from datakeel.operators.base import (
     annotate,
     summarize,
 )
-from datakeel.operators.image.helpers import decode
+from datakeel.operators.image.helpers import decode_with_depth
 from datakeel.operators.image.quality_scores import ImageQualityChecks, evaluate
 from datakeel.operators.image.quality_signals import ImageSignals, measure
 
@@ -38,7 +38,8 @@ class ImageQualityMeasurement(ImageSignals):
 
 
 def _quality(file: FileItem, params: ImageQualityParams) -> ImageQualityMeasurement:
-    signals = measure(decode(file), params.analysis_size)
+    pixels, depth = decode_with_depth(file)
+    signals = measure(pixels, params.analysis_size, params.impulse_level, depth)
     checks = evaluate(signals, params)
     values = checks.values()
     # Basic usability requires all five checks; an isolated severe defect must

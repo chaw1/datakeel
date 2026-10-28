@@ -84,12 +84,19 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Define image-quality thresholds in luminance, pixels and robust noise sigma.",
+      "description": "Define image-quality thresholds in 8-bit luminance, pixels and noise measures.\n\nSixteen-bit samples are rescaled to 8-bit levels before measuring.\nDefaults come from generated scenes saved as PNG and JPEG.\n``min_sharpness`` bounds the contrast-invariant edge sharpness: clean,\nhazy, snowy, minimal and low-contrast scenes measured at least 1.29, and\nthe same scenes under Gaussian blur of sigma 1.5 or more at most 0.95.\n``min_highlight`` bounds\nthe 99.9th luminance percentile: clean scenes reached at least 144 and\nhalved exposures at most 110. ``max_impulse_fraction`` sits between clean\nscenes (at most 0.00003) and 1% salt-and-pepper noise (at least 0.0068).\n``blur_threshold`` is the earlier absolute Laplacian variance, which\nfalls with contrast; it is off unless set.",
       "properties": {
         "blur_threshold": {
-          "default": 50.0,
+          "default": 0.0,
           "minimum": 0,
           "title": "Blur Threshold",
+          "type": "number"
+        },
+        "min_sharpness": {
+          "default": 1.0,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Min Sharpness",
           "type": "number"
         },
         "min_brightness": {
@@ -106,6 +113,13 @@
           "title": "Max Brightness",
           "type": "number"
         },
+        "min_highlight": {
+          "default": 120.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Min Highlight",
+          "type": "number"
+        },
         "min_resolution": {
           "default": 64,
           "minimum": 1,
@@ -117,6 +131,20 @@
           "exclusiveMinimum": 0,
           "maximum": 255,
           "title": "Max Noise Sigma",
+          "type": "number"
+        },
+        "impulse_level": {
+          "default": 48.0,
+          "exclusiveMinimum": 0,
+          "maximum": 255,
+          "title": "Impulse Level",
+          "type": "number"
+        },
+        "max_impulse_fraction": {
+          "default": 0.003,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Max Impulse Fraction",
           "type": "number"
         },
         "min_color_stddev": {

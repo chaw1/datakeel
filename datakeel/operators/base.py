@@ -61,13 +61,30 @@ class ConvertParams(Params):
 
 
 class ImageQualityParams(Params):
-    """Define image-quality thresholds in luminance, pixels and robust noise sigma."""
+    """Define image-quality thresholds in 8-bit luminance, pixels and noise measures.
 
-    blur_threshold: float = Field(default=50.0, ge=0)
+    Sixteen-bit samples are rescaled to 8-bit levels before measuring.
+    Defaults come from generated scenes saved as PNG and JPEG.
+    ``min_sharpness`` bounds the contrast-invariant edge sharpness: clean,
+    hazy, snowy, minimal and low-contrast scenes measured at least 1.29, and
+    the same scenes under Gaussian blur of sigma 1.5 or more at most 0.95.
+    ``min_highlight`` bounds
+    the 99.9th luminance percentile: clean scenes reached at least 144 and
+    halved exposures at most 110. ``max_impulse_fraction`` sits between clean
+    scenes (at most 0.00003) and 1% salt-and-pepper noise (at least 0.0068).
+    ``blur_threshold`` is the earlier absolute Laplacian variance, which
+    falls with contrast; it is off unless set.
+    """
+
+    blur_threshold: float = Field(default=0.0, ge=0)
+    min_sharpness: float = Field(default=1.0, ge=0, le=10)
     min_brightness: float = Field(default=20.0, ge=0, le=255)
     max_brightness: float = Field(default=235.0, ge=0, le=255)
+    min_highlight: float = Field(default=120.0, ge=0, le=255)
     min_resolution: int = Field(default=64, ge=1)
     max_noise_sigma: float = Field(default=12.0, gt=0, le=255)
+    impulse_level: float = Field(default=48.0, gt=0, le=255)
+    max_impulse_fraction: float = Field(default=0.003, gt=0, le=1)
     min_color_stddev: float = Field(default=5.0, gt=0, le=128)
     max_clipped_fraction: float = Field(default=0.5, ge=0, le=1)
     analysis_size: int = Field(default=512, ge=32, le=2048)
