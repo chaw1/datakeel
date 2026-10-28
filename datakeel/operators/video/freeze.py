@@ -79,7 +79,7 @@ def held_frames(
     unchanged frames, as a keyframe re-encoding a held picture produces.
     """
     change, shift = analysis.change, analysis.shift
-    count = analysis.count
+    count = analysis.frame_count
     if count < _MIN_FRAMES:
         empty = np.zeros(count, dtype=np.bool_)
         return empty, empty
@@ -120,7 +120,7 @@ def frozen_runs(
     runs: list[tuple[int, int]] = []
     start: int | None = None
     anchor = 0
-    for index in range(1, analysis.count):
+    for index in range(1, analysis.frame_count):
         if held[index] and start is None:
             start = anchor = index - 1
         if start is None:
@@ -136,5 +136,5 @@ def frozen_runs(
         if held[index]:
             start = anchor = index - 1
     if start is not None:
-        runs.append((start, analysis.count - 1))
+        runs.append((start, analysis.frame_count - 1))
     return [(first, last) for first, last in runs if last > first]

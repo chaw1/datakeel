@@ -107,7 +107,7 @@ def _dhashes(luma: NDArray[np.float32]) -> NDArray[np.uint64]:
 def decode_sequence(file: FileItem, max_fps: float) -> Sequence:
     """Build a sequence from the shared single-pass analysis at up to ``max_fps``."""
     analysis = analyse(file, max_fps)
-    count = analysis.count
+    count = analysis.frame_count
     luma = analysis.luma().reshape(count, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH)
     search = (
         luma.reshape(count, _SEARCH_HEIGHT, 2, _SEARCH_WIDTH, 2)

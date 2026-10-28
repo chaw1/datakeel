@@ -55,13 +55,13 @@ class VideoAnalysis(NamedTuple):
     thumbnails: NDArray[np.uint8]
 
     @property
-    def count(self) -> int:
+    def frame_count(self) -> int:
         """Return the number of analysed frames."""
         return len(self.mean)
 
     def luma(self) -> NDArray[np.float32]:
         """Return BT.601 luma of the thumbnails as ``(frames, 576)`` float32."""
-        pixels = self.thumbnails.reshape(self.count, -1, 3).astype(np.float32)
+        pixels = self.thumbnails.reshape(self.frame_count, -1, 3).astype(np.float32)
         weights = np.asarray([0.299, 0.587, 0.114], dtype=np.float32)
         return pixels @ weights
 
