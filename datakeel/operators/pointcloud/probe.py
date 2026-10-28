@@ -10,7 +10,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from datakeel.core.models import FileItem
-from datakeel.operators.base import Operator, OperatorResult, annotate, summarize
+from datakeel.operators.base import Operator, OperatorResult, annotate
+from datakeel.operators.pointcloud.batch import each_file
 from datakeel.operators.pointcloud.io import load_cloud
 from datakeel.operators.pointcloud.models import (
     BoundingBox,
@@ -190,7 +191,7 @@ def execute(files: list[FileItem], _output_dir: Path, params: ProbeParams) -> Op
             pointcloud_probe_params=params.model_dump(mode="json"),
         )
 
-    return summarize(files, [probe(file) for file in files])
+    return each_file(files, "pointcloud.probe", probe)
 
 
 OPERATOR = Operator("pointcloud.probe", "point-cloud", "quality", ProbeParams, execute)

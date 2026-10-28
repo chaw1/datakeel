@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Exercise unit suspicion, batch hints and policy continuity across operators."""
+"""Exercise unit suspicion, batch hints, policy continuity and per-file failure."""
 
 from __future__ import annotations
 
@@ -10,7 +10,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from datakeel.operators.pointcloud import clean, downsample, preview, probe, unit_check
+from datakeel.operators.pointcloud import (
+    clean,
+    downsample,
+    outliers,
+    preview,
+    probe,
+    unit_check,
+)
 from datakeel.operators.pointcloud.io import dump_cloud
 from datakeel.quality.media import pointcloud_assessment
 from tests.operators.pointcloud.helpers import make_cloud
@@ -19,6 +26,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from datakeel.core.models import FileItem
+    from datakeel.operators.base import Operator
     from tests.operators.factories import FileFactory
 
 HINT = "batch_extent_ratio_possible_unit_mismatch"
@@ -27,6 +35,11 @@ HINT = "batch_extent_ratio_possible_unit_mismatch"
 def _cloud(make_file: FileFactory, extent: float, name: str = "scan.ply") -> FileItem:
     corners = np.array([[0.0, 0.0, 0.0], [extent, extent, extent]])
     return make_file(dump_cloud(make_cloud(corners)), name, "point-cloud")
+
+
+def _broken(make_file: FileFactory) -> FileItem:
+    header = b"ply\nformat ascii 1.0\nelement vertex 9\nproperty float x\nend_header\n1 2\n"
+    return make_file(header, "broken.ply", "point-cloud")
 
 
 def test_mixed_scale_batch_gets_a_hint_not_a_defect(
@@ -115,4 +128,44 @@ def test_explicit_reference_and_ratio_give_a_matching_scale_in_both_directions(
 
 def test_empty_unit_check_batch_produces_no_outputs(output_dir: Path) -> None:
     """Batch-relative scale estimation has a defined empty input behavior."""
-    assert unit_check.OPERATOR.run([], output_dir).files == []
+    result = unit_check.OPERATOR.run([], output_dir)
+    assert result.files == []
+    assert result.quality["partial"] is False
+
+
+OPERATORS = [probe.OPERATOR, clean.OPERATOR, downsample.OPERATOR, outliers.OPERATOR]
+
+
+@pytest.mark.parametrize("operator", [*OPERATORS, preview.OPERATOR, unit_check.OPERATOR])
+def test_one_unreadable_file_leaves_the_rest_of_the_batch_processed(
+    make_file: FileFactory, output_dir: Path, operator: Operator
+) -> None:
+    """The broken file keeps its reason; the others are processed and the run is partial."""
+    good = [_cloud(make_file, 1.0, "first.ply"), _cloud(make_file, 1.2, "second.ply")]
+    broken = _broken(make_file)
+    result = operator.run([good[0], broken, good[1]], output_dir)
+    assert len(result.files) == 3
+    assert result.files[1].id == broken.id
+    failure = result.files[1].metadata.get("pointcloud_error")
+    assert isinstance(failure, dict)
+    assert failure["operator"] == operator.manifest.id
+    assert "Malformed or truncated" in failure["reason"]
+    assert result.quality["partial"] is True
+    assert result.quality["failed_count"] == 1
+    assert result.quality["failed_files"][0]["filename"].endswith("broken.ply")
+    assert [issue["code"] for issue in result.quality["issues"]] == ["pointcloud_unreadable"]
+    assert all("pointcloud_error" not in result.files[index].metadata for index in (0, 2))
+    clean_run = operator.run(good, output_dir)
+    assert clean_run.quality["partial"] is False
+    assert clean_run.quality["failed_count"] == 0
+
+
+@pytest.mark.parametrize("operator", OPERATORS)
+def test_later_steps_skip_a_failed_file_and_keep_the_first_reason(
+    make_file: FileFactory, output_dir: Path, operator: Operator
+) -> None:
+    """A file that failed earlier is not read again, and its original reason survives."""
+    failed = probe.OPERATOR.run([_broken(make_file)], output_dir).files[0]
+    passed = operator.run([failed], output_dir)
+    assert passed.files == [failed]
+    assert passed.quality["failed_files"][0]["operator"] == "pointcloud.probe"

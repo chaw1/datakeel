@@ -12,6 +12,7 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
 from datakeel.operators.base import Operator, OperatorResult, annotate
 from datakeel.operators.image.helpers import image_artifact
+from datakeel.operators.pointcloud.batch import each_file
 from datakeel.operators.pointcloud.io import load_cloud
 from datakeel.operators.pointcloud.models import PointCloud, PointCloudProbe, PreviewParams
 from datakeel.operators.pointcloud.probe import file_probe_params, inspect_cloud
@@ -76,10 +77,7 @@ def execute(files: list[FileItem], output_dir: Path, params: PreviewParams) -> O
             },
         )
 
-    output = [render(file) for file in files]
-    return OperatorResult(
-        files=output, quality={"input_count": len(files), "output_count": len(output)}
-    )
+    return each_file(files, "pointcloud.preview", render)
 
 
 OPERATOR = Operator("pointcloud.preview", "point-cloud", "visualization", PreviewParams, execute)

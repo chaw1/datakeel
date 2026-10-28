@@ -10,8 +10,9 @@ from numpy.typing import NDArray
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
-from datakeel.operators.base import Operator, OperatorResult, summarize
+from datakeel.operators.base import Operator, OperatorResult
 from datakeel.operators.pointcloud.artifacts import cloud_artifact
+from datakeel.operators.pointcloud.batch import each_file
 from datakeel.operators.pointcloud.io import load_cloud, select_cloud
 from datakeel.operators.pointcloud.models import DownsampleParams
 
@@ -38,7 +39,7 @@ def execute(files: list[FileItem], output_dir: Path, params: DownsampleParams) -
         selected = select_cloud(cloud, voxel_indices(cloud.xyz, params.voxel_size))
         return cloud_artifact(file, output_dir, selected, "pointcloud.downsample", (cloud, None))
 
-    return summarize(files, [thin(file) for file in files])
+    return each_file(files, "pointcloud.downsample", thin)
 
 
 OPERATOR = Operator("pointcloud.downsample", "point-cloud", "transform", DownsampleParams, execute)

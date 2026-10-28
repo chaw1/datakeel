@@ -8,7 +8,13 @@ from pathlib import Path
 import numpy as np
 
 from datakeel.core.models import FileItem
-from datakeel.operators.base import Operator, OperatorResult, annotate, summarize
+from datakeel.operators.base import Operator, OperatorResult, annotate
+from datakeel.operators.pointcloud.batch import (
+    FILE_ERRORS,
+    failed_file,
+    file_error,
+    summarize_batch,
+)
 from datakeel.operators.pointcloud.io import load_cloud
 from datakeel.operators.pointcloud.models import PointCloudProbe, ProbeParams, UnitCheckParams
 from datakeel.operators.pointcloud.probe import (
@@ -86,15 +92,21 @@ def execute(files: list[FileItem], _output_dir: Path, params: UnitCheckParams) -
     a suspicion. A near-thousandfold difference from the rest of the batch is
     recorded as a hint, because mixed-scale batches are legitimate.
     """
-    measured = [_measured(file) for file in files]
-    reference = _reference(measured, params)
-    return summarize(
-        files,
-        [
-            _checked(file, probe, params, reference)
-            for file, probe in zip(files, measured, strict=True)
-        ],
-    )
+    measured: dict[str, PointCloudProbe] = {}
+    output: dict[str, FileItem] = {}
+    for file in files:
+        if file_error(file) is not None:
+            output[file.id] = file
+            continue
+        try:
+            measured[file.id] = _measured(file)
+        except FILE_ERRORS as error:
+            output[file.id] = failed_file(file, "pointcloud.unit_check", error)
+    reference = _reference(list(measured.values()), params)
+    for file in files:
+        if file.id in measured:
+            output[file.id] = _checked(file, measured[file.id], params, reference)
+    return summarize_batch(files, [output[file.id] for file in files])
 
 
 OPERATOR = Operator("pointcloud.unit_check", "point-cloud", "validation", UnitCheckParams, execute)
