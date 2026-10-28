@@ -31,7 +31,7 @@ def test_missing_ffmpeg_explains_user_install(monkeypatch: pytest.MonkeyPatch) -
     def unavailable(_program: str) -> None:
         return None
 
-    monkeypatch.setattr("datakeel.operators.media.tools.shutil.which", unavailable)
+    monkeypatch.setattr("datakeel.operators.media.command.shutil.which", unavailable)
     with pytest.raises(ExecutionError, match="brew install ffmpeg"):
         run_tool(["ffmpeg", "-version"])
 
@@ -49,7 +49,7 @@ def test_timeout_is_a_domain_error(monkeypatch: pytest.MonkeyPatch) -> None:
         command = "ffmpeg"
         raise subprocess.TimeoutExpired(command, 300)
 
-    monkeypatch.setattr("datakeel.operators.media.tools.subprocess.run", timeout)
+    monkeypatch.setattr("datakeel.operators.media.command.subprocess.run", timeout)
     with pytest.raises(ExecutionError, match="TimeoutExpired"):
         run_tool(["ffmpeg", "-version"])
 

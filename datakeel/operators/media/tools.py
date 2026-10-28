@@ -5,9 +5,8 @@
 
 import hashlib
 import json
-import shutil
-import subprocess
 from fractions import Fraction
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -17,6 +16,24 @@ from datakeel.core.errors import ExecutionError, ValidationError
 from datakeel.core.media_alignment import MediaAlignment
 from datakeel.core.media_models import MediaProbe, MediaStep
 from datakeel.core.models import FileItem
+from datakeel.operators.media.command import (
+    input_path,
+    media_timeout,
+    run_tool,
+    run_tool_stderr,
+    stream_tool,
+)
+
+__all__ = [
+    "decode_audio",
+    "input_path",
+    "media_artifact",
+    "media_timeout",
+    "probe_file",
+    "run_tool",
+    "run_tool_stderr",
+    "stream_tool",
+]
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -25,79 +42,36 @@ if TYPE_CHECKING:
     from datakeel.operators.base import Params
 
 
-def _run(arguments: list[str]) -> subprocess.CompletedProcess[bytes]:
-    if not arguments or arguments[0] not in {"ffmpeg", "ffprobe"}:
-        msg = "Media commands must use ffmpeg or ffprobe"
-        raise ValidationError(msg)
-    executable = shutil.which(arguments[0])
-    if executable is None:
-        msg = "Install ffmpeg and ffprobe: brew install ffmpeg, or apt-get install ffmpeg"
-        raise ExecutionError(msg)
-    prefix = [executable, "-protocol_whitelist", "file,pipe"]
-    if arguments[0] == "ffmpeg":
-        prefix.extend(["-nostdin", "-threads", "1", "-filter_threads", "1"])
-    try:
-        result = subprocess.run(  # noqa: S603  # Executable resolved from an explicit allowlist.
-            [*prefix, *arguments[1:]], capture_output=True, timeout=300, check=False
-        )
-    except (OSError, subprocess.TimeoutExpired) as error:
-        msg = f"Local media command failed: {type(error).__name__}"
-        raise ExecutionError(msg) from error
-    if result.returncode:
-        diagnostic = result.stderr.decode(errors="replace")[-2000:]
-        msg = f"{arguments[0]} could not process recording: {diagnostic}"
-        raise ExecutionError(msg)
-    return result
-
-
-def input_path(file: FileItem) -> str:
-    """Name a local recording so ffmpeg never reads it as an option or a protocol.
-
-    A relative name such as ``-take.wav`` is a positional option to ffprobe, and
-    ``cam:1.mp4`` or ``pipe:0`` select protocols; an absolute path is neither.
-    """
-    return str(Path(file.path).absolute())
-
-
-def run_tool(arguments: list[str]) -> bytes:
-    """Run one local media command and return its standard output."""
-    return _run(arguments).stdout
-
-
-def run_tool_stderr(arguments: list[str]) -> bytes:
-    """Run one local media measurement and return its diagnostic output."""
-    return _run(arguments).stderr
-
-
 def probe_file(file: FileItem) -> MediaProbe:
-    """Read local media headers without permitting network protocols."""
+    """Read local media headers without network protocols, cached per file version."""
+    path = Path(input_path(file))
+    try:
+        status = path.stat()
+    except OSError as error:
+        msg = f"Recording is not readable: {type(error).__name__}"
+        raise ExecutionError(msg) from error
+    return _probe(str(path), status.st_size, status.st_mtime_ns)
+
+
+@lru_cache(maxsize=256)
+def _probe(path: str, _size: int, _modified_ns: int) -> MediaProbe:
     document = json.loads(
-        run_tool(
-            [
-                "ffprobe",
-                "-v",
-                "error",
-                "-show_streams",
-                "-show_format",
-                "-of",
-                "json",
-                input_path(file),
-            ]
-        )
+        run_tool(["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", path])
     )
     streams = document.get("streams", [])
     videos = [stream for stream in streams if stream.get("codec_type") == "video"]
     audios = [stream for stream in streams if stream.get("codec_type") == "audio"]
     stream: dict[str, Any] = videos[0] if videos else audios[0] if audios else {}
     audio: dict[str, Any] = audios[0] if audios else {}
-    duration = document.get("format", {}).get("duration", stream.get("duration", "0"))
+    form = document.get("format", {})
+    duration = form.get("duration", stream.get("duration", "0"))
     rate = stream.get("avg_frame_rate", "0/1")
     rotation = int(stream.get("tags", {}).get("rotate", 0))
     for side in stream.get("side_data_list", []):
         rotation = int(side.get("rotation", rotation))
     return MediaProbe(
         duration_ms=round(float(duration) * 1000),
-        format=str(document.get("format", {}).get("format_name", "")),
+        format=str(form.get("format_name", "")),
         codec=str(stream.get("codec_name", "")),
         width=int(stream.get("width", 0)),
         height=int(stream.get("height", 0)),
@@ -113,7 +87,8 @@ def decode_audio(
     file: FileItem, sample_rate: int = 16000, *, max_duration_seconds: float | None = None
 ) -> "NDArray[np.float64]":
     """Decode the strongest audio channel without destructive phase cancellation."""
-    channels = probe_file(file).channels or 1
+    probe = probe_file(file)
+    channels = probe.channels or 1
     limit = ["-t", str(max_duration_seconds)] if max_duration_seconds is not None else []
     content = run_tool(
         [
@@ -130,7 +105,8 @@ def decode_audio(
             "-f",
             "f64le",
             "pipe:1",
-        ]
+        ],
+        timeout=media_timeout(probe.duration_ms),
     )
     samples = np.frombuffer(content, dtype="<f8").reshape(-1, channels)
     if not samples.size:

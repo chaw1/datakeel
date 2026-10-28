@@ -74,6 +74,8 @@ def test_loudness_reports_missing_measurement_json(
 ) -> None:
     """Fail clearly when a tool omits its promised measurement result."""
     source = make_audio("sine=duration=0.5")
-    monkeypatch.setattr(loudness, "run_tool_stderr", lambda _arguments: b"no measurement")
+    monkeypatch.setattr(
+        loudness, "run_tool_stderr", lambda _arguments, **_options: b"no measurement"
+    )
     with pytest.raises(ExecutionError, match="EBU R128 loudness measurements"):
         OPERATOR.run([source], tmp_path / "missing")

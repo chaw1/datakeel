@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     model_routing_file: Path | None = None
     delegation_max_depth: int = Field(default=2, ge=1, le=8)
     delegation_max_parallel: int = Field(default=3, ge=1, le=16)
+    media_threads: int = Field(default=0, ge=0, le=64)
+    media_timeout_base_seconds: float = Field(default=300.0, gt=0, le=86400)
+    media_timeout_ratio: float = Field(default=2.0, gt=0, le=100)
+    media_timeout_max_seconds: float = Field(default=21600.0, gt=0, le=172800)
 
     def extraction_key(self, environment_name: str | None) -> SecretStr | None:
         """Resolve an explicitly selected extraction credential only when it is needed."""

@@ -14,10 +14,10 @@ from datakeel.operators.audio.common import annotate_audio, runs
 from datakeel.operators.audio.models import AudioMetrics
 from datakeel.operators.audio.params import ClippingParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
-from datakeel.operators.media.tools import input_path, probe_file, run_tool
+from datakeel.operators.media.tools import input_path, media_timeout, probe_file, run_tool
 
 
-def _plateaus(channel: NDArray[np.float64], params: ClippingParams) -> NDArray[np.bool_]:
+def _plateaus(channel: NDArray[np.float32], params: ClippingParams) -> NDArray[np.bool_]:
     flagged = np.zeros(channel.shape, dtype=np.bool_)
     for start, end in runs(np.abs(channel) >= params.threshold):
         if end - start >= params.min_consecutive_samples:
@@ -26,7 +26,7 @@ def _plateaus(channel: NDArray[np.float64], params: ClippingParams) -> NDArray[n
 
 
 def _saturated(
-    channel: NDArray[np.float64], params: ClippingParams, sample_rate: int
+    channel: NDArray[np.float32], params: ClippingParams, sample_rate: int
 ) -> NDArray[np.bool_]:
     """Flag windows that dwell near full scale, as lossy-coded clipped plateaus do.
 
@@ -60,13 +60,15 @@ def _measure(
             "-map",
             "0:a:0",
             "-c:a",
-            "pcm_f64le",
+            "pcm_f32le",
             "-f",
-            "f64le",
+            "f32le",
             "pipe:1",
-        ]
+        ],
+        timeout=media_timeout(probe.duration_ms),
     )
-    samples = np.frombuffer(raw, dtype="<f8").reshape(-1, channels)
+    # Single precision halves the memory of long recordings; thresholds need no more.
+    samples = np.frombuffer(raw, dtype="<f4").reshape(-1, channels)
     clipped = np.zeros(samples.shape, dtype=np.bool_)
     for channel in range(channels):
         clipped[:, channel] = _plateaus(samples[:, channel], params) | _saturated(

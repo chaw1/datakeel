@@ -19,6 +19,7 @@ from datakeel.operators.base import Operator, OperatorResult, summarize
 from datakeel.operators.media.tools import (
     input_path,
     media_artifact,
+    media_timeout,
     probe_file,
     run_tool,
     run_tool_stderr,
@@ -52,7 +53,8 @@ def measure(file: FileItem, params: LoudnessParams) -> LoudnessMeasurement:
             "-f",
             "null",
             "-",
-        ]
+        ],
+        timeout=media_timeout(probe_file(file).duration_ms),
     ).decode(errors="replace")
     matches = re.findall(r"\{[^{}]*\}", diagnostic)
     if not matches:
@@ -106,7 +108,8 @@ def _normalize(
             "-f",
             "wav",
             "pipe:1",
-        ]
+        ],
+        timeout=media_timeout(probe.duration_ms),
     )
     return media_artifact(
         file,

@@ -11,14 +11,15 @@ from datakeel.core.models import FileItem
 from datakeel.operators.audio.models import ActivityResult, AudioMetrics
 from datakeel.operators.audio.params import ActivityParams
 from datakeel.operators.base import annotate
-from datakeel.operators.media.tools import input_path, probe_file, run_tool
+from datakeel.operators.media.tools import input_path, media_timeout, probe_file, run_tool
 
 SAMPLE_RATE = 16000
 
 
 def decode_channels(file: FileItem) -> NDArray[np.float64]:
     """Decode first-stream channels independently to avoid destructive phase cancellation."""
-    channels = probe_file(file).channels or 1
+    probe = probe_file(file)
+    channels = probe.channels or 1
     raw = run_tool(
         [
             "ffmpeg",
@@ -35,7 +36,8 @@ def decode_channels(file: FileItem) -> NDArray[np.float64]:
             "-f",
             "f64le",
             "pipe:1",
-        ]
+        ],
+        timeout=media_timeout(probe.duration_ms),
     )
     return np.frombuffer(raw, dtype="<f8").reshape(-1, channels)
 

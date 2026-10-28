@@ -14,7 +14,13 @@ from datakeel.operators.audio.common import (
 )
 from datakeel.operators.audio.params import TrimParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
-from datakeel.operators.media.tools import input_path, media_artifact, run_tool
+from datakeel.operators.media.tools import (
+    input_path,
+    media_artifact,
+    media_timeout,
+    probe_file,
+    run_tool,
+)
 
 
 def execute(files: list[FileItem], output_dir: Path, params: TrimParams) -> OperatorResult:
@@ -48,7 +54,8 @@ def execute(files: list[FileItem], output_dir: Path, params: TrimParams) -> Oper
                 "-f",
                 "wav",
                 "pipe:1",
-            ]
+            ],
+            timeout=media_timeout(probe_file(file).duration_ms),
         )
         trimmed = media_artifact(
             file,
