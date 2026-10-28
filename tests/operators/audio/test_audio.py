@@ -180,7 +180,7 @@ def test_clipping_refresh_removes_stale_intervals(make_audio: AudioFactory, tmp_
     """A rerun with a higher threshold must clear previous clipping deductions."""
     source = make_audio("sine=frequency=523:sample_rate=16000:duration=0.3")
     low = clipping.OPERATOR.run(
-        [source], tmp_path / "low", {"threshold": 0.1, "min_consecutive_samples": 1}
+        [source], tmp_path / "low", {"saturation_level": 0.1, "saturation_occupancy": 0.1}
     ).files[0]
     refreshed = clipping.OPERATOR.run([low], tmp_path / "normal").files[0]
     assert low.metadata["audio_metrics"]["clipping_ratio"] > 0

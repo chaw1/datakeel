@@ -16,11 +16,21 @@ from datakeel.operators.audio.params import ClippingParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
 from datakeel.operators.media.tools import input_path, media_timeout, probe_file, run_tool
 
+# Largest variation (two 16-bit steps) within a run that is still a flat plateau.
+_FLAT = 2 / 32768
+
 
 def _plateaus(channel: NDArray[np.float32], params: ClippingParams) -> NDArray[np.bool_]:
+    """Flag runs held flat at full scale, as converters and integer PCM clip.
+
+    A lossy decoder's overshoot can exceed full scale for a few samples of an
+    unclipped waveform, but those samples still move; a clipped run does not.
+    """
     flagged = np.zeros(channel.shape, dtype=np.bool_)
     for start, end in runs(np.abs(channel) >= params.threshold):
-        if end - start >= params.min_consecutive_samples:
+        if end - start >= params.min_consecutive_samples and (
+            float(np.ptp(channel[start:end])) <= _FLAT
+        ):
             flagged[start:end] = True
     return flagged
 
