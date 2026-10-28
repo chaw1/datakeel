@@ -118,6 +118,61 @@ def test_openai_when_tool_roundtrip_preserves_arguments_usage_and_headers(
     assert result.stop_reason == "tool_calls"
 
 
+def test_openai_when_request_parameters_given_sends_them_in_the_request_body(
+    model_request: ModelRequest,
+) -> None:
+    """Thinking controls reach the OpenAI-compatible body exactly as typed in the profile."""
+    bodies: list[dict[str, JsonValue]] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {"message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}
+                ],
+                "usage": {"prompt_tokens": 3, "completion_tokens": 1},
+            },
+        )
+
+    with (
+        httpx.Client(transport=httpx.MockTransport(respond), trust_env=False) as client,
+        model_provider(
+            ConversationCreate(provider="openai", model="qwen3.5-flash"),
+            Settings.model_validate(
+                {"openai_api_key": "fixture-key", "openai_base_url": "https://fixture.invalid/v1"}
+            ),
+            client,
+            {"enable_thinking": False, "reasoning_effort": "low"},
+        ) as provider,
+    ):
+        assert provider.complete(model_request).content == "ok"
+    (body,) = bodies
+    assert body["model"] == "fixture-model"
+    assert body["enable_thinking"] is False
+    assert body["reasoning_effort"] == "low"
+
+
+def test_anthropic_when_request_parameters_given_rejects_before_any_request() -> None:
+    """Thinking controls are an OpenAI-compatible body field and never reach Anthropic."""
+
+    def fail(_request: httpx.Request) -> httpx.Response:
+        raise AssertionError
+
+    with (
+        httpx.Client(transport=httpx.MockTransport(fail), trust_env=False) as client,
+        pytest.raises(ValidationError, match="request_parameters"),
+        model_provider(
+            ConversationCreate(provider="anthropic"),
+            Settings.model_validate({"anthropic_api_key": "fixture-key"}),
+            client,
+            {"enable_thinking": False},
+        ),
+    ):
+        pass
+
+
 def test_anthropic_when_tool_roundtrip_uses_messages_blocks_and_inclusive_usage(
     model_request: ModelRequest,
 ) -> None:

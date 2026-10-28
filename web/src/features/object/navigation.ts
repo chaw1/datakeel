@@ -19,6 +19,7 @@ export const objectTabs = [
   "quality",
   "annotation-quality",
   "report",
+  "datasheets",
 ] as const;
 export type ObjectTab = (typeof objectTabs)[number];
 export type ObjectTarget = {

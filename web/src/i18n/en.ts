@@ -9,6 +9,7 @@ import { catalogEn } from "./catalogEn";
 import { commandEn } from "./commandEn";
 import { customOperatorEn } from "./customOperatorEn";
 import { dqEn } from "./dqEn";
+import { datasheetEn } from "./datasheetEn";
 import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
 import { kgEn } from "./kgEn";
@@ -29,6 +30,7 @@ export const en = {
   ...dqEn,
   ...metadataEn,
   ...annotationEn,
+  ...datasheetEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,

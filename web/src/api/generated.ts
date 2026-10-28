@@ -1047,6 +1047,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{dataset_id}/datasheets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Documents
+         * @description List frozen drafts with their current version-expiry marker.
+         */
+        get: operations["documents_api_datasets__dataset_id__datasheets_get"];
+        put?: never;
+        /**
+         * Generate
+         * @description Freeze actual facts into a draft action; external model calls require approval.
+         */
+        post: operations["generate_api_datasets__dataset_id__datasheets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{identifier}": {
         parameters: {
             query?: never;
@@ -1305,6 +1329,106 @@ export interface paths {
         get: operations["versions_api_datasets__identifier__versions_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasheets/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Job
+         * @description Read queued, complete, failed or cancelled optional model generation.
+         */
+        get: operations["job_api_datasheets_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasheets/{before_id}/compare/{after_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare
+         * @description Compare frozen fact values between two saved snapshots of the same dataset.
+         */
+        get: operations["compare_api_datasheets__before_id__compare__after_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasheets/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Document
+         * @description Read one immutable cited document with current publication and expiry state.
+         */
+        get: operations["document_api_datasheets__document_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasheets/{document_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download
+         * @description Download escaped Markdown or standalone HTML with sentence-level fact links.
+         */
+        get: operations["download_api_datasheets__document_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasheets/{document_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish
+         * @description Prepare publication for explicit review through the existing approval gate.
+         */
+        post: operations["publish_api_datasheets__document_id__publish_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2798,7 +2922,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance";
+            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -2852,7 +2976,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance";
+            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -4844,6 +4968,198 @@ export interface components {
             } | null;
         };
         /**
+         * DatasheetComparison
+         * @description Compare saved documents without re-reading mutable platform state.
+         */
+        DatasheetComparison: {
+            /** After Id */
+            after_id: string;
+            /** Before Id */
+            before_id: string;
+            /**
+             * Changed Chapters
+             * @default []
+             */
+            changed_chapters: ("motivation" | "composition" | "collection" | "preprocessing" | "uses" | "distribution" | "maintenance")[];
+            /**
+             * Changes
+             * @default []
+             */
+            changes: components["schemas"]["DatasheetFactChange"][];
+        };
+        /**
+         * DatasheetDocument
+         * @description Bind checked documentation to one immutable dataset version and fact snapshot.
+         */
+        DatasheetDocument: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /**
+             * Dropped Sentences
+             * @default []
+             */
+            dropped_sentences: components["schemas"]["DroppedSentence"][];
+            /** Facts */
+            facts: components["schemas"]["DatasheetFact"][];
+            /** Id */
+            id: string;
+            /**
+             * Language
+             * @default zh
+             * @enum {string}
+             */
+            language: "zh" | "en";
+            /**
+             * Mode
+             * @default template
+             * @enum {string}
+             */
+            mode: "template" | "model";
+            /**
+             * Published
+             * @default false
+             */
+            published: boolean;
+            /** Sections */
+            sections: components["schemas"]["DatasheetSection"][];
+            /**
+             * Stale
+             * @default false
+             */
+            stale: boolean;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * DatasheetFact
+         * @description Freeze one deterministic platform value together with its source coordinates.
+         */
+        DatasheetFact: {
+            /**
+             * Chapter
+             * @enum {string}
+             */
+            chapter: "motivation" | "composition" | "collection" | "preprocessing" | "uses" | "distribution" | "maintenance";
+            /** Field */
+            field: string;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @default text
+             * @enum {string}
+             */
+            kind: "count" | "ratio" | "percent" | "score" | "bytes" | "amount" | "duration" | "date" | "name" | "status" | "text" | "number" | "record";
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Source Id */
+            source_id: string;
+            /** Source Type */
+            source_type: string;
+            /** Unit */
+            unit?: string | null;
+            value: components["schemas"]["JsonValue"];
+        };
+        /**
+         * DatasheetFactChange
+         * @description Describe one stable fact identity added, removed, or changed between drafts.
+         */
+        DatasheetFactChange: {
+            after?: components["schemas"]["JsonValue"];
+            before?: components["schemas"]["JsonValue"];
+            /** Fact Id */
+            fact_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "added" | "removed" | "changed";
+        };
+        /**
+         * DatasheetJob
+         * @description Expose durable task progress without leaking the frozen outgoing fact payload.
+         */
+        DatasheetJob: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Document Id */
+            document_id?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Language
+             * @enum {string}
+             */
+            language: "zh" | "en";
+            /**
+             * Provider
+             * @default fake
+             * @enum {string}
+             */
+            provider: "fake" | "openai" | "anthropic";
+            /**
+             * Status
+             * @default QUEUED
+             * @enum {string}
+             */
+            status: "QUEUED" | "COMPLETED" | "FAILED" | "CANCELLED";
+            /** Task Id */
+            task_id: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * DatasheetSection
+         * @description Represent one fixed chapter and disclose when usable facts are absent.
+         */
+        DatasheetSection: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "motivation" | "composition" | "collection" | "preprocessing" | "uses" | "distribution" | "maintenance";
+            /**
+             * Missing
+             * @default false
+             */
+            missing: boolean;
+            /**
+             * Sentences
+             * @default []
+             */
+            sentences: components["schemas"]["DatasheetSentence"][];
+            /** Title */
+            title: string;
+        };
+        /**
+         * DatasheetSentence
+         * @description Carry proposed text and explicit references before independent verification.
+         */
+        DatasheetSentence: {
+            /**
+             * Fact Ids
+             * @default []
+             */
+            fact_ids: string[];
+            /** Text */
+            text: string;
+        };
+        /**
          * DbtImportRequest
          * @description Supply decoded dbt artifacts and the matching physical catalog source identity.
          */
@@ -5352,6 +5668,21 @@ export interface components {
             table: string;
         };
         /**
+         * DroppedSentence
+         * @description Preserve rejected text and every independent citation failure reason.
+         */
+        DroppedSentence: {
+            /**
+             * Fact Ids
+             * @default []
+             */
+            fact_ids: string[];
+            /** Reasons */
+            reasons: string[];
+            /** Text */
+            text: string;
+        };
+        /**
          * EntityLink
          * @description Expose the reviewable assertion and its graph and catalog endpoints.
          */
@@ -5811,6 +6142,47 @@ export interface components {
              * @default 1.0
              */
             version: string;
+        };
+        /**
+         * GenerateDatasheetRequest
+         * @description Choose a version, language and optional existing model configuration.
+         */
+        GenerateDatasheetRequest: {
+            budget?: components["schemas"]["BudgetLimits-Input"];
+            /**
+             * Language
+             * @default zh
+             * @enum {string}
+             */
+            language: "zh" | "en";
+            /**
+             * Max Output Tokens
+             * @default 4096
+             */
+            max_output_tokens: number;
+            /**
+             * Mode
+             * @default template
+             * @enum {string}
+             */
+            mode: "template" | "model";
+            /**
+             * Model
+             * @default fake-demo
+             */
+            model: string;
+            /**
+             * Provider
+             * @default fake
+             * @enum {string}
+             */
+            provider: "fake" | "openai" | "anthropic";
+            /** Request Parameters */
+            request_parameters?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Version Id */
+            version_id: string;
         };
         /**
          * GraphEdge
@@ -11506,6 +11878,74 @@ export interface operations {
             };
         };
     };
+    documents_api_datasets__dataset_id__datasheets_get: {
+        parameters: {
+            query?: {
+                version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasheetDocument"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_api_datasets__dataset_id__datasheets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateDatasheetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     dataset_api_datasets__identifier__get: {
         parameters: {
             query?: never;
@@ -11952,6 +12392,165 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VersionView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_api_datasheets_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasheetJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compare_api_datasheets__before_id__compare__after_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                before_id: string;
+                after_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasheetComparison"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    document_api_datasheets__document_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasheetDocument"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_api_datasheets__document_id__download_get: {
+        parameters: {
+            query?: {
+                format?: "markdown" | "html";
+            };
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": unknown;
+                    "text/markdown": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_api_datasheets__document_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionPlan"];
                 };
             };
             /** @description Validation Error */

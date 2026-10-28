@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 from pydantic import Field, JsonValue, field_validator, model_validator
 
 from datakeel.core.evidence_models import ContentRevision, ImageRegion
+from datakeel.core.model_parameters import request_parameter_valid
 from datakeel.core.models import BoundaryModel
 from datakeel.core.transcription_auto import AutoRouteDecision, AutoRoutingConfig, OCRReference
 
@@ -60,20 +61,7 @@ class TranscriptionProfile(BoundaryModel):
     def validate_parameters(cls, values: dict[str, JsonValue]) -> dict[str, JsonValue]:
         """Permit only typed thinking and context controls, never transport overrides."""
         for name, value in values.items():
-            valid = (
-                (name == "enable_thinking" and isinstance(value, bool))
-                or (
-                    name == "num_ctx"
-                    and isinstance(value, int)
-                    and not isinstance(value, bool)
-                    and value > 0
-                )
-                or (
-                    name == "reasoning_effort"
-                    and value in ("none", "minimal", "low", "medium", "high")
-                )
-            )
-            if not valid:
+            if not request_parameter_valid(name, value):
                 message = "request_parameters: unsupported parameter name or value"
                 raise ValueError(message)
         return values

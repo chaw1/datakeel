@@ -19,6 +19,7 @@ from datakeel.storage.datasets import materialize_files, persist_files
 from datakeel.storage.dq_jobs import schedule_due
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.worker.custom_runner import CustomExecution
+from datakeel.worker.datasheet_runner import execute_datasheet
 from datakeel.worker.dq_runner import execute_dq
 from datakeel.worker.dq_webhooks import relay_webhooks
 from datakeel.worker.heartbeat import pulse as _pulse
@@ -35,6 +36,8 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
         return execute_dq(queue, lease)
     if lease.kg_run_id is not None:
         return execute_kg(queue, lease)
+    if lease.datasheet_job_id is not None:
+        return execute_datasheet(queue, lease)
     stop = threading.Event()
     definition = Pipeline.model_validate(
         lease.pipeline if lease.pipeline is not None else default_pipeline()

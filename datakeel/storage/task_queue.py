@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.datasheet_execution import DatasheetCompletion
 from datakeel.core.dq_monitor import DqCompletion
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_execution import PendingExtraction
@@ -18,6 +19,7 @@ from datakeel.pipeline import Pipeline, validate_pipeline
 from datakeel.pipeline.sharding import validate_shards
 from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.database import Database, DatasetRow, OutboxRow, ShardRow, TaskRow, VersionRow
+from datakeel.storage.datasheet_jobs import publish_completion as publish_datasheet
 from datakeel.storage.dq_results import publish_completion as publish_dq_completion
 from datakeel.storage.events import append_event
 from datakeel.storage.evidence_store import record_extraction_in_session
@@ -41,6 +43,7 @@ class Lease(BaseModel):
     input_version_id: str | None = None
     kg_run_id: str | None = None
     dq_run_id: str | None = None
+    datasheet_job_id: str | None = None
 
 
 class TaskSource(Protocol):
@@ -165,6 +168,7 @@ class DatabaseQueue:
                 input_version_id=_source_version(session, task),
                 kg_run_id=task.kg_run_id,
                 dq_run_id=task.dq_run_id,
+                datasheet_job_id=task.datasheet_job_id,
             )
             session.commit()
             return lease
@@ -190,7 +194,10 @@ class DatabaseQueue:
         error: str | None = None,
         expired_before: float | None = None,
         *,
-        evidence: tuple[PendingExtraction, ...] | KGCompletion | DqCompletion = (),
+        evidence: tuple[PendingExtraction, ...]
+        | KGCompletion
+        | DqCompletion
+        | DatasheetCompletion = (),
     ) -> bool:
         """Publish outputs and the terminal outbox atomically if the lease is owned."""
         with self.db.session() as session:
@@ -209,6 +216,16 @@ class DatabaseQueue:
             if task is None:
                 msg = "Task not found"
                 raise NotFoundError(msg)
+            if (
+                task.datasheet_job_id
+                and not error
+                and (
+                    not isinstance(evidence, DatasheetCompletion)
+                    or evidence.job_id != task.datasheet_job_id
+                )
+            ):
+                msg = "Successful datasheet tasks require their exact checked completion"
+                raise ConflictError(msg)
             shard.state = "FAILED" if error else "COMPLETED"
             shard.outputs = [item.model_dump(mode="json") for item in outputs]
             shard.lease_owner = None
@@ -218,6 +235,8 @@ class DatabaseQueue:
                 publish_dq_completion(session, evidence, task.id)
             elif isinstance(evidence, KGCompletion):
                 publish_completion(session, evidence, task.id)
+            elif isinstance(evidence, DatasheetCompletion):
+                publish_datasheet(session, evidence, task.id)
             else:
                 for pending in evidence:
                     record_extraction_in_session(session, pending.event, pending.bundle)

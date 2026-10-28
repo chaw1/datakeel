@@ -10,6 +10,7 @@ import { chromium } from "playwright";
 
 import { customOperatorSmoke } from "./custom-operator-smoke.mjs";
 import { advancedSmoke } from "./advanced-smoke.mjs";
+import { datasheetSmoke } from "./datasheet-smoke.mjs";
 import { enterpriseSmoke } from "./enterprise-smoke.mjs";
 import { evidenceSmoke } from "./evidence-smoke.mjs";
 import { kgSmoke } from "./kg-smoke.mjs";
@@ -473,6 +474,7 @@ try {
     screenshot,
     checks,
   });
+  const datasheet = await datasheetSmoke({ page, json, screenshot, checks });
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(output, "evidence.json"),
@@ -496,6 +498,7 @@ try {
         routing,
         advanced,
         customOperators,
+        datasheet,
         checks,
         errors,
       },

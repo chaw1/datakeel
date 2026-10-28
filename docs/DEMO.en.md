@@ -237,6 +237,12 @@ Open the dataset **Aster harbor · annotation quality demo** and choose the **An
 
 See the [annotation quality reference](ANNOTATION_QA.md) for metric definitions, the AQL table and the suspicion rules.
 
+## 16. Generate a cited dataset datasheet (2 minutes)
+
+Open **Data library**, choose **Paired scenes · evidence demo**, and select **Datasheet**. Under **Dataset version**, choose **Version 1**, the imported version that carries the evidence assertions. Keep English and **Offline template**, click **Generate draft**, review the reversible plan, then choose **Execute action**. The document has all seven chapters; Motivation, Uses and Distribution say that the platform has no record. Hover over a sentence to see its source fact, then click it to expand the fact ID, source object, field, value and recording time. Expand **Removed sentences**: the template keeps every sentence. Download the Markdown and HTML files; the HTML keeps a citation on every sentence.
+
+Because the demo pipeline already created Version 2, this datasheet shows **Out of date**. Choose **Publish datasheet**: it prepares an approval sheet and publishes only after you approve. Then choose **Regenerate for latest version**, execute the plan, and pick the Version 1 document under **Compare with a saved datasheet**. **Changes between the two datasheets** lists the changed chapters and facts above the two documents shown side by side. To try the model path without credentials, select **Configured model** with **Offline fake**; the plan is queued under **Runs** and the result appears after **Refresh datasheets**. Finally switch the interface to Chinese, open **Images and diagrams · knowledge graph demo**, and generate a Chinese datasheet that cites the graph entities. See the [datasheet reference](DATASHEETS.md) for citation and model boundaries. This section is a manual walkthrough; the screenshot replay below covers the earlier sections, and `npm run smoke:ui` exercises this one.
+
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.

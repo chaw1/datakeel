@@ -50,6 +50,8 @@ ActionName = Literal[
     "run_quality_rule",
     "change_quality_issue",
     "annotation_acceptance",
+    "generate_datasheet",
+    "publish_datasheet",
 ]
 PlanStatus = Literal["PREPARED", "APPROVED", "REJECTED", "EXECUTED", "FAILED"]
 RunStatus = Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED"]

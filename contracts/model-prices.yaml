@@ -41,13 +41,15 @@ models:
     cache_read: 0.006
     cache_write: 0.3
     source: https://api-docs.deepseek.com/quick_start/pricing (2026-10-24; peak; off-peak half)
-
-# Visual transcription uses this same model-keyed table. Insert a verified tariff
-# before treating transcription estimates as known; do not use placeholder zeros.
-# - model: qwen3.5-flash
-#   provider: openai
-#   input: <verified USD per million input tokens>
-#   output: <verified USD per million output tokens>
-#   cache_read: <verified USD per million cached input tokens>
-#   cache_write: <verified USD per million cache-write tokens>
-#   source: <tariff source and verification date>
+  # Checked 2026-10-28 on the official Model Studio price page (last updated 2026-10-27).
+  # China (Beijing) endpoint dashscope.aliyuncs.com, tier 0 < input <= 128K tokens per request;
+  # longer requests bill at 0.115/1.147 (<= 256K) or 0.172/1.72 (<= 1M). Thinking and
+  # non-thinking modes share one price. No cache-hit price is published, so cached input is
+  # charged at the full input price.
+  - model: qwen3.5-flash
+    provider: openai
+    input: 0.029
+    output: 0.287
+    cache_read: 0.029
+    cache_write: 0.029
+    source: https://www.alibabacloud.com/help/en/model-studio/model-pricing (2026-10-27; China (Beijing); input <= 128K; no published cache-hit price)

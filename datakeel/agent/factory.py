@@ -3,10 +3,11 @@
 
 """Resolve configured providers while keeping the default demo fully offline."""
 
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 
 import httpx
+from pydantic import JsonValue
 
 from datakeel.agent.demo import DemoProvider
 from datakeel.core.agent_models import ConversationCreate, Provider
@@ -17,7 +18,9 @@ from datakeel.runtime.chat_provider import model_provider
 
 @contextmanager
 def provider_session(
-    config: ConversationCreate, supplied: Provider | None = None
+    config: ConversationCreate,
+    supplied: Provider | None = None,
+    request_parameters: Mapping[str, JsonValue] | None = None,
 ) -> Generator[Provider]:
     """Use an injected fixture or close the configured provider's HTTP client reliably."""
     if supplied is not None:
@@ -33,6 +36,6 @@ def provider_session(
         raise ValidationError(msg)
     with (
         httpx.Client(timeout=settings.provider_timeout, trust_env=False) as client,
-        model_provider(config, settings, client) as provider,
+        model_provider(config, settings, client, request_parameters) as provider,
     ):
         yield provider

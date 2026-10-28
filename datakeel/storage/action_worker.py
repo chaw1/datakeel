@@ -57,6 +57,14 @@ def reconcile_runs(db: Database) -> int:
             version = session.scalar(select(VersionRow).where(VersionRow.task_id == task.id))
             error = task.error or "Pipeline failed" if task.state != "COMPLETED" else None
             outputs = [AssetRef(asset_type="task", asset_id=task.id)]
+            if task.datasheet_job_id is not None:
+                outputs.append(
+                    AssetRef(
+                        asset_type="datasheet",
+                        asset_id=task.datasheet_job_id,
+                        version=task.input_version_id,
+                    )
+                )
             if version is not None:
                 outputs.append(
                     AssetRef(asset_type="version", asset_id=version.id, version=version.id)

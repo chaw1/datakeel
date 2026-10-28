@@ -9,6 +9,7 @@ import { catalogZh } from "./catalogZh";
 import { commandZh } from "./commandZh";
 import { customOperatorZh } from "./customOperatorZh";
 import { dqZh } from "./dqZh";
+import { datasheetZh } from "./datasheetZh";
 import { evidenceZh } from "./evidenceZh";
 import { graphZh } from "./graphZh";
 import { kgZh } from "./kgZh";
@@ -30,6 +31,7 @@ export const zh: Record<MessageKey, string> = {
   ...dqZh,
   ...metadataZh,
   ...annotationZh,
+  ...datasheetZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,

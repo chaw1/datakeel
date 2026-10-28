@@ -17,6 +17,7 @@ from datakeel.actions.catalog_parameters import (
     UpdateTermParams,
 )
 from datakeel.actions.data_asset_parameters import DATA_ASSET_PARAMETER_TYPES
+from datakeel.actions.datasheet_parameters import GenerateDatasheetParams, PublishDatasheetParams
 from datakeel.actions.dq_parameters import (
     ChangeQualityIssueParams,
     CreateQualityRuleParams,
@@ -108,6 +109,8 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "run_kg_extraction": RunKGExtractionParams,
     "submit_custom_operator": SubmitCustomOperatorParams,
     "publish_release": PublishReleaseParams,
+    "generate_datasheet": GenerateDatasheetParams,
+    "publish_datasheet": PublishDatasheetParams,
     "save_metadata": MetadataParams,
     "export_dataset": ExportParams,
     "decide_assertions": DecideAssertionsParams,
@@ -173,7 +176,7 @@ def selection_for(params: BoundaryModel) -> ObjectSet:
         )
     if isinstance(params, ExportParams):
         return ObjectSet(dataset_id=params.dataset_id, limit=10000)
-    if isinstance(params, MetadataParams):
+    if isinstance(params, MetadataParams | GenerateDatasheetParams | PublishDatasheetParams):
         return ObjectSet(
             object_type="dataset",
             dataset_id=params.dataset_id,

@@ -12,6 +12,7 @@ export type Page =
   | "quality"
   | "quality-rules"
   | "report"
+  | "datasheets"
   | "approvals"
   | "action-runs"
   | "ontology"
@@ -34,6 +35,7 @@ export const tabs: { id: Page; label: MessageKey }[] = [
   { id: "lineage", label: "lineage" },
   { id: "quality", label: "quality" },
   { id: "report", label: "report" },
+  { id: "datasheets", label: "datasheets" },
 ];
 
 export const operationPages = [

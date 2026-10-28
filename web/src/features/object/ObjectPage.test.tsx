@@ -57,6 +57,21 @@ it("copies the complete ID while showing its short form", async () => {
     "Copied",
   );
 });
+it("opens the dataset datasheet from the shared object tabs", async () => {
+  const user = userEvent.setup();
+  const onOpen = vi.fn<(target: ObjectTarget) => void>();
+  render(
+    <ObjectPage target={{ kind: "dataset", id: dataset.id }} onOpen={onOpen} />,
+  );
+  await user.click(await screen.findByRole("link", { name: "Datasheet" }));
+  expect(onOpen).toHaveBeenCalledWith(
+    expect.objectContaining({
+      kind: "dataset",
+      id: dataset.id,
+      tab: "datasheets",
+    }),
+  );
+});
 it("links dataset facts to the current version, files, quality, candidates, and event", async () => {
   const user = userEvent.setup();
   const onOpen = vi.fn<(target: ObjectTarget) => void>();

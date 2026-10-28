@@ -1,5 +1,6 @@
 import { useI18n } from "../../i18n/useI18n";
 import { AnnotationQuality } from "../annotation/AnnotationQuality";
+import { Datasheets } from "../datasheets/Datasheets";
 import { Files } from "../files/Files";
 import Quality from "../quality/Quality";
 import { ReportView } from "../reports/ReportView";
@@ -66,6 +67,15 @@ export function ObjectSections({
       );
     case "report":
       return <ReportView report={data.report} />;
+    case "datasheets":
+      return (
+        <Datasheets
+          key={data.dataset?.id ?? target.id}
+          datasetId={data.dataset?.id ?? target.id}
+          versions={data.versions}
+          initialVersionId={target.versionId}
+        />
+      );
     case "facts":
       return (
         <section

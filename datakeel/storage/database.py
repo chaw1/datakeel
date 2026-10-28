@@ -56,6 +56,8 @@ from datakeel.storage.data_asset_rows import (
     DataAssetRow,
     install_asset_constraints,
 )
+from datakeel.storage.datasheet_job_rows import DatasheetJobRow
+from datakeel.storage.datasheet_rows import DatasheetRow
 from datakeel.storage.delivery_rows import ReconciliationRow
 from datakeel.storage.dq_rows import (
     DqHistoryRow,
@@ -119,6 +121,7 @@ _REGISTERED_MODELS = (
     DqIssueAuditRow,
     DqWebhookRow,
     FileStateRow,
+    DatasheetJobRow,
     BudgetAccountRow,
     BudgetReservationRow,
     ConversationRequestRow,
@@ -145,6 +148,7 @@ _REGISTERED_MODELS = (
     MetricAuditRow,
     AskSessionRow,
     AskAnswerRow,
+    DatasheetRow,
     CheckpointRow,
     CheckpointWriteRow,
     WorkflowRunRow,
@@ -212,6 +216,7 @@ class TaskRow(Base):
     input_version_id: Mapped[str | None] = mapped_column(String, nullable=True)
     kg_run_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     dq_run_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    datasheet_job_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
 
 class ShardRow(Base):

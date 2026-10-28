@@ -56,6 +56,8 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
     "delete_quality_rule": ("quality:write", False, "Archive an approved quality rule"),
     "run_quality_rule": ("quality:run", True, "Schedule a bounded read-only quality check"),
     "change_quality_issue": ("quality:write", True, "Claim or confirm a quality issue"),
+    "generate_datasheet": ("datasets:write", True, "Generate a versioned cited datasheet draft"),
+    "publish_datasheet": ("datasets:export", False, "Publish the approved immutable datasheet"),
 }
 
 
