@@ -26,12 +26,20 @@ class Box(NamedTuple):
 
 
 class Pole(NamedTuple):
-    """Vertical cylinder standing on the ground."""
+    """Vertical cylinder from base up to height, standing on the ground by default."""
 
     x: float
     y: float
     radius: float
     height: float
+    base: float = 0.0
+
+
+class Sphere(NamedTuple):
+    """Round object such as a lamp shade, a tree crown or a branch segment."""
+
+    center: tuple[float, float, float]
+    radius: float
 
 
 def _box_hits(origin: Points, rays: Points, box: Box, *, inside: bool) -> NDArray[np.float64]:
@@ -53,8 +61,16 @@ def _pole_hits(origin: Points, rays: Points, pole: Pole) -> NDArray[np.float64]:
     discriminant = b * b - 4 * a * c
     hit = (-b - np.sqrt(np.maximum(discriminant, 0))) / (2 * a)
     height = origin[:, 2] + hit * rays[:, 2]
-    valid = (discriminant > 0) & (hit > 1e-6) & (height >= 0) & (height <= pole.height)
+    valid = (discriminant > 0) & (hit > 1e-6) & (height >= pole.base) & (height <= pole.height)
     return np.where(valid, hit, np.inf)
+
+
+def _sphere_hits(origin: Points, rays: Points, sphere: Sphere) -> NDArray[np.float64]:
+    shifted = origin - np.asarray(sphere.center)
+    half = (shifted * rays).sum(axis=1)
+    discriminant = half * half - (shifted**2).sum(axis=1) + sphere.radius**2
+    hit = -half - np.sqrt(np.maximum(discriminant, 0))
+    return np.where((discriminant > 0) & (hit > 1e-6), hit, np.inf)
 
 
 def _cast(
@@ -64,6 +80,7 @@ def _cast(
     *,
     ground: bool = False,
     max_range: float = np.inf,
+    spheres: tuple[Sphere, ...] = (),
 ) -> tuple[Points, Points]:
     room, boxes, poles = scene
     start = np.broadcast_to(np.asarray(origin, dtype=np.float64), rays.shape)
@@ -74,6 +91,8 @@ def _cast(
         hits = np.minimum(hits, _box_hits(start, rays, box, inside=False))
     for pole in poles:
         hits = np.minimum(hits, _pole_hits(start, rays, pole))
+    for sphere in spheres:
+        hits = np.minimum(hits, _sphere_hits(start, rays, sphere))
     if ground:
         down = rays[:, 2] < -1e-9
         floor = np.where(down, -start[:, 2] / np.where(down, rays[:, 2], -1.0), np.inf)
@@ -128,6 +147,126 @@ def vehicle_scan(rings: int = 32, azimuth_step: float = 0.4, seed: int = 0) -> P
     return _range_noise(points, offsets, np.full(len(points), 0.02), seed)
 
 
+def _car(x: float, y: float, *, along: bool = True) -> list[Box]:
+    """Return the body and cabin of a 4.5 x 1.8 m car along or across the street."""
+    body, cabin = (2.25, 0.9), (1.15, 0.8)
+    if not along:
+        body, cabin = body[::-1], cabin[::-1]
+    return [
+        Box((x - body[0], y - body[1], 0.3), (x + body[0], y + body[1], 1.4)),
+        Box((x - cabin[0], y - cabin[1], 1.4), (x + cabin[0], y + cabin[1], 1.9)),
+    ]
+
+
+def street_layout(layout: int = 0) -> tuple[list[Box], list[Pole], tuple[Sphere, ...]]:
+    """Lay out a street whose real fragments look like strays to a naive rule.
+
+    Parked cars hide the feet of poles and tree trunks, a double-parked car
+    stands in front of another, cross streets show only the corners of far
+    buildings, a signal head hangs from a light arm, signs float on thin
+    posts and tree crowns carry thin branches.
+    """
+    rng = np.random.default_rng(100 + layout)
+    boxes = [
+        Box((-90, 11, 0), (18, 30, 12)),
+        Box((30, 11, 0), (90, 30, 14)),
+        Box((-90, -30, 0), (-28, -10.5, 10)),
+        Box((-16, -30, 0), (90, -10.5, 9)),
+        Box((14, 52, 0), (40, 70, 8)),
+        Box((-36, -75, 0), (-10, -52, 7)),
+        Box((75, -6, 0), (95, 6, 6)),
+        Box((-30, 4.2, 0.4), (-21, 6.8, 3.6)),
+        Box((27.9, 3.0, 5.6), (28.1, 9.6, 5.75)),
+        Box((27.8, 4.0, 4.7), (28.2, 4.4, 5.6)),
+    ]
+    for x in np.arange(-50, 60, 7.5) + rng.uniform(-1, 1, 15):
+        if rng.random() < 0.7:
+            boxes += _car(float(x), 8.2 + rng.uniform(-0.2, 0.2))
+        if rng.random() < 0.6:
+            boxes += _car(float(x) + 3, -7.6 + rng.uniform(-0.2, 0.2))
+    boxes += _car(12, 5.4) + _car(-14, -4.8) + _car(48, 1.5) + _car(-58, -2.0)
+    boxes += _car(66, -2.5, along=False)
+    poles = [Pole(28, 9.6, 0.15, 6.0)]
+    for x in (-42, -27, -9, 6, 21, 36, 51):
+        poles += [Pole(x, 9.9, 0.08, 4.5), Pole(x + 2, -9.4, 0.12, 6.5)]
+        boxes.append(Box((x - 0.35, 9.86, 2.3), (x + 0.35, 9.94, 2.9)))
+    spheres: list[Sphere] = []
+    for x in (-36, 2, 43):
+        poles.append(Pole(x, -9.0, 0.18, 3.2))
+        spheres.append(Sphere((x, -9.0, 4.6), 1.7))
+        spheres += [Sphere((x + 0.25 * k, -9.0 + 0.12 * k, 3.0 + 0.18 * k), 0.05) for k in range(8)]
+    return boxes, poles, tuple(spheres)
+
+
+def street_scan(
+    origin: tuple[float, float, float] = (0.0, 0.0, 1.8),
+    *,
+    rings: int = 32,
+    azimuth_step: float = 0.2,
+    sector: tuple[float, float] = (0.0, 360.0),
+    layout: int = 0,
+    seed: int = 0,
+) -> Points:
+    """Sweep one frame of a spinning multi-ring lidar along the occluded street.
+
+    Point spacing grows with range and between rings, objects behind parked
+    cars appear only above them, and every return carries 2 cm range noise.
+    """
+    rng = np.random.default_rng(seed)
+    elevation = np.concatenate(
+        [np.linspace(-25, -6, rings // 2), np.linspace(-5, 15, rings - rings // 2)]
+    )
+    azimuth = np.arange(*sector, azimuth_step) + rng.uniform(0, azimuth_step)
+    boxes, poles, spheres = street_layout(layout)
+    points, offsets = _cast(
+        origin,
+        _spherical(azimuth, elevation),
+        (None, boxes, poles),
+        ground=True,
+        max_range=100,
+        spheres=spheres,
+    )
+    return _range_noise(points, offsets, np.full(len(points), 0.02), seed)
+
+
+def drive(frames: int = 8, *, azimuth_step: float = 0.4, seed: int = 0) -> Points:
+    """Accumulate frames of the street scan along a 1.5 m-step drive with slight weaving."""
+    return np.vstack(
+        [
+            street_scan(
+                (-0.75 * frames + 1.5 * index, 0.3 * np.sin(index), 1.8),
+                azimuth_step=azimuth_step,
+                seed=seed * 100 + index,
+            )
+            for index in range(frames)
+        ]
+    )
+
+
+def furnished_room(
+    origin: tuple[float, float, float] = (5.0, 4.0, 1.5), step: float = 0.5, seed: int = 0
+) -> Points:
+    """Scan the room with a chandelier, a pendant lamp on a cord and a flat ceiling fan."""
+    rng = np.random.default_rng(seed)
+    rays = _spherical(np.arange(0, 360, step) + rng.uniform(0, step), np.arange(-60, 75, step))
+    boxes = [
+        Box((2, 1, 0), (4, 2, 0.75)),
+        Box((2.9, 1.4, 0.75), (3.0, 1.5, 0.87)),
+        Box((8, 5, 0), (9.2, 7.6, 2)),
+        Box((6.4, 5.4, 2.6), (7.6, 6.6, 2.65)),
+    ]
+    poles = [
+        Pole(6.5, 2.5, 0.15, 3),
+        Pole(4.0, 5.0, 0.008, 3.0, 2.7),
+        Pole(9.0, 2.0, 0.005, 3.0, 2.55),
+        Pole(7.0, 6.0, 0.02, 3.0, 2.65),
+    ]
+    lamps = (Sphere((4.0, 5.0, 2.45), 0.28), Sphere((9.0, 2.0, 2.45), 0.15))
+    scene = (Box((0, 0, 0), (12, 8, 3)), boxes, poles)
+    points, offsets = _cast(origin, rays, scene, spheres=lamps)
+    return _range_noise(points, offsets, np.full(len(points), 0.002), seed)
+
+
 def depth_scan(width: int = 160, height: int = 120, tilt: float = 35.0, seed: int = 0) -> Points:
     """Look down at a floor with two boxes and a small block through a tilted depth camera."""
     focal = (width / 2) / np.tan(np.radians(30))
@@ -179,3 +318,50 @@ def scatter(points: Points, fraction: float, seed: int = 1, margin: float = 0.05
 def blob(center: tuple[float, float, float], size: int, spread: float, seed: int = 3) -> Points:
     """Return a compact Gaussian group of points."""
     return np.asarray(center) + np.random.default_rng(seed).normal(0, spread, (size, 3))
+
+
+def nearest_distance(occupied: Points, centers: Points) -> NDArray[np.float64]:
+    """Return each center's distance to the nearest occupied point."""
+    nearest = np.full(len(centers), np.inf)
+    for block in range(0, len(occupied), 4096):
+        delta = centers[:, None, :] - occupied[None, block : block + 4096, :]
+        nearest = np.minimum(nearest, np.einsum("ijk,ijk->ij", delta, delta).min(axis=1))
+    return np.sqrt(nearest)
+
+
+def floating_blobs(
+    points: Points,
+    origin: tuple[float, float, float],
+    sizes: list[int],
+    *,
+    spread: float,
+    clearance: float,
+    seed: int = 5,
+) -> Points:
+    """Append compact Gaussian blobs in open air between the sensor and scanned surfaces.
+
+    Each blob is centred on a sensor ray, 30-85% of the way to a scanned
+    point and at least ``clearance`` from every scanned point and every
+    other blob centre, as dust, a bird or a multipath echo would be. Blob
+    rows come last, in the order of ``sizes``.
+    """
+    rng = np.random.default_rng(seed)
+    start = np.asarray(origin, dtype=np.float64)
+    occupied = points
+    blobs: list[Points] = []
+    for size in sizes:
+        targets = points[rng.integers(len(points), size=512)]
+        centers = start + (targets - start) * rng.uniform(0.3, 0.85, (512, 1))
+        screen = occupied[:: max(1, len(occupied) // 8192)]
+        free = (
+            centers[row]
+            for row in np.flatnonzero(nearest_distance(screen, centers) > clearance)
+            if nearest_distance(occupied, centers[row : row + 1])[0] > clearance
+        )
+        center = next(free, None)
+        if center is None:
+            message = f"no open space {clearance} from the scan for a blob"
+            raise ValueError(message)
+        blobs.append(center + rng.normal(0, spread, (size, 3)))
+        occupied = np.vstack([occupied, center])
+    return np.vstack([points, *blobs])

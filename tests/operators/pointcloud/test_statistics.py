@@ -49,8 +49,10 @@ def test_scattered_outliers_push_a_scan_over_the_file_limit(name: str, fraction:
     points = _scan(name)
     mask = outlier_mask(scans.scatter(points, fraction), DEFAULTS)
     assert mask.mean() > 2 * LIMIT
-    assert mask[len(points) :].mean() > 0.2
-    assert mask[: len(points)].mean() <= LIMIT * 1.5
+    # At 2% the strays in a small room are close enough to neighbor each other and
+    # only the most isolated stand out; the file still clears twice the limit.
+    assert mask[len(points) :].mean() > (0.2 if fraction < 0.01 else 0.1)
+    assert mask[: len(points)].mean() <= 0.001
 
 
 @pytest.mark.parametrize("name", SCANS)
@@ -105,15 +107,37 @@ def _patch(height: float, *, thin: bool, seed: int = 2) -> NDArray[np.float64]:
     return np.column_stack([6 + across[:, 0], 6 + across[:, 1], height + depth])
 
 
-def test_thin_surface_pieces_need_twice_their_extent_of_clearance() -> None:
-    """A piece of surface near the scene is kept; a volume-filling group there is not."""
+@pytest.mark.parametrize("height", [0.45, 0.9])
+def test_floating_surface_pieces_stay_and_volume_filling_groups_go(height: float) -> None:
+    """A floating patch of surface is real scene at any clearance; a filled cube is not."""
     room = _scan("indoor")
     count = len(room)
-    for height, thin, expected in ((0.45, True, False), (0.45, False, True), (0.9, True, True)):
+    for thin in (True, False):
         mask = outlier_mask(np.vstack([room, _patch(height, thin=thin)]), DEFAULTS)
-        assert bool(mask[count:].all()) is expected
-        assert bool(mask[count:].any()) is expected
+        assert bool(mask[count:].all()) is not thin
+        assert bool(mask[count:].any()) is not thin
         assert not mask[:count].any()
+
+
+def _noisy_wall(offset: float, rng: np.random.Generator) -> NDArray[np.float64]:
+    """Return a 1 m wall at 5 mm spacing with 1 cm noise and an 8 cm piece of it in front."""
+    grid = np.stack(np.meshgrid(np.arange(0, 1, 0.005), np.arange(0, 1, 0.005)), -1)
+    piece = np.stack(np.meshgrid(np.arange(0, 0.08, 0.005), np.arange(0, 0.08, 0.005)), -1)
+    wall = np.column_stack([rng.normal(0, 0.01, grid[..., 0].size), grid.reshape(-1, 2)])
+    front = np.column_stack(
+        [offset + rng.normal(0, 0.01, piece[..., 0].size), piece.reshape(-1, 2) + 0.46]
+    )
+    return np.vstack([wall, front])
+
+
+def test_pieces_as_thick_as_the_surface_noise_need_twice_their_extent_of_clearance() -> None:
+    """A noisy piece looks filled at its own scale; beside its surface it stays, far off it goes."""
+    for offset, expected in ((0.15, False), (0.35, True)):
+        points = _noisy_wall(offset, np.random.default_rng(8))
+        mask = outlier_mask(points, DEFAULTS)
+        assert bool(mask[-256:].all()) is expected
+        assert bool(mask[-256:].any()) is expected
+        assert not mask[:-256].any()
 
 
 def test_self_contained_groups_are_compared_with_the_main_body_only_when_volumetric() -> None:
@@ -131,16 +155,16 @@ def test_self_contained_groups_are_compared_with_the_main_body_only_when_volumet
     assert not mask[:count].any()
 
 
-def test_isolation_needs_both_the_mean_and_the_nearest_spacing_ratio() -> None:
-    """A lone point is isolated; a close pair is not, but is still a separated cluster."""
+def test_a_lone_point_is_isolated_and_a_close_pair_is_kept() -> None:
+    """A lone stray is isolated; two points together may be a wire or a branch and stay."""
     room = _scan("indoor")
     count = len(room)
     single = analyse(np.vstack([room, [[6.0, 6.0, 0.5]]]), DEFAULTS)
     assert single.isolated[count:].all()
     pair = analyse(np.vstack([room, [[6.0, 6.0, 0.5], [6.003, 6.0, 0.5]]]), DEFAULTS)
-    assert not pair.isolated[count:].any()
-    assert pair.clustered[count:].all()
     assert pair.ratio[count:].min() > DEFAULTS.local_ratio
+    assert not pair.mask[count:].any()
+    assert not pair.mask[:count].any()
 
 
 def test_tiny_and_repeated_clouds_produce_no_spurious_outliers() -> None:
