@@ -9,18 +9,22 @@ import tempfile
 from pathlib import Path
 
 from pydantic import Field, JsonValue
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select, text
+from sqlalchemy.orm import Session, defer
 
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
+from datakeel.core.file_queries import FileQuery
 from datakeel.core.models import AssetRef, FileItem
 from datakeel.storage.data_asset_access import require_access_in_session
 from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.datasets import dataset_dict, import_dataset
+from datakeel.storage.file_discovery import begin_file_read, requires_python_files
+from datakeel.storage.file_pages import read_file_page
 from datakeel.storage.file_state import FileStateRow, get_file_state, overlay_files
 from datakeel.storage.objects import object_store
+from datakeel.storage.version_stream import dataset_settings
 from datakeel.storage.views import DatasetView, DownloadView, FileView, VersionView, View
 
 
@@ -56,29 +60,69 @@ def public_files(values: list[dict[str, JsonValue]]) -> list[FileView]:
     ]
 
 
-def _dataset_view(session: Session, row: DatasetRow) -> DatasetView:
-    result = DatasetView.model_validate(dataset_dict(row))
-    deleted = set(
-        session.scalars(
-            select(FileStateRow.file_id).where(
-                FileStateRow.dataset_id == row.id,
-                FileStateRow.deleted.is_(True),
+def _file_count(session: Session, row: DatasetRow) -> int:
+    if requires_python_files(session):
+        deleted_ids = set(
+            session.scalars(
+                select(FileStateRow.file_id).where(
+                    FileStateRow.dataset_id == row.id, FileStateRow.deleted.is_(True)
+                )
             )
         )
+        return sum(str(item["id"]) not in deleted_ids for item in row.files)
+    count = (
+        session.scalar(
+            select(func.json_array_length(DatasetRow.files)).where(DatasetRow.id == row.id)
+        )
+        or 0
     )
-    return result.model_copy(
-        update={
-            "file_count": sum(str(item["id"]) not in deleted for item in row.files),
-        }
+    deleted = session.scalar(
+        select(FileStateRow.file_id)
+        .where(FileStateRow.dataset_id == row.id, FileStateRow.deleted.is_(True))
+        .limit(1)
+    )
+    if deleted is not None:
+        expand = (
+            "json_each(d.files) AS j"
+            if session.get_bind().dialect.name == "sqlite"
+            else "json_array_elements(d.files) AS j(value)"
+        )
+        identity = (
+            "json_extract(j.value, '$.id')"
+            if session.get_bind().dialect.name == "sqlite"
+            else "j.value->>'id'"
+        )
+        statement = (
+            f"SELECT count(*) FROM datasets AS d CROSS JOIN {expand} "  # noqa: S608  # Fixed SQL fragments.
+            f"JOIN file_states AS s ON s.file_id = {identity} "
+            "AND s.dataset_id = d.id WHERE d.id = :id AND s.deleted = true"
+        )
+        count -= session.scalar(text(statement), {"id": row.id}) or 0
+    return count
+
+
+def _dataset_view(session: Session, row: DatasetRow) -> DatasetView:
+    return DatasetView(
+        id=row.id,
+        name=row.name,
+        created_at=row.created_at,
+        file_count=_file_count(session, row),
+        metadata=row.metadata_values,
+        quality_config=row.quality_config,
+        template=row.template,
+        compliance=row.compliance,
     )
 
 
 def list_datasets(db: Database) -> list[DatasetView]:
     """List dataset summaries in creation order."""
     with db.session() as session:
+        begin_file_read(session)
         return [
             _dataset_view(session, row)
-            for row in session.scalars(select(DatasetRow).order_by(DatasetRow.created_at))
+            for row in session.scalars(
+                select(DatasetRow).options(defer(DatasetRow.files)).order_by(DatasetRow.created_at)
+            )
             if not row.metadata_values.get("internal_quality_monitor")
         ]
 
@@ -86,7 +130,8 @@ def list_datasets(db: Database) -> list[DatasetView]:
 def get_dataset(db: Database, identifier: str) -> DatasetView:
     """Return a dataset summary or a domain missing-resource error."""
     with db.session() as session:
-        return _dataset_view(session, require_dataset(session, identifier))
+        begin_file_read(session)
+        return _dataset_view(session, dataset_settings(session, identifier))
 
 
 def _write_upload(item: UploadFile, directory: Path) -> Path:
@@ -123,19 +168,23 @@ def list_files(
     version: str | None = None,
     *,
     access: AccessContext | None = None,
+    query: FileQuery | None = None,
 ) -> list[FileView]:
     """List original files or a selected immutable version."""
     with db.session() as session:
-        values = require_dataset(session, identifier).files
-        if version:
-            record = session.get(VersionRow, version)
-            if record is None or record.dataset_id != identifier:
-                message = "Version not found"
-                raise NotFoundError(message)
-            values = record.manifest
-        visible = overlay_files(
-            session, identifier, [FileItem.model_validate(item) for item in values]
-        )
+        if query is not None:
+            visible = read_file_page(session, identifier, version, query)
+        else:
+            values = require_dataset(session, identifier).files
+            if version:
+                record = session.get(VersionRow, version)
+                if record is None or record.dataset_id != identifier:
+                    message = "Version not found"
+                    raise NotFoundError(message)
+                values = record.manifest
+            visible = overlay_files(
+                session, identifier, [FileItem.model_validate(item) for item in values]
+            )
         result = public_files([item.model_dump(mode="json") for item in visible])
     refs = [AssetRef(asset_id=identifier, version=version)]
     refs.extend(AssetRef(asset_type="file", asset_id=item.id, version=version) for item in result)
