@@ -49,7 +49,6 @@ def _split_arguments(parser: argparse.ArgumentParser, command: str) -> None:
     )
     parser.add_argument("--directory", action="store_true", default=command == "leakage")
     parser.add_argument("--image-threshold", type=int, default=8)
-    parser.add_argument("--text-threshold", type=int, default=3)
 
 
 def _request(args: argparse.Namespace) -> SplitRequest:
@@ -61,7 +60,6 @@ def _request(args: argparse.Namespace) -> SplitRequest:
         group_field=args.group_field,
         source="directory" if args.directory else "generated",
         image_threshold=args.image_threshold,
-        text_threshold=args.text_threshold,
     )
 
 

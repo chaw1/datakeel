@@ -37,7 +37,7 @@ def _build(
         [
             dataset_id,
             version_id,
-            "1.1-primary-label",
+            "1.2-primary-no-text",
             request.model_dump(mode="json"),
             [member.model_dump(mode="json") for member in members],
         ],
@@ -53,7 +53,7 @@ def _build(
         members=members,
         distributions=distributions(members),
         created_at=datetime(1970, 1, 1, tzinfo=UTC),
-        algorithm_version="1.1-primary-label",
+        algorithm_version="1.2-primary-no-text",
     )
 
 

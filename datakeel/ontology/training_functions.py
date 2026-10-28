@@ -26,8 +26,8 @@ TRAINING_TOOL_DESCRIPTIONS = {
         "训练集按主标签切分、各类分布、按8:1:1切完各类分布怎样; only reads, never saves."
     ),
     "training_leakage": (
-        "Check exact, image/text near-duplicate and group leakage with sample pairs and distances. "
-        "有没有泄漏、跨集合重复; defaults to external train/val/test directories."
+        "Check exact, image near-duplicate and group leakage with sample pairs and distances. "
+        "有没有泄漏、跨集合重复; text similarity is unavailable; defaults to external directories."
     ),
 }
 

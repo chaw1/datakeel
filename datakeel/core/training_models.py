@@ -47,7 +47,9 @@ class SplitRequest(BoundaryModel):
     group_field: str | None = Field(default=None, min_length=1, max_length=200)
     avoid_leakage: bool = True
     image_threshold: int = Field(default=8, ge=0, le=64)
-    text_threshold: int = Field(default=3, ge=0, le=64)
+    text_threshold: int = Field(
+        default=3, ge=0, le=64, description="Reserved for snapshot compatibility; ignored."
+    )
     source: Literal["generated", "directory"] = "generated"
 
 
@@ -61,7 +63,12 @@ class TrainingSample(BoundaryModel):
     image_hash: int | None = Field(default=None, ge=0, lt=1 << 64)
     image_uniform: bool = False
     image_color: tuple[int, int, int] | None = None
-    text_hash: int | None = Field(default=None, ge=0, lt=1 << 64)
+    text_hash: int | None = Field(
+        default=None,
+        ge=0,
+        lt=1 << 64,
+        description="Reserved for snapshot compatibility; ignored.",
+    )
 
 
 class SplitMember(BoundaryModel):
@@ -121,6 +128,7 @@ class LeakageReport(BoundaryModel):
     dataset_id: str
     version_id: str
     sample_count: int = Field(ge=0)
+    checked_signals: tuple[Literal["exact", "image", "group"], ...] = ("exact", "image", "group")
     pairs: tuple[LeakagePair, ...]
 
 

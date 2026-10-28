@@ -47,11 +47,10 @@ export const trainingEn = {
   trainingLeakage: "Leakage report",
   trainingCheckLeakage: "Check leakage",
   trainingImageThreshold: "Image distance threshold",
-  trainingTextThreshold: "Text distance threshold",
   trainingLeakageHint:
-    "Checks exact content, image similarity, text similarity and groups across sets.",
+    "Checks exact content, image similarity and groups across sets. Text similarity is unavailable; identical text is still checked by SHA-256.",
   trainingNoLeakage:
-    "No cross-set leakage found within the configured thresholds.",
+    "No exact-content, image or group leakage found. Text similarity was not checked.",
   trainingLeakageCount: "{count} cross-set evidence pairs",
   trainingExact: "Identical content",
   trainingImage: "Similar images",
@@ -61,8 +60,7 @@ export const trainingEn = {
   trainingLeft: "First sample / set",
   trainingRight: "Second sample / set",
   trainingDetail: "Evidence",
-  trainingThresholds:
-    "Distance thresholds: image {image}, text {text} (64-bit Hamming).",
+  trainingThresholds: "Image distance threshold: {image} (64-bit Hamming).",
   trainingExport: "Export training data",
   trainingFormat: "Training format",
   trainingCoco: "COCO detection",

@@ -94,7 +94,7 @@ def test_create_freezes_policy_members_and_lineage_with_exact_retry(
     """A named exact retry preserves the original result without appending another event."""
     request = SplitRequest(name="baseline", group_field="batch.id")
     split = create_split(db, training.dataset_id, training.version_id, request)
-    assert split.algorithm_version == "1.1-primary-label"
+    assert split.algorithm_version == "1.2-primary-no-text"
     assert split == create_split(db, training.dataset_id, training.version_id, request)
     assert split == get_split(db, training.dataset_id, split.id)
     assert list_splits(db, training.dataset_id, training.version_id) == (split,)
@@ -182,15 +182,16 @@ def test_split_freezes_annotation_revision_and_new_policy_reads_latest(
     ) == ("before",)
 
 
-def test_directory_preview_keeps_external_assignments_and_reports_text_variation(
+def test_directory_preview_keeps_assignments_and_checks_only_exact_text_duplicates(
     db: Database, tmp_path: Path
 ) -> None:
-    """Whitespace, case and punctuation changes are recalled while unrelated text is clean."""
+    """Text SHA equality is checked; formatting similarity and legacy text hashes are ignored."""
     files: list[FileItem] = []
     texts = (
         "A brief description, of a brown fox!",
         " a BRIEF description of a brown FOX ",
         "Computer kernels manage virtual memory",
+        "A brief description, of a brown fox!",
     )
     for index, content in enumerate(texts):
         path = tmp_path / f"text-{index}.txt"
@@ -209,8 +210,12 @@ def test_directory_preview_keeps_external_assignments_and_reports_text_variation
     request = SplitRequest(name="external", source="directory")
     report = preview_leakage(db, fixture.dataset_id, fixture.version_id, request)
     assert [(pair.kind, pair.left_id, pair.right_id, pair.distance) for pair in report.pairs] == [
-        ("text", "0", "1", 0)
+        ("exact", "0", "3", 0)
     ]
+    assert report.checked_signals == ("exact", "image", "group")
+    samples = load_training_samples(db, fixture.dataset_id, fixture.version_id)
+    assert all(sample.text_hash is None for sample in samples)
+    assert all(sample.file.sha256 == digest(Path(sample.file.path)) for sample in samples)
     split = create_split(db, fixture.dataset_id, fixture.version_id, request)
     assert check_leakage(db, fixture.dataset_id, split.id).pairs == report.pairs
 

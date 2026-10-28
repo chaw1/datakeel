@@ -6,7 +6,7 @@ import { leakage, splitSet } from "./testFixtures";
 import { TrainingForm } from "./TrainingForm";
 import { TrainingLeakage } from "./TrainingLeakage";
 
-it("validates ratio totals and accepts two sets with configurable thresholds", async () => {
+it("validates ratio totals and accepts two sets with configurable image threshold", async () => {
   const user = userEvent.setup();
   const submit = vi.fn();
   render(<TrainingForm busy={false} onSubmit={submit} />);
@@ -21,8 +21,8 @@ it("validates ratio totals and accepts two sets with configurable thresholds", a
   await user.clear(screen.getByLabelText("Random seed"));
   await user.type(screen.getByLabelText("Random seed"), "7");
   await user.click(screen.getByLabelText("Balance primary labels across sets"));
-  await user.clear(screen.getByLabelText("Text distance threshold"));
-  await user.type(screen.getByLabelText("Text distance threshold"), "5");
+  await user.clear(screen.getByLabelText("Image distance threshold"));
+  await user.type(screen.getByLabelText("Image distance threshold"), "5");
   await user.click(
     screen.getByRole("button", { name: "Preview distribution" }),
   );
@@ -31,7 +31,7 @@ it("validates ratio totals and accepts two sets with configurable thresholds", a
       ratios: { train: 0.9, val: 0.1, test: 0 },
       seed: 7,
       stratify: false,
-      text_threshold: 5,
+      image_threshold: 5,
     }),
     true,
   );
@@ -49,7 +49,7 @@ it("requires an explicit leakage read and reports a clean result", async () => {
   await screen.findByRole("status");
   expect(
     screen.getByText(
-      "No cross-set leakage found within the configured thresholds.",
+      "No exact-content, image or group leakage found. Text similarity was not checked.",
     ),
   ).toBeVisible();
   expect(fetch).toHaveBeenCalledWith(

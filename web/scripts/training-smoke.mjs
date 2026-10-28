@@ -90,9 +90,12 @@ export async function trainingSmoke({ page, json, screenshot, checks }) {
   const leakage = await (await leakageResponse).json();
   assert.deepEqual(leakage.pairs, []);
   await section
-    .getByText("No cross-set leakage found within the configured thresholds.", {
-      exact: true,
-    })
+    .getByText(
+      "No exact-content, image or group leakage found. Text similarity was not checked.",
+      {
+        exact: true,
+      },
+    )
     .waitFor();
   const typography = await typographySample(page, "training-en");
   for (const theme of ["light", "dark"]) {

@@ -12,7 +12,6 @@ export const splitSet: SplitSet = {
     group_field: "batch",
     avoid_leakage: true,
     image_threshold: 8,
-    text_threshold: 3,
     source: "generated",
   },
   members: [

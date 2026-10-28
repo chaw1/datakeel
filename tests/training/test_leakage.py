@@ -1,11 +1,10 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Direct pair evidence and independent clean controls for all four leakage signals."""
+"""Direct pair evidence and independent clean controls for the three checked signals."""
 
 from datakeel.core.models import FileItem, utcnow
 from datakeel.core.training_models import SplitRequest, SplitSet, TrainingSample
-from datakeel.training.hashes import simhash
 from datakeel.training.leakage import leakage_report
 from datakeel.training.splitting import distributions, split_samples
 
@@ -39,22 +38,22 @@ def _split(samples: tuple[TrainingSample, ...]) -> SplitSet:
     )
 
 
-def test_four_signals_emit_pairs_with_distance_and_partitions() -> None:
+def test_three_signals_emit_pairs_with_distance_and_partitions() -> None:
     """Every planted cross-set signal is recalled with zero unrelated direct pairs."""
     samples = (
         _sample("exact-left", "train"),
         _sample("exact-right", "val"),
         _sample("image-left", "train", image_hash=0x1234567890ABCDEF),
         _sample("image-right", "test", image_hash=0x1234567890ABCDEE),
-        _sample("text-left", "train", text_hash=simhash("A quick brown fox, jumps!")),
-        _sample("text-right", "val", text_hash=simhash("a QUICK brown fox jumps")),
+        _sample("text-left", "train", text_hash=123),
+        _sample("text-right", "val", text_hash=123),
         _sample("group-left", "val", group="batch-7"),
         _sample("group-right", "test", group="batch-7"),
         _sample(
             "clean",
             "test",
             image_hash=0xEDCBA9876F543210,
-            text_hash=simhash("quantum physics and long distant stars"),
+            text_hash=456,
         ),
     )
     samples = (
@@ -65,10 +64,16 @@ def test_four_signals_emit_pairs_with_distance_and_partitions() -> None:
         *samples[2:],
     )
     report = leakage_report(samples, _split(samples))
-    assert {pair.kind for pair in report.pairs} == {"exact", "image", "text", "group"}
-    assert len(report.pairs) == 4
+    assert report.checked_signals == ("exact", "image", "group")
+    assert {pair.kind for pair in report.pairs} == {"exact", "image", "group"}
+    assert len(report.pairs) == 3
     assert all(pair.left_split != pair.right_split and pair.detail for pair in report.pairs)
     assert next(pair.distance for pair in report.pairs if pair.kind == "image") == 1
+    legacy_policy = _split(samples).model_copy(
+        update={"request": SplitRequest(name="legacy", text_threshold=64)}
+    )
+    assert leakage_report(samples, legacy_policy).pairs == report.pairs
+    assert samples[4].model_dump()["text_hash"] == 123
 
 
 def test_report_excludes_within_set_and_does_not_invent_transitive_pairs() -> None:

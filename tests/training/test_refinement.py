@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Random overlapping label regression cases independent of the iterative heuristic."""
+"""Primary-label allocation preserves indivisible groups with overlapping source labels."""
 
 import numpy as np
 

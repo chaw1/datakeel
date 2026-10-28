@@ -19,7 +19,7 @@ class TrainingDistributionParams(BoundaryModel):
 
 
 class TrainingLeakageParams(TrainingDistributionParams):
-    """Check saved or external directory splits with direct pair evidence."""
+    """Check exact, image and group pairs in saved or external directory splits."""
 
     request: SplitRequest = Field(
         default_factory=lambda: SplitRequest(name="directory-preview", source="directory")

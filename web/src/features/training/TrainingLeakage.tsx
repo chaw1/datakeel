@@ -36,7 +36,6 @@ export function TrainingLeakage({ split }: { split: SplitSet }) {
           <p className="muted small">
             {t("trainingThresholds", {
               image: split.request.image_threshold,
-              text: split.request.text_threshold,
             })}
           </p>
         </div>

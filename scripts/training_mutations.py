@@ -34,17 +34,6 @@ TRAINING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="training-text-case-normalization-omitted",
-        path="training/hashes.py",
-        before='unicodedata.normalize("NFKC", text).casefold()',
-        after='unicodedata.normalize("NFKC", text)',
-        case=(
-            "tests/training/test_splitting.py::"
-            "test_simhash_normalizes_punctuation_unicode_case_and_whitespace"
-        ),
-        runner="pytest",
-    ),
-    Mutation(
         name="training-coco-uses-xyxy-as-xywh",
         path="training/export_detection.py",
         before="bbox = (box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1)",
@@ -77,7 +66,7 @@ TRAINING_MUTATIONS = (
     Mutation(
         name="training-flat-image-color-confirmation-omitted",
         path="training/leakage.py",
-        before='if kind == "image" and not _image_confirmation(',
+        before="if not _image_confirmation(",
         after="if False and not _image_confirmation(",
         case=(
             "tests/storage/test_training_store.py::"
@@ -97,13 +86,13 @@ TRAINING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="training-ascii-punctuation-normalization-omitted",
-        path="training/hashes.py",
-        before="and character not in string.punctuation",
-        after="",
+        name="training-checked-signals-omits-group",
+        path="training/leakage.py",
+        before='checked_signals=("exact", "image", "group"),',
+        after='checked_signals=("exact", "image"),',
         case=(
-            "tests/training/test_text_normalization.py::"
-            "test_simhash_ignores_all_ascii_punctuation_and_compatibility_variants"
+            "tests/training/test_leakage.py::"
+            "test_three_signals_emit_pairs_with_distance_and_partitions"
         ),
         runner="pytest",
     ),

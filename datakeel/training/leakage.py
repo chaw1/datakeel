@@ -53,29 +53,25 @@ def _equal_pairs(samples: tuple[TrainingSample, ...], field: str) -> Iterator[Si
             )
 
 
-def _hash_pairs(
-    samples: tuple[TrainingSample, ...], kind: LeakageKind, threshold: int
-) -> Iterator[SignalPair]:
+def _image_pairs(samples: tuple[TrainingSample, ...], threshold: int) -> Iterator[SignalPair]:
     values = [
         (index, value)
         for index, sample in enumerate(samples)
-        if (value := sample.image_hash if kind == "image" else sample.text_hash) is not None
+        if (value := sample.image_hash) is not None
     ]
     comparison = compare_hashes([value for _, value in values], threshold, mode="exact")
     for left, right, distance in comparison.pairs:
-        if kind == "image" and not _image_confirmation(
-            samples[values[left][0]], samples[values[right][0]]
-        ):
+        if not _image_confirmation(samples[values[left][0]], samples[values[right][0]]):
             continue
         yield (
             values[left][0],
             values[right][0],
-            kind,
+            "image",
             distance,
-            f"64-bit {'dHash' if kind == 'image' else 'simhash'} Hamming distance <= {threshold}"
+            f"64-bit dHash Hamming distance <= {threshold}"
             + (
                 f"; low-texture RGB channel difference <= {UNIFORM_COLOR_THRESHOLD}"
-                if kind == "image" and samples[values[left][0]].image_uniform
+                if samples[values[left][0]].image_uniform
                 else ""
             ),
         )
@@ -87,12 +83,11 @@ def signal_pairs(
     """Yield all direct measured edges, using lossless comparison rather than prefix blocking."""
     yield from _equal_pairs(samples, "exact")
     yield from _equal_pairs(samples, "group")
-    yield from _hash_pairs(samples, "image", request.image_threshold)
-    yield from _hash_pairs(samples, "text", request.text_threshold)
+    yield from _image_pairs(samples, request.image_threshold)
 
 
 def leakage_report(samples: tuple[TrainingSample, ...], split: SplitSet) -> LeakageReport:
-    """Measure each of the four leakage signals and retain only cross-partition pairs."""
+    """Measure exact, image and group signals and retain only cross-partition pairs."""
     assignments: dict[str, SplitName] = {member.sample_id: member.split for member in split.members}
     pairs: list[LeakagePair] = []
     for left, right, kind, distance, detail in signal_pairs(samples, split.request):
@@ -114,5 +109,6 @@ def leakage_report(samples: tuple[TrainingSample, ...], split: SplitSet) -> Leak
         dataset_id=split.dataset_id,
         version_id=split.version_id,
         sample_count=len(samples),
+        checked_signals=("exact", "image", "group"),
         pairs=tuple(sorted(pairs, key=lambda pair: (pair.kind, pair.left_id, pair.right_id))),
     )

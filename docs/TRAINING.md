@@ -52,18 +52,17 @@ both sample IDs and split names, the signal and its distance:
 | ------ | ------------------------------------------------------------ |
 | Exact  | Equal SHA-256 content hashes                                 |
 | Image  | 64-bit dHash, Hamming distance at most 8 by default          |
-| Text   | 64-bit simhash, Hamming distance at most 3 by default        |
 | Group  | Equal non-null values of the configured metadata group field |
 
-Image and text thresholds are configurable from 0 to 64. Hash comparison uses the
-existing optional Rust backend when available and exact Python comparison otherwise;
-it does not use lossy prefix blocking. A–B and B–C edges group all three samples while
-the report retains only measured direct edges. Text normalization applies Unicode NFKC,
-case folding, whitespace, ASCII punctuation and Unicode P-category punctuation removal,
-then weighted character trigrams.
-Thus variants differing only in those normalized characters have distance zero.
-Empty normalized text supplies no text-similarity signal. These hashes are similarity
-heuristics; inspect pair evidence rather than interpreting them as semantic identity.
+The image threshold is configurable from 0 to 64. Hash comparison uses the existing
+optional Rust backend when available and exact Python comparison otherwise; it does not
+use lossy prefix blocking. A–B and B–C edges group all three samples while the report
+retains only measured direct edges. Image hashes are similarity heuristics; inspect pair
+evidence rather than interpreting them as semantic identity.
+
+Text similarity is unavailable. Identical text files are still checked by SHA-256, without
+text normalization. A clean report covers exact content, images and groups only; it does
+not establish that different text files have no near duplicates.
 
 Flat images need an additional color confirmation to avoid dHash collisions: on a
 32×32 RGB thumbnail, an image is low texture when every channel's standard deviation

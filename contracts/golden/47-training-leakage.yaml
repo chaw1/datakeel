@@ -25,10 +25,11 @@ expect:
         properties:
           data:
             type: object
-            required: [version_id, sample_count, pairs]
+            required: [version_id, sample_count, checked_signals, pairs]
             properties:
               version_id: {const: '{{version_id}}'}
               sample_count: {const: 100}
+              checked_signals: {const: [exact, image, group]}
               pairs:
                 type: array
                 minItems: 2

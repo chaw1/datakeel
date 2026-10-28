@@ -46,10 +46,10 @@ export const trainingZh = {
   trainingLeakage: "泄漏报告",
   trainingCheckLeakage: "检查泄漏",
   trainingImageThreshold: "图片距离阈值",
-  trainingTextThreshold: "文本距离阈值",
   trainingLeakageHint:
-    "检查跨集合的完全相同内容、图片近重复、文本近重复和分组重叠。",
-  trainingNoLeakage: "在配置的阈值范围内，未发现跨集合泄漏。",
+    "检查跨集合的完全相同内容、图片近重复和分组重叠。暂不提供文本相似性检查，文本 SHA-256 完全相同仍会检查。",
+  trainingNoLeakage:
+    "未发现完全相同内容、图片或分组跨集合泄漏；未检查文本相似性。",
   trainingLeakageCount: "{count} 对跨集合证据",
   trainingExact: "内容完全相同",
   trainingImage: "图片近重复",
@@ -59,7 +59,7 @@ export const trainingZh = {
   trainingLeft: "样本一 / 集合",
   trainingRight: "样本二 / 集合",
   trainingDetail: "证据",
-  trainingThresholds: "距离阈值：图片 {image}，文本 {text}（64 位汉明距离）。",
+  trainingThresholds: "图片距离阈值：{image}（64 位汉明距离）。",
   trainingExport: "导出训练数据",
   trainingFormat: "训练格式",
   trainingCoco: "COCO 检测",

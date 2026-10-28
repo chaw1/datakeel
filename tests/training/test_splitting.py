@@ -10,7 +10,6 @@ import pytest
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
 from datakeel.core.training_models import SplitRatios, SplitRequest, TrainingSample
-from datakeel.training.hashes import normalize_text, simhash
 from datakeel.training.splitting import distributions, split_samples
 
 
@@ -66,17 +65,6 @@ def test_two_sets_empty_samples_and_directory_validation() -> None:
         split_samples((_sample(1),), request.model_copy(update={"source": "directory"}))
     with pytest.raises(ValidationError, match="distinct"):
         split_samples((_sample(1), _sample(1)), request)
-
-
-def test_simhash_normalizes_punctuation_unicode_case_and_whitespace() -> None:
-    """Formatting changes carry exactly the same text signal, while empty text has none."""
-    assert simhash("Hello, WORLD! This is a test.") == simhash("  hello world\nthis is a TEST ")
-    assert normalize_text("\uff21\uff22\uff23\uff0c甲乙\uff01") == "abc甲乙"
-    assert simhash(" \n !!!") is None
-    assert simhash("a") != simhash("b")
-    assert simhash("A short account of forest conservation.") != simhash(
-        "Operating systems allocate virtual address spaces."
-    )
 
 
 @pytest.mark.parametrize("values", [{"train": 0.7}, {"train": 1, "val": 0, "test": 0}])
