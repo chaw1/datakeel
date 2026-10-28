@@ -94,10 +94,11 @@ def test_static_scene_without_any_change_is_not_a_repeat(tmp_path: Path) -> None
     assert [code for code, _start, _end in issues] == ["frozen_frame"]
 
 
-def test_replayed_fixed_camera_segment_is_located_exactly(tmp_path: Path) -> None:
-    """Seconds 1-3 replayed at 5-7 s are reported with frame-accurate bounds."""
+@pytest.mark.parametrize("rate", [10, 30])
+def test_replayed_fixed_camera_segment_is_located_exactly(tmp_path: Path, rate: int) -> None:
+    """Seconds 1-3 replayed at 5-7 s are reported to within one frame."""
     graph = (
-        _scene(8) + ",split=3[a][b][c];"
+        _scene(8, rate=rate) + ",split=3[a][b][c];"
         "[a]trim=0:5,setpts=PTS-STARTPTS[x];[b]trim=1:3,setpts=PTS-STARTPTS[y];"
         "[c]trim=7:8,setpts=PTS-STARTPTS[z];[x][y][z]concat=n=3:v=1:a=0"
     )
@@ -113,4 +114,4 @@ def test_replayed_fixed_camera_segment_is_located_exactly(tmp_path: Path) -> Non
         ("source_start_ms", 1000),
         ("source_end_ms", 3000),
     ):
-        assert abs(window[key] - expected) <= _FRAME_MS, (key, window)
+        assert abs(window[key] - expected) <= 1000 / rate, (key, window)
