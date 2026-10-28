@@ -81,7 +81,10 @@ def test_ontology_endpoint_when_requested_exposes_valid_versioned_schemas(
     value = client.get("/api/ontology").json()
     assert len(value["object_types"]) == 14
     assert len(value["link_types"]) == 9
-    assert len(value["functions"]) == 20
+    assert len(value["functions"]) == 22
+    assert {"training_distribution", "training_leakage"} <= {
+        item["id"] for item in value["functions"]
+    }
     assert len(value["actions"]) == 37
     assert {"list_quality_rules", "get_table_quality"} <= {
         item["id"] for item in value["functions"]
