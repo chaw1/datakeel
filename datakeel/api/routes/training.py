@@ -31,7 +31,7 @@ router = APIRouter(
 
 def _access(request: Request) -> AccessContext:
     return AccessContext(
-        actor=request.headers.get("X-Datakeel-Actor", "local"), entry="ask", scope="query"
+        actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
     )
 
 
