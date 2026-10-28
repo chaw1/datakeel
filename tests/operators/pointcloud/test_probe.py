@@ -41,25 +41,32 @@ def test_wilson_interval_matches_reference_values() -> None:
 
 
 @pytest.mark.parametrize("fraction", [0.0, 0.005, 0.02])
-def test_sampled_probe_interval_covers_the_full_measurement(
+def test_sampled_probe_reaches_the_full_verdict(
     monkeypatch: pytest.MonkeyPatch, fraction: float
 ) -> None:
-    """A large file is measured on a sample whose interval contains the full answer."""
+    """A file measured on a half sample reaches the verdict of a full measurement.
+
+    The interval covers the sampling error of the proportion only. Thinning
+    also widens surface spacing faster than the gaps between scattered
+    strays, so the sampled ratio sits somewhat off the full one; a half
+    sample is what a million-point file gets.
+    """
     points = scans.indoor_scan()
     cloud = make_cloud(scans.scatter(points, fraction) if fraction else points)
     full = probe.inspect_cloud(cloud)
     assert not full.outlier_sampled
     assert full.outlier_ci_low == full.outlier_ratio == full.outlier_ci_high
-    monkeypatch.setattr(probe, "FULL_LIMIT", 8000)
+    monkeypatch.setattr(probe, "FULL_LIMIT", full.point_count // 2)
     sampled = probe.inspect_cloud(cloud)
     assert sampled.outlier_sampled
-    assert sampled.outlier_sample_count == 8000
-    assert sampled.outlier_ci_low <= full.outlier_ratio <= sampled.outlier_ci_high
+    assert sampled.outlier_sample_count == full.point_count // 2
     assert sampled.outlier_ci_low <= sampled.outlier_ratio <= sampled.outlier_ci_high
     assert sampled.relative_spacing == pytest.approx(full.relative_spacing, rel=0.3)
     assert sampled.body_extent == pytest.approx(full.body_extent, rel=0.05)
+    limit = ProbeParams().max_outlier_ratio
+    assert (sampled.outlier_ci_low > limit) is (full.outlier_ratio > limit) is (fraction > 0)
     if fraction:
-        assert sampled.outlier_ci_low > ProbeParams().max_outlier_ratio
+        assert 0.75 * full.outlier_ratio <= sampled.outlier_ratio <= 1.5 * full.outlier_ratio
     else:
         assert sampled.outlier_ci_low == 0
 

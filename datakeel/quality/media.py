@@ -11,7 +11,7 @@ from datakeel.core.models import FileItem, JsonDocument, Record
 from datakeel.quality.models import IssueView
 
 # Same value as the probe policy default; used only for probes recorded without a policy.
-DEFAULT_MAX_OUTLIER_RATIO = 0.0007
+DEFAULT_MAX_OUTLIER_RATIO = 0.0004
 
 
 class MediaAssessment(Record):

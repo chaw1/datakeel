@@ -429,7 +429,7 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Control statistical, sparse-coverage and unit-suspicion file-level policy.\n\n``max_outlier_ratio`` defaults to 0.07%, between the worst clean\ngenerated scan (0.038%) and the least flagged scan with 0.5% embedded\noutliers (0.16%). Sampled files are judged by the lower end of the 95%\ninterval, so sampling error alone cannot raise an issue.",
+      "description": "Control statistical, sparse-coverage and unit-suspicion file-level policy.\n\n``max_outlier_ratio`` defaults to 0.04%, near the geometric middle of\nthe worst clean generated scan (0.029%, a sparse 32-ring street) and the\nleast flagged generated scan with 0.5% embedded outliers (0.060%, a\n2.6-million-point drive of 24 frames). Sampled files are judged by the\nlower end of the 95% interval, so sampling error alone cannot raise an\nissue.",
       "properties": {
         "neighbors": {
           "default": 12,
@@ -492,7 +492,7 @@
           "type": "string"
         },
         "max_outlier_ratio": {
-          "default": 0.0007,
+          "default": 0.0004,
           "maximum": 1,
           "minimum": 0,
           "title": "Max Outlier Ratio",

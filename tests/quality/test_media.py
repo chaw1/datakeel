@@ -115,7 +115,7 @@ def _outliers(ratio: float, low: float, limit: float | None = None) -> FileItem:
 def test_outlier_issue_needs_the_lower_confidence_bound_above_the_file_limit() -> None:
     """A sampled ratio within sampling error of the limit is not reported; a clear excess is."""
     assert ProbeParams().max_outlier_ratio == DEFAULT_MAX_OUTLIER_RATIO
-    uncertain = assess_file(_outliers(0.0009, 0.0006))
+    uncertain = assess_file(_outliers(0.0005, 0.0003))
     assert uncertain.issues == []
     assert uncertain.distribution == 1
     clear = assess_file(_outliers(0.002, 0.0018))
@@ -125,7 +125,7 @@ def test_outlier_issue_needs_the_lower_confidence_bound_above_the_file_limit() -
     assert "0.180%-0.220%" in message
     assert "500000 sampled points" in message
     assert "700 isolated, 120 in separated clusters" in message
-    assert "limit 0.070%" in message
+    assert "limit 0.040%" in message
     assert assess_file(_outliers(0.002, 0.0018, limit=0.01)).issues == []
     full = _outliers(0.001, 0.001)
     full.metadata["pointcloud_probe"]["outlier_sampled"] = False  # type: ignore[index]

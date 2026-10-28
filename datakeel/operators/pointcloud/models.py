@@ -170,14 +170,16 @@ class StatisticalParams(Params):
 class ProbeParams(StatisticalParams):
     """Control statistical, sparse-coverage and unit-suspicion file-level policy.
 
-    ``max_outlier_ratio`` defaults to 0.07%, between the worst clean
-    generated scan (0.038%) and the least flagged scan with 0.5% embedded
-    outliers (0.16%). Sampled files are judged by the lower end of the 95%
-    interval, so sampling error alone cannot raise an issue.
+    ``max_outlier_ratio`` defaults to 0.04%, near the geometric middle of
+    the worst clean generated scan (0.029%, a sparse 32-ring street) and the
+    least flagged generated scan with 0.5% embedded outliers (0.060%, a
+    2.6-million-point drive of 24 frames). Sampled files are judged by the
+    lower end of the 95% interval, so sampling error alone cannot raise an
+    issue.
     """
 
     sensor: Sensor = "unknown"
-    max_outlier_ratio: float = Field(default=0.0007, ge=0, le=1)
+    max_outlier_ratio: float = Field(default=0.0004, ge=0, le=1)
     max_relative_spacing: float | None = Field(default=None, gt=0)
     expected_max_extent: float | None = Field(default=None, gt=0)
     reference_extent: float | None = Field(default=None, gt=0)
