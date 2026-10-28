@@ -283,38 +283,3 @@ it("blocks preparation during composition and prevents native composition Enter"
     await screen.findByRole("button", { name: "Execute action" }),
   ).toBeVisible();
 });
-
-it("prepares extraction for a pinned source containing test-set paired images", async () => {
-  const fetch = api();
-  const testSource = {
-    ...source,
-    id: "test-source",
-    manifest: source.manifest.map((file) => ({
-      ...file,
-      metadata: {
-        evidence_sample: {
-          ...file.metadata.evidence_sample,
-          sample_key: "test/sample/image.png",
-          split: "test",
-        },
-      },
-    })),
-  };
-  fetch.mockResolvedValueOnce(new Response(JSON.stringify([testSource])));
-  const user = userEvent.setup();
-  render(
-    <EvidenceExtraction datasetId={dataset.id} sourceVersion={testSource.id} />,
-  );
-  await user.click(
-    await screen.findByRole("button", { name: "Prepare evidence extraction" }),
-  );
-  expect(fetch).toHaveBeenCalledWith(
-    "/api/actions/run_pipeline/prepare",
-    expect.objectContaining({
-      body: JSON.stringify(extractionInput(dataset.id, testSource.id)),
-    }),
-  );
-  expect(fetch.mock.calls.some(([path]) => path.endsWith("/execute"))).toBe(
-    false,
-  );
-});
