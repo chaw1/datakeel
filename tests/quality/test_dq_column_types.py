@@ -182,6 +182,15 @@ def _prepare(db: Database, rule: DqRule) -> DqRule:
     return DqRule.model_validate(plan.canonical_params["rule"])
 
 
+def _refusal(db: Database, rule: DqRule) -> str:
+    # Plain assertions on the message keep refusal regressions measurable by mutation tests.
+    try:
+        _prepare(db, rule)
+    except ValidationError as error:
+        return str(error)
+    return ""
+
+
 def _typed_rule(
     schema: str, kind: DqKind, column: str, params: DqParameters | None = None
 ) -> DqRule:
@@ -200,8 +209,8 @@ def test_special_columns_run_or_are_refused_at_preparation(
 ) -> None:
     """NULL checks read no values; UUID rules compare canonical text; others are refused."""
     source, schema = typed_source
-    with pytest.raises(ValidationError, match="regex rules need"):
-        _prepare(db, _typed_rule(schema, "regex", "payload", DqParameters(pattern=".*")))
+    regex = _typed_rule(schema, "regex", "payload", DqParameters(pattern=".*"))
+    assert "regex rules need" in _refusal(db, regex)
     for column in ("value", "payload"):
         prepared = _prepare(db, _typed_rule(schema, "not_null", column))
         result = execute_rule(prepared, source)
@@ -210,8 +219,7 @@ def test_special_columns_run_or_are_refused_at_preparation(
         assert result.metrics.mean is None
     assert read_rules(db) == ()
     if db.sqlite:
-        with pytest.raises(ValidationError, match="unique rules need"):
-            _prepare(db, _typed_rule(schema, "unique", "value"))
+        assert "unique rules need" in _refusal(db, _typed_rule(schema, "unique", "value"))
         return
     unique = execute_rule(_prepare(db, _typed_rule(schema, "unique", "value")), source)
     assert (unique.status, unique.failed_count) == ("failed", 2)
@@ -220,13 +228,12 @@ def test_special_columns_run_or_are_refused_at_preparation(
     reference = DqParameters(reference_table="parents", reference_column="key")
     orphans = _typed_rule(schema, "referential_integrity", "value", reference)
     assert execute_rule(_prepare(db, orphans), source).failed_count == 1
-    with pytest.raises(ValidationError, match="range rules need"):
-        _prepare(db, _typed_rule(schema, "range", "value", DqParameters(minimum=0)))
+    ranged = _typed_rule(schema, "range", "value", DqParameters(minimum=0))
+    assert "range rules need" in _refusal(db, ranged)
     missing = _typed_rule(
         schema,
         "referential_integrity",
         "value",
         DqParameters(reference_table="absent", reference_column="key"),
     )
-    with pytest.raises(ValidationError, match="reference table"):
-        _prepare(db, missing)
+    assert "reference table" in _refusal(db, missing)
