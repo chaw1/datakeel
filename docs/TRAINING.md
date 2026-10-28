@@ -73,10 +73,16 @@ source export permissions are rechecked on every download. Export receipts enter
 | `hf_imagefolder` | Images plus split-local `metadata.jsonl` with relative `file_name`, labels and detection objects; root `categories.json` |
 | `text_jsonl` | `<split>.jsonl`; exact text, labels and half-open character-offset spans |
 
-Images with no detection boxes have an empty YOLO label file and remain in COCO images.
+Reviewed-empty images (`boxes=[]`) have an empty YOLO label file and remain in COCO images.
+Missing box reviews (`boxes=null`) are refused for detection exports, rather than treated
+as negative examples. YOLO requires at least one explicit detection category across the
+selected samples. COCO can represent a reviewed all-empty dataset with no categories;
+that is a valid interchange document, not a useful zero-class training task.
 Invalid or out-of-bounds boxes are refused. ImageFolder rejects missing or multiple class
 labels. Text offsets count Unicode characters, not UTF-8 bytes or UTF-16 code units, and
 the exporter validates them against the original unnormalized text.
+Imported coordinates that exceed a pixel boundary only by floating-point roundoff
+(at most four ULPs of the image extent) are clamped to that boundary; real overflow is refused.
 
 `MANIFEST.json` records the source version, optional release, split ID, seed, format and
 format version, total and per-split file counts, annotation counts and each source hash.
