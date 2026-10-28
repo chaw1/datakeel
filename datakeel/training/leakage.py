@@ -19,6 +19,20 @@ from datakeel.core.training_models import (
 from datakeel.operators.evidence.near_duplicate_hashes import compare_hashes
 
 type SignalPair = tuple[int, int, LeakageKind, int, str]
+UNIFORM_COLOR_THRESHOLD = 12
+
+
+def _image_confirmation(left: TrainingSample, right: TrainingSample) -> bool:
+    if not left.image_uniform and not right.image_uniform:
+        return True
+    if not left.image_uniform or not right.image_uniform:
+        return False
+    if left.image_color is None or right.image_color is None:
+        return False
+    return all(
+        abs(a - b) <= UNIFORM_COLOR_THRESHOLD
+        for a, b in zip(left.image_color, right.image_color, strict=True)
+    )
 
 
 def _equal_pairs(samples: tuple[TrainingSample, ...], field: str) -> Iterator[SignalPair]:
@@ -49,12 +63,21 @@ def _hash_pairs(
     ]
     comparison = compare_hashes([value for _, value in values], threshold, mode="exact")
     for left, right, distance in comparison.pairs:
+        if kind == "image" and not _image_confirmation(
+            samples[values[left][0]], samples[values[right][0]]
+        ):
+            continue
         yield (
             values[left][0],
             values[right][0],
             kind,
             distance,
-            f"64-bit {'dHash' if kind == 'image' else 'simhash'} Hamming distance <= {threshold}",
+            f"64-bit {'dHash' if kind == 'image' else 'simhash'} Hamming distance <= {threshold}"
+            + (
+                f"; low-texture RGB channel difference <= {UNIFORM_COLOR_THRESHOLD}"
+                if kind == "image" and samples[values[left][0]].image_uniform
+                else ""
+            ),
         )
 
 

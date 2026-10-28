@@ -56,6 +56,8 @@ class TrainingSample(BoundaryModel):
     labels: tuple[str, ...] = ()
     group: str | None = None
     image_hash: int | None = Field(default=None, ge=0, lt=1 << 64)
+    image_uniform: bool = False
+    image_color: tuple[int, int, int] | None = None
     text_hash: int | None = Field(default=None, ge=0, lt=1 << 64)
 
 

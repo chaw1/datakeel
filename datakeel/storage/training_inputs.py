@@ -8,6 +8,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import numpy as np
 from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -30,6 +31,8 @@ from datakeel.training.hashes import simhash
 
 if TYPE_CHECKING:
     from pydantic import JsonValue
+
+UNIFORM_STD_THRESHOLD = 3
 
 
 def authorize_training(
@@ -108,6 +111,20 @@ def _group(file: FileItem, field: str | None) -> str | None:
     )
 
 
+def _image_signal(file: FileItem) -> tuple[int, bool, tuple[int, int, int]]:
+    try:
+        with open_image(file) as image:
+            image_hash = int(dhash(image), 16)
+            pixels = np.asarray(image.convert("RGB").resize((32, 32)), dtype=np.float64)
+            mean = np.mean(pixels, axis=(0, 1))
+            color = (round(float(mean[0])), round(float(mean[1])), round(float(mean[2])))
+            uniform = float(np.max(np.std(pixels, axis=(0, 1)))) < UNIFORM_STD_THRESHOLD
+            return image_hash, uniform, color
+    except (OSError, ValueError, Image.DecompressionBombError) as error:
+        message = f"Training image could not be decoded: {file.id}"
+        raise ValidationError(message) from error
+
+
 def _sample(
     file: FileItem, records: tuple[AnnotationRecord, ...], group_field: str | None
 ) -> TrainingSample:
@@ -117,13 +134,9 @@ def _sample(
         raise ConflictError(message)
     file = file.model_copy(update={"sha256": checksum})
     image_hash, text_hash = None, None
+    image_uniform, image_color = False, None
     if file.modality == "image":
-        try:
-            with open_image(file) as image:
-                image_hash = int(dhash(image), 16)
-        except (OSError, ValueError, Image.DecompressionBombError) as error:
-            message = f"Training image could not be decoded: {file.id}"
-            raise ValidationError(message) from error
+        image_hash, image_uniform, image_color = _image_signal(file)
     if file.modality == "text":
         try:
             text_hash = simhash(Path(file.path).read_text(encoding="utf-8-sig"))
@@ -149,6 +162,8 @@ def _sample(
         labels=labels,
         group=_group(file, group_field),
         image_hash=image_hash,
+        image_uniform=image_uniform,
+        image_color=image_color,
         text_hash=text_hash,
     )
 
@@ -177,7 +192,7 @@ def read_training_samples(
     authorize_training(session, dataset_id, version_id, access, tuple(file.id for file in files))
     annotations = _annotations(session, dataset_id, version_id)
     return tuple(
-        _sample(file, annotations.get(file.id, _fallback(file)), group_field)
+        _sample(file, annotations.get(file.id) or _fallback(file), group_field)
         for file in materialize_files(files)
     )
 

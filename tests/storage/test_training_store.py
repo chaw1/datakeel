@@ -309,3 +309,43 @@ def test_external_directory_fallback_recognizes_test_before_object_materializati
         db, fixture.dataset_id, fixture.version_id, SplitRequest(name="path", source="directory")
     )
     assert preview.members[0].split == "test"
+
+
+def test_flat_color_dhash_collision_requires_color_confirmation(
+    db: Database, tmp_path: Path
+) -> None:
+    """Flat red recompression matches; blue, gray and white controls do not falsely match."""
+    colors = ("red", "red", "blue", "gray", "white")
+    files: list[FileItem] = []
+    for index, color in enumerate(colors):
+        path = tmp_path / (f"flat-{index}.jpg" if index == 1 else f"flat-{index}.png")
+        Image.new("RGB", (80, 80), color).save(path)
+        files.append(
+            FileItem(
+                id=str(index),
+                path=str(path),
+                filename=path.name,
+                sha256=digest(path),
+                modality="image",
+                metadata={"split": "train" if index == 0 else "test"},
+            )
+        )
+    fixture = _version(db, tuple(files))
+    report = preview_leakage(
+        db, fixture.dataset_id, fixture.version_id, SplitRequest(name="flat", source="directory")
+    )
+    assert [(pair.kind, pair.left_id, pair.right_id) for pair in report.pairs] == [
+        ("image", "0", "1")
+    ]
+
+
+def test_corrupt_training_image_fails_before_saving_split(db: Database, tmp_path: Path) -> None:
+    """An undecodable image produces a typed failure instead of silently missing leakage."""
+    path = tmp_path / "corrupt.png"
+    path.write_bytes(b"invalid image")
+    fixture = _version(
+        db, (FileItem(id="corrupt", path=str(path), filename=path.name, modality="image"),)
+    )
+    with pytest.raises(ValidationError, match="decoded"):
+        create_split(db, fixture.dataset_id, fixture.version_id, SplitRequest(name="corrupt"))
+    assert not list_splits(db, fixture.dataset_id, fixture.version_id)

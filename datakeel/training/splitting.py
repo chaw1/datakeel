@@ -17,6 +17,7 @@ from datakeel.core.training_models import (
     TrainingSample,
 )
 from datakeel.training.leakage import signal_pairs
+from datakeel.training.refinement import refine_assignments
 
 SPLITS: tuple[SplitName, ...] = ("train", "val", "test")
 
@@ -111,8 +112,11 @@ def _iterative(
             active: list[SplitName] = [
                 split for split in SPLITS if getattr(request.ratios, split) > 0
             ]
+            fitting: list[SplitName] = [
+                split for split in active if capacity[split] >= len(groups[index])
+            ]
             selected = max(
-                active,
+                fitting or active,
                 key=lambda split: (
                     desired[split].get(rare or "", 0),
                     capacity[split],
@@ -125,7 +129,7 @@ def _iterative(
             for label, count in labels[index].items():
                 desired[selected][label] -= count
             remaining.remove(index)
-    return result
+    return refine_assignments(samples, groups, result, request)
 
 
 def _directory(samples: tuple[TrainingSample, ...]) -> dict[int, SplitName]:
