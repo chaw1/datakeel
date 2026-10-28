@@ -5,6 +5,7 @@
 
 from scripts.advanced_mutations import ADVANCED_MUTATIONS
 from scripts.annotation_qa_mutations import ANNOTATION_QA_MUTATIONS
+from scripts.ask_chart_mutations import ASK_CHART_MUTATIONS
 from scripts.auto_routing_mutations import AUTO_ROUTING_MUTATIONS
 from scripts.coordinate_mutations import COORDINATE_MUTATIONS
 from scripts.data_asset_mutations import DATA_ASSET_MUTATIONS
@@ -42,4 +43,5 @@ FEATURE_MUTATIONS = (
     *ORCHESTRATION_MUTATIONS,
     *ANNOTATION_QA_MUTATIONS,
     *DATASHEET_MUTATIONS,
+    *ASK_CHART_MUTATIONS,
 )
