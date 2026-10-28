@@ -7,6 +7,7 @@ from scripts.mutation_models import Mutation
 
 _GUARD = "tests/ask/test_unconsumed_guard.py::"
 _PARAPHRASE = "tests/routing/test_paraphrase_routing.py::"
+_FOLLOW_UP = "tests/routing/test_result_follow_ups.py::"
 
 GUARD_MUTATIONS = (
     Mutation(
@@ -113,6 +114,56 @@ GUARD_MUTATIONS = (
         before="    if concepts.outcomes:",
         after="    if False:",
         case=_PARAPHRASE + "test_no_negative_message_starts_a_workflow",
+        runner="pytest",
+    ),
+    Mutation(
+        name="routing-outcome-follow-up-split",
+        path="routing/questions.py",
+        before="            return link.start()",
+        after="            return None",
+        case=_FOLLOW_UP + "test_no_outcome_follow_up_turns_a_request_into_a_question",
+        runner="pytest",
+    ),
+    Mutation(
+        name="routing-outcome-question-form-blanked",
+        path="routing/questions.py",
+        before="        return sentence[:split] + _TAIL_CUES.sub(_spaces, tail)",
+        after="        return sentence[:split] + tail",
+        case=_FOLLOW_UP + "test_no_outcome_follow_up_turns_a_request_into_a_question",
+        runner="pytest",
+    ),
+    Mutation(
+        name="routing-outcome-joins-request-clause",
+        path="routing/questions.py",
+        before="        tail = _LINK_PUNCTUATION.sub(_spaces, sentence[split:])",
+        after="        tail = sentence[split:]",
+        case=_FOLLOW_UP + "test_no_outcome_follow_up_turns_a_request_into_a_question",
+        runner="pytest",
+    ),
+    Mutation(
+        name="routing-workflow-focus-follow-up",
+        path="routing/questions.py",
+        before="    if split is not None and _WORKFLOW_FOCUS.search(sentence[split:]) is None:",
+        after="    if split is not None:",
+        case=_FOLLOW_UP + "test_no_follow_up_about_the_workflow_itself_starts_it",
+        runner="pytest",
+    ),
+    Mutation(
+        name="routing-concept-exclusion-verification",
+        path="routing/intent.py",
+        before="    verified = verified and not concept_excluded(scoped, workflow.triggers)",
+        after="    verified = verified",
+        case=_PARAPHRASE
+        + "test_declared_exclusions_keep_the_classifier_but_block_selection_and_verification",
+        runner="pytest",
+    ),
+    Mutation(
+        name="routing-concept-exclusion-offline",
+        path="routing/intent.py",
+        before="            or concept_excluded(scoped, workflow.triggers)",
+        after="            or False",
+        case=_PARAPHRASE
+        + "test_declared_exclusions_keep_the_classifier_but_block_selection_and_verification",
         runner="pytest",
     ),
 )
