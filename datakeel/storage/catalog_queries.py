@@ -16,6 +16,8 @@ from datakeel.core.catalog_models import (
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import JsonDocument
 from datakeel.metrics.projection import resolved_metric_cards
+from datakeel.storage.catalog_pages import read_page
+from datakeel.storage.catalog_rows import CatalogObjectRow
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.database import Database
 
@@ -25,9 +27,15 @@ MAX_IMPACT_HOPS = 3
 def get_object(db: Database, asset_id: str) -> CatalogObject:
     """Read one stable metadata identity or report its absence explicitly."""
     with db.session() as session:
-        for item in _resolved_objects(read_snapshot(session)):
-            if item.asset_ref.asset_id == asset_id:
-                return item
+        row = session.get(CatalogObjectRow, asset_id)
+        if row is not None:
+            if row.kind != "metric":
+                return CatalogObject.model_validate(row.payload)
+            return next(
+                item
+                for item in _resolved_objects(read_snapshot(session))
+                if item.asset_ref.asset_id == asset_id
+            )
     msg = f"Catalog object not found: {asset_id}"
     raise NotFoundError(msg)
 
@@ -36,32 +44,15 @@ def read_objects(db: Database, query: CatalogQuery | None = None) -> CatalogPage
     """List deterministic pages with optional type, source, containment, and name filters."""
     query = query or CatalogQuery()
     with db.session() as session:
-        snapshot = read_snapshot(session)
-    children = {
-        link.target.asset_id
-        for link in snapshot.links
-        if link.kind == "contains" and link.source.asset_id == query.parent_id
-    }
-    items = [
-        item
-        for item in _resolved_objects(snapshot)
-        if (
-            (query.kind is None or item.asset_ref.asset_type == query.kind)
-            and (query.source_id is None or item.source_id == query.source_id)
-            and (query.parent_id is None or item.asset_ref.asset_id in children)
-            and (
-                query.search is None
-                or query.search.casefold() in item.name.casefold()
-                or query.search.casefold() in (item.english_name or "").casefold()
-            )
+        page = read_page(session, query)
+        if not any(item.asset_ref.asset_type == "metric" for item in page.items):
+            return page
+        resolved = {
+            item.asset_ref.asset_id: item for item in _resolved_objects(read_snapshot(session))
+        }
+        return page.model_copy(
+            update={"items": tuple(resolved[item.asset_ref.asset_id] for item in page.items)}
         )
-    ]
-    return CatalogPage(
-        items=tuple(items[query.offset : query.offset + query.limit]),
-        total=len(items),
-        offset=query.offset,
-        limit=query.limit,
-    )
 
 
 def neighbors(db: Database, asset_id: str) -> ImpactResult:

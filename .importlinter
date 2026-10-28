@@ -212,6 +212,8 @@ ignore_imports =
     datakeel.storage.lineage_service -> datakeel.lineage.collapse
     datakeel.storage.lineage_service -> datakeel.lineage.models
     datakeel.storage.lineage_service -> datakeel.lineage.service
+# Indexed catalog adjacency consumes the same frozen graph query as lineage reads.
+    datakeel.storage.catalog_graph -> datakeel.lineage.models
     datakeel.storage.task_queue -> datakeel.pipeline
     datakeel.storage.views -> datakeel.governance.models
 # Persistence implements action transactions with pure policy/receipt helpers and ontology projections.
