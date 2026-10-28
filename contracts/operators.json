@@ -133,7 +133,7 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Measure EBU R128 loudness and optionally create a normalized PCM artifact.",
+      "description": "Measure EBU R128 loudness and optionally create a normalized PCM artifact.\n\nIntegrated loudness inside ``[acceptable_min_lufs, acceptable_max_lufs]``, widened\nby ``loudness_tolerance_lu`` on both sides, is not flagged. The default range runs\nfrom the EBU R128 broadcast target (-23 LUFS) to the -14 LUFS normalization level\nof the loudest common streaming platforms, with R128's +/-1 LU tolerance; set the\nrange to -23..-23 for strict broadcast delivery (-23 +/- 1). ``target_lufs`` is the\nlevel that ``normalize`` produces.",
       "properties": {
         "normalize": {
           "default": false,
@@ -147,8 +147,22 @@
           "title": "Target Lufs",
           "type": "number"
         },
+        "acceptable_min_lufs": {
+          "default": -23.0,
+          "maximum": -5,
+          "minimum": -70,
+          "title": "Acceptable Min Lufs",
+          "type": "number"
+        },
+        "acceptable_max_lufs": {
+          "default": -14.0,
+          "maximum": -5,
+          "minimum": -70,
+          "title": "Acceptable Max Lufs",
+          "type": "number"
+        },
         "loudness_tolerance_lu": {
-          "default": 3.0,
+          "default": 1.0,
           "maximum": 30,
           "minimum": 0,
           "title": "Loudness Tolerance Lu",
@@ -327,11 +341,11 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Configure signal thresholds at the documented 160 by 90 sample scale.",
+      "description": "Configure signal thresholds at the documented 160 by 90 analysis scale.\n\n``sample_fps`` is the maximum analysis rate: slower video is examined frame by\nframe, so interval boundaries are exact to one frame.",
       "properties": {
         "sample_fps": {
-          "default": 5.0,
-          "maximum": 30,
+          "default": 30.0,
+          "maximum": 60,
           "minimum": 1,
           "title": "Sample Fps",
           "type": "number"
@@ -357,8 +371,29 @@
           "title": "Freeze Difference",
           "type": "number"
         },
+        "freeze_local_difference": {
+          "default": 2.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Freeze Local Difference",
+          "type": "number"
+        },
+        "freeze_locality": {
+          "default": 10.0,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Freeze Locality",
+          "type": "number"
+        },
+        "freeze_noise_ratio": {
+          "default": 0.5,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Freeze Noise Ratio",
+          "type": "number"
+        },
         "freeze_duration_ms": {
-          "default": 1000,
+          "default": 1200,
           "minimum": 100,
           "title": "Freeze Duration Ms",
           "type": "integer"
@@ -405,7 +440,7 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Search repeated windows frame by frame and extend each match to its real extent.\n\nRepeats lasting at least 1.5 windows are located wherever they start.",
+      "description": "Search repeated windows frame by frame and extend each match to its real extent.\n\nRepeats lasting at least 1.5 windows are located wherever they start. Frames\nmatch when the thumbnail differs little on average (``max_spatial_difference``)\nand nowhere by much (``max_local_difference``, so a changed clock digit or a\nsubject elsewhere in a static scene is not a match), and when the picture\nchanges the same way; windows of static picture are never reported.",
       "properties": {
         "window_ms": {
           "default": 2000,
@@ -440,6 +475,13 @@
           "maximum": 255,
           "minimum": 0,
           "title": "Max Spatial Difference",
+          "type": "number"
+        },
+        "max_local_difference": {
+          "default": 32.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Max Local Difference",
           "type": "number"
         },
         "minimum_clip_ms": {
