@@ -1,83 +1,177 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Validate exact neighbors and deterministic large-cloud approximation behavior."""
+"""Judge outlier detection on generated scans whose density falls with range."""
+
+from functools import cache
 
 import numpy as np
+import pytest
+from numpy.typing import NDArray
 
-from datakeel.operators.pointcloud.statistics import neighbor_distances, outlier_mask, spatial_order
+from datakeel.operators.pointcloud.models import ProbeParams, StatisticalParams
+from datakeel.operators.pointcloud.statistics import analyse, outlier_mask
+from tests.operators.pointcloud import scans
 
-
-def test_exact_neighbor_scores_match_independent_distance_reference() -> None:
-    """Check every small-cloud kNN score against a direct all-pairs implementation."""
-    xyz = np.random.default_rng(23).normal(size=(30, 3))
-    distances = np.linalg.norm(xyz[:, None] - xyz[None, :], axis=-1)
-    np.fill_diagonal(distances, np.inf)
-    expected = np.sort(distances, axis=1)[:, :5].mean(axis=1)
-    np.testing.assert_allclose(neighbor_distances(xyz, 5), expected)
+LIMIT = ProbeParams().max_outlier_ratio
+DEFAULTS = StatisticalParams()
 
 
-def test_large_cloud_approximation_stays_close_on_flat_noisy_ground() -> None:
-    """A thin axis must not be stretched to full Morton resolution and scramble locality."""
-    rng = np.random.default_rng(1828)
-    xyz = rng.uniform([0, 0, 0], [100, 100, 0.5], (4000, 3))
-    exact = np.empty(len(xyz))
-    for start in range(0, len(xyz), 400):
-        block = np.linalg.norm(xyz[start : start + 400, None] - xyz[None, :], axis=-1)
-        block[np.arange(len(block)), np.arange(start, start + len(block))] = np.inf
-        exact[start : start + 400] = np.sort(block, axis=1)[:, :16].mean(axis=1)
-    ratio = neighbor_distances(xyz, 16) / exact
-    assert ratio.min() >= 1 - 1e-12
-    assert np.median(ratio) < 1.2
-    assert np.quantile(ratio, 0.95) < 2
+@cache
+def _scan(name: str) -> NDArray[np.float64]:
+    generators = {
+        "indoor": scans.indoor_scan,
+        "indoor-fine": lambda: scans.indoor_scan(step=0.5),
+        "vehicle": scans.vehicle_scan,
+        "vehicle-16": lambda: scans.vehicle_scan(rings=16),
+        "depth": scans.depth_scan,
+    }
+    return generators[name]()
+
+
+SCANS = ("indoor", "vehicle", "vehicle-16", "depth")
+
+
+@pytest.mark.parametrize("name", SCANS)
+def test_clean_scans_stay_under_the_file_limit_despite_their_density_gradient(name: str) -> None:
+    """Far, sparse surfaces are judged against their own neighbors, not the dense near field."""
+    points = _scan(name)
+    measured = analyse(points, DEFAULTS)
+    assert measured.mask.mean() <= LIMIT / 2
+    # The gradient is real: one cloud-wide spacing cut would reject far surfaces.
+    assert (measured.spacing > 3 * np.median(measured.spacing)).mean() > LIMIT * 5
+
+
+@pytest.mark.parametrize("name", SCANS)
+@pytest.mark.parametrize("fraction", [0.005, 0.02])
+def test_scattered_outliers_push_a_scan_over_the_file_limit(name: str, fraction: float) -> None:
+    """Uniform strays inside the scanned volume are found without flagging the scan itself."""
+    points = _scan(name)
+    mask = outlier_mask(scans.scatter(points, fraction), DEFAULTS)
+    assert mask.mean() > 2 * LIMIT
+    assert mask[len(points) :].mean() > 0.2
+    assert mask[: len(points)].mean() <= LIMIT * 1.5
+
+
+@pytest.mark.parametrize("name", SCANS)
+def test_strays_far_around_a_scan_are_found_by_their_sparseness(name: str) -> None:
+    """Strays far outside the scene neighbor each other and still stand out as sparse."""
+    points = _scan(name)
+    noisy = scans.scatter(points, 0.02, seed=3, margin=10.0)
+    assert outlier_mask(noisy, DEFAULTS)[len(points) :].all()
+    assert not outlier_mask(noisy, DEFAULTS)[: len(points)].any()
+    blind = StatisticalParams(sparse_cluster_ratio=1000)
+    assert outlier_mask(noisy, blind)[len(points) :].mean() < 0.1
+
+
+def test_floating_clusters_are_found_while_small_real_objects_stay() -> None:
+    """Compact groups in the air are outliers; a cup on a table and a pillar are scene."""
+    room = _scan("indoor-fine")
+    count = len(room)
+    cup = (np.abs(room[:, :2] - (2.95, 1.45)) <= 0.06).all(axis=1) & (room[:, 2] > 0.76)
+    pillar = np.hypot(room[:, 0] - 6.5, room[:, 1] - 2.5) <= 0.17
+    assert cup.sum() >= 20
+    groups = [
+        scans.blob((3.2, 1.6, 1.1), 30, 0.02),
+        scans.blob((6, 6, 2.2), 30, 0.03, seed=4),
+        scans.blob((3, 6, 1.2), 60, 0.03, seed=5),
+    ]
+    measured = analyse(np.vstack([room, *groups]), DEFAULTS)
+    assert measured.clustered[count:].all()
+    assert not measured.mask[:count][cup | pillar].any()
+    assert measured.mask[:count].mean() <= LIMIT / 2
+
+
+def test_cluster_size_limit_follows_its_parameters() -> None:
+    """Groups at or above the minimum size are left to the sparseness test."""
+    room = _scan("indoor")
+    groups = np.vstack([scans.blob((6, 6, 2.2), 30, 0.03), scans.blob((3, 6, 1.2), 60, 0.03, 4)])
+    points = np.vstack([room, groups])
+    count = len(room)
+    for minimum, flagged in ((100, [True, True]), (50, [True, False]), (20, [False, False])):
+        params = StatisticalParams(min_cluster_points=minimum, min_cluster_fraction=0)
+        mask = outlier_mask(points, params)
+        assert [bool(mask[count : count + 30].all()), bool(mask[count + 30 :].all())] == flagged
+        assert [bool(mask[count : count + 30].any()), bool(mask[count + 30 :].any())] == flagged
+    fraction = StatisticalParams(min_cluster_points=2, min_cluster_fraction=0.002)
+    assert outlier_mask(points, fraction)[count:].all()
+
+
+def _patch(height: float, *, thin: bool, seed: int = 2) -> NDArray[np.float64]:
+    """Return 200 points over a 0.3 m square above the floor, flat or filling a cube."""
+    rng = np.random.default_rng(seed)
+    across = rng.uniform(-0.15, 0.15, (200, 2))
+    depth = rng.normal(0, 0.002, 200) if thin else rng.uniform(0, 0.3, 200)
+    return np.column_stack([6 + across[:, 0], 6 + across[:, 1], height + depth])
+
+
+def test_thin_surface_pieces_need_twice_their_extent_of_clearance() -> None:
+    """A piece of surface near the scene is kept; a volume-filling group there is not."""
+    room = _scan("indoor")
+    count = len(room)
+    for height, thin, expected in ((0.45, True, False), (0.45, False, True), (0.9, True, True)):
+        mask = outlier_mask(np.vstack([room, _patch(height, thin=thin)]), DEFAULTS)
+        assert bool(mask[count:].all()) is expected
+        assert bool(mask[count:].any()) is expected
+        assert not mask[:count].any()
+
+
+def test_self_contained_groups_are_compared_with_the_main_body_only_when_volumetric() -> None:
+    """A far facade with no outside neighbors stays; a sparse cloud filling space does not."""
+    room = _scan("indoor")
+    count = len(room)
+    rng = np.random.default_rng(6)
+    grid = np.stack(np.meshgrid(np.arange(25.0), np.arange(25.0)), axis=-1).reshape(-1, 2)
+    facade = np.column_stack([100 + rng.normal(0, 0.01, len(grid)), grid - (12, 5)])
+    volume = rng.uniform((100, -12, -5), (125, 13, 20), (len(grid), 3))
+    assert len(grid) > DEFAULTS.min_cluster_fraction * (count + len(grid))
+    assert not outlier_mask(np.vstack([room, facade]), DEFAULTS).any()
+    mask = outlier_mask(np.vstack([room, volume]), DEFAULTS)
+    assert mask[count:].all()
+    assert not mask[:count].any()
+
+
+def test_isolation_needs_both_the_mean_and_the_nearest_spacing_ratio() -> None:
+    """A lone point is isolated; a close pair is not, but is still a separated cluster."""
+    room = _scan("indoor")
+    count = len(room)
+    single = analyse(np.vstack([room, [[6.0, 6.0, 0.5]]]), DEFAULTS)
+    assert single.isolated[count:].all()
+    pair = analyse(np.vstack([room, [[6.0, 6.0, 0.5], [6.003, 6.0, 0.5]]]), DEFAULTS)
+    assert not pair.isolated[count:].any()
+    assert pair.clustered[count:].all()
+    assert pair.ratio[count:].min() > DEFAULTS.local_ratio
 
 
 def test_tiny_and_repeated_clouds_produce_no_spurious_outliers() -> None:
     """No division by zero or self-neighbor rejection occurs on tiny or identical clouds."""
-    assert not neighbor_distances(np.zeros((1, 3))).any()
-    assert not outlier_mask(np.zeros((2, 3))).any()
-    assert not outlier_mask(np.zeros((50, 3))).any()
-
-
-def test_large_cloud_approximation_finds_sparse_far_points_deterministically() -> None:
-    """Exercise the scalable path with unseen generated geometry and obvious sparse outliers."""
-    rng = np.random.default_rng(500)
-    xyz = np.vstack((rng.normal(0, 0.1, size=(5000, 3)), rng.uniform(20, 100, size=(40, 3))))
-    rejected = outlier_mask(xyz)
-    assert rejected[-40:].sum() >= 38
-    assert rejected[:5000].mean() < 0.02
-    np.testing.assert_array_equal(outlier_mask(xyz), rejected)
-    assert np.unique(spatial_order(xyz)).size == len(xyz)
-
-
-def _surfaces(rng: np.random.Generator, count: int) -> np.ndarray:
-    """Sample a box-shaped room's six faces with sensor-like jitter."""
-    size = np.array([6.0, 5.0, 2.8])
-    points = rng.uniform(0, 1, (count, 3)) * size
-    axis = rng.integers(0, 3, count)
-    points[np.arange(count), axis] = rng.integers(0, 2, count) * size[axis]
-    return points + rng.normal(0, 0.004, points.shape)
-
-
-def test_clean_surface_scan_has_no_statistical_outliers() -> None:
-    """Boundary and corner points of a clean scan are not rejected as a fixed tail."""
-    room = _surfaces(np.random.default_rng(1810), 12000)
-    assert outlier_mask(room).mean() < 0.002
-
-
-def test_heavy_scattered_contamination_is_found_without_masking() -> None:
-    """A median spacing scale keeps detecting outliers when they are a large minority."""
-    rng = np.random.default_rng(1811)
-    room = _surfaces(rng, 12000)
-    noise = rng.uniform(-15, 20, (4000, 3))
-    rejected = outlier_mask(np.vstack((room, noise)))
-    assert rejected[12000:].mean() > 0.9
-    assert rejected[:12000].mean() < 0.01
+    for count in (0, 1, 2, 50):
+        assert not outlier_mask(np.zeros((count, 3)), DEFAULTS).any()
+    assert analyse(np.zeros((2, 3)), DEFAULTS).spacing.tolist() == [0.0, 0.0]
 
 
 def test_mostly_repeated_points_still_measure_isolated_points() -> None:
-    """A zero median from duplicated returns falls back to the mean spacing."""
+    """Duplicated returns score zero instead of making a far point look normal."""
     xyz = np.vstack((np.zeros((80, 3)), np.ones((20, 3)) * 0.01, [[50.0, 50.0, 50.0]]))
-    rejected = outlier_mask(xyz, neighbors=4)
+    rejected = outlier_mask(xyz, StatisticalParams(neighbors=4))
     assert rejected[-1]
     assert not rejected[:-1].any()
+
+
+def test_stack_of_repeated_points_in_the_air_is_a_cluster() -> None:
+    """Invalid returns written as one repeated coordinate have no spacing but are separated."""
+    room = _scan("indoor")
+    count = len(room)
+    stacked = analyse(np.vstack([room, np.tile([5.0, 4.0, 1.5], (30, 1))]), DEFAULTS)
+    assert stacked.clustered[count:].all()
+    assert not stacked.isolated[count:].any()
+    assert not stacked.mask[:count].any()
+
+
+def test_nonfinite_rows_are_rejected_without_disturbing_the_rest() -> None:
+    """Invalid rows are outliers by definition and are left out of the neighbor search."""
+    room = _scan("depth")
+    broken = np.vstack([room, [[np.nan, 0, 0], [np.inf, 1, 1]]])
+    mask = outlier_mask(broken, DEFAULTS)
+    assert mask[-2:].all()
+    np.testing.assert_array_equal(mask[:-2], outlier_mask(room, DEFAULTS))

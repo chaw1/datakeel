@@ -75,6 +75,33 @@ class BoundingBox(BoundaryModel):
     max: tuple[float, float, float]
 
 
+Sensor = Literal["unknown", "terrestrial", "vehicle_lidar", "depth_camera", "object"]
+
+
+class SensorDefaults(BoundaryModel):
+    """Plausible single-capture extent and point spacing for one sensor form."""
+
+    max_extent: float
+    max_relative_spacing: float
+    sparse_penalized: bool
+
+
+# Extents are in meters; relative spacing is the median nearest-neighbor
+# distance divided by the main-body extent. The limits sit about four times
+# above clean generated captures of each form (see docs/MEDIA_QUALITY.md).
+SENSOR_DEFAULTS: dict[str, SensorDefaults] = {
+    "unknown": SensorDefaults(max_extent=1000, max_relative_spacing=0.01, sparse_penalized=False),
+    "terrestrial": SensorDefaults(
+        max_extent=1000, max_relative_spacing=0.01, sparse_penalized=True
+    ),
+    "vehicle_lidar": SensorDefaults(
+        max_extent=1000, max_relative_spacing=0.005, sparse_penalized=True
+    ),
+    "depth_camera": SensorDefaults(max_extent=50, max_relative_spacing=0.01, sparse_penalized=True),
+    "object": SensorDefaults(max_extent=10, max_relative_spacing=0.01, sparse_penalized=True),
+}
+
+
 class PointCloudProbe(BoundaryModel):
     """Summarize format, finite geometry and actionable quality signals."""
 
@@ -90,21 +117,86 @@ class PointCloudProbe(BoundaryModel):
     invalid_ratio: float
     outlier_ratio: float
     outlier_sample_count: int
+    outlier_sampled: bool = False
+    outlier_ci_low: float = 0.0
+    outlier_ci_high: float = 0.0
+    isolated_count: int = 0
+    clustered_count: int = 0
+    spacing: float = 0.0
+    relative_spacing: float = 0.0
+    spacing_limit: float = 0.0
+    sparse_penalized: bool = False
     body_extent: float
+    sensor: Sensor = "unknown"
     unit_suspected: bool
     unit_reason: str | None
+    unit_hint: str | None = None
 
 
-class ProbeParams(Params):
-    """Control statistical probe, sparse-coverage and unit-suspicion thresholds."""
+class StatisticalParams(Params):
+    """Tune the local density ratio and the separated-cluster test.
 
-    neighbors: int = Field(default=16, ge=1, le=64)
-    distance_ratio: float = Field(default=4.0, gt=1, le=100)
-    min_density: float = Field(default=1.0, ge=0)
-    expected_max_extent: float = Field(default=1000.0, gt=0)
+    Defaults come from generated ray-cast scans with density gradients:
+    indoor terrestrial, 16 to 64 line vehicle lidar, oblique depth cameras
+    and a small structured-light part. With 12 neighbors and a ratio of 3 no
+    clean scan had more than 0.04% of points flagged, while every scan with
+    0.5% scattered outliers had at least 0.16% flagged. A small component
+    has at least two linked points and fewer than max(50, 1% of the cloud).
+    It is an outlier cluster when its spacing is more than 10 times that of
+    the points its members neighbor, as with strays spread far around a
+    scene, or when no other point lies within 5 times its link spacing. A
+    group with no outside neighbors at all is compared with the main body
+    instead, unless it is a piece of surface such as a far facade.
+    Pieces of scanned surface, which are thin in some direction, must also
+    be more than twice their own extent away, so ring segments and far wall
+    patches stay. Sparse-cluster ratios of 9 to 30 gave identical results.
+    """
+
+    neighbors: int = Field(default=12, ge=2, le=64)
+    local_ratio: float = Field(default=3.0, gt=1, le=100)
+    link_ratio: float = Field(default=3.0, gt=1, le=100)
+    cluster_gap: float = Field(default=5.0, gt=1, le=1000)
+    min_cluster_points: int = Field(default=50, ge=2)
+    min_cluster_fraction: float = Field(default=0.01, ge=0, le=0.5)
+    sparse_cluster_ratio: float = Field(default=10.0, gt=1, le=1000)
+
+    def statistics(self) -> "StatisticalParams":
+        """Return only the fields that decide which points are outliers."""
+        return StatisticalParams.model_validate(
+            self.model_dump(include=set(StatisticalParams.model_fields))
+        )
+
+
+class ProbeParams(StatisticalParams):
+    """Control statistical, sparse-coverage and unit-suspicion file-level policy.
+
+    ``max_outlier_ratio`` defaults to 0.07%, between the worst clean
+    generated scan (0.038%) and the least flagged scan with 0.5% embedded
+    outliers (0.16%). Sampled files are judged by the lower end of the 95%
+    interval, so sampling error alone cannot raise an issue.
+    """
+
+    sensor: Sensor = "unknown"
+    max_outlier_ratio: float = Field(default=0.0007, ge=0, le=1)
+    max_relative_spacing: float | None = Field(default=None, gt=0)
+    expected_max_extent: float | None = Field(default=None, gt=0)
     reference_extent: float | None = Field(default=None, gt=0)
     scale_ratio: float = Field(default=1000.0, gt=1)
     scale_tolerance: float = Field(default=2.0, gt=1)
+
+    def max_extent(self) -> float:
+        """Return the explicit or sensor-form plausible maximum extent."""
+        return self.expected_max_extent or SENSOR_DEFAULTS[self.sensor].max_extent
+
+    def spacing_limit(self) -> float:
+        """Return the explicit or sensor-form maximum relative spacing."""
+        return self.max_relative_spacing or SENSOR_DEFAULTS[self.sensor].max_relative_spacing
+
+    def sparse_penalized(self) -> bool:
+        """Penalize sparse coverage only for a declared sensor form or an explicit limit."""
+        return (
+            self.max_relative_spacing is not None or SENSOR_DEFAULTS[self.sensor].sparse_penalized
+        )
 
 
 class CleanParams(Params):
@@ -139,17 +231,14 @@ class DownsampleParams(Params):
     voxel_size: float = Field(default=0.1, gt=0)
 
 
-class OutlierParams(Params):
-    """Reject points whose mean neighbor distance exceeds a multiple of the median."""
-
-    neighbors: int = Field(default=16, ge=1, le=64)
-    distance_ratio: float = Field(default=4.0, gt=1, le=100)
+class OutlierParams(StatisticalParams):
+    """Remove isolated points and separated small clusters with the probe's rule."""
 
 
 class UnitCheckParams(Params):
     """Flag implausibly large extents without rewriting ambiguous coordinates."""
 
-    expected_max_extent: float = Field(default=1000.0, gt=0)
+    expected_max_extent: float | None = Field(default=None, gt=0)
     reference_extent: float | None = Field(default=None, gt=0)
     scale_ratio: float = Field(default=1000.0, gt=1)
     scale_tolerance: float = Field(default=2.0, gt=1)

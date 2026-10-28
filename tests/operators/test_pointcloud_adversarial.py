@@ -13,6 +13,7 @@ import pytest
 
 from datakeel.operators import REGISTRY
 from datakeel.operators.pointcloud.io import dump_cloud, load_cloud
+from datakeel.operators.pointcloud.models import StatisticalParams
 from datakeel.operators.pointcloud.statistics import outlier_mask
 from datakeel.quality import score_quality
 from datakeel.quality.media import assess_file
@@ -143,31 +144,32 @@ def test_statistical_outliers_are_stable_under_input_permutation_and_translation
     dense = rng.normal(size=(4200, 3)) * np.array([2, 0.005, 0.005])
     sparse = rng.uniform(30, 80, size=(60, 3))
     xyz = np.vstack((dense, sparse))
-    expected = outlier_mask(xyz, neighbors=12)
+    params = StatisticalParams()
+    expected = outlier_mask(xyz, params)
     shuffled = rng.permutation(len(xyz))
     restored = np.empty(len(xyz), dtype=bool)
-    restored[shuffled] = outlier_mask(xyz[shuffled] + [1250, -37, 4], 12)
+    restored[shuffled] = outlier_mask(xyz[shuffled] + [1250, -37, 4], params)
     np.testing.assert_array_equal(restored, expected)
-    assert expected[-60:].mean() >= 0.9
-    # A one-dimensional Gaussian's own tails are genuinely sparse; only they may be removed.
-    assert expected[:4200].mean() < 0.05
+    assert expected[-60:].all()
+    # The Gaussian's own thinning tails are judged against their local neighbors, not the core.
+    assert expected[:4200].mean() < 0.002
 
 
-def test_batch_unit_suspicion_uses_geometry_and_survives_preview(
+def test_batch_unit_hint_uses_geometry_and_survives_preview(
     make_file: FileFactory, output_dir: Path
 ) -> None:
-    """A small millimeter scan can be suspicious relative to peers below the absolute limit."""
+    """A small scan a thousand times larger than its peers gets a hint, not a defect."""
     files = [_cloud(make_file, [(0, 0, 0), (extent, 0, 0)]) for extent in (0.8, 1.1, 800)]
     measured = REGISTRY["pointcloud.unit_check"].run(files, output_dir).files
-    assert [item.metadata["pointcloud_probe"]["unit_suspected"] for item in measured] == [
-        False,
-        False,
-        True,
-    ]
+    probes = [item.metadata["pointcloud_probe"] for item in measured]
+    assert [probe["unit_suspected"] for probe in probes] == [False, False, False]
+    assert [probe["unit_hint"] is not None for probe in probes] == [False, False, True]
     policy = measured[-1].metadata["pointcloud_probe_params"]
     assert policy["reference_extent"] == pytest.approx(0.95)
+    assert measured[-1].metadata["pointcloud_unit_check"]["suggested_scale"] == 0.001
+    assert assess_file(measured[-1]).consistency == 1
     rendered = REGISTRY["pointcloud.preview"].run([measured[-1]], output_dir).files[0]
-    assert rendered.metadata["pointcloud_probe"]["unit_suspected"] is True
+    assert rendered.metadata["pointcloud_probe"]["unit_hint"] is not None
     assert rendered.metadata["pointcloud_probe_params"] == policy
 
 
@@ -181,7 +183,8 @@ def test_custom_scale_ratio_produces_matching_conversion_hint(
         .run([source], output_dir, {"reference_extent": 1.0, "scale_ratio": 100.0})
         .files[0]
     )
-    assert measured.metadata["pointcloud_probe"]["unit_suspected"] is True
+    assert measured.metadata["pointcloud_probe"]["unit_suspected"] is False
+    assert measured.metadata["pointcloud_unit_check"]["hint"] is not None
     assert measured.metadata["pointcloud_unit_check"]["suggested_scale"] == 0.01
 
 

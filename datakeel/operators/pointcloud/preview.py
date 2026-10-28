@@ -48,8 +48,8 @@ def render_preview(cloud: PointCloud, params: PreviewParams) -> NDArray[np.uint8
 
 def execute(files: list[FileItem], output_dir: Path, params: PreviewParams) -> OperatorResult:
     """Keep point-cloud slots intact and attach a separately materialized PNG reference."""
-    output: list[FileItem] = []
-    for file in files:
+
+    def render(file: FileItem) -> FileItem:
         cloud = load_cloud(Path(file.path))
         policy = file_probe_params(file)
         probe = (
@@ -61,22 +61,22 @@ def execute(files: list[FileItem], output_dir: Path, params: PreviewParams) -> O
         preview = image_artifact(
             file.model_copy(update={"modality": "image"}), output_dir, raster, "png"
         )
-        output.append(
-            annotate(
-                file,
-                pointcloud_probe=probe.model_dump(mode="json"),
-                pointcloud_probe_params=policy.model_dump(mode="json"),
-                pointcloud_preview={
-                    "artifact_id": preview.id,
-                    "path": preview.path,
-                    "filename": preview.filename,
-                    "sha256": preview.sha256,
-                    "size": preview.size,
-                    "width": params.size,
-                    "height": params.size,
-                },
-            )
+        return annotate(
+            file,
+            pointcloud_probe=probe.model_dump(mode="json"),
+            pointcloud_probe_params=policy.model_dump(mode="json"),
+            pointcloud_preview={
+                "artifact_id": preview.id,
+                "path": preview.path,
+                "filename": preview.filename,
+                "sha256": preview.sha256,
+                "size": preview.size,
+                "width": params.size,
+                "height": params.size,
+            },
         )
+
+    output = [render(file) for file in files]
     return OperatorResult(
         files=output, quality={"input_count": len(files), "output_count": len(output)}
     )

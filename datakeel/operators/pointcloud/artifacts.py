@@ -11,21 +11,32 @@ if TYPE_CHECKING:
 
 from datakeel.core.models import FileItem
 from datakeel.operators.base import artifact
-from datakeel.operators.pointcloud.io import dump_cloud, load_cloud
+from datakeel.operators.pointcloud.io import dump_cloud
 from datakeel.operators.pointcloud.models import PointCloud
 from datakeel.operators.pointcloud.probe import file_probe_params, inspect_cloud
+from datakeel.operators.pointcloud.statistics import OutlierAnalysis
 
 
 def cloud_artifact(
-    file: FileItem, output_dir: Path, cloud: PointCloud, operator: str, input_points: int
+    file: FileItem,
+    output_dir: Path,
+    cloud: PointCloud,
+    operator: str,
+    source: tuple[PointCloud, OutlierAnalysis | None],
 ) -> FileItem:
-    """Write transformed rows with refreshed quality and the earliest source probe."""
+    """Write transformed rows with refreshed quality and the earliest source probe.
+
+    ``source`` is the loaded input and, when the operator already analysed
+    all of its finite rows, that analysis; the source is only measured again
+    when no earlier probe was recorded and no analysis is available.
+    """
     params = file_probe_params(file)
     probe = inspect_cloud(cloud, params).model_dump(mode="json")
     original = file.metadata.get("pointcloud_probe")
     if original is None:
-        original = inspect_cloud(load_cloud(Path(file.path)), params).model_dump(mode="json")
-    source: JsonValue = file.metadata.get("source_pointcloud_probe", original)
+        original = inspect_cloud(source[0], params, source[1]).model_dump(mode="json")
+    input_points = len(source[0].data)
+    earliest: JsonValue = file.metadata.get("source_pointcloud_probe", original)
     removed = input_points - len(cloud.data)
     refreshed = file.model_copy(
         update={
@@ -43,7 +54,7 @@ def cloud_artifact(
         cloud.format,
         pointcloud_probe=probe,
         pointcloud_probe_params=params.model_dump(mode="json"),
-        source_pointcloud_probe=source,
+        source_pointcloud_probe=earliest,
         pointcloud_processing={
             "operator": operator,
             "input_points": input_points,

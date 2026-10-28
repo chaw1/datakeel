@@ -1,100 +1,97 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Bounded statistical neighbor distances with deterministic spatial ordering."""
+"""Local density outliers and separated clusters measured on k-nearest-neighbor spacing."""
+
+from typing import NamedTuple
 
 import numpy as np
 from numpy.typing import NDArray
 
-_EXACT_LIMIT = 2048
-_BATCH_SIZE = 16384
-_MORTON_BITS = 20
-_MIN_NEIGHBOR_POINTS = 2
+from datakeel.operators.pointcloud.components import ClusterPolicy, separated_clusters
+from datakeel.operators.pointcloud.models import StatisticalParams
+from datakeel.operators.pointcloud.neighbors import nearest_neighbors, normalize
+
 _MIN_STATISTICAL_POINTS = 3
+_FLOAT_MAX = float(np.finfo(np.float64).max)
 
 
-def _interleave(values: NDArray[np.uint64]) -> NDArray[np.uint64]:
-    values = (values | (values << np.uint64(32))) & np.uint64(0x1F00000000FFFF)
-    values = (values | (values << np.uint64(16))) & np.uint64(0x1F0000FF0000FF)
-    values = (values | (values << np.uint64(8))) & np.uint64(0x100F00F00F00F00F)
-    values = (values | (values << np.uint64(4))) & np.uint64(0x10C30C30C30C30C3)
-    return (values | (values << np.uint64(2))) & np.uint64(0x1249249249249249)
+class OutlierAnalysis(NamedTuple):
+    """Per-point evidence for isolated and clustered outliers and local spacing."""
+
+    isolated: NDArray[np.bool_]
+    clustered: NDArray[np.bool_]
+    ratio: NDArray[np.float64]
+    spacing: NDArray[np.float64]
+    nearest: NDArray[np.float64]
+
+    @property
+    def mask(self) -> NDArray[np.bool_]:
+        """Combine both outlier kinds."""
+        return self.isolated | self.clustered
 
 
-def spatial_order(xyz: NDArray[np.float64]) -> NDArray[np.intp]:
-    """Sort into a Morton locality curve using bounded 20-bit coordinates.
+def _empty(count: int) -> OutlierAnalysis:
+    zeros = np.zeros(count, dtype=np.float64)
+    return OutlierAnalysis(
+        np.zeros(count, dtype=bool), np.zeros(count, dtype=bool), zeros, zeros, zeros
+    )
 
-    One isotropic scale (the largest axis extent) keeps grid cells cubic in
-    source units. Normalizing each axis separately would stretch a thin axis,
-    such as the sensor noise of a flat ground scan, across every bit level and
-    break the spatial locality the neighbor window depends on.
+
+def local_ratio(spacing: NDArray[np.float64], indices: NDArray[np.intp]) -> NDArray[np.float64]:
+    """Divide each mean neighbor distance by the median of its neighbors' own values.
+
+    The reference is local, so the natural near-dense, far-sparse falloff of a
+    scan cancels out. Points that coincide with their neighbors score zero; a
+    point whose neighbors all coincide scores infinity unless it coincides too.
     """
-    low, high = xyz.min(axis=0), xyz.max(axis=0)
-    scale = max(float((high - low).max()), np.finfo(np.float64).tiny)
-    grid = np.floor(np.clip((xyz - low) / scale, 0, 1) * ((1 << _MORTON_BITS) - 1))
-    unsigned = grid.astype(np.uint64)
-    codes = _interleave(unsigned[:, 0])
-    codes |= _interleave(unsigned[:, 1]) << np.uint64(1)
-    codes |= _interleave(unsigned[:, 2]) << np.uint64(2)
-    return np.argsort(codes, kind="stable")
+    reference = np.median(spacing[indices], axis=1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratio = spacing / reference
+    return np.where(spacing == 0, 0.0, ratio)
 
 
-def _exact_scores(xyz: NDArray[np.float64], neighbors: int) -> NDArray[np.float64]:
-    scores = np.empty(len(xyz), dtype=np.float64)
-    for start in range(0, len(xyz), _BATCH_SIZE // 32):
-        stop = min(start + _BATCH_SIZE // 32, len(xyz))
-        delta = xyz[start:stop, None, :] - xyz[None, :, :]
-        distances = np.einsum("ijk,ijk->ij", delta, delta)
-        distances[np.arange(stop - start), np.arange(start, stop)] = np.inf
-        closest = np.partition(distances, neighbors - 1, axis=1)[:, :neighbors]
-        scores[start:stop] = np.sqrt(closest).mean(axis=1)
-    return scores
+def analyse(xyz: NDArray[np.float64], params: StatisticalParams) -> OutlierAnalysis:
+    """Measure finite coordinates for isolated points and separated small clusters.
 
-
-def neighbor_distances(xyz: NDArray[np.float64], neighbors: int = 16) -> NDArray[np.float64]:
-    """Measure exact small-cloud or bounded Morton-window approximate kNN distances.
-
-    Large clouds search up to twice k spatially adjacent candidates on each
-    side. This deterministic approximation avoids quadratic memory and work;
-    it can retain some isolated points near Morton discontinuities.
+    A point is isolated when its mean distance to its k nearest neighbors is
+    more than ``local_ratio`` times the median of the same measure over those
+    neighbors, and its nearest-neighbor distance is too. The second scale
+    keeps short ring fragments and thin poles, whose next point is close but
+    whose wider neighborhood reaches other rings, from looking isolated.
+    Groups of points that are each other's neighbors escape that test, so
+    connected components of locally short links are also checked: a small
+    component far from everything else, or one much sparser than the points
+    its members neighbor, is marked as clustered.
+    Coordinates are normalized first so extreme magnitudes cannot overflow.
     """
-    if len(xyz) < _MIN_NEIGHBOR_POINTS:
-        return np.zeros(len(xyz), dtype=np.float64)
-    neighbors = min(neighbors, len(xyz) - 1)
-    if len(xyz) <= _EXACT_LIMIT:
-        return _exact_scores(xyz, neighbors)
-    order = spatial_order(xyz)
-    ordered, result = xyz[order], np.empty(len(xyz), dtype=np.float64)
-    window = min(neighbors * 2, len(xyz) - 1)
-    padded = np.pad(ordered, ((window, window), (0, 0)), constant_values=np.inf)
-    for start in range(0, len(xyz), _BATCH_SIZE):
-        stop = min(start + _BATCH_SIZE, len(xyz))
-        distances = np.full((stop - start, window * 2), np.inf, dtype=np.float64)
-        for column, offset in enumerate((*range(-window, 0), *range(1, window + 1))):
-            delta = ordered[start:stop] - padded[start + window + offset : stop + window + offset]
-            distances[:, column] = np.einsum("ij,ij->i", delta, delta)
-        closest = np.partition(distances, neighbors - 1, axis=1)[:, :neighbors]
-        result[order[start:stop]] = np.sqrt(closest).mean(axis=1)
-    return result
+    count = len(xyz)
+    if count < _MIN_STATISTICAL_POINTS:
+        return _empty(count)
+    unit, span = normalize(xyz)
+    found = nearest_neighbors(unit, params.neighbors)
+    spacing = found.distances.mean(axis=1)
+    ratio = local_ratio(spacing, found.indices)
+    closest = found.distances.min(axis=1)
+    nearest_ratio = local_ratio(closest, found.indices)
+    policy = ClusterPolicy(
+        params.link_ratio,
+        params.cluster_gap,
+        params.min_cluster_points,
+        params.min_cluster_fraction,
+        params.sparse_cluster_ratio,
+    )
+    clustered = separated_clusters(unit, found, spacing, policy)
+    with np.errstate(over="ignore"):
+        scaled = np.minimum(spacing * span, _FLOAT_MAX)
+        nearest = np.minimum(closest * span, _FLOAT_MAX)
+    isolated = (ratio > params.local_ratio) & (nearest_ratio > params.local_ratio)
+    return OutlierAnalysis(isolated, clustered, ratio, scaled, nearest)
 
 
-def outlier_mask(
-    xyz: NDArray[np.float64], neighbors: int = 16, distance_ratio: float = 4.0
-) -> NDArray[np.bool_]:
-    """Mark nonfinite rows and mean-neighbor distances far above the typical spacing.
-
-    The scale is the median mean-neighbor distance, which stays representative
-    while fewer than half of the points are outliers. A mean-plus-deviation
-    threshold always rejects the boundary tail of a clean scan and is inflated
-    by heavy contamination. When most points repeat exactly, the mean replaces
-    the zero median so isolated points are still compared with real spacing.
-    """
+def outlier_mask(xyz: NDArray[np.float64], params: StatisticalParams) -> NDArray[np.bool_]:
+    """Mark nonfinite rows, isolated points and separated small clusters."""
     finite = np.isfinite(xyz).all(axis=1)
     result = ~finite
-    if finite.sum() < _MIN_STATISTICAL_POINTS:
-        return result
-    distances = neighbor_distances(xyz[finite], neighbors)
-    scale = float(np.median(distances)) or float(distances.mean())
-    if scale > 0:
-        result[finite] = distances > distance_ratio * scale
+    result[finite] = analyse(xyz[finite], params).mask
     return result

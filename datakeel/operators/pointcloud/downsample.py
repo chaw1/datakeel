@@ -32,14 +32,13 @@ def voxel_indices(xyz: NDArray[np.float64], voxel_size: float) -> NDArray[np.int
 
 def execute(files: list[FileItem], output_dir: Path, params: DownsampleParams) -> OperatorResult:
     """Downsample finite points deterministically, retaining all optional fields."""
-    output: list[FileItem] = []
-    for file in files:
+
+    def thin(file: FileItem) -> FileItem:
         cloud = load_cloud(Path(file.path))
         selected = select_cloud(cloud, voxel_indices(cloud.xyz, params.voxel_size))
-        output.append(
-            cloud_artifact(file, output_dir, selected, "pointcloud.downsample", len(cloud.data))
-        )
-    return summarize(files, output)
+        return cloud_artifact(file, output_dir, selected, "pointcloud.downsample", (cloud, None))
+
+    return summarize(files, [thin(file) for file in files])
 
 
 OPERATOR = Operator("pointcloud.downsample", "point-cloud", "transform", DownsampleParams, execute)

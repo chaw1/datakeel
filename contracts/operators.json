@@ -429,33 +429,100 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Control statistical probe, sparse-coverage and unit-suspicion thresholds.",
+      "description": "Control statistical, sparse-coverage and unit-suspicion file-level policy.\n\n``max_outlier_ratio`` defaults to 0.07%, between the worst clean\ngenerated scan (0.038%) and the least flagged scan with 0.5% embedded\noutliers (0.16%). Sampled files are judged by the lower end of the 95%\ninterval, so sampling error alone cannot raise an issue.",
       "properties": {
         "neighbors": {
-          "default": 16,
+          "default": 12,
           "maximum": 64,
-          "minimum": 1,
+          "minimum": 2,
           "title": "Neighbors",
           "type": "integer"
         },
-        "distance_ratio": {
-          "default": 4.0,
+        "local_ratio": {
+          "default": 3.0,
           "exclusiveMinimum": 1,
           "maximum": 100,
-          "title": "Distance Ratio",
+          "title": "Local Ratio",
           "type": "number"
         },
-        "min_density": {
-          "default": 1.0,
-          "minimum": 0,
-          "title": "Min Density",
+        "link_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Link Ratio",
           "type": "number"
+        },
+        "cluster_gap": {
+          "default": 5.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Cluster Gap",
+          "type": "number"
+        },
+        "min_cluster_points": {
+          "default": 50,
+          "minimum": 2,
+          "title": "Min Cluster Points",
+          "type": "integer"
+        },
+        "min_cluster_fraction": {
+          "default": 0.01,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Min Cluster Fraction",
+          "type": "number"
+        },
+        "sparse_cluster_ratio": {
+          "default": 10.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Sparse Cluster Ratio",
+          "type": "number"
+        },
+        "sensor": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "terrestrial",
+            "vehicle_lidar",
+            "depth_camera",
+            "object"
+          ],
+          "title": "Sensor",
+          "type": "string"
+        },
+        "max_outlier_ratio": {
+          "default": 0.0007,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Max Outlier Ratio",
+          "type": "number"
+        },
+        "max_relative_spacing": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Relative Spacing"
         },
         "expected_max_extent": {
-          "default": 1000.0,
-          "exclusiveMinimum": 0,
-          "title": "Expected Max Extent",
-          "type": "number"
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Max Extent"
         },
         "reference_extent": {
           "anyOf": [
@@ -604,20 +671,54 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Reject points whose mean neighbor distance exceeds a multiple of the median.",
+      "description": "Remove isolated points and separated small clusters with the probe's rule.",
       "properties": {
         "neighbors": {
-          "default": 16,
+          "default": 12,
           "maximum": 64,
-          "minimum": 1,
+          "minimum": 2,
           "title": "Neighbors",
           "type": "integer"
         },
-        "distance_ratio": {
-          "default": 4.0,
+        "local_ratio": {
+          "default": 3.0,
           "exclusiveMinimum": 1,
           "maximum": 100,
-          "title": "Distance Ratio",
+          "title": "Local Ratio",
+          "type": "number"
+        },
+        "link_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Link Ratio",
+          "type": "number"
+        },
+        "cluster_gap": {
+          "default": 5.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Cluster Gap",
+          "type": "number"
+        },
+        "min_cluster_points": {
+          "default": 50,
+          "minimum": 2,
+          "title": "Min Cluster Points",
+          "type": "integer"
+        },
+        "min_cluster_fraction": {
+          "default": 0.01,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Min Cluster Fraction",
+          "type": "number"
+        },
+        "sparse_cluster_ratio": {
+          "default": 10.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Sparse Cluster Ratio",
           "type": "number"
         }
       },
@@ -642,10 +743,17 @@
       "description": "Flag implausibly large extents without rewriting ambiguous coordinates.",
       "properties": {
         "expected_max_extent": {
-          "default": 1000.0,
-          "exclusiveMinimum": 0,
-          "title": "Expected Max Extent",
-          "type": "number"
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Max Extent"
         },
         "reference_extent": {
           "anyOf": [
