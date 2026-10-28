@@ -84,13 +84,13 @@ def test_invalid_frames_motion_jump_separates_frozen_intervals(
 ) -> None:
     """A sharp visual change divides two static runs instead of falsely bridging them."""
     source = make_video(
-        "testsrc2=size=160x96:rate=10:duration=0.1,tpad=stop_mode=clone:stop_duration=0.9[a];"
+        "testsrc2=size=160x96:rate=10:duration=0.1,tpad=stop_mode=clone:stop_duration=1.4[a];"
         "testsrc2=size=160x96:rate=10:duration=3,trim=start=2.5:end=2.6,setpts=PTS-STARTPTS,"
-        "tpad=stop_mode=clone:stop_duration=0.9[b];[a][b]concat=n=2:v=1:a=0"
+        "tpad=stop_mode=clone:stop_duration=1.4[b];[a][b]concat=n=2:v=1:a=0"
     )
     marked = OPERATOR.run([source], output_dir).files[0]
     frozen = [item for item in marked.metadata["media_issues"] if item["code"] == "frozen_frame"]
-    assert [(item["start_ms"], item["end_ms"]) for item in frozen] == [(0, 1000), (1000, 2000)]
+    assert [(item["start_ms"], item["end_ms"]) for item in frozen] == [(0, 1500), (1500, 3000)]
 
 
 def test_invalid_frames_brief_static_image_does_not_pass_freeze_duration(

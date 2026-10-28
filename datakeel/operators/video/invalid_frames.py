@@ -7,85 +7,68 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import numpy as np
 from pydantic import Field
 
+from datakeel.core.media_models import MediaInterval
 from datakeel.operators.base import Operator, OperatorResult, Params, annotate, summarize
 from datakeel.operators.media.tools import probe_file
-from datakeel.operators.video.frames import decode_frames, intervals, laplacian_variance
+from datakeel.operators.video.analysis import analyse
+from datakeel.operators.video.frames import intervals
+from datakeel.operators.video.freeze import frozen_runs
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from numpy.typing import NDArray
     from pydantic import JsonValue
 
-    from datakeel.core.media_models import MediaInterval
     from datakeel.core.models import FileItem
+    from datakeel.operators.video.analysis import VideoAnalysis
 
 
 class InvalidFramesParams(Params):
-    """Configure signal thresholds at the documented 160 by 90 sample scale."""
+    """Configure signal thresholds at the documented 160 by 90 analysis scale.
 
-    sample_fps: float = Field(default=5.0, ge=1, le=30)
+    ``sample_fps`` is the maximum analysis rate: slower video is examined frame by
+    frame, so interval boundaries are exact to one frame.
+    """
+
+    sample_fps: float = Field(default=30.0, ge=1, le=60)
     black_threshold: float = Field(default=16.0, ge=0, le=255)
     solid_std_threshold: float = Field(default=2.0, ge=0, le=128)
     freeze_difference: float = Field(default=0.75, ge=0, le=255)
-    freeze_duration_ms: int = Field(default=1000, ge=100)
+    freeze_local_difference: float = Field(default=2.0, ge=0, le=255)
+    freeze_locality: float = Field(default=10.0, ge=1, le=1000)
+    freeze_noise_ratio: float = Field(default=0.5, ge=0, le=10)
+    freeze_duration_ms: int = Field(default=1200, ge=100)
     blur_variance_threshold: float = Field(default=8.0, ge=0)
     minimum_interval_ms: int = Field(default=200, ge=0)
     remove: bool = False
     invalid_ratio_threshold: float = Field(default=0.99, gt=0, le=1)
 
 
-def _deviation(frame: NDArray[np.uint8]) -> float:
-    return float(np.std(frame))
-
-
-def _difference(left: NDArray[np.uint8], right: NDArray[np.uint8]) -> float:
-    return float(np.mean(np.abs(left.astype(np.float64) - right)))
-
-
-def _measure(
-    frames: NDArray[np.uint8], duration_ms: int, params: InvalidFramesParams
-) -> list[MediaInterval]:
-    means = np.mean(frames, axis=(1, 2))
-    deviations = np.asarray([_deviation(frames[index]) for index in range(len(frames))])
-    differences = np.asarray(
-        [_difference(frames[index], frames[index + 1]) for index in range(len(frames) - 1)]
-    )
-    # Each sampled frame receives its most specific defect: a black frame is also uniform
-    # and detail-free, and a uniform frame has no detail, so neither is reported again.
-    black = means <= params.black_threshold
-    uniform = black | (deviations <= params.solid_std_threshold)
-    blurred = (laplacian_variance(frames) < params.blur_variance_threshold) & ~uniform
+def _measure(analysis: VideoAnalysis, params: InvalidFramesParams) -> list[MediaInterval]:
+    # Each frame receives its most specific defect: a black frame is also uniform and
+    # detail-free, and a uniform frame has no detail, so neither is reported again.
+    black = analysis.mean <= params.black_threshold
+    uniform = black | (analysis.deviation <= params.solid_std_threshold)
+    blurred = (analysis.detail < params.blur_variance_threshold) & ~uniform
     checks = (
         ("black_frame", black.tolist()),
         ("solid_frame", (uniform & ~black).tolist()),
         ("blurred_frame", blurred.tolist()),
     )
+    duration_ms = analysis.duration_ms
     issues = [
         issue
         for code, flags in checks
-        for issue in intervals(
-            flags, code, params.sample_fps, duration_ms, params.minimum_interval_ms
-        )
+        for issue in intervals(flags, code, analysis.rate, duration_ms, params.minimum_interval_ms)
     ]
-    step_ms = round(1000 / params.sample_fps)
-    # A held picture is a freeze only when it still has content; static uniform frames
-    # are already reported above.
-    held = (differences <= params.freeze_difference) & ~uniform[:-1] & ~uniform[1:]
-    frozen = intervals(
-        held.tolist(),
-        "frozen_frame",
-        params.sample_fps,
-        duration_ms,
-        max(0, params.freeze_duration_ms - step_ms),
-    )
-    return issues + [
-        issue.model_copy(update={"end_ms": min(duration_ms, issue.end_ms + step_ms)})
-        for issue in frozen
-    ]
+    for first, last in frozen_runs(analysis, uniform, params):
+        start_ms = round(first * analysis.frame_ms)
+        end_ms = min(duration_ms, round((last + 1) * analysis.frame_ms))
+        if end_ms - start_ms >= params.freeze_duration_ms:
+            issues.append(MediaInterval(code="frozen_frame", start_ms=start_ms, end_ms=end_ms))
+    return issues
 
 
 def _invalid_duration(issues: list[MediaInterval]) -> int:
@@ -105,7 +88,7 @@ def execute(
     all_issues: list[dict[str, object]] = []
     for file in files:
         probe = probe_file(file)
-        issues = _measure(decode_frames(file, params.sample_fps), probe.duration_ms, params)
+        issues = _measure(analyse(file, params.sample_fps), params)
         invalid_ms = _invalid_duration(issues)
         invalid_ratio = invalid_ms / max(1, probe.duration_ms)
         metrics: dict[str, JsonValue] = {
