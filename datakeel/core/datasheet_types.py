@@ -29,6 +29,14 @@ MEASURED_KINDS: frozenset[DatasheetValueKind] = frozenset(
 )
 
 _FIELD_TYPES: dict[str, tuple[DatasheetValueKind, str | None]] = {
+    "training.records": ("count", "records"),
+    "training.language_distribution": ("count", "records"),
+    "training.deduplication_rate": ("ratio", None),
+    "training.pii_records": ("count", "records"),
+    "training.contamination_rate": ("ratio", None),
+    "training.format_error_rate": ("ratio", None),
+    "training.issue_counts": ("count", "records"),
+    "training.rule_version": ("status", None),
     "dataset.name": ("name", None),
     "version.created_at": ("date", None),
     "manifest.file_count": ("count", "files"),

@@ -8,10 +8,26 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Delivery services verify portable frozen release facts without importing API code.
 ignore_imports =
+# Training governance reuses indexed hashes and typed offline analysis, never model adapters.
+    datakeel.llm_data.index -> datakeel.operators.evidence.near_duplicate_hashes
+    datakeel.storage.training_selection -> datakeel.actions.training_parameters
+    datakeel.storage.training_selection -> datakeel.ontology.models
+    datakeel.storage.evidence_actions -> datakeel.actions.training_parameters
+    datakeel.storage.training_actions -> datakeel.actions.models
+    datakeel.storage.training_actions -> datakeel.actions.training_parameters
+    datakeel.storage.training_actions -> datakeel.llm_data
+    datakeel.storage.training_store -> datakeel.llm_data
+    datakeel.storage.training_reads -> datakeel.llm_data
+    datakeel.ontology.training_functions -> datakeel.storage.database
+    datakeel.ontology.training_functions -> datakeel.storage.training_reads
+    datakeel.storage.action_operations -> datakeel.actions.training_parameters
+    datakeel.storage.action_snapshot -> datakeel.actions.training_parameters
+    datakeel.operators.text.training_quality -> datakeel.llm_data
+    datakeel.operators.text.dedup -> datakeel.llm_data.index
     datakeel.storage.delivery_service -> datakeel.delivery.manifest
     datakeel.storage.delivery_service -> datakeel.delivery.reconcile
     datakeel.storage.release_actions -> datakeel.actions.models
@@ -32,7 +48,6 @@ ignore_imports =
     datakeel.assets.access -> datakeel.storage.data_asset_access
     datakeel.storage.data_asset_quality -> datakeel.quality.scoring
 # Standards keep pure rules separate from typed source reads and controlled transactions.
-    datakeel.standards.checks -> datakeel.operators.text.pii_redact
     datakeel.storage.standard_changes -> datakeel.actions.models
     datakeel.storage.standard_changes -> datakeel.actions.standard_parameters
     datakeel.storage.standard_changes -> datakeel.actions.references
@@ -88,7 +103,6 @@ ignore_imports =
 # Approved model workers reuse the existing provider factory and persistent budget boundary.
     datakeel.worker.datasheet_model -> datakeel.agent.factory
 # Explicit memory services retain only typed projections across storage and tool boundaries.
-    datakeel.memory.service -> datakeel.operators.text.pii_redact
     datakeel.memory.service -> datakeel.storage.memory_store
     datakeel.memory.service -> datakeel.storage.database
     datakeel.memory.tools -> datakeel.ontology.tool_models

@@ -34,6 +34,7 @@ from datakeel.actions.standard_parameters import (
     UpdateCodeListParams,
     UpdateStandardParams,
 )
+from datakeel.actions.training_parameters import CleanTrainingParams
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import ValidationError
@@ -100,6 +101,7 @@ class ExportParams(BoundaryModel):
 
 PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     **DATA_ASSET_PARAMETER_TYPES,
+    "clean_training_data": CleanTrainingParams,
     "annotation_acceptance": AnnotationAcceptanceParams,
     "quarantine_files": SelectionParams,
     "unquarantine_files": SelectionParams,
@@ -165,6 +167,13 @@ def selection_for(params: BoundaryModel) -> ObjectSet:
             msg = "Deleted files cannot be action targets"
             raise ValidationError(msg)
         return params.selection
+    if isinstance(params, CleanTrainingParams):
+        return ObjectSet(
+            dataset_id=params.dataset_id,
+            version_ids=[params.version_id] if params.version_id else [],
+            filters=[PropertyFilter(field="id", operator="in", value=list(params.file_ids))],
+            limit=10000,
+        )
     if isinstance(params, PipelineParams | RunKGExtractionParams):
         return ObjectSet(
             dataset_id=params.dataset_id,

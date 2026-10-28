@@ -14,6 +14,7 @@ from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import DecideAssertionsParams, ExportParams
 from datakeel.actions.standard_parameters import StandardActionParams
+from datakeel.actions.training_parameters import CleanTrainingParams
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.models import BoundaryModel
 from datakeel.core.settings import get_settings
@@ -29,17 +30,12 @@ from datakeel.storage.events import all_events
 from datakeel.storage.evidence_actions import decision_snapshot
 from datakeel.storage.object_queries import evaluate_in_session
 from datakeel.storage.standard_store import standards_state
+from datakeel.storage.training_actions import training_state
 
 
 def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> str:
     """Bind selected contents plus dataset metadata and exported event observations."""
-    values = [manifest.state_digest]
-    if isinstance(params, DataAssetActionParams):
-        values.append(data_asset_state(session, params))
-    if isinstance(params, QualityActionParams):
-        values.append(quality_state(session, params))
-    if isinstance(params, AnnotationAcceptanceParams):
-        values.append(annotation_snapshot(session, params))
+    values = [manifest.state_digest, *_domain_snapshots(session, params)]
     datasheet = datasheet_state(session, params)
     if datasheet:
         values.append(datasheet)
@@ -72,6 +68,19 @@ def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenMan
                 )
             )
     return hashlib.sha256(json.dumps(values, separators=(",", ":")).encode()).hexdigest()
+
+
+def _domain_snapshots(session: Session, params: BoundaryModel) -> list[str]:
+    values: list[str] = []
+    if isinstance(params, CleanTrainingParams):
+        values.append(training_state(session, params))
+    if isinstance(params, DataAssetActionParams):
+        values.append(data_asset_state(session, params))
+    if isinstance(params, QualityActionParams):
+        values.append(quality_state(session, params))
+    if isinstance(params, AnnotationAcceptanceParams):
+        values.append(annotation_snapshot(session, params))
+    return values
 
 
 def current_snapshot_digest(session: Session, plan: ActionPlan, params: BoundaryModel) -> str:

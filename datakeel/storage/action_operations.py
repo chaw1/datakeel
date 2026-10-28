@@ -24,6 +24,7 @@ from datakeel.actions.parameters import (
 )
 from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.actions.standard_parameters import StandardActionParams
+from datakeel.actions.training_parameters import CleanTrainingParams
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import NotFoundError
@@ -44,6 +45,7 @@ from datakeel.storage.evidence_actions import decide_action
 from datakeel.storage.kg_store import schedule_extraction
 from datakeel.storage.release_actions import publish_release
 from datakeel.storage.standard_changes import execute_standard_action
+from datakeel.storage.training_actions import execute_training_clean
 
 
 def _metadata(session: Session, params: MetadataParams) -> OperationResult:
@@ -105,6 +107,7 @@ def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> Ope
 _TYPED_ACTIONS: tuple[
     tuple[type | UnionType, Callable[[Session, ActionPlan, Any], OperationResult]], ...
 ] = (
+    (CleanTrainingParams, execute_training_clean),
     (DataAssetActionParams, execute_data_asset_action),
     (QualityActionParams, execute_quality_action),
     (AnnotationAcceptanceParams, inspect_action),

@@ -18,6 +18,8 @@ from datakeel.storage.database import DatasetRow, MetadataChangeRow, VersionRow
 from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.datasheet_sources import source_facts
 from datakeel.storage.datasheet_values import make_fact
+from datakeel.storage.training_facts import training_facts
+from datakeel.storage.training_store import training_overlay
 
 _METADATA_CHAPTERS: dict[DatasheetChapter, tuple[str, ...]] = {
     "motivation": ("description", "purpose", "motivation"),
@@ -129,11 +131,12 @@ def _metadata_facts(dataset: DatasetRow, changes: dict[str, float]) -> tuple[Dat
 
 
 def _assessment_facts(
-    dataset: DatasetRow, version: VersionRow, changes: dict[str, float]
+    session: Session, dataset: DatasetRow, version: VersionRow, changes: dict[str, float]
 ) -> tuple[DatasheetFact, ...]:
     files = [FileItem.model_validate(value) for value in version.manifest]
     # Stamp recomputed scores with their latest recorded input, never the extraction clock.
     measured_at = datetime.fromtimestamp(max((version.created_at, *changes.values())), UTC)
+    files = training_overlay(session, dataset.id, version.id, files)
     quality = score_quality(files, dataset.quality_config)
     compliance = compliance_score(dataset.name, files, dataset.metadata_values, dataset.template)
     values: tuple[tuple[DatasheetChapter, str, str, object], ...] = (
@@ -180,7 +183,8 @@ def extract_facts(session: Session, dataset_id: str, version_id: str) -> tuple[D
     facts = (
         *_manifest_facts(dataset, version),
         *_metadata_facts(dataset, changes),
-        *_assessment_facts(dataset, version, changes),
+        *_assessment_facts(session, dataset, version, changes),
+        *training_facts(session, dataset_id, version_id),
         *source_facts(session, dataset_id, version),
     )
     return tuple(

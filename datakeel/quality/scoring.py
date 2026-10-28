@@ -13,6 +13,7 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
 from datakeel.quality.models import QualityConfig, QualityView
 from datakeel.quality.tabular import assess_tables, table_issues
+from datakeel.quality.training import assess_training
 
 MAX_SCORE = 100
 
@@ -137,6 +138,15 @@ def score_quality(
             details[dimension]["tabular_rule"] = (
                 "fraction of source rows affected by recorded rules"
             )
+    training = assess_training(files)
+    for dimension, measured in training.scores.items():
+        raw[dimension] = min(raw[dimension], measured)
+        details[dimension]["training_score"] = measured
+        details[dimension]["training_records"] = training.records
+        details[dimension]["training_issue_counts"] = training.issue_counts
+        details[dimension]["training_rule"] = (
+            "recorded affected-row fraction; overlapping signals use the maximum count"
+        )
     result = _summarize(raw, details, resolved, annotations, count)
     return result.model_copy(
         update={

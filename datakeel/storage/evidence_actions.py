@@ -14,6 +14,7 @@ from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import DecideAssertionsParams, selection_for
 from datakeel.actions.release_parameters import PublishReleaseParams
+from datakeel.actions.training_parameters import CleanTrainingParams
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
@@ -29,6 +30,7 @@ from datakeel.storage.kg_image_sources import image_review_references
 from datakeel.storage.object_projection import content_digest
 from datakeel.storage.object_queries import evaluate_in_session
 from datakeel.storage.release_actions import publication_manifest
+from datakeel.storage.training_selection import training_manifest
 
 
 def _assertions(session: Session, params: DecideAssertionsParams) -> list[Assertion]:
@@ -156,6 +158,8 @@ def action_manifest(
     session: Session, params: BoundaryModel, query: ObjectSet | None = None
 ) -> FrozenManifest:
     """Use exact assertion endpoints for reviews and ordinary ObjectSets for other actions."""
+    if isinstance(params, CleanTrainingParams):
+        return training_manifest(session, params)
     if isinstance(params, PublishReleaseParams):
         return publication_manifest(session, params)
     if isinstance(params, AnnotationAcceptanceParams):

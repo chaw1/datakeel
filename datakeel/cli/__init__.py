@@ -24,6 +24,7 @@ from datakeel.cli import (
     routing,
     standards,
     timeseries_demo,
+    training,
     workflow,
 )
 from datakeel.cli.ask import ask
@@ -98,6 +99,7 @@ def parser() -> argparse.ArgumentParser:
         routing,
         kg_evaluation,
         timeseries_demo,
+        training,
         custom_operators,
         delivery,
         data_assets,
@@ -191,6 +193,7 @@ _MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
     "data-assets": data_assets.dispatch,
     "standards": standards.dispatch,
     "quality": quality.dispatch,
+    "training-quality": training.dispatch,
     "import": metadata_imports.dispatch,
     "release-plan": release_plans.dispatch,
 }

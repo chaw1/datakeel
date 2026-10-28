@@ -11,6 +11,7 @@ from datakeel.core.errors import NotFoundError
 from datakeel.core.kg_queries import KGExplainQuery, KGQuery
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.standard_reporting_models import StandardCoverageParams, StandardUsageParams
+from datakeel.core.training_governance import TrainingQualityQuery
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.lineage.models import GraphNode, GraphView
 from datakeel.ontology.annotation_functions import invoke_annotation_quality
@@ -32,6 +33,7 @@ from datakeel.ontology.parameters import (
 )
 from datakeel.ontology.standard_functions import invoke_standard
 from datakeel.ontology.tool_refs import extract_refs
+from datakeel.ontology.training_functions import invoke_training
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
@@ -61,6 +63,7 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "list_quality_rules": QualityRulesParams,
     "get_table_quality": TableQualityParams,
     "annotation_quality": AnnotationQualityParams,
+    "get_training_quality": TrainingQualityQuery,
 }
 
 
@@ -238,6 +241,8 @@ def invoke_function(
         result = invoke_catalog(db, name, arguments, access=caller)
     elif name == "list_datasets":
         result = _list_datasets(db, arguments, caller)
+    elif name == "get_training_quality":
+        result = invoke_training(db, arguments, access=caller)
     elif name == "get_lineage":
         result = _lineage(db, arguments, caller)
     elif name in {"query_kg", "explain_relation"}:

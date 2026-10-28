@@ -15,6 +15,14 @@ _TITLES = {
     "maintenance": ("维护", "Maintenance"),
 }
 FIELD_LABELS = {
+    "training.records": ("训练记录数量", "Training record count"),
+    "training.language_distribution": ("语言分布", "Language distribution"),
+    "training.deduplication_rate": ("去重比例", "Deduplication ratio"),
+    "training.pii_records": ("个人信息记录数量", "Personal information record count"),
+    "training.contamination_rate": ("评测污染比例", "Evaluation contamination ratio"),
+    "training.format_error_rate": ("格式错误比例", "Format error ratio"),
+    "training.issue_counts": ("训练问题数量", "Training issue counts"),
+    "training.rule_version": ("规则版本", "Rule version"),
     "dataset.name": ("数据集名称", "Dataset name"),
     "version.created_at": ("版本创建时间", "Version creation time"),
     "manifest.file_count": ("文件数量", "File count"),
@@ -71,6 +79,7 @@ _METADATA_LABELS = {
 FIELD_LABELS.update({f"metadata.{key}": value for key, value in _METADATA_LABELS.items()})
 # Measurement units and value kinds are shown to the model and accepted as words of their facts.
 UNIT_LABELS = {
+    "records": ("\u6761", "records"),
     "files": ("\u4e2a", "files"),
     "assertions": ("\u6761", "assertions"),
     "relations": ("\u6761", "relations"),

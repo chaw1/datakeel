@@ -21,6 +21,7 @@ from datakeel.storage.database import Database, DatasetRow, MetadataChangeRow, V
 from datakeel.storage.dataset_service import list_datasets, require_dataset
 from datakeel.storage.datasets import dataset_dict, latest_files
 from datakeel.storage.dq_views import attach_rule_quality
+from datakeel.storage.training_store import training_overlay
 from datakeel.storage.views import (
     DatasetQualityView,
     MetadataChangeView,
@@ -55,13 +56,14 @@ class QualityInput(View):
 
 
 def _measured_quality(session: Session, row: DatasetRow, files: list[FileItem]) -> QualityView:
-    result = score_quality(files, row.quality_config)
     version = session.scalar(
         select(VersionRow)
         .where(VersionRow.dataset_id == row.id)
         .order_by(VersionRow.created_at.desc())
         .limit(1)
     )
+    measured = training_overlay(session, row.id, version.id, files) if version else files
+    result = score_quality(measured, row.quality_config)
     if version is None:
         return result
     return apply_annotation_quality(result, read_annotation_quality(session, row.id, version.id))

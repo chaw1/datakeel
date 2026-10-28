@@ -9,6 +9,7 @@ from datakeel.core.models import JsonDocument
 from datakeel.ontology.models import ActionType
 
 POLICIES: dict[str, tuple[str, bool, str]] = {
+    "clean_training_data": ("datasets:write", False, "Publish an approved clean training version"),
     "submit_custom_operator": ("operators:submit", False, "Approve immutable custom Python code"),
     "create_data_asset": ("data-assets:write", True, "Create an asset draft"),
     "update_data_asset": ("data-assets:write", True, "Revise an asset card"),
