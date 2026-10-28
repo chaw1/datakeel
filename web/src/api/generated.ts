@@ -7562,6 +7562,15 @@ export interface components {
          * @description Return direct pair evidence without merging transitive neighbors into false pairs.
          */
         LeakageReport: {
+            /**
+             * Checked Signals
+             * @default [
+             *       "exact",
+             *       "image",
+             *       "group"
+             *     ]
+             */
+            checked_signals: ("exact" | "image" | "group")[];
             /** Dataset Id */
             dataset_id: string;
             /** Pairs */
@@ -9365,11 +9374,13 @@ export interface components {
             source: "generated" | "directory";
             /**
              * Stratify
+             * @description Stratify by the lexicographically smallest label; retain all annotations.
              * @default true
              */
             stratify: boolean;
             /**
              * Text Threshold
+             * @description Reserved for snapshot compatibility; ignored.
              * @default 3
              */
             text_threshold: number;

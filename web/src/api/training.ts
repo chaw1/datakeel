@@ -4,7 +4,10 @@ import type { components } from "./generated";
 import type { ActionPlan } from "./types";
 
 export type SplitSet = components["schemas"]["SplitSet"];
-export type SplitRequest = components["schemas"]["SplitRequest"];
+export type SplitRequest = Omit<
+  components["schemas"]["SplitRequest"],
+  "text_threshold"
+>;
 export type LeakageReport = components["schemas"]["LeakageReport"];
 
 export function trainingPath(datasetId: string, versionId: string) {

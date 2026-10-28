@@ -12,6 +12,7 @@ export const splitSet: SplitSet = {
     group_field: "batch",
     avoid_leakage: true,
     image_threshold: 8,
+    text_threshold: 3,
     source: "generated",
   },
   members: [
@@ -43,7 +44,7 @@ export const splitSet: SplitSet = {
     { split: "test", count: 1, labels: [{ label: "harbor", count: 1 }] },
   ],
   created_at: "2026-10-29T00:00:00Z",
-  algorithm_version: "1.0",
+  algorithm_version: "1.2-primary-no-text",
 };
 
 export const leakage: LeakageReport = {
@@ -51,7 +52,8 @@ export const leakage: LeakageReport = {
   dataset_id: splitSet.dataset_id,
   version_id: splitSet.version_id,
   sample_count: 3,
-  pairs: ["exact", "image", "text", "group"].map((kind) => ({
+  checked_signals: ["exact", "image", "group"],
+  pairs: ["exact", "image", "group"].map((kind) => ({
     kind: kind as LeakageReport["pairs"][number]["kind"],
     left_id: "sample-a",
     right_id: "sample-b",
