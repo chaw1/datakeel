@@ -3,6 +3,7 @@
 
 """Derive column relationships from SQL syntax and qualified sqlglot lineage."""
 
+from collections.abc import Iterable
 from itertools import pairwise
 
 import sqlglot
@@ -24,6 +25,8 @@ from datakeel.core.catalog_models import (
 )
 from datakeel.core.models import BoundaryModel
 
+Schema = dict[str, dict[str, dict[str, str]]]
+
 
 class LineageBatch(BoundaryModel):
     """Return metadata enriched by parsed SQL and explicit failures."""
@@ -32,21 +35,63 @@ class LineageBatch(BoundaryModel):
     failures: tuple[SqlFailure, ...]
 
 
-def _schema(snapshot: CatalogSnapshot) -> dict[str, dict[str, dict[str, str]]]:
-    result: dict[str, dict[str, dict[str, str]]] = {}
-    for item in snapshot.objects:
-        if item.asset_ref.asset_type == "column" and item.table_id and item.schema_name:
-            table = catalog_segments(item.table_id)[-1]
-            result.setdefault(item.schema_name, {}).setdefault(table, {})[item.name] = (
-                ColumnProperties.model_validate(
-                    {
-                        key: value
-                        for key, value in item.properties.root.items()
-                        if key in ColumnProperties.model_fields
-                    }
-                ).data_type
-            )
-    return result
+def _folded(parts: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(part.casefold() for part in parts)
+
+
+class _Catalog:
+    """Index an import's objects once, so each statement resolves fields by key.
+
+    Statements only append objects and links; every lookup answers exactly what a
+    scan of the objects in import order would, without rescanning per statement.
+    """
+
+    def __init__(self, snapshot: CatalogSnapshot) -> None:
+        self.objects: list[CatalogObject] = []
+        self.links: list[CatalogLink] = list(snapshot.links)
+        self.by_id: dict[str, CatalogObject] = {}
+        self._exact: dict[tuple[str, ...], CatalogObject] = {}
+        self._folded: dict[tuple[str, ...], list[CatalogObject]] = {}
+        self._schema: Schema = {}
+        self.add(snapshot.objects)
+
+    def add(self, items: Iterable[CatalogObject]) -> None:
+        for item in items:
+            self.objects.append(item)
+            self.by_id[item.asset_ref.asset_id] = item
+            if item.asset_ref.asset_type != "column":
+                continue
+            parts = catalog_segments(item.asset_ref.asset_id)
+            self._exact.setdefault(parts, item)
+            self._folded.setdefault(_folded(parts), []).append(item)
+            if item.table_id and item.schema_name:
+                fields = {
+                    key: value
+                    for key, value in item.properties.root.items()
+                    if key in ColumnProperties.model_fields
+                }
+                table = catalog_segments(item.table_id)[-1]
+                self._schema.setdefault(item.schema_name, {}).setdefault(table, {})[item.name] = (
+                    ColumnProperties.model_validate(fields).data_type
+                )
+
+    def column(self, identity: str) -> CatalogObject | None:
+        """Prefer the exact field; accept a case-insensitive match only when unique."""
+        parts = catalog_segments(identity)
+        if (exact := self._exact.get(parts)) is not None:
+            return exact
+        matches = self._folded.get(_folded(parts), [])
+        return matches[0] if len(matches) == 1 else None
+
+    def schema_for(self, query: exp.Query) -> Schema:
+        """Restrict the parser schema to tables the statement can name, in import order."""
+        names = {table.name.casefold() for table in query.find_all(exp.Table)}
+        result: Schema = {}
+        for schema, tables in self._schema.items():
+            for table, columns in tables.items():
+                if table.casefold() in names:
+                    result.setdefault(schema, {})[table] = columns
+        return result
 
 
 def _query(definition: SqlDefinition) -> tuple[str, exp.Query]:
@@ -64,24 +109,7 @@ def _query(definition: SqlDefinition) -> tuple[str, exp.Query]:
     return table_id, expression
 
 
-def _existing_column(snapshot: CatalogSnapshot, identity: str) -> CatalogObject | None:
-    parts = catalog_segments(identity)
-    columns = tuple(item for item in snapshot.objects if item.asset_ref.asset_type == "column")
-    exact = next(
-        (item for item in columns if catalog_segments(item.asset_ref.asset_id) == parts), None
-    )
-    if exact:
-        return exact
-    folded = tuple(part.casefold() for part in parts)
-    matches = [
-        item
-        for item in columns
-        if tuple(part.casefold() for part in catalog_segments(item.asset_ref.asset_id)) == folded
-    ]
-    return matches[0] if len(matches) == 1 else None
-
-
-def _leaves(root: Node, table_id: str, snapshot: CatalogSnapshot) -> set[str]:
+def _leaves(root: Node, table_id: str, catalog: _Catalog) -> set[str]:
     source_id, schema, _name = catalog_segments(table_id)
     result: set[str] = set()
     for node in root.walk():
@@ -90,7 +118,7 @@ def _leaves(root: Node, table_id: str, snapshot: CatalogSnapshot) -> set[str]:
         table = node.expression
         column = node.name.rsplit(".", 1)[-1].strip('"`')
         identity = catalog_id(source_id, table.db or schema, table.name, column)
-        existing = _existing_column(snapshot, identity)
+        existing = catalog.column(identity)
         if existing is None:
             msg = f"SQL references an unregistered field: {identity}"
             raise SqlglotError(msg)
@@ -105,12 +133,16 @@ def _output_name(output: str, names: tuple[str, ...]) -> str:
     return matches[0] if len(matches) == 1 else output
 
 
-def _derive(definition: SqlDefinition, snapshot: CatalogSnapshot) -> CatalogSnapshot:
+def _derive(
+    definition: SqlDefinition, catalog: _Catalog
+) -> tuple[list[CatalogObject], list[CatalogLink]]:
+    """Compute one statement's additions without touching the catalog until it succeeds."""
     table_id, query = _query(definition)
     _source, schema, table_name = catalog_segments(table_id)
-    parsed = lineage(None, query, schema=_schema(snapshot), dialect=definition.dialect, db=schema)
-    roots = parsed
-    objects = {item.asset_ref.asset_id: item for item in snapshot.objects}
+    roots = lineage(
+        None, query, schema=catalog.schema_for(query), dialect=definition.dialect, db=schema
+    )
+    objects = catalog.by_id
     source = objects[table_id.split("/")[0]]
     table = objects.get(table_id) or metadata_object(
         "table", table_id, table_name, TableProperties(is_view=True, sql=definition.sql)
@@ -121,7 +153,7 @@ def _derive(definition: SqlDefinition, snapshot: CatalogSnapshot) -> CatalogSnap
     for index, (output, root) in enumerate(roots.items()):
         column = _output_name(output, original_names)
         target_id = catalog_id(*catalog_segments(table_id), column)
-        target = _existing_column(snapshot, target_id) or metadata_object(
+        target = catalog.column(target_id) or metadata_object(
             "column", target_id, column, ColumnProperties(data_type="UNKNOWN", ordinal=index)
         )
         if target.asset_ref.asset_id not in objects:
@@ -129,14 +161,9 @@ def _derive(definition: SqlDefinition, snapshot: CatalogSnapshot) -> CatalogSnap
             links.append(contains(table, target))
         links.extend(
             CatalogLink(source=objects[identity].asset_ref, target=target.asset_ref, kind="derived")
-            for identity in sorted(_leaves(root, table_id, snapshot))
+            for identity in sorted(_leaves(root, table_id, catalog))
         )
-    return snapshot.model_copy(
-        update={
-            "objects": snapshot.objects + tuple(additions),
-            "links": snapshot.links + tuple(links),
-        }
-    )
+    return additions, links
 
 
 def _statements(definition: SqlDefinition) -> list[str]:
@@ -158,6 +185,7 @@ def _statements(definition: SqlDefinition) -> list[str]:
 def derive_sql(snapshot: CatalogSnapshot, definitions: tuple[SqlDefinition, ...]) -> LineageBatch:
     """Parse each view or SQL statement; retain valid lineage while reporting failures."""
     failures: list[SqlFailure] = []
+    catalog = _Catalog(snapshot)
     for definition in definitions:
         try:
             statements = _statements(definition)
@@ -166,14 +194,14 @@ def derive_sql(snapshot: CatalogSnapshot, definitions: tuple[SqlDefinition, ...]
             continue
         for index, statement in enumerate(statements, 1):
             try:
-                snapshot = _derive(
-                    definition.model_copy(update={"sql": statement}),
-                    snapshot,
+                additions, links = _derive(
+                    definition.model_copy(update={"sql": statement}), catalog
                 )
             except (SqlglotError, ValueError) as error:
                 failures.append(
                     SqlFailure(origin=f"{definition.origin}#{index}", reason=str(error))
                 )
+                continue
             except RecursionError:
                 # Generated SQL (long UNION ALL chains, deeply nested calls) can exceed the
                 # recursive parser's depth; that is one statement's failure, not the import's.
@@ -183,8 +211,16 @@ def derive_sql(snapshot: CatalogSnapshot, definitions: tuple[SqlDefinition, ...]
                         reason="SQL is nested too deeply to derive column lineage",
                     )
                 )
+                continue
+            catalog.add(additions)
+            catalog.links.extend(links)
     unique = {
-        (link.kind, link.source.asset_id, link.target.asset_id): link for link in snapshot.links
+        (link.kind, link.source.asset_id, link.target.asset_id): link for link in catalog.links
     }
-    snapshot = snapshot.model_copy(update={"links": tuple(unique[key] for key in sorted(unique))})
+    snapshot = snapshot.model_copy(
+        update={
+            "objects": tuple(catalog.objects),
+            "links": tuple(unique[key] for key in sorted(unique)),
+        }
+    )
     return LineageBatch(snapshot=snapshot, failures=tuple(failures))

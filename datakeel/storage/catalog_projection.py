@@ -3,13 +3,16 @@
 
 """Rebuild separate catalog object and edge projections from their immutable events."""
 
-from sqlalchemy import delete
+from itertools import batched
+
+from sqlalchemy import delete, insert
 from sqlalchemy.orm import Session
 
 from datakeel.core.catalog_canonical import canonical_content, document_hash
 from datakeel.core.catalog_models import CatalogRebuildResult, CatalogSnapshot
 from datakeel.core.catalog_projection import project_catalog, snapshot_events
 from datakeel.core.models import JsonDocument
+from datakeel.storage.base import Base
 from datakeel.storage.catalog_locks import lock_catalog
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.catalog_rows import CatalogEdgeRow, CatalogObjectRow
@@ -25,21 +28,33 @@ def project_snapshot(session: Session, snapshot: CatalogSnapshot) -> None:
     _write_projection(session, current.model_copy(update={"scope": snapshot.scope}))
 
 
+def _insert_rows(session: Session, row: type[Base], values: list[dict[str, object]]) -> None:
+    """Write rows in few multi-row statements: one statement per row costs a server round trip.
+
+    Each statement stays within the dialect's bound-parameter limit.
+    """
+    if not values:
+        return
+    limit = session.get_bind().dialect.insertmanyvalues_max_parameters
+    for chunk in batched(values, max(1, limit // len(values[0]))):
+        session.execute(insert(row).values(list(chunk)))
+
+
 def _write_projection(session: Session, snapshot: CatalogSnapshot) -> None:
     session.execute(delete(CatalogEdgeRow))
     session.execute(delete(CatalogObjectRow))
     session.flush()
-    for item in snapshot.objects:
-        session.add(
-            CatalogObjectRow(
-                asset_id=item.asset_ref.asset_id,
-                scope=snapshot.scope,
-                kind=item.asset_ref.asset_type,
-                payload=JsonDocument.model_validate(item.model_dump(mode="json")).root,
-            )
-        )
+    objects: list[dict[str, object]] = [
+        {
+            "asset_id": item.asset_ref.asset_id,
+            "scope": snapshot.scope,
+            "kind": item.asset_ref.asset_type,
+            "payload": JsonDocument.model_validate(item.model_dump(mode="json")).root,
+        }
+        for item in snapshot.objects
+    ]
+    edges: list[dict[str, object]] = []
     for link in snapshot.links:
-        payload = JsonDocument.model_validate(link.model_dump(mode="json"))
         identity = JsonDocument(
             {
                 "scope": snapshot.scope,
@@ -48,18 +63,19 @@ def _write_projection(session: Session, snapshot: CatalogSnapshot) -> None:
                 "target": link.target.asset_id,
             }
         )
-        session.add(
-            CatalogEdgeRow(
-                id=document_hash(identity),
-                scope=snapshot.scope,
-                kind=link.kind,
-                source_id=link.source.asset_id,
-                target_id=link.target.asset_id,
-                producer_event_id=link.producer_event_id or "",
-                payload=payload.root,
-            )
+        edges.append(
+            {
+                "id": document_hash(identity),
+                "scope": snapshot.scope,
+                "kind": link.kind,
+                "source_id": link.source.asset_id,
+                "target_id": link.target.asset_id,
+                "producer_event_id": link.producer_event_id or "",
+                "payload": JsonDocument.model_validate(link.model_dump(mode="json")).root,
+            }
         )
-    session.flush()
+    _insert_rows(session, CatalogObjectRow, objects)
+    _insert_rows(session, CatalogEdgeRow, edges)
 
 
 def normalized_hash(session: Session) -> str:
