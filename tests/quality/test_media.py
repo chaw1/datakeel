@@ -180,6 +180,30 @@ def test_batch_unit_hint_is_information_without_penalty() -> None:
     assert "reference extent=200.0" in assessment.issues[0].message
 
 
+def test_empty_point_cloud_scores_zero_with_a_reason() -> None:
+    """A readable file with no points names why it scores zero instead of listing nothing."""
+    probe: dict[str, JsonValue] = {
+        "point_count": 0,
+        "invalid_ratio": 0,
+        "outlier_ratio": 0,
+        "relative_spacing": 0,
+        "spacing_limit": 0.01,
+        "unit_suspected": False,
+    }
+    assessment = assess_file(_file("point-cloud", pointcloud_probe=probe))
+    assert assessment.score == 0
+    assert assessment.completeness == 0
+    assert [(issue.code, issue.dimension) for issue in assessment.issues] == [
+        ("pointcloud_empty", "completeness")
+    ]
+    assert "no points" in assessment.issues[0].message
+    probe["point_count"] = 1
+    assert all(
+        issue.code != "pointcloud_empty"
+        for issue in assess_file(_file("point-cloud", pointcloud_probe=probe)).issues
+    )
+
+
 def test_unreadable_point_cloud_is_an_error_with_its_reason() -> None:
     """A file an operator could not read scores zero completeness and names the operator."""
     file = _file(

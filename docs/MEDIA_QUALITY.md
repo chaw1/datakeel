@@ -102,7 +102,7 @@ Clean generated captures of each form measure about a quarter of these spacing l
 
 Coordinates alone cannot prove a physical unit. Only a main-body extent beyond the maximum for the declared form is **unit in doubt** (`pointcloud_unit`, consistency), with the extent, form, limits and a suggested `1 / scale_ratio` as evidence. Sparse coverage is not judged while the unit is in doubt, and no other penalty follows from it. An extent near `scale_ratio` (1,000) times the batch reference (500–2,000 times by default; the reference is `reference_extent` or the median of the smaller half of the batch) is only a hint (`pointcloud_unit_hint`, information, no penalty) that names the factor toward the reference, because a batch may legitimately mix a small part and a whole room. Coordinates are never changed.
 
-A file that cannot be read or validated is kept in the output with the operator and reason under `pointcloud_error`; the other files are processed. The operator result then has `partial: true`, `failed_count` and `failed_files`, later point-cloud steps pass the failed file through untouched, and the report lists it as a `pointcloud_unreadable` error with zero completeness.
+A file that cannot be read or validated is kept in the output with the operator and reason under `pointcloud_error`; the other files are processed. The operator result then has `partial: true`, `failed_count` and `failed_files`, later point-cloud steps pass the failed file through untouched, and the report lists it as a `pointcloud_unreadable` error with zero completeness. A readable file with no points also scores zero completeness and is reported as `pointcloud_empty`.
 
 Defaults were calibrated only on generated ray-cast scans with density gradients: indoor terrestrial scans at three resolutions, 16- to 64-line vehicle lidar, depth cameras at three tilts, and a structured-light part in meters and millimeters. No clean scan had more than 0.04% of points flagged; every scan with 0.5% scattered outliers had at least 0.16% flagged; strays far around a scene and floating groups of 30 to 120 points were all found. Known limits: strays scattered inside a densely scanned volume are partly masked, because a stray near a surface has close neighbors (20–40% of 2% scattered strays were flagged, still far above the file limit); a cluster larger than 1% of the cloud is only found if it is much sparser than its surroundings; a millimeter part with an undeclared sensor is not suspected, so declare `object`.
 
@@ -121,7 +121,7 @@ Defaults were calibrated only on generated ray-cast scans with density gradients
 
 仅凭坐标不能证明物理单位。只有主体跨度超过声明形式的上限才判**单位存疑**（`pointcloud_unit`，计入一致性），证据包括跨度、形式、上限和建议系数 `1 / scale_ratio`；单位存疑时不判稀疏，也不连带其他扣分。跨度约为批次参照值 `scale_ratio`（1,000）倍（默认容许 500–2,000 倍；参照值为 `reference_extent`，未指定时取批次较小一半跨度的中位数）只给提示（`pointcloud_unit_hint`，信息级，不扣分），并给出朝参照值换算的系数，因为一个批次里本来就可以同时有小零件和整间房。坐标不会被修改。
 
-无法读取或校验的文件保留在输出中，`pointcloud_error` 记录出错算子和原因，其余文件照常处理。算子结果带 `partial: true`、`failed_count` 和 `failed_files`，后续点云步骤原样跳过该文件，报告将其列为 `pointcloud_unreadable` 错误，完整性记零。
+无法读取或校验的文件保留在输出中，`pointcloud_error` 记录出错算子和原因，其余文件照常处理。算子结果带 `partial: true`、`failed_count` 和 `failed_files`，后续点云步骤原样跳过该文件，报告将其列为 `pointcloud_unreadable` 错误，完整性记零。能读取但没有任何点的文件同样完整性记零，记为 `pointcloud_empty`。
 
 默认值只在带密度梯度的生成光线投射扫描上校准：三种分辨率的室内架站扫描、16 至 64 线车载激光雷达、三种俯角的深度相机，以及米和毫米两种单位的结构光零件。干净扫描被标记的点都不超过 0.04%；含 0.5% 散布离群点的扫描至少标出 0.16%；场景远处的散点和 30 至 120 点的悬空点团全部找到。已知局限：散布在密集扫描空间内部的散点会被部分掩盖，因为靠近表面的散点本身有近邻（2% 散点中约 20–40% 被标出，仍远超文件阈值）；超过全云 1% 的点团只有明显比周围稀疏时才会被找到；未声明采集形式的毫米零件不会被判单位存疑，需要声明 `object`。
 

@@ -88,6 +88,7 @@ def pointcloud_assessment(file: FileItem) -> MediaAssessment:
     issues = [
         issue
         for issue in (
+            _empty(file, count),
             _invalid(file, invalid),
             outlier_issue,
             sparse_issue,
@@ -119,6 +120,13 @@ def _unreadable(file: FileItem, failure: dict[str, JsonValue]) -> MediaAssessmen
         observations={"pointcloud_error": failure},
         issues=[issue.model_copy(update={"severity": "error"})],
     )
+
+
+def _empty(file: FileItem, count: float) -> IssueView | None:
+    """Explain the zero score of a readable cloud that declares no points."""
+    if count > 0:
+        return None
+    return _issue(file, "pointcloud_empty", "the file contains no points", "completeness")
 
 
 def _invalid(file: FileItem, ratio: float) -> IssueView | None:
