@@ -5,6 +5,7 @@
 
 import hashlib
 import math
+from fractions import Fraction
 
 from sqlalchemy.orm import Session
 
@@ -35,13 +36,22 @@ def select_sample(sample_ids: tuple[str, ...], count: int, seed: int) -> tuple[s
     return tuple(sorted(ranked[:count]))
 
 
+def ratio_sample_size(lot_size: int, ratio: float) -> int:
+    """Round a fixed fraction up using its decimal value, so 7% of 100 units is exactly 7.
+
+    Binary floats make ``100 * 0.07`` slightly above 7 and a plain ceiling would
+    inspect 8 units; the shortest decimal form of the declared ratio avoids that.
+    """
+    return max(1, math.ceil(Fraction(str(ratio)) * lot_size))
+
+
 def _sampling_plan(
     batch: AnnotationBatch, request: SamplingRequest, template: SamplingPlan
 ) -> SamplingPlan:
     identifiers = tuple(sorted({item.sample_id for item in batch.annotations}))
     lookup = lookup_aql(len(identifiers), request.aql) if request.method == "aql" else None
     count = (
-        lookup.sample_size if lookup else max(1, math.ceil(len(identifiers) * (request.ratio or 1)))
+        lookup.sample_size if lookup else ratio_sample_size(len(identifiers), request.ratio or 1)
     )
     acceptance = lookup.acceptance_number if lookup else (request.acceptance_number or 0)
     if acceptance >= count:

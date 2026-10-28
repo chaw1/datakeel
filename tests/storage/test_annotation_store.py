@@ -13,7 +13,11 @@ import pytest
 from datakeel.core.annotation_models import AnnotationBatch, AnnotationRecord, OutlierPolicy
 from datakeel.core.annotation_sampling import AnnotationImportRequest, SamplingRequest
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
-from datakeel.storage.annotation_sampling import create_sampling_plan, select_sample
+from datakeel.storage.annotation_sampling import (
+    create_sampling_plan,
+    ratio_sample_size,
+    select_sample,
+)
 from datakeel.storage.annotation_store import get_annotation_quality, import_annotations
 from datakeel.storage.dataset_service import import_paths, list_versions
 
@@ -192,6 +196,52 @@ def test_ratio_sampling_rounds_up_and_requires_meaningful_acceptance(
         create_sampling_plan(
             db, annotations.dataset_id, request.model_copy(update={"acceptance_number": 11})
         )
+
+
+@pytest.mark.parametrize(
+    ("lot", "ratio", "expected"),
+    [
+        (100, 0.07, 7),
+        (100, 0.14, 14),
+        (100, 0.55, 55),
+        (50, 0.28, 14),
+        (40, 0.251, 11),
+        (3, 0.01, 1),
+    ],
+)
+def test_ratio_sample_size_uses_the_declared_decimal_fraction(
+    lot: int, ratio: float, expected: int
+) -> None:
+    """Binary rounding must not add a unit: 100 x 0.07 is 7.000000000000001 as a float."""
+    assert ratio_sample_size(lot, ratio) == expected
+
+
+def test_ratio_sampling_plan_inspects_exactly_seven_percent_of_one_hundred(
+    db: Database, tmp_path: Path
+) -> None:
+    """The stored plan and its reproducibility check both use the exact decimal size."""
+    paths = [tmp_path / f"unit-{number}.txt" for number in range(100)]
+    for number, path in enumerate(paths):
+        path.write_text(f"unit {number}")
+    dataset = import_paths(db, "Hundred units", paths)
+    version = list_versions(db, dataset.id)[0]
+    batch = AnnotationBatch(
+        annotations=tuple(
+            AnnotationRecord(sample_id=file.id, annotator_id="reviewer", labels=("x",))
+            for file in version.manifest
+        )
+    )
+    report = import_annotations(
+        db,
+        dataset.id,
+        AnnotationImportRequest(version_id=version.id, batch=batch, idempotency_key="hundred"),
+    )
+    plan = create_sampling_plan(
+        db,
+        dataset.id,
+        SamplingRequest(batch_id=report.id, method="ratio", ratio=0.07, acceptance_number=0),
+    )
+    assert (plan.lot_size, plan.sample_size, len(plan.sample_ids)) == (100, 7, 7)
 
 
 def test_annotation_version_cannot_be_read_through_another_dataset(
