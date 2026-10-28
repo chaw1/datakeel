@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session, defer
 
-from datakeel.core.errors import ConflictError, NotFoundError
+from datakeel.core.errors import ConflictError, ExecutionError, NotFoundError
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.portable_metadata import portable_metadata
 from datakeel.core.release_models import ReleaseFile, annotation_statistics
@@ -30,25 +30,43 @@ def require_version(
 
 
 def stream_manifest(session: Session, version_id: str) -> Iterator[FileItem]:
-    """Stream file records ordered by stable identity using database JSON expansion."""
+    """Stream file records in code-point identity order using database JSON expansion.
+
+    The comparison merge and release ordinals use Python string order. PostgreSQL would
+    otherwise sort by the database collation (ICU or glibc locales order mixed case and
+    punctuation differently), so its sort is pinned to "C": byte order of UTF-8 equals
+    code-point order. SQLite's default BINARY collation already compares bytes.
+    """
     sqlite = session.get_bind().dialect.name == "sqlite"
     statement = (
         "SELECT value FROM versions, json_each(versions.manifest) "
         "WHERE versions.id = :version ORDER BY json_extract(value, '$.id')"
         if sqlite
         else "SELECT value FROM versions, json_array_elements(versions.manifest) AS value "
-        "WHERE versions.id = :version ORDER BY value->>'id'"
+        "WHERE versions.id = :version ORDER BY value->>'id' COLLATE \"C\""
     )
     result = session.execute(
         text(statement).execution_options(yield_per=100), {"version": version_id}
     )
+    yield from ordered_identities(
+        FileItem.model_validate(json.loads(row[0]) if isinstance(row[0], str) else row[0])
+        for row in result
+    )
+
+
+def ordered_identities(items: Iterator[FileItem]) -> Iterator[FileItem]:
+    """Yield strictly increasing file identities, refusing duplicates and misordered streams."""
     previous: str | None = None
-    for row in result:
-        value = row[0]
-        item = FileItem.model_validate(json.loads(value) if isinstance(value, str) else value)
-        if item.id == previous:
+    for item in items:
+        if previous is not None and item.id == previous:
             message = "Version contains duplicate file identities"
             raise ConflictError(message)
+        if previous is not None and item.id < previous:
+            message = (
+                "Version manifest stream is not in code-point order of file identities; "
+                "comparison stopped instead of misaligning files"
+            )
+            raise ExecutionError(message)
         previous = item.id
         yield item
 
