@@ -20,7 +20,7 @@ it("validates ratio totals and accepts two sets with configurable thresholds", a
   await user.type(screen.getByLabelText("Train"), "0.9");
   await user.clear(screen.getByLabelText("Random seed"));
   await user.type(screen.getByLabelText("Random seed"), "7");
-  await user.click(screen.getByLabelText("Balance labels across sets"));
+  await user.click(screen.getByLabelText("Balance primary labels across sets"));
   await user.clear(screen.getByLabelText("Text distance threshold"));
   await user.type(screen.getByLabelText("Text distance threshold"), "5");
   await user.click(

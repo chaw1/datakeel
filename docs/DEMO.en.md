@@ -247,7 +247,7 @@ Because the demo pipeline already created Version 2, this datasheet shows **Out 
 
 ## 17. Split training data, check leakage and export (2 minutes)
 
-Open an annotated dataset in **Data library → Versions** and select its source version in **Training sets**. Name the split `baseline-80-10-10`, keep ratios `0.8 / 0.1 / 0.1`, seed `42`, label balancing and duplicate avoidance. If samples share a video or collection batch, enter that metadata field in **Group metadata field** to keep related samples together. For two sets, use `0.8 / 0.2 / 0`.
+Open an annotated dataset in **Data library → Versions** and select its source version in **Training sets**. Name the split `baseline-80-10-10`, keep ratios `0.8 / 0.1 / 0.1`, seed `42`, primary-label balancing and duplicate avoidance. Balancing uses each sample’s first label in sorted order; the distribution charts retain all labels. If samples share a video or collection batch, enter that metadata field in **Group metadata field** to keep related samples together. For two sets, use `0.8 / 0.2 / 0`.
 
 Click **Preview distribution** to inspect each class's counts, percentages and bars across train, validation and test. A preview does not create history and cannot be exported. Click **Save immutable split** to pin the membership to this version. Select saved splits, expand **Inspect sample membership**, then save another name with another seed and use **Compare with another split** to inspect both distributions side by side.
 

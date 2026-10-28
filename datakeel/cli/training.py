@@ -44,7 +44,9 @@ def _split_arguments(parser: argparse.ArgumentParser, command: str) -> None:
     parser.add_argument("--test", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--group-field")
-    parser.add_argument("--no-stratify", action="store_true")
+    parser.add_argument(
+        "--no-stratify", action="store_true", help="Disable primary-label stratification"
+    )
     parser.add_argument("--directory", action="store_true", default=command == "leakage")
     parser.add_argument("--image-threshold", type=int, default=8)
     parser.add_argument("--text-threshold", type=int, default=3)

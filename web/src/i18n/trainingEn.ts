@@ -1,7 +1,7 @@
 export const trainingEn = {
   trainingTitle: "Training sets",
   trainingDescription:
-    "Create a reproducible split, inspect class balance and check leakage before export.",
+    "Balance each sample’s first label in sorted order; distributions retain all labels. Groups and duplicates stay together before ratio targets.",
   trainingVersion: "Training source version",
   trainingName: "Split set name",
   trainingNameExample: "baseline-80-10-10",
@@ -16,7 +16,7 @@ export const trainingEn = {
   trainingVal: "Validation",
   trainingTest: "Test",
   trainingSeed: "Random seed",
-  trainingStratify: "Balance labels across sets",
+  trainingStratify: "Balance primary labels across sets",
   trainingGroup: "Group metadata field",
   trainingGroupHint: "For example, video_id or collection_batch",
   trainingAvoidLeakage: "Keep duplicates and related groups together",

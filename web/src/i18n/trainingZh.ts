@@ -1,7 +1,7 @@
 export const trainingZh = {
   trainingTitle: "训练集",
   trainingDescription:
-    "生成可复现的切分，查看类别分布并检查泄漏，再导出训练数据。",
+    "按每个样本字典序最小的主标签平衡分布，图表仍统计全部标签；同组与重复样本隔离优先于比例目标。",
   trainingVersion: "训练集来源版本",
   trainingName: "切分集合名称",
   trainingNameExample: "baseline-80-10-10",
@@ -16,7 +16,7 @@ export const trainingZh = {
   trainingVal: "验证集",
   trainingTest: "测试集",
   trainingSeed: "随机种子",
-  trainingStratify: "按标签分层，平衡各集合分布",
+  trainingStratify: "按主标签分层，平衡各集合分布",
   trainingGroup: "分组元数据字段",
   trainingGroupHint: "例如 video_id 或 collection_batch",
   trainingAvoidLeakage: "将重复样本和关联分组放入同一集合",

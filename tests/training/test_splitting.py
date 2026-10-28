@@ -36,33 +36,6 @@ def test_single_label_strata_rounding_and_reproducibility() -> None:
     assert members != split_samples(samples, request.model_copy(update={"seed": 18}))
 
 
-def test_multilabel_iterative_stratification_preserves_prevalence() -> None:
-    """Iterative assignment balances shared categories rather than whole label tuples."""
-    samples = tuple(
-        _sample(
-            index,
-            tuple(label for modulus, label in ((2, "a"), (3, "b"), (5, "c")) if index % modulus),
-        )
-        for index in range(300)
-    )
-    request = SplitRequest(name="multilabel")
-    members = split_samples(samples, request)
-    overall = Counter(label for sample in samples for label in sample.labels)
-    for distribution in distributions(members):
-        if not distribution.count:
-            continue
-        for label in distribution.labels:
-            assert (
-                abs(label.count / distribution.count - overall[label.label] / len(samples)) <= 0.02
-            )
-            assert (
-                abs(
-                    label.count - overall[label.label] * getattr(request.ratios, distribution.split)
-                )
-                <= 1
-            )
-
-
 def test_atomic_transitive_groups_take_priority_over_ratios() -> None:
     """A group link and a duplicate link form a single indivisible connected component."""
     samples = [_sample(index, ("class",)) for index in range(30)]

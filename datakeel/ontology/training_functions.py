@@ -22,8 +22,8 @@ from datakeel.storage.training_store import (
 
 TRAINING_TOOL_DESCRIPTIONS = {
     "training_distribution": (
-        "Read per-class train/val/test counts, or preview a seeded 8:1:1 stratified split. "
-        "训练集切分、各类分布、按8:1:1切完各类分布怎样; only reads, never saves."
+        "Read per-class train/val/test counts, or preview a seeded 8:1:1 primary-label split. "
+        "训练集按主标签切分、各类分布、按8:1:1切完各类分布怎样; only reads, never saves."
     ),
     "training_leakage": (
         "Check exact, image/text near-duplicate and group leakage with sample pairs and distances. "

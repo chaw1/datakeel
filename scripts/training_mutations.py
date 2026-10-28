@@ -108,13 +108,13 @@ TRAINING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="training-multilabel-prevalence-tolerance-weakened",
-        path="training/proportions.py",
-        before="PREVALENCE_TOLERANCE = 0.02",
-        after="PREVALENCE_TOLERANCE = 0.2",
+        name="training-primary-label-depends-on-input-order",
+        path="training/splitting.py",
+        before="(min(sample.labels),) if sample.labels else ()",
+        after="sample.labels[:1]",
         case=(
-            "tests/training/test_proportions.py::"
-            "test_sparse_nonuniform_multilabel_counts_meet_count_and_prevalence_limits[0-ratios0]"
+            "tests/training/test_primary_labels.py::"
+            "test_primary_label_order_is_canonical_and_full_annotations_are_preserved"
         ),
         runner="pytest",
     ),

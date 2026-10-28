@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Deterministic iterative stratification with indivisible connected sample groups."""
+"""Deterministic primary-label stratification with indivisible connected sample groups."""
 
 import hashlib
 import math
@@ -17,12 +17,11 @@ from datakeel.core.training_models import (
     TrainingSample,
 )
 from datakeel.training.leakage import signal_pairs
-from datakeel.training.proportions import balance_proportions, proportion_cost
+from datakeel.training.proportions import balance_proportions
 from datakeel.training.refinement import refine_assignments
 from datakeel.training.single_prevalence import balance_single_labels
 
 SPLITS: tuple[SplitName, ...] = ("train", "val", "test")
-BALANCE_ATTEMPTS = 16
 
 
 def _groups(samples: tuple[TrainingSample, ...], request: SplitRequest) -> list[list[int]]:
@@ -83,7 +82,7 @@ def _single_labels(
     return result
 
 
-def _iterative(
+def _grouped_labels(
     samples: tuple[TrainingSample, ...], groups: list[list[int]], request: SplitRequest
 ) -> dict[int, SplitName]:
     labels = [
@@ -146,30 +145,11 @@ def _directory(samples: tuple[TrainingSample, ...]) -> dict[int, SplitName]:
     return result
 
 
-def _balance_independent(
-    samples: tuple[TrainingSample, ...],
-    groups: list[list[int]],
-    request: SplitRequest,
-    assignments: dict[int, SplitName],
-    *,
-    simple: bool,
-) -> dict[int, SplitName]:
-    if not request.stratify:
-        return assignments
-    if simple:
-        return balance_single_labels(samples, assignments, request)
-    cost = proportion_cost(samples, assignments, request)
-    for attempt in range(1, BALANCE_ATTEMPTS + 1):
-        if cost[:2] == (0, 0):
-            break
-        alternative = request.model_copy(update={"seed": request.seed + attempt})
-        candidate = balance_proportions(
-            samples, groups, _iterative(samples, groups, alternative), request
-        )
-        candidate_cost = proportion_cost(samples, candidate, request)
-        if candidate_cost < cost:
-            assignments, cost = candidate, candidate_cost
-    return assignments
+def _primary_labels(samples: tuple[TrainingSample, ...]) -> tuple[TrainingSample, ...]:
+    return tuple(
+        sample.model_copy(update={"labels": (min(sample.labels),) if sample.labels else ()})
+        for sample in samples
+    )
 
 
 def split_samples(
@@ -184,16 +164,16 @@ def split_samples(
         assignments = _directory(ordered)
     else:
         groups = _groups(ordered, request)
+        projected = _primary_labels(ordered) if request.stratify else ordered
         independent = all(len(group) == 1 for group in groups)
-        simple = all(len(sample.labels) <= 1 for sample in ordered)
         assignments = (
-            _single_labels(ordered, request)
-            if independent and simple
-            else _iterative(ordered, groups, request)
+            _single_labels(projected, request)
+            if independent
+            else _grouped_labels(projected, groups, request)
         )
-        assignments = balance_proportions(ordered, groups, assignments, request)
-        if independent:
-            assignments = _balance_independent(ordered, groups, request, assignments, simple=simple)
+        assignments = balance_proportions(projected, groups, assignments, request)
+        if independent and request.stratify:
+            assignments = balance_single_labels(projected, assignments, request)
     return tuple(
         SplitMember(
             sample_id=sample.file.id,

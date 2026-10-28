@@ -3,43 +3,11 @@
 
 """Random overlapping label regression cases independent of the iterative heuristic."""
 
-from collections import Counter
-
 import numpy as np
-import pytest
 
 from datakeel.core.models import FileItem
 from datakeel.core.training_models import SplitRequest, TrainingSample
-from datakeel.training.splitting import distributions, split_samples
-
-
-@pytest.mark.parametrize("seed", [*range(12), 25, 54, 385])
-def test_random_multilabel_overlap_keeps_capacity_and_category_ratios(seed: int) -> None:
-    """Nonuniform overlapping labels satisfy both count and prevalence error budgets."""
-    generator = np.random.default_rng(seed)
-    samples = tuple(
-        TrainingSample(
-            file=FileItem(id=str(index), path="unused", filename=str(index), sha256=str(index)),
-            labels=tuple(str(label) for label in range(8) if generator.random() < 0.4),
-        )
-        for index in range(300)
-    )
-    request = SplitRequest(name="overlap", seed=seed)
-    members = split_samples(samples, request)
-    totals = Counter(label for sample in samples for label in sample.labels)
-    result = distributions(members)
-    assert [distribution.count for distribution in result] == [240, 30, 30]
-    for distribution in result:
-        for label in distribution.labels:
-            assert (
-                abs(label.count - totals[label.label] * getattr(request.ratios, distribution.split))
-                <= 1
-            )
-            assert (
-                abs(label.count / distribution.count - totals[label.label] / len(samples))
-                <= 0.02 + 1e-9
-            )
-    assert members == split_samples(tuple(reversed(samples)), request)
+from datakeel.training.splitting import split_samples
 
 
 def test_refinement_keeps_random_multilabel_group_components_indivisible() -> None:

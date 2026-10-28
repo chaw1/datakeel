@@ -69,34 +69,6 @@ def test_uneven_single_label_counts_near_fifty_meet_both_limits(
     _assert_limits(samples, split_samples(samples, request), request)
 
 
-@pytest.mark.parametrize(
-    ("seed", "ratios"),
-    [
-        (0, (0.8, 0.1, 0.1)),
-        (19, (0.7, 0.2, 0.1)),
-        (97, (0.7, 0.2, 0.1)),
-        *((seed, (0.9, 0.05, 0.05)) for seed in (19, 22, 23, 28, 34, 91)),
-    ],
-)
-def test_sparse_nonuniform_multilabel_counts_meet_count_and_prevalence_limits(
-    seed: int, ratios: tuple[float, float, float]
-) -> None:
-    """Unequal label frequencies and sparse overlap need both transfer and exchange search."""
-    generator = np.random.default_rng(seed)
-    population = (300, 500, 1000)[seed % 3]
-    labels: list[list[str]] = [[] for _ in range(population)]
-    for category, count in enumerate(generator.integers(50, int(population * 0.85), size=6)):
-        for index in generator.choice(population, size=int(count), replace=False):
-            labels[int(index)].append(str(category))
-    samples = _samples([tuple(value) for value in labels])
-    request = SplitRequest(
-        name="sparse", seed=seed, ratios=SplitRatios(train=ratios[0], val=ratios[1], test=ratios[2])
-    )
-    members = split_samples(samples, request)
-    _assert_limits(samples, members, request)
-    assert members == split_samples(tuple(reversed(samples)), request)
-
-
 def test_prevalence_balancing_never_breaks_atomic_groups() -> None:
     """Whole-group transfers retain complete cohorts when numeric limits are unattainable."""
     samples = tuple(

@@ -3,7 +3,7 @@
 [中文](TRAINING.zh.md)
 
 Open a dataset's **Versions** tab and expand **Training sets**. Select an immutable
-source version, set train/validation/test proportions, a seed, optional stratification
+source version, set train/validation/test proportions, a seed, optional primary-label stratification
 and a metadata group field. Preview reads the files and computes distributions without
 saving. **Save immutable split** creates a named, version-owned snapshot. Repeating the
 same name and policy returns that snapshot; changing its policy requires another name.
@@ -16,24 +16,27 @@ comparison API below to inspect changes in sample assignments.
 
 ## Reproducible grouping and stratification
 
-Single-label independent samples start with seeded largest-remainder quotas. When small
-rounded sets violate class prevalence limits, a bounded integer transport solver selects
-the closest feasible set totals. Multilabel samples use rare-label-first iterative
-stratification, deterministic whole-group transfers/exchanges and at most 16 additional
-seeded starts. Count error and class prevalence limits take priority over exact set totals.
+Stratification balances one primary label per sample: the lexicographically smallest
+label. For a single-label sample, that is its only label. All labels and complete
+annotations remain in the immutable split and exports; the distribution table measures
+every label. Non-primary labels have no balance or prevalence-error guarantee.
+
+Independent samples start with seeded largest-remainder quotas. A bounded integer
+transport solver can adjust small rounded sets to feasible primary-label totals.
 Groups and connected duplicate clusters are indivisible; an entire connected component
-receives one split. A metadata field can be nested, for example `capture.session` or
+receives one split. Their isolation takes priority over primary-label balance and exact
+ratios. A metadata field can be nested, for example `capture.session` or
 `metadata.capture.session`. A missing or null group value does not join unrelated samples.
 
 Group isolation takes priority over exact ratios. A group larger than a validation
-target, or mutually constrained multilabel groups, can make requested class proportions
+target, or mutually constrained groups, can make requested primary-label proportions
 mathematically impossible. Inspect the measured counts before training. The seed, full
 policy, algorithm version, member identities, source hashes and annotations are frozen.
 Later annotation imports do not rewrite an existing split. Create a new named split to
 use revised annotations.
 
-Small integer sets can be infeasible even without groups. For example, class counts
-92/83/68 with a 90:5:5 policy admit no positive validation size that keeps every category
+Small integer sets can be infeasible even without groups. For example, primary-label counts
+92/83/68 with a 90:5:5 policy admit no positive validation size that keeps every primary label
 within one sample of its target and within two percentage points of global prevalence.
 The result still reports its actual counts; an unattainable request does not justify
 splitting a group or silently changing the declared policy.

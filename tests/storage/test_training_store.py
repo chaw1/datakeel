@@ -27,6 +27,7 @@ from datakeel.storage.data_asset_rows import DataAssetRow
 from datakeel.storage.database import DatasetRow, EventRow, VersionRow
 from datakeel.storage.objects import digest
 from datakeel.storage.training_inputs import load_training_samples
+from datakeel.storage.training_rows import TrainingSplitRow
 from datakeel.storage.training_store import (
     check_leakage,
     compare_splits,
@@ -93,6 +94,7 @@ def test_create_freezes_policy_members_and_lineage_with_exact_retry(
     """A named exact retry preserves the original result without appending another event."""
     request = SplitRequest(name="baseline", group_field="batch.id")
     split = create_split(db, training.dataset_id, training.version_id, request)
+    assert split.algorithm_version == "1.1-primary-label"
     assert split == create_split(db, training.dataset_id, training.version_id, request)
     assert split == get_split(db, training.dataset_id, split.id)
     assert list_splits(db, training.dataset_id, training.version_id) == (split,)
@@ -349,3 +351,28 @@ def test_corrupt_training_image_fails_before_saving_split(db: Database, tmp_path
     with pytest.raises(ValidationError, match="decoded"):
         create_split(db, fixture.dataset_id, fixture.version_id, SplitRequest(name="corrupt"))
     assert not list_splits(db, fixture.dataset_id, fixture.version_id)
+
+
+def test_existing_algorithm_snapshot_is_returned_without_rewriting(
+    db: Database, training: TrainingFixture
+) -> None:
+    """The primary-label algorithm keeps older immutable names and snapshots readable."""
+    request = SplitRequest(name="legacy")
+    preview = preview_split(db, training.dataset_id, training.version_id, request)
+    legacy = preview.model_copy(update={"id": "legacy-split", "algorithm_version": "1.0"})
+    with db.session() as session:
+        session.add(
+            TrainingSplitRow(
+                id=legacy.id,
+                dataset_id=training.dataset_id,
+                version_id=training.version_id,
+                name=request.name,
+                created_at=legacy.created_at.timestamp(),
+                payload=legacy.model_dump(mode="json"),
+                samples=[],
+            )
+        )
+        session.commit()
+    assert create_split(db, training.dataset_id, training.version_id, request) == legacy
+    assert get_split(db, training.dataset_id, legacy.id) == legacy
+    assert preview.id != legacy.id

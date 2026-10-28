@@ -40,7 +40,10 @@ class SplitRequest(BoundaryModel):
     name: str = Field(min_length=1, max_length=200, pattern=r"\S")
     ratios: SplitRatios = Field(default_factory=SplitRatios)
     seed: int = 42
-    stratify: bool = True
+    stratify: bool = Field(
+        default=True,
+        description="Stratify by the lexicographically smallest label; retain all annotations.",
+    )
     group_field: str | None = Field(default=None, min_length=1, max_length=200)
     avoid_leakage: bool = True
     image_threshold: int = Field(default=8, ge=0, le=64)
