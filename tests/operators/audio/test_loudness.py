@@ -11,7 +11,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datakeel.operators.audio import loudness
-from datakeel.operators.audio.loudness import OPERATOR
+from datakeel.operators.audio.loudness import OPERATOR, deviation_lu
+from datakeel.operators.audio.params import LoudnessParams
 from tests.operators.media.helpers import failure_reason
 
 if TYPE_CHECKING:
@@ -79,3 +80,51 @@ def test_loudness_reports_missing_measurement_json(
     )
     failed = OPERATOR.run([source], tmp_path / "missing").files[0]
     assert "EBU R128 loudness measurements" in failure_reason(failed, "audio.loudness")
+
+
+def test_loudness_inside_accepted_range_is_not_flagged(
+    make_audio: AudioFactory, tmp_path: Path
+) -> None:
+    """Loudness between the range ends passes; outside it the distance is the deviation."""
+    source = make_audio("sine=frequency=997:sample_rate=48000:duration=2", "volume=0.3")
+    measured = OPERATOR.run([source], tmp_path / "measure").files[0]
+    level = measured.metadata["audio_metrics"]["integrated_lufs"]
+    inside = OPERATOR.run(
+        [source],
+        tmp_path / "inside",
+        {
+            "acceptable_min_lufs": level - 0.5,
+            "acceptable_max_lufs": level + 0.5,
+            "loudness_tolerance_lu": 0.0,
+        },
+    ).files[0]
+    assert inside.metadata["audio_metrics"]["loudness_deviation_lu"] == 0.0
+    assert inside.metadata["media_issues"] == []
+    strict = {"acceptable_min_lufs": level + 3, "acceptable_max_lufs": level + 3}
+    below = OPERATOR.run([source], tmp_path / "below", strict).files[0]
+    metrics = below.metadata["audio_metrics"]
+    assert metrics["loudness_deviation_lu"] == pytest.approx(3.0, abs=0.01)
+    assert (metrics["acceptable_min_lufs"], metrics["loudness_tolerance_lu"]) == (level + 3, 1.0)
+    assert [issue["code"] for issue in below.metadata["media_issues"]] == ["audio_loudness"]
+    tolerated = OPERATOR.run(
+        [source], tmp_path / "tolerated", {**strict, "loudness_tolerance_lu": 3.5}
+    ).files[0]
+    assert tolerated.metadata["media_issues"] == []
+
+
+@pytest.mark.parametrize(
+    ("level", "expected"),
+    [(-18.0, 0.0), (-23.0, 0.0), (-14.0, 0.0), (-25.5, 2.5), (-12.0, 2.0)],
+)
+def test_default_range_is_broadcast_to_streaming(level: float, expected: float) -> None:
+    """By default -23..-14 LUFS is accepted and only the distance beyond it counts."""
+    assert deviation_lu(level, LoudnessParams()) == pytest.approx(expected)
+    assert LoudnessParams().loudness_tolerance_lu == 1.0
+
+
+def test_reversed_loudness_range_is_rejected(tmp_path: Path) -> None:
+    """An acceptable range whose lower bound exceeds the upper one is a parameter error."""
+    with pytest.raises(ValueError, match="acceptable_min_lufs must not exceed"):
+        OPERATOR.run(
+            [], tmp_path / "invalid", {"acceptable_min_lufs": -14.0, "acceptable_max_lufs": -23.0}
+        )

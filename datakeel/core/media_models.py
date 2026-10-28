@@ -96,6 +96,9 @@ class MediaFileScore(Record):
     dimensions: dict[str, float]
     total: float
     reasons: list[str]
+    loudness_lufs: float | None = None
+    accepted_lufs: tuple[float, float] | None = None
+    loudness_tolerance_lu: float | None = None
 
 
 class MediaFailure(Record):

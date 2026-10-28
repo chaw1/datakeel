@@ -4,6 +4,7 @@
 """Deterministic signal deductions and recording/clip report aggregates."""
 
 from collections import Counter, defaultdict
+from typing import Any
 
 from datakeel.core.media_metadata import media_failure, media_metadata
 from datakeel.core.media_models import (
@@ -70,7 +71,36 @@ def _score(file: FileItem, media: MediaFileView) -> MediaFileScore:
         dimensions=dimensions,
         total=total,
         reasons=[f"{issue.code}: {issue.start_ms}-{issue.end_ms} ms" for issue in media.issues],
+        **_loudness(media),
     )
+
+
+def _loudness(media: MediaFileView) -> dict[str, Any]:
+    """Carry measured loudness and the accepted range it was judged against."""
+    metrics = media.metrics
+    low, high = metrics.get("acceptable_min_lufs"), metrics.get("acceptable_max_lufs")
+    tolerance = metrics.get("loudness_tolerance_lu")
+    loudness = metrics.get("integrated_lufs")
+    return {
+        "loudness_lufs": float(loudness) if isinstance(loudness, int | float) else None,
+        "accepted_lufs": (
+            (float(low), float(high))
+            if isinstance(low, int | float) and isinstance(high, int | float)
+            else None
+        ),
+        "loudness_tolerance_lu": (float(tolerance) if isinstance(tolerance, int | float) else None),
+    }
+
+
+def _file_line(score: MediaFileScore) -> str:
+    line = f"- {score.filename}: {score.total}/100; " + "; ".join(score.reasons)
+    if score.loudness_lufs is not None and score.accepted_lufs is not None:
+        low, high = score.accepted_lufs
+        line += (
+            f"; loudness {score.loudness_lufs} LUFS (accepted {low}..{high} LUFS "
+            f"+/- {score.loudness_tolerance_lu} LU)"
+        )
+    return line
 
 
 def _valid_source_ranges(media: MediaFileView) -> list[MediaInterval]:
@@ -188,9 +218,6 @@ def media_chapter(summary: MediaSummary) -> dict[str, str]:
             f"clips: {summary.clip_count}; duplicates: {summary.duplicate_count}.\n"
             + "\n".join(f"- {code}: {count}" for code, count in summary.issue_distribution.items())
             + "\n"
-            + "\n".join(
-                f"- {file.filename}: {file.total}/100; " + "; ".join(file.reasons)
-                for file in summary.files
-            )
+            + "\n".join(_file_line(file) for file in summary.files)
         ),
     }

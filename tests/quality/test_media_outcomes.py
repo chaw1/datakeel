@@ -85,3 +85,27 @@ def test_truncated_recording_completeness_uses_declared_duration() -> None:
     assert score.effective_duration_ms == 2000
     assert summary.issue_distribution == {"truncated_file": 1}
     assert score.reasons == ["truncated_file: 2000-4000 ms"]
+
+
+def test_loudness_and_accepted_range_reach_the_digest() -> None:
+    """The digest states measured loudness and the range it was judged against."""
+    metrics: dict[str, JsonValue] = {
+        "integrated_lufs": -18.0,
+        "acceptable_min_lufs": -23.0,
+        "acceptable_max_lufs": -14.0,
+        "loudness_tolerance_lu": 1.0,
+        "loudness_deviation_lu": 0.0,
+    }
+    summary = summarize_media([_file("voice", MediaProbe(duration_ms=1000), audio_metrics=metrics)])
+    assert summary is not None
+    score = summary.files[0]
+    assert (score.loudness_lufs, score.accepted_lufs, score.loudness_tolerance_lu) == (
+        -18.0,
+        (-23.0, -14.0),
+        1.0,
+    )
+    assert score.dimensions["consistency"] == 100.0
+    assert (
+        "loudness -18.0 LUFS (accepted -23.0..-14.0 LUFS +/- 1.0 LU)"
+        in (media_chapter(summary)["body"])
+    )

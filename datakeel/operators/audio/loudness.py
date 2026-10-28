@@ -123,9 +123,16 @@ def _normalize(
     )
 
 
+def deviation_lu(integrated_lufs: float, params: LoudnessParams) -> float:
+    """Return how far loudness lies outside the acceptable range (0 inside it)."""
+    below = params.acceptable_min_lufs - integrated_lufs
+    above = integrated_lufs - params.acceptable_max_lufs
+    return max(0.0, below, above)
+
+
 def _annotate(file: FileItem, measured: LoudnessMeasurement, params: LoudnessParams) -> FileItem:
     deviation = (
-        abs(measured.integrated_lufs - params.target_lufs)
+        deviation_lu(measured.integrated_lufs, params)
         if measured.integrated_lufs is not None
         else None
     )
@@ -134,6 +141,9 @@ def _annotate(file: FileItem, measured: LoudnessMeasurement, params: LoudnessPar
         loudness_range_lu=measured.loudness_range_lu,
         true_peak_dbfs=measured.true_peak_dbfs,
         target_lufs=params.target_lufs,
+        acceptable_min_lufs=params.acceptable_min_lufs,
+        acceptable_max_lufs=params.acceptable_max_lufs,
+        loudness_tolerance_lu=params.loudness_tolerance_lu,
         loudness_deviation_lu=round(deviation, 3) if deviation is not None else None,
         loudness_measurable=measured.integrated_lufs is not None,
     )

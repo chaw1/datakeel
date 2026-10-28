@@ -21,6 +21,9 @@ class AudioMetrics(Record):
     loudness_range_lu: float | None = None
     true_peak_dbfs: float | None = None
     target_lufs: float | None = None
+    acceptable_min_lufs: float | None = None
+    acceptable_max_lufs: float | None = None
+    loudness_tolerance_lu: float | None = None
     loudness_deviation_lu: float | None = None
     loudness_measurable: bool | None = None
     clipping_ratio: float | None = None
