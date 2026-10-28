@@ -15,7 +15,6 @@ from datakeel.core.models import AssetRef, BoundaryModel, LineageEvent
 from datakeel.ontology.models import FrozenManifest
 
 ActionName = Literal[
-    "clean_training_data",
     "create_data_asset",
     "update_data_asset",
     "publish_data_asset",
@@ -53,6 +52,7 @@ ActionName = Literal[
     "annotation_acceptance",
     "generate_datasheet",
     "publish_datasheet",
+    "clean_training_data",
 ]
 PlanStatus = Literal["PREPARED", "APPROVED", "REJECTED", "EXECUTED", "FAILED"]
 RunStatus = Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED"]
