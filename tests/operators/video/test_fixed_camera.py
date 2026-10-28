@@ -16,12 +16,19 @@ from datakeel.operators.media.tools import run_tool
 if TYPE_CHECKING:
     from pathlib import Path
 
-_STATIC = "testsrc2=s=160x96:r=10:d=0.1,tpad=stop_mode=clone:stop_duration={seconds}"
-_WALKER = (
-    _STATIC + "[bg];color=c=red:s=10x16:r=10:d={seconds}[box];"
-    "[bg][box]overlay=x='5+t*15':y='30+t*3':shortest=1"
-)
+_STATIC = "testsrc2=s=160x96:r={rate}:d=0.1,tpad=stop_mode=clone:stop_duration={seconds}"
+_SUBJECT = "[bg];color=c=red:s=10x16:r={rate}:d={seconds}[box];[bg][box]overlay=x='{x}':y='{y}'"
 _FRAME_MS = 100
+
+
+def _scene(seconds: int, x: str = "5+t*15", y: str = "30+t*3", rate: int = 10) -> str:
+    """Return a static camera picture crossed by a small red subject."""
+    background = _STATIC.format(rate=rate, seconds=seconds)
+    return background + _SUBJECT.format(rate=rate, seconds=seconds, x=x, y=y) + ":shortest=1"
+
+
+def _still(seconds: int) -> str:
+    return _STATIC.format(rate=10, seconds=seconds)
 
 
 def _encode(directory: Path, name: str, graph: str, *options: str) -> FileItem:
@@ -62,14 +69,15 @@ def test_freeze_start_is_frame_accurate_across_keyframes(tmp_path: Path) -> None
 @pytest.mark.parametrize(
     ("name", "graph"),
     [
-        ("small-moving-target", _WALKER.format(seconds=6)),
-        ("slow-lighting-change", _STATIC.format(seconds=6) + ",eq=brightness='t*0.01':eval=frame"),
-        ("sensor-noise", _STATIC.format(seconds=6) + ",noise=alls=12:allf=t"),
+        ("small-moving-target", _scene(6)),
+        ("slow-lighting-change", _still(6) + ",eq=brightness='t*0.01':eval=frame"),
+        ("sensor-noise", _still(6) + ",noise=alls=12:allf=t"),
         (
             "blinking-indicator",
-            _STATIC.format(seconds=6)
-            + ",drawbox=x=4:y=4:w=12:h=8:color=white:t=fill:enable='lt(mod(t,1),0.5)'",
+            _still(6) + ",drawbox=x=4:y=4:w=12:h=8:color=white:t=fill:enable='lt(mod(t,1),0.5)'",
         ),
+        ("fan-half-window-period", _scene(6, x="70+30*sin(2*PI*t/0.5)", y="40")),
+        ("fan-longer-period", _scene(6, x="70+30*sin(2*PI*t/0.8)", y="40")),
     ],
 )
 def test_live_fixed_camera_is_neither_frozen_nor_repeated(
@@ -82,14 +90,14 @@ def test_live_fixed_camera_is_neither_frozen_nor_repeated(
 
 def test_static_scene_without_any_change_is_not_a_repeat(tmp_path: Path) -> None:
     """Identical frames are a freeze, never a repeat of earlier footage."""
-    issues = _issues(tmp_path, _encode(tmp_path, "still", _STATIC.format(seconds=5), "-q:v", "2"))
+    issues = _issues(tmp_path, _encode(tmp_path, "still", _still(5), "-q:v", "2"))
     assert [code for code, _start, _end in issues] == ["frozen_frame"]
 
 
 def test_replayed_fixed_camera_segment_is_located_exactly(tmp_path: Path) -> None:
     """Seconds 1-3 replayed at 5-7 s are reported with frame-accurate bounds."""
     graph = (
-        _WALKER.format(seconds=8) + ",split=3[a][b][c];"
+        _scene(8) + ",split=3[a][b][c];"
         "[a]trim=0:5,setpts=PTS-STARTPTS[x];[b]trim=1:3,setpts=PTS-STARTPTS[y];"
         "[c]trim=7:8,setpts=PTS-STARTPTS[z];[x][y][z]concat=n=3:v=1:a=0"
     )

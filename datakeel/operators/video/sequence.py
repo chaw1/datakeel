@@ -49,6 +49,8 @@ _MIN_ENERGY = 1e-6
 _PERIODIC_COPIES = 2
 # How many windows on either side are searched for further copies of a window.
 _PERIODIC_REACH = 3
+# Real periods jitter by up to this much, so lags this close belong to one copy.
+_PERIOD_JITTER_MS = 200.0
 
 
 class Thresholds(Protocol):
@@ -262,12 +264,14 @@ def _recurs_within(
     evidence of repeated footage. A clip copied once has a single nearby copy; a
     window with two or more separate copies within three windows on either side is
     periodic. Lags shorter than half a window are not tested, because smooth motion
-    looks alike over short lags, and real periods jitter by a frame or two.
+    looks alike over short lags; lags within a period's jitter (about 200 ms, at least
+    two frames) are one copy, so a period of half a window still counts as periodic.
     """
     lags = range(max(2, (span + 1) // 2), _PERIODIC_REACH * span + 1)
     offsets = [offset for lag in lags for offset in (-lag, lag)]
     found = sorted(offset for offset in offsets if _recurs(candidate, checks, offset, limits))
-    separate = sum(1 for before, after in itertools.pairwise(found) if after - before > span // 2)
+    jitter = max(2, round(_PERIOD_JITTER_MS / candidate.frame_ms))
+    separate = sum(1 for before, after in itertools.pairwise(found) if after - before > jitter)
     return bool(found) and separate + 1 >= _PERIODIC_COPIES
 
 
