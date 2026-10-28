@@ -84,5 +84,6 @@ def supported(reading: Reading, evidence: frozenset[Reading]) -> bool:
     if unit in (None, "ratio") and (value * 100, "percent") in evidence:
         return True
     if unit is None:
-        return any(item == value for item, _unit in evidence)
+        # A bare number never borrows a calendar part; dates and clocks are compared whole.
+        return any(item == value for item, item_unit in evidence if item_unit != "date")
     return (value, unit) in evidence or (value, None) in evidence

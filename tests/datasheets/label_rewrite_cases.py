@@ -158,7 +158,7 @@ BAD: tuple[BadCase, ...] = (
     ("maintenance", "负责人为李四\uff08名称\uff09。", ("owner",), "unsupported_term"),
     ("maintenance", "Northwind Labs maintains the dataset.", ("creator",), "unsupported_term"),
     ("collection", "该版本创建于2027年1月2日。", ("created",), "unsupported_date"),
-    ("collection", "版本创建时间为2026年10月27日16:55。", ("created",), "unsupported_number"),
+    ("collection", "版本创建时间为2026年10月27日16:55。", ("created",), "unsupported_date"),
     ("composition", "文件数量为398个。", ("invented",), "unknown_fact"),
     ("composition", "文件数量为398个。", (), "missing_citation"),
     ("maintenance", "文件数量为398个。", ("files",), "wrong_chapter"),

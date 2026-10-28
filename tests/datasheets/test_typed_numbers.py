@@ -133,3 +133,40 @@ def test_explicit_kind_is_preserved_and_measured_leaves_share_it() -> None:
     ratio = _fact("custom.share", 0.5, kind="ratio", unit=None)
     assert ratio.kind == "ratio"
     assert ratio.model_copy() == DatasheetFact.model_validate(ratio.model_dump(mode="json"))
+
+
+def _cited_reasons(text: str, *facts: DatasheetFact) -> tuple[str, ...]:
+    section = DatasheetSection(
+        key="composition",
+        title="Composition",
+        sentences=(DatasheetSentence(text=text, fact_ids=tuple(fact.id for fact in facts)),),
+    )
+    result = validate_sections((section,), facts, "zh")
+    return tuple(reason for item in result.dropped_sentences for reason in item.reasons)
+
+
+@pytest.mark.parametrize(
+    ("text", "reasons"),
+    [
+        ("质量总分为87.5分\uff0c版本创建时间为2026-10-27T21:26:46.777104+00:00。", ()),
+        ("质量总分为87.5分\uff0c版本创建于2026-10-27 21:26。", ()),
+        ("质量总分为87.5分\uff0c版本创建于10月27日。", ()),
+        ("质量总分为27\uff0c版本创建于2026-10-27。", ("unsupported_number",)),
+        ("质量总分为21\uff0c版本创建于2026-10-27。", ("unsupported_number",)),
+        ("质量总分为46\uff0c版本创建于2026-10-27。", ("unsupported_number",)),
+        ("质量总分为87.5分\uff0c版本创建于10月21日。", ("unsupported_number",)),
+        ("质量总分为87.5分\uff0c版本创建于2026-10-27 21:46。", ("unsupported_date",)),
+        ("质量总分为87.5分\uff0c版本创建于2026-10-27 22:26。", ("unsupported_date",)),
+        (
+            "质量总分为87.5分\uff0c版本创建于2026-10-27T21:26:46.999999+00:00。",
+            ("unsupported_date",),
+        ),
+    ],
+)
+def test_date_and_clock_parts_are_never_loose_numbers(text: str, reasons: tuple[str, ...]) -> None:
+    """A cited timestamp supports its whole date and clock, not a bare day, hour or second."""
+    score = _fact("quality.total", 87.5)
+    created = _fact("version.created_at", "2026-10-27T21:26:46.777104+00:00").model_copy(
+        update={"id": "f2"}
+    )
+    assert _cited_reasons(text, score, created) == reasons

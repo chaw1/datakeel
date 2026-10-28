@@ -55,8 +55,8 @@ _NAMED_DATE = re.compile(r"\b(" + _MONTH_PATTERN + r")\.?\s+(\d{1,2}),?\s+(\d{4}
 _DAY_FIRST_DATE = re.compile(
     r"\b(\d{1,2})\s+(" + _MONTH_PATTERN + r")\.?\s+(\d{4})\b", re.IGNORECASE
 )
-# A timestamp's clock follows its date directly, as in 2026-10-27T15:55:01.
-_TIME = re.compile(r"(?<!\d)(\d{1,2}):(\d{2})(?::(\d{2}))?(?!\d)")
+# A clock is compared whole, like a date, as in 2026-10-27T15:55:01.562095.
+_CLOCK = re.compile(r"(?<!\d)(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(?!\d)")
 _LATIN = re.compile(r"[^\W\d_][\w'\u2019-]*", re.UNICODE)
 _HAN = re.compile(r"[\u3400-\u9fff]+")
 
@@ -97,15 +97,33 @@ def _named_date(match: re.Match[str], *, day_first: bool) -> str:
         return match.group()
 
 
+def _clock_prefixes(match: re.Match[str]) -> tuple[str, ...]:
+    # A recorded clock may be stated to the minute or second, never with other parts.
+    hour, minute, second, fraction = match.groups()
+    clock = f"T{int(hour)}:{int(minute)}"
+    values = [clock]
+    if second is not None:
+        values.append(clock := f"{clock}:{int(second)}")
+    if fraction is not None:
+        values.append(f"{clock}.{fraction}")
+    return tuple(values)
+
+
 def _dates(text: str) -> set[str]:
     values = {_date(match) for match in _DATE.finditer(text)}
     values.update(_named_date(match, day_first=False) for match in _NAMED_DATE.finditer(text))
     values.update(_named_date(match, day_first=True) for match in _DAY_FIRST_DATE.finditer(text))
+    values.update(value for match in _CLOCK.finditer(text) for value in _clock_prefixes(match))
     return values
 
 
 def _erase_dates(text: str) -> str:
     return _DAY_FIRST_DATE.sub(" ", _NAMED_DATE.sub(" ", _DATE.sub(" ", text)))
+
+
+def _loose_numbers(text: str) -> str:
+    # Calendar days and clocks are checked whole above; their parts are not loose numbers.
+    return _CLOCK.sub(" ", _erase_dates(text))
 
 
 _MEASURED = {
@@ -137,9 +155,9 @@ def fact_readings(fact: DatasheetFact) -> frozenset[Reading]:
             readings.add((Decimal(str(value)), measured))
         elif isinstance(value, str):
             text = normalized(value)
-            for match in (*_DATE.finditer(text), *_TIME.finditer(text)):
+            for match in _DATE.finditer(text):
                 readings.update((Decimal(part), "date") for part in match.groups() if part)
-            for item, unit in text_readings(_erase_dates(text)):
+            for item, unit in text_readings(_loose_numbers(text)):
                 readings.add((item, unit if measured is None or unit == "percent" else measured))
         elif isinstance(value, dict):
             for key, item in value.items():
@@ -154,7 +172,7 @@ def fact_readings(fact: DatasheetFact) -> frozenset[Reading]:
 
 
 def _unsupported_numbers(text: str, evidence: frozenset[Reading]) -> bool:
-    return not all(supported(item, evidence) for item in text_readings(_erase_dates(text)))
+    return not all(supported(item, evidence) for item in text_readings(_loose_numbers(text)))
 
 
 def numeric_issues(text: str, facts: tuple[DatasheetFact, ...]) -> tuple[str, ...]:
