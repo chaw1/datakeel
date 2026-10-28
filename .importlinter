@@ -15,7 +15,6 @@ ignore_imports =
 # Training reads and exports adapt verified version facts; similarity reuses local hashing.
     datakeel.storage.training_store -> datakeel.training.leakage
     datakeel.storage.training_store -> datakeel.training.splitting
-    datakeel.storage.training_inputs -> datakeel.training.hashes
     datakeel.storage.training_inputs -> datakeel.operators.evidence.image_phash
     datakeel.storage.training_inputs -> datakeel.operators.image.helpers
     datakeel.training.leakage -> datakeel.operators.evidence.near_duplicate_hashes
