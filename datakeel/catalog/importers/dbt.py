@@ -24,6 +24,7 @@ from datakeel.catalog.importers.dbt_objects import (
     resource_metadata,
     resource_table,
 )
+from datakeel.catalog.importers.dbt_runs import run_outcome, run_record, run_results
 from datakeel.catalog.importers.dbt_semantics import metric_drafts
 from datakeel.catalog.importers.helpers import contains, metadata_object
 from datakeel.catalog.importers.models import SqlDefinition
@@ -78,22 +79,6 @@ def _collection(document: JsonDocument, name: str) -> dict[str, JsonDocument]:
     return {key: stable_resource(JsonDocument.model_validate(item)) for key, item in value.items()}
 
 
-def _results(document: JsonDocument | None) -> dict[str, JsonDocument]:
-    if document is None:
-        return {}
-    values = document.root.get("results", [])
-    if not isinstance(values, list):
-        msg = "dbt run_results.results must be an array"
-        raise ValidationError(msg)
-    result: dict[str, JsonDocument] = {}
-    for value in values:
-        if not isinstance(value, dict) or not isinstance(value.get("unique_id"), str):
-            msg = "dbt run result must have a unique_id"
-            raise ValidationError(msg)
-        result[str(value["unique_id"])] = JsonDocument(value)
-    return result
-
-
 def _tests_by_parent(manifest: DbtManifest) -> dict[str, list[DbtNode | DbtUnitTest]]:
     index: dict[str, list[DbtNode | DbtUnitTest]] = {}
     for test in (*manifest.nodes.values(), *manifest.unit_tests.values()):
@@ -116,7 +101,7 @@ def _evidence(
             "definition": raw_nodes[test.unique_id].root,
         }
         if test.unique_id in results:
-            evidence["result"] = results[test.unique_id].root
+            evidence["result"] = run_outcome(results[test.unique_id]).root
         tests.append(evidence)
     code = node.compiled_code or node.compiled_sql
     details: dict[str, JsonValue] = {
@@ -128,7 +113,7 @@ def _evidence(
         "materialized": node.config.materialized,
     }
     if node.unique_id in results:
-        details["run_result"] = results[node.unique_id].root
+        details["run_result"] = run_outcome(results[node.unique_id]).root
     return JsonDocument(details)
 
 
@@ -166,7 +151,7 @@ def _resource_links(
 def _reflect(request: DbtImportRequest, manifest: DbtManifest) -> MetadataImportBatch:
     catalog = DbtCatalog.model_validate(request.catalog.root if request.catalog else {})
     reflected = {**catalog.nodes, **catalog.sources}
-    results = _results(request.run_results)
+    results = run_results(request.run_results)
     raw_nodes = {
         **_collection(request.manifest, "nodes"),
         **_collection(request.manifest, "unit_tests"),
@@ -215,7 +200,11 @@ def _reflect(request: DbtImportRequest, manifest: DbtManifest) -> MetadataImport
     links.extend(_resource_links(nodes, resources))
     snapshot = _owned_snapshot(request.source_id, objects, links)
     derived = derive_sql(snapshot, tuple(sql))
-    return MetadataImportBatch(snapshot=derived.snapshot, parse_failures=derived.failures)
+    return MetadataImportBatch(
+        snapshot=derived.snapshot,
+        parse_failures=derived.failures,
+        run_record=run_record(request.source_id, request.run_results, results),
+    )
 
 
 def _owned_snapshot(

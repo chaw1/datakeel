@@ -18,6 +18,8 @@ uv run datakeel import dbt \
 
 models、sources、seeds、snapshots 导入为表；列、描述、`meta.owner` 或 `config.meta.owner`、标签保留在目录中。`depends_on` 生成表级血缘，编译后的 SQL 经既有解析器推导列级血缘。SQL 解析失败逐条写入导入摘要，不会冒充成功推导。测试定义及最近结果作为对象的质量证据保存，exposures 作为下游消费者。
 
+对象上的运行结果只保留状态、失败数，以及非成功时的消息；耗时、线程、适配器回执（如行数、查询 ID）等每次运行都会变的字段，连同 `invocation_id` 和 `generated_at`，存为单独的运行记录（`DBT_RUN` 事件，按 `invocation_id` 去重），不算对象变更。项目和数据都没变时重跑 dbt 再导入，摘要为全部未变；测试由通过变为失败、失败数变化仍算变更。
+
 负责人依次取资源的 `meta.owner`、`config.meta.owner`，来源表再回退到 source 级 `meta.owner`（dbt 1.6/1.7 写在 `source_meta`）；exposure 取 `owner.name` 或 `owner.email`。ephemeral 模型没有物理表，仍按 dbt 记录的 schema 和模型名登记为目录节点，`materialized` 标为 `ephemeral`，以保持表级血缘连续；引用它的模型在编译 SQL 中已内联 CTE，列级血缘直接指向物理来源。SQL 解析方言取自 `metadata.adapter_type`（`sqlserver`、`synapse` 映射为 T-SQL，`glue` 映射为 Spark，未知适配器用通用 SQL）。
 
 `--source-id` 必须与已有数据库导入使用的 ID 一致，并代表一个物理数据库范围；内部对象标识为 `source/schema/table`，使用 relation 的 schema 和表名匹配同一张表。同一来源内若出现不同数据库中同 schema、同表名的冲突，导入会明确拒绝，需为数据库分别指定来源 ID。dbt 的 `unique_id` 用于识别同一来源中的对象，不能用可变显示名替代。目录对象的集成元数据保存原始身份、负责人、描述、标签、运行及质量证据；Web 的“集成元数据”区域可直接查看。

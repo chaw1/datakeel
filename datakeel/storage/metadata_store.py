@@ -12,7 +12,7 @@ from datakeel.core.metadata_imports import MetadataImportBatch, MetadataImportRe
 from datakeel.core.models import JsonDocument
 from datakeel.storage.catalog_store import lock_catalog, publish_snapshot_in_session
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
+from datakeel.storage.events import all_events, append_event
 
 
 def _deleted(item: CatalogObject) -> bool:
@@ -83,6 +83,8 @@ def publish_metadata_in_session(
         for item in incoming.objects
     )
     result = publish_snapshot_in_session(session, retained, actor=actor)
+    if batch.run_record is not None:
+        append_event(session, batch.run_record)
     return MetadataImportReport.model_validate(
         {
             **result.model_dump(exclude={"failed_sql_count"}),

@@ -9,7 +9,7 @@ from pydantic import Field
 
 from datakeel.core.catalog_models import CatalogSnapshot, ImportReport, SqlFailure
 from datakeel.core.metric_models import MetricDefinition
-from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.core.models import BoundaryModel, JsonDocument, LineageEvent
 
 
 class PhysicalRelation(BoundaryModel):
@@ -62,10 +62,15 @@ class AirflowSource(BoundaryModel):
 
 
 class MetadataImportBatch(BoundaryModel):
-    """Return adapter snapshots and SQL diagnostics before starting a transaction."""
+    """Return adapter snapshots and SQL diagnostics before starting a transaction.
+
+    A run record keeps per-invocation observations (timings, adapter receipts) as
+    its own idempotent fact, so they never count as catalog object changes.
+    """
 
     snapshot: CatalogSnapshot
     parse_failures: tuple[SqlFailure, ...] = ()
+    run_record: LineageEvent | None = None
 
 
 class MetadataImportReport(ImportReport):
