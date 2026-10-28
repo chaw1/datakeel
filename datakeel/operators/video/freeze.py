@@ -18,6 +18,8 @@ from typing import TYPE_CHECKING, Protocol
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
+from datakeel.operators.video.analysis import THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -31,6 +33,8 @@ _ISOLATION = 4.0
 _IDENTICAL = 0.005
 _SETTLE = 0.1
 _QUIET_WINDOW = 9
+# Largest keyframe re-encoding step, as a share of the frame's luma deviation.
+_REENCODING = 0.05
 
 
 class FreezeLimits(Protocol):
@@ -83,12 +87,17 @@ def held_frames(
     if count < _MIN_FRAMES:
         empty = np.zeros(count, dtype=np.bool_)
         return empty, empty
-    diffuse = ~_localized(analysis.peak, change, limits) & (change <= limits.freeze_difference)
+    spread = ~_localized(analysis.peak, change, limits)
+    diffuse = spread & (change <= limits.freeze_difference)
     strict = diffuse & _quiet(change, limits)
     neighbours = np.zeros(count, dtype=np.float64)
     neighbours[1:-1] = np.maximum(change[:-2], change[2:])
+    # Re-encoding noise is a few percent of the picture's own contrast; a cut to a
+    # different picture changes pixels by a large share of it.
+    reencoded = change <= np.maximum(limits.freeze_difference, _REENCODING * analysis.deviation)
     blip = (
-        diffuse
+        spread
+        & reencoded
         & (np.abs(shift) <= change / 2)
         & (change > _ISOLATION * neighbours)
         & np.concatenate(([False], strict[:-2] & strict[2:], [False]))
@@ -102,13 +111,19 @@ def held_frames(
 def _same_picture(
     anchor: NDArray[np.float32], frame: NDArray[np.float32], limits: FreezeLimits
 ) -> bool:
-    difference = np.abs(frame - anchor)
+    """Compare thumbnails on the 16x9 block grid that ``freeze_local_difference`` uses."""
+    difference = np.abs(_blocks(frame) - _blocks(anchor))
     spread = float(difference.mean())
     if spread > limits.freeze_difference:
         return False
     return float(difference.max()) <= max(
         limits.freeze_local_difference, limits.freeze_locality * spread
     )
+
+
+def _blocks(luma: NDArray[np.float32]) -> NDArray[np.float32]:
+    rows, columns = THUMBNAIL_HEIGHT // 2, THUMBNAIL_WIDTH // 2
+    return luma.reshape(rows, 2, columns, 2).mean(axis=(1, 3))
 
 
 def frozen_runs(
