@@ -6,6 +6,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
+from fastapi.responses import FileResponse
 
 from datakeel.actions import service
 from datakeel.actions.budget import BudgetRequest, requested_context
@@ -14,6 +15,7 @@ from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import JsonDocument
+from datakeel.storage.training_download import completed_export
 
 router = APIRouter(prefix="/api", tags=["actions"])
 
@@ -40,6 +42,13 @@ def pending_approvals(db: DatabaseDependency, request: Request) -> list[ActionPl
 def action_plan(plan_id: str, db: DatabaseDependency, request: Request) -> ActionPlan:
     """Read the server-owned frozen plan and its current lifecycle status."""
     return service.get_plan(db, plan_id, access=_read_access(request))
+
+
+@router.get("/actions/{plan_id}/export")
+def download_export(plan_id: str, db: DatabaseDependency, request: Request) -> FileResponse:
+    """Download a completed export while rechecking current source export grants."""
+    path = completed_export(db, plan_id, access=_read_access(request))
+    return FileResponse(path, filename=path.name)
 
 
 @router.post("/actions/{action_type}/prepare")

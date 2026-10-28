@@ -1,0 +1,50 @@
+id: 47-training-leakage
+description: Detect a planted external train/val image duplicate from actual frozen content.
+fixture_kind: training
+turns:
+  - input: 这个版本有没有跨集合泄漏？
+    script:
+      - tool_calls:
+          - name: tool_search
+            arguments: {query: training_leakage}
+            id: leakage-discover
+      - tool_calls:
+          - name: training_leakage
+            arguments:
+              dataset_id: '{{dataset_id}}'
+              version_id: '{{version_id}}'
+            id: leakage-read
+      - content: The external train and val splits contain a duplicate image. Review the measured sample pair and distance.
+expect:
+  tool_sequence: [tool_search, training_leakage]
+  tool_results:
+    - name: training_leakage
+      content_schema:
+        type: object
+        required: [data]
+        properties:
+          data:
+            type: object
+            required: [version_id, sample_count, pairs]
+            properties:
+              version_id: {const: '{{version_id}}'}
+              sample_count: {const: 100}
+              pairs:
+                type: array
+                minItems: 2
+                maxItems: 2
+                items:
+                  type: object
+                  required: [kind, left_id, right_id, left_split, right_split, distance, detail]
+                  properties:
+                    kind: {enum: [exact, image]}
+                    distance: {const: 0}
+                    detail: {type: string, minLength: 1}
+                contains:
+                  type: object
+                  required: [kind]
+                  properties:
+                    kind: {const: exact}
+  answer_contains: [duplicate image, sample pair, distance]
+  file_count: 100
+  max_turns: 3

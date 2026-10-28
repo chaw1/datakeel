@@ -99,6 +99,7 @@ class GoldenCase(BoundaryModel):
         "standards",
         "quality",
         "annotation_qa",
+        "training",
     ] = "legacy"
     fixture_reviewed: bool = False
     config: ConversationCreate = Field(default_factory=ConversationCreate)

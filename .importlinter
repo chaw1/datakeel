@@ -8,10 +8,23 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.training | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Delivery services verify portable frozen release facts without importing API code.
 ignore_imports =
+# Training reads and exports adapt verified version facts; similarity reuses local hashing.
+    datakeel.storage.training_store -> datakeel.training.leakage
+    datakeel.storage.training_store -> datakeel.training.splitting
+    datakeel.storage.training_inputs -> datakeel.training.hashes
+    datakeel.storage.training_inputs -> datakeel.operators.evidence.image_phash
+    datakeel.storage.training_inputs -> datakeel.operators.image.helpers
+    datakeel.training.leakage -> datakeel.operators.evidence.near_duplicate_hashes
+    datakeel.ontology.training_functions -> datakeel.storage.database
+    datakeel.ontology.training_functions -> datakeel.storage.dataset_service
+    datakeel.ontology.training_functions -> datakeel.storage.training_store
+    datakeel.storage.training_export -> datakeel.actions.parameters
+    datakeel.storage.action_export -> datakeel.training.export
+    datakeel.storage.training_import -> datakeel.training.importers
     datakeel.storage.delivery_service -> datakeel.delivery.manifest
     datakeel.storage.delivery_service -> datakeel.delivery.reconcile
     datakeel.storage.release_actions -> datakeel.actions.models

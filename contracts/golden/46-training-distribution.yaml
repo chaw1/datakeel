@@ -1,0 +1,53 @@
+id: 46-training-distribution
+description: Preview actual balanced class counts with a seeded 8:1:1 split without saving.
+fixture_kind: training
+turns:
+  - input: 这个版本按8:1:1切完各类分布怎样？
+    script:
+      - tool_calls:
+          - name: tool_search
+            arguments: {query: training_distribution}
+            id: training-discover
+      - tool_calls:
+          - name: training_distribution
+            arguments:
+              dataset_id: '{{dataset_id}}'
+              version_id: '{{version_id}}'
+            id: training-distribution
+      - content: The measured class distribution is available for train, val and test. This preview saves no split.
+expect:
+  tool_sequence: [tool_search, training_distribution]
+  tool_results:
+    - name: training_distribution
+      content_schema:
+        type: object
+        required: [data]
+        properties:
+          data:
+            type: object
+            required: [version_id, distributions, members]
+            properties:
+              version_id: {const: '{{version_id}}'}
+              members: {type: array, minItems: 100, maxItems: 100}
+              distributions:
+                type: array
+                minItems: 3
+                maxItems: 3
+                contains:
+                  type: object
+                  required: [split, count, labels]
+                  properties:
+                    split: {const: train}
+                    count: {const: 80}
+                    labels:
+                      type: array
+                      minItems: 2
+                      maxItems: 2
+                      items:
+                        type: object
+                        required: [label, count]
+                        properties:
+                          count: {const: 40}
+  answer_contains: [class distribution, train, val, test]
+  file_count: 100
+  max_turns: 3
