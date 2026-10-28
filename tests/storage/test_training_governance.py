@@ -9,7 +9,8 @@ import json
 from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import DBAPIError
 
 from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.service import approve_plan, execute_plan, prepare_action
@@ -131,6 +132,17 @@ def test_frozen_dry_run_rejects_changed_decision_ledger(db: Database, tmp_path: 
     with pytest.raises(ConflictError, match="ledger changed"):
         execute_plan(db, plan.id, ExecuteRequest(plan_digest=plan.plan_digest))
     assert len(list_versions(db, dataset)) == 1
+
+
+def test_saved_training_reports_cannot_be_edited_or_deleted(db: Database, tmp_path: Path) -> None:
+    """Version facts and signed previews stay immutable even through direct SQL."""
+    _, _, run = seed_training(db, tmp_path)
+    for statement in (
+        update(TrainingRunRow).where(TrainingRunRow.id == run.id).values(file_ids=[]),
+        delete(TrainingRunRow).where(TrainingRunRow.id == run.id),
+    ):
+        with db.session() as session, pytest.raises(DBAPIError, match="immutable"):
+            session.execute(statement)
 
 
 def test_report_facts_and_quality_share_exact_version_pinned_measurements(

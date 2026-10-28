@@ -34,6 +34,7 @@ def training_manifest(session: Session, params: CleanTrainingParams) -> FrozenMa
         )
     objects: dict[tuple[str, str], FrozenObject] = {}
     query = ObjectSet(dataset_id=row.dataset_id, limit=10000)
+    truncated = False
     for dataset_id, version_id, identifiers in selections:
         selected = evaluate_in_session(
             session,
@@ -44,6 +45,7 @@ def training_manifest(session: Session, params: CleanTrainingParams) -> FrozenMa
                 filters=[PropertyFilter(field="id", operator="in", value=list(identifiers))],
             ),
         )
+        truncated = truncated or selected.truncated
         for item in selected.objects:
             objects[(item.asset_ref.asset_id, item.asset_ref.version or "")] = item
     values = [objects[key] for key in sorted(objects)]
@@ -52,4 +54,5 @@ def training_manifest(session: Session, params: CleanTrainingParams) -> FrozenMa
         objects=values,
         total_bytes=sum(item.size for item in values),
         state_digest=content_digest([item.model_dump(mode="json") for item in values]),
+        truncated=truncated,
     )

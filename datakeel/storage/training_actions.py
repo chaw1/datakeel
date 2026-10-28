@@ -11,7 +11,15 @@ from sqlalchemy.orm import Session
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.training_parameters import CleanTrainingParams
 from datakeel.core.errors import ConflictError
-from datakeel.core.models import AssetRef, BoundaryModel, FileItem, LineageEvent, new_id, utcnow
+from datakeel.core.models import (
+    AssetRef,
+    BoundaryModel,
+    FileItem,
+    JsonDocument,
+    LineageEvent,
+    new_id,
+    utcnow,
+)
 from datakeel.core.training_governance import TrainingAnalysisRequest, TrainingGovernanceRun
 from datakeel.llm_data import analyze_sources, cleaned_filename
 from datakeel.storage.database import VersionRow
@@ -54,7 +62,11 @@ def training_state(session: Session, params: CleanTrainingParams) -> str:
     if session.get(TrainingCleanRow, row.id) is not None:
         msg = "Training dry run already produced a clean version"
         raise ConflictError(msg)
-    return content_digest(row.payload)
+    source = source_version(session, row.dataset_id, row.version_id)
+    values = JsonDocument.model_validate(
+        {"report": row.payload, "source_manifest": source.manifest}
+    )
+    return content_digest(values.root)
 
 
 def _cleaned_files(original: tuple[FileItem, ...], directory: Path) -> tuple[FileItem, ...]:
