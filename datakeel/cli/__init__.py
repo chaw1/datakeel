@@ -5,6 +5,7 @@
 
 import argparse
 import json
+from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
 
@@ -132,9 +133,19 @@ def main() -> None:
     _database_command(db, args)
 
 
+# Feature command groups that own their own dispatch over the initialized fact store.
+_MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
+    "timeseries-demo": timeseries_demo.dispatch,
+    "custom-operator": custom_operators.dispatch,
+}
+
+
 def _database_command(db: Database, args: argparse.Namespace) -> None:
     """Dispatch commands that share an initialized authoritative fact store."""
-    if args.command == "migrate":
+    handler = _MODULE_COMMANDS.get(args.command)
+    if handler is not None:
+        handler(db, args)
+    elif args.command == "migrate":
         Console().print("Database schema is current.")
     elif args.command == "worker":
         with suppress(KeyboardInterrupt):
@@ -151,10 +162,6 @@ def _database_command(db: Database, args: argparse.Namespace) -> None:
         rebuild_catalog(db, args.expected_hash)
     elif args.command == "ask":
         ask(db, args.question, args.reference_instant)
-    elif args.command == "timeseries-demo":
-        timeseries_demo.demo(db, args.output)
-    elif args.command == "custom-operator":
-        custom_operators.dispatch(db, args)
 
 
 def _evaluation_command(db: Database, args: argparse.Namespace) -> None:

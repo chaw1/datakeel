@@ -3,6 +3,7 @@
 
 """Import generated sensors and publish durable profiles through existing controlled actions."""
 
+import argparse
 from pathlib import Path
 
 from rich.console import Console
@@ -110,6 +111,11 @@ def demo(db: Database, output: Path | None = None) -> None:
     """Print durable identities for a one-command generated demonstration."""
     result = run_timeseries_demo(db, output or data_dir() / "sensor-demo")
     Console().print(result.model_dump_json(), markup=False, soft_wrap=True)
+
+
+def dispatch(db: Database, args: argparse.Namespace) -> None:
+    """Run the demonstration selected on the command line."""
+    demo(db, args.output)
 
 
 def register_parser(commands: CommandGroup) -> None:
