@@ -63,4 +63,37 @@ TRAINING_MUTATIONS = (
         case="tests/training/test_export.py::test_yolo_layout_and_normalized_boxes_roundtrip",
         runner="pytest",
     ),
+    Mutation(
+        name="training-multilabel-refinement-omitted",
+        path="training/splitting.py",
+        before="return refine_assignments(samples, groups, result, request)",
+        after="return result",
+        case=(
+            "tests/training/test_refinement.py::"
+            "test_random_multilabel_overlap_keeps_capacity_and_category_ratios[25]"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-flat-image-color-confirmation-omitted",
+        path="training/leakage.py",
+        before='if kind == "image" and not _image_confirmation(',
+        after="if False and not _image_confirmation(",
+        case=(
+            "tests/storage/test_training_store.py::"
+            "test_flat_color_dhash_collision_requires_color_confirmation"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-text-line-endings-normalized",
+        path="training/export_common.py",
+        before='return content.decode("utf-8")',
+        after='return content.decode("utf-8").replace(chr(13), "")',
+        case=(
+            "tests/training/test_export.py::"
+            "test_text_jsonl_preserves_crlf_and_carriage_return_character_positions"
+        ),
+        runner="pytest",
+    ),
 )
