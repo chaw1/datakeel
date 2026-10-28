@@ -19,6 +19,7 @@ from scripts.metric_mutations import METRIC_MUTATIONS
 from scripts.orchestration_mutations import ORCHESTRATION_MUTATIONS
 from scripts.pii_mutations import PII_MUTATIONS
 from scripts.release_mutations import RELEASE_MUTATIONS
+from scripts.sandbox_mutations import SANDBOX_MUTATIONS
 from scripts.standard_mutations import LEXICAL_RULE_MUTATIONS, STANDARD_MUTATIONS
 from scripts.table_mutations import TABLE_MUTATIONS
 from scripts.timeseries_mutations import TIMESERIES_MUTATIONS
@@ -48,4 +49,5 @@ FEATURE_MUTATIONS = (
     *PII_MUTATIONS,
     *TRAINING_MUTATIONS,
     *TRAINING_GOVERNANCE_MUTATIONS,
+    *SANDBOX_MUTATIONS,
 )
