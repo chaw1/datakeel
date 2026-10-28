@@ -24,9 +24,7 @@ it("renders a class named total without colliding with the sample total row", ()
     expect(
       screen.getByRole("rowheader", { name: "All samples" }),
     ).toBeVisible();
-    expect(
-      screen.getByRole("rowheader", { name: "total" }),
-    ).toBeVisible();
+    expect(screen.getByRole("rowheader", { name: "total" })).toBeVisible();
     expect(error).not.toHaveBeenCalled();
   } finally {
     error.mockRestore();
