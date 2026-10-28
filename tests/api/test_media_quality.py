@@ -77,6 +77,34 @@ def test_media_worker_publishes_cleaned_scan_preview_and_original_evidence(
     assert any(ref.asset_id == preview["artifact_id"] for event in events for ref in event.outputs)
 
 
+def test_media_worker_finishes_a_batch_with_one_broken_scan_as_partial(
+    db: Database, tmp_path: Path
+) -> None:
+    """A truncated scan is recorded with its reason while the good scan is cleaned."""
+    broken = tmp_path / "broken.ply"
+    broken.write_bytes(
+        b"ply\nformat ascii 1.0\nelement vertex 9\nproperty float x\nend_header\n1 2\n"
+    )
+    dataset = import_paths(db, "Generated scans", [_scan(tmp_path), broken])
+    DatabaseQueue(db).submit(dataset.id, "media", media_pipeline(clean=True))
+    run_worker(db, once=True)
+    versions = list_versions(db, dataset.id)
+    assert len(versions) == 2
+    files = {file.filename: file for file in versions[-1].manifest}
+    assert files["scan.ply"].metadata["pointcloud_probe"]["invalid_count"] == 0
+    assert "pointcloud_error" not in files["scan.ply"].metadata
+    failure = files["broken.ply"].metadata["pointcloud_error"]
+    assert failure["operator"] == "pointcloud.probe"
+    assert "Malformed or truncated" in failure["reason"]
+    assert (
+        "broken.ply: pointcloud.probe could not process the file" in get_report(db, dataset.id).body
+    )
+    events = [event for event in get_graph(db).events if event.operator.startswith("pointcloud.")]
+    assert len(events) == 6
+    assert all(event.quality["partial"] is True for event in events)
+    assert all(event.quality["failed_count"] == 1 for event in events)
+
+
 def test_preview_cannot_escape_dataset_or_version_scope(db: Database, tmp_path: Path) -> None:
     """Preview resolution never trusts a caller-supplied path or another dataset's version."""
     dataset = import_paths(db, "Generated scan", [_scan(tmp_path)])

@@ -28,6 +28,8 @@ def test_generated_media_is_deterministic_and_contains_distinct_defects(tmp_path
     assert np.all(np.isfinite(normal))
     np.testing.assert_allclose(clouds["room-millimeters"], normal * 1000)
     assert np.ptp(clouds["room-outliers"], axis=0).min() > 300
+    floating = np.linalg.norm(clouds["room-outliers"] - (0, 0, 1.5), axis=1) < 0.3
+    assert floating.sum() == 40
     assert np.count_nonzero(~np.isfinite(clouds["room-invalid"]).all(axis=1)) > 1000
     assert len(clouds["room-sparse"]) < len(normal) / 50
     with Image.open(tmp_path / "first" / "image-low-resolution.png") as small:

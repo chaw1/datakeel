@@ -53,9 +53,9 @@ class MediaDemoResult(BoundaryModel):
 
 
 def _room_points() -> "NDArray[np.float32]":
-    axis_x = np.linspace(-4, 4, 64, dtype=np.float32)
-    axis_y = np.linspace(-3, 3, 48, dtype=np.float32)
-    axis_z = np.linspace(0, 3, 24, dtype=np.float32)
+    axis_x = np.linspace(-4, 4, 128, dtype=np.float32)
+    axis_y = np.linspace(-3, 3, 96, dtype=np.float32)
+    axis_z = np.linspace(0, 3, 48, dtype=np.float32)
     x, y = np.meshgrid(axis_x, axis_y)
     wall_y, wall_z = np.meshgrid(axis_y, axis_z)
     return np.concatenate(
@@ -86,7 +86,9 @@ def _pointclouds(directory: Path) -> list[Path]:
     invalid = room.copy()
     invalid[::4, 0] = np.nan
     invalid[1, 1] = np.inf
-    outliers = np.random.default_rng(18).uniform(-200, 200, (600, 3)).astype(np.float32)
+    strays = np.random.default_rng(18).uniform(-200, 200, (600, 3))
+    floating = np.random.default_rng(20).normal((0, 0, 1.5), 0.05, (40, 3))
+    outliers = np.concatenate([strays, floating]).astype(np.float32)
     cases = [
         ("room-normal.ply", room, "binary_little_endian"),
         ("room-millimeters.pcd", room * 1000, "binary"),
@@ -162,7 +164,9 @@ def run_demo(output: Path) -> MediaDemoResult:
     try:
         db.migrate()
         dataset = import_paths(db, "Indoor scan and image quality", paths)
-        task_id = DatabaseQueue(db).submit(dataset.id, "generated-media-v1", media_pipeline())
+        task_id = DatabaseQueue(db).submit(
+            dataset.id, "generated-media-v1", media_pipeline(sensor="terrestrial")
+        )
         run_worker(db, once=True)
         task = query_task(db, task_id)
         if task.state != "COMPLETED":
