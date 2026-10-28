@@ -103,8 +103,10 @@ shard so input partitioning cannot hide matches.
 
 Every video is decoded once, multithreaded, into per-frame statistics and 32x18
 thumbnails that invalid-frame detection and deduplication share; frames are streamed
-and reduced, never held in memory at full size. Clips seek on the input side, so each
-decodes from its nearest keyframe instead of from the start of the file. Command
+and reduced, never held in memory at full size. Clips enter the file just before the
+last keyframe at or before their start (read from the packet flags) and drop earlier
+frames exactly, so each decodes from that keyframe instead of from the start of the
+file, also in MPEG-TS, which has no seek index. Command
 time limits scale with the recording: `base + ratio x seconds x max(1, pixels /
 1080p)`, capped. Configure with `DATAKEEL_MEDIA_TIMEOUT_BASE_SECONDS` (300),
 `DATAKEEL_MEDIA_TIMEOUT_RATIO` (2), `DATAKEEL_MEDIA_TIMEOUT_MAX_SECONDS` (21600) and
