@@ -27,8 +27,14 @@ def _workflows() -> list[WorkflowDefinition]:
     return list_workflows()
 
 
-def route_message(db: Database, conversation: Conversation, provider: Provider) -> RouteDecision:
-    """Classify only ambiguous messages and fail open to the normal Agent response."""
+def route_message(
+    db: Database,
+    conversation: Conversation,
+    provider: Provider,
+    *,
+    offline_classifier: bool = False,
+) -> RouteDecision:
+    """Classify ambiguous or partial matches and preserve a checked, nonexecuting suggestion."""
     text = next(
         message.content for message in reversed(conversation.messages) if message.role == "user"
     )
@@ -38,11 +44,12 @@ def route_message(db: Database, conversation: Conversation, provider: Provider) 
     )
     if decision.branch != "classifier":
         return decision
+    decision = decision.model_copy(update={"classifier_used": True})
     selected = select_model(conversation.config, TierState(), load_config())
     request = classification_request(selected.model, text, decision, workflows)
     classifier = (
         OfflineClassifier(decision, workflows)
-        if conversation.config.provider == "fake"
+        if conversation.config.provider == "fake" or offline_classifier
         else provider
     )
     account = ModelAccount(
@@ -64,7 +71,8 @@ def route_message(db: Database, conversation: Conversation, provider: Provider) 
                 "reason": f"classifier_unavailable:{type(error).__name__}",
             }
         )
-    return classified_route(decision, response.content.strip())
+    selection = response.content.strip()
+    return classified_route(decision, None if selection == "NONE" else selection, text, workflows)
 
 
 def model_decisions(

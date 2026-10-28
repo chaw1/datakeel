@@ -23,18 +23,46 @@ class WorkflowInput(BoundaryModel):
     default: JsonValue = None
 
 
+class WorkflowConcepts(BoundaryModel):
+    """Declare a workflow's objects, requesting verbs and required follow-ups, with paraphrases.
+
+    ``outcomes`` lists what a request must also ask for when the workflow bundles more than
+    one action, so that a request for the first action alone stays a single step.
+    ``exclusions`` lists wording that puts a request outside the workflow (for example one
+    selected item for a bulk cleanup); it blocks selection and verification but keeps the
+    rule score, so the classifier is still consulted and can abstain.
+    """
+
+    entities: list[str] = Field(default_factory=list[str])
+    actions: list[str] = Field(default_factory=list[str])
+    outcomes: list[str] = Field(default_factory=list[str])
+    exclusions: list[str] = Field(default_factory=list[str])
+
+    @field_validator("entities", "actions", "outcomes", "exclusions")
+    @classmethod
+    def validate_alternatives(cls, terms: list[str]) -> list[str]:
+        """Require every declared phrasing to contain visible text."""
+        if any(not term.strip() for term in terms):
+            msg = "concept alternatives must not be empty"
+            raise ValueError(msg)
+        return terms
+
+
 class WorkflowTriggers(BoundaryModel):
     """Declare multilingual routing vocabulary and auditable score thresholds."""
 
     keywords: list[list[str]] = Field(min_length=1)
+    concepts: WorkflowConcepts | None = Field(default=None, exclude_if=lambda value: value is None)
     classification_keywords: list[str] = Field(default_factory=list[str])
+    classification_groups: list[list[str]] = Field(default_factory=list[list[str]])
+    verification_keywords: list[str] = Field(default_factory=list[str])
     excluded_keywords: list[str] = Field(default_factory=list[str])
     excluded_prefixes: list[str] = Field(default_factory=list[str])
     excluded_groups: list[list[str]] = Field(default_factory=list[list[str]])
     threshold: float = Field(default=1, gt=0)
     margin: float = Field(default=1, gt=0)
 
-    @field_validator("keywords", "excluded_groups")
+    @field_validator("keywords", "classification_groups", "excluded_groups")
     @classmethod
     def validate_groups(cls, groups: list[list[str]]) -> list[list[str]]:
         """Reject empty concepts so every declared conjunction requires real vocabulary."""
@@ -45,7 +73,9 @@ class WorkflowTriggers(BoundaryModel):
             cls.validate_terms(group)
         return groups
 
-    @field_validator("classification_keywords", "excluded_keywords", "excluded_prefixes")
+    @field_validator(
+        "classification_keywords", "verification_keywords", "excluded_keywords", "excluded_prefixes"
+    )
     @classmethod
     def validate_terms(cls, terms: list[str]) -> list[str]:
         """Require a nonempty literal on both sides of every synonym separator."""

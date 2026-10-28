@@ -6,15 +6,17 @@
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.ask.access import answer_refs, query_refs
+from datakeel.ask.consumption import leftover_fragments
 from datakeel.ask.dimensions import parse_dimensions
 from datakeel.ask.knowledge_parser import metric_recognition, parse_knowledge_question
 from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
-from datakeel.ask.models import QueryContext
+from datakeel.ask.models import DimensionParse, Leftovers, QueryContext
 from datakeel.ask.parser import parse_question
 from datakeel.ask.profile import parse_profile_question, profile_answer
 from datakeel.ask.resolution import resolve_metric
 from datakeel.core.ask_models import (
     AskAnswer,
+    AskInterpretation,
     AskRequest,
     LineageReference,
     MetricResolution,
@@ -78,7 +80,9 @@ def _ask_data(db: Database, request: AskRequest, access: AccessContext) -> AskAn
     parsed = parse_question(request, context.layer)
     resolution = resolve_metric(parsed, resolved_metric_cards(snapshot), request.metric_id)
     if resolution.status != "resolved":
-        answer = _nonanswer(request, parsed, resolution)
+        answer = _nonanswer(request, parsed, resolution).model_copy(
+            update={"interpretation": _interpretation(parsed, resolution, DimensionParse())}
+        )
     else:
         answer = _answer(db, request, parsed, resolution, context, access)
         answer = related_knowledge(db, answer, snapshot, graph)
@@ -96,15 +100,15 @@ def _answer(
     access: AccessContext,
 ) -> AskAnswer:
     card = resolution.candidates[0]
-    dimensions = parse_dimensions(request.question, card, context.layer)
+    occupied = tuple((item.start, item.end) for item in parsed.matches if item.metric_id)
+    dimensions = parse_dimensions(request.question, card, context.layer, occupied)
     parsed = parsed.model_copy(update={"matches": parsed.matches + dimensions.matches})
-    if dimensions.issues:
-        refusal = MetricResolution(
-            status="clarification",
-            candidates=resolution.candidates,
-            message="请明确维度条件: " + "; ".join(dimensions.issues),
+    interpretation = _interpretation(parsed, resolution, dimensions)
+    refusal = _condition_refusal(resolution, dimensions, _leftovers(parsed, dimensions))
+    if refusal is not None:
+        return _nonanswer(request, parsed, refusal).model_copy(
+            update={"interpretation": interpretation}
         )
-        return _nonanswer(request, parsed, refusal)
     try:
         source = _source(context.snapshot, card)
         dialect = "postgres" if source.dialect in {"postgres", "postgresql"} else "sqlite"
@@ -126,7 +130,9 @@ def _answer(
             candidates=resolution.candidates,
             message=f"已登记指标暂时无法执行 ({type(exc).__name__})。",
         )
-        return _nonanswer(request, parsed, refusal)
+        return _nonanswer(request, parsed, refusal).model_copy(
+            update={"interpretation": interpretation}
+        )
     return AskAnswer(
         session_id=request.session_id or new_id(),
         question=request.question,
@@ -139,6 +145,62 @@ def _answer(
         time_range=parsed.time_range,
         matches=parsed.matches,
         lineage=LineageReference(asset_id=card.definition.id),
+        interpretation=interpretation,
+    )
+
+
+def _leftovers(parsed: ParsedQuestion, dimensions: DimensionParse) -> Leftovers:
+    spans = [(item.start, item.end) for item in parsed.matches]
+    times = tuple((item.start, item.end) for item in parsed.matches if item.match_kind == "time")
+    return leftover_fragments(parsed.question, [*spans, *dimensions.consumed], times)
+
+
+def _condition_refusal(
+    resolution: MetricResolution, dimensions: DimensionParse, leftovers: Leftovers
+) -> MetricResolution | None:
+    """Never execute when a temporal, filter or grouping fragment was not understood."""
+    if leftovers.times:
+        return MetricResolution(
+            status="unanswerable",
+            candidates=resolution.candidates,
+            message="无法可靠解析时间条件: 未理解「" + "」「".join(leftovers.times) + "」",
+        )
+    rankings = () if dimensions.group_by else leftovers.rankings
+    unsupported = [*leftovers.calculations, *rankings]
+    if unsupported:
+        return MetricResolution(
+            status="unanswerable",
+            candidates=resolution.candidates,
+            message="登记指标不支持所问的计算: 「" + "」「".join(unsupported) + "」",
+        )
+    issues = [*dimensions.issues, *(f"未理解「{item}」" for item in leftovers.conditions)]
+    if issues:
+        return MetricResolution(
+            status="clarification",
+            candidates=resolution.candidates,
+            message="请明确维度条件: " + "; ".join(issues),
+        )
+    return None
+
+
+def _interpretation(
+    parsed: ParsedQuestion, resolution: MetricResolution, dimensions: DimensionParse
+) -> AskInterpretation:
+    resolved = resolution.status == "resolved" and len(resolution.candidates) == 1
+    as_of = any(item.source.startswith("time:as_of") for item in parsed.matches)
+    leftovers = _leftovers(parsed, dimensions)
+    return AskInterpretation(
+        metric_id=resolution.candidates[0].definition.id if resolved else None,
+        time_range=parsed.time_range,
+        time_basis=None if parsed.time_range is None else "as_of" if as_of else "period",
+        slices=dimensions.slices,
+        group_by=dimensions.group_by,
+        unconsumed=(
+            *leftovers.times,
+            *leftovers.conditions,
+            *leftovers.calculations,
+            *leftovers.rankings,
+        ),
     )
 
 

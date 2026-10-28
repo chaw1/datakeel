@@ -49,6 +49,9 @@ class MetricDefinition(BoundaryModel):
 
     id: str = Field(min_length=1)
     name: str = Field(min_length=1)
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
     synonyms: list[str] = Field(default_factory=list)
     description: str
     owner: str = Field(min_length=1)
@@ -65,9 +68,27 @@ class DimensionDefinition(BoundaryModel):
 
     id: str = Field(min_length=1)
     name: str = Field(min_length=1)
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
     synonyms: list[str] = Field(default_factory=list)
     column: str
     values: list[str] = Field(default_factory=list)
+    value_synonyms: dict[str, list[str]] = Field(
+        default_factory=dict[str, list[str]], exclude_if=lambda value: not value
+    )
+
+    @model_validator(mode="after")
+    def registered_value_synonyms(self) -> Self:
+        """Allow aliases, in any language, only for values the dimension declares."""
+        unknown = sorted(set(self.value_synonyms) - set(self.values))
+        if unknown:
+            msg = f"Value synonyms reference undeclared values: {', '.join(unknown)}"
+            raise ValueError(msg)
+        if any(not alias.strip() for aliases in self.value_synonyms.values() for alias in aliases):
+            msg = "Value synonyms must be nonempty"
+            raise ValueError(msg)
+        return self
 
 
 class TermTarget(BoundaryModel):
@@ -81,8 +102,20 @@ class TermDefinition(BoundaryModel):
     """Map a business term and synonyms to a typed semantic target."""
 
     term: str = Field(min_length=1)
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
     synonyms: list[str] = Field(default_factory=list)
     means: TermTarget
+
+
+class OwnerDefinition(BoundaryModel):
+    """Add optional display metadata to an owner referenced by its original name."""
+
+    name: str = Field(min_length=1)
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
 
 
 class SemanticLayer(BoundaryModel):
@@ -91,12 +124,14 @@ class SemanticLayer(BoundaryModel):
     metrics: list[MetricDefinition] = Field(default_factory=list[MetricDefinition])
     dimensions: list[DimensionDefinition] = Field(default_factory=list[DimensionDefinition])
     terms: list[TermDefinition] = Field(default_factory=list[TermDefinition])
+    owners: list[OwnerDefinition] = Field(default_factory=list[OwnerDefinition])
 
 
 class MetricCard(BoundaryModel):
     """Expose a metric revision and explicit reference resolution failures."""
 
     definition: MetricDefinition
+    owner_english_name: str | None = Field(default=None, exclude_if=lambda value: value is None)
     status: Literal["resolved", "unresolved"] = "resolved"
     reasons: list[str] = Field(default_factory=list)
 

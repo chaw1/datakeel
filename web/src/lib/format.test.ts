@@ -1,6 +1,17 @@
 import { expect, it } from "vitest";
 
-import { date } from "./format";
+import { date, shortId } from "./format";
+
+it.each([
+  ["9c5d7314-80b0-46cc-a772-889c215ab263", "9c5d7314"],
+  ["9C5D7314-80B0-46CC-A772-889C215AB263", "9C5D7314"],
+  ["retail_revenue", "retail_revenue"],
+  ["source/main/orders", "source/main/orders"],
+  ["9c5d7314-not-a-uuid", "9c5d7314-not-a-uuid"],
+  ["0123456789abcdef0123456789abcdef", "0123456789abcdef0123456789abcdef"],
+])("shortens only complete UUID identities: %s", (value, expected) => {
+  expect(shortId(value)).toBe(expected);
+});
 
 it("keeps the same compact local calendar format in both interface languages", () => {
   const timestamp = "2026-10-22T12:00:00Z";

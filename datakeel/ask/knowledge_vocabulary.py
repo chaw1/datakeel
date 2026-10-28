@@ -154,6 +154,10 @@ IMPACT = (
     r"\b(?:affects?|affected|impacts?|impacted|influences?|causes?|breaks?|break|suffers?)\b"
 )
 IMPACT_PASSIVE = r"\b(?:affected|impacted)\s+by\b|受(?:到)?"
+DEPENDENCY_CONSEQUENCE = (
+    IMPACT + r"|会坏|无法(?:更新|生成)|不能(?:更新|生成)|失去(?:数据)?(?:来源|输入|供给)|"
+    r"\b(?:fail\w*|stop\s+(?:working|refreshing)|lose\w*\s+(?:(?:its|their)\s+)?(?:data\s+)?feed)\b"
+)
 CONSUMPTION = (
     rf"(?:{USAGE_ZH})|\b(?:uses?|used|using|consumes?|consuming|reads?|reading|"
     r"calls?|calling|depends?\s+on)\b"
@@ -179,7 +183,9 @@ EMPLOYMENT = (
 WORK_WORDS = r"工作|\bwork\b"
 CONDITION_WORDS = r"要是|如果|假如|假设|一旦|若|\bif\b"
 ABSENCE_WORDS = (
-    r"没了|没有|不存在|消失|停了|停用|停更|停止更新|不再更新|下线|删除|删掉|不可用|"
+    r"没了|没有|不存在|消失|停了|停用|停更|停掉|停供|断供|停止更新|"
+    r"不再(?:更新|供数|提供数据|可用)|下线|删除|删掉|不可用|"
+    r"\b(?:went|go(?:es)?|going|go)\s+away\b|"
     r"\b(?:disappear\w*|remove\w*|unavailable|stop\w*|vanish\w*|missing|gone|deleted|dropped)\b"
 )
 CAUSAL_INPUT = r"(?:因|由于)\s*§|\b(?:because\s+of|due\s+to)\s+§"
@@ -269,7 +275,8 @@ ZH_RECIPIENT_USAGE = (
 )
 
 ZH_TOPIC_USAGE = (
-    rf"§\s*[,\uff0c]?\s*(?:是\s*)?(?P<actor>(?:谁|哪|多少|几){ROLE_CLAUSE}?)"
+    rf"§\s*[,\uff0c]?\s*(?:目前|现在|还|都|是|有|\s)*"
+    rf"(?P<actor>(?:谁|哪|多少|几){ROLE_CLAUSE}?)"
     rf"(?P<usage>{TOPIC_USAGE_ZH})(?P<object>{ROLE_CLAUSE})"
 )
 ZH_ELIDED_OBJECT = r"\s*(?:了|过|着|呢|啊|呀|它|其)*\s*"

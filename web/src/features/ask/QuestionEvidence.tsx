@@ -11,6 +11,7 @@ import type {
 const kinds = {
   exact: "askMatchExact",
   synonym: "askMatchSynonym",
+  normalized: "askNormalized",
   prefix: "askMatchPrefix",
   dimension_value: "askMatchDimension",
   time: "askMatchTime",

@@ -23,7 +23,7 @@ export function MetricHistory({
   onChanged: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isComposing = useCompositionGuard();
   const pending = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -68,7 +68,9 @@ export function MetricHistory({
           <details>
             <summary>
               {t("version")} {card.definition.version} ·{" "}
-              {localizedCatalogName(card.definition.name, t)}
+              {locale === "en" && card.definition.english_name
+                ? card.definition.english_name
+                : localizedCatalogName(card.definition.name, t)}
             </summary>
             <pre>{JSON.stringify(card.definition, null, 2)}</pre>
           </details>

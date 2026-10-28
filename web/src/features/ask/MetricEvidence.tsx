@@ -1,9 +1,11 @@
 import { useI18n } from "../../i18n/useI18n";
 
+import { metricName, metricOwner } from "./metricLabels";
+
 import type { AskMetric } from "../../api/ask";
 
 export function MetricEvidence({ metric }: { metric: AskMetric }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const definition = metric.definition;
   return (
     <section className="ask-metric" aria-label={t("askMetric")}>
@@ -13,12 +15,12 @@ export function MetricEvidence({ metric }: { metric: AskMetric }) {
           {t("askVersion", { version: definition.version })}
         </span>
       </div>
-      <h2>{definition.name}</h2>
+      <h2>{metricName(metric, locale)}</h2>
       <p>{definition.description}</p>
       <dl className="ask-facts">
         <div>
           <dt>{t("askOwner")}</dt>
-          <dd>{definition.owner}</dd>
+          <dd>{metricOwner(metric, locale)}</dd>
         </div>
         <div>
           <dt>{t("askMeasure")}</dt>

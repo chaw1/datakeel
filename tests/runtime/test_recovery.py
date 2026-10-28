@@ -112,7 +112,8 @@ def _assert_recovered(
     results = Counter(item.tool_call_id for item in conversation.messages if item.role == "tool")
     assert results == {"discover-action": 1, "delete-selection": 1}
     traces = list_traces(db, request.conversation_id)
-    assert len(traces) == 3
+    assert [item.call_type for item in traces].count("conversation") == 3
+    assert [item.call_type for item in traces].count("intent_classifier") == 1
     assert all(
         sum(part.tokens for part in item.segments) == item.usage.input_tokens for item in traces
     )

@@ -26,6 +26,7 @@ def load_layer(path: Path) -> SemanticLayer:
         metrics=[metric for document in documents for metric in document.metrics],
         dimensions=[dimension for document in documents for dimension in document.dimensions],
         terms=[term for document in documents for term in document.terms],
+        owners=[owner for document in documents for owner in document.owners],
     )
     validate_unique(layer)
     return layer
@@ -37,6 +38,7 @@ def validate_unique(layer: SemanticLayer) -> None:
         ("metric", [item.id for item in layer.metrics]),
         ("dimension", [item.id for item in layer.dimensions]),
         ("term", [item.term for item in layer.terms]),
+        ("owner", [item.name for item in layer.owners]),
     ):
         if len(identities) != len(set(identities)):
             msg = f"Duplicate {kind} identity in semantic layer"

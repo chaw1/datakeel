@@ -50,7 +50,11 @@ export function MetricDetails({
                   card.status === "resolved" ? "catResolved" : "catUnresolved",
                 )}
               </span>
-              <h2>{localizedCatalogName(metric.name, t)}</h2>
+              <h2>
+                {locale === "en" && metric.english_name
+                  ? metric.english_name
+                  : localizedCatalogName(metric.name, t)}
+              </h2>
               <a
                 className="text-button"
                 href={objectHref({ kind: "metric", id: metricId })}
@@ -78,7 +82,14 @@ export function MetricDetails({
             </div>
             <div>
               <dt>{t("catOwner")}</dt>
-              <dd>{localizedObjectName("owner", metric.owner, locale)}</dd>
+              <dd>
+                {localizedObjectName(
+                  "owner",
+                  metric.owner,
+                  locale,
+                  card.owner_english_name,
+                )}
+              </dd>
             </div>
           </dl>
           <p>{metric.description}</p>

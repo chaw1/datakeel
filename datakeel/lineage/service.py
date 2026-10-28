@@ -77,6 +77,7 @@ def _project_catalog(
             projection,
             item.asset_ref.model_copy(update={"display_name": _catalog_name(item, names)}),
         )
+        projection.nodes[item.asset_ref.asset_id]["english_name"] = item.english_name
 
 
 def _catalog_name(item: CatalogObject, names: dict[str, str]) -> str:

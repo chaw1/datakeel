@@ -49,7 +49,11 @@ def read_objects(db: Database, query: CatalogQuery | None = None) -> CatalogPage
             (query.kind is None or item.asset_ref.asset_type == query.kind)
             and (query.source_id is None or item.source_id == query.source_id)
             and (query.parent_id is None or item.asset_ref.asset_id in children)
-            and (query.search is None or query.search.casefold() in item.name.casefold())
+            and (
+                query.search is None
+                or query.search.casefold() in item.name.casefold()
+                or query.search.casefold() in (item.english_name or "").casefold()
+            )
         )
     ]
     return CatalogPage(

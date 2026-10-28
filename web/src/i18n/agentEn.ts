@@ -85,6 +85,7 @@ export const agentEn = {
   tokenBudget: "{count} {count, plural, one {token} other {tokens}}",
   dailyBudget: "Daily budget",
   waitingApproval: "Waiting for your approval",
+  workflowConfirmationStopped: "Confirm the workflow before applying changes.",
   budgetStopped: "The configured budget was reached.",
   repeatStopped: "Repeated tool calls were detected.",
   progressStopped: "The conversation stopped making progress.",

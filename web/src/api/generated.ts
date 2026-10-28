@@ -2691,6 +2691,7 @@ export interface components {
             candidates: components["schemas"]["MetricCard"][];
             /** Id */
             id?: string;
+            interpretation?: components["schemas"]["AskInterpretation"] | null;
             knowledge?: components["schemas"]["KnowledgeAnswer"] | null;
             lineage?: components["schemas"]["LineageReference"] | null;
             /**
@@ -2725,6 +2726,32 @@ export interface components {
              */
             subject_candidates: components["schemas"]["KnowledgeSubject"][];
             time_range?: components["schemas"]["TimeRange"] | null;
+        };
+        /**
+         * AskInterpretation
+         * @description Record how a numeric question was understood, including fragments left unexplained.
+         */
+        AskInterpretation: {
+            /**
+             * Group By
+             * @default []
+             */
+            group_by: string[];
+            /** Metric Id */
+            metric_id?: string | null;
+            /**
+             * Slices
+             * @default []
+             */
+            slices: components["schemas"]["DimensionSlice"][];
+            /** Time Basis */
+            time_basis?: ("period" | "as_of") | null;
+            time_range?: components["schemas"]["TimeRange"] | null;
+            /**
+             * Unconsumed
+             * @default []
+             */
+            unconsumed: string[];
         };
         /**
          * AskRequest
@@ -3376,6 +3403,8 @@ export interface components {
          */
         CatalogObject: {
             asset_ref: components["schemas"]["AssetRef"];
+            /** English Name */
+            english_name?: string | null;
             /** Name */
             name: string;
             /** Producer Event Id */
@@ -4226,6 +4255,15 @@ export interface components {
             reason: string;
         };
         /**
+         * DimensionSlice
+         * @description Select a single dimension value by registered dimension identity.
+         */
+        DimensionSlice: {
+            /** Dimension Id */
+            dimension_id: string;
+            value: components["schemas"]["Scalar"];
+        };
+        /**
          * DimensionView
          * @description One weighted measured quality dimension.
          */
@@ -4744,6 +4782,8 @@ export interface components {
             deleted?: boolean | null;
             /** Display Name */
             display_name?: string | null;
+            /** English Name */
+            english_name?: string | null;
             /** Id */
             id: string;
             /** Label */
@@ -5955,7 +5995,7 @@ export interface components {
              * Match Kind
              * @enum {string}
              */
-            match_kind: "exact" | "synonym" | "prefix" | "dimension_value" | "time";
+            match_kind: "exact" | "synonym" | "normalized" | "prefix" | "dimension_value" | "time";
             /** Metric Id */
             metric_id?: string | null;
             /** Source */
@@ -6163,6 +6203,8 @@ export interface components {
          */
         MetricCard: {
             definition: components["schemas"]["MetricDefinition"];
+            /** Owner English Name */
+            owner_english_name?: string | null;
             /** Reasons */
             reasons?: string[];
             /**
@@ -6183,6 +6225,8 @@ export interface components {
             description: string;
             /** Dimensions */
             dimensions?: string[];
+            /** English Name */
+            english_name?: string | null;
             /** Filters */
             filters?: components["schemas"]["MetricFilter"][];
             /** Id */
@@ -6924,14 +6968,28 @@ export interface components {
             branch: "keyword" | "classifier" | "free_agent";
             /** Candidates */
             candidates: components["schemas"]["RouteCandidate"][];
+            /** Classifier Selection */
+            classifier_selection?: string | null;
+            /**
+             * Classifier Used
+             * @default false
+             */
+            classifier_used: boolean;
             inputs?: components["schemas"]["RouteInputs"];
             /** Reason */
             reason: string;
+            /**
+             * Requires Confirmation
+             * @default false
+             */
+            requires_confirmation: boolean;
             /**
              * Score
              * @default 0
              */
             score: number;
+            /** Verification Passed */
+            verification_passed?: boolean | null;
             /** Workflow Id */
             workflow_id?: string | null;
         };
@@ -7005,6 +7063,8 @@ export interface components {
         SearchResult: {
             /** Dataset Id */
             dataset_id?: string | null;
+            /** English Name */
+            english_name?: string | null;
             /** Id */
             id: string;
             /**
@@ -7967,6 +8027,26 @@ export interface components {
             run_id: string;
         };
         /**
+         * WorkflowConcepts
+         * @description Declare a workflow's objects, requesting verbs and required follow-ups, with paraphrases.
+         *
+         *     ``outcomes`` lists what a request must also ask for when the workflow bundles more than
+         *     one action, so that a request for the first action alone stays a single step.
+         *     ``exclusions`` lists wording that puts a request outside the workflow (for example one
+         *     selected item for a bulk cleanup); it blocks selection and verification but keeps the
+         *     rule score, so the classifier is still consulted and can abstain.
+         */
+        WorkflowConcepts: {
+            /** Actions */
+            actions?: string[];
+            /** Entities */
+            entities?: string[];
+            /** Exclusions */
+            exclusions?: string[];
+            /** Outcomes */
+            outcomes?: string[];
+        };
+        /**
          * WorkflowDefinition
          * @description Bind input declarations, routing vocabulary, and an acyclic step graph.
          */
@@ -8109,8 +8189,11 @@ export interface components {
          * @description Declare multilingual routing vocabulary and auditable score thresholds.
          */
         WorkflowTriggers: {
+            /** Classification Groups */
+            classification_groups?: string[][];
             /** Classification Keywords */
             classification_keywords?: string[];
+            concepts?: components["schemas"]["WorkflowConcepts"] | null;
             /** Excluded Groups */
             excluded_groups?: string[][];
             /** Excluded Keywords */
@@ -8129,6 +8212,8 @@ export interface components {
              * @default 1
              */
             threshold: number;
+            /** Verification Keywords */
+            verification_keywords?: string[];
         };
     };
     responses: never;

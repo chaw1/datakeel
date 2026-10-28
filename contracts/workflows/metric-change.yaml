@@ -1,7 +1,10 @@
 id: metric-change
 name: 指标口径变更 / Metric definition change
-description: Inspect the existing definition and impact, apply a reversible override,
-  and compare answers.
+description: Change how a metric is calculated and compare the answers. Read the current
+  definition and answer, inspect impact, apply a reversible definition override, then ask
+  the same question again and compare how much the number changed. Changes the metric
+  definition. Not for renaming, describing or only reading a metric, or for a formula edit
+  that is not asked again.
 inputs:
   metric_id:
     type: string
@@ -22,6 +25,18 @@ inputs:
     description: Fixed UTC question reference / 固定问数时间
     default: '2026-10-01T00:00:00Z'
 triggers:
+  concepts:
+    entities:
+    - 口径|指标口径|统计口径|计算口径|取数口径|指标定义|定义|计算方式|计算方法|计算逻辑|计算公式|公式|算法|取数逻辑|度量|度量字段|度量列|度量表达式|计算字段|计算列|取数字段
+    - metric definition|definition|definitions|defined|redefine|formula|formulas|calculation|calculations|calculated|computed|computation|calculation field|calculation logic|measure|measures|measure column|measure field|measure expression|metric logic|metric calculation|metric formula
+    actions:
+    - 改|改成|改为|改一下|修改|更改|调整|调一下|换|换成|换掉|替换|切换|重设|重新定义|变更|动一下
+    - change|switch|swap|replace|redefine|revise|alter|modify|tweak|adjust|update|rework|override|repoint|use a different|use another
+    outcomes:
+    - 对比|比较|对照|前后|再问|重问|重新问|再算|重算|重新算|再跑|重跑|再回答|差别|差异|区别|变化|新旧|两版|答案|问数结果
+    - compare|comparison|contrast|before and after|before/after|side by side|side-by-side|recompute|recalculate|rerun|re-run|re-ask|reask|ask again|ask it again|question again|same question|answer again|difference|differences|diff|what changes|how it changes|old and new|new answer|answer|answers
+    - 差了|差多少|相差|差距|差值|差额|变了|变动|涨跌|增减|影响
+    - changed|delta|gap|impact
   keywords:
   - - 指标口径变更|metric definition change
     - 做|运行|执行|启动|开展|run|perform|conduct|start|begin|prioritize|do
@@ -37,7 +52,15 @@ triggers:
   - 度量字段
   - definition change
   - measure column
+  classification_groups:
+  - - 指标口径|指标计算|计算字段|计算列|度量字段|度量表达式|metric calculation|metric formula|metric definition|calculation
+      field|measure column
+    - 调整|替换|换掉|重设|改动|revise|alter|rework|swap|different
+    - 再算|重问|对照|比较|前后|recompute|rerun|compare|contrast
   excluded_keywords:
+  - 谁|负责人|who|owner|where|哪里|如果|假如|if|suppose
+  - 别清理|别删除|别修改|别改|先别|暂时别|不修改|不更改|无需|without
+  - 备注|名称|名字|说明文档|description|documentation|name|label|layout|formatting
   - explain
   - what is
   - what does
@@ -52,12 +75,15 @@ triggers:
   - 只查看
   - 介绍|说明|如何|怎么|how to|how do
   - 描述|释义|description|documentation|负责人|owner|名称|名字|name|label
-  - 什么|哪些|为什么|是否|需不需要|what|why|how|does|should
+  - 只看看|只看一下|只是看看|看看就行|先不改|暂不改|不用改|别动|just look|only look|just show|only show|leave it as is|keep it as is|no need to change|hold off
+  - 什么|哪些|为什么|是否|需不需要|why|what is|what are|what was|what were|what does|what did|what will
+    |what would|what happens|how many|how much|how long|how often|how is|how are|how was|how does
+    |how did|how will|how would|how to|how do|does it|does the|does this|does that
   excluded_prefixes:
-  - 查看|查询|列出|显示|展示|获取|show|list|display|find|get|tell
+  - 查看|查询|列出|显示|展示|获取|show|list|display|find|get|tell|read|describe|should
   excluded_groups:
-  - - 查看|查询|列出|显示|展示|show|list|display|find|get
-    - 历史|记录|日志|状态|进度|上次|history|record|records|log|logs|status|progress|previous|last
+  - - 查看|查询|列出|显示|展示|看看|看一下|read|look at|bring up|show|list|display|find|get
+    - 历史|记录|日志|状态|进度|上次|最近一次|history|record|records|log|logs|status|progress|previous|last|latest
   threshold: 1
   margin: 1
 entry: current

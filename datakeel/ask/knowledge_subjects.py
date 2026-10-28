@@ -12,6 +12,7 @@ from datakeel.ask.knowledge_names import (
     name_variants,
     normalize_name,
 )
+from datakeel.ask.matching import metric_matches
 from datakeel.core.catalog_models import CatalogObject, CatalogSnapshot, TableProperties
 from datakeel.core.evidence_models import TextSpan
 from datakeel.core.kg_product import KGEntity
@@ -65,15 +66,20 @@ def _metric_names(catalog: CatalogSnapshot, layer: SemanticLayer) -> list[Subjec
             continue
         names.extend(
             SubjectName(name=value, subject=targets[metric.id], rank=rank)
-            for rank, values in ((2, (metric.name, metric.id)), (1, metric.synonyms))
+            for rank, values in (
+                (2, (metric.name, metric.english_name)),
+                (2, metric.synonyms),
+                (0, (metric.id,)),
+            )
             for value in values
+            if value
         )
         for term in layer.terms:
             if (term.means.kind == "metric" and term.means.id == metric.id) or (
                 term.means.kind == "column" and term.means.id == metric.measure.column
             ):
                 names.extend(
-                    SubjectName(name=value, subject=targets[metric.id], rank=1)
+                    SubjectName(name=value, subject=targets[metric.id], rank=2)
                     for value in (term.term, *term.synonyms)
                 )
     return names
@@ -169,6 +175,16 @@ def subject_mentions(
         for name in name_variants(item.name):
             for span in name_occurrences(text, name):
                 spans.setdefault(span, []).append(item)
+    targets = {
+        item.asset_ref.asset_id: catalog_subject(item)
+        for item in catalog.objects
+        if item.asset_ref.asset_type == "metric"
+    }
+    for match in metric_matches(text, layer):
+        if match.match_kind == "normalized" and match.metric_id in targets:
+            spans.setdefault((match.start, match.end), []).append(
+                SubjectName(name=match.text, subject=targets[match.metric_id], rank=0)
+            )
     selected: list[SubjectMention] = []
     for (start, end), names in sorted(
         spans.items(), key=lambda item: (item[0][0] - item[0][1], item[0][0])

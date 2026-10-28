@@ -17,6 +17,8 @@ const uuid = /[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}/gi;
 export function safeNodeName(node: GraphNode, locale: Locale = "en"): string {
   const t = translator(locale);
   const kind = node.asset_type;
+  if (locale === "en" && node.english_name?.trim())
+    return node.english_name.trim();
   const raw = node.display_name?.trim() || node.label.trim();
   const name = kind === "term" ? raw.replace(/^term[/\\]/, "") : raw;
   const fallback = `${graphKindLabel(kind, t)} ${node.asset_id.slice(0, 8)}`;

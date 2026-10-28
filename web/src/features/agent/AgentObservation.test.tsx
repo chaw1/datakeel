@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 
+import { I18nContext, translator } from "../../i18n/context";
 import { agentEvent } from "../../test/agentFixtures";
 
 import { AgentObservation } from "./AgentObservation";
@@ -58,3 +59,30 @@ it("explains a canary stop without rendering its attached protected content", ()
   );
   expect(screen.queryByText("PROTECTED_SESSION_VALUE")).not.toBeInTheDocument();
 });
+
+it.each(["en", "zh"] as const)(
+  "explains workflow confirmation in %s without exposing the machine stop reason",
+  (locale) => {
+    render(
+      <I18nContext.Provider
+        value={{ locale, setLocale: vi.fn(), t: translator(locale) }}
+      >
+        <AgentObservation
+          {...props}
+          event={agentEvent("stopped", {
+            stop_reason: "workflow_confirmation_required",
+            text: "Stopped: workflow_confirmation_required.",
+          })}
+        />
+      </I18nContext.Provider>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      locale === "en"
+        ? "Confirm the workflow before applying changes."
+        : "请确认工作流后再执行更改。",
+    );
+    expect(screen.getByRole("status")).not.toHaveTextContent(
+      "workflow_confirmation_required",
+    );
+  },
+);

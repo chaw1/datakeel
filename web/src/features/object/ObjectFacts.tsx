@@ -59,7 +59,12 @@ export function ObjectFacts({
             {fact.label === "objReceipt" && data.action
               ? t(data.action.status)
               : fact.label === "objOwner" && typeof fact.value === "string"
-                ? localizedObjectName("owner", fact.value, locale)
+                ? localizedObjectName(
+                    "owner",
+                    fact.value,
+                    locale,
+                    data.metric?.owner_english_name,
+                  )
                 : fact.value}
           </strong>
         </a>

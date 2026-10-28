@@ -29,6 +29,8 @@ from datakeel.core.link_models import LinkContext
 from datakeel.core.metric_models import SemanticLayer
 from datakeel.core.models import BoundaryModel
 
+_WHATS = re.compile(r"\bwhat['\u2019]s\b", re.IGNORECASE)
+
 
 class KnowledgeQuestion(BoundaryModel):
     """Retain subject-first resolution and a replayable deterministic decision trace."""
@@ -53,10 +55,13 @@ def parse_knowledge_question(
     """Find subjects before interpreting focus; keep metric routing graph-independent."""
     text = normalize_name(question)
     mentions = subject_mentions(question, catalog, layer, context or LinkContext())
-    numeric_text = masked_subjects(text, mentions)
-    numeric_focus = question_focus(numeric_text)
-    if numeric_route(numeric_text, numeric_focus, question=text) or pure_metric_phrase(
-        question, layer
+    if _metric_route(question, mentions, layer) or (
+        _WHATS.search(question) is not None
+        and _metric_route(
+            expanded := _WHATS.sub("what is", question),
+            subject_mentions(expanded, catalog, layer, context or LinkContext()),
+            layer,
+        )
     ):
         return None
     if subject_id:
@@ -84,10 +89,22 @@ def parse_knowledge_question(
     return _interpret(masked, mentions, focus)
 
 
+def _metric_route(
+    question: str, mentions: tuple[SubjectMention, ...], layer: SemanticLayer
+) -> bool:
+    """Route quantities and pure metric phrases to the metric path."""
+    text = normalize_name(question)
+    numeric_text = masked_subjects(text, mentions)
+    return numeric_route(
+        numeric_text, question_focus(numeric_text), question=text
+    ) or pure_metric_phrase(question, layer)
+
+
 def metric_recognition(
     question: str, catalog: CatalogSnapshot, layer: SemanticLayer
 ) -> KnowledgeRecognition:
     """Explain numeric, grouped and fallback decisions using catalog vocabulary alone."""
+    question = _WHATS.sub("what is", question)  # The contraction routes like its full form.
     mentions = subject_mentions(question, catalog, layer, LinkContext())
     text = masked_subjects(normalize_name(question), mentions)
     focus = question_focus(text)

@@ -1,5 +1,6 @@
 import { lineageHref } from "../../app/lineageNavigation";
 import { useI18n } from "../../i18n/useI18n";
+import { shortId } from "../../lib/format";
 import { ActionReceipt } from "../actions/ActionReceipt";
 import { MetricDetails } from "../catalog/MetricDetails";
 import { TableDetails } from "../catalog/TableDetails";
@@ -77,7 +78,7 @@ export function ObjectEvidence({
                   })}
                 >
                   {item.asset_ref.asset_type} ·{" "}
-                  <code>{item.asset_ref.asset_id.slice(0, 8)}</code>
+                  <code>{shortId(item.asset_ref.asset_id)}</code>
                 </a>
               ) : (
                 <code>{item.asset_ref.asset_id}</code>

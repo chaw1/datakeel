@@ -5,6 +5,7 @@ import { kindLabels } from "../features/object/descriptors";
 import { objectHref } from "../features/object/navigation";
 import { localizedObjectName } from "../i18n/graphCatalogNames";
 import { useI18n } from "../i18n/useI18n";
+import { shortId } from "../lib/format";
 import { useCompositionGuard } from "../lib/useCompositionGuard";
 import { useResource } from "../lib/useResource";
 
@@ -63,7 +64,12 @@ export function CommandPalette({
   }
   function startConversation(item: SearchResult) {
     const prompt = t("cmdPrompt", {
-      name: localizedObjectName(item.kind, item.name, locale),
+      name: localizedObjectName(
+        item.kind,
+        item.name,
+        locale,
+        item.english_name,
+      ),
       kind: t(kindLabels[item.kind]),
       id: item.id,
     });
@@ -248,9 +254,14 @@ export function CommandPalette({
                       {t(kindLabels[item.kind])}
                     </span>
                     <span className="command-name">
-                      {localizedObjectName(item.kind, item.name, locale)}
+                      {localizedObjectName(
+                        item.kind,
+                        item.name,
+                        locale,
+                        item.english_name,
+                      )}
                     </span>
-                    <code title={item.id}>{item.id.slice(0, 8)}</code>
+                    <code title={item.id}>{shortId(item.id)}</code>
                   </button>
                 </li>
               ))}
@@ -271,6 +282,7 @@ export function CommandPalette({
                       selected.kind,
                       selected.name,
                       locale,
+                      selected.english_name,
                     ),
                   })}
                 </button>

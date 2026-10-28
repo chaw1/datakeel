@@ -88,6 +88,7 @@ export const workflowZh = {
   workflowSuggested: "建议工作流",
   workflowRunSuggested: "按工作流运行",
   workflowSuggestionHint: "核对输入后再开始运行。",
+  workflowConfirmationHint: "此工作流会更改数据，请在工作流表单确认后启动。",
   workflowRouteScore: "匹配分数 {score}",
   workflowRouteKeyword: "关键词匹配",
   workflowRouteClassifier: "分类模型匹配",

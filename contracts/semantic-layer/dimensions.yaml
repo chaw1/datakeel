@@ -2,92 +2,185 @@
 dimensions:
 - id: retail_region
   name: 零售区域
-  synonyms:
+  english_name: Retail region
+  synonyms: &region_names
   - 区域
   - 地区
+  - region
+  - regions
+  - area
+  - areas
+  - territory
+  - territories
   column: ecommerce/main/orders/region
   values: &id001
   - 华东
   - 华南
   - 华北
   - 西部
+  value_synonyms: &region_values
+    华东:
+    - East China
+    - Eastern China
+    - East
+    - Eastern
+    华南:
+    - South China
+    - Southern China
+    - South
+    - Southern
+    华北:
+    - North China
+    - Northern China
+    - North
+    - Northern
+    西部:
+    - West China
+    - Western China
+    - West
+    - Western
 - id: retail_channel
   name: 零售渠道
-  synonyms:
+  english_name: Retail channel
+  synonyms: &channel_names
   - 渠道
+  - channel
+  - channels
+  - sales channel
+  - sales channels
   column: ecommerce/main/orders/channel
   values: &id002
   - 线上
   - 门店
   - 经销商
+  value_synonyms: &channel_values
+    线上:
+    - online
+    - e-commerce
+    - ecommerce
+    - web
+    门店:
+    - store
+    - stores
+    - in-store
+    - retail store
+    - retail stores
+    - offline
+    - brick-and-mortar
+    经销商:
+    - distributor
+    - distributors
+    - dealer
+    - dealers
+    - reseller
+    - resellers
 - id: retail_category
   name: 零售品类
+  english_name: Retail category
   synonyms:
   - 品类
+  - category
+  - categories
+  - product category
+  - product categories
+  - product line
+  - product lines
   column: ecommerce/main/orders/category
   values:
   - 油烟机
   - 洗碗机
   - 燃气灶
   - 蒸烤箱
+  value_synonyms:
+    油烟机:
+    - range hood
+    - range hoods
+    - cooker hood
+    - cooker hoods
+    - extractor hood
+    - extractor hoods
+    洗碗机:
+    - dishwasher
+    - dishwashers
+    燃气灶:
+    - gas stove
+    - gas stoves
+    - gas hob
+    - gas hobs
+    - gas cooktop
+    - gas cooktops
+    蒸烤箱:
+    - steam oven
+    - steam ovens
+    - combi steam oven
+    - combi steam ovens
 - id: shipment_region
   name: 出货区域
-  synonyms:
-  - 区域
-  - 地区
+  english_name: Shipment region
+  synonyms: *region_names
   column: erp/main/shipments/region
   values: *id001
+  value_synonyms: *region_values
 - id: sales_region
   name: 销售区域
-  synonyms:
-  - 区域
-  - 地区
+  english_name: Sales region
+  synonyms: *region_names
   column: crm/main/sales/region
   values: *id001
+  value_synonyms: *region_values
 - id: sales_channel
   name: 销售渠道
-  synonyms:
-  - 渠道
+  english_name: Sales channel
+  synonyms: *channel_names
   column: crm/main/sales/channel
   values: *id002
+  value_synonyms: *channel_values
 - id: inventory_region
   name: 库存区域
-  synonyms:
-  - 区域
-  - 地区
+  english_name: Inventory region
+  synonyms: *region_names
   column: erp/main/inventory/region
   values: *id001
+  value_synonyms: *region_values
 - id: customer_region
   name: 客户区域
-  synonyms:
-  - 区域
-  - 地区
+  english_name: Customer region
+  synonyms: *region_names
   column: crm/main/customers/region
   values: *id001
+  value_synonyms: *region_values
 - id: ticket_region
   name: 售后区域
-  synonyms:
-  - 区域
-  - 地区
+  english_name: Service region
+  synonyms: *region_names
   column: service/main/tickets/region
   values: *id001
+  value_synonyms: *region_values
 - id: repair_region
   name: 维修区域
-  synonyms:
-  - 区域
-  - 地区
+  english_name: Repair region
+  synonyms: *region_names
   column: service/main/repairs/region
   values: *id001
+  value_synonyms: *region_values
 - id: refund_region
   name: 退款区域
-  synonyms:
-  - 区域
-  - 地区
+  english_name: Refund region
+  synonyms: *region_names
   column: ecommerce/main/returns/region
   values: *id001
+  value_synonyms: *region_values
 - id: payment_channel
   name: 支付渠道
+  english_name: Payment channel
   synonyms:
   - 渠道
+  - channel
+  - channels
+  - payment channel
+  - payment channels
+  - payment method
+  - payment methods
   column: ecommerce/main/payments/channel
   values: *id002
+  value_synonyms: *channel_values

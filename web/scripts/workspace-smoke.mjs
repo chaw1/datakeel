@@ -283,7 +283,16 @@ export async function workspaceSmoke({ page, json, post, screenshot, checks }) {
       .locator(".object-header")
       .getByRole("button", { name: "Copy ID", exact: true });
     assert.equal(await copy.getAttribute("title"), id);
-    assert.equal(await copy.locator("code").textContent(), id.slice(0, 8));
+    const businessId = ["table", "column", "metric", "term"].includes(kind);
+    if (!businessId)
+      assert.match(
+        id,
+        /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i,
+      );
+    assert.equal(
+      await copy.locator("code").textContent(),
+      businessId ? id : id.slice(0, 8),
+    );
     for (const tab of ["Facts", "Relations", "Evidence", "History"])
       assert.equal(
         await archive
@@ -497,7 +506,8 @@ export async function workspaceSmoke({ page, json, post, screenshot, checks }) {
     ].filter(Boolean),
   );
   await factValue("objMeasures", fields.size);
-  await factValue("objOwner", metric.definition.owner);
+  const ownerName = metric.owner_english_name ?? metric.definition.owner;
+  await factValue("objOwner", ownerName);
   await followFact("objRevision", { tab: "history" }, ".object-revisions");
   assert.equal(
     await archive.locator(".object-revisions [data-metric-version]").count(),
@@ -531,7 +541,7 @@ export async function workspaceSmoke({ page, json, post, screenshot, checks }) {
   );
   assert.ok(
     (await page.locator("#object-section-owner").textContent()).includes(
-      metric.definition.owner,
+      ownerName,
     ),
   );
   assert.ok(

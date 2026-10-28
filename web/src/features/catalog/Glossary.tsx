@@ -64,7 +64,12 @@ export function Glossary({
                         })}
                       >
                         <strong>
-                          {localizedObjectName("term", term.name, locale)}
+                          {localizedObjectName(
+                            "term",
+                            term.name,
+                            locale,
+                            term.english_name,
+                          )}
                         </strong>
                       </a>
                     </td>

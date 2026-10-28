@@ -4,13 +4,19 @@
 """Keep numerical and grouped metric phrases separate from typed knowledge questions."""
 
 import re
+from datetime import date
 
+from datakeel.ask import dimension_cues
 from datakeel.ask import knowledge_vocabulary as vocabulary
+from datakeel.ask.dimensions import dimension_mentions
 from datakeel.ask.knowledge_focus import QuestionFocus, has_relation, question_focus
 from datakeel.ask.knowledge_names import normalize_name
 from datakeel.ask.knowledge_scope import question_scope
+from datakeel.ask.matching import metric_matches
+from datakeel.ask.time import time_spans
 from datakeel.core.metric_models import SemanticLayer
 
+_SPAN_REFERENCE = date(2000, 1, 1)
 _NUMERIC = re.compile(
     r"多少|(?<!哪)几(?!张|位|些)|总额|合计|最高|最低|最多|最少|排名|前几|最大|最小|"
     r"\b(?:how\s+(?:much|many)|total|most|least|top|highest|lowest|largest|smallest)\b"
@@ -30,10 +36,26 @@ _GROUP = re.compile(
     r"\b(?:group(?:ed)?\s+by|(?:break\s+)?down\s+by|by|per|for)\s+[^?\uff1f。!\uff01,\uff0c]+|"
     r"\beach\s+[^?\uff1f。!\uff01,\uff0c]+?['\u2019]s\s+"
 )
+_PERSON_ASK = re.compile(
+    r"谁|哪位|哪(?:个|些|支)?(?:团队|部门|组|人)|"
+    r"\b(?:who|whose)\b|\b(?:which|what)\s+(?:(?:source|downstream|responsible)\s+)?"
+    r"(?:teams?|people|persons?|owners?)\b"
+)
+_OWNER_HEAD = re.compile(r"负责人|责任人|所有者|\bowners?\s+of\b|\bowner\s*[?!.]*\s*$")
+_BUSINESS_RANKING = re.compile(
+    r"\bwhich\s+owners?\s+(?:has|have|manages?)\s+(?:the\s+)?"
+    r"(?:most|least|highest|lowest|largest|smallest|top)\b|"
+    r"\bwho\s+(?:manages?|operates?|runs?)\s+(?:the\s+)?"
+    r"(?:regions?|stores?|branches|accounts?|territories|outlets?)\b[^?!.]*"
+    r"\bwith\s+(?:the\s+)?(?:most|least|highest|lowest|largest|smallest|top)\b|"
+    r"(?:谁|哪位)(?:负责|管理|经营)的[^?\uff1f。\uff0c,]*(?:最高|最低|最多|最少)"
+)
 
 
 def numeric_route(text_without_names: str, focus: QuestionFocus, *, question: str) -> bool:
     """Prioritize quantities except explicit requests for tables or metric lists."""
+    if text_without_names != question and _requested_person(text_without_names):
+        return False
     if _explicit_value_question(text_without_names, focus, question):
         return True
     if focus.counted and _business_count(text_without_names, focus):
@@ -85,39 +107,23 @@ def _business_count(text: str, focus: QuestionFocus) -> bool:
 
 def pure_metric_phrase(question: str, layer: SemanticLayer) -> bool:
     """Strip registered metric/time/dimension terms and bounded grouping/filter clauses."""
-    text = normalize_name(question)
-    names = {
-        normalize_name(value)
-        for metric in layer.metrics
-        for value in (metric.name, metric.id, *metric.synonyms)
-    }
-    metric_ids = {metric.id for metric in layer.metrics}
-    measure_columns = {metric.measure.column for metric in layer.metrics}
-    names.update(
-        normalize_name(value)
-        for term in layer.terms
-        if (term.means.kind == "metric" and term.means.id in metric_ids)
-        or (term.means.kind == "column" and term.means.id in measure_columns)
-        for value in (term.term, *term.synonyms)
-    )
-    found = False
-    for name in sorted(names, key=len, reverse=True):
-        if name and name in text:
-            found = True
-            text = text.replace(name, vocabulary.SUBJECT_MARKER)
-    if not found:
+    text = _masked_metrics(normalize_name(question), layer)
+    if text is None or _requested_person(text):
         return False
-    timed = _TIME.search(text) is not None
+    text, conditioned = _masked_conditions(text, layer)
+    timed = conditioned or _TIME.search(text) is not None
     text = _TIME.sub(" ", text)
     text, grouped = _strip_grouping(text)
     text = re.sub(vocabulary.METRIC_WHERE_FILTER, vocabulary.SUBJECT_MARKER, text)
-    if _metric_scalar_head(text, question, timed=timed or grouped):
-        return True
-    if _scalar_request(text, grouped=grouped):
+    if _metric_scalar_head(text, question, timed=timed or grouped) or _scalar_request(
+        text, grouped=grouped
+    ):
         return True
     text = text.replace(vocabulary.SUBJECT_MARKER, " ")
     if re.search(r"谁|哪|什么|\b(?:who|whose|which|what|where)\b", text):
         return False
+    if not _FILLER.sub("", text):
+        return True
     # Nominal filters before a metric are not requests for the relation they contain.
     text = re.sub(r"^[^谁哪什么?\uff1f]*的\s*$", "", text)
     if question_focus(text).kind != "unknown":
@@ -126,6 +132,50 @@ def pure_metric_phrase(question: str, layer: SemanticLayer) -> bool:
         for value in dimension.values:
             text = text.replace(normalize_name(value), " ")
     return not _FILLER.sub("", text)
+
+
+def _masked_conditions(text: str, layer: SemanticLayer) -> tuple[str, bool]:
+    """Blank parsed periods and registered filter values with their attached prepositions.
+
+    A period or a filter value both mark a value question: definitions take neither.
+    """
+    spans = list(time_spans(text, _SPAN_REFERENCE))
+    for item in dimension_mentions(text, layer):
+        if item.value is not None:
+            lead = dimension_cues.FILTER_BEFORE.search(text[: item.start])
+            spans.append((lead.start() if lead else item.start, item.end))
+    characters = list(text)
+    for start, end in spans:
+        characters[start:end] = " " * (end - start)
+    return "".join(characters), bool(spans)
+
+
+def _masked_metrics(text: str, layer: SemanticLayer) -> str | None:
+    spans: list[tuple[int, int]] = []
+    for match in sorted(metric_matches(text, layer), key=lambda item: (item.start, -item.end)):
+        if match.match_kind == "prefix":
+            continue
+        if spans and match.start < spans[-1][1]:
+            spans[-1] = (spans[-1][0], max(spans[-1][1], match.end))
+        else:
+            spans.append((match.start, match.end))
+    if not spans:
+        return None
+    for start, end in reversed(spans):
+        text = text[:start] + vocabulary.SUBJECT_MARKER + text[end:]
+    return text
+
+
+def _requested_person(text: str) -> bool:
+    ungrouped, _ = _strip_grouping(question_scope(text))
+    ungrouped = re.sub(r"(?:按|每|各)\s*(?:负责人|责任人|所有者|团队|人员)", " ", ungrouped)
+    focus = question_focus(ungrouped)
+    return bool(
+        focus.kind == "person"
+        and not focus.counted
+        and (_PERSON_ASK.search(ungrouped) or _OWNER_HEAD.search(ungrouped))
+        and not _BUSINESS_RANKING.search(ungrouped)
+    )
 
 
 def grouped_request(text: str, focus: QuestionFocus) -> bool:

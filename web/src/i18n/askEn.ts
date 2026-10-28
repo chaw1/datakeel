@@ -80,6 +80,7 @@ export const askEn = {
   askMatchSources: "Match sources",
   askMatchExact: "Exact metric",
   askMatchSynonym: "Synonym",
+  askNormalized: "Metric ID form",
   askMatchPrefix: "Prefix",
   askMatchDimension: "Dimension value",
   askMatchTime: "Time expression",

@@ -7,9 +7,11 @@ from scripts.advanced_mutations import ADVANCED_MUTATIONS
 from scripts.auto_routing_mutations import AUTO_ROUTING_MUTATIONS
 from scripts.coordinate_mutations import COORDINATE_MUTATIONS
 from scripts.data_asset_mutations import DATA_ASSET_MUTATIONS
+from scripts.guard_mutations import GUARD_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
+from scripts.metric_mutations import METRIC_MUTATIONS
 from scripts.release_mutations import RELEASE_MUTATIONS
 from scripts.standard_mutations import LEXICAL_RULE_MUTATIONS, STANDARD_MUTATIONS
 from scripts.table_mutations import TABLE_MUTATIONS
@@ -19,7 +21,9 @@ FEATURE_MUTATIONS = (
     *ADVANCED_MUTATIONS,
     *KG_MUTATIONS,
     *KNOWLEDGE_MUTATIONS,
+    *METRIC_MUTATIONS,
     *IMAGE_KG_MUTATIONS,
+    *GUARD_MUTATIONS,
     *TIMESERIES_MUTATIONS,
     *TABLE_MUTATIONS,
     *AUTO_ROUTING_MUTATIONS,

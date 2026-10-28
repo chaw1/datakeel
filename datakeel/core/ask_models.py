@@ -15,7 +15,13 @@ from datakeel.core.knowledge_models import (
     KnowledgeRecognition,
     KnowledgeSubject,
 )
-from datakeel.core.metric_models import CompiledQuery, MetricCard, QueryResult, TimeRange
+from datakeel.core.metric_models import (
+    CompiledQuery,
+    DimensionSlice,
+    MetricCard,
+    QueryResult,
+    TimeRange,
+)
 from datakeel.core.models import BoundaryModel, new_id, utcnow
 from datakeel.core.profile_models import ProfileAnswer
 
@@ -31,7 +37,7 @@ class MatchEvidence(BoundaryModel):
     end: int = Field(gt=0)
     text: str = Field(min_length=1)
     source: str = Field(min_length=1)
-    match_kind: Literal["exact", "synonym", "prefix", "dimension_value", "time"]
+    match_kind: Literal["exact", "synonym", "normalized", "prefix", "dimension_value", "time"]
     metric_id: str | None = None
     dimension_id: str | None = None
     term_id: str | None = None
@@ -83,6 +89,17 @@ class LineageReference(BoundaryModel):
     include_catalog: Literal[True] = True
 
 
+class AskInterpretation(BoundaryModel):
+    """Record how a numeric question was understood, including fragments left unexplained."""
+
+    metric_id: str | None = None
+    time_range: TimeRange | None = None
+    time_basis: Literal["period", "as_of"] | None = None
+    slices: tuple[DimensionSlice, ...] = ()
+    group_by: tuple[str, ...] = ()
+    unconsumed: tuple[str, ...] = ()
+
+
 class AskAnswer(BoundaryModel):
     """Persist one fully evidenced answer, refusal, or request for clarification."""
 
@@ -106,6 +123,9 @@ class AskAnswer(BoundaryModel):
     subject_candidates: tuple[KnowledgeSubject, ...] = ()
     recognition: KnowledgeRecognition | None = None
     profile: ProfileAnswer | None = Field(default=None, exclude_if=lambda value: value is None)
+    interpretation: AskInterpretation | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def evidence_matches_state(self) -> Self:

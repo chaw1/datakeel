@@ -26,6 +26,47 @@ WORKFLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="intent-classifier-candidate-bound",
+        path="routing/intent.py",
+        before="CLASSIFIER_CANDIDATE_LIMIT = 3",
+        after="CLASSIFIER_CANDIDATE_LIMIT = 4",
+        case=(
+            "tests/routing/test_recall.py::"
+            "test_classifier_candidate_limit_when_four_positive_scores_rejects_fourth"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-classifier-literal-verification",
+        path="routing/intent.py",
+        before="verified = not _excluded(scoped, workflow) and any(",
+        after="verified = True or not _excluded(scoped, workflow) and any(",
+        case=(
+            "tests/routing/test_recall.py::"
+            "test_classifier_verification_when_candidate_has_no_literal_anchor_rejects"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-classifier-write-confirmation",
+        path="runtime/graph.py",
+        before="if self.workflow_confirmation_required and call.name not in {",
+        after="if False and call.name not in {",
+        case=(
+            "tests/routing/test_confirmation.py::"
+            "test_classified_write_when_model_calls_action_stops_before_mutation_then_user_can_start"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-request-negation-scope",
+        path="routing/scopes.py",
+        before="        _NEGATION.search(text)\n",
+        after="        False\n",
+        case="tests/routing/test_scopes.py::test_negated_named_workflow_when_high_score_has_no_route",
+        runner="pytest",
+    ),
+    Mutation(
         name="workflow-cycle",
         path="workflows/validation.py",
         before="errors.extend(cycle_errors(definition, source))",

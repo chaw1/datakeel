@@ -93,6 +93,7 @@ export function FilteredMetricCatalog({
                   item.asset_ref.asset_type,
                   item.name,
                   locale,
+                  item.english_name,
                 )}
               </button>
             </li>

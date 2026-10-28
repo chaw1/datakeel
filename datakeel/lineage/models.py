@@ -56,6 +56,7 @@ class GraphNode(Record):
     label: str
     version: str | None = None
     display_name: str | None = None
+    english_name: str | None = None
     quarantined: bool | None = None
     deleted: bool | None = None
 

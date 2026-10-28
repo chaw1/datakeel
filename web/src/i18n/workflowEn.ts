@@ -102,6 +102,8 @@ export const workflowEn = {
   workflowSuggested: "Suggested workflow",
   workflowRunSuggested: "Run as workflow",
   workflowSuggestionHint: "Review the inputs before starting.",
+  workflowConfirmationHint:
+    "This workflow changes data. Review and confirm the inputs in the workflow form before starting.",
   workflowRouteScore: "Match score {score}",
   workflowRouteKeyword: "Keyword match",
   workflowRouteClassifier: "Classifier match",

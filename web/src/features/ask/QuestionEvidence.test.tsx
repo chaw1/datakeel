@@ -52,3 +52,23 @@ it("shows the unmodified question when no terms match", () => {
   ).toBeVisible();
   expect(container.querySelector("mark")).toBeNull();
 });
+
+it("labels normalized metric IDs without losing the registered source", async () => {
+  render(
+    <QuestionEvidence
+      question="Refund Amounts?"
+      matches={[
+        {
+          start: 0,
+          end: 14,
+          text: "Refund Amounts",
+          source: "metric:refund_amount",
+          match_kind: "normalized",
+        },
+      ]}
+    />,
+  );
+  await userEvent.click(screen.getByText("Match sources"));
+  expect(screen.getByText("Metric ID form")).toBeVisible();
+  expect(screen.getByText("metric:refund_amount")).toBeVisible();
+});

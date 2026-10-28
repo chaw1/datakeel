@@ -30,6 +30,9 @@ class CatalogObject(BoundaryModel):
 
     asset_ref: AssetRef
     name: str
+    english_name: str | None = Field(
+        default=None, min_length=1, exclude_if=lambda value: value is None
+    )
     source_id: str | None = None
     schema_name: str | None = None
     table_id: str | None = None

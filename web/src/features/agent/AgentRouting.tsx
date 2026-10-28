@@ -36,7 +36,13 @@ export function AgentRouting({ event }: { event: AgentEvent }) {
         <a className="button" href={`#/workflows?${params.toString()}`}>
           {t("workflowRunSuggested")}
         </a>
-        <p className="muted small">{t("workflowSuggestionHint")}</p>
+        <p className="muted small">
+          {t(
+            route.requires_confirmation
+              ? "workflowConfirmationHint"
+              : "workflowSuggestionHint",
+          )}
+        </p>
       </aside>
     );
   }

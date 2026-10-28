@@ -45,6 +45,9 @@ export function ApprovalObjects({ plan }: { plan: ActionPlan }) {
             ref.asset_type,
             typeof name === "string" && name ? name : ref.asset_id,
             locale,
+            typeof item.properties.english_name === "string"
+              ? item.properties.english_name
+              : undefined,
           );
           const quality = item.properties.quality;
           return (
