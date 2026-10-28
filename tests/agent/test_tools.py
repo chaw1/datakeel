@@ -16,6 +16,8 @@ from datakeel.core.agent_models import (
     ToolDefinition,
 )
 from datakeel.core.models import JsonDocument
+from datakeel.ontology.functions import PARAMETER_MODELS
+from datakeel.ontology.tool_history import DEFERRED_READ_FUNCTIONS
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.storage.tool_invocations import list_invocations
 
@@ -26,7 +28,15 @@ if TYPE_CHECKING:
 def test_catalog_when_constructed_has_only_read_tools_and_deferred_actions() -> None:
     """Never expose approve_plan or execute_plan through either discovery list."""
     assert len(resident_tools()) == 10
-    assert len(deferred_tools()) == 50
+    assert len(deferred_tools()) == 52
+    training = next(tool for tool in deferred_tools() if tool.name == "get_training_quality")
+    assert "clean_training_data" in {tool.name for tool in deferred_tools()}
+    assert training.name in PARAMETER_MODELS
+    assert training.name in DEFERRED_READ_FUNCTIONS
+    assert training.parameters.root["required"] == ["dataset_id"]
+    properties = training.parameters.root["properties"]
+    assert isinstance(properties, dict)
+    assert "version_id" in properties
     assert "submit_custom_operator" in {tool.name for tool in deferred_tools()}
     assert "publish_release" in {tool.name for tool in deferred_tools()}
     assert "confirm_metric_draft" in {tool.name for tool in deferred_tools()}
@@ -118,6 +128,7 @@ def test_catalog_when_all_new_reads_discovered_never_loads_execution_authority(
         "list_standard_usage",
         "list_quality_rules",
         "get_table_quality",
+        "get_training_quality",
     ):
         assert catalog.invoke(db, ToolCall(name=name), ToolCallContext()).status == "FAILED"
         search = catalog.invoke(

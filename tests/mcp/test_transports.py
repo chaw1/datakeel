@@ -35,13 +35,19 @@ async def _exercise(client: Client, dataset_id: str) -> None:
     assert client.initialize_result is not None
     assert client.initialize_result.protocol_version == "2025-11-25"
     tools = await client.list_tools()
-    assert len(tools) == 59
+    assert len(tools) == 61
+    training = next(tool for tool in tools if tool.name == "get_training_quality")
+    assert training.annotations is not None
+    assert training.annotations.read_only_hint is True
+    assert training.input_schema["required"] == ["dataset_id"]
+    assert "version_id" in training.input_schema["properties"]
     assert {
         "query_kg",
         "explain_relation",
         "run_kg_extraction",
         "submit_custom_operator",
         "publish_release",
+        "clean_training_data",
     } <= {tool.name for tool in tools}
     assert {"list_quality_rules", "get_table_quality", "create_quality_rule"} <= {
         tool.name for tool in tools
