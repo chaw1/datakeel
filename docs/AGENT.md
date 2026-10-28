@@ -87,6 +87,25 @@ No SSE event type is added. Existing events gain defaulted `agent_path`, `agent_
 
 SSE 类型保持不变，只增加带默认值的关联字段。父工具调用、子事件、父工具结果按序出现；路径支持折叠显示。子会话的 done 不结束主响应，会话列表只显示根会话。
 
+## Data standard reads / 数据标准读取
+
+Discover these read-only tools through `tool_search`; MCP exposes the same schemas and handlers. They read confirmed mappings and measured checks without returning raw source rows.
+
+先用 `tool_search` 发现以下只读工具；MCP 复用相同 schema 与实现。返回内容来自已确认映射与实测检查，不返回原始数据行。
+
+| Tool / 工具 | Parameters / 参数 | Question / 问题 |
+| --- | --- | --- |
+| `query_standard_coverage` | Optional `table_id`, `limit` (1–100) | Which table has the lowest conformance? / 哪张表落标最差？ |
+| `list_standard_usage` | `standard` (code or bilingual name), `limit` (1–1000) | Which columns use the customer ID standard? / 客户编号这个标准被哪些列用了？ |
+
+Coverage ranks tables by mapped-column compliance, then coverage and identity. A missing check, deprecated standard or truncated population cannot count as fully compliant. Standard definitions, code lists and mapping confirmations require human approval even when reversible. The Agent can prepare these plans, then pauses for approval through the existing resume protocol. See [data standards](STANDARDS.md) for contracts, scoring and examples.
+
+表按映射合规率、覆盖率和标识排序。未检查、标准已废止或观测总体被截断时，不计为完整合规。字段标准、码表和映射确认即使可逆也必须人工签批；Agent 只能准备计划，再通过既有恢复协议等待审批。合同、打分与演示见数据标准说明。
+
+Golden cases `41-standard-coverage` and `42-standard-usage` assert the real generated-table ranking and confirmed usage, with corresponding mutations for incorrect rankings and missing associations.
+
+新增两个 golden 用真实生成表验证落标排名和确认映射；对应变异必须使错误排名和缺失映射变红。
+
 ## Golden extensions / Golden 扩展
 
 The fake runtime consumes one shared serial script queue across root and child model calls. Optional `agent` labels must match the consuming Agent name (`main` for the root); a mismatch fails the golden even if `provider_error` was expected. Specify fixed tool-call IDs to keep suite digests reproducible. Example reply:

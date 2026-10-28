@@ -9,6 +9,7 @@ import { EvidencePage } from "../pages/EvidencePage";
 import { KnowledgeGraphPage } from "../pages/KnowledgeGraphPage";
 import { MemoryPage } from "../pages/MemoryPage";
 import { OntologyPage } from "../pages/OntologyPage";
+import { StandardsPage } from "../pages/StandardsPage";
 import { TracesPage } from "../pages/TracesPage";
 import { WorkflowsPage } from "../pages/WorkflowsPage";
 
@@ -55,6 +56,13 @@ export function OperationsWorkspace({
         datasets={datasets}
         onDataChanged={onDataChanged}
         onOpenReceipt={onOpenReceipt}
+      />
+    );
+  if (page === "standards")
+    return (
+      <StandardsPage
+        onOpenReceipt={onOpenReceipt}
+        onDataChanged={onDataChanged}
       />
     );
   if (page === "memory") return <MemoryPage datasets={datasets} />;

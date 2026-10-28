@@ -14,6 +14,7 @@ import { knowledgeEn } from "./knowledgeEn";
 import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
 import { releaseEn } from "./releaseEn";
+import { standardsEn } from "./standardsEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
@@ -21,6 +22,7 @@ export const en = {
   ...customOperatorEn,
   ...releaseEn,
   ...assetEn,
+  ...standardsEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,

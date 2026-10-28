@@ -211,6 +211,16 @@ In a terminal with Datakeel installed, run `datakeel reconcile delivery.tar.gz -
 
 The release portion is a separate optional walkthrough after the screenshot replay below. It changes only the generated workspace and local downloaded copies. The [delivery guide](RELEASES.md) documents the manifest, receipt records, APIs and CLI commands.
 
+## 13. Confirm field standards and inspect conformance (1 minute)
+
+Open **Data standards → Field standards**, search `customer_id`, and inspect the bilingual business meaning, type, owner and lifecycle status. Switch to **Code lists** to read reference value meanings. Editing prepares a frozen plan and saves only after approval.
+
+Open **Mapping suggestions**, search a column, and read the name, type and observed-value reasons behind its candidates. Click **Review mapping**, check the column and target standard, then **Approve and Confirm standard mapping**. Low-evidence columns explicitly receive no suggestion; confirmed columns retain their current mapping.
+
+In **Coverage**, switch between database, table and owner groups and inspect mapping coverage, mapped-column compliance and violation Top N. Follow a table or column link, open **Facts**, and expand its standards checks to see failed rules, counts and redacted examples. **Standards report** combines field quality with the deterministic rule report. **Change history** can prepare an approval plan to restore an earlier revision.
+
+The demo includes separately generated clean and deliberately nonconforming tables. If an older workspace has no standards demo, run `uv run datakeel standards demo` with the same `DATAKEEL_HOME` and refresh. See the [data standards reference](STANDARDS.md). This flow uses rules and needs no model.
+
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.

@@ -22,11 +22,13 @@ from datakeel.cli.evidence import seed_evidence_demo
 from datakeel.cli.image_kg_demo import seed_image_kg_demo
 from datakeel.cli.kg_demo import check_demo, demo_reports, seed_kg_demo
 from datakeel.core.errors import ExecutionError
+from datakeel.core.standard_history_models import StandardsReport
 from datakeel.harness.enterprise_kg import (
     check_enterprise_extraction,
     import_enterprise_documents,
     schedule_enterprise_extraction,
 )
+from datakeel.harness.standard_cases import seed_standard_demo
 from datakeel.http import Client
 from datakeel.sample import generate_samples
 from datakeel.storage.database import Database, data_dir
@@ -140,7 +142,7 @@ def _serve(
         )
         base = f"http://{args.host}:{args.port}"
         console.print(f"API: {base}/api/docs\nPage: {base}/", markup=False)
-        _wait_ready(db, task_id, base, children, started, evidence_task_id)
+        _wait_ready(db, task_id, base, children, time.monotonic(), evidence_task_id)
         elapsed = time.monotonic() - started
         console.print(f"Demo COMPLETED: 400 source files in {elapsed:.2f}s. Press Ctrl+C to stop.")
         if evidence_task_id is not None:
@@ -156,6 +158,19 @@ def _serve(
         _stop(children)
 
 
+def _check_processed(db: Database, task_id: str, evidence_task_id: str | None) -> None:
+    if not _check_task(db, task_id):
+        msg = "Demo task did not complete"
+        raise ExecutionError(msg)
+    if evidence_task_id and not _check_task(db, evidence_task_id):
+        msg = "Evidence demo task did not complete"
+        raise ExecutionError(msg)
+
+
+def _seed_standards(db: Database, *, legacy_only: bool) -> StandardsReport | None:
+    return None if legacy_only else seed_standard_demo(db, data_dir() / "standards-demo")
+
+
 def demo(args: argparse.Namespace) -> None:
     """Run the complete local demonstration without external services."""
     started = time.monotonic()
@@ -167,6 +182,7 @@ def demo(args: argparse.Namespace) -> None:
     assets = seed_asset_demo(db, dataset_id) if enterprise else ()
     graph = None if getattr(args, "legacy_only", False) else seed_kg_demo(db)
     image_graph = None if getattr(args, "legacy_only", False) else seed_image_kg_demo(db)
+    standards = _seed_standards(db, legacy_only=getattr(args, "legacy_only", False))
     documents = (
         import_enterprise_documents(db, data_dir() / "enterprise-documents") if graph else None
     )
@@ -177,12 +193,7 @@ def demo(args: argparse.Namespace) -> None:
         _serve(db, task_id, args, started, evidence[1] if evidence else None)
         return
     run_worker(db, once=True)
-    if not _check_task(db, task_id):
-        msg = "Demo task did not complete"
-        raise ExecutionError(msg)
-    if evidence and not _check_task(db, evidence[1]):
-        msg = "Evidence demo task did not complete"
-        raise ExecutionError(msg)
+    _check_processed(db, task_id, evidence[1] if evidence else None)
     if graph:
         check_demo(db, graph)
     if image_graph:
@@ -198,6 +209,7 @@ def demo(args: argparse.Namespace) -> None:
                 "elapsed_seconds": round(time.monotonic() - started, 3),
                 "enterprise": enterprise.model_dump(mode="json") if enterprise else None,
                 "data_assets": [asset.model_dump(mode="json") for asset in assets],
+                "standards": standards.coverage.model_dump(mode="json") if standards else None,
                 "enterprise_documents": documents.model_dump(mode="json") if documents else None,
                 "knowledge_graph": [run.model_dump(mode="json") for run in demo_reports(db, graph)]
                 if graph

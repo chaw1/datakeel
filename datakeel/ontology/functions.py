@@ -10,6 +10,7 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError
 from datakeel.core.kg_queries import KGExplainQuery, KGQuery
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.core.standard_reporting_models import StandardCoverageParams, StandardUsageParams
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.lineage.models import GraphNode, GraphView
 from datakeel.ontology.catalog_functions import invoke_catalog
@@ -26,6 +27,7 @@ from datakeel.ontology.parameters import (
     SearchFilesParams,
     TaskParams,
 )
+from datakeel.ontology.standard_functions import invoke_standard
 from datakeel.ontology.tool_refs import extract_refs
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
@@ -51,6 +53,8 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "impact_of": ImpactParams,
     "query_kg": KGQuery,
     "explain_relation": KGExplainQuery,
+    "query_standard_coverage": StandardCoverageParams,
+    "list_standard_usage": StandardUsageParams,
 }
 
 
@@ -254,9 +258,13 @@ def _invoke_function(db: Database, name: str, arguments: JsonDocument) -> Functi
         "impact_of",
         "query_kg",
         "explain_relation",
+        "query_standard_coverage",
+        "list_standard_usage",
     }:
         handler = (
-            invoke_kg
+            invoke_standard
+            if name in {"query_standard_coverage", "list_standard_usage"}
+            else invoke_kg
             if name in {"query_kg", "explain_relation"}
             else invoke_evidence
             if name in {"query_evidence", "get_evidence", "explain_sample"}

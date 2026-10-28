@@ -1,0 +1,71 @@
+.standards-page,
+.standards-section {
+  display: grid;
+  gap: calc(var(--space) * 5);
+  min-width: 0;
+}
+.standards-section {
+  padding: calc(var(--space) * 5);
+}
+.standards-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px);
+  gap: calc(var(--space) * 4);
+}
+.standards-toolbar label {
+  display: grid;
+  gap: calc(var(--space) * 1.5);
+}
+.standards-candidates {
+  display: grid;
+  gap: calc(var(--space) * 4);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.standards-candidates > li {
+  padding: calc(var(--space) * 4);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+.standards-candidate {
+  border-top: 1px solid var(--rule);
+  padding-block: calc(var(--space) * 3);
+}
+.standards-candidate ul {
+  margin-block: calc(var(--space) * 2);
+}
+.standards-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(var(--space) * 4);
+  margin: 0;
+}
+.standards-summary dd {
+  margin: calc(var(--space) * 2) 0 0;
+  font-size: var(--font-lg);
+  font-weight: 600;
+}
+.standards-summary dt {
+  color: var(--muted);
+}
+.standards-checks {
+  display: grid;
+  gap: calc(var(--space) * 3);
+  border-top: 1px solid var(--rule);
+  padding-top: calc(var(--space) * 4);
+}
+.standards-checks summary {
+  overflow-wrap: anywhere;
+}
+.standards-page input,
+.standards-page select,
+.standards-page textarea {
+  font-size: var(--font-sm);
+}
+@media (max-width: 740px) {
+  .standards-toolbar,
+  .standards-summary {
+    grid-template-columns: 1fr;
+  }
+}

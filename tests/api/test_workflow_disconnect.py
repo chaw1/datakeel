@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import asyncio
-from threading import Event, Timer
+from threading import Event
 from time import monotonic, sleep
 from typing import TYPE_CHECKING, cast
 
@@ -25,28 +25,16 @@ from datakeel.workflows.execution import WorkflowHooks
 from tests.workflows.conftest import create_dataset
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable
     from pathlib import Path
 
     from starlette.types import Message, Scope
 
     from datakeel.storage.database import Database
 
-
-def _ready_stream(
-    events: Generator[WorkflowEvent, None, None], target: Callable[[WorkflowEvent], bool]
-) -> Generator[WorkflowEvent, None, None]:
-    """Complete real workflow setup before measuring its ASGI disconnect handling."""
-    try:
-        for event in events:
-            if target(event):
-                yield event
-                yield from events
-                return
-        msg = "Workflow never reached the disconnect test target"
-        raise AssertionError(msg)
-    finally:
-        events.close()
+_PREPARATION_SECONDS = 30
+_DISCONNECT_SECONDS = 2
+_CLEANUP_SECONDS = 30
 
 
 async def _disconnect(
@@ -57,6 +45,7 @@ async def _disconnect(
 ) -> tuple[list[WorkflowEvent], float]:
     """Notify the actual response after a target SSE event, including a blocked next call."""
     ready = asyncio.Event()
+    disconnected = asyncio.Event()
     observed: list[WorkflowEvent] = []
     disconnected_at = 0.0
 
@@ -64,9 +53,10 @@ async def _disconnect(
         nonlocal disconnected_at
         await ready.wait()
         if polling is not None:
-            await asyncio.to_thread(polling.wait, 3)
-            assert polling.is_set(), "The real wait node never entered its polling sleep"
+            entered = await asyncio.to_thread(polling.wait, _PREPARATION_SECONDS)
+            assert entered, "The real wait node never entered its polling sleep"
         disconnected_at = monotonic()
+        disconnected.set()
         return {"type": "http.disconnect"}
 
     async def send(message: Message) -> None:
@@ -82,7 +72,17 @@ async def _disconnect(
                     await asyncio.Future[None]()
 
     scope: Scope = {"type": "http", "asgi": {"version": "3.0", "spec_version": spec_version}}
-    await asyncio.wait_for(response(scope, receive, send), timeout=4)
+    execution = asyncio.create_task(response(scope, receive, send))
+    try:
+        await asyncio.wait_for(disconnected.wait(), timeout=_PREPARATION_SECONDS)
+        await asyncio.wait_for(asyncio.shield(execution), timeout=_DISCONNECT_SECONDS)
+    finally:
+        response.cancelled.set()
+        if not execution.done():
+            execution.cancel()
+        await asyncio.wait_for(
+            asyncio.gather(execution, return_exceptions=True), timeout=_CLEANUP_SECONDS
+        )
     assert disconnected_at > 0, "The response completed before the injected disconnect"
     return observed, monotonic() - disconnected_at
 
@@ -93,21 +93,8 @@ def _call_disconnected(
     target: Callable[[WorkflowEvent], bool],
     polling: Event | None = None,
 ) -> tuple[list[WorkflowEvent], float]:
-    """Bound a broken listener without allowing the fixture to wait for its 60-second timeout."""
-    rescue = Timer(3, response.cancelled.set)
-
-    def ready_target(event: WorkflowEvent) -> bool:
-        matched = target(event)
-        if matched and rescue.ident is None:
-            rescue.start()
-        return matched
-
-    try:
-        return asyncio.run(_disconnect(response, spec_version, ready_target, polling))
-    finally:
-        rescue.cancel()
-        if rescue.ident is not None:
-            rescue.join()
+    """Bound preparation separately while joining response cleanup before fixture teardown."""
+    return asyncio.run(_disconnect(response, spec_version, target, polling))
 
 
 @pytest.mark.parametrize("spec_version", ["2.3", "2.4"])
@@ -122,11 +109,6 @@ def test_http_disconnect_interrupts_real_wait_without_worker(
         polling.set()
         sleep(seconds)
 
-    def wait_started(event: WorkflowEvent) -> bool:
-        return event.step_id == "wait" and any(
-            step.id == "wait" and step.status == "RUNNING" for step in event.run.steps
-        )
-
     events = start_workflow(
         db,
         "dataset-health",
@@ -136,9 +118,12 @@ def test_http_disconnect_interrupts_real_wait_without_worker(
         hooks=WorkflowHooks(sleep=real_sleep, cancelled=cancelled.is_set),
     )
     observed, elapsed = _call_disconnected(
-        WorkflowStreamResponse(_ready_stream(events, wait_started), cancelled),
+        WorkflowStreamResponse(events, cancelled),
         spec_version,
-        wait_started,
+        lambda event: (
+            event.step_id == "wait"
+            and any(step.id == "wait" and step.status == "RUNNING" for step in event.run.steps)
+        ),
         polling,
     )
     assert elapsed <= 2
@@ -161,10 +146,6 @@ def test_http_disconnect_preserves_a_durable_approval_pause(
     """Closing a paused stream must retain its signed-resume checkpoint and pending plan."""
     dataset = create_dataset(db, tmp_path / "approval-disconnect")
     cancelled = Event()
-
-    def paused(event: WorkflowEvent) -> bool:
-        return event.run.status == "PAUSED"
-
     events = start_workflow(
         db,
         "low-quality-cleanup",
@@ -175,9 +156,9 @@ def test_http_disconnect_preserves_a_durable_approval_pause(
         hooks=WorkflowHooks(cancelled=cancelled.is_set),
     )
     observed, elapsed = _call_disconnected(
-        WorkflowStreamResponse(_ready_stream(events, paused), cancelled),
+        WorkflowStreamResponse(events, cancelled),
         spec_version,
-        paused,
+        lambda event: event.run.status == "PAUSED",
     )
     assert elapsed <= 2
     run = get_run(db, observed[-1].run.id)

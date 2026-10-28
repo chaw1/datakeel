@@ -14,6 +14,7 @@ import { knowledgeZh } from "./knowledgeZh";
 import { metricRollbackZh } from "./metricRollbackZh";
 import { objectZh } from "./objectZh";
 import { releaseZh } from "./releaseZh";
+import { standardsZh } from "./standardsZh";
 import { workflowZh } from "./workflowZh";
 import { workspaceZh } from "./workspaceZh";
 
@@ -22,6 +23,7 @@ export const zh: Record<MessageKey, string> = {
   ...customOperatorZh,
   ...releaseZh,
   ...assetZh,
+  ...standardsZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,

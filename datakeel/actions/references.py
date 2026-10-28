@@ -18,6 +18,13 @@ from datakeel.actions.data_asset_parameters import (
 )
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import parse_params
+from datakeel.actions.standard_parameters import (
+    ConfirmStandardMappingParams,
+    ImportStandardsParams,
+    StandardActionParams,
+    UpdateCodeListParams,
+    UpdateStandardParams,
+)
 from datakeel.core.catalog_identity import catalog_id
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
@@ -33,6 +40,8 @@ def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
                 version=params.code_hash,
             )
         ]
+    if isinstance(params, StandardActionParams):
+        return standard_refs(params)
     if isinstance(params, ImportCatalogParams) and params.snapshot is not None:
         return [item.asset_ref for item in params.snapshot.objects]
     if isinstance(params, RestoreCatalogParams):
@@ -84,3 +93,29 @@ def plan_refs(plan: ActionPlan) -> list[AssetRef]:
     """Combine file manifest identities and separately bound metadata targets."""
     params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
     return [item.asset_ref for item in plan.manifest.objects] + parameter_refs(params)
+
+
+def standard_refs(params: StandardActionParams) -> list[AssetRef]:
+    """Identify standards targets separately from the legacy file manifest contract."""
+    if isinstance(params, UpdateStandardParams):
+        return [AssetRef(asset_type="standard", asset_id=params.definition.code)]
+    if isinstance(params, UpdateCodeListParams):
+        return [AssetRef(asset_type="code_list", asset_id=params.definition.code)]
+    if isinstance(params, ConfirmStandardMappingParams):
+        return [AssetRef(asset_type="column", asset_id=params.mapping.column_id)]
+    if isinstance(params, ImportStandardsParams):
+        return [
+            *(
+                AssetRef(asset_type="standard", asset_id=item.code)
+                for item in params.contract.standards
+            ),
+            *(
+                AssetRef(asset_type="code_list", asset_id=item.code)
+                for item in params.contract.code_lists
+            ),
+            *(
+                AssetRef(asset_type="standard_synonyms", asset_id=item.canonical)
+                for item in params.contract.synonyms
+            ),
+        ]
+    return [AssetRef(asset_type="standards", asset_id="contract")]

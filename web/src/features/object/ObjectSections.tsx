@@ -2,6 +2,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { Files } from "../files/Files";
 import Quality from "../quality/Quality";
 import { ReportView } from "../reports/ReportView";
+import { StandardsChecks } from "../standards/StandardsChecks";
 import { VersionWorkspace } from "../versions/VersionWorkspace";
 
 import { ObjectEvidence } from "./ObjectEvidence";
@@ -81,6 +82,16 @@ export function ObjectSections({
               )}
             </pre>
           </details>
+          {(target.kind === "table" || target.kind === "column") && (
+            <StandardsChecks
+              tableId={
+                target.kind === "table"
+                  ? target.id
+                  : target.id.split("/").slice(0, -1).join("/")
+              }
+              columnId={target.kind === "column" ? target.id : undefined}
+            />
+          )}
         </section>
       );
   }

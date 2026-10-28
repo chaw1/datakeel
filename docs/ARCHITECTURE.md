@@ -44,6 +44,7 @@ datakeel/
     quality/                # 五维评分、问题分级、规则基线报告
     lineage/                # 事件写入、幂等、投影、图查询、OpenLineage/Croissant 导出
     governance/             # 标准模板、元数据校验、变更日志、合规评分
+    standards/              # 字段标准和码表合同、规则映射建议、落标检查与覆盖率
     storage/                # DB（SQLAlchemy，Postgres/SQLite 双栈）、对象存储（S3/本地）
     worker/                 # 任务领取、分片、reaper、outbox relay
     api/                    # FastAPI 路由；/admin 只读看板

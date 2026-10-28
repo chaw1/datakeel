@@ -25,4 +25,9 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   rollback_metric: "approvalMetricRollback",
   update_term: "approvalTermUpdate",
   rollback_term: "approvalTermRollback",
+  update_standard: "stdFieldUpdate",
+  update_code_list: "stdCodeUpdate",
+  import_standards: "stdImport",
+  confirm_standard_mapping: "stdMappingAction",
+  rollback_standards: "stdRollbackAction",
 };

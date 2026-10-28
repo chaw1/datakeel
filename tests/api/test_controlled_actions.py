@@ -81,8 +81,8 @@ def test_ontology_endpoint_when_requested_exposes_valid_versioned_schemas(
     value = client.get("/api/ontology").json()
     assert len(value["object_types"]) == 14
     assert len(value["link_types"]) == 9
-    assert len(value["functions"]) == 15
-    assert len(value["actions"]) == 23
+    assert len(value["functions"]) == 17
+    assert len(value["actions"]) == 28
     for item in value["object_types"]:
         Draft202012Validator.check_schema(item["properties"])
     for item in value["actions"]:

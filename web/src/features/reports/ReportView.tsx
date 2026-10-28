@@ -5,7 +5,13 @@ import { display } from "../../lib/format";
 import { Paragraphs } from "./Paragraphs";
 
 import type { Report } from "../../api/types";
-export function ReportView({ report }: { report: Report | null }) {
+export function ReportView({
+  report,
+  context = "dataset",
+}: {
+  report: Report | null;
+  context?: "dataset" | "standards";
+}) {
   const { t } = useI18n();
 
   if (!report)
@@ -30,14 +36,24 @@ export function ReportView({ report }: { report: Report | null }) {
       </aside>
       <div className="report-body">
         <div className="report-cover">
-          <span className="eyebrow">{t("datasetIntelligence")}</span>
+          <span className="eyebrow">
+            {t(context === "standards" ? "stdNav" : "datasetIntelligence")}
+          </span>
           <h2>
-            {t("fromRawData")} <br />
-            {t("toInformedDecisions")}{" "}
+            {context === "standards" ? (
+              t("stdAnalysis")
+            ) : (
+              <>
+                {t("fromRawData")} <br />
+                {t("toInformedDecisions")}
+              </>
+            )}
           </h2>
           <p>
             {t(
-              "aPracticalAssessmentOfQualitySuitabilityAndTheNextStepsForYourDataset",
+              context === "standards"
+                ? "stdIntro"
+                : "aPracticalAssessmentOfQualitySuitabilityAndTheNextStepsForYourDataset",
             )}{" "}
           </p>
           <span className="badge green">

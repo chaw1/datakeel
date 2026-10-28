@@ -52,12 +52,24 @@ export async function enterpriseSmoke({
       json(`/api/catalog/${kind}?limit=200`),
     ),
   );
-  assert.equal(sources.total, 4);
+  assert.equal(sources.total, 5);
+  assert.deepEqual(
+    sources.items.map((item) => item.asset_ref.asset_id).sort(),
+    ["crm", "ecommerce", "erp", "service", "standards_demo"],
+  );
   assert.ok(
-    tables.total >= 20 &&
-      columns.total >= 100 &&
+    tables.total >= 22 &&
+      columns.total >= 118 &&
       metrics.total >= 12 &&
       terms.total >= 30,
+  );
+  assert.equal(
+    tables.items.filter((item) => item.source_id === "standards_demo").length,
+    2,
+  );
+  assert.equal(
+    columns.items.filter((item) => item.source_id === "standards_demo").length,
+    18,
   );
   await page
     .getByRole("region", { name: "Data sources", exact: true })
@@ -105,7 +117,7 @@ export async function enterpriseSmoke({
   await page.getByText("21–32 of 32", { exact: true }).waitFor();
   await screenshot("catalog-glossary");
   checks.push(
-    "four real catalog sources, table fields, bounded downstream impact and paginated glossary",
+    "four original business sources plus the generated standards source, exactly two standards tables and 18 columns, table fields, bounded downstream impact and paginated glossary",
   );
 
   await openAsk();

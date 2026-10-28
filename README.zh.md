@@ -4,6 +4,9 @@
 
 [十分钟导览](docs/DEMO.md) · [Ten-minute tour](docs/DEMO.en.md)
 
+[数据标准](docs/STANDARDS.md) 支持字段标准与码表、可解释的规则映射建议、已确认字段的落标检查和覆盖率。标准变更与映射确认均须人工签批。
+
+
 ```bash
 uv sync
 uv run datakeel demo
@@ -337,7 +340,7 @@ OpenLineage 导出是事件数组，逐个元素用官方 RunEvent Schema 校验
 
 ## MCP 接入
 
-`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **33 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），16 个**只准备计划**的动作（含 `publish_release`、`run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。
+`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **33 个工具**：15 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），16 个**只准备计划**的动作（含 `publish_release`、`run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。共 **39 个工具**：17 个只读函数（含 `query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），20 个**只准备计划**的动作（含 `run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。
 
 Agent 和 MCP 同步提供 `ask_data`、`list_metrics`、`explain_metric`、`impact_of`。`ask_data` 只读源数据，在 Datakeel 保存答案及证据；涉及资产的调用记录 `asset_refs`，空的 `list_metrics` 结果可没有引用。工具、动作与 HTTP 使用同一套类型模型生成 schema。
 
@@ -396,9 +399,9 @@ uv run datakeel eval-kg --json
 uv run python scripts/mutate.py --output mutation-results.json
 ```
 
-44 条 golden 保留原有 12 条查询、动作、审批、打转、预算、跨轮指代与 dry-run 等场景，以及证据查询、未知状态解释、按查询结果生成版本和删除待审四条；新增问数、澄清、拒答、受控修改指标后答案变化四条企业场景。另外 12 条覆盖委派、泄漏、注入审批及跨会话记忆。另有 4 条图谱场景覆盖查询、缺失端点解释、自动重放和外发签批且对话执行记录为 0。另有 4 条知识问数、3 条图片来源和 1 条无授权资产引导场景；后者要求 Agent 提示申请且不泄露数据。每条用脚本回复驱动真实本机服务与隔离样例。第二次运行显示上次 ID 和通过数、token、成本差值；`--json` 输出完整结果，有失败则退出码非零。`--provider openai` / `--provider anthropic` 会选择真实付费评估，离线门禁不会运行。
+44 条 golden 保留原有 12 条查询、动作、审批、打转、预算、跨轮指代与 dry-run 等场景，以及证据查询、未知状态解释、按查询结果生成版本和删除待审四条；新增问数、澄清、拒答、受控修改指标后答案变化四条企业场景。另外 12 条覆盖委派、泄漏、注入审批及跨会话记忆。另有 4 条图谱场景覆盖查询、缺失端点解释、自动重放和外发签批且对话执行记录为 0。另有 4 条知识问数、3 条图片来源和 1 条无授权资产引导场景；后者要求 Agent 提示申请且不泄露数据。另有 2 条标准场景检查落标最差表和已确认的标准使用列。每条用脚本回复驱动真实本机服务与隔离样例。第二次运行显示上次 ID 和通过数、token、成本差值；`--json` 输出完整结果，有失败则退出码非零。`--provider openai` / `--provider anthropic` 会选择真实付费评估，离线门禁不会运行。
 
-变异脚本要求临时源码副本中的 46 处变异全部为 `KILLED`。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。运行时变异还检查签批恢复授权与工具调用幂等。工作流及路由变异检查工作流签批恢复授权、意图得分分差、图的环检测，以及切换备用模型前对失败尝试结算预算。新增 canary、委派深度、工具越权、记忆硬删及每次用户提问的记忆增强去重五个变异。图谱增加关闭端点核对、丢弃待复核候选、缓存遗漏模型身份三个变异。知识问数另有四处变异，分别篡改候选审阅标签、按下划线拆分标识符、把未支持的知识问句送入数值路线、拒绝另一端关联后丢弃关系，必须由真实工具结果的 golden 或专项回归捕获。资产增加缺失授权、到期、撤销、精确范围、工具缓存重放、来源清单、Agent 消息重放和版本来源八处守卫变异。每个隔离子进程仍限时 300 秒。环境或初始化失败不计为成功杀死变异。
+变异脚本要求临时源码副本中的 46 处变异全部为 `KILLED`。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。运行时变异还检查签批恢复授权与工具调用幂等。工作流及路由变异检查工作流签批恢复授权、意图得分分差、图的环检测，以及切换备用模型前对失败尝试结算预算。新增 canary、委派深度、工具越权、记忆硬删及每次用户提问的记忆增强去重五个变异。图谱增加关闭端点核对、丢弃待复核候选、缓存遗漏模型身份三个变异。知识问数另有四处变异，分别篡改候选审阅标签、按下划线拆分标识符、把未支持的知识问句送入数值路线、拒绝另一端关联后丢弃关系，必须由真实工具结果的 golden 或专项回归捕获。资产增加缺失授权、到期、撤销、精确范围、工具缓存重放、来源清单、Agent 消息重放和版本来源八处守卫变异。两处标准变异分别倒置合规率排序、丢弃已确认映射，必须使对应 golden 失败。每个隔离子进程仍限时 300 秒。环境或初始化失败不计为成功杀死变异。
 
 `eval-evidence` 在隔离的本机进程中新生成 1,000 个样本，运行生产抽取 DAG，再执行 [questions.yaml](contracts/evidence/questions.yaml) 的 15 题：近重复 4 题、冲突 4 题、损坏 4 题、无标注 3 题。baseline 只用标签、路径和已有质量事实，with_evidence 加入断言与直接近重复关系。报告包含每题 precision/recall、宏平均、pair 指标、三态计数、抽取计数与耗时，复用 `eval_runs` 表，`provider=evidence`，`suite_digest` 是题集文件 SHA-256。临时样例随评测结束清理，保留报告和 gold 摘要；`--questions path.yaml` 可指定另一份通过校验的题集。
 

@@ -8,6 +8,7 @@ from datakeel.core.agent_models import ToolDefinition
 from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.functions import PARAMETER_MODELS
+from datakeel.ontology.standard_functions import STANDARD_TOOL_DESCRIPTIONS
 from datakeel.ontology.tool_models import ApproveToolParams, ExecuteToolParams
 
 
@@ -30,6 +31,8 @@ def tool_definitions() -> list[ToolDefinition]:
 
 
 def _description(name: str) -> str:
+    if name in STANDARD_TOOL_DESCRIPTIONS:
+        return STANDARD_TOOL_DESCRIPTIONS[name]
     if name == "ask_data":
         return ASK_DATA_DESCRIPTION
     if name in PARAMETER_TYPES:

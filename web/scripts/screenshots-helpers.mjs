@@ -17,6 +17,11 @@ export const pages = [
   { name: "ask", hash: "#/ask", ready: ".ask-composer" },
   { name: "catalog", hash: "#/catalog", ready: ".catalog-object-list button" },
   {
+    name: "standards",
+    hash: "#/standards",
+    ready: ".catalog-object-list button",
+  },
+  {
     name: "object-table",
     hash: "#/object/table/ecommerce%2Fmain%2Forders?tab=relations",
     ready: ".object-body .graph-node",

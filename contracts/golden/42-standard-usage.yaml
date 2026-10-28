@@ -1,0 +1,44 @@
+id: 42-standard-usage
+description: Resolve a bilingual field standard and return only confirmed column associations.
+fixture_kind: standards
+turns:
+  - input: 客户编号这个标准被哪些列用了？
+    script:
+      - tool_calls:
+          - name: tool_search
+            arguments: {query: list_standard_usage}
+            id: 42-discover
+      - tool_calls:
+          - name: list_standard_usage
+            arguments: {standard: 客户编号}
+            id: 42-usage
+      - content: customer_id is used by clean_customers and dirty_customers.
+expect:
+  tool_sequence: [tool_search, list_standard_usage]
+  tool_results:
+    - name: list_standard_usage
+      content_schema:
+        type: object
+        required: [data]
+        properties:
+          data:
+            type: object
+            required: [mappings, total]
+            properties:
+              total: {const: 2}
+              mappings:
+                type: array
+                minItems: 2
+                maxItems: 2
+                items:
+                  type: object
+                  required: [column_id, standard_code]
+                  properties:
+                    standard_code: {const: customer_id}
+                    column_id:
+                      enum:
+                        - standards_demo/main/clean_customers/customer_id
+                        - standards_demo/main/dirty_customers/customer_id
+  answer_contains: [clean_customers, dirty_customers]
+  file_count: 1
+  max_turns: 3

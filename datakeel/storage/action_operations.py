@@ -21,6 +21,7 @@ from datakeel.actions.parameters import (
     parse_params,
 )
 from datakeel.actions.release_parameters import PublishReleaseParams
+from datakeel.actions.standard_parameters import StandardActionParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import AssetRef, JsonDocument
@@ -36,6 +37,7 @@ from datakeel.storage.datasets import latest_files
 from datakeel.storage.evidence_actions import decide_action
 from datakeel.storage.kg_store import schedule_extraction
 from datakeel.storage.release_actions import publish_release
+from datakeel.storage.standard_changes import execute_standard_action
 
 
 def _metadata(session: Session, params: MetadataParams) -> OperationResult:
@@ -98,6 +100,7 @@ _TYPED_ACTIONS: tuple[
     tuple[type | UnionType, Callable[[Session, ActionPlan, Any], OperationResult]], ...
 ] = (
     (DataAssetActionParams, execute_data_asset_action),
+    (StandardActionParams, execute_standard_action),
     (SubmitCustomOperatorParams, approve_custom_operator),
     (PublishReleaseParams, publish_release),
     (CatalogActionParams, execute_catalog_action),

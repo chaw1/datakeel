@@ -23,7 +23,8 @@ export type Page =
   | "traces"
   | "workflows"
   | "memory"
-  | "custom-operators";
+  | "custom-operators"
+  | "standards";
 // Enterprise workspaces remain independent of the file dataset selection.
 export const tabs: { id: Page; label: MessageKey }[] = [
   { id: "overview", label: "overview" },
@@ -39,6 +40,7 @@ export const operationPages = [
   { id: "data-assets", label: "assetMarket", icon: "database" },
   { id: "workflows", label: "workflowsNav", icon: "activity" },
   { id: "catalog", label: "catalogNav", icon: "database" },
+  { id: "standards", label: "stdNav", icon: "grid" },
   { id: "ask", label: "askNav", icon: "message" },
   { id: "evidence", label: "evidenceNav", icon: "quality" },
   { id: "kg", label: "kgNav", icon: "grid" },

@@ -1,0 +1,52 @@
+id: 41-standard-coverage
+description: Rank confirmed standard conformance from generated clean and dirty customer tables.
+fixture_kind: standards
+turns:
+  - input: 哪张表落标最差？
+    script:
+      - tool_calls:
+          - name: tool_search
+            arguments: {query: query_standard_coverage}
+            id: 41-discover
+      - tool_calls:
+          - name: query_standard_coverage
+            arguments: {limit: 1}
+            id: 41-coverage
+      - content: dirty_customers has the lowest confirmed standard compliance.
+expect:
+  tool_sequence: [tool_search, query_standard_coverage]
+  tool_results:
+    - name: query_standard_coverage
+      content_schema:
+        type: object
+        required: [data]
+        properties:
+          data:
+            type: object
+            required: [worst_tables, coverage]
+            properties:
+              worst_tables:
+                type: array
+                minItems: 1
+                maxItems: 1
+                items:
+                  type: object
+                  required: [key, compliant_columns, mapped_columns]
+                  properties:
+                    key: {const: standards_demo/main/dirty_customers}
+                    compliant_columns: {const: 1}
+                    mapped_columns: {const: 8}
+              coverage:
+                type: object
+                required: [overall]
+                properties:
+                  overall:
+                    type: object
+                    required: [total_columns, mapped_columns, compliant_columns]
+                    properties:
+                      total_columns: {const: 18}
+                      mapped_columns: {const: 16}
+                      compliant_columns: {const: 9}
+  answer_contains: [dirty_customers]
+  file_count: 1
+  max_turns: 3
