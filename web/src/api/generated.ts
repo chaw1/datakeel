@@ -2139,6 +2139,195 @@ export interface components {
             version?: string | null;
         };
         /**
+         * AutoRoutingConfig
+         * @description Keep every numerical routing threshold in the signed transcription profile.
+         *
+         *     Image analysis is bounded by downsampling, never by source filename or identity.
+         *     Ratios use OCR line heights so the same signals survive image resizing.
+         *     Document padding bounds the sparse-text denominator around OCR content; contrast
+         *     rejects surrounding dark scenery. Grey-row comparisons require aligned nearby
+         *     rows and abrupt local background changes; strike limits reject thick or extended
+         *     background lines.
+         */
+        AutoRoutingConfig: {
+            /**
+             * Analysis Max Side
+             * @default 1200
+             */
+            analysis_max_side: number;
+            /**
+             * Background Percentile
+             * @default 90
+             */
+            background_percentile: number;
+            /**
+             * Connector Min Coverage
+             * @default 0.72
+             */
+            connector_min_coverage: number;
+            /**
+             * Connector Min Height Ratio
+             * @default 1.5
+             */
+            connector_min_height_ratio: number;
+            /**
+             * Connector Projection Margin Ratio
+             * @default 0.5
+             */
+            connector_projection_margin_ratio: number;
+            /**
+             * Connector Tolerance Ratio
+             * @default 0.12
+             */
+            connector_tolerance_ratio: number;
+            /**
+             * Dark Pixel Threshold
+             * @default 160
+             */
+            dark_pixel_threshold: number;
+            /**
+             * Document Analysis Max Side
+             * @default 256
+             */
+            document_analysis_max_side: number;
+            /**
+             * Document Min Component Area Ratio
+             * @default 0.5
+             */
+            document_min_component_area_ratio: number;
+            /**
+             * Document Min Contrast
+             * @default 25
+             */
+            document_min_contrast: number;
+            /**
+             * Document Padding Height Ratio
+             * @default 3
+             */
+            document_padding_height_ratio: number;
+            /**
+             * Grey Alignment Height Ratio
+             * @default 1
+             */
+            grey_alignment_height_ratio: number;
+            /**
+             * Grey Background Step Height Ratio
+             * @default 0.2
+             */
+            grey_background_step_height_ratio: number;
+            /**
+             * Grey Context Height Ratio
+             * @default 0.5
+             */
+            grey_context_height_ratio: number;
+            /**
+             * Grey Edge Probe Height Ratio
+             * @default 0.05
+             */
+            grey_edge_probe_height_ratio: number;
+            /**
+             * Grey Max Brightness
+             * @default 235
+             */
+            grey_max_brightness: number;
+            /**
+             * Grey Max Line Height Ratio
+             * @default 1.6
+             */
+            grey_max_line_height_ratio: number;
+            /**
+             * Grey Max Neighbor Height Ratio
+             * @default 8
+             */
+            grey_max_neighbor_height_ratio: number;
+            /**
+             * Grey Min Brightness
+             * @default 100
+             */
+            grey_min_brightness: number;
+            /**
+             * Grey Min Contrast
+             * @default 15
+             */
+            grey_min_contrast: number;
+            /**
+             * Grey Min Edge Concentration
+             * @default 0.75
+             */
+            grey_min_edge_concentration: number;
+            /**
+             * Grey Min Row Fraction
+             * @default 0.6
+             */
+            grey_min_row_fraction: number;
+            /**
+             * Grey Min Text Brightness
+             * @default 110
+             */
+            grey_min_text_brightness: number;
+            /**
+             * Max Box Area Per Character
+             * @default 2
+             */
+            max_box_area_per_character: number;
+            /**
+             * Max Connector Neighbors
+             * @default 12
+             */
+            max_connector_neighbors: number;
+            /**
+             * Max Unmatched Ink Fraction
+             * @default 0.85
+             */
+            max_unmatched_ink_fraction: number;
+            /**
+             * Min Mean Confidence
+             * @default 0.85
+             */
+            min_mean_confidence: number;
+            /**
+             * Min Text Area Ratio
+             * @default 0.003
+             */
+            min_text_area_ratio: number;
+            /**
+             * Sparse Max Characters
+             * @default 16
+             */
+            sparse_max_characters: number;
+            /**
+             * Strike Max Extension Ratio
+             * @default 1
+             */
+            strike_max_extension_ratio: number;
+            /**
+             * Strike Max Thickness Ratio
+             * @default 0.2
+             */
+            strike_max_thickness_ratio: number;
+            /**
+             * Strike Min Width Ratio
+             * @default 0.75
+             */
+            strike_min_width_ratio: number;
+            /**
+             * Strike Vertical Margin
+             * @default 0.25
+             */
+            strike_vertical_margin: number;
+            /**
+             * Text Mask Padding Ratio
+             * @default 0.08
+             */
+            text_mask_padding_ratio: number;
+            /**
+             * Version
+             * @default auto-v2
+             * @enum {string}
+             */
+            version: "auto-v1" | "auto-v2";
+        };
+        /**
          * BranchStep
          * @description Choose an edge using a reference, an allowlisted comparator, and an operand.
          */
@@ -3313,6 +3502,32 @@ export interface components {
             version_field?: string | null;
         };
         /**
+         * ImageAutoMetrics
+         * @description Score actual routing, outbound calls and product extraction on labelled images.
+         */
+        ImageAutoMetrics: {
+            /** Cases */
+            cases: number;
+            /** External Images */
+            external_images: number;
+            /** External Ratio */
+            external_ratio: number;
+            /** Extraction F1 */
+            extraction_f1: number;
+            /** Labelled Cases */
+            labelled_cases: number;
+            /** Route Accuracy */
+            route_accuracy?: number | null;
+            /** Route Correct */
+            route_correct: number;
+            /** Routes */
+            routes: components["schemas"]["ImageRouteResult"][];
+            /** Vlm Images */
+            vlm_images: number;
+            /** Vlm Ratio */
+            vlm_ratio: number;
+        };
+        /**
          * ImageGroupMetrics
          * @description Report an explicit image group or language slice with geometric and text quality.
          */
@@ -3359,12 +3574,51 @@ export interface components {
             width: number;
         };
         /**
+         * ImageRouteResult
+         * @description Retain an observed route without using the expected route to choose a backend.
+         */
+        ImageRouteResult: {
+            /** Case Id */
+            case_id: string;
+            /** Expected Route */
+            expected_route?: ("ocr" | "vlm") | null;
+            /**
+             * External
+             * @default false
+             */
+            external: boolean;
+            /**
+             * Reasons
+             * @default []
+             */
+            reasons: ("low_confidence" | "structure_diagram" | "struck_or_greyed_rows" | "sparse_text" | "ocr_failed" | "clean_text")[];
+            /** Route */
+            route: ("ocr" | "vlm") | null;
+        };
+        /**
          * ImageScoringView
          * @description Keep clean, scan, diagram and bilingual slices in stable display order.
          */
         ImageScoringView: {
             /** Groups */
             groups: components["schemas"]["ImageGroupMetrics"][];
+        };
+        /**
+         * ImageTransfer
+         * @description Bind every potentially outbound image to the consent envelope.
+         */
+        ImageTransfer: {
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Image Hash */
+            image_hash: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "ocr" | "vlm" | "auto";
         };
         /**
          * ImpactResult
@@ -3548,6 +3802,7 @@ export interface components {
             failures: components["schemas"]["KGEvalFailure"][];
             /** Id */
             id?: string;
+            image_auto?: components["schemas"]["ImageAutoMetrics"] | null;
             image_product?: components["schemas"]["ImageScoringView"] | null;
             image_recording?: components["schemas"]["ImageScoringView"] | null;
             /**
@@ -3911,8 +4166,15 @@ export interface components {
              * @default 0
              */
             relations_verified: number;
+            /** Transcription Cost Upper Usd */
+            transcription_cost_upper_usd?: string | null;
             /** Transcription Cost Usd */
             transcription_cost_usd?: string | null;
+            /**
+             * Transcription External Images
+             * @default 0
+             */
+            transcription_external_images: number;
             /**
              * Transcription Failed
              * @default 0
@@ -4798,6 +5060,16 @@ export interface components {
             };
         };
         /**
+         * OCRReference
+         * @description Keep the local attempt for human comparison without feeding it to extraction.
+         */
+        OCRReference: {
+            /** Error */
+            error?: string | null;
+            /** Text */
+            text: string;
+        };
+        /**
          * ObjectSet
          * @description Select assets by type, public properties, quality, and version interval.
          */
@@ -5672,6 +5944,11 @@ export interface components {
          * @description Show the image transfer envelope independently from downstream extraction.
          */
         TranscriptionEstimate: {
+            /**
+             * Auto Images
+             * @default 0
+             */
+            auto_images: number;
             /** Cost Upper Usd */
             cost_upper_usd?: string | null;
             /** Image Tokens */
@@ -5682,6 +5959,11 @@ export interface components {
             max_output_tokens: number;
             /** Model */
             model: string;
+            /**
+             * Possible External Images
+             * @default []
+             */
+            possible_external_images: components["schemas"]["ImageTransfer"][];
             price?: components["schemas"]["ModelPrice"] | null;
             /** Price Version */
             price_version?: string | null;
@@ -5702,17 +5984,38 @@ export interface components {
             cached: boolean;
             /** Error */
             error?: string | null;
+            /**
+             * External
+             * @default false
+             */
+            external: boolean;
             /** File Id */
             file_id: string;
             /** Filename */
             filename: string;
             /**
+             * Ignored Field Count
+             * @default 0
+             */
+            ignored_field_count: number;
+            /**
              * Mode
              * @enum {string}
              */
-            mode: "ocr" | "vlm";
+            mode: "ocr" | "vlm" | "auto";
             /** Model */
             model: string;
+            ocr_reference?: components["schemas"]["OCRReference"] | null;
+            /**
+             * Quality Issues
+             * @default []
+             */
+            quality_issues: ("empty" | "truncated" | "repeated" | "timeout" | "provider_error" | "provider_quota_exhausted" | "recording_missing" | "ocr_not_installed" | "api_key_missing" | "mode_mismatch" | "image_decode_error" | "outbound_not_approved" | "coordinates_unreliable" | "unparseable_structured_output")[];
+            /**
+             * Reasons
+             * @default []
+             */
+            reasons: ("low_confidence" | "structure_diagram" | "struck_or_greyed_rows" | "sparse_text" | "ocr_failed" | "clean_text")[];
             /**
              * Status
              * @default completed
@@ -5727,6 +6030,7 @@ export interface components {
         TranscriptionProfile: {
             /** Api Key Env */
             api_key_env?: string | null;
+            auto_routing?: components["schemas"]["AutoRoutingConfig"];
             /**
              * Backend
              * @enum {string}
@@ -5734,6 +6038,17 @@ export interface components {
             backend: "ocr" | "vlm" | "replay" | "fake";
             /** Base Url */
             base_url?: string | null;
+            /**
+             * Coordinate Min Median Iou
+             * @default 0.3
+             */
+            coordinate_min_median_iou: number;
+            /**
+             * Coordinate Space
+             * @default pixel
+             * @enum {string}
+             */
+            coordinate_space: "pixel" | "normalized_1000" | "normalized_1";
             /** Id */
             id: string;
             /**
@@ -5752,7 +6067,7 @@ export interface components {
              * @default ocr
              * @enum {string}
              */
-            mode: "ocr" | "vlm";
+            mode: "ocr" | "vlm" | "auto";
             /** Model */
             model: string;
             /**
@@ -5763,9 +6078,9 @@ export interface components {
             /**
              * Prompt Version
              * @default image-transcription-v1
-             * @constant
+             * @enum {string}
              */
-            prompt_version: "image-transcription-v1";
+            prompt_version: "image-transcription-v1" | "image-transcription-v2";
             /** Recording */
             recording?: string | null;
             /** Request Parameters */
@@ -8016,7 +8331,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

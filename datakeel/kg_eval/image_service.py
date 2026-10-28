@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.kg_eval_models import KGCaseSuite, KGEvalReport, ScoredRecord
 from datakeel.kg.loader import contracts_path
+from datakeel.kg_eval.image_auto_metrics import auto_metrics
 from datakeel.kg_eval.image_execution import ImageCaseExecution, ImageCaseRunner
 from datakeel.kg_eval.image_loader import image_path, load_image_cases
 from datakeel.kg_eval.image_metrics import image_scores
@@ -83,6 +84,7 @@ def evaluate_image(
     transcripts = {execution.raw.pid: execution.transcript for execution in executions}
     labels = {relation.name for relation in schema.relations}
     text_suite = KGCaseSuite(id=suite.id, version=suite.version, cases=suite.cases)
+    product_view = score_views(products, text_suite, labels)
     offline = profile.extractor in {"fake", "replay", "gliner2"} and transcription.backend in {
         "fake",
         "replay",
@@ -95,9 +97,12 @@ def evaluate_image(
         model=profile.model,
         suite_digest=digest,
         recording=score_views(recorded, text_suite, labels),
-        product=score_views(products, text_suite, labels),
+        product=product_view,
         image_recording=image_scores(recorded, suite, labels, transcripts),
         image_product=image_scores(products, suite, labels, transcripts),
+        image_auto=auto_metrics(
+            suite, executions, transcription, product_view.all.relation_strict.f1
+        ),
         blocked_relations=tuple(item for execution in executions for item in execution.blocked),
         failures=tuple(item for execution in executions for item in execution.failures),
         elapsed_seconds=perf_counter() - started,

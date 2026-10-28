@@ -153,6 +153,7 @@ export const kgRun: KGRun = {
     documents: 1,
     transcriptions: [],
     transcription_failed: 0,
+    transcription_external_images: 0,
     located_relations: 0,
     unlocated_relations: 0,
     cloud_calls: 0,

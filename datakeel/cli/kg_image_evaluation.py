@@ -20,7 +20,7 @@ from datakeel.core.kg_images import TranscriptionEstimate
 from datakeel.core.models import new_id, utcnow
 from datakeel.core.transcription_models import TranscriptionProfile
 from datakeel.extraction_runtime.factory import create_extractor
-from datakeel.kg.loader import get_schema
+from datakeel.kg.loader import contracts_path, get_schema
 from datakeel.kg.prompt import image_profile
 from datakeel.kg_eval.image_service import evaluate_image
 from datakeel.storage.database import Database
@@ -111,6 +111,14 @@ def _display(report: KGEvalReport, console: Console) -> None:
                 str(group.transcription_failures),
             )
     console.print(table)
+    if report.image_auto is not None:
+        auto = report.image_auto
+        accuracy = f"{auto.route_accuracy:.1%}" if auto.route_accuracy is not None else "unknown"
+        console.print(
+            f"Routing accuracy: {accuracy}; VLM fraction: {auto.vlm_ratio:.1%}; "
+            f"External fraction: {auto.external_ratio:.1%}; "
+            f"auto extraction F1: {auto.extraction_f1}"
+        )
 
 
 def evaluate(
@@ -123,6 +131,13 @@ def evaluate(
     """Use explicit selected profiles and combine transcription and extraction budget traces."""
     profile = image_profile(load_evaluation_profile(request.profile))
     transcription, schema = _profile(request.transcription_profile), get_schema(request.schema_id)
+    if request.transcription_mode is not None:
+        transcription = TranscriptionProfile.model_validate(
+            transcription.model_dump() | {"mode": request.transcription_mode}
+        )
+    cases = request.cases
+    if cases is None and profile.id == "replay-image-auto":
+        cases = contracts_path() / "eval" / "image-auto"
     config = metering_config(profile, new_id())
     if limits is not None:
         config = config.model_copy(
@@ -134,7 +149,7 @@ def evaluate(
     with create_extractor(profile) as extractor, create_transcriber(transcription) as transcriber:
         extraction = MeteredExtractor(db, config, extractor)
         measured = MeteredTranscriber(db, _job(config, schema, transcription), transcriber)
-        report = evaluate_image(profile, schema, extraction, transcription, measured, request.cases)
+        report = evaluate_image(profile, schema, extraction, transcription, measured, cases)
         if extraction.exceeded or measured.exceeded:
             msg = "Image evaluation exceeded its model budget"
             raise BudgetError(msg)

@@ -30,8 +30,15 @@ def merge_products(job: KGJob, values: list[ProductExtraction]) -> ProductExtrac
     extractor = extraction_identity(
         prepared.schema_definition, prepared.profile, prepared.recording_hash
     )
+    image_extractor = extraction_identity(
+        prepared.schema_definition,
+        prepared.extraction_profile(image=True),
+        prepared.recording_hash,
+    )
     selected = tuple(entities[key] for key in sorted(entities))
-    aliases = same_as_drafts(selected, drafts, prepared.schema_definition, extractor)
+    aliases = same_as_drafts(
+        selected, drafts, prepared.schema_definition, extractor, image_extractor
+    )
     return ProductExtraction(
         entities=selected,
         drafts=merge_drafts((*drafts, *aliases)),
@@ -78,6 +85,7 @@ def base_report(
     return KGReport(
         transcriptions=job.run.report.transcriptions,
         transcription_failed=job.run.report.transcription_failed,
+        transcription_external_images=job.run.report.transcription_external_images,
         located_relations=located,
         unlocated_relations=image_relations - located,
         cloud_calls=len(cloud),
@@ -99,6 +107,7 @@ def base_report(
         accounted_cost_usd=accounted,
         cost_usd=known_cost(traces),
         transcription_cost_usd=known_cost(traces, "transcription"),
+        transcription_cost_upper_usd=job.prepared.transcription_cost_upper_usd,
         extraction_cost_usd=known_cost(traces, "extraction"),
         failed=sum(failure.attempted for failure in failures),
         unexecuted=sum(not failure.attempted for failure in failures),

@@ -12,4 +12,5 @@ timeout_seconds: 120
 request_parameters:
   enable_thinking: false
   num_ctx: 16384
-prompt_version: image-transcription-v1
+prompt_version: image-transcription-v2
+coordinate_space: normalized_1000

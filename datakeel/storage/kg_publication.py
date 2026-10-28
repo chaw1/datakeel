@@ -101,7 +101,14 @@ def _products(
     extractor = extraction_identity(
         prepared.schema_definition, prepared.profile, prepared.recording_hash
     )
-    aliases = same_as_drafts(selected, drafts, prepared.schema_definition, extractor)
+    image_extractor = extraction_identity(
+        prepared.schema_definition,
+        prepared.extraction_profile(image=True),
+        prepared.recording_hash,
+    )
+    aliases = same_as_drafts(
+        selected, drafts, prepared.schema_definition, extractor, image_extractor
+    )
     return ProductExtraction(
         entities=selected,
         drafts=merge_drafts((*refresh_reviewed_aliases(drafts, reviewed), *aliases)),

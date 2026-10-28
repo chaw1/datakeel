@@ -84,6 +84,15 @@ class RapidOCRTranscriber:
         if mode == "vlm":
             message = "RapidOCR supports only ocr mode"
             raise ValidationError(message)
+        try:
+            return self._transcribe(image)
+        except TranscriptionUnavailableError:
+            raise
+        except Exception as error:
+            message = "Local OCR engine failed"
+            raise TranscriptionUnavailableError(message, reason="provider_error") from error
+
+    def _transcribe(self, image: ImageInput) -> TranscriptionResult:
         with Image.open(BytesIO(image.png)) as source:
             rgb = np.asarray(source.convert("RGB"), dtype=np.uint8)
             pixels = np.ascontiguousarray(rgb[:, :, ::-1])

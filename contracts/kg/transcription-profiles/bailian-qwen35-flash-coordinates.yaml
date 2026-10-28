@@ -1,0 +1,16 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+# External transfer requires approval. Normalized coordinates are converted to corrected pixels.
+id: bailian-qwen35-flash-coordinates
+backend: vlm
+mode: vlm
+model: qwen3.5-flash
+interface: openai
+base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+api_key_env: DATAKEEL_VISION_API_KEY
+max_output_tokens: 4096
+timeout_seconds: 120
+request_parameters:
+  enable_thinking: false
+prompt_version: image-transcription-v2
+coordinate_space: normalized_1000

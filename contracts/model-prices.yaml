@@ -41,3 +41,13 @@ models:
     cache_read: 0.006
     cache_write: 0.3
     source: https://api-docs.deepseek.com/quick_start/pricing (2026-10-24; peak; off-peak half)
+
+# Visual transcription uses this same model-keyed table. Insert a verified tariff
+# before treating transcription estimates as known; do not use placeholder zeros.
+# - model: qwen3.5-flash
+#   provider: openai
+#   input: <verified USD per million input tokens>
+#   output: <verified USD per million output tokens>
+#   cache_read: <verified USD per million cached input tokens>
+#   cache_write: <verified USD per million cache-write tokens>
+#   source: <tariff source and verification date>

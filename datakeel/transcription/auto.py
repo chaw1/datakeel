@@ -1,0 +1,192 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Route OCR by deterministic pixel and geometry signals without invoking a backend."""
+
+from __future__ import annotations
+
+import re
+from io import BytesIO
+from typing import TYPE_CHECKING
+
+import numpy as np
+from PIL import Image
+
+from datakeel.core.transcription_auto import AutoReason, AutoRouteDecision, AutoRoutingConfig
+from datakeel.transcription.auto_document import document_view
+from datakeel.transcription.auto_rows import has_grey_row, has_strike, longest_run
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+    from datakeel.core.transcription_models import ImageInput, TranscriptionResult
+
+_ARROW = re.compile(r"[←-⇿⟵-⟿]|-{1,3}>|<-{1,3}")
+
+
+def _pixels(image: ImageInput, config: AutoRoutingConfig) -> tuple[NDArray[np.uint8], float]:
+    with Image.open(BytesIO(image.png)) as source:
+        grey = source.convert("L")
+        scale = min(1.0, config.analysis_max_side / max(grey.size))
+        grey = grey.resize((max(1, round(grey.width * scale)), max(1, round(grey.height * scale))))
+        return np.asarray(grey, dtype=np.uint8), scale
+
+
+def _dark_pixels(
+    pixels: NDArray[np.uint8],
+    boxes: NDArray[np.float64],
+    config: AutoRoutingConfig,
+    *,
+    text: bool = False,
+) -> NDArray[np.bool_]:
+    x1, y1 = np.floor(np.min(boxes[:, :2], axis=0)).astype(np.intp)
+    x2, y2 = np.ceil(np.max(boxes[:, 2:], axis=0)).astype(np.intp)
+    region = pixels[y1:y2, x1:x2]
+    contrast, percentile = config.grey_min_contrast, config.background_percentile
+    threshold = float(np.percentile(region, percentile)) - contrast
+    if text and (foreground := region[region < threshold]).size:
+        threshold = float(np.percentile(foreground, 100 - percentile)) + contrast
+    return pixels < min(config.dark_pixel_threshold, threshold)
+
+
+def _masked_ink(
+    pixels: NDArray[np.uint8], boxes: NDArray[np.float64], config: AutoRoutingConfig
+) -> NDArray[np.bool_]:
+    ink = _dark_pixels(pixels, boxes, config)
+    for x1, y1, x2, y2 in boxes:
+        padding = (y2 - y1) * config.text_mask_padding_ratio
+        left, top = max(0, int(x1 - padding)), max(0, int(y1 - padding))
+        right, bottom = int(np.ceil(x2 + padding)), int(np.ceil(y2 + padding))
+        ink[top:bottom, left:right] = False
+    return ink
+
+
+def _axis_connector(
+    ink: NDArray[np.bool_], pair: NDArray[np.float64], config: AutoRoutingConfig
+) -> bool:
+    height = float(np.median(pair[:, 3] - pair[:, 1]))
+    for axis in (0, 1):
+        first, second = pair[np.argsort(pair[:, axis])]
+        start, end = int(first[axis + 2]), int(second[axis])
+        perpendicular = 1 - axis
+        margin = height * config.connector_projection_margin_ratio
+        left = max(0, int(max(first[perpendicular], second[perpendicular]) - margin))
+        right = int(min(first[perpendicular + 2], second[perpendicular + 2]) + margin)
+        if end - start < height * config.connector_min_height_ratio or right <= left:
+            continue
+        area = ink[start:end, left:right] if axis == 1 else ink[left:right, start:end].T
+        if any(
+            longest_run(column) >= (end - start) * config.connector_min_coverage
+            for column in area.T
+        ):
+            return True
+    return False
+
+
+def _connector(
+    ink: NDArray[np.bool_], pair: NDArray[np.float64], config: AutoRoutingConfig
+) -> bool:
+    if _axis_connector(ink, pair, config):
+        return True
+    centers: NDArray[np.float64] = (pair[:, :2] + pair[:, 2:]) / 2
+    delta: NDArray[np.float64] = centers[1] - centers[0]
+    distance = float(np.hypot(delta[0], delta[1]))
+    height = float(np.median(pair[:, 3] - pair[:, 1]))
+    if distance < height * config.connector_min_height_ratio:
+        return False
+    fractions = np.linspace(0, 1, max(2, int(np.ceil(distance))), dtype=np.float64)
+    samples: NDArray[np.float64] = centers[0] + fractions[:, None] * delta
+    inside = (samples[:, None, :] >= pair[None, :, :2]) & (samples[:, None, :] <= pair[None, :, 2:])
+    outside = ~np.any(np.all(inside, axis=2), axis=1)
+    indices = samples[outside].astype(np.intp)
+    if len(indices) < height * config.connector_min_height_ratio:
+        return False
+    tolerance = round(height * config.connector_tolerance_ratio)
+    hits = np.zeros(len(indices), dtype=np.bool_)
+    for offset in range(-tolerance, tolerance + 1):
+        for axis in (0, 1):
+            points = indices.copy()
+            points[:, axis] += offset
+            x = np.clip(points[:, 0], 0, ink.shape[1] - 1)
+            y = np.clip(points[:, 1], 0, ink.shape[0] - 1)
+            hits |= ink[y, x]
+    return longest_run(hits) >= len(hits) * config.connector_min_coverage
+
+
+def _has_structure(
+    ink: NDArray[np.bool_], boxes: NDArray[np.float64], config: AutoRoutingConfig
+) -> bool:
+    # Compare nearby lines first; distant document lines cannot hide a local connector.
+    centers: NDArray[np.float64] = (boxes[:, :2] + boxes[:, 2:]) / 2
+    for index, center in enumerate(centers):
+        distances: NDArray[np.float64] = np.sum((centers - center) ** 2, axis=1, dtype=np.float64)
+        for other in np.argsort(distances)[1 : config.max_connector_neighbors + 1]:
+            if other > index and _connector(ink, boxes[[index, other]], config):
+                return True
+    return False
+
+
+def _is_sparse(
+    pixels: NDArray[np.uint8],
+    ink: NDArray[np.bool_],
+    boxes: NDArray[np.float64],
+    characters: int,
+    config: AutoRoutingConfig,
+    document_area: int,
+) -> bool:
+    area = float(np.sum((boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])))
+    height = float(np.median(boxes[:, 3] - boxes[:, 1]))
+    foreground = _dark_pixels(pixels, boxes, config, text=True)
+    dark = int(np.count_nonzero(foreground))
+    unmatched = int(np.count_nonzero(ink & foreground)) / max(1, dark)
+    return (
+        (
+            characters <= config.sparse_max_characters
+            and area / max(1, document_area) < config.min_text_area_ratio
+        )
+        or area / max(1, characters * height**2) > config.max_box_area_per_character
+        or (dark > 0 and unmatched > config.max_unmatched_ink_fraction)
+    )
+
+
+def decide_auto_route(
+    image: ImageInput,
+    ocr: TranscriptionResult | None,
+    config: AutoRoutingConfig | None = None,
+) -> AutoRouteDecision:
+    """Choose local OCR or vision from pixels and the completed local OCR attempt.
+
+    ``None`` represents a caught OCR exception. Failure decisions never need to
+    decode pixels; the caller remains responsible for authorization before vision.
+    """
+    config = config or AutoRoutingConfig()
+    if (
+        ocr is None
+        or ocr.error
+        or ocr.quality_issues
+        or ocr.finish_reason == "length"
+        or not ocr.text.strip()
+        or not ocr.lines
+    ):
+        return AutoRouteDecision(route="vlm", reasons=("ocr_failed",))
+    lines = tuple(line for line in ocr.lines if line.text.strip())
+    if not lines:
+        return AutoRouteDecision(route="vlm", reasons=("ocr_failed",))
+    reasons: list[AutoReason] = []
+    characters = sum(len(line.text.strip()) for line in lines)
+    confidence = sum(line.confidence * len(line.text.strip()) for line in lines) / characters
+    if confidence < config.min_mean_confidence:
+        reasons.append("low_confidence")
+    pixels, scale = _pixels(image, config)
+    boxes = np.asarray([tuple(value * scale for value in line.bbox) for line in lines])
+    pixels, document_area = document_view(pixels, boxes, config)
+    ink = _masked_ink(pixels, boxes, config)
+    if _ARROW.search(ocr.text) or _has_structure(ink, boxes, config):
+        reasons.append("structure_diagram")
+    if has_strike(pixels, boxes, config) or has_grey_row(pixels, boxes, config):
+        reasons.append("struck_or_greyed_rows")
+    if _is_sparse(pixels, ink, boxes, characters, config, document_area):
+        reasons.append("sparse_text")
+    return AutoRouteDecision(
+        route="vlm" if reasons else "ocr", reasons=tuple(reasons) or ("clean_text",)
+    )

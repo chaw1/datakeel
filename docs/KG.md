@@ -330,9 +330,9 @@ Document claims expose the assertion ID, endpoints, predicate, `relation_status`
 
 ## Images and scans / 图片与扫描件
 
-`run_kg_extraction` accepts images alongside text. Set `transcription_profile_id` independently from `profile_id`, the **text extractor**. The UI defaults to `replay-image-demo` only when every image has a matching recording; other images require an explicit transcription choice. Pair `replay-image-demo` transcription with `replay-image-flash` extraction for the bundled qwen visual transcripts. `mode_overrides` maps selected image file IDs to `ocr` or `vlm`. There is no automatic routing or cloud localization in this release.
+`run_kg_extraction` accepts images alongside text. Set `transcription_profile_id` independently from `profile_id`, the **text extractor**. The UI defaults to `replay-image-demo` only when every image has a matching recording; other images require an explicit transcription choice. Pair `replay-image-demo` transcription with `replay-image-flash` extraction for the bundled qwen visual transcripts. `transcription_mode` selects `ocr`, `vlm` or `auto` for the batch, falling back to the profile mode when omitted. `mode_overrides` maps selected image file IDs to a mode and takes priority over the batch choice. Existing defaults are unchanged.
 
-`run_kg_extraction` 复用现有签批与任务队列。图片先转写，再走原有文本切块、三处核对和候选断言；`transcription_profile_id` 指转写配置，`profile_id` 仍指文本抽取配置。按文件覆盖通过 `mode_overrides: {文件ID: ocr或vlm}`。本期只提供显式模式，不做自动分流或云端框定位。界面仅在所有图片均匹配 demo 录制时默认选中，否则必须选择转写配置。
+`run_kg_extraction` 复用现有签批与任务队列。图片先转写，再走原有文本切块、三处核对和候选断言；`transcription_profile_id` 指转写配置，`profile_id` 仍指文本抽取配置。批次模式由 `transcription_mode: ocr或vlm或auto` 设置，省略时使用配置默认值。按文件覆盖通过 `mode_overrides: {文件ID: 模式}`，优先于批次选择。原有默认值不变。界面仅在所有图片均匹配 demo 录制时默认选中，否则必须选择转写配置。
 
 ```bash
 uv run datakeel eval-kg --suite image --json  # defaults: replay-image-flash + replay-image-demo
@@ -379,7 +379,7 @@ Ollama 原生接口支持 `num_ctx`，避免兼容接口默认上下文截断。
 
 RapidOCR is loaded lazily. Users install the third-party OCR packages themselves with `pip install rapidocr==3.10.0 onnxruntime`; these are not Datakeel dependencies and are outside Datakeel's license audit. Missing packages produce a typed per-image failure with this installation hint. Visual mode still runs local OCR for line geometry; replay and fake carry their own frozen OCR lines and need no OCR installation.
 
-RapidOCR 懒加载；用户自行安装 `rapidocr==3.10.0` 和 `onnxruntime`。这些第三方包不是 Datakeel 的依赖，也不在 Datakeel 的许可审计范围内。未安装时报有类型的逐图失败与上述安装提示；真实视觉转写仍需本地 OCR 行框，回放和脚本自带冻结行框。
+RapidOCR 懒加载；用户自行安装 `rapidocr==3.10.0` 和 `onnxruntime`。这些第三方包不是 Datakeel 的依赖，也不在 Datakeel 的许可审计范围内。未安装时报有类型的逐图失败与上述安装提示；显式视觉转写仍先尝试本地 OCR；auto 在 OCR 报错时可转交视觉模型。回放和脚本自带冻结行框。
 
 Some OpenCV prebuilt packages, for example on macOS, bundle GPL codecs such as x264/x265. ONNX Runtime includes Eigen under MPL-2.0. Users who redistribute these packages must assess the licenses themselves; see [code standards](CODE_STANDARDS.md#9-user-installed-ocr--用户自行安装-ocr). Datakeel does not supply an OCR extra or a source-build installation path.
 
@@ -397,7 +397,7 @@ All coordinates use original pixels **after EXIF orientation correction**. Trans
 
 Evidence fragments are aligned to OCR text after whitespace/markdown normalization. Exact matches take priority, fuzzy matching uses threshold 0.8, and adjacent OCR lines can match one fragment. Arrows, pipes, ellipses and newlines split fragments; repeated labels choose the occurrence closest to the rarest fragment. A successful text extraction without an image match remains a candidate with `image_unlocated` (“图上未定位”), never an invented rectangle. Dataset metadata `handwriting: true` additionally marks mentions and relations involving entity types declared `person: true` with `handwriting_name` (“手写人名需复核”). Schemas without that marker do not apply this rule.
 
-图片证据框只来自 OCR 行，不采信模型自报坐标。未匹配到框时保留关系并标待复核；转写稿仍可高亮证据句和头尾实体。导入时可通过数据集 metadata 设置 `handwriting: true`；schema 用 `person: true` 指定人物类，这类提及及关联关系始终需要人工核对姓名。
+图片证据框来自 OCR 行或 v2 视觉转写中通过校验的行框，不使用抽取模型自报坐标。未匹配到框时保留关系并标待复核；转写稿仍可高亮证据句和头尾实体。导入时可通过数据集 metadata 设置 `handwriting: true`；schema 用 `person: true` 指定人物类，这类提及及关联关系始终需要人工核对姓名。
 
 Empty output, truncation and timeout become explicit failed image blocks and a partial report. Visual results are also checked for three consecutive identical lines or repeated long fragments after removing markdown table separators and filler runs; OCR mode skips repetition checks. The 2.5× output/OCR length check applies only when normalized OCR text has at least 20 characters; empty OCR plus valid visual transcription is allowed. Failed results never enter the successful cache.
 
@@ -410,3 +410,29 @@ Preparation reads no transcription backend. Consent binds image hashes, both pro
 Only blocks derived from image transcripts use `image-kg-v1`; ordinary text keeps `text-kg-v3` and its existing cache identity, including in mixed datasets.
 
 只有图片转写稿的块使用 `image-kg-v1`；混合数据集里的普通文本仍使用 `text-kg-v3` 及原缓存身份。
+
+### Automatic image routing / 图片自动分流
+
+Select `auto` in the extraction form, action HTTP/MCP parameters, or CLI evaluation (`--transcription-mode auto`). The `bailian-qwen35-flash-auto` profile is an opt-in external example; `replay-image-auto` evaluates the generated offline auto suite. OCR-only profiles cannot select auto because they have no visual fallback.
+
+```bash
+uv run datakeel eval-kg --suite image --profile replay-image-auto --transcription-profile replay-image-auto --transcription-mode auto --json
+```
+
+Auto runs local OCR first. The pure `auto-v2` rules use weighted OCR confidence, missing/failed OCR, text-box and ink coverage within the estimated document area, connectors outside text boxes, and struck-through or greyed rows. Grey rows are compared with aligned neighboring rows; uniform paper tint, smooth shadows and surrounding scenery do not qualify. Strikes must be thin lines across the middle of a text box. A normal page stays local with `clean_text`; visual handoffs carry one or more of `low_confidence`, `structure_diagram`, `struck_or_greyed_rows`, `sparse_text`, `ocr_failed`. These are heuristic signals, not a guarantee of diagram recognition. Defaults have synthetic regression coverage and have not been calibrated against a private holdout set.
+
+`auto` 先运行本地 OCR，再根据置信度、失败/空结果、估计文档区域内的文字框与墨迹覆盖、框外连线、删除线或灰色行决定路线。灰行只与同组排版对齐的相邻行比较，统一纸色、平滑阴影和文档外背景不算；删除线必须是穿过文字框中部的细横线。普通文字记 `clean_text`；转交理由逐图显示中英文说明。阈值统一在转写 YAML 的 `auto_routing` 中覆盖（例如 `min_mean_confidence: 0.85`），完整默认值见 `datakeel/core/transcription_auto.py`。规则版本与全部阈值进入签批摘要和 auto 缓存键；改变它们必须重新准备和签批。升级到 `auto-v2` 后，旧 `auto-v1` 的 auto 签批不能继续执行，旧 auto 转写缓存不会复用；历史运行及转写记录仍可读取，显式 OCR/VLM 的入口与缓存身份不变。
+
+Prepare does not call OCR, routing or vision. Its outbound list includes every auto image that may reach an external endpoint, labelled “auto: depending on OCR results”; costs assume all eligible images use vision. Execution checks each file ID and content hash against that signed list before any external visual request. A missing entry fails that image while the rest continue. Reports retain the approved transcription cost upper bound alongside actual outbound image counts and separate actual transcription charges, with unknown prices remaining unknown. Cached reruns report no new transfers. The local OCR reference remains visible beside a visual result and is excluded from extraction. The model-price example has commented transcription price fields; add verified prices before relying on known estimates.
+
+签批前不调用任何转写后端或判定函数。auto 按所有可能转交图片估算费用上限，卡片列出文件与条件；执行时逐图核对文件身份和内容哈希，未获准图片拒绝外发，其余照常完成。报告显示实际外发数、分阶段费用及不参与抽取的本地 OCR 参考稿；缓存复用不计作再次外发。未知价格继续显示未知。
+
+With `prompt_version: image-transcription-v2`, visual transcription returns JSON `{"lines":[{"text":"...","bbox":[x1,y1,x2,y2]}]}`. Declare `coordinate_space: pixel` (the default), `normalized_1000` or `normalized_1` in the profile; normalized axes span 0–1000 or 0–1 across the EXIF-corrected image. The prompt states this declaration, and rectangles are converted to original pixels before validation and evidence alignment. The bundled Qwen visual examples use `normalized_1000`. Invalid, missing, nonfinite, nonpositive or out-of-range rectangles lose only their coordinates while text remains. Extra line fields are ignored and counted in `ignored_field_count`. Code fences and surrounding prose are removed before parsing; transcript text is assembled from parsed lines and never falls back to raw JSON. Completely unparseable structured output fails that image with `unparseable_structured_output`; auto retains the independent OCR reference.
+
+v2 视觉转写要求逐行 JSON；转写 profile 用 `coordinate_space` 显式声明 `pixel`（默认）、`normalized_1000` 或 `normalized_1`。归一化坐标先换算到 EXIF 转正后的原图像素，再校验并定位。无效坐标只丢框、保留文字，额外字段忽略并计数；代码围栏和前后说明不进入正文。完全不可解析时该图标 `unparseable_structured_output`，auto 保留 OCR 参考稿，原始 JSON 不进入抽取。
+
+When OCR reference lines are available, visual/OCR lines are paired one-to-one using normalized text similarity of at least 0.8; equal text matches prefer the highest IoU. The paired median IoU is checked against `coordinate_min_median_iou` (default `0.3`, finite range 0–1). A lower median discards all visual rectangles and adds `coordinates_unreliable`; relations remain `image_unlocated` for review. With no comparable OCR pairs only rectangle range validation applies. Both coordinate settings enter the signed profile digest and cache identity. Result and recording `coordinate_space` record the source declaration; stored `lines` always contain validated pixels. A recording's top-level coordinate space governs raw decoding for the whole file. Optional record `raw_output` preserves an unparsed v2 wire response for replay. Existing recordings omit these fields, default to pixels and retain their text and geometry.
+
+有 OCR 参考行时，按文字匹配后检查行框的中位 IoU；低于 `coordinate_min_median_iou`（默认 `0.3`，范围 0–1）就整图丢弃视觉坐标并加 `coordinates_unreliable`，关系退回「图上未定位」。没有 OCR 参考只做范围校验。坐标系与阈值进入签批摘要和缓存身份；录制声明来源坐标系，已解析行框始终存像素。旧录制缺省为 `pixel`，文字与几何保持原有回放行为。
+
+The bundled real visual profiles use v2; custom profiles can explicitly retain v1 for legacy behavior. The separate six-image `image-auto` suite is generated by `scripts/generate_auto_image_cases.py`, with three text images and connector, strike and grey-row diagrams. Its scripted recordings are explicitly labelled synthetic. Reports add expected/observed routes, accuracy, visual handoff ratio, actual outbound ratio and extraction F1; replay performs no external transfers. The original 60-image suite and score definitions remain unchanged.

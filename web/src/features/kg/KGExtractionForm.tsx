@@ -6,13 +6,15 @@ import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { ActionReceipt } from "../actions/ActionReceipt";
 import { PlanCard } from "../actions/PlanCard";
 
+import { KGTranscriptionModes } from "./KGTranscriptionModes";
+
 import type {
   KGProfile,
   KGSchema,
   KGTranscriptionProfile,
   KGTranscriptionSelection,
 } from "../../api/kg";
-import type { ActionPlan, ActionRun } from "../../api/types";
+import type { ActionPlan, ActionRun, FileItem } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
 export function KGExtractionForm({
@@ -23,6 +25,7 @@ export function KGExtractionForm({
   transcriptionProfiles = [],
   transcriptionSelection = null,
   selectionPending = false,
+  imageFiles = [],
   onChanged,
   onOpenReceipt,
 }: {
@@ -33,6 +36,7 @@ export function KGExtractionForm({
   transcriptionProfiles?: KGTranscriptionProfile[];
   transcriptionSelection?: KGTranscriptionSelection | null;
   selectionPending?: boolean;
+  imageFiles?: FileItem[];
   onChanged: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
@@ -41,6 +45,10 @@ export function KGExtractionForm({
   const [schema, setSchema] = useState("");
   const [profile, setProfile] = useState("");
   const [transcription, setTranscription] = useState<string | null>(null);
+  const [mode, setMode] = useState<KGTranscriptionProfile["mode"] | "">("");
+  const [overrides, setOverrides] = useState<
+    Record<string, KGTranscriptionProfile["mode"]>
+  >({});
   const [budget, setBudget] = useState("");
   const [cost, setCost] = useState("");
   const [plan, setPlan] = useState<ActionPlan | null>(null);
@@ -80,6 +88,10 @@ export function KGExtractionForm({
           profile_id: activeProfile,
           ...(activeTranscription
             ? { transcription_profile_id: activeTranscription }
+            : {}),
+          ...(mode ? { transcription_mode: mode } : {}),
+          ...(Object.keys(overrides).length
+            ? { mode_overrides: overrides }
             : {}),
           ...(budget ? { budget_tokens: Number(budget) } : {}),
           ...(cost ? { max_cost_usd: cost } : {}),
@@ -154,6 +166,8 @@ export function KGExtractionForm({
                 disabled={!!plan || busy}
                 onChange={(event) => {
                   setTranscription(event.target.value);
+                  setMode("");
+                  setOverrides({});
                 }}
               >
                 <option value="">{t("kgTranscriptionDefault")}</option>
@@ -196,6 +210,21 @@ export function KGExtractionForm({
             />
           </label>
         </div>
+        {!!activeTranscription && (
+          <KGTranscriptionModes
+            mode={mode}
+            overrides={overrides}
+            files={imageFiles}
+            disabled={!!plan || busy}
+            ocrOnly={
+              transcriptionProfiles.find(
+                (item) => item.id === activeTranscription,
+              )?.backend === "ocr"
+            }
+            onMode={setMode}
+            onOverrides={setOverrides}
+          />
+        )}
         <button
           className="button primary"
           type="submit"

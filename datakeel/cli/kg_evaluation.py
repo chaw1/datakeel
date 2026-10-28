@@ -33,6 +33,7 @@ def register_parser(commands: CommandGroup) -> None:
     command.add_argument("--schema", default="business-knowledge")
     command.add_argument("--suite", choices=("text", "image"), default="text")
     command.add_argument("--transcription-profile", default="replay-image-demo")
+    command.add_argument("--transcription-mode", choices=("ocr", "vlm", "auto"))
     command.add_argument(
         "--cases", type=Path, help="External evaluation YAML in the documented format"
     )

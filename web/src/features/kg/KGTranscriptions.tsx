@@ -1,5 +1,7 @@
 import { useI18n } from "../../i18n/useI18n";
 
+import { autoReasonLabels } from "./autoLabels";
+
 import type { KGRun } from "../../api/kg";
 
 export function KGTranscriptions({ report }: { report: KGRun["report"] }) {
@@ -22,6 +24,18 @@ export function KGTranscriptions({ report }: { report: KGRun["report"] }) {
           <dd>{report.transcription_failed}</dd>
         </div>
         <div>
+          <dt>{t("kgActualExternalImages")}</dt>
+          <dd>{report.transcription_external_images}</dd>
+        </div>
+        <div>
+          <dt>{t("kgTranscriptionApprovedUpper")}</dt>
+          <dd>
+            {report.transcription_cost_upper_usd == null
+              ? t("kgUnknown")
+              : `$${Number(report.transcription_cost_upper_usd).toFixed(6)}`}
+          </dd>
+        </div>
+        <div>
           <dt>{t("kgCloudCalls")}</dt>
           <dd>{report.cloud_calls}</dd>
         </div>
@@ -42,6 +56,8 @@ export function KGTranscriptions({ report }: { report: KGRun["report"] }) {
               <th>{t("kgTranscriptionRoute")}</th>
               <th>{t("kgModel")}</th>
               <th>{t("kgTranscriptionStatus")}</th>
+              <th>{t("kgRouteReasons")}</th>
+              <th>{t("kgExternalStatus")}</th>
               <th>{t("kgFailureReason")}</th>
             </tr>
           </thead>
@@ -63,8 +79,41 @@ export function KGTranscriptions({ report }: { report: KGRun["report"] }) {
                             ? "kgUnexecuted"
                             : "kgCompleted",
                       )}
+                  {item.quality_issues.includes("coordinates_unreliable") && (
+                    <p>{t("kgCoordinatesUnreliable")}</p>
+                  )}
+                  {item.ignored_field_count > 0 && (
+                    <p>
+                      {t("kgIgnoredTranscriptionFields", {
+                        count: item.ignored_field_count,
+                      })}
+                    </p>
+                  )}
                 </td>
-                <td>{item.error ?? "—"}</td>
+                <td>
+                  {item.reasons.map((reason) => (
+                    <p key={reason}>
+                      {t(autoReasonLabels[reason])} ({reason})
+                    </p>
+                  ))}
+                  {item.ocr_reference && (
+                    <details>
+                      <summary>{t("kgOCRReference")}</summary>
+                      <pre>{item.ocr_reference.text}</pre>
+                      {item.ocr_reference.error && (
+                        <p>{item.ocr_reference.error}</p>
+                      )}
+                    </details>
+                  )}
+                </td>
+                <td>
+                  {t(item.external ? "kgExternalSent" : "kgExternalLocal")}
+                </td>
+                <td>
+                  {item.quality_issues.includes("unparseable_structured_output")
+                    ? t("kgUnparseableTranscription")
+                    : (item.error ?? "—")}
+                </td>
               </tr>
             ))}
           </tbody>

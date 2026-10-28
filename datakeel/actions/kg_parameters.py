@@ -4,12 +4,12 @@
 """Freeze explicit graph extraction scope and per-run budget limits."""
 
 from decimal import Decimal
-from typing import Literal
 
 from pydantic import Field, field_validator
 
 from datakeel.core.kg_execution import KGPrepared
 from datakeel.core.models import BoundaryModel
+from datakeel.core.transcription_models import TranscriptionMode
 
 
 class RunKGExtractionParams(BoundaryModel):
@@ -21,7 +21,8 @@ class RunKGExtractionParams(BoundaryModel):
     profile_id: str = "replay-demo"
     file_ids: tuple[str, ...] = ()
     transcription_profile_id: str = "replay-image-demo"
-    mode_overrides: dict[str, Literal["ocr", "vlm"]] = Field(default_factory=dict)
+    transcription_mode: TranscriptionMode | None = None
+    mode_overrides: dict[str, TranscriptionMode] = Field(default_factory=dict)
     budget_tokens: int = Field(default=250000, ge=0)
     max_cost_usd: Decimal = Field(default=Decimal(5), ge=0, allow_inf_nan=False)
     prepared: KGPrepared | None = None

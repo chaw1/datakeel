@@ -116,6 +116,7 @@ def same_as_drafts(
     drafts: tuple[ObservationDraft, ...],
     schema: KGSchema,
     extractor: ExtractorRef,
+    image_extractor: ExtractorRef | None = None,
 ) -> tuple[ObservationDraft, ...]:
     """Propose only grounded cross-document pairs not already represented by a pair claim."""
     mentions = {
@@ -159,7 +160,12 @@ def same_as_drafts(
                 predicate="kg.same_as",
                 object=right.asset_ref,
                 anchors=tuple(anchors[key] for key in sorted(anchors)),
-                extractor=extractor,
+                extractor=image_extractor
+                if image_extractor
+                and any(
+                    anchor.asset_ref.asset_type == "image_transcript" for anchor in anchors.values()
+                )
+                else extractor,
                 verification="needs_review",
                 verification_detail=_detail(locations),
             )

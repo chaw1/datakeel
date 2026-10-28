@@ -36,7 +36,7 @@ def test_transport_when_success_sends_clean_pixels_and_retains_usage(
     """Each interface uses its actual context and finish fields with exactly one request."""
     profile = get_profile(
         "ollama-vision-local" if interface == "ollama" else "bailian-qwen35-flash"
-    )
+    ).model_copy(update={"prompt_version": "image-transcription-v1"})
     observed: list[httpx.Request] = []
 
     def respond(request: httpx.Request) -> httpx.Response:
@@ -156,9 +156,9 @@ def test_factory_when_vlm_runs_ocr_first_and_override_avoids_credentials(
     def respond(request: httpx.Request) -> httpx.Response:
         calls.append("request")
         payload = (
-            {"message": {"content": "normal"}}
+            {"message": {"content": '{"lines":[{"text":"normal"}]}'}}
             if interface == "ollama"
-            else {"choices": [{"message": {"content": "normal"}}]}
+            else {"choices": [{"message": {"content": '{"lines":[{"text":"normal"}]}'}}]}
         )
         return httpx.Response(200, json=payload)
 
@@ -225,7 +225,10 @@ def test_factory_when_sparse_ocr_and_local_native_endpoint_succeeds(
         assert "authorization" not in request.headers
         return httpx.Response(
             200,
-            json={"message": {"content": "A complete readable paragraph."}, "done_reason": "stop"},
+            json={
+                "message": {"content": '{"lines":[{"text":"A complete readable paragraph."}]}'},
+                "done_reason": "stop",
+            },
         )
 
     with (

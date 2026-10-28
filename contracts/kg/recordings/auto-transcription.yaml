@@ -1,0 +1,248 @@
+model: scripted-auto-fixture
+recorded_at: '2026-10-26'
+prompt_version: image-transcription-v1
+source: Scripted observations for generated images; no real model was run.
+records:
+- text: 'Current organisation and data register
+
+    Ari works for Cedar Labs.
+
+    This register lists current facts only.
+
+    Reviewed and approved for this example.'
+  lines:
+  - text: Current organisation and data register
+    bbox:
+    - 50.0
+    - 37.0
+    - 504.0
+    - 61.0
+    confidence: 0.99
+  - text: Ari works for Cedar Labs.
+    bbox:
+    - 50.0
+    - 116.0
+    - 344.0
+    - 136.0
+    confidence: 0.99
+  - text: This register lists current facts only.
+    bbox:
+    - 50.0
+    - 181.0
+    - 469.0
+    - 206.0
+    confidence: 0.99
+  - text: Reviewed and approved for this example.
+    bbox:
+    - 50.0
+    - 246.0
+    - 539.0
+    - 271.0
+    confidence: 0.99
+  width: 900
+  height: 420
+  backend: vlm
+  model: scripted-auto-fixture
+  mode: vlm
+  finish_reason: stop
+  quality_issues: []
+  image_hash: 4c9d1d29a0cd6b334cc2c23342b252f693903ce5f0beedb22dfa002c24fd5888
+- text: 'Current organisation and data register
+
+    Maple Team is located in Oslo.
+
+    This register lists current facts only.
+
+    Reviewed and approved for this example.'
+  lines:
+  - text: Current organisation and data register
+    bbox:
+    - 50.0
+    - 37.0
+    - 504.0
+    - 61.0
+    confidence: 0.99
+  - text: Maple Team is located in Oslo.
+    bbox:
+    - 50.0
+    - 117.0
+    - 410.0
+    - 141.0
+    confidence: 0.99
+  - text: This register lists current facts only.
+    bbox:
+    - 50.0
+    - 181.0
+    - 469.0
+    - 206.0
+    confidence: 0.99
+  - text: Reviewed and approved for this example.
+    bbox:
+    - 50.0
+    - 246.0
+    - 539.0
+    - 271.0
+    confidence: 0.99
+  width: 900
+  height: 420
+  backend: vlm
+  model: scripted-auto-fixture
+  mode: vlm
+  finish_reason: stop
+  quality_issues: []
+  image_hash: 6cdd7e2e17d32590e47434b59a5feb46beac6cd133fff0aa5d23894e2b8ff05f
+- text: 'Current organisation and data register
+
+    daily_sales is derived from raw_sales.
+
+    This register lists current facts only.
+
+    Reviewed and approved for this example.'
+  lines:
+  - text: Current organisation and data register
+    bbox:
+    - 50.0
+    - 37.0
+    - 504.0
+    - 61.0
+    confidence: 0.99
+  - text: daily_sales is derived from raw_sales.
+    bbox:
+    - 50.0
+    - 116.0
+    - 485.0
+    - 141.0
+    confidence: 0.99
+  - text: This register lists current facts only.
+    bbox:
+    - 50.0
+    - 181.0
+    - 469.0
+    - 206.0
+    confidence: 0.99
+  - text: Reviewed and approved for this example.
+    bbox:
+    - 50.0
+    - 246.0
+    - 539.0
+    - 271.0
+    confidence: 0.99
+  width: 900
+  height: 420
+  backend: vlm
+  model: scripted-auto-fixture
+  mode: vlm
+  finish_reason: stop
+  quality_issues: []
+  image_hash: 05adf662a01aab8215248c810c5a4474c1b5d4a69227175c0fc939d6d08965e7
+- text: Field Ops is part of Operations.
+  lines:
+  - text: Current organisation and data register
+    bbox:
+    - 50.0
+    - 37.0
+    - 504.0
+    - 61.0
+    confidence: 0.99
+  - text: Operations
+    bbox:
+    - 330.0
+    - 118.0
+    - 461.0
+    - 141.0
+    confidence: 0.99
+  - text: Field Ops
+    bbox:
+    - 345.0
+    - 317.0
+    - 457.0
+    - 341.0
+    confidence: 0.99
+  width: 900
+  height: 420
+  backend: vlm
+  model: scripted-auto-fixture
+  mode: vlm
+  finish_reason: stop
+  quality_issues: []
+  image_hash: 6069de2e74dc5f5b5fbaaa6aba925cb827611f3da075c81c74f24dd5d6313010
+- text: 'Rina owns current_orders.
+
+    Cancelled: Milo owns legacy_orders.'
+  lines:
+  - text: Current organisation and data register
+    bbox:
+    - 50.0
+    - 37.0
+    - 504.0
+    - 61.0
+    confidence: 0.99
+  - text: Rina owns current_orders.
+    bbox:
+    - 50.0
+    - 117.0
+    - 358.0
+    - 138.0
+    confidence: 0.99
+  - text: Milo owns legacy_orders.
+    bbox:
+    - 50.0
+    - 212.0
+    - 348.0
+    - 236.0
+    confidence: 0.99
+  - text: Struck or shaded rows are cancelled.
+    bbox:
+    - 50.0
+    - 327.0
+    - 487.0
+    - 346.0
+    confidence: 0.99
+  width: 900
+  height: 420
+  backend: vlm
+  model: scripted-auto-fixture
+  mode: vlm
+  finish_reason: stop
+  quality_issues: []
+  image_hash: 125401a8822b569244b15af1aa49fe624e61011e32d6898fa21ce2e3778036c2
+- text: 'Nora owns active_inventory.
+
+    Cancelled: Owen owns retired_inventory.'
+  lines:
+  - text: Current organisation and data register
+    bbox:
+    - 50.0
+    - 37.0
+    - 504.0
+    - 61.0
+    confidence: 0.99
+  - text: Nora owns active_inventory.
+    bbox:
+    - 50.0
+    - 118.0
+    - 382.0
+    - 141.0
+    confidence: 0.99
+  - text: Owen owns retired_inventory.
+    bbox:
+    - 50.0
+    - 212.0
+    - 403.0
+    - 236.0
+    confidence: 0.99
+  - text: Struck or shaded rows are cancelled.
+    bbox:
+    - 50.0
+    - 327.0
+    - 487.0
+    - 346.0
+    confidence: 0.99
+  width: 900
+  height: 420
+  backend: vlm
+  model: scripted-auto-fixture
+  mode: vlm
+  finish_reason: stop
+  quality_issues: []
+  image_hash: 07b31e4027e1954aba3ca1cb09ba2e1a000639795962a234bc34262bfed6b6e1

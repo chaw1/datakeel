@@ -8,20 +8,24 @@ from contextlib import ExitStack
 from datakeel.core.errors import BudgetError, ConflictError, ValidationError
 from datakeel.core.kg_execution import KGBlockFailure, KGDocument, KGInputs, KGJob, KGLeaseFence
 from datakeel.core.kg_images import TranscriptionObservation
+from datakeel.core.transcription_auto import OCRReference
 from datakeel.core.transcription_errors import TranscriptionFailure, TranscriptionUnavailableError
 from datakeel.core.transcription_models import ImageInput, TranscriptionProfile, TranscriptionResult
 from datakeel.kg.text import chunk_text, decode_text
 from datakeel.storage.kg_image_preparation import transcript_ref
+from datakeel.storage.transcription_pricing import transcription_external
 from datakeel.storage.transcription_store import (
     cached_transcription,
     save_transcript_documents,
     save_transcription,
 )
+from datakeel.transcription.auto_adapter import AutoTranscriber
 from datakeel.transcription.cache import cache_key
 from datakeel.transcription.factory import create_transcriber
 from datakeel.transcription.loader import read_recording
 from datakeel.transcription.quality import TranscriberAdapter, checked_transcribe
 from datakeel.worker.queue import DatabaseQueue, Lease
+from datakeel.worker.transcription_consent import authorize_image_transfer
 from datakeel.worker.transcription_metering import MeteredTranscriber
 
 
@@ -35,18 +39,37 @@ class ImageTranscription:
         self.adapter: TranscriberAdapter | None = None
         self.observations: list[TranscriptionObservation] = []
         self.failures: list[KGBlockFailure] = []
+        self.external_files: set[str] = set()
+        self.current_image: ImageInput | None = None
 
-    def _adapter(self, profile: TranscriptionProfile) -> TranscriberAdapter:
+    def _adapter(self, profile: TranscriptionProfile, document: KGDocument) -> TranscriberAdapter:
         if self.adapter is None:
             recording_hash, recording = read_recording(profile)
             if recording_hash != self.job.prepared.transcription_recording_hash:
                 msg = "Approved transcription recording changed before execution"
                 raise ValidationError(msg)
-            adapter = self.stack.enter_context(create_transcriber(profile, recording=recording))
-            self.adapter = MeteredTranscriber(
-                self.queue.db, self.job, adapter, lambda: self.queue.heartbeat(self.lease)
+            automatic = any(
+                item.image and item.image.mode == "auto" for item in self.job.prepared.documents
             )
-        return self.adapter
+            selected = profile.model_copy(update={"mode": "auto"}) if automatic else profile
+            if not automatic and document.image is not None:
+                selected = profile.model_copy(update={"mode": document.image.mode})
+            self.adapter = self.stack.enter_context(
+                create_transcriber(selected, recording=recording)
+            )
+
+        def before_request() -> bool:
+            if document.image is None:
+                return False
+            image = self.current_image
+            if image is None:
+                return False
+            authorize_image_transfer(self.job, document, image)
+            if transcription_external(profile):
+                self.external_files.add(document.image.asset_ref.asset_id)
+            return self.queue.heartbeat(self.lease)
+
+        return MeteredTranscriber(self.queue.db, self.job, self.adapter, before_request)
 
     def _result(
         self, document: KGDocument, image: ImageInput | None
@@ -67,7 +90,8 @@ class ImageTranscription:
         if not self.queue.heartbeat(self.lease):
             msg = "Graph worker lease was lost before transcription"
             raise ConflictError(msg)
-        result = checked_transcribe(self._adapter(profile), image, source.mode)
+        self.current_image = image
+        result = checked_transcribe(self._adapter(profile, document), image, source.mode)
         if (result.width, result.height) != (source.width, source.height):
             msg = "Transcription coordinates do not match the corrected image"
             raise ValidationError(msg)
@@ -95,6 +119,24 @@ class ImageTranscription:
             BudgetError,
             TimeoutError,
         ) as error:
+            if (
+                image is not None
+                and source.mode == "auto"
+                and isinstance(self.adapter, AutoTranscriber)
+                and self.adapter.image_hash == image.image_hash
+                and self.adapter.decision is not None
+            ):
+                observation = observation.model_copy(
+                    update={
+                        "mode": self.adapter.decision.route,
+                        "reasons": self.adapter.decision.reasons,
+                        "ocr_reference": OCRReference(
+                            text=self.adapter.ocr.text, error=self.adapter.ocr.error
+                        )
+                        if self.adapter.ocr is not None and self.adapter.decision.route == "vlm"
+                        else None,
+                    }
+                )
             self._failed(observation, error)
             return None
         self.observations.append(
@@ -103,6 +145,11 @@ class ImageTranscription:
                     "cached": cached,
                     "model": result.model,
                     "mode": result.mode,
+                    "reasons": result.auto_decision.reasons if result.auto_decision else (),
+                    "ocr_reference": result.ocr_reference,
+                    "quality_issues": result.quality_issues,
+                    "ignored_field_count": result.ignored_field_count,
+                    "external": observation.file_id in self.external_files,
                     "backend": source.backend
                     if source.backend in {"replay", "fake"}
                     else result.backend,
@@ -122,6 +169,8 @@ class ImageTranscription:
             else ("budget_exceeded" if isinstance(error, BudgetError) else "timeout")
         )
         attempted = not isinstance(error, BudgetError)
+        if not attempted:
+            self.external_files.discard(observation.file_id)
         self.failures.append(
             KGBlockFailure(
                 file_id=observation.file_id,
@@ -136,11 +185,18 @@ class ImageTranscription:
             observation.model_copy(
                 update={
                     "status": "failed" if attempted else "unexecuted",
+                    "external": observation.file_id in self.external_files,
                     "error": (error.result.error or reason)
                     if isinstance(error, TranscriptionFailure)
                     else str(error)
                     if isinstance(error, TranscriptionUnavailableError)
                     else reason,
+                    "quality_issues": error.result.quality_issues
+                    if isinstance(error, TranscriptionFailure)
+                    else (),
+                    "ignored_field_count": error.result.ignored_field_count
+                    if isinstance(error, TranscriptionFailure)
+                    else 0,
                 }
             )
         )
@@ -188,6 +244,7 @@ class ImageTranscription:
                 "transcriptions": tuple(self.observations),
                 "failures": tuple(self.failures),
                 "transcription_failed": len(self.failures),
+                "transcription_external_images": len(self.external_files),
             }
         )
         job = self.job.model_copy(

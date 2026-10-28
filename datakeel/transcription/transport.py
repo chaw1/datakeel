@@ -9,54 +9,31 @@ import base64
 from typing import TYPE_CHECKING
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
+from pydantic import JsonValue, ValidationError
 
-from datakeel.transcription.prompt import TRANSCRIBE_PROMPT
+from datakeel.core.transcription_auto import OCRReference
+from datakeel.core.transcription_models import TranscriptionResult
+from datakeel.core.transcription_wire import TranscriptionResponse
+from datakeel.transcription.coordinates import check_coordinates, decode_coordinates
+from datakeel.transcription.prompt import transcription_prompt
 
 if TYPE_CHECKING:
     from datakeel.core.transcription_models import (
         ImageInput,
         TranscriptionProfile,
-        TranscriptionResult,
     )
-
-
-class _WireModel(BaseModel):
-    """Ignore unrelated provider metadata while keeping consumed response fields frozen."""
-
-    model_config = ConfigDict(extra="ignore", frozen=True)
-
-
-class _Message(_WireModel):
-    content: str = ""
-
-
-class _Choice(_WireModel):
-    message: _Message = Field(default_factory=_Message)
-    finish_reason: str | None = None
-
-
-class _Usage(_WireModel):
-    prompt_tokens: int | None = Field(default=None, ge=0)
-    completion_tokens: int | None = Field(default=None, ge=0)
-
-
-class _Response(_WireModel):
-    choices: tuple[_Choice, ...] = ()
-    message: _Message = Field(default_factory=_Message)
-    usage: _Usage = Field(default_factory=_Usage)
-    done_reason: str | None = None
-    prompt_eval_count: int | None = Field(default=None, ge=0)
-    eval_count: int | None = Field(default=None, ge=0)
 
 
 def _body(profile: TranscriptionProfile, image: ImageInput) -> dict[str, JsonValue]:
     encoded = base64.b64encode(image.png).decode("ascii")
+    prompt = transcription_prompt(
+        profile.prompt_version, image.width, image.height, profile.coordinate_space
+    )
     if profile.interface == "ollama":
         body: dict[str, JsonValue] = {
             "model": profile.model,
             "stream": False,
-            "messages": [{"role": "user", "content": TRANSCRIBE_PROMPT, "images": [encoded]}],
+            "messages": [{"role": "user", "content": prompt, "images": [encoded]}],
             "options": {
                 "temperature": 0,
                 "num_predict": profile.max_output_tokens,
@@ -65,6 +42,8 @@ def _body(profile: TranscriptionProfile, image: ImageInput) -> dict[str, JsonVal
         }
         if "enable_thinking" in profile.request_parameters:
             body["think"] = profile.request_parameters["enable_thinking"]
+        if profile.prompt_version == "image-transcription-v2":
+            body["format"] = "json"
         return body
     return {
         "model": profile.model,
@@ -74,11 +53,16 @@ def _body(profile: TranscriptionProfile, image: ImageInput) -> dict[str, JsonVal
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": TRANSCRIBE_PROMPT},
+                    {"type": "text", "text": prompt},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}},
                 ],
             }
         ],
+        **(
+            {"response_format": {"type": "json_object"}}
+            if profile.prompt_version == "image-transcription-v2"
+            else {}
+        ),
         **profile.request_parameters,
     }
 
@@ -104,7 +88,7 @@ def _response(
             )
         return ocr.model_copy(update={"text": "", "error": f"http_{response.status_code}"})
     try:
-        parsed = _Response.model_validate_json(response.content)
+        parsed = TranscriptionResponse.model_validate_json(response.content)
     except ValidationError:
         return ocr.model_copy(update={"text": "", "error": "invalid_response"})
     if profile.interface == "ollama":
@@ -115,14 +99,24 @@ def _response(
             return ocr.model_copy(update={"text": "", "error": "invalid_response"})
         text, finish = parsed.choices[0].message.content, parsed.choices[0].finish_reason
         input_tokens, output_tokens = parsed.usage.prompt_tokens, parsed.usage.completion_tokens
-    return ocr.model_copy(
+    located = (
+        decode_coordinates(text, ocr.width, ocr.height, profile.coordinate_space)
+        if profile.prompt_version == "image-transcription-v2"
+        else None
+    )
+    result = ocr.model_copy(
         update={
-            "text": text,
+            "text": located.text if located else text,
+            "lines": located.lines if located else ocr.lines,
             "finish_reason": finish or "stop",
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
+            "coordinate_space": profile.coordinate_space,
+            "ignored_field_count": located.ignored_field_count if located else 0,
+            "quality_issues": located.quality_issues if located else (),
         }
     )
+    return check_coordinates(result, ocr, profile.coordinate_min_median_iou) if located else result
 
 
 def request_transcription(
@@ -133,14 +127,17 @@ def request_transcription(
     api_key: str,
 ) -> TranscriptionResult:
     """Preserve safe failure categories without retries, redirects or provider body leakage."""
-    result = ocr.model_copy(
-        update={
-            "backend": "vlm",
-            "model": profile.model,
-            "mode": "vlm",
-            "input_tokens": None,
-            "output_tokens": None,
-        }
+    result = TranscriptionResult(
+        text="",
+        lines=ocr.lines,
+        width=ocr.width,
+        height=ocr.height,
+        backend="vlm",
+        model=profile.model,
+        mode="vlm",
+        ocr_reference=OCRReference(text=ocr.text, error=ocr.error)
+        if profile.prompt_version == "image-transcription-v2"
+        else ocr.ocr_reference,
     )
     headers = {"accept": "application/json"}
     if api_key:

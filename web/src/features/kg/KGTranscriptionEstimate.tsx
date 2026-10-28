@@ -38,7 +38,22 @@ export function KGTranscriptionEstimate({ plan }: { plan: ActionPlan }) {
               : `$${Number(estimate.cost_upper_usd).toFixed(6)}`}
           </dd>
         </div>
+        <div>
+          <dt>{t("kgPossibleExternalImages")}</dt>
+          <dd>{estimate.possible_external_images.length}</dd>
+        </div>
       </dl>
+      {!!estimate.auto_images && <p>{t("kgAutoPossible")}</p>}
+      {!!estimate.possible_external_images.length && (
+        <ul>
+          {estimate.possible_external_images.map((image) => (
+            <li key={image.file_id}>
+              {image.filename} ·{" "}
+              {image.mode === "auto" ? t("kgAutoPossible") : image.mode}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

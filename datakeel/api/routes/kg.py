@@ -156,7 +156,12 @@ def select_transcription(
     responses={
         200: {"content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}},
         404: {"description": "Image or extraction run not found"},
-        422: {"description": "Invalid image request or image revision"},
+        422: {
+            "description": "Invalid image request or image revision",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}
+            },
+        },
     },
 )
 def image_content(

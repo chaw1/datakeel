@@ -18,6 +18,22 @@ export function KGImageEvaluations({ run }: { run: KGEvaluation }) {
       <p>
         {t("kgTranscriptionProfile")}: {run.transcription_profile}
       </p>
+      {run.image_auto && (
+        <dl className="kg-metrics">
+          <div>
+            <dt>{t("kgAutoRouteAccuracy")}</dt>
+            <dd>{((run.image_auto.route_accuracy ?? 0) * 100).toFixed(1)}%</dd>
+          </div>
+          <div>
+            <dt>{t("kgAutoVLMRatio")}</dt>
+            <dd>{(run.image_auto.vlm_ratio * 100).toFixed(1)}%</dd>
+          </div>
+          <div>
+            <dt>{t("kgAutoExternalRatio")}</dt>
+            <dd>{(run.image_auto.external_ratio * 100).toFixed(1)}%</dd>
+          </div>
+        </dl>
+      )}
       <div className="table-scroll">
         <table>
           <thead>

@@ -101,6 +101,10 @@ export const imageRun: KGRun = {
     cloud_cost_usd: "0",
     transcriptions: [
       {
+        external: false,
+        reasons: [],
+        quality_issues: [],
+        ignored_field_count: 0,
         file_id: "image-1",
         filename: "diagram.png",
         backend: "replay",
@@ -110,6 +114,10 @@ export const imageRun: KGRun = {
         status: "completed",
       },
       {
+        external: false,
+        reasons: [],
+        quality_issues: ["truncated"],
+        ignored_field_count: 0,
         file_id: "image-2",
         filename: "scripted-truncated.png",
         backend: "fake",
@@ -132,6 +140,8 @@ export const imagePlan: ActionPlan = {
     },
     transcription_estimate: {
       target_host: "vision.example.com",
+      auto_images: 0,
+      possible_external_images: [],
       model: "vision-model",
       images: 2,
       image_tokens: 260,

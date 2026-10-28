@@ -87,7 +87,7 @@ class ImageCaseRunner:
             content_revision=image.image_hash,
             width=image.width,
             height=image.height,
-            mode=self.transcription.mode,
+            mode=result.mode,
             profile_id=self.transcription.id,
             profile_digest=self.digest,
             backend=result.backend,

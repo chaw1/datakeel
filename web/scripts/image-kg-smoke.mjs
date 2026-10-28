@@ -117,6 +117,14 @@ export async function imageKGSmoke({ page, json, post, screenshot, checks }) {
     .getByLabel("Image transcription profile", { exact: true })
     .selectOption("bailian-qwen35-flash");
   await page
+    .getByLabel("Transcription mode", { exact: true })
+    .selectOption("auto");
+  await page.getByText("Per-image mode overrides", { exact: true }).click();
+  const override = page
+    .locator(".kg-transcription-modes details select")
+    .first();
+  await override.selectOption("ocr");
+  await page
     .getByRole("button", { name: "Prepare graph extraction", exact: true })
     .click();
   await page
@@ -125,9 +133,22 @@ export async function imageKGSmoke({ page, json, post, screenshot, checks }) {
   await page
     .getByText("Input estimated from the transcription output limit.")
     .waitFor();
+  await page
+    .getByText("Auto: may be sent depending on OCR results", { exact: true })
+    .first()
+    .waitFor();
+  const estimate = page.getByRole("region", {
+    name: "Image transcription estimate",
+  });
+  assert.ok((await estimate.locator("li").count()) > 0);
+  assert.equal(
+    await page.getByLabel("Transcription mode", { exact: true }).isDisabled(),
+    true,
+  );
+  assert.equal(await override.isDisabled(), true);
   await screenshot("image-kg-external-consent", false);
   checks.push(
-    "Image KG: original image multiple regions, transcript role highlights, genuine unlocated relation in English/Chinese, scripted truncation report, external vision consent without execution",
+    "Image KG: original image multiple regions, transcript role highlights, genuine unlocated relation in English/Chinese, scripted truncation report, auto selection with per-image override, conditional external vision consent without execution",
   );
   return {
     dataset_id: dataset.id,
