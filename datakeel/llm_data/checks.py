@@ -65,11 +65,15 @@ def repetition_ratio(text: str) -> float:
     return 1 - len(set(grams)) / len(grams)
 
 
-def _privacy(value: JsonValue, field: str = "payload") -> Iterator[TrainingIssue]:
+def _privacy(
+    value: JsonValue,
+    field: str = "payload",
+    label: str | None = None,
+) -> Iterator[TrainingIssue]:
     if isinstance(value, str):
-        if value in _STRUCTURAL_VALUES:
+        if value in _STRUCTURAL_VALUES and (label is None or label in _SCHEMA_KEYS):
             return
-        for match in detect_pii(value):
+        for match in detect_pii(value, label=label):
             yield TrainingIssue(
                 code=f"pii_{match.type}",
                 field=field,
@@ -84,7 +88,7 @@ def _privacy(value: JsonValue, field: str = "payload") -> Iterator[TrainingIssue
             if private_key:
                 yield from _privacy(key, f"{field}.[key]")
             label = key if not private_key and _FIELD_KEY.fullmatch(key) else "[field]"
-            yield from _privacy(item, f"{field}.{label}")
+            yield from _privacy(item, f"{field}.{label}", key)
     elif isinstance(value, list):
         for index, item in enumerate(value):
             yield from _privacy(item, f"{field}.{index}")
@@ -159,17 +163,17 @@ def check_record(record: ParsedTrainingRecord, config: TrainingConfig) -> tuple[
     return tuple(findings)
 
 
-def redact_payload(value: JsonValue) -> JsonValue:
-    """Redact string values recursively while preserving the training JSON structure."""
+def redact_payload(value: JsonValue, *, label: str | None = None) -> JsonValue:
+    """Redact strings and labelled credential fields while preserving JSON structure."""
     if isinstance(value, str):
-        return redact_pii(value)
+        return redact_pii(value, label=label)
     if isinstance(value, dict):
         output: dict[str, JsonValue] = {}
         for key, item in value.items():
             label = key if key in _SCHEMA_KEYS else redact_pii(key)
             while label in output:
                 label += "[duplicate]"
-            output[label] = redact_payload(item)
+            output[label] = redact_payload(item, label=key)
         return output
     if isinstance(value, list):
         return [redact_payload(item) for item in value]

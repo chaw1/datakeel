@@ -38,4 +38,20 @@ PII_MUTATIONS = (
         case="tests/llm_data/test_checks.py::test_rejected_when_code_fence_is_unclosed_always_reports_truncation",
         runner="pytest",
     ),
+    Mutation(
+        name="pii-credential-field-context",
+        path="core/pii.py",
+        before="    if finding := _labeled_secret(text, label):",
+        after="    if False:",
+        case="tests/core/test_pii.py::test_label_context_is_required_to_find_an_opaque_credential",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-ipv6-label-boundary",
+        path="core/pii.py",
+        before="    for match in patterns.LABELED_IP.finditer(text):",
+        after="    for match in ():",
+        case="tests/core/test_pii.py::test_ipv6_label_boundary_requires_whole_token_validation",
+        runner="pytest",
+    ),
 )

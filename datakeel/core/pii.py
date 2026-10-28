@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date
-from ipaddress import ip_address
+from ipaddress import IPv6Address, ip_address
 from typing import TYPE_CHECKING, Literal
 
 from pydantic import Field
@@ -37,6 +38,23 @@ _MAX_DECIMAL_DIGIT = 9
 _MIN_PHONE_DIGITS = 8
 _MAX_PHONE_DIGITS = 15
 _MIN_COMPACT_PHONE_DIGITS = 10
+_MIN_SECRET_LENGTH = 8
+_SECRET_LABELS = frozenset(
+    {
+        "apikey",
+        "accesstoken",
+        "authtoken",
+        "secretkey",
+        "secretaccesskey",
+        "awssecretaccesskey",
+        "clientsecret",
+        "githubtoken",
+        "ghtoken",
+        "password",
+        "passwd",
+    }
+)
+_PLACEHOLDERS = frozenset(f"[{kind.upper()}]" for kind in _PRIORITY) | {"[REDACTED]"}
 _CARD_ISSUERS = (
     ({13, 16, 19}, "4", "4"),
     ({15}, "34", "34"),
@@ -177,7 +195,15 @@ def _candidates(text: str) -> Iterator[PiiMatch]:
     for pattern in (patterns.LABELED_SECRET, patterns.BEARER):
         for match in pattern.finditer(text):
             yield PiiMatch(type="secret", start=match.start("value"), end=match.end("value"))
+    for match in patterns.QUOTED_SECRET.finditer(text):
+        if candidate := _labeled_secret(match.group("value"), match.group("label")):
+            start = match.start("value")
+            yield PiiMatch(type="secret", start=start + candidate.start, end=start + candidate.end)
     yield from _number_candidates(text)
+    yield from _ip_candidates(text)
+
+
+def _ip_candidates(text: str) -> Iterator[PiiMatch]:
     for pattern in (patterns.IPV4, patterns.IPV6):
         for match in pattern.finditer(text):
             try:
@@ -185,6 +211,18 @@ def _candidates(text: str) -> Iterator[PiiMatch]:
             except ValueError:
                 continue
             yield PiiMatch(type="ip", start=match.start(), end=match.end())
+    if ":" not in text:
+        return
+    for match in patterns.LABELED_IP.finditer(text):
+        value = match.group("value").rstrip(".")
+        try:
+            address = ip_address(value)
+        except ValueError:
+            continue
+        if isinstance(address, IPv6Address):
+            yield PiiMatch(
+                type="ip", start=match.start("value"), end=match.start("value") + len(value)
+            )
 
 
 def _number_candidates(text: str) -> Iterator[PiiMatch]:
@@ -211,16 +249,38 @@ def _numeric_prefix(text: str, start: int) -> bool:
     return index >= 0 and text[index].isdigit()
 
 
-def detect_pii(text: str) -> tuple[PiiMatch, ...]:
+def _labeled_secret(text: str, label: str | None) -> PiiMatch | None:
+    if label is None:
+        return None
+    normalized = re.sub(r"[^a-z0-9]", "", label.casefold())
+    value = text.strip()
+    if (
+        normalized not in _SECRET_LABELS
+        or len(value) < _MIN_SECRET_LENGTH
+        or value in _PLACEHOLDERS
+    ):
+        return None
+    if normalized not in {"password", "passwd"} and not patterns.SECRET_VALUE.fullmatch(value):
+        return None
+    start = len(text) - len(text.lstrip())
+    return PiiMatch(type="secret", start=start, end=start + len(value))
+
+
+def detect_pii(text: str, *, label: str | None = None) -> tuple[PiiMatch, ...]:
     """Return validated findings, resolving enclosing credentials before their contents.
 
     Resident IDs require a valid province, birth date, sequence and checksum. Cards
     require a recognized issuer shape and Luhn checksum. These are shape checks,
     not proof that an identity, card, account or secret is issued or active.
+    An optional credential-field label supplies context for otherwise opaque values;
+    all offsets still refer to the original value, without a synthetic prefix.
     """
+    candidates = list(_candidates(text))
+    if finding := _labeled_secret(text, label):
+        candidates.append(finding)
     selected: list[PiiMatch] = []
     for match in sorted(
-        _candidates(text), key=lambda item: (_PRIORITY.index(item.type), item.start)
+        candidates, key=lambda item: (_PRIORITY.index(item.type), item.start, -item.end)
     ):
         if not any(match.start < item.end and item.start < match.end for item in selected):
             selected.append(match)
@@ -228,12 +288,16 @@ def detect_pii(text: str) -> tuple[PiiMatch, ...]:
 
 
 def redact_pii(
-    text: str, *, replacement: str | None = None, kinds: frozenset[PiiType] | None = None
+    text: str,
+    *,
+    replacement: str | None = None,
+    kinds: frozenset[PiiType] | None = None,
+    label: str | None = None,
 ) -> str:
     """Replace findings with type placeholders, or an explicitly supplied legacy label."""
     result: list[str] = []
     cursor = 0
-    for match in detect_pii(text):
+    for match in detect_pii(text, label=label):
         if kinds is not None and match.type not in kinds:
             continue
         result.extend((text[cursor : match.start], replacement or match.placeholder))

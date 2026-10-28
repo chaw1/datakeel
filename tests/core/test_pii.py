@@ -3,6 +3,8 @@
 
 """Exercise generated privacy shapes, checksum failures, boundaries and masking."""
 
+import json
+
 import pytest
 from pydantic import ValidationError
 
@@ -190,3 +192,74 @@ def test_international_phone_when_digits_also_pass_luhn_keeps_phone_type() -> No
     value = "+" + card("4915", 13)
     assert [match.type for match in detect_pii(value)] == ["phone"]
     assert redact_pii(value) == "[PHONE]"
+
+
+@pytest.mark.parametrize("label", ["address", "host", "ip_address", "地址"])
+def test_ipv6_when_adjacent_to_label_colon_reports_complete_address(label: str) -> None:
+    """A label separator does not prevent IPv6 detection or alter the address span."""
+    value = f"{2001}:db8::abcd"
+    text = f"{label}:{value}"
+    matches = detect_pii(text)
+    assert len(matches) == 1
+    assert matches[0].type == "ip"
+    assert text[matches[0].start : matches[0].end] == value
+    assert redact_pii(text) == f"{label}:[IP]"
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [f"{2001}:db8::zzzz", f"{2001}:db8:::1", f"{2001}:db8::1.invalid", "12345::1"],
+)
+def test_ipv6_when_invalid_tail_or_compression_present_cannot_report_partial_ip(
+    invalid: str,
+) -> None:
+    """Recognizing labels cannot cut an invalid address into an apparently valid suffix."""
+    assert not detect_pii(invalid)
+    assert not detect_pii(f"address:{invalid}")
+
+
+@pytest.mark.parametrize(
+    "label", ["api_key", "API-KEY", "access_token", "secret_access_key", "password"]
+)
+def test_quoted_secret_labels_when_serialized_as_json_mask_nonprefix_values(label: str) -> None:
+    """JSON string labels protect synthetic credentials without vendor prefixes."""
+    value = "q7R8s9T0" * 4
+    text = f'{{"{label}":"{value}"}}'
+    assert redact_pii(text) == f'{{"{label}":"[SECRET]"}}'
+
+
+@pytest.mark.parametrize("label", ["api_key", "client_secret", "AWS_SECRET_ACCESS_KEY", "password"])
+def test_labelled_value_when_context_supplied_uses_original_value_offsets(label: str) -> None:
+    """Typed field context detects credentials without temporary text concatenation."""
+    value = "q7R8s9T0" * 4
+    matches = detect_pii(f"  {value}  ", label=label)
+    assert len(matches) == 1
+    assert matches[0].type == "secret"
+    assert matches[0].start == 2
+    assert matches[0].end == len(value) + 2
+    assert redact_pii(value, label=label) == "[SECRET]"
+    assert not detect_pii("[SECRET]", label=label)
+    assert not detect_pii("short", label=label)
+    assert not detect_pii("a normal explanatory phrase", label="api_key")
+
+
+@pytest.mark.parametrize("value", ["Q7r8s9t0!@#$", "a password with spaces", 'Q7r8s9t0"quoted"'])
+def test_quoted_password_when_special_characters_present_redacts_complete_value(value: str) -> None:
+    """Quoted credentials preserve no punctuation or escaped suffix from the original value."""
+    text = json.dumps({"password": value})
+    assert redact_pii(text) == json.dumps({"password": "[SECRET]"})
+    assert not detect_pii(json.dumps({"password": "[SECRET]"}))
+
+
+def test_label_context_is_required_to_find_an_opaque_credential() -> None:
+    """Removing field context must fail this independent privacy mutation anchor."""
+    value = "q7R8s9T0" * 4
+    assert not detect_pii(value)
+    assert [match.type for match in detect_pii(value, label="api_key")] == ["secret"]
+
+
+def test_ipv6_label_boundary_requires_whole_token_validation() -> None:
+    """Ignoring labels or accepting malformed suffixes breaks this single mutation anchor."""
+    value = f"{2001}:db8::abcd"
+    assert redact_pii(f"address:{value}") == "address:[IP]"
+    assert not detect_pii(f"address:{value}zzzz")

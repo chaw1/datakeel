@@ -219,3 +219,35 @@ def test_privacy_when_redacted_metadata_keys_collide_retains_each_value() -> Non
     assert isinstance(redacted, dict)
     assert len(redacted) == 2
     assert set(redacted.values()) == {"first", "second"}
+
+
+@pytest.mark.parametrize("label", ["api_key", "password", "client_secret", "AWS_SECRET_ACCESS_KEY"])
+def test_nested_labelled_credential_when_value_has_no_prefix_detects_and_cleans(
+    label: str,
+    tmp_path: Path,
+) -> None:
+    """Field context survives the recursive payload walk and the actual cleaned artifact."""
+    value = "q7R8s9T0" * 4
+    path = tmp_path / "labeled.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "instruction": "Explain a generated concept.",
+                "output": "A complete explanation.",
+                "metadata": {label: value},
+            }
+        )
+        + "\n"
+    )
+    report = analyze_sources(
+        (TrainingSource(file_id="labelled", filename=path.name, path=str(path)),),
+        cleaned_dir=tmp_path / "cleaned",
+    )
+    assert report.pii_records == 1
+    assert report.redacted == 1
+    finding = next(item for item in report.samples[0].issues if item.code == "pii_secret")
+    assert finding.field == f"payload.metadata.{label}"
+    assert finding.start == 0
+    assert finding.end == len(value)
+    content = json.loads((tmp_path / "cleaned" / cleaned_filename("labelled")).read_text())
+    assert content["metadata"][label] == "[SECRET]"

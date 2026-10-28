@@ -22,6 +22,10 @@ IPV6 = re.compile(
     r"(?<![A-Za-z0-9_.:])(?:[0-9A-Fa-f]{0,4}:){2,7}"
     r"(?:[0-9A-Fa-f]{0,4}|(?:[0-9]{1,3}\.){3}[0-9]{1,3})(?![A-Za-z0-9_.:])"
 )
+LABELED_IP = re.compile(
+    r"(?<![\w:])[^\W\d][\w-]{0,63}\s*:\s*"
+    r"(?P<value>[0-9A-Fa-f:][A-Za-z0-9_.:%-]*)(?![A-Za-z0-9_.:%-])"
+)
 CREDENTIAL_URL = re.compile(
     r"\b[A-Za-z][A-Za-z0-9+.-]{1,20}://[^\s/@]+@"
     r"(?:\[[0-9A-Fa-f:.]+\]|[^\s<>\[\]()])+"
@@ -37,10 +41,18 @@ SECRET = re.compile(
     r"|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"
     r")(?![A-Za-z0-9_])"
 )
+CREDENTIAL_LABEL_PATTERN = (
+    r"\b(?P<label>api[_-]?key|access[_-]?token|auth[_-]?token|"
+    r"(?:aws[_-]?)?secret[_-]?(?:access[_-]?)?key|client[_-]?secret|"
+    r"(?:github|gh)[_-]?token|password|passwd)"
+)
 LABELED_SECRET = re.compile(
-    r"\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|"
-    r"secret[_-]?(?:access[_-]?)?key|password|passwd)"
-    r"\s*[:=]\s*[\"']?(?P<value>[A-Za-z0-9_./+~=-]{8,})",
+    CREDENTIAL_LABEL_PATTERN + r"[\"']?\s*[:=]\s*[\"']?(?P<value>[A-Za-z0-9_./+~=-]{8,})",
+    re.IGNORECASE,
+)
+QUOTED_SECRET = re.compile(
+    CREDENTIAL_LABEL_PATTERN
+    + r"""["']?\s*[:=]\s*(?P<quote>["'])(?P<value>(?:\\.|[^\\])*?)(?P=quote)""",
     re.IGNORECASE,
 )
 BEARER = re.compile(r"\bBearer\s+(?P<value>[A-Za-z0-9._~+/-]{16,}=*)", re.IGNORECASE)
@@ -48,3 +60,4 @@ PRIVATE_KEY = re.compile(
     r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
     r"[\sA-Za-z0-9+/=]+-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
 )
+SECRET_VALUE = re.compile(r"[A-Za-z0-9_./+~=-]{8,}\Z")
