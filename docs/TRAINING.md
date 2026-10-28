@@ -17,9 +17,10 @@ comparison API below to inspect changes in sample assignments.
 ## Reproducible grouping and stratification
 
 Stratification balances one primary label per sample: the lexicographically smallest
-label. For a single-label sample, that is its only label. All labels and complete
-annotations remain in the immutable split and exports; the distribution table measures
-every label. Non-primary labels have no balance or prevalence-error guarantee.
+label. For a single-label sample, that is its only label. The immutable split retains
+all labels and complete annotations; each export writes the annotations supported by
+its format. The distribution table measures every label. Non-primary labels have no
+balance or prevalence-error guarantee.
 
 Independent samples start with seeded largest-remainder quotas. A bounded integer
 transport solver can adjust small rounded sets to feasible primary-label totals.
