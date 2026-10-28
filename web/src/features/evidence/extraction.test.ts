@@ -64,7 +64,7 @@ describe("paired source eligibility", () => {
     undefined,
     {},
     { sample_key: "", split: "train" },
-    { sample_key: "image.png", split: "test" },
+    { sample_key: "image.png", split: "holdout" },
     { sample_key: "image.png", split: "train", caption: "caption.txt" },
     { sample_key: "image.png", split: "train", annotation: {} },
   ])("rejects malformed sample metadata %j", (evidence_sample) => {
@@ -83,6 +83,30 @@ describe("paired source eligibility", () => {
     expect(supportsEvidence({ ...paired, manifest: [] })).toBe(false);
   });
 });
+
+it.each(["train", "val", "test"])(
+  "accepts paired images from the %s split",
+  (split) => {
+    expect(
+      supportsEvidence({
+        ...paired,
+        manifest: [
+          {
+            ...image,
+            metadata: {
+              evidence_sample: {
+                sample_key: `${split}/scene/image.png`,
+                split,
+                caption: null,
+                annotation: null,
+              },
+            },
+          },
+        ],
+      }),
+    ).toBe(true);
+  },
+);
 
 it("sends the explicit five-extractor chain with one global near-duplicate shard", () => {
   const input = extractionInput("dataset-id", "source-version");

@@ -26,7 +26,7 @@ export const evidenceZh: Record<keyof typeof evidenceEn, string> = {
   evExtractionNoSource: "没有可用于证据抽取的来源版本。",
   evPairedInstructions: "在本地生成或导入配对样本",
   evPairedLayout:
-    "把图像放在 train/ 或 val/ 下，与 caption.txt、annotations.json 放在一起。允许缺少附属文件，此时对应证据为未知。请用配对导入器保留引用关系；普通上传不会建立这些绑定。",
+    "把图像放在 train/、val/ 或 test/ 下，与 caption.txt、annotations.json 放在一起。允许缺少附属文件，此时对应证据为未知。请用配对导入器保留引用关系；普通上传不会建立这些绑定。",
   evPairedEnvironment:
     "在项目目录运行，使用与本地服务相同的 DATAKEEL_HOME 和 DATAKEEL_DATABASE_URL。下面的命令只创建新的配对数据集，不执行抽取。导入自己的样本时，跳过生成步骤并修改导入目录。",
   evPairedNext: "刷新数据库，选择新数据集，再回到证据页准备抽取。",
@@ -57,6 +57,7 @@ export const evidenceZh: Record<keyof typeof evidenceEn, string> = {
   evSplit: "样本划分",
   evTrain: "训练集",
   evVal: "验证集",
+  evTest: "测试集",
   evGap: "标注缺口",
   evMissingLabel: "没有匹配标注",
   evGapPresent: "已确认标注缺口",

@@ -53,6 +53,7 @@ const fields: {
       ["", "evAny"],
       ["train", "evTrain"],
       ["val", "evVal"],
+      ["test", "evTest"],
     ],
   },
   {
@@ -62,6 +63,7 @@ const fields: {
       ["", "evAny"],
       ["train", "evTrain"],
       ["val", "evVal"],
+      ["test", "evTest"],
     ],
   },
 ];

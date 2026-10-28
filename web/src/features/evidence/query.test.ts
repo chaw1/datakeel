@@ -70,3 +70,13 @@ it("pins checked identities to exactly one dataset and source version", () => {
   ).toBeNull();
   expect(exactSelection([{ ...sample, deleted: true }])).toBeNull();
 });
+
+it("preserves test membership and test-neighbor predicates in the API request", () => {
+  expect(
+    evidenceQuery(
+      "dataset",
+      { ...exampleFilters, split: "test", near: "test" },
+      null,
+    ),
+  ).toMatchObject({ split: "test", has_near_duplicate_in: "test" });
+});

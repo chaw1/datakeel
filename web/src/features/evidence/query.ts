@@ -7,8 +7,8 @@ export type EvidenceFilters = {
   scene: string;
   sceneState: "present" | "absent" | "unknown";
   gap: "" | "missing" | "present" | "unknown";
-  near: "" | "train" | "val";
-  split: "" | "train" | "val";
+  near: "" | NonNullable<EvidenceQuery["has_near_duplicate_in"]>;
+  split: "" | NonNullable<EvidenceQuery["split"]>;
   qualityMin: number;
   qualityMax: number;
   sort: "review" | "filename" | "quality";
