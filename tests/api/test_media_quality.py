@@ -7,10 +7,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from datakeel.api.app import create_app
 from datakeel.pipeline.media import media_pipeline
+from datakeel.storage.database import TaskRow
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.governance_service import get_report
 from datakeel.storage.lineage_service import get_graph
@@ -103,6 +106,34 @@ def test_media_worker_finishes_a_batch_with_one_broken_scan_as_partial(
     assert len(events) == 6
     assert all(event.quality["partial"] is True for event in events)
     assert all(event.quality["failed_count"] == 1 for event in events)
+
+
+def test_media_job_completes_with_one_corrupt_png_as_partial(db: Database, tmp_path: Path) -> None:
+    """A PNG that cannot be decoded is reported while the other image and the scan are scored."""
+    good = tmp_path / "good.png"
+    Image.fromarray(np.full((48, 64, 3), 120, dtype=np.uint8)).save(good)
+    broken = tmp_path / "broken.png"
+    broken.write_bytes(good.read_bytes()[:40])
+    dataset = import_paths(db, "Mixed media", [good, broken, _scan(tmp_path)])
+    task = DatabaseQueue(db).submit(dataset.id, "media", media_pipeline())
+    run_worker(db, once=True)
+    with db.session() as session:
+        row = session.get(TaskRow, task)
+        assert row is not None
+        assert row.state == "COMPLETED"
+    files = {file.filename: file for file in list_versions(db, dataset.id)[-1].manifest}
+    assert files["good.png"].metadata["image_quality"]["width"] == 64
+    assert "image_error" not in files["good.png"].metadata
+    failure = files["broken.png"].metadata["image_error"]
+    assert failure["operator"] == "image.quality"
+    assert "broken.png" in failure["reason"]
+    assert "image_quality" not in files["broken.png"].metadata
+    assert files["scan.ply"].metadata["pointcloud_probe"]["point_count"] == 4
+    report = get_report(db, dataset.id).body
+    assert "broken.png: image.quality could not process the file" in report
+    [event] = [event for event in get_graph(db).events if event.operator == "image.quality"]
+    assert event.quality["partial"] is True
+    assert event.quality["failed_files"][0]["filename"] == "broken.png"
 
 
 def test_preview_cannot_escape_dataset_or_version_scope(db: Database, tmp_path: Path) -> None:

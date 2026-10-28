@@ -41,8 +41,16 @@ def _issue(file: FileItem, code: str, message: str, dimension: str) -> IssueView
 
 
 def image_assessment(file: FileItem) -> MediaAssessment:
-    """Use the measured overall score and preserve individual failed-check reasons."""
-    measured = JsonDocument.model_validate(file.metadata).root.get("image_quality")
+    """Use the measured overall score and preserve individual failed-check reasons.
+
+    An image that an operator could not decode scores zero completeness with
+    its reason.
+    """
+    metadata = JsonDocument.model_validate(file.metadata).root
+    failure = metadata.get("image_error")
+    if isinstance(failure, dict):
+        return _unreadable(file, failure, "image")
+    measured = metadata.get("image_quality")
     if not isinstance(measured, dict) or "overall_score" not in measured:
         return MediaAssessment()
     score = max(0, min(100, _number(measured.get("overall_score"), 100)))
@@ -72,7 +80,7 @@ def pointcloud_assessment(file: FileItem) -> MediaAssessment:
     metadata = JsonDocument.model_validate(file.metadata).root
     failure = metadata.get("pointcloud_error")
     if isinstance(failure, dict):
-        return _unreadable(file, failure)
+        return _unreadable(file, failure, "pointcloud")
     measured = metadata.get("pointcloud_probe")
     if not isinstance(measured, dict):
         return MediaAssessment()
@@ -111,13 +119,13 @@ def pointcloud_assessment(file: FileItem) -> MediaAssessment:
     )
 
 
-def _unreadable(file: FileItem, failure: dict[str, JsonValue]) -> MediaAssessment:
+def _unreadable(file: FileItem, failure: dict[str, JsonValue], modality: str) -> MediaAssessment:
     reason = f"{failure.get('operator')} could not process the file: {failure.get('reason')}"
-    issue = _issue(file, "pointcloud_unreadable", reason, "completeness")
+    issue = _issue(file, f"{modality}_unreadable", reason, "completeness")
     return MediaAssessment(
         completeness=0.0,
         score=0.0,
-        observations={"pointcloud_error": failure},
+        observations={f"{modality}_error": failure},
         issues=[issue.model_copy(update={"severity": "error"})],
     )
 

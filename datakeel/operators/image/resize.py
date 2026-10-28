@@ -7,7 +7,8 @@ from functools import partial
 from pathlib import Path
 
 from datakeel.core.models import FileItem
-from datakeel.operators.base import Operator, OperatorResult, ResizeParams, summarize
+from datakeel.operators.base import Operator, OperatorResult, ResizeParams
+from datakeel.operators.image.batch import guarded, summarize_batch
 from datakeel.operators.image.helpers import decode, image_artifact, resize
 from datakeel.operators.image.parallel import map_images
 
@@ -27,10 +28,10 @@ def execute(files: list[FileItem], output_dir: Path, params: ResizeParams) -> Op
     """Resize images within requested dimensions, retaining aspect ratio by default."""
     output = map_images(
         files,
-        partial(_resize, output_dir=output_dir, params=params),
+        guarded("image.resize", partial(_resize, output_dir=output_dir, params=params)),
         params.width * params.height,
     )
-    return summarize(files, output)
+    return summarize_batch(files, output)
 
 
 OPERATOR = Operator("image.resize", "image", "transform", ResizeParams, execute)

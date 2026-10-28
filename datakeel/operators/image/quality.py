@@ -7,13 +7,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from datakeel.core.models import FileItem
-from datakeel.operators.base import (
-    ImageQualityParams,
-    Operator,
-    OperatorResult,
-    annotate,
-    summarize,
-)
+from datakeel.operators.base import ImageQualityParams, Operator, OperatorResult, annotate
+from datakeel.operators.image.batch import guarded, summarize_batch
 from datakeel.operators.image.helpers import decode_with_depth
 from datakeel.operators.image.quality_scores import ImageQualityChecks, evaluate
 from datakeel.operators.image.quality_signals import ImageSignals, measure
@@ -58,22 +53,18 @@ def _quality(file: FileItem, params: ImageQualityParams) -> ImageQualityMeasurem
 
 
 def execute(files: list[FileItem], _output_dir: Path, params: ImageQualityParams) -> OperatorResult:
-    """Annotate oriented images with scores, threshold failures and measured explanations."""
-    output: list[FileItem] = []
+    """Annotate oriented images with scores, threshold failures and measured explanations.
+
+    An image that cannot be decoded within the resource limits keeps its
+    failure reason instead of failing the batch, and the result is partial.
+    """
     issues: list[dict[str, Any]] = []
     measurements: dict[str, JsonValue] = {}
-    for file in files:
+
+    def measure_file(file: FileItem) -> FileItem:
         quality = _quality(file, params)
         serialized = cast("dict[str, JsonValue]", quality.model_dump(mode="json"))
         measurements[file.id] = serialized
-        output.append(
-            annotate(
-                file,
-                width=quality.width,
-                height=quality.height,
-                image_quality=serialized,
-            )
-        )
         issues.extend(
             {
                 "file_id": file.id,
@@ -85,7 +76,11 @@ def execute(files: list[FileItem], _output_dir: Path, params: ImageQualityParams
             for check in quality.checks.values()
             if check.failed
         )
-    result = summarize(files, output, issues)
+        return annotate(file, width=quality.width, height=quality.height, image_quality=serialized)
+
+    step = guarded("image.quality", measure_file)
+    output = [step(file) for file in files]
+    result = summarize_batch(files, output, issues)
     result.quality["measurements"] = measurements
     return result
 

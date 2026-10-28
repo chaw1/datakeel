@@ -220,6 +220,23 @@ def test_unreadable_point_cloud_is_an_error_with_its_reason() -> None:
     assert "bad header" in assessment.issues[0].message
 
 
+def test_unreadable_image_is_an_error_and_a_measured_image_is_not() -> None:
+    """An image no operator could decode scores zero; a decoded image keeps its own score."""
+    failed = _file(
+        "image",
+        image_error={"operator": "image.quality", "reason": "UnidentifiedImageError: bad.png"},
+    )
+    assessment = assess_file(failed)
+    assert (assessment.completeness, assessment.score) == (0, 0)
+    assert [(issue.code, issue.severity) for issue in assessment.issues] == [
+        ("image_unreadable", "error")
+    ]
+    assert "image.quality could not process the file" in assessment.issues[0].message
+    assert assessment.observations == {"image_error": failed.metadata["image_error"]}
+    measured = assess_file(_file("image", image_quality={"overall_score": 90.0, "checks": {}}))
+    assert (measured.score, measured.issues) == (90, [])
+
+
 def test_cleaned_scan_report_preserves_original_defects() -> None:
     """A corrected current score does not erase the original scan observations."""
     file = _file(
