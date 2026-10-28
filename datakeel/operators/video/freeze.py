@@ -149,7 +149,9 @@ def frozen_runs(
         runs.append((start, index - 1))
         start = None
         if held[index]:
-            start = anchor = index - 1
+            # A new run starts at the previous frame only if this frame still shows it.
+            same = _same_picture(luma[index - 1], luma[index], limits)
+            start = anchor = index - 1 if same else index
     if start is not None:
         runs.append((start, analysis.frame_count - 1))
     return [(first, last) for first, last in runs if last > first]
