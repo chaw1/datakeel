@@ -18,6 +18,7 @@ from datakeel.storage import evidence_queries
 
 if TYPE_CHECKING:
     from datakeel.actions.models import ActionRun
+    from datakeel.core.data_asset_models import AccessContext
     from datakeel.core.harness_eval import GoldenCase
     from datakeel.core.models import AssetRef, FileItem
     from datakeel.evidence.query_models import EvidenceExplanation
@@ -36,9 +37,13 @@ def test_explanation_when_script_says_unknown_but_real_states_missing_fails(
     original = evidence_queries.explain_sample
 
     def missing_states(
-        db: Database, asset_id: str, version_id: str | None = None
+        db: Database,
+        asset_id: str,
+        version_id: str | None = None,
+        *,
+        access: AccessContext | None = None,
     ) -> EvidenceExplanation:
-        return original(db, asset_id, version_id).model_copy(update={"states": []})
+        return original(db, asset_id, version_id, access=access).model_copy(update={"states": []})
 
     monkeypatch.setattr(evidence_queries, "explain_sample", missing_states)
     result = run_case(_case("14-evidence-unknown"), "fake")

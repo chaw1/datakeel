@@ -3,11 +3,12 @@
 
 """Controlled mutation plans, local user approvals, and durable action receipts."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from datakeel.actions import service
 from datakeel.actions.models import ActionPlan, ActionRun, ApprovalDecision, ExecuteRequest
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import JsonDocument
 
@@ -21,21 +22,21 @@ def _require_local(actor: str) -> None:
 
 
 @router.get("/actions/runs")
-def action_runs(db: DatabaseDependency) -> list[ActionRun]:
+def action_runs(db: DatabaseDependency, request: Request) -> list[ActionRun]:
     """Read attempts, including DENIED runs with missing/rejected/consumed approval reasons."""
-    return service.list_runs(db)
+    return service.list_runs(db, access=_read_access(request))
 
 
 @router.get("/approvals")
-def pending_approvals(db: DatabaseDependency) -> list[ActionPlan]:
+def pending_approvals(db: DatabaseDependency, request: Request) -> list[ActionPlan]:
     """Read irreversible or outbound plans awaiting a local user decision."""
-    return service.list_approvals(db)
+    return service.list_approvals(db, access=_read_access(request))
 
 
 @router.get("/actions/plans/{plan_id}")
-def action_plan(plan_id: str, db: DatabaseDependency) -> ActionPlan:
+def action_plan(plan_id: str, db: DatabaseDependency, request: Request) -> ActionPlan:
     """Read the server-owned frozen plan and its current lifecycle status."""
-    return service.get_plan(db, plan_id)
+    return service.get_plan(db, plan_id, access=_read_access(request))
 
 
 @router.post("/actions/{action_type}/prepare")
@@ -60,3 +61,9 @@ def execute(plan_id: str, body: ExecuteRequest, db: DatabaseDependency) -> Actio
     """
     _require_local(body.actor)
     return service.execute_plan(db, plan_id, body)
+
+
+def _read_access(request: Request) -> AccessContext:
+    return AccessContext(
+        actor=request.headers.get("X-Datakeel-Actor", "local"), entry="ask", scope="query"
+    )

@@ -14,6 +14,7 @@ from rich.console import Console
 
 from datakeel.cli import (
     custom_operators,
+    data_assets,
     delivery,
     kg_evaluation,
     kg_image_evaluation,
@@ -29,15 +30,18 @@ from datakeel.cli.evaluation import evaluate
 from datakeel.cli.evidence import rebuild
 from datakeel.cli.evidence_evaluation import evaluate_evidence
 from datakeel.cli.mcp import serve
+from datakeel.core.data_asset_models import AccessContext, SkippedEntries
 from datakeel.core.errors import NotFoundError
 from datakeel.core.harness_models import BudgetLimits
 from datakeel.core.kg_image_request import ImageEvaluationRequest
 from datakeel.core.logging import configure_logging
+from datakeel.core.models import AssetRef
 from datakeel.core.settings import get_settings
 from datakeel.routing.config import load_config
+from datakeel.storage.data_asset_access import skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
-from datakeel.storage.lineage_service import export_dataset, export_events
+from datakeel.storage.lineage_service import export_dataset, export_readable_events
 from datakeel.worker.runner import run_worker
 
 __all__ = ["main", "seed_demo"]
@@ -86,21 +90,54 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
-    for module in (workflow, routing, kg_evaluation, timeseries_demo, custom_operators, delivery):
+    for module in (
+        workflow,
+        routing,
+        kg_evaluation,
+        timeseries_demo,
+        custom_operators,
+        delivery,
+        data_assets,
+    ):
         module.register_parser(commands)
     return result
 
 
+def _report_skipped(skipped: SkippedEntries | None, kind: str) -> None:
+    # The exported document keeps its standard shape; skipped entries are reported on stderr.
+    if skipped is not None:
+        Console(stderr=True).print(
+            f"Skipped {skipped.count} protected {kind}: {', '.join(skipped.ids)}. "
+            f"Assets: {', '.join(skipped.assets)}. {skipped.reason}.",
+            markup=False,
+            highlight=False,
+            soft_wrap=True,
+        )
+
+
 def _export(db: Database, args: argparse.Namespace) -> None:
     if args.format == "openlineage":
-        result = [event.model_dump(mode="json") for event in export_events(db, args.dataset)]
+        events, skipped = export_readable_events(db, args.dataset)
+        _report_skipped(skipped, "events")
+        result = [event.model_dump(mode="json") for event in events]
         encoded = json.dumps(result, ensure_ascii=False, indent=2)
     else:
-        datasets = list_datasets(db)
-        identifier = args.dataset or (datasets[0].id if datasets else None)
+        identifier = args.dataset
         if identifier is None:
-            msg = "No dataset found; run datakeel demo first"
-            raise NotFoundError(msg)
+            # Without an explicit dataset, export the first one this operator may read.
+            datasets = list_datasets(db)
+            skipped = skip_protected(
+                db,
+                [(value.id, (AssetRef(asset_id=value.id),)) for value in datasets],
+                AccessContext(actor="local-user", entry="export", scope="export"),
+            )
+            hidden: set[str] = set(skipped.ids) if skipped else set()
+            readable = [value.id for value in datasets if value.id not in hidden]
+            if not readable:
+                msg = "No readable dataset found; run datakeel demo first or apply for access"
+                raise NotFoundError(msg)
+            _report_skipped(skipped, "datasets")
+            identifier = readable[0]
         document = export_dataset(db, identifier, get_settings().base_url)
         encoded = json.dumps(document.model_dump(mode="json"), ensure_ascii=False, indent=2)
     if args.output:
@@ -144,6 +181,7 @@ _MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
     "version-diff": delivery.database_command,
     "release-export": delivery.database_command,
     "release-reconcile": delivery.database_command,
+    "data-assets": data_assets.dispatch,
 }
 
 

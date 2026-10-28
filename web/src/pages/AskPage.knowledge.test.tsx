@@ -106,7 +106,10 @@ it("retains a selected intent when a later response asks to choose the subject",
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   render(<AskPage onOpenReceipt={vi.fn()} />);
-  await user.type(screen.getByRole("textbox"), question);
+  await user.type(
+    screen.getByRole("textbox", { name: "Business question" }),
+    question,
+  );
   await user.click(screen.getByRole("button", { name: "Ask data" }));
   await user.click(await screen.findByRole("button", { name: "Upstream" }));
   await user.click(
@@ -150,7 +153,10 @@ it("restores a selected intent from a replayed subject clarification", async () 
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   render(<AskPage onOpenReceipt={vi.fn()} />);
-  await user.type(screen.getByRole("textbox"), knowledgeAnswer.question);
+  await user.type(
+    screen.getByRole("textbox", { name: "Business question" }),
+    knowledgeAnswer.question,
+  );
   await user.click(screen.getByRole("button", { name: "Ask data" }));
   await user.click(
     await screen.findByRole("button", { name: "Replay saved answer" }),
@@ -213,7 +219,10 @@ it("keeps the pinned subject when a subject choice is followed by an intent choi
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   render(<AskPage onOpenReceipt={vi.fn()} />);
-  await user.type(screen.getByRole("textbox"), question);
+  await user.type(
+    screen.getByRole("textbox", { name: "Business question" }),
+    question,
+  );
   await user.click(screen.getByRole("button", { name: "Ask data" }));
   await user.click(
     await screen.findByRole("button", { name: /出货额 Metric Catalog asset/ }),

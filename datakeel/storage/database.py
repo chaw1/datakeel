@@ -42,6 +42,15 @@ from datakeel.storage.conversation_rows import (
     ConversationRow,
 )
 from datakeel.storage.custom_rows import CustomOperatorRow, CustomRunRow
+from datakeel.storage.data_asset_rows import (
+    AssetApplicationRow,
+    AssetControlRow,
+    AssetGrantRow,
+    AssetUsageRow,
+    DataAssetHistoryRow,
+    DataAssetRow,
+    install_asset_constraints,
+)
 from datakeel.storage.delivery_rows import ReconciliationRow
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
@@ -72,6 +81,12 @@ _REGISTERED_MODELS = (
     ReconciliationRow,
     ReleaseRow,
     ReleaseEntryRow,
+    AssetApplicationRow,
+    AssetControlRow,
+    AssetGrantRow,
+    AssetUsageRow,
+    DataAssetHistoryRow,
+    DataAssetRow,
     ActionAuditRow,
     ActionOperationRow,
     ActionPlanRow,
@@ -260,6 +275,7 @@ class Database:
             add_nullable_columns(connection)
             install_evidence_constraints(connection, sqlite=self.sqlite)
             install_release_constraints(connection, sqlite=self.sqlite)
+            install_asset_constraints(connection, sqlite=self.sqlite)
             if self.sqlite:
                 for operation in ("UPDATE", "DELETE"):
                     connection.execute(

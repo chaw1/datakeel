@@ -9,7 +9,7 @@ from hashlib import sha256
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from datakeel.core.errors import ConflictError, NotFoundError
+from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError
 from datakeel.core.memory_models import (
     MemoryCreate,
     MemoryDeletion,
@@ -22,6 +22,7 @@ from datakeel.core.models import new_id
 from datakeel.memory.consolidation import consolidate
 from datakeel.memory.retrieval import refreshed, reinforced, select_entries
 from datakeel.storage.conversation_rows import ConversationRow
+from datakeel.storage.data_asset_context import visible_memories
 from datakeel.storage.database import Database, DatasetRow
 from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 
@@ -122,22 +123,28 @@ def list_entries(
     policy: MemoryPolicy,
     *,
     include_archived: bool = False,
+    record: bool = False,
 ) -> list[MemoryEntry]:
     """List global and optionally matching dataset memories with current strength."""
     with db.session() as session:
         entries = [_read(row, now, policy) for row in _rows(session)]
-    return [
+    selected = [
         item
         for item in entries
         if (include_archived or not item.archived)
         and (dataset_id is None or item.dataset_id in {None, dataset_id})
     ]
+    return visible_memories(db, selected, record=record)
 
 
 def get(db: Database, identifier: str, now: datetime, policy: MemoryPolicy) -> MemoryEntry:
     """Read one current entry or raise a typed not-found error after hard deletion."""
     with db.session() as session:
-        return _read(_existing(session, identifier), now, policy)
+        result = _read(_existing(session, identifier), now, policy)
+    if not visible_memories(db, [result], record=True):
+        msg = "Memory source requires an active query grant; apply for access"
+        raise AuthorizationError(msg)
+    return result
 
 
 def select_memories(

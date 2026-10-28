@@ -44,7 +44,12 @@ def list_memories(
 ) -> list[MemoryEntry]:
     """List current entries; an optional dataset filter also includes global entries."""
     return memory_store.list_entries(
-        db, dataset_id, clock(), policy or MemoryPolicy(), include_archived=include_archived
+        db,
+        dataset_id,
+        clock(),
+        policy or MemoryPolicy(),
+        include_archived=include_archived,
+        record=True,
     )
 
 

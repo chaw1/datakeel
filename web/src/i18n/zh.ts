@@ -3,6 +3,7 @@ import { agentZh } from "./agentZh";
 import { approvalsMetricZh } from "./approvalsMetricZh";
 import { approvalZh } from "./approvalZh";
 import { askZh } from "./askZh";
+import { assetZh } from "./assetZh";
 import { catalogZh } from "./catalogZh";
 import { commandZh } from "./commandZh";
 import { customOperatorZh } from "./customOperatorZh";
@@ -20,6 +21,7 @@ import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
   ...customOperatorZh,
   ...releaseZh,
+  ...assetZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,

@@ -7,25 +7,42 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.actions.models import ActionPlan, ApprovalDecision
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError, ConflictError
+from datakeel.storage.action_access import authorize_plans_in_session
 from datakeel.storage.action_planning import verify_plan
 from datakeel.storage.action_rows import ApprovalRow
 from datakeel.storage.action_store import audit, locked_plan
+from datakeel.storage.data_asset_review import (
+    refuse_tool_decision,
+    require_independent_reviewer,
+)
 from datakeel.storage.database import Database
 
 
-def approve_plan(db: Database, plan_id: str, decision: ApprovalDecision) -> ActionPlan:
+def approve_plan(
+    db: Database,
+    plan_id: str,
+    decision: ApprovalDecision,
+    *,
+    access: AccessContext | None = None,
+) -> ActionPlan:
     """Approve or reject the exact displayed plan once, before it expires."""
     with db.session() as session:
         db.lock_writes(session)
         row, plan = locked_plan(session, plan_id)
+        refuse_tool_decision(plan.action_type, access)
         verify_plan(session, plan, decision.plan_digest, decision.actor)
+        require_independent_reviewer(
+            session, plan.action_type, plan.canonical_params, decision.actor
+        )
         if plan.status != "PREPARED":
             msg = "Action plan already has a decision or execution"
             raise ConflictError(msg)
         if not plan.requires_approval:
             msg = "Reversible local actions do not require approval"
             raise ConflictError(msg)
+        authorize_plans_in_session(session, (plan,), access, actor=decision.actor)
         status = "APPROVED" if decision.approve else "REJECTED"
         session.add(
             ApprovalRow(

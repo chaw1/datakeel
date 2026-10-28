@@ -4,6 +4,7 @@ import { ApprovalsPage } from "../pages/ApprovalsPage";
 import { AskPage } from "../pages/AskPage";
 import { CatalogPage } from "../pages/CatalogPage";
 import { CustomOperatorsPage } from "../pages/CustomOperatorsPage";
+import { DataAssetsPage } from "../pages/DataAssetsPage";
 import { EvidencePage } from "../pages/EvidencePage";
 import { KnowledgeGraphPage } from "../pages/KnowledgeGraphPage";
 import { MemoryPage } from "../pages/MemoryPage";
@@ -32,6 +33,13 @@ export function OperationsWorkspace({
   onOpenReceipt: (target: LineageTarget) => void;
   onDataChanged: () => void;
 }) {
+  if (page === "data-assets")
+    return (
+      <DataAssetsPage
+        onDataChanged={onDataChanged}
+        onOpenReceipt={onOpenReceipt}
+      />
+    );
   if (page === "kg")
     return (
       <KnowledgeGraphPage

@@ -80,3 +80,31 @@ def test_memory_when_action_completes_keeps_full_plan_once_and_summarizes_worksp
             },
         }
     ]
+
+
+def test_workspace_when_dataset_has_business_metadata_exports_only_identity(
+    db: Database, dataset: DatasetView
+) -> None:
+    """Automatic workspace context cannot copy protected values from dataset metadata."""
+    from datakeel.actions.models import ExecuteRequest  # noqa: PLC0415
+    from datakeel.actions.service import execute_plan, prepare_action  # noqa: PLC0415
+    from datakeel.core.models import JsonDocument  # noqa: PLC0415
+
+    business_value = "Generated confidential planning figure 730251"
+    plan = prepare_action(
+        db,
+        "save_metadata",
+        JsonDocument(
+            {
+                "dataset_id": dataset.id,
+                "values": {"business_note": business_value},
+                "reason": "Fixture",
+            }
+        ),
+    )
+    execute_plan(db, plan.id, ExecuteRequest(plan_digest=plan.plan_digest))
+    conversation = create_conversation(db, ConversationCreate(dataset_id=dataset.id))
+    facts = workspace(db, get(db, conversation.id))
+    assert facts.root["datasets"] == [{"id": dataset.id, "name": dataset.name}]
+    assert business_value not in facts.model_dump_json()
+    assert "business_note" not in facts.model_dump_json()

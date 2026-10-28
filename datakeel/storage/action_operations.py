@@ -11,6 +11,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from datakeel.actions.catalog_parameters import CatalogActionParams
+from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import (
@@ -29,6 +30,7 @@ from datakeel.storage.action_selection import change_file_state, selected_files,
 from datakeel.storage.catalog_actions import execute_catalog_action
 from datakeel.storage.custom_store import approve_custom_operator
 from datakeel.storage.custom_validation import validate_custom_pipeline
+from datakeel.storage.data_asset_actions import execute_data_asset_action
 from datakeel.storage.database import DatasetRow, MetadataChangeRow, ShardRow, TaskRow, VersionRow
 from datakeel.storage.datasets import latest_files
 from datakeel.storage.evidence_actions import decide_action
@@ -95,6 +97,7 @@ def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> Ope
 _TYPED_ACTIONS: tuple[
     tuple[type | UnionType, Callable[[Session, ActionPlan, Any], OperationResult]], ...
 ] = (
+    (DataAssetActionParams, execute_data_asset_action),
     (SubmitCustomOperatorParams, approve_custom_operator),
     (PublishReleaseParams, publish_release),
     (CatalogActionParams, execute_catalog_action),

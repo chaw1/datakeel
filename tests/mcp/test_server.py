@@ -45,13 +45,19 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             assert client.initialize_result.server_info.name == "Datakeel"
             listed = await client.list_tools()
         expected = {item.name: item for item in tool_definitions()}
-        assert len(listed) == len(expected) == 34
+        assert len(listed) == len(expected) == 40
         assert {
             "query_kg",
             "explain_relation",
             "run_kg_extraction",
             "submit_custom_operator",
             "publish_release",
+            "create_data_asset",
+            "update_data_asset",
+            "publish_data_asset",
+            "withdraw_data_asset",
+            "decide_asset_application",
+            "revoke_asset_grant",
         } <= set(expected)
         for tool in listed:
             Draft202012Validator.check_schema(tool.input_schema)

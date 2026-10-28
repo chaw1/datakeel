@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 def test_catalog_when_constructed_has_only_read_tools_and_deferred_actions() -> None:
     """Never expose approve_plan or execute_plan through either discovery list."""
     assert len(resident_tools()) == 10
-    assert len(deferred_tools()) == 25
+    assert len(deferred_tools()) == 31
     assert "submit_custom_operator" in {tool.name for tool in deferred_tools()}
     assert "publish_release" in {tool.name for tool in deferred_tools()}
     assert not {"approve_plan", "execute_plan"}.intersection(

@@ -37,6 +37,73 @@ if TYPE_CHECKING:
             ),
             "outside its assertion",
         ),
+        (
+            1,
+            (
+                '<testcase name="target" classname="tests.test_target">'
+                '<failure message="Failed: unrelated failure">Failed: unrelated failure</failure>'
+                "</testcase>"
+            ),
+            "outside its assertion",
+        ),
+        (
+            1,
+            (
+                '<testcase name="target" classname="tests.test_target">'
+                '<failure message="Failed: DID NOT RAISE ValueError"/></testcase>'
+            ),
+            "outside its assertion",
+        ),
+        (
+            1,
+            (
+                '<testcase name="target" classname="tests.test_target">'
+                '<failure type="RuntimeError" '
+                'message="Failed: DID NOT RAISE AuthorizationError"/></testcase>'
+            ),
+            "outside its assertion",
+        ),
+        (
+            1,
+            (
+                '<testcase name="target" classname="tests.test_target">'
+                '<failure message="Failed: DID NOT RAISE AuthorizationError">'
+                "RuntimeError: unrelated call failed</failure></testcase>"
+            ),
+            "outside its assertion",
+        ),
+        (
+            1,
+            (
+                '<testcase name="target" classname="tests.test_target">'
+                '<failure message="Failed: DID NOT RAISE AuthorizationError">'
+                "E           Failed: DID NOT RAISE AuthorizationError</failure></testcase>"
+            ),
+            "outside its assertion",
+        ),
+        (
+            1,
+            (
+                '<testcase name="target" classname="tests.test_target">'
+                '<failure message="Failed: DID NOT RAISE AuthorizationError">'
+                "with pytest.raises(AuthorizationError):\nRuntimeError: call failed"
+                "</failure></testcase>"
+            ),
+            "outside its assertion",
+        ),
+        (
+            1,
+            (
+                '<testcase name="target" classname="tests.test_target">'
+                '<error message="Failed: DID NOT RAISE AuthorizationError"/></testcase>'
+            ),
+            "outcome",
+        ),
+        (
+            1,
+            '<testcase name="target" classname="tests.test_target"><skipped/></testcase>',
+            "outcome",
+        ),
     ],
 )
 def test_test_runner_when_crash_setup_or_wrong_case_occurs_never_counts_kill(
@@ -56,6 +123,37 @@ def test_test_runner_when_crash_setup_or_wrong_case_occurs_never_counts_kill(
     monkeypatch.setattr(mutate.subprocess, "run", process)
     with pytest.raises(RuntimeError, match=error):
         mutate.evaluate_image_test(tmp_path, "tests/test_target.py::target")
+
+
+@pytest.mark.parametrize("missing_authorization", [False, True])
+def test_test_runner_accepts_green_baseline_and_exact_authorization_assertion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, missing_authorization: bool
+) -> None:
+    """Only the observed pytest.raises failure is measurable beside its passing baseline."""
+    target = "tests/test_target.py::target"
+    failure = (
+        '<failure message="Failed: DID NOT RAISE AuthorizationError">'
+        '> with pytest.raises(AuthorizationError, match="apply for access"):\n'
+        "E           Failed: DID NOT RAISE AuthorizationError</failure>"
+        if missing_authorization
+        else ""
+    )
+
+    def process(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        (tmp_path / "test-results.xml").write_text(
+            '<testsuites><testsuite><testcase name="target" classname="tests.test_target">'
+            f"{failure}</testcase></testsuite></testsuites>"
+        )
+        return subprocess.CompletedProcess(
+            command, int(missing_authorization), stdout="", stderr=""
+        )
+
+    monkeypatch.setattr(mutate.subprocess, "run", process)
+    measured = mutate.evaluate_image_test(tmp_path, target)
+    assert measured.exit_code == int(missing_authorization)
+    assert measured.passed == int(not missing_authorization)
+    assert measured.total == 1
+    assert set(measured.failures) == ({target} if missing_authorization else set())
 
 
 def test_mutation_environment_when_remote_settings_present_uses_only_local_targets(

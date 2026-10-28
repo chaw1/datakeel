@@ -10,6 +10,12 @@ from datakeel.ontology.models import ActionType
 
 POLICIES: dict[str, tuple[str, bool, str]] = {
     "submit_custom_operator": ("operators:submit", False, "Approve immutable custom Python code"),
+    "create_data_asset": ("data-assets:write", True, "Create an asset draft"),
+    "update_data_asset": ("data-assets:write", True, "Revise an asset card"),
+    "publish_data_asset": ("data-assets:write", True, "Publish an asset card"),
+    "withdraw_data_asset": ("data-assets:write", True, "Withdraw an asset card"),
+    "decide_asset_application": ("data-assets:approve", False, "Decide an access application"),
+    "revoke_asset_grant": ("data-assets:approve", False, "Revoke an access grant"),
     "quarantine_files": ("files:write", True, "Set quarantine state"),
     "unquarantine_files": ("files:write", True, "Clear quarantine state"),
     "create_version_from_selection": (

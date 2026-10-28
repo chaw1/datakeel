@@ -8,6 +8,7 @@ from typing import Literal, Self
 
 from pydantic import Field, JsonValue, field_validator, model_validator
 
+from datakeel.core.data_asset_models import SkippedEntries
 from datakeel.core.evidence_models import AssertionStatus, PredicateId, Presence
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 from datakeel.core.object_kinds import LEGACY_OBJECT_KINDS, ObjectKind, validate_object_kind
@@ -235,3 +236,5 @@ class FunctionResult(BoundaryModel):
     function: str
     asset_refs: list[AssetRef]
     data: JsonValue
+    # Listings name protected entries they left out; absent when nothing was skipped.
+    skipped: SkippedEntries | None = None

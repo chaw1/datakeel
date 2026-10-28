@@ -11,6 +11,7 @@ from PIL import Image
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.harness_eval import CaseFixture, GoldenCase
+from datakeel.harness.asset_cases import seed_asset_case
 from datakeel.harness.enterprise_cases import seed_enterprise_case
 from datakeel.harness.enterprise_kg import seed_enterprise_kg
 from datakeel.harness.enterprise_reviews import review_enterprise_kg
@@ -42,7 +43,14 @@ def seed_case(
     db: Database,
     directory: Path,
     kind: Literal[
-        "legacy", "evidence", "enterprise", "injection", "kg", "enterprise_kg", "image_kg"
+        "legacy",
+        "evidence",
+        "enterprise",
+        "injection",
+        "kg",
+        "enterprise_kg",
+        "image_kg",
+        "asset_access",
     ] = "legacy",
     *,
     reviewed: bool = False,
@@ -55,8 +63,10 @@ def seed_case(
         return fixture
     if kind in {"kg", "image_kg"}:
         return {"kg": seed_kg_case, "image_kg": seed_image_kg_case}[kind](db, directory)
-    if kind == "enterprise":
-        return seed_enterprise_case(db, directory)
+    if kind in {"enterprise", "asset_access"}:
+        return {"enterprise": seed_enterprise_case, "asset_access": seed_asset_case}[kind](
+            db, directory
+        )
     if kind == "injection":
         return seed_injection_case(db, directory)
     if kind == "evidence":

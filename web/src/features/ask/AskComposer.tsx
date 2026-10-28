@@ -26,6 +26,7 @@ export function AskComposer({
   onSubmit: (request: AskRequest) => void;
 }) {
   const { t } = useI18n();
+  const [actor, setActor] = useState("local-user");
   const [question, setQuestion] = useState(initialQuestion);
   const [metricId, setMetricId] = useState(initialMetricId);
   const isComposing = useCompositionGuard();
@@ -35,9 +36,16 @@ export function AskComposer({
       className="card ask-composer"
       onSubmit={(event) => {
         event.preventDefault();
-        if (isComposing() || busy || !question.trim() || !reference) return;
+        if (
+          isComposing() ||
+          busy ||
+          !question.trim() ||
+          !reference ||
+          !actor.trim()
+        )
+          return;
         onSubmit({
-          actor: "local-user",
+          actor: actor.trim(),
           ...(metricId ? { metric_id: metricId } : {}),
           question: question.trim().normalize("NFC"),
           reference_instant: `${reference}T00:00:00Z`,
@@ -57,6 +65,18 @@ export function AskComposer({
           </button>
         </p>
       )}
+      <label htmlFor="ask-actor">{t("assetActor")}</label>
+      <input
+        className="ask-actor"
+        id="ask-actor"
+        value={actor}
+        required
+        disabled={busy}
+        onChange={(event) => {
+          setActor(event.target.value);
+        }}
+      />
+      <p className="muted">{t("assetActorHelp")}</p>
       <label htmlFor="ask-question">{t("askQuestion")}</label>
       <textarea
         onKeyDown={(event) => {
@@ -121,7 +141,7 @@ export function AskComposer({
           }}
           type="submit"
           className="button primary"
-          disabled={busy || !question.trim() || !reference}
+          disabled={busy || !question.trim() || !reference || !actor.trim()}
         >
           {t(busy ? "askWorking" : "askSubmit")}
         </button>

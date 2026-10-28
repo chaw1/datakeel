@@ -1,0 +1,10 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+# Popular score = uses * usage_weight + users * users_weight
+#                 + downstream dependencies * downstream_weight (descending).
+# All ties: resource updated_at descending, then asset ID ascending.
+# freshness: ascending age, unknown last; quality: descending score, unknown last;
+# downstream: descending count; name: casefolded ascending. All use the same ties.
+usage_weight: 1
+users_weight: 2
+downstream_weight: 1

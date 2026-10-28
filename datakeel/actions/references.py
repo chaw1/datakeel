@@ -11,6 +11,11 @@ from datakeel.actions.catalog_parameters import (
     UpdateMetricParams,
     UpdateTermParams,
 )
+from datakeel.actions.data_asset_parameters import (
+    CreateDataAssetParams,
+    DataAssetIdentityParams,
+    UpdateDataAssetParams,
+)
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import parse_params
 from datakeel.core.catalog_identity import catalog_id
@@ -46,7 +51,15 @@ def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
         return [
             AssetRef(asset_type="metric", asset_id=params.metric_id, version=str(params.version))
         ]
-    return _term_refs(params)
+    return _data_asset_refs(params) + _term_refs(params)
+
+
+def _data_asset_refs(params: BoundaryModel) -> list[AssetRef]:
+    if isinstance(params, CreateDataAssetParams | UpdateDataAssetParams):
+        return [params.definition.target]
+    if isinstance(params, DataAssetIdentityParams):
+        return [AssetRef(asset_type="data_asset", asset_id=params.asset_id)]
+    return []
 
 
 def _term_refs(params: BoundaryModel) -> list[AssetRef]:

@@ -21,6 +21,7 @@ from datakeel.core.harness_eval import EvalCaseResult, EvalReport
 from scripts.advanced_mutations import ADVANCED_MUTATIONS
 from scripts.auto_routing_mutations import AUTO_ROUTING_MUTATIONS
 from scripts.coordinate_mutations import COORDINATE_MUTATIONS
+from scripts.data_asset_mutations import DATA_ASSET_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
@@ -147,6 +148,7 @@ MUTATIONS = (
     *AUTO_ROUTING_MUTATIONS,
     *COORDINATE_MUTATIONS,
     *RELEASE_MUTATIONS,
+    *DATA_ASSET_MUTATIONS,
 )
 
 
@@ -203,6 +205,19 @@ def _evaluate(directory: Path) -> tuple[int, EvalReport]:
         raise RuntimeError(msg) from error
 
 
+def _missing_authorization_assertion(failure: ET.Element) -> bool:
+    text = failure.text or ""
+    return (
+        failure.attrib.get("message") == "Failed: DID NOT RAISE AuthorizationError"
+        and "type" not in failure.attrib
+        and "with pytest.raises(AuthorizationError" in text
+        and any(
+            line.split() == ["E", "Failed:", "DID", "NOT", "RAISE", "AuthorizationError"]
+            for line in text.splitlines()
+        )
+    )
+
+
 def evaluate_image_test(directory: Path, node_id: str) -> TestMeasurement:
     """Accept only one declared test's call assertion, rejecting crashes and setup failures."""
     report = directory / "test-results.xml"
@@ -235,7 +250,11 @@ def evaluate_image_test(directory: Path, node_id: str) -> TestMeasurement:
     detail = (
         "" if failure is None else (failure.attrib.get("message", "") + "\n" + (failure.text or ""))
     )
-    if failure is not None and "AssertionError" not in detail:
+    if (
+        failure is not None
+        and "AssertionError" not in detail
+        and not _missing_authorization_assertion(failure)
+    ):
         msg = f"Image test failed outside its assertion: {detail[-2000:]}"
         raise RuntimeError(msg)
     return TestMeasurement(

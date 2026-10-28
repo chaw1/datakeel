@@ -15,6 +15,12 @@ from datakeel.core.models import AssetRef, BoundaryModel, LineageEvent
 from datakeel.ontology.models import FrozenManifest
 
 ActionName = Literal[
+    "create_data_asset",
+    "update_data_asset",
+    "publish_data_asset",
+    "withdraw_data_asset",
+    "decide_asset_application",
+    "revoke_asset_grant",
     "quarantine_files",
     "unquarantine_files",
     "create_version_from_selection",

@@ -3,8 +3,10 @@
 
 """Read-only evidence selection, deterministic pagination, detail, and explanations."""
 
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.evidence_models import AssertionStatus, EvidenceValue
+from datakeel.core.models import AssetRef
 from datakeel.evidence.presentation import explain, present_sample
 from datakeel.evidence.query_models import (
     EvidenceExplanation,
@@ -13,6 +15,7 @@ from datakeel.evidence.query_models import (
     EvidenceSample,
 )
 from datakeel.ontology.models import FrozenObject, ObjectSet, PropertyFilter
+from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_snapshot import EvidenceSnapshot, read_snapshot
 from datakeel.storage.object_queries import evaluate_in_session, matching_objects_in_session
@@ -79,7 +82,9 @@ def _after_cursor(objects: list[FrozenObject], query: EvidenceQuery) -> list[Fro
     raise ValidationError(msg)
 
 
-def query_evidence(db: Database, query: EvidenceQuery) -> EvidenceQueryResult:
+def query_evidence(
+    db: Database, query: EvidenceQuery, *, access: AccessContext | None = None
+) -> EvidenceQueryResult:
     """Sort the complete selected set before pagination, retaining asset order by default."""
     statuses: set[AssertionStatus] = {"candidate", "accepted"}
     if query.assertion_filters:
@@ -105,6 +110,11 @@ def query_evidence(db: Database, query: EvidenceQuery) -> EvidenceQueryResult:
             )
             for value in page
         ]
+    refs = [ref for item in items for ref in sample_refs(item)]
+    if query.dataset_id:
+        refs.append(AssetRef(asset_id=query.dataset_id))
+    refs.extend(AssetRef(asset_type="version", asset_id=value) for value in query.version_ids)
+    authorize_query(db, tuple(refs), access)
     return EvidenceQueryResult(
         items=items,
         total=len(objects),
@@ -113,7 +123,13 @@ def query_evidence(db: Database, query: EvidenceQuery) -> EvidenceQueryResult:
     )
 
 
-def get_evidence(db: Database, asset_id: str, version_id: str | None = None) -> EvidenceSample:
+def get_evidence(
+    db: Database,
+    asset_id: str,
+    version_id: str | None = None,
+    *,
+    access: AccessContext | None = None,
+) -> EvidenceSample:
     """Return all active statuses for one original sample, including explicit rejections."""
     with db.session() as session:
         snapshot = read_snapshot(session)
@@ -130,11 +146,26 @@ def get_evidence(db: Database, asset_id: str, version_id: str | None = None) -> 
             msg = "Evidence sample not found"
             raise NotFoundError(msg)
         value = selected.objects[0]
-        return present_sample(value, list(snapshot.observations(value.asset_ref).assertions))
+        sample = present_sample(value, list(snapshot.observations(value.asset_ref).assertions))
+    authorize_query(db, sample_refs(sample), access)
+    return sample
 
 
 def explain_sample(
-    db: Database, asset_id: str, version_id: str | None = None
+    db: Database,
+    asset_id: str,
+    version_id: str | None = None,
+    *,
+    access: AccessContext | None = None,
 ) -> EvidenceExplanation:
     """Expose the actual assertion states rather than inferring absent or unknown answers."""
-    return explain(get_evidence(db, asset_id, version_id))
+    return explain(get_evidence(db, asset_id, version_id, access=access))
+
+
+def sample_refs(sample: EvidenceSample) -> tuple[AssetRef, ...]:
+    """Include original and neighboring sources disclosed by one evidence card."""
+    return (
+        sample.asset_ref,
+        *(neighbor.asset_ref for neighbor in sample.near_duplicates),
+        *(anchor.asset_ref for assertion in sample.assertions for anchor in assertion.anchors),
+    )

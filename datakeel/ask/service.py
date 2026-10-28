@@ -5,6 +5,7 @@
 
 from pydantic import ValidationError as ModelValidationError
 
+from datakeel.ask.access import answer_refs, query_refs
 from datakeel.ask.dimensions import parse_dimensions
 from datakeel.ask.knowledge_parser import metric_recognition, parse_knowledge_question
 from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
@@ -20,6 +21,7 @@ from datakeel.core.ask_models import (
     ParsedQuestion,
 )
 from datakeel.core.catalog_models import CatalogSnapshot, SourceProperties
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ExecutionError, NotFoundError, ValidationError
 from datakeel.core.metric_models import CompileRequest, MetricCard
 from datakeel.core.models import new_id
@@ -28,16 +30,33 @@ from datakeel.metrics.execution import execute_query
 from datakeel.metrics.projection import resolved_metric_cards, semantic_layer
 from datakeel.storage.ask_store import store_answer
 from datakeel.storage.catalog_store import read_snapshot
+from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
 from datakeel.storage.link_queries import read_link_context
 from datakeel.storage.profile_queries import read_profiles
 
 
-def ask_data(db: Database, request: AskRequest) -> AskAnswer:
+def ask_data(
+    db: Database,
+    request: AskRequest,
+    *,
+    access: AccessContext | None = None,
+    record_usage: bool = True,
+) -> AskAnswer:
     """Answer only from registered metadata and store every outcome with its evidence."""
+    caller = (access or AccessContext(actor=request.actor, entry="ask", scope="query")).model_copy(
+        update={"scope": "query"}
+    )
+    request = request.model_copy(update={"actor": caller.actor})
+    answer = _ask_data(db, request, caller)
+    require_access(db, answer_refs(answer), caller, record=record_usage)
+    return store_answer(db, request, answer)
+
+
+def _ask_data(db: Database, request: AskRequest, access: AccessContext) -> AskAnswer:
     profile = parse_profile_question(request)
     if profile is not None:
-        return store_answer(db, request, profile_answer(request, profile, read_profiles(db)))
+        return profile_answer(request, profile, read_profiles(db))
     with db.session() as session:
         snapshot = read_snapshot(session)
     context = QueryContext(snapshot=snapshot, layer=semantic_layer(snapshot))
@@ -50,28 +69,31 @@ def ask_data(db: Database, request: AskRequest) -> AskAnswer:
         subject_id=request.subject_id or request.metric_id,
     )
     if knowledge is not None:
-        return store_answer(
-            db,
-            request,
-            knowledge_answer(db, request, knowledge, snapshot, context.layer, graph).model_copy(
-                update={"recognition": knowledge.recognition}
-            ),
+        require_access(
+            db, tuple(item.asset_ref for item in knowledge.candidates), access, record=False
+        )
+        return knowledge_answer(db, request, knowledge, snapshot, context.layer, graph).model_copy(
+            update={"recognition": knowledge.recognition}
         )
     parsed = parse_question(request, context.layer)
     resolution = resolve_metric(parsed, resolved_metric_cards(snapshot), request.metric_id)
     if resolution.status != "resolved":
         answer = _nonanswer(request, parsed, resolution)
     else:
-        answer = _answer(request, parsed, resolution, context)
+        answer = _answer(db, request, parsed, resolution, context, access)
         answer = related_knowledge(db, answer, snapshot, graph)
-    answer = answer.model_copy(
+    return answer.model_copy(
         update={"recognition": metric_recognition(request.question, snapshot, context.layer)}
     )
-    return store_answer(db, request, answer)
 
 
 def _answer(
-    request: AskRequest, parsed: ParsedQuestion, resolution: MetricResolution, context: QueryContext
+    db: Database,
+    request: AskRequest,
+    parsed: ParsedQuestion,
+    resolution: MetricResolution,
+    context: QueryContext,
+    access: AccessContext,
 ) -> AskAnswer:
     card = resolution.candidates[0]
     dimensions = parse_dimensions(request.question, card, context.layer)
@@ -96,6 +118,7 @@ def _answer(
                 time_range=parsed.time_range,
             ),
         )
+        require_access(db, query_refs(query), access, record=False)
         result = execute_query(source.connection_url or "", query)
     except (ExecutionError, NotFoundError, ValidationError, ModelValidationError) as exc:
         refusal = MetricResolution(

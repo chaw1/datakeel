@@ -11,14 +11,20 @@ from pydantic import ValidationError as ModelValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.data_asset_models import AccessContext, SkippedEntries
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_inputs import sample_sidecars
-from datakeel.core.models import FileItem, JsonDocument, LineageEvent
+from datakeel.core.models import AssetRef, FileItem, JsonDocument, LineageEvent
 from datakeel.lineage.collapse import collapse_graph
 from datakeel.lineage.exports import export_croissant, export_openlineage
 from datakeel.lineage.models import GraphNode, GraphOverlay, GraphQuery, GraphView
 from datakeel.lineage.service import all_events, append_event, graph
 from datakeel.storage.catalog_store import read_snapshot
+from datakeel.storage.data_asset_access import (
+    require_access_in_session,
+    skip_protected_in_session,
+)
+from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.datasets import dataset_dict
@@ -90,30 +96,95 @@ def get_graph(
         return name_graph(session, result.model_copy(update={"nodes": nodes}))
 
 
-def export_events(db: Database, dataset_id: str | None = None) -> list[JsonDocument]:
-    """Export recorded events, optionally scoped to a dataset lineage component."""
+# Node kinds whose display names quote source data; hash-labelled bundles do not.
+_SOURCE_CONTENT = frozenset({"artifact", "file", "image_transcript", "kg_entity", "text"})
+
+
+def read_graph(
+    db: Database, query: GraphQuery, *, access: AccessContext | None = None
+) -> GraphView:
+    """Project lineage for a caller without disclosing unreadable protected source content.
+
+    Catalog metadata nodes stay visible like asset cards. File names, graph entities
+    and transcripts quote source data and pass the query-scope guard.
+    """
+    result = get_graph(db, query=query)
+    refs = tuple(
+        AssetRef(
+            asset_type=node.asset_type,
+            asset_id=node.asset_id,
+            namespace=node.namespace,
+            version=node.version,
+        )
+        for node in result.nodes
+        if node.asset_type in _SOURCE_CONTENT
+    )
+    authorize_query(db, refs, access)
+    return result
+
+
+def export_readable_events(
+    db: Database, dataset_id: str | None = None, *, access: AccessContext | None = None
+) -> tuple[list[JsonDocument], SkippedEntries | None]:
+    """Export recorded events the caller may read and name the protected ones left out.
+
+    An explicitly requested dataset must itself be readable. Within the exported
+    component or full log, each event touching an unreadable protected asset is
+    skipped by ID instead of failing the whole export.
+    """
+    caller = (
+        access or AccessContext(actor="local-user", entry="export", scope="export")
+    ).model_copy(update={"entry": "export", "scope": "export"})
     with db.session() as session:
         events = all_events(session)
+        target: tuple[AssetRef, ...] = ()
         if dataset_id:
             require_dataset(session, dataset_id)
+            target = (AssetRef(asset_id=dataset_id),)
+            require_access_in_session(session, target, caller, record=False)
             scoped = {value["event_id"] for value in graph(events, dataset_id)["events"]}
             events = [event for event in events if event.event_id in scoped]
-        return [JsonDocument.model_validate(value) for value in export_openlineage(events)]
+        skipped = skip_protected_in_session(
+            session, [(event.event_id, (*event.inputs, *event.outputs)) for event in events], caller
+        )
+        hidden: set[str] = set(skipped.ids) if skipped else set()
+        events = [event for event in events if event.event_id not in hidden]
+        refs = tuple(ref for event in events for ref in (*event.inputs, *event.outputs))
+        require_access_in_session(session, (*refs, *target), caller)
+        result = [JsonDocument.model_validate(value) for value in export_openlineage(events)]
+        session.commit()
+        return result, skipped
 
 
-def export_dataset(db: Database, dataset_id: str | None, base_url: str) -> JsonDocument:
+def export_events(
+    db: Database, dataset_id: str | None = None, *, access: AccessContext | None = None
+) -> list[JsonDocument]:
+    """Export readable recorded events, optionally scoped to a dataset lineage component."""
+    return export_readable_events(db, dataset_id, access=access)[0]
+
+
+def export_dataset(
+    db: Database, dataset_id: str | None, base_url: str, *, access: AccessContext | None = None
+) -> JsonDocument:
     """Export a dataset manifest as a portable Croissant document."""
     if not dataset_id:
         message = "dataset_id is required for Croissant"
         raise ValidationError(message)
     with db.session() as session:
         row = require_dataset(session, dataset_id)
+        require_access_in_session(
+            session,
+            (AssetRef(asset_id=dataset_id),),
+            (
+                access or AccessContext(actor="local-user", entry="export", scope="export")
+            ).model_copy(update={"entry": "export", "scope": "export"}),
+        )
         data = {
             **dataset_dict(row),
             "base_url": base_url.rstrip("/"),
             "url": base_url.rstrip("/") + f"/api/datasets/{row.id}",
         }
-        return JsonDocument.model_validate(
+        result = JsonDocument.model_validate(
             export_croissant(
                 data,
                 overlay_files(
@@ -121,6 +192,8 @@ def export_dataset(db: Database, dataset_id: str | None, base_url: str) -> JsonD
                 ),
             )
         )
+        session.commit()
+        return result
 
 
 def _files(item: FileItem) -> tuple[FileItem, ...]:

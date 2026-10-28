@@ -7,6 +7,7 @@ from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
+from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionContext, ActionImpact, ActionPlan
 from datakeel.actions.parameters import (
@@ -22,11 +23,13 @@ from datakeel.actions.registry import action_definition
 from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.custom_review import prepare_submission
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import BoundaryModel, JsonDocument, new_id, utcnow
 from datakeel.ontology.models import FrozenManifest
 from datakeel.pipeline import default_pipeline
 from datakeel.pipeline.sharding import validate_shards
+from datakeel.storage.action_access import authorize_plans_in_session
 from datakeel.storage.action_rows import ActionPlanRow
 from datakeel.storage.action_selection import require_unique_file_sources
 from datakeel.storage.action_snapshot import snapshot_digest
@@ -34,6 +37,14 @@ from datakeel.storage.action_store import audit
 from datakeel.storage.action_targets import current_manifest
 from datakeel.storage.catalog_action_state import catalog_impact, prepare_catalog_params
 from datakeel.storage.custom_validation import validate_custom_pipeline
+from datakeel.storage.data_asset_action_state import (
+    prepare_data_asset_params,
+    relaxes_asset_access,
+)
+from datakeel.storage.data_asset_review import (
+    refuse_tool_decision,
+    require_independent_reviewer,
+)
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
@@ -45,7 +56,11 @@ def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManif
         return 1
     if isinstance(params, PublishReleaseParams):
         return publication_impact(manifest)
-    count = catalog_impact(session, params, manifest)
+    count = (
+        1
+        if isinstance(params, DataAssetActionParams)
+        else catalog_impact(session, params, manifest)
+    )
     return (
         max(count, len(params.assertion_ids))
         if isinstance(params, DecideAssertionsParams)
@@ -78,6 +93,7 @@ def _prepare_params(session: Session, action_type: str, params: JsonDocument) ->
     parsed = prepare_catalog_params(session, parse_params(action_type, params))
     if isinstance(parsed, SubmitCustomOperatorParams):
         parsed = prepare_submission(parsed)
+    parsed = prepare_data_asset_params(session, parsed)
     if isinstance(parsed, RunKGExtractionParams):
         parsed = prepare_kg_params(session, parsed)
     if isinstance(parsed, PipelineParams) and parsed.pipeline is None:
@@ -126,7 +142,7 @@ def _new_plan(
             "state_digest": snapshot_digest(session, parsed, manifest),
             "created_at": created,
             "expires_at": created + timedelta(seconds=context.ttl_seconds),
-            "reversible": definition.reversible,
+            "reversible": definition.reversible and not relaxes_asset_access(session, parsed),
             "external": external,
             "impact": ActionImpact(
                 object_count=_impact_count(session, parsed, manifest),
@@ -149,13 +165,21 @@ def _new_plan(
 
 
 def prepare_action(
-    db: Database, action_type: str, params: JsonDocument, context: ActionContext | None = None
+    db: Database,
+    action_type: str,
+    params: JsonDocument,
+    context: ActionContext | None = None,
+    *,
+    access: AccessContext | None = None,
 ) -> ActionPlan:
     """Freeze a selected target set and persist the exact reviewable action plan."""
+    refuse_tool_decision(action_type, access)
     with db.session() as session:
         db.lock_writes(session)
         plan = _new_plan(action_type, params, context or ActionContext(), session)
         authorize(plan, plan.actor)
+        require_independent_reviewer(session, plan.action_type, plan.canonical_params, plan.actor)
+        authorize_plans_in_session(session, (plan,), access, actor=plan.actor)
         session.add(
             ActionPlanRow(id=plan.id, action_type=action_type, payload=plan.model_dump(mode="json"))
         )

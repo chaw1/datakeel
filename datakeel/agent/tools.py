@@ -17,7 +17,7 @@ from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.delegation.models import DelegateParams
 from datakeel.delegation.policy import tool_allowed
 from datakeel.memory.tools import invoke_memory, memory_tool
-from datakeel.ontology.functions import function_definitions
+from datakeel.ontology.functions import PARAMETER_MODELS, function_definitions
 from datakeel.ontology.tool_models import ToolCallContext, ToolInvocationStart, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.conversation_authorization import record_audit
@@ -122,6 +122,10 @@ class ToolCatalog:
         """Enforce model-visible capabilities even if a provider invents a hidden call."""
         identifier = invocation_identity(context.session_id, call.id)
         previous = replay_invocation(db, identifier, call.name, digest(call.arguments.root))
+        if previous is not None and (
+            call.name in PARAMETER_MODELS or previous.plan is not None or previous.run is not None
+        ):
+            previous = invoke_tool(db, call.name, call.arguments, context, call_id=call.id)
         if previous is not None:
             if call.name == "tool_search":
                 self._load(previous)

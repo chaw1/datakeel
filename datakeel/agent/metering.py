@@ -11,7 +11,7 @@ from datakeel.agent.demo import DemoProvider
 from datakeel.agent.memory import workspace
 from datakeel.agent.tools import ToolCatalog
 from datakeel.core.agent_models import Conversation, ModelRequest, ModelResponse, Provider
-from datakeel.core.memory_models import MemoryUseScope
+from datakeel.core.memory_models import MemoryEntry, MemoryUseScope
 from datakeel.core.routing_models import TierState
 from datakeel.memory.service import reinforce_memories, select_memories
 from datakeel.routing.accounting import CallContext, ModelAccount
@@ -19,7 +19,9 @@ from datakeel.routing.attempts import complete_with_fallback
 from datakeel.routing.config import load_config
 from datakeel.routing.tiers import model_chain, select_model
 from datakeel.storage import conversation_store as memory
+from datakeel.storage.conversation_memory_sources import remember_memory_sources
 from datakeel.storage.conversation_secrets import get_canary
+from datakeel.storage.data_asset_context import project_agent_history
 from datakeel.storage.database import Database
 
 
@@ -44,6 +46,7 @@ class ModelMeter:
         self.accounting_conversation_id = accounting_conversation_id
         self.used_memory_ids: list[str] = []
         self._memory_ids: list[str] = []
+        self._memory_entries: list[MemoryEntry] = []
 
     def complete(
         self,
@@ -97,6 +100,7 @@ class ModelMeter:
     def _invoke(
         self, invoke: Callable[[ModelRequest], ModelResponse], request: ModelRequest
     ) -> ModelResponse:
+        remember_memory_sources(self.db, self.conversation_id, self.token, self._memory_entries)
         try:
             return invoke(request)
         finally:
@@ -127,7 +131,7 @@ class ModelMeter:
             conversation.config.dataset_id,
         )
         request = assemble(
-            conversation,
+            project_agent_history(self.db, conversation),
             catalog.core,
             list(catalog.loaded.values()),
             workspace(self.db, conversation),
@@ -141,4 +145,5 @@ class ModelMeter:
             }
         )
         self._memory_ids = [entry.id for entry in selected.entries]
+        self._memory_entries = selected.entries
         return request

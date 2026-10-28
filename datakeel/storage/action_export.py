@@ -11,12 +11,14 @@ from sqlalchemy.orm import Session
 
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import ExportParams
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import AssetRef
 from datakeel.core.settings import get_settings
 from datakeel.lineage.exports import export_croissant, export_openlineage
 from datakeel.lineage.service import graph
 from datakeel.storage.action_selection import selected_files
+from datakeel.storage.data_asset_access import require_access_in_session
 from datakeel.storage.database import DatasetRow, data_dir
 from datakeel.storage.datasets import dataset_dict
 from datakeel.storage.events import all_events
@@ -45,6 +47,12 @@ def export_action(session: Session, plan: ActionPlan, params: ExportParams) -> O
     if dataset is None:
         msg = "Export dataset not found"
         raise NotFoundError(msg)
+    require_access_in_session(
+        session,
+        (AssetRef(asset_id=params.dataset_id),),
+        AccessContext(actor=plan.context.actor, entry="export", scope="export"),
+        record=False,
+    )
     target = export_path(params.destination or f"{plan.id}.json")
     if params.format == "croissant":
         data = {**dataset_dict(dataset), "base_url": get_settings().base_url}

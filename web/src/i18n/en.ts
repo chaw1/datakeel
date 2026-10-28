@@ -3,6 +3,7 @@ import { agentEn } from "./agentEn";
 import { approvalEn } from "./approvalEn";
 import { approvalsMetricEn } from "./approvalsMetricEn";
 import { askEn } from "./askEn";
+import { assetEn } from "./assetEn";
 import { catalogEn } from "./catalogEn";
 import { commandEn } from "./commandEn";
 import { customOperatorEn } from "./customOperatorEn";
@@ -19,6 +20,7 @@ import { workspaceEn } from "./workspaceEn";
 export const en = {
   ...customOperatorEn,
   ...releaseEn,
+  ...assetEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,

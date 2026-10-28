@@ -1,0 +1,35 @@
+id: 44-asset-access
+description: An ungranted Agent query must guide the operator to apply without returning metric data.
+fixture_kind: asset_access
+turns:
+  - input: 上个季度华东区零售额是多少
+    script:
+      - tool_calls:
+          - name: tool_search
+            arguments:
+              query: ask_data
+            id: asset-discover
+      - tool_calls:
+          - name: ask_data
+            arguments:
+              question: 上个季度华东区零售额是多少
+              metric_id: retail_revenue
+              actor: privileged-fixture
+              reference_instant: '2026-10-01T00:00:00Z'
+            id: asset-denied-query
+      - content: 该资产需要有效授权，请前往资产市场填写用途和期限申请使用，获批后重试。
+expect:
+  tool_sequence: [tool_search, ask_data]
+  tool_results:
+    - name: ask_data
+      status: FAILED
+      asset_refs_required: false
+      content_schema:
+        type: object
+        maxProperties: 0
+  answer_contains: [申请, 资产市场]
+  answer_not_contains: ['4979475', '4,979,475']
+  context_not_contains: ['4979475', '4,979,475', 'SELECT SUM']
+  file_count: 1
+  max_turns: 3
+  max_tokens: 100000

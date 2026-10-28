@@ -11,7 +11,8 @@ from pydantic import ValidationError as ModelValidationError
 from datakeel.actions.policy import digest
 from datakeel.core.agent_models import ChatMessage, Conversation, ToolCall
 from datakeel.core.canary import is_leak
-from datakeel.core.errors import DatakeelError
+from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.errors import AuthorizationError, DatakeelError
 from datakeel.core.models import JsonDocument, new_id
 from datakeel.delegation.loader import get_agent
 from datakeel.delegation.models import (
@@ -23,8 +24,10 @@ from datakeel.delegation.models import (
 from datakeel.delegation.policy import rejection
 from datakeel.ontology.tool_models import ToolCallContext, ToolInvocationStart, ToolOutcome
 from datakeel.storage import conversation_store as memory
+from datakeel.storage.conversation_asset_refs import conversation_asset_refs
 from datakeel.storage.conversation_authorization import record_audit
 from datakeel.storage.conversation_secrets import get_canary
+from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
 from datakeel.storage.tool_invocations import (
     begin_invocation,
@@ -63,6 +66,15 @@ def _child(
 def _cached(db: Database, outcome: ToolOutcome) -> DelegationResult:
     child_id = outcome.content.root.get("conversation_id")
     stop = outcome.content.root.get("stop_reason")
+    if isinstance(child_id, str):
+        refs = conversation_asset_refs(db, child_id)
+        try:
+            require_access(db, refs, AccessContext(actor="local", entry="agent", scope="query"))
+        except AuthorizationError as error:
+            return DelegationResult(
+                outcome=ToolOutcome(name=outcome.name, status="FAILED", error=str(error))
+            )
+        outcome = outcome.model_copy(update={"asset_refs": list(refs)})
     return DelegationResult(
         outcome=outcome,
         events=memory.get(db, child_id).events if isinstance(child_id, str) else [],
@@ -86,6 +98,15 @@ def _perform(
         return DelegationResult(outcome=ToolOutcome(name=call.name, status="FAILED", error=reason))
     child = _child(db, parent, definition, call)
     result = run(child, params.task)
+    refs = conversation_asset_refs(db, child.id)
+    try:
+        require_access(
+            db, refs, AccessContext(actor="local", entry="agent", scope="query"), record=False
+        )
+    except AuthorizationError as error:
+        return DelegationResult(
+            outcome=ToolOutcome(name=call.name, status="FAILED", error=str(error))
+        )
     if is_leak(get_canary(db, parent.id), result.summary) or result.stop_reason == "canary_leak":
         record_audit(db, parent.id, "", "CANARY_LEAK", "delegated_result")
         result = ChildResult(stop_reason="canary_leak")
@@ -97,6 +118,7 @@ def _perform(
             name=call.name,
             status="FAILED" if result.stop_reason else "SUCCEEDED",
             error=result.stop_reason,
+            asset_refs=list(refs),
             content=JsonDocument(
                 {
                     "conversation_id": child.id,

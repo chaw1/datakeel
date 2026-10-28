@@ -58,7 +58,7 @@ it("normalizes the question and blocks empty input and busy submissions", async 
   const user = userEvent.setup();
   const onSubmit = vi.fn();
   const { rerender } = render(<AskComposer busy={false} onSubmit={onSubmit} />);
-  const input = screen.getByRole("textbox");
+  const input = screen.getByRole("textbox", { name: "Business question" });
   await user.type(input, "  ");
   expect(screen.getByRole("button", { name: "Ask data" })).toBeDisabled();
   await user.type(input, "Cafe\u0301");
@@ -74,4 +74,23 @@ it("normalizes the question and blocks empty input and busy submissions", async 
   expect(
     screen.getByRole("button", { name: "Revenue · compare definitions" }),
   ).toBeDisabled();
+});
+
+it("submits the selected operator identity for asset access checks", async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn();
+  render(
+    <AskComposer
+      busy={false}
+      initialQuestion="Orders total"
+      onSubmit={onSubmit}
+    />,
+  );
+  const actor = screen.getByRole("textbox", { name: "Operator identity" });
+  await user.clear(actor);
+  await user.type(actor, "local");
+  await user.click(screen.getByRole("button", { name: "Ask data" }));
+  expect(onSubmit).toHaveBeenCalledWith(
+    expect.objectContaining({ actor: "local" }),
+  );
 });

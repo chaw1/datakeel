@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from datakeel.actions.catalog_parameters import CatalogActionParams
+from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import DecideAssertionsParams, selection_for
 from datakeel.actions.release_parameters import PublishReleaseParams
@@ -154,7 +155,7 @@ def action_manifest(
     """Use exact assertion endpoints for reviews and ordinary ObjectSets for other actions."""
     if isinstance(params, PublishReleaseParams):
         return publication_manifest(session, params)
-    if isinstance(params, CatalogActionParams | SubmitCustomOperatorParams):
+    if isinstance(params, CatalogActionParams | SubmitCustomOperatorParams | DataAssetActionParams):
         return catalog_manifest()
     if isinstance(params, DecideAssertionsParams):
         return decision_manifest(session, params, query)

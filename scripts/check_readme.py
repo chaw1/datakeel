@@ -19,6 +19,7 @@ from rich.console import Console
 
 from datakeel.core.ask_models import AskAnswer
 from datakeel.core.catalog_models import ImpactResult
+from datakeel.core.data_asset_models import SkippedEntries
 from datakeel.core.metric_models import MetricCard
 from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.ontology.models import FunctionResult
@@ -97,8 +98,43 @@ async def verified_read[T: ClientTransport](
     return FunctionResult.model_validate(result.content.root)
 
 
+async def verified_denial[T: ClientTransport](
+    client: Client[T], name: str, arguments: JsonDocument
+) -> None:
+    """Require an explicit asset refusal with no returned tool data."""
+    response = await client.call_tool(name, arguments.root, raise_on_error=False)
+    result = ToolOutcome.model_validate(response.structured_content)
+    if (
+        not response.is_error
+        or result.status != "FAILED"
+        or result.content.root
+        or "apply for access" not in (result.error or "")
+        or "requires an active" not in (result.error or "")
+    ):
+        msg = f"README protected MCP read did not refuse access: {name}"
+        raise RuntimeError(msg)
+
+
+async def verified_skip[T: ClientTransport](
+    client: Client[T], name: str, arguments: JsonDocument
+) -> SkippedEntries:
+    """Require a successful listing that names skipped protected entries without their content."""
+    result = await verified_read(client, name, arguments)
+    skipped = result.skipped
+    returned = result.model_dump_json(exclude={"skipped"})
+    if (
+        skipped is None
+        or skipped.count != len(skipped.ids)
+        or "apply for access" not in skipped.reason
+        or any(identifier in returned for identifier in skipped.ids)
+    ):
+        msg = f"README protected MCP listing did not report its skipped entries: {name}"
+        raise RuntimeError(msg)
+    return skipped
+
+
 async def verify_enterprise_stdio[T: ClientTransport](client: Client[T]) -> None:
-    """Exercise all four metadata reads and verify the fixed-reference enterprise answer."""
+    """Exercise permitted metadata reads, a skipped protected listing and a named refusal."""
     result = await verified_read(
         client,
         "ask_data",
@@ -113,7 +149,14 @@ async def verify_enterprise_stdio[T: ClientTransport](client: Client[T]) -> None
     if answer.status != "answered" or answer.result is None or answer.result.rows != [[4979475]]:
         msg = "README MCP question returned an incorrect enterprise answer"
         raise RuntimeError(msg)
-    await verified_read(client, "list_metrics", JsonDocument({"limit": 2}))
+    skipped = await verified_skip(client, "list_metrics", JsonDocument({"limit": 2}))
+    await verified_denial(client, "explain_metric", JsonDocument({"metric_id": skipped.ids[0]}))
+    listed = await verified_read(
+        client, "list_metrics", JsonDocument({"limit": 2, "search": "retail_revenue"})
+    )
+    if [ref.asset_id for ref in listed.asset_refs] != ["retail_revenue"]:
+        msg = "README filtered metric list did not retain its exact permitted scope"
+        raise RuntimeError(msg)
     explained = await verified_read(
         client, "explain_metric", JsonDocument({"metric_id": "retail_revenue"})
     )
@@ -167,33 +210,90 @@ async def verify_stdio(config: CommandServer, environment: dict[str, str]) -> No
     Console().print(f"README stdio handshake and audited read passed: {len(names)} tools.")
 
 
+def run_command(
+    arguments: list[str], environment: dict[str, str]
+) -> subprocess.CompletedProcess[str]:
+    """Capture one documented local command without interpreting its failure as success."""
+    result = subprocess.run(  # noqa: S603  # Fixed local Python module and argv, never a shell.
+        [sys.executable, "-m", "datakeel.cli", *arguments],
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    console = Console()
+    for output in (result.stdout, result.stderr):
+        if output:
+            console.print(output, markup=False, highlight=False, soft_wrap=True, end="")
+    return result
+
+
+def verify_denied_command(
+    arguments: list[str], environment: dict[str, str], output: Path | None = None
+) -> None:
+    """Require a nonzero asset authorization failure, no stdout data and no export artifact."""
+    result = run_command(arguments, environment)
+    if (
+        result.returncode == 0
+        or result.stdout.strip()
+        or "AuthorizationError" not in result.stderr
+        or "requires an active" not in result.stderr
+        or "apply for access" not in result.stderr
+        or (output is not None and output.exists())
+    ):
+        msg = "README protected command did not fail safely with an asset authorization refusal"
+        raise RuntimeError(msg)
+    Console().print(f"README protected command refused as expected: {arguments[0]}")
+
+
+def verify_skipped_command(arguments: list[str], environment: dict[str, str], output: Path) -> None:
+    """Require a successful export that reports skipped protected entries by ID and reason."""
+    result = run_command(arguments, environment)
+    if (
+        result.returncode != 0
+        or not output.exists()
+        or "Skipped" not in result.stderr
+        or "apply for access" not in result.stderr
+    ):
+        msg = "README export did not skip protected entries with a stated reason"
+        raise RuntimeError(msg)
+    Console().print(f"README export skipped protected entries as expected: {arguments[0]}")
+
+
 def main() -> None:
     """Validate install-independent demo, export and migration instructions."""
     config = validate_examples()
     with tempfile.TemporaryDirectory(prefix="datakeel-readme-") as temporary:
         environment = local_environment(Path(temporary))
+        run_command(["migrate"], environment).check_returncode()
+        demo = run_command(["demo", "--once"], environment)
+        demo.check_returncode()
+        dataset_id = JsonDocument.model_validate_json(demo.stdout).root.get("dataset_id")
+        if not isinstance(dataset_id, str) or not dataset_id:
+            msg = "README demo did not identify its generated public dataset"
+            raise RuntimeError(msg)
+        events = Path(temporary) / "events.json"
+        verify_skipped_command(
+            ["export", "--format", "openlineage", "--output", str(events)], environment, events
+        )
+        verify_denied_command(
+            ["ask", "退货率为什么上升", "--reference-instant", "2026-10-01T00:00:00Z"], environment
+        )
         for arguments in (
-            ["migrate"],
-            ["demo", "--once"],
-            ["export", "--format", "openlineage", "--output", str(Path(temporary) / "events.json")],
+            ["export", "--format", "openlineage", "--dataset", dataset_id, "--output", str(events)],
             ["export", "--format", "croissant", "--output", str(Path(temporary) / "dataset.json")],
             ["eval", "--provider", "fake"],
             ["eval", "--provider", "fake", "--json"],
             ["eval-evidence", "--json"],
             ["rebuild-evidence"],
             ["ask", "上个季度华东区零售额是多少", "--reference-instant", "2026-10-01T00:00:00Z"],
-            ["ask", "退货率为什么上升", "--reference-instant", "2026-10-01T00:00:00Z"],
             ["ask", "上个季度营业额是多少", "--reference-instant", "2026-10-01T00:00:00Z"],
             ["eval-ask", "--json"],
             ["rebuild-catalog"],
             ["mcp", "--help"],
         ):
-            subprocess.run(  # noqa: S603  # Fixed local Python module and generated path arguments.
-                [sys.executable, "-m", "datakeel.cli", *arguments],
-                env=environment,
-                check=True,
-                timeout=300,  # Shared CI runners are several times slower; this only bounds hangs.
-            )
+            run_command(arguments, environment).check_returncode()
         asyncio.run(asyncio.wait_for(verify_stdio(config, environment), timeout=30))
         Console().print("Quick start commands passed in a fresh local workspace.")
 

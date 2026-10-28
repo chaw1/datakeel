@@ -24,6 +24,7 @@ from datakeel.runtime.graph import AgentGraph
 from datakeel.storage import conversation_store as memory
 from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.conversation_resume import abandoned_token, begin_resume
+from datakeel.storage.data_asset_context import read_agent_histories, require_agent_history
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import get_dataset
 
@@ -39,12 +40,12 @@ def create_conversation(db: Database, request: ConversationCreate) -> Conversati
 
 def get_conversation(db: Database, conversation_id: str) -> ConversationView:
     """Read all messages and hydrate plan cards with the latest human decisions."""
-    return conversation_view(db, memory.get(db, conversation_id))
+    return conversation_view(db, read_agent_histories(db, [memory.get(db, conversation_id)])[0])
 
 
 def list_conversations(db: Database) -> list[ConversationView]:
     """List persisted local conversations with complete transcript views."""
-    return [conversation_view(db, item) for item in memory.list_all(db)]
+    return [conversation_view(db, item) for item in read_agent_histories(db, memory.list_all(db))]
 
 
 def send_message(
@@ -93,6 +94,7 @@ def _deliver(
     db: Database, conversation_id: str, lease: ConversationLease, events: Iterator[AgentEvent]
 ) -> Iterator[AgentEvent]:
     if lease.replay is not None:
+        require_agent_history(db, conversation_id)
         yield from (AgentEvent.model_validate(document.root) for document in lease.replay)
         return
     completed = False

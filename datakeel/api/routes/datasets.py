@@ -5,10 +5,11 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse
 
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.storage import dataset_service as service
 from datakeel.storage.dataset_service import DatasetInput
 from datakeel.storage.governance_service import dataset_quality_summaries
@@ -38,24 +39,43 @@ def dataset(identifier: str, db: DatabaseDependency) -> DatasetView:
 
 
 @router.get("/{identifier}/files")
-def files(identifier: str, db: DatabaseDependency, version: str | None = None) -> list[FileView]:
+def files(
+    identifier: str, db: DatabaseDependency, request: Request, version: str | None = None
+) -> list[FileView]:
     """Read original or versioned files without exposing local paths."""
-    return service.list_files(db, identifier, version)
+    return service.list_files(db, identifier, version, access=_query_access(request))
 
 
 @router.get("/{identifier}/versions")
-def versions(identifier: str, db: DatabaseDependency) -> list[VersionView]:
+def versions(identifier: str, db: DatabaseDependency, request: Request) -> list[VersionView]:
     """List a dataset's immutable manifest snapshots."""
-    return service.list_versions(db, identifier)
+    return service.list_versions(db, identifier, access=_query_access(request))
 
 
 @router.get("/{identifier}/files/{file_id}/download")
 def download(
     identifier: str,
     file_id: str,
+    request: Request,
     db: DatabaseDependency,
     version: Annotated[str | None, Query(min_length=1)] = None,
 ) -> FileResponse:
     """Download a file from its dataset, optionally pinned to one immutable version."""
-    value = service.resolve_download(db, identifier, file_id, version)
+    value = service.resolve_download(
+        db,
+        identifier,
+        file_id,
+        version,
+        access=AccessContext(
+            actor=request.headers.get("X-Datakeel-Actor", "local-user"),
+            entry="download",
+            scope="download",
+        ),
+    )
     return FileResponse(value.path, filename=value.filename)
+
+
+def _query_access(request: Request) -> AccessContext:
+    return AccessContext(
+        actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
+    )
