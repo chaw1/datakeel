@@ -15,19 +15,26 @@ from datakeel.core.datasheet_models import (
     DatasheetSentence,
     DatasheetValidation,
 )
+from datakeel.core.datasheet_types import DatasheetValueKind
 from datakeel.datasheets.validation import parse_model_output, validate_sections
 
 
-def fact(value: JsonValue, *, key: str = "f1") -> DatasheetFact:
+def fact(
+    value: JsonValue, *, key: str = "f1", kind: DatasheetValueKind | None = None
+) -> DatasheetFact:
     """Create independent frozen evidence without external stores or model calls."""
-    return DatasheetFact(
-        id=key,
-        chapter="composition",
-        source_type="manifest",
-        source_id="source-9999",
-        field="manifest.file_count",
-        value=value,
-        recorded_at=datetime(2026, 10, 27, tzinfo=UTC),
+    declared = {} if kind is None else {"kind": kind, "unit": None}
+    return DatasheetFact.model_validate(
+        {
+            "id": key,
+            "chapter": "composition",
+            "source_type": "manifest",
+            "source_id": "source-9999",
+            "field": "manifest.file_count",
+            "value": value,
+            "recorded_at": datetime(2026, 10, 27, tzinfo=UTC),
+            **declared,
+        }
     )
 
 
@@ -52,7 +59,6 @@ def checked(
     [
         ("The dataset contains 1,234 files.", 1234),
         ("The dataset contains \uff11\uff12\uff13\uff14 files.", 1234),
-        ("The quality score is 98.3%.", 0.983),
         ("The quality score is 0.983.", "98.3%"),
         ("The quality score is -1.25.", -1.25),
         ("The quality score is 1.2e3.", 1200),
@@ -67,7 +73,6 @@ def checked(
         ("The owner is Élodie.", "E\u0301lodie"),
         ("File names: data_1.csv.", ["data_1.csv"]),
         ("The data contains true and null.", [True, None]),
-        ("The quality score is 98.3%.", 98.3),
         ("The version was created on 2026-10-27.", "2026-10-27T14:30:17+00:00"),
         ("The version was created on October 27, 2026.", "2026-10-27T14:30:17+00:00"),
     ],
@@ -238,7 +243,6 @@ def test_supported_unspaced_chinese_number_survives() -> None:
         ("The dataset contains one hundred and twenty-three files.", 123),
         ("数据集包含三张图片。", 3),
         ("数据集包含九百九十九个文件。", 999),
-        ("The quality score is 98.3 percent.", 0.983),
     ],
 )
 def test_written_number_matches_only_its_numeric_value(text: str, value: JsonValue) -> None:

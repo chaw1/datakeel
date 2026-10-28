@@ -11,6 +11,7 @@ from pydantic import JsonValue
 
 from datakeel.core.datasheet_models import DatasheetFact
 from datakeel.datasheets.number_words import erase_written_numbers, written_numbers
+from datakeel.datasheets.vocabulary import KIND_LABELS
 
 _QUOTED = re.compile(
     r'"((?:\\.|[^"\\\n])+)"|“([^”\n]+)”|「([^」\n]+)」|『([^』\n]+)』|\u2018([^\u2019\n]+)\u2019'
@@ -55,6 +56,10 @@ _ROLE_PATTERNS = (
     ),
     re.compile(r"^(.+?)(?:负责)?(?:创建|维护|管理|提供)(?:了)?(?:该|本)?数据集"),
 )
+_NAME_MARKER = re.compile(
+    r"\s*[(\uff08]\s*(?:" + "|".join(KIND_LABELS["name"]) + r")\s*[)\uff09]\s*\.?\s*$",
+    re.IGNORECASE,
+)
 _NUMERAL_ONLY = re.compile(r"[\d零\u3007一二两三四五六七八九十百千万亿]+")
 
 
@@ -83,6 +88,8 @@ def _literal_supported(candidate: str, values: tuple[str, ...]) -> bool:
 
 
 def _name_supported(candidate: str, values: tuple[str, ...], structured: tuple[str, ...]) -> bool:
+    # The prompt marks names as "(name)"; copying that marker does not change the identity.
+    candidate = _NAME_MARKER.sub("", candidate)
     if _fold(candidate.rstrip(".")) in structured:
         return True
     candidate = (

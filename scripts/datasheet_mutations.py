@@ -47,6 +47,24 @@ DATASHEET_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="datasheet-percent-ratio-only",
+        path="datasheets/units.py",
+        before=(
+            '        return (value / 100, "ratio") in evidence or (value, "percent") in evidence'
+        ),
+        after="        return any(item == value for item, _unit in evidence)",
+        case="tests/harness/test_datasheet_mutations.py::test_datasheet_percentage_of_a_count_cannot_be_published",
+        runner="pytest",
+    ),
+    Mutation(
+        name="datasheet-unit-consistency",
+        path="datasheets/units.py",
+        before="    return (value, unit) in evidence or (value, None) in evidence",
+        after="    return any(item == value for item, _unit in evidence)",
+        case="tests/harness/test_datasheet_mutations.py::test_datasheet_byte_total_cannot_be_published_as_a_file_count",
+        runner="pytest",
+    ),
+    Mutation(
         name="datasheet-date-support",
         path="datasheets/matching.py",
         before="    if _dates(normalized(text)) - dates:",

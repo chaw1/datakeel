@@ -104,8 +104,20 @@ def _chinese_value(text: str) -> Decimal:
 
 def written_numbers(text: str) -> set[Decimal]:
     """Return Arabic-equivalent values for English and Chinese written cardinal spans."""
-    english = {_english_value(match.group()) for match in _ENGLISH.finditer(text)}
-    return english | {_chinese_value(match.group()) for match in _CHINESE.finditer(text)}
+    return {value for _start, _end, value in written_number_spans(text)}
+
+
+def written_number_spans(text: str) -> tuple[tuple[int, int, Decimal], ...]:
+    """Locate written cardinals so their surrounding unit words can be classified."""
+    english = tuple(
+        (match.start(), match.end(), _english_value(match.group()))
+        for match in _ENGLISH.finditer(text)
+    )
+    chinese = tuple(
+        (match.start(), match.end(), _chinese_value(match.group()))
+        for match in _CHINESE.finditer(text)
+    )
+    return english + chinese
 
 
 def erase_written_numbers(text: str) -> str:

@@ -69,6 +69,24 @@ _METADATA_LABELS = {
     "retention": ("保留策略", "Retention"),
 }
 FIELD_LABELS.update({f"metadata.{key}": value for key, value in _METADATA_LABELS.items()})
+# Measurement units and value kinds are shown to the model and accepted as words of their facts.
+UNIT_LABELS = {
+    "files": ("\u4e2a", "files"),
+    "assertions": ("\u6761", "assertions"),
+    "relations": ("\u6761", "relations"),
+    "bytes": ("\u5b57\u8282", "bytes"),
+    "points": ("\u5206", "points"),
+    "seconds": ("\u79d2", "seconds"),
+    "USD": ("\u7f8e\u5143", "USD"),
+    "CNY": ("\u5143", "CNY"),
+}
+KIND_LABELS = {
+    "ratio": ("\u6bd4\u4f8b", "ratio"),
+    "percent": ("\u767e\u5206\u6bd4", "percent"),
+    "date": ("\u65e5\u671f", "date"),
+    "name": ("\u540d\u79f0", "name"),
+    "status": ("\u72b6\u6001\u503c", "status"),
+}
 
 # Unknown content words are refused even when lowercase or sentence-initial. This closed
 # grammar intentionally prefers deleting a plausible paraphrase to admitting an invented name.
@@ -241,6 +259,10 @@ CHINESE_GRAMMAR = (
     "步骤",
     "类型",
     "格式",
+    "年",
+    "月",
+    "日",
+    "号",
 )
 
 
@@ -254,6 +276,19 @@ def missing_text(language: DatasheetLanguage) -> str:
     if language == "en":
         return "No record of this item exists in the platform."
     return "平台中没有这一项的记录。"
+
+
+def unit_label(unit: str | None, language: DatasheetLanguage) -> str | None:
+    """Localize a declared unit; unknown units are shown literally."""
+    if unit is None:
+        return None
+    return UNIT_LABELS.get(unit, (unit, unit))[language == "en"]
+
+
+def kind_label(kind: str, language: DatasheetLanguage) -> str | None:
+    """Name value kinds whose literal form matters, such as ratios, dates and names."""
+    labels = KIND_LABELS.get(kind)
+    return None if labels is None else labels[language == "en"]
 
 
 def field_label(field: str, language: DatasheetLanguage) -> str:

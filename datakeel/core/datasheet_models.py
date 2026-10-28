@@ -3,10 +3,11 @@
 
 """Immutable facts, cited sentences, and versioned dataset documentation."""
 
-from typing import Literal
+from typing import Literal, cast
 
-from pydantic import AwareDatetime, ConfigDict, Field, JsonValue
+from pydantic import AwareDatetime, ConfigDict, Field, JsonValue, model_validator
 
+from datakeel.core.datasheet_types import DatasheetValueKind, fact_type
 from datakeel.core.models import BoundaryModel, new_id, utcnow
 
 DatasheetLanguage = Literal["zh", "en"]
@@ -40,6 +41,21 @@ class DatasheetFact(BoundaryModel):
     field: str = Field(min_length=1)
     value: JsonValue
     recorded_at: AwareDatetime
+    kind: DatasheetValueKind = "text"
+    unit: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def declare_meaning(cls, data: object) -> object:
+        """Fill the kind and unit from the field registry when a caller omits them."""
+        if not isinstance(data, dict):
+            return data
+        values = cast("dict[str, object]", data)
+        field = values.get("field")
+        if "kind" in values or not isinstance(field, str):
+            return values
+        kind, unit = fact_type(field, cast("JsonValue", values.get("value")))
+        return {**values, "kind": kind, "unit": unit}
 
 
 class DatasheetSentence(BoundaryModel):

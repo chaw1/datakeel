@@ -11,13 +11,15 @@ from datakeel.core.datasheet_models import DatasheetFact, DatasheetSection, Data
 from datakeel.datasheets.validation import validate_sections
 
 
-def _rejected(text: str, ids: tuple[str, ...], value: JsonValue = 12) -> bool:
+def _rejected(
+    text: str, ids: tuple[str, ...], value: JsonValue = 12, field: str = "manifest.file_count"
+) -> bool:
     fact = DatasheetFact(
         id="f1",
         chapter="composition",
         source_type="manifest",
         source_id="v1",
-        field="manifest.file_count",
+        field=field,
         value=value,
         recorded_at=datetime(2026, 10, 27, tzinfo=UTC),
     )
@@ -63,3 +65,15 @@ def test_datasheet_invented_date_cannot_be_published() -> None:
 def test_datasheet_numeric_owner_name_cannot_be_published() -> None:
     """A count of one cannot establish an owner named with the written numeral."""
     assert _rejected("Owner='ONE'.", ("f1",), 1)
+
+
+def test_datasheet_percentage_of_a_count_cannot_be_published() -> None:
+    """A percentage restates only a ratio; a count of 50 files is not 50%."""
+    assert _rejected("50% of the files are images.", ("f1",), 50)
+
+
+def test_datasheet_byte_total_cannot_be_published_as_a_file_count() -> None:
+    """A number written with a unit needs a cited fact measured in that unit."""
+    assert _rejected(
+        "The dataset contains 4,815,739 files.", ("f1",), 4815739, "manifest.total_bytes"
+    )

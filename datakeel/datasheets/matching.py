@@ -7,19 +7,23 @@ import re
 import unicodedata
 from collections.abc import Iterable
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from pydantic import JsonValue
 
 from datakeel.core.datasheet_models import DatasheetFact
 from datakeel.datasheets.names import names_supported
-from datakeel.datasheets.number_words import erase_written_numbers, written_numbers
+from datakeel.datasheets.number_words import erase_written_numbers
 from datakeel.datasheets.sentences import split_sentences
-from datakeel.datasheets.vocabulary import CHINESE_GRAMMAR, ENGLISH_GRAMMAR, field_label
-
-_NUMBER = re.compile(
-    r"(?<![A-Za-z0-9_.])[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?%?"
+from datakeel.datasheets.units import NUMBER, Reading, supported, text_readings
+from datakeel.datasheets.vocabulary import (
+    CHINESE_GRAMMAR,
+    ENGLISH_GRAMMAR,
+    field_label,
+    kind_label,
+    unit_label,
 )
+
 # Chinese dates may space their 年/月/日 markers; numeric separators stay unspaced.
 _DATE = re.compile(
     r"(?<!\d)(\d{4})(?:[-/.]|[ \t]*年[ \t]*)(\d{1,2})(?:[-/.]|[ \t]*月[ \t]*)(\d{1,2})"
@@ -51,6 +55,8 @@ _NAMED_DATE = re.compile(r"\b(" + _MONTH_PATTERN + r")\.?\s+(\d{1,2}),?\s+(\d{4}
 _DAY_FIRST_DATE = re.compile(
     r"\b(\d{1,2})\s+(" + _MONTH_PATTERN + r")\.?\s+(\d{4})\b", re.IGNORECASE
 )
+# A timestamp's clock follows its date directly, as in 2026-10-27T15:55:01.
+_TIME = re.compile(r"(?<!\d)(\d{1,2}):(\d{2})(?::(\d{2}))?(?!\d)")
 _LATIN = re.compile(r"[^\W\d_][\w'\u2019-]*", re.UNICODE)
 _HAN = re.compile(r"[\u3400-\u9fff]+")
 
@@ -72,12 +78,6 @@ def value_strings(value: JsonValue) -> tuple[str, ...]:
     if isinstance(value, bool):
         return (str(value).lower(),)
     return (str(value),)
-
-
-def _number(value: str) -> Decimal:
-    cleaned = value.replace(",", "").rstrip("%")
-    number = Decimal(cleaned)
-    return number / 100 if value.endswith("%") else number
 
 
 def _date(value: re.Match[str]) -> str:
@@ -108,34 +108,61 @@ def _erase_dates(text: str) -> str:
     return _DAY_FIRST_DATE.sub(" ", _NAMED_DATE.sub(" ", _DATE.sub(" ", text)))
 
 
-def _readings(text: str) -> tuple[frozenset[Decimal], ...]:
-    # A percentage may restate a recorded ratio (0.983 -> 98.3%) or a 0-100 score (98.3 -> 98.3%).
-    text = _erase_dates(text)
-    tokens = [frozenset((value,)) for value in written_numbers(text)]
-    for match in _NUMBER.finditer(text):
-        try:
-            value = _number(match.group())
-            plain = _number(match.group().rstrip("%"))
-        except InvalidOperation:
-            continue
-        tokens.append(frozenset((value, plain)))
-    return tuple(tokens)
+_MEASURED = {
+    "count": "count",
+    "ratio": "ratio",
+    "percent": "percent",
+    "score": "score",
+    "bytes": "bytes",
+    "duration": "duration",
+    "date": "date",
+}
 
 
-def _numbers(text: str) -> set[Decimal]:
-    return {value for token in _readings(text) for value in token}
+def _measured(fact: DatasheetFact) -> str | None:
+    if fact.kind == "amount":
+        return f"amount:{fact.unit}" if fact.unit else None
+    return _MEASURED.get(fact.kind)
 
 
-def _unsupported_numbers(text: str, numbers: set[Decimal]) -> bool:
-    return any(token.isdisjoint(numbers) for token in _readings(text))
+def fact_readings(fact: DatasheetFact) -> frozenset[Reading]:
+    """Type every recorded number by its fact kind, or by its own words in recorded text."""
+    measured = _measured(fact)
+    readings: set[Reading] = set()
+
+    def visit(value: JsonValue) -> None:
+        if isinstance(value, bool) or value is None:
+            return
+        if isinstance(value, int | float):
+            readings.add((Decimal(str(value)), measured))
+        elif isinstance(value, str):
+            text = normalized(value)
+            for match in (*_DATE.finditer(text), *_TIME.finditer(text)):
+                readings.update((Decimal(part), "date") for part in match.groups() if part)
+            for item, unit in text_readings(_erase_dates(text)):
+                readings.add((item, unit if measured is None or unit == "percent" else measured))
+        elif isinstance(value, dict):
+            for key, item in value.items():
+                visit(key)
+                visit(item)
+        else:
+            for item in value:
+                visit(item)
+
+    visit(fact.value)
+    return frozenset(readings)
+
+
+def _unsupported_numbers(text: str, evidence: frozenset[Reading]) -> bool:
+    return not all(supported(item, evidence) for item in text_readings(_erase_dates(text)))
 
 
 def numeric_issues(text: str, facts: tuple[DatasheetFact, ...]) -> tuple[str, ...]:
-    """Require dates and numeric values in cited values, never incidental fact IDs."""
+    """Require dates, and numbers under the same unit, in cited values, never in fact IDs."""
     candidates = tuple(normalized(part) for fact in facts for part in value_strings(fact.value))
     dates = {item for part in candidates for item in _dates(part)}
     dates.update(fact.recorded_at.date().isoformat() for fact in facts)
-    numbers = {item for part in candidates for item in _numbers(part)}
+    numbers = frozenset(item for fact in facts for item in fact_readings(fact))
     issues: list[str] = []
     if _dates(normalized(text)) - dates:
         issues.append("unsupported_date")
@@ -226,7 +253,7 @@ def _phrase_text(text: str) -> str:
             return match.group()
         return " "
 
-    return _NUMBER.sub(replacement, text)
+    return NUMBER.sub(replacement, text)
 
 
 def term_issues(text: str, facts: tuple[DatasheetFact, ...]) -> tuple[str, ...]:
@@ -234,22 +261,28 @@ def term_issues(text: str, facts: tuple[DatasheetFact, ...]) -> tuple[str, ...]:
     values = tuple(normalized(part) for fact in facts for part in value_strings(fact.value))
     fields = tuple(normalized(fact.field) for fact in facts)
     labels = tuple(
-        normalized(field_label(fact.field, language)) for fact in facts for language in ("zh", "en")
+        normalized(label)
+        for fact in facts
+        for language in ("zh", "en")
+        for label in (
+            field_label(fact.field, language),
+            unit_label(fact.unit, language),
+            kind_label(fact.kind, language),
+        )
+        if label is not None
     )
     evidence = values + fields + labels
     known_words = {
         word
         for part in evidence
-        for word in _words(erase_written_numbers(_NUMBER.sub(" ", _erase_dates(part))))
+        for word in _words(erase_written_numbers(NUMBER.sub(" ", _erase_dates(part))))
     }
     # Dates/numbers have their own stricter matcher and must not become lexical exceptions.
-    lexical = erase_written_numbers(_NUMBER.sub(" ", _erase_dates(normalized(text))))
+    lexical = erase_written_numbers(NUMBER.sub(" ", _erase_dates(normalized(text))))
     unknown = set(_words(lexical)) - known_words - ENGLISH_GRAMMAR
     if (
         unknown
-        or not _proper_phrases(
-            erase_written_numbers(_NUMBER.sub(" ", _erase_dates(text))), evidence
-        )
+        or not _proper_phrases(erase_written_numbers(NUMBER.sub(" ", _erase_dates(text))), evidence)
         or not names_supported(text, facts)
         or not _content_phrases(_phrase_text(text), evidence)
         or any(not _han_supported(run, evidence) for run in _HAN.findall(lexical))
