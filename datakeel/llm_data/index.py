@@ -46,13 +46,18 @@ class DuplicateIndex:
                     (key, _CANDIDATES_PER_BAND),
                 )
             )
+        if not ids:
+            return []
+        placeholders = ",".join("?" for _ in ids)
+        # Only fixed SQL and generated placeholders; IDs remain bound values.
+        query = (
+            "SELECT record_id,normalized,simhash,prompt,answer FROM records WHERE id IN ("  # noqa: S608
+            + placeholders
+            + ") ORDER BY id"
+        )
         return [
             (str(row[0]), str(row[1]), bytes(row[2]), str(row[3]), str(row[4]))
-            for identity in sorted(ids)
-            for row in self.connection.execute(
-                "SELECT record_id,normalized,simhash,prompt,answer FROM records WHERE id=?",
-                (identity,),
-            )
+            for row in self.connection.execute(query, tuple(sorted(ids)))
         ]
 
     def _near(
@@ -94,6 +99,8 @@ class DuplicateIndex:
     ) -> tuple[TrainingIssue, ...]:
         """Find a prior representative and retain unique records without expanding all pairs."""
         normalized = normalize(text)
+        normalized_prompt = normalized if prompt == text else normalize(prompt)
+        normalized_answer = normalized if answer == text else normalize(answer)
         key = digest(normalized)
         prior = self.connection.execute(
             "SELECT record_id FROM records WHERE digest=?", (key,)
@@ -109,7 +116,6 @@ class DuplicateIndex:
             )
         else:
             hashed, keys = fingerprint(normalized) if approximate else (0, ())
-            normalized_prompt, normalized_answer = normalize(prompt), normalize(answer)
             near = self._near(normalized, hashed, keys, normalized_prompt, normalized_answer)
             if near is not None:
                 findings.append(near)
@@ -117,7 +123,7 @@ class DuplicateIndex:
                 self._insert(
                     record_id, key, normalized, hashed, keys, (normalized_prompt, normalized_answer)
                 )
-        conflict = self._prompt(record_id, prompt, answer)
+        conflict = self._prompt(record_id, normalized_prompt, normalized_answer)
         if conflict is not None:
             findings.append(conflict)
         return tuple(findings)
@@ -142,7 +148,7 @@ class DuplicateIndex:
         )
 
     def _prompt(self, record_id: str, prompt: str, answer: str) -> TrainingIssue | None:
-        key, answer_key = digest(normalize(prompt)), digest(normalize(answer))
+        key, answer_key = digest(prompt), digest(answer)
         prior = self.connection.execute(
             "SELECT answer,record_id FROM prompts WHERE digest=?", (key,)
         ).fetchone()
