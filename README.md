@@ -478,3 +478,7 @@ Submit a Python file in **Custom operators**, review its complete source and sta
 ## Dataset datasheets
 
 Open a dataset and select **Datasheet** to generate a seven-chapter datasheet (motivation, composition, collection, preprocessing, uses, distribution, maintenance) for one dataset version. Datakeel first freezes platform facts with stable IDs and sources; every retained sentence cites them, and a sentence with an uncited, unknown, numeric, date or name claim that the cited facts do not support is removed and listed with its reason. Chapters without facts say so explicitly. The offline template needs no model; an optional configured model follows the existing budget and external-transfer approval rules. Drafts are controlled actions, publication requires approval, and newer versions mark older datasheets out of date. Markdown and HTML downloads keep sentence-level citations. See the [datasheet reference](docs/DATASHEETS.md).
+
+## Training data governance
+
+Open a dataset's **Text data governance** tab to inspect SFT, instruction and preference JSONL records. Local checks cover structure, language, duplicates, PII/secrets and your registered evaluation sets. Analysis previews each record's decision; a separate approved action creates a reproducible cleaned version with lineage. Recorded signals feed quality scores and cited datasheets. See the [training-data guide](docs/TRAINING_DATA.md) and [tour](docs/DEMO.en.md#17-inspect-and-clean-training-records-2-minutes).
