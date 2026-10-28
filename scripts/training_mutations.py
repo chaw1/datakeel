@@ -64,13 +64,13 @@ TRAINING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="training-multilabel-refinement-omitted",
-        path="training/splitting.py",
-        before="return refine_assignments(samples, groups, result, request)",
-        after="return result",
+        name="training-single-label-prevalence-constraint-omitted",
+        path="training/single_prevalence.py",
+        before="if labelled and count >= MIN_CATEGORY:",
+        after="if labelled and count < 0:",
         case=(
-            "tests/training/test_refinement.py::"
-            "test_random_multilabel_overlap_keeps_capacity_and_category_ratios[25]"
+            "tests/training/test_single_prevalence.py::"
+            "test_integer_solver_shifts_small_totals_to_the_nearest_feasible_allocation"
         ),
         runner="pytest",
     ),
@@ -104,6 +104,17 @@ TRAINING_MUTATIONS = (
         case=(
             "tests/training/test_text_normalization.py::"
             "test_simhash_ignores_all_ascii_punctuation_and_compatibility_variants"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-multilabel-prevalence-tolerance-weakened",
+        path="training/proportions.py",
+        before="PREVALENCE_TOLERANCE = 0.02",
+        after="PREVALENCE_TOLERANCE = 0.2",
+        case=(
+            "tests/training/test_proportions.py::"
+            "test_sparse_nonuniform_multilabel_counts_meet_count_and_prevalence_limits[0-ratios0]"
         ),
         runner="pytest",
     ),

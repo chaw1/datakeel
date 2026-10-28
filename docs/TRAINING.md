@@ -15,8 +15,11 @@ prevalence. Select another saved split to compare its distribution and assignmen
 
 ## Reproducible grouping and stratification
 
-Single-label independent samples use seeded stratified allocation with largest-remainder
-integer quotas. Multilabel samples use rare-label-first iterative stratification.
+Single-label independent samples start with seeded largest-remainder quotas. When small
+rounded sets violate class prevalence limits, a bounded integer transport solver selects
+the closest feasible set totals. Multilabel samples use rare-label-first iterative
+stratification, deterministic whole-group transfers/exchanges and at most 16 additional
+seeded starts. Count error and class prevalence limits take priority over exact set totals.
 Groups and connected duplicate clusters are indivisible; an entire connected component
 receives one split. A metadata field can be nested, for example `capture.session` or
 `metadata.capture.session`. A missing or null group value does not join unrelated samples.
@@ -27,6 +30,12 @@ mathematically impossible. Inspect the measured counts before training. The seed
 policy, algorithm version, member identities, source hashes and annotations are frozen.
 Later annotation imports do not rewrite an existing split. Create a new named split to
 use revised annotations.
+
+Small integer sets can be infeasible even without groups. For example, class counts
+92/83/68 with a 90:5:5 policy admit no positive validation size that keeps every category
+within one sample of its target and within two percentage points of global prevalence.
+The result still reports its actual counts; an unattainable request does not justify
+splitting a group or silently changing the declared policy.
 
 ## Leakage evidence
 
