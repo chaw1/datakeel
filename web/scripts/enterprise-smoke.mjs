@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { URLSearchParams } from "node:url";
 
+import { grantProtectedDemoMetrics } from "./asset-grant-smoke.mjs";
+
 // Use only the generated local demo. Restore metric changes through its inverse action.
 export async function enterpriseSmoke({
   page,
@@ -269,6 +271,7 @@ export async function enterpriseSmoke({
     "primary answer 4,979,475 with metric version, SELECT, bound parameters, NFC highlights, source fields and exact replay; two-hop catalog graph",
   );
 
+  await grantProtectedDemoMetrics({ page, json, post, checks });
   await openAsk();
   const rejected = [];
   for (const [question, status] of [
