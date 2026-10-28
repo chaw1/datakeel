@@ -97,8 +97,16 @@ class Observations:
                         **value.get("quality", {}),
                         "input_count": value.get("input_count", 0),
                         "output_count": value.get("output_count", 0),
-                        "operator_version": REGISTRY[value.operator].manifest.version,
+                        "operator_version": _operator_version(value.operator),
                         "params_sha256": parameter_digest,
                     },
                 )
             )
+
+
+def _operator_version(operator: str) -> str:
+    """Registered operators carry a manifest version; approved custom ones are pinned by hash."""
+    registered = REGISTRY.get(operator)
+    if registered is not None:
+        return registered.manifest.version
+    return operator.rpartition("@")[2]
