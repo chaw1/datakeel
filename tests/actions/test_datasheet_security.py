@@ -24,6 +24,7 @@ from datakeel.core.datasheet_models import DatasheetDocument
 from datakeel.core.errors import ConflictError
 from datakeel.core.harness_models import TokenUsage
 from datakeel.core.models import JsonDocument
+from datakeel.datasheets.prompt import fact_display
 from datakeel.datasheets.templates import build_template
 from datakeel.storage.budget_rows import BudgetReservationRow
 from datakeel.storage.budget_service import reserve as reserve_budget
@@ -363,3 +364,39 @@ def test_replayed_model_output_keeps_supported_text_and_ledgers_four_fabrication
         ("unknown_fact",),
         ("missing_citation",),
     ]
+
+
+@pytest.mark.parametrize(("language", "verb", "end"), [("zh", "为", "。"), ("en", " is ", ".")])
+def test_replayed_sentences_copying_fact_display_lines_are_all_kept(
+    db: Database, dataset: DatasetFixture, language: str, verb: str, end: str
+) -> None:
+    """A model that restates each labelled display line through the worker loses no sentence."""
+    plan = _prepare(db, dataset, language=language)
+    queue = _schedule(db, plan)
+    lease = queue.claim()
+    assert lease is not None
+    job, prepared = _input(db, lease)
+    lines = [
+        (fact, display.replace("=", verb, 1) + end)
+        for fact in prepared.facts
+        if (display := fact_display(fact, job.language)) is not None
+    ]
+    assert len(lines) >= 5
+    content = json.dumps(
+        {
+            "sections": [
+                {
+                    "key": fact.chapter,
+                    "title": fact.chapter,
+                    "sentences": [{"text": text, "fact_ids": [fact.id]}],
+                }
+                for fact, text in lines
+            ]
+        },
+        ensure_ascii=False,
+    )
+    assert execute_datasheet(queue, lease, FixtureProvider(ModelResponse(content=content)))
+    (document,) = list_documents(db, dataset[0].id)
+    kept = [sentence.text for section in document.sections for sentence in section.sentences]
+    assert document.dropped_sentences == ()
+    assert sorted(kept) == sorted(text for _fact, text in lines)
