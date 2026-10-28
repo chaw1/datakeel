@@ -1,7 +1,13 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Measure full-scale plateaus independently in every original audio channel."""
+"""Measure clipped passages independently in every original audio channel.
+
+Three kinds of evidence: runs held flat at full scale (PCM), windows dwelling near
+full scale (hard clipping of tones, which keeps them there after lossy coding), and
+clusters of flat-topped peaks near the track's own peak level (voice and music clipped
+before lossy coding, see :mod:`datakeel.operators.audio.flat_tops`).
+"""
 
 from pathlib import Path
 
@@ -11,6 +17,7 @@ from numpy.typing import NDArray
 from datakeel.core.media_models import MediaInterval
 from datakeel.core.models import FileItem
 from datakeel.operators.audio.common import annotate_audio, runs
+from datakeel.operators.audio.flat_tops import flat_tops
 from datakeel.operators.audio.models import AudioMetrics
 from datakeel.operators.audio.params import ClippingParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
@@ -81,8 +88,11 @@ def _measure(
     samples = np.frombuffer(raw, dtype="<f4").reshape(-1, channels)
     clipped = np.zeros(samples.shape, dtype=np.bool_)
     for channel in range(channels):
-        clipped[:, channel] = _plateaus(samples[:, channel], params) | _saturated(
-            samples[:, channel], params, sample_rate
+        signal = samples[:, channel]
+        clipped[:, channel] = (
+            _plateaus(signal, params)
+            | _saturated(signal, params, sample_rate)
+            | flat_tops(signal, sample_rate, params.window_ms)
         )
     count = int(np.count_nonzero(clipped))
     metrics = AudioMetrics(
