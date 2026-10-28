@@ -15,6 +15,7 @@ reported as a repeat.
 from __future__ import annotations
 
 import itertools
+import math
 from typing import TYPE_CHECKING, NamedTuple, Protocol
 
 import numpy as np
@@ -76,6 +77,9 @@ class Sequence(NamedTuple):
     motion: NDArray[np.float32]
     moving: NDArray[np.bool_]
     measured: NDArray[np.bool_]
+    # Motion over the other whole number of frames around 100 ms (equal to ``motion``
+    # when 100 ms is a whole number of frames), for copies at a different frame rate.
+    alternate: NDArray[np.float32]
 
 
 class Match(NamedTuple):
@@ -120,9 +124,7 @@ def decode_sequence(file: FileItem, max_fps: float) -> Sequence:
     )
     step = motion_step(analysis.frame_ms)
     later = np.arange(count) + step
-    motion = search[np.minimum(later, count - 1)] - search
-    # A uniform brightness change (lighting, exposure) carries no evidence of footage.
-    motion -= motion.mean(axis=1, keepdims=True)
+    motion = _change(search, step)
     textures = analysis.thumbnails.reshape(count, -1)
     return Sequence(
         file_id=file.id,
@@ -136,7 +138,25 @@ def decode_sequence(file: FileItem, max_fps: float) -> Sequence:
         motion=motion,
         moving=np.abs(motion).max(axis=1) > _MOTION_FLOOR,
         measured=later < count,
+        alternate=_change(search, alternate_step(analysis.frame_ms)),
     )
+
+
+def _change(search: NDArray[np.float32], step: int) -> NDArray[np.float32]:
+    """Return each frame's picture change ``step`` frames ahead, without uniform brightness.
+
+    A uniform brightness change (lighting, exposure) carries no evidence of footage.
+    """
+    later = np.minimum(np.arange(len(search)) + step, len(search) - 1)
+    change = search[later] - search
+    return (change - change.mean(axis=1, keepdims=True)).astype(np.float32)
+
+
+def alternate_step(frame_ms: float) -> int:
+    """Return the whole number of frames on the other side of 100 ms from ``motion_step``."""
+    span = round(_MOTION_STEP_MS / frame_ms, 6)
+    step = motion_step(frame_ms)
+    return max(1, math.floor(span) if step > span else math.ceil(span))
 
 
 def _motion_matches(candidate: Sequence, index: int, prior: Sequence, target: int) -> bool:
@@ -145,7 +165,18 @@ def _motion_matches(candidate: Sequence, index: int, prior: Sequence, target: in
         return True
     if not candidate.moving[index] and not prior.moving[target]:
         return True
-    left, right = candidate.motion[index], prior.motion[target]
+    if math.isclose(candidate.frame_ms, prior.frame_ms):
+        return _same_change(candidate.motion[index], prior.motion[target])
+    # 100 ms is rarely a whole number of frames at both rates (25 fps: 80 or 120 ms;
+    # 29.97 fps: 67 or 100 ms), so the closest pair of spans is compared.
+    return any(
+        _same_change(left[index], right[target])
+        for left in (candidate.motion, candidate.alternate)
+        for right in (prior.motion, prior.alternate)
+    )
+
+
+def _same_change(left: NDArray[np.float32], right: NDArray[np.float32]) -> bool:
     energy = float(left @ left + right @ right)
     residual = float(np.square(left - right).sum())
     return residual <= _MOTION_RESIDUAL * energy
@@ -153,7 +184,7 @@ def _motion_matches(candidate: Sequence, index: int, prior: Sequence, target: in
 
 def motion_step(frame_ms: float) -> int:
     """Return how many frames ahead a frame's motion is measured (about 100 ms)."""
-    return max(1, round(_MOTION_STEP_MS / frame_ms))
+    return max(1, round(round(_MOTION_STEP_MS / frame_ms, 6)))
 
 
 def frame_matches(

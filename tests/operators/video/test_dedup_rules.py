@@ -8,7 +8,12 @@ from __future__ import annotations
 import numpy as np
 
 from datakeel.operators.video.dedup import DedupParams
-from datakeel.operators.video.sequence import Sequence, frame_matches
+from datakeel.operators.video.sequence import (
+    Sequence,
+    alternate_step,
+    frame_matches,
+    motion_step,
+)
 
 _PIXELS = 18 * 32 * 3
 _SEARCH = 9 * 16
@@ -32,6 +37,7 @@ def _frame(file_id: str, motion: float, texture: np.ndarray | None = None) -> Se
         motion=change,
         moving=np.asarray([motion != 0], dtype=np.bool_),
         measured=np.ones(1, dtype=np.bool_),
+        alternate=change,
     )
 
 
@@ -55,3 +61,24 @@ def test_one_strongly_changed_spot_breaks_a_match() -> None:
     assert float(np.abs(changed.textures.astype(np.float32) - 128).mean()) < 1
     assert not frame_matches(changed, 0, prior, 0.0, limits)
     assert frame_matches(changed, 0, prior, 0.0, DedupParams(max_local_difference=255))
+
+
+def test_motion_spans_bracket_100_ms_at_common_frame_rates() -> None:
+    """25 fps measures 80 and 120 ms, 29.97 fps 100 and 67 ms, 30 fps exactly 100 ms."""
+    assert (motion_step(40.0), alternate_step(40.0)) == (2, 3)
+    assert (motion_step(1001 / 30), alternate_step(1001 / 30)) == (3, 2)
+    assert (motion_step(100 / 3), alternate_step(100 / 3)) == (3, 3)
+    assert (motion_step(100.0), alternate_step(100.0)) == (1, 1)
+
+
+def test_change_over_the_other_span_matches_a_copy_at_another_frame_rate() -> None:
+    """A copy's change over its other span is compared too, so 100 ms meets 80 or 120 ms."""
+    limits = DedupParams()
+    prior = _frame("prior", 10.0)
+    resampled = _frame("resampled", -10.0)._replace(frame_ms=40.0)
+    assert not frame_matches(resampled, 0, prior, 0.0, limits)
+    assert frame_matches(resampled._replace(alternate=prior.motion), 0, prior, 0.0, limits)
+    assert frame_matches(resampled, 0, prior._replace(alternate=resampled.motion), 0.0, limits)
+    # At the same rate both spans are equal, so only the one change is compared.
+    same_rate = resampled._replace(frame_ms=prior.frame_ms, alternate=prior.motion)
+    assert not frame_matches(same_rate, 0, prior, 0.0, limits)
