@@ -10,13 +10,14 @@ from rich.console import Console
 
 from datakeel.cli.parsers import CommandGroup
 from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
 from datakeel.core.training_models import SplitRatios, SplitRequest
 from datakeel.ontology.training_functions import invoke_training
 from datakeel.ontology.training_parameters import TrainingDistributionParams, TrainingLeakageParams
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_versions
-from datakeel.storage.training_store import compare_splits, create_split, list_splits
+from datakeel.storage.training_store import compare_splits, create_split, get_split, list_splits
 
 
 def register_parser(commands: CommandGroup) -> None:
@@ -85,13 +86,22 @@ def dispatch(db: Database, args: argparse.Namespace) -> None:
         )
         payload = result.data
     elif args.training_command == "compare":
+        if (
+            args.version is not None
+            and get_split(db, args.dataset, args.left, access=access).version_id != args.version
+        ):
+            message = "Split comparison does not belong to the requested version"
+            raise ValidationError(message)
         payload = compare_splits(db, args.dataset, args.left, args.right, access=access).model_dump(
             mode="json"
         )
     else:
         version = args.version or list_versions(db, args.dataset, access=access)[-1].id
         payload = (
-            [item.model_dump(mode="json") for item in list_splits(db, args.dataset, version)]
+            [
+                item.model_dump(mode="json")
+                for item in list_splits(db, args.dataset, version, access=access)
+            ]
             if args.training_command == "list"
             else create_split(db, args.dataset, version, _request(args), access=access).model_dump(
                 mode="json"

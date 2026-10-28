@@ -10,6 +10,7 @@ from pydantic import TypeAdapter
 
 from datakeel.cli import parser
 from datakeel.cli.training import dispatch
+from datakeel.core.errors import ValidationError
 from datakeel.core.training_models import LeakageReport, SplitComparison, SplitSet
 from datakeel.harness.training_cases import seed_training_case
 from datakeel.storage.database import Database
@@ -48,3 +49,5 @@ def test_cli_training_reads_previews_saves_and_compares(
         command("compare", fixture.dataset_id, saved.id, saved.id)
     )
     assert compared.changed_sample_ids == ()
+    with pytest.raises(ValidationError, match="requested version"):
+        command("compare", fixture.dataset_id, saved.id, saved.id, "--version", "other-version")
