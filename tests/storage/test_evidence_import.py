@@ -80,7 +80,7 @@ def test_paired_import_when_split_missing_rejects_ambiguous_samples(
 ) -> None:
     """Reject source directories that would make train/val filtering ambiguous."""
     (tmp_path / "image.png").write_bytes(b"sample")
-    with pytest.raises(ValidationError, match="train/ or val/"):
+    with pytest.raises(ValidationError, match=r"train/.*val/.*test/"):
         import_evidence_samples(db, "invalid", tmp_path)
 
 
@@ -100,3 +100,14 @@ def test_sidecar_boundary_when_missing_rejects_unpaired_file() -> None:
     """Require explicit typed pairing metadata before evidence extraction."""
     with pytest.raises(ModelValidationError):
         sample_sidecars(FileItem(path="unused", filename="unused"))
+
+
+def test_paired_import_supports_test_partition_metadata(db: Database, tmp_path: Path) -> None:
+    """The third partition survives immutable import and typed sidecar validation."""
+    directory = tmp_path / "test"
+    directory.mkdir()
+    (directory / "image.png").write_bytes(b"generated test sample")
+    dataset = import_evidence_samples(db, "test partition", tmp_path)
+    _, files = source_manifest(db, dataset.id)
+    assert files[0].metadata["split"] == "test"
+    assert sample_sidecars(files[0]).split == "test"

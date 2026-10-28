@@ -51,7 +51,7 @@ def _peer_splits(session: Session, keys: set[str]) -> dict[str, str]:
             if key in keys:
                 item = FileItem.model_validate(raw)
                 split = item.metadata.get("split")
-                if split in {"train", "val"}:
+                if split in {"train", "val", "test"}:
                     result[key] = str(split)
     return result
 

@@ -34,12 +34,12 @@ def _sidecar(paths: list[Path], root: Path, store: ObjectStore) -> FileItem | No
 def _paired_file(path: Path, root: Path, store: ObjectStore) -> FileItem:
     relative = path.relative_to(root)
     split = relative.parts[0]
-    if split not in {"train", "val"}:
-        msg = "Paired samples must be under train/ or val/"
+    if split not in {"train", "val", "test"}:
+        msg = "Paired samples must be under train/, val/ or test/"
         raise ValidationError(msg)
     sidecars = SampleSidecars(
         sample_key=relative.as_posix(),
-        split="train" if split == "train" else "val",
+        split="train" if split == "train" else "test" if split == "test" else "val",
         caption=_sidecar(
             [
                 path.with_suffix(".txt"),

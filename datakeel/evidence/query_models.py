@@ -73,7 +73,7 @@ class EvidenceSample(BoundaryModel):
     dataset_id: str
     source_version: str
     filename: str
-    split: Literal["train", "val"] | None
+    split: Literal["train", "val", "test"] | None
     thumbnail_url: str | None
     caption: str | None
     caption_spans: list[TextSpan]
