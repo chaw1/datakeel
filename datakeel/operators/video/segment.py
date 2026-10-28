@@ -80,9 +80,9 @@ def execute(files: list[FileItem], output_dir: Path, params: SegmentParams) -> O
             start_ms, end_ms = round(start_exact), round(end_exact)
             if end_ms - start_ms < params.minimum_duration_ms:
                 continue
-            content = render(
-                file, start_ms=start_exact, end_ms=end_exact, frame_count=next_frame - frame
-            )
+            # Seek midway from the previous frame so rounding never drops the first frame.
+            seek = (timestamps[frame - 1] + start_exact) / 2 if frame else 0.0
+            content = render(file, start_ms=seek, end_ms=end_exact, frame_count=next_frame - frame)
             output.append(
                 media_artifact(
                     file,

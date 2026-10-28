@@ -1,55 +1,20 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Decode bounded pixel samples and assemble half-open issue intervals."""
+"""Read frame presentation times and assemble half-open issue intervals."""
 
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-import numpy as np
-
-from datakeel.core.errors import ValidationError
+from datakeel.core.errors import ExecutionError, ValidationError
 from datakeel.core.media_models import MediaInterval
-from datakeel.operators.media.tools import input_path, run_tool
+from datakeel.operators.media.tools import input_path, media_timeout, probe_file, run_tool
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
-
     from datakeel.core.models import FileItem
-
-FRAME_WIDTH = 160
-FRAME_HEIGHT = 90
-
-
-def decode_frames(file: FileItem, sample_fps: float, *, rgb: bool = False) -> NDArray[np.uint8]:
-    """Decode evenly spaced grayscale or RGB frames without requiring Python codecs."""
-    content = run_tool(
-        [
-            "ffmpeg",
-            "-v",
-            "error",
-            "-i",
-            input_path(file),
-            "-map",
-            "0:v:0",
-            "-an",
-            "-vf",
-            f"fps={sample_fps},scale={FRAME_WIDTH}:{FRAME_HEIGHT}:flags=area",
-            "-pix_fmt",
-            "rgb24" if rgb else "gray",
-            "-f",
-            "rawvideo",
-            "pipe:1",
-        ]
-    )
-    frame_size = FRAME_WIDTH * FRAME_HEIGHT * (3 if rgb else 1)
-    count = len(content) // frame_size
-    if count == 0 or len(content) % frame_size:
-        msg = "Video contains no decodable frames"
-        raise ValidationError(msg)
-    shape = (count, FRAME_HEIGHT, FRAME_WIDTH, 3) if rgb else (count, FRAME_HEIGHT, FRAME_WIDTH)
-    return np.frombuffer(content, dtype=np.uint8).reshape(shape)
 
 
 def intervals(
@@ -70,22 +35,55 @@ def intervals(
     return result
 
 
-def _laplacian(frame: NDArray[np.uint8]) -> float:
-    pixels = frame.astype(np.float64)
-    center = pixels[1:-1, 1:-1]
-    laplacian = (
-        pixels[:-2, 1:-1] + pixels[2:, 1:-1] + pixels[1:-1, :-2] + pixels[1:-1, 2:] - 4 * center
-    )
-    return float(np.var(laplacian))
-
-
-def laplacian_variance(frames: NDArray[np.uint8]) -> NDArray[np.float64]:
-    """Measure frame detail without expanding the full recording into floating-point pixels."""
-    return np.asarray([_laplacian(frames[index]) for index in range(len(frames))])
-
-
 def frame_times(file: FileItem) -> list[float]:
-    """Read actual decoded video presentation times in source-local milliseconds."""
+    """Read video presentation times in source-local milliseconds, cached per file version.
+
+    Times come from the stored packets, which needs no decoding; a stream without
+    packet timestamps falls back to decoding every frame once.
+    """
+    path = Path(input_path(file))
+    try:
+        status = path.stat()
+    except OSError as error:
+        msg = f"Recording is not readable: {type(error).__name__}"
+        raise ExecutionError(msg) from error
+    probe = probe_file(file)
+    timeout = media_timeout(probe.duration_ms, probe.width, probe.height)
+    return list(_frame_times(str(path), status.st_size, status.st_mtime_ns, timeout))
+
+
+@lru_cache(maxsize=8)
+def _frame_times(path: str, _size: int, _modified_ns: int, timeout: float) -> tuple[float, ...]:
+    times = sorted(_packet_times(path, timeout)) or _decoded_times(path, timeout)
+    if not times:
+        msg = "Video contains no timestamped frames"
+        raise ValidationError(msg)
+    return tuple(timestamp - times[0] for timestamp in times)
+
+
+def _packet_times(path: str, timeout: float) -> list[float]:
+    """Return kept video packet timestamps; packets flagged for discard are not shown."""
+    listing = _listing(path, "packet=pts_time,flags", timeout)
+    times: list[float] = []
+    for line in listing:
+        stamp, _, flags = line.partition(",")
+        if stamp in {"", "N/A"}:
+            return []
+        if "D" not in flags:
+            times.append(float(stamp) * 1000)
+    return times
+
+
+def _decoded_times(path: str, timeout: float) -> list[float]:
+    listing = _listing(path, "frame=best_effort_timestamp_time", timeout)
+    return sorted(
+        float(line.split(",")[0]) * 1000
+        for line in listing
+        if line.split(",")[0].strip() not in {"", "N/A"}
+    )
+
+
+def _listing(path: str, entries: str, timeout: float) -> list[str]:
     content = run_tool(
         [
             "ffprobe",
@@ -94,18 +92,11 @@ def frame_times(file: FileItem) -> list[float]:
             "-select_streams",
             "v:0",
             "-show_entries",
-            "frame=best_effort_timestamp_time",
+            entries,
             "-of",
             "csv=p=0",
-            input_path(file),
-        ]
+            path,
+        ],
+        timeout=timeout,
     )
-    times = [
-        float(line.split(",")[0]) * 1000
-        for line in content.decode().splitlines()
-        if line.split(",")[0].strip()
-    ]
-    if not times:
-        msg = "Video contains no timestamped frames"
-        raise ValidationError(msg)
-    return [timestamp - times[0] for timestamp in times]
+    return content.decode(errors="replace").splitlines()
