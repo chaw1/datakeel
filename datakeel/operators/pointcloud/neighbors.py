@@ -10,11 +10,13 @@ from numpy.typing import NDArray
 
 EXACT_LIMIT = 2048
 _BATCH_SIZE = 16384
-_MORTON_BITS = 20
+MORTON_BITS = 20
+CELL_COUNT = (1 << MORTON_BITS) - 1
 # Non-dyadic offsets (in units of twice the cloud span) move every Morton cell
 # boundary; a boundary of one order is interior to the others.
 _SHIFTS = (0.0, 1 / 6, 1 / 3)
 _FLOAT_MAX = float(np.finfo(np.float64).max)
+_LOW = np.uint64(0xFFFFFFFF)
 
 
 class Neighbors(NamedTuple):
@@ -33,8 +35,16 @@ def _interleave(values: NDArray[np.uint64]) -> NDArray[np.uint64]:
     return (values | (values << np.uint64(2))) & np.uint64(0x1249249249249249)
 
 
-def spatial_order(unit: NDArray[np.float64], shift: float = 0.0) -> NDArray[np.intp]:
-    """Sort coordinates normalized to [0, 1] into a Morton curve on one cubic grid.
+def encode(cells: NDArray[np.uint64]) -> NDArray[np.uint64]:
+    """Interleave integer cell coordinates into Morton codes."""
+    codes = _interleave(cells[:, 0])
+    codes |= _interleave(cells[:, 1]) << np.uint64(1)
+    codes |= _interleave(cells[:, 2]) << np.uint64(2)
+    return codes
+
+
+def grid_cells(unit: NDArray[np.float64], shift: float = 0.0) -> NDArray[np.uint64]:
+    """Return integer cells of coordinates normalized to [0, 1] on one cubic grid.
 
     One isotropic scale keeps grid cells cubic in source units. Normalizing
     each axis separately would stretch a thin axis, such as the sensor noise
@@ -43,11 +53,12 @@ def spatial_order(unit: NDArray[np.float64], shift: float = 0.0) -> NDArray[np.i
     keeps every point inside it.
     """
     scaled = np.clip(unit / 2 + shift, 0, 1)
-    grid = np.floor(scaled * ((1 << _MORTON_BITS) - 1)).astype(np.uint64)
-    codes = _interleave(grid[:, 0])
-    codes |= _interleave(grid[:, 1]) << np.uint64(1)
-    codes |= _interleave(grid[:, 2]) << np.uint64(2)
-    return np.argsort(codes, kind="stable")
+    return np.floor(scaled * CELL_COUNT).astype(np.uint64)
+
+
+def spatial_order(unit: NDArray[np.float64], shift: float = 0.0) -> NDArray[np.intp]:
+    """Sort coordinates normalized to [0, 1] into a Morton curve on one cubic grid."""
+    return np.argsort(encode(grid_cells(unit, shift)), kind="stable")
 
 
 def normalize(xyz: NDArray[np.float64]) -> tuple[NDArray[np.float64], float]:
@@ -77,51 +88,49 @@ def _exact(xyz: NDArray[np.float64], k: int) -> Neighbors:
     return Neighbors(distances, indices, ())
 
 
-def _window(
-    coords: NDArray[np.float32], order: NDArray[np.intp], k: int
-) -> tuple[NDArray[np.float64], NDArray[np.intp]]:
+def _keys(squared: NDArray[np.float32], rows: NDArray[np.intp]) -> NDArray[np.uint64]:
+    """Pack squared distances above row indices so one partition orders both.
+
+    Non-negative float32 values keep their order as unsigned bit patterns,
+    so equal distances fall back to the smaller row index and every result
+    is deterministic. Row indices fit the low 32 bits.
+    """
+    bits = squared.view(np.uint32).astype(np.uint64) << np.uint64(32)
+    return bits | (rows.astype(np.uint64) & _LOW)
+
+
+def _window(coords: NDArray[np.float32], order: NDArray[np.intp], k: int) -> NDArray[np.uint64]:
     """Take the k closest of the k predecessors and k successors along one order."""
     count = len(coords)
     ordered = coords[order]
     padded = np.pad(ordered, ((k, k), (0, 0)), constant_values=np.inf)
     padded_order = np.pad(order, (k, k), constant_values=-1)
     offsets = (*range(-k, 0), *range(1, k + 1))
-    distances = np.empty((count, k), dtype=np.float64)
-    indices = np.empty((count, k), dtype=np.intp)
+    found = np.empty((count, k), dtype=np.uint64)
     for start in range(0, count, _BATCH_SIZE):
         stop = min(start + _BATCH_SIZE, count)
         here = ordered[start:stop]
-        squared = np.empty((stop - start, 2 * k), dtype=coords.dtype)
+        squared = np.empty((stop - start, 2 * k), dtype=np.float32)
         candidates = np.empty((stop - start, 2 * k), dtype=np.intp)
         for column, offset in enumerate(offsets):
             delta = here - padded[start + k + offset : stop + k + offset]
             squared[:, column] = np.einsum("ij,ij->i", delta, delta)
             candidates[:, column] = padded_order[start + k + offset : stop + k + offset]
-        part = np.argpartition(squared, k - 1, axis=1)[:, :k]
-        rows = order[start:stop]
-        distances[rows] = np.sqrt(np.take_along_axis(squared, part, axis=1))
-        indices[rows] = np.take_along_axis(candidates, part, axis=1)
-    return distances, indices
+        keys = _keys(squared, candidates)
+        found[order[start:stop]] = np.partition(keys, k - 1, axis=1)[:, :k]
+    return found
 
 
-def _merge(
-    found: tuple[NDArray[np.float64], NDArray[np.intp]],
-    extra: tuple[NDArray[np.float64], NDArray[np.intp]],
-) -> None:
+def _merge(found: NDArray[np.uint64], extra: NDArray[np.uint64]) -> None:
     """Keep each row's k closest of two candidate lists, counting shared neighbors once."""
-    distances, indices = found
-    count, k = indices.shape
+    count, k = found.shape
     for start in range(0, count, _BATCH_SIZE):
         stop = min(start + _BATCH_SIZE, count)
-        fresh = extra[0][start:stop].copy()
-        candidates = extra[1][start:stop]
-        known = (candidates[:, :, None] == indices[start:stop, None, :]).any(axis=2)
-        fresh[known] = np.inf
-        merged = np.concatenate([distances[start:stop], fresh], axis=1)
-        merged_indices = np.concatenate([indices[start:stop], candidates], axis=1)
-        part = np.argpartition(merged, k - 1, axis=1)[:, :k]
-        distances[start:stop] = np.take_along_axis(merged, part, axis=1)
-        indices[start:stop] = np.take_along_axis(merged_indices, part, axis=1)
+        fresh = extra[start:stop].copy()
+        known = ((fresh & _LOW)[:, :, None] == (found[start:stop] & _LOW)[:, None, :]).any(axis=2)
+        fresh[known] = np.iinfo(np.uint64).max
+        merged = np.concatenate([found[start:stop], fresh], axis=1)
+        found[start:stop] = np.partition(merged, k - 1, axis=1)[:, :k]
 
 
 def nearest_neighbors(xyz: NDArray[np.float64], neighbors: int) -> Neighbors:
@@ -143,14 +152,17 @@ def nearest_neighbors(xyz: NDArray[np.float64], neighbors: int) -> Neighbors:
         return Neighbors(empty, empty.astype(np.intp), ())
     unit, span = normalize(xyz)
     if count <= EXACT_LIMIT:
-        found = _exact(unit, k)
-        distances, indices, orders = found.distances, found.indices, ()
+        exact = _exact(unit, k)
+        distances, indices, orders = exact.distances, exact.indices, ()
     else:
         coords = unit.astype(np.float32)
         orders = tuple(spatial_order(unit, shift) for shift in _SHIFTS)
-        distances, indices = _window(coords, orders[0], k)
+        found = _window(coords, orders[0], k)
         for order in orders[1:]:
-            _merge((distances, indices), _window(coords, order, k))
+            _merge(found, _window(coords, order, k))
+        indices = (found & _LOW).astype(np.intp)
+        squared = (found >> np.uint64(32)).astype(np.uint32).view(np.float32)
+        distances = np.sqrt(squared).astype(np.float64)
     with np.errstate(over="ignore"):
         scaled = np.minimum(distances * span, _FLOAT_MAX)
     return Neighbors(scaled, indices, orders)
