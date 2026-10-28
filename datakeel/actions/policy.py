@@ -6,6 +6,7 @@
 import hashlib
 import json
 
+from datakeel.actions.budget import budget_hint, require_within_ceiling
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.registry import action_definition
 from datakeel.core.errors import AuthorizationError, BudgetError, ConflictError, ValidationError
@@ -37,11 +38,15 @@ def authorize(plan: ActionPlan, actor: str) -> None:
     if "*" not in plan.context.scopes and definition.auth_scope not in plan.context.scopes:
         msg = f"Missing action scope: {definition.auth_scope}"
         raise AuthorizationError(msg)
+    require_within_ceiling(plan.action_type, plan.context)
+    impact = plan.impact
     if (
-        plan.impact.object_count > plan.context.max_objects
-        or plan.impact.total_bytes > plan.context.max_bytes
+        impact.object_count > plan.context.max_objects
+        or impact.total_bytes > plan.context.max_bytes
     ):
-        msg = "Action impact exceeds the authorized object or byte budget"
+        msg = "Action impact exceeds the authorized object or byte budget" + budget_hint(
+            plan.action_type, impact.object_count, impact.total_bytes
+        )
         raise BudgetError(msg)
     if plan.expires_at <= utcnow():
         msg = "Action plan has expired"

@@ -9,6 +9,8 @@ export const approvalZh: Record<keyof typeof approvalEn, string> = {
   approvalSourceConversation: "对话 {id}",
   approvalImpact: "影响",
   approvalImpactSummary: "{count} 个对象，共 {size}",
+  approvalBudget: "授权预算",
+  approvalBudgetSummary: "最多 {count} 个对象，{size}",
   approvalNoTransfer: "无，数据不离开本工作区",
   approvalTransfer: "外发，共 {size}",
   approvalCannotUndo: "执行后不能撤销。",

@@ -6,6 +6,8 @@ import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { PlanCard } from "../actions/PlanCard";
 
+import { ReleaseBudget, budgetQuery, emptyBudget } from "./ReleaseBudget";
+
 import type { operations } from "../../api/generated";
 import type { ActionPlan, Version } from "../../api/types";
 import type { SubmitEvent } from "react";
@@ -24,6 +26,7 @@ export function PublishRelease({
   const [versionId, setVersionId] = useState(versions[0]?.id ?? "");
   const [tag, setTag] = useState("");
   const [notes, setNotes] = useState("");
+  const [budget, setBudget] = useState(emptyBudget);
   const [plan, setPlan] = useState<ActionPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +44,10 @@ export function PublishRelease({
       };
     try {
       setPlan(
-        await post<ActionPlan>("/api/actions/publish_release/prepare", body),
+        await post<ActionPlan>(
+          `/api/actions/publish_release/prepare${budgetQuery(budget)}`,
+          body,
+        ),
       );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -95,6 +101,13 @@ export function PublishRelease({
             rows={3}
           />
         </label>
+        <ReleaseBudget
+          value={budget}
+          onChange={(value) => {
+            setBudget(value);
+            setPlan(null);
+          }}
+        />
         <button
           className="button primary"
           type="submit"

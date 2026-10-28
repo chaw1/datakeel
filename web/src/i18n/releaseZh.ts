@@ -24,6 +24,11 @@ export const releaseZh = {
   releaseTag: "语义化版本标签",
   releaseTagExample: "v1.2.0",
   releaseNotes: "发布说明",
+  releaseBudget: "计划预算（可选）",
+  releaseBudgetHint:
+    "留空即使用默认上限：1 万个文件、10 GiB。更大的发布可申请更高预算，但不能超过服务端上限（默认 100 万个文件、1 TiB）。签批单会显示所申请的预算。",
+  releaseBudgetObjects: "最多文件数",
+  releaseBudgetGib: "最大容量（GiB）",
   releaseReview: "审阅发布计划",
   releaseApproval: "发布版本",
   releaseDetail: "发布详情",

@@ -8,6 +8,9 @@ export const approvalEn = {
   approvalImpact: "Impact",
   approvalImpactSummary:
     "{count} {count, plural, one {object} other {objects}} · {size}",
+  approvalBudget: "Authorized budget",
+  approvalBudgetSummary:
+    "Up to {count} {count, plural, one {object} other {objects}} · {size}",
   approvalNoTransfer: "None; data stays in this workspace",
   approvalTransfer: "External transfer · {size}",
   approvalCannotUndo: "This action cannot be undone.",

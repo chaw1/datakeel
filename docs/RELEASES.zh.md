@@ -22,6 +22,16 @@ uv run datakeel version-diff DATASET_ID BEFORE_VERSION AFTER_VERSION --limit 50 
 
 自动化继续使用受控动作协议：`POST /api/actions/publish_release/prepare`，参数为 `dataset_id`、`version_id`、`tag`、`notes`；随后在 `POST /api/approvals/{plan_id}` 签批，再通过 `POST /api/actions/{plan_id}/execute` 执行。签批和执行须携带返回的计划摘要，执行使用该计划的 operation ID。查询接口为 `GET /api/datasets/{dataset}/releases`、`GET /api/releases/{release}` 和 `GET /api/releases/{release}/files?offset=0&limit=50`。
 
+### 大版本发布
+
+受控动作每个计划默认最多 1 万个对象、10 GiB。发布和由证据选择生成版本会冻结整份清单，因此 `publish_release` 与 `create_version_from_selection` 可以显式申请更高预算。不申请时，超出默认值的计划会被拒绝，错误信息给出实测影响和申请方法。预算写在计划的 `context`（`max_objects`、`max_bytes`）中，受计划摘要保护，签批单上显示为「授权预算」；签批和执行时会再次用它核对冻结的影响。
+
+- Web：在「发布版本」填写「最多文件数」和/或「最大容量（GiB）」，留空即用默认值。
+- HTTP：`POST /api/actions/publish_release/prepare?max_objects=20000&max_bytes=2147483648`，请求体不变；其他动作类型带这两个参数会被拒绝。
+- CLI：`uv run datakeel release-plan prepare publish_release params.json --max-objects 20000`，再执行 `release-plan approve PLAN_ID --digest DIGEST` 和 `release-plan execute PLAN_ID --digest DIGEST`。`params.json` 与 HTTP 请求体相同；`create_version_from_selection` 用法一样。
+
+申请上限由 `DATAKEEL_RELEASE_BUDGET_MAX_OBJECTS`（默认 100 万）和 `DATAKEEL_RELEASE_BUDGET_MAX_BYTES`（默认 1 TiB）控制。超过上限的申请返回 `422`，错误信息写明这两个配置项。管理员若在准备计划后调低上限，显式预算已超限的计划不能再签批或执行；使用默认预算的计划不受影响。执行时仍会逐个读取并校验所有发布对象的哈希，发布越大耗时越长。
+
 ## 导出与离线对账
 
 发布详情中的 **导出交付包** 下载 gzip tar 包。本地命令可导出压缩包或新目录：

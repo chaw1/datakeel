@@ -20,6 +20,7 @@ from datakeel.cli import (
     kg_image_evaluation,
     metadata_imports,
     quality,
+    release_plans,
     routing,
     standards,
     timeseries_demo,
@@ -103,6 +104,7 @@ def parser() -> argparse.ArgumentParser:
         standards,
         quality,
         metadata_imports,
+        release_plans,
     ):
         module.register_parser(commands)
     return result
@@ -190,6 +192,7 @@ _MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
     "standards": standards.dispatch,
     "quality": quality.dispatch,
     "import": metadata_imports.dispatch,
+    "release-plan": release_plans.dispatch,
 }
 
 

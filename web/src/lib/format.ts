@@ -54,7 +54,9 @@ export function bytes(value?: number): string {
   if (value === undefined) return "—";
   if (value < 1024) return `${String(value)} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  if (value < 1024 ** 3) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  if (value < 1024 ** 4) return `${(value / 1024 ** 3).toFixed(1)} GB`;
+  return `${(value / 1024 ** 4).toFixed(1)} TB`;
 }
 
 export function taskProgress(task: Task): number {

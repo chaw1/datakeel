@@ -26,6 +26,11 @@ export const releaseEn = {
   releaseTag: "Semantic version tag",
   releaseTagExample: "v1.2.0",
   releaseNotes: "Release notes",
+  releaseBudget: "Plan budget (optional)",
+  releaseBudgetHint:
+    "Leave empty to use the default of 10,000 files and 10 GiB. A larger release can request more, up to the server ceiling (by default 1,000,000 files and 1 TiB). The approval sheet shows the budget.",
+  releaseBudgetObjects: "Maximum files",
+  releaseBudgetGib: "Maximum size (GiB)",
   releaseReview: "Review release plan",
   releaseApproval: "publish release",
   releaseDetail: "Release details",

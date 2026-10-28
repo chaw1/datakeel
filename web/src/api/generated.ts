@@ -52,6 +52,9 @@ export interface paths {
         /**
          * Prepare
          * @description Validate parameters and freeze the exact reviewable impact for the local actor.
+         *
+         *     Releases and selected versions accept an explicit object/byte budget up to the
+         *     configured ceiling; the budget is frozen into the plan that the user approves.
          */
         post: operations["prepare_api_actions__action_type__prepare_post"];
         delete?: never;
@@ -10168,7 +10171,10 @@ export interface operations {
     };
     prepare_api_actions__action_type__prepare_post: {
         parameters: {
-            query?: never;
+            query?: {
+                max_objects?: number | null;
+                max_bytes?: number | null;
+            };
             header?: never;
             path: {
                 action_type: string;

@@ -3,9 +3,12 @@
 
 """Controlled mutation plans, local user approvals, and durable action receipts."""
 
-from fastapi import APIRouter, Request
+from typing import Annotated
+
+from fastapi import APIRouter, Query, Request
 
 from datakeel.actions import service
+from datakeel.actions.budget import BudgetRequest, requested_context
 from datakeel.actions.models import ActionPlan, ActionRun, ApprovalDecision, ExecuteRequest
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
@@ -40,9 +43,20 @@ def action_plan(plan_id: str, db: DatabaseDependency, request: Request) -> Actio
 
 
 @router.post("/actions/{action_type}/prepare")
-def prepare(action_type: str, body: JsonDocument, db: DatabaseDependency) -> ActionPlan:
-    """Validate parameters and freeze the exact reviewable impact for the local actor."""
-    return service.prepare_action(db, action_type, body)
+def prepare(
+    action_type: str,
+    body: JsonDocument,
+    db: DatabaseDependency,
+    max_objects: Annotated[int | None, Query(ge=1)] = None,
+    max_bytes: Annotated[int | None, Query(ge=1)] = None,
+) -> ActionPlan:
+    """Validate parameters and freeze the exact reviewable impact for the local actor.
+
+    Releases and selected versions accept an explicit object/byte budget up to the
+    configured ceiling; the budget is frozen into the plan that the user approves.
+    """
+    budget = BudgetRequest(max_objects=max_objects, max_bytes=max_bytes)
+    return service.prepare_action(db, action_type, body, requested_context(action_type, budget))
 
 
 @router.post("/approvals/{plan_id}")

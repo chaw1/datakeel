@@ -35,6 +35,29 @@ const sourcePlan: ActionPlan = {
   },
 };
 
+it("shows the authorized budget only on release and version plans", () => {
+  const { unmount } = render(
+    <ApprovalSheet
+      plan={{
+        ...sourcePlan,
+        action_type: "publish_release",
+        context: {
+          ...sourcePlan.context,
+          max_objects: 20000,
+          max_bytes: 2 * 1024 ** 3,
+        },
+      }}
+      onOpenReceipt={vi.fn()}
+    />,
+  );
+  expect(screen.getByText("Authorized budget").parentElement).toHaveTextContent(
+    "Up to 20000 objects · 2.0 GB",
+  );
+  unmount();
+  render(<ApprovalSheet plan={sourcePlan} onOpenReceipt={vi.fn()} />);
+  expect(screen.queryByText("Authorized budget")).toBeNull();
+});
+
 it("renders the frozen plan fields, source conversation, object context and irreversible stamp", async () => {
   const user = userEvent.setup();
   render(<ApprovalSheet plan={sourcePlan} onOpenReceipt={vi.fn()} />);

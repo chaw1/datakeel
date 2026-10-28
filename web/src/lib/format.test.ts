@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { date, shortId } from "./format";
+import { bytes, date, shortId } from "./format";
 
 it.each([
   ["9c5d7314-80b0-46cc-a772-889c215ab263", "9c5d7314"],
@@ -33,3 +33,13 @@ it.each(["en", "zh"] as const)(
     );
   },
 );
+
+it.each([
+  [512, "512 B"],
+  [2048, "2.0 KB"],
+  [5 * 1024 ** 2, "5.0 MB"],
+  [10 * 1024 ** 3, "10.0 GB"],
+  [1024 ** 4, "1.0 TB"],
+])("formats %d bytes with a readable unit", (value, expected) => {
+  expect(bytes(value)).toBe(expected);
+});

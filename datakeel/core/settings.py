@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     upload_max_chunk_bytes: int = Field(default=8 * 1024 * 1024, ge=1, le=64 * 1024 * 1024)
     upload_max_concurrency: int = Field(default=4, ge=1, le=32)
     upload_max_file_bytes: int = Field(default=5 * 1024**3, ge=0, le=1024**4)
+    # Releases and selected versions freeze whole manifests. Their plans may request a
+    # budget above the ordinary 10,000-object / 10 GiB action default, up to this ceiling.
+    release_budget_max_objects: int = Field(default=1_000_000, ge=1)
+    release_budget_max_bytes: int = Field(default=1024**4, ge=1)
     openlineage_token: SecretStr | None = None
     openlineage_namespaces: dict[str, OpenLineageNamespace] = Field(default_factory=dict)
     airflow_url: str | None = None

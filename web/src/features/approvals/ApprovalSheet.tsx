@@ -17,6 +17,12 @@ import type { ApprovalProps } from "./useApproval";
 
 import "./approval.css";
 
+// Releases and selected versions may carry an explicit, server-capped budget.
+const BUDGET_ACTIONS = new Set([
+  "publish_release",
+  "create_version_from_selection",
+]);
+
 export function ApprovalSheet(props: ApprovalProps) {
   const { plan, onOpenReceipt, readOnly = false } = props;
   const { t, locale } = useI18n();
@@ -101,6 +107,17 @@ export function ApprovalSheet(props: ApprovalProps) {
             )}
           </dd>
         </div>
+        {BUDGET_ACTIONS.has(plan.action_type) && (
+          <div>
+            <dt>{t("approvalBudget")}</dt>
+            <dd>
+              {t("approvalBudgetSummary", {
+                count: plan.context.max_objects,
+                size: bytes(plan.context.max_bytes),
+              })}
+            </dd>
+          </div>
+        )}
         <div>
           <dt>{t("externalTransfer")}</dt>
           <dd>

@@ -112,6 +112,35 @@ it("prepares a frozen release and requires explicit approval before executing", 
   expect(changed).toHaveBeenCalledOnce();
 });
 
+it("requests an explicit release budget only when the user enters one", async () => {
+  const fetch = vi.fn((path: string) => {
+    let payload: unknown = [];
+    if (path.includes("/prepare"))
+      payload = { ...actionPlan, action_type: "publish_release" };
+    return Promise.resolve(new Response(JSON.stringify(payload)));
+  });
+  vi.stubGlobal("fetch", fetch);
+  const user = userEvent.setup();
+  render(
+    <Releases
+      versions={[version]}
+      datasetId={dataset.id}
+      onChanged={vi.fn()}
+    />,
+  );
+  await user.click(screen.getByText("Publish a release"));
+  await user.type(screen.getByLabelText("Semantic version tag"), "1.0.0");
+  await user.type(screen.getByLabelText("Maximum files"), "20000");
+  await user.type(screen.getByLabelText("Maximum size (GiB)"), "2");
+  await user.click(screen.getByRole("button", { name: "Review release plan" }));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/actions/publish_release/prepare?max_objects=20000&max_bytes=${String(2 * 1024 ** 3)}`,
+      expect.anything(),
+    );
+  });
+});
+
 it("loads release details and archived six-category differences and persists a new check", async () => {
   let reports = [report];
   const fetch = vi.fn((path: string) => {

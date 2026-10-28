@@ -51,6 +51,19 @@
   display: grid;
   gap: var(--space);
 }
+.release-budget {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: calc(var(--space) * 3);
+  margin: 0;
+  border: 1px solid var(--rule);
+  padding: calc(var(--space) * 3);
+}
+.release-budget legend,
+.release-budget p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
 .release-list {
   display: grid;
   gap: calc(var(--space) * 2);

@@ -22,6 +22,16 @@ The resulting release appears in the list. Expand its tag to see the source vers
 
 For automation, use the existing controlled-action protocol with `POST /api/actions/publish_release/prepare` and parameters `dataset_id`, `version_id`, `tag`, `notes`; sign the returned plan at `POST /api/approvals/{plan_id}` and execute it at `POST /api/actions/{plan_id}/execute`. Approval and execution must carry the returned digest, and execution uses the plan's operation ID. Read releases with `GET /api/datasets/{dataset}/releases`, `GET /api/releases/{release}` and `GET /api/releases/{release}/files?offset=0&limit=50`.
 
+### Large releases and versions
+
+Controlled actions normally stop at 10,000 objects and 10 GiB per plan. A release or a version selected from evidence freezes a whole manifest, so `publish_release` and `create_version_from_selection` may request a larger budget explicitly. Without one, a plan above the default is refused with the impact it measured and how to request more. The budget is stored in the plan's `context` (`max_objects`, `max_bytes`), is covered by the plan digest and appears as **Authorized budget** on the approval sheet. Approval and execution check the frozen impact against it again.
+
+- Web: in **Publish a release**, fill **Maximum files** and/or **Maximum size (GiB)**. Empty fields keep the default.
+- HTTP: `POST /api/actions/publish_release/prepare?max_objects=20000&max_bytes=2147483648`; the body is unchanged. Other action types reject these query parameters.
+- CLI: `uv run datakeel release-plan prepare publish_release params.json --max-objects 20000`, then `release-plan approve PLAN_ID --digest DIGEST` and `release-plan execute PLAN_ID --digest DIGEST`. `params.json` holds the same JSON body as the HTTP request; `create_version_from_selection` works the same way.
+
+Requests are capped by `DATAKEEL_RELEASE_BUDGET_MAX_OBJECTS` (default 1,000,000) and `DATAKEEL_RELEASE_BUDGET_MAX_BYTES` (default 1 TiB). A request above the ceiling is rejected with `422` and names both settings. If an operator lowers the ceiling after preparation, a plan whose explicit budget no longer fits cannot be approved or executed; plans on the default budget are unaffected. Execution still reads and hashes every published object, so very large releases take correspondingly long.
+
 ## Export and verify independently
 
 Click **Export delivery package** in the release detail to download a gzip tar archive. The equivalent command writes an archive or a new directory:
