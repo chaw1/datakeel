@@ -271,7 +271,11 @@ def test_text_jsonl_preserves_crlf_and_carriage_return_character_positions(tmp_p
     export = TrainingExport(
         dataset_id="d", version_id="v", split_set_id="s", seed=1, format="text_jsonl", items=(item,)
     )
-    package = _write(export, tmp_path / "crlf-export")
+    try:
+        package = _write(export, tmp_path / "crlf-export")
+    except ValidationError as error:
+        message = "Valid CRLF source text and character offsets must export successfully"
+        raise AssertionError(message) from error
     row = json.loads((package / "train.jsonl").read_bytes())
     assert row["text"] == text
     assert row["text"][3:4] == "猫"

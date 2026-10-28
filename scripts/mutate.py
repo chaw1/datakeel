@@ -364,7 +364,14 @@ def main() -> None:
         ):
             msg = "Image baseline must pass before mutation testing"
             raise RuntimeError(msg)
-    results = [run_mutation(mutation) for mutation in MUTATIONS]
+    results: list[MutationResult] = []
+    for mutation in MUTATIONS:
+        result = run_mutation(mutation)
+        results.append(result)
+        Console().print(
+            f"{result.name}: {'KILLED' if result.killed else 'SURVIVED'} "
+            f"({result.passed}/{result.total} {result.runner} cases passed)"
+        )
     report = {
         "baseline": baseline.model_dump(mode="json"),
         "image_baselines": [result.model_dump(mode="json") for result in image_baselines],
@@ -373,11 +380,6 @@ def main() -> None:
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
-    for result in results:
-        Console().print(
-            f"{result.name}: {'KILLED' if result.killed else 'SURVIVED'} "
-            f"({result.passed}/{result.total} {result.runner} cases passed)"
-        )
     raise SystemExit(not all(result.killed for result in results))
 
 
