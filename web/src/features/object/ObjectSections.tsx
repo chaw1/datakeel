@@ -10,6 +10,7 @@ import { VersionWorkspace } from "../versions/VersionWorkspace";
 import { ObjectEvidence } from "./ObjectEvidence";
 import { ObjectFileQuality } from "./ObjectFileQuality";
 import { ObjectHistory } from "./ObjectHistory";
+import { ObjectMedia } from "./ObjectMedia";
 import { ObjectProfile } from "./ObjectProfile";
 import { ObjectRelations } from "./ObjectRelations";
 
@@ -54,7 +55,10 @@ export function ObjectSections({
       );
     case "quality":
       return target.kind === "file" ? (
-        <ObjectFileQuality data={data} />
+        <>
+          <ObjectMedia data={data} target={target} />
+          <ObjectFileQuality data={data} />
+        </>
       ) : (
         <Quality quality={data.quality} />
       );
@@ -78,39 +82,42 @@ export function ObjectSections({
       );
     case "facts":
       return (
-        <section
-          id="object-section-source-record"
-          className="object-source-evidence"
-        >
-          <h2>{t("objSourceRecord")}</h2>
-          <p>{data.metric?.definition.description ?? data.name}</p>
-          <ObjectProfile object={data.catalog ?? data.table?.table} />
-          <details>
-            <summary>{t("objProperties")}</summary>
-            <pre>
-              {JSON.stringify(
-                data.file ??
-                  data.version ??
-                  data.catalog ??
-                  data.metric?.definition ??
-                  data.action ??
-                  data.dataset,
-                null,
-                2,
-              )}
-            </pre>
-          </details>
-          {(target.kind === "table" || target.kind === "column") && (
-            <StandardsChecks
-              tableId={
-                target.kind === "table"
-                  ? target.id
-                  : target.id.split("/").slice(0, -1).join("/")
-              }
-              columnId={target.kind === "column" ? target.id : undefined}
-            />
-          )}
-        </section>
+        <>
+          <ObjectMedia data={data} target={target} />
+          <section
+            id="object-section-source-record"
+            className="object-source-evidence"
+          >
+            <h2>{t("objSourceRecord")}</h2>
+            <p>{data.metric?.definition.description ?? data.name}</p>
+            <ObjectProfile object={data.catalog ?? data.table?.table} />
+            <details>
+              <summary>{t("objProperties")}</summary>
+              <pre>
+                {JSON.stringify(
+                  data.file ??
+                    data.version ??
+                    data.catalog ??
+                    data.metric?.definition ??
+                    data.action ??
+                    data.dataset,
+                  null,
+                  2,
+                )}
+              </pre>
+            </details>
+            {(target.kind === "table" || target.kind === "column") && (
+              <StandardsChecks
+                tableId={
+                  target.kind === "table"
+                    ? target.id
+                    : target.id.split("/").slice(0, -1).join("/")
+                }
+                columnId={target.kind === "column" ? target.id : undefined}
+              />
+            )}
+          </section>
+        </>
       );
   }
 }

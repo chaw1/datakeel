@@ -57,6 +57,9 @@ export const workspaceEn = {
   datasetQualityCount:
     "{count} {count, plural, one {dataset} other {datasets}} below 60",
   runDetailsTitle: "Pipeline details",
+  partiallyCompleted: "Partially completed: some recordings failed",
+  failedRecordings: "Failed recordings",
+  partiallyCompletedShort: "partial",
   localRuntime: "Local runtime",
   workingCount: "{count} pending",
 };

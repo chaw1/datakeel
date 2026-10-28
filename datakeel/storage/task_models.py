@@ -3,6 +3,9 @@
 
 """Immutable task query responses shared by HTTP and worker callers."""
 
+from pydantic import Field
+
+from datakeel.core.media_models import MediaFailure
 from datakeel.core.models import Record
 
 
@@ -16,7 +19,11 @@ class ShardView(Record):
 
 
 class TaskView(Record):
-    """Persisted task state and derived completion progress."""
+    """Persisted task state and derived completion progress.
+
+    ``failed_files`` lists recordings published with a processing failure, and
+    ``partial`` marks a completed task whose output includes such failures.
+    """
 
     id: str
     dataset_id: str
@@ -29,3 +36,5 @@ class TaskView(Record):
     created_at: float
     finished_at: float | None
     shards: list[ShardView]
+    failed_files: list[MediaFailure] = Field(default_factory=list[MediaFailure])
+    partial: bool = False

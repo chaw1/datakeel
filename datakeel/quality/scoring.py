@@ -10,7 +10,9 @@ from pathlib import PurePosixPath
 from typing import Any, cast
 
 from datakeel.core.errors import ValidationError
+from datakeel.core.media_models import MediaSummary
 from datakeel.core.models import FileItem
+from datakeel.quality.media import summarize_media
 from datakeel.quality.models import QualityConfig, QualityView
 from datakeel.quality.tabular import assess_tables, table_issues
 
@@ -137,10 +139,14 @@ def score_quality(
             details[dimension]["tabular_rule"] = (
                 "fraction of source rows affected by recorded rules"
             )
+    media = summarize_media(files)
+    if media is not None:
+        _apply_media(media, files, resolved, raw, details)
     result = _summarize(raw, details, resolved, annotations, count)
     return result.model_copy(
         update={
             "tabular": tabular if tabular.files else None,
+            "media": media,
             "issues": [*result.issues, *table_issues(tabular)],
         }
     )
@@ -315,6 +321,33 @@ def _distribution(files: list[FileItem], field: str) -> tuple[Counter[str], floa
     )
     coverage = sum(_observed(labels).values()) / len(files) if files else 0
     return labels, coverage
+
+
+def _apply_media(
+    media: MediaSummary,
+    files: list[FileItem],
+    resolved: QualityConfig,
+    raw: dict[str, float],
+    details: dict[str, Any],
+) -> None:
+    """Deduct measured recording signal issues and count near-duplicate recordings once."""
+    count = len(files)
+    complete_ids = {file.id for file in files if _complete(file, resolved)}
+    for key in ("completeness", "consistency"):
+        deduction = (
+            sum(
+                100 - file.dimensions[key]
+                for file in media.files
+                if key != "completeness" or file.file_id in complete_ids
+            )
+            / count
+        )
+        raw[key] = max(0.0, raw[key] - deduction)
+    duplicates = {file.file_id for file in media.files if file.dimensions["uniqueness"] < MAX_SCORE}
+    retained = {file.sha256 for file in files if file.sha256 and file.id not in duplicates}
+    raw["uniqueness"] = 100 * len(retained) / count
+    details["uniqueness"]["media_duplicate_files"] = sorted(duplicates)
+    details["completeness"]["media"] = media.model_dump(mode="json")
 
 
 def _summarize(

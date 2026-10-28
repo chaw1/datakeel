@@ -195,6 +195,17 @@
   font-family: var(--font-body);
   margin-top: calc(var(--space) * 1.5);
 }
+.warning-text,
+.task-failures {
+  color: var(--warn);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+  margin-top: calc(var(--space) * 1.5);
+  overflow-wrap: anywhere;
+}
+.task-failures {
+  padding-left: calc(var(--space) * 4);
+}
 .muted {
   color: var(--muted);
 }

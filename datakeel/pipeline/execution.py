@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from datakeel.core.errors import ExecutionError
+from datakeel.core.media_metadata import FAILURE_KEY
 from datakeel.core.models import FileItem
 from datakeel.operators import REGISTRY, OperatorResult
 from datakeel.pipeline.defaults import default_pipeline
@@ -39,11 +40,14 @@ def _execute_node(node: Node, selected: list[FileItem], output: Path) -> SlotFil
         return {
             "image": [file for file in selected if file.modality == "image"],
             "text": [file for file in selected if file.modality == "text"],
+            "audio": [file for file in selected if file.modality == "audio"],
+            "video": [file for file in selected if file.modality == "video"],
             "table": tables,
             "other": [
                 file
                 for file in selected
-                if file.modality not in {"image", "text"} and file.id not in table_ids
+                if file.modality not in {"image", "text", "audio", "video"}
+                and file.id not in table_ids
             ],
         }
     operator = REGISTRY[str(node.operator)]
@@ -62,6 +66,14 @@ def _observation(
         quality = {
             "issues": [{"code": "execution_failed", "severity": "critical", "message": str(error)}]
         }
+    failed = error is None and _every_recording_failed(output, quality)
+    if failed:
+        reasons = sorted({str(file.metadata[FAILURE_KEY].get("reason", "")) for file in output})
+        message = "Every recording failed: " + "; ".join(reasons)
+        quality = {
+            **quality,
+            "issues": [{"code": "media_failed", "severity": "critical", "message": message}],
+        }
     return PipelineObservation(
         node_id=node.id,
         operator=str(node.operator),
@@ -75,7 +87,18 @@ def _observation(
         output_count=len(output),
         outputs=[file.id for file in output],
         quality=quality,
-        run_state="FAILED" if error else "COMPLETED",
+        run_state="FAILED" if error or failed else "COMPLETED",
+    )
+
+
+def _every_recording_failed(output: list[FileItem], quality: dict[str, Any]) -> bool:
+    """Report a media node that failed recordings itself and has no healthy output.
+
+    Isolated media operators pass failed recordings on instead of raising, so a node
+    whose every recording failed is audited as failed while the task decides the rest.
+    """
+    return bool(quality.get("failed_files")) and all(
+        isinstance(file.metadata.get(FAILURE_KEY), dict) for file in output
     )
 
 
