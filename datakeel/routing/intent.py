@@ -8,6 +8,7 @@ import re
 from datakeel.actions.registry import action_definitions
 from datakeel.core.routing_models import RouteCandidate, RouteDecision
 from datakeel.routing.concepts import (
+    concept_excluded,
     concept_match,
     concept_terms,
     inflected_position,
@@ -157,7 +158,11 @@ def classify_offline(
     for workflow in workflows:
         scope = workflow_scope(normalized, workflow, workflows)
         scoped = scope.text
-        if workflow.id not in scores or _excluded(scoped, workflow):
+        if (
+            workflow.id not in scores
+            or _excluded(scoped, workflow)
+            or concept_excluded(scoped, workflow.triggers)
+        ):
             continue
         triggers = workflow.triggers
         groups = triggers.classification_groups
@@ -214,6 +219,7 @@ def classified_route(
         inflected_position(scoped, term) is not None
         for term in verification_terms(workflow.triggers)
     )
+    verified = verified and not concept_excluded(scoped, workflow.triggers)
     if not verified:
         return decision.model_copy(
             update={

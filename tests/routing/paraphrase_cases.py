@@ -44,7 +44,25 @@ PICK_AND_DISPOSE_REQUESTS = [
     ("Pick out the failing samples and dispose of them.", "low-quality-cleanup"),
     ("低分样本全部剔除, 走完审批再复查。", "low-quality-cleanup"),
 ]
-POSITIVE_REQUESTS = [*PHRASAL_REQUESTS, *COLLOQUIAL_REQUESTS, *PICK_AND_DISPOSE_REQUESTS]
+# Category 3b: colloquial disposal verbs and quality descriptors, grouped by verb pattern.
+COLLOQUIAL_DISPOSAL_REQUESTS = [
+    ("把低质的样本弄掉。", "low-quality-cleanup"),
+    ("把那些烂样本干掉。", "low-quality-cleanup"),
+    ("把分数太低的图片都清走。", "low-quality-cleanup"),
+    ("把没用的废片扔出去。", "low-quality-cleanup"),
+    ("把模糊的图一键清了。", "low-quality-cleanup"),
+    ("把不及格的文件搞干净。", "low-quality-cleanup"),
+    ("把损坏的样本都处置掉。", "low-quality-cleanup"),
+    ("Nuke the blurry images from this dataset.", "low-quality-cleanup"),
+    ("Bin the useless files.", "low-quality-cleanup"),
+    ("Chuck out the damaged samples.", "low-quality-cleanup"),
+]
+POSITIVE_REQUESTS = [
+    *PHRASAL_REQUESTS,
+    *COLLOQUIAL_REQUESTS,
+    *PICK_AND_DISPOSE_REQUESTS,
+    *COLLOQUIAL_DISPOSAL_REQUESTS,
+]
 
 # Category 4: questions about a workflow itself, many of which match every keyword.
 WORKFLOW_QUESTIONS = [
@@ -66,6 +84,17 @@ WORKFLOW_QUESTIONS = [
     "Can the metric definition change be rolled back?",
     "Should I run a health check on this dataset?",
     "Could you tell me how long the low-quality file cleanup takes?",
+]
+# Read-only or postponed requests worded with the same colloquial vocabulary.
+READ_ONLY_OR_POSTPONED = [
+    "先别处理低质样本, 只看看有多少。",
+    "只看看那些烂样本, 别删。",
+    "低分的条目先不处理, 列出来就行。",
+    "把烂样本挑出来给我看看就行。",
+    "Just show me the junk samples, don't touch them.",
+    "Hold off on getting rid of the bad files for now.",
+    "Just list the blurry images for now.",
+    "零售额口径先不改, 只看看现在的定义。",
 ]
 NEAR_MISSES = [
     "Show me the junk samples in this dataset.",
@@ -91,4 +120,8 @@ NEAR_MISSES = [
     "Count the defective records in this dataset.",
     "Rename the retail revenue metric to Net Retail.",
 ]
-NEGATIVE_MESSAGES = [*WORKFLOW_QUESTIONS, *NEAR_MISSES]
+NEGATIVE_MESSAGES = [
+    *WORKFLOW_QUESTIONS,
+    *NEAR_MISSES,
+    *READ_ONLY_OR_POSTPONED,
+]

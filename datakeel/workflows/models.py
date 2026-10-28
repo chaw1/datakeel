@@ -28,13 +28,17 @@ class WorkflowConcepts(BoundaryModel):
 
     ``outcomes`` lists what a request must also ask for when the workflow bundles more than
     one action, so that a request for the first action alone stays a single step.
+    ``exclusions`` lists wording that puts a request outside the workflow (for example one
+    selected item for a bulk cleanup); it blocks selection and verification but keeps the
+    rule score, so the classifier is still consulted and can abstain.
     """
 
     entities: list[str] = Field(default_factory=list[str])
     actions: list[str] = Field(default_factory=list[str])
     outcomes: list[str] = Field(default_factory=list[str])
+    exclusions: list[str] = Field(default_factory=list[str])
 
-    @field_validator("entities", "actions", "outcomes")
+    @field_validator("entities", "actions", "outcomes", "exclusions")
     @classmethod
     def validate_alternatives(cls, terms: list[str]) -> list[str]:
         """Require every declared phrasing to contain visible text."""

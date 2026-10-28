@@ -63,8 +63,17 @@ def concept_match(text: str, triggers: WorkflowTriggers) -> bool:
     )
 
 
+def concept_excluded(text: str, triggers: WorkflowTriggers) -> bool:
+    """Return whether the request uses wording the workflow declares out of its scope."""
+    concepts = triggers.concepts
+    if concepts is None:
+        return False
+    return any(inflected_position(text, term) is not None for term in concepts.exclusions)
+
+
 def concept_terms(
-    triggers: WorkflowTriggers, *roles: Literal["entities", "actions", "outcomes"]
+    triggers: WorkflowTriggers,
+    *roles: Literal["entities", "actions", "outcomes", "exclusions"],
 ) -> list[str]:
     """List the declared phrasings of the given roles (entities and actions by default)."""
     concepts = triggers.concepts

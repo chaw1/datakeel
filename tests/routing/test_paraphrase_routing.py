@@ -198,6 +198,27 @@ def test_concept_phrases_match_inflected_verbs(text: str, term: str) -> None:
     assert inflected_position(text, term) is not None
 
 
+_SELECTED_ITEMS = [
+    "Delete selected empty files",
+    "Delete the selected junk file.",
+    "Remove this single bad file.",
+    "删掉选中的那个垃圾文件",
+    "把选中的烂图干掉",
+]
+
+
+def test_declared_exclusions_keep_the_classifier_but_block_selection_and_verification() -> None:
+    """One selected item is outside the bulk cleanup, whoever chooses the workflow."""
+    workflows = list_workflows()
+    for message in _SELECTED_ITEMS:
+        decision = keyword_route(message, workflows)
+        assert decision.branch == "classifier", message
+        assert classify_offline(message, decision.candidates, workflows) is None, message
+        chosen = _route(message, "low-quality-cleanup")
+        assert chosen.workflow_id is None, message
+        assert chosen.verification_passed is False
+
+
 def test_concepts_are_optional_and_reject_blank_phrasings() -> None:
     """Older contracts load without concepts; declared alternatives must contain text."""
     legacy = WorkflowTriggers(keywords=[["shared"]])
@@ -205,6 +226,8 @@ def test_concepts_are_optional_and_reject_blank_phrasings() -> None:
     assert "concepts" not in legacy.model_dump()
     with pytest.raises(ValidationError):
         WorkflowConcepts(entities=[" "])
+    with pytest.raises(ValidationError):
+        WorkflowConcepts(exclusions=[""])
     for workflow in list_workflows():
         concepts = workflow.triggers.concepts
         assert concepts is not None

@@ -1,8 +1,9 @@
 id: low-quality-cleanup
 name: 低质样本清理 / Low-quality sample cleanup
-description: Clean low-quality data out of a dataset. Find files whose quality score is at or
-  below a limit, quarantine them, delete them after approval, and recheck quality. Changes
-  data.
+description: Clean low-quality data out of a dataset, however colloquially the disposal is
+  worded. Find files whose quality score is at or below a limit, quarantine them, delete them
+  after approval, and recheck quality. Changes data. Not for only listing, counting or viewing
+  low-quality items, for one selected file, or when told to hold off.
 inputs:
   dataset_id:
     type: string
@@ -16,9 +17,21 @@ triggers:
     entities:
     - 低质|低质量|低分|不合格|劣质|质量差|质量不好|质量不行|质量太差|不达标|垃圾|脏数据|坏样本|坏文件|废样本|废数据|残次|次品|噪声|噪音|有问题的样本|有问题的文件
     - low-quality|low quality|poor-quality|poor quality|poor|low-scoring|low scoring|low-score|substandard|sub-standard|subpar|sub-par|defective|bad|junk|garbage|trash|noisy|corrupt|corrupted|broken|unusable|below-threshold|below threshold|failing|quality below
+    - 烂样本|烂数据|烂文件|烂图|烂片|烂的|稀烂|差样本|差的样本|差文件|差的文件|差数据|很差的|太差的|比较差的
+    - 分数低|分低|评分低|得分低|打分低|分数太低|分太低|质量低|质量偏低|质量较低|质量太低|低于阈值|低于门槛|不及格|没达标|未达标|不过关|没过关
+    - 没用的|无用的|没价值|无效样本|无效数据|无效文件|废片|废图|废文件|残缺|损坏|坏掉的|坏图|模糊的|糊的|脏样本|脏文件|脏的
+    - crappy|crummy|rubbish|useless|worthless|blurry|damaged|invalid|low-grade|low grade|second-rate|flawed|faulty|dirty|lousy|bogus
     actions:
     - 清理|清掉|清一下|清除|清走|清干净|清出去|清洗|处理掉|去掉|去除|剔除|剔掉|筛掉|筛除|滤掉|过滤掉|扔掉|丢掉|干掉|删掉|删光|删干净|淘汰|收拾|拿掉|挑掉
     - cleanup|clean up|clean out|clean|clear out|clear away|get rid of|weed out|filter out|throw out|throw away|toss|toss out|purge|prune|scrub|cull|tidy up|dispose of|dispose|strip out|root out|eliminate|discard|ditch|drop
+    - 弄掉|搞掉|整掉|砍掉|撤掉|除掉|抹掉|处置掉|收拾掉|踢掉|甩掉|刷掉|裁掉|灭掉|毙掉|删除掉|清理掉|清除掉|淘汰掉
+    - 弄走|搬走|挪走|移走|撤走|拿走|清退|剔出去|踢出去|丢出去|扔出去|弄出去|请出去
+    - 弄干净|搞干净|整干净|处理干净|收拾干净|扔光|清光|删空|清空
+    - 处理一下|处置|报废|作废|销毁|废弃|一键清
+    - nuke|zap|trash|bin|chuck|chuck out|dump|axe|wipe|wipe out|clear|kill|knock out|cut out|sweep out|sweep away|flush out|take out|kick out|do away with|scrap
+    exclusions:
+    - 选中|选定|勾选|单个|单独一个|这一个|那一个|这一张|那一张
+    - selected|chosen|single|this one|that one|this file|that file|this image|that image|one file
   keywords:
   - - 低质|低质量|low-quality|low quality|poor-quality|poor quality
     - 样本|文件|sample|samples|file|files
@@ -46,7 +59,8 @@ triggers:
   - do not
   - don't
   - 不要
-  - 选中|选定|selected|chosen|单个|single
+  - 只看看|只看一下|只是看看|看看就行|看看就好|只列出|只列一下|只要列出|只统计|只数一下|先不处理|暂不处理|不用处理|别处理|别动|不用删|别删|先不删|别清|先不清|不急着清
+  - just look|just take a look|only look|just show|only show|just list|only list|just count|only count|leave them|hold off|no need to|don't touch|do not touch|not yet
   - 解释
   - 说明一下
   - 是什么

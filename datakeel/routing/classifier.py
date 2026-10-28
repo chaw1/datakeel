@@ -67,6 +67,7 @@ def _candidate(workflow: WorkflowDefinition) -> dict[str, object]:
         "acts_on": concept_terms(triggers, "entities"),
         "request_verbs": concept_terms(triggers, "actions") or triggers.classification_keywords,
         "must_also_ask_for": concept_terms(triggers, "outcomes"),
+        "not_for": concept_terms(triggers, "exclusions"),
     }
 
 

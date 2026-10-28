@@ -2,7 +2,9 @@ id: metric-change
 name: 指标口径变更 / Metric definition change
 description: Change how a metric is calculated and compare the answers. Read the current
   definition and answer, inspect impact, apply a reversible definition override, then ask
-  the same question again and compare. Changes the metric definition.
+  the same question again and compare how much the number changed. Changes the metric
+  definition. Not for renaming, describing or only reading a metric, or for a formula edit
+  that is not asked again.
 inputs:
   metric_id:
     type: string
@@ -71,6 +73,7 @@ triggers:
   - 只查看
   - 介绍|说明|如何|怎么|how to|how do
   - 描述|释义|description|documentation|负责人|owner|名称|名字|name|label
+  - 只看看|只看一下|只是看看|看看就行|先不改|暂不改|不用改|别动|just look|only look|just show|only show|leave it as is|keep it as is|no need to change|hold off
   - 什么|哪些|为什么|是否|需不需要|why|what is|what are|what was|what were|what does|what did|what will
     |what would|what happens|how many|how much|how long|how often|how is|how are|how was|how does
     |how did|how will|how would|how to|how do|does it|does the|does this|does that
