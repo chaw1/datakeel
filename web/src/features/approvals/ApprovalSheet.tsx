@@ -5,6 +5,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { bytes, date } from "../../lib/format";
 import { useClock } from "../../lib/useClock";
 import { ActionReceipt } from "../actions/ActionReceipt";
+import { CustomCodeApproval } from "../custom-operators/CustomCodeApproval";
 import { KGApprovalEstimate } from "../kg/KGApprovalEstimate";
 
 import { approvalActions } from "./approvalActions";
@@ -156,6 +157,7 @@ export function ApprovalSheet(props: ApprovalProps) {
           </dd>
         </div>
       </dl>
+      <CustomCodeApproval plan={plan} />
       <KGApprovalEstimate plan={plan} />
       <ApprovalObjects plan={plan} />
       <p className="approval-footnote">

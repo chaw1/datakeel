@@ -10,11 +10,13 @@ import time
 from datakeel.actions.worker import reconcile_runs, start_task_run
 from datakeel.core.errors import ExecutionError
 from datakeel.core.evidence_execution import EvidenceExecutionContext
+from datakeel.core.logging import warn_unsafe_subprocess
 from datakeel.evidence.execution import EvidenceExecution
 from datakeel.pipeline import Pipeline, default_pipeline, run_pipeline
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.datasets import materialize_files, persist_files
 from datakeel.storage.evidence_import import source_manifest
+from datakeel.worker.custom_runner import CustomExecution
 from datakeel.worker.heartbeat import pulse as _pulse
 from datakeel.worker.kg_runner import execute_kg
 from datakeel.worker.observations import Observations
@@ -50,7 +52,7 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
             output_dir,
             lease.pipeline,
             observations.observe,
-            operator_executor=evidence.execute_node,
+            operator_executor=CustomExecution(queue.db, lease, evidence).execute_node,
         )
         persisted = persist_files(outputs)
         return queue.finish(lease, persisted, observations.events, evidence=tuple(evidence.pending))
@@ -76,6 +78,7 @@ def run_worker(
     db: Database, *, once: bool = False, queue_name: str = "cpu", poll: float = 0.25
 ) -> None:
     """Drain or continuously poll one durable queue, relaying terminal events."""
+    warn_unsafe_subprocess()
     queue = DatabaseQueue(db)
     while True:
         queue.reap()

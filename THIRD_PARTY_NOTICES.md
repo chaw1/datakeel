@@ -30,6 +30,15 @@ Upstream license texts remain in
 installed distributions; frontend texts are in `web/public/THIRD-PARTY-LICENSES.txt`.
 Rust license texts and notices are retained in the extension wheel.
 
+Sandbox Python dependencies are fixed in `sandbox/Dockerfile` and checked against
+the same locked versions and license evidence. Upstream wheel license files are retained.
+The official Python slim base is separately pinned; its OS distribution licensing
+and notices remain in the image. This inventory does not relicense base OS packages.
+The interpreter, installed wheels (including base tooling), and every Debian package have
+versioned copyright-file evidence in
+[the base inventory](sandbox/BASE_IMAGE_INVENTORY.json).
+Debian license declarations are retained separately from the Python allowlist.
+
 | Ecosystem | Package | Version | SPDX license | Evidence |
 | --- | --- | --- | --- | --- |
 | python | aiofile | 3.12.3 | Apache-2.0 | installed METADATA License-Expression |
@@ -171,5 +180,9 @@ Rust license texts and notices are retained in the extension wheel.
 | rust | syn | 3.0.9 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | target-lexicon | 0.13.5 | Apache-2.0 WITH LLVM-exception | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| sandbox-python | cpython | 3.12.15 | PSF-2.0 | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/LICENSE.txt |
+| sandbox-python | numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/numpy-2.5.4.dist-info/licenses/LICENSE.txt |
+| sandbox-python | pillow | 13.0.0 | MIT-CMU | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/pillow-13.0.0.dist-info/licenses/LICENSE |
+| sandbox-python | pip | 25.0.1 | MIT | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/pip-25.0.1.dist-info/LICENSE.txt |
 
 Policy findings: 0.

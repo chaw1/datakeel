@@ -45,3 +45,12 @@ def configure_logging() -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(JsonFormatter())
     logging.basicConfig(level=get_settings().log_level, handlers=[handler], force=True)
+
+
+def warn_unsafe_subprocess() -> None:
+    """Disclose an unsafe development override when an application role starts."""
+    if get_settings().sandbox_allow_subprocess:
+        logging.getLogger(__name__).warning(
+            "UNSAFE subprocess backend enabled: trusted local development only; "
+            "platform-submitted code requires the container backend"
+        )

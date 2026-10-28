@@ -37,6 +37,8 @@ jobs:
       - run: uv sync --locked
       - run: npm ci
         working-directory: web
+      - name: Real container sandbox security tests (runtime required)
+        run: uv run pytest tests/operators/custom_sandbox/test_security.py -q
       - name: Same gates as local development
         env:
           DATAKEEL_TEST_DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgresql+pg8000://datakeel@127.0.0.1:5432/datakeel' || '' }}

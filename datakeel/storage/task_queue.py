@@ -15,6 +15,7 @@ from datakeel.core.kg_execution import KGCompletion
 from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
 from datakeel.pipeline import Pipeline, validate_pipeline
 from datakeel.pipeline.sharding import validate_shards
+from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.database import Database, DatasetRow, OutboxRow, ShardRow, TaskRow, VersionRow
 from datakeel.storage.events import append_event
 from datakeel.storage.evidence_store import record_extraction_in_session
@@ -95,6 +96,7 @@ class DatabaseQueue:
                     msg = "Idempotency key already used with different parameters"
                     raise ConflictError(msg)
                 return existing.id
+            _validate_registered_pipeline(session, pipeline)
             source_files = dataset.files
             if version_id:
                 version = session.get(VersionRow, version_id)
@@ -352,3 +354,7 @@ def _source_version(session: Session, task: TaskRow) -> str:
         msg = "Task source manifest version is missing"
         raise NotFoundError(msg)
     return version.id
+
+
+def _validate_registered_pipeline(session: Session, value: dict[str, Any] | None) -> None:
+    validate_custom_pipeline(session, Pipeline.model_validate(value) if value else None)

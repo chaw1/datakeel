@@ -19,6 +19,8 @@ from datakeel.actions.parameters import (
 from datakeel.actions.policy import authorize, digest, plan_digest
 from datakeel.actions.references import parameter_refs
 from datakeel.actions.registry import action_definition
+from datakeel.core.custom_operators import SubmitCustomOperatorParams
+from datakeel.core.custom_review import prepare_submission
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import BoundaryModel, JsonDocument, new_id, utcnow
 from datakeel.ontology.models import FrozenManifest
@@ -30,12 +32,15 @@ from datakeel.storage.action_snapshot import snapshot_digest
 from datakeel.storage.action_store import audit
 from datakeel.storage.action_targets import current_manifest
 from datakeel.storage.catalog_action_state import catalog_impact, prepare_catalog_params
+from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
 
 
 def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
+    if isinstance(params, SubmitCustomOperatorParams):
+        return 1
     count = catalog_impact(session, params, manifest)
     return (
         max(count, len(params.assertion_ids))
@@ -67,11 +72,14 @@ def verify_target_state(session: Session, plan: ActionPlan) -> None:
 
 def _prepare_params(session: Session, action_type: str, params: JsonDocument) -> BoundaryModel:
     parsed = prepare_catalog_params(session, parse_params(action_type, params))
+    if isinstance(parsed, SubmitCustomOperatorParams):
+        parsed = prepare_submission(parsed)
     if isinstance(parsed, RunKGExtractionParams):
         parsed = prepare_kg_params(session, parsed)
     if isinstance(parsed, PipelineParams) and parsed.pipeline is None:
         parsed = parsed.model_copy(update={"pipeline": default_pipeline()})
     if isinstance(parsed, PipelineParams):
+        validate_custom_pipeline(session, parsed.pipeline)
         validate_shards(parsed.pipeline, parsed.shards)
     if isinstance(parsed, ExportParams):
         destination = parsed.destination or f"{new_id()}.{parsed.format}.json"
@@ -118,7 +126,11 @@ def _new_plan(
             "external": external,
             "impact": ActionImpact(
                 object_count=_impact_count(session, parsed, manifest),
-                total_bytes=manifest.total_bytes,
+                total_bytes=(
+                    len(parsed.code.encode())
+                    if isinstance(parsed, SubmitCustomOperatorParams)
+                    else manifest.total_bytes
+                ),
                 external=external,
                 kg_estimate=kg.estimate if kg else None,
                 transcription_estimate=kg.transcription_estimate if kg else None,

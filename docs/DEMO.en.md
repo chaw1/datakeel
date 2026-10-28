@@ -14,7 +14,7 @@ Open <http://127.0.0.1:8773/> and wait for the initialization tasks to finish. T
 
 ## If you already have local configuration
 
-If you previously set `DATAKEEL_*` environment variables, replace the one-line launcher with this isolated launch. It clears inherited database, storage, and model settings and creates a fresh temporary directory for the tour.
+If you previously set `DATAKEEL_*` environment variables, replace the one-line launcher with this isolated launch. It clears inherited database, storage, and model settings and creates a fresh temporary directory for the tour. Only the explicitly configured sandbox image and runtime endpoint are retained; execution is forced to `container` and the development subprocess backend is disabled. For section 11, build the image and export its digest before running this launcher.
 
 ```bash
 uv run python - <<'PY'
@@ -22,10 +22,13 @@ import os
 import subprocess
 import tempfile
 
+sandbox_keys = {"DATAKEEL_SANDBOX_IMAGE", "DATAKEEL_SANDBOX_DOCKER_HOST"}
 environment = {
     key: value for key, value in os.environ.items()
-    if not key.startswith("DATAKEEL_")
+    if not key.startswith("DATAKEEL_") or key in sandbox_keys
 }
+environment["DATAKEEL_SANDBOX_BACKEND"] = "container"
+environment["DATAKEEL_SANDBOX_ALLOW_SUBPROCESS"] = "false"
 environment["DATAKEEL_HOME"] = tempfile.mkdtemp(prefix="datakeel-tour-")
 environment["DATAKEEL_BASE_URL"] = "http://127.0.0.1:8773"
 subprocess.run(
@@ -171,6 +174,30 @@ Close the drawer, select that relation and click **Reject selected**. Switch to 
 ![Rejected graph edge remains visible with its independent verification state](images/demo/20-kg-rejected.jpg)
 
 See the [knowledge graph reference](KG.md) for schema configuration, offline evaluation and consent before external extraction.
+
+## 11. Write, review and run a sandboxed operator (3 minutes)
+
+This section additionally needs a Docker-compatible runtime installed by you. Follow [container setup](CUSTOM_OPERATORS.md#container-setup--容器配置), build the image, set `DATAKEEL_SANDBOX_IMAGE`, and start this fresh demo with the same environment. Only generated text is used; no model or external dataset is needed.
+
+In a second terminal, create an independent three-line fixture:
+
+```bash
+curl --fail http://127.0.0.1:8773/api/datasets \
+  -H 'Content-Type: application/json' --data-binary @- <<'JSON'
+{
+  "name": "Custom operator demo",
+  "files": [
+    {"filename": "lines.txt", "content_base64": "a2VlcCBmaXJzdApkaXNjYXJkIHNlY29uZAprZWVwIHRoaXJkCg=="}
+  ]
+}
+JSON
+```
+
+Read [filter_lines.py](../examples/custom_operators/filter_lines.py) and copy the entire file. Refresh the browser and open **Custom operators**. Enter `filter_lines`, select **Text**, paste the complete source, and **Submit for code review**. The sheet shows all source lines, SHA-256 and static findings. Review them and choose **Approve and register custom operator code**. An absence of findings does not establish safety; containment still comes from the container.
+
+Under **Approved versions**, select `Custom operator demo`, enter `{"contains":"keep"}` and choose **Run in pipeline**. Wait for the worker, then refresh. Check the successful sandbox record, exit reason and actual image digest. In **Data library**, open this dataset's **Relations** and inspect the custom operator lineage event. Its `code_hash` must equal the complete reviewed hash; inspect the parameter digest and resource usage too. The generated `filtered-0.txt` contains only `keep first` and `keep third`.
+
+Add a comment to the source and submit it again. Check that the new sheet has another hash while the original approved version remains. The changed code needs another approval before it can run. A second example, [tag_images.py](../examples/custom_operators/tag_images.py), labels generated images with `{"label":"generated-fixture"}`. See the [custom operator reference](CUSTOM_OPERATORS.md) for contracts, CLI, validation and threat-model limits. This section is separate from the existing screenshot replay script below.
 
 ## Replay the tour and generate screenshots
 

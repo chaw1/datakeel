@@ -16,12 +16,15 @@ from datakeel.actions.parameters import (
     PipelineParams,
     parse_params,
 )
+from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.governance import compliance_score, validate_metadata
 from datakeel.pipeline.sharding import validate_shards
 from datakeel.storage.action_selection import change_file_state, selected_files, single_dataset
 from datakeel.storage.catalog_actions import execute_catalog_action
+from datakeel.storage.custom_store import approve_custom_operator
+from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.database import DatasetRow, MetadataChangeRow, ShardRow, TaskRow, VersionRow
 from datakeel.storage.datasets import latest_files
 from datakeel.storage.evidence_actions import decide_action
@@ -60,6 +63,7 @@ def _metadata(session: Session, params: MetadataParams) -> OperationResult:
 
 def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> OperationResult:
     validate_shards(params.pipeline, params.shards)
+    validate_custom_pipeline(session, params.pipeline)
     files = selected_files(session, plan)
     task = TaskRow(
         dataset_id=params.dataset_id,
@@ -85,6 +89,8 @@ def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> Ope
 def execute_business(session: Session, plan: ActionPlan) -> OperationResult:
     """Mutate a validated plan without opening or committing another transaction."""
     params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
+    if isinstance(params, SubmitCustomOperatorParams):
+        return approve_custom_operator(session, plan, params)
     if isinstance(params, CatalogActionParams):
         return execute_catalog_action(session, plan, params)
     if isinstance(params, DecideAssertionsParams):

@@ -5,6 +5,7 @@ import { approvalsMetricEn } from "./approvalsMetricEn";
 import { askEn } from "./askEn";
 import { catalogEn } from "./catalogEn";
 import { commandEn } from "./commandEn";
+import { customOperatorEn } from "./customOperatorEn";
 import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
 import { kgEn } from "./kgEn";
@@ -15,6 +16,7 @@ import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  ...customOperatorEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,

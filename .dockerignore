@@ -1,0 +1,6 @@
+**
+!sandbox/
+!sandbox/Dockerfile
+!datakeel/
+!datakeel/sandbox_entry.py
+!datakeel/sandbox_worker.py

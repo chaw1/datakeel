@@ -103,6 +103,9 @@ ignore_imports =
     datakeel.ontology.tooling -> datakeel.storage.database
     datakeel.ontology.tooling -> datakeel.storage.tool_invocations
 # Action facades call typed transactional storage services; schemas reuse ontology and DAG models.
+    datakeel.actions.custom_runs -> datakeel.pipeline.models
+    datakeel.actions.custom_runs -> datakeel.storage.custom_store
+    datakeel.actions.custom_runs -> datakeel.storage.database
     datakeel.actions.approvals -> datakeel.storage.action_approvals
     datakeel.actions.execution -> datakeel.storage.action_execution
     datakeel.actions.models -> datakeel.ontology.models
@@ -322,6 +325,10 @@ ignore_imports =
 # Image evaluation persists the same product identities; offline goldens drain real worker tasks.
     datakeel.storage.kg_image_eval_store -> datakeel.kg.identity
     datakeel.harness.image_kg_cases -> datakeel.worker.runner
+
+# Approved custom-source publication reuses controlled plans and validates durable DAG submissions.
+    datakeel.storage.custom_store -> datakeel.actions.models
+    datakeel.storage.custom_validation -> datakeel.pipeline.models
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

@@ -95,7 +95,7 @@ class FrontendLock(ManifestModel):
 class LicensePackage(BoundaryModel):
     """Describe one shipped dependency and the metadata supporting its SPDX identity."""
 
-    ecosystem: Literal["python", "frontend", "rust"]
+    ecosystem: Literal["python", "frontend", "rust", "sandbox-python"]
     name: str
     version: str
     license: str
@@ -105,7 +105,7 @@ class LicensePackage(BoundaryModel):
 class LicenseFinding(BoundaryModel):
     """Explain one dependency that fails the declared license policy."""
 
-    ecosystem: Literal["python", "frontend", "rust"]
+    ecosystem: Literal["python", "frontend", "rust", "sandbox-python"]
     name: str
     version: str
     license: str

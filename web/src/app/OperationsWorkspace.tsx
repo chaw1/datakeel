@@ -3,6 +3,7 @@ import { AgentPage } from "../pages/AgentPage";
 import { ApprovalsPage } from "../pages/ApprovalsPage";
 import { AskPage } from "../pages/AskPage";
 import { CatalogPage } from "../pages/CatalogPage";
+import { CustomOperatorsPage } from "../pages/CustomOperatorsPage";
 import { EvidencePage } from "../pages/EvidencePage";
 import { KnowledgeGraphPage } from "../pages/KnowledgeGraphPage";
 import { MemoryPage } from "../pages/MemoryPage";
@@ -36,6 +37,14 @@ export function OperationsWorkspace({
       <KnowledgeGraphPage
         datasets={datasets}
         datasetId={datasetId}
+        onDataChanged={onDataChanged}
+        onOpenReceipt={onOpenReceipt}
+      />
+    );
+  if (page === "custom-operators")
+    return (
+      <CustomOperatorsPage
+        datasets={datasets}
         onDataChanged={onDataChanged}
         onOpenReceipt={onOpenReceipt}
       />

@@ -455,3 +455,7 @@ Import screenshots, scans or diagrams, then select an image transcription profil
 Local OCR requires user-installed third-party packages: `pip install rapidocr==3.10.0 onnxruntime`. They are not Datakeel dependencies and are outside its license audit. Some OpenCV prebuilt packages (including macOS wheels) bundle GPL codecs such as x264/x265; ONNX Runtime includes MPL-2.0 Eigen. Assess these licenses yourself before redistribution. Offline replay needs none of these packages.
 
 See [table and time-series profiling](docs/TIMESERIES.md) for a one-command generated sensor week, deterministic detection rules and controlled catalog profiles.
+
+## Custom operators
+
+Submit a Python file in **Custom operators**, review its complete source and static findings, approve its SHA-256 version, then run it in a container sandbox through the normal pipeline. The container runtime is user-installed; submitted code never falls back to unsafe local execution. See the [bilingual operator and security reference](docs/CUSTOM_OPERATORS.md) and [guided example](docs/DEMO.en.md#11-write-review-and-run-a-sandboxed-operator-3-minutes).

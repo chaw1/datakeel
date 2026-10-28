@@ -5,6 +5,7 @@
 
 from typing import Any
 
+from datakeel.core.custom_operators import custom_reference
 from datakeel.core.errors import ValidationError
 from datakeel.operators import REGISTRY
 from datakeel.pipeline.models import ConditionParams, Node, Pipeline
@@ -21,6 +22,9 @@ def reference(value: str) -> tuple[str, str]:
 
 def _slots(node: Node) -> tuple[dict[str, str], dict[str, str]]:
     if node.kind == "operator":
+        if node.operator is not None and node.operator.startswith("custom."):
+            custom_reference(node.operator)
+            return {"files": "files.any"}, {"files": "files.any"}
         if node.operator not in REGISTRY:
             msg = f"Unknown operator: {node.operator}"
             raise ValidationError(msg)

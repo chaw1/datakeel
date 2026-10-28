@@ -11,7 +11,14 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
-from datakeel.cli import kg_evaluation, kg_image_evaluation, routing, timeseries_demo, workflow
+from datakeel.cli import (
+    custom_operators,
+    kg_evaluation,
+    kg_image_evaluation,
+    routing,
+    timeseries_demo,
+    workflow,
+)
 from datakeel.cli.ask import ask
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
@@ -77,7 +84,7 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
-    for module in (workflow, routing, kg_evaluation, timeseries_demo):
+    for module in (workflow, routing, kg_evaluation, timeseries_demo, custom_operators):
         module.register_parser(commands)
     return result
 
@@ -146,6 +153,8 @@ def _database_command(db: Database, args: argparse.Namespace) -> None:
         ask(db, args.question, args.reference_instant)
     elif args.command == "timeseries-demo":
         timeseries_demo.demo(db, args.output)
+    elif args.command == "custom-operator":
+        custom_operators.dispatch(db, args)
 
 
 def _evaluation_command(db: Database, args: argparse.Namespace) -> None:

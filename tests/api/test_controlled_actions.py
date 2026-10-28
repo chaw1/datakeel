@@ -82,7 +82,7 @@ def test_ontology_endpoint_when_requested_exposes_valid_versioned_schemas(
     assert len(value["object_types"]) == 14
     assert len(value["link_types"]) == 9
     assert len(value["functions"]) == 15
-    assert len(value["actions"]) == 15
+    assert len(value["actions"]) == 16
     for item in value["object_types"]:
         Draft202012Validator.check_schema(item["properties"])
     for item in value["actions"]:

@@ -14,11 +14,20 @@ from datakeel.actions.catalog_parameters import (
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import parse_params
 from datakeel.core.catalog_identity import catalog_id
+from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 
 
 def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
     """Read typed action targets independently of legacy ObjectSet membership."""
+    if isinstance(params, SubmitCustomOperatorParams):
+        return [
+            AssetRef(
+                asset_type="custom_operator",
+                asset_id=f"custom.{params.name}",
+                version=params.code_hash,
+            )
+        ]
     if isinstance(params, ImportCatalogParams) and params.snapshot is not None:
         return [item.asset_ref for item in params.snapshot.objects]
     if isinstance(params, RestoreCatalogParams):

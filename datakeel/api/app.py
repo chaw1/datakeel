@@ -13,6 +13,7 @@ from datakeel.api.routes import (
     agent,
     ask,
     catalog,
+    custom_operators,
     datasets,
     evidence,
     governance,
@@ -26,6 +27,7 @@ from datakeel.api.routes import (
     tasks,
     workflow_runs,
 )
+from datakeel.core.logging import warn_unsafe_subprocess
 from datakeel.routing.config import load_config
 from datakeel.runtime.workflow_service import recover_runs
 from datakeel.storage.database import Database
@@ -34,6 +36,7 @@ from datakeel.storage.database import Database
 def create_app(db: Database | None = None) -> FastAPI:
     """Create an isolated application with explicit infrastructure dependencies."""
     database = db or Database()
+    warn_unsafe_subprocess()
     database.migrate()
     load_config()
     recover_runs(database)
@@ -46,6 +49,7 @@ def create_app(db: Database | None = None) -> FastAPI:
         system.router,
         datasets.router,
         catalog.router,
+        custom_operators.router,
         ask.router,
         evidence.router,
         kg.router,
