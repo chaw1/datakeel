@@ -32,6 +32,13 @@ from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 
 def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
     """Read typed action targets independently of legacy ObjectSet membership."""
+    feature = _feature_refs(params)
+    if feature:
+        return feature
+    return _catalog_refs(params)
+
+
+def _feature_refs(params: BoundaryModel) -> list[AssetRef]:
     if isinstance(params, SubmitCustomOperatorParams):
         return [
             AssetRef(
@@ -42,6 +49,10 @@ def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
         ]
     if isinstance(params, StandardActionParams):
         return standard_refs(params)
+    return []
+
+
+def _catalog_refs(params: BoundaryModel) -> list[AssetRef]:
     if isinstance(params, ImportCatalogParams) and params.snapshot is not None:
         return [item.asset_ref for item in params.snapshot.objects]
     if isinstance(params, RestoreCatalogParams):
