@@ -32,6 +32,7 @@ BLOCK = 10
 THUMBNAIL_WIDTH = 32
 THUMBNAIL_HEIGHT = 18
 _BATCH = 256
+_LUMA_BLOCK = 4096
 _ANALYSIS_TIMEOUT_FACTOR = 2
 
 
@@ -60,10 +61,18 @@ class VideoAnalysis(NamedTuple):
         return len(self.mean)
 
     def luma(self) -> NDArray[np.float32]:
-        """Return BT.601 luma of the thumbnails as ``(frames, 576)`` float32."""
-        pixels = self.thumbnails.reshape(self.frame_count, -1, 3).astype(np.float32)
+        """Return BT.601 luma of the thumbnails as ``(frames, 576)`` float32.
+
+        Frames are converted in blocks, so a long recording never holds a float copy
+        of every RGB thumbnail at once.
+        """
+        pixels = self.thumbnails.reshape(self.frame_count, -1, 3)
         weights = np.asarray([0.299, 0.587, 0.114], dtype=np.float32)
-        return pixels @ weights
+        luma = np.empty(pixels.shape[:2], dtype=np.float32)
+        for start in range(0, self.frame_count, _LUMA_BLOCK):
+            block = pixels[start : start + _LUMA_BLOCK].astype(np.float32)
+            luma[start : start + _LUMA_BLOCK] = block @ weights
+        return luma
 
 
 def analysis_rate(frame_rate: float, max_fps: float) -> float:

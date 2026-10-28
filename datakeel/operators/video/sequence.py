@@ -40,6 +40,8 @@ _MOVING_SHARE = 0.5
 # (or noise) gives about 1, a repeat of the same motion close to 0.
 _MOTION_RESIDUAL = 0.5
 _CANDIDATES = 8
+# Prior frames compared at once when searching for a repeat's lead frame.
+_SEARCH_BLOCK = 4096
 _HASH_ROWS = 8
 _HASH_COLUMNS = 9
 _MIN_ENERGY = 1e-6
@@ -194,17 +196,30 @@ def _looks_same(
 def _lead_candidates(
     candidate: Sequence, lead: int, prior: Sequence, limit: int, limits: Thresholds
 ) -> NDArray[np.int64]:
-    """Return prior frames whose appearance and motion both resemble the lead frame."""
-    looks, moves = prior.search[:limit], prior.motion[:limit]
+    """Return prior frames whose appearance and motion both resemble the lead frame.
+
+    Prior frames are compared in fixed-size blocks: one temporary per lead sized by
+    the whole prior recording would grow with its length, and allocators keep such
+    differently sized buffers, so a long recording's memory would keep rising.
+    """
     target, change = candidate.search[lead], candidate.motion[lead]
-    appearance = np.square(looks - target).mean(axis=1)
-    energy = np.square(moves).sum(axis=1) + float(change @ change)
-    residual = np.square(moves - change).sum(axis=1)
-    allowed = (appearance <= (2 * limits.max_spatial_difference) ** 2) & (
-        residual <= _MOTION_RESIDUAL * energy
-    )
-    found = np.flatnonzero(allowed)
-    order = np.argsort(appearance[found] + residual[found] / np.maximum(energy[found], _MIN_ENERGY))
+    reach = (2 * limits.max_spatial_difference) ** 2
+    own = float(change @ change)
+    rows: list[NDArray[np.int64]] = []
+    keys: list[NDArray[np.float32]] = []
+    for start in range(0, limit, _SEARCH_BLOCK):
+        looks = prior.search[start : start + _SEARCH_BLOCK][: limit - start]
+        moves = prior.motion[start : start + _SEARCH_BLOCK][: limit - start]
+        appearance = np.square(looks - target).mean(axis=1)
+        energy = np.square(moves).sum(axis=1) + own
+        residual = np.square(moves - change).sum(axis=1)
+        found = np.flatnonzero((appearance <= reach) & (residual <= _MOTION_RESIDUAL * energy))
+        rows.append(found + start)
+        keys.append(appearance[found] + residual[found] / np.maximum(energy[found], _MIN_ENERGY))
+    if not rows:
+        return np.zeros(0, dtype=np.int64)
+    found = np.concatenate(rows)
+    order = np.argsort(np.concatenate(keys))
     return found[order[:_CANDIDATES]]
 
 
