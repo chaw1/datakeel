@@ -27,10 +27,15 @@ _PATH_NAMESPACES = frozenset({"file", "dbfs"})
 
 
 class ResolvedDataset(BoundaryModel):
-    """Keep explicit source identity separate from an external namespace."""
+    """Keep explicit source identity separate from an external namespace.
+
+    ``location`` replaces the schema segment for a dataset filed under a placeholder
+    source, keeping its namespace and database in the catalog identity.
+    """
 
     source_id: str
     relation: PhysicalRelation
+    location: str | None = None
 
 
 class DatasetField(BoundaryModel):
@@ -117,12 +122,13 @@ def dataset_object(
         relation=relation,
         details=details or JsonDocument({"facets": dataset.facets.root, "placeholder": True}),
     )
-    identity = catalog_id(resolved.source_id, relation.schema_name, relation.name)
+    schema_name = resolved.location or relation.schema_name
+    identity = catalog_id(resolved.source_id, schema_name, relation.name)
     return CatalogObject(
         asset_ref=AssetRef(asset_type="table", asset_id=identity, display_name=relation.name),
         name=relation.name,
         source_id=resolved.source_id,
-        schema_name=relation.schema_name,
+        schema_name=schema_name,
         properties=JsonDocument(
             {
                 "columns": {field.name: field.type for field in schema.fields},

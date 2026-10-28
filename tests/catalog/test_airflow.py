@@ -11,11 +11,19 @@ from datakeel.catalog.importers.airflow import prepare_airflow
 from datakeel.core.errors import ValidationError
 from datakeel.core.metadata_imports import AirflowImportRequest, ExternalMetadata
 from datakeel.core.models import JsonDocument
+from datakeel.core.orchestration import OpenLineageNamespace
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.database import Database
 from datakeel.storage.metadata_store import publish_metadata
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "metadata" / "airflow-v1.json"
+# The fixture's analytics database is the catalog source "warehouse".
+SOURCES = (
+    (
+        "postgres://warehouse.example",
+        OpenLineageNamespace(source_id="warehouse", database="analytics"),
+    ),
+)
 
 
 def request(document: JsonDocument | None = None) -> AirflowImportRequest:
@@ -28,7 +36,7 @@ def request(document: JsonDocument | None = None) -> AirflowImportRequest:
 
 def test_airflow_import_preserves_schedule_owner_status_and_freshness(db: Database) -> None:
     """DAG/task state and successful output freshness survive transactional readback."""
-    batch = prepare_airflow(request())
+    batch = prepare_airflow(sources=SOURCES, request=request())
     result = publish_metadata(db, batch)
     with db.session() as session:
         objects = {item.asset_ref.asset_id: item for item in read_snapshot(session).objects}
@@ -54,7 +62,7 @@ def test_airflow_import_preserves_schedule_owner_status_and_freshness(db: Databa
 
 def test_airflow_import_preserves_explicit_inlets_outlets_and_dependencies() -> None:
     """Task dependencies remain directed alongside explicit dataset flow edges."""
-    snapshot = prepare_airflow(request()).snapshot
+    snapshot = prepare_airflow(sources=SOURCES, request=request()).snapshot
     edges = {(edge.source.asset_id, edge.target.asset_id, edge.kind) for edge in snapshot.links}
     assert ("warehouse/raw/orders", "warehouse/dag/daily_orders/extract", "derived") in edges
     assert ("warehouse/dag/daily_orders/build", "warehouse/public/orders", "derived") in edges
@@ -69,10 +77,12 @@ def test_airflow_import_preserves_explicit_inlets_outlets_and_dependencies() -> 
 
 def test_airflow_incremental_replay_and_soft_deleted_tasks(db: Database) -> None:
     """An identical replay is event-free and a removed inventory remains as tombstones."""
-    batch = prepare_airflow(request())
+    batch = prepare_airflow(sources=SOURCES, request=request())
     publish_metadata(db, batch)
     replay = publish_metadata(db, batch)
-    removed = publish_metadata(db, prepare_airflow(request(JsonDocument({"dags": []}))))
+    removed = publish_metadata(
+        db, prepare_airflow(sources=SOURCES, request=request(JsonDocument({"dags": []})))
+    )
     assert replay.new == replay.changed == replay.deleted == 0
     assert replay.event_id is None
     assert removed.deleted == 6
@@ -85,7 +95,7 @@ def test_airflow_nested_export_and_absent_run_details() -> None:
     document = JsonDocument(
         {"dags": [{"dag_id": "sample", "tags": ["demo"], "tasks": [{"task_id": "one"}]}]}
     )
-    snapshot = prepare_airflow(request(document)).snapshot
+    snapshot = prepare_airflow(sources=SOURCES, request=request(document)).snapshot
     dag = ExternalMetadata.model_validate(snapshot.objects[0].properties["integration"])
     assert dag.details["last_success"] is None
     assert dag.details["state"] is None
@@ -117,7 +127,7 @@ def test_airflow_nested_export_and_absent_run_details() -> None:
 def test_airflow_invalid_export_rejects_instead_of_guessing(document: dict, message: str) -> None:
     """Duplicate identities and broken dependencies have actionable validation failures."""
     with pytest.raises(ValidationError, match=message):
-        prepare_airflow(request(JsonDocument.model_validate(document)))
+        prepare_airflow(sources=SOURCES, request=request(JsonDocument.model_validate(document)))
 
 
 def test_airflow_dataset_freshness_uses_latest_producer_across_consumers() -> None:
@@ -152,7 +162,7 @@ def test_airflow_dataset_freshness_uses_latest_producer_across_consumers() -> No
     )
     table = next(
         item
-        for item in prepare_airflow(request(document)).snapshot.objects
+        for item in prepare_airflow(sources=SOURCES, request=request(document)).snapshot.objects
         if item.asset_ref.asset_type == "table"
     )
     metadata = ExternalMetadata.model_validate(table.properties["integration"])
@@ -203,7 +213,7 @@ def test_airflow_latest_state_follows_logical_date_for_never_started_runs() -> N
     )
     objects = {
         item.asset_ref.asset_id: ExternalMetadata.model_validate(item.properties["integration"])
-        for item in prepare_airflow(request(document)).snapshot.objects
+        for item in prepare_airflow(sources=SOURCES, request=request(document)).snapshot.objects
     }
     dag = objects["warehouse/dag/nightly"]
     task = objects["warehouse/dag/nightly/publish"]

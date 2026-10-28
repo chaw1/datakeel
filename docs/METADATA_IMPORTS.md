@@ -78,6 +78,13 @@ REST v1 Task 响应未必提供 inlets/outlets，可在离线任务条目补充�
 
 DAG 和任务保留负责人、调度、最近运行状态；inlets/outlets 生成输入表 → 任务 → 输出表血缘。成功运行时间成为输出表的新鲜度证据。在“已导入对象”中可筛选 DAG、Airflow 任务并查看详情；表的对象页也展示最近成功运行时间。它表示已导入的最近成功证据，不是实时心跳。
 
+`--source-id` 只命名调度器本身（DAG 和任务挂在它下面）；inlets/outlets 指向的表挂到真正存放它的数据源。URI 先按 OpenLineage 规则规范化（scheme 小写、去掉默认端口），再依次匹配：
+
+1. `DATAKEEL_OPENLINEAGE_NAMESPACES` 里的显式映射（见下文），适合 dbt、SQLite 等没有服务器地址的来源；
+2. 数据库导入的来源：连接串写明了主机和数据库时，按“scheme://主机:端口 + 数据库”匹配，驱动后缀和账号密码不参与，例如 `postgresql+pg8000://etl@warehouse.example:5432/analytics` 的来源对上 `postgres://warehouse.example:5432/analytics.public.orders`，直接合并到已反射的 `public.orders`。
+
+两者都对不上的表，挂到名为 `airflow` 的占位来源下，详情标 `unmatched_source`，对象页显示“未匹配来源”；占位表的 schema 段保留原 namespace 和数据库，不同服务器上的同名表不会合并。之后补导对应数据源再重导 Airflow，表改挂到该来源下，原占位表标为“来源已删除”。
+
 ## HTTP 和 Web
 
 - `POST /api/catalog/import/dbt`：`source_id`、可选 `name`、`manifest`，以及可选 `catalog`、`run_results`。

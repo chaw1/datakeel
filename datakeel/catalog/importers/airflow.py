@@ -3,10 +3,18 @@
 
 """Prepare offline Airflow REST v1 inventory without importing or executing Airflow."""
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
+from datakeel.catalog.importers.helpers import contains, metadata_object
 from datakeel.core.catalog_identity import catalog_id
-from datakeel.core.catalog_models import CatalogLink, CatalogObject, CatalogSnapshot
+from datakeel.core.catalog_models import (
+    CatalogLink,
+    CatalogObject,
+    CatalogSnapshot,
+    SourceProperties,
+)
 from datakeel.core.errors import ValidationError
 from datakeel.core.metadata_imports import (
     AirflowImportRequest,
@@ -21,7 +29,17 @@ from datakeel.core.orchestration_airflow import (
     AirflowRun,
     AirflowTask,
 )
-from datakeel.core.orchestration_catalog import dataset_from_uri, dataset_object, resolve_dataset
+from datakeel.core.orchestration_catalog import dataset_from_uri, dataset_object
+from datakeel.core.orchestration_sources import (
+    UNMATCHED_SOURCE_ID,
+    SourceNamespace,
+    attribute_dataset,
+)
+
+if TYPE_CHECKING:
+    from pydantic import JsonValue
+
+Sources = Sequence[SourceNamespace]
 
 
 def _run_time(run: AirflowRun) -> datetime:
@@ -131,14 +149,13 @@ def _dag_entries(export: AirflowExport) -> tuple[AirflowDag, ...]:
     return tuple(result)
 
 
-def _dataset(request: AirflowImportRequest, uri: str, last_success: str | None) -> CatalogObject:
+def _dataset(sources: Sources, uri: str, last_success: str | None) -> CatalogObject:
     dataset = dataset_from_uri(uri)
-    return dataset_object(
-        dataset,
-        resolve_dataset(dataset, {}, request.source_id),
-        "airflow",
-        JsonDocument({"uri": uri, "last_success": last_success}),
-    )
+    resolved = attribute_dataset(dataset, sources)
+    details: dict[str, JsonValue] = {"uri": uri, "last_success": last_success}
+    if resolved.location is not None:
+        details["unmatched_source"] = True
+    return dataset_object(dataset, resolved, "airflow", JsonDocument(details))
 
 
 def _link(source: CatalogObject, target: CatalogObject, kind: str = "derived") -> CatalogLink:
@@ -148,7 +165,7 @@ def _link(source: CatalogObject, target: CatalogObject, kind: str = "derived") -
 
 
 def _task_datasets(
-    request: AirflowImportRequest, task: AirflowTask, node: CatalogObject
+    sources: Sources, task: AirflowTask, node: CatalogObject
 ) -> tuple[tuple[CatalogObject, ...], tuple[CatalogLink, ...]]:
     metadata = ExternalMetadata.model_validate(node.properties.root["integration"])
     last_success = metadata.details.root.get("last_success")
@@ -158,14 +175,14 @@ def _task_datasets(
     for values, output in ((task.inlets, False), (task.outlets, True)):
         for value in values:
             uri = value if isinstance(value, str) else value.uri
-            table = _dataset(request, uri, freshness if output else None)
+            table = _dataset(sources, uri, freshness if output else None)
             objects.append(table)
             links.append(_link(node, table) if output else _link(table, node))
     return tuple(objects), tuple(links)
 
 
 def _dag_inventory(
-    request: AirflowImportRequest, dag: AirflowDag
+    request: AirflowImportRequest, dag: AirflowDag, sources: Sources
 ) -> tuple[tuple[CatalogObject, ...], tuple[CatalogLink, ...]]:
     parent = _dag_object(request, dag)
     tasks = {task.task_id: _task_object(request, dag, task) for task in dag.tasks}
@@ -175,7 +192,7 @@ def _dag_inventory(
     objects = [parent, *tasks.values()]
     links = [_link(parent, task, "contains") for task in tasks.values()]
     for task in dag.tasks:
-        extra, edges = _task_datasets(request, task, tasks[task.task_id])
+        extra, edges = _task_datasets(sources, task, tasks[task.task_id])
         objects.extend(extra)
         links.extend(edges)
         for target in task.downstream_task_ids:
@@ -212,9 +229,12 @@ def _retain_freshness(old: CatalogObject | None, current: CatalogObject) -> Cata
 
 
 def _dataset_inventory(
-    request: AirflowImportRequest, dataset: AirflowDataset, objects: dict[str, CatalogObject]
+    request: AirflowImportRequest,
+    dataset: AirflowDataset,
+    objects: dict[str, CatalogObject],
+    sources: Sources,
 ) -> tuple[CatalogObject, tuple[CatalogLink, ...]]:
-    table = _dataset(request, dataset.uri, None)
+    table = _dataset(sources, dataset.uri, None)
     links: list[CatalogLink] = []
     for reference in dataset.producing_tasks:
         identity = catalog_id(request.source_id, "dag", reference.dag_id, reference.task_id or "")
@@ -223,7 +243,7 @@ def _dataset_inventory(
             metadata = ExternalMetadata.model_validate(producer.properties.root["integration"])
             freshness = metadata.details.root.get("last_success")
             if isinstance(freshness, str):
-                table = _retain_freshness(table, _dataset(request, dataset.uri, freshness))
+                table = _retain_freshness(table, _dataset(sources, dataset.uri, freshness))
             links.append(_link(producer, table))
     for reference in dataset.consuming_dags:
         identity = catalog_id(request.source_id, "dag", reference.dag_id)
@@ -232,8 +252,32 @@ def _dataset_inventory(
     return table, tuple(links)
 
 
-def prepare_airflow(request: AirflowImportRequest) -> MetadataImportBatch:
-    """Parse documented offline v1 endpoint exports into one incrementally owned scope."""
+def _unmatched_source(objects: dict[str, CatalogObject]) -> tuple[CatalogLink, ...]:
+    """File datasets no known source claims under one explicit placeholder source."""
+    unmatched = [
+        item
+        for item in objects.values()
+        if item.source_id == UNMATCHED_SOURCE_ID
+        and ExternalMetadata.model_validate(item.properties.root["integration"]).details.root.get(
+            "unmatched_source"
+        )
+        is True
+    ]
+    if not unmatched:
+        return ()
+    source = metadata_object(
+        "source", catalog_id(UNMATCHED_SOURCE_ID), "airflow", SourceProperties(dialect="unknown")
+    )
+    objects[source.asset_ref.asset_id] = source
+    return tuple(contains(source, item) for item in unmatched)
+
+
+def prepare_airflow(request: AirflowImportRequest, sources: Sources = ()) -> MetadataImportBatch:
+    """Parse documented offline v1 endpoint exports into one incrementally owned scope.
+
+    Dataset URIs are attributed to ``sources`` by normalized namespace and database;
+    the rest are filed under the ``airflow`` placeholder source as unmatched.
+    """
     export = AirflowExport.model_validate(request.document.root)
     if len({dag.dag_id for dag in export.dags}) != len(export.dags):
         msg = "Airflow exports require unique DAG IDs"
@@ -241,16 +285,17 @@ def prepare_airflow(request: AirflowImportRequest) -> MetadataImportBatch:
     objects: dict[str, CatalogObject] = {}
     links: list[CatalogLink] = []
     for dag in _dag_entries(export):
-        entries, edges = _dag_inventory(request, dag)
+        entries, edges = _dag_inventory(request, dag, sources)
         for item in entries:
             identity = item.asset_ref.asset_id
             objects[identity] = _retain_freshness(objects.get(identity), item)
         links.extend(edges)
     for dataset in export.datasets:
-        table, edges = _dataset_inventory(request, dataset, objects)
+        table, edges = _dataset_inventory(request, dataset, objects, sources)
         identity = table.asset_ref.asset_id
         objects[identity] = _retain_freshness(objects.get(identity), table)
         links.extend(edges)
+    links.extend(_unmatched_source(objects))
     unique_links = {(link.kind, link.source.asset_id, link.target.asset_id): link for link in links}
     return MetadataImportBatch(
         snapshot=CatalogSnapshot(

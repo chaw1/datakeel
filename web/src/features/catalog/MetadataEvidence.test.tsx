@@ -37,6 +37,26 @@ it("renders source deletion, owners, schedule, state, freshness, and quality det
   expect(screen.getByText(/"passed": 3/)).toBeInTheDocument();
 });
 
+it("marks Airflow datasets filed under the placeholder as an unmatched source", () => {
+  const airflow = (unmatched: boolean) => ({
+    ...table,
+    properties: {
+      integration: {
+        system: "airflow",
+        unique_id: "postgres://ehr-db.example/ehr.public.orders",
+        details: unmatched ? { placeholder: true, unmatched_source: true } : {},
+      },
+    },
+  });
+  const { rerender } = render(<MetadataEvidence item={airflow(true)} />);
+  expect(screen.getByText("Unmatched source")).toHaveAttribute(
+    "title",
+    expect.stringContaining("airflow placeholder"),
+  );
+  rerender(<MetadataEvidence item={airflow(false)} />);
+  expect(screen.queryByText("Unmatched source")).not.toBeInTheDocument();
+});
+
 it("adds no empty integration section to ordinary catalog tables", () => {
   const { container } = render(<MetadataEvidence item={table} />);
   expect(container).toBeEmptyDOMElement();

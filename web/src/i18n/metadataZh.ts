@@ -32,6 +32,9 @@ export const metadataZh = {
   metadataJob: "OpenLineage 作业",
   metadataEvidence: "集成元数据",
   metadataDeleted: "来源已删除",
+  metadataUnmatchedSource: "未匹配来源",
+  metadataUnmatchedSourceHint:
+    "没有已导入的数据源对上这个数据集的命名空间，暂挂在 airflow 占位来源下。",
   metadataUniqueId: "外部标识",
   metadataDescription: "描述",
   metadataTags: "标签",

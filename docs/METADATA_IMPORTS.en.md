@@ -78,6 +78,13 @@ The REST v1 Task response may omit inlets/outlets; add these fields to offline t
 
 DAGs and tasks retain owners, schedules, and the latest run state. Inlets and outlets produce input table → task → output table lineage. Successful producer task times become output table freshness evidence. Filter **Imported objects** by DAG or Airflow task to inspect details; table object pages also display the last successful run. This is the most recent imported success evidence, not a live heartbeat.
 
+`--source-id` names only the scheduler, which owns the DAGs and tasks. Tables named by inlets and outlets attach to the source that actually holds them. URIs are normalized under the OpenLineage rules (lowercase scheme, default port removed) and then matched in order:
+
+1. An explicit `DATAKEEL_OPENLINEAGE_NAMESPACES` mapping (see below), suited to sources without a server address such as dbt or SQLite.
+2. A database-import source whose connection URL names a host and a database, matched on "scheme://host:port + database"; driver suffixes and credentials are ignored. For example, a source at `postgresql+pg8000://etl@warehouse.example:5432/analytics` matches `postgres://warehouse.example:5432/analytics.public.orders`, which merges into the reflected `public.orders`.
+
+Tables that match neither are filed under a placeholder source named `airflow`, marked `unmatched_source` in their details and shown as "Unmatched source" on the object page. The placeholder's schema segment keeps the original namespace and database, so equally named tables on different servers never merge. Importing the matching source and then re-importing Airflow attaches the table to that source and marks the old placeholder as deleted at source.
+
 ## HTTP and Web
 
 - `POST /api/catalog/import/dbt`: `source_id`, optional `name`, `manifest`, and optional `catalog` and `run_results`.

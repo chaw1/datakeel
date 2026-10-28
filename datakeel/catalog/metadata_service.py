@@ -15,6 +15,8 @@ from datakeel.core.metadata_imports import (
     DbtImportRequest,
     MetadataImportReport,
 )
+from datakeel.core.orchestration_sources import SourceNamespace, known_sources
+from datakeel.core.settings import get_settings
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.database import Database
 from datakeel.storage.metadata_store import publish_metadata, publish_metadata_from_prior
@@ -35,11 +37,29 @@ def import_dbt(
     )
 
 
+def _known_sources(db: Database) -> tuple[SourceNamespace, ...]:
+    with db.session() as session:
+        snapshot = read_snapshot(session)
+    connections = [
+        (item.source_id, url)
+        for item in snapshot.objects
+        if item.asset_ref.asset_type == "source"
+        and item.source_id
+        and isinstance(url := item.properties.root.get("connection_url"), str)
+    ]
+    return known_sources(get_settings().openlineage_namespaces, connections)
+
+
 def import_airflow(
     db: Database, request: AirflowImportRequest, actor: str = "local-user"
 ) -> MetadataImportReport:
-    """Import an offline export without constructing an Airflow client."""
-    return publish_metadata(db, prepare_airflow(request), actor)
+    """Import an offline export without constructing an Airflow client.
+
+    Inlets and outlets attach to the source that holds them: an explicit
+    DATAKEEL_OPENLINEAGE_NAMESPACES mapping, or a catalog source whose connection
+    names the same server and database; others go to the ``airflow`` placeholder.
+    """
+    return publish_metadata(db, prepare_airflow(request, _known_sources(db)), actor)
 
 
 def import_airflow_api(

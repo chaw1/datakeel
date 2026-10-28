@@ -33,6 +33,9 @@ export const metadataEn = {
   metadataJob: "OpenLineage job",
   metadataEvidence: "Integration metadata",
   metadataDeleted: "Deleted at source",
+  metadataUnmatchedSource: "Unmatched source",
+  metadataUnmatchedSourceHint:
+    "No imported data source matched this dataset namespace, so it is filed under the airflow placeholder.",
   metadataUniqueId: "External identity",
   metadataDescription: "Description",
   metadataTags: "Tags",

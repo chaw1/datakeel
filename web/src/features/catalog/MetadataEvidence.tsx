@@ -73,10 +73,16 @@ export function MetadataEvidence({ item }: { item: CatalogObject }) {
     (item.properties?.source_deleted === undefined &&
       entries.length === 1 &&
       integration.source_deleted === true);
+  const unmatched = allDetails.some((value) => value.unmatched_source === true);
   return (
     <section className="metadata-evidence" aria-label={t("metadataEvidence")}>
       <h3>{t("metadataEvidence")}</h3>
       {deleted && <p className="badge warning">{t("metadataDeleted")}</p>}
+      {unmatched && (
+        <p className="badge" title={t("metadataUnmatchedSourceHint")}>
+          {t("metadataUnmatchedSource")}
+        </p>
+      )}
       <dl className="catalog-definition">
         {fields.map(([label, value]) =>
           text(value) ? (
