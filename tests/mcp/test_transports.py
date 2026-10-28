@@ -35,7 +35,7 @@ async def _exercise(client: Client, dataset_id: str) -> None:
     assert client.initialize_result is not None
     assert client.initialize_result.protocol_version == "2025-11-25"
     tools = await client.list_tools()
-    assert len(tools) == 55
+    assert len(tools) == 57
     assert {
         "query_kg",
         "explain_relation",
@@ -46,6 +46,7 @@ async def _exercise(client: Client, dataset_id: str) -> None:
     assert {"list_quality_rules", "get_table_quality", "create_quality_rule"} <= {
         tool.name for tool in tools
     }
+    assert {"annotation_quality", "annotation_acceptance"} <= {tool.name for tool in tools}
     read = await _call(client, "list_datasets", JsonDocument({}))
     assert dataset_id in {item.asset_id for item in read.asset_refs}
     selection = JsonDocument({"selection": {"dataset_id": dataset_id, "quality_max": 0}})

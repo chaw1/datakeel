@@ -23,12 +23,14 @@ from datakeel.actions.parameters import (
 )
 from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.actions.standard_parameters import StandardActionParams
+from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.governance import compliance_score, validate_metadata
 from datakeel.pipeline.sharding import validate_shards
 from datakeel.storage.action_selection import change_file_state, selected_files, single_dataset
+from datakeel.storage.annotation_actions import inspect_action
 from datakeel.storage.catalog_actions import execute_catalog_action
 from datakeel.storage.custom_store import approve_custom_operator
 from datakeel.storage.custom_validation import validate_custom_pipeline
@@ -103,6 +105,7 @@ _TYPED_ACTIONS: tuple[
 ] = (
     (DataAssetActionParams, execute_data_asset_action),
     (QualityActionParams, execute_quality_action),
+    (AnnotationAcceptanceParams, inspect_action),
     (StandardActionParams, execute_standard_action),
     (SubmitCustomOperatorParams, approve_custom_operator),
     (PublishReleaseParams, publish_release),

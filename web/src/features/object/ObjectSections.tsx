@@ -1,4 +1,5 @@
 import { useI18n } from "../../i18n/useI18n";
+import { AnnotationQuality } from "../annotation/AnnotationQuality";
 import { Files } from "../files/Files";
 import Quality from "../quality/Quality";
 import { ReportView } from "../reports/ReportView";
@@ -55,6 +56,13 @@ export function ObjectSections({
         <ObjectFileQuality data={data} />
       ) : (
         <Quality quality={data.quality} />
+      );
+    case "annotation-quality":
+      return (
+        <AnnotationQuality
+          datasetId={data.dataset?.id ?? target.datasetId ?? target.id}
+          versionId={data.version?.id ?? data.versions[0]?.id}
+        />
       );
     case "report":
       return <ReportView report={data.report} />;

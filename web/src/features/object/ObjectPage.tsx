@@ -25,6 +25,7 @@ const labels: Record<ObjectTab, MessageKey> = {
   files: "filesTab",
   versions: "versions",
   quality: "quality",
+  "annotation-quality": "annotationQuality",
   report: "report",
 };
 export function ObjectPage({
@@ -94,8 +95,8 @@ export function ObjectPage({
   }
   const tabs: ObjectTab[] = ["facts", "relations", "evidence", "history"];
   if (target.kind === "dataset")
-    tabs.push("files", "versions", "quality", "report");
-  if (target.kind === "version") tabs.push("files");
+    tabs.push("files", "versions", "quality", "annotation-quality", "report");
+  if (target.kind === "version") tabs.push("files", "annotation-quality");
   if (target.kind === "file") tabs.push("quality");
   const resolved = {
     ...target,

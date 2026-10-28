@@ -14,11 +14,13 @@ from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import DecideAssertionsParams, ExportParams
 from datakeel.actions.standard_parameters import StandardActionParams
+from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.models import BoundaryModel
 from datakeel.core.settings import get_settings
 from datakeel.lineage.service import graph
 from datakeel.ontology.models import FrozenManifest, ObjectSet
 from datakeel.storage.action_targets import current_manifest
+from datakeel.storage.annotation_sampling import annotation_snapshot
 from datakeel.storage.catalog_action_state import catalog_state
 from datakeel.storage.data_asset_action_state import data_asset_state
 from datakeel.storage.dq_actions import quality_state
@@ -35,6 +37,8 @@ def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenMan
         values.append(data_asset_state(session, params))
     if isinstance(params, QualityActionParams):
         values.append(quality_state(session, params))
+    if isinstance(params, AnnotationAcceptanceParams):
+        values.append(annotation_snapshot(session, params))
     if isinstance(params, CatalogActionParams):
         values.append(catalog_state(session))
     if isinstance(params, StandardActionParams):

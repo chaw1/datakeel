@@ -23,6 +23,7 @@ DEFERRED_READ_FUNCTIONS = frozenset(
         "list_standard_usage",
         "list_quality_rules",
         "get_table_quality",
+        "annotation_quality",
     }
 )
 

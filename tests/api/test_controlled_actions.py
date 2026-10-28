@@ -81,8 +81,8 @@ def test_ontology_endpoint_when_requested_exposes_valid_versioned_schemas(
     value = client.get("/api/ontology").json()
     assert len(value["object_types"]) == 14
     assert len(value["link_types"]) == 9
-    assert len(value["functions"]) == 19
-    assert len(value["actions"]) == 34
+    assert len(value["functions"]) == 20
+    assert len(value["actions"]) == 35
     assert {"list_quality_rules", "get_table_quality"} <= {
         item["id"] for item in value["functions"]
     }
@@ -93,6 +93,8 @@ def test_ontology_endpoint_when_requested_exposes_valid_versioned_schemas(
         "run_quality_rule",
         "change_quality_issue",
     } <= {item["id"] for item in value["actions"]}
+    assert "annotation_quality" in {item["id"] for item in value["functions"]}
+    assert "annotation_acceptance" in {item["id"] for item in value["actions"]}
     for item in value["object_types"]:
         Draft202012Validator.check_schema(item["properties"])
     for item in value["actions"]:

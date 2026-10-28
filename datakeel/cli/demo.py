@@ -22,7 +22,9 @@ from datakeel.cli.evidence import seed_evidence_demo
 from datakeel.cli.image_kg_demo import seed_image_kg_demo
 from datakeel.cli.kg_demo import check_demo, demo_reports, seed_kg_demo
 from datakeel.core.errors import ExecutionError
+from datakeel.core.harness_eval import CaseFixture
 from datakeel.core.standard_history_models import StandardsReport
+from datakeel.harness.annotation_cases import AnnotationDemoSummary, seed_annotation_qa_demo
 from datakeel.harness.enterprise_kg import (
     check_enterprise_extraction,
     import_enterprise_documents,
@@ -171,6 +173,16 @@ def _seed_standards(db: Database, *, legacy_only: bool) -> StandardsReport | Non
     return None if legacy_only else seed_standard_demo(db, data_dir() / "standards-demo")
 
 
+def _enterprise_documents(db: Database) -> CaseFixture:
+    return import_enterprise_documents(db, data_dir() / "enterprise-documents")
+
+
+def _annotation_demo(db: Database, args: argparse.Namespace) -> AnnotationDemoSummary | None:
+    if getattr(args, "legacy_only", False):
+        return None
+    return seed_annotation_qa_demo(db, data_dir() / "annotation-qa-samples")
+
+
 def demo(args: argparse.Namespace) -> None:
     """Run the complete local demonstration without external services."""
     started = time.monotonic()
@@ -183,9 +195,8 @@ def demo(args: argparse.Namespace) -> None:
     graph = None if getattr(args, "legacy_only", False) else seed_kg_demo(db)
     image_graph = None if getattr(args, "legacy_only", False) else seed_image_kg_demo(db)
     standards = _seed_standards(db, legacy_only=getattr(args, "legacy_only", False))
-    documents = (
-        import_enterprise_documents(db, data_dir() / "enterprise-documents") if graph else None
-    )
+    annotation = _annotation_demo(db, args)
+    documents = _enterprise_documents(db) if graph else None
     document_task = schedule_enterprise_extraction(db, documents) if documents else None
     if not args.once:
         if enterprise is not None:
@@ -194,10 +205,9 @@ def demo(args: argparse.Namespace) -> None:
         return
     run_worker(db, once=True)
     _check_processed(db, task_id, evidence[1] if evidence else None)
-    if graph:
-        check_demo(db, graph)
-    if image_graph:
-        check_demo(db, image_graph)
+    for seeded_graph in (graph, image_graph):
+        if seeded_graph:
+            check_demo(db, seeded_graph)
     if documents and document_task:
         check_enterprise_extraction(db, documents, document_task)
     console.print(
@@ -210,6 +220,7 @@ def demo(args: argparse.Namespace) -> None:
                 "enterprise": enterprise.model_dump(mode="json") if enterprise else None,
                 "data_assets": [asset.model_dump(mode="json") for asset in assets],
                 "standards": standards.coverage.model_dump(mode="json") if standards else None,
+                "annotation_quality": annotation.model_dump(mode="json") if annotation else None,
                 "enterprise_documents": documents.model_dump(mode="json") if documents else None,
                 "knowledge_graph": [run.model_dump(mode="json") for run in demo_reports(db, graph)]
                 if graph

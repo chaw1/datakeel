@@ -98,6 +98,7 @@ class GoldenCase(BoundaryModel):
         "asset_access",
         "standards",
         "quality",
+        "annotation_qa",
     ] = "legacy"
     fixture_reviewed: bool = False
     config: ConversationCreate = Field(default_factory=ConversationCreate)

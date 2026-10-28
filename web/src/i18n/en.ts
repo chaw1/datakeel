@@ -1,5 +1,6 @@
 import { advancedEn } from "./advancedEn";
 import { agentEn } from "./agentEn";
+import { annotationEn } from "./annotationEn";
 import { approvalEn } from "./approvalEn";
 import { approvalsMetricEn } from "./approvalsMetricEn";
 import { askEn } from "./askEn";
@@ -27,6 +28,7 @@ export const en = {
   ...standardsEn,
   ...dqEn,
   ...metadataEn,
+  ...annotationEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,

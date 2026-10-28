@@ -45,7 +45,7 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             assert client.initialize_result.server_info.name == "Datakeel"
             listed = await client.list_tools()
         expected = {item.name: item for item in tool_definitions()}
-        assert len(listed) == len(expected) == 55
+        assert len(listed) == len(expected) == 57
         assert {
             "query_kg",
             "explain_relation",
@@ -70,6 +70,7 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             "create_quality_rule",
         } <= set(expected)
         assert "confirm_metric_draft" in expected
+        assert {"annotation_quality", "annotation_acceptance"} <= set(expected)
         for tool in listed:
             Draft202012Validator.check_schema(tool.input_schema)
             assert tool.output_schema is not None

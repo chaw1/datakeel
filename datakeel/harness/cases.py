@@ -11,6 +11,7 @@ from PIL import Image
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.harness_eval import CaseFixture, GoldenCase
+from datakeel.harness.annotation_cases import seed_annotation_case
 from datakeel.harness.asset_cases import seed_asset_case
 from datakeel.harness.dq_cases import seed_quality_case
 from datakeel.harness.enterprise_cases import seed_enterprise_case
@@ -55,6 +56,7 @@ def seed_case(
         "asset_access",
         "standards",
         "quality",
+        "annotation_qa",
     ] = "legacy",
     *,
     reviewed: bool = False,
@@ -73,6 +75,7 @@ def seed_case(
         "standards": seed_standard_case,
         "enterprise": seed_enterprise_case,
         "asset_access": seed_asset_case,
+        "annotation_qa": seed_annotation_case,
         "injection": seed_injection_case,
         "evidence": seed_evidence_case,
     }

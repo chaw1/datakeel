@@ -13,6 +13,8 @@ from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.standard_reporting_models import StandardCoverageParams, StandardUsageParams
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.lineage.models import GraphNode, GraphView
+from datakeel.ontology.annotation_functions import invoke_annotation_quality
+from datakeel.ontology.annotation_parameters import AnnotationQualityParams
 from datakeel.ontology.catalog_functions import invoke_catalog
 from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams, MetricParams
 from datakeel.ontology.data_asset_access import requested_refs
@@ -58,6 +60,7 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "list_standard_usage": StandardUsageParams,
     "list_quality_rules": QualityRulesParams,
     "get_table_quality": TableQualityParams,
+    "annotation_quality": AnnotationQualityParams,
 }
 
 
@@ -250,6 +253,8 @@ def invoke_function(
 def _invoke_function(db: Database, name: str, arguments: JsonDocument) -> FunctionResult:
     if name == "search_files":
         return _search_files(db, arguments)
+    if name == "annotation_quality":
+        return invoke_annotation_quality(db, arguments)
     if name in {"get_quality", "get_report"}:
         return _dataset_result(db, name, arguments)
     if name in {

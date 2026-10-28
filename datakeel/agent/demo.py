@@ -12,6 +12,7 @@ from datakeel.core.envelopes import unwrap
 from datakeel.core.harness_models import TokenUsage
 from datakeel.core.models import JsonDocument
 from datakeel.delegation.demo import respond_delegation
+from datakeel.ontology.annotation_demo import respond_annotation_quality
 from datakeel.ontology.tool_models import ToolOutcome
 
 
@@ -45,6 +46,7 @@ class DemoProvider:
     ) -> ModelResponse:
         evidence = (
             _access_refusal(tools)
+            or respond_annotation_quality(request, text, facts, tools)
             or respond_delegation(request, text, tools)
             or (
                 ModelResponse(content="工具调用失败。请检查工具结果后重试。")

@@ -1,0 +1,81 @@
+id: 44-annotation-quality
+description: Read actual persisted agreement, suspicions, approved inspection and rework history.
+fixture_kind: annotation_qa
+turns:
+- input: 这批标注一致性怎么样？
+  script:
+  - tool_calls:
+    - name: tool_search
+      arguments:
+        query: annotation_quality
+      id: 44-discover
+  - tool_calls:
+    - name: annotation_quality
+      arguments:
+        dataset_id: '{{dataset_id}}'
+        version_id: '{{version_id}}'
+      id: 44-quality
+  - content: This batch has three reviewers. Review Fleiss kappa alongside raw agreement and inspect the rework history.
+expect:
+  tool_sequence: [tool_search, annotation_quality]
+  tool_results:
+  - name: annotation_quality
+    content_schema:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [latest, batches, inspections]
+          properties:
+            latest:
+              type: object
+              required: [sample_count, annotation_count, result, comparison]
+              properties:
+                sample_count: {const: 24}
+                annotation_count: {const: 72}
+                result:
+                  type: object
+                  required: [classification, boxes, spans, findings, annotator_count]
+                  properties:
+                    annotator_count: {const: 3}
+                    classification:
+                      type: object
+                      required: [fleiss_kappa]
+                      properties:
+                        fleiss_kappa:
+                          type: object
+                          required: [value, observed_agreement]
+                          properties:
+                            value: {const: 1.0}
+                            observed_agreement: {const: 1.0}
+                    boxes: {type: array, minItems: 3}
+                    spans: {type: array, minItems: 3}
+                    findings:
+                      type: array
+                      contains:
+                        type: object
+                        required: [code, evidence]
+                        properties:
+                          code: {const: invalid_span}
+                          evidence: {type: array, minItems: 1}
+                comparison:
+                  type: object
+                  required: [corrected_count, introduced_count]
+                  properties:
+                    corrected_count: {type: integer, minimum: 5}
+                    introduced_count: {const: 1}
+            batches: {type: array, minItems: 2, maxItems: 2}
+            inspections:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                type: object
+                required: [accepted, defective_count]
+                properties:
+                  accepted: {const: false}
+                  defective_count: {const: 2}
+  answer_contains: [three reviewers, raw agreement, rework]
+  file_count: 24
+  max_turns: 3

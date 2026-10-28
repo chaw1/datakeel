@@ -17,6 +17,7 @@ export const objectTabs = [
   "files",
   "versions",
   "quality",
+  "annotation-quality",
   "report",
 ] as const;
 export type ObjectTab = (typeof objectTabs)[number];

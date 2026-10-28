@@ -30,6 +30,11 @@ from datakeel.storage.action_rows import (
     ActionRunRow,
     ApprovalRow,
 )
+from datakeel.storage.annotation_rows import (
+    AnnotationBatchRow,
+    AnnotationInspectionRow,
+    AnnotationSamplingRow,
+)
 from datakeel.storage.ask_rows import AskAnswerRow, AskSessionRow
 from datakeel.storage.base import Base
 from datakeel.storage.budget_rows import BudgetAccountRow, BudgetReservationRow
@@ -96,6 +101,9 @@ _REGISTERED_MODELS = (
     AssetUsageRow,
     DataAssetHistoryRow,
     DataAssetRow,
+    AnnotationBatchRow,
+    AnnotationSamplingRow,
+    AnnotationInspectionRow,
     ActionAuditRow,
     ActionOperationRow,
     ActionPlanRow,

@@ -1,5 +1,6 @@
 import { advancedZh } from "./advancedZh";
 import { agentZh } from "./agentZh";
+import { annotationZh } from "./annotationZh";
 import { approvalsMetricZh } from "./approvalsMetricZh";
 import { approvalZh } from "./approvalZh";
 import { askZh } from "./askZh";
@@ -28,6 +29,7 @@ export const zh: Record<MessageKey, string> = {
   ...standardsZh,
   ...dqZh,
   ...metadataZh,
+  ...annotationZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,

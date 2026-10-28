@@ -81,6 +81,7 @@ packages = ["datakeel"]
 "contracts/assets" = "datakeel/_contracts/assets"
 "contracts/standards" = "datakeel/_contracts/standards"
 "contracts/quality-rules" = "datakeel/_contracts/quality-rules"
+"contracts/annotation_qa" = "datakeel/_contracts/annotation_qa"
 "docs/p9" = "datakeel/docs/p9"
 
 [tool.ruff]

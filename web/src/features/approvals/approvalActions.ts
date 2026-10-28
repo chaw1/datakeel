@@ -10,6 +10,7 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   withdraw_data_asset: "assetWithdraw",
   decide_asset_application: "assetDecision",
   revoke_asset_grant: "assetRevoke",
+  annotation_acceptance: "annotationAcceptAction",
   delete_files: "approvalDelete",
   export_dataset: "approvalExport",
   quarantine_files: "approvalQuarantine",

@@ -11,6 +11,7 @@ from datakeel.api.errors import register_errors
 from datakeel.api.routes import (
     actions,
     agent,
+    annotation_qa,
     ask,
     catalog,
     custom_operators,
@@ -61,6 +62,7 @@ def create_app(db: Database | None = None) -> FastAPI:
         releases.router,
         uploads.router,
         data_assets.router,
+        annotation_qa.router,
         catalog.router,
         custom_operators.router,
         standards.router,

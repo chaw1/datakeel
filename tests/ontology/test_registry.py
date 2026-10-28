@@ -38,7 +38,8 @@ def test_registry_when_built_exposes_all_declared_asset_and_read_function_types(
         "question",
         "kg_entity",
     }
-    assert len(value.functions) == 19
+    assert len(value.functions) == 20
+    assert "annotation_quality" in {item.id for item in value.functions}
 
 
 def test_link_definitions_when_built_keep_semantics_distinct() -> None:

@@ -16,6 +16,7 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
     "withdraw_data_asset": ("data-assets:write", True, "Withdraw an asset card"),
     "decide_asset_application": ("data-assets:approve", False, "Decide an access application"),
     "revoke_asset_grant": ("data-assets:approve", False, "Revoke an access grant"),
+    "annotation_acceptance": ("annotations:accept", False, "Archive signed sampling acceptance"),
     "quarantine_files": ("files:write", True, "Set quarantine state"),
     "unquarantine_files": ("files:write", True, "Clear quarantine state"),
     "create_version_from_selection": (

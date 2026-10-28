@@ -33,6 +33,7 @@ from datakeel.actions.standard_parameters import (
     UpdateCodeListParams,
     UpdateStandardParams,
 )
+from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
@@ -98,6 +99,7 @@ class ExportParams(BoundaryModel):
 
 PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     **DATA_ASSET_PARAMETER_TYPES,
+    "annotation_acceptance": AnnotationAcceptanceParams,
     "quarantine_files": SelectionParams,
     "unquarantine_files": SelectionParams,
     "delete_files": SelectionParams,
