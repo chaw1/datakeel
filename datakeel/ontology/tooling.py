@@ -13,6 +13,7 @@ from datakeel.actions.models import ActionContext, ActionPlan, ApprovalDecision,
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.actions.policy import digest
 from datakeel.actions.references import plan_refs
+from datakeel.core.ask_models import AskAnswer
 from datakeel.core.data_asset_models import AccessContext, AccessEntry
 from datakeel.core.errors import AuthorizationError, DatakeelError, NotFoundError
 from datakeel.core.models import JsonDocument
@@ -25,6 +26,7 @@ from datakeel.ontology.tool_models import (
     ToolOutcome,
 )
 from datakeel.ontology.tool_refs import argument_refs, extract_refs, reconcile_refs
+from datakeel.storage.ask_conversations import get_conversation
 from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
 from datakeel.storage.tool_invocations import (
@@ -148,10 +150,21 @@ def _replay_access(
         elif previous.run is not None:
             service.authorize_run(db, previous.run, caller)
         elif previous.name in PARAMETER_MODELS and previous.status == "SUCCEEDED":
+            if previous.name == "ask_data":
+                _require_ask_thread(db, previous, caller)
             require_access(db, tuple(previous.asset_refs), caller)
     except AuthorizationError as error:
         return ToolOutcome(name=previous.name, status="FAILED", error=str(error))
     return previous
+
+
+def _require_ask_thread(db: Database, previous: ToolOutcome, caller: AccessContext) -> None:
+    answer = AskAnswer.model_validate(previous.content.root["data"])
+    if answer.conversation_id is not None:
+        try:
+            get_conversation(db, answer.conversation_id, actor=caller.actor)
+        except NotFoundError as error:
+            raise AuthorizationError(str(error)) from error
 
 
 def invoke_tool(
