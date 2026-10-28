@@ -144,6 +144,14 @@ def _store(session: Session, request: AskRequest, answer: AskAnswer) -> AskAnswe
     return answer
 
 
+def store_answer_in_session(session: Session, request: AskRequest, answer: AskAnswer) -> AskAnswer:
+    """Store validated immutable evidence inside the caller's write transaction."""
+    request = AskRequest.model_validate(request.model_dump())
+    answer = AskAnswer.model_validate(answer.model_dump())
+    _check_request(request, answer)
+    return _store(session, request, answer)
+
+
 def store_answer(db: Database, request: AskRequest, answer: AskAnswer) -> AskAnswer:
     """Commit a session, immutable answer, and evidence event in one serialized transaction."""
     request = AskRequest.model_validate(request.model_dump())

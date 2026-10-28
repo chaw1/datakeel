@@ -9,6 +9,8 @@ from typing import Literal, Self
 
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
+from datakeel.core.ask_chart_models import ChartSpec
+from datakeel.core.ask_frame_models import AskComparison, AskQueryFrame
 from datakeel.core.evidence_models import Assertion
 from datakeel.core.knowledge_models import (
     KnowledgeAnswer,
@@ -26,7 +28,8 @@ from datakeel.core.models import BoundaryModel, new_id, utcnow
 from datakeel.core.profile_models import ProfileAnswer
 
 ASK_DATA_DESCRIPTION = (
-    "Read metric values, owners, upstream or downstream; document evidence includes review status."
+    "Read metric values, owners, upstream or downstream; document evidence includes review status. "
+    "Pass conversation_id from a prior answer to ask a follow-up question."
 )
 
 
@@ -60,6 +63,7 @@ class AskRequest(BoundaryModel):
     subject_id: str | None = Field(default=None, min_length=1, max_length=500)
     knowledge_intent: Literal["owner", "upstream", "downstream", "owned"] | None = None
     session_id: str | None = Field(default=None, min_length=1, max_length=100)
+    conversation_id: str | None = Field(default=None, min_length=1, max_length=100)
     reference_instant: AwareDatetime = Field(default_factory=utcnow)
     actor: str = Field(default="local-user", min_length=1, max_length=100)
 
@@ -109,6 +113,11 @@ class AskAnswer(BoundaryModel):
     status: Literal["answered", "unanswerable", "clarification"]
     message: str
     reference_instant: AwareDatetime
+    conversation_id: str | None = None
+    interpreted_question: str = ""
+    query_frame: AskQueryFrame | None = None
+    comparison: AskComparison | None = None
+    chart: ChartSpec | None = Field(default=None, exclude_if=lambda value: value is None)
     metric_card: MetricCard | None = None
     sql: CompiledQuery | None = None
     result: QueryResult | None = None
