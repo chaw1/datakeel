@@ -55,7 +55,11 @@ def test_mixed_scale_batch_gets_a_hint_not_a_defect(
     assert checked["reference_extent"] == 0.55
     assert checked["suggested_scale"] == 0.001
     assert checked["coordinates_changed"] is False
-    assert pointcloud_assessment(result[-1]).consistency == 1
+    assessed = pointcloud_assessment(result[-1])
+    assert assessed.consistency == 1
+    assert [(issue["code"], issue["severity"]) for issue in assessed.issues] == [
+        ("pointcloud_unit_hint", "info")
+    ]
     cleaned = clean.OPERATOR.run([result[-1]], output_dir).files[0]
     assert cleaned.metadata["pointcloud_probe"]["unit_hint"] == HINT
     assert cleaned.metadata["source_pointcloud_probe"]["unit_hint"] == HINT
@@ -169,3 +173,8 @@ def test_later_steps_skip_a_failed_file_and_keep_the_first_reason(
     passed = operator.run([failed], output_dir)
     assert passed.files == [failed]
     assert passed.quality["failed_files"][0]["operator"] == "pointcloud.probe"
+    assessed = pointcloud_assessment(passed.files[0])
+    assert assessed.completeness == 0
+    assert [(issue["code"], issue["severity"]) for issue in assessed.issues] == [
+        ("pointcloud_unreadable", "error")
+    ]

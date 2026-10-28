@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datakeel.core.models import FileItem
+from datakeel.operators.pointcloud.models import ProbeParams
 from datakeel.quality import build_report, score_quality
-from datakeel.quality.media import assess_file
+from datakeel.quality.media import DEFAULT_MAX_OUTLIER_RATIO, assess_file
 from datakeel.storage.database import DatasetRow
 from datakeel.storage.object_projection import file_quality
 
@@ -55,7 +56,7 @@ def test_image_scores_feed_completeness_report_and_cleanup() -> None:
     [
         ("invalid_ratio", 0.25, "completeness", 75, "pointcloud_invalid_ratio"),
         ("outlier_ratio", 0.4, "distribution", 60, "pointcloud_outlier_ratio"),
-        ("density", 0.2, "distribution", 20, "pointcloud_sparse"),
+        ("relative_spacing", 0.05, "distribution", 20, "pointcloud_sparse"),
         ("unit_suspected", True, "consistency", 20, "pointcloud_unit"),
     ],
 )
@@ -65,9 +66,11 @@ def test_pointcloud_signals_have_specific_dimension_penalties(
     """Each independently measured problem has its own reason and bounded score."""
     probe: dict[str, JsonValue] = {
         "point_count": 100,
-        "density": 10,
         "invalid_ratio": 0,
         "outlier_ratio": 0,
+        "relative_spacing": 0.001,
+        "spacing_limit": 0.01,
+        "sparse_penalized": True,
         "unit_suspected": False,
         "unit_reason": "possible millimeters",
         signal: value,
@@ -79,12 +82,14 @@ def test_pointcloud_signals_have_specific_dimension_penalties(
 
 
 def test_clean_probe_has_no_pointcloud_issues_and_full_score() -> None:
-    """A dense, finite, correctly scaled scan without outliers is not penalized."""
+    """A dense, finite, correctly scaled scan with a few outliers below the limit is clean."""
     probe: dict[str, JsonValue] = {
         "point_count": 5000,
-        "density": 40,
         "invalid_ratio": 0,
-        "outlier_ratio": 0,
+        "outlier_ratio": 0.0004,
+        "relative_spacing": 0.002,
+        "spacing_limit": 0.01,
+        "sparse_penalized": True,
         "unit_suspected": False,
     }
     file = _file("point-cloud", pointcloud_probe=probe)
@@ -92,26 +97,103 @@ def test_clean_probe_has_no_pointcloud_issues_and_full_score() -> None:
     assert not [issue for issue in score_quality([file]).issues if issue.code.startswith("point")]
 
 
-def test_sparse_threshold_follows_recorded_policy_and_yields_to_unit_suspicion() -> None:
-    """The density minimum is configurable; suspect units make density incomparable."""
-    probe: dict[str, JsonValue] = {"point_count": 100, "density": 5, "unit_suspected": False}
-    strict = _file(
-        "point-cloud", pointcloud_probe=probe, pointcloud_probe_params={"min_density": 20}
+def _outliers(ratio: float, low: float, limit: float | None = None) -> FileItem:
+    probe: dict[str, JsonValue] = {
+        "point_count": 2_000_000,
+        "outlier_ratio": ratio,
+        "outlier_ci_low": low,
+        "outlier_ci_high": ratio * 2 - low,
+        "outlier_sampled": True,
+        "outlier_sample_count": 500_000,
+        "isolated_count": 700,
+        "clustered_count": 120,
+    }
+    policy: dict[str, JsonValue] = {} if limit is None else {"max_outlier_ratio": limit}
+    return _file("point-cloud", pointcloud_probe=probe, pointcloud_probe_params=policy)
+
+
+def test_outlier_issue_needs_the_lower_confidence_bound_above_the_file_limit() -> None:
+    """A sampled ratio within sampling error of the limit is not reported; a clear excess is."""
+    assert ProbeParams().max_outlier_ratio == DEFAULT_MAX_OUTLIER_RATIO
+    uncertain = assess_file(_outliers(0.0009, 0.0006))
+    assert uncertain.issues == []
+    assert uncertain.distribution == 1
+    clear = assess_file(_outliers(0.002, 0.0018))
+    assert [issue.code for issue in clear.issues] == ["pointcloud_outlier_ratio"]
+    assert clear.distribution == pytest.approx(0.998)
+    message = clear.issues[0].message
+    assert "0.180%-0.220%" in message
+    assert "500000 sampled points" in message
+    assert "700 isolated, 120 in separated clusters" in message
+    assert "limit 0.070%" in message
+    assert assess_file(_outliers(0.002, 0.0018, limit=0.01)).issues == []
+    full = _outliers(0.001, 0.001)
+    full.metadata["pointcloud_probe"]["outlier_sampled"] = False  # type: ignore[index]
+    assert "all 500000 finite points" in assess_file(full).issues[0].message
+
+
+def test_sparse_coverage_is_a_hint_without_a_sensor_and_skipped_for_doubtful_units() -> None:
+    """Relative spacing is penalized for declared forms only; doubtful units are not sparse."""
+    probe: dict[str, JsonValue] = {
+        "point_count": 100,
+        "relative_spacing": 0.04,
+        "spacing_limit": 0.01,
+        "sparse_penalized": True,
+        "sensor": "depth_camera",
+        "unit_suspected": False,
+    }
+    declared = assess_file(_file("point-cloud", pointcloud_probe=probe))
+    assert declared.distribution == 0.25
+    assert [issue.code for issue in declared.issues] == ["pointcloud_sparse"]
+    assert "0.0400 of the main-body extent" in declared.issues[0].message
+    assert "depth_camera limit 0.01" in declared.issues[0].message
+    hint = assess_file(_file("point-cloud", pointcloud_probe={**probe, "sparse_penalized": False}))
+    assert hint.distribution == 1
+    assert [(issue.code, issue.severity) for issue in hint.issues] == [
+        ("pointcloud_sparse_hint", "info")
+    ]
+    dense = assess_file(_file("point-cloud", pointcloud_probe={**probe, "relative_spacing": 0.01}))
+    assert dense.issues == []
+    doubtful = assess_file(_file("point-cloud", pointcloud_probe={**probe, "unit_suspected": True}))
+    assert [issue.code for issue in doubtful.issues] == ["pointcloud_unit"]
+    assert doubtful.distribution == 1
+    assert doubtful.consistency == 0.2
+    assert "unit in doubt" in doubtful.issues[0].message
+
+
+def test_batch_unit_hint_is_information_without_penalty() -> None:
+    """A thousandfold difference from the batch alone never lowers a score."""
+    probe: dict[str, JsonValue] = {
+        "point_count": 100,
+        "body_extent": 0.2,
+        "unit_suspected": False,
+        "unit_hint": "batch_extent_ratio_possible_unit_mismatch",
+    }
+    policy: dict[str, JsonValue] = {"reference_extent": 200.0, "scale_ratio": 1000.0}
+    assessment = assess_file(
+        _file("point-cloud", pointcloud_probe=probe, pointcloud_probe_params=policy)
     )
-    assessment = assess_file(strict)
-    assert assessment.distribution == 0.25
-    assert [issue.code for issue in assessment.issues] == ["pointcloud_sparse"]
-    assert "below minimum 20" in assessment.issues[0].message
-    lenient = _file(
-        "point-cloud", pointcloud_probe=probe, pointcloud_probe_params={"min_density": 0}
-    )
-    assert assess_file(lenient).issues == []
-    scaled = _file(
+    assert assessment.score == 100
+    assert [(issue.code, issue.severity) for issue in assessment.issues] == [
+        ("pointcloud_unit_hint", "info")
+    ]
+    assert "reference extent=200.0" in assessment.issues[0].message
+
+
+def test_unreadable_point_cloud_is_an_error_with_its_reason() -> None:
+    """A file an operator could not read scores zero completeness and names the operator."""
+    file = _file(
         "point-cloud",
-        pointcloud_probe={"point_count": 100, "density": 1e-7, "unit_suspected": True},
+        pointcloud_error={"operator": "pointcloud.probe", "reason": "ValidationError: bad header"},
     )
-    assert [issue.code for issue in assess_file(scaled).issues] == ["pointcloud_unit"]
-    assert assess_file(scaled).distribution == 1
+    assessment = assess_file(file)
+    assert assessment.completeness == 0
+    assert assessment.score == 0
+    assert [(issue.code, issue.severity) for issue in assessment.issues] == [
+        ("pointcloud_unreadable", "error")
+    ]
+    assert "pointcloud.probe could not process the file" in assessment.issues[0].message
+    assert "bad header" in assessment.issues[0].message
 
 
 def test_cleaned_scan_report_preserves_original_defects() -> None:
