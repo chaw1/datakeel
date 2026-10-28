@@ -54,7 +54,7 @@ class QualityView(Record):
     config: QualityConfig
     tabular: TabularAssessment | None = None
     rules: DqSummary | None = Field(default=None, exclude_if=lambda value: value is None)
-    media: MediaSummary | None = None
+    media: MediaSummary | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ChapterView(Record):
