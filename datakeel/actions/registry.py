@@ -37,6 +37,7 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
     "export_dataset": ("datasets:export", False, "Publish an approved local export artifact"),
     "decide_assertions": ("evidence:write", True, "Review assertion status with append-only audit"),
     "import_catalog": ("catalog:write", True, "Publish a versioned source snapshot"),
+    "confirm_metric_draft": ("metrics:write", True, "Confirm imported semantic draft"),
     "restore_catalog": ("catalog:write", True, "Restore a prior source snapshot"),
     "update_metric": ("metrics:write", True, "semantic_change"),
     "rollback_metric": ("metrics:write", True, "semantic_change"),

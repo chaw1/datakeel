@@ -243,3 +243,18 @@
     margin-bottom: calc(var(--space) * 2.5);
   }
 }
+.metadata-import-form,
+.metadata-evidence {
+  display: grid;
+  gap: calc(var(--space) * 3);
+}
+.metadata-import-form > button {
+  justify-self: start;
+}
+.metadata-fact {
+  display: contents;
+}
+.metadata-evidence pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

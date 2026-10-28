@@ -229,7 +229,6 @@ Select the rule in the list, choose **Run now**, then **Execute action** in the 
 Restore `{"minimum": 0}`, approve the edit and run again. The issue becomes **Recovered, awaiting confirmation**. **Confirm resolution** and execute that plan to close it. Recent results retain each observation; the trend distinguishes actual values from thresholds. Open the `ecommerce/main/orders` table object from **Data catalog** to see its related rules and status. After an edit, latest status uses only the current revision; older results remain available.
 
 See the [quality-rule reference](QUALITY_RULES.md) for YAML, UTC cron, timeouts and scan limits, baselines, signed alerts and scoring. This is a manual extension to the tour; the screenshot replay below still covers the original steps.
-
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.
@@ -261,3 +260,18 @@ The default demo publishes six fictional enterprise assets through controlled ac
 6. Revoke the grant through another reviewed, approved and executed plan. New questions and old-answer replay now refuse access. Expiry has the same effect without a background job; earlier audit remains.
 
 **Create asset draft** packages an existing object; publication, edits and withdrawal retain all revisions. See [Data assets](DATA_ASSETS.en.md) for configuration and API/CLI details.
+
+## Import dbt and orchestration metadata
+
+Import the fictional dbt project artifacts into the current local workspace:
+
+```sh
+uv run datakeel import dbt --source-id shop \
+  --manifest tests/fixtures/dbt/manifest.json \
+  --catalog tests/fixtures/dbt/catalog.json \
+  --run-results tests/fixtures/dbt/run_results.json
+```
+
+Open **Catalog → Import metadata**. Reuse your database source ID, select a local `manifest.json`, and optionally include `catalog.json` and `run_results.json`. Import the artifacts and inspect the new, changed, deleted-at-source, and unchanged counts. Switch to Airflow to import an offline REST v1 DAG export. The imported-object browser filters DAGs, tasks, consumers, and metric drafts; select an object to inspect its schedule, ownership, latest state, freshness, and lineage.
+
+Metric drafts remain outside the semantic layer until their complete definition is reviewed and explicitly approved in the standard confirmation plan. Repeating an identical import should report unchanged objects. Removed source objects keep their deletion marker. See [Metadata imports](METADATA_IMPORTS.en.md) for CLI, HTTP, export formats, and OpenLineage authentication.

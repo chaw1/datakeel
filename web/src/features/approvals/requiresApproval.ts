@@ -10,6 +10,7 @@ export function requiresHumanApproval(plan: ActionPlan) {
       "import_standards",
       "confirm_standard_mapping",
       "rollback_standards",
+      "confirm_metric_draft",
     ].includes(plan.action_type)
   );
 }

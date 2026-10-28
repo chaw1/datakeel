@@ -11,6 +11,8 @@ from typing import Literal
 from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from datakeel.core.orchestration import OpenLineageNamespace
+
 
 class Settings(BaseSettings):
     """Read the local process environment; callers share one instance per environment snapshot."""
@@ -42,6 +44,14 @@ class Settings(BaseSettings):
     upload_max_chunk_bytes: int = Field(default=8 * 1024 * 1024, ge=1, le=64 * 1024 * 1024)
     upload_max_concurrency: int = Field(default=4, ge=1, le=32)
     upload_max_file_bytes: int = Field(default=5 * 1024**3, ge=0, le=1024**4)
+    openlineage_token: SecretStr | None = None
+    openlineage_namespaces: dict[str, OpenLineageNamespace] = Field(default_factory=dict)
+    airflow_url: str | None = None
+    airflow_token: SecretStr | None = None
+    airflow_username: str | None = None
+    airflow_password: SecretStr | None = None
+    airflow_timeout: float = Field(default=30, gt=0, le=120)
+    airflow_run_limit: int = Field(default=10, ge=1, le=100)
     delegation_max_depth: int = Field(default=2, ge=1, le=8)
     delegation_max_parallel: int = Field(default=3, ge=1, le=16)
     sandbox_backend: Literal["container", "subprocess"] = "container"

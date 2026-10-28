@@ -82,7 +82,7 @@ def test_ontology_endpoint_when_requested_exposes_valid_versioned_schemas(
     assert len(value["object_types"]) == 14
     assert len(value["link_types"]) == 9
     assert len(value["functions"]) == 19
-    assert len(value["actions"]) == 33
+    assert len(value["actions"]) == 34
     assert {"list_quality_rules", "get_table_quality"} <= {
         item["id"] for item in value["functions"]
     }

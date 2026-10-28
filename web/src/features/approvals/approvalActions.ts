@@ -20,6 +20,7 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   save_metadata: "approvalMetadata",
   decide_assertions: "approvalAssertions",
   import_catalog: "approvalImport",
+  confirm_metric_draft: "metadataConfirmAction",
   restore_catalog: "approvalRestore",
   update_metric: "approvalMetricUpdate",
   rollback_metric: "approvalMetricRollback",

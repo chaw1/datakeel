@@ -31,6 +31,13 @@ def object_content(item: CatalogObject) -> JsonDocument:
         properties = {key: properties.get(key) for key in ("columns", "primary_key", "comment")}
         if "table_profile" in item.properties.root:
             properties["table_profile"] = item.properties.root["table_profile"]
+    properties.update(
+        {
+            key: item.properties.root[key]
+            for key in ("integration", "integrations", "source_deleted")
+            if key in item.properties.root
+        }
+    )
     value["properties"] = properties
     return JsonDocument(value)
 

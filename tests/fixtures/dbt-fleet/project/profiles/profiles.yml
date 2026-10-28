@@ -1,0 +1,8 @@
+fleet:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: fleet.duckdb
+      database: fleet
+      schema: main

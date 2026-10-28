@@ -30,6 +30,7 @@ ActionName = Literal[
     "export_dataset",
     "decide_assertions",
     "import_catalog",
+    "confirm_metric_draft",
     "restore_catalog",
     "update_metric",
     "rollback_metric",
@@ -101,7 +102,7 @@ class ActionPlan(BoundaryModel):
 
     @property
     def requires_approval(self) -> bool:
-        """Gate irreversible, outbound and standards governance changes on human review."""
+        """Gate irreversible, outbound, standards and metric-draft changes on human review."""
         return (
             not self.reversible
             or self.external
@@ -112,6 +113,7 @@ class ActionPlan(BoundaryModel):
                 "update_code_list",
                 "confirm_standard_mapping",
                 "rollback_standards",
+                "confirm_metric_draft",
             }
         )
 

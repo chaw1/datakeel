@@ -4,6 +4,7 @@
 """Expose metadata identities without placing them in legacy frozen manifests."""
 
 from datakeel.actions.catalog_parameters import (
+    ConfirmMetricDraftParams,
     ImportCatalogParams,
     RestoreCatalogParams,
     RollbackMetricParams,
@@ -56,6 +57,8 @@ def _feature_refs(params: BoundaryModel) -> list[AssetRef]:
         ]
     if isinstance(params, StandardActionParams):
         return standard_refs(params)
+    if isinstance(params, ConfirmMetricDraftParams):
+        return [AssetRef(asset_type="metric_draft", asset_id=params.draft_id)]
     return []
 
 

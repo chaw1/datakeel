@@ -9,6 +9,7 @@ import { objectHref } from "../object/navigation";
 import { StandardsChecks } from "../standards/StandardsChecks";
 
 import { ImpactTree } from "./ImpactTree";
+import { MetadataEvidence } from "./MetadataEvidence";
 import { linkLabels, propertyText } from "./values";
 
 import type { CatalogTableDetail } from "../../api/catalog";
@@ -77,6 +78,7 @@ export function TableDetails({
               )
               .join(", ") || t("catNotSet")}
           </p>
+          <MetadataEvidence item={detail.table} />
           <div className="catalog-table-scroll">
             <table>
               <thead>

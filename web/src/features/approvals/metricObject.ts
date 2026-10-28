@@ -2,13 +2,15 @@ import type { MetricHistory } from "../../api/objects";
 import type { ActionPlan } from "../../api/types";
 
 export function isMetricPlan(plan: ActionPlan) {
-  return ["update_metric", "rollback_metric"].includes(plan.action_type);
+  return ["update_metric", "rollback_metric", "confirm_metric_draft"].includes(
+    plan.action_type,
+  );
 }
 
 export function metricObject(plan: ActionPlan) {
   const definition = plan.canonical_params.definition;
   if (
-    plan.action_type === "update_metric" &&
+    ["update_metric", "confirm_metric_draft"].includes(plan.action_type) &&
     definition !== null &&
     typeof definition === "object" &&
     !Array.isArray(definition)

@@ -27,3 +27,14 @@ it("switches between source browsing, registered metrics, and the glossary", asy
   await user.click(screen.getByRole("button", { name: "Business glossary" }));
   expect(await screen.findByText("Retail receipts")).toBeVisible();
 });
+
+it("opens the metadata import form and imported object browser", async () => {
+  mockCatalogFetch();
+  const user = userEvent.setup();
+  render(<CatalogPage onOpenReceipt={vi.fn()} />);
+  await user.click(screen.getByRole("button", { name: "Import metadata" }));
+  expect(screen.getByLabelText("manifest.json (required)")).toBeVisible();
+  expect(
+    await screen.findByRole("region", { name: "Imported objects" }),
+  ).toBeVisible();
+});

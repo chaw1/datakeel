@@ -36,7 +36,7 @@ def _project_events(projection: Projection, events: list[LineageEvent]) -> None:
             continue
         for ref in event.inputs + event.outputs:
             _add_asset(projection, ref)
-        if event.run_state in {"FAIL", "FAILED"}:
+        if event.run_state in {"FAIL", "FAILED", "ABORT"}:
             continue
         # Keep large bundle events once in GraphView.events rather than on every edge.
         inline = len(event.inputs) + len(event.outputs) <= INLINE_EVENT_REFS
@@ -170,7 +170,9 @@ def _visible_events(
             ref.asset_id in selected for ref in event.outputs
         ):
             continue
-        edgeless = not event.inputs or not event.outputs or event.run_state in {"FAIL", "FAILED"}
+        edgeless = (
+            not event.inputs or not event.outputs or event.run_state in {"FAIL", "FAILED", "ABORT"}
+        )
         incident = not asset or any(
             ref.asset_id in selected for ref in event.inputs + event.outputs
         )

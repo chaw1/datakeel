@@ -1,0 +1,10 @@
+config:
+  send_anonymous_usage_stats: false
+p22_shop:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: shop.duckdb
+      schema: main
+      threads: 1

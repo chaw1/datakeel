@@ -1,0 +1,22 @@
+{
+  "eventType": "START",
+  "eventTime": "2026-10-27T01:00:00Z",
+  "producer": "https://producer.example/v1",
+  "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+  "run": {"runId": "37b58248-1d60-4ba8-9fc6-605a535527c4", "facets": {}},
+  "job": {"namespace": "airflow://scheduler.example", "name": "daily_orders.build", "facets": {}},
+  "inputs": [{"namespace": "POSTGRESQL://WAREHOUSE.EXAMPLE:5432/", "name": "analytics.raw.orders"}],
+  "outputs": [
+    {
+      "namespace": "postgres://warehouse.example",
+      "name": "analytics.public.orders",
+      "facets": {
+        "schema": {
+          "_producer": "https://producer.example/v1",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+          "fields": [{"name": "order_id", "type": "BIGINT", "description": "Order identifier"}]
+        }
+      }
+    }
+  ]
+}

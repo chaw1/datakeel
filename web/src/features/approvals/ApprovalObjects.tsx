@@ -5,6 +5,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { bytes } from "../../lib/format";
 import { isObjectKind, objectHref } from "../object/navigation";
 
+import { ApprovalMetricDraftObject } from "./ApprovalMetricDraftObject";
 import { ApprovalMetricObject } from "./ApprovalMetricObject";
 import { ApprovalStandardObjects } from "./ApprovalStandardObjects";
 import { ApprovalQualityObject } from "./ApprovalQualityObject";
@@ -27,6 +28,8 @@ export function ApprovalObjects({ plan }: { plan: ActionPlan }) {
     ].includes(plan.action_type)
   )
     return <ApprovalStandardObjects key={plan.plan_digest} plan={plan} />;
+  if (plan.action_type === "confirm_metric_draft")
+    return <ApprovalMetricDraftObject plan={plan} />;
   if (isMetricPlan(plan))
     return <ApprovalMetricObject key={plan.plan_digest} plan={plan} />;
   if (isQualityPlan(plan))
