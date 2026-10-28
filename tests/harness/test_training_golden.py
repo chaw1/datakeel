@@ -9,14 +9,13 @@ from typing import TYPE_CHECKING
 
 from datakeel.harness.cases import load_cases
 from datakeel.harness.execution import run_case
-from datakeel.storage.training_reads import read_training_quality
+from datakeel.storage.training_reads import read_training_result
 
 if TYPE_CHECKING:
     import pytest
 
     from datakeel.core.data_asset_models import AccessContext
-    from datakeel.core.llm_data_models import TrainingReport
-    from datakeel.core.training_governance import TrainingQualityQuery
+    from datakeel.core.training_governance import TrainingQualityQuery, TrainingQualityResult
     from datakeel.storage.database import Database
 
 
@@ -32,12 +31,13 @@ def test_training_golden_rejects_mutated_issue_counts(monkeypatch: pytest.Monkey
 
     def corrupted(
         db: Database, query: TrainingQualityQuery, *, access: AccessContext | None = None
-    ) -> TrainingReport:
-        return read_training_quality(db, query, access=access).model_copy(
-            update={"issue_counts": {}}
+    ) -> TrainingQualityResult:
+        result = read_training_result(db, query, access=access)
+        return result.model_copy(
+            update={"report": result.report.model_copy(update={"issue_counts": {}})}
         )
 
-    monkeypatch.setattr("datakeel.ontology.training_functions.read_training_quality", corrupted)
+    monkeypatch.setattr("datakeel.ontology.training_functions.read_training_result", corrupted)
     case = next(item for item in load_cases() if item.id == "46-training-quality")
     report = run_case(case, "fake")
     assert not report.passed

@@ -8,7 +8,7 @@ from datetime import datetime
 from pydantic import Field
 
 from datakeel.core.llm_data_models import TrainingConfig, TrainingReport
-from datakeel.core.models import BoundaryModel
+from datakeel.core.models import AssetRef, BoundaryModel, FileItem
 
 TRAINING_QUALITY_DESCRIPTION = (
     "Read offline SFT messages, instruction and preference JSONL training quality findings: "
@@ -64,3 +64,17 @@ class TrainingQualityQuery(BoundaryModel):
 
     dataset_id: str = Field(min_length=1)
     version_id: str | None = None
+
+
+class TrainingQualityResult(BoundaryModel):
+    """Bind a read result and its exact source grants inside one storage snapshot."""
+
+    report: TrainingReport
+    asset_refs: tuple[AssetRef, ...]
+
+
+class TrainingProjection(BoundaryModel):
+    """Keep scored files and their pinned training/evaluation references inseparable."""
+
+    files: tuple[FileItem, ...]
+    asset_refs: tuple[AssetRef, ...] = ()

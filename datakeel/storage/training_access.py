@@ -6,6 +6,7 @@
 from sqlalchemy.orm import Session
 
 from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.errors import NotFoundError
 from datakeel.core.models import AssetRef
 from datakeel.core.training_governance import TrainingEvaluation
 from datakeel.storage.data_asset_access import require_access_in_session
@@ -27,16 +28,24 @@ def authorize_training(
     access: AccessContext | None = None,
 ) -> None:
     """Check evaluation-source grants as well as source-dataset grants before any file read."""
-    resolved = list(refs)
-    for identifier in evaluation_ids:
-        row = session.get(TrainingEvaluationRow, identifier)
-        if row is not None:
-            value = TrainingEvaluation.model_validate(row.payload)
-            resolved.extend(
-                training_refs(value.source_dataset_id, value.version_id, value.file_ids)
-            )
+    resolved = (*refs, *evaluation_source_refs(session, evaluation_ids))
     require_access_in_session(
         session,
-        tuple(resolved),
+        resolved,
         access or AccessContext(actor="local", entry="ask", scope="query"),
     )
+
+
+def evaluation_source_refs(
+    session: Session, evaluation_ids: tuple[str, ...]
+) -> tuple[AssetRef, ...]:
+    """Resolve version-pinned evaluation provenance for both initial reads and cached replays."""
+    resolved: list[AssetRef] = []
+    for identifier in evaluation_ids:
+        row = session.get(TrainingEvaluationRow, identifier)
+        if row is None:
+            msg = "Registered training evaluation not found"
+            raise NotFoundError(msg)
+        value = TrainingEvaluation.model_validate(row.payload)
+        resolved.extend(training_refs(value.source_dataset_id, value.version_id, value.file_ids))
+    return tuple(resolved)

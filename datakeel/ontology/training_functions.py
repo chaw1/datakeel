@@ -4,11 +4,11 @@
 """Expose offline training measurements through the shared Agent and MCP read boundary."""
 
 from datakeel.core.data_asset_models import AccessContext
-from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.core.models import JsonDocument
 from datakeel.core.training_governance import TrainingQualityQuery
 from datakeel.ontology.models import FunctionResult
 from datakeel.storage.database import Database
-from datakeel.storage.training_reads import read_training_quality
+from datakeel.storage.training_reads import read_training_result
 
 
 def invoke_training(
@@ -16,9 +16,10 @@ def invoke_training(
 ) -> FunctionResult:
     """Keep reads read-only while returning real counts, redacted evidence and source refs."""
     query = TrainingQualityQuery.model_validate(arguments.root)
-    report = read_training_quality(db, query, access=access)
+    result = read_training_result(db, query, access=access)
+    report = result.report
     return FunctionResult(
         function="get_training_quality",
-        asset_refs=[AssetRef(asset_id=query.dataset_id, version=query.version_id)],
+        asset_refs=list(result.asset_refs),
         data=report.model_dump(mode="json"),
     )

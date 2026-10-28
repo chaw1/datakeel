@@ -24,4 +24,18 @@ TRAINING_GOVERNANCE_MUTATIONS = (
         after='        data={**report.model_dump(mode="json"), "issue_counts": {}},',
         case="46-training-quality",
     ),
+    Mutation(
+        name="training-cached-evaluation-provenance",
+        path="ontology/training_functions.py",
+        before="        asset_refs=list(result.asset_refs),",
+        after=(
+            "        asset_refs=[ref for ref in result.asset_refs "
+            "if ref.asset_type == 'dataset' and ref.asset_id == query.dataset_id],"
+        ),
+        case=(
+            "tests/storage/test_training_replay.py::"
+            "test_cached_training_and_quality_tools_recheck_version_pinned_evaluation_grants"
+        ),
+        runner="pytest",
+    ),
 )

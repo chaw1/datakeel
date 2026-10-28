@@ -6,7 +6,7 @@
 from pydantic import Field, JsonValue
 
 from datakeel.core.dq_views import DqSummary
-from datakeel.core.models import Record
+from datakeel.core.models import AssetRef, Record
 from datakeel.quality.tabular_models import TabularAssessment
 
 
@@ -73,3 +73,10 @@ class ReportView(Record):
     source: str
     llm_body: str | None = None
     fallback_reason: str | None = None
+
+
+class GovernanceRead(Record):
+    """Bind a quality/report view to the exact training provenance used to compute it."""
+
+    data: QualityView | ReportView
+    asset_refs: tuple[AssetRef, ...] = ()

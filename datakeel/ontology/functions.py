@@ -37,7 +37,7 @@ from datakeel.ontology.training_functions import invoke_training
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
-from datakeel.storage.governance_service import get_quality, get_report
+from datakeel.storage.governance_service import read_governance
 from datakeel.storage.lineage_service import get_graph
 from datakeel.storage.object_queries import evaluate
 from datakeel.storage.task_queries import query_task
@@ -135,12 +135,12 @@ def _dataset_result(
     db: Database, name: str, arguments: JsonDocument, access: AccessContext | None = None
 ) -> FunctionResult:
     params = DatasetParams.model_validate(arguments.root)
-    value = (
-        get_quality(db, params.dataset_id, access=access)
-        if name == "get_quality"
-        else get_report(db, params.dataset_id, access=access)
+    value = read_governance(db, params.dataset_id, report=name == "get_report", access=access)
+    return _result(
+        name,
+        [AssetRef(asset_id=params.dataset_id), *value.asset_refs],
+        value.data.model_dump(mode="json"),
     )
-    return _result(name, [AssetRef(asset_id=params.dataset_id)], value.model_dump(mode="json"))
 
 
 def _node_ref(node: GraphNode) -> AssetRef:

@@ -13,17 +13,19 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.settings import get_settings
+from datakeel.core.training_governance import TrainingProjection
 from datakeel.governance import compliance_score, validate_metadata
 from datakeel.governance.models import ComplianceView
 from datakeel.quality import build_report, score_quality
 from datakeel.quality.annotation import apply_annotation_quality
-from datakeel.quality.models import QualityView, ReportView
+from datakeel.quality.models import GovernanceRead, QualityView, ReportView
 from datakeel.storage.annotation_store import read_annotation_quality
 from datakeel.storage.database import Database, DatasetRow, MetadataChangeRow, VersionRow
 from datakeel.storage.dataset_service import list_datasets, require_dataset
 from datakeel.storage.datasets import dataset_dict, latest_files
 from datakeel.storage.dq_views import attach_rule_quality
-from datakeel.storage.training_store import training_overlay
+from datakeel.storage.file_state import overlay_files
+from datakeel.storage.training_store import training_overlay, training_projection
 from datakeel.storage.views import (
     DatasetQualityView,
     MetadataChangeView,
@@ -156,6 +158,51 @@ def get_report(db: Database, identifier: str, *, access: AccessContext | None = 
         return ReportView.model_validate(
             build_report(dataset_dict(row), result, get_settings().llm_url)
         )
+
+
+def read_governance(
+    db: Database,
+    identifier: str,
+    *,
+    report: bool = False,
+    access: AccessContext | None = None,
+) -> GovernanceRead:
+    """Pin scored files, selected training report and replay grants in one source snapshot."""
+    with db.session() as session:
+        row = require_dataset(session, identifier)
+        version = session.scalar(
+            select(VersionRow)
+            .where(VersionRow.dataset_id == identifier)
+            .order_by(VersionRow.created_at.desc(), VersionRow.id)
+            .limit(1)
+        )
+        files = overlay_files(
+            session,
+            identifier,
+            [
+                FileItem.model_validate(item)
+                for item in (version.manifest if version else row.files)
+            ],
+        )
+        projection = (
+            training_projection(session, identifier, version.id, files, access=access)
+            if version
+            else TrainingProjection(files=tuple(files))
+        )
+        quality = score_quality(list(projection.files), row.quality_config)
+        if version:
+            quality = apply_annotation_quality(
+                quality, read_annotation_quality(session, identifier, version.id)
+            )
+        quality = attach_rule_quality(session, identifier, quality)
+        data = (
+            ReportView.model_validate(
+                build_report(dataset_dict(row), quality, get_settings().llm_url)
+            )
+            if report
+            else quality
+        )
+        return GovernanceRead(data=data, asset_refs=projection.asset_refs)
 
 
 def save_template(db: Database, identifier: str, body: JsonDocument) -> TemplateView:

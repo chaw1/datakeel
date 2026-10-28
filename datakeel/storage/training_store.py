@@ -13,11 +13,19 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.llm_data_models import TrainingReport
 from datakeel.core.models import FileItem, new_id, utcnow
-from datakeel.core.training_governance import TrainingAnalysisRequest, TrainingGovernanceRun
+from datakeel.core.training_governance import (
+    TrainingAnalysisRequest,
+    TrainingGovernanceRun,
+    TrainingProjection,
+)
 from datakeel.llm_data import analyze_sources
 from datakeel.storage.database import Database
 from datakeel.storage.objects import digest, object_store
-from datakeel.storage.training_access import authorize_training, training_refs
+from datakeel.storage.training_access import (
+    authorize_training,
+    evaluation_source_refs,
+    training_refs,
+)
 from datakeel.storage.training_evaluations import evaluation_files
 from datakeel.storage.training_rows import TrainingCleanRow, TrainingRunRow
 from datakeel.storage.training_sources import fresh_sources, source_files, source_version
@@ -183,6 +191,18 @@ def training_overlay(
     access: AccessContext | None = None,
 ) -> list[FileItem]:
     """Project pinned per-file counts so hidden files cannot affect the visible quality score."""
+    return list(training_projection(session, dataset_id, version_id, files, access=access).files)
+
+
+def training_projection(
+    session: Session,
+    dataset_id: str,
+    version_id: str,
+    files: list[FileItem],
+    *,
+    access: AccessContext | None = None,
+) -> TrainingProjection:
+    """Freeze scored evidence and its replay authorization identities from the same report row."""
     row = session.scalar(
         select(TrainingRunRow)
         .where(TrainingRunRow.dataset_id == dataset_id, TrainingRunRow.version_id == version_id)
@@ -190,10 +210,10 @@ def training_overlay(
         .limit(1)
     )
     if row is None or not files:
-        return files
+        return TrainingProjection(files=tuple(files))
     selected = tuple(sorted(set(row.file_ids) & {item.id for item in files}))
     if not selected:
-        return files
+        return TrainingProjection(files=tuple(files))
     authorize_training(
         session, training_refs(dataset_id, version_id, selected), tuple(row.evaluation_ids), access
     )
@@ -211,7 +231,13 @@ def training_overlay(
                 issue_counts=summary.issue_counts,
             ).model_dump(mode="json")
         result.append(item.model_copy(update={"metadata": metadata}))
-    return result
+    return TrainingProjection(
+        files=tuple(result),
+        asset_refs=(
+            *training_refs(dataset_id, version_id, selected),
+            *evaluation_source_refs(session, tuple(row.evaluation_ids)),
+        ),
+    )
 
 
 def version_training_report(
