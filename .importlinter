@@ -23,6 +23,7 @@ ignore_imports =
     datakeel.ontology.training_functions -> datakeel.storage.dataset_service
     datakeel.ontology.training_functions -> datakeel.storage.training_store
     datakeel.storage.training_export -> datakeel.actions.parameters
+    datakeel.storage.training_download -> datakeel.actions.parameters
     datakeel.storage.action_export -> datakeel.training.export
     datakeel.storage.training_import -> datakeel.training.importers
     datakeel.storage.delivery_service -> datakeel.delivery.manifest
