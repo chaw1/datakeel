@@ -54,4 +54,12 @@ PII_MUTATIONS = (
         case="tests/core/test_pii.py::test_ipv6_label_boundary_requires_whole_token_validation",
         runner="pytest",
     ),
+    Mutation(
+        name="training-json-unicode-scalar-validation",
+        path="llm_data/parsing.py",
+        before="    _validate_unicode(value)",
+        after="    pass",
+        case="tests/llm_data/test_engine.py::test_unicode_scalar_guard_when_removed_cannot_abort_the_cleaning_stream",
+        runner="pytest",
+    ),
 )

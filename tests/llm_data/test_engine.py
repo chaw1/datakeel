@@ -7,6 +7,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
+
 from datakeel.core.llm_data_models import TrainingConfig, TrainingRecord, TrainingSource
 from datakeel.llm_data import analyze_sources, cleaned_filename
 
@@ -136,3 +138,113 @@ def test_invalid_record_never_exposes_encoded_or_partial_private_payload(tmp_pat
     assert "reader" not in ledger.read_text()
     assert report.samples[0].content_hash
     assert "column" in report.samples[0].issues[0].message
+
+
+@pytest.mark.parametrize("with_cleaned", [False, True])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"instruction": chr(0xD800), "output": "A harmless response."},
+        {"instruction": "A generated request.", "output": chr(0xDC00)},
+        {
+            "messages": [
+                {"role": "user", "content": chr(0xD800)},
+                {"role": "assistant", "content": "A harmless response."},
+            ]
+        },
+        {
+            "instruction": "Request",
+            "output": "Response",
+            "metadata": {"nested": [{"value": chr(0xD800)}]},
+        },
+        {
+            "instruction": "Request",
+            "output": "Response",
+            "metadata": {"nested": [{chr(0xDC00): "ordinary"}]},
+        },
+        {
+            "instruction": "Request",
+            "output": "Response",
+            "metadata": {"nested": [{chr(0xD800): chr(0xDC00)}]},
+        },
+    ],
+)
+def test_escaped_lone_surrogate_when_first_row_is_bad_preserves_following_record(
+    bad: object,
+    tmp_path: Path,
+    *,
+    with_cleaned: bool,
+) -> None:
+    """Invalid scalar values anywhere in a record become isolated safe format errors."""
+    good = {
+        "instruction": "Describe the generated object.",
+        "output": "The object is a smooth sphere.",
+    }
+    data = source(tmp_path, [json.dumps(bad, ensure_ascii=True), good])
+    ledger = tmp_path / "surrogate-ledger.jsonl"
+    report = analyze_sources(
+        (data,),
+        ledger_path=ledger,
+        cleaned_dir=tmp_path / "clean" if with_cleaned else None,
+    )
+    assert report.records == 2
+    assert report.valid_records == 1
+    assert report.issue_counts == {"format_error": 1}
+    assert [item.decision for item in report.samples] == ["drop", "keep"]
+    assert [item.line for item in report.samples] == [1, 2]
+    assert report.samples[0].preview == "[UNPARSEABLE_RECORD]"
+    assert (
+        report.samples[0].issues[0].message
+        == "JSON strings must contain valid Unicode scalar values"
+    )
+    encoded = ledger.read_text()
+    assert len(encoded.splitlines()) == 2
+    assert r"\ud800" not in encoded
+    assert r"\udc00" not in encoded
+    if with_cleaned:
+        cleaned = (tmp_path / "clean" / cleaned_filename(data.file_id)).read_text()
+        assert [json.loads(line) for line in cleaned.splitlines()] == [good]
+
+
+@pytest.mark.parametrize("with_cleaned", [False, True])
+@pytest.mark.parametrize("ascii_escapes", [False, True])
+def test_valid_unicode_scalar_or_escaped_pair_survives_analysis_and_cleaning(
+    tmp_path: Path,
+    *,
+    with_cleaned: bool,
+    ascii_escapes: bool,
+) -> None:
+    """Normal UTF-8 emoji and a legal JSON surrogate pair both remain ordinary data."""
+    payload = {
+        "instruction": "Explain this face " + chr(0x1F603),
+        "output": "It is smiling.",
+        "metadata": {"symbol": chr(0x1F603), "count": 1},
+    }
+    data = source(tmp_path, [json.dumps(payload, ensure_ascii=ascii_escapes)])
+    report = analyze_sources((data,), cleaned_dir=tmp_path / "clean" if with_cleaned else None)
+    assert report.records == 1
+    assert report.valid_records == 1
+    assert not report.issue_counts
+    if with_cleaned:
+        cleaned = (tmp_path / "clean" / cleaned_filename(data.file_id)).read_text()
+        assert json.loads(cleaned) == payload
+
+
+def test_unicode_scalar_guard_when_removed_cannot_abort_the_cleaning_stream(tmp_path: Path) -> None:
+    """The scalar-validation mutation must cause an observed assertion failure."""
+    data = source(
+        tmp_path,
+        [
+            json.dumps(
+                {"instruction": "Request", "output": "Response", "metadata": {chr(0xD800): "value"}}
+            ),
+            {"instruction": "Describe a harmless object.", "output": "It is a sphere."},
+        ],
+    )
+    completed = False
+    try:
+        report = analyze_sources((data,), cleaned_dir=tmp_path / "clean")
+        completed = report.records == 2 and report.valid_records == 1
+    except UnicodeEncodeError:
+        completed = False
+    assert completed

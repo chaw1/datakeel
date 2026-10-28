@@ -248,11 +248,28 @@ def _finite_float(value: str) -> float:
     return result
 
 
+def _validate_unicode(value: JsonValue) -> None:
+    if isinstance(value, str):
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError as error:
+            message = "JSON strings must contain valid Unicode scalar values"
+            raise ValueError(message) from error
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            _validate_unicode(key)
+            _validate_unicode(item)
+    elif isinstance(value, list):
+        for item in value:
+            _validate_unicode(item)
+
+
 def parse_record(raw: str, selected: TrainingFormat = "auto") -> ParsedTrainingRecord:
     """Recognize supported JSON objects; malformed lines fail independently of their file."""
     value = cast(
         "JsonValue", json.loads(raw, parse_constant=_reject_constant, parse_float=_finite_float)
     )
+    _validate_unicode(value)
     if not isinstance(value, dict):
         message = "A training record must be a JSON object"
         raise TypeError(message)
