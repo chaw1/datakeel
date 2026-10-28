@@ -66,6 +66,7 @@ def parser() -> argparse.ArgumentParser:
     evaluation.add_argument("--json", action="store_true", dest="json_output")
     evidence_evaluation = commands.add_parser("eval-evidence")
     evidence_evaluation.add_argument("--questions", type=Path)
+    evidence_evaluation.add_argument("--mode", choices=["prefix", "exact"])
     evidence_evaluation.add_argument("--json", action="store_true", dest="json_output")
     ask_evaluation = commands.add_parser("eval-ask")
     ask_evaluation.add_argument("--questions", type=Path)
@@ -153,7 +154,7 @@ def _evaluation_command(db: Database, args: argparse.Namespace) -> None:
     if args.command == "eval":
         evaluate(db, args.provider, args.golden_dir, json_output=args.json_output)
     elif args.command == "eval-evidence":
-        evaluate_evidence(db, args.questions, json_output=args.json_output)
+        evaluate_evidence(db, args.questions, json_output=args.json_output, mode=args.mode)
     elif args.command == "eval-kg" and args.suite == "image":
         kg_image_evaluation.evaluate(
             db,

@@ -17,6 +17,7 @@ from rich.console import Console
 from scripts.license_frontend import frontend_packages
 from scripts.license_models import LicenseFinding, LicensePackage, LicenseReport
 from scripts.license_python import python_packages
+from scripts.license_rust import rust_packages
 
 ALLOWED_LICENSES = frozenset(
     {
@@ -36,6 +37,9 @@ ALLOWED_LICENSES = frozenset(
         "Unlicense",
     }
 )
+RUST_ALLOWED_LICENSES = frozenset(
+    {"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "Unicode-DFS-2016", "Unicode-3.0"}
+)
 PACKAGE_EXCEPTIONS = {
     "certifi": "MPL-2.0",
     "orjson": "MPL-2.0 AND (Apache-2.0 OR MIT)",
@@ -50,10 +54,13 @@ def license_findings(package: LicensePackage) -> tuple[LicenseFinding, ...]:
     except InvalidLicenseExpression:
         reason = "Unknown or invalid SPDX license expression"
     else:
+        if package.ecosystem == "rust" and expression == "Apache-2.0 WITH LLVM-exception":
+            return ()
         terms = set(re.findall(r"[A-Za-z0-9][A-Za-z0-9.+-]*", expression)) - {"AND", "OR"}
         if package.ecosystem == "python" and PACKAGE_EXCEPTIONS.get(package.name) == expression:
             return ()
-        rejected = sorted(terms - ALLOWED_LICENSES)
+        allowed = RUST_ALLOWED_LICENSES if package.ecosystem == "rust" else ALLOWED_LICENSES
+        rejected = sorted(terms - allowed)
         if not rejected:
             return ()
         reason = "License terms outside the allowlist: " + ", ".join(rejected)
@@ -69,8 +76,8 @@ def license_findings(package: LicensePackage) -> tuple[LicenseFinding, ...]:
 
 
 def audit(root: Path) -> LicenseReport:
-    """Collect both runtime closures from their locks and installed package metadata."""
-    packages = (*python_packages(root), *frontend_packages(root))
+    """Collect runtime closures and the complete locked Rust build graph."""
+    packages = (*python_packages(root), *frontend_packages(root), *rust_packages(root))
     return LicenseReport(
         python_target=f"Python {platform.python_version()} / {sys.platform} / {platform.machine()}",
         packages=packages,
@@ -91,6 +98,12 @@ def render_notices(report: LicenseReport) -> str:
         "nested packages. It also includes every package measured by the current Vite build,",
         "including development dependencies actually bundled. Unbundled build tools are excluded.",
         "",
+        "The Rust inventory includes every locked dependency, including build and target edges.",
+        "Rust SPDX identifiers: " + ", ".join(sorted(RUST_ALLOWED_LICENSES)) + ".",
+        "Rust also permits the exact Apache-2.0 WITH LLVM-exception expression: the upstream",
+        "exception grants additional permissions for compiled artifacts. Other WITH terms fail.",
+        "Rust has no package exceptions; unknown and missing licenses fail.",
+        "",
         "Licenses are read from installed metadata and checked against exact locked versions.",
         "Ambiguous legacy metadata is accepted only with a reviewed license-file SHA-256 match.",
         "For python-dateutil, the verified BSD terms explicitly apply to all its code.",
@@ -105,6 +118,7 @@ def render_notices(report: LicenseReport) -> str:
         "permissive. These exact package exceptions do not permit other MPL or CNRI dependencies.",
         "Upstream license texts remain in",
         "installed distributions; frontend texts are in `web/public/THIRD-PARTY-LICENSES.txt`.",
+        "Rust license texts and notices are retained in the extension wheel.",
         "",
         "| Ecosystem | Package | Version | SPDX license | Evidence |",
         "| --- | --- | --- | --- | --- |",

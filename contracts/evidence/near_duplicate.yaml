@@ -6,6 +6,7 @@ height: 8
 resampling: lanczos
 hamming_threshold: 8
 prefix_bits: 4
-# Smooth generated textures preserve dHash under mild crop/resize/noise. Four
-# prefix bits bound comparisons without sacrificing the measured >0.8 recall.
+mode: prefix
+# Prefix blocking bounds comparisons but can miss pairs across buckets. Exact
+# mode indexes threshold + 1 disjoint segments and guarantees threshold recall.
 # Direct pair distance only: no connected-component or transitive expansion.

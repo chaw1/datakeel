@@ -104,9 +104,9 @@ MUTATIONS = (
     ),
     Mutation(
         name="near-duplicate-threshold",
-        path="operators/evidence/near_duplicate.py",
-        before="if distance <= contract.hamming_threshold:",
-        after="if distance <= contract.hamming_threshold + 4:",
+        path="operators/evidence/near_duplicate_hashes.py",
+        before="if (distance := (left_hash ^ right_hash).bit_count()) <= threshold",
+        after="if (distance := (left_hash ^ right_hash).bit_count()) <= threshold + 4",
         case=(
             "tests/operators/evidence/test_near_duplicate.py::"
             "test_near_duplicate_when_chain_images_supplied_does_not_infer_endpoint_pair"
@@ -169,6 +169,7 @@ def local_environment(directory: Path) -> dict[str, str]:
             "PYTHONPATH": str(directory),
             "DATAKEEL_HOME": str(directory / "home"),
             "DATAKEEL_DATABASE_URL": f"sqlite:///{directory / 'evaluation.db'}",
+            "DATAKEEL_ACCEL": "off",
             "DATAKEEL_OPENAI_API_KEY": "",
             "DATAKEEL_ANTHROPIC_API_KEY": "",
         }

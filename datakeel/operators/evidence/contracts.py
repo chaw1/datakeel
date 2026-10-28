@@ -43,6 +43,7 @@ class NearDuplicateContract(BoundaryModel):
     resampling: Literal["lanczos"]
     hamming_threshold: int = Field(ge=0, le=64)
     prefix_bits: int = Field(ge=1, le=16)
+    mode: Literal["prefix", "exact"] = "prefix"
 
 
 def contract_path(name: str) -> Path:

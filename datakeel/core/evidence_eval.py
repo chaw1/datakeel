@@ -93,6 +93,7 @@ class EvidenceEvalReport(BoundaryModel):
     baseline_macro: MacroMetrics
     with_evidence_macro: MacroMetrics
     near_duplicate_pairs: RetrievalMetrics
+    near_duplicate_mode: Literal["prefix", "exact"] = "prefix"
     val_to_train_pairs: RetrievalMetrics
     presence_counts: PresenceCounts
     extraction: EvidenceRunReport
