@@ -13,6 +13,7 @@ export const askZh: Record<keyof typeof askEn, string> = {
   askChartStacked: "堆叠柱状图",
   askChartTable: "表格",
   askChartChange: "与上一期相比",
+  askChartChangeYearOverYear: "与去年同期相比",
   askComparisonMissing: "上一期无数据",
   askComparisonZeroBaseline: "上一期数值为零，无法计算该数值的百分比变化。",
   askComparisonMissingGroups:

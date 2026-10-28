@@ -99,7 +99,7 @@ export function AskConversations({
       {items && (
         <ul className="ask-conversation-list">
           {items.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} data-conversation-id={item.id}>
               <span>
                 {item.title || t("askNewConversation")} ·{" "}
                 {t("askConversationTurns", { count: item.turns.length })}

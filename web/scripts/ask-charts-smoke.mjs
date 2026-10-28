@@ -217,7 +217,9 @@ try {
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
   assert.equal(await page.locator(".ask-understood").count(), 0);
-  await page
+  const thread = page.locator(`li[data-conversation-id="${identity}"]`);
+  assert.equal(await thread.count(), 1);
+  await thread
     .getByRole("button", {
       name: "Open conversation: 上个季度华东区零售额是多少",
       exact: true,
@@ -229,7 +231,7 @@ try {
       response.request().method() === "DELETE" &&
       response.url().endsWith(identity),
   );
-  await page
+  await thread
     .getByRole("button", {
       name: "Delete conversation: 上个季度华东区零售额是多少",
       exact: true,

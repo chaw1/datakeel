@@ -136,7 +136,12 @@ export function AskChart({
       )}
       {type === "scalar" && comparison && (
         <p className="ask-comparison">
-          {t("askChartChange")}:{" "}
+          {t(
+            answer.comparison?.mode === "year_over_year"
+              ? "askChartChangeYearOverYear"
+              : "askChartChange",
+          )}
+          :{" "}
           {comparison.delta == null
             ? t("askComparisonMissing")
             : `${chartNumber(comparison.delta, chart, locale)}${chart.unit ? ` ${chart.unit}` : ""}`}

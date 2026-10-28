@@ -41,9 +41,13 @@ const comparison: NonNullable<AskAnswer["comparison"]> = {
 const zeroNotice =
   "The previous value is zero. Percentage change cannot be calculated for that value.";
 
-it.each([0, 10])(
-  "shows a measured delta of %s and explains the zero denominator instead of silently omitting the percentage",
-  (value) => {
+it.each([
+  [0, "year_over_year", "Change from same period last year"],
+  [10, "year_over_year", "Change from same period last year"],
+  [10, "period_over_period", "Change from previous period"],
+] as const)(
+  "shows a measured delta of %s for %s under the matching baseline label and explains the zero denominator",
+  (value, mode, label) => {
     render(
       <AskChart
         answer={{
@@ -51,6 +55,7 @@ it.each([0, 10])(
           result: { columns: ["value"], rows: [[value]], truncated: false },
           comparison: {
             ...comparison,
+            mode,
             changes: [
               {
                 dimensions: [],
@@ -66,9 +71,14 @@ it.each([0, 10])(
         footnotes={[]}
       />,
     );
+    expect(screen.getByText(`${label}: ${String(value)} CNY`)).toBeVisible();
     expect(
-      screen.getByText(`Change from previous period: ${String(value)} CNY`),
-    ).toBeVisible();
+      screen.queryByText(
+        mode === "year_over_year"
+          ? /Change from previous period/
+          : /same period last year/,
+      ),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(zeroNotice)).toBeVisible();
     expect(screen.queryByText(/No previous data/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Infinity|NaN/)).not.toBeInTheDocument();

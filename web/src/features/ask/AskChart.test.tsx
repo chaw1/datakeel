@@ -151,7 +151,7 @@ it("shows scalar units, measured changes, and percentages without multiplying tw
   );
   expect(screen.getByLabelText("Calculated result")).toHaveTextContent("120");
   expect(
-    screen.getByText("Change from previous period: 20 CNY (20%)"),
+    screen.getByText("Change from same period last year: 20 CNY (20%)"),
   ).toBeVisible();
 });
 

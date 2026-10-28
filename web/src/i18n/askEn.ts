@@ -12,6 +12,7 @@ export const askEn = {
   askChartStacked: "Stacked columns",
   askChartTable: "Table",
   askChartChange: "Change from previous period",
+  askChartChangeYearOverYear: "Change from same period last year",
   askComparisonMissing: "No previous data",
   askComparisonZeroBaseline:
     "The previous value is zero. Percentage change cannot be calculated for that value.",
