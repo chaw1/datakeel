@@ -175,7 +175,12 @@ def resolve_training_ledger(
 
 
 def training_overlay(
-    session: Session, dataset_id: str, version_id: str, files: list[FileItem]
+    session: Session,
+    dataset_id: str,
+    version_id: str,
+    files: list[FileItem],
+    *,
+    access: AccessContext | None = None,
 ) -> list[FileItem]:
     """Project pinned per-file counts so hidden files cannot affect the visible quality score."""
     row = session.scalar(
@@ -186,6 +191,12 @@ def training_overlay(
     )
     if row is None or not files:
         return files
+    selected = tuple(sorted(set(row.file_ids) & {item.id for item in files}))
+    if not selected:
+        return files
+    authorize_training(
+        session, training_refs(dataset_id, version_id, selected), tuple(row.evaluation_ids), access
+    )
     report = TrainingGovernanceRun.model_validate(row.payload).report
     summaries = {summary.file_id: summary for summary in report.files}
     result: list[FileItem] = []

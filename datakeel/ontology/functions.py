@@ -131,12 +131,14 @@ def _search_files(db: Database, arguments: JsonDocument) -> FunctionResult:
     return _result("search_files", refs, manifest.model_dump(mode="json"))
 
 
-def _dataset_result(db: Database, name: str, arguments: JsonDocument) -> FunctionResult:
+def _dataset_result(
+    db: Database, name: str, arguments: JsonDocument, access: AccessContext | None = None
+) -> FunctionResult:
     params = DatasetParams.model_validate(arguments.root)
     value = (
-        get_quality(db, params.dataset_id)
+        get_quality(db, params.dataset_id, access=access)
         if name == "get_quality"
-        else get_report(db, params.dataset_id)
+        else get_report(db, params.dataset_id, access=access)
     )
     return _result(name, [AssetRef(asset_id=params.dataset_id)], value.model_dump(mode="json"))
 
@@ -243,6 +245,8 @@ def invoke_function(
         result = _list_datasets(db, arguments, caller)
     elif name == "get_training_quality":
         result = invoke_training(db, arguments, access=caller)
+    elif name in {"get_quality", "get_report"}:
+        result = _dataset_result(db, name, arguments, caller)
     elif name == "get_lineage":
         result = _lineage(db, arguments, caller)
     elif name in {"query_kg", "explain_relation"}:
@@ -260,8 +264,6 @@ def _invoke_function(db: Database, name: str, arguments: JsonDocument) -> Functi
         return _search_files(db, arguments)
     if name == "annotation_quality":
         return invoke_annotation_quality(db, arguments)
-    if name in {"get_quality", "get_report"}:
-        return _dataset_result(db, name, arguments)
     if name in {
         "query_evidence",
         "get_evidence",

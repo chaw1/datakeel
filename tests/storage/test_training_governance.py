@@ -145,6 +145,29 @@ def test_saved_training_reports_cannot_be_edited_or_deleted(db: Database, tmp_pa
             session.execute(statement)
 
 
+def test_cleaning_freezes_state_of_unselected_hidden_preserved_files(
+    db: Database, tmp_path: Path
+) -> None:
+    """A hidden source file's revision cannot change behind an already signed clean plan."""
+    dataset, _, run = seed_training(db, tmp_path)
+    untouched = next(item for item in list_files(db, dataset) if item.filename == "keep.txt")
+    with db.session() as session:
+        session.add(FileStateRow(dataset_id=dataset, file_id=untouched.id, deleted=True))
+        session.commit()
+    plan = prepare_action(
+        db, "clean_training_data", JsonDocument({"dataset_id": dataset, "run_id": run.id})
+    )
+    approve_plan(db, plan.id, ApprovalDecision(plan_digest=plan.plan_digest, approve=True))
+    with db.session() as session:
+        state = session.get(FileStateRow, (dataset, untouched.id))
+        assert state is not None
+        state.revision += 1
+        session.commit()
+    with pytest.raises(ConflictError, match="target state changed"):
+        execute_plan(db, plan.id, ExecuteRequest(plan_digest=plan.plan_digest))
+    assert len(list_versions(db, dataset)) == 1
+
+
 def test_report_facts_and_quality_share_exact_version_pinned_measurements(
     db: Database, tmp_path: Path
 ) -> None:
@@ -204,6 +227,17 @@ def test_evaluations_are_uploaded_version_references_and_frozen_by_dry_run(
     assert run.report.issue_counts["contamination"] == 2
     assert evaluation_file.id in run.report.evaluation_sha256
     assert evaluation_file.id not in run.report.source_sha256
+    cleaned_version = clean_training(db, run)
+    cleaned = list_training_runs(db, dataset, cleaned_version)[0]
+    assert cleaned.report.config == run.report.config
+    assert cleaned.report.evaluation_sha256 == run.report.evaluation_sha256
+    assert cleaned.report.issue_counts.get("contamination", 0) == 0
+    with db.session() as session:
+        clean_report = session.get(TrainingRunRow, cleaned.id)
+        assert clean_report is not None
+        assert clean_report.evaluation_ids == [registered.id]
+        event = next(item for item in all_events(session) if item.operator == "text.training_clean")
+    assert any(ref.asset_id == evaluation_file.id for ref in event.inputs)
     with pytest.raises(NotFoundError):
         analyze_training(db, dataset, TrainingAnalysisRequest(evaluation_ids=("missing",)))
 
@@ -223,6 +257,31 @@ def test_read_only_tool_computes_real_findings_without_persisting_a_run(
     assert result.asset_refs[0].asset_id == dataset.id
     with db.session() as session:
         assert session.scalar(select(func.count()).select_from(TrainingRunRow)) == 0
+
+
+def test_quality_overlay_excludes_deleted_files_from_record_penalties(
+    db: Database, tmp_path: Path
+) -> None:
+    """Stored whole-scan counts are projected per file after the current visibility overlay."""
+    bad, healthy = tmp_path / "bad.jsonl", tmp_path / "healthy.jsonl"
+    bad.write_text("invalid-json\n")
+    healthy.write_text(
+        '{"instruction":"Describe winter snow",'
+        '"output":"Snow forms from frozen water crystals high in clouds."}\n'
+    )
+    dataset = import_paths(db, "Visibility fixture", [bad, healthy])
+    run = analyze_training(db, dataset.id, TrainingAnalysisRequest())
+    assert get_quality(db, dataset.id).dimensions["completeness"].score == 50
+    hidden = next(item for item in run.report.files if item.filename == "bad.jsonl")
+    with db.session() as session:
+        session.add(FileStateRow(dataset_id=dataset.id, file_id=hidden.file_id, deleted=True))
+        session.commit()
+    quality = get_quality(db, dataset.id)
+    assert quality.file_count == 1
+    assert quality.dimensions["completeness"].score == 100
+    assert quality.dimensions["completeness"].details["training_records"] == 1
+    with pytest.raises(ValidationError, match="Deleted"):
+        read_training_quality(db, TrainingQualityQuery(dataset_id=dataset.id))
 
 
 def test_source_ownership_type_and_state_are_validated(db: Database, tmp_path: Path) -> None:

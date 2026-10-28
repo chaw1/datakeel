@@ -29,7 +29,7 @@ def quality(
     identifier: str, db: DatabaseDependency, request: Request, *, quarantined: bool | None = None
 ) -> QualityView:
     """Read the latest manifest quality evaluation."""
-    result = service.get_quality(db, identifier, quarantined=quarantined)
+    result = service.get_quality(db, identifier, quarantined=quarantined, access=_access(request))
     _authorize_dataset(db, identifier, request)
     return result
 
@@ -43,7 +43,7 @@ def quality_config(identifier: str, config: QualityInput, db: DatabaseDependency
 @router.get("/report", response_model_exclude_none=True)
 def report(identifier: str, db: DatabaseDependency, request: Request) -> ReportView:
     """Read the evidence-based dataset report."""
-    result = service.get_report(db, identifier)
+    result = service.get_report(db, identifier, access=_access(request))
     _authorize_dataset(db, identifier, request)
     return result
 
@@ -83,7 +83,11 @@ def _authorize_dataset(db: Database, identifier: str, request: Request) -> None:
     authorize_query(
         db,
         (AssetRef(asset_id=identifier),),
-        AccessContext(
-            actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
-        ),
+        _access(request),
+    )
+
+
+def _access(request: Request) -> AccessContext:
+    return AccessContext(
+        actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
     )

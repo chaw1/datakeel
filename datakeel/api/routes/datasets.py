@@ -20,10 +20,14 @@ router = APIRouter(prefix="/api/datasets", tags=["datasets"])
 
 @router.get("")
 def datasets(
-    db: DatabaseDependency, include: Literal["quality"] | None = None
+    db: DatabaseDependency, request: Request, include: Literal["quality"] | None = None
 ) -> list[DatasetView | DatasetQualityView]:
     """List datasets, optionally including the latest read-only quality score."""
-    return list(dataset_quality_summaries(db)) if include else list(service.list_datasets(db))
+    return (
+        list(dataset_quality_summaries(db, access=_query_access(request)))
+        if include
+        else list(service.list_datasets(db))
+    )
 
 
 @router.post("", status_code=201)

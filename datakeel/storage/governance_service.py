@@ -9,6 +9,8 @@ from pydantic import ConfigDict, Field, JsonValue
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.settings import get_settings
 from datakeel.governance import compliance_score, validate_metadata
@@ -55,21 +57,31 @@ class QualityInput(View):
     allowed_formats: dict[str, list[str]] | None = None
 
 
-def _measured_quality(session: Session, row: DatasetRow, files: list[FileItem]) -> QualityView:
+def _measured_quality(
+    session: Session, row: DatasetRow, files: list[FileItem], access: AccessContext | None = None
+) -> QualityView:
     version = session.scalar(
         select(VersionRow)
         .where(VersionRow.dataset_id == row.id)
         .order_by(VersionRow.created_at.desc())
         .limit(1)
     )
-    measured = training_overlay(session, row.id, version.id, files) if version else files
+    measured = (
+        training_overlay(session, row.id, version.id, files, access=access) if version else files
+    )
     result = score_quality(measured, row.quality_config)
     if version is None:
         return result
     return apply_annotation_quality(result, read_annotation_quality(session, row.id, version.id))
 
 
-def get_quality(db: Database, identifier: str, *, quarantined: bool | None = None) -> QualityView:
+def get_quality(
+    db: Database,
+    identifier: str,
+    *,
+    quarantined: bool | None = None,
+    access: AccessContext | None = None,
+) -> QualityView:
     """Evaluate quality using the latest published manifest."""
     with db.session() as session:
         row = require_dataset(session, identifier)
@@ -78,25 +90,41 @@ def get_quality(db: Database, identifier: str, *, quarantined: bool | None = Non
             files = [
                 item for item in files if bool(item.metadata.get("quarantined")) == quarantined
             ]
+            version = session.scalar(
+                select(VersionRow)
+                .where(VersionRow.dataset_id == identifier)
+                .order_by(VersionRow.created_at.desc(), VersionRow.id)
+                .limit(1)
+            )
+            if version:
+                files = training_overlay(session, identifier, version.id, files, access=access)
         quality = (
             score_quality(files, row.quality_config)
             if quarantined is not None
-            else _measured_quality(session, row, files)
+            else _measured_quality(session, row, files, access)
         )
         return attach_rule_quality(session, identifier, quality)
 
 
-def dataset_quality_summaries(db: Database) -> list[DatasetQualityView]:
+def dataset_quality_summaries(
+    db: Database, *, access: AccessContext | None = None
+) -> list[DatasetQualityView]:
     """Read the same latest-manifest scores as the quality endpoint for each dataset."""
     result: list[DatasetQualityView] = []
     for item in list_datasets(db):
-        quality = get_quality(db, item.id)
+        try:
+            quality = get_quality(db, item.id, access=access)
+        except AuthorizationError:
+            quality = None
         result.append(
             DatasetQualityView(
                 **item.model_dump(),
                 quality_score=quality.total
-                if quality.file_count
-                or (quality.rules is not None and quality.rules.score is not None)
+                if quality is not None
+                and (
+                    quality.file_count
+                    or (quality.rules is not None and quality.rules.score is not None)
+                )
                 else None,
             )
         )
@@ -118,12 +146,12 @@ def save_quality(db: Database, identifier: str, body: QualityInput) -> QualityVi
         return result
 
 
-def get_report(db: Database, identifier: str) -> ReportView:
+def get_report(db: Database, identifier: str, *, access: AccessContext | None = None) -> ReportView:
     """Build an evidence-based report from the current dataset snapshot."""
     with db.session() as session:
         row = require_dataset(session, identifier)
         result = attach_rule_quality(
-            session, identifier, _measured_quality(session, row, latest_files(session, row))
+            session, identifier, _measured_quality(session, row, latest_files(session, row), access)
         )
         return ReportView.model_validate(
             build_report(dataset_dict(row), result, get_settings().llm_url)

@@ -7,10 +7,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from datakeel.api.app import create_app
-from datakeel.core.models import AssetRef
+from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.errors import AuthorizationError
+from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.core.training_governance import TrainingEvaluationRequest
+from datakeel.ontology.functions import invoke_function
+from datakeel.storage.dataset_service import import_paths, list_files
+from datakeel.storage.training_evaluations import register_evaluation
 from tests.asgi_client import TestClient
-from tests.assets.entry_helpers import grant, publish
+from tests.assets.entry_helpers import grant, publish, revoke
 from tests.storage.training_helpers import seed_training
 
 if TYPE_CHECKING:
@@ -115,3 +123,52 @@ def test_training_findings_and_ledger_preserve_native_query_and_download_grants(
         assert client.get(f"/api/training-governance/{run.id}/ledger").status_code == 403
         grant(db, asset, "valid", "download", subject="reader")
         assert client.get(f"/api/training-governance/{run.id}/ledger").status_code == 200
+
+
+def test_quality_and_report_recheck_current_evaluation_source_grants(
+    db: Database, tmp_path: Path
+) -> None:
+    """Derived contamination counts cannot bypass a revoked grant through generic quality reads."""
+    dataset, _, _ = seed_training(db, tmp_path)
+    path = tmp_path / "evaluation.txt"
+    path.write_text("Rainforests host diverse wildlife.")
+    source = import_paths(db, "Generated evaluation source", [path])
+    evaluation = register_evaluation(
+        db,
+        dataset,
+        TrainingEvaluationRequest(
+            name="Generated",
+            source_dataset_id=source.id,
+            file_ids=(list_files(db, source.id)[0].id,),
+        ),
+    )
+    train_asset = publish(db, AssetRef(asset_id=dataset))
+    evaluation_asset = publish(db, AssetRef(asset_id=source.id))
+    grant(db, train_asset, "valid", "query", subject="reader")
+    evaluation_grant = grant(db, evaluation_asset, "valid", "query", subject="reader")
+    assert evaluation_grant is not None
+    with TestClient(create_app(db), headers={"X-Datakeel-Actor": "reader"}) as client:
+        scan = client.post(
+            f"/api/datasets/{dataset}/text-governance/analyze",
+            json={"evaluation_ids": [evaluation.id], "config": {"contamination_ngram": 2}},
+        )
+        assert scan.status_code == 200, scan.text
+        for suffix in ("quality", "report", "quality?quarantined=false"):
+            assert client.get(f"/api/datasets/{dataset}/{suffix}").status_code == 200
+        revoke(db, evaluation_grant)
+        for suffix in ("quality", "report", "quality?quarantined=false"):
+            denied = client.get(f"/api/datasets/{dataset}/{suffix}")
+            assert denied.status_code == 403
+            assert "training_issue_counts" not in denied.text
+        listing = client.get("/api/datasets?include=quality")
+        assert listing.status_code == 200
+        summary = next(item for item in listing.json() if item["id"] == dataset)
+        assert summary["quality_score"] is None
+        for name in ("get_training_quality", "get_quality", "get_report"):
+            with pytest.raises(AuthorizationError):
+                invoke_function(
+                    db,
+                    name,
+                    JsonDocument({"dataset_id": dataset}),
+                    access=AccessContext(actor="reader", entry="agent", scope="query"),
+                )

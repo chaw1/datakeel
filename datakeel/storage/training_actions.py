@@ -25,6 +25,7 @@ from datakeel.llm_data import analyze_sources, cleaned_filename
 from datakeel.storage.database import VersionRow
 from datakeel.storage.datasets import persist_file
 from datakeel.storage.events import append_event
+from datakeel.storage.file_state import get_file_state
 from datakeel.storage.object_projection import content_digest
 from datakeel.storage.objects import digest, fresh_object, object_store
 from datakeel.storage.training_evaluations import evaluation_files
@@ -64,7 +65,16 @@ def training_state(session: Session, params: CleanTrainingParams) -> str:
         raise ConflictError(msg)
     source = source_version(session, row.dataset_id, row.version_id)
     values = JsonDocument.model_validate(
-        {"report": row.payload, "source_manifest": source.manifest}
+        {
+            "report": row.payload,
+            "source_manifest": source.manifest,
+            "source_state": {
+                str(item["id"]): get_file_state(
+                    session, row.dataset_id, str(item["id"])
+                ).model_dump()
+                for item in source.manifest
+            },
+        }
     )
     return content_digest(values.root)
 
@@ -112,10 +122,7 @@ def _publish_lineage(
             operator="text.training_clean",
             inputs=[
                 AssetRef(asset_id=row.dataset_id, version=row.version_id),
-                *(
-                    AssetRef(asset_type="file", asset_id=identifier, version=row.version_id)
-                    for identifier in row.file_ids
-                ),
+                *(item.asset_ref for item in plan.manifest.objects),
             ],
             outputs=[
                 AssetRef(asset_type="version", asset_id=version.id, version=version.id),
@@ -180,7 +187,7 @@ def execute_training_clean(
         )
         session.add(version)
         session.flush()
-        _save_output_report(session, original, version, cleaned, directory)
+        _save_output_report(session, row, version, cleaned, directory)
         session.add(TrainingCleanRow(run_id=row.id, version_id=version.id))
         _publish_lineage(session, plan, row, version)
     return OperationResult(
@@ -195,14 +202,20 @@ def execute_training_clean(
 
 def _save_output_report(
     session: Session,
-    original: TrainingGovernanceRun,
+    original_row: TrainingRunRow,
     version: VersionRow,
     files: tuple[FileItem, ...],
     directory: Path,
 ) -> None:
+    original = TrainingGovernanceRun.model_validate(original_row.payload)
+    evaluations = evaluation_files(
+        session, original_row.dataset_id, tuple(original_row.evaluation_ids)
+    )
     ledger = directory / "cleaned-ledger.jsonl"
-    with fresh_sources(files) as sources:
-        report = analyze_sources(sources, original.report.config, ledger_path=ledger)
+    with fresh_sources(files) as sources, fresh_sources(evaluations) as evaluation_sources:
+        report = analyze_sources(
+            sources, original.report.config, evaluations=evaluation_sources, ledger_path=ledger
+        )
     result = TrainingGovernanceRun(
         id=new_id(),
         dataset_id=original.dataset_id,
@@ -212,6 +225,9 @@ def _save_output_report(
         ledger_sha256=report.ledger_sha256,
     )
     request = TrainingAnalysisRequest(
-        version_id=version.id, file_ids=tuple(item.id for item in files), config=report.config
+        version_id=version.id,
+        file_ids=tuple(item.id for item in files),
+        evaluation_ids=tuple(original_row.evaluation_ids),
+        config=report.config,
     )
     save_training_run(session, result, request, ledger)
