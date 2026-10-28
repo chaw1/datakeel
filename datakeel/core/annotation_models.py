@@ -49,11 +49,38 @@ class NearDuplicatePair(BoundaryModel):
     similarity: float = Field(default=1, ge=0, le=1)
 
 
+class OutlierPolicy(BoundaryModel):
+    """Tune the robust size, aspect-ratio and span-length outlier rules of one batch.
+
+    Defaults: modified z above 3.5 (above 5 when another annotator drew a matching
+    item), at least 4x area or 3x aspect-ratio / span-length deviation from the
+    category median, cohorts of at least ten items, and a cohort where more than
+    10% would be flagged is treated as multimodal and skipped.
+    """
+
+    modified_z: float = Field(default=3.5, gt=0, allow_inf_nan=False)
+    corroborated_z: float = Field(default=5.0, gt=0, allow_inf_nan=False)
+    area_factor: float = Field(default=4.0, gt=1, allow_inf_nan=False)
+    aspect_factor: float = Field(default=3.0, gt=1, allow_inf_nan=False)
+    span_length_factor: float = Field(default=3.0, gt=1, allow_inf_nan=False)
+    min_cohort: int = Field(default=10, ge=3)
+    max_flagged_share: float = Field(default=0.1, gt=0, le=1, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def corroboration_is_stricter(self) -> "OutlierPolicy":
+        """Keep corroborated geometry at least as hard to flag as uncorroborated geometry."""
+        if self.corroborated_z < self.modified_z:
+            message = "corroborated_z must be at least modified_z"
+            raise ValueError(message)
+        return self
+
+
 class AnnotationBatch(BoundaryModel):
     """Freeze distinct sample/annotator records and review policy.
 
     ``label_mode`` declares whether one sample may carry several labels; ``auto``
-    infers single-select behaviour from the batch itself.
+    infers single-select behaviour from the batch itself. ``outlier_policy`` belongs
+    to the frozen batch, so its digest and every rework comparison bind the thresholds.
     """
 
     annotations: tuple[AnnotationRecord, ...]
@@ -61,6 +88,7 @@ class AnnotationBatch(BoundaryModel):
     exclusive_label_groups: tuple[tuple[str, ...], ...] = ()
     iou_threshold: float = Field(default=0.5, gt=0, le=1)
     label_mode: Literal["auto", "single", "multi"] = "auto"
+    outlier_policy: OutlierPolicy = Field(default_factory=OutlierPolicy)
 
     @model_validator(mode="after")
     def unique_annotations(self) -> "AnnotationBatch":

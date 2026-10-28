@@ -6,15 +6,17 @@
 Values are compared in log space within one category (box area relative to the
 image when both image dimensions are declared). The modified z-score is
 0.6745 * |x - median| / MAD (Iglewicz and Hoaglin, 1993). A value is an outlier
-when it also differs from the median by a minimum factor (4x for box area, 3x for
-box aspect ratio and span length) and either its score exceeds 3.5 or it lies
-beyond the cohort's 1st-99th percentile range by more than that same factor. The
-percentile fence catches extreme values in flat, wide cohorts where the MAD is
-large. When another annotator of the same sample drew a matching item (box IoU at
-the batch threshold or span Jaccard of at least 0.5) the panel corroborates its
-geometry, so the score must exceed 5 instead. Cohorts need at least ten items;
-when more than 10% of a cohort would be flagged, the cohort is treated as
-multimodal and yields nothing.
+when it also differs from the median by a minimum factor and either its score
+exceeds the policy threshold or it lies beyond the cohort's 1st-99th percentile
+range by more than that same factor. The percentile fence catches extreme values
+in flat, wide cohorts where the MAD is large. When another annotator of the same
+sample drew a matching item (box IoU at the batch threshold or span Jaccard of at
+least 0.5) the panel corroborates its geometry, so the stricter corroborated
+threshold applies. Small cohorts yield nothing, and when more than the policy share
+of a cohort would be flagged, the cohort is treated as multimodal and skipped.
+All thresholds come from the batch's frozen ``OutlierPolicy`` (defaults: z 3.5,
+corroborated z 5, factors 4x area / 3x aspect ratio / 3x span length, ten items,
+10% share).
 """
 
 from collections import defaultdict
@@ -34,13 +36,10 @@ from datakeel.core.annotation_models import (
     AnnotationRecord,
     AnnotationSpan,
     FindingCode,
+    OutlierPolicy,
 )
 
-_MIN_COHORT = 10
-_MODIFIED_Z = 3.5
-_CORROBORATED_Z = 5.0
 _MAD_CONSISTENCY = 0.6745
-_MAX_FLAGGED_SHARE = 0.1
 _SPAN_MATCH = 0.5
 
 
@@ -55,11 +54,15 @@ class _Rule(NamedTuple):
     code: FindingCode
     floor: float
     measure: str
+    policy: OutlierPolicy
 
 
-_AREA = _Rule("bbox_size_outlier", log(4), "log box area")
-_ASPECT = _Rule("bbox_aspect_outlier", log(3), "log box width/height")
-_LENGTH = _Rule("span_length_outlier", log(3), "log span length")
+def _rules(policy: OutlierPolicy) -> tuple[_Rule, _Rule, _Rule]:
+    return (
+        _Rule("bbox_size_outlier", log(policy.area_factor), "log box area", policy),
+        _Rule("bbox_aspect_outlier", log(policy.aspect_factor), "log box width/height", policy),
+        _Rule("span_length_outlier", log(policy.span_length_factor), "log span length", policy),
+    )
 
 
 def _span_overlap(left: AnnotationSpan, right: AnnotationSpan) -> float:
@@ -132,7 +135,8 @@ def _span_cohorts(batch: AnnotationBatch) -> dict[str, list[_Observation]]:
 
 
 def _outliers(cohort: str, values: list[_Observation], rule: _Rule) -> list[AnnotationFinding]:
-    if len(values) < _MIN_COHORT:
+    policy = rule.policy
+    if len(values) < policy.min_cohort:
         return []
     array = np.array([item.value for item in values], dtype=np.float64)
     median = float(np.median(array))
@@ -141,16 +145,13 @@ def _outliers(cohort: str, values: list[_Observation], rule: _Rule) -> list[Anno
     scale = _MAD_CONSISTENCY / mad if mad else float("inf")
     low, high = (float(value) for value in np.percentile(array, [1, 99]))
     fenced = (array > high + rule.floor) | (array < low - rule.floor)
+    limits = [policy.corroborated_z if item.corroborated else policy.modified_z for item in values]
     flagged = [
         index
         for index, deviation in enumerate(deviations)
-        if deviation >= rule.floor
-        and (
-            bool(fenced[index])
-            or deviation * scale > (_CORROBORATED_Z if values[index].corroborated else _MODIFIED_Z)
-        )
+        if deviation >= rule.floor and (bool(fenced[index]) or deviation * scale > limits[index])
     ]
-    if len(flagged) > _MAX_FLAGGED_SHARE * len(values):
+    if len(flagged) > policy.max_flagged_share * len(values):
         return []
     return [
         finding(
@@ -161,7 +162,10 @@ def _outliers(cohort: str, values: list[_Observation], rule: _Rule) -> list[Anno
                 f"category={cohort}; {values[index].location}; cohort={len(values)}",
                 f"{rule.measure}={array[index]:.4f}; median={median:.4f}; MAD={mad:.4f}",
                 f"p1={low:.4f}; p99={high:.4f}; factor={np.exp(deviations[index]):.2f}x",
-                f"floor={np.exp(rule.floor):.0f}x; corroborated={values[index].corroborated}",
+                (
+                    f"floor={np.exp(rule.floor):g}x; corroborated={values[index].corroborated}; "
+                    f"z_threshold={limits[index]:g}"
+                ),
             ),
             key=values[index].location,
         )
@@ -171,16 +175,18 @@ def _outliers(cohort: str, values: list[_Observation], rule: _Rule) -> list[Anno
 
 def box_outliers(batch: AnnotationBatch) -> tuple[AnnotationFinding, ...]:
     """Flag box area and aspect-ratio outliers within comparable category cohorts."""
+    area, aspect, _ = _rules(batch.outlier_policy)
     result: list[AnnotationFinding] = []
     for cohort, (areas, aspects) in sorted(_box_cohorts(batch).items()):
-        result.extend(_outliers(cohort, areas, _AREA))
-        result.extend(_outliers(cohort, aspects, _ASPECT))
+        result.extend(_outliers(cohort, areas, area))
+        result.extend(_outliers(cohort, aspects, aspect))
     return tuple(result)
 
 
 def span_outliers(batch: AnnotationBatch) -> tuple[AnnotationFinding, ...]:
     """Flag span lengths far from the usual length of the same span category."""
+    *_, length = _rules(batch.outlier_policy)
     result: list[AnnotationFinding] = []
     for cohort, lengths in sorted(_span_cohorts(batch).items()):
-        result.extend(_outliers(cohort, lengths, _LENGTH))
+        result.extend(_outliers(cohort, lengths, length))
     return tuple(result)

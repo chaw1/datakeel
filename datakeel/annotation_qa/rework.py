@@ -52,6 +52,7 @@ def compare_rework(before: AnnotationBatch, after: AnnotationBatch) -> ReworkCom
         or before.near_duplicates != after.near_duplicates
         or before.iou_threshold != after.iou_threshold
         or before.label_mode != after.label_mode
+        or before.outlier_policy != after.outlier_policy
     ):
         message = "Rework comparisons require unchanged review policy and duplicate relations"
         raise ValueError(message)

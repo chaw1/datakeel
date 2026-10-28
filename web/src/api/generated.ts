@@ -1930,7 +1930,8 @@ export interface components {
          * @description Freeze distinct sample/annotator records and review policy.
          *
          *     ``label_mode`` declares whether one sample may carry several labels; ``auto``
-         *     infers single-select behaviour from the batch itself.
+         *     infers single-select behaviour from the batch itself. ``outlier_policy`` belongs
+         *     to the frozen batch, so its digest and every rework comparison bind the thresholds.
          */
         AnnotationBatch: {
             /** Annotations */
@@ -1956,6 +1957,7 @@ export interface components {
              * @default []
              */
             near_duplicates: components["schemas"]["NearDuplicatePair"][];
+            outlier_policy?: components["schemas"]["OutlierPolicy"];
         };
         /**
          * AnnotationBox
@@ -5088,6 +5090,52 @@ export interface components {
              * @default 1.0
              */
             version: string;
+        };
+        /**
+         * OutlierPolicy
+         * @description Tune the robust size, aspect-ratio and span-length outlier rules of one batch.
+         *
+         *     Defaults: modified z above 3.5 (above 5 when another annotator drew a matching
+         *     item), at least 4x area or 3x aspect-ratio / span-length deviation from the
+         *     category median, cohorts of at least ten items, and a cohort where more than
+         *     10% would be flagged is treated as multimodal and skipped.
+         */
+        OutlierPolicy: {
+            /**
+             * Area Factor
+             * @default 4
+             */
+            area_factor: number;
+            /**
+             * Aspect Factor
+             * @default 3
+             */
+            aspect_factor: number;
+            /**
+             * Corroborated Z
+             * @default 5
+             */
+            corroborated_z: number;
+            /**
+             * Max Flagged Share
+             * @default 0.1
+             */
+            max_flagged_share: number;
+            /**
+             * Min Cohort
+             * @default 10
+             */
+            min_cohort: number;
+            /**
+             * Modified Z
+             * @default 3.5
+             */
+            modified_z: number;
+            /**
+             * Span Length Factor
+             * @default 3
+             */
+            span_length_factor: number;
         };
         /**
          * OutputStep

@@ -31,10 +31,23 @@ Datakeel 可离线评估分类标签、二维目标框与文本片段。导入�
     "exclusive_label_groups": [["clear", "restricted"]],
     "near_duplicates": [{"sample_id": "file-id", "other_sample_id": "other-file-id"}],
     "iou_threshold": 0.5,
-    "label_mode": "auto"
+    "label_mode": "auto",
+    "outlier_policy": {
+      "modified_z": 3.5,
+      "corroborated_z": 5.0,
+      "area_factor": 4.0,
+      "aspect_factor": 3.0,
+      "span_length_factor": 3.0,
+      "min_cohort": 10,
+      "max_flagged_share": 0.1
+    }
   }
 }
 ```
+
+`outlier_policy` is optional; the values above are its defaults. It belongs to the frozen batch, so it is part of the batch digest and retry identity, and a rework batch must use the same policy as the batch it repairs. `corroborated_z` may not be lower than `modified_z`; factors must exceed 1.
+
+`outlier_policy` 可省略，上例即默认值。它属于冻结批次，计入批次摘要与重试身份；返工批次必须沿用原批次的阈值。`corroborated_z` 不得低于 `modified_z`，倍数须大于 1。
 
 `label_mode` is `auto` (infer single-select behaviour), `single` or `multi`. `near_duplicates` lists sample pairs known to show the same content, for example from the existing image dHash evidence. Box coordinates use `xyxy` pixels. Spans are half-open character offsets `[start,end)` in the associated text. Invalid coordinates remain reviewable input; they generate findings instead of disappearing during import. Existing evidence sidecars remain supported; this version-scoped panel adds annotator identities needed for agreement.
 
@@ -80,7 +93,7 @@ Every rule uses only the annotations and batch statistics; no model is called. E
 | `bbox_missing`, `span_missing` | A strict-majority cluster has no item from this panel member (`[]` counts as reviewed; `null` does not). 多数人标了、此人漏标。 |
 | `bbox_extra`, `span_extra` | An item only its own annotator drew while at least two other panel members reviewed that modality. 只有此人标的框或片段。 |
 | `duplicate_bbox`, `duplicate_span` | One annotator drew two boxes with IoU ≥ 0.9, or marked identical span offsets twice. 同一人重复框或重复片段。 |
-| `bbox_size_outlier`, `bbox_aspect_outlier`, `span_length_outlier` | Within one category, log area (relative to the image when declared), log aspect ratio or log span length deviates from the median by at least 4x / 3x / 3x and either has modified z-score 0.6745·|x−median|/MAD above 3.5 (Iglewicz and Hoaglin 1993) or lies that factor beyond the cohort's 1st–99th percentile range. An item matched by another annotator needs a modified z above 5. Cohorts need ten items; a cohort where over 10% would be flagged is treated as multimodal and skipped. 按类别的对数面积、长宽比、片段长度稳健离群。 |
+| `bbox_size_outlier`, `bbox_aspect_outlier`, `span_length_outlier` | Within one category, log area (relative to the image when declared), log aspect ratio or log span length deviates from the median by at least 4x / 3x / 3x and either has modified z-score 0.6745·|x−median|/MAD above 3.5 (Iglewicz and Hoaglin 1993) or lies that factor beyond the cohort's 1st–99th percentile range. An item matched by another annotator needs a modified z above 5. Cohorts need ten items; a cohort where over 10% would be flagged is treated as multimodal and skipped. These are the defaults of the batch's `outlier_policy`. 按类别的对数面积、长宽比、片段长度稳健离群；以上为批次 `outlier_policy` 的默认值。 |
 | `invalid_bbox`, `invalid_span` | Nonpositive size, negative origin, or beyond declared image size / text length. Invalid items are excluded from statistics and are not also reported as missing. 越界或非法坐标。 |
 | `rare_category` | A label, box category or span category used exactly once among at least 50 such annotations, a likely typing error. 至少 50 个标注中只出现一次的类别，常见于拼写错误。 |
 

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datakeel.core.annotation_models import AnnotationBatch, AnnotationRecord
+from datakeel.core.annotation_models import AnnotationBatch, AnnotationRecord, OutlierPolicy
 from datakeel.core.annotation_sampling import AnnotationImportRequest, SamplingRequest
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.storage.annotation_sampling import create_sampling_plan, select_sample
@@ -89,6 +89,32 @@ def test_annotation_import_rejects_changed_retry_identity(
                 batch=annotations.batch,
                 name="Changed",
                 idempotency_key="initial",
+            ),
+        )
+
+
+def test_outlier_policy_is_part_of_the_frozen_batch_digest(
+    db: Database, annotations: AnnotationFixture
+) -> None:
+    """Changed outlier thresholds are a different batch and cannot reuse a retry identity."""
+    relaxed = annotations.batch.model_copy(
+        update={"outlier_policy": OutlierPolicy(modified_z=6, corroborated_z=8)}
+    )
+    request = AnnotationImportRequest(
+        version_id=annotations.version_id, batch=relaxed, idempotency_key="initial"
+    )
+    with pytest.raises(ConflictError, match="different inputs"):
+        import_annotations(db, annotations.dataset_id, request)
+    report = import_annotations(
+        db, annotations.dataset_id, request.model_copy(update={"idempotency_key": "relaxed"})
+    )
+    assert report.batch_digest != annotations.report.batch_digest
+    with pytest.raises(ValueError, match="unchanged review policy"):
+        import_annotations(
+            db,
+            annotations.dataset_id,
+            request.model_copy(
+                update={"idempotency_key": "relaxed-rework", "rework_of": annotations.report.id}
             ),
         )
 
