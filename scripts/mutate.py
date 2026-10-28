@@ -18,17 +18,8 @@ from tempfile import TemporaryDirectory
 from rich.console import Console
 
 from datakeel.core.harness_eval import EvalCaseResult, EvalReport
-from scripts.advanced_mutations import ADVANCED_MUTATIONS
-from scripts.auto_routing_mutations import AUTO_ROUTING_MUTATIONS
-from scripts.coordinate_mutations import COORDINATE_MUTATIONS
-from scripts.data_asset_mutations import DATA_ASSET_MUTATIONS
-from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
-from scripts.kg_mutations import KG_MUTATIONS
-from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
+from scripts.mutation_catalog import FEATURE_MUTATIONS
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
-from scripts.release_mutations import RELEASE_MUTATIONS
-from scripts.table_mutations import TABLE_MUTATIONS
-from scripts.timeseries_mutations import TIMESERIES_MUTATIONS
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -139,16 +130,7 @@ MUTATIONS = (
         runner="pytest",
     ),
     *WORKFLOW_MUTATIONS,
-    *ADVANCED_MUTATIONS,
-    *KG_MUTATIONS,
-    *KNOWLEDGE_MUTATIONS,
-    *IMAGE_KG_MUTATIONS,
-    *TIMESERIES_MUTATIONS,
-    *TABLE_MUTATIONS,
-    *AUTO_ROUTING_MUTATIONS,
-    *COORDINATE_MUTATIONS,
-    *RELEASE_MUTATIONS,
-    *DATA_ASSET_MUTATIONS,
+    *FEATURE_MUTATIONS,
 )
 
 
