@@ -94,12 +94,12 @@ def test_airflow_file_uri_without_host_keeps_the_local_path() -> None:
     ("namespace", "expected"),
     [
         (
-            "abfss://raw@ClinicLake.dfs.core.windows.net/",
-            "abfss://raw@cliniclake.dfs.core.windows.net",
+            "abfss://raw@ClinicLake.dfs.example/",
+            "abfss://raw@cliniclake.dfs.example",
         ),
         (
-            "wasbs://exports@clinic.dfs.core.windows.net",
-            "wasbs://exports@clinic.dfs.core.windows.net",
+            "wasbs://exports@clinic.dfs.example",
+            "wasbs://exports@clinic.dfs.example",
         ),
     ],
 )
@@ -115,4 +115,4 @@ def test_azure_lake_namespace_keeps_container_instead_of_rejecting_it(
 def test_azure_lake_namespace_with_password_is_still_rejected() -> None:
     """Only the container may precede the account; a password is still a credential."""
     with pytest.raises(ValueError, match="must not"):
-        normalized_namespace("abfss://raw:secret@lake.dfs.core.windows.net")
+        normalized_namespace("abfss://raw:secret@lake.dfs.example")
