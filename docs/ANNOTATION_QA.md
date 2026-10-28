@@ -101,9 +101,9 @@ Findings request human review; a near duplicate or minority vote is not proof of
 
 以上规则只用标注本身和批次统计，不调用模型；每条疑似含稳定身份、原因和证据。疑似只表示需要人工复核。生成数据测试见 `tests/annotation_qa/test_generated_panels.py`：埋入的各类错误全部被发现，干净数据被标记的样本不超过 2%。
 
-Export rework lists as CSV or JSON. Import the repaired panel with `rework_of` pointing to the original batch in the same version. Comparison distinguishes corrected, introduced, remaining and unassessed findings. Removed reviews are unassessed, so dropping troublesome rows cannot count as a fix. It also counts changed, unchanged, added and removed sample/annotator records, and, when an approved inspection of the original batch marked units defective, how many of those units were changed. Summary counts feed quality scoring, analysis reports and the dataset-version view.
+Export rework lists as CSV or JSON. Import the repaired panel with `rework_of` pointing to the original batch in the same version. Comparison distinguishes corrected, introduced, remaining and unassessed findings. Removed reviews are unassessed, so dropping troublesome rows cannot count as a fix. Item findings are keyed by position, so when an unrelated box or span is added or deleted, an unmatched old and new finding of the same sample, annotator and rule are treated as one remaining issue rather than a fix plus a regression. It also counts changed, unchanged, added and removed sample/annotator records, and, when an approved inspection of the original batch marked units defective, how many of those units were changed. Summary counts feed quality scoring, analysis reports and the dataset-version view.
 
-返工清单可导出 CSV/JSON。导入返工批次时，`rework_of` 指向同版本的原批次。对比分别统计已修正、新增、遗留和未重新评估的复核项；删掉标注不会被算成修正。另统计改动、未改、新增、删除的标注记录数，以及原批次抽检判为不合格的样本中有多少在返工中被改动。摘要进入质量评分、分析报告与数据集版本页。
+返工清单可导出 CSV/JSON。导入返工批次时，`rework_of` 指向同版本的原批次。对比分别统计已修正、新增、遗留和未重新评估的复核项；删掉标注不会被算成修正。框和片段的复核项按序号定身份，增删同一记录里无关的框或片段会让序号变化，此时同一样本、同一标注员、同一规则下一旧一新的复核项按一条遗留处理，不算一次修正加一次新增。另统计改动、未改、新增、删除的标注记录数，以及原批次抽检判为不合格的样本中有多少在返工中被改动。摘要进入质量评分、分析报告与数据集版本页。
 
 ## Offline demonstration / 离线演示
 
