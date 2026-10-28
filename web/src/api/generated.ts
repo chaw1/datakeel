@@ -1074,6 +1074,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{dataset_id}/text-governance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reports
+         * @description Read bounded reports for one pinned version or the latest immutable version.
+         */
+        get: operations["reports_api_datasets__dataset_id__text_governance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{dataset_id}/text-governance/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze
+         * @description Stream uploaded JSONL into a reproducible dry run without publishing clean files.
+         */
+        post: operations["analyze_api_datasets__dataset_id__text_governance_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{dataset_id}/text-governance/evaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evaluations
+         * @description List the user's own registered evaluation file references.
+         */
+        get: operations["evaluations_api_datasets__dataset_id__text_governance_evaluations_get"];
+        put?: never;
+        /**
+         * Register
+         * @description Register an exact uploaded JSONL or text manifest selection for contamination checks.
+         */
+        post: operations["register_api_datasets__dataset_id__text_governance_evaluations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{identifier}": {
         parameters: {
             query?: never;
@@ -2642,6 +2706,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training-governance/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report
+         * @description Return bounded redacted findings and any approved clean-version reference.
+         */
+        get: operations["report_api_training_governance__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training-governance/{run_id}/clean": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clean
+         * @description Prepare mandatory human approval bound to this exact dry run and frozen sources.
+         */
+        post: operations["clean_api_training_governance__run_id__clean_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training-governance/{run_id}/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ledger
+         * @description Download every keep, drop and redact decision with redacted evidence and reasons.
+         */
+        get: operations["ledger_api_training_governance__run_id__ledger_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/uploads": {
         parameters: {
             query?: never;
@@ -2925,7 +3049,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet";
+            action_type: "clean_training_data" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -2979,7 +3103,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet";
+            action_type: "clean_training_data" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -9504,6 +9628,356 @@ export interface components {
             type: "tool";
         };
         /**
+         * TrainingAnalysisRequest
+         * @description Analyze selected uploaded JSONL files with a completely frozen rule configuration.
+         */
+        TrainingAnalysisRequest: {
+            config?: components["schemas"]["TrainingConfig"];
+            /**
+             * Evaluation Ids
+             * @default []
+             */
+            evaluation_ids: string[];
+            /**
+             * File Ids
+             * @default []
+             */
+            file_ids: string[];
+            /** Version Id */
+            version_id?: string | null;
+        };
+        /**
+         * TrainingConfig
+         * @description Freeze all rule thresholds so a dry run can be reproduced exactly.
+         */
+        TrainingConfig: {
+            /**
+             * Contamination Ngram
+             * @default 13
+             */
+            contamination_ngram: number;
+            /**
+             * Contamination Threshold
+             * @default 0.2
+             */
+            contamination_threshold: number;
+            /**
+             * Format
+             * @default auto
+             * @enum {string}
+             */
+            format: "auto" | "messages" | "instruction" | "preference";
+            /**
+             * Max Line Bytes
+             * @default 1048576
+             */
+            max_line_bytes: number;
+            /**
+             * Max Tokens
+             * @default 8192
+             */
+            max_tokens: number;
+            /**
+             * Near Distance
+             * @default 8
+             */
+            near_distance: number;
+            /**
+             * Near Similarity
+             * @default 0.9
+             */
+            near_similarity: number;
+            /**
+             * Refusal Phrases
+             * @default [
+             *       "as an ai language model",
+             *       "as an artificial intelligence",
+             *       "i cannot assist with",
+             *       "作为一个ai",
+             *       "作为人工智能",
+             *       "作为一个人工智能",
+             *       "我无法协助"
+             *     ]
+             */
+            refusal_phrases: string[];
+            /**
+             * Repetition Threshold
+             * @default 0.45
+             */
+            repetition_threshold: number;
+            /**
+             * Safety Terms
+             * @default []
+             */
+            safety_terms: string[];
+            /**
+             * Sample Limit
+             * @default 50
+             */
+            sample_limit: number;
+        };
+        /**
+         * TrainingEvaluation
+         * @description Identify an immutable user-registered evaluation snapshot.
+         */
+        TrainingEvaluation: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** File Ids */
+            file_ids: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Source Dataset Id */
+            source_dataset_id: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * TrainingEvaluationRequest
+         * @description Register evaluation files from an existing uploaded dataset, never an arbitrary path.
+         */
+        TrainingEvaluationRequest: {
+            /** File Ids */
+            file_ids: string[];
+            /** Name */
+            name: string;
+            /** Source Dataset Id */
+            source_dataset_id: string;
+            /** Version Id */
+            version_id?: string | null;
+        };
+        /**
+         * TrainingFileSummary
+         * @description Aggregate one source without retaining every parsed record in memory.
+         */
+        TrainingFileSummary: {
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Issue Counts */
+            issue_counts?: {
+                [key: string]: number;
+            };
+            /** Records */
+            records: number;
+            /** Valid Records */
+            valid_records: number;
+        };
+        /**
+         * TrainingGovernanceRun
+         * @description Present bounded redacted findings and the complete decision-ledger fingerprint.
+         */
+        TrainingGovernanceRun: {
+            /** Cleaned Version Id */
+            cleaned_version_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Id */
+            id: string;
+            /** Ledger Sha256 */
+            ledger_sha256: string;
+            report: components["schemas"]["TrainingReport"];
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * TrainingIssue
+         * @description Locate a measured rule signal; evidence is always redacted for presentation.
+         */
+        TrainingIssue: {
+            /** Code */
+            code: string;
+            /** End */
+            end?: number | null;
+            /**
+             * Evidence
+             * @default
+             */
+            evidence: string;
+            /**
+             * Field
+             * @default record
+             */
+            field: string;
+            /** Message */
+            message: string;
+            /** Related Id */
+            related_id?: string | null;
+            /** Start */
+            start?: number | null;
+        };
+        /**
+         * TrainingRecord
+         * @description Carry a bounded, redacted record preview and its stable source identity.
+         */
+        TrainingRecord: {
+            /** Content Hash */
+            content_hash: string;
+            /**
+             * Decision
+             * @default keep
+             * @enum {string}
+             */
+            decision: "keep" | "drop" | "redact";
+            /**
+             * Estimated Tokens
+             * @default 0
+             */
+            estimated_tokens: number;
+            /** File Id */
+            file_id: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "auto" | "messages" | "instruction" | "preference";
+            /** Id */
+            id: string;
+            /**
+             * Issues
+             * @default []
+             */
+            issues: components["schemas"]["TrainingIssue"][];
+            /**
+             * Language
+             * @default unknown
+             * @enum {string}
+             */
+            language: "zh" | "en" | "mixed" | "unknown";
+            /**
+             * Language Confidence
+             * @default 0
+             */
+            language_confidence: number;
+            /** Line */
+            line: number;
+            /**
+             * Preview
+             * @default
+             */
+            preview: string;
+            /**
+             * Reasons
+             * @default []
+             */
+            reasons: string[];
+        };
+        /**
+         * TrainingReport
+         * @description Expose deterministic counts and bounded samples; the full ledger stays on disk.
+         */
+        TrainingReport: {
+            /**
+             * Chosen Longer Ratio
+             * @default 0
+             */
+            chosen_longer_ratio: number;
+            config: components["schemas"]["TrainingConfig"];
+            /**
+             * Contamination Hits
+             * @default []
+             */
+            contamination_hits: components["schemas"]["TrainingIssue"][];
+            /**
+             * Dedup Backend
+             * @default python
+             */
+            dedup_backend: string;
+            /**
+             * Dropped
+             * @default 0
+             */
+            dropped: number;
+            /**
+             * Duplicate Clusters
+             * @default []
+             */
+            duplicate_clusters: string[][];
+            /** Evaluation Sha256 */
+            evaluation_sha256?: {
+                [key: string]: string;
+            };
+            /**
+             * Files
+             * @default []
+             */
+            files: components["schemas"]["TrainingFileSummary"][];
+            /** Formats */
+            formats?: {
+                [key: string]: number;
+            };
+            /** Issue Counts */
+            issue_counts?: {
+                [key: string]: number;
+            };
+            /**
+             * Kept
+             * @default 0
+             */
+            kept: number;
+            /** Languages */
+            languages?: {
+                [key: string]: number;
+            };
+            /**
+             * Ledger Sha256
+             * @default
+             */
+            ledger_sha256: string;
+            /**
+             * Pii Records
+             * @default 0
+             */
+            pii_records: number;
+            /**
+             * Preference Records
+             * @default 0
+             */
+            preference_records: number;
+            /**
+             * Records
+             * @default 0
+             */
+            records: number;
+            /**
+             * Redacted
+             * @default 0
+             */
+            redacted: number;
+            /**
+             * Rule Version
+             * @default 1.0
+             */
+            rule_version: string;
+            /**
+             * Samples
+             * @default []
+             */
+            samples: components["schemas"]["TrainingRecord"][];
+            /** Source Sha256 */
+            source_sha256?: {
+                [key: string]: string;
+            };
+            /**
+             * Valid Records
+             * @default 0
+             */
+            valid_records: number;
+        };
+        /**
          * TranscriptionEstimate
          * @description Show the image transfer envelope independently from downstream extraction.
          */
@@ -11952,6 +12426,140 @@ export interface operations {
             };
         };
     };
+    reports_api_datasets__dataset_id__text_governance_get: {
+        parameters: {
+            query?: {
+                version_id?: string | null;
+            };
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingGovernanceRun"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_api_datasets__dataset_id__text_governance_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingAnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingGovernanceRun"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    evaluations_api_datasets__dataset_id__text_governance_evaluations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingEvaluation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_api_datasets__dataset_id__text_governance_evaluations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingEvaluationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingEvaluation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     dataset_api_datasets__identifier__get: {
         parameters: {
             query?: never;
@@ -14329,6 +14937,97 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["FileView"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_api_training_governance__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingGovernanceRun"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clean_api_training_governance__run_id__clean_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ledger_api_training_governance__run_id__ledger_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

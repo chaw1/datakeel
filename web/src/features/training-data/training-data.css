@@ -1,0 +1,161 @@
+.training-governance {
+  margin-block: calc(var(--space) * 6);
+}
+.training-governance > summary {
+  font-size: var(--font-xl);
+  font-weight: 600;
+  cursor: pointer;
+}
+.training-governance > summary:focus-visible,
+.training-report summary:focus-visible {
+  outline: 2px solid var(--pencil);
+  outline-offset: var(--space);
+}
+.training-controls,
+.training-evaluation-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 3);
+  align-items: end;
+  margin-block: calc(var(--space) * 4);
+}
+.training-controls label,
+.training-evaluation-form > label {
+  display: grid;
+  gap: var(--space);
+  flex: 1;
+  min-width: 160px;
+}
+.training-controls input,
+.training-controls select,
+.training-evaluation-form input {
+  width: 100%;
+}
+.training-evaluation-form fieldset,
+.training-evaluation-selection {
+  flex-basis: 100%;
+  border: 1px solid var(--rule);
+  padding: calc(var(--space) * 3);
+}
+.training-checkbox {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+  padding-block: var(--space);
+}
+.training-checkbox input {
+  width: auto;
+}
+.training-report {
+  display: grid;
+  gap: calc(var(--space) * 5);
+}
+.training-report h3,
+.training-dry-run h3 {
+  font-size: var(--font-xl);
+}
+.training-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: calc(var(--space) * 3);
+}
+.training-metrics > div {
+  padding: calc(var(--space) * 3);
+  border: 1px solid var(--rule);
+}
+.training-metrics dt {
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
+.training-metrics dd {
+  margin: 0;
+  font-size: var(--font-2xl);
+  font-weight: 600;
+}
+.training-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: calc(var(--space) * 6);
+}
+.training-counts > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: calc(var(--space) * 2);
+  padding-block: var(--space);
+  border-block-end: 1px solid var(--rule);
+}
+.training-counts dd {
+  margin: 0;
+}
+.training-samples {
+  display: grid;
+  gap: calc(var(--space) * 4);
+}
+.training-record,
+.training-dry-run {
+  padding: calc(var(--space) * 4);
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+}
+.training-report h4 {
+  font-family: var(--font-body);
+}
+.training-record h4 {
+  margin-block: 0 calc(var(--space) * 2);
+  font-size: var(--font-md);
+}
+.training-id,
+.training-governance code,
+.training-findings mark {
+  overflow-wrap: anywhere;
+}
+.training-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--font-sm);
+  line-height: var(--line-body);
+  padding: calc(var(--space) * 3);
+  background: var(--ink-wash);
+  max-height: 280px;
+  overflow: auto;
+}
+.training-findings {
+  display: grid;
+  gap: calc(var(--space) * 3);
+  padding-inline-start: calc(var(--space) * 5);
+}
+.training-findings small,
+.training-findings mark,
+.training-findings li > code:last-child {
+  display: block;
+}
+.training-findings small {
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
+.training-findings mark {
+  color: var(--ink);
+  background: var(--warn-wash);
+  border-inline-start: 3px solid var(--warn);
+  padding: var(--space) calc(var(--space) * 2);
+  white-space: pre-wrap;
+}
+.training-history {
+  display: grid;
+  gap: var(--space);
+  margin-block: calc(var(--space) * 4);
+}
+.training-history select {
+  max-width: 100%;
+}
+.training-governance summary {
+  overflow-wrap: anywhere;
+}
+.training-preview mark {
+  color: var(--ink);
+  background: var(--warn-wash);
+  text-decoration: underline;
+  text-decoration-color: var(--warn);
+  text-decoration-thickness: 2px;
+}

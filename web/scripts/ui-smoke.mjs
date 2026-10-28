@@ -19,6 +19,7 @@ import { extractionSmoke } from "./extraction-smoke.mjs";
 import { polishSmoke } from "./polish-smoke.mjs";
 import { refinementSmoke } from "./refinement-smoke.mjs";
 import { standardsSmoke } from "./standards-smoke.mjs";
+import { trainingJourney } from "./training-smoke.mjs";
 import { workspaceSmoke } from "./workspace-smoke.mjs";
 import {
   cleanupFixture,
@@ -475,6 +476,16 @@ try {
     checks,
   });
   const datasheet = await datasheetSmoke({ page, json, screenshot, checks });
+  const training = await trainingJourney({
+    page,
+    base: base.href,
+    json,
+    create: (data) => post("/api/datasets", data),
+    capture: (name) => screenshot(name, false),
+  });
+  checks.push(
+    "training rules, own evaluation registration, redacted highlights, four locale/theme variants, mobile width, dry-run without a version and approved cleaning",
+  );
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(output, "evidence.json"),
@@ -499,6 +510,7 @@ try {
         advanced,
         customOperators,
         datasheet,
+        training,
         checks,
         errors,
       },
