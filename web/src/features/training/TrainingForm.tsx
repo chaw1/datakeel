@@ -42,11 +42,14 @@ export function TrainingForm({
     onSubmit(
       {
         name: name.trim(),
-        ratios: {
-          train: Number(ratios.train),
-          val: Number(ratios.val),
-          test: Number(ratios.test),
-        },
+        ratios:
+          source === "directory"
+            ? { train: 0.8, val: 0.1, test: 0.1 }
+            : {
+                train: Number(ratios.train),
+                val: Number(ratios.val),
+                test: Number(ratios.test),
+              },
         seed: Number(seed),
         stratify,
         group_field: group.trim() || null,

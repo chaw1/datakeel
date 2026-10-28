@@ -42,7 +42,7 @@ export function TrainingDistribution({ split }: { split: SplitSet }) {
           </thead>
           <tbody>
             {rows.map((label) => (
-              <tr key={label ?? "total"}>
+              <tr key={label === null ? "total" : `label:${label}`}>
                 <th scope="row">{label ?? t("trainingTotal")}</th>
                 {split.distributions.map((item) => {
                   const count =

@@ -57,3 +57,25 @@ it("requires an explicit leakage read and reports a clean result", async () => {
     expect.objectContaining({ method: "GET" }),
   );
 });
+
+it("keeps disabled generated ratios out of directory split requests", async () => {
+  const user = userEvent.setup();
+  const submit = vi.fn();
+  render(<TrainingForm busy={false} onSubmit={submit} />);
+  await user.clear(screen.getByLabelText("Train"));
+  await user.type(screen.getByLabelText("Train"), "0.5");
+  expect(
+    screen.getByRole("button", { name: "Save immutable split" }),
+  ).toBeDisabled();
+  await user.selectOptions(screen.getByLabelText("Split source"), "directory");
+  await user.click(
+    screen.getByRole("button", { name: "Save immutable split" }),
+  );
+  expect(submit).toHaveBeenCalledWith(
+    expect.objectContaining({
+      source: "directory",
+      ratios: { train: 0.8, val: 0.1, test: 0.1 },
+    }),
+    false,
+  );
+});
