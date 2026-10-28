@@ -97,8 +97,21 @@ class MediaFileScore(Record):
     reasons: list[str]
 
 
+class MediaFailure(Record):
+    """Name a recording that could not be processed, the operator and the reason."""
+
+    file_id: str
+    filename: str
+    operator: str
+    reason: str
+
+
 class MediaSummary(Record):
-    """Aggregate original recordings separately from their derived clips."""
+    """Aggregate original recordings separately from their derived clips.
+
+    Recordings that failed are listed in ``failures`` instead of being scored;
+    ``partial`` is true when some recordings failed while others were processed.
+    """
 
     original_duration_ms: int = 0
     effective_duration_ms: int = 0
@@ -106,6 +119,8 @@ class MediaSummary(Record):
     duplicate_count: int = 0
     issue_distribution: dict[str, int] = Field(default_factory=dict)
     files: list[MediaFileScore] = Field(default_factory=list[MediaFileScore])
+    failures: list[MediaFailure] = Field(default_factory=list[MediaFailure])
+    partial: bool = False
 
 
 class MediaArtifactRecord(Record):

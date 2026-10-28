@@ -12,6 +12,7 @@ from pydantic import Field
 from datakeel.core.media_models import MediaInterval
 from datakeel.core.models import FileItem, JsonDocument, Record
 from datakeel.operators.base import Operator, OperatorResult, Params, annotate, summarize
+from datakeel.operators.media.isolation import MEDIA_ERRORS, mark_failed
 from datakeel.operators.media.tools import media_artifact
 from datakeel.operators.video.render import render
 from datakeel.operators.video.sequence import (
@@ -180,7 +181,11 @@ def execute(files: list[FileItem], output_dir: Path, params: DedupParams) -> Ope
     earlier: list[Sequence] = []
     duplicate_count = 0
     for file in files:
-        sequence = decode_sequence(file, params.sample_fps)
+        try:
+            sequence = decode_sequence(file, params.sample_fps)
+        except MEDIA_ERRORS as error:
+            output.append(mark_failed(file, "video.dedup", error))
+            continue
         duplicates = _duplicates(sequence, earlier, params)
         earlier.append(sequence)
         duplicate_count += len(duplicates)

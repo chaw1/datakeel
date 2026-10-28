@@ -195,6 +195,8 @@ export const zh: Record<MessageKey, string> = {
   yourPipelineRunsAndLiveProgressWillAppearHere:
     "流水线运行和实时进度将在这里显示。",
   datasetProcessing: "数据集处理",
+  partiallyCompleted: "部分完成：部分录制处理失败",
+  failedRecordings: "处理失败的录制",
   shards: "个分片",
   latestLabel: "最新",
   inspectManifestSnapshot: "查看清单快照",

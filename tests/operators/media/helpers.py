@@ -5,6 +5,7 @@
 
 from pathlib import Path
 
+from datakeel.core.media_metadata import media_failure
 from datakeel.core.models import FileItem
 from datakeel.operators.media.tools import run_tool
 
@@ -31,3 +32,11 @@ def shifted_file(file: FileItem, offset_ms: int) -> FileItem:
         filename=path.name,
         modality="audio",
     )
+
+
+def failure_reason(file: FileItem, operator: str) -> str:
+    """Return why ``operator`` marked this recording failed, requiring that it did."""
+    failure = media_failure(file.id, file.filename, file.metadata)
+    assert failure is not None
+    assert failure.operator == operator
+    return failure.reason

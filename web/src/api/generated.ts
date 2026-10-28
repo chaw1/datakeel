@@ -4166,6 +4166,20 @@ export interface components {
             reference_file_id: string;
         };
         /**
+         * MediaFailure
+         * @description Name a recording that could not be processed, the operator and the reason.
+         */
+        MediaFailure: {
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Operator */
+            operator: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
          * MediaFileScore
          * @description Explain one recording or clip's measured signal deductions.
          */
@@ -4316,6 +4330,9 @@ export interface components {
         /**
          * MediaSummary
          * @description Aggregate original recordings separately from their derived clips.
+         *
+         *     Recordings that failed are listed in ``failures`` instead of being scored;
+         *     ``partial`` is true when some recordings failed while others were processed.
          */
         MediaSummary: {
             /**
@@ -4333,6 +4350,8 @@ export interface components {
              * @default 0
              */
             effective_duration_ms: number;
+            /** Failures */
+            failures?: components["schemas"]["MediaFailure"][];
             /** Files */
             files?: components["schemas"]["MediaFileScore"][];
             /** Issue Distribution */
@@ -4344,6 +4363,11 @@ export interface components {
              * @default 0
              */
             original_duration_ms: number;
+            /**
+             * Partial
+             * @default false
+             */
+            partial: boolean;
         };
         /**
          * MemoryCreate
@@ -5188,6 +5212,9 @@ export interface components {
         /**
          * TaskView
          * @description Persisted task state and derived completion progress.
+         *
+         *     ``failed_files`` lists recordings published with a processing failure, and
+         *     ``partial`` marks a completed task whose output includes such failures.
          */
         TaskView: {
             /** Completed Shards */
@@ -5198,12 +5225,19 @@ export interface components {
             dataset_id: string;
             /** Error */
             error: string | null;
+            /** Failed Files */
+            failed_files?: components["schemas"]["MediaFailure"][];
             /** Finished At */
             finished_at: number | null;
             /** Id */
             id: string;
             /** Input Version Id */
             input_version_id: string | null;
+            /**
+             * Partial
+             * @default false
+             */
+            partial: boolean;
             /** Progress */
             progress: number;
             /** Shards */

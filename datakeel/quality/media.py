@@ -5,8 +5,14 @@
 
 from collections import Counter, defaultdict
 
-from datakeel.core.media_metadata import media_metadata
-from datakeel.core.media_models import MediaFileScore, MediaFileView, MediaInterval, MediaSummary
+from datakeel.core.media_metadata import media_failure, media_metadata
+from datakeel.core.media_models import (
+    MediaFailure,
+    MediaFileScore,
+    MediaFileView,
+    MediaInterval,
+    MediaSummary,
+)
 from datakeel.core.models import FileItem
 
 
@@ -110,8 +116,17 @@ def _effective_duration(measured: list[tuple[FileItem, MediaFileView | None]]) -
 
 
 def summarize_media(files: list[FileItem]) -> MediaSummary | None:
-    """Report measured originals and clips with per-file five-dimension deductions."""
-    measured = [(file, media_metadata(file.metadata)) for file in files]
+    """Report measured originals and clips with per-file five-dimension deductions.
+
+    Recordings that failed are listed with their operator and reason, not scored.
+    """
+    failures = [
+        failure
+        for file in files
+        if (failure := media_failure(file.id, file.filename, file.metadata)) is not None
+    ]
+    failed = {failure.file_id for failure in failures}
+    measured = [(file, media_metadata(file.metadata)) for file in files if file.id not in failed]
     scores: list[MediaFileScore] = []
     originals: list[MediaFileScore] = []
     distribution: Counter[str] = Counter()
@@ -133,7 +148,7 @@ def summarize_media(files: list[FileItem]) -> MediaSummary | None:
             if isinstance(windows, list)
             else int(any("duplicate" in issue.code for issue in media.issues))
         )
-    if not scores:
+    if not scores and not failures:
         return None
     return MediaSummary(
         original_duration_ms=sum(score.duration_ms for score in originals),
@@ -142,15 +157,31 @@ def summarize_media(files: list[FileItem]) -> MediaSummary | None:
         duplicate_count=duplicates,
         issue_distribution=dict(sorted(distribution.items())),
         files=scores,
+        failures=failures,
+        partial=bool(failures and scores),
+    )
+
+
+def _failure_lines(failures: list[MediaFailure]) -> str:
+    return "".join(
+        f"- failed / 处理失败 {item.filename} ({item.operator}): {item.reason}\n"
+        for item in failures
     )
 
 
 def media_chapter(summary: MediaSummary) -> dict[str, str]:
     """Describe measured durations and issue counts without embedding media bytes."""
+    outcome = (
+        f"Partially completed / 部分完成: {len(summary.failures)} recording(s) failed.\n"
+        if summary.partial
+        else ""
+    )
     return {
         "title": "音视频 / Audio and video",
         "body": (
-            f"Original duration: {summary.original_duration_ms} ms; "
+            outcome
+            + _failure_lines(summary.failures)
+            + f"Original duration: {summary.original_duration_ms} ms; "
             f"effective duration: {summary.effective_duration_ms} ms; "
             f"clips: {summary.clip_count}; duplicates: {summary.duplicate_count}.\n"
             + "\n".join(f"- {code}: {count}" for code, count in summary.issue_distribution.items())

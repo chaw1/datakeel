@@ -62,3 +62,39 @@ def test_demo_media_processes_given_recordings(db: Database, tmp_path: Path) -> 
         if file["filename"] == "microphone.wav" and file["media"]["source_file_id"] is None
     ]
     assert offsets == [300.0]
+
+
+def test_demo_media_reports_partial_completion_for_unreadable_recording(
+    db: Database, tmp_path: Path
+) -> None:
+    """One unreadable recording is listed as failed; the others are still processed."""
+    camera, broken = tmp_path / "camera.mkv", tmp_path / "broken.mp4"
+    run_tool(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=s=96x64:r=10:d=3",
+            "-c:v",
+            "ffv1",
+            str(camera),
+        ]
+    )
+    broken.write_bytes(b"not a recording" * 64)
+    result = run_demo(db, [camera, broken])
+    assert result["state"] == "COMPLETED"
+    assert result["partial"] is True
+    failed = result["failed_files"]
+    assert [item["filename"] for item in failed] == ["broken.mp4"]
+    assert failed[0]["operator"] == "media.align"
+    summary = MediaSummary.model_validate(result["quality"]["media"])
+    assert summary.partial
+    assert [item.filename for item in summary.failures] == ["broken.mp4"]
+    assert [score.filename for score in summary.files if score.duration_ms] != []
+    assert all(score.filename != "broken.mp4" for score in summary.files)
+    chapters = {chapter["title"]: chapter["body"] for chapter in result["report"]["chapters"]}
+    body = chapters["音视频 / Audio and video"]
+    assert "部分完成" in body
+    assert "broken.mp4 (media.align)" in body

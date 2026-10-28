@@ -8,6 +8,7 @@ import json
 from typing import TYPE_CHECKING, cast
 
 from datakeel.core.media_models import MediaArtifactRecord, MediaStep
+from datakeel.operators.media.isolation import has_failed
 
 if TYPE_CHECKING:
     from pydantic import JsonValue
@@ -27,6 +28,9 @@ def record_media_result(
     files: list[FileItem] = []
     artifacts: list[MediaArtifactRecord] = []
     for file in result.files:
+        if has_failed(file):
+            files.append(file)
+            continue
         history = [
             MediaStep.model_validate(step) for step in file.metadata.get("media_history", [])
         ]

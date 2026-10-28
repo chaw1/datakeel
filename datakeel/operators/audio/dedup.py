@@ -13,6 +13,7 @@ from datakeel.operators.audio.fingerprint import Signature, fingerprint, is_dupl
 from datakeel.operators.audio.models import AudioMetrics
 from datakeel.operators.audio.params import DedupParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
+from datakeel.operators.media.isolation import MEDIA_ERRORS, mark_failed
 
 
 def execute(files: list[FileItem], _output_dir: Path, params: DedupParams) -> OperatorResult:
@@ -21,7 +22,11 @@ def execute(files: list[FileItem], _output_dir: Path, params: DedupParams) -> Op
     output: list[FileItem] = []
     issues: list[dict[str, Any]] = []
     for file in files:
-        measured = signature(fingerprint_samples(file))
+        try:
+            measured = signature(fingerprint_samples(file))
+        except MEDIA_ERRORS as error:
+            output.append(mark_failed(file, "audio.dedup", error))
+            continue
         match = next(
             (prior.id for prior, previous in retained if is_duplicate(measured, previous, params)),
             None,

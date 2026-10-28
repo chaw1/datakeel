@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import ValidationError
 
-from datakeel.core.errors import ValidationError as MediaValidationError
 from datakeel.operators.video import OPERATORS
 from datakeel.operators.video.probe import OPERATOR
+from tests.operators.media.helpers import failure_reason
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -51,5 +51,5 @@ def test_probe_audio_disguised_as_video_is_rejected(
 ) -> None:
     """A modality label cannot make an audio-only stream satisfy video probing."""
     source = make_video("sine=frequency=400:sample_rate=16000:duration=1")
-    with pytest.raises(MediaValidationError, match="no video stream"):
-        OPERATOR.run([source], output_dir)
+    failed = OPERATOR.run([source], output_dir).files[0]
+    assert "no video stream" in failure_reason(failed, "video.probe")

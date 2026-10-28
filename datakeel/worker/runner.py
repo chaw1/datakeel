@@ -10,6 +10,9 @@ import time
 from datakeel.actions.worker import reconcile_runs, start_task_run
 from datakeel.core.errors import ExecutionError
 from datakeel.core.evidence_execution import EvidenceExecutionContext
+from datakeel.core.media_metadata import media_failure
+from datakeel.core.media_models import MediaFailure
+from datakeel.core.models import FileItem
 from datakeel.evidence.execution import EvidenceExecution
 from datakeel.pipeline import Pipeline, default_pipeline, run_pipeline
 from datakeel.storage.database import Database, data_dir
@@ -22,6 +25,7 @@ from datakeel.worker.observations import Observations
 from datakeel.worker.queue import DatabaseQueue, Lease
 
 logger = logging.getLogger(__name__)
+_ERROR_LIMIT = 4000
 
 
 def execute(queue: DatabaseQueue, lease: Lease) -> bool:
@@ -53,6 +57,7 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
             observations.observe,
             operator_executor=evidence.execute_node,
         )
+        _require_processed_recording(outputs)
         persisted = persist_files(outputs)
         return queue.finish(
             lease,
@@ -76,6 +81,23 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
     finally:
         stop.set()
         heartbeat.join(timeout=5)
+
+
+def _require_processed_recording(outputs: list[FileItem]) -> None:
+    """Fail the attempt when every output is a recording that could not be processed.
+
+    A failed recording is kept and reported next to the others (a partial result);
+    when nothing was processed the task fails instead of publishing only failures.
+    """
+    failures = [failure for file in outputs if (failure := _failure(file)) is not None]
+    if outputs and len(failures) == len(outputs):
+        reasons = "; ".join(f"{item.filename}: {item.reason}" for item in failures)
+        msg = f"Every recording failed: {reasons}"
+        raise ExecutionError(msg[:_ERROR_LIMIT])
+
+
+def _failure(file: FileItem) -> MediaFailure | None:
+    return media_failure(file.id, file.filename, file.metadata)
 
 
 def run_worker(

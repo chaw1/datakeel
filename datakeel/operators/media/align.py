@@ -13,6 +13,7 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.media_alignment import MediaAlignment
 from datakeel.core.models import FileItem
 from datakeel.operators.base import Operator, OperatorResult, Params, annotate, summarize
+from datakeel.operators.media.isolation import MEDIA_ERRORS, mark_failed
 from datakeel.operators.media.tools import decode_audio, probe_file
 
 _SAMPLE_RATE = 16000
@@ -122,44 +123,68 @@ def estimate_alignment(
     return max(successes, key=lambda result: result.confidence) if successes else plain
 
 
+def _decode(file: FileItem, params: AlignParams) -> NDArray[np.float64] | None:
+    """Decode the analysed audio, or ``None`` for a recording without an audio track."""
+    if not probe_file(file).audio_tracks:
+        return None
+    return decode_audio(
+        file, sample_rate=_SAMPLE_RATE, max_duration_seconds=params.max_analysis_seconds
+    )
+
+
+def _alignment(
+    signal: NDArray[np.float64] | None,
+    reference: tuple[str, NDArray[np.float64]],
+    *,
+    is_reference: bool,
+    params: AlignParams,
+) -> MediaAlignment:
+    reference_id, samples = reference
+    if signal is None:
+        return MediaAlignment(reference_file_id=reference_id, reason="missing_audio")
+    if is_reference and samples.size and np.any(samples):
+        return MediaAlignment(
+            reference_file_id=reference_id,
+            offset_ms=0.0,
+            confidence=1.0,
+            aligned=True,
+            reason="reference",
+        )
+    return estimate_alignment(samples, signal, reference_id, params)
+
+
 def execute(files: list[FileItem], _output_dir: Path, params: AlignParams) -> OperatorResult:
-    """Annotate each audio or video recording relative to the first input."""
+    """Annotate each audio or video recording relative to the first readable input.
+
+    A recording that cannot be decoded is marked failed and the next readable one
+    becomes the reference, so one broken file never blocks the others.
+    """
     if len(files) < _MIN_RECORDINGS or any(
         file.modality not in {"audio", "video"} for file in files
     ):
         msg = "media.align requires at least two audio or video recordings with audio tracks"
         raise ValidationError(msg)
-    reference = (
-        decode_audio(
-            files[0], sample_rate=_SAMPLE_RATE, max_duration_seconds=params.max_analysis_seconds
-        )
-        if probe_file(files[0]).audio_tracks
-        else np.zeros(0, dtype=np.float64)
-    )
-    output: list[FileItem] = []
-    for index, file in enumerate(files):
-        has_audio = bool(probe_file(file).audio_tracks)
-        alignment = (
-            MediaAlignment(
-                reference_file_id=files[0].id,
-                offset_ms=0.0,
-                confidence=1.0,
-                aligned=True,
-                reason="reference",
+    decoded: list[tuple[FileItem, NDArray[np.float64] | None]] = []
+    failed: dict[str, FileItem] = {}
+    for file in files:
+        try:
+            decoded.append((file, _decode(file, params)))
+        except MEDIA_ERRORS as error:
+            failed[file.id] = mark_failed(file, "media.align", error)
+    if decoded:
+        first, samples = decoded[0]
+        reference = (first.id, samples if samples is not None else np.zeros(0, dtype=np.float64))
+        aligned = {
+            file.id: annotate(
+                file,
+                media_alignment=_alignment(
+                    signal, reference, is_reference=index == 0, params=params
+                ).model_dump(mode="json"),
             )
-            if index == 0 and reference.size and np.any(reference)
-            else estimate_alignment(
-                reference,
-                decode_audio(
-                    file, sample_rate=_SAMPLE_RATE, max_duration_seconds=params.max_analysis_seconds
-                ),
-                files[0].id,
-                params,
-            )
-            if has_audio
-            else MediaAlignment(reference_file_id=files[0].id, reason="missing_audio")
-        )
-        output.append(annotate(file, media_alignment=alignment.model_dump(mode="json")))
+            for index, (file, signal) in enumerate(decoded)
+        }
+        failed.update(aligned)
+    output = [failed[file.id] for file in files]
     return summarize(files, output)
 
 

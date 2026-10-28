@@ -3,9 +3,25 @@
 
 """Convert extensible stored metadata into explicit media boundary models."""
 
-from typing import Any
+from typing import Any, cast
 
-from datakeel.core.media_models import MediaFileView
+from datakeel.core.media_models import MediaFailure, MediaFileView
+
+FAILURE_KEY = "media_failure"
+
+
+def media_failure(file_id: str, filename: str, metadata: dict[str, Any]) -> MediaFailure | None:
+    """Read the failure an isolated media operator recorded on a recording, if any."""
+    failure: object = metadata.get(FAILURE_KEY)
+    if not isinstance(failure, dict) or not failure:
+        return None
+    record = cast("dict[str, Any]", failure)
+    return MediaFailure(
+        file_id=file_id,
+        filename=filename,
+        operator=str(record.get("operator", "")),
+        reason=str(record.get("reason", "")),
+    )
 
 
 def media_metadata(metadata: dict[str, Any]) -> MediaFileView | None:

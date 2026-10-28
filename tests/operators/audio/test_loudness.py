@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datakeel.core.errors import ExecutionError
 from datakeel.operators.audio import loudness
 from datakeel.operators.audio.loudness import OPERATOR
+from tests.operators.media.helpers import failure_reason
 
 if TYPE_CHECKING:
     from tests.operators.audio.conftest import AudioFactory
@@ -77,5 +77,5 @@ def test_loudness_reports_missing_measurement_json(
     monkeypatch.setattr(
         loudness, "run_tool_stderr", lambda _arguments, **_options: b"no measurement"
     )
-    with pytest.raises(ExecutionError, match="EBU R128 loudness measurements"):
-        OPERATOR.run([source], tmp_path / "missing")
+    failed = OPERATOR.run([source], tmp_path / "missing").files[0]
+    assert "EBU R128 loudness measurements" in failure_reason(failed, "audio.loudness")

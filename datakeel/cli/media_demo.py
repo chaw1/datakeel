@@ -68,6 +68,9 @@ def run_demo(db: Database, recordings: list[Path] | None = None) -> JsonDocument
         "task_id": task_id,
         "version_id": version.id,
         "state": task.state,
+        # A completed task may still list recordings that failed (partial completion).
+        "partial": task.partial,
+        "failed_files": [failure.model_dump(mode="json") for failure in task.failed_files],
         "quality": quality.model_dump(mode="json"),
         "report": report.model_dump(mode="json"),
         "files": [file.model_dump(mode="json") for file in files],

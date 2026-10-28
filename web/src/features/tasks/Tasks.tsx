@@ -33,6 +33,19 @@ export function Tasks({
             <strong>{t("datasetProcessing")}</strong>
             <span className="mono">{task.id}</span>
             {task.error && <p className="error-text">{task.error}</p>}
+            {task.partial && (
+              <p className="warning-text">{t("partiallyCompleted")}</p>
+            )}
+            {(task.failed_files ?? []).length > 0 && (
+              <ul className="task-failures" aria-label={t("failedRecordings")}>
+                {(task.failed_files ?? []).map((failure) => (
+                  <li key={failure.file_id}>
+                    <span className="mono">{failure.filename}</span> ·{" "}
+                    {failure.operator}: {failure.reason}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="task-progress">
             <div>

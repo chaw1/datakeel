@@ -11,12 +11,12 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from datakeel.core.errors import ExecutionError
 from datakeel.core.media_models import MediaProbe
 from datakeel.operators.audio import clipping, probe, trim_silence, vad
 from datakeel.operators.audio.common import activity, activity_metrics, runs
 from datakeel.operators.audio.params import ActivityParams
 from datakeel.operators.media.tools import probe_file
+from tests.operators.media.helpers import failure_reason
 
 if TYPE_CHECKING:
     from datakeel.operators.base import Operator
@@ -40,8 +40,9 @@ def test_probe_rejects_undecodable_audio(make_audio: AudioFactory, tmp_path: Pat
     """Report malformed content rather than returning fabricated measurements."""
     source = make_audio("anullsrc=r=16000:cl=mono:d=0.1")
     Path(source.path).write_bytes(b"invalid recording")
-    with pytest.raises(ExecutionError, match="could not process recording"):
-        probe.OPERATOR.run([source], tmp_path / "probe")
+    result = probe.OPERATOR.run([source], tmp_path / "probe")
+    assert "could not process recording" in failure_reason(result.files[0], "audio.probe")
+    assert result.quality["failed_files"] == [source.id]
 
 
 def test_vad_locates_energy_and_silence(make_audio: AudioFactory, tmp_path: Path) -> None:
@@ -96,8 +97,8 @@ def test_probe_rejects_missing_audio_stream(
     """A file without any audio track must not pass an audio-specific probe."""
     source = make_audio("sine=duration=0.2")
     monkeypatch.setattr(probe, "probe_file", lambda _file: MediaProbe(duration_ms=200))
-    with pytest.raises(ValueError, match="decodable audio stream"):
-        probe.OPERATOR.run([source], tmp_path / "missing")
+    result = probe.OPERATOR.run([source], tmp_path / "missing")
+    assert "decodable audio stream" in failure_reason(result.files[0], "audio.probe")
 
 
 def test_vad_and_trim_keep_opposite_phase_stereo(make_audio: AudioFactory, tmp_path: Path) -> None:
