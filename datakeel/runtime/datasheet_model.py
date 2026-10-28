@@ -104,7 +104,9 @@ def draft_with_model(
         msg = "Datasheet model job has no frozen price"
         raise ConflictError(msg)
     fallback = _OfflineProvider(job, prepared) if prepared.config.provider == "fake" else None
-    with provider_session(prepared.config, supplied or fallback) as provider:
+    with provider_session(
+        prepared.config, supplied or fallback, prepared.request_parameters
+    ) as provider:
         reservation = reserve(
             db,
             BudgetRequest(

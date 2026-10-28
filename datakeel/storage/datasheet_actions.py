@@ -50,7 +50,11 @@ def prepare_datasheet(session: Session, params: BoundaryModel) -> BoundaryModel:
     )
     target = model_destination(config)
     prepared = DatasheetPrepared(
-        facts=facts, config=config, target_url=target, external=is_external_destination(target)
+        facts=facts,
+        config=config,
+        target_url=target,
+        external=is_external_destination(target),
+        request_parameters=params.request_parameters,
     )
     if params.mode == "model":
         tokens = estimate_tokens(build_model_prompt(facts, params.language))

@@ -3,7 +3,7 @@
 
 """Construct retry-free vendor chat models over the injected HTTP transport."""
 
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from functools import cached_property
 
@@ -12,7 +12,7 @@ import httpx2
 from anthropic import Anthropic
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
-from pydantic import Field
+from pydantic import Field, JsonValue
 
 from datakeel.core.agent_models import ConversationCreate
 from datakeel.core.errors import ValidationError
@@ -69,14 +69,32 @@ def _base_url(config: ConversationCreate, settings: Settings) -> str:
     return legacy.removesuffix(suffix)
 
 
+def _openai_parameters(parameters: Mapping[str, JsonValue]) -> dict[str, object]:
+    # reasoning_effort is a native field; vendor switches such as enable_thinking go in the body.
+    options: dict[str, object] = {}
+    extra = {key: value for key, value in parameters.items() if key != "reasoning_effort"}
+    if "reasoning_effort" in parameters:
+        options["reasoning_effort"] = parameters["reasoning_effort"]
+    if extra:
+        options["extra_body"] = extra
+    return options
+
+
 @contextmanager
 def model_provider(
-    config: ConversationCreate, settings: Settings, client: httpx.Client
+    config: ConversationCreate,
+    settings: Settings,
+    client: httpx.Client,
+    request_parameters: Mapping[str, JsonValue] | None = None,
 ) -> Generator[ChatProvider]:
     """Use the owned HTTP client for all synchronous SDK requests and disable retries."""
     key = settings.openai_api_key if config.provider == "openai" else settings.anthropic_api_key
     if key is None:
         msg = f"No API key configured for {config.provider}"
+        raise ValidationError(msg)
+    parameters = dict(request_parameters or {})
+    if parameters and config.provider != "openai":
+        msg = "request_parameters require the openai provider"
         raise ValidationError(msg)
     with httpx2.Client(transport=_Transport(client), trust_env=False) as transport:
         options = {
@@ -91,6 +109,7 @@ def model_provider(
             ChatOpenAI.model_validate(
                 {
                     **options,
+                    **_openai_parameters(parameters),
                     "http_client": transport,
                     "http_socket_options": (),
                     "async_client": object(),

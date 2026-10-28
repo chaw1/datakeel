@@ -6,7 +6,7 @@
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import AwareDatetime
+from pydantic import AwareDatetime, Field, JsonValue
 
 from datakeel.core.agent_models import ConversationCreate
 from datakeel.core.datasheet_models import DatasheetDocument, DatasheetFact, DatasheetLanguage
@@ -25,6 +25,7 @@ class DatasheetPrepared(BoundaryModel):
     price: ModelPrice | None = None
     price_version: str | None = None
     external: bool = False
+    request_parameters: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class DatasheetJob(BoundaryModel):
