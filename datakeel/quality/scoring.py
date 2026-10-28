@@ -10,11 +10,10 @@ from pathlib import PurePosixPath
 from typing import Any, cast
 
 from datakeel.core.errors import ValidationError
-from datakeel.core.media_models import MediaSummary
 from datakeel.core.models import FileItem
-from datakeel.quality.image_pointcloud import ImagePointcloudAssessment, assess_file
-from datakeel.quality.media import summarize_media
-from datakeel.quality.models import IssueView, QualityConfig, QualityView
+from datakeel.quality.image_pointcloud import apply_image_pointcloud
+from datakeel.quality.media import apply_media, summarize_media
+from datakeel.quality.models import QualityConfig, QualityView
 from datakeel.quality.tabular import assess_tables, table_issues
 
 MAX_SCORE = 100
@@ -140,10 +139,11 @@ def score_quality(
             details[dimension]["tabular_rule"] = (
                 "fraction of source rows affected by recorded rules"
             )
-    visual = _image_pointcloud_evidence(files, raw, details)
+    visual = apply_image_pointcloud(files, raw, details)
     media = summarize_media(files)
     if media is not None:
-        _apply_media(media, files, resolved, raw, details)
+        complete_ids = {file.id for file in files if _complete(file, resolved)}
+        apply_media(media, files, complete_ids, raw, details)
     result = _summarize(raw, details, resolved, annotations, count)
     return result.model_copy(
         update={
@@ -152,24 +152,6 @@ def score_quality(
             "issues": [*result.issues, *table_issues(tabular), *visual],
         }
     )
-
-
-def _image_pointcloud_evidence(
-    files: list[FileItem], raw: dict[str, float], details: dict[str, Any]
-) -> list[IssueView]:
-    """Apply recorded image and point-cloud measurements as multipliers with reasons."""
-    assessments: list[ImagePointcloudAssessment] = [assess_file(file) for file in files]
-    for dimension in ("completeness", "consistency", "distribution"):
-        if assessments:
-            raw[dimension] *= sum(getattr(item, dimension) for item in assessments) / len(files)
-        observations = [
-            {"file_id": file.id, "filename": file.filename, **item.observations}
-            for file, item in zip(files, assessments, strict=True)
-            if item.observations
-        ]
-        if observations:
-            details[dimension]["image_pointcloud"] = observations
-    return [issue for item in assessments for issue in item.issues]
 
 
 def _validate_numbers(result: dict[str, Any]) -> None:
@@ -341,33 +323,6 @@ def _distribution(files: list[FileItem], field: str) -> tuple[Counter[str], floa
     )
     coverage = sum(_observed(labels).values()) / len(files) if files else 0
     return labels, coverage
-
-
-def _apply_media(
-    media: MediaSummary,
-    files: list[FileItem],
-    resolved: QualityConfig,
-    raw: dict[str, float],
-    details: dict[str, Any],
-) -> None:
-    """Deduct measured recording signal issues and count near-duplicate recordings once."""
-    count = len(files)
-    complete_ids = {file.id for file in files if _complete(file, resolved)}
-    for key in ("completeness", "consistency"):
-        deduction = (
-            sum(
-                100 - file.dimensions[key]
-                for file in media.files
-                if key != "completeness" or file.file_id in complete_ids
-            )
-            / count
-        )
-        raw[key] = max(0.0, raw[key] - deduction)
-    duplicates = {file.file_id for file in media.files if file.dimensions["uniqueness"] < MAX_SCORE}
-    retained = {file.sha256 for file in files if file.sha256 and file.id not in duplicates}
-    raw["uniqueness"] = 100 * len(retained) / count
-    details["uniqueness"]["media_duplicate_files"] = sorted(duplicates)
-    details["completeness"]["media"] = media.model_dump(mode="json")
 
 
 def _summarize(

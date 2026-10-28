@@ -4,6 +4,7 @@
 """Map recorded image and point-cloud signals into the existing five dimensions."""
 
 from math import isfinite
+from typing import Any
 
 from pydantic import Field, JsonValue
 
@@ -232,3 +233,21 @@ def assess_file(file: FileItem) -> ImagePointcloudAssessment:
     if file.modality == "point-cloud":
         return pointcloud_assessment(file)
     return ImagePointcloudAssessment()
+
+
+def apply_image_pointcloud(
+    files: list[FileItem], raw: dict[str, float], details: dict[str, Any]
+) -> list[IssueView]:
+    """Apply recorded image and point-cloud measurements as multipliers with reasons."""
+    assessments: list[ImagePointcloudAssessment] = [assess_file(file) for file in files]
+    for dimension in ("completeness", "consistency", "distribution"):
+        if assessments:
+            raw[dimension] *= sum(getattr(item, dimension) for item in assessments) / len(files)
+        observations = [
+            {"file_id": file.id, "filename": file.filename, **item.observations}
+            for file, item in zip(files, assessments, strict=True)
+            if item.observations
+        ]
+        if observations:
+            details[dimension]["image_pointcloud"] = observations
+    return [issue for item in assessments for issue in item.issues]

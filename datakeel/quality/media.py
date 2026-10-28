@@ -16,6 +16,8 @@ from datakeel.core.media_models import (
 )
 from datakeel.core.models import FileItem
 
+MAX_SCORE = 100
+
 
 def interval_duration(intervals: list[MediaInterval], duration_ms: int) -> int:
     """Measure the union of bounded issue ranges without double counting overlaps."""
@@ -221,3 +223,29 @@ def media_chapter(summary: MediaSummary) -> dict[str, str]:
             + "\n".join(_file_line(file) for file in summary.files)
         ),
     }
+
+
+def apply_media(
+    media: MediaSummary,
+    files: list[FileItem],
+    complete_ids: set[str],
+    raw: dict[str, float],
+    details: dict[str, Any],
+) -> None:
+    """Deduct measured recording signal issues and count near-duplicate recordings once."""
+    count = len(files)
+    for key in ("completeness", "consistency"):
+        deduction = (
+            sum(
+                100 - file.dimensions[key]
+                for file in media.files
+                if key != "completeness" or file.file_id in complete_ids
+            )
+            / count
+        )
+        raw[key] = max(0.0, raw[key] - deduction)
+    duplicates = {file.file_id for file in media.files if file.dimensions["uniqueness"] < MAX_SCORE}
+    retained = {file.sha256 for file in files if file.sha256 and file.id not in duplicates}
+    raw["uniqueness"] = 100 * len(retained) / count
+    details["uniqueness"]["media_duplicate_files"] = sorted(duplicates)
+    details["completeness"]["media"] = media.model_dump(mode="json")
