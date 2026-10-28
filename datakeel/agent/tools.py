@@ -10,9 +10,9 @@ from pydantic import Field, ValidationError
 
 from datakeel.actions.policy import digest
 from datakeel.actions.registry import action_definitions
-from datakeel.agent.schemas import compact_schema
 from datakeel.core.agent_models import Conversation, ToolCall, ToolDefinition
 from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
+from datakeel.core.json_schema import compact_schema
 from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.delegation.models import DelegateParams
 from datakeel.delegation.policy import tool_allowed

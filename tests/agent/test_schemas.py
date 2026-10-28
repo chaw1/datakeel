@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING
 import pytest
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError, validate
 
-from datakeel.agent.schemas import compact_schema
 from datakeel.agent.tools import ToolCatalog, deferred_tools, resident_tools
 from datakeel.core.agent_models import Conversation, ConversationCreate, ToolCall
+from datakeel.core.json_schema import compact_schema
 from datakeel.core.models import JsonDocument
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.ontology.functions import function_definitions

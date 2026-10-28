@@ -11,12 +11,17 @@ from mcp_types import CallToolRequestParams, ToolAnnotations
 from pydantic import JsonValue, PrivateAttr
 
 from datakeel.core.agent_models import ToolDefinition
+from datakeel.core.json_schema import compact_schema
 from datakeel.core.models import JsonDocument
 from datakeel.mcp.catalog import tool_definitions
 from datakeel.mcp.dispatch import dispatch
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.storage.database import Database
+
+# Every tool shares this result schema; repeated model titles would push tools/list past the
+# 1 MiB server-sent event limit of SSE clients once all feature tools are registered.
+OUTPUT_SCHEMA = compact_schema(JsonDocument.model_validate(ToolOutcome.model_json_schema())).root
 
 
 class ControlledTool(Tool):
@@ -32,7 +37,7 @@ class ControlledTool(Tool):
             name=definition.name,
             description=definition.description,
             parameters=definition.parameters.root,
-            output_schema=ToolOutcome.model_json_schema(),
+            output_schema=OUTPUT_SCHEMA,
             annotations=ToolAnnotations(
                 read_only_hint=read_only,
                 destructive_hint=definition.name == "execute_plan",
