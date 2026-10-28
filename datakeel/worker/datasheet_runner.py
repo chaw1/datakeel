@@ -11,7 +11,6 @@ from datakeel.core.datasheet_execution import DatasheetCompletion, DatasheetFenc
 from datakeel.core.datasheet_models import DatasheetDocument
 from datakeel.datasheets.validation import parse_model_output
 from datakeel.storage.datasheet_jobs import job_input
-from datakeel.worker.datasheet_model import draft_with_model
 from datakeel.worker.heartbeat import pulse
 from datakeel.worker.queue import DatabaseQueue, Lease
 
@@ -24,6 +23,9 @@ def execute_datasheet(
     supplied: Provider | None = None,
 ) -> bool:
     """Validate each proposed sentence before atomically publishing the fenced document."""
+    # The model adapter loads chat SDKs; offline CLI commands import this runner without them.
+    from datakeel.worker.datasheet_model import draft_with_model  # noqa: PLC0415
+
     stop = threading.Event()
     heartbeat = threading.Thread(target=pulse, args=(queue, lease, stop), daemon=True)
     heartbeat.start()
