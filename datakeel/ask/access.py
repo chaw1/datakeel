@@ -19,7 +19,7 @@ def query_refs(query: CompiledQuery) -> tuple[AssetRef, ...]:
 
 
 def answer_refs(answer: AskAnswer) -> tuple[AssetRef, ...]:
-    """Include revisions, query dependencies, knowledge sources and candidate disclosures."""
+    """Include revisions, query dependencies, knowledge, profiled datasets and candidates."""
     cards = answer.candidates + ((answer.metric_card,) if answer.metric_card else ())
     refs = [
         AssetRef(
@@ -32,4 +32,11 @@ def answer_refs(answer: AskAnswer) -> tuple[AssetRef, ...]:
         refs.extend(AssetRef(asset_type="column", asset_id=key) for key in answer.sql.columns)
     refs.extend(knowledge_citations(answer.knowledge))
     refs.extend(candidate.asset_ref for candidate in answer.subject_candidates)
+    if answer.profile is not None:
+        profiled = (answer.profile.dataset, *answer.profile.candidates)
+        refs.extend(
+            AssetRef(asset_id=item.dataset_id, version=item.version_id)
+            for item in profiled
+            if item is not None
+        )
     return tuple(refs)
