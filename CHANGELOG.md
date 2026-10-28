@@ -4,6 +4,36 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-28
+
+### Added
+
+- Sensor time-series and table profiling: mixed timestamp normalization, ordering and deduplication, sampling gaps, stuck values, robust outliers, range and unit checks, column profiles, and sensor-profile answers in Ask.
+- Optional Rust acceleration for perceptual-hash near-duplicate search with bit-identical results and an exact mode; `DATAKEEL_ACCEL=auto|off|required` selects the backend.
+- Custom Python operators reviewed by code hash and run in a container sandbox without network, with a read-only root, a non-root user, no capabilities and a seccomp filter.
+- Image auto mode: local OCR followed by a versioned routing policy; declared visual coordinate spaces are converted to pixels and boxes that fail the OCR cross-check are dropped and marked `coordinates_unreliable`.
+- Version comparison in five categories, immutable releases published through approval, delivery packages with offline and platform reconciliation, and resumable chunked uploads.
+- Data asset publication with public, restricted and apply-first policies, access applications, expiring or revocable grants, one access guard for Ask, export, download, Agent and MCP reads, and audited governed reads.
+- Field standards, code lists and synonyms with reviewed column mappings, approved confirmation and rollback, and table conformance reports.
+- Data quality rules for SQLite and PostgreSQL tables (not-null, unique, range, accepted values, regex, referential integrity, allow-listed SQL assertions, volume change, freshness and distribution drift) with scheduled runs, issue recovery and HMAC-signed webhooks.
+- dbt manifest, run-result and catalog import, Airflow exports and OpenLineage events with column-level lineage and reviewed metric drafts.
+- Annotation agreement (Cohen and Fleiss kappa, Krippendorff alpha, box IoU, span matching), suspect-label detection, ISO 2859-1 (AQL) or fixed-ratio sampling, approved acceptance decisions and rework comparison.
+- Seven-chapter dataset datasheets from an offline template or a configured model; every retained sentence cites frozen platform facts, unsupported sentences are removed with their reason, publication needs approval and newer versions mark older datasheets out of date.
+- `release-plan prepare|approve|reject|execute` CLI commands for large releases and selected versions.
+
+### Changed
+
+- Package, API and frontend versions advance to 0.13.0. The MCP server exposes 59 tools: 20 read functions, 37 plan-only actions and the approve/execute controls. Its shared tool output schema is compacted so the tool list stays within the 1 MiB SSE event limit.
+- English and Chinese metric questions resolve time ranges and filters the same way; generic wording asks for clarification, and questions about a workflow no longer start it.
+- `publish_release` and `create_version_from_selection` accept an explicit object/byte budget through HTTP query parameters, the CLI or the release form, capped by `DATAKEEL_RELEASE_BUDGET_MAX_OBJECTS` (default 1,000,000) and `DATAKEEL_RELEASE_BUDGET_MAX_BYTES` (default 1 TiB). The budget is frozen into the approved plan and shown on the approval sheet; other actions keep the 10,000-object / 10 GiB default.
+- The Web byte formatter shows GB and TB for large sizes.
+
+### Fixed
+
+- Version comparison orders manifest streams by code point on PostgreSQL (`COLLATE "C"`), so mixed-case or hyphenated file IDs align on databases with ICU or locale collations; an out-of-order stream now stops with an error instead of misclassifying files.
+- Profile answers in Ask pass through the data-asset access guard.
+- Offline CLI imports no longer load chat-model SDKs through the datasheet worker.
+
 ## [0.12.0] - 2026-10-25
 
 ### Added
