@@ -20,6 +20,7 @@ from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.datasets import dataset_dict, import_dataset
 from datakeel.storage.file_state import FileStateRow, get_file_state, overlay_files
+from datakeel.storage.media_artifacts import PreviewArtifact
 from datakeel.storage.objects import object_store
 from datakeel.storage.views import DatasetView, DownloadView, FileView, VersionView, View
 
@@ -185,6 +186,45 @@ def resolve_download(
     access: AccessContext | None = None,
 ) -> DownloadView:
     """Resolve a public file, preserving exact version ownership when explicitly pinned."""
+    value = _download_file(db, identifier, file_id, version, access)
+    key = value.metadata.get("object_key")
+    if not isinstance(key, str):
+        message = "File object not found"
+        raise NotFoundError(message)
+    return DownloadView(path=object_store().materialize(key), filename=value.filename)
+
+
+def resolve_pointcloud_preview(
+    db: Database,
+    identifier: str,
+    file_id: str,
+    version: str | None = None,
+    *,
+    access: AccessContext | None = None,
+) -> DownloadView:
+    """Read only a persisted preview bound to an owned, visible immutable file record."""
+    value = _download_file(db, identifier, file_id, version, access)
+    raw = value.metadata.get("pointcloud_preview")
+    if raw is None:
+        message = "Point-cloud preview not found; run pointcloud.preview first"
+        raise NotFoundError(message)
+    preview = PreviewArtifact.model_validate(raw)
+    if preview.object_key is None:
+        message = "Point-cloud preview object not found"
+        raise NotFoundError(message)
+    return DownloadView(
+        path=object_store().materialize(preview.object_key), filename=preview.filename
+    )
+
+
+def _download_file(
+    db: Database,
+    identifier: str,
+    file_id: str,
+    version: str | None,
+    access: AccessContext | None,
+) -> FileView:
+    """Locate a visible file record and authorize the download scope before any read."""
     with db.session() as session:
         dataset = require_dataset(session, identifier)
         if version is not None:
@@ -206,10 +246,6 @@ def resolve_download(
             message = "File not found"
             raise NotFoundError(message)
         value = FileView.model_validate({k: v for k, v in record.items() if k != "path"})
-        key = value.metadata.get("object_key")
-        if not isinstance(key, str):
-            message = "File object not found"
-            raise NotFoundError(message)
         require_access_in_session(
             session,
             (
@@ -220,9 +256,8 @@ def resolve_download(
                 access or AccessContext(actor="local-user", entry="download", scope="download")
             ).model_copy(update={"entry": "download", "scope": "download"}),
         )
-        result = DownloadView(path=object_store().materialize(key), filename=value.filename)
         session.commit()
-        return result
+        return value
 
 
 def task_artifacts(

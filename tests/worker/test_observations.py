@@ -3,6 +3,7 @@
 
 """Lineage ancestry collapses control nodes without losing source identity."""
 
+from datakeel.core.models import FileItem
 from datakeel.pipeline import Node, Pipeline, PipelineObservation
 from datakeel.storage.task_queue import Lease
 from datakeel.worker.observations import Observations
@@ -48,3 +49,41 @@ def test_failed_operator_records_evidence_without_claiming_artifact_output() -> 
     assert event.run_state == "FAILED"
     assert event.outputs == []
     assert [ref.asset_id for ref in event.inputs] == ["data"]
+
+
+def test_media_lineage_preserves_derived_identity_without_false_source_version() -> None:
+    """A downstream derived file is an artifact, never a file in the original version."""
+    lease = Lease(
+        shard_id="shard",
+        task_id="task",
+        dataset_id="data",
+        owner="owner",
+        inputs=[FileItem(id="source", path="source.ply", filename="source.ply")],
+        pipeline=None,
+        input_version_id="source-version",
+    )
+    definition = Pipeline(
+        nodes=[
+            Node(id="sample", operator="pointcloud.downsample", inputs={"files": "$input.files"})
+        ],
+        outputs=["sample.files"],
+    )
+    observations = Observations(lease, definition)
+    observations.observe(
+        PipelineObservation(
+            node_id="sample",
+            operator="pointcloud.downsample",
+            params={"voxel_size": 0.1},
+            input_count=1,
+            inputs=["derived"],
+            output_count=1,
+            outputs=["sampled"],
+            quality={},
+            run_state="COMPLETED",
+        )
+    )
+    event = observations.events[0]
+    derived = next(ref for ref in event.inputs if ref.asset_id == "derived")
+    assert derived.asset_type == "artifact"
+    assert derived.version is None
+    assert any(ref.asset_id == "sampled" for ref in event.outputs)

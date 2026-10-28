@@ -253,6 +253,7 @@ ignore_imports =
     datakeel.storage.action_worker -> datakeel.actions.receipts
     datakeel.storage.object_projection -> datakeel.ontology.models
     datakeel.storage.object_projection -> datakeel.quality
+    datakeel.storage.object_projection -> datakeel.quality.image_pointcloud
     datakeel.storage.object_queries -> datakeel.ontology.models
     datakeel.storage.tool_invocations -> datakeel.ontology.tool_models
 

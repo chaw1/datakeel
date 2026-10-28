@@ -11,7 +11,7 @@ from typing import Any
 
 from datakeel.core.errors import ExecutionError
 from datakeel.core.media_metadata import FAILURE_KEY
-from datakeel.core.models import FileItem
+from datakeel.core.models import FileItem, JsonDocument
 from datakeel.operators import REGISTRY, OperatorResult
 from datakeel.pipeline.defaults import default_pipeline
 from datakeel.pipeline.models import ConditionParams, Node, Pipeline, PipelineObservation
@@ -42,11 +42,12 @@ def _execute_node(node: Node, selected: list[FileItem], output: Path) -> SlotFil
             "text": [file for file in selected if file.modality == "text"],
             "audio": [file for file in selected if file.modality == "audio"],
             "video": [file for file in selected if file.modality == "video"],
+            "pointcloud": [file for file in selected if file.modality == "point-cloud"],
             "table": tables,
             "other": [
                 file
                 for file in selected
-                if file.modality not in {"image", "text", "audio", "video"}
+                if file.modality not in {"image", "text", "audio", "video", "point-cloud"}
                 and file.id not in table_ids
             ],
         }
@@ -85,7 +86,7 @@ def _observation(
         input_count=len(selected),
         inputs=[file.id for file in selected],
         output_count=len(output),
-        outputs=[file.id for file in output],
+        outputs=[file.id for file in output] + _preview_ids(output),
         quality=quality,
         run_state="FAILED" if error or failed else "COMPLETED",
     )
@@ -100,6 +101,17 @@ def _every_recording_failed(output: list[FileItem], quality: dict[str, Any]) -> 
     return bool(quality.get("failed_files")) and all(
         isinstance(file.metadata.get(FAILURE_KEY), dict) for file in output
     )
+
+
+def _preview_ids(files: list[FileItem]) -> list[str]:
+    result: list[str] = []
+    for file in files:
+        preview = JsonDocument.model_validate(file.metadata).root.get("pointcloud_preview")
+        if isinstance(preview, dict):
+            identifier = preview.get("artifact_id")
+            if isinstance(identifier, str):
+                result.append(identifier)
+    return result
 
 
 def _operator_node(

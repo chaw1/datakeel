@@ -12,8 +12,9 @@ from typing import Any, cast
 from datakeel.core.errors import ValidationError
 from datakeel.core.media_models import MediaSummary
 from datakeel.core.models import FileItem
+from datakeel.quality.image_pointcloud import ImagePointcloudAssessment, assess_file
 from datakeel.quality.media import summarize_media
-from datakeel.quality.models import QualityConfig, QualityView
+from datakeel.quality.models import IssueView, QualityConfig, QualityView
 from datakeel.quality.tabular import assess_tables, table_issues
 
 MAX_SCORE = 100
@@ -139,6 +140,7 @@ def score_quality(
             details[dimension]["tabular_rule"] = (
                 "fraction of source rows affected by recorded rules"
             )
+    visual = _image_pointcloud_evidence(files, raw, details)
     media = summarize_media(files)
     if media is not None:
         _apply_media(media, files, resolved, raw, details)
@@ -147,9 +149,27 @@ def score_quality(
         update={
             "tabular": tabular if tabular.files else None,
             "media": media,
-            "issues": [*result.issues, *table_issues(tabular)],
+            "issues": [*result.issues, *table_issues(tabular), *visual],
         }
     )
+
+
+def _image_pointcloud_evidence(
+    files: list[FileItem], raw: dict[str, float], details: dict[str, Any]
+) -> list[IssueView]:
+    """Apply recorded image and point-cloud measurements as multipliers with reasons."""
+    assessments: list[ImagePointcloudAssessment] = [assess_file(file) for file in files]
+    for dimension in ("completeness", "consistency", "distribution"):
+        if assessments:
+            raw[dimension] *= sum(getattr(item, dimension) for item in assessments) / len(files)
+        observations = [
+            {"file_id": file.id, "filename": file.filename, **item.observations}
+            for file, item in zip(files, assessments, strict=True)
+            if item.observations
+        ]
+        if observations:
+            details[dimension]["image_pointcloud"] = observations
+    return [issue for item in assessments for issue in item.issues]
 
 
 def _validate_numbers(result: dict[str, Any]) -> None:

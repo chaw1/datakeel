@@ -70,7 +70,8 @@ def test_image_quality_detects_issues(make_image: ImageFactory, output_dir: Path
     quality = result.files[0].metadata["image_quality"]
     assert (quality["width"], quality["height"]) == (20, 10)
     assert quality["brightness"] == quality["blur_variance"] == 0
-    assert set(quality["issues"]) == {"blurry", "brightness", "low_resolution"}
+    assert set(quality["issues"]) == {"brightness", "low_resolution"}
+    assert "exposure failed" in quality["checks"]["blur"]["reason"]
 
 
 def test_resize_preserves_aspect_and_original(make_image: ImageFactory, output_dir: Path) -> None:
@@ -154,7 +155,7 @@ def test_text_quality_reports_unreadable_and_short(
 
 def test_manifest_schemas_and_validation(make_file: FileFactory, output_dir: Path) -> None:
     """Verify manifest schemas and validation."""
-    assert len(manifests()) == 35
+    assert len(manifests()) == 41
     snapshot = Path(__file__).resolve().parents[2] / "contracts/operators.json"
     assert json.loads(snapshot.read_text()) == [value.model_dump() for value in manifests()]
     for manifest in manifests():
@@ -202,7 +203,7 @@ def test_transformed_image_metadata_matches_scoring_evidence(
     assert final.size == Path(final.path).stat().st_size
     assert (
         score_quality([original], {"min_image_width": 16})["dimensions"]["completeness"]["score"]
-        == 100
+        == original.metadata["image_quality"]["overall_score"]
     )
     assert (
         score_quality([final], {"min_image_width": 16})["dimensions"]["completeness"]["score"] == 0

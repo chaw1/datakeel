@@ -71,7 +71,34 @@ def _baseline(
                 "body": annotation_summary(JsonDocument.model_validate(details).root),
             }
         )
+    return [*chapters, *_image_pointcloud_chapters(quality)]
+
+
+def _image_pointcloud_chapters(quality: dict[str, Any] | QualityView) -> list[dict[str, str]]:
+    dimensions = quality.get("dimensions", {})
+    details = dimensions.get("completeness", {}).get("details", {})
+    observations = details.get("image_pointcloud", [])
+    chapters: list[dict[str, str]] = []
+    for key, title in (
+        ("image", "图片质量 / Image quality"),
+        ("pointcloud", "点云 / Point clouds"),
+    ):
+        records = [item for item in observations if key in item]
+        if records:
+            body = "\n".join(_image_pointcloud_line(item, key) for item in records)
+            chapters.append({"title": title, "body": body})
     return chapters
+
+
+def _image_pointcloud_line(item: dict[str, Any], key: str) -> str:
+    measured = json.dumps(item[key], ensure_ascii=False, sort_keys=True, allow_nan=False)
+    line = f"- {item['filename']}: {measured}"
+    if key == "pointcloud" and item.get("policy"):
+        line += "\n  Measurement policy: " + json.dumps(item["policy"], sort_keys=True)
+    if key == "pointcloud" and item.get("source_pointcloud"):
+        source = json.dumps(item["source_pointcloud"], ensure_ascii=False, sort_keys=True)
+        line += f"\n  Original scan observations (before cleanup): {source}"
+    return line
 
 
 def build_report(

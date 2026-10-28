@@ -11,6 +11,7 @@ import { ObjectEvidence } from "./ObjectEvidence";
 import { ObjectFileQuality } from "./ObjectFileQuality";
 import { ObjectHistory } from "./ObjectHistory";
 import { ObjectMedia } from "./ObjectMedia";
+import { ObjectPointcloud } from "./ObjectPointcloud";
 import { ObjectProfile } from "./ObjectProfile";
 import { ObjectRelations } from "./ObjectRelations";
 
@@ -58,6 +59,7 @@ export function ObjectSections({
         <>
           <ObjectMedia data={data} target={target} />
           <ObjectFileQuality data={data} />
+          <ObjectPointcloud data={data} target={target} />
         </>
       ) : (
         <Quality quality={data.quality} />
@@ -84,6 +86,7 @@ export function ObjectSections({
       return (
         <>
           <ObjectMedia data={data} target={target} />
+          <ObjectPointcloud data={data} target={target} />
           <section
             id="object-section-source-record"
             className="object-source-evidence"

@@ -1,6 +1,7 @@
 [
   {
     "id": "audio.probe",
+    "version": "1.0.0",
     "modality": "audio",
     "category": "inspection",
     "inputs": {
@@ -20,6 +21,7 @@
   },
   {
     "id": "audio.vad",
+    "version": "1.0.0",
     "modality": "audio",
     "category": "quality",
     "inputs": {
@@ -68,6 +70,7 @@
   },
   {
     "id": "audio.trim_silence",
+    "version": "1.0.0",
     "modality": "audio",
     "category": "transformation",
     "inputs": {
@@ -123,6 +126,7 @@
   },
   {
     "id": "audio.loudness",
+    "version": "1.0.0",
     "modality": "audio",
     "category": "quality",
     "inputs": {
@@ -190,6 +194,7 @@
   },
   {
     "id": "audio.clipping",
+    "version": "1.0.0",
     "modality": "audio",
     "category": "quality",
     "inputs": {
@@ -252,6 +257,7 @@
   },
   {
     "id": "audio.dedup",
+    "version": "1.0.0",
     "modality": "audio",
     "category": "deduplication",
     "inputs": {
@@ -312,6 +318,7 @@
   },
   {
     "id": "video.probe",
+    "version": "1.0.0",
     "modality": "video",
     "category": "inspection",
     "inputs": {
@@ -331,6 +338,7 @@
   },
   {
     "id": "video.invalid_frames",
+    "version": "1.0.0",
     "modality": "video",
     "category": "quality",
     "inputs": {
@@ -430,6 +438,7 @@
   },
   {
     "id": "video.dedup",
+    "version": "1.0.0",
     "modality": "video",
     "category": "deduplication",
     "inputs": {
@@ -503,6 +512,7 @@
   },
   {
     "id": "video.segment",
+    "version": "1.0.0",
     "modality": "video",
     "category": "segmentation",
     "inputs": {
@@ -541,6 +551,7 @@
   },
   {
     "id": "video.normalize",
+    "version": "1.0.0",
     "modality": "video",
     "category": "normalization",
     "inputs": {
@@ -582,6 +593,7 @@
   },
   {
     "id": "media.align",
+    "version": "1.0.0",
     "modality": "any",
     "category": "alignment",
     "inputs": {
@@ -637,6 +649,7 @@
   },
   {
     "id": "file.dedup",
+    "version": "1.0.0",
     "modality": "any",
     "category": "deduplication",
     "inputs": {
@@ -656,6 +669,7 @@
   },
   {
     "id": "file.corrupt_check",
+    "version": "1.0.0",
     "modality": "any",
     "category": "validation",
     "inputs": {
@@ -681,6 +695,7 @@
   },
   {
     "id": "file.empty_check",
+    "version": "1.0.0",
     "modality": "any",
     "category": "validation",
     "inputs": {
@@ -706,6 +721,7 @@
   },
   {
     "id": "image.quality",
+    "version": "1.0.0",
     "modality": "image",
     "category": "quality",
     "inputs": {
@@ -716,12 +732,19 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Define the image-quality measurement thresholds.",
+      "description": "Define image-quality thresholds in 8-bit luminance, pixels and noise measures.\n\nSixteen-bit samples are rescaled to 8-bit levels before measuring.\nDefaults come from generated scenes saved as PNG and JPEG.\n``min_sharpness`` bounds the contrast-invariant edge sharpness: clean,\nhazy, snowy, minimal and low-contrast scenes measured at least 1.29, and\nthe same scenes under Gaussian blur of sigma 1.5 or more at most 0.95.\n``min_highlight`` bounds\nthe 99.9th luminance percentile: clean scenes reached at least 144 and\nhalved exposures at most 110. ``max_impulse_fraction`` sits between clean\nscenes (at most 0.00003) and 1% salt-and-pepper noise (at least 0.0068).\n``blur_threshold`` is the earlier absolute Laplacian variance, which\nfalls with contrast; it is off unless set.",
       "properties": {
         "blur_threshold": {
-          "default": 50.0,
+          "default": 0.0,
           "minimum": 0,
           "title": "Blur Threshold",
+          "type": "number"
+        },
+        "min_sharpness": {
+          "default": 1.0,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Min Sharpness",
           "type": "number"
         },
         "min_brightness": {
@@ -738,10 +761,59 @@
           "title": "Max Brightness",
           "type": "number"
         },
+        "min_highlight": {
+          "default": 120.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Min Highlight",
+          "type": "number"
+        },
         "min_resolution": {
           "default": 64,
           "minimum": 1,
           "title": "Min Resolution",
+          "type": "integer"
+        },
+        "max_noise_sigma": {
+          "default": 12.0,
+          "exclusiveMinimum": 0,
+          "maximum": 255,
+          "title": "Max Noise Sigma",
+          "type": "number"
+        },
+        "impulse_level": {
+          "default": 48.0,
+          "exclusiveMinimum": 0,
+          "maximum": 255,
+          "title": "Impulse Level",
+          "type": "number"
+        },
+        "max_impulse_fraction": {
+          "default": 0.003,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Max Impulse Fraction",
+          "type": "number"
+        },
+        "min_color_stddev": {
+          "default": 5.0,
+          "exclusiveMinimum": 0,
+          "maximum": 128,
+          "title": "Min Color Stddev",
+          "type": "number"
+        },
+        "max_clipped_fraction": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Max Clipped Fraction",
+          "type": "number"
+        },
+        "analysis_size": {
+          "default": 512,
+          "maximum": 2048,
+          "minimum": 32,
+          "title": "Analysis Size",
           "type": "integer"
         }
       },
@@ -752,6 +824,7 @@
   },
   {
     "id": "image.resize",
+    "version": "1.0.0",
     "modality": "image",
     "category": "transform",
     "inputs": {
@@ -791,6 +864,7 @@
   },
   {
     "id": "image.thumbnail",
+    "version": "1.0.0",
     "modality": "image",
     "category": "preview",
     "inputs": {
@@ -818,6 +892,7 @@
   },
   {
     "id": "image.convert",
+    "version": "1.0.0",
     "modality": "image",
     "category": "transform",
     "inputs": {
@@ -855,6 +930,7 @@
   },
   {
     "id": "text.encoding_fix",
+    "version": "1.0.0",
     "modality": "text",
     "category": "transform",
     "inputs": {
@@ -885,6 +961,7 @@
   },
   {
     "id": "text.pii_redact",
+    "version": "1.0.0",
     "modality": "text",
     "category": "privacy",
     "inputs": {
@@ -922,6 +999,7 @@
   },
   {
     "id": "text.dedup",
+    "version": "1.0.0",
     "modality": "text",
     "category": "deduplication",
     "inputs": {
@@ -954,6 +1032,7 @@
   },
   {
     "id": "text.quality",
+    "version": "1.0.0",
     "modality": "text",
     "category": "quality",
     "inputs": {
@@ -986,7 +1065,415 @@
     "queue": "cpu"
   },
   {
+    "id": "pointcloud.probe",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "quality",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Control statistical, sparse-coverage and unit-suspicion file-level policy.\n\n``max_outlier_ratio`` defaults to 0.04%, near the geometric middle of\nthe worst clean generated scan (0.029%, a sparse 32-ring street) and the\nleast flagged generated scan with 0.5% embedded outliers (0.060%, a\n2.6-million-point drive of 24 frames). Sampled files are judged by the\nlower end of the 95% interval, so sampling error alone cannot raise an\nissue.",
+      "properties": {
+        "neighbors": {
+          "default": 12,
+          "maximum": 64,
+          "minimum": 2,
+          "title": "Neighbors",
+          "type": "integer"
+        },
+        "local_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Local Ratio",
+          "type": "number"
+        },
+        "link_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Link Ratio",
+          "type": "number"
+        },
+        "cluster_gap": {
+          "default": 5.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Cluster Gap",
+          "type": "number"
+        },
+        "min_cluster_points": {
+          "default": 50,
+          "minimum": 2,
+          "title": "Min Cluster Points",
+          "type": "integer"
+        },
+        "min_cluster_fraction": {
+          "default": 0.01,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Min Cluster Fraction",
+          "type": "number"
+        },
+        "sparse_cluster_ratio": {
+          "default": 10.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Sparse Cluster Ratio",
+          "type": "number"
+        },
+        "sensor": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "terrestrial",
+            "vehicle_lidar",
+            "depth_camera",
+            "object"
+          ],
+          "title": "Sensor",
+          "type": "string"
+        },
+        "max_outlier_ratio": {
+          "default": 0.0004,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Max Outlier Ratio",
+          "type": "number"
+        },
+        "max_relative_spacing": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Relative Spacing"
+        },
+        "expected_max_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Max Extent"
+        },
+        "reference_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Extent"
+        },
+        "scale_ratio": {
+          "default": 1000.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Ratio",
+          "type": "number"
+        },
+        "scale_tolerance": {
+          "default": 2.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Tolerance",
+          "type": "number"
+        }
+      },
+      "title": "ProbeParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.clean",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Remove invalid coordinates and optionally clip an inclusive source-unit box.",
+      "properties": {
+        "remove_invalid": {
+          "default": true,
+          "title": "Remove Invalid",
+          "type": "boolean"
+        },
+        "min_bound": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Bound"
+        },
+        "max_bound": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Bound"
+        }
+      },
+      "title": "CleanParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.downsample",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Select the source-unit voxel size for stable first-point sampling.",
+      "properties": {
+        "voxel_size": {
+          "default": 0.1,
+          "exclusiveMinimum": 0,
+          "title": "Voxel Size",
+          "type": "number"
+        }
+      },
+      "title": "DownsampleParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.outliers",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Remove isolated points and separated small clusters with the probe's rule.",
+      "properties": {
+        "neighbors": {
+          "default": 12,
+          "maximum": 64,
+          "minimum": 2,
+          "title": "Neighbors",
+          "type": "integer"
+        },
+        "local_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Local Ratio",
+          "type": "number"
+        },
+        "link_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Link Ratio",
+          "type": "number"
+        },
+        "cluster_gap": {
+          "default": 5.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Cluster Gap",
+          "type": "number"
+        },
+        "min_cluster_points": {
+          "default": 50,
+          "minimum": 2,
+          "title": "Min Cluster Points",
+          "type": "integer"
+        },
+        "min_cluster_fraction": {
+          "default": 0.01,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Min Cluster Fraction",
+          "type": "number"
+        },
+        "sparse_cluster_ratio": {
+          "default": 10.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Sparse Cluster Ratio",
+          "type": "number"
+        }
+      },
+      "title": "OutlierParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.unit_check",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "validation",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Flag implausibly large extents without rewriting ambiguous coordinates.",
+      "properties": {
+        "expected_max_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Max Extent"
+        },
+        "reference_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Extent"
+        },
+        "scale_ratio": {
+          "default": 1000.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Ratio",
+          "type": "number"
+        },
+        "scale_tolerance": {
+          "default": 2.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Tolerance",
+          "type": "number"
+        }
+      },
+      "title": "UnitCheckParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.preview",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "visualization",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Bound a deterministic top-down PNG projection.",
+      "properties": {
+        "size": {
+          "default": 512,
+          "maximum": 2048,
+          "minimum": 32,
+          "title": "Size",
+          "type": "integer"
+        },
+        "color_by": {
+          "default": "height",
+          "enum": [
+            "height",
+            "intensity"
+          ],
+          "title": "Color By",
+          "type": "string"
+        }
+      },
+      "title": "PreviewParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
     "id": "evidence.image_phash",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -1013,6 +1500,7 @@
   },
   {
     "id": "evidence.caption_mentions",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -1039,6 +1527,7 @@
   },
   {
     "id": "evidence.annotation_labels",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -1065,6 +1554,7 @@
   },
   {
     "id": "evidence.label_gap",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -1091,6 +1581,7 @@
   },
   {
     "id": "evidence.near_duplicate",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -1133,6 +1624,7 @@
   },
   {
     "id": "table.profile",
+    "version": "1.0.0",
     "modality": "table",
     "category": "quality",
     "inputs": {
@@ -1199,6 +1691,7 @@
   },
   {
     "id": "timeseries.timestamp_normalize",
+    "version": "1.0.0",
     "modality": "table",
     "category": "normalize",
     "inputs": {
@@ -1253,6 +1746,7 @@
   },
   {
     "id": "timeseries.order_dedup",
+    "version": "1.0.0",
     "modality": "table",
     "category": "clean",
     "inputs": {
@@ -1300,6 +1794,7 @@
   },
   {
     "id": "timeseries.gaps",
+    "version": "1.0.0",
     "modality": "table",
     "category": "quality",
     "inputs": {
@@ -1357,6 +1852,7 @@
   },
   {
     "id": "timeseries.resample",
+    "version": "1.0.0",
     "modality": "table",
     "category": "transform",
     "inputs": {
@@ -1421,6 +1917,7 @@
   },
   {
     "id": "timeseries.anomaly",
+    "version": "1.0.0",
     "modality": "table",
     "category": "quality",
     "inputs": {
@@ -1552,6 +2049,7 @@
   },
   {
     "id": "timeseries.unit_check",
+    "version": "1.0.0",
     "modality": "table",
     "category": "quality",
     "inputs": {

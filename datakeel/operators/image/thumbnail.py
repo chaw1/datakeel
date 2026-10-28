@@ -7,7 +7,8 @@ from functools import partial
 from pathlib import Path
 
 from datakeel.core.models import FileItem
-from datakeel.operators.base import Operator, OperatorResult, ThumbnailParams, summarize
+from datakeel.operators.base import Operator, OperatorResult, ThumbnailParams
+from datakeel.operators.image.batch import guarded, summarize_batch
 from datakeel.operators.image.helpers import decode, image_artifact, resize
 from datakeel.operators.image.parallel import map_images
 
@@ -24,9 +25,11 @@ def _thumbnail(file: FileItem, output_dir: Path, params: ThumbnailParams) -> Fil
 def execute(files: list[FileItem], output_dir: Path, params: ThumbnailParams) -> OperatorResult:
     """Create small previews without upscaling smaller inputs."""
     output = map_images(
-        files, partial(_thumbnail, output_dir=output_dir, params=params), params.size * params.size
+        files,
+        guarded("image.thumbnail", partial(_thumbnail, output_dir=output_dir, params=params)),
+        params.size * params.size,
     )
-    return summarize(files, output)
+    return summarize_batch(files, output)
 
 
 OPERATOR = Operator("image.thumbnail", "image", "preview", ThumbnailParams, execute)

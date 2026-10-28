@@ -79,3 +79,30 @@ def _query_access(request: Request) -> AccessContext:
     return AccessContext(
         actor=request.headers.get("X-Datakeel-Actor", "local-user"), entry="ask", scope="query"
     )
+
+
+@router.get(
+    "/{identifier}/files/{file_id}/pointcloud-preview",
+    response_class=FileResponse,
+    responses={200: {"content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}}},
+)
+def pointcloud_preview(
+    identifier: str,
+    file_id: str,
+    request: Request,
+    db: DatabaseDependency,
+    version: Annotated[str | None, Query(min_length=1)] = None,
+) -> FileResponse:
+    """View a PNG preview from the same dataset/version scope as its point cloud."""
+    value = service.resolve_pointcloud_preview(
+        db,
+        identifier,
+        file_id,
+        version,
+        access=AccessContext(
+            actor=request.headers.get("X-Datakeel-Actor", "local-user"),
+            entry="download",
+            scope="download",
+        ),
+    )
+    return FileResponse(value.path, media_type="image/png", filename=value.filename)

@@ -14,10 +14,12 @@ from sqlalchemy.orm import Session
 from datakeel.core.models import AssetRef, FileItem, JsonDocument
 from datakeel.ontology.models import FrozenObject, ObjectSet
 from datakeel.quality import score_quality
+from datakeel.quality.image_pointcloud import assess_file
 from datakeel.storage.database import DatasetRow, TaskRow, VersionRow
 from datakeel.storage.datasets import dataset_dict
 from datakeel.storage.evidence_snapshot import EvidenceSnapshot, observed_file, read_snapshot
 from datakeel.storage.file_state import get_file_state
+from datakeel.storage.media_observations import MediaObservations, read_media_observations
 
 
 def content_digest(value: JsonValue) -> str:
@@ -80,7 +82,7 @@ def file_quality(file: FileItem, dataset: DatasetRow) -> float:
     """Score one file; empty or unreadable evidence caps its aggregate score at zero."""
     if not file.size or file.metadata.get("empty") or file.metadata.get("corrupt"):
         return 0.0
-    result = score_quality([file], dataset.quality_config).total
+    result = min(score_quality([file], dataset.quality_config).total, assess_file(file).score)
     evidence = JsonDocument.model_validate(file.metadata).root.get("text_quality")
     if isinstance(evidence, dict):
         characters, printable = evidence.get("characters"), evidence.get("printable_ratio")
@@ -133,9 +135,16 @@ def _file_objects(
     session: Session, dataset: DatasetRow, query: ObjectSet, snapshot: EvidenceSnapshot
 ) -> list[FrozenObject]:
     result: list[FrozenObject] = []
+    observations = (
+        read_media_observations(session, dataset.id)
+        if query.object_type == "file"
+        and not (query.version_ids or query.created_after or query.created_before)
+        else MediaObservations()
+    )
     for version in _versions(session, dataset.id, query):
         for raw in version.manifest:
-            file = observed_file(FileItem.model_validate(raw), version.id, snapshot)
+            file = observations.observed(FileItem.model_validate(raw))
+            file = observed_file(file, version.id, snapshot)
             value = _file_object(session, dataset, version, file, query)
             if value is not None:
                 result.append(value)
