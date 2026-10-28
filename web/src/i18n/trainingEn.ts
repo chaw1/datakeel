@@ -68,7 +68,6 @@ export const trainingEn = {
   trainingCoco: "COCO detection",
   trainingYolo: "YOLO detection",
   trainingImagefolder: "ImageFolder classification",
-  trainingHf: "HuggingFace imagefolder",
   trainingJsonl: "Text JSONL",
   trainingDestination: "Archive filename",
   trainingAnnotator: "Annotation author",

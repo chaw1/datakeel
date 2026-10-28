@@ -6,7 +6,6 @@
 
 [数据标准](docs/STANDARDS.md) 支持字段标准与码表、可解释的规则映射建议、已确认字段的落标检查和覆盖率。标准变更与映射确认均须人工签批。
 
-
 ```bash
 uv sync
 uv run datakeel demo
@@ -297,7 +296,7 @@ uv run datakeel demo --once
 | 质量         | `GET /api/datasets/{id}/quality`、`PUT /quality/config`                                                                                                                        |
 | 治理         | `PUT /template`、`GET/PUT /metadata`、`GET /metadata/changes`、`GET /compliance`                                                                                               |
 | Agent 会话   | `POST/GET /api/agent/conversations`、`GET /api/agent/conversations/{id}`、`POST /api/agent/conversations/{id}/messages`（SSE）                                                 |
-| Agent 恢复   | `POST /api/agent/conversations/{id}/resume`，请求体 `{plan_id, idempotency_key}`（SSE）；`GET /api/agent/conversations/{id}/audit` 查询恢复审计 |
+| Agent 恢复   | `POST /api/agent/conversations/{id}/resume`，请求体 `{plan_id, idempotency_key}`（SSE）；`GET /api/agent/conversations/{id}/audit` 查询恢复审计                                |
 | 受控动作     | `POST /api/actions/{type}/prepare`、`POST /api/approvals/{plan_id}`、`POST /api/actions/{plan_id}/execute`、`GET /api/actions/runs`                                            |
 | 本体与计量   | `GET /api/ontology`、`POST /api/ontology/object-sets/evaluate`、`GET /api/harness/traces`、`GET /api/harness/costs?group_by=conversation`                                      |
 | 报告与导出   | `/api/datasets/{id}/report`、`/api/export?format=croissant&dataset_id={id}`                                                                                                    |
@@ -464,4 +463,4 @@ S3 提供客户端契约测试，不自动连接真实 S3。LLM 成功分支用�
 
 打开数据集并进入「说明书」页签，可为某个数据集版本生成七章说明书（动机、构成、采集、预处理、用途、分发、维护）。系统先冻结带稳定 ID 和来源的平台事实；保留的每句话都引用事实，没有引用、引用不存在的事实，或数字、日期、专有名词得不到被引用事实支持的句子会被删除并记录原因。缺事实的章节明确标出。离线模板不需要模型；可选的已配置模型沿用现有预算与外发签批规则。生成草稿走受控动作，发布须签批；数据集有新版本后旧说明书标为已过期。Markdown 与 HTML 下载保留逐句依据。详见[说明书参考](docs/DATASHEETS.md)。
 
-「版本 → 训练集」区域可预览和保存带种子的训练/验证/测试切分，对比各类分布，检查完全相同、图片、文本和组键泄漏，再经已有受控导出动作生成 COCO、YOLO、ImageFolder、Hugging Face imagefolder 或文本 JSONL。训练包绑定不可变版本与切分，附清单，逐字节可复现。分组约束、阈值、CLI 和往返导入见[训练集说明](docs/TRAINING.zh.md)。
+「版本 → 训练集」区域可预览和保存带种子的训练/验证/测试切分，对比各类分布，检查完全相同、图片、文本和组键泄漏，再经已有受控导出动作生成 COCO、YOLO、ImageFolder 或文本 JSONL。训练包绑定不可变版本与切分，附清单，逐字节可复现。分组约束、阈值、CLI 和往返导入见[训练集说明](docs/TRAINING.zh.md)。

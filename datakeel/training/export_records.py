@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Write ImageFolder, Hugging Face imagefolder and character-offset text JSONL."""
+"""Write ImageFolder and character-offset text JSONL."""
 
 from pathlib import Path
 
@@ -15,7 +15,6 @@ from datakeel.training.export_common import (
     json_text,
     source_text,
 )
-from datakeel.training.export_detection import detection_categories
 
 
 def write_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]:
@@ -36,40 +35,6 @@ def write_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]
         for label in item.annotation.labels or ()
     }
     (directory / "classes.json").write_text(json_text(classes), encoding="utf-8", newline="\n")
-    return paths
-
-
-def write_hf_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]:
-    """Link each image to one metadata.jsonl row using paths relative to that split."""
-    categories = detection_categories(export.items)
-    paths: dict[str, str] = {}
-    for split in sorted({item.split for item in export.items}):
-        rows: list[str] = []
-        for item in (item for item in export.items if item.split == split):
-            width, height = dimensions(item)
-            name = filename(item)
-            relative = f"{split}/{name}"
-            copy_source(item, directory / relative)
-            paths[item.file.id] = relative
-            boxes = item.annotation.boxes or ()
-            record = {
-                "file_name": name,
-                "sample_id": item.file.id,
-                "width": width,
-                "height": height,
-                "labels": list(item.annotation.labels or ()),
-                "objects": {
-                    "bbox": [[box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1] for box in boxes],
-                    "categories": [categories.index(box.category) for box in boxes],
-                },
-            }
-            rows.append(json_text(record))
-        (directory / split / "metadata.jsonl").write_text(
-            "\n".join(rows) + "\n", encoding="utf-8", newline="\n"
-        )
-    (directory / "categories.json").write_text(
-        json_text(categories), encoding="utf-8", newline="\n"
-    )
     return paths
 
 

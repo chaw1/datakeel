@@ -15,7 +15,6 @@ const formats: Record<string, MessageKey> = {
   coco: "trainingCoco",
   yolo: "trainingYolo",
   imagefolder: "trainingImagefolder",
-  hf_imagefolder: "trainingHf",
   text_jsonl: "trainingJsonl",
 };
 

@@ -10,8 +10,8 @@ from pydantic import ConfigDict, Field, model_validator
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel, FileItem
 
-TrainingFormat = Literal["coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"]
-TRAINING_FORMATS = frozenset({"coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"})
+TrainingFormat = Literal["coco", "yolo", "imagefolder", "text_jsonl"]
+TRAINING_FORMATS = frozenset({"coco", "yolo", "imagefolder", "text_jsonl"})
 
 
 class TrainingExportItem(BoundaryModel):

@@ -13,7 +13,9 @@ from pathlib import Path
 import pytest
 import yaml
 from PIL import Image
+from pydantic import ValidationError as SchemaValidationError
 
+from datakeel.actions.parameters import ExportParams
 from datakeel.core.annotation_models import AnnotationBox, AnnotationRecord, AnnotationSpan
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import FileItem
@@ -83,7 +85,7 @@ def _write(export: TrainingExport, directory: Path) -> Path:
     return directory / "package"
 
 
-@pytest.mark.parametrize("format_name", ["coco", "yolo", "imagefolder", "hf_imagefolder"])
+@pytest.mark.parametrize("format_name", ["coco", "yolo", "imagefolder"])
 def test_training_export_same_source_is_byte_identical_and_manifest_pins_version(
     export: TrainingExport, tmp_path: Path, format_name: TrainingFormat
 ) -> None:
@@ -159,21 +161,12 @@ def test_yolo_layout_and_normalized_boxes_roundtrip(export: TrainingExport, tmp_
         assert (package / "images" / original.split / filename(original)).is_file()
 
 
-def test_imagefolder_escapes_category_paths_and_hf_metadata_links_images(
-    export: TrainingExport, tmp_path: Path
-) -> None:
-    """Classification directory names cannot escape the root; HF uses split-relative paths."""
+def test_imagefolder_escapes_category_paths(export: TrainingExport, tmp_path: Path) -> None:
+    """Classification directory names cannot escape the root."""
     package = _write(export.model_copy(update={"format": "imagefolder"}), tmp_path / "imagefolder")
     assert (package / "train" / "cat%2Frare" / filename(export.items[0])).is_file()
     assert class_directory("..") != ".."
     assert class_directory("/") == "%2F"
-    hf = _write(export.model_copy(update={"format": "hf_imagefolder"}), tmp_path / "hf")
-    for split in ("train", "val", "test"):
-        metadata = json.loads((hf / split / "metadata.jsonl").read_text())
-        assert (hf / split / metadata["file_name"]).is_file()
-        assert metadata["labels"] == ["cat/rare"]
-        if split != "test":
-            assert metadata["objects"] == {"bbox": [[10, 20, 30, 40]], "categories": [0]}
 
 
 def test_text_jsonl_keeps_unicode_and_half_open_character_offsets(tmp_path: Path) -> None:
@@ -365,17 +358,25 @@ def test_yolo_export_requires_explicit_category_while_empty_coco_remains_valid(
     assert import_coco(document, "r")[0].boxes == ()
 
 
-def test_hf_classification_keeps_missing_detection_annotation_available(
+def test_imagefolder_classification_keeps_missing_detection_annotation_available(
     export: TrainingExport, tmp_path: Path
 ) -> None:
-    """HF classification metadata does not require a detection review for every image."""
+    """Classification does not require a detection review for every image."""
     item = export.items[0]
     classification = item.model_copy(
         update={"annotation": item.annotation.model_copy(update={"boxes": None})}
     )
     package = _write(
-        export.model_copy(update={"format": "hf_imagefolder", "items": (classification,)}),
-        tmp_path / "hf-classification",
+        export.model_copy(update={"format": "imagefolder", "items": (classification,)}),
+        tmp_path / "classification",
     )
-    record = json.loads((package / "train/metadata.jsonl").read_bytes())
-    assert record["labels"] == ["cat/rare"]
+    assert (package / "train/cat%2Frare" / filename(classification)).is_file()
+    assert json.loads((package / "classes.json").read_bytes()) == {"cat%2Frare": "cat/rare"}
+
+
+def test_removed_hf_training_format_is_rejected(export: TrainingExport) -> None:
+    """Both controlled-action and training boundaries reject the deferred format."""
+    with pytest.raises(SchemaValidationError, match="format"):
+        ExportParams.model_validate({"dataset_id": "dataset", "format": "hf_imagefolder"})
+    with pytest.raises(SchemaValidationError, match="format"):
+        TrainingExport.model_validate({**export.model_dump(), "format": "hf_imagefolder"})

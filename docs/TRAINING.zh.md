@@ -35,12 +35,12 @@
 `train/`、`val/`、`test/` 归属，检查时保留原集合。逐对报告给出两个样本 ID、各自集合、
 信号、距离和解释：
 
-| 信号 | 默认规则 |
-| --- | --- |
-| 完全相同 | SHA-256 内容哈希相等 |
-| 图片近重复 | 64 位 dHash 的汉明距离不超过 8 |
+| 信号       | 默认规则                         |
+| ---------- | -------------------------------- |
+| 完全相同   | SHA-256 内容哈希相等             |
+| 图片近重复 | 64 位 dHash 的汉明距离不超过 8   |
 | 文本近重复 | 64 位 simhash 的汉明距离不超过 3 |
-| 组键重叠 | 指定元数据字段的非 null 值相同 |
+| 组键重叠   | 指定元数据字段的非 null 值相同   |
 
 图片和文本阈值可在 0–64 之间配置。比较复用可选 Rust 后端，未安装时使用结果一致的
 精确 Python 比较，不使用可能漏召回的前缀分桶。A–B、B–C 构成一个切分组，但报告不会
@@ -60,13 +60,12 @@
 `export_dataset` 受控动作，冻结版本、切分和对象/字节预算，经现有签批与执行流程
 产生包。完成后点击「下载训练包」；每次下载都会重查源数据的当前导出权限。导出回执进入血缘。
 
-| `format` | 目录与标注约定 |
-| --- | --- |
-| `coco` | `images/<split>/` 和 `annotations/instances_<split>.json`；整数 ID、像素 xywh、area、`iscrowd=0` |
-| `yolo` | `images/<split>/`、对应 `labels/<split>/*.txt` 和相对路径 `data.yaml`；类别从 0 开始，坐标为归一中心点和宽高 |
-| `imagefolder` | `<split>/<class>/<image>`；每张图必须恰好一个分类标签 |
-| `hf_imagefolder` | 每个集合的图片与 `metadata.jsonl`，包含相对 `file_name`、标签和框；根目录 `categories.json` |
-| `text_jsonl` | `<split>.jsonl`，包含原文、分类标签和半开字符偏移片段 |
+| `format`      | 目录与标注约定                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------ |
+| `coco`        | `images/<split>/` 和 `annotations/instances_<split>.json`；整数 ID、像素 xywh、area、`iscrowd=0`             |
+| `yolo`        | `images/<split>/`、对应 `labels/<split>/*.txt` 和相对路径 `data.yaml`；类别从 0 开始，坐标为归一中心点和宽高 |
+| `imagefolder` | `<split>/<class>/<image>`；每张图必须恰好一个分类标签                                                        |
+| `text_jsonl`  | `<split>.jsonl`，包含原文、分类标签和半开字符偏移片段                                                        |
 
 已审空框图片（`boxes=[]`）保留在 COCO images 中，YOLO 对应空 txt。未审框（`boxes=null`）
 拒绝导出检测格式，避免把未知当作负样本。YOLO 的所选数据须至少有一个明确的框类别；
@@ -109,5 +108,4 @@ API 前缀为 `/api/datasets/{dataset}/versions/{version}/training`：
 原有元数据导出格式保持兼容。完整类型定义见[本机 API 参考](http://127.0.0.1:8765/api/docs)。
 
 格式规范：[COCO](https://cocodataset.org/#format-data)、
-[Ultralytics 检测](https://docs.ultralytics.com/datasets/detect/)、
-[Hugging Face imagefolder](https://huggingface.co/docs/datasets/image_dataset)。
+[Ultralytics 检测](https://docs.ultralytics.com/datasets/detect/)。

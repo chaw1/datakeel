@@ -65,7 +65,6 @@ export const trainingZh = {
   trainingCoco: "COCO 检测",
   trainingYolo: "YOLO 检测",
   trainingImagefolder: "ImageFolder 分类",
-  trainingHf: "HuggingFace imagefolder",
   trainingJsonl: "文本 JSONL",
   trainingDestination: "压缩包文件名",
   trainingAnnotator: "标注员",

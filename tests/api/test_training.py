@@ -138,6 +138,21 @@ def test_training_import_accepts_standard_coco_and_yolo(panel: TrainingPanel) ->
     assert yolo.json()["annotation_count"] == 1
 
 
+def test_deferred_hf_training_format_is_rejected(panel: TrainingPanel) -> None:
+    """Preparing an export cannot bypass the retained-format boundary."""
+    client, _base, fixture = panel
+    response = client.post(
+        "/api/actions/export_dataset/prepare",
+        json={
+            "dataset_id": fixture.dataset_id,
+            "version_id": fixture.version_id,
+            "format": "hf_imagefolder",
+        },
+    )
+    assert response.status_code == 422, response.text
+    assert "format" in response.text
+
+
 def _export(panel: TrainingPanel) -> ActionPlan:
     client, base, fixture = panel
     split = _save(client, base, "export")
@@ -147,7 +162,7 @@ def _export(panel: TrainingPanel) -> ActionPlan:
             "dataset_id": fixture.dataset_id,
             "version_id": fixture.version_id,
             "split_set_id": split.id,
-            "format": "hf_imagefolder",
+            "format": "imagefolder",
         },
     )
     assert response.status_code == 200, response.text
@@ -172,7 +187,13 @@ def test_completed_training_artifact_downloads_a_real_archive(panel: TrainingPan
     assert response.status_code == 200
     with tarfile.open(fileobj=io.BytesIO(response.content)) as archive:
         assert "MANIFEST.json" in archive.getnames()
-        assert any(name.endswith("metadata.jsonl") for name in archive.getnames())
+        assert "classes.json" in archive.getnames()
+        assert any(
+            len(name.split("/")) == 3
+            and name.split("/")[0] in {"train", "val", "test"}
+            and name.endswith(".png")
+            for name in archive.getnames()
+        )
 
 
 def test_export_download_rejects_symlink_and_missing_artifacts(panel: TrainingPanel) -> None:

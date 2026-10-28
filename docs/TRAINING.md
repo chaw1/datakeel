@@ -45,12 +45,12 @@ Choose **Existing directory assignments** to inspect imported `train/`, `val/` a
 `test/` memberships without changing them. The report lists direct cross-set pairs,
 both sample IDs and split names, the signal and its distance:
 
-| Signal | Rule |
-| --- | --- |
-| Exact | Equal SHA-256 content hashes |
-| Image | 64-bit dHash, Hamming distance at most 8 by default |
-| Text | 64-bit simhash, Hamming distance at most 3 by default |
-| Group | Equal non-null values of the configured metadata group field |
+| Signal | Rule                                                         |
+| ------ | ------------------------------------------------------------ |
+| Exact  | Equal SHA-256 content hashes                                 |
+| Image  | 64-bit dHash, Hamming distance at most 8 by default          |
+| Text   | 64-bit simhash, Hamming distance at most 3 by default        |
+| Group  | Equal non-null values of the configured metadata group field |
 
 Image and text thresholds are configurable from 0 to 64. Hash comparison uses the
 existing optional Rust backend when available and exact Python comparison otherwise;
@@ -76,13 +76,12 @@ frozen version, split, object/byte budget and effects, then use the normal appro
 execution controls. A successful receipt exposes **Download training archive**. Current
 source export permissions are rechecked on every download. Export receipts enter lineage.
 
-| `format` | Archive layout and annotation convention |
-| --- | --- |
-| `coco` | `images/<split>/` and `annotations/instances_<split>.json`; integer IDs, absolute `[x,y,width,height]`, area, `iscrowd=0` |
-| `yolo` | `images/<split>/`, matching `labels/<split>/*.txt` and relative `data.yaml`; zero-based classes, normalized center/width/height |
-| `imagefolder` | `<split>/<class>/<image>`; requires exactly one classification label per image |
-| `hf_imagefolder` | Images plus split-local `metadata.jsonl` with relative `file_name`, labels and detection objects; root `categories.json` |
-| `text_jsonl` | `<split>.jsonl`; exact text, labels and half-open character-offset spans |
+| `format`      | Archive layout and annotation convention                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `coco`        | `images/<split>/` and `annotations/instances_<split>.json`; integer IDs, absolute `[x,y,width,height]`, area, `iscrowd=0`       |
+| `yolo`        | `images/<split>/`, matching `labels/<split>/*.txt` and relative `data.yaml`; zero-based classes, normalized center/width/height |
+| `imagefolder` | `<split>/<class>/<image>`; requires exactly one classification label per image                                                  |
+| `text_jsonl`  | `<split>.jsonl`; exact text, labels and half-open character-offset spans                                                        |
 
 Reviewed-empty images (`boxes=[]`) have an empty YOLO label file and remain in COCO images.
 Missing box reviews (`boxes=null`) are refused for detection exports, rather than treated
@@ -134,5 +133,4 @@ Prepare exports through `POST /api/actions/export_dataset/prepare` with `dataset
 request schemas and examples are in the local [API reference](http://127.0.0.1:8765/api/docs).
 
 Format references: [COCO](https://cocodataset.org/#format-data),
-[Ultralytics detection](https://docs.ultralytics.com/datasets/detect/),
-[Hugging Face imagefolder](https://huggingface.co/docs/datasets/image_dataset).
+[Ultralytics detection](https://docs.ultralytics.com/datasets/detect/).

@@ -6,7 +6,6 @@ Version files, inspect evidence and ask business questions against registered me
 
 [Data standards](docs/STANDARDS.md) define fields and code lists, explain mapping suggestions, and report confirmed-column conformance and coverage. Every standard change and mapping confirmation requires approval.
 
-
 ```bash
 uv sync
 uv run datakeel demo
@@ -312,7 +311,7 @@ The interactive [local API reference](http://127.0.0.1:8765/api/docs) includes a
 | Quality                | `GET /api/datasets/{id}/quality`, `PUT /api/datasets/{id}/quality/config`                                                                                                                |
 | Governance             | `PUT /api/datasets/{id}/template`, `GET/PUT /metadata`, `GET /metadata/changes`, `GET /compliance`                                                                                       |
 | Agent conversations    | `POST/GET /api/agent/conversations`, `GET /api/agent/conversations/{id}`, `POST /api/agent/conversations/{id}/messages` (SSE)                                                            |
-| Agent resume           | `POST /api/agent/conversations/{id}/resume` with `{plan_id, idempotency_key}` (SSE); `GET /api/agent/conversations/{id}/audit` exposes recovery audit |
+| Agent resume           | `POST /api/agent/conversations/{id}/resume` with `{plan_id, idempotency_key}` (SSE); `GET /api/agent/conversations/{id}/audit` exposes recovery audit                                    |
 | Controlled actions     | `POST /api/actions/{type}/prepare`, `POST /api/approvals/{plan_id}`, `POST /api/actions/{plan_id}/execute`, `GET /api/actions/runs`                                                      |
 | Ontology and metering  | `GET /api/ontology`, `POST /api/ontology/object-sets/evaluate`, `GET /api/harness/traces`, `GET /api/harness/costs?group_by=conversation`                                                |
 | Reports and export     | `GET /api/datasets/{id}/report`, `GET /api/export?format=croissant&dataset_id={id}`                                                                                                      |
@@ -479,4 +478,4 @@ Submit a Python file in **Custom operators**, review its complete source and sta
 
 Open a dataset and select **Datasheet** to generate a seven-chapter datasheet (motivation, composition, collection, preprocessing, uses, distribution, maintenance) for one dataset version. Datakeel first freezes platform facts with stable IDs and sources; every retained sentence cites them, and a sentence with an uncited, unknown, numeric, date or name claim that the cited facts do not support is removed and listed with its reason. Chapters without facts say so explicitly. The offline template needs no model; an optional configured model follows the existing budget and external-transfer approval rules. Drafts are controlled actions, publication requires approval, and newer versions mark older datasheets out of date. Markdown and HTML downloads keep sentence-level citations. See the [datasheet reference](docs/DATASHEETS.md).
 
-The **Versions → Training sets** area previews and saves seeded train/validation/test splits, compares per-class distributions, checks exact/image/text/group leakage, and exports COCO, YOLO, ImageFolder, Hugging Face imagefolder or text JSONL through the existing controlled export action. Archives bind an immutable version and split, include a manifest, and reproduce byte for byte. See the [training guide](docs/TRAINING.md) for grouping constraints, thresholds, CLI commands and roundtrip imports.
+The **Versions → Training sets** area previews and saves seeded train/validation/test splits, compares per-class distributions, checks exact/image/text/group leakage, and exports COCO, YOLO, ImageFolder or text JSONL through the existing controlled export action. Archives bind an immutable version and split, include a manifest, and reproduce byte for byte. See the [training guide](docs/TRAINING.md) for grouping constraints, thresholds, CLI commands and roundtrip imports.
