@@ -5,8 +5,6 @@
 
 import json
 
-from pydantic import JsonValue, ValidationError
-
 from datakeel.core.agent_models import (
     ChatMessage,
     ContextSegment,
@@ -18,7 +16,7 @@ from datakeel.core.canary import canary_instruction
 from datakeel.core.context_tokens import allocate_tokens, estimate_tokens
 from datakeel.core.envelopes import envelope
 from datakeel.core.models import JsonDocument
-from datakeel.ontology.tool_models import ToolOutcome
+from datakeel.ontology.tool_history import compact_tool_search
 
 __all__ = ["allocate_tokens", "assemble", "estimate_tokens"]
 
@@ -42,7 +40,9 @@ def assemble(
     memory_text: str = "",
 ) -> ModelRequest:
     """Place immutable instructions and core schemas before changing history and facts."""
-    history = [_history_message(message, loaded_tools) for message in conversation.messages]
+    history = [
+        envelope(compact_tool_search(message, loaded_tools)) for message in conversation.messages
+    ]
     secret = canary_instruction(canary) if canary else ""
     parts = [
         ("instructions", "stable", INSTRUCTIONS),
@@ -89,27 +89,3 @@ def _schemas(tools: list[ToolDefinition]) -> str:
     return json.dumps(
         [tool.model_dump(mode="json") for tool in tools], sort_keys=True, separators=(",", ":")
     )
-
-
-def _history_message(message: ChatMessage, loaded_tools: list[ToolDefinition]) -> ChatMessage:
-    if message.role == "tool" and message.name == "tool_search":
-        try:
-            outcome = ToolOutcome.model_validate_json(message.content)
-        except ValidationError:
-            return envelope(message)
-        definitions = outcome.content.root.get("tools")
-        loaded = [json.dumps(tool.model_dump(mode="json"), sort_keys=True) for tool in loaded_tools]
-        if isinstance(definitions, list):
-            # Identical schemas are already present in the request's native tool definitions.
-            content: dict[str, JsonValue] = {
-                **outcome.content.root,
-                "tools": [
-                    {key: value for key, value in item.items() if key != "parameters"}
-                    if isinstance(item, dict) and json.dumps(item, sort_keys=True) in loaded
-                    else item
-                    for item in definitions
-                ],
-            }
-            outcome = outcome.model_copy(update={"content": JsonDocument(content)})
-            message = message.model_copy(update={"content": outcome.model_dump_json()})
-    return envelope(message)

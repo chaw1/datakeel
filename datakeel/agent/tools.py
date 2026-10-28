@@ -19,6 +19,7 @@ from datakeel.delegation.policy import tool_allowed
 from datakeel.memory.tools import invoke_memory, memory_tool
 from datakeel.ontology.functions import PARAMETER_MODELS, function_definitions
 from datakeel.ontology.standard_functions import STANDARD_TOOL_DESCRIPTIONS
+from datakeel.ontology.tool_history import DEFERRED_READ_FUNCTIONS
 from datakeel.ontology.tool_models import ToolCallContext, ToolInvocationStart, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.conversation_authorization import record_audit
@@ -28,19 +29,6 @@ from datakeel.storage.tool_invocations import (
     finish_invocation,
     invocation_identity,
     replay_invocation,
-)
-
-DEFERRED_READ_FUNCTIONS = frozenset(
-    {
-        "ask_data",
-        "list_metrics",
-        "explain_metric",
-        "impact_of",
-        "query_kg",
-        "explain_relation",
-        "query_standard_coverage",
-        "list_standard_usage",
-    }
 )
 
 
