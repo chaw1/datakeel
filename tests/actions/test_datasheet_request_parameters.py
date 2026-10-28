@@ -98,7 +98,7 @@ def test_plan_freezes_parameters_and_worker_passes_them_to_the_provider(
         seen.append(request_parameters)
         yield supplied
 
-    monkeypatch.setattr("datakeel.runtime.datasheet_model.provider_session", session)
+    monkeypatch.setattr("datakeel.worker.datasheet_model.provider_session", session)
     queue = _schedule(db, plan)
     lease = queue.claim()
     assert lease is not None

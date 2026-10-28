@@ -86,8 +86,7 @@ ignore_imports =
     datakeel.storage.action_planning -> datakeel.actions.datasheet_parameters
     datakeel.storage.action_operations -> datakeel.actions.datasheet_parameters
 # Approved model workers reuse the existing provider factory and persistent budget boundary.
-    datakeel.worker.datasheet_runner -> datakeel.runtime.datasheet_model
-    datakeel.runtime.datasheet_model -> datakeel.agent.factory
+    datakeel.worker.datasheet_model -> datakeel.agent.factory
 # Explicit memory services retain only typed projections across storage and tool boundaries.
     datakeel.memory.service -> datakeel.operators.text.pii_redact
     datakeel.memory.service -> datakeel.storage.memory_store

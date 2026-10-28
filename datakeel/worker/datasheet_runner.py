@@ -10,8 +10,8 @@ from datakeel.core.agent_models import Provider
 from datakeel.core.datasheet_execution import DatasheetCompletion, DatasheetFence
 from datakeel.core.datasheet_models import DatasheetDocument
 from datakeel.datasheets.validation import parse_model_output
-from datakeel.runtime.datasheet_model import draft_with_model
 from datakeel.storage.datasheet_jobs import job_input
+from datakeel.worker.datasheet_model import draft_with_model
 from datakeel.worker.heartbeat import pulse
 from datakeel.worker.queue import DatabaseQueue, Lease
 

@@ -186,7 +186,7 @@ def test_destination_changed_after_approval_blocks_provider_and_budget(
     def changed_destination(_config: ConversationCreate) -> str:
         return "https://changed.example.test/v1"
 
-    monkeypatch.setattr("datakeel.runtime.datasheet_model.model_destination", changed_destination)
+    monkeypatch.setattr("datakeel.worker.datasheet_model.model_destination", changed_destination)
     assert execute_datasheet(queue, lease, provider)
     assert provider.requests == []
     assert get_job(db, job.id).status == "FAILED"
@@ -289,7 +289,7 @@ def test_lease_lost_after_budget_reservation_is_refunded_without_model_invocatio
         assert queue.cancel(lease.task_id)
         return reservation
 
-    monkeypatch.setattr("datakeel.runtime.datasheet_model.reserve", reserve_then_cancel)
+    monkeypatch.setattr("datakeel.worker.datasheet_model.reserve", reserve_then_cancel)
     assert not execute_datasheet(queue, lease, provider)
     assert provider.requests == []
     assert get_job(db, job.id).status == "CANCELLED"
