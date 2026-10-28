@@ -80,6 +80,17 @@ ASK_CHART_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="ask-followup-sliced-group-dropped",
+        path="ask/followup.py",
+        before="inherited_groups = set(previous.group_by if previous else ()) - sliced",
+        after="inherited_groups = set(previous.group_by if previous else ())",
+        case=(
+            "tests/ask/test_followup_chains.py::"
+            "test_sliced_followup_drops_the_inherited_grouping_and_keeps_other_groups"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="ask-followup-continuation-consumed",
         path="ask/followup.py",
         before="        consumed.extend(cues.continuation_spans(request.question))",
@@ -87,6 +98,17 @@ ASK_CHART_MUTATIONS = (
         case=(
             "tests/ask/test_followup_chains.py::"
             "test_time_followups_behind_a_continuation_equal_complete_questions"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="ask-followup-value-before-knowledge",
+        path="ask/service.py",
+        before='            or turn.resolution.status == "resolved"',
+        after="            or False",
+        case=(
+            "tests/ask/test_followup_chains.py::"
+            "test_dimension_value_followup_outranks_knowledge_routing"
         ),
         runner="pytest",
     ),

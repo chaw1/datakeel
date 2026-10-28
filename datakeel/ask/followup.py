@@ -228,7 +228,9 @@ def _resolved(
 ) -> MetricTurn:
     slices = {item.dimension_id: item for item in previous.slices} if previous else {}
     slices.update({item.dimension_id: item for item in dimensions.slices})
-    groups = tuple(sorted(set((previous.group_by if previous else ()) + dimensions.group_by)))
+    sliced = {item.dimension_id for item in dimensions.slices}
+    inherited_groups = set(previous.group_by if previous else ()) - sliced
+    groups = tuple(sorted(inherited_groups | set(dimensions.group_by)))
     frame = AskQueryFrame(
         metric_id=resolution.candidates[0].definition.id,
         time_range=parsed.time_range or (previous.time_range if previous else None),

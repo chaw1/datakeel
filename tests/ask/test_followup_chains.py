@@ -86,6 +86,12 @@ CHAINS = (
         "上个季度零售额",
         (("按月拆开", "上个季度按月零售额"), ("换成订单数", "上个季度按月订单数")),
     ),
+    ("上个季度各区域零售额", (("那华南呢", "上个季度华南零售额"),)),
+    ("上个月按零售渠道订单数", (("那门店呢", "上个月门店订单数"),)),
+    (
+        "last quarter retail revenue by region",
+        (("what about South China", "last quarter retail revenue in South China"),),
+    ),
     (
         "last quarter retail revenue in East China",
         (("what about August 2026", "retail revenue in East China in August 2026"),),
@@ -93,6 +99,10 @@ CHAINS = (
     (
         "last quarter retail revenue in East China",
         (("what about 2026 Q3", "retail revenue in East China in 2026 Q3"),),
+    ),
+    (
+        "last quarter retail revenue in East China",
+        (("what about stores", "last quarter retail revenue in East China in stores"),),
     ),
     (
         "last quarter retail revenue in East China",
@@ -219,6 +229,30 @@ def test_unregistered_concepts_in_a_conversation_answer_like_standalone_question
         assert answer.query_frame is None
 
 
+def test_sliced_followup_drops_the_inherited_grouping_and_keeps_other_groups(
+    db: Database, enterprise_sample: EnterpriseSample
+) -> None:
+    """Filtering a grouped dimension yields one value; unrelated groupings survive."""
+    first = ask_data(
+        db, AskRequest(question="上个季度按零售区域按零售渠道零售额", reference_instant=REFERENCE)
+    )
+    assert first.status == "answered", first.message
+    assert first.query_frame
+    assert first.query_frame.group_by == ("retail_channel", "retail_region")
+    answer = ask_data(
+        db,
+        AskRequest(
+            question="那华南呢",
+            conversation_id=first.conversation_id,
+            reference_instant=REFERENCE,
+        ),
+    )
+    assert answer.status == "answered", answer.message
+    assert answer.query_frame
+    assert answer.query_frame.group_by == ("retail_channel",)
+    assert [item.value for item in answer.query_frame.slices] == ["华南"]
+
+
 def test_time_followups_behind_a_continuation_equal_complete_questions(
     db: Database, enterprise_sample: EnterpriseSample
 ) -> None:
@@ -247,6 +281,35 @@ def test_time_followups_behind_a_continuation_equal_complete_questions(
         assert answer.status == standalone.status == "answered", (followup, answer.message)
         assert answer.result == standalone.result
         assert answer.query_frame == standalone.query_frame
+
+
+def test_dimension_value_followup_outranks_knowledge_routing(
+    db: Database, enterprise_sample: EnterpriseSample
+) -> None:
+    """A fully understood value edit answers with numbers instead of a lineage prompt."""
+    first = ask_data(
+        db,
+        AskRequest(
+            question="last quarter retail revenue in East China", reference_instant=REFERENCE
+        ),
+    )
+    answer = ask_data(
+        db,
+        AskRequest(
+            question="what about stores",
+            conversation_id=first.conversation_id,
+            reference_instant=REFERENCE,
+        ),
+    )
+    assert answer.status == "answered", answer.message
+    assert answer.knowledge is None
+    assert answer.query_frame
+    assert {(item.dimension_id, item.value) for item in answer.query_frame.slices} == {
+        ("retail_channel", "门店"),
+        ("retail_region", "华东"),
+    }
+    assert answer.result
+    assert answer.result.rows
 
 
 def test_unknown_followup_suffix_requires_clarification(

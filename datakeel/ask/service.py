@@ -100,8 +100,13 @@ def _ask_data(
     contextual_metric = (
         turn.follows
         and knowledge is not None
-        and bool(knowledge.intent_candidates)
-        and any(item.metric_id for item in turn.parsed.matches)
+        and (
+            (
+                bool(knowledge.intent_candidates)
+                and any(item.metric_id for item in turn.parsed.matches)
+            )
+            or turn.resolution.status == "resolved"
+        )
     )
     if knowledge is not None and not contextual_metric:
         require_access(

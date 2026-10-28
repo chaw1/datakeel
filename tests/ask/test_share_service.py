@@ -83,9 +83,9 @@ def test_share_followups_inherit_display_intent_and_complete_topics_reset_it(
     assert share.result == first.result
     assert share.chart
     assert share.chart.show_percent
-    south = _ask(db, "那华南呢", share)
-    september = _ask(db, "上个月呢", south)
-    complete = _ask(db, "上个月华南按零售区域零售额占比")
+    stores = _ask(db, "那门店呢", share)
+    september = _ask(db, "上个月呢", stores)
+    complete = _ask(db, "上个月门店按零售区域零售额占比")
     assert september.status == complete.status == "answered"
     assert september.result == complete.result
     assert september.query_frame == complete.query_frame
