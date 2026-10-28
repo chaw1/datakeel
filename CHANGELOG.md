@@ -4,6 +4,21 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-10-28
+
+### Added
+
+- Audio and video preprocessing with user-installed `ffmpeg`/`ffprobe`: probe, invalid frames (black, solid, frozen, blurred), repeated video, fixed-window segmentation on packet timestamps, normalization, voice activity, edge-silence trimming, loudness against a configurable accepted range, clipping, repeated audio and multi-recording alignment. A recording that fails stays in the output with its operator and reason instead of failing the task; `demo-media` runs the chain on generated or your own local recordings; recording and clip pages show probes, issue intervals, alignment, processing history and clip links.
+- Image quality measurement (blur, exposure, noise, resolution and solid color with each failed check's measured reason, EXIF orientation and 16-bit depth handled) and point-cloud operators for PLY/PCD files: probe, unit check, cleanup, voxel downsampling, statistical outliers that separate isolated points and separated clusters from occluded or distant structure, and top-down PNG previews on the file object page. An unreadable image or scan is listed with its reason and the rest of the batch completes. `scripts/demo_media.py` runs an offline end-to-end example.
+
+### Changed
+
+- Package, API and frontend versions advance to 0.13.1.
+- Quality scoring applies tabular rules, image and point-cloud multipliers and recording deductions in that order. The quality view's `media` summary is present only when recordings were measured; image and point-cloud observations live under `image_pointcloud` in the dimension details.
+- The image and point-cloud preset is `datakeel.pipeline.image_pointcloud.image_pointcloud_pipeline()`; `datakeel.pipeline.media.media_pipeline()` is the audio/video chain.
+- Point-cloud preview downloads pass through the same data-asset download guard as file downloads.
+- Lineage records an approved custom operator's code hash as its operator version.
+
 ## [0.13.0] - 2026-10-28
 
 ### Added

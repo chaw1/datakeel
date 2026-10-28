@@ -1,6 +1,6 @@
 [project]
 name = "datakeel"
-version = "0.13.0"
+version = "0.13.1"
 description = "A small, observable data platform from files to trustworthy datasets."
 readme = "README.md"
 requires-python = ">=3.12"
