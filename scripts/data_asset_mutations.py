@@ -96,7 +96,8 @@ DATA_ASSET_MUTATIONS = (
         name="asset-content-revision",
         path="storage/data_asset_native.py",
         before=(
-            "pinned = ref.version is not None and session.get(VersionRow, ref.version) is not None"
+            "pinned = ref.version is not None"
+            " and _version_dataset(session, ref.version) is not None"
         ),
         after="pinned = ref.version is not None",
         case=(

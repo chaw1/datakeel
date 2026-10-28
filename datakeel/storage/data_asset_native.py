@@ -13,6 +13,8 @@ from datakeel.storage.database import DatasetRow, TaskRow, VersionRow
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_rows import KGRunRow
 
+_MANIFEST_IDS = "datakeel.asset_manifest_ids"
+
 
 def native_targets(session: Session, ref: AssetRef) -> tuple[AssetRef, ...]:
     """Resolve files, versions, tasks, graph runs and assertions without content reads."""
@@ -34,35 +36,55 @@ def native_targets(session: Session, ref: AssetRef) -> tuple[AssetRef, ...]:
     return tuple(result)
 
 
+def _version_dataset(session: Session, version_id: str) -> str | None:
+    """Read a version's owning dataset without decoding its manifest."""
+    return session.scalar(select(VersionRow.dataset_id).where(VersionRow.id == version_id))
+
+
 def _version_targets(session: Session, ref: AssetRef) -> tuple[AssetRef, ...]:
     """Visit a pinned version's producer while retaining verified dataset ownership."""
     if ref.asset_type == "dataset" and ref.version is not None:
-        version = session.get(VersionRow, ref.version)
-        if version is not None and version.dataset_id == ref.asset_id:
-            return (AssetRef(asset_type="version", asset_id=version.id, version=version.id),)
+        owner = _version_dataset(session, ref.version)
+        if owner == ref.asset_id:
+            return (AssetRef(asset_type="version", asset_id=ref.version, version=ref.version),)
     if ref.asset_type in {"version", "resource"}:
-        row = session.get(VersionRow, ref.asset_id)
-        if row:
-            return (AssetRef(asset_id=row.dataset_id, version=row.id),)
+        owner = _version_dataset(session, ref.asset_id)
+        if owner is not None:
+            return (AssetRef(asset_id=owner, version=ref.asset_id),)
     if ref.asset_type == "kg_entity" and ref.version is not None:
         # Graph entity identities carry the dataset version they were extracted from.
-        row = session.get(VersionRow, ref.version)
-        if row:
-            return (AssetRef(asset_id=row.dataset_id, version=row.id),)
+        owner = _version_dataset(session, ref.version)
+        if owner is not None:
+            return (AssetRef(asset_id=owner, version=ref.version),)
     return ()
+
+
+def _manifest_ids(session: Session, version_id: str) -> frozenset[str]:
+    """Read one immutable version manifest's file identities once per session.
+
+    Listing a dataset resolves every file reference; decoding every manifest again for
+    each file made that quadratic in files times versions.
+    """
+    cache: dict[str, frozenset[str]] = session.info.setdefault(_MANIFEST_IDS, {})
+    ids = cache.get(version_id)
+    if ids is None:
+        manifest = session.scalar(select(VersionRow.manifest).where(VersionRow.id == version_id))
+        ids = frozenset(FileItem.model_validate(raw).id for raw in manifest or [])
+        cache[version_id] = ids
+    return ids
 
 
 def _file_targets(session: Session, ref: AssetRef) -> list[AssetRef]:
     # Image-region anchors pin a content revision rather than a version identity;
     # match such revisions conservatively, like an unversioned file read.
-    pinned = ref.version is not None and session.get(VersionRow, ref.version) is not None
-    statement = select(VersionRow)
+    pinned = ref.version is not None and _version_dataset(session, ref.version) is not None
+    statement = select(VersionRow.id, VersionRow.dataset_id)
     if pinned:
         statement = statement.where(VersionRow.id == ref.version)
     result = [
-        AssetRef(asset_id=version.dataset_id, version=version.id)
-        for version in session.scalars(statement)
-        if any(FileItem.model_validate(raw).id == ref.asset_id for raw in version.manifest)
+        AssetRef(asset_id=dataset_id, version=version_id)
+        for version_id, dataset_id in session.execute(statement)
+        if ref.asset_id in _manifest_ids(session, version_id)
     ]
     if not result and not pinned:
         result.extend(
