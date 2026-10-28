@@ -14,6 +14,7 @@ import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
 import { kgEn } from "./kgEn";
 import { knowledgeEn } from "./knowledgeEn";
+import { mediaEn } from "./mediaEn";
 import { metadataEn } from "./metadataEn";
 import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
@@ -31,42 +32,7 @@ export const en = {
   ...metadataEn,
   ...annotationEn,
   ...datasheetEn,
-  mediaNotMeasured: "No measurements are available for this version.",
-  mediaTitle: "Audio and video",
-  mediaDuration: "Duration",
-  mediaSeconds: "{value} s",
-  mediaEncoding: "Encoding",
-  mediaDimensions: "Resolution",
-  mediaFrameRate: "Frames per second",
-  mediaRotation: "Rotation",
-  mediaDegrees: "{value}°",
-  mediaAudioTracks: "Audio tracks",
-  mediaSampleRate: "Sample rate",
-  mediaHertz: "{value} Hz",
-  mediaChannels: "Channels",
-  mediaTimeRange: "{start}–{end} s",
-  mediaSourceRange: "Source interval",
-  mediaSourceRecording: "Source recording",
-  mediaAlignment: "Recording alignment",
-  mediaOffset: "Offset {value} ms",
-  mediaUnalignable: "Unable to align",
-  mediaConfidence: "Confidence {value}%",
-  mediaOffsetMeaning:
-    "A positive offset means this recording’s shared signal occurs later than the reference.",
-  mediaIssues: "Detected intervals",
-  mediaNoIssues: "No signal issues detected.",
-  mediaClips: "Clips ({count})",
-  mediaNoClips: "No derived clips in this version scope.",
-  mediaProcessing: "Processing history",
-  mediaBlackFrame: "Black frames",
-  mediaSolidFrame: "Solid frames",
-  mediaFrozenFrame: "Frozen frames",
-  mediaBlurredFrame: "Blurred frames",
-  mediaVideoDuplicate: "Repeated video",
-  mediaSilence: "Silence",
-  mediaClipping: "Audio clipping",
-  mediaLoudness: "Loudness deviation",
-  mediaAudioDuplicate: "Repeated audio",
+  ...mediaEn,
   ...kgEn,
   ...knowledgeEn,
   ...metricRollbackEn,
