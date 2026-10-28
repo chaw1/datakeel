@@ -38,31 +38,39 @@ def _empty(count: int) -> OutlierAnalysis:
     )
 
 
-def local_ratio(spacing: NDArray[np.float64], indices: NDArray[np.intp]) -> NDArray[np.float64]:
-    """Divide each mean neighbor distance by the median of its neighbors' own values.
+def typical_spacing(spacing: NDArray[np.float64], indices: NDArray[np.intp]) -> NDArray[np.float64]:
+    """Return the median, over each point's neighbors, of their own mean neighbor distance."""
+    return np.median(spacing[indices], axis=1)
+
+
+def local_ratio(
+    distance: NDArray[np.float64], reference: NDArray[np.float64]
+) -> NDArray[np.float64]:
+    """Divide each distance by the typical neighbor spacing around the same point.
 
     The reference is local, so the natural near-dense, far-sparse falloff of a
     scan cancels out. Points that coincide with their neighbors score zero; a
     point whose neighbors all coincide scores infinity unless it coincides too.
     """
-    reference = np.median(spacing[indices], axis=1)
     with np.errstate(divide="ignore", invalid="ignore"):
-        ratio = spacing / reference
-    return np.where(spacing == 0, 0.0, ratio)
+        ratio = distance / reference
+    return np.where(distance == 0, 0.0, ratio)
 
 
 def analyse(xyz: NDArray[np.float64], params: StatisticalParams) -> OutlierAnalysis:
     """Measure finite coordinates for isolated points and separated small clusters.
 
-    A point is isolated when its mean distance to its k nearest neighbors is
-    more than ``local_ratio`` times the median of the same measure over those
-    neighbors, and its nearest-neighbor distance is too. The second scale
-    keeps short ring fragments and thin poles, whose next point is close but
-    whose wider neighborhood reaches other rings, from looking isolated.
-    Groups of points that are each other's neighbors escape that test, so
-    connected components of locally short links are also checked: a small
-    component far from everything else, or one much sparser than the points
-    its members neighbor, is marked as clustered.
+    The typical spacing around a point is the median, over its k nearest
+    neighbors, of their mean distance to their own k nearest neighbors. A
+    point is isolated when even its nearest neighbor is more than
+    ``local_ratio`` times that far away, so it is apart from the scan by
+    more than the sampling at its range. A point pushed off a densely
+    sampled scan line by range noise still has a neighbor within a few
+    sample spacings and is kept; ``ratio`` reports the mean-distance version
+    for review. Groups of points that are each other's neighbors escape that
+    test, so connected components of locally short links are also checked:
+    a group much sparser than the points it neighbors, or one that fills a
+    volume and floats apart from everything else, is marked as clustered.
     Coordinates are normalized first so extreme magnitudes cannot overflow.
     """
     count = len(xyz)
@@ -71,9 +79,9 @@ def analyse(xyz: NDArray[np.float64], params: StatisticalParams) -> OutlierAnaly
     unit, span = normalize(xyz)
     found = nearest_neighbors(unit, params.neighbors)
     spacing = found.distances.mean(axis=1)
-    ratio = local_ratio(spacing, found.indices)
+    reference = typical_spacing(spacing, found.indices)
+    ratio = local_ratio(spacing, reference)
     closest = found.distances.min(axis=1)
-    nearest_ratio = local_ratio(closest, found.indices)
     policy = ClusterPolicy(
         params.link_ratio,
         params.cluster_gap,
@@ -85,7 +93,7 @@ def analyse(xyz: NDArray[np.float64], params: StatisticalParams) -> OutlierAnaly
     with np.errstate(over="ignore"):
         scaled = np.minimum(spacing * span, _FLOAT_MAX)
         nearest = np.minimum(closest * span, _FLOAT_MAX)
-    isolated = (ratio > params.local_ratio) & (nearest_ratio > params.local_ratio)
+    isolated = local_ratio(closest, reference) > params.local_ratio
     return OutlierAnalysis(isolated, clustered, ratio, scaled, nearest)
 
 

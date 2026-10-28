@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 
 from datakeel.operators.pointcloud.components import connected
 from datakeel.operators.pointcloud.neighbors import EXACT_LIMIT, nearest_neighbors, spatial_order
-from datakeel.operators.pointcloud.statistics import local_ratio
+from datakeel.operators.pointcloud.statistics import local_ratio, typical_spacing
 from tests.operators.pointcloud import scans
 
 
@@ -141,7 +141,7 @@ def test_local_ratio_compares_with_neighbors_and_handles_zero_spacing() -> None:
     """Coincident points score zero; a point among coincident neighbors scores infinity."""
     spacing = np.array([1.0, 1.0, 4.0, 0.0, 0.0, 2.0])
     indices = np.array([[1, 2], [0, 2], [0, 1], [4, 5], [3, 5], [3, 4]])
-    ratio = local_ratio(spacing, indices)
+    ratio = local_ratio(spacing, typical_spacing(spacing, indices))
     np.testing.assert_allclose(ratio[:3], [1 / 2.5, 1 / 2.5, 4.0])
     assert ratio[3] == ratio[4] == 0
     assert np.isinf(ratio[5])
