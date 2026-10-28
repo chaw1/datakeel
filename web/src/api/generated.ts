@@ -4388,6 +4388,12 @@ export interface components {
              * @default 0
              */
             new: number;
+            /**
+             * Notes
+             * @description Explanations of how this import treated missing artifacts.
+             * @default []
+             */
+            notes: string[];
             /** Object Count */
             object_count: number;
             /**
@@ -4395,6 +4401,12 @@ export interface components {
              * @default []
              */
             parse_failures: components["schemas"]["SqlFailure"][];
+            /**
+             * Retained Columns
+             * @description Reflected columns kept from the previous import because catalog.json was not provided.
+             * @default 0
+             */
+            retained_columns: number;
             /**
              * Snapshot Version
              * @default 0

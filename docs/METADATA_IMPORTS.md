@@ -8,6 +8,8 @@ Datakeel 读取本地 dbt 产物、Airflow REST API v1（实时拉取或离线�
 
 支持 manifest v10、v11、v12（dbt 1.6 至 1.9 及以后生成的 v12）；其他版本会明确报错。`manifest.json` 必填，`catalog.json` 和 `run_results.json` 可选。请使用同一次构建生成的文件。
 
+缺少 `catalog.json` 只代表这次没有读仓库的列信息，不代表列被删了：再次导入时沿用上次导入反射到的列、类型和注释，列级血缘照常推导，导入摘要用 `retained_columns` 和 `notes` 写明“本次未提供 catalog.json，列沿用上次”。只有带了 `catalog.json`、而且某列确实不在其中时，该列才标为“来源已删除”。
+
 ```sh
 uv run datakeel import dbt \
   --source-id warehouse --name 'Analytics warehouse' \

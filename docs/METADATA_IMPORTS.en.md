@@ -8,6 +8,8 @@ Datakeel reads local dbt artifacts, the Airflow REST API v1 (live or as an offli
 
 Manifest versions 10, 11, and 12 are supported (dbt 1.6 through 1.9 and later v12 producers); other versions fail with an explicit error. `manifest.json` is required. `catalog.json` and `run_results.json` are optional. Use artifacts from the same build.
 
+A missing `catalog.json` only means the warehouse columns were not read this time, not that columns were dropped: a later import keeps the columns, types, and comments reflected by the previous import, column lineage is still derived, and the summary says so through `retained_columns` and `notes`. A column is marked deleted at source only when a supplied `catalog.json` no longer contains it.
+
 ```sh
 uv run datakeel import dbt \
   --source-id warehouse --name 'Analytics warehouse' \

@@ -20,6 +20,8 @@ export const metadataZh = {
   metadataFileRequired: "请选择必填的 JSON 文件。",
   metadataSummary:
     "新增 {new} · 变更 {changed} · 来源已删除 {deleted} · 未变 {unchanged} · 指标草稿 {drafts}",
+  metadataColumnsRetained:
+    "本次未提供 catalog.json，沿用上次导入的 {count} 列，未标为来源已删除。",
   metadataImportedObjects: "已导入对象",
   metadataKind: "对象类型",
   metadataAllKinds: "全部导入对象",

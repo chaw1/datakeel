@@ -71,6 +71,8 @@ class MetadataImportBatch(BoundaryModel):
     snapshot: CatalogSnapshot
     parse_failures: tuple[SqlFailure, ...] = ()
     run_record: LineageEvent | None = None
+    retained_columns: int = 0
+    notes: tuple[str, ...] = ()
 
 
 class MetadataImportReport(ImportReport):
@@ -78,6 +80,14 @@ class MetadataImportReport(ImportReport):
 
     deleted: int = 0
     drafts: int = 0
+    retained_columns: int = Field(
+        default=0,
+        description="Reflected columns kept from the previous import because catalog.json "
+        "was not provided.",
+    )
+    notes: tuple[str, ...] = Field(
+        default=(), description="Explanations of how this import treated missing artifacts."
+    )
 
 
 class MetricDraft(BoundaryModel):

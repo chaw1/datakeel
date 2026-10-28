@@ -188,6 +188,13 @@ export function MetadataImportForm({ onImported }: { onImported: () => void }) {
               drafts: report.drafts,
             })}
           </p>
+          {report.retained_columns > 0 && (
+            <p>
+              {t("metadataColumnsRetained", {
+                count: report.retained_columns,
+              })}
+            </p>
+          )}
           {!!report.parse_failures.length && (
             <ul>
               {report.parse_failures.map((failure) => (

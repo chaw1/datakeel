@@ -21,6 +21,8 @@ export const metadataEn = {
   metadataFileRequired: "Choose a required JSON file.",
   metadataSummary:
     "New {new} · Changed {changed} · Deleted at source {deleted} · Unchanged {unchanged} · Metric drafts {drafts}",
+  metadataColumnsRetained:
+    "catalog.json was not provided; kept {count} columns from the previous import instead of marking them deleted at source.",
   metadataImportedObjects: "Imported objects",
   metadataKind: "Object type",
   metadataAllKinds: "All imported objects",

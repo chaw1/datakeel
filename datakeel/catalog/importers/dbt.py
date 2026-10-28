@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import Dialect
 
 from datakeel.catalog.importers.dbt_models import (
     DbtCatalog,
+    DbtCatalogNode,
     DbtManifest,
     DbtNode,
     DbtUnitTest,
@@ -23,6 +24,12 @@ from datakeel.catalog.importers.dbt_objects import (
     owner_objects,
     resource_metadata,
     resource_table,
+)
+from datakeel.catalog.importers.dbt_retention import (
+    catalog_evidence,
+    retained_catalog,
+    retained_columns,
+    retention_note,
 )
 from datakeel.catalog.importers.dbt_runs import run_outcome, run_record, run_results
 from datakeel.catalog.importers.dbt_semantics import metric_drafts
@@ -93,6 +100,7 @@ def _evidence(
     tests_by_parent: dict[str, list[DbtNode | DbtUnitTest]],
     raw_nodes: dict[str, JsonDocument],
     results: dict[str, JsonDocument],
+    reflected: DbtCatalogNode | None,
 ) -> JsonDocument:
     tests: list[JsonValue] = []
     for test in tests_by_parent.get(node.unique_id, ()):
@@ -114,6 +122,8 @@ def _evidence(
     }
     if node.unique_id in results:
         details["run_result"] = run_outcome(results[node.unique_id]).root
+    if reflected is not None:
+        details["catalog"] = catalog_evidence(reflected)
     return JsonDocument(details)
 
 
@@ -148,9 +158,18 @@ def _resource_links(
     return tuple(links)
 
 
-def _reflect(request: DbtImportRequest, manifest: DbtManifest) -> MetadataImportBatch:
-    catalog = DbtCatalog.model_validate(request.catalog.root if request.catalog else {})
-    reflected = {**catalog.nodes, **catalog.sources}
+def _catalog(
+    request: DbtImportRequest, previous: CatalogSnapshot | None
+) -> dict[str, DbtCatalogNode]:
+    if request.catalog is None:
+        return retained_catalog(previous)
+    catalog = DbtCatalog.model_validate(request.catalog.root)
+    return {**catalog.nodes, **catalog.sources}
+
+
+def _reflect(
+    request: DbtImportRequest, manifest: DbtManifest, reflected: dict[str, DbtCatalogNode]
+) -> MetadataImportBatch:
     results = run_results(request.run_results)
     raw_nodes = {
         **_collection(request.manifest, "nodes"),
@@ -175,7 +194,8 @@ def _reflect(request: DbtImportRequest, manifest: DbtManifest) -> MetadataImport
         if node.resource_type == "exposure":
             item = _exposure(request.source_id, node)
         else:
-            metadata = resource_metadata(node, _evidence(node, tests, raw_nodes, results))
+            evidence = _evidence(node, tests, raw_nodes, results, reflected.get(node.unique_id))
+            metadata = resource_metadata(node, evidence)
             batch = resource_table(
                 request.source_id, node, reflected.get(node.unique_id), metadata, dialect
             )
@@ -225,17 +245,32 @@ def _owned_snapshot(
         else:
             unique[key] = item
     return CatalogSnapshot(
-        scope=f"metadata:dbt:{source_id}",
+        scope=dbt_scope(source_id),
         objects=tuple(unique[key] for key in sorted(unique)),
         links=tuple(links),
     )
 
 
-def prepare_dbt(request: DbtImportRequest) -> MetadataImportBatch:
-    """Validate supported artifacts and prepare a complete, nonexecuting import snapshot."""
+def dbt_scope(source_id: str) -> str:
+    """Name the independently versioned catalog scope owned by one dbt import source."""
+    return f"metadata:dbt:{source_id}"
+
+
+def prepare_dbt(
+    request: DbtImportRequest, previous: CatalogSnapshot | None = None
+) -> MetadataImportBatch:
+    """Validate supported artifacts and prepare a complete, nonexecuting import snapshot.
+
+    Without catalog.json, ``previous`` (the scope's current version) supplies the last
+    reflected columns, so omitting the artifact never reads as columns being dropped.
+    """
     manifest = _validate_manifest(request.manifest)
     try:
-        return _reflect(request, manifest)
+        batch = _reflect(request, manifest, _catalog(request, previous))
     except SchemaError as error:
         msg = "Invalid dbt catalog or run-results artifact"
         raise ValidationError(msg) from error
+    if request.catalog is not None:
+        return batch
+    count = retained_columns(batch.snapshot)
+    return batch.model_copy(update={"retained_columns": count, "notes": (retention_note(count),)})

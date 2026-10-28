@@ -6,7 +6,7 @@ import { MetadataImportForm } from "./MetadataImportForm";
 
 import type { MetadataImportReport } from "../../api/metadataImports";
 
-function reply() {
+function reply(retained = 0) {
   const report: MetadataImportReport = {
     object_count: 4,
     new: 2,
@@ -18,6 +18,8 @@ function reply() {
     snapshot_version: 2,
     failed_sql_count: 0,
     parse_failures: [],
+    retained_columns: retained,
+    notes: [],
   };
   const fetch = vi
     .fn()
@@ -58,6 +60,28 @@ it("reads dbt JSON locally, posts contents, and shows the incremental summary", 
     expect.objectContaining({
       body: JSON.stringify({ source_id: "shop", name: "dbt", manifest }),
     }),
+  );
+  expect(screen.getByRole("status")).not.toHaveTextContent("catalog.json");
+});
+
+it("explains that columns were kept when catalog.json was not provided", async () => {
+  reply(17);
+  const user = userEvent.setup();
+  render(<MetadataImportForm onImported={vi.fn()} />);
+  await user.type(screen.getByLabelText("Source ID"), "shop");
+  await user.upload(
+    screen.getByLabelText("manifest.json (required)"),
+    new File(
+      [
+        '{"metadata":{"dbt_schema_version":"https://schemas.getdbt.com/dbt/manifest/v12.json"}}',
+      ],
+      "manifest.json",
+      { type: "application/json" },
+    ),
+  );
+  await user.click(screen.getByRole("button", { name: "Import artifacts" }));
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "catalog.json was not provided; kept 17 columns from the previous import instead of marking them deleted at source.",
   );
 });
 

@@ -3,6 +3,8 @@
 
 """Publish incremental integration scopes with retained soft deletion evidence."""
 
+from collections.abc import Callable
+
 from sqlalchemy.orm import Session
 
 from datakeel.core.catalog_canonical import object_content
@@ -95,6 +97,8 @@ def publish_metadata_in_session(
             "deleted": sum(not _deleted(item) for item in removed),
             "drafts": sum(item.asset_ref.asset_type == "metric_draft" for item in incoming.objects),
             "parse_failures": batch.parse_failures,
+            "retained_columns": batch.retained_columns,
+            "notes": batch.notes,
         }
     )
 
@@ -106,5 +110,20 @@ def publish_metadata(
     with db.session() as session:
         db.lock_writes(session)
         result = publish_metadata_in_session(session, batch, actor)
+        session.commit()
+        return result
+
+
+def publish_metadata_from_prior(
+    db: Database,
+    scope: str,
+    prepare: Callable[[CatalogSnapshot], MetadataImportBatch],
+    actor: str = "local-user",
+) -> MetadataImportReport:
+    """Prepare against the scope's current version inside the same serialized write."""
+    with db.session() as session:
+        db.lock_writes(session)
+        lock_catalog(session)
+        result = publish_metadata_in_session(session, prepare(_prior(session, scope)), actor)
         session.commit()
         return result
