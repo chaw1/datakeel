@@ -24,6 +24,8 @@ from datakeel.storage.link_context import read_link_graphs
 
 def _links(session: Session, graphs: tuple[LinkGraph, ...]) -> tuple[EntityLink, ...]:
     entities = {entity.asset_ref.asset_id: entity for graph in graphs for entity in graph.entities}
+    if not entities:
+        return ()
     targets = {item.asset_ref.asset_id: item for item in read_snapshot(session).objects}
     result: list[EntityLink] = []
     rows = session.scalars(
