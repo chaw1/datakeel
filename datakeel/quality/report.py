@@ -12,6 +12,8 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import Record
 from datakeel.quality.models import QualityView, ReportView
+from datakeel.quality.tabular_models import TabularAssessment
+from datakeel.quality.tabular_report import tabular_chapter
 
 MAX_RESPONSE_BYTES = 1_048_576
 
@@ -62,6 +64,10 @@ def build_report(
 ) -> ReportView:
     """Build a baseline with optional bounded chat-completions enrichment."""
     chapters = _baseline(dataset, quality)
+    table_evidence = quality.get("tabular")
+    if table_evidence:
+        assessment = TabularAssessment.model_validate(table_evidence)
+        chapters.append(tabular_chapter(assessment).model_dump())
     baseline = "\n\n".join(f"## {chapter['title']}\n\n{chapter['body']}" for chapter in chapters)
     verification = (
         f"基线核验: 文件数 {quality.get('file_count', 0)}; "

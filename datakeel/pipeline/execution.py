@@ -28,10 +28,22 @@ def _execute_node(node: Node, selected: list[FileItem], output: Path) -> SlotFil
         )
         return {"true": selected if condition else [], "false": [] if condition else selected}
     if node.kind == "route":
+        tables = [
+            file
+            for file in selected
+            if file.modality == "table"
+            and Path(file.filename).suffix.lower() in {".csv", ".tsv", ".parquet", ".pq"}
+        ]
+        table_ids = {file.id for file in tables}
         return {
             "image": [file for file in selected if file.modality == "image"],
             "text": [file for file in selected if file.modality == "text"],
-            "other": [file for file in selected if file.modality not in {"image", "text"}],
+            "table": tables,
+            "other": [
+                file
+                for file in selected
+                if file.modality not in {"image", "text"} and file.id not in table_ids
+            ],
         }
     operator = REGISTRY[str(node.operator)]
     result = operator.run(selected, output / node.id, node.params)

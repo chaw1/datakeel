@@ -25,12 +25,29 @@ from datakeel.workflows.execution import WorkflowHooks
 from tests.workflows.conftest import create_dataset
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
     from pathlib import Path
 
     from starlette.types import Message, Scope
 
     from datakeel.storage.database import Database
+
+
+def _from_target(
+    events: Generator[WorkflowEvent, None, None],
+    target: Callable[[WorkflowEvent], bool],
+) -> Generator[WorkflowEvent, None, None]:
+    """Complete fixture setup before timing the real response from its target event."""
+    try:
+        for event in events:
+            if target(event):
+                yield event
+                yield from events
+                return
+        message = "The real workflow never reached the disconnect target"
+        raise AssertionError(message)
+    finally:
+        events.close()
 
 
 async def _disconnect(
@@ -48,8 +65,9 @@ async def _disconnect(
         nonlocal disconnected_at
         await ready.wait()
         if polling is not None:
-            await asyncio.sleep(0.1)
-            assert polling.is_set(), "The real wait node never entered its polling sleep"
+            assert await asyncio.to_thread(polling.wait, 3), (
+                "The real wait node never entered its polling sleep"
+            )
         disconnected_at = monotonic()
         return {"type": "http.disconnect"}
 
@@ -99,6 +117,11 @@ def test_http_disconnect_interrupts_real_wait_without_worker(
         polling.set()
         sleep(seconds)
 
+    def target(event: WorkflowEvent) -> bool:
+        return event.step_id == "wait" and any(
+            step.id == "wait" and step.status == "RUNNING" for step in event.run.steps
+        )
+
     events = start_workflow(
         db,
         "dataset-health",
@@ -108,12 +131,9 @@ def test_http_disconnect_interrupts_real_wait_without_worker(
         hooks=WorkflowHooks(sleep=real_sleep, cancelled=cancelled.is_set),
     )
     observed, elapsed = _call_disconnected(
-        WorkflowStreamResponse(events, cancelled),
+        WorkflowStreamResponse(_from_target(events, target), cancelled),
         spec_version,
-        lambda event: (
-            event.step_id == "wait"
-            and any(step.id == "wait" and step.status == "RUNNING" for step in event.run.steps)
-        ),
+        target,
         polling,
     )
     assert elapsed <= 2
@@ -136,6 +156,10 @@ def test_http_disconnect_preserves_a_durable_approval_pause(
     """Closing a paused stream must retain its signed-resume checkpoint and pending plan."""
     dataset = create_dataset(db, tmp_path / "approval-disconnect")
     cancelled = Event()
+
+    def target(event: WorkflowEvent) -> bool:
+        return event.run.status == "PAUSED"
+
     events = start_workflow(
         db,
         "low-quality-cleanup",
@@ -146,9 +170,9 @@ def test_http_disconnect_preserves_a_durable_approval_pause(
         hooks=WorkflowHooks(cancelled=cancelled.is_set),
     )
     observed, elapsed = _call_disconnected(
-        WorkflowStreamResponse(events, cancelled),
+        WorkflowStreamResponse(_from_target(events, target), cancelled),
         spec_version,
-        lambda event: event.run.status == "PAUSED",
+        target,
     )
     assert elapsed <= 2
     run = get_run(db, observed[-1].run.id)

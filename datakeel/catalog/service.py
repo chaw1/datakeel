@@ -8,6 +8,7 @@ from pathlib import Path
 from datakeel.catalog.importers.database import reflect_database
 from datakeel.catalog.importers.models import SqlDefinition
 from datakeel.catalog.importers.sql import derive_sql
+from datakeel.catalog.importers.tabular import reflect_files
 from datakeel.core.catalog_identity import catalog_id
 from datakeel.core.catalog_models import CatalogImportRequest, CatalogSnapshot, ImportReport
 from datakeel.core.errors import ValidationError
@@ -17,10 +18,13 @@ from datakeel.storage.database import Database
 
 def prepare_import(request: CatalogImportRequest) -> tuple[CatalogSnapshot, ImportReport]:
     """Read source metadata before opening the authoritative store transaction."""
-    if not request.connection_url or request.files:
-        msg = "P4 catalog import requires a SQLite URL; file import adapters are deferred"
+    if request.files and request.connection_url:
+        msg = "Catalog import requires either files or a SQLite URL, not both"
         raise ValidationError(msg)
-    batch = reflect_database(request)
+    if not request.files and not request.connection_url:
+        msg = "Catalog import requires files or a SQLite URL"
+        raise ValidationError(msg)
+    batch = reflect_files(request) if request.files else reflect_database(request)
     snapshot, definitions = batch.snapshot, batch.sql
     definitions += tuple(
         SqlDefinition(

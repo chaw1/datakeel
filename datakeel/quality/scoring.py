@@ -12,6 +12,7 @@ from typing import Any, cast
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
 from datakeel.quality.models import QualityConfig, QualityView
+from datakeel.quality.tabular import assess_tables, table_issues
 
 MAX_SCORE = 100
 
@@ -128,7 +129,21 @@ def score_quality(
         * distribution_coverage,
     }
     details = _evidence(files, resolved, complete, annotations, known_hashes, groups)
-    return _summarize(raw, details, resolved, annotations, count)
+    tabular = assess_tables(files)
+    for dimension, measured in tabular.scores.items():
+        raw[dimension] = min(raw[dimension], measured)
+        if tabular.files:
+            details[dimension]["tabular_score"] = measured
+            details[dimension]["tabular_rule"] = (
+                "fraction of source rows affected by recorded rules"
+            )
+    result = _summarize(raw, details, resolved, annotations, count)
+    return result.model_copy(
+        update={
+            "tabular": tabular if tabular.files else None,
+            "issues": [*result.issues, *table_issues(tabular)],
+        }
+    )
 
 
 def _validate_numbers(result: dict[str, Any]) -> None:

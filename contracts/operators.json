@@ -478,5 +478,517 @@
       "type": "object"
     },
     "queue": "cpu"
+  },
+  {
+    "id": "table.profile",
+    "modality": "table",
+    "category": "quality",
+    "inputs": {
+      "files": "files.table"
+    },
+    "outputs": {
+      "files": "files.table"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Control null recognition, category inference and optional candidate scans.",
+      "properties": {
+        "null_values": {
+          "default": [
+            "",
+            "null",
+            "none",
+            "nan",
+            "n/a"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Null Values",
+          "type": "array"
+        },
+        "enum_max_values": {
+          "default": 20,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Enum Max Values",
+          "type": "integer"
+        },
+        "enum_max_ratio": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Enum Max Ratio",
+          "type": "number"
+        },
+        "top_values_limit": {
+          "default": 5,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Top Values Limit",
+          "type": "integer"
+        },
+        "detect_pii": {
+          "default": true,
+          "description": "Report PII findings; contact distribution values are always withheld",
+          "title": "Detect Pii",
+          "type": "boolean"
+        },
+        "detect_foreign_keys": {
+          "default": true,
+          "title": "Detect Foreign Keys",
+          "type": "boolean"
+        }
+      },
+      "title": "ProfileParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "timeseries.timestamp_normalize",
+    "modality": "table",
+    "category": "normalize",
+    "inputs": {
+      "files": "files.table"
+    },
+    "outputs": {
+      "files": "files.table"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Normalize timestamps with an explicit assumption for naive local times.",
+      "properties": {
+        "time_column": {
+          "default": "timestamp",
+          "minLength": 1,
+          "title": "Time Column",
+          "type": "string"
+        },
+        "device_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "device_id",
+          "title": "Device Column"
+        },
+        "naive_timezone": {
+          "default": "UTC",
+          "minLength": 1,
+          "title": "Naive Timezone",
+          "type": "string"
+        },
+        "numeric_unit": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "s",
+            "ms"
+          ],
+          "title": "Numeric Unit",
+          "type": "string"
+        }
+      },
+      "title": "TimestampParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "timeseries.order_dedup",
+    "modality": "table",
+    "category": "clean",
+    "inputs": {
+      "files": "files.table"
+    },
+    "outputs": {
+      "files": "files.table"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Select the row retained at a duplicate device/timestamp key.",
+      "properties": {
+        "time_column": {
+          "default": "timestamp",
+          "minLength": 1,
+          "title": "Time Column",
+          "type": "string"
+        },
+        "device_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "device_id",
+          "title": "Device Column"
+        },
+        "keep": {
+          "default": "first",
+          "enum": [
+            "first",
+            "last"
+          ],
+          "title": "Keep",
+          "type": "string"
+        }
+      },
+      "title": "OrderParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "timeseries.gaps",
+    "modality": "table",
+    "category": "quality",
+    "inputs": {
+      "files": "files.table"
+    },
+    "outputs": {
+      "files": "files.table"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Detect missing samples against a fixed or per-device median interval.",
+      "properties": {
+        "time_column": {
+          "default": "timestamp",
+          "minLength": 1,
+          "title": "Time Column",
+          "type": "string"
+        },
+        "device_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "device_id",
+          "title": "Device Column"
+        },
+        "expected_interval_ms": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Interval Ms"
+        },
+        "tolerance": {
+          "default": 1.5,
+          "exclusiveMinimum": 1,
+          "title": "Tolerance",
+          "type": "number"
+        }
+      },
+      "title": "GapsParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "timeseries.resample",
+    "modality": "table",
+    "category": "transform",
+    "inputs": {
+      "files": "files.table"
+    },
+    "outputs": {
+      "files": "files.table"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Aggregate numeric values in UTC-aligned fixed-width buckets.",
+      "properties": {
+        "time_column": {
+          "default": "timestamp",
+          "minLength": 1,
+          "title": "Time Column",
+          "type": "string"
+        },
+        "device_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "device_id",
+          "title": "Device Column"
+        },
+        "interval_ms": {
+          "default": 60000,
+          "minimum": 1,
+          "title": "Interval Ms",
+          "type": "integer"
+        },
+        "aggregation": {
+          "default": "mean",
+          "enum": [
+            "mean",
+            "sum",
+            "min",
+            "max",
+            "first",
+            "last"
+          ],
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "value_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Value Columns",
+          "type": "array"
+        }
+      },
+      "title": "ResampleParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "timeseries.anomaly",
+    "modality": "table",
+    "category": "quality",
+    "inputs": {
+      "files": "files.table"
+    },
+    "outputs": {
+      "files": "files.table"
+    },
+    "parameters": {
+      "$defs": {
+        "ColumnRange": {
+          "additionalProperties": false,
+          "description": "Declare an inclusive physical range for a numeric signal.",
+          "properties": {
+            "column": {
+              "minLength": 1,
+              "title": "Column",
+              "type": "string"
+            },
+            "minimum": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Minimum"
+            },
+            "maximum": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Maximum"
+            }
+          },
+          "required": [
+            "column"
+          ],
+          "title": "ColumnRange",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Apply independent, declared statistical rules to sensor signals.",
+      "properties": {
+        "time_column": {
+          "default": "timestamp",
+          "minLength": 1,
+          "title": "Time Column",
+          "type": "string"
+        },
+        "device_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "device_id",
+          "title": "Device Column"
+        },
+        "value_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Value Columns",
+          "type": "array"
+        },
+        "window": {
+          "default": 11,
+          "maximum": 1001,
+          "minimum": 3,
+          "title": "Window",
+          "type": "integer"
+        },
+        "noise_floor": {
+          "default": true,
+          "title": "Noise Floor",
+          "type": "boolean"
+        },
+        "robust_z_threshold": {
+          "default": 6.0,
+          "exclusiveMinimum": 0,
+          "title": "Robust Z Threshold",
+          "type": "number"
+        },
+        "stuck_min_points": {
+          "default": 5,
+          "minimum": 3,
+          "title": "Stuck Min Points",
+          "type": "integer"
+        },
+        "jump_threshold": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Jump Threshold"
+        },
+        "ranges": {
+          "items": {
+            "$ref": "#/$defs/ColumnRange"
+          },
+          "title": "Ranges",
+          "type": "array"
+        }
+      },
+      "title": "AnomalyParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "timeseries.unit_check",
+    "modality": "table",
+    "category": "quality",
+    "inputs": {
+      "files": "files.table"
+    },
+    "outputs": {
+      "files": "files.table"
+    },
+    "parameters": {
+      "$defs": {
+        "UnitDeclaration": {
+          "additionalProperties": false,
+          "description": "Declare the expected unit without requesting implicit conversion.",
+          "properties": {
+            "column": {
+              "minLength": 1,
+              "title": "Column",
+              "type": "string"
+            },
+            "minimum": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Minimum"
+            },
+            "maximum": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Maximum"
+            },
+            "unit": {
+              "minLength": 1,
+              "title": "Unit",
+              "type": "string"
+            }
+          },
+          "required": [
+            "column",
+            "unit"
+          ],
+          "title": "UnitDeclaration",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Check explicit cell suffixes and ranges against column declarations.",
+      "properties": {
+        "time_column": {
+          "default": "timestamp",
+          "minLength": 1,
+          "title": "Time Column",
+          "type": "string"
+        },
+        "device_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "device_id",
+          "title": "Device Column"
+        },
+        "declarations": {
+          "items": {
+            "$ref": "#/$defs/UnitDeclaration"
+          },
+          "title": "Declarations",
+          "type": "array"
+        }
+      },
+      "title": "UnitParams",
+      "type": "object"
+    },
+    "queue": "cpu"
   }
 ]

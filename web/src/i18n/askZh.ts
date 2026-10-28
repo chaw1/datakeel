@@ -1,6 +1,24 @@
 import type { askEn } from "./askEn";
 
 export const askZh: Record<keyof typeof askEn, string> = {
+  askProfileTitle: "已记录的传感器剖析",
+  askProfileAnswered: "答案来自已发布剖析",
+  askProfileUnavailable: "暂无可可靠排名的剖析记录",
+  askProfileChoose: "请选择剖析的数据集",
+  askProfilePublishedVersion: "已发布版本",
+  askProfileSourceVersion: "原始来源版本",
+  askProfileRanking: "有已记录采样断档的设备",
+  askProfileDevice: "设备",
+  askProfileCount: "断档区间数",
+  askProfileDuration: "断档总时长（秒）",
+  askProfileSortCount: "按断档区间数排序，次数相同再比较总时长。",
+  askProfileSortDuration: "按断档总时长排序，时长相同按设备名排序。",
+  askProfileScope:
+    "这些测量描述表格采样时间轴，不代表温度列独有的缺值。未记录断档的设备不参与排名。",
+  askProfileIntervals: "来源区间",
+  askProfileCoordinates:
+    "行号为原始 CSV 来源行号，通过来源行映射在排序后保留；区间端点统一为 UTC。",
+  askProfileRows: "原始 CSV 行号",
   askTitle: "问数",
   askIntro:
     "基于虚构厨电公司的已登记指标和文档知识，查询数值、负责人及上下游。",

@@ -3,6 +3,7 @@ import { get, post } from "./client";
 import type { components } from "./generated";
 
 export type AskAnswer = components["schemas"]["AskAnswer"];
+export type ProfileAnswer = components["schemas"]["ProfileAnswer"];
 export type AskRequest = components["schemas"]["AskRequest"];
 export type AskMetric = components["schemas"]["MetricCard"];
 export type AskMatch = components["schemas"]["MatchEvidence"];
