@@ -10,7 +10,12 @@ import pytest
 
 from datakeel.core.llm_data_models import TrainingConfig, TrainingSource
 from datakeel.llm_data import analyze_sources, cleaned_filename
-from datakeel.llm_data.checks import check_record, redact_payload, repetition_ratio
+from datakeel.llm_data.checks import (
+    check_record,
+    has_unclosed_fence,
+    redact_payload,
+    repetition_ratio,
+)
 from datakeel.llm_data.language import estimate_tokens, identify_language
 from datakeel.llm_data.parsing import parse_record
 
@@ -251,3 +256,20 @@ def test_nested_labelled_credential_when_value_has_no_prefix_detects_and_cleans(
     assert finding.end == len(value)
     content = json.loads((tmp_path / "cleaned" / cleaned_filename("labelled")).read_text())
     assert content["metadata"][label] == "[SECRET]"
+
+
+def test_code_fence_when_markers_appear_inside_code_never_flags_valid_block() -> None:
+    """Inline string markers and shorter nested fences cannot close the outer fence."""
+    assert not has_unclosed_fence('```python\nprint("```")\n```')
+    assert not has_unclosed_fence("````markdown\n```python\ncode\n```\n````")
+    assert not has_unclosed_fence("An inline ``` marker is not a fenced block.")
+    assert not has_unclosed_fence("~~~text\ncontent\n~~~")
+    assert has_unclosed_fence("````text\ncontent\n```")
+
+
+def test_code_fence_when_tilde_block_is_unclosed_reports_truncation() -> None:
+    """Both supported Markdown fence characters must pair before a response is complete."""
+    parsed = parse_record(
+        json.dumps({"instruction": "Provide sample code", "output": "~~~python\nprint(1)"})
+    )
+    assert "unclosed_code_fence" in {item.code for item in check_record(parsed, TrainingConfig())}

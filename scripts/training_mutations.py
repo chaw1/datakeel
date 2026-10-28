@@ -7,6 +7,17 @@ from scripts.mutation_models import Mutation
 
 TRAINING_MUTATIONS = (
     Mutation(
+        name="training-code-fence-truncation",
+        path="llm_data/checks.py",
+        before="    return opened is not None",
+        after="    return False",
+        case=(
+            "tests/llm_data/test_checks.py::"
+            "test_code_fence_when_tilde_block_is_unclosed_reports_truncation"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="training-invalid-preview-privacy",
         path="llm_data/engine.py",
         before='        preview="[UNPARSEABLE_RECORD]",',

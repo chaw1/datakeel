@@ -54,6 +54,23 @@ _STRUCTURAL_VALUES = frozenset(
 _MIN_REPETITION_UNITS = 12
 _MIN_PROMPT_LENGTH = 80
 _MAX_GARBLED_RATIO = 0.01
+_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+
+
+def has_unclosed_fence(text: str) -> bool:
+    """Match line-oriented code fences without counting inline markers or shorter inner fences."""
+    opened: tuple[str, int] | None = None
+    for line in text.splitlines():
+        match = _FENCE.match(line.expandtabs(4))
+        if match is None:
+            continue
+        marker, suffix = match.groups()
+        if opened is None:
+            if marker[0] != "`" or "`" not in suffix:
+                opened = marker[0], len(marker)
+        elif marker[0] == opened[0] and len(marker) >= opened[1] and not suffix.strip():
+            opened = None
+    return opened is not None
 
 
 def repetition_ratio(text: str) -> float:
@@ -107,7 +124,7 @@ def _answer_findings(
         yield issue("template_response", field, "Configured template phrase matched")
     if repetition_ratio(answer) >= config.repetition_threshold:
         yield issue("ngram_repetition", field, "High repeated trigram fraction")
-    if answer.count("```") % 2:
+    if has_unclosed_fence(answer):
         yield issue("unclosed_code_fence", field, "Unclosed fenced code block")
     if len(prompt) >= _MIN_PROMPT_LENGTH and len(answer.strip()) < len(prompt) * 0.03:
         yield issue("short_answer", field, "Answer is unusually short relative to prompt")
