@@ -49,6 +49,19 @@ def test_large_scan_neighbors_match_exact_search_on_sampled_rows() -> None:
     assert all(np.array_equal(np.sort(order), np.arange(len(xyz))) for order in found.orders)
 
 
+def test_flat_noisy_ground_keeps_isotropic_locality() -> None:
+    """A thin axis must not be stretched to full Morton resolution and scramble locality."""
+    rng = np.random.default_rng(1828)
+    xyz = rng.uniform([0, 0, 0], [100, 100, 0.5], (4000, 3))
+    found = nearest_neighbors(xyz, 12)
+    rows = rng.choice(len(xyz), 600, replace=False)
+    exact = _brute(xyz, rows, 12)
+    ratio = found.distances[rows].mean(axis=1) / exact.mean(axis=1)
+    assert ratio.min() >= 1 - 1e-4
+    assert np.median(ratio) < 1.02
+    assert np.quantile(ratio, 0.95) < 1.1
+
+
 def test_large_cloud_neighbors_are_unique_other_rows() -> None:
     """A row's list never repeats a neighbor or includes the row itself."""
     xyz = scans.vehicle_scan(rings=16)
