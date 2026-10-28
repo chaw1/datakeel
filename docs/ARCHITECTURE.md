@@ -8,7 +8,7 @@
 数据进来 → 语义识别（文件是什么）→ 预处理算子链 → 质量评分 → 元数据/标准 → 血缘事件 → 分析报告。
 Agent 全程用对话操作，但只能走受控动作；harness 让 Agent 可量、可回放、可跑分。
 
-企业版的东西不要：多租户/统一认证、项目/考培/任务大厅、标注工具矩阵、桌面端、离线交付、k8s/GitOps、模型服务治理。
+企业版的东西不要：多租户/统一认证、项目/考培/任务大厅、标注工具矩阵、桌面端、k8s/GitOps、模型服务治理。
 
 ## 2. 定了的决策
 
@@ -175,3 +175,13 @@ Transcripts are deterministic `image_transcript` assets with content-hash versio
 Auto transcription is local OCR followed by a versioned pure routing policy. The profile owns every threshold; the signed plan and auto cache identity bind the complete configuration. Preparation invokes no transcription or routing backend and lists every potentially outbound image at worst-case cost. The worker validates each selected file ID and image hash against that envelope before a visual request, with per-image failures and independent OCR reference text excluded from extraction. Explicit batch/per-image modes override the profile default.
 
 auto 先本地 OCR，再按纯函数规则决定是否转交视觉模型；版本和全部阈值冻结在配置、签批和缓存中。逐图签批清单按最坏情况准备，执行前再次核对身份与哈希。实际路线、原因、外发数及两阶段费用单独报告，失败保持逐图隔离。
+
+## 14. Dataset releases and recipient verification / 数据集发布与收货对账
+
+Version comparison expands legacy JSON manifests inside the database and merges two streams ordered by stable file identity. Each request retains only its bounded result page and constant-size summaries; metadata classification preserves JSON types. New releases use the existing irreversible controlled-action and approval protocol. Private object keys stay in storage; frozen public file facts and dataset metadata form separate release rows. Database constraints seal entries when their release header is inserted and reject later source-version, header or entry mutations. Content-addressed local objects and conditional S3 writes reject replacement with different bytes.
+
+`delivery/` is a framework-free domain package for canonical manifests, safe tar reading and six independent recipient checks. The exported JSON Schema lives in `contracts/` and is also included in the wheel. `storage/delivery_service.py` materializes actual backend objects, validates exports and archives platform reconciliation receipts. The CLI dispatches recipient verification before settings, routing or database initialization. `MANIFEST.json` records expected facts; `RECORDS.json` supplies receipt-side metadata and annotation statistics, without trying to infer annotation semantics from arbitrary payloads. The manifest checksum provides integrity; it is not a sender signature.
+
+版本清单和已有生成版本行为保持兼容。发布冻结文件事实、来源、元数据及统计；后续变更必须生成其他版本。离线交付包只携带相对路径、公开元数据和版本血缘，不携带对象键或凭证。平台对账和收货命令调用同一套六类规则，平台结果独立存档。
+
+Resumable uploads stage bounded, atomically committed chunks under the configured local home. Shared process-released locks serialize writers and cap concurrent streams; whole-file and freshly read backend hashes are checked before a dataset transaction commits. The same declaration key resumes one upload, identical chunks merge, and conflicting retries are rejected. Multiple hosts require shared durable staging or sticky routing. Completed staging is retained; automatic cleanup is outside this implementation. See [the release guide](RELEASES.md) and [中文说明](RELEASES.zh.md).

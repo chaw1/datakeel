@@ -14,6 +14,7 @@ from rich.console import Console
 
 from datakeel.cli import (
     custom_operators,
+    delivery,
     kg_evaluation,
     kg_image_evaluation,
     routing,
@@ -85,7 +86,7 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
-    for module in (workflow, routing, kg_evaluation, timeseries_demo, custom_operators):
+    for module in (workflow, routing, kg_evaluation, timeseries_demo, custom_operators, delivery):
         module.register_parser(commands)
     return result
 
@@ -111,6 +112,9 @@ def _export(db: Database, args: argparse.Namespace) -> None:
 def main() -> None:
     """Dispatch a validated local command and configure structured diagnostics."""
     args = parser().parse_args()
+    if args.command == "reconcile":
+        delivery.offline_command(args)
+        return
     configure_logging()
     if args.command in {"routing", "eval-route"}:
         routing.dispatch(args)
@@ -137,6 +141,9 @@ def main() -> None:
 _MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
     "timeseries-demo": timeseries_demo.dispatch,
     "custom-operator": custom_operators.dispatch,
+    "version-diff": delivery.database_command,
+    "release-export": delivery.database_command,
+    "release-reconcile": delivery.database_command,
 }
 
 

@@ -15,6 +15,7 @@ from datakeel.api.routes import (
     catalog,
     custom_operators,
     datasets,
+    delivery,
     evidence,
     governance,
     harness,
@@ -22,9 +23,11 @@ from datakeel.api.routes import (
     lineage,
     memories,
     ontology,
+    releases,
     search,
     system,
     tasks,
+    uploads,
     workflow_runs,
 )
 from datakeel.core.logging import warn_unsafe_subprocess
@@ -48,6 +51,9 @@ def create_app(db: Database | None = None) -> FastAPI:
     for router in (
         system.router,
         datasets.router,
+        delivery.router,
+        releases.router,
+        uploads.router,
         catalog.router,
         custom_operators.router,
         ask.router,

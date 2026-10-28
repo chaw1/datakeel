@@ -723,6 +723,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{identifier}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Version Diff
+         * @description Compare any two same-dataset versions by stable file identity, hash, and metadata.
+         */
+        get: operations["version_diff_api_datasets__identifier__diff_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{identifier}/files": {
         parameters: {
             query?: never;
@@ -840,6 +860,26 @@ export interface paths {
          * @description Replace and validate quality scoring overrides.
          */
         put: operations["quality_config_api_datasets__identifier__quality_config_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{identifier}/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Releases
+         * @description List approved immutable publications without exposing object locations.
+         */
+        get: operations["releases_api_datasets__identifier__releases_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1467,6 +1507,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/releases/{release_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Release
+         * @description Read the exact metadata and measurements frozen at publication.
+         */
+        get: operations["release_api_releases__release_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/releases/{release_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export
+         * @description Download a verified portable tar containing the manifest and independent records.
+         */
+        post: operations["export_api_releases__release_id__export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/releases/{release_id}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Release Files
+         * @description Page through frozen release entries independently of mutable source settings.
+         */
+        get: operations["release_files_api_releases__release_id__files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/releases/{release_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify
+         * @description Verify current stored bytes and archive the complete receipt.
+         */
+        post: operations["verify_api_releases__release_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/releases/{release_id}/reconciliations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * History
+         * @description Read prior six-category receipts including per-file differences.
+         */
+        get: operations["history_api_releases__release_id__reconciliations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/search": {
         parameters: {
             query?: never;
@@ -1545,6 +1685,86 @@ export interface paths {
         get: operations["artifacts_api_tasks__identifier__artifacts_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start
+         * @description Declare file size, SHA-256, chunk size and a reusable idempotency key.
+         */
+        post: operations["start_api_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/uploads/{identifier}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Status
+         * @description Read missing ordinals so reconnection sends only absent chunks.
+         */
+        get: operations["status_api_uploads__identifier__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/uploads/{identifier}/chunks/{ordinal}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Chunk
+         * @description Stream at most the configured chunk limit under a process-shared concurrency cap.
+         */
+        put: operations["chunk_api_uploads__identifier__chunks__ordinal__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/uploads/{identifier}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete
+         * @description Verify every chunk and both whole-file hashes before atomic dataset publication.
+         */
+        post: operations["complete_api_uploads__identifier__complete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1750,7 +1970,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -1804,7 +2024,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator";
+            action_type: "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -2558,6 +2778,24 @@ export interface components {
             tool_calls?: components["schemas"]["ToolCall"][];
         };
         /**
+         * CheckResult
+         * @description Report one of the six independent reconciliation categories.
+         */
+        CheckResult: {
+            /**
+             * Differences
+             * @default []
+             */
+            differences: components["schemas"]["Difference"][];
+            /**
+             * Name
+             * @enum {string}
+             */
+            name: "file_count" | "bytes" | "hashes" | "annotations" | "metadata" | "lineage";
+            /** Passed */
+            passed: boolean;
+        };
+        /**
          * CompiledQuery
          * @description Carry compiler-generated SELECT SQL, bound parameters, and evidence.
          */
@@ -2973,6 +3211,64 @@ export interface components {
             interval_count: number;
             /** Total Gap Ms */
             total_gap_ms: number;
+        };
+        /**
+         * DiffCounts
+         * @description Complete five-way counts, independent of the requested page and filter.
+         */
+        DiffCounts: {
+            /**
+             * Added
+             * @default 0
+             */
+            added: number;
+            /**
+             * Content Changed
+             * @default 0
+             */
+            content_changed: number;
+            /**
+             * Metadata Changed
+             * @default 0
+             */
+            metadata_changed: number;
+            /**
+             * Removed
+             * @default 0
+             */
+            removed: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged: number;
+        };
+        /**
+         * DiffFile
+         * @description One stable file identity compared across two immutable manifests.
+         */
+        DiffFile: {
+            after?: components["schemas"]["ReleaseFile"] | null;
+            before?: components["schemas"]["ReleaseFile"] | null;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "added" | "removed" | "content_changed" | "metadata_changed" | "unchanged";
+            /** File Id */
+            file_id: string;
+        };
+        /**
+         * Difference
+         * @description Explain one failed check with machine-readable expected and actual values.
+         */
+        Difference: {
+            actual?: components["schemas"]["JsonValue"];
+            expected?: components["schemas"]["JsonValue"];
+            /** Path */
+            path: string;
+            /** Reason */
+            reason: string;
         };
         /**
          * DimensionView
@@ -5424,6 +5720,22 @@ export interface components {
             truncated: boolean;
         };
         /**
+         * ReconcileReport
+         * @description Archive a complete offline or platform-side verification result.
+         */
+        ReconcileReport: {
+            /** Categories */
+            categories: components["schemas"]["CheckResult"][];
+            /** Created At */
+            created_at?: number;
+            /** Id */
+            id?: string;
+            /** Passed */
+            passed: boolean;
+            /** Release Id */
+            release_id?: string | null;
+        };
+        /**
          * RelationType
          * @description Constrain a directed relation to declared endpoint categories.
          */
@@ -5436,6 +5748,73 @@ export interface components {
             name: string;
             /** Range */
             range: string[];
+        };
+        /**
+         * ReleaseFile
+         * @description Portable release file facts without internal storage locations.
+         */
+        ReleaseFile: {
+            /** Annotation Count */
+            annotation_count: number;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Label Count */
+            label_count: number;
+            /** Lineage Refs */
+            lineage_refs: string[];
+            /** Metadata */
+            metadata?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Modality */
+            modality: string;
+            /** Sha256 */
+            sha256: string;
+            /** Size */
+            size: number;
+            /** Source Version */
+            source_version: string;
+        };
+        /**
+         * ReleaseFiles
+         * @description Bounded portable entries from an immutable published release.
+         */
+        ReleaseFiles: {
+            /** Files */
+            files: components["schemas"]["ReleaseFile"][];
+            /** Next Offset */
+            next_offset?: number | null;
+        };
+        /**
+         * ReleaseView
+         * @description Immutable published manifest identity, provenance, and release notes.
+         */
+        ReleaseView: {
+            /** Created At */
+            created_at: number;
+            /** Dataset Id */
+            dataset_id: string;
+            /** File Count */
+            file_count: number;
+            /** Id */
+            id: string;
+            /** Manifest Sha256 */
+            manifest_sha256: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Notes */
+            notes: string;
+            summary: components["schemas"]["VersionSummary"];
+            /** Tag */
+            tag: string;
+            /** Total Bytes */
+            total_bytes: number;
+            /** Version Id */
+            version_id: string;
         };
         /**
          * ReportView
@@ -6103,6 +6482,57 @@ export interface components {
             /** Filename */
             filename: string;
         };
+        /**
+         * UploadInput
+         * @description Declare one file's immutable identity before sending bounded chunks.
+         */
+        UploadInput: {
+            /** Chunk Bytes */
+            chunk_bytes: number;
+            /** Filename */
+            filename: string;
+            /** Idempotency Key */
+            idempotency_key: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Name */
+            name: string;
+            /** Sha256 */
+            sha256: string;
+            /** Total Bytes */
+            total_bytes: number;
+        };
+        /**
+         * UploadView
+         * @description Expose durable progress without physical paths or uploaded data.
+         */
+        UploadView: {
+            /** Chunk Bytes */
+            chunk_bytes: number;
+            /** Chunk Count */
+            chunk_count: number;
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Missing Chunks */
+            missing_chunks: number[];
+            /** Received Chunks */
+            received_chunks: number[];
+            /** Sha256 */
+            sha256: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "UPLOADING" | "COMPLETE";
+            /** Total Bytes */
+            total_bytes: number;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -6162,6 +6592,56 @@ export interface components {
             issues: components["schemas"]["VerificationIssue"][];
             source: components["schemas"]["AssetRef"];
             tail?: components["schemas"]["TextSpan"] | null;
+        };
+        /**
+         * VersionDiff
+         * @description A bounded page of comparisons with whole-version measurement summaries.
+         */
+        VersionDiff: {
+            after_summary: components["schemas"]["VersionSummary"];
+            /** After Version */
+            after_version: string;
+            before_summary: components["schemas"]["VersionSummary"];
+            /** Before Version */
+            before_version: string;
+            counts: components["schemas"]["DiffCounts"];
+            /** Dataset Id */
+            dataset_id: string;
+            /** Files */
+            files: components["schemas"]["DiffFile"][];
+            /** Next Offset */
+            next_offset?: number | null;
+        };
+        /**
+         * VersionSummary
+         * @description Observed annotations, mean file quality, and version-scoped review states.
+         */
+        VersionSummary: {
+            /**
+             * Annotation Count
+             * @default 0
+             */
+            annotation_count: number;
+            /** Evidence Decisions */
+            evidence_decisions?: {
+                [key: string]: number;
+            };
+            /**
+             * Label Count
+             * @default 0
+             */
+            label_count: number;
+            /**
+             * Quality Basis
+             * @default mean_file_quality
+             * @constant
+             */
+            quality_basis: "mean_file_quality";
+            /**
+             * Quality Score
+             * @default 0
+             */
+            quality_score: number;
         };
         /**
          * VersionView
@@ -7608,6 +8088,43 @@ export interface operations {
             };
         };
     };
+    version_diff_api_datasets__identifier__diff_get: {
+        parameters: {
+            query: {
+                before: string;
+                after: string;
+                offset?: number;
+                limit?: number;
+                category?: ("added" | "removed" | "content_changed" | "metadata_changed" | "unchanged") | null;
+            };
+            header?: never;
+            path: {
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDiff"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     files_api_datasets__identifier__files_get: {
         parameters: {
             query?: {
@@ -7827,6 +8344,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QualityView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    releases_api_datasets__identifier__releases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseView"][];
                 };
             };
             /** @description Validation Error */
@@ -8768,6 +9316,162 @@ export interface operations {
             };
         };
     };
+    release_api_releases__release_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_api_releases__release_id__export_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_files_api_releases__release_id__files_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseFiles"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_api_releases__release_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconcileReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_api_releases__release_id__reconciliations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconcileReport"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     search_api_search_get: {
         parameters: {
             query?: {
@@ -8902,6 +9606,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_api_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    status_api_uploads__identifier__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chunk_api_uploads__identifier__chunks__ordinal__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+                ordinal: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_api_uploads__identifier__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadView"];
                 };
             };
             /** @description Validation Error */

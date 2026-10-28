@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     anthropic_url: str = "https://api.anthropic.com/v1/messages"
     provider_timeout: float = Field(default=30, gt=0, le=120)
     model_routing_file: Path | None = None
+    upload_max_chunk_bytes: int = Field(default=8 * 1024 * 1024, ge=1, le=64 * 1024 * 1024)
+    upload_max_concurrency: int = Field(default=4, ge=1, le=32)
+    upload_max_file_bytes: int = Field(default=5 * 1024**3, ge=0, le=1024**4)
     delegation_max_depth: int = Field(default=2, ge=1, le=8)
     delegation_max_parallel: int = Field(default=3, ge=1, le=16)
     sandbox_backend: Literal["container", "subprocess"] = "container"

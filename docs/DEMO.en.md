@@ -199,6 +199,18 @@ Under **Approved versions**, select `Custom operator demo`, enter `{"contains":"
 
 Add a comment to the source and submit it again. Check that the new sheet has another hash while the original approved version remains. The changed code needs another approval before it can run. A second example, [tag_images.py](../examples/custom_operators/tag_images.py), labels generated images with `{"label":"generated-fixture"}`. See the [custom operator reference](CUSTOM_OPERATORS.md) for contracts, CLI, validation and threat-model limits. This section is separate from the existing screenshot replay script below.
 
+## 12. Compare, release and verify a delivery (2 minutes)
+
+Return to **Evidence** and select the same generated paired dataset used in step 2. Find the pedestrian annotation gaps again, select a sample and click **Create version**. Clear the selection, select that same sample plus one additional sample and create another version. These are two independent frozen selections; use their actual IDs in **Data library → dataset → Versions**.
+
+Select the single-file version as **Before version** and the two-file version as **After version**, then click **Compare versions**. Inspect **Added**, **Removed**, **Content changed**, **Metadata only** and **Unchanged**, along with annotation, quality and evidence decision summaries. The two selections naturally demonstrate added and unchanged files; the other categories may have zero counts.
+
+Expand **Publish a release**, select the two-file version, use tag `v1.0.0` and enter `Reviewed generated samples` as the release notes. Click **Review release plan**, inspect the source version and frozen file impact, then **Approve and publish release**. Expand `v1.0.0` in **Releases** and click **Export delivery package**. Save the download as `delivery.tar.gz`.
+
+In a terminal with Datakeel installed, run `datakeel reconcile delivery.tar.gz --manifest MANIFEST.json`. All six categories pass without contacting the demo. Follow the byte-change snippet in the [delivery guide](RELEASES.md#export-and-verify-independently) to extract a copy and alter one payload byte, then run `datakeel reconcile received --manifest MANIFEST.json`. The report names the corrupted file in **Content hashes** and exits unsuccessfully. Return to release details, click **Reconcile stored objects** and reload: the platform's intact objects still pass, and the archived six-category report remains visible.
+
+The release portion is a separate optional walkthrough after the screenshot replay below. It changes only the generated workspace and local downloaded copies. The [delivery guide](RELEASES.md) documents the manifest, receipt records, APIs and CLI commands.
+
 ## Replay the tour and generate screenshots
 
 Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.

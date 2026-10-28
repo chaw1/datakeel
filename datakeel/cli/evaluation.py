@@ -8,7 +8,6 @@ from typing import Literal
 
 from rich.console import Console
 
-from datakeel.harness.evaluation import run_evaluation
 from datakeel.storage.database import Database
 
 
@@ -20,6 +19,9 @@ def evaluate(
     json_output: bool = False,
 ) -> None:
     """Run a suite, show comparison and failures, and fail the command on regression."""
+    # Offline recipient commands do not need the conversation engine or model SDKs.
+    from datakeel.harness.evaluation import run_evaluation  # noqa: PLC0415
+
     report = run_evaluation(db, provider, golden_dir)
     console = Console()
     if json_output:

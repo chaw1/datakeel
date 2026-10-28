@@ -42,6 +42,7 @@ from datakeel.storage.conversation_rows import (
     ConversationRow,
 )
 from datakeel.storage.custom_rows import CustomOperatorRow, CustomRunRow
+from datakeel.storage.delivery_rows import ReconciliationRow
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
 from datakeel.storage.file_state import FileStateRow
@@ -51,8 +52,11 @@ from datakeel.storage.kg_rows import KGCacheRow, KGRunRow
 from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 from datakeel.storage.metric_audit import MetricAuditRow
 from datakeel.storage.migrations import add_nullable_columns
+from datakeel.storage.release_constraints import install_release_constraints
+from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
 from datakeel.storage.tool_rows import ToolInvocationRow
 from datakeel.storage.transcription_rows import TranscriptionRow
+from datakeel.storage.upload_rows import UploadRow
 from datakeel.storage.workflow_rows import (
     WorkflowAuditRow,
     WorkflowResumeRow,
@@ -65,6 +69,9 @@ if TYPE_CHECKING:
 
 # Loading each mapping registers it in the single migration metadata collection.
 _REGISTERED_MODELS = (
+    ReconciliationRow,
+    ReleaseRow,
+    ReleaseEntryRow,
     ActionAuditRow,
     ActionOperationRow,
     ActionPlanRow,
@@ -90,6 +97,7 @@ _REGISTERED_MODELS = (
     MemoryAuditRow,
     ToolInvocationRow,
     TranscriptionRow,
+    UploadRow,
     AssertionRow,
     AssertionDecisionRow,
     EvidenceCacheRow,
@@ -251,6 +259,7 @@ class Database:
             Base.metadata.create_all(connection)
             add_nullable_columns(connection)
             install_evidence_constraints(connection, sqlite=self.sqlite)
+            install_release_constraints(connection, sqlite=self.sqlite)
             if self.sqlite:
                 for operation in ("UPDATE", "DELETE"):
                     connection.execute(

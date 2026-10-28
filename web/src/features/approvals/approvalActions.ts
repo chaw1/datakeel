@@ -3,6 +3,7 @@ import type { MessageKey } from "../../i18n/en";
 
 export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   submit_custom_operator: "customOperatorReviewAction",
+  publish_release: "releaseApproval",
   delete_files: "approvalDelete",
   export_dataset: "approvalExport",
   quarantine_files: "approvalQuarantine",

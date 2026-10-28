@@ -1,0 +1,181 @@
+{
+  "$defs": {
+    "DeliveryFile": {
+      "additionalProperties": false,
+      "description": "Register one public payload and the facts its recipient must verify.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "media_type": {
+          "title": "Media Type",
+          "type": "string"
+        },
+        "source_version": {
+          "title": "Source Version",
+          "type": "string"
+        },
+        "lineage_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Lineage Refs",
+          "type": "array"
+        },
+        "annotation_count": {
+          "minimum": 0,
+          "title": "Annotation Count",
+          "type": "integer"
+        },
+        "label_count": {
+          "minimum": 0,
+          "title": "Label Count",
+          "type": "integer"
+        },
+        "required_metadata": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Metadata",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "path",
+        "size",
+        "sha256",
+        "media_type",
+        "source_version",
+        "lineage_refs",
+        "annotation_count",
+        "label_count"
+      ],
+      "title": "DeliveryFile",
+      "type": "object"
+    },
+    "DeliveryLineage": {
+      "additionalProperties": false,
+      "description": "Identify one source version without revealing internal object locations.",
+      "properties": {
+        "version_id": {
+          "title": "Version Id",
+          "type": "string"
+        },
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version_id",
+        "dataset_id"
+      ],
+      "title": "DeliveryLineage",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "description": "Versioned, self-contained contract for a release delivery.",
+  "properties": {
+    "format_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "release_id": {
+      "title": "Release Id",
+      "type": "string"
+    },
+    "tag": {
+      "title": "Tag",
+      "type": "string"
+    },
+    "dataset_id": {
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "source_version": {
+      "title": "Source Version",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Metadata",
+      "type": "object"
+    },
+    "required_metadata": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Metadata",
+      "type": "array"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/DeliveryFile"
+      },
+      "title": "Files",
+      "type": "array"
+    },
+    "lineage": {
+      "items": {
+        "$ref": "#/$defs/DeliveryLineage"
+      },
+      "title": "Lineage",
+      "type": "array"
+    },
+    "file_count": {
+      "minimum": 0,
+      "title": "File Count",
+      "type": "integer"
+    },
+    "total_bytes": {
+      "minimum": 0,
+      "title": "Total Bytes",
+      "type": "integer"
+    },
+    "manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifest Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "release_id",
+    "tag",
+    "dataset_id",
+    "source_version",
+    "files",
+    "lineage",
+    "file_count",
+    "total_bytes",
+    "manifest_sha256"
+  ],
+  "title": "DeliveryManifest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

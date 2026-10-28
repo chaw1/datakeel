@@ -16,6 +16,7 @@
     "check:source": "node scripts/check-source.mjs",
     "smoke:ui": "node scripts/ui-smoke.mjs",
     "smoke:tour": "node scripts/demo-tour.mjs",
+    "smoke:release": "node scripts/release-smoke.mjs",
     "check:tokens": "node scripts/check-tokens.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
     "test:style-gates": "node scripts/check-tokens.mjs --self-test && node scripts/check-contrast.mjs --self-test",
