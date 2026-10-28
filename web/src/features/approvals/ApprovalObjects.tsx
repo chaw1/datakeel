@@ -7,8 +7,8 @@ import { isObjectKind, objectHref } from "../object/navigation";
 
 import { ApprovalMetricDraftObject } from "./ApprovalMetricDraftObject";
 import { ApprovalMetricObject } from "./ApprovalMetricObject";
-import { ApprovalStandardObjects } from "./ApprovalStandardObjects";
 import { ApprovalQualityObject } from "./ApprovalQualityObject";
+import { ApprovalStandardObjects } from "./ApprovalStandardObjects";
 import { isMetricPlan } from "./metricObject";
 import { isQualityPlan } from "./qualityObject";
 

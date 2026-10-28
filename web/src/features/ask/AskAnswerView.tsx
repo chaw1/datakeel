@@ -7,8 +7,8 @@ import { AnswerProvenance } from "./AnswerProvenance";
 import { AskResolution } from "./AskResolution";
 import { KnowledgeAnswerView } from "./KnowledgeAnswerView";
 import { KnowledgeResolution } from "./KnowledgeResolution";
-import { ProfileAnswerView } from "./ProfileAnswerView";
 import { metricName } from "./metricLabels";
+import { ProfileAnswerView } from "./ProfileAnswerView";
 
 import type {
   AskAnswer,

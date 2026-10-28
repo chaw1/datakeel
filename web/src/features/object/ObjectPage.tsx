@@ -3,8 +3,8 @@ import { useEffect } from "react";
 import { ResourceState } from "../../components/ResourceState";
 import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
-import { TableQualityRules } from "../qualityRules/TableQualityRules";
 import { MetadataEvidence } from "../catalog/MetadataEvidence";
+import { TableQualityRules } from "../qualityRules/TableQualityRules";
 
 import { objectHref, readObjectTarget } from "./navigation";
 import { ObjectFacts } from "./ObjectFacts";
@@ -96,7 +96,14 @@ export function ObjectPage({
   }
   const tabs: ObjectTab[] = ["facts", "relations", "evidence", "history"];
   if (target.kind === "dataset")
-    tabs.push("files", "versions", "quality", "annotation-quality", "report", "datasheets");
+    tabs.push(
+      "files",
+      "versions",
+      "quality",
+      "annotation-quality",
+      "report",
+      "datasheets",
+    );
   if (target.kind === "version") tabs.push("files", "annotation-quality");
   if (target.kind === "file") tabs.push("quality");
   const resolved = {
