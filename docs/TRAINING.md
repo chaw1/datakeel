@@ -46,7 +46,8 @@ Image and text thresholds are configurable from 0 to 64. Hash comparison uses th
 existing optional Rust backend when available and exact Python comparison otherwise;
 it does not use lossy prefix blocking. A–B and B–C edges group all three samples while
 the report retains only measured direct edges. Text normalization applies Unicode NFKC,
-case folding, whitespace and punctuation removal, then weighted character trigrams.
+case folding, whitespace, ASCII punctuation and Unicode P-category punctuation removal,
+then weighted character trigrams.
 Thus variants differing only in those normalized characters have distance zero.
 Empty normalized text supplies no text-similarity signal. These hashes are similarity
 heuristics; inspect pair evidence rather than interpreting them as semantic identity.

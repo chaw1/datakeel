@@ -4,6 +4,7 @@
 """Deterministic Unicode-aware 64-bit text similarity without model calls."""
 
 import hashlib
+import string
 import unicodedata
 from collections import Counter
 
@@ -13,7 +14,9 @@ def normalize_text(text: str) -> str:
     return "".join(
         character
         for character in unicodedata.normalize("NFKC", text).casefold()
-        if not character.isspace() and not unicodedata.category(character).startswith("P")
+        if not character.isspace()
+        and character not in string.punctuation
+        and not unicodedata.category(character).startswith("P")
     )
 
 

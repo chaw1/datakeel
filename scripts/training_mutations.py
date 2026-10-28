@@ -96,4 +96,15 @@ TRAINING_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="training-ascii-punctuation-normalization-omitted",
+        path="training/hashes.py",
+        before="and character not in string.punctuation",
+        after="",
+        case=(
+            "tests/training/test_text_normalization.py::"
+            "test_simhash_ignores_all_ascii_punctuation_and_compatibility_variants"
+        ),
+        runner="pytest",
+    ),
 )
