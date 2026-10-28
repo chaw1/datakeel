@@ -16,7 +16,7 @@ PHONE = re.compile(
 )
 CHINA_MOBILE = re.compile(r"(?<![A-Za-z0-9_])(?:(?:\+|00)?86[ -]?)?1[3-9][0-9]{9}(?![A-Za-z0-9_])")
 CHINA_ID = re.compile(r"(?<![A-Za-z0-9_])[1-9][0-9]{16}[0-9Xx](?![A-Za-z0-9_])")
-BANK_CARD = re.compile(r"(?<![A-Za-z0-9_])[1-9](?:[ -]?[0-9]){12,18}(?![A-Za-z0-9_]|[ -]*[0-9])")
+BANK_CARD = re.compile(r"(?<![A-Za-z0-9_+])[1-9](?:[ -]?[0-9]){12,18}(?![A-Za-z0-9_]|[ -]*[0-9])")
 IPV4 = re.compile(r"(?<![A-Za-z0-9_.])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![A-Za-z0-9_.])")
 IPV6 = re.compile(
     r"(?<![A-Za-z0-9_.:])(?:[0-9A-Fa-f]{0,4}:){2,7}"

@@ -183,3 +183,10 @@ def test_card_when_checksum_invalid_never_reports_payment_card() -> None:
     value = card()
     broken = value[:-1] + str((int(value[-1]) + 1) % 10)
     assert all(match.type != "bank_card" for match in detect_pii(broken))
+
+
+def test_international_phone_when_digits_also_pass_luhn_keeps_phone_type() -> None:
+    """An explicit dialing prefix cannot become a payment-card finding by coincidence."""
+    value = "+" + card("4915", 13)
+    assert [match.type for match in detect_pii(value)] == ["phone"]
+    assert redact_pii(value) == "[PHONE]"
