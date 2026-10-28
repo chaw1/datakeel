@@ -10,6 +10,12 @@ from pydantic import Field
 from datakeel.core.llm_data_models import TrainingConfig, TrainingReport
 from datakeel.core.models import BoundaryModel
 
+TRAINING_QUALITY_DESCRIPTION = (
+    "Read offline SFT messages, instruction and preference JSONL training quality findings: "
+    "format, duplicates, PII, languages and registered evaluation contamination. "
+    "训练数据治理、对话与偏好数据质量问题; 只读检查, 不执行清洗。"
+)
+
 
 class TrainingAnalysisRequest(BoundaryModel):
     """Analyze selected uploaded JSONL files with a completely frozen rule configuration."""

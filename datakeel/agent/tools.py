@@ -14,6 +14,7 @@ from datakeel.core.agent_models import Conversation, ToolCall, ToolDefinition
 from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
 from datakeel.core.json_schema import compact_schema
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.core.training_governance import TRAINING_QUALITY_DESCRIPTION
 from datakeel.delegation.models import DelegateParams
 from datakeel.delegation.policy import tool_allowed
 from datakeel.memory.tools import invoke_memory, memory_tool
@@ -65,7 +66,9 @@ def deferred_tools() -> list[ToolDefinition]:
     reads = [
         ToolDefinition(
             name=item.id,
-            description=ASK_DATA_DESCRIPTION
+            description=TRAINING_QUALITY_DESCRIPTION
+            if item.id == "get_training_quality"
+            else ASK_DATA_DESCRIPTION
             if item.id == "ask_data"
             else STANDARD_TOOL_DESCRIPTIONS.get(item.id, f"Read {item.id}"),
             parameters=compact_schema(item.input_schema),

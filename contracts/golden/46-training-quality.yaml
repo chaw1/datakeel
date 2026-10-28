@@ -6,7 +6,7 @@ turns:
     script:
       - tool_calls:
           - name: tool_search
-            arguments: {query: get_training_quality}
+            arguments: {query: SFT}
             id: 46-discover
       - tool_calls:
           - name: get_training_quality
