@@ -155,7 +155,7 @@ def _invalid(
         line=line.number,
         content_hash=line.digest,
         format=config.format,
-        preview=redact_pii(line.raw[:_PREVIEW_LIMIT].decode("utf-8", errors="replace")),
+        preview="[UNPARSEABLE_RECORD]",
         issues=(TrainingIssue(code=code, message=message),),
         decision="drop",
         reasons=(code,),

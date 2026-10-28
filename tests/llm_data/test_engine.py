@@ -124,3 +124,15 @@ def test_invalid_record_never_consumes_a_good_duplicate_representative(tmp_path:
     )
     report = analyze_sources((data,))
     assert [item.decision for item in report.samples] == ["drop", "keep"]
+
+
+def test_invalid_record_never_exposes_encoded_or_partial_private_payload(tmp_path: Path) -> None:
+    """Invalid JSON cannot be reliably decoded or redacted, so its raw preview stays hidden."""
+    raw = '{"instruction":"Contact", "output":"reader\\u0040example.org",}'
+    data = source(tmp_path, [raw])
+    ledger = tmp_path / "private-decisions.jsonl"
+    report = analyze_sources((data,), ledger_path=ledger)
+    assert report.samples[0].preview == "[UNPARSEABLE_RECORD]"
+    assert "reader" not in ledger.read_text()
+    assert report.samples[0].content_hash
+    assert "column" in report.samples[0].issues[0].message

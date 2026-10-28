@@ -7,6 +7,17 @@ from scripts.mutation_models import Mutation
 
 TRAINING_MUTATIONS = (
     Mutation(
+        name="training-invalid-preview-privacy",
+        path="llm_data/engine.py",
+        before='        preview="[UNPARSEABLE_RECORD]",',
+        after='        preview=redact_pii(line.raw.decode("utf-8", errors="replace")),',
+        case=(
+            "tests/llm_data/test_engine.py::"
+            "test_invalid_record_never_exposes_encoded_or_partial_private_payload"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="training-blocking-clean-decision",
         path="llm_data/engine.py",
         before="    if codes & _BLOCKING:",
