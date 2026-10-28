@@ -1,0 +1,100 @@
+.ask-chart-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 2);
+  margin-block: calc(var(--space) * 3);
+}
+.ask-chart-controls select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: calc(var(--space) * 2);
+}
+.ask-chart-figure {
+  margin: 0;
+  overflow-x: auto;
+}
+.ask-chart-figure svg {
+  width: 100%;
+  min-width: 560px;
+  display: block;
+  overflow: visible;
+}
+.ask-chart-figure text {
+  fill: var(--ink);
+  font-size: var(--font-sm);
+  font-family: var(--font-body);
+}
+.ask-chart-axis {
+  stroke: var(--rule);
+  stroke-width: 1;
+  fill: var(--icon-fill);
+}
+.ask-chart-line {
+  stroke: var(--pencil);
+  stroke-width: 3;
+  fill: var(--icon-fill);
+}
+.ask-chart-mark {
+  fill: var(--series-color, var(--pencil));
+}
+.ask-chart-series-0 {
+  --series-color: var(--pencil);
+}
+.ask-chart-series-1 {
+  --series-color: var(--ink);
+}
+.ask-chart-series-2 {
+  --series-color: var(--warn);
+}
+.ask-chart-series-3 {
+  --series-color: var(--ok);
+}
+.ask-chart-series-4 {
+  --series-color: var(--red);
+}
+.ask-chart-figure figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 4);
+  margin-top: calc(var(--space) * 2);
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
+.ask-chart-legend::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: calc(var(--space) * 2);
+  background: var(--series-color);
+}
+.ask-comparison {
+  color: var(--ink);
+  font-size: var(--font-md);
+}
+.ask-conversation-list {
+  padding-left: 0;
+  list-style: none;
+}
+.ask-conversation-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+  border-bottom: 1px solid var(--rule);
+  padding-block: calc(var(--space) * 2);
+}
+.ask-conversation-list li > span {
+  flex: 1;
+  min-width: 160px;
+  overflow-wrap: anywhere;
+}
+.ask-understood {
+  color: var(--ink);
+  border-left: 2px solid var(--pencil);
+  padding-left: calc(var(--space) * 3);
+}

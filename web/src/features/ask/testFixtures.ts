@@ -4,6 +4,7 @@ export const retailMetric: AskMetric = {
   status: "resolved",
   reasons: [],
   definition: {
+    number_format: "number",
     id: "retail_revenue",
     name: "零售额",
     description: "Consumer retail revenue from completed orders.",
@@ -28,6 +29,7 @@ export const retailAnswer: AskAnswer = {
   id: "answer-1",
   session_id: "session-1",
   question: "上个季度华东区零售额是多少",
+  interpreted_question: "上个季度华东区零售额是多少",
   status: "answered",
   message: "Calculated from the registered definition.",
   reference_instant: "2026-10-01T00:00:00Z",
@@ -108,6 +110,7 @@ export const unavailableAnswer: AskAnswer = {
   id: "answer-2",
   session_id: "session-1",
   question: "退货率为什么上升",
+  interpreted_question: "退货率为什么上升",
   status: "unanswerable",
   message: "This question is outside the registered metric definitions.",
   reference_instant: "2026-10-01T00:00:00Z",

@@ -48,6 +48,7 @@ export const metric: MetricCard = {
   status: "resolved",
   reasons: [],
   definition: {
+    number_format: "number",
     id: "retail_revenue",
     name: "Retail revenue",
     owner: "Retail team",

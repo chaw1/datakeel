@@ -1,15 +1,16 @@
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { askData, replayAnswer } from "../api/ask";
+import { askData, openAskConversation, replayAnswer } from "../api/ask";
 import { AskAnswerView } from "../features/ask/AskAnswerView";
 import { AskComposer } from "../features/ask/AskComposer";
+import { AskConversations } from "../features/ask/AskConversations";
 import { AskHistory } from "../features/ask/AskHistory";
 import { useI18n } from "../i18n/useI18n";
 import { useCompositionGuard } from "../lib/useCompositionGuard";
 
 import "../features/ask/ask.css";
 
-import type { AskAnswer, AskRequest } from "../api/ask";
+import type { AskAnswer, AskConversation, AskRequest } from "../api/ask";
 import type { LineageTarget } from "../app/navigation";
 
 function subscribeHash(callback: () => void) {
@@ -20,6 +21,8 @@ function subscribeHash(callback: () => void) {
 }
 
 type AskOperation = { request: AskRequest } | { answerId: string };
+const conversationKey = "datakeel.ask.conversation";
+const actorKey = "datakeel.ask.actor";
 
 export function AskPage({
   onOpenReceipt,
@@ -32,9 +35,65 @@ export function AskPage({
   const isComposing = useCompositionGuard();
   const [savedAnswers, setSavedAnswers] = useState<AskAnswer[]>([]);
   const [answer, setAnswer] = useState<AskAnswer | null>(null);
+  const [initialConversation] = useState(() => ({
+    id: sessionStorage.getItem(conversationKey),
+    actor: sessionStorage.getItem(actorKey) ?? "local-user",
+    failureMessage: t("askError"),
+  }));
+  const [conversationId, setConversationId] = useState<string | undefined>(
+    initialConversation.id ?? undefined,
+  );
+  const [actor, setActor] = useState(initialConversation.actor);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [conversationBusy, setConversationBusy] = useState(
+    Boolean(initialConversation.id),
+  );
+  const waiting = busy || conversationBusy;
   const [lastOperation, setLastOperation] = useState<AskOperation | null>(null);
+  useEffect(() => {
+    if (!initialConversation.id) return;
+    let active = true;
+    void openAskConversation(initialConversation.id, initialConversation.actor)
+      .then((conversation) => {
+        if (!active) return;
+        setSavedAnswers([...conversation.turns].reverse());
+        setAnswer(conversation.turns.at(-1) ?? null);
+      })
+      .catch((reason: unknown) => {
+        if (!active) return;
+        sessionStorage.removeItem(conversationKey);
+        setConversationId(undefined);
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : initialConversation.failureMessage,
+        );
+      })
+      .finally(() => {
+        if (active) setConversationBusy(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [initialConversation]);
+  function openConversation(conversation: AskConversation) {
+    setConversationId(conversation.id);
+    sessionStorage.setItem(conversationKey, conversation.id);
+    sessionStorage.setItem(actorKey, actor);
+    setSavedAnswers([...conversation.turns].reverse());
+    setAnswer(conversation.turns.at(-1) ?? null);
+    setError("");
+    setLastOperation(null);
+  }
+  function newConversation() {
+    setConversationId(undefined);
+    sessionStorage.removeItem(conversationKey);
+    setAnswer(null);
+    setSavedAnswers([]);
+    setLastOperation(null);
+    setError("");
+  }
   const chosenIntent =
     lastOperation && "request" in lastOperation
       ? lastOperation.request.knowledge_intent
@@ -43,7 +102,7 @@ export function AskPage({
         ? answer.knowledge.intent
         : undefined;
   async function perform(operation: AskOperation) {
-    if (busy || isComposing()) return;
+    if (waiting || isComposing()) return;
     setBusy(true);
     setError("");
     setAnswer(null);
@@ -52,8 +111,13 @@ export function AskPage({
       const next =
         "request" in operation
           ? await askData(operation.request)
-          : await replayAnswer(operation.answerId);
+          : await replayAnswer(operation.answerId, actor);
       setAnswer(next);
+      if (next.conversation_id) {
+        setConversationId(next.conversation_id);
+        sessionStorage.setItem(conversationKey, next.conversation_id);
+        sessionStorage.setItem(actorKey, actor);
+      }
       if (next.id)
         setSavedAnswers((previous) => [
           next,
@@ -75,14 +139,36 @@ export function AskPage({
           </h1>
         </div>
       </div>
+      <AskConversations
+        key={actor}
+        actor={actor}
+        activeId={conversationId}
+        disabled={waiting}
+        onBusyChange={setConversationBusy}
+        onOpen={openConversation}
+        onNew={newConversation}
+        onDeleted={(id) => {
+          if (id === conversationId) newConversation();
+        }}
+      />
       <AskComposer
         key={hash}
         initialQuestion={prefill.get("question") ?? ""}
         initialMetricId={prefill.get("metric") ?? undefined}
+        initialActor={actor}
         busy={busy}
+        disabled={conversationBusy}
+        onActorChange={(nextActor) => {
+          setActor(nextActor);
+          if (nextActor !== actor) newConversation();
+        }}
         onSubmit={(request) => {
           void perform({
-            request: { ...request, session_id: answer?.session_id },
+            request: {
+              ...request,
+              session_id: answer?.session_id,
+              ...(conversationId ? { conversation_id: conversationId } : {}),
+            },
           });
         }}
       />
@@ -124,10 +210,13 @@ export function AskPage({
                   actor:
                     lastOperation && "request" in lastOperation
                       ? lastOperation.request.actor
-                      : "local-user",
+                      : actor,
                   question: answer.question,
                   reference_instant: answer.reference_instant,
                   session_id: answer.session_id,
+                  ...(conversationId
+                    ? { conversation_id: conversationId }
+                    : {}),
                   subject_id: datasetId,
                 },
               });
@@ -138,10 +227,13 @@ export function AskPage({
                   actor:
                     lastOperation && "request" in lastOperation
                       ? lastOperation.request.actor
-                      : "local-user",
+                      : actor,
                   question: answer.question,
                   reference_instant: answer.reference_instant,
                   session_id: answer.session_id,
+                  ...(conversationId
+                    ? { conversation_id: conversationId }
+                    : {}),
                   subject_id: answer.knowledge?.subject?.asset_ref.asset_id,
                   knowledge_intent: intent,
                 },
@@ -153,10 +245,13 @@ export function AskPage({
                   actor:
                     lastOperation && "request" in lastOperation
                       ? lastOperation.request.actor
-                      : "local-user",
+                      : actor,
                   question: answer.question,
                   reference_instant: answer.reference_instant,
                   session_id: answer.session_id,
+                  ...(conversationId
+                    ? { conversation_id: conversationId }
+                    : {}),
                   subject_id: subject.asset_ref.asset_id,
                   ...(chosenIntent ? { knowledge_intent: chosenIntent } : {}),
                 },
@@ -168,10 +263,13 @@ export function AskPage({
                   actor:
                     lastOperation && "request" in lastOperation
                       ? lastOperation.request.actor
-                      : "local-user",
+                      : actor,
                   question: answer.question,
                   reference_instant: answer.reference_instant,
                   session_id: answer.session_id,
+                  ...(conversationId
+                    ? { conversation_id: conversationId }
+                    : {}),
                   metric_id: metricId,
                 },
               });
@@ -179,6 +277,7 @@ export function AskPage({
           />
           <AskHistory
             answers={savedAnswers}
+            disabled={waiting}
             currentId={answer.id}
             onReplay={(id) => {
               void perform({ answerId: id });
@@ -186,7 +285,7 @@ export function AskPage({
           />
         </>
       )}
-      {!answer && !busy && !error && (
+      {!answer && !waiting && !error && (
         <div className="card ask-empty">
           <span className="ask-empty-symbol" aria-hidden="true">
             ?

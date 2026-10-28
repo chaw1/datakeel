@@ -9,10 +9,12 @@ export function AskHistory({
   answers,
   currentId,
   onReplay,
+  disabled = false,
 }: {
   answers: AskAnswer[];
   currentId?: string;
   onReplay: (id: string) => void;
+  disabled?: boolean;
 }) {
   const { t, locale } = useI18n();
   const isComposing = useCompositionGuard();
@@ -40,11 +42,16 @@ export function AskHistory({
                   version: answer.metric_card.definition.version,
                 })}
             </p>
+            <p>
+              {t("askUnderstood")}
+              {answer.interpreted_question || answer.question}
+            </p>
             <code title={answer.id}>{answer.id?.slice(0, 8)}</code>
           </div>
           <button
             className="button"
             type="button"
+            disabled={disabled}
             aria-label={
               currentId === answer.id
                 ? t("askReplay")

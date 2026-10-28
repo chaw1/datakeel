@@ -378,6 +378,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ask/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Conversations
+         * @description List this actor's threads while omitting histories requiring absent grants.
+         */
+        get: operations["list_conversations_api_ask_conversations_get"];
+        put?: never;
+        /**
+         * Create Conversation
+         * @description Create a question thread independently of Agent runtime conversations.
+         */
+        post: operations["create_conversation_api_ask_conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ask/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open Conversation
+         * @description Recover saved turns only after owner and current asset authorization checks.
+         */
+        get: operations["open_conversation_api_ask_conversations__conversation_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Conversation
+         * @description Delete an owned thread and its persisted question history.
+         */
+        delete: operations["delete_conversation_api_ask_conversations__conversation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ask/{answer_id}": {
         parameters: {
             query?: never;
@@ -3412,9 +3460,18 @@ export interface components {
              * @default []
              */
             candidates: components["schemas"]["MetricCard"][];
+            chart?: components["schemas"]["ChartSpec"] | null;
+            comparison?: components["schemas"]["AskComparison"] | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
             /** Id */
             id?: string;
             interpretation?: components["schemas"]["AskInterpretation"] | null;
+            /**
+             * Interpreted Question
+             * @default
+             */
+            interpreted_question: string;
             knowledge?: components["schemas"]["KnowledgeAnswer"] | null;
             lineage?: components["schemas"]["LineageReference"] | null;
             /**
@@ -3426,6 +3483,7 @@ export interface components {
             message: string;
             metric_card?: components["schemas"]["MetricCard"] | null;
             profile?: components["schemas"]["ProfileAnswer"] | null;
+            query_frame?: components["schemas"]["AskQueryFrame"] | null;
             /** Question */
             question: string;
             recognition?: components["schemas"]["KnowledgeRecognition"] | null;
@@ -3449,6 +3507,53 @@ export interface components {
              */
             subject_candidates: components["schemas"]["KnowledgeSubject"][];
             time_range?: components["schemas"]["TimeRange"] | null;
+        };
+        /**
+         * AskComparison
+         * @description Expose the actual second query result and its arithmetic comparison.
+         */
+        AskComparison: {
+            /**
+             * Changes
+             * @default []
+             */
+            changes: components["schemas"]["ComparisonChange"][];
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "year_over_year" | "period_over_period";
+            previous_result: components["schemas"]["QueryResult"];
+            previous_sql: components["schemas"]["CompiledQuery"];
+            previous_time_range: components["schemas"]["TimeRange"];
+        };
+        /**
+         * AskConversation
+         * @description Return an actor-owned question thread and its replayable turns.
+         */
+        AskConversation: {
+            /** Actor */
+            actor: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            current_frame?: components["schemas"]["AskQueryFrame"] | null;
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Turns
+             * @default []
+             */
+            turns: components["schemas"]["AskAnswer"][];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /**
          * AskInterpretation
@@ -3477,6 +3582,36 @@ export interface components {
             unconsumed: string[];
         };
         /**
+         * AskQueryFrame
+         * @description Retain the complete resolved query, independently of conversational phrasing.
+         */
+        AskQueryFrame: {
+            /** Comparison */
+            comparison?: ("year_over_year" | "period_over_period") | null;
+            /**
+             * Group By
+             * @default []
+             */
+            group_by: string[];
+            /** Metric Id */
+            metric_id: string;
+            /**
+             * Share Of Result Rows
+             * @default false
+             */
+            share_of_result_rows: boolean;
+            /**
+             * Slices
+             * @default []
+             */
+            slices: components["schemas"]["DimensionSlice"][];
+            /** Time Basis */
+            time_basis?: ("period" | "as_of") | null;
+            /** Time Grain */
+            time_grain?: ("day" | "month" | "quarter" | "year") | null;
+            time_range?: components["schemas"]["TimeRange"] | null;
+        };
+        /**
          * AskRequest
          * @description Accept a local question and an explicitly injectable aware time reference.
          */
@@ -3486,6 +3621,8 @@ export interface components {
              * @default local-user
              */
             actor: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
             /** Knowledge Intent */
             knowledge_intent?: ("owner" | "upstream" | "downstream" | "owned") | null;
             /** Metric Id */
@@ -4208,6 +4345,50 @@ export interface components {
             title: string;
         };
         /**
+         * ChartSpec
+         * @description Describe presentation without copying, rounding, or replacing result data.
+         */
+        ChartSpec: {
+            /**
+             * Available Types
+             * @default [
+             *       "table"
+             *     ]
+             */
+            available_types: components["schemas"]["ChartType"][];
+            /** Description */
+            description: string;
+            /** @default number */
+            number_format: components["schemas"]["NumberFormat"];
+            /** Series */
+            series?: string | null;
+            /**
+             * Show Percent
+             * @default false
+             */
+            show_percent: boolean;
+            /**
+             * Sort
+             * @default source
+             * @constant
+             */
+            sort: "source";
+            /** Title */
+            title: string;
+            type: components["schemas"]["ChartType"];
+            /** Unit */
+            unit?: string | null;
+            /** X */
+            x?: string | null;
+            /**
+             * Y
+             * @default []
+             */
+            y: string[];
+        };
+        /** @enum {string} */
+        ChartType: "scalar" | "line" | "bar" | "horizontal_bar" | "grouped_bar" | "stacked_bar" | "table";
+        /**
          * ChatMessage
          * @description Persist text and complete tool exchanges without truncating history.
          */
@@ -4444,6 +4625,25 @@ export interface components {
              * @default []
              */
             values: components["schemas"]["StandardValue"][];
+        };
+        /**
+         * ComparisonChange
+         * @description Compare corresponding result rows without substituting a missing baseline.
+         */
+        ComparisonChange: {
+            /** Current Value */
+            current_value?: number | null;
+            /** Delta */
+            delta?: number | null;
+            /**
+             * Dimensions
+             * @default []
+             */
+            dimensions: components["schemas"]["Scalar"][];
+            /** Percent Change */
+            percent_change?: number | null;
+            /** Previous Value */
+            previous_value?: number | null;
         };
         /**
          * CompiledQuery
@@ -7758,11 +7958,19 @@ export interface components {
             measure: components["schemas"]["Measure"];
             /** Name */
             name: string;
+            /**
+             * Number Format
+             * @default number
+             * @enum {string}
+             */
+            number_format: "number" | "integer" | "percent";
             /** Owner */
             owner: string;
             /** Synonyms */
             synonyms?: string[];
             time: components["schemas"]["MetricTime"];
+            /** Unit */
+            unit?: string | null;
             /**
              * Version
              * @default 1
@@ -7979,6 +8187,8 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** @enum {string} */
+        NumberFormat: "number" | "integer" | "percent";
         /**
          * OCRReference
          * @description Keep the local attempt for human comparison without feeding it to extraction.
@@ -10731,6 +10941,106 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AskAnswer"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_conversations_api_ask_conversations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskConversation"][];
+                };
+            };
+        };
+    };
+    create_conversation_api_ask_conversations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskConversation"];
+                };
+            };
+        };
+    };
+    open_conversation_api_ask_conversations__conversation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskConversation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_conversation_api_ask_conversations__conversation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
