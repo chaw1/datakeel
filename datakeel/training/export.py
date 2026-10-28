@@ -10,7 +10,11 @@ from pathlib import Path
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.training_export_models import TrainingExport, TrainingExportItem
 from datakeel.training.export_common import json_text, write_archive
-from datakeel.training.export_detection import write_coco, write_yolo
+from datakeel.training.export_detection import (
+    validate_detection_annotations,
+    write_coco,
+    write_yolo,
+)
 from datakeel.training.export_records import (
     write_hf_imagefolder,
     write_imagefolder,
@@ -52,6 +56,7 @@ def _verify_sources(export: TrainingExport) -> None:
 
 def write_training_export(export: TrainingExport, directory: Path, archive: Path) -> None:
     """Write a format directory and byte-stable tar without destination or action timestamps."""
+    validate_detection_annotations(export)
     _verify_sources(export)
     ordered = export.model_copy(
         update={"items": tuple(sorted(export.items, key=lambda i: i.file.id))}

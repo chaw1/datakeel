@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from datakeel.core.errors import ValidationError
 from datakeel.core.training_export_models import (
     CocoBox,
     CocoCategory,
@@ -21,6 +22,19 @@ from datakeel.training.export_common import copy_source, dimensions, filename, j
 def detection_categories(items: tuple[TrainingExportItem, ...]) -> tuple[str, ...]:
     """Assign stable category identities from sorted explicit detection names."""
     return tuple(sorted({box.category for item in items for box in item.annotation.boxes or ()}))
+
+
+def validate_detection_annotations(export: TrainingExport) -> None:
+    """Require reviewed detections and at least one explicit category for YOLO training."""
+    if export.format not in {"coco", "yolo"}:
+        return
+    if any(item.annotation.boxes is None for item in export.items):
+        message = "Detection exports require reviewed boxes; missing annotations are not negatives"
+        raise ValidationError(message)
+    categories = detection_categories(export.items)
+    if export.format == "yolo" and not categories:
+        message = "YOLO exports require at least one explicit detection category"
+        raise ValidationError(message)
 
 
 def write_coco(export: TrainingExport, directory: Path) -> dict[str, str]:

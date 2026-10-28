@@ -23,6 +23,7 @@ from datakeel.storage.object_projection import content_digest
 from datakeel.storage.release_service import iter_release_entries, require_release
 from datakeel.storage.training_rows import TrainingSplitRow
 from datakeel.storage.version_stream import require_version, stream_manifest
+from datakeel.training.export_detection import validate_detection_annotations
 
 
 def _split(session: Session, params: ExportParams) -> SplitSet:
@@ -121,7 +122,7 @@ def training_export_inputs(
     if not items:
         message = "The selected version has no files for the requested training format"
         raise ValidationError(message)
-    return TrainingExport(
+    export = TrainingExport(
         dataset_id=params.dataset_id,
         version_id=split.version_id,
         release_id=params.release_id,
@@ -130,6 +131,8 @@ def training_export_inputs(
         format=cast("TrainingFormat", params.format),
         items=tuple(items),
     )
+    validate_detection_annotations(export)
+    return export
 
 
 def training_export_state(session: Session, params: ExportParams) -> str:

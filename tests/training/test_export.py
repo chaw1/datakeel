@@ -322,3 +322,56 @@ def test_fractional_detection_touching_image_boundary_roundtrips(
     )
     assert restored.x2 == 2970
     assert restored.y2 == 80
+
+
+@pytest.mark.parametrize("format_name", ["coco", "yolo"])
+def test_detection_export_rejects_missing_boxes_instead_of_inventing_negative(
+    export: TrainingExport, tmp_path: Path, format_name: TrainingFormat
+) -> None:
+    """An unannotated image is different from an explicit reviewed-empty detection image."""
+    item = export.items[0]
+    missing = item.model_copy(
+        update={"annotation": item.annotation.model_copy(update={"boxes": None})}
+    )
+    with pytest.raises(ValidationError, match="missing annotations are not negatives"):
+        _write(
+            export.model_copy(update={"format": format_name, "items": (missing,)}),
+            tmp_path / format_name,
+        )
+
+
+def test_yolo_export_requires_explicit_category_while_empty_coco_remains_valid(
+    export: TrainingExport, tmp_path: Path
+) -> None:
+    """Zero-category COCO is an interchange document; zero-category YOLO cannot be trained."""
+    item = export.items[0]
+    empty = item.model_copy(
+        update={"annotation": item.annotation.model_copy(update={"boxes": (), "labels": ()})}
+    )
+    selected = export.model_copy(update={"items": (empty,)})
+    with pytest.raises(ValidationError, match="at least one explicit detection category"):
+        _write(selected.model_copy(update={"format": "yolo"}), tmp_path / "yolo-empty")
+    package = _write(selected.model_copy(update={"format": "coco"}), tmp_path / "coco-empty")
+    document = CocoDataset.model_validate_json(
+        (package / "annotations/instances_train.json").read_bytes()
+    )
+    assert document.categories == ()
+    assert document.annotations == ()
+    assert len(document.images) == 1
+    assert import_coco(document, "r")[0].boxes == ()
+
+
+def test_hf_classification_keeps_missing_detection_annotation_available(
+    export: TrainingExport, tmp_path: Path
+) -> None:
+    """HF classification metadata does not require a detection review for every image."""
+    item = export.items[0]
+    classification = item.model_copy(
+        update={"annotation": item.annotation.model_copy(update={"boxes": None})}
+    )
+    package = _write(
+        export.model_copy(update={"format": "hf_imagefolder", "items": (classification,)}),
+        tmp_path / "hf-classification",
+    )
+    record = json.loads((package / "train/metadata.jsonl").read_bytes())
+    assert record["labels"] == ["cat/rare"]
