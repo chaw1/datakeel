@@ -4,6 +4,9 @@
 """Apply short business mutations inside the controlled action transaction."""
 
 import json
+from collections.abc import Callable
+from types import UnionType
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -88,17 +91,23 @@ def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> Ope
     return OperationResult(task_id=task.id)
 
 
+# Parameter families whose own module performs the whole mutation, checked in order.
+_TYPED_ACTIONS: tuple[
+    tuple[type | UnionType, Callable[[Session, ActionPlan, Any], OperationResult]], ...
+] = (
+    (SubmitCustomOperatorParams, approve_custom_operator),
+    (PublishReleaseParams, publish_release),
+    (CatalogActionParams, execute_catalog_action),
+    (DecideAssertionsParams, decide_action),
+)
+
+
 def execute_business(session: Session, plan: ActionPlan) -> OperationResult:
     """Mutate a validated plan without opening or committing another transaction."""
     params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
-    if isinstance(params, SubmitCustomOperatorParams):
-        return approve_custom_operator(session, plan, params)
-    if isinstance(params, PublishReleaseParams):
-        return publish_release(session, plan, params)
-    if isinstance(params, CatalogActionParams):
-        return execute_catalog_action(session, plan, params)
-    if isinstance(params, DecideAssertionsParams):
-        return decide_action(session, plan, params)
+    for kind, handler in _TYPED_ACTIONS:
+        if isinstance(params, kind):
+            return handler(session, plan, params)
     if plan.action_type in {"quarantine_files", "unquarantine_files", "delete_files"}:
         change_file_state(session, plan)
         outputs = (
