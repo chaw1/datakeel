@@ -53,7 +53,7 @@ def resident_tools() -> list[ToolDefinition]:
         ],
         ToolDefinition(
             name="tool_search",
-            description="Discover read tools or controlled actions; actions only prepare.",
+            description="Discover reads and prepare-only actions.",
             parameters=compact_schema(
                 JsonDocument.model_validate(ToolSearchParams.model_json_schema())
             ),
