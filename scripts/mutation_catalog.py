@@ -17,10 +17,13 @@ from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
 from scripts.metadata_mutations import METADATA_MUTATIONS
 from scripts.metric_mutations import METRIC_MUTATIONS
 from scripts.orchestration_mutations import ORCHESTRATION_MUTATIONS
+from scripts.pii_mutations import PII_MUTATIONS
 from scripts.release_mutations import RELEASE_MUTATIONS
 from scripts.standard_mutations import LEXICAL_RULE_MUTATIONS, STANDARD_MUTATIONS
 from scripts.table_mutations import TABLE_MUTATIONS
 from scripts.timeseries_mutations import TIMESERIES_MUTATIONS
+from scripts.training_governance_mutations import TRAINING_GOVERNANCE_MUTATIONS
+from scripts.training_mutations import TRAINING_MUTATIONS
 
 FEATURE_MUTATIONS = (
     *ADVANCED_MUTATIONS,
@@ -42,4 +45,7 @@ FEATURE_MUTATIONS = (
     *ORCHESTRATION_MUTATIONS,
     *ANNOTATION_QA_MUTATIONS,
     *DATASHEET_MUTATIONS,
+    *PII_MUTATIONS,
+    *TRAINING_MUTATIONS,
+    *TRAINING_GOVERNANCE_MUTATIONS,
 )

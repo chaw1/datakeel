@@ -21,6 +21,7 @@ from datakeel.operators.text.dedup import OPERATOR as TEXT_DEDUP
 from datakeel.operators.text.encoding_fix import OPERATOR as ENCODING_FIX
 from datakeel.operators.text.pii_redact import OPERATOR as PII_REDACT
 from datakeel.operators.text.quality import OPERATOR as TEXT_QUALITY
+from datakeel.operators.text.training_quality import OPERATOR as TRAINING_QUALITY
 from datakeel.operators.timeseries.anomaly import OPERATOR as SERIES_ANOMALY
 from datakeel.operators.timeseries.gaps import OPERATOR as SERIES_GAPS
 from datakeel.operators.timeseries.order_dedup import OPERATOR as SERIES_ORDER
@@ -42,6 +43,7 @@ REGISTRY: dict[str, Operator] = {
         PII_REDACT,
         TEXT_DEDUP,
         TEXT_QUALITY,
+        TRAINING_QUALITY,
         IMAGE_PHASH,
         CAPTION_MENTIONS,
         ANNOTATION_LABELS,

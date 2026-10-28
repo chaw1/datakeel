@@ -194,3 +194,19 @@ Resumable uploads stage bounded, atomically committed chunks under the configure
 `datasheets/` is a framework-free domain package: fixed chapter vocabulary, offline templates, the untrusted-data model prompt, Markdown/HTML rendering and the independent citation validator. `storage/datasheet_*.py` extracts version-pinned facts (manifest, metadata, quality, compliance, scoped lineage, evidence counts, review decisions and graph entities) and stores immutable documents. Each fact ID hashes its source type, source ID and field. Each fact also records a value kind and unit from a fixed field registry (`core/datasheet_types.py`); the prompt shows them as labelled display lines, and the validator compares numbers by unit class, so a percentage cites only a ratio and a unit-bearing number cites only the same unit. Generation and publication are controlled actions; template drafts are written inside the action transaction, while model drafts use the existing task queue, shard lease, persistent budget and trace (`call_type=extraction`, `agent_path=datasheets`). The model adapter lives in `worker/datasheet_model.py`, next to the KG execution and metering modules.
 
 说明书分两段：先确定性抽取并冻结事实，再由模板或可选模型写句子。无论哪一种，保存前都经同一校验器逐句检查：引用必须存在且至少一条属于本章；数字（含千分位、百分比、中英文数词）、日期和专有名词须能在被引用事实中找到，数字还须与事实的类型和单位一致（百分比只对应比例，带单位的数字只对应同单位事实）；不通过的句子删除并记入删句记录。外发模型冻结目的地址、价表与预算上界，非回环地址需要签批；发布动作不可逆，必须签批。新版本只给旧说明书加「已过期」标记，不改写旧事实与正文。校验是保守的字面支持检查，不做语义蕴含判断。详见 [DATASHEETS.md](DATASHEETS.md)。
+
+## 16. Training data governance / 训练数据治理
+
+`llm_data/` streams conversation, instruction and preference JSONL through frozen core
+contracts and deterministic local rules. Its disposable SQLite indexes are scratch data,
+not an application fact source: exact hashes, prompt conflicts, bounded MinHash candidates
+and user-registered evaluation n-grams stay on disk with fixed page caches. Near candidates
+reuse the optional Rust integer comparator and require an independent text-similarity check.
+Reports retain bounded, redacted samples; a complete JSONL ledger streams each record's
+identity, findings, decision and reasons without retaining raw payloads in the report.
+
+训练治理先冻结试运行报告与完整脱敏账本，再经不可逆受控动作签批发布新版本。执行重新物化
+来源和自有评测，验证内容哈希、决定账本及冻结配置；血缘连接来源、结果版本与账本资产。
+版本范围的报告供五维质量评分与带类型的说明书事实复用，不改图片评分权重或旧版本事实。
+共享隐私检测在 `core/`，表格、文本脱敏与显式记忆写入复用相同的号码校验和类型占位符。
+See [training governance](TRAINING_DATA.md) and [中文说明](TRAINING_DATA.zh.md).
