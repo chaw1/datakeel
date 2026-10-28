@@ -64,7 +64,9 @@ def write_coco(export: TrainingExport, directory: Path) -> dict[str, str]:
         )
         target = directory / "annotations" / f"instances_{split}.json"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json_text(document.model_dump(mode="json")), encoding="utf-8")
+        target.write_text(
+            json_text(document.model_dump(mode="json")), encoding="utf-8", newline="\n"
+        )
     return paths
 
 
@@ -96,12 +98,14 @@ def write_yolo(export: TrainingExport, directory: Path) -> dict[str, str]:
                     [str(categories.index(box.category)), *(format(v, ".17g") for v in coordinates)]
                 )
             )
-        target.write_text("\n".join(rows) + ("\n" if rows else ""), encoding="utf-8")
+        target.write_text("\n".join(rows) + ("\n" if rows else ""), encoding="utf-8", newline="\n")
     configuration: dict[str, object] = {
         **{split: f"images/{split}" for split in ("train", "val", "test")},
         "names": dict(enumerate(categories)),
     }
     (directory / "data.yaml").write_text(
-        yaml.safe_dump(configuration, allow_unicode=True, sort_keys=True), encoding="utf-8"
+        yaml.safe_dump(configuration, allow_unicode=True, sort_keys=True),
+        encoding="utf-8",
+        newline="\n",
     )
     return paths

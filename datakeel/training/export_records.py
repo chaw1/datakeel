@@ -13,6 +13,7 @@ from datakeel.training.export_common import (
     dimensions,
     filename,
     json_text,
+    source_text,
 )
 from datakeel.training.export_detection import detection_categories
 
@@ -34,7 +35,7 @@ def write_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]
         for item in export.items
         for label in item.annotation.labels or ()
     }
-    (directory / "classes.json").write_text(json_text(classes), encoding="utf-8")
+    (directory / "classes.json").write_text(json_text(classes), encoding="utf-8", newline="\n")
     return paths
 
 
@@ -63,8 +64,12 @@ def write_hf_imagefolder(export: TrainingExport, directory: Path) -> dict[str, s
                 },
             }
             rows.append(json_text(record))
-        (directory / split / "metadata.jsonl").write_text("\n".join(rows) + "\n", encoding="utf-8")
-    (directory / "categories.json").write_text(json_text(categories), encoding="utf-8")
+        (directory / split / "metadata.jsonl").write_text(
+            "\n".join(rows) + "\n", encoding="utf-8", newline="\n"
+        )
+    (directory / "categories.json").write_text(
+        json_text(categories), encoding="utf-8", newline="\n"
+    )
     return paths
 
 
@@ -74,7 +79,7 @@ def write_text_jsonl(export: TrainingExport, directory: Path) -> dict[str, str]:
     for split in sorted({item.split for item in export.items}):
         rows: list[str] = []
         for item in (item for item in export.items if item.split == split):
-            text = Path(item.file.path).read_text(encoding="utf-8")
+            text = source_text(item)
             spans = item.annotation.spans or ()
             if any(not 0 <= span.start < span.end <= len(text) for span in spans):
                 message = (
@@ -95,5 +100,7 @@ def write_text_jsonl(export: TrainingExport, directory: Path) -> dict[str, str]:
                 )
             )
             paths[item.file.id] = f"{split}.jsonl"
-        (directory / f"{split}.jsonl").write_text("\n".join(rows) + "\n", encoding="utf-8")
+        (directory / f"{split}.jsonl").write_text(
+            "\n".join(rows) + "\n", encoding="utf-8", newline="\n"
+        )
     return paths

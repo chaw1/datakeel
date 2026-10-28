@@ -77,6 +77,15 @@ def dimensions(item: TrainingExportItem) -> tuple[int, int]:
     return width, height
 
 
+def source_text(item: TrainingExportItem) -> str:
+    """Decode verified UTF-8 bytes without changing CRLF or carriage-return character offsets."""
+    content = Path(item.file.path).read_bytes()
+    if hashlib.sha256(content).hexdigest() != item.file.sha256 or len(content) != item.file.size:
+        message = "Source text differs from the frozen dataset version; export refused"
+        raise ConflictError(message)
+    return content.decode("utf-8")
+
+
 def write_archive(directory: Path, output: Path) -> None:
     """Create byte-stable tar or gzip tar with neutral host metadata and gzip headers."""
     with output.open("wb") as raw, ExitStack() as stack:

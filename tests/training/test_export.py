@@ -251,3 +251,27 @@ def test_gzip_training_archive_has_no_filename_or_timestamp_and_reproduces(
     assert first.read_bytes()[4:8] == b"\x00\x00\x00\x00"
     with tarfile.open(first) as archive:
         assert "MANIFEST.json" in archive.getnames()
+
+
+def test_text_jsonl_preserves_crlf_and_carriage_return_character_positions(tmp_path: Path) -> None:
+    """Reading text must never normalize newlines before interpreting source character offsets."""
+    text = "A\r\n猫 B\rC"
+    source = tmp_path / "windows-text.txt"
+    source.write_bytes(text.encode("utf-8"))
+    annotation = AnnotationRecord(
+        sample_id="text",
+        annotator_id="r",
+        labels=("topic",),
+        text_length=len(text),
+        spans=(AnnotationSpan(category="animal", start=3, end=4),),
+    )
+    item = TrainingExportItem(
+        file=_file(source, "text", "text"), split="train", annotation=annotation
+    )
+    export = TrainingExport(
+        dataset_id="d", version_id="v", split_set_id="s", seed=1, format="text_jsonl", items=(item,)
+    )
+    package = _write(export, tmp_path / "crlf-export")
+    row = json.loads((package / "train.jsonl").read_bytes())
+    assert row["text"] == text
+    assert row["text"][3:4] == "猫"

@@ -85,5 +85,5 @@ def write_training_export(export: TrainingExport, directory: Path, archive: Path
             for item in ordered.items
         ],
     }
-    (directory / "MANIFEST.json").write_text(json_text(manifest), encoding="utf-8")
+    (directory / "MANIFEST.json").write_text(json_text(manifest), encoding="utf-8", newline="\n")
     write_archive(directory, archive)
