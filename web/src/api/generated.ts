@@ -5503,12 +5503,17 @@ export interface components {
          *
          *     ``outcomes`` lists what a request must also ask for when the workflow bundles more than
          *     one action, so that a request for the first action alone stays a single step.
+         *     ``exclusions`` lists wording that puts a request outside the workflow (for example one
+         *     selected item for a bulk cleanup); it blocks selection and verification but keeps the
+         *     rule score, so the classifier is still consulted and can abstain.
          */
         WorkflowConcepts: {
             /** Actions */
             actions?: string[];
             /** Entities */
             entities?: string[];
+            /** Exclusions */
+            exclusions?: string[];
             /** Outcomes */
             outcomes?: string[];
         };
