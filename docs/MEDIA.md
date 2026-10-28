@@ -106,7 +106,9 @@ thumbnails that invalid-frame detection and deduplication share; frames are stre
 and reduced, never held in memory at full size. Clips enter the file just before the
 last keyframe at or before their start (read from the packet flags) and drop earlier
 frames exactly, so each decodes from that keyframe instead of from the start of the
-file, also in MPEG-TS, which has no seek index. Command
+file, also in MPEG-TS, which has no seek index. Every clip starts at its first video
+frame, with audio cut at the same instant: audio that precedes the first video frame
+of a recording (common in MPEG-TS captures) is not carried into the output. Command
 time limits scale with the recording: `base + ratio x seconds x max(1, pixels /
 1080p)`, capped. Configure with `DATAKEEL_MEDIA_TIMEOUT_BASE_SECONDS` (300),
 `DATAKEEL_MEDIA_TIMEOUT_RATIO` (2), `DATAKEEL_MEDIA_TIMEOUT_MAX_SECONDS` (21600) and
@@ -213,6 +215,13 @@ Known limits / 已知边界:
   的 TS 直接切片，第一段会被抽帧；流水线先做归一，不受影响。
 - A transport stream with flipped bits decodes with errors while ffmpeg still exits 0,
   so it is not flagged. / 位翻转的 TS 解码会报错但 ffmpeg 返回 0，不会被标记。
+- ffmpeg 6.1 or newer is supported; the operators are verified on 6.1 and 9.0. Clips
+  reset their timeline to the first kept frame because the two versions fill a gap
+  before the first frame differently (6.1 duplicates it, 9.0 shifts it by a frame),
+  and the freeze detector's identical-frame floor sits above the residue 6.1's
+  encoder leaves for a few frames after a cut. / 支持 ffmpeg ≥ 6.1，在 6.1 与 9.0 上
+  验证。切片把时间线重置到第一个保留帧，因为两版对首帧前空隙的处理不同（6.1 复制首帧，
+  9.0 后移一帧）；冻帧检测的「相同帧」下限高于 6.1 编码器在切换后几帧内留下的残差。
 - Failure reasons quote the local object-store path of the recording, and the report
   chapter and run page show them; remove the paths before sharing a report. / 失败原因
   带本机对象库的绝对路径，会出现在报告章节和运行记录页；报告外发前请去掉路径。

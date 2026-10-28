@@ -19,6 +19,10 @@ All notable changes are documented here using the Keep a Changelog format.
 - Point-cloud preview downloads pass through the same data-asset download guard as file downloads.
 - Lineage records an approved custom operator's code hash as its operator version.
 
+### Fixed
+
+- 修正：ffmpeg 6.1 下冻帧边界与 TS 切片首帧。Video clips start at their first kept frame with audio cut at the same instant, so ffmpeg 6.1 no longer duplicates the first frame of a clip (9.0 shifted it by a frame); the freeze detector's identical-frame floor sits above the residue 6.1's encoder leaves after a cut. Supported ffmpeg is 6.1 or newer, verified on 6.1 and 9.0.
+
 ## [0.13.0] - 2026-10-28
 
 ### Added

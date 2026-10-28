@@ -29,8 +29,11 @@ _MIN_FRAMES = 2
 # A re-encoding step is several times larger than the changes on either side of it.
 _ISOLATION = 4.0
 # Mean absolute change (8-bit levels at 160x90) treated as identical frames, and the
-# largest single-frame refinement an encoder applies to a held picture.
-_IDENTICAL = 0.005
+# largest single-frame refinement an encoder applies to a held picture. An encoder
+# keeps refining a held picture for several frames after a cut (ffmpeg 6.1's mpeg4
+# leaves 0.003 to 0.008 for six frames where 9.0 settles within two), so the identical
+# floor stays above that residue: 0.02 is one level on two percent of the picture.
+_IDENTICAL = 0.02
 _SETTLE = 0.1
 _QUIET_WINDOW = 9
 # Largest keyframe re-encoding step, as a share of the frame's luma deviation.
