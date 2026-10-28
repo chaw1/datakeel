@@ -67,3 +67,21 @@ def test_clean_summary_has_no_failures() -> None:
     assert summary is not None
     assert (summary.partial, summary.failures) == (False, [])
     assert "处理失败" not in media_chapter(summary)["body"]
+
+
+def test_truncated_recording_completeness_uses_declared_duration() -> None:
+    """Half of a promised recording is half complete even though all of it is readable."""
+    probe = MediaProbe(duration_ms=2000, declared_duration_ms=4000)
+    issue: dict[str, JsonValue] = {
+        "code": "truncated_file",
+        "start_ms": 2000,
+        "end_ms": 4000,
+        "severity": "critical",
+    }
+    summary = summarize_media([_file("cut", probe, media_issues=[issue])])
+    assert summary is not None
+    score = summary.files[0]
+    assert score.dimensions["completeness"] == 50.0
+    assert score.effective_duration_ms == 2000
+    assert summary.issue_distribution == {"truncated_file": 1}
+    assert score.reasons == ["truncated_file: 2000-4000 ms"]

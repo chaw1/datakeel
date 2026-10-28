@@ -5,6 +5,7 @@
 
 import hashlib
 import json
+import math
 from fractions import Fraction
 from functools import lru_cache
 from pathlib import Path
@@ -25,6 +26,7 @@ from datakeel.operators.media.command import (
 )
 
 __all__ = [
+    "TRUNCATION_TOLERANCE_MS",
     "decode_audio",
     "input_path",
     "media_artifact",
@@ -42,8 +44,19 @@ if TYPE_CHECKING:
     from datakeel.operators.base import Params
 
 
+TRUNCATION_TOLERANCE_MS = 500
+_RIFF_HEADER = 12
+_CHUNK_HEADER = 8
+_FMT_BYTE_RATE = slice(8, 12)
+_UNKNOWN_RIFF_SIZE = 0xFFFFFFFF
+
+
 def probe_file(file: FileItem) -> MediaProbe:
-    """Read local media headers without network protocols, cached per file version."""
+    """Read local media headers and the readable stream extent, cached per file version.
+
+    When the header promises noticeably more than the stored packets contain, the
+    probe reports the readable duration and keeps the header's claim separately.
+    """
     path = Path(input_path(file))
     try:
         status = path.stat()
@@ -64,13 +77,17 @@ def _probe(path: str, _size: int, _modified_ns: int) -> MediaProbe:
     stream: dict[str, Any] = videos[0] if videos else audios[0] if audios else {}
     audio: dict[str, Any] = audios[0] if audios else {}
     form = document.get("format", {})
-    duration = form.get("duration", stream.get("duration", "0"))
+    header = _seconds(form.get("duration", stream.get("duration")))
+    readable = _readable_ms(path, _seconds(form.get("start_time")) or 0.0, header)
+    declared = max(round((header or 0) * 1000), _riff_declared_ms(path) or 0) or readable
+    truncated = declared - readable > TRUNCATION_TOLERANCE_MS
     rate = stream.get("avg_frame_rate", "0/1")
     rotation = int(stream.get("tags", {}).get("rotate", 0))
     for side in stream.get("side_data_list", []):
         rotation = int(side.get("rotation", rotation))
     return MediaProbe(
-        duration_ms=round(float(duration) * 1000),
+        duration_ms=readable if truncated else declared,
+        declared_duration_ms=declared if truncated else None,
         format=str(form.get("format_name", "")),
         codec=str(stream.get("codec_name", "")),
         width=int(stream.get("width", 0)),
@@ -81,6 +98,59 @@ def _probe(path: str, _size: int, _modified_ns: int) -> MediaProbe:
         sample_rate=int(audio.get("sample_rate", 0)),
         channels=int(audio.get("channels", 0)),
     )
+
+
+def _seconds(value: object) -> float | None:
+    try:
+        number = float(str(value))
+    except ValueError:
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _readable_ms(path: str, start: float, header: float | None) -> int:
+    """Measure where the stored packets end, without decoding them."""
+    listing = run_tool(
+        [
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-show_entries",
+            "packet=pts_time,dts_time,duration_time",
+            "-of",
+            "csv=p=0",
+            path,
+        ],
+        timeout=media_timeout(round((header or 0) * 1000)),
+    )
+    end = 0.0
+    for line in listing.decode(errors="replace").splitlines():
+        fields = [*line.split(","), "", "", ""][:3]
+        stamp = _seconds(fields[0]) if fields[0] not in {"", "N/A"} else _seconds(fields[1])
+        if stamp is not None:
+            end = max(end, stamp + (_seconds(fields[2]) or 0.0))
+    return max(0, round((end - start) * 1000))
+
+
+def _riff_declared_ms(path: str) -> int | None:
+    """Read the duration a WAV header promises, which ffprobe clamps to the file size."""
+    with Path(path).open("rb") as handle:
+        header = handle.read(_RIFF_HEADER)
+        if header[:4] != b"RIFF" or header[8:12] != b"WAVE":
+            return None
+        byte_rate = 0
+        while chunk := handle.read(_CHUNK_HEADER):
+            if len(chunk) < _CHUNK_HEADER:
+                return None
+            identifier, size = chunk[:4], int.from_bytes(chunk[4:], "little")
+            if identifier == b"data":
+                if not byte_rate or size in {0, _UNKNOWN_RIFF_SIZE}:
+                    return None
+                return round(size * 1000 / byte_rate)
+            payload = handle.read(size + size % 2)
+            if identifier == b"fmt ":
+                byte_rate = int.from_bytes(payload[_FMT_BYTE_RATE], "little")
+    return None
 
 
 def decode_audio(

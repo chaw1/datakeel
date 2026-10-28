@@ -15,6 +15,7 @@ class MediaProbe(Record):
     """Describe decoded recording properties in milliseconds and display coordinates."""
 
     duration_ms: int = Field(ge=0)
+    declared_duration_ms: int | None = Field(default=None, ge=0)
     format: str = ""
     codec: str = ""
     width: int = Field(default=0, ge=0)

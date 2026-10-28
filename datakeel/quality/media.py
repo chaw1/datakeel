@@ -49,7 +49,9 @@ def _score(file: FileItem, media: MediaFileView) -> MediaFileScore:
         if issue.code not in {"audio_loudness", "audio_duplicate", "video_duplicate"}
     ]
     effective = duration - interval_duration(invalid, duration)
-    signal = round(100 * effective / duration, 2) if duration else 0.0
+    # A truncated file is scored against the duration its header promised.
+    expected = max(duration, media.probe.declared_duration_ms or 0)
+    signal = round(100 * effective / expected, 2) if expected else 0.0
     duplicate = any("duplicate" in issue.code for issue in media.issues)
     dimensions = {
         "completeness": signal,

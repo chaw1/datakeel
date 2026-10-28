@@ -4266,6 +4266,8 @@ export interface components {
              * @default
              */
             codec: string;
+            /** Declared Duration Ms */
+            declared_duration_ms?: number | null;
             /** Duration Ms */
             duration_ms: number;
             /**

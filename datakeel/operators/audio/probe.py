@@ -7,7 +7,8 @@ from pathlib import Path
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
-from datakeel.operators.base import EmptyParams, Operator, OperatorResult, annotate, summarize
+from datakeel.operators.base import EmptyParams, Operator, OperatorResult, summarize
+from datakeel.operators.media.probe_annotation import annotate_probe
 from datakeel.operators.media.tools import probe_file
 
 
@@ -19,7 +20,7 @@ def execute(files: list[FileItem], _output_dir: Path, _params: EmptyParams) -> O
         if probe.audio_tracks == 0:
             msg = "audio.probe requires a decodable audio stream"
             raise ValidationError(msg)
-        output.append(annotate(file, media_probe=probe.model_dump(mode="json")))
+        output.append(annotate_probe(file, probe))
     return summarize(files, output)
 
 

@@ -24,6 +24,9 @@ if TYPE_CHECKING:
     from datakeel.core.models import FileItem
     from datakeel.operators.video.analysis import VideoAnalysis
 
+# Issue codes this operator measures; issues other operators recorded are kept.
+_MEASURED = frozenset({"black_frame", "solid_frame", "blurred_frame", "frozen_frame"})
+
 
 class InvalidFramesParams(Params):
     """Configure signal thresholds at the documented 160 by 90 analysis scale.
@@ -95,10 +98,15 @@ def execute(
             "invalid_duration_ms": invalid_ms,
             "invalid_ratio": invalid_ratio,
         }
+        kept = [
+            value
+            for value in file.metadata.get("media_issues", [])
+            if value.get("code") not in _MEASURED
+        ]
         marked = annotate(
             file,
             media_probe=probe.model_dump(mode="json"),
-            media_issues=[issue.model_dump(mode="json") for issue in issues],
+            media_issues=[*kept, *(issue.model_dump(mode="json") for issue in issues)],
             video_metrics=metrics,
         )
         if not params.remove or invalid_ratio < params.invalid_ratio_threshold:
