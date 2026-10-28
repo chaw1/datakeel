@@ -11,7 +11,8 @@ same name and policy returns that snapshot; changing its policy requires another
 Set `test=0` for two sets, for example `train=0.8, val=0.2`. Proportions must sum to one.
 Every sample appears once. The class table counts each label once per sample, so
 multilabel totals can exceed the number of samples. The adjacent meters show class
-prevalence. Select another saved split to compare its distribution and assignments.
+prevalence. Select another saved split to compare distributions. Use the CLI or
+comparison API below to inspect changes in sample assignments.
 
 ## Reproducible grouping and stratification
 
