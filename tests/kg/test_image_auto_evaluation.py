@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import yaml
+from PIL import Image
 
 from datakeel.core.kg_eval_models import ScoredRecord
 from datakeel.core.kg_image_eval import KGImageSuite
@@ -113,7 +114,11 @@ def test_generator_reproduces_all_six_images_and_both_replay_archives(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """All new image pixels and scripted observations are reproducible from checked-in code."""
+    """All new image pixels and scripted observations are reproducible from checked-in code.
+
+    Pixels are compared decoded: PNG bytes differ between platform zlib builds, so the
+    generated file hashes are mapped onto the checked-in ones before comparing recordings.
+    """
     monkeypatch.setattr(generate_auto_image_cases, "ROOT", tmp_path)
     (tmp_path / "recordings").mkdir()
     generate_auto_image_cases.main()
@@ -121,14 +126,26 @@ def test_generator_reproduces_all_six_images_and_both_replay_archives(
     suite, _, _ = load_image_cases(get_schema(), generated)
     assert len(suite.cases) == 6
     assert sum(case.expected_route == "vlm" for case in suite.cases) == 3
+    checked_in, _, _ = load_image_cases(get_schema(), contracts_path() / "eval" / "image-auto")
+    hashes = {case.image: case.image_hash or "" for case in checked_in.cases}
+    rename: dict[str, str] = {}
     for case in suite.cases:
         original = contracts_path() / "eval" / "image-auto" / case.image
-        assert hashlib.sha256(original.read_bytes()).hexdigest() == case.image_hash
-        assert (generated / case.image).read_bytes() == original.read_bytes()
+        assert hashlib.sha256(original.read_bytes()).hexdigest() == hashes[case.image]
+        fresh_hash = hashlib.sha256((generated / case.image).read_bytes()).hexdigest()
+        assert fresh_hash == case.image_hash
+        rename[fresh_hash] = hashes[case.image]
+        with Image.open(generated / case.image) as fresh, Image.open(original) as expected:
+            assert (fresh.mode, fresh.size, fresh.tobytes()) == (
+                expected.mode,
+                expected.size,
+                expected.tobytes(),
+            )
     for name in ("auto-transcription.yaml", "auto-extraction.yaml"):
-        assert (tmp_path / "recordings" / name).read_bytes() == (
-            contracts_path() / "recordings" / name
-        ).read_bytes()
+        text = (tmp_path / "recordings" / name).read_text()
+        for fresh_hash, expected_hash in rename.items():
+            text = text.replace(fresh_hash, expected_hash)
+        assert text == (contracts_path() / "recordings" / name).read_text()
 
 
 def _execution(mode: TranscriptionMode, *, decision: bool = False) -> ImageCaseExecution:
