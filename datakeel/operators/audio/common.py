@@ -10,51 +10,9 @@ from datakeel.core.media_models import MediaInterval
 from datakeel.core.models import FileItem
 from datakeel.operators.audio.models import ActivityResult, AudioMetrics
 from datakeel.operators.audio.params import ActivityParams
+from datakeel.operators.audio.streaming import SAMPLE_RATE, channel_blocks
 from datakeel.operators.base import annotate
-from datakeel.operators.media.tools import input_path, media_timeout, probe_file, run_tool
-
-SAMPLE_RATE = 16000
-
-
-def decode_channels(file: FileItem) -> NDArray[np.float64]:
-    """Decode first-stream channels independently to avoid destructive phase cancellation."""
-    probe = probe_file(file)
-    channels = probe.channels or 1
-    raw = run_tool(
-        [
-            "ffmpeg",
-            "-v",
-            "error",
-            "-i",
-            input_path(file),
-            "-map",
-            "0:a:0",
-            "-ar",
-            str(SAMPLE_RATE),
-            "-c:a",
-            "pcm_f64le",
-            "-f",
-            "f64le",
-            "pipe:1",
-        ],
-        timeout=media_timeout(probe.duration_ms),
-    )
-    return np.frombuffer(raw, dtype="<f8").reshape(-1, channels)
-
-
-def activity_samples(file: FileItem) -> NDArray[np.float64]:
-    """Compute per-sample channel RMS without interpreting channel phase as silence."""
-    channels = decode_channels(file)
-    return np.sqrt(np.mean(np.square(channels), axis=1))
-
-
-def fingerprint_samples(file: FileItem) -> NDArray[np.float64]:
-    """Use the strongest channel for MFCC analysis instead of cancelling opposite phases."""
-    channels = decode_channels(file)
-    if not channels.size:
-        return np.array([], dtype=np.float64)
-    strongest = int(np.argmax(np.mean(np.square(channels), axis=0)))
-    return channels[:, strongest]
+from datakeel.operators.media.tools import probe_file
 
 
 def runs(mask: NDArray[np.bool_]) -> list[tuple[int, int]]:
@@ -77,6 +35,32 @@ def activity(samples: NDArray[np.float64], params: ActivityParams) -> ActivityRe
     energy = np.add.reduceat(np.square(samples), starts)
     sizes = np.minimum(frame_size, samples.size - starts)
     active = np.sqrt(energy / sizes) >= 10 ** (params.threshold_dbfs / 20)
+    return _activity_result(active, samples.size, params)
+
+
+def measure_activity(file: FileItem, params: ActivityParams) -> ActivityResult:
+    """Accumulate frame energies across decode boundaries without retaining PCM samples."""
+    frame_size = SAMPLE_RATE * params.frame_ms // 1000
+    pending = np.empty(0, dtype=np.float64)
+    flags: list[NDArray[np.bool_]] = []
+    total = 0
+    threshold = 10 ** (params.threshold_dbfs / 20)
+    for channels in channel_blocks(file):
+        total += len(channels)
+        samples = np.concatenate((pending, np.sqrt(np.mean(np.square(channels), axis=1))))
+        count = samples.size // frame_size
+        frames = samples[: count * frame_size].reshape(count, frame_size)
+        flags.append(np.sqrt(np.mean(np.square(frames), axis=1)) >= threshold)
+        pending = samples[count * frame_size :].copy()
+    if pending.size:
+        flags.append(np.array([np.sqrt(np.mean(np.square(pending))) >= threshold]))
+    active = np.concatenate(flags) if flags else np.empty(0, dtype=np.bool_)
+    return _activity_result(active, total, params)
+
+
+def _activity_result(
+    active: NDArray[np.bool_], samples: int, params: ActivityParams
+) -> ActivityResult:
     for start, end in runs(~active):
         if (
             start > 0
@@ -87,7 +71,7 @@ def activity(samples: NDArray[np.float64], params: ActivityParams) -> ActivityRe
     for start, end in runs(active):
         if (end - start) * params.frame_ms < params.min_activity_ms:
             active[start:end] = False
-    duration_ms = round(samples.size * 1000 / SAMPLE_RATE)
+    duration_ms = round(samples * 1000 / SAMPLE_RATE)
     return ActivityResult(
         duration_ms=duration_ms,
         active=_intervals(active, params.frame_ms, duration_ms, "audio_activity"),

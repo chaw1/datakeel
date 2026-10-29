@@ -13,6 +13,7 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.media_models import MediaSummary
 from datakeel.core.models import JsonDocument, Record
 from datakeel.quality.annotation_report import annotation_summary
+from datakeel.quality.dq_report import coverage_text
 from datakeel.quality.media import media_chapter
 from datakeel.quality.models import QualityView, ReportView
 from datakeel.quality.tabular_models import TabularAssessment
@@ -46,7 +47,8 @@ def _baseline(
     )
     if isinstance(quality, QualityView) and quality.rules is not None:
         issue_text += "\n\nDatabase rule observations:\n" + "\n".join(
-            f"- {view.rule.id}: {view.latest_result.status if view.latest_result else 'pending'}"
+            f"- {view.rule.id}: {view.latest_result.status if view.latest_result else 'pending'}; "
+            f"{coverage_text(view.latest_result)}"
             for view in quality.rules.rules
         )
     recommendations = [

@@ -7,10 +7,26 @@ from scripts.mutation_models import Mutation
 
 DQ_MUTATIONS = (
     Mutation(
+        name="dq-stream-complete-batches",
+        path="quality/dq_source.py",
+        before="        yield tuple(row[0] for row in batch.rows)",
+        after="        yield tuple(row[0] for row in batch.rows)\n        return",
+        case="tests/quality/test_dq_streaming.py::test_regex_stream_counts_failures_after_multiple_batches",
+        runner="pytest",
+    ),
+    Mutation(
+        name="dq-result-complete-coverage",
+        path="quality/dq_engine.py",
+        before='"coverage": "complete",',
+        after='"coverage": "unknown",',
+        case="tests/quality/test_dq_streaming.py::test_constraints_cover_rows_and_reference_values_beyond_batch_size",
+        runner="pytest",
+    ),
+    Mutation(
         name="dq-not-null-verdict",
-        path="quality/dq_evaluation.py",
-        before="        return value is None",
-        after="        return False",
+        path="quality/dq_constraints.py",
+        before="        return column.is_(exp.null())",
+        after="        return exp.false()",
         case="tests/quality/test_dq_engine.py::test_not_null_guard_reports_missing_business_values",
         runner="pytest",
     ),
@@ -19,12 +35,14 @@ DQ_MUTATIONS = (
         path="quality/dq_source.py",
         before=(
             "    if result.truncated:\n"
-            '        msg = "Quality rule scan row limit exceeded; '
-            'no partial verdict was produced"\n'
+            '        msg = "Quality assertion result row limit exceeded"\n'
             "        raise ExecutionError(msg)"
         ),
         after="",
-        case="tests/quality/test_dq_engine.py::test_scan_row_cap_refuses_partial_success",
+        case=(
+            "tests/quality/test_dq_streaming.py::"
+            "test_assertion_limits_only_returned_violations_and_reports_source_coverage"
+        ),
         runner="pytest",
     ),
     Mutation(
@@ -53,12 +71,9 @@ DQ_MUTATIONS = (
     ),
     Mutation(
         name="dq-adaptive-psi-bins",
-        path="quality/dq_evaluation.py",
-        before=(
-            "    return tuple(sorted({numbers[len(numbers) * decile // 10] "
-            "for decile in range(1, 10)}))"
-        ),
-        after="    return ()",
+        path="quality/dq_statistics.py",
+        before="    edges = tuple(sorted(boundaries))",
+        after="    edges = ()",
         case="tests/quality/test_dq_engine.py::test_adaptive_psi_bins_follow_baseline_scale",
         runner="pytest",
     ),
@@ -76,7 +91,7 @@ DQ_MUTATIONS = (
     Mutation(
         name="dq-assertion-function-allowlist",
         path="quality/dq_source.py",
-        before="    _reject_unsafe_calls(parsed, _dialect(source))\n",
+        before="    _reject_unsafe_calls(parsed, source_dialect(source))\n",
         after="",
         case=(
             "tests/quality/test_dq_sql_functions.py::"
@@ -120,7 +135,7 @@ DQ_MUTATIONS = (
     Mutation(
         name="dq-freshness-invalid-cells",
         path="quality/dq_source.py",
-        before="_latest(row[1], dialect), _whole(row[2]))",
+        before="_latest(row[1], dialect), whole_number(row[2]))",
         after="_latest(row[1], dialect), 0)",
         case="tests/quality/test_dq_aggregates.py::test_unparsable_timestamp_cells_fail_freshness",
         runner="pytest",

@@ -7,6 +7,14 @@ from scripts.mutation_models import Mutation
 
 RELEASE_MUTATIONS = (
     Mutation(
+        name="upload-busy-message",
+        path="storage/upload_files.py",
+        before="with response_lock(db, identity, busy_message=message):",
+        after="with response_lock(db, identity):",
+        case="tests/api/test_uploads.py::test_http_concurrent_chunk_conflict_names_upload",
+        runner="pytest",
+    ),
+    Mutation(
         name="version-content-category",
         path="storage/version_diff.py",
         before="if before.sha256 != after.sha256:",

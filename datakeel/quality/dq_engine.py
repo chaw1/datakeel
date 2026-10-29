@@ -10,25 +10,20 @@ from time import monotonic
 from datakeel.core.catalog_models import SourceProperties
 from datakeel.core.dq_models import DqMetrics, DqResult, DqRule, DqSample
 from datakeel.core.errors import ExecutionError, ValidationError
-from datakeel.core.metric_models import Scalar
 from datakeel.core.models import utcnow
+from datakeel.quality.dq_constraints import count_constraints
 from datakeel.quality.dq_evaluation import (
-    decile_edges,
-    observation,
     population_stability,
     relative_change,
     stable_mean,
-    validate_distribution_values,
-    violating_rows,
 )
-from datakeel.quality.dq_regex import regex_violations
+from datakeel.quality.dq_regex import regex_observation
 from datakeel.quality.dq_source import (
     TableAggregate,
     execute_assertion,
-    read_rule_table,
     read_table_aggregate,
 )
-from datakeel.quality.dq_types import nulls_only
+from datakeel.quality.dq_statistics import distribution_metrics
 
 
 def execute_rule(
@@ -47,6 +42,17 @@ def execute_rule(
     try:
         result = _evaluate(rule, source, history, instant.astimezone(UTC), deadline)
         _remaining(rule, deadline)
+        result = result.model_copy(
+            update={
+                "rows_total": result.rows_total
+                if result.rows_total is not None
+                else result.row_count,
+                "rows_scanned": result.rows_total
+                if result.rows_total is not None
+                else result.row_count,
+                "coverage": "complete",
+            }
+        )
     except (ExecutionError, ValidationError) as error:
         result = DqResult(
             rule_id=rule.id,
@@ -67,38 +73,42 @@ def _evaluate(
     deadline: float,
 ) -> DqResult:
     if rule.kind == "sql_assertion":
-        rows = execute_assertion(_remaining(rule, deadline), source)
-        failed = tuple(range(1, len(rows.rows) + 1))
-        return _result(rule, now, DqMetrics(row_count=len(rows.rows)), failed, float(len(failed)))
+        observation = execute_assertion(_remaining(rule, deadline), source)
+        failed = tuple(range(1, len(observation.result.rows) + 1))
+        return _result(
+            rule, now, DqMetrics(row_count=len(observation.result.rows)), failed, float(len(failed))
+        ).model_copy(update={"rows_total": observation.rows_total})
     if rule.kind in {"volume_change", "freshness"}:
         aggregate = read_table_aggregate(_remaining(rule, deadline), source)
         if rule.kind == "freshness":
             return _freshness(rule, aggregate, now)
         metrics = DqMetrics(row_count=aggregate.row_count)
         return _historical(rule, metrics, _baseline(rule, history, now), now)
-    rows = read_rule_table(_remaining(rule, deadline), source)
-    values = tuple(row[0] for row in rows.rows)
-    validate_distribution_values(rule, values)
     baseline = _baseline(rule, history, now)
-    metrics = observation(values, _histogram_edges(rule, baseline, values))
-    if nulls_only(rule):
-        # NULL-only scans project markers, so no business value statistics exist.
-        metrics = DqMetrics(row_count=metrics.row_count, null_rate=metrics.null_rate)
     if rule.kind == "distribution_drift":
-        return _historical(rule, metrics, baseline, now)
-    reference = ()
-    if rule.params.reference_table:
-        reference = tuple(
-            row[0]
-            for row in read_rule_table(_remaining(rule, deadline), source, reference=True).rows
+        metrics = distribution_metrics(
+            _remaining(rule, deadline), source, _histogram_edges(rule, baseline)
         )
-    failed = (
-        regex_violations(rule.params.pattern or "", values, _remaining(rule, deadline).timeout_ms)
-        if rule.kind == "regex"
-        else violating_rows(rule, values, reference)
-    )
-    actual = len(failed) / len(values) if values else 0.0
-    return _result(rule, now, metrics, failed, actual)
+        return _historical(rule, metrics, baseline, now)
+    if rule.kind == "regex":
+        observation = regex_observation(_remaining(rule, deadline), source)
+        metrics, failed, samples = (
+            observation.metrics,
+            observation.failed_count,
+            observation.samples,
+        )
+    else:
+        counts = count_constraints(_remaining(rule, deadline), source)
+        metrics = DqMetrics(
+            row_count=counts.rows,
+            null_rate=counts.nulls / counts.rows if counts.rows else 0,
+            mean=counts.mean,
+            stddev=counts.stddev,
+        )
+        failed = counts.failed
+        samples = (counts.first_failure,) if counts.first_failure is not None else ()
+    actual = failed / metrics.row_count if metrics.row_count else 0.0
+    return _result(rule, now, metrics, samples, actual).model_copy(update={"failed_count": failed})
 
 
 def _remaining(rule: DqRule, deadline: float) -> DqRule:
@@ -163,16 +173,13 @@ def _baseline(rule: DqRule, history: tuple[DqResult, ...], now: datetime) -> lis
     )[: rule.params.baseline_runs]
 
 
-def _histogram_edges(
-    rule: DqRule, baseline: list[DqResult], values: tuple[Scalar, ...]
-) -> tuple[float, ...]:
-    if rule.params.bin_edges or rule.kind != "distribution_drift" or rule.params.statistic != "psi":
+def _histogram_edges(rule: DqRule, baseline: list[DqResult]) -> tuple[float, ...] | None:
+    if rule.params.bin_edges or rule.params.statistic != "psi":
         return rule.params.bin_edges
-    # Adaptive bins are fixed by the revision's first numeric observation and then reused.
     for item in baseline:
         if item.metrics.bin_edges:
             return item.metrics.bin_edges
-    return decile_edges(values)
+    return None
 
 
 def _historical(
@@ -204,7 +211,8 @@ def _drift(rule: DqRule, metrics: DqMetrics, history: tuple[DqMetrics, ...]) -> 
         if any(item.bin_edges != metrics.bin_edges for item in history):
             return None
         baseline = tuple(
-            fmean(bucket) for bucket in zip(*(item.histogram for item in history), strict=True)
+            stable_mean(bucket)
+            for bucket in zip(*(item.histogram for item in history), strict=True)
         )
         return population_stability(metrics.histogram, baseline)
     current = getattr(metrics, statistic)

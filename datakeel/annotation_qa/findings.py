@@ -121,21 +121,25 @@ def duplicate_findings(batch: AnnotationBatch) -> tuple[AnnotationFinding, ...]:
 def _self_duplicates(item: AnnotationRecord) -> list[AnnotationFinding]:
     result: list[AnnotationFinding] = []
     boxes = item.boxes or ()
+    duplicate_boxes: set[int] = set()
     for (i, left), (j, right) in combinations(enumerate(boxes), 2):
         overlap = box_iou(left, right)
-        if overlap >= _DUPLICATE_IOU:
+        if overlap >= _DUPLICATE_IOU and j not in duplicate_boxes:
+            duplicate_boxes.add(j)
             result.append(
                 finding(
                     item,
                     "duplicate_bbox",
                     "The same annotator drew two nearly identical boxes",
                     (f"box[{i}] {left.category} vs box[{j}] {right.category}; IoU={overlap:.3f}",),
-                    key=f"{i}:{j}",
+                    key=str(j),
                 )
             )
     spans = item.spans or ()
+    duplicate_spans: set[int] = set()
     for (i, left), (j, right) in combinations(enumerate(spans), 2):
-        if (left.start, left.end) == (right.start, right.end):
+        if (left.start, left.end) == (right.start, right.end) and j not in duplicate_spans:
+            duplicate_spans.add(j)
             result.append(
                 finding(
                     item,
@@ -147,7 +151,7 @@ def _self_duplicates(item: AnnotationRecord) -> list[AnnotationFinding]:
                             f"offsets={left.start}:{left.end}"
                         ),
                     ),
-                    key=f"{i}:{j}",
+                    key=str(j),
                 )
             )
     return result

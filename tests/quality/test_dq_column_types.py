@@ -217,6 +217,12 @@ def test_special_columns_run_or_are_refused_at_preparation(
         assert result.status == "failed"
         assert result.failed_count == 1
         assert result.metrics.mean is None
+    null_rate = _typed_rule(
+        schema, "distribution_drift", "payload", DqParameters(statistic="null_rate")
+    )
+    observed = execute_rule(_prepare(db, null_rate), source)
+    assert observed.status == "baseline_insufficient"
+    assert observed.metrics.mean is None
     assert read_rules(db) == ()
     if db.sqlite:
         assert "unique rules need" in _refusal(db, _typed_rule(schema, "unique", "value"))

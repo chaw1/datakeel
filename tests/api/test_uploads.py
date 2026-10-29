@@ -10,7 +10,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from datakeel.api.app import create_app
+from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.database import Database
+from datakeel.storage.upload_service import start_upload
+from tests.storage.test_uploads import declaration
 
 
 def test_http_chunk_upload_resume_and_download(db: Database) -> None:
@@ -69,3 +72,16 @@ def test_http_oversize_chunk_is_bounded(db: Database, monkeypatch: pytest.Monkey
     assert result.status_code == 422
     assert "upload_max_chunk_bytes" in result.json()["detail"]
     assert client.get(prefix).json()["received_chunks"] == []
+
+
+def test_http_concurrent_chunk_conflict_names_upload(db: Database) -> None:
+    """A busy chunk request returns a retryable upload-specific HTTP conflict."""
+    upload = start_upload(db, declaration(b"abcd"))
+    client = TestClient(create_app(db))
+    with response_lock(db, f"upload:{upload.id}"):
+        response = client.put(f"/api/uploads/{upload.id}/chunks/0", content=b"abcd")
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert detail == "Upload is busy; retry after the active upload operation completes"
+    assert "Conversation" not in detail
+    assert client.put(f"/api/uploads/{upload.id}/chunks/0", content=b"abcd").status_code == 200

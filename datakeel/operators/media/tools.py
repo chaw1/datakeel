@@ -6,6 +6,7 @@
 import hashlib
 import json
 import math
+import shutil
 from fractions import Fraction
 from functools import lru_cache
 from pathlib import Path
@@ -188,7 +189,7 @@ def decode_audio(
 def media_artifact(
     file: FileItem,
     output_dir: Path,
-    content: bytes,
+    content: bytes | Path,
     extension: str,
     operator: str,
     params: "Params",
@@ -213,18 +214,22 @@ def media_artifact(
         end_ms=end_ms,
     )
     identity = hashlib.sha256(
-        (file.id + step.model_dump_json() + hashlib.sha256(content).hexdigest()).encode()
+        (file.id + step.model_dump_json() + _content_digest(content)).encode()
     ).hexdigest()
     path = output_dir / f"{identity}.{extension}"
     output_dir.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(content)
-    metadata = {**_artifact_metadata(file, step), "format": extension, "empty": not content}
+    if isinstance(content, Path):
+        shutil.copyfile(content, path)
+    else:
+        path.write_bytes(content)
+    size = path.stat().st_size
+    metadata = {**_artifact_metadata(file, step), "format": extension, "empty": size == 0}
     result = FileItem(
         id=identity,
         path=str(path.resolve()),
         filename=f"{Path(file.filename).stem}.{extension}",
-        sha256=hashlib.sha256(content).hexdigest(),
-        size=len(content),
+        sha256=_content_digest(content),
+        size=size,
         modality=file.modality,
         metadata=metadata,
     )
@@ -236,6 +241,13 @@ def media_artifact(
             }
         }
     )
+
+
+def _content_digest(content: bytes | Path) -> str:
+    if isinstance(content, Path):
+        with content.open("rb") as handle:
+            return hashlib.file_digest(handle, "sha256").hexdigest()
+    return hashlib.sha256(content).hexdigest()
 
 
 def _artifact_metadata(file: FileItem, step: MediaStep) -> dict[str, Any]:

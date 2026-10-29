@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.dq_models import DqRule
 from datakeel.core.dq_views import DqReport, DqRuleView, DqSummary
+from datakeel.quality.dq_report import coverage_text
 from datakeel.quality.models import DimensionView, IssueView, QualityView
 from datakeel.storage.database import Database
 from datakeel.storage.dq_issues import list_issues
@@ -108,7 +109,8 @@ def read_report(
     ]
     lines.extend(
         f"- {view.rule.id} ({view.rule.target.table}): "
-        f"{view.latest_result.status if view.latest_result else 'pending'}"
+        f"{view.latest_result.status if view.latest_result else 'pending'}; "
+        f"{coverage_text(view.latest_result)}"
         for view in summary.rules
     )
     return DqReport(summary=summary, body="\n".join(lines))

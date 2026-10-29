@@ -14,7 +14,6 @@ from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.settings import get_settings
 from datakeel.core.uploads import UploadInput, UploadView
-from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.database import Database
 from datakeel.storage.datasets import prepare_files, publish_files
 from datakeel.storage.objects import object_store
@@ -24,6 +23,7 @@ from datakeel.storage.upload_files import (
     expected_bytes,
     persist_chunk,
     received_chunks,
+    upload_lock,
     verify_stored_object,
 )
 from datakeel.storage.upload_rows import UploadRow
@@ -68,7 +68,7 @@ def start_upload(db: Database, body: UploadInput) -> UploadView:
     if body.total_bytes > settings.upload_max_file_bytes:
         message = "Declared file size exceeds upload_max_file_bytes"
         raise ValidationError(message)
-    with response_lock(db, f"upload-create:{body.idempotency_key}"), db.session() as session:
+    with upload_lock(db, f"upload-create:{body.idempotency_key}"), db.session() as session:
         db.lock_writes(session)
         row = session.scalar(
             select(UploadRow).where(UploadRow.idempotency_key == body.idempotency_key)
@@ -97,7 +97,7 @@ def get_upload(db: Database, identifier: str) -> UploadView:
 
 def put_chunk(db: Database, identifier: str, ordinal: int, content: bytes) -> UploadView:
     """Serialize same-file writers; merge exact duplicates and refuse conflicting chunks."""
-    with response_lock(db, f"upload:{identifier}"), db.session() as session:
+    with upload_lock(db, f"upload:{identifier}"), db.session() as session:
         row = _require(session, identifier)
         if row.dataset_id:
             message = "Completed upload is immutable"
@@ -146,7 +146,7 @@ def _publish_upload(
 
 def complete_upload(db: Database, identifier: str) -> UploadView:
     """Verify content outside the writer transaction, then atomically publish one receipt."""
-    with response_lock(db, f"upload:{identifier}"):
+    with upload_lock(db, f"upload:{identifier}"):
         body = _completion_input(db, identifier)
         if isinstance(body, UploadView):
             # A retry also finishes cleanup that a crash after commit may have interrupted.

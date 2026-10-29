@@ -3,6 +3,8 @@
 
 """Execute compiler output through read-only connections with strict resource caps."""
 
+from collections.abc import Generator, Iterator
+from contextlib import contextmanager
 from datetime import date, datetime, time
 from decimal import Decimal
 from pathlib import Path
@@ -27,6 +29,58 @@ def execute_query(
 ) -> QueryResult:
     """Run a validated SELECT using database-enforced read-only permissions."""
     limits = limits or QueryLimits()
+    return execute_queries(source_url, (query,), limits)[0]
+
+
+def execute_queries(
+    source_url: str, queries: tuple[CompiledQuery, ...], limits: QueryLimits
+) -> tuple[QueryResult, ...]:
+    """Read bounded results in a single protected snapshot, without mixing source revisions."""
+    if not queries:
+        return ()
+    for query in queries:
+        validate_select(query.sql, query.dialect)
+    with _read_connection(source_url, queries[0], limits) as connection:
+        return tuple(_read_result(connection, query, limits) for query in queries)
+
+
+def _read_result(connection: Connection, query: CompiledQuery, limits: QueryLimits) -> QueryResult:
+    result = connection.execute(text(query.sql), query.parameters)
+    rows = result.fetchmany(limits.max_rows + 1)
+    return QueryResult(
+        columns=list(result.keys()),
+        rows=[[_scalar(value) for value in row] for row in rows[: limits.max_rows]],
+        truncated=len(rows) > limits.max_rows,
+    )
+
+
+def stream_query(
+    source_url: str, query: CompiledQuery, limits: QueryLimits
+) -> Iterator[QueryResult]:
+    """Yield bounded batches from one protected transaction, using server cursors on PostgreSQL."""
+    deadline = monotonic() + limits.timeout_ms / 1000
+    size = min(limits.max_rows, 4096)
+    with _read_connection(source_url, query, limits) as connection:
+        result = connection.execution_options(yield_per=size).execute(
+            text(query.sql), query.parameters
+        )
+        try:
+            while rows := result.fetchmany(size):
+                if monotonic() >= deadline:
+                    msg = "Read-only query stream exceeded its timeout"
+                    raise ExecutionError(msg)
+                yield QueryResult(
+                    columns=list(result.keys()),
+                    rows=[[_scalar(value) for value in row] for row in rows],
+                )
+        finally:
+            result.close()
+
+
+@contextmanager
+def _read_connection(
+    source_url: str, query: CompiledQuery, limits: QueryLimits
+) -> Generator[Connection]:
     deadline = monotonic() + limits.timeout_ms / 1000
     validate_select(query.sql, query.dialect)
     url = make_url(source_url)
@@ -50,13 +104,7 @@ def execute_query(
                 raise ExecutionError(msg)
             limits = limits.model_copy(update={"timeout_ms": remaining})
             _protect(connection, limits)
-            result = connection.execute(text(query.sql), query.parameters)
-            rows = result.fetchmany(limits.max_rows + 1)
-            return QueryResult(
-                columns=list(result.keys()),
-                rows=[[_scalar(value) for value in row] for row in rows[: limits.max_rows]],
-                truncated=len(rows) > limits.max_rows,
-            )
+            yield connection
     except (SQLAlchemyError, OSError) as exc:
         msg = f"Read-only metric query failed: {type(exc).__name__}"
         raise ExecutionError(msg) from exc
@@ -68,11 +116,12 @@ def _protect(connection: Connection, limits: QueryLimits) -> None:
     if connection.dialect.name == "sqlite":
         raw = cast("sqlite3.Connection", connection.connection.driver_connection)
         raw.execute("PRAGMA query_only=ON")
+        raw.execute("BEGIN")
         raw.execute(f"PRAGMA busy_timeout={limits.timeout_ms}")
         deadline = monotonic() + limits.timeout_ms / 1000
         raw.set_progress_handler(lambda: int(monotonic() >= deadline), 1000)
     else:
-        connection.execute(text("SET TRANSACTION READ ONLY"))
+        connection.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
         connection.execute(
             text("SELECT set_config('statement_timeout', :timeout, true)"),
             {"timeout": str(limits.timeout_ms)},

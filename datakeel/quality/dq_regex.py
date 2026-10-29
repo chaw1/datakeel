@@ -6,24 +6,40 @@
 import multiprocessing
 import re
 from multiprocessing.connection import Connection
-from typing import cast
 
+from datakeel.core.catalog_models import SourceProperties
+from datakeel.core.dq_models import DqMetrics, DqRule
 from datakeel.core.errors import ExecutionError
-from datakeel.core.metric_models import Scalar
+from datakeel.core.models import BoundaryModel
+from datakeel.quality.dq_source import iter_rule_values
+from datakeel.quality.dq_statistics import ColumnStatistics
+
+_SAMPLE_LIMIT = 5
 
 
-def regex_violations(pattern: str, values: tuple[Scalar, ...], timeout_ms: int) -> tuple[int, ...]:
-    """Evaluate cells in one private process and terminate only that process on timeout."""
+class RegexObservation(BoundaryModel):
+    """Return only constant-size aggregate evidence from the isolated regex scanner."""
+
+    metrics: DqMetrics
+    failed_count: int
+    samples: tuple[int, ...]
+
+
+def regex_observation(rule: DqRule, source: SourceProperties) -> RegexObservation:
+    """Stream and match in one isolated process under the complete rule deadline."""
     context = multiprocessing.get_context("spawn")
     reader, writer = context.Pipe(duplex=False)
-    process = context.Process(target=_match_rows, args=(writer, pattern, values), daemon=True)
+    process = context.Process(target=_match_stream, args=(writer, rule, source), daemon=True)
     process.start()
     writer.close()
     try:
-        if not reader.poll(timeout_ms / 1000):
+        if not reader.poll(rule.timeout_ms / 1000):
             msg = "Quality regex execution exceeded its timeout"
             raise ExecutionError(msg)
-        return cast("tuple[int, ...]", reader.recv())
+        result = reader.recv()
+        if isinstance(result, str):
+            raise ExecutionError(result)
+        return RegexObservation.model_validate(result)
     except EOFError as error:
         msg = "Quality regex execution could not produce a result"
         raise ExecutionError(msg) from error
@@ -35,15 +51,25 @@ def regex_violations(pattern: str, values: tuple[Scalar, ...], timeout_ms: int) 
         process.close()
 
 
-def _match_rows(writer: Connection, pattern: str, values: tuple[Scalar, ...]) -> None:
-    compiled = re.compile(pattern)
+def _match_stream(writer: Connection, rule: DqRule, source: SourceProperties) -> None:
+    compiled = re.compile(rule.params.pattern or "")
+    statistics = ColumnStatistics()
+    failed = 0
+    samples: list[int] = []
     try:
+        for values in iter_rule_values(rule, source):
+            for index, value in enumerate(values, statistics.rows + 1):
+                if value is not None and compiled.fullmatch(str(value)) is None:
+                    failed += 1
+                    if len(samples) < _SAMPLE_LIMIT:
+                        samples.append(index)
+            statistics.add(values)
         writer.send(
-            tuple(
-                index
-                for index, value in enumerate(values, 1)
-                if value is not None and compiled.fullmatch(str(value)) is None
-            )
+            RegexObservation(
+                metrics=statistics.metrics(), failed_count=failed, samples=tuple(samples)
+            ).model_dump()
         )
+    except ExecutionError as error:
+        writer.send(str(error))
     finally:
         writer.close()

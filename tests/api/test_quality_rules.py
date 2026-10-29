@@ -30,6 +30,12 @@ def test_quality_reads_show_failure_history_and_pending_after_edit(
         run_worker(db, once=True)
         view = client.get(f"/api/quality/rules/{rule.id}").json()
         assert view["latest_result"]["status"] == "failed"
+        result = view["latest_result"]
+        assert (result["rows_total"], result["rows_scanned"], result["coverage"]) == (
+            2,
+            2,
+            "complete",
+        )
         assert (
             client.get("/api/quality/summary?source_id=orders-test&table=orders").json()["score"]
             == 0
@@ -37,6 +43,7 @@ def test_quality_reads_show_failure_history_and_pending_after_edit(
         assert len(client.get("/api/quality/issues").json()) == 1
         report_body = client.get("/api/quality/report").json()["body"]
         assert "orders-positive (orders): failed" in report_body
+        assert "coverage 100% (2/2 rows; complete)" in report_body
         execute_action(
             db,
             "update_quality_rule",
@@ -72,4 +79,5 @@ def test_quality_score_and_report_use_associated_rule_evidence(
     assert measured.rules is not None
     assert measured.rules.failed == 1
     assert "orders-positive: failed" in get_report(db, dataset.id).baseline
+    assert "coverage 100% (2/2 rows; complete)" in get_report(db, dataset.id).baseline
     assert [value.id for value in list_datasets(db)] == [dataset.id]

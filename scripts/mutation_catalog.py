@@ -15,6 +15,7 @@ from scripts.guard_mutations import GUARD_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
+from scripts.media_mutations import MEDIA_MUTATIONS
 from scripts.metadata_mutations import METADATA_MUTATIONS
 from scripts.metric_mutations import METRIC_MUTATIONS
 from scripts.orchestration_mutations import ORCHESTRATION_MUTATIONS
@@ -52,4 +53,5 @@ FEATURE_MUTATIONS = (
     *HF_TRAINING_MUTATIONS,
     *TRAINING_MULTILABEL_MUTATIONS,
     *TRAINING_TEXT_MUTATIONS,
+    *MEDIA_MUTATIONS,
 )

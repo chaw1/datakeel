@@ -18,10 +18,12 @@ _BUSY = "Conversation already has an active response"
 
 
 @contextmanager
-def response_lock(db: Database, conversation_id: str) -> Generator[None]:
+def response_lock(
+    db: Database, conversation_id: str, *, busy_message: str = _BUSY
+) -> Generator[None]:
     """Reject overlapping writers; let the operating system release ownership after SIGKILL."""
     if db.sqlite:
-        with _sqlite_lock(db, conversation_id):
+        with _sqlite_lock(db, conversation_id, busy_message):
             yield
         return
     with db.engine.connect() as connection:
@@ -31,7 +33,7 @@ def response_lock(db: Database, conversation_id: str) -> Generator[None]:
         )
         connection.commit()
         if not acquired:
-            raise ConflictError(_BUSY)
+            raise ConflictError(busy_message)
         try:
             yield
         finally:
@@ -43,7 +45,7 @@ def response_lock(db: Database, conversation_id: str) -> Generator[None]:
 
 
 @contextmanager
-def _sqlite_lock(db: Database, conversation_id: str) -> Generator[None]:
+def _sqlite_lock(db: Database, conversation_id: str, busy_message: str) -> Generator[None]:
     database = Path(db.engine.url.database or data_dir() / "memory.db").resolve()
     directory = database.parent / f".{database.name}.response-locks"
     directory.mkdir(parents=True, exist_ok=True)
@@ -53,7 +55,7 @@ def _sqlite_lock(db: Database, conversation_id: str) -> Generator[None]:
         try:
             fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as error:
-            raise ConflictError(_BUSY) from error
+            raise ConflictError(busy_message) from error
         try:
             yield
         finally:

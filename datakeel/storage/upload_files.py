@@ -91,12 +91,20 @@ def verify_stored_object(store: ObjectStore, key: str, body: UploadInput) -> Non
 
 
 @contextmanager
+def upload_lock(db: Database, identity: str) -> Generator[None]:
+    """Preserve shared lock ownership while reporting conflicts in upload terminology."""
+    message = "Upload is busy; retry after the active upload operation completes"
+    with response_lock(db, identity, busy_message=message):
+        yield
+
+
+@contextmanager
 def upload_slot(db: Database) -> Generator[None]:
     """Bound concurrent chunk streams across processes using crash-released shared locks."""
     for ordinal in range(get_settings().upload_max_concurrency):
         stack = ExitStack()
         try:
-            stack.enter_context(response_lock(db, f"upload-slot:{ordinal}"))
+            stack.enter_context(upload_lock(db, f"upload-slot:{ordinal}"))
         except ConflictError:
             stack.close()
             continue

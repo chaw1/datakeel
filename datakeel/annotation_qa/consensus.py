@@ -12,6 +12,9 @@ its own annotator drew, while at least two other panel members reviewed the same
 modality, is reported as extra. At least three panel members are required.
 Invalid items are reported by the bounds rules instead; an annotator whose record
 holds an invalid item of the consensus category is not also reported as missing it.
+Additional items by one annotator in a cluster are reported as duplicates. Each
+annotator casts at most one vote per value; conflicting values from one annotator
+abstain while that annotator remains in the strict-majority denominator.
 """
 
 from collections import Counter, defaultdict
@@ -52,11 +55,19 @@ class _Rules(NamedTuple):
     extra: FindingCode
     category: FindingCode
     boundary: FindingCode | None
+    duplicate: FindingCode
 
 
-_BOX_RULES = _Rules("box", "bbox_missing", "bbox_extra", "bbox_category_minority", None)
+_BOX_RULES = _Rules(
+    "box", "bbox_missing", "bbox_extra", "bbox_category_minority", None, "duplicate_bbox"
+)
 _SPAN_RULES = _Rules(
-    "span", "span_missing", "span_extra", "span_category_minority", "span_boundary_minority"
+    "span",
+    "span_missing",
+    "span_extra",
+    "span_category_minority",
+    "span_boundary_minority",
+    "duplicate_span",
 )
 
 
@@ -120,12 +131,43 @@ def _describe(item: _Item) -> str:
     return f"{item.record.annotator_id}[{item.position}] {item.category} @ {shape}"
 
 
+def _votes(members: list[_Item], value: Callable[[_Item], str]) -> Counter[str]:
+    choices: dict[str, set[str]] = defaultdict(set)
+    for item in members:
+        choices[item.record.annotator_id].add(value(item))
+    return Counter(next(iter(values)) for values in choices.values() if len(values) == 1)
+
+
+def _cluster_duplicates(members: list[_Item], rules: _Rules) -> list[AnnotationFinding]:
+    first: dict[str, _Item] = {}
+    result: list[AnnotationFinding] = []
+    for item in members:
+        annotator = item.record.annotator_id
+        if annotator not in first:
+            first[annotator] = item
+            continue
+        original = first[annotator]
+        result.append(
+            finding(
+                item.record,
+                rules.duplicate,
+                f"The same annotator contributed multiple items to one {rules.noun} cluster",
+                (f"retained: {_describe(original)}", f"additional: {_describe(item)}"),
+                key=str(item.position),
+            )
+        )
+    return result
+
+
 def _minority(
     members: list[_Item], value: Callable[[_Item], str], code: FindingCode, noun: str
 ) -> list[AnnotationFinding]:
-    counts = Counter(value(item) for item in members)
+    counts = _votes(members, value)
+    if not counts:
+        return []
     majority, votes = counts.most_common(1)[0]
-    if votes * 2 <= len(members):
+    total = len({item.record.annotator_id for item in members})
+    if votes * 2 <= total:
         return []
     return [
         finding(
@@ -133,7 +175,7 @@ def _minority(
             code,
             f"Matched {noun} differs from the strict majority of the annotator panel",
             (
-                f"majority={majority}; votes={votes}/{len(members)}",
+                f"majority={majority}; votes={votes}/{total}",
                 f"observed={value(item)}; {_describe(item)}",
             ),
             key=str(item.position),
@@ -148,8 +190,9 @@ def _cluster_findings(
 ) -> list[AnnotationFinding]:
     annotators = {item.record.annotator_id for item in members}
     representative = min(members, key=lambda item: (item.record.annotator_id, item.position))
-    category = Counter(item.category for item in members).most_common(1)[0][0]
-    result: list[AnnotationFinding] = []
+    categories = _votes(members, lambda item: item.category)
+    category = categories.most_common(1)[0][0] if categories else None
+    result = _cluster_duplicates(members, rules)
     if len(annotators) * 2 > len(panel):
         absent = [
             annotator

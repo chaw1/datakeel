@@ -7,19 +7,15 @@ from pathlib import Path
 
 from datakeel.core.models import FileItem
 from datakeel.operators.audio.common import (
-    activity,
     activity_metrics,
-    activity_samples,
     annotate_audio,
+    measure_activity,
 )
 from datakeel.operators.audio.params import TrimParams
+from datakeel.operators.audio.streaming import stream_artifact
 from datakeel.operators.base import Operator, OperatorResult, summarize
 from datakeel.operators.media.tools import (
     input_path,
-    media_artifact,
-    media_timeout,
-    probe_file,
-    run_tool,
 )
 
 
@@ -27,12 +23,14 @@ def execute(files: list[FileItem], output_dir: Path, params: TrimParams) -> Oper
     """Trim only leading/trailing silence and drop files without detected activity."""
     output: list[FileItem] = []
     for file in files:
-        measured = activity(activity_samples(file), params)
+        measured = measure_activity(file, params)
         if not measured.active:
             continue
         start_ms = max(0, measured.active[0].start_ms - params.padding_ms)
         end_ms = min(measured.duration_ms, measured.active[-1].end_ms + params.padding_ms)
-        content = run_tool(
+        trimmed = stream_artifact(
+            file,
+            output_dir,
             [
                 "ffmpeg",
                 "-v",
@@ -55,19 +53,12 @@ def execute(files: list[FileItem], output_dir: Path, params: TrimParams) -> Oper
                 "wav",
                 "pipe:1",
             ],
-            timeout=media_timeout(probe_file(file).duration_ms),
-        )
-        trimmed = media_artifact(
-            file,
-            output_dir,
-            content,
-            "wav",
             "audio.trim_silence",
             params,
             start_ms=start_ms,
             end_ms=end_ms,
         )
-        remaining = activity(activity_samples(trimmed), params)
+        remaining = measure_activity(trimmed, params)
         output.append(annotate_audio(trimmed, activity_metrics(remaining), remaining.silent))
     return summarize(files, output)
 

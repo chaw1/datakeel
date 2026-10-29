@@ -9,7 +9,7 @@ from typing import Literal
 import numpy as np
 import pytest
 
-from datakeel.annotation_qa import find_suspicions
+from datakeel.annotation_qa import compare_rework, find_suspicions
 from datakeel.core.annotation_models import (
     AnnotationBatch,
     AnnotationBox,
@@ -180,3 +180,19 @@ def test_clean_panels_have_at_most_two_percent_flagged_samples(sizes: Sizes, see
     findings = find_suspicions(_clean(seed, sizes, ("cat", "dog", "bird", "fish")))
     assert len({item.sample_id for item in findings}) / 200 <= 0.02
     assert len(findings) / 600 <= 0.02
+
+
+@pytest.mark.parametrize("sizes", ["lognormal", "uniform", "tight"])
+def test_generated_panel_compared_with_itself_has_no_repairs_or_regressions(sizes: Sizes) -> None:
+    """Cluster duplicate identities and every generated finding remain stable on self comparison."""
+    batch = _clean(11, sizes, ("cat", "dog", "bird"))
+    records = tuple(
+        EDITS["box duplicate"](record) if record.sample_id == "s040" else record
+        for record in batch.annotations
+    )
+    repeated = batch.model_copy(update={"annotations": records})
+    result = compare_rework(repeated, repeated)
+    assert result.corrected_count == 0
+    assert result.introduced_count == 0
+    assert result.remaining_count == result.before_count == result.after_count
+    assert result.remaining_count > 0

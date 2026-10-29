@@ -86,6 +86,7 @@ export function RuleDetails({
                   <th>{t("dqActual")}</th>
                   <th>{t("dqThreshold")}</th>
                   <th>{t("dqRows")}</th>
+                  <th>{t("dqCoverage")}</th>
                   <th>{t("dqFailedRows")}</th>
                   <th>{t("dqDuration")}</th>
                 </tr>
@@ -119,7 +120,15 @@ export function RuleDetails({
                         : result.actual_value.toLocaleString(locale)}
                     </td>
                     <td>{result.threshold}</td>
-                    <td>{result.row_count}</td>
+                    <td>{result.rows_scanned}</td>
+                    <td>
+                      {result.coverage === "complete"
+                        ? t("dqCoverageComplete", {
+                            scanned: result.rows_scanned,
+                            total: result.rows_total ?? 0,
+                          })
+                        : t("dqCoverageUnknown")}
+                    </td>
                     <td>{result.failed_count}</td>
                     <td>
                       {t("dqDurationValue", {

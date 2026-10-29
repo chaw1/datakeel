@@ -139,11 +139,13 @@ def test_markdown_export_cannot_inject_block_structure_from_a_cited_sentence(
         title="构成",
         sentences=(DatasheetSentence(text=text, fact_ids=("fact-count",)),),
     )
-    checked = validate_sections((section,), (_fact(),), "en")
+    fact = _fact().model_copy(update={"kind": "number", "unit": None})
+    checked = validate_sections((section,), (fact,), "en")
     assert not checked.dropped_sentences
     document = _document().model_copy(
         update={
             "sections": checked.sections,
+            "facts": (fact,),
             "dropped_sentences": (DroppedSentence(text=text, reasons=("unsupported_term",)),),
         }
     )
@@ -207,7 +209,14 @@ def test_realistic_demo_template_values_pass_independent_validation(
         ("compliance.total", 99.92),
     )
     facts = tuple(
-        _fact().model_copy(update={"id": f"f{index}", "field": field, "value": value})
+        DatasheetFact.model_validate(
+            {
+                **_fact().model_dump(exclude={"kind", "unit"}),
+                "id": f"f{index}",
+                "field": field,
+                "value": value,
+            }
+        )
         for index, (field, value) in enumerate(values)
     )
     template = build_template(facts, language)

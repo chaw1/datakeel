@@ -7,6 +7,68 @@ from scripts.mutation_models import Mutation
 
 STANDARD_MUTATIONS = (
     Mutation(
+        name="standards-chinese-cycle-context",
+        path="standards/names.py",
+        before='"周期": "cycle",',
+        after='"周期": "period",',
+        case=(
+            "tests/standards/test_mapping_accounting.py::"
+            "test_billing_cycle_abstains_from_amount_but_reaches_a_custom_cycle"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-date-time-context-recall",
+        path="standards/matching.py",
+        before='        and "amount" in observed_context | expected_context\n',
+        after="",
+        case=(
+            "tests/standards/test_mapping_accounting.py::"
+            "test_date_time_qualifiers_remain_mapping_candidates"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-accounting-context-separation",
+        path="standards/matching.py",
+        before=(
+            "if (\n"
+            "        observed_context\n"
+            "        and expected_context\n"
+            "        and observed_context.isdisjoint(expected_context)\n"
+            '        and "amount" in observed_context | expected_context\n'
+            "    ):"
+        ),
+        after="if False:",
+        case=(
+            "tests/standards/test_mapping_accounting.py::"
+            "test_billing_cycle_abstains_from_amount_but_reaches_a_custom_cycle"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-billing-synonym-recall",
+        path="../contracts/standards/synonyms.yaml",
+        before="alternatives: [bill, billing, billed, 开票, 发票, 账单, 票据]",
+        after="alternatives: [开票, 发票, 账单, 票据]",
+        case=(
+            "tests/standards/test_mapping_accounting.py::"
+            "test_billing_synonym_group_reaches_invoiced_amount"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="standards-chinese-bill-recall",
+        path="standards/names.py",
+        before='"账单": "invoice",',
+        after='"账单": "account",',
+        case=(
+            "tests/standards/test_mapping_accounting.py::"
+            "test_chinese_bill_name_reaches_invoiced_amount"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="standards-worst-table",
         path="ontology/standard_functions.py",
         before="key=lambda item: (item.compliance, item.coverage, item.key)",

@@ -122,6 +122,7 @@ ENGLISH_GRAMMAR = frozenset(
 CHINESE_GRAMMAR = (
     "图片",
     "图像",
+    "观测",
     "文本",
     "视频",
     "音频",

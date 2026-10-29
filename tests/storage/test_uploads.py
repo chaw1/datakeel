@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.uploads import UploadInput
 from datakeel.storage import datasets, upload_service
+from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.database import Database, DatasetRow, VersionRow
 from datakeel.storage.dataset_service import list_files
 from datakeel.storage.objects import LocalStore, S3Store, digest
@@ -232,6 +233,23 @@ def test_parallel_same_upload_merges_or_rejects_and_publishes_once(db: Database)
     assert (upload_directory(upload.id) / "0").read_bytes() == b"abcd"
     receipt = complete_upload(db, upload.id)
     assert complete_upload(db, upload.id).dataset_id == receipt.dataset_id
+
+
+def test_upload_creation_and_completion_conflicts_name_upload(db: Database) -> None:
+    """Initialization and completion use upload wording without changing lock identities."""
+    body = declaration(b"abcd")
+    with response_lock(db, f"upload-create:{body.idempotency_key}"):
+        with pytest.raises(ConflictError) as creation:
+            start_upload(db, body)
+        assert "Upload is busy" in str(creation.value)
+        assert "Conversation" not in str(creation.value)
+    upload = start_upload(db, body)
+    put_chunk(db, upload.id, 0, b"abcd")
+    with response_lock(db, f"upload:{upload.id}"):
+        with pytest.raises(ConflictError) as completion:
+            complete_upload(db, upload.id)
+        assert "Upload is busy" in str(completion.value)
+        assert "Conversation" not in str(completion.value)
 
 
 def test_interrupted_temporary_does_not_count_as_received(db: Database) -> None:

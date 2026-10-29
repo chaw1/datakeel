@@ -18,7 +18,7 @@ def _check(text: str, value: JsonValue) -> bool:
         chapter="composition",
         source_type="manifest",
         source_id="fixture",
-        field="manifest.file_count",
+        field="custom.value",
         value=value,
         recorded_at=datetime(2026, 10, 27, tzinfo=UTC),
     )

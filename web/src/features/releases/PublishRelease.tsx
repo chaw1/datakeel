@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { post } from "../../api/client";
 import { lineageHref } from "../../app/lineageNavigation";
@@ -30,11 +30,17 @@ export function PublishRelease({
   const [plan, setPlan] = useState<ActionPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const revision = useRef(0);
+  function invalidatePlan() {
+    revision.current += 1;
+    setPlan(null);
+  }
   async function prepare(event: SubmitEvent) {
     event.preventDefault();
     if (busy || isComposing()) return;
     setBusy(true);
     setError("");
+    const preparedRevision = revision.current;
     const body: operations["prepare_api_actions__action_type__prepare_post"]["requestBody"]["content"]["application/json"] =
       {
         dataset_id: datasetId,
@@ -43,12 +49,11 @@ export function PublishRelease({
         notes,
       };
     try {
-      setPlan(
-        await post<ActionPlan>(
-          `/api/actions/publish_release/prepare${budgetQuery(budget)}`,
-          body,
-        ),
+      const preparedPlan = await post<ActionPlan>(
+        `/api/actions/publish_release/prepare${budgetQuery(budget)}`,
+        body,
       );
+      if (revision.current === preparedRevision) setPlan(preparedPlan);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -66,10 +71,11 @@ export function PublishRelease({
             value={versionId}
             onBlur={(event) => {
               setVersionId(event.target.value);
-              setPlan(null);
+              invalidatePlan();
             }}
             onChange={(event) => {
               setVersionId(event.target.value);
+              invalidatePlan();
             }}
             required
           >
@@ -86,6 +92,7 @@ export function PublishRelease({
             value={tag}
             onChange={(event) => {
               setTag(event.target.value);
+              invalidatePlan();
             }}
             placeholder={t("releaseTagExample")}
             required
@@ -97,6 +104,7 @@ export function PublishRelease({
             value={notes}
             onChange={(event) => {
               setNotes(event.target.value);
+              invalidatePlan();
             }}
             rows={3}
           />
@@ -105,7 +113,7 @@ export function PublishRelease({
           value={budget}
           onChange={(value) => {
             setBudget(value);
-            setPlan(null);
+            invalidatePlan();
           }}
         />
         <button

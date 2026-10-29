@@ -18,6 +18,7 @@ export const releaseEn = {
   versionQualityScore: "Quality score",
   versionEvidenceDecisions: "Evidence decisions",
   releaseTitle: "Releases",
+  releaseFileCount: "{count} {count, plural, one {file} other {files}}",
   releaseFrozenHint:
     "Publishing requires approval and permanently freezes the file manifest, content hashes and metadata.",
   releaseEmpty: "No releases have been published.",

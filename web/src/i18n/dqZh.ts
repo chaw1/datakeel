@@ -28,7 +28,7 @@ export const dqZh = {
   dqParameterHelp:
     "可从当前类型的示例开始。服务端校验全部参数后才生成冻结计划。",
   dqTimeout: "超时（毫秒）",
-  dqMaxRows: "扫描行数上限",
+  dqMaxRows: "分块 / 断言结果行数上限",
   dqEnabled: "启用",
   dqRules: "规则 · {count}",
   dqEmpty: "暂无质量规则。为已登记的业务数据源新建一条规则。",
@@ -48,6 +48,9 @@ export const dqZh = {
   dqDuration: "耗时",
   dqDurationValue: "{value} 毫秒",
   dqRows: "扫描行数",
+  dqCoverage: "覆盖范围",
+  dqCoverageComplete: "100% · {scanned}/{total} 行",
+  dqCoverageUnknown: "未知",
   dqFailedRows: "违规行数",
   dqSamples: "脱敏失败样例",
   dqTrend: "结果趋势",
