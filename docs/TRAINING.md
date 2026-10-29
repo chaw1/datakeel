@@ -3,7 +3,7 @@
 [中文](TRAINING.zh.md)
 
 Open a dataset's **Versions** tab and expand **Training sets**. Select an immutable
-source version, set train/validation/test proportions, a seed, optional primary-label stratification
+source version, set train/validation/test proportions, a seed, optional all-label stratification
 and a metadata group field. Preview reads the files and computes distributions without
 saving. **Save immutable split** creates a named, version-owned snapshot. Repeating the
 same name and policy returns that snapshot; changing its policy requires another name.
@@ -16,31 +16,38 @@ comparison API below to inspect changes in sample assignments.
 
 ## Reproducible grouping and stratification
 
-Stratification balances one primary label per sample: the lexicographically smallest
-label. For a single-label sample, that is its only label. The immutable split retains
-all labels and complete annotations; each export writes the annotations supported by
-its format. The distribution table measures every label. Non-primary labels have no
-balance or prevalence-error guarantee.
+Single-label data uses seeded largest-remainder quotas and an integer transport solver.
+Multilabel data uses iterative stratification: allocate the rarest remaining label first,
+update the desired counts for every label on each selected sample, then refine whole-group
+assignments against all label quotas and class prevalence together. Labels are deduplicated
+and sorted for computation; saved members retain the original labels and complete annotations.
+Each export writes the annotations supported by its format.
 
-Independent samples start with seeded largest-remainder quotas. A bounded integer
-transport solver can adjust small rounded sets to feasible primary-label totals.
+For feasible inputs, the targets are at most one sample from each label's requested split
+count, and at most two percentage points from global prevalence for every category with at
+least 50 samples. Refinement checks both limits before overall split-size proximity, with
+up to 16 additional deterministic seeded starts for multilabel data. This is a bounded search,
+not a general integer-feasibility proof. Inspect the actual distribution for your data.
+
 Groups and connected duplicate clusters are indivisible; an entire connected component
-receives one split. Their isolation takes priority over primary-label balance and exact
-ratios. A metadata field can be nested, for example `capture.session` or
-`metadata.capture.session`. A missing or null group value does not join unrelated samples.
+receives one split. Their isolation takes priority over balance and exact ratios. A metadata
+field can be nested, for example `capture.session` or `metadata.capture.session`. A missing
+or null value does not join unrelated samples.
 
-Group isolation takes priority over exact ratios. A group larger than a validation
-target, or mutually constrained groups, can make requested primary-label proportions
-mathematically impossible. Inspect the measured counts before training. The seed, full
-policy, algorithm version, member identities, source hashes and annotations are frozen.
-Later annotation imports do not rewrite an existing split. Create a new named split to
-use revised annotations.
+Small integer sets can make the two numerical targets incompatible even without groups.
+For example, 159 samples with disjoint class counts 55/52/52 and an additional label on every
+sample, at 80:10:10, cannot meet both limits. The universal label requires train size 127–128
+and validation/test size 15–16. A size-16 set cannot represent class 55/159 within two percentage
+points (neither 5/16 nor 6/16 works), so both small sets must have size 15, forcing train size
+129. A group larger than a validation target can also make the target unattainable. A search
+that misses a target is not by itself evidence of impossibility. Counts remain visible;
+groups are never split and the requested policy is never silently changed.
 
-Small integer sets can be infeasible even without groups. For example, primary-label counts
-92/83/68 with a 90:5:5 policy admit no positive validation size that keeps every primary label
-within one sample of its target and within two percentage points of global prevalence.
-The result still reports its actual counts; an unattainable request does not justify
-splitting a group or silently changing the declared policy.
+New splits use algorithm `1.3-iterative-text`; its version is included in the split identity.
+The seed, full policy, member identities, source hashes and annotations are frozen. Existing
+named snapshots, including `1.2-primary-no-text`, are read without recalculation or replacement.
+Repeating the same name and policy returns that exact snapshot. Use a new name for the new
+algorithm or revised annotations.
 
 ## Leakage evidence
 
@@ -53,17 +60,30 @@ both sample IDs and split names, the signal and its distance:
 | ------ | ------------------------------------------------------------ |
 | Exact  | Equal SHA-256 content hashes                                 |
 | Image  | 64-bit dHash, Hamming distance at most 8 by default          |
+| Text   | 64-bit normalized-text simhash, Hamming distance at most 3 by default |
 | Group  | Equal non-null values of the configured metadata group field |
 
-The image threshold is configurable from 0 to 64. Hash comparison uses the existing
+Image and text thresholds are independently configurable from 0 to 64. Hash comparison uses the existing
 optional Rust backend when available and exact Python comparison otherwise; it does not
 use lossy prefix blocking. A–B and B–C edges group all three samples while the report
 retains only measured direct edges. Image hashes are similarity heuristics; inspect pair
 evidence rather than interpreting them as semantic identity.
 
-Text similarity is unavailable. Identical text files are still checked by SHA-256, without
-text normalization. A clean report covers exact content, images and groups only; it does
-not establish that different text files have no near duplicates.
+Text hashing applies Unicode NFKC normalization and case folding, then removes Unicode
+punctuation, ASCII punctuation/symbols and whitespace, then applies NFKC again so that
+combining characters separated by removed formatting recompose. It hashes character trigrams with SHA-256 and computes a weighted
+64-bit simhash; shorter nonempty text is one feature. Changes confined to case, whitespace or
+punctuation therefore have distance zero, including changes inside words, and are recalled
+even with threshold zero. Empty normalized text has no simhash; byte-identical files still
+match SHA-256. These transformations affect only comparison, never exported source text or
+character offsets. Short texts, rearranged templates with the same trigram multiset, and text that becomes
+identical after space or symbol removal (for example, `C++` and `C`) can collide: this signal is a formatting/similarity check, not semantic equivalence.
+A threshold of 64 matches every pair with a text hash and is usually unsuitable.
+
+`checked_signals` states what a report actually checked. A saved `1.2-primary-no-text` snapshot
+keeps its original three signals and does not read source files to invent missing text hashes.
+Create a new named split or preview to compute the new text signal. A clean report applies
+only to the listed signals and configured thresholds.
 
 Flat images need an additional color confirmation to avoid dHash collisions: on a
 32×32 RGB thumbnail, an image is low texture when every channel's standard deviation
@@ -84,6 +104,7 @@ source export permissions are rechecked on every download. Export receipts enter
 | `coco`        | `images/<split>/` and `annotations/instances_<split>.json`; integer IDs, absolute `[x,y,width,height]`, area, `iscrowd=0`       |
 | `yolo`        | `images/<split>/`, matching `labels/<split>/*.txt` and relative `data.yaml`; zero-based classes, normalized center/width/height |
 | `imagefolder` | `<split>/<class>/<image>`; requires exactly one classification label per image                                                  |
+| `hf_imagefolder` | `<split>/<image>` and `metadata.jsonl`; lossless scalar metadata, described below |
 | `text_jsonl`  | `<split>.jsonl`; exact text, labels and half-open character-offset spans                                                        |
 
 Reviewed-empty images (`boxes=[]`) have an empty YOLO label file and remain in COCO images.
@@ -101,6 +122,18 @@ ImageFolder accepts the default torchvision suffixes: `.jpg`, `.jpeg`, `.png`, `
 archives whose images the standard loader would ignore. Sources are never transcoded.
 Imported coordinates that exceed a pixel boundary only by floating-point roundoff
 (at most four ULPs of the image extent) are clamped to that boundary; real overflow is refused.
+
+HF imagefolder writes `file_name` relative to each split's `metadata.jsonl`, with scalar
+`sample_id`, `annotator_id`, `width`, `height`, `labels_json` and `boxes_json` columns. Load the
+unpacked directory with `datasets.load_dataset("imagefolder", data_dir="package")`; HF names
+`val` as `validation`. Decode `labels_json` and `boxes_json` with `json.loads` to recover the
+original category strings and absolute pixel `x1,y1,x2,y2` boxes. JSON `null` means unreviewed;
+`[]` means reviewed empty. JSON text columns keep the inferred schema identical across splits
+containing only empty annotations versus populated ones, without artificial examples. The
+archive includes these instructions in `README.md`. No `datasets` dependency is added.
+HF exports reject EXIF orientation values other than absent or 1: its default decoder
+automatically rotates or mirrors oriented images, which would invalidate raw pixel boxes
+and dimensions. The exporter neither transcodes pixels nor silently rewrites coordinates.
 
 `MANIFEST.json` records the source version, optional release, split ID, seed, format and
 format version, total and per-split file counts, annotation counts and each source hash.
@@ -140,7 +173,8 @@ Prepare exports through `POST /api/actions/export_dataset/prepare` with `dataset
 `destination`. Existing metadata formats retain their original behavior. The full typed
 request schemas and examples are in the local [API reference](http://127.0.0.1:8765/api/docs).
 
-Format references: [COCO](https://cocodataset.org/#format-data),
+Format references: [HF imagefolder](https://huggingface.co/docs/datasets/image_dataset),
+[COCO](https://cocodataset.org/#format-data),
 [Ultralytics detection](https://docs.ultralytics.com/datasets/detect/),
 [Ultralytics image formats](https://docs.ultralytics.com/modes/predict/#image-and-video-formats),
 [torchvision ImageFolder source](https://docs.pytorch.org/vision/stable/_modules/torchvision/datasets/folder.html).

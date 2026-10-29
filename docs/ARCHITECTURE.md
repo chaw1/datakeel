@@ -201,7 +201,7 @@ Resumable uploads stage bounded, atomically committed chunks under the configure
 portable format writers and COCO/YOLO import adapters. It consumes frozen core models;
 source object materialization, current grants, immutable split rows and transaction
 boundaries stay in `storage/training_*.py`. Saved split members freeze annotation reviews
-and content hashes. Exact, dHash and metadata group edges form indivisible
+and content hashes. Exact, dHash, normalized-text simhash and metadata group edges form indivisible
 connected components, while reports retain only direct measured pairs.
 
 训练预览只读计算，命名切分持久化为版本所属的不可变快照，源清单也受数据库约束保护。
