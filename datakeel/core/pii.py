@@ -37,7 +37,6 @@ _ID_LENGTH = 18
 _MAX_DECIMAL_DIGIT = 9
 _MIN_PHONE_DIGITS = 8
 _MAX_PHONE_DIGITS = 15
-_MIN_COMPACT_PHONE_DIGITS = 10
 _MIN_SECRET_LENGTH = 8
 _SECRET_LABELS = frozenset(
     {
@@ -180,9 +179,9 @@ def _valid_phone(value: str) -> bool:
     if not value.startswith("+") and _card_prefix(digits):
         return False
     return (
-        len(digits) >= _MIN_COMPACT_PHONE_DIGITS
-        or value.startswith("+")
-        or any(char in value for char in "()-")
+        value.startswith("+")
+        or patterns.CHINA_PHONE_DIGITS.fullmatch(digits) is not None
+        or patterns.LOCAL_PHONE.fullmatch(value) is not None
     )
 
 
