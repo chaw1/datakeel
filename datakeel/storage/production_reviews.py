@@ -12,10 +12,12 @@ from datakeel.actions.production_parameters import (
 )
 from datakeel.core.errors import AuthorizationError, ConflictError, ValidationError
 from datakeel.core.models import new_id, utcnow
-from datakeel.core.production_models import ProductionTask, Review
+from datakeel.core.production_models import ProductionTask, Project, Review
 from datakeel.storage.production_assignments import active_assignment, finish_assignment
+from datakeel.storage.production_leases import arm_lease, raise_if_reclaimed, require_live_lease
 from datakeel.storage.production_revisions import require_holder
-from datakeel.storage.production_rows import ProductionReviewRow
+from datakeel.storage.production_rows import ProductionReviewRow, ProductionTaskRow
+from datakeel.storage.production_separation import require_separation
 from datakeel.storage.production_tasks import (
     require_mutable_project,
     require_task,
@@ -59,9 +61,14 @@ def review_task(session: Session, params: ReviewTaskParams, actor: str) -> Revie
         message = "Review requires the current submitted revision"
         raise ConflictError(message)
     assignment = active_assignment(session, task.id, "review")
+    if assignment is None or assignment.actor != actor:
+        raise_if_reclaimed(session, task.id, actor, "review")
     if assignment is not None and assignment.actor != actor:
         message = "Task review is assigned to another reviewer"
         raise AuthorizationError(message)
+    if assignment is not None:
+        require_live_lease(assignment, utcnow())
+    require_separation(session, project, task, actor)
     if params.decision == "rework" and not params.issues:
         message = "Rework requires at least one issue"
         raise ValidationError(message)
@@ -85,16 +92,24 @@ def review_task(session: Session, params: ReviewTaskParams, actor: str) -> Revie
             payload=review.model_dump(mode="json"),
         )
     )
-    finish_assignment(session, task.id, "review")
+    finish_assignment(session, task.id, "review", "reviewed")
     if params.decision == "approve":
         task.approved_revision_id = task.latest_revision_id
-        finish_assignment(session, task.id, "annotation")
+        finish_assignment(session, task.id, "annotation", "approved")
         transition_task(session, task, "approved")
     else:
-        task.round += 1
-        task.approved_revision_id = None
-        transition_task(session, task, "pending")
+        return_for_rework(session, project, task)
     return review
+
+
+def return_for_rework(session: Session, project: Project, task: ProductionTaskRow) -> None:
+    """Count one rework round and give the retained annotation holder a fresh team lease."""
+    task.round += 1
+    task.approved_revision_id = None
+    transition_task(session, task, "pending")
+    holder = active_assignment(session, task.id, "annotation")
+    if holder is not None and project.workflow_tier == "team":
+        arm_lease(holder, project, utcnow())
 
 
 def reopen_task(session: Session, params: ReopenTaskParams) -> ProductionTask:
@@ -105,13 +120,11 @@ def reopen_task(session: Session, params: ReopenTaskParams) -> ProductionTask:
     assignment and revisions stay as they are; the action audit still records the request.
     """
     task = require_task(session, params.task_id)
-    require_mutable_project(session, task.project_id)
+    project = require_mutable_project(session, task.project_id)
     if task.state == "finalized":
         message = "Finalized tasks cannot be reopened"
         raise ConflictError(message)
     if task.state in REWORK_STATES:
-        finish_assignment(session, task.id, "review")
-        task.round += 1
-        task.approved_revision_id = None
-        transition_task(session, task, "pending")
+        finish_assignment(session, task.id, "review", "reopened")
+        return_for_rework(session, project, task)
     return task_view(task)

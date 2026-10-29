@@ -81,6 +81,8 @@ class ProductionAssignmentRow(Base):
     stage: Mapped[str] = mapped_column(String)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     payload: Mapped[dict[str, JsonValue]] = mapped_column(JSON)
+    # Enforced team-tier lease deadline (UTC epoch seconds); NULL when no lease is enforced.
+    lease_expires_at: Mapped[float | None] = mapped_column(Float, nullable=True, index=True)
 
 
 class ProductionRevisionRow(Base):

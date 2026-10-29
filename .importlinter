@@ -532,6 +532,12 @@ ignore_imports =
     datakeel.storage.production_reviews -> datakeel.actions.production_parameters
     datakeel.storage.production_revisions -> datakeel.actions.production_parameters
     datakeel.storage.production_statistics -> datakeel.annotation_qa
+# Team-tier leases, skill dispatch and package acceptance execute typed production actions.
+    datakeel.ontology.production_functions -> datakeel.storage.production_team_reads
+    datakeel.storage.production_acceptance -> datakeel.actions.models
+    datakeel.storage.production_acceptance -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.production_dispatch -> datakeel.actions.production_parameters
+    datakeel.storage.production_reaper -> datakeel.actions.production_parameters
 
 # Production source grants and authoritative runtime session actors reuse existing contracts.
     datakeel.delegation.service -> datakeel.storage.identity_sessions

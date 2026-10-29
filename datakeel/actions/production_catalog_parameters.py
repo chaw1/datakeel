@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
+from datakeel.core.annotation_sampling import InspectionCheck
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import (
     LabelMigration,
@@ -15,6 +16,7 @@ from datakeel.core.production_catalog_models import (
     ProductionModel,
     ProductionTemplate,
 )
+from datakeel.core.production_team_models import PackageSamplingParams
 
 
 class ProductionCatalogActionParams(BoundaryModel):
@@ -101,6 +103,21 @@ class FinalizeProjectParams(ProductionCatalogActionParams):
     name: str = Field(default="Production annotations", min_length=1, max_length=200)
 
 
+class AcceptPackageParams(ProductionCatalogActionParams, PackageSamplingParams):
+    """Inspect every P26-sampled unit of an approved team package, then accept or return it."""
+
+    package_id: str = Field(min_length=1)
+    checks: tuple[InspectionCheck, ...] = Field(min_length=1, max_length=10000)
+
+    @model_validator(mode="after")
+    def unique_checks(self) -> "AcceptPackageParams":
+        """Reject duplicate units instead of inflating an inspection count, as P26 does."""
+        if len({item.sample_id for item in self.checks}) != len(self.checks):
+            message = "Inspection checks must contain distinct sampled units"
+            raise ValueError(message)
+        return self
+
+
 CATALOG_PARAMETER_TYPES: dict[str, type[ProductionCatalogActionParams]] = {
     "create_label_set": CreateLabelSetParams,
     "publish_label_set": PublishLabelSetParams,
@@ -109,6 +126,7 @@ CATALOG_PARAMETER_TYPES: dict[str, type[ProductionCatalogActionParams]] = {
     "import_predictions": ImportPredictionsParams,
     "run_prelabel": RunPrelabelParams,
     "finalize_project": FinalizeProjectParams,
+    "accept_package": AcceptPackageParams,
 }
 
 CATALOG_POLICIES: dict[str, tuple[str, bool, str]] = {
@@ -119,4 +137,5 @@ CATALOG_POLICIES: dict[str, tuple[str, bool, str]] = {
     "import_predictions": ("production:manage", True, "Import model-attributed revisions"),
     "run_prelabel": ("production:manage", True, "Run deterministic offline prelabel model"),
     "finalize_project": ("production:finalize", False, "Publish finalized production annotations"),
+    "accept_package": ("production:accept", False, "Accept or return a package by sampling"),
 }

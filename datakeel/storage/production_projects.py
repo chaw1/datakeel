@@ -12,6 +12,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from datakeel.actions.production_parameters import (
+    ConfigureProjectParams,
     CreateProjectParams,
     SplitPackagesParams,
     UpgradeProjectParams,
@@ -22,6 +23,7 @@ from datakeel.core.production_models import Project, TaskPackage, TaskState
 from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.production_assignments import preserve_personal_assignment
 from datakeel.storage.production_catalog import require_label_set, require_template
+from datakeel.storage.production_leases import enforce_recorded_leases
 from datakeel.storage.production_members import record_project_member
 from datakeel.storage.production_rows import (
     ProductionMemberRow,
@@ -36,7 +38,21 @@ from datakeel.storage.production_tasks import (
     transition_task,
 )
 
-__all__ = ["create_project", "record_project_member", "split_packages", "upgrade_project"]
+__all__ = [
+    "configure_project",
+    "create_project",
+    "record_project_member",
+    "split_packages",
+    "upgrade_project",
+]
+_TEAM_SETTINGS = ("lease_minutes", "dispatch_strategy", "skill_requirement", "max_active_tasks")
+
+
+def _validate_dispatch(project: Project) -> Project:
+    if project.dispatch_strategy == "skill" and project.skill_requirement is None:
+        message = "Skill dispatch strategy requires a skill_requirement"
+        raise ValidationError(message)
+    return project
 
 
 def create_project(session: Session, params: CreateProjectParams, actor: str) -> Project:
@@ -45,7 +61,9 @@ def create_project(session: Session, params: CreateProjectParams, actor: str) ->
     require_label_set(session, params.label_set_id, params.label_set_version)
     if params.template_id is not None:
         require_template(session, params.template_id)
-    project = Project(id=new_id(), created_at=utcnow(), **params.model_dump(exclude={"request_id"}))
+    project = _validate_dispatch(
+        Project(id=new_id(), created_at=utcnow(), **params.model_dump(exclude={"request_id"}))
+    )
     session.add(
         ProductionProjectRow(
             id=project.id, dataset_id=project.dataset_id, payload=project.model_dump(mode="json")
@@ -159,7 +177,26 @@ def upgrade_project(session: Session, params: UpgradeProjectParams) -> Project:
     if project.workflow_tier == "personal" and upgraded.workflow_tier != "personal":
         session.flush()
         _preserve_personal_assignments(session, project.id)
+    if upgraded.workflow_tier == "team":
+        session.flush()
+        enforce_recorded_leases(session, project.id)
     return require_mutable_project(session, project.id)
+
+
+def configure_project(session: Session, params: ConfigureProjectParams) -> Project:
+    """Change team settings in place; existing leases keep their deadlines until renewed."""
+    row = session.get(
+        ProductionProjectRow, params.project_id, with_for_update=True, populate_existing=True
+    )
+    project = require_mutable_project(session, params.project_id)
+    updates: dict[str, object] = {
+        field: value for field in _TEAM_SETTINGS if (value := getattr(params, field)) is not None
+    }
+    updates.update(dict.fromkeys(params.clear))
+    configured = _validate_dispatch(Project.model_validate({**project.model_dump(), **updates}))
+    if row is not None:
+        row.payload = configured.model_dump(mode="json")
+    return configured
 
 
 def _preserve_personal_assignments(session: Session, project_id: str) -> None:

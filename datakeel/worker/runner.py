@@ -21,6 +21,7 @@ from datakeel.storage.database import Database, data_dir
 from datakeel.storage.datasets import materialize_files, persist_files
 from datakeel.storage.dq_jobs import schedule_due
 from datakeel.storage.evidence_import import source_manifest
+from datakeel.storage.production_reaper import reap_expired_leases
 from datakeel.worker.custom_runner import CustomExecution
 from datakeel.worker.datasheet_runner import execute_datasheet
 from datakeel.worker.dq_runner import execute_dq
@@ -121,6 +122,7 @@ def run_worker(
         schedule_due(db)
         relay_webhooks(db, get_settings())
         queue.reap()
+        reap_expired_leases(db)
         queue.relay()
         reconcile_runs(db)
         lease = queue.claim(queue_name)

@@ -7,7 +7,9 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 from datakeel.core.production_reads import (
     LabelSetDiffParams,
+    LeaseStatusParams,
     NextTaskParams,
+    PackageAcceptanceParams,
     PackageReadParams,
     ProductionObjectQuery,
     ProjectReadParams,
@@ -21,7 +23,13 @@ from datakeel.storage.production_statistics import (
     confidence_distribution,
     production_agreement,
 )
+from datakeel.storage.production_team_reads import (
+    lease_status,
+    package_acceptance_status,
+    skill_workload,
+)
 
+TEAM_READS = frozenset({"lease_status", "skill_workload", "package_acceptance"})
 PRODUCTION_READ_MODELS: dict[str, type[BoundaryModel]] = {
     "project_progress": ProjectReadParams,
     "package_status": PackageReadParams,
@@ -32,6 +40,9 @@ PRODUCTION_READ_MODELS: dict[str, type[BoundaryModel]] = {
     "label_set_diff": LabelSetDiffParams,
     "next_task": NextTaskParams,
     "production_objects": ProductionObjectQuery,
+    "lease_status": LeaseStatusParams,
+    "skill_workload": ProjectReadParams,
+    "package_acceptance": PackageAcceptanceParams,
 }
 
 
@@ -58,7 +69,11 @@ def invoke_production(
         {"project_id": arguments.root.get("project_id")}
     ).project_id
     project = get_project(db, project_id)
-    value = _project_read(db, name, arguments, caller)
+    value = (
+        _team_read(db, name, arguments)
+        if name in TEAM_READS
+        else _project_read(db, name, arguments, caller)
+    )
     return FunctionResult(
         function=name,
         asset_refs=[
@@ -86,3 +101,11 @@ def _project_read(
     if name == "annotation_consistency":
         return production_agreement(db, project.project_id)
     return annotator_workload(db, project.project_id)
+
+
+def _team_read(db: Database, name: str, arguments: JsonDocument) -> BoundaryModel:
+    if name == "lease_status":
+        return lease_status(db, LeaseStatusParams.model_validate(arguments.root))
+    if name == "package_acceptance":
+        return package_acceptance_status(db, PackageAcceptanceParams.model_validate(arguments.root))
+    return skill_workload(db, ProjectReadParams.model_validate(arguments.root).project_id)

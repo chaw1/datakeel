@@ -24,6 +24,9 @@ _MANAGER_ACTIONS = frozenset(
         "reopen_task",
         "import_predictions",
         "upgrade_project",
+        "configure_project",
+        "revoke_assignment",
+        "accept_package",
         # Finalized project versions feed controlled training splits and exports.
         "export_dataset",
     }
@@ -38,9 +41,13 @@ def role_templates() -> tuple[Role, ...]:
         (
             "annotator",
             "Annotator",
-            frozenset({"claim_task", "release_task", "save_revision", "submit_task"}),
+            frozenset({"claim_task", "release_task", "heartbeat", "save_revision", "submit_task"}),
         ),
-        ("reviewer", "Quality reviewer", frozenset({"claim_task", "release_task", "review_task"})),
+        (
+            "reviewer",
+            "Quality reviewer",
+            frozenset({"claim_task", "release_task", "heartbeat", "review_task"}),
+        ),
         ("acceptance", "Acceptance observer", frozenset[str]()),
     )
     return tuple(

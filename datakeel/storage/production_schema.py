@@ -26,6 +26,11 @@ from datakeel.storage.production_rows import (
     ProductionTaskRow,
     install_production_constraints,
 )
+from datakeel.storage.production_team_rows import (
+    ProductionLeaseReleaseRow,
+    ProductionPackageInspectionRow,
+    install_team_constraints,
+)
 
 REGISTERED_PRODUCTION_MODELS = (
     *REGISTERED_IDENTITY_RUNTIME_ROWS,
@@ -47,6 +52,8 @@ REGISTERED_PRODUCTION_MODELS = (
     ProductionRevisionRow,
     ProductionSummaryRow,
     ProductionTaskRow,
+    ProductionLeaseReleaseRow,
+    ProductionPackageInspectionRow,
 )
 
 
@@ -54,3 +61,4 @@ def install_production_schema(connection: Connection, *, sqlite: bool) -> None:
     """Protect published vocabularies and append-only annotation and review history."""
     install_catalog_constraints(connection, sqlite=sqlite)
     install_production_constraints(connection, sqlite=sqlite)
+    install_team_constraints(connection, sqlite=sqlite)

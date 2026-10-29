@@ -23,6 +23,7 @@ from datakeel.storage.production_queries import list_revisions, list_tasks
 from datakeel.storage.release_service import get_release
 from tests.production_flow_support import action_payload, personal_flow
 from tests.production_helpers import production_fixture
+from tests.production_team_support import accept_all_packages
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -150,6 +151,8 @@ def test_upgrade_preserves_each_history_record_and_matches_personal_finalized_an
     for tier in ("group", "team"):
         runner("upgrade_project", {"project_id": project.id, "workflow_tier": tier})
         _assert_history_preserved(before, _history(db, tasks))
+    # P29b: team-tier finalization additionally requires every package to be accepted.
+    accept_all_packages(db, runner, project.id)
     upgraded = _batch(
         db, str(runner("finalize_project", {"project_id": project.id}).root["version_id"])
     )

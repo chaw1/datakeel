@@ -11,6 +11,7 @@ from datakeel.core.errors import AuthorizationError, ConflictError, ValidationEr
 from datakeel.core.models import new_id, utcnow
 from datakeel.core.production_models import AnnotationRevision
 from datakeel.storage.production_catalog import normalize_annotation, validate_annotation
+from datakeel.storage.production_leases import raise_if_reclaimed, require_live_lease
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
     ProductionRevisionRow,
@@ -44,8 +45,10 @@ def require_holder(session: Session, task: ProductionTaskRow, actor: str) -> Non
         )
     )
     if assignment is None or assignment.actor != actor:
+        raise_if_reclaimed(session, task.id, actor, "annotation")
         message = "Only the current annotation assignment holder may modify this task"
         raise AuthorizationError(message)
+    require_live_lease(assignment, utcnow())
 
 
 def current_revision(session: Session, task: ProductionTaskRow) -> AnnotationRevision | None:

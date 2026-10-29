@@ -9,11 +9,14 @@ from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.production_parameters import (
     AssignTasksParams,
     ClaimTaskParams,
+    ConfigureProjectParams,
     CreateProjectParams,
+    HeartbeatParams,
     ProductionActionParams,
     ReleaseTaskParams,
     ReopenTaskParams,
     ReviewTaskParams,
+    RevokeAssignmentParams,
     SaveRevisionParams,
     SplitPackagesParams,
     SubmitTaskParams,
@@ -21,22 +24,31 @@ from datakeel.actions.production_parameters import (
 )
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import AssetRef
-from datakeel.core.production_models import AnnotationRevision, ProductionTask, Project, Review
+from datakeel.core.production_models import (
+    AnnotationRevision,
+    Assignment,
+    ProductionTask,
+    Project,
+    Review,
+)
 from datakeel.storage.action_store import audit
 from datakeel.storage.production_assignments import assign_tasks, claim_task, release_task
+from datakeel.storage.production_dispatch import dispatch_by_skill
 from datakeel.storage.production_projects import (
+    configure_project,
     create_project,
     record_project_member,
     split_packages,
     upgrade_project,
 )
+from datakeel.storage.production_reaper import renew_lease, revoke_assignment
 from datakeel.storage.production_reviews import reopen_task, review_task, submit_task
 from datakeel.storage.production_revisions import append_revision
 from datakeel.storage.production_tasks import require_project, require_task
 
 
 def _result(
-    kind: str, value: AnnotationRevision | ProductionTask | Project | Review
+    kind: str, value: AnnotationRevision | Assignment | ProductionTask | Project | Review
 ) -> OperationResult:
     return OperationResult(
         outputs=[AssetRef(asset_type=kind, asset_id=str(value.id))],
@@ -66,6 +78,20 @@ def execute_production_action(
         return _suggest(result, suggestion=suggestion)
     if isinstance(params, ReleaseTaskParams):
         return _result("production_task", release_task(session, params, plan.actor))
+    return _team_action(session, plan, params)
+
+
+def _team_action(
+    session: Session,
+    plan: ActionPlan,
+    params: ProductionActionParams,
+) -> OperationResult:
+    if isinstance(params, HeartbeatParams):
+        return _result("assignment", renew_lease(session, params, plan.actor))
+    if isinstance(params, RevokeAssignmentParams):
+        return _result("assignment", revoke_assignment(session, params, plan.actor))
+    if isinstance(params, ConfigureProjectParams):
+        return _result("project", configure_project(session, params))
     return _editing_action(session, plan, params)
 
 
@@ -112,12 +138,17 @@ def _save(session: Session, plan: ActionPlan, params: SaveRevisionParams) -> Ope
 
 def _assign(session: Session, params: AssignTasksParams) -> OperationResult:
     task = require_task(session, params.task_ids[0])
-    suggestion = record_project_member(session, task.project_id, params.actor)
-    assignments = assign_tasks(session, params)
+    if params.strategy == "skill":
+        assignments, skipped = dispatch_by_skill(session, params)
+        suggestion = False
+    else:
+        suggestion = record_project_member(session, task.project_id, params.actor or "")
+        assignments, skipped = assign_tasks(session, params), ()
     return OperationResult(
         outputs=[AssetRef(asset_type="assignment", asset_id=item.id) for item in assignments],
         details={
             "assignments": [item.model_dump(mode="json") for item in assignments],
+            "unassigned": [item.model_dump(mode="json") for item in skipped],
             "suggest_review": suggestion,
         },
     )

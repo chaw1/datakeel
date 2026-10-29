@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from datakeel.actions.production_parameters import (
     AssignTasksParams,
     ClaimTaskParams,
+    ConfigureProjectParams,
     CreateProjectParams,
     ProductionActionParams,
     SaveRevisionParams,
@@ -60,7 +61,7 @@ def production_state(session: Session, params: ProductionActionParams) -> str:
                 "finalized_version_id": project.finalized_version_id,
             }
         )
-    if isinstance(params, UpgradeProjectParams):
+    if isinstance(params, UpgradeProjectParams | ConfigureProjectParams):
         return content_digest(require_project(session, params.project_id).model_dump(mode="json"))
     identifiers = (
         params.task_ids
