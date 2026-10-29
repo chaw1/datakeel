@@ -8,6 +8,9 @@ and a metadata group field. Preview reads the files and computes distributions w
 saving. **Save immutable split** creates a named, version-owned snapshot. Repeating the
 same name and policy returns that snapshot; changing its policy requires another name.
 
+The **Split source** and **Saved split set** selectors have explicit accessible names
+in both English and Chinese, matching their visible labels for assistive technology.
+
 Set `test=0` for two sets, for example `train=0.8, val=0.2`. Proportions must sum to one.
 Every sample appears once. The class table counts each label once per sample, so
 multilabel totals can exceed the number of samples. The adjacent meters show class

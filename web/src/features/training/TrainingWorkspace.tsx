@@ -83,6 +83,7 @@ export function TrainingWorkspace({
           <label>
             {t("trainingSaved")}
             <select
+              aria-label={t("trainingSaved")}
               value={preview ? "" : (selected?.id ?? "")}
               onBlur={(event) => {
                 if (event.target.value) {

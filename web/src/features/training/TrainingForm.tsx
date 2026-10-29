@@ -77,6 +77,7 @@ export function TrainingForm({
       <label>
         {t("trainingSource")}
         <select
+          aria-label={t("trainingSource")}
           value={source}
           onChange={(event) => {
             setSource(
