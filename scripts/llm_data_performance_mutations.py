@@ -31,7 +31,7 @@ LLM_DATA_PERFORMANCE_MUTATIONS = (
     Mutation(
         name="pii-conservative-label-prefilter",
         path="core/pii.py",
-        before="    if patterns.ASCII_LETTER.search(text) is None:",
+        before="    if patterns.LABEL_HINT.search(text) is None:",
         after="    if True:",
         case=(
             "tests/core/test_pii_credential_guards.py::"

@@ -10,7 +10,9 @@ NUMBER_RUN = re.compile(r"[0-9][0-9 ()-]{6}")
 ASCII_LETTER = re.compile(r"[A-Za-z]")
 SECRET_HINT = re.compile(r"sk-|AKIA|ASIA|gh[pousr]_|github_pat_|xox[baprs]-|AIza|eyJ")
 LABEL_HINT = re.compile(
-    r"api|access|auth|secret|aws|client|github|gh|password|passwd|bearer", re.IGNORECASE
+    r"api|access|auth|secret|aws|client|github|gh|password|passwd|pwd|token|bearer|"
+    r"密码|口令|密钥|令牌",
+    re.IGNORECASE,
 )
 
 EMAIL = re.compile(
@@ -51,17 +53,31 @@ SECRET = re.compile(
     r")(?![A-Za-z0-9_])"
 )
 CREDENTIAL_LABEL_PATTERN = (
-    r"(?<![A-Za-z0-9_])(?P<label>api[_-]?key|access[_-]?token|auth[_-]?token|"
+    r"(?:(?<![A-Za-z0-9_])|(?=[\u3400-\u9fff]))(?P<label>api[_-]?key|access[_-]?token|auth[_-]?token|"
     r"(?:aws[_-]?)?secret[_-]?(?:access[_-]?)?key|client[_-]?secret|"
-    r"(?:github|gh)[_-]?token|password|passwd)"
+    r"(?:github|gh)[_-]?token|password|passwd|pwd|secret|token|"
+    r"访问密钥|访问令牌|密码|口令|密钥|令牌)"
+)
+CREDENTIAL_SEPARATOR = r"[\"']?\s*[:=\uff1a是为]\s*"
+CREDENTIAL_ASSIGNMENT = re.compile(CREDENTIAL_LABEL_PATTERN + CREDENTIAL_SEPARATOR, re.IGNORECASE)
+CREDENTIAL_VALUE_START = (
+    r"(?!" + CREDENTIAL_LABEL_PATTERN.replace("(?P<label>", "(?:") + CREDENTIAL_SEPARATOR + r")"
+)
+# Stop bare values before surrounding prose; quotes permit spaces and escaped punctuation.
+BARE_CREDENTIAL_PATTERN = (
+    r"[^\s\"'<>,;\uff0c。\uff1b\uff01\uff1f\uff1a「」《》、【】“”\u2018\u2019\u3400-\u9fff]{8,}"
 )
 LABELED_SECRET = re.compile(
-    CREDENTIAL_LABEL_PATTERN + r"[\"']?\s*[:=]\s*[\"']?(?P<value>[A-Za-z0-9_./+~=-]{8,})",
+    CREDENTIAL_LABEL_PATTERN
+    + CREDENTIAL_SEPARATOR
+    + CREDENTIAL_VALUE_START
+    + rf"(?P<value>{BARE_CREDENTIAL_PATTERN})",
     re.IGNORECASE,
 )
 QUOTED_SECRET = re.compile(
     CREDENTIAL_LABEL_PATTERN
-    + r"""["']?\s*[:=]\s*(?P<quote>["'])(?P<value>(?:\\.|[^\\])*?)(?P=quote)""",
+    + CREDENTIAL_SEPARATOR
+    + r"""(?P<quote>["'])(?P<value>(?:\\.|[^\\])*?)(?P=quote)""",
     re.IGNORECASE,
 )
 BEARER = re.compile(r"(?<![A-Za-z0-9_])Bearer\s+(?P<value>[A-Za-z0-9._~+/-]{16,}=*)", re.IGNORECASE)
@@ -69,4 +85,4 @@ PRIVATE_KEY = re.compile(
     r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
     r"[\sA-Za-z0-9+/=]+-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
 )
-SECRET_VALUE = re.compile(r"[A-Za-z0-9_./+~=-]{8,}\Z")
+SECRET_VALUE = re.compile(r"\S{8,}\Z")

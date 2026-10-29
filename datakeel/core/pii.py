@@ -52,6 +52,15 @@ _SECRET_LABELS = frozenset(
         "ghtoken",
         "password",
         "passwd",
+        "pwd",
+        "secret",
+        "token",
+        "密码",
+        "口令",
+        "密钥",
+        "令牌",
+        "访问密钥",
+        "访问令牌",
     }
 )
 _PLACEHOLDERS = frozenset(f"[{kind.upper()}]" for kind in _PRIORITY) | {"[REDACTED]"}
@@ -199,14 +208,38 @@ def _candidates(text: str) -> Iterator[PiiMatch]:
     yield from _ip_candidates(text)
 
 
+def _bare_secret(value: str, start: int) -> PiiMatch | None:
+    value = value.rstrip(",;")
+    while any(
+        value.endswith(closing) and value.count(closing) > value.count(opening)
+        for opening, closing in (("(", ")"), ("[", "]"), ("{", "}"))
+    ):
+        value = value[:-1].rstrip(",;")
+    if (
+        len(value) >= _MIN_SECRET_LENGTH
+        and value not in _PLACEHOLDERS
+        and any(char.isalnum() for char in value)
+    ):
+        return PiiMatch(type="secret", start=start, end=start + len(value))
+    return None
+
+
 def _credential_candidates(text: str) -> Iterator[PiiMatch]:
-    if patterns.ASCII_LETTER.search(text) is None:
-        return
     if patterns.LABEL_HINT.search(text) is None:
         return
-    for pattern in (patterns.LABELED_SECRET, patterns.BEARER):
-        for match in pattern.finditer(text):
-            yield PiiMatch(type="secret", start=match.start("value"), end=match.end("value"))
+    starts = [match.start() for match in patterns.CREDENTIAL_ASSIGNMENT.finditer(text)]
+    for index, start in enumerate(starts):
+        if match := patterns.LABELED_SECRET.match(text, start):
+            end = min(
+                match.end("value"), starts[index + 1] if index + 1 < len(starts) else len(text)
+            )
+            value = text[match.start("value") : end]
+            if end < match.end("value"):
+                value = value.rstrip("&|")
+            if candidate := _bare_secret(value, match.start("value")):
+                yield candidate
+    for match in patterns.BEARER.finditer(text):
+        yield PiiMatch(type="secret", start=match.start("value"), end=match.end("value"))
     for match in patterns.QUOTED_SECRET.finditer(text):
         if candidate := _labeled_secret(match.group("value"), match.group("label")):
             start = match.start("value")
@@ -268,18 +301,31 @@ def _numeric_prefix(text: str, start: int) -> bool:
 def _labeled_secret(text: str, label: str | None) -> PiiMatch | None:
     if label is None:
         return None
-    normalized = re.sub(r"[^a-z0-9]", "", label.casefold())
+    normalized = re.sub(r"[\W_]", "", label.casefold())
     value = text.strip()
     if (
         normalized not in _SECRET_LABELS
         or len(value) < _MIN_SECRET_LENGTH
         or value in _PLACEHOLDERS
+        or not any(char.isalnum() for char in value)
     ):
         return None
-    if normalized not in {"password", "passwd"} and not patterns.SECRET_VALUE.fullmatch(value):
+    if normalized not in {"password", "passwd", "pwd", "密码", "口令"} and not (
+        patterns.SECRET_VALUE.fullmatch(value)
+    ):
         return None
     start = len(text) - len(text.lstrip())
     return PiiMatch(type="secret", start=start, end=start + len(value))
+
+
+def _outer_candidates(candidates: list[PiiMatch]) -> Iterator[PiiMatch]:
+    enclosing_start, limit = -1, -1
+    for match in sorted(candidates, key=lambda item: (item.start, -item.end)):
+        if match.end <= limit and (match.start, match.end) != (enclosing_start, limit):
+            continue
+        yield match
+        if match.end > limit:
+            enclosing_start, limit = match.start, match.end
 
 
 def detect_pii(text: str, *, label: str | None = None) -> tuple[PiiMatch, ...]:
@@ -296,7 +342,8 @@ def detect_pii(text: str, *, label: str | None = None) -> tuple[PiiMatch, ...]:
         candidates.append(finding)
     selected: list[PiiMatch] = []
     for match in sorted(
-        candidates, key=lambda item: (_PRIORITY.index(item.type), item.start, -item.end)
+        _outer_candidates(candidates),
+        key=lambda item: (_PRIORITY.index(item.type), item.start, -item.end),
     ):
         if not any(match.start < item.end and item.start < match.end for item in selected):
             selected.append(match)
