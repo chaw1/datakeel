@@ -7,6 +7,30 @@ from scripts.mutation_models import Mutation
 
 PII_MUTATIONS = (
     Mutation(
+        name="pii-credential-url-ascii-boundary",
+        path="core/pii_patterns.py",
+        before=r"(?<![A-Za-z0-9_+.-])[A-Za-z][A-Za-z0-9+.-]{1,20}://",
+        after=r"\b[A-Za-z][A-Za-z0-9+.-]{1,20}://",
+        case="tests/core/test_pii_credential_guards.py::test_credential_url_boundary_cannot_leak_userinfo",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-credential-label-ascii-boundary",
+        path="core/pii_patterns.py",
+        before=r"(?<![A-Za-z0-9_])(?P<label>api",
+        after=r"\b(?P<label>api",
+        case="tests/core/test_pii_credential_guards.py::test_credential_label_boundary_cannot_leak_password",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-bearer-ascii-boundary",
+        path="core/pii_patterns.py",
+        before=r"(?<![A-Za-z0-9_])Bearer",
+        after=r"\bBearer",
+        case="tests/core/test_pii_credential_guards.py::test_bearer_boundary_cannot_leak_token",
+        runner="pytest",
+    ),
+    Mutation(
         name="pii-resident-id-checksum",
         path="core/pii.py",
         before="    return value[-1].upper() == _ID_CHECKS[checksum % 11]",

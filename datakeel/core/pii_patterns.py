@@ -27,8 +27,9 @@ LABELED_IP = re.compile(
     r"(?P<value>[0-9A-Fa-f:][A-Za-z0-9_.:%-]*)(?![A-Za-z0-9_.:%-])"
 )
 CREDENTIAL_URL = re.compile(
-    r"\b[A-Za-z][A-Za-z0-9+.-]{1,20}://[^\s/@]+@"
-    r"(?:\[[0-9A-Fa-f:.]+\]|[^\s<>\[\]()])+"
+    r"(?<![A-Za-z0-9_+.-])[A-Za-z][A-Za-z0-9+.-]{1,20}://"
+    r"[^\s/@]+@"
+    r"(?:\[[0-9A-Fa-f:.]+\]|[^\s<>\[\](){}\"'`\uff0c。\uff1b\uff01\uff1f\uff1a\uff08\uff09【】“”\u2018\u2019])+"
 )
 SECRET = re.compile(
     r"(?<![A-Za-z0-9_])(?:"
@@ -42,7 +43,7 @@ SECRET = re.compile(
     r")(?![A-Za-z0-9_])"
 )
 CREDENTIAL_LABEL_PATTERN = (
-    r"\b(?P<label>api[_-]?key|access[_-]?token|auth[_-]?token|"
+    r"(?<![A-Za-z0-9_])(?P<label>api[_-]?key|access[_-]?token|auth[_-]?token|"
     r"(?:aws[_-]?)?secret[_-]?(?:access[_-]?)?key|client[_-]?secret|"
     r"(?:github|gh)[_-]?token|password|passwd)"
 )
@@ -55,7 +56,7 @@ QUOTED_SECRET = re.compile(
     + r"""["']?\s*[:=]\s*(?P<quote>["'])(?P<value>(?:\\.|[^\\])*?)(?P=quote)""",
     re.IGNORECASE,
 )
-BEARER = re.compile(r"\bBearer\s+(?P<value>[A-Za-z0-9._~+/-]{16,}=*)", re.IGNORECASE)
+BEARER = re.compile(r"(?<![A-Za-z0-9_])Bearer\s+(?P<value>[A-Za-z0-9._~+/-]{16,}=*)", re.IGNORECASE)
 PRIVATE_KEY = re.compile(
     r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
     r"[\sA-Za-z0-9+/=]+-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
