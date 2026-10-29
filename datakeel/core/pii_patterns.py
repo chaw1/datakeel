@@ -48,7 +48,7 @@ CREDENTIAL_URL = re.compile(
     r"(?<![A-Za-z0-9_+.-])[A-Za-z][A-Za-z0-9+.-]{1,20}://"
     r"[^\s/@]+@"
     r"(?:\[[0-9A-Fa-f:.]+\]|[^\s<>\[\](){}\"'`“”\u2018\u2019"
-    r"\u2e80-\ua4cf\uac00-\ud7af\uf900-\ufaff\ufe10-\ufe6f\uff00-\uffef\U00020000-\U000323af])+"
+    r"\u2e80-\ua4cf\uac00-\ud7af\uf900-\ufaff\ufe10-\ufe6f\uff00-\uffef\U00020000-\U000323af])*"
 )
 SECRET = re.compile(
     r"(?<![A-Za-z0-9_])(?:"

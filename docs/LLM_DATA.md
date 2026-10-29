@@ -133,6 +133,8 @@ Credential assignments recognize English labels (including password, passwd, pwd
 
 Credential URLs stop before CJK prose and Chinese punctuation after the userinfo; the complete username/password remains covered even when it contains Unicode or punctuation. Adjacent instructions and quotation marks are retained. Label-like usernames inside a URL are not interpreted as separate credential assignments; credentials after the URL are still checked independently.
 
+The `scheme://userinfo@` prefix is always redacted even if the host is empty or starts with CJK text. CJK host text remains outside the redacted span, using the same boundary as adjacent prose.
+
 Phone candidates require complete digit boundaries. Mainland 11-digit mobile numbers accept +86/0086 and spaces or hyphens; landlines require an area-code separator, and North American local numbers use 3-3-4 grouping. Explicit + international numbers retain the existing 8–15 digit bounds. Other long bare numbers, dates, decimal amounts, versions, postal codes and percentages are not inferred to be phones.
 
 Existing typed redaction placeholders are not reported again. Nested surrounding brackets are retained regardless of their ordering. Overlapping findings cover their complete combined span, so a credential URL crossing a labelled password cannot leave either credential partly visible.

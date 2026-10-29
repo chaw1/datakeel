@@ -7,6 +7,14 @@ from scripts.mutation_models import Mutation
 
 PII_MUTATIONS = (
     Mutation(
+        name="pii-credential-url-empty-or-cjk-host",
+        path="core/pii_patterns.py",
+        before=r"\U000323af])*",
+        after=r"\U000323af])+",
+        case="tests/core/test_pii_url_hosts.py::test_cjk_and_empty_url_hosts_cannot_expose_userinfo",
+        runner="pytest",
+    ),
+    Mutation(
         name="pii-url-userinfo-is-not-a-credential-assignment",
         path="core/pii.py",
         before='    urls = tuple(patterns.CREDENTIAL_URL.finditer(text)) if "://" in text else ()',
