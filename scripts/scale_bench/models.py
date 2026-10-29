@@ -75,12 +75,14 @@ SCALES = {
 class Config(BenchModel):
     """Select one reproducible workload and an explicitly selected local stack."""
 
-    scenario: Literal["B1", "B2", "B3", "B4", "B5", "B6", "B7"]
+    scenario: Literal["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8"]
     size: Literal["S", "M", "L"] = "S"
     stack: Literal["sqlite", "postgres"] = "sqlite"
     seed: int = 23
     repeats: int = Field(default=20, ge=1, le=1000)
     workers: int = Field(default=8, ge=1, le=32)
+    think_ms: int = Field(default=1000, ge=0, le=60_000)
+    duration_seconds: float | None = Field(default=None, gt=0, le=3600)
 
 
 class Context(BenchModel):
