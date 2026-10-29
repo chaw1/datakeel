@@ -57,5 +57,13 @@ def test_pytest_entry_preserves_selection_reports_and_exit_status(
         run_pytest.main()
     assert stopped.value.code == 1
     assert observed == [
-        ["--cov=datakeel", "--cov-fail-under=85", "-n", xdist_count, "--dist=loadfile"]
+        [
+            "--cov=datakeel",
+            "--cov-fail-under=85",
+            "-p",
+            "scripts.pytest_groups",
+            "-n",
+            xdist_count,
+            "--dist=loadgroup",
+        ]
     ]

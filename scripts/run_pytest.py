@@ -11,10 +11,19 @@ from scripts.test_workers import test_worker_count
 
 
 def main() -> None:
-    """Keep each test file together and merge worker coverage through pytest-cov."""
+    """Group only shared sandbox setup and merge worker coverage through pytest-cov."""
     workers = test_worker_count()
     raise SystemExit(
-        pytest.main([*sys.argv[1:], "-n", str(workers if workers > 1 else 0), "--dist=loadfile"])
+        pytest.main(
+            [
+                *sys.argv[1:],
+                "-p",
+                "scripts.pytest_groups",
+                "-n",
+                str(workers if workers > 1 else 0),
+                "--dist=loadgroup",
+            ]
+        )
     )
 
 
