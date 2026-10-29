@@ -24,6 +24,15 @@ DEFERRED_READ_FUNCTIONS = frozenset(
         "list_quality_rules",
         "get_table_quality",
         "annotation_quality",
+        "project_progress",
+        "package_status",
+        "annotator_workload",
+        "rework_rate",
+        "annotation_consistency",
+        "prelabel_confidence",
+        "label_set_diff",
+        "next_task",
+        "production_objects",
     }
 )
 

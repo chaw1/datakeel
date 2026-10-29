@@ -4,6 +4,7 @@
 """Build MCP tool schemas from the same immutable domain argument models."""
 
 from datakeel.actions.parameters import PARAMETER_TYPES
+from datakeel.actions.production_language import PRODUCTION_LANGUAGE
 from datakeel.core.agent_models import ToolDefinition
 from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
 from datakeel.core.models import JsonDocument
@@ -30,5 +31,7 @@ def _description(name: str) -> str:
     if name == "ask_data":
         return ASK_DATA_DESCRIPTION
     if name in PARAMETER_TYPES:
-        return f"Prepare {name}; return a frozen impact plan without executing it."
+        base = f"Prepare {name}; return a frozen impact plan without executing it."
+        language = PRODUCTION_LANGUAGE.get(name)
+        return base + (" " + "; ".join(language) if language else "")
     return f"Read {name} without changing dataset contents."

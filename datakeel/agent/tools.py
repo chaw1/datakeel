@@ -86,7 +86,13 @@ def deferred_tools() -> list[ToolDefinition]:
         *[
             ToolDefinition(
                 name=item.id,
-                description=f"Prepare {item.id}: {', '.join(item.effects)}",
+                description=f"Prepare {item.id}: {', '.join(item.effects)}"
+                + "; ".join(
+                    text
+                    for group in (item.phrases, item.examples)
+                    for texts in group.values()
+                    for text in texts
+                ),
                 parameters=compact_schema(item.params_schema),
             )
             for item in action_definitions()

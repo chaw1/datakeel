@@ -15,7 +15,7 @@ from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 class ToolCallContext(BoundaryModel):
     """Attribute a local tool request without accepting caller-supplied privileges."""
 
-    actor: Literal["local"] = "local"
+    actor: str = "local"
     agent_id: str | None = Field(default=None, max_length=128)
     session_id: str | None = Field(default=None, max_length=128)
 

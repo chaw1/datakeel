@@ -5,7 +5,27 @@
 
 from pydantic import JsonValue
 
+from datakeel.actions.production_language import PRODUCTION_LANGUAGE
 from datakeel.core.models import AssetRef
+
+_PRODUCTION_READS = frozenset(
+    {
+        "project_progress",
+        "package_status",
+        "annotator_workload",
+        "rework_rate",
+        "annotation_consistency",
+        "prelabel_confidence",
+        "label_set_diff",
+        "next_task",
+        "production_objects",
+    }
+)
+
+
+def production_tool(name: str) -> bool:
+    """Identify the namespace whose task_id refers to annotation work rather than workers."""
+    return name in PRODUCTION_LANGUAGE or name in _PRODUCTION_READS
 
 
 def unique_refs(refs: list[AssetRef]) -> list[AssetRef]:
@@ -28,13 +48,17 @@ def reconcile_refs(authoritative: list[AssetRef], inferred: list[AssetRef]) -> l
     return unique_refs(authoritative + selected)
 
 
-def extract_refs(value: JsonValue, asset_type: str = "dataset") -> list[AssetRef]:
+def extract_refs(
+    value: JsonValue, asset_type: str = "dataset", *, production: bool = False
+) -> list[AssetRef]:
     """Recognize explicit AssetRefs and named identity parameters recursively."""
     refs: list[AssetRef] = []
     if isinstance(value, list):
         for item in value:
-            refs.extend(extract_refs(item, asset_type))
+            refs.extend(extract_refs(item, asset_type, production=production))
     elif isinstance(value, dict):
+        operator = value.get("operator")
+        production = production or (isinstance(operator, str) and production_tool(operator))
         identifier = value.get("asset_id")
         if isinstance(identifier, str):
             kind, namespace, version = (
@@ -60,16 +84,18 @@ def extract_refs(value: JsonValue, asset_type: str = "dataset") -> list[AssetRef
             if key in {"dataset_id", "file_id", "version_id", "task_id"} and isinstance(item, str):
                 refs.append(
                     AssetRef(
-                        asset_type=key.removesuffix("_id"),
+                        asset_type="production_task"
+                        if key == "task_id" and production
+                        else key.removesuffix("_id"),
                         asset_id=item,
                         version=item if key == "version_id" else None,
                     )
                 )
-            refs.extend(extract_refs(item, asset_type))
+            refs.extend(extract_refs(item, asset_type, production=production))
     return unique_refs(refs)
 
 
 def argument_refs(name: str, arguments: JsonValue) -> list[AssetRef]:
     """Resolve evidence asset_id arguments as files even when a read is rejected."""
     kind = "file" if name in {"get_evidence", "explain_sample"} else "dataset"
-    return extract_refs(arguments, kind)
+    return extract_refs(arguments, kind, production=production_tool(name))

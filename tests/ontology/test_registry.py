@@ -37,8 +37,22 @@ def test_registry_when_built_exposes_all_declared_asset_and_read_function_types(
         "task",
         "question",
         "kg_entity",
+        "user",
+        "team",
+        "role",
+        "skill",
+        "label_set",
+        "template",
+        "project",
+        "task_package",
+        "production_task",
+        "assignment",
+        "annotation_revision",
+        "review",
+        "model",
+        "prelabel_run",
     }
-    assert len(value.functions) == 20
+    assert len(value.functions) == 29
     assert "annotation_quality" in {item.id for item in value.functions}
 
 
@@ -54,6 +68,13 @@ def test_link_definitions_when_built_keep_semantics_distinct() -> None:
         "means",
         "owned_by",
         "references",
+        "member_of",
+        "holds_role",
+        "has_skill",
+        "assigned_to",
+        "review_of",
+        "previous_revision",
+        "uses",
     }
 
 

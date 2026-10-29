@@ -48,7 +48,7 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             assert client.initialize_result.server_info.name == "Datakeel"
             listed = await client.list_tools()
         expected = {item.name: item for item in tool_definitions()}
-        assert len(listed) == len(expected) == 57
+        assert len(listed) == len(expected) == 87
         assert {
             "query_kg",
             "explain_relation",

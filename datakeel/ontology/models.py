@@ -86,6 +86,8 @@ class ActionType(BoundaryModel):
     reversible: bool
     inverse_of: str | None = None
     handler: str
+    phrases: dict[str, list[str]] = Field(default_factory=dict)
+    examples: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class OntologyRegistry(BoundaryModel):

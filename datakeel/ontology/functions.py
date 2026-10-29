@@ -30,8 +30,9 @@ from datakeel.ontology.parameters import (
     SearchFilesParams,
     TaskParams,
 )
+from datakeel.ontology.production_functions import PRODUCTION_READ_MODELS, invoke_production
 from datakeel.ontology.standard_functions import invoke_standard
-from datakeel.ontology.tool_refs import extract_refs
+from datakeel.ontology.tool_refs import extract_refs, production_tool
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
@@ -41,6 +42,7 @@ from datakeel.storage.object_queries import evaluate
 from datakeel.storage.task_queries import query_task
 
 PARAMETER_MODELS: dict[str, type[BaseModel]] = {
+    **PRODUCTION_READ_MODELS,
     "list_datasets": ListDatasetsParams,
     "search_files": SearchFilesParams,
     "get_quality": DatasetParams,
@@ -234,7 +236,9 @@ def invoke_function(
     if name in PARAMETER_MODELS:
         PARAMETER_MODELS[name].model_validate(arguments.root)
     require_access(db, requested_refs(name, arguments), caller, record=False)
-    if name in {"ask_data", "list_metrics"}:
+    if name in PRODUCTION_READ_MODELS:
+        result = invoke_production(db, name, arguments, caller)
+    elif name in {"ask_data", "list_metrics"}:
         result = invoke_catalog(db, name, arguments, access=caller)
     elif name == "list_datasets":
         result = _list_datasets(db, arguments, caller)
@@ -246,7 +250,11 @@ def invoke_function(
         result = invoke_evidence(db, name, arguments, access=caller)
     else:
         result = _invoke_function(db, name, arguments)
-    require_access(db, (*result.asset_refs, *extract_refs(result.data)), caller)
+    require_access(
+        db,
+        (*result.asset_refs, *extract_refs(result.data, production=production_tool(name))),
+        caller,
+    )
     return result
 
 
