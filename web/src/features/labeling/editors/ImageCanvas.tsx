@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Group, Image as CanvasImage, Layer, Rect, Stage } from "react-konva";
 
 import { useI18n } from "../../../i18n/useI18n";
+import { altKeyName } from "../platformKeys";
 
 import { arrowDelta, clamp } from "./geometry";
 import { useCanvasTokens } from "./useCanvasTokens";
@@ -172,7 +173,7 @@ export function ImageCanvas({
           })}
         </output>
       </div>
-      <p className="muted">{t("wbEditorPanHint")}</p>
+      <p className="muted">{t("wbEditorPanHint", { alt: altKeyName() })}</p>
       {failed ? (
         <p role="alert">{t("wbEditorImageError")}</p>
       ) : loading ? (

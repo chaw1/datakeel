@@ -41,7 +41,7 @@ export const workbenchEn = {
   wbShortcuts: "Keyboard shortcuts",
   wbClose: "Close",
   wbCommonKeys:
-    "Ctrl/⌘+S save · Ctrl/⌘+Enter submit · Ctrl/⌘+Z undo · Ctrl/⌘+Shift+Z redo · Alt+N next · Alt+P previous · ? help",
+    "Ctrl/⌘+S save · Ctrl/⌘+Enter submit · Ctrl/⌘+Z undo · Ctrl/⌘+Shift+Z redo · {alt}+N next · {alt}+P previous · ? help",
   wbEditorKeys:
     "Box: B add, arrows move, Shift+arrows resize, Ctrl/⌘+D copy. Polygon: P add point, Enter close. Classification: label number or configured shortcut. Text: select characters then add span; Tab reaches every field.",
   wbDrawer: "Annotation details",

@@ -7,6 +7,7 @@ import { translator } from "../../i18n/context";
 import { labelingProject, labelingTask } from "../../test/labelingFixtures";
 
 import * as actions from "./actions";
+import { altKeyName } from "./platformKeys";
 import { TaskSession } from "./TaskSession";
 
 import type { AnnotationRecord, TaskWorkbench } from "../../api/production";
@@ -144,6 +145,43 @@ it("saves the current edits before a keyboard submission and exposes help", asyn
   });
   fireEvent.keyDown(region, { key: "n", altKey: true });
   expect(props.onNavigate).toHaveBeenCalledWith(1);
+});
+it("navigates with macOS Option+N/P, whose keys are a dead key and π", () => {
+  const { props } = mount();
+  const region = screen.getByRole("region", { name: "Annotation workbench" });
+  fireEvent.keyDown(region, { key: "Dead", code: "KeyN", altKey: true });
+  expect(props.onNavigate).toHaveBeenLastCalledWith(1);
+  fireEvent.keyDown(region, { key: "π", code: "KeyP", altKey: true });
+  expect(props.onNavigate).toHaveBeenLastCalledWith(-1);
+  fireEvent.keyDown(region, {
+    key: "Dead",
+    code: "KeyN",
+    altKey: true,
+    metaKey: true,
+  });
+  fireEvent.keyDown(region, { key: "n", code: "KeyN" });
+  expect(props.onNavigate).toHaveBeenCalledTimes(2);
+});
+it("names the navigation modifier ⌥ on Apple keyboards and Alt elsewhere", () => {
+  expect(
+    altKeyName({
+      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/141",
+    }),
+  ).toBe("⌥");
+  expect(
+    altKeyName({ userAgent: "", userAgentData: { platform: "macOS" } }),
+  ).toBe("⌥");
+  expect(
+    altKeyName({ userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }),
+  ).toBe("Alt");
+  expect(
+    altKeyName({ userAgent: "", userAgentData: { platform: "Linux" } }),
+  ).toBe("Alt");
+  mount();
+  fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
+  expect(
+    screen.getByText(/Alt\+N next · Alt\+P previous/, { exact: false }),
+  ).toBeVisible();
 });
 it("hides annotation controls without annotation scope and prevents keyboard bypass", async () => {
   mount({ scopes: ["production:review"] });

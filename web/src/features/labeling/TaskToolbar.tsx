@@ -1,5 +1,7 @@
 import { useI18n } from "../../i18n/useI18n";
 
+import { altKeyName } from "./platformKeys";
+
 import type { useAnnotationSession } from "./session/useAnnotationSession";
 
 export function TaskToolbar({
@@ -100,7 +102,7 @@ export function TaskToolbar({
       {help && (
         <section className="card wb-shortcuts" aria-label={t("wbShortcuts")}>
           <h2>{t("wbShortcuts")}</h2>
-          <p>{t("wbCommonKeys")}</p>
+          <p>{t("wbCommonKeys", { alt: altKeyName() })}</p>
           <p>{t("wbEditorKeys")}</p>
           <button
             type="button"

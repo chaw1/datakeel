@@ -48,7 +48,7 @@ export const wbEditorEn = {
   wbEditorFit: "Fit image (0)",
   wbEditorPan: "Pan image",
   wbEditorPanHint:
-    "Toggle Pan to drag the image. Alt + arrows pans; + / - zooms; 0 fits.",
+    "Toggle Pan to drag the image. {alt} + arrows pans; + / - zooms; 0 fits.",
   wbEditorLoading: "Loading image…",
   wbEditorImageError:
     "The image could not be loaded. Check the source, then reopen the task.",

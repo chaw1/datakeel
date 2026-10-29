@@ -39,7 +39,7 @@ export const workbenchZh = {
   wbShortcuts: "快捷键表",
   wbClose: "关闭",
   wbCommonKeys:
-    "Ctrl/⌘+S 保存 · Ctrl/⌘+Enter 提交 · Ctrl/⌘+Z 撤销 · Ctrl/⌘+Shift+Z 重做 · Alt+N 下一条 · Alt+P 上一条 · ? 帮助",
+    "Ctrl/⌘+S 保存 · Ctrl/⌘+Enter 提交 · Ctrl/⌘+Z 撤销 · Ctrl/⌘+Shift+Z 重做 · {alt}+N 下一条 · {alt}+P 上一条 · ? 帮助",
   wbEditorKeys:
     "框：B 添加，方向键移动，Shift+方向键调边，Ctrl/⌘+D 复制。多边形：P 添加点，Enter 闭合。分类：标签序号或自定义快捷键。文本：选字后添加片段；Tab 可到达所有字段。",
   wbDrawer: "标注详情",

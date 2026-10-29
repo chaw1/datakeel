@@ -48,7 +48,7 @@ export const wbEditorZh = {
   wbEditorFit: "适应图片（0）",
   wbEditorPan: "平移图片",
   wbEditorPanHint:
-    "启用平移后拖动图片。Alt + 方向键平移，+ / - 缩放，0 适应图片。",
+    "启用平移后拖动图片。{alt} + 方向键平移，+ / - 缩放，0 适应图片。",
   wbEditorLoading: "正在加载图片…",
   wbEditorImageError: "图片加载失败，请检查来源后重新打开任务。",
   wbEditorNoImage: "暂无图片，仍可在下方编辑坐标。",
