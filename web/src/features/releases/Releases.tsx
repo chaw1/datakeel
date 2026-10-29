@@ -63,7 +63,7 @@ export function Releases({
             </button>{" "}
             <span className="muted">
               {date(release.created_at, locale)} ·{" "}
-              {t("files", { count: release.file_count })}: {release.file_count}
+              {t("releaseFileCount", { count: release.file_count })}
             </span>
             {selected === release.id && (
               <ReleaseDetail releaseId={release.id} />

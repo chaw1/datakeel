@@ -51,8 +51,10 @@ def test_separate_process_upload_lock_and_crash_resume(db: Database, tmp_path: P
             while not request.marker.exists() and monotonic() < deadline and process.poll() is None:
                 sleep(0.02)
             assert request.marker.exists()
-            with pytest.raises(ConflictError):
+            with pytest.raises(ConflictError) as conflict:
                 put_chunk(db, upload.id, 0, b"abcd")
+            assert "Upload is busy" in str(conflict.value)
+            assert "Conversation" not in str(conflict.value)
             assert get_upload(db, upload.id).missing_chunks == [0]
         finally:
             process.kill()

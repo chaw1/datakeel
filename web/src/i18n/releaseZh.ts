@@ -17,6 +17,7 @@ export const releaseZh = {
   versionQualityScore: "质量分",
   versionEvidenceDecisions: "证据决策",
   releaseTitle: "发布记录",
+  releaseFileCount: "{count} 个文件",
   releaseFrozenHint: "发布须经签批，并永久冻结文件清单、内容哈希和元数据。",
   releaseEmpty: "尚无发布记录。",
   releasePublish: "发布版本",

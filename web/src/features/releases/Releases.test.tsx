@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
+import { I18nContext, translator } from "../../i18n/context";
 import { actionPlan, actionRun } from "../../test/actionFixtures";
 import { dataset, version } from "../../test/fixtures";
 
@@ -55,6 +56,31 @@ const report = {
         : [],
   })),
 };
+
+it.each([
+  ["zh", "2 个文件"],
+  ["en", "2 files"],
+] as const)(
+  "places the release count before its unit in %s",
+  async (locale, text) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify([{ ...release, file_count: 2 }])),
+        ),
+      ),
+    );
+    render(
+      <I18nContext.Provider
+        value={{ locale, setLocale: vi.fn(), t: translator(locale) }}
+      >
+        <Releases versions={[version]} datasetId={dataset.id} />
+      </I18nContext.Provider>,
+    );
+    expect(await screen.findByText(new RegExp(text))).toBeVisible();
+  },
+);
 
 it("prepares a frozen release and requires explicit approval before executing", async () => {
   let published = false;

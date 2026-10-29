@@ -18,7 +18,9 @@ uv run datakeel version-diff DATASET_ID BEFORE_VERSION AFTER_VERSION --limit 50 
 
 在 **版本 → 发布版本** 选择来源版本，输入 `v1.2.0` 等语义化标签及发布说明，点击 **审阅发布计划**。检查冻结参数、文件影响、摘要和不可逆提示后，点击 **签批并发布版本**。准备计划不会发布；签批只适用于这一份冻结计划，待办也会出现在 **审批待办**。
 
-发布记录出现在列表中。展开标签可查看来源版本、清单 SHA-256、说明、总字节数和分页冻结文件。发布冻结的是准备发布计划时的当前治理元数据、质量测量及证据决策摘要。发布后的文件、元数据和哈希均不可修改；后续修改须生成新版本并再次发布，原有生成版本流程保持兼容。
+修改来源版本、标签、说明或任一预算字段，会立即清掉表单下方的计划；须重新审阅计划后再签批修改后的表单。修改前发起的准备请求即使稍后返回，也不会恢复旧计划。服务端已准备的冻结计划仍可在 **审批待办** 中按原参数查看。
+
+发布记录出现在列表中，文件数量显示为 **2 个文件**（英文为 **2 files**）。展开标签可查看来源版本、清单 SHA-256、说明、总字节数和分页冻结文件。发布冻结的是准备发布计划时的当前治理元数据、质量测量及证据决策摘要。发布后的文件、元数据和哈希均不可修改；后续修改须生成新版本并再次发布，原有生成版本流程保持兼容。
 
 自动化继续使用受控动作协议：`POST /api/actions/publish_release/prepare`，参数为 `dataset_id`、`version_id`、`tag`、`notes`；随后在 `POST /api/approvals/{plan_id}` 签批，再通过 `POST /api/actions/{plan_id}/execute` 执行。签批和执行须携带返回的计划摘要，执行使用该计划的 operation ID。查询接口为 `GET /api/datasets/{dataset}/releases`、`GET /api/releases/{release}` 和 `GET /api/releases/{release}/files?offset=0&limit=50`。
 
@@ -101,6 +103,8 @@ uv run datakeel release-reconcile RELEASE_ID --json
 向 `POST /api/uploads` 提交 `idempotency_key`、`name`、`filename`、`total_bytes`、完整源文件的 `sha256`、`chunk_bytes` 和可选 `metadata`，保存返回的上传 ID。通过 `GET /api/uploads/{id}` 获取 `received_chunks` 和 `missing_chunks`，新客户端只补缺失分片。分片编号从零开始，通过 `PUT /api/uploads/{id}/chunks/{ordinal}` 发送精确大小的原始字节，设置 `Content-Type: application/octet-stream`。最后调用无请求体的 `POST /api/uploads/{id}/complete` 校验并导入；成功回执包含 `COMPLETE` 状态及 `dataset_id`。
 
 相同分片重传会合并，内容冲突的重复分片会拒绝；允许乱序到达。同一上传的重叠写入返回 `409`，客户端可在前一写入完成后重试。同一个初始化幂等键恢复同一声明，修改声明返回 `409`；不同键代表独立导入意图。完成请求可重复调用。导入前检查整文件 SHA-256，提交数据集事务前再读回实际存储对象核对哈希。大小错误、缺片或哈希不符返回 `422`，不会创建数据集；不存在的上传 ID 返回 `404`。
+
+初始化、分片写入或完成请求遇到上传锁忙时，返回 `409`，其 `detail` 为 `"Upload is busy; retry after the active upload operation completes"`（该上传正由其他操作占用，请稍后重试）。此文案明确指出上传操作；会话冲突保留原文案。全局上传写入并发名额用尽时，仍提示上传并发上限。
 
 配置上限为 `DATAKEEL_UPLOAD_MAX_CHUNK_BYTES`（默认 8 MiB，最高 64 MiB）、`DATAKEEL_UPLOAD_MAX_CONCURRENCY`（默认 4，最高 32）和 `DATAKEEL_UPLOAD_MAX_FILE_BYTES`（默认 5 GiB，最高 1 TiB）。最多 100,000 个分片，选择分片大小时须满足这一限制；超出并发写入限制返回 `409`。
 
