@@ -4,6 +4,16 @@
 """Fixed presentation vocabulary, never a list of guessed entity identities."""
 
 from datakeel.core.datasheet_models import DatasheetChapter, DatasheetLanguage
+from datakeel.core.evidence_models import AssertionStatus, Verification
+
+# These are presentation labels for the product's typed states, not additional record keys.
+EVIDENCE_STATE_LABELS: dict[AssertionStatus | Verification, tuple[str, str]] = {
+    "candidate": ("候选", "candidate"),
+    "accepted": ("已接受", "accepted"),
+    "rejected": ("已拒绝", "rejected"),
+    "verified": ("已核对", "verified"),
+    "needs_review": ("待复核", "needs review"),
+}
 
 _TITLES = {
     "motivation": ("动机", "Motivation"),
@@ -125,6 +135,8 @@ ENGLISH_GRAMMAR = frozenset(
         "private internal external local open restricted not applicable suitable supports",
         "called maintains support applies apply assigned designated responsible includes dataset's",
         "step steps type types format formats under using used via",
+        "need still reviewers",
+        *(english for _chinese, english in EVIDENCE_STATE_LABELS.values()),
     )
     for word in line.split()
 )
@@ -234,6 +246,7 @@ CHINESE_GRAMMAR = (
     "项",
     "已",
     "未",
+    "仍",
     "完成",
     "失败",
     "候选",
@@ -273,6 +286,7 @@ CHINESE_GRAMMAR = (
     "月",
     "日",
     "号",
+    *(chinese for chinese, _english in EVIDENCE_STATE_LABELS.values()),
 )
 
 

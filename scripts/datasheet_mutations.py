@@ -7,6 +7,38 @@ from scripts.mutation_models import Mutation
 
 DATASHEET_MUTATIONS = (
     Mutation(
+        name="datasheet-product-review-state-keys",
+        path="datasheets/number_labels.py",
+        before="get_args(AssertionStatus)",
+        after="()",
+        case="tests/datasheets/test_state_labels.py::test_candidate_labels_derive_from_product_states",
+        runner="pytest",
+    ),
+    Mutation(
+        name="datasheet-product-verification-state-keys",
+        path="datasheets/number_labels.py",
+        before="get_args(Verification)",
+        after="()",
+        case="tests/datasheets/test_state_labels.py::test_review_labels_derive_english_inflections",
+        runner="pytest",
+    ),
+    Mutation(
+        name="datasheet-product-state-inflections",
+        path="datasheets/number_labels.py",
+        before='return tuple(" ".join(words) for words in product(*forms))',
+        after="return (label,)",
+        case="tests/datasheets/test_state_labels.py::test_review_labels_derive_english_inflections",
+        runner="pytest",
+    ),
+    Mutation(
+        name="datasheet-product-state-count-predicates",
+        path="datasheets/units.py",
+        before="or state_predicate(phrase[end:].strip())",
+        after="or False",
+        case="tests/datasheets/test_state_labels.py::test_state_predicates_keep_the_counted_assertion_object",
+        runner="pytest",
+    ),
+    Mutation(
         name="datasheet-trailing-record-key-label",
         path="datasheets/numeric.py",
         before='if reading[1] == "count:unknown" and any(',
@@ -65,7 +97,9 @@ DATASHEET_MUTATIONS = (
     Mutation(
         name="datasheet-post-count-predicate",
         path="datasheets/units.py",
-        before="if _POST_COUNT.match(phrase[end:].strip()):",
+        before=(
+            "if _POST_COUNT.match(phrase[end:].strip()) or state_predicate(phrase[end:].strip()):"
+        ),
         after="if False:",
         case="tests/datasheets/test_typed_numbers.py::test_count_modifier_support_is_required",
         runner="pytest",

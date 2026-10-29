@@ -525,3 +525,63 @@ def test_record_key_labels_cannot_erase_explicit_foreign_objects() -> None:
         assert numeric_issues(f"8 text files and audio: 6 {noun}.", facts) == (
             "unsupported_number",
         )
+
+
+@pytest.mark.parametrize(
+    ("text", "field", "value", "drop"),
+    [
+        (
+            "Reviewers accepted 1200 assertions; 85 are candidates.",
+            "assertions.status_counts",
+            {"accepted": 1200, "candidate": 85},
+            False,
+        ),
+        (
+            "85 条证据断言仍为候选。",
+            "assertions.status_counts",
+            {"accepted": 1200, "candidate": 85},
+            False,
+        ),
+        (
+            "9 assertions still need review.",
+            "assertions.verification_counts",
+            {"verified": 52, "needs_review": 9},
+            False,
+        ),
+        (
+            "9 条断言待复核。",
+            "assertions.verification_counts",
+            {"verified": 52, "needs_review": 9},
+            False,
+        ),
+        (
+            "85 assertions are rejected.",
+            "assertions.status_counts",
+            {"accepted": 1200, "candidate": 85},
+            True,
+        ),
+        (
+            "1200 条证据断言仍为候选。",
+            "assertions.status_counts",
+            {"accepted": 1200, "candidate": 85},
+            True,
+        ),
+        (
+            "52 assertions still need review.",
+            "assertions.verification_counts",
+            {"verified": 52, "needs_review": 9},
+            True,
+        ),
+        (
+            "9 条断言已核对。",
+            "assertions.verification_counts",
+            {"verified": 52, "needs_review": 9},
+            True,
+        ),
+    ],
+)
+def test_tails2_required_product_state_keys(
+    text: str, field: str, value: JsonValue, *, drop: bool
+) -> None:
+    """All eight required sentences retain their exact wording and direct numeric verdict."""
+    assert bool(numeric_issues(text, (_fact(field, value),))) is drop
