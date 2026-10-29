@@ -99,8 +99,8 @@ TRAINING_MUTATIONS = (
     Mutation(
         name="training-checked-signals-omits-group",
         path="training/leakage.py",
-        before='checked_signals=("exact", "image", "group"),',
-        after='checked_signals=("exact", "image"),',
+        before='checked_signals=("exact", "image", "text", "group"),',
+        after='checked_signals=("exact", "image", "text"),',
         case=(
             "tests/training/test_leakage.py::"
             "test_three_signals_emit_pairs_with_distance_and_partitions"
@@ -110,7 +110,7 @@ TRAINING_MUTATIONS = (
     Mutation(
         name="training-primary-label-depends-on-input-order",
         path="training/splitting.py",
-        before="(min(sample.labels),) if sample.labels else ()",
+        before="tuple(sorted(set(sample.labels)))",
         after="sample.labels[:1]",
         case=(
             "tests/training/test_primary_labels.py::"

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import io
+import json
 import tarfile
 from typing import TYPE_CHECKING
 
@@ -138,22 +139,22 @@ def test_training_import_accepts_standard_coco_and_yolo(panel: TrainingPanel) ->
     assert yolo.json()["annotation_count"] == 1
 
 
-def test_deferred_hf_training_format_is_rejected(panel: TrainingPanel) -> None:
-    """Preparing an export cannot bypass the retained-format boundary."""
+def test_unknown_training_format_is_rejected(panel: TrainingPanel) -> None:
+    """Preparing an export cannot bypass the declared-format boundary."""
     client, _base, fixture = panel
     response = client.post(
         "/api/actions/export_dataset/prepare",
         json={
             "dataset_id": fixture.dataset_id,
             "version_id": fixture.version_id,
-            "format": "hf_imagefolder",
+            "format": "unknown_training_format",
         },
     )
     assert response.status_code == 422, response.text
     assert "format" in response.text
 
 
-def _export(panel: TrainingPanel) -> ActionPlan:
+def _export(panel: TrainingPanel, format_name: str = "imagefolder") -> ActionPlan:
     client, base, fixture = panel
     split = _save(client, base, "export")
     response = client.post(
@@ -162,7 +163,7 @@ def _export(panel: TrainingPanel) -> ActionPlan:
             "dataset_id": fixture.dataset_id,
             "version_id": fixture.version_id,
             "split_set_id": split.id,
-            "format": "imagefolder",
+            "format": format_name,
         },
     )
     assert response.status_code == 200, response.text
@@ -179,17 +180,30 @@ def _export(panel: TrainingPanel) -> ActionPlan:
     return plan
 
 
-def test_completed_training_artifact_downloads_a_real_archive(panel: TrainingPanel) -> None:
+@pytest.mark.parametrize("format_name", ["imagefolder", "hf_imagefolder"])
+def test_completed_training_artifact_downloads_a_real_archive(
+    panel: TrainingPanel, format_name: str
+) -> None:
     """The browser download resolves only a successful receipt in the controlled directory."""
     client, _base, _fixture = panel
-    plan = _export(panel)
+    plan = _export(panel, format_name)
     response = client.get(f"/api/actions/{plan.id}/export")
     assert response.status_code == 200
     with tarfile.open(fileobj=io.BytesIO(response.content)) as archive:
         assert "MANIFEST.json" in archive.getnames()
-        assert "classes.json" in archive.getnames()
+        if format_name == "imagefolder":
+            assert "classes.json" in archive.getnames()
+        else:
+            metadata = [name for name in archive.getnames() if name.endswith("metadata.jsonl")]
+            assert len(metadata) == 3
+            for name in metadata:
+                source = archive.extractfile(name)
+                assert source is not None
+                rows = [json.loads(line) for line in source.read().decode().splitlines()]
+                assert rows
+                assert all(json.loads(row["labels_json"]) for row in rows)
         assert any(
-            len(name.split("/")) == 3
+            len(name.split("/")) == (3 if format_name == "imagefolder" else 2)
             and name.split("/")[0] in {"train", "val", "test"}
             and name.endswith(".png")
             for name in archive.getnames()

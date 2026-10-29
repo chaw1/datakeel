@@ -29,7 +29,7 @@ expect:
             properties:
               version_id: {const: '{{version_id}}'}
               sample_count: {const: 100}
-              checked_signals: {const: [exact, image, group]}
+              checked_signals: {const: [exact, image, text, group]}
               pairs:
                 type: array
                 minItems: 2
