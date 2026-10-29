@@ -182,6 +182,7 @@ def _valid_phone(value: str) -> bool:
         value.startswith("+")
         or patterns.CHINA_PHONE_DIGITS.fullmatch(digits) is not None
         or patterns.LOCAL_PHONE.fullmatch(value) is not None
+        or patterns.PARENTHESIZED_PHONE.fullmatch(value) is not None
     )
 
 
@@ -288,6 +289,7 @@ def _number_candidates(text: str) -> Iterator[PiiMatch]:
         ("china_id", patterns.CHINA_ID, _valid_id),
         ("bank_card", patterns.BANK_CARD, _valid_card),
         ("phone", patterns.CHINA_MOBILE, _valid_phone),
+        ("phone", patterns.PARENTHESIZED_PHONE, _valid_phone),
         ("phone", patterns.PHONE, _valid_phone),
     )
     for kind, pattern, validate in checks:
@@ -302,7 +304,7 @@ def _numeric_prefix(text: str, start: int) -> bool:
     if text[start] == "+":
         return False
     index = start - 1
-    while index >= 0 and text[index] in " -()":
+    while index >= 0 and text[index] in " -()\uff08\uff09":
         index -= 1
     return index >= 0 and text[index].isdigit()
 

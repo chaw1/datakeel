@@ -7,6 +7,14 @@ from scripts.mutation_models import Mutation
 
 PII_MUTATIONS = (
     Mutation(
+        name="pii-parenthesized-phone-recall",
+        path="core/pii.py",
+        before='        ("phone", patterns.PARENTHESIZED_PHONE, _valid_phone),',
+        after='        ("phone", patterns.PHONE, _valid_phone),',
+        case="tests/core/test_pii_phone_parentheses.py::test_parenthesized_phone_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
         name="pii-credential-url-empty-or-cjk-host",
         path="core/pii_patterns.py",
         before=r"\U000323af])*",
