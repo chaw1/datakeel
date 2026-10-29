@@ -18,12 +18,14 @@ import { mediaEn } from "./mediaEn";
 import { metadataEn } from "./metadataEn";
 import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
+import { productionEn } from "./productionEn";
 import { releaseEn } from "./releaseEn";
 import { standardsEn } from "./standardsEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  ...productionEn,
   ...customOperatorEn,
   ...releaseEn,
   ...assetEn,

@@ -18,6 +18,7 @@ import { mediaZh } from "./mediaZh";
 import { metadataZh } from "./metadataZh";
 import { metricRollbackZh } from "./metricRollbackZh";
 import { objectZh } from "./objectZh";
+import { productionZh } from "./productionZh";
 import { releaseZh } from "./releaseZh";
 import { standardsZh } from "./standardsZh";
 import { workflowZh } from "./workflowZh";
@@ -25,6 +26,7 @@ import { workspaceZh } from "./workspaceZh";
 
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
+  ...productionZh,
   ...customOperatorZh,
   ...releaseZh,
   ...assetZh,

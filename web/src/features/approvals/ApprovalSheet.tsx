@@ -142,6 +142,10 @@ export function ApprovalSheet(props: ApprovalProps) {
           </dd>
         </div>
         <div>
+          <dt>{t("approvalRequired")}</dt>
+          <dd>{t(approval.requiresApproval ? "yes" : "no")}</dd>
+        </div>
+        <div>
           <dt>{t("planDigest")}</dt>
           <dd className="approval-digest">
             <code title={plan.plan_digest}>{plan.plan_digest}</code>

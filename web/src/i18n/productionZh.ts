@@ -1,0 +1,25 @@
+import type { productionEn } from "./productionEn";
+
+export const productionZh: Record<keyof typeof productionEn, string> = {
+  productionManageUsers: "管理用户与团队",
+  productionManageSkills: "管理技能",
+  productionDefineRole: "定义角色",
+  productionUpdateRole: "修改角色",
+  productionCreateLabelSet: "管理标签集与模板",
+  productionPublishLabelSet: "发布标签集",
+  productionRegisterModel: "登记预标注模型",
+  productionUpdateModel: "修改预标注模型",
+  productionImportPredictions: "导入预测",
+  productionRunPrelabel: "运行预标注",
+  productionFinalizeProject: "定稿项目",
+  productionCreateProject: "创建项目",
+  productionSplitPackages: "切分任务包",
+  productionAssignTasks: "指派任务",
+  productionClaimTask: "领取任务",
+  productionReleaseTask: "释放任务",
+  productionSaveRevision: "保存标注修订",
+  productionSubmitTask: "提交任务",
+  productionReviewTask: "审核任务",
+  productionReopenTask: "重开任务",
+  productionUpgradeProject: "升级工作流档位",
+};
