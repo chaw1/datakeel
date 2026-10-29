@@ -129,8 +129,12 @@ def test_frozen_dry_run_rejects_changed_decision_ledger(db: Database, tmp_path: 
         stored = session.get(TrainingRunRow, run.id)
         assert stored is not None
         object_store().materialize(stored.ledger_key).write_text("changed-decisions\n")
-    with pytest.raises(ConflictError, match="ledger changed"):
+    message = ""
+    try:
         execute_plan(db, plan.id, ExecuteRequest(plan_digest=plan.plan_digest))
+    except ConflictError as error:
+        message = str(error)
+    assert "ledger changed" in message
     assert len(list_versions(db, dataset)) == 1
 
 

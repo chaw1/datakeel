@@ -98,8 +98,8 @@ def test_preference_identical_and_near_identical_are_always_reported(tmp_path: P
         {"prompt": "Explain the third concept", "chosen": "", "rejected": "A rejected response."},
     ]
     report = analyze_sources((source(tmp_path, rows),))
-    assert report.issue_counts["preference_identical"] == 1
-    assert report.issue_counts["preference_near_identical"] == 1
-    assert report.issue_counts["chosen_empty"] == 1
+    assert report.issue_counts.get("preference_identical", 0) == 1
+    assert report.issue_counts.get("preference_near_identical", 0) == 1
+    assert report.issue_counts.get("chosen_empty", 0) == 1
     assert report.dropped == 3
     assert json.loads(report.model_dump_json())["preference_records"] == 3

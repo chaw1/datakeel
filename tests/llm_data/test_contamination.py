@@ -48,7 +48,7 @@ def test_short_lightly_edited_question_uses_conservative_fallback(tmp_path: Path
         "output": "The branches contain storage chambers.",
     }
     report = analyze_sources((source(tmp_path, [row]),), evaluations=(evaluation,))
-    assert report.issue_counts["contamination"] == 1
+    assert report.issue_counts.get("contamination", 0) == 1
 
 
 def test_unregistered_and_clean_data_have_no_contamination_signal(tmp_path: Path) -> None:
