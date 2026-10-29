@@ -15,6 +15,7 @@ import { enterpriseSmoke } from "./enterprise-smoke.mjs";
 import { evidenceSmoke } from "./evidence-smoke.mjs";
 import { kgSmoke } from "./kg-smoke.mjs";
 import { imageKGSmoke } from "./image-kg-smoke.mjs";
+import { labelingSmoke } from "./labeling-smoke.mjs";
 import { extractionSmoke } from "./extraction-smoke.mjs";
 import { polishSmoke } from "./polish-smoke.mjs";
 import { refinementSmoke } from "./refinement-smoke.mjs";
@@ -427,6 +428,13 @@ try {
     screenshot,
     checks,
   });
+  const labeling = await labelingSmoke({
+    page,
+    json,
+    post,
+    screenshot,
+    checks,
+  });
   const polish = await polishSmoke({ page, json, screenshot, checks });
   const refinement = await refinementSmoke({ page, json, screenshot, checks });
   const extraction = process.argv[5]
@@ -504,6 +512,7 @@ try {
         enterprise,
         standards,
         workspace,
+        labeling,
         polish,
         refinement,
         extraction,
