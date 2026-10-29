@@ -64,3 +64,22 @@ def test_training_operator_rejects_removed_safety_configuration(tmp_path: Path) 
         REGISTRY["text.training_quality"].run(
             [], tmp_path / "output", {"safety_terms": ["screening phrase"]}
         )
+
+
+def test_training_operator_retains_record_normalization_independently_of_document_dedup(
+    tmp_path: Path,
+) -> None:
+    """The dedicated training entry still detects punctuation-only repeated records."""
+    rows = [
+        {
+            "instruction": f"Describe a generated garden{punctuation}",
+            "output": "The garden includes native plants and open walking paths.",
+        }
+        for punctuation in (".", "!")
+    ]
+    content = "\n".join(json.dumps(row) for row in rows) + "\n"
+    training = _file(tmp_path, "records.jsonl", content)
+    result = REGISTRY["text.training_quality"].run([training], tmp_path / "output")
+    assert result.files[0].metadata["training_quality"]["issue_counts"].get("exact_duplicate") == 1
+    assert result.files[0].id == training.id
+    assert Path(result.files[0].path).read_text() == content

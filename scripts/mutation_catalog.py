@@ -22,6 +22,7 @@ from scripts.release_mutations import RELEASE_MUTATIONS
 from scripts.sandbox_mutations import SANDBOX_MUTATIONS
 from scripts.standard_mutations import LEXICAL_RULE_MUTATIONS, STANDARD_MUTATIONS
 from scripts.table_mutations import TABLE_MUTATIONS
+from scripts.text_dedup_mutations import TEXT_DEDUP_MUTATIONS
 from scripts.timeseries_mutations import TIMESERIES_MUTATIONS
 from scripts.training_governance_mutations import TRAINING_GOVERNANCE_MUTATIONS
 from scripts.training_mutations import TRAINING_MUTATIONS
@@ -47,6 +48,7 @@ FEATURE_MUTATIONS = (
     *ANNOTATION_QA_MUTATIONS,
     *DATASHEET_MUTATIONS,
     *PII_MUTATIONS,
+    *TEXT_DEDUP_MUTATIONS,
     *TRAINING_MUTATIONS,
     *TRAINING_GOVERNANCE_MUTATIONS,
     *SANDBOX_MUTATIONS,
