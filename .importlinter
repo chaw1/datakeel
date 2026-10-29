@@ -27,7 +27,6 @@ ignore_imports =
     datakeel.storage.action_operations -> datakeel.actions.training_parameters
     datakeel.storage.action_snapshot -> datakeel.actions.training_parameters
     datakeel.operators.text.training_quality -> datakeel.llm_data
-    datakeel.operators.text.dedup -> datakeel.llm_data.index
     datakeel.storage.delivery_service -> datakeel.delivery.manifest
     datakeel.storage.delivery_service -> datakeel.delivery.reconcile
     datakeel.storage.release_actions -> datakeel.actions.models
