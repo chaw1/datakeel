@@ -5,7 +5,14 @@
 
 from pathlib import Path
 
-from datakeel.core.training_export_models import HfImageMetadata, TrainingExport
+from PIL import Image
+
+from datakeel.core.errors import ValidationError
+from datakeel.core.training_export_models import (
+    HfImageMetadata,
+    TrainingExport,
+    TrainingExportItem,
+)
 from datakeel.training.export_common import (
     copy_source,
     dimensions,
@@ -18,6 +25,8 @@ _README = """# Hugging Face imagefolder
 
 Each nonempty split contains images and one metadata.jsonl with a row per image.
 file_name is relative to its metadata file. Image bytes are unchanged.
+Only absent or identity (1) EXIF orientation is accepted. Normalize rotated or
+mirrored sources before importing; the HF decoder otherwise changes their frame.
 
 Load with datasets.load_dataset("imagefolder", data_dir="package"). The loader
 recognizes the val directory as the validation split. No datasets dependency is
@@ -35,6 +44,16 @@ MANIFEST.json records original split names, source hashes, counts and identities
 """
 
 
+def _validate_orientation(item: TrainingExportItem) -> None:
+    with Image.open(item.file.path) as image:
+        if image.getexif().get(274) not in (None, 1):
+            message = (
+                "HF imagefolder requires absent or identity EXIF orientation; "
+                "normalize the source orientation before importing"
+            )
+            raise ValidationError(message)
+
+
 def write_hf_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]:
     """Write safe relative image links and nullable annotations as stable JSON text columns."""
     paths: dict[str, str] = {}
@@ -42,6 +61,7 @@ def write_hf_imagefolder(export: TrainingExport, directory: Path) -> dict[str, s
         rows: list[str] = []
         for item in (item for item in export.items if item.split == split):
             validate_image_extension(item, "hf_imagefolder")
+            _validate_orientation(item)
             width, height = dimensions(item)
             name = filename(item)
             relative = f"{split}/{name}"

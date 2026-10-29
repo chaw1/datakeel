@@ -196,3 +196,46 @@ def test_hf_loader_unsupported_extension_is_explicitly_rejected(
     assert caught is not None, "The writer must reject extensions that imagefolder ignores"
     assert "hf_imagefolder does not support source image extension .unlisted" in str(caught)
     assert not (tmp_path / "unsupported/export.tar.gz").exists()
+
+
+def test_hf_loader_exif_rotation_and_mirroring_are_explicitly_rejected(
+    hf_export: TrainingExport, tmp_path: Path
+) -> None:
+    """HF automatically orients decoded pixels, so raw-frame geometry must not be exported."""
+    for orientation in (6, 2):
+        source = tmp_path / f"orientation-{orientation}.jpg"
+        exif = Image.Exif()
+        exif[274] = orientation
+        Image.new("RGB", (47, 31), (60, 110, 90)).save(source, exif=exif)
+        item = _item(source, hf_export.items[2].annotation, "train")
+        caught: ValidationError | None = None
+        output = tmp_path / f"export-{orientation}"
+        try:
+            _write(hf_export.model_copy(update={"items": (item,)}), output)
+        except ValidationError as error:
+            caught = error
+        assert caught is not None, "HF must not silently rotate or mirror annotated image pixels"
+        assert "requires absent or identity EXIF orientation" in str(caught)
+        assert not (output / "export.tar.gz").exists()
+
+
+def test_hf_loader_identity_exif_preserves_dimensions_and_source_bytes(
+    hf_export: TrainingExport, tmp_path: Path
+) -> None:
+    """Identity EXIF is safe for the default decoder and must not cause transcoding."""
+    source = tmp_path / "identity.jpg"
+    exif = Image.Exif()
+    exif[274] = 1
+    Image.new("RGB", (47, 31), (60, 110, 90)).save(source, exif=exif)
+    item = _item(source, hf_export.items[2].annotation, "train")
+    package = _write(hf_export.model_copy(update={"items": (item,)}), tmp_path / "identity")
+    row = HfImageMetadata.model_validate_json((package / "train/metadata.jsonl").read_bytes())
+    assert (row.width, row.height) == (47, 31)
+    assert json.loads(row.boxes_json) == [
+        box.model_dump(mode="json") for box in item.annotation.boxes or ()
+    ]
+    exported = package / "train" / row.file_name
+    assert exported.read_bytes() == source.read_bytes()
+    with Image.open(exported) as image:
+        assert image.size == (47, 31)
+        assert image.getexif().get(274) == 1

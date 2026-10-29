@@ -66,4 +66,15 @@ HF_TRAINING_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="training-hf-loader-exif-orientation-guard-omitted",
+        path="training/export_hf.py",
+        before="_validate_orientation(item)",
+        after="pass",
+        case=(
+            "tests/training/test_export_hf.py::"
+            "test_hf_loader_exif_rotation_and_mirroring_are_explicitly_rejected"
+        ),
+        runner="pytest",
+    ),
 )
