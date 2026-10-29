@@ -11,6 +11,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
@@ -30,7 +31,9 @@ class _Item:
         self.markers.append(marker)
 
 
-def test_collection_marks_only_the_exact_security_file_without_reordering() -> None:
+def test_collection_marks_only_the_exact_security_file_without_reordering(
+    pytestconfig: pytest.Config,
+) -> None:
     """Similar filenames and neighboring directories cannot accidentally share affinity."""
     security = [
         _Item(pytest_groups.SECURITY_NODE_PREFIX + f"test_generated[{number}]")
@@ -50,7 +53,7 @@ def test_collection_marks_only_the_exact_security_file_without_reordering() -> N
     items = [*security[:10], *others, *security[10:]]
     original = tuple(items)
     node_ids = [item.nodeid for item in items]
-    pytest_groups.pytest_collection_modifyitems(cast("list[pytest.Item]", items))
+    pytest_groups.pytest_collection_modifyitems(cast("list[pytest.Item]", items), pytestconfig)
     assert tuple(items) == original
     assert [item.nodeid for item in items] == node_ids
     assert all(
@@ -61,15 +64,38 @@ def test_collection_marks_only_the_exact_security_file_without_reordering() -> N
     assert all(not item.markers for item in others)
 
 
-def test_collection_keeps_existing_marks_and_selection_metadata() -> None:
+def test_collection_keeps_existing_marks_and_selection_metadata(
+    pytestconfig: pytest.Config,
+) -> None:
     """Grouping does not replace integration, skip or other pre-existing decisions."""
     existing = pytest.mark.integration
     target = _Item(pytest_groups.SECURITY_NODE_PREFIX + "test_generated", [existing])
     ordinary = _Item("tests/core/test_generated.py::test_case", [existing])
-    pytest_groups.pytest_collection_modifyitems(cast("list[pytest.Item]", [target, ordinary]))
+    pytest_groups.pytest_collection_modifyitems(
+        cast("list[pytest.Item]", [target, ordinary]), pytestconfig
+    )
     assert target.markers[0] is existing
     assert ordinary.markers == [existing]
     assert len(target.markers) == 2
+
+
+@pytest.mark.parametrize("parallel", [False, True])
+def test_long_case_priority_preserves_selection_and_serial_order(*, parallel: bool) -> None:
+    """Parallel ordering leaves unknown cases stable and serial ordering untouched."""
+    ordinary = _Item("tests/core/test_generated.py::test_first")
+    long_case = _Item(
+        "tests/routing/test_commands.py::test_eval_command_when_offline_prints_accuracy_and_confusion"
+    )
+    last = _Item("tests/core/test_generated.py::test_last")
+    items = [ordinary, long_case, last]
+    config = SimpleNamespace(**({"workerinput": {}} if parallel else {}))
+    pytest_groups.pytest_collection_modifyitems(
+        cast("list[pytest.Item]", items), cast("pytest.Config", config)
+    )
+    expected = [long_case, ordinary, last] if parallel else [ordinary, long_case, last]
+    assert items == expected
+    assert sorted(item.nodeid for item in items) == sorted(item.nodeid for item in expected)
+    assert all(not item.markers for item in items)
 
 
 def _run_pytest(

@@ -17,7 +17,8 @@ domain coverage checks in `scripts/check_coverage.py` still run after the merged
 | xdist `load` | Dispatch pending tests to available workers. / 按空闲情况派发用例。 | Fine granularity; expensive fixtures may repeat. / 粒度细，昂贵夹具可能重复。 |
 | xdist `loadfile` | Keep each file on one worker. / 同一文件留在同一 worker。 | Reuses file fixtures; slow files limit balance. / 便于复用夹具，慢文件可能拖尾。 |
 | xdist `loadscope` | Group functions by module and methods by class. / 函数按模块、方法按类分组。 | Useful for costly module/class fixtures. / 适合昂贵模块或类夹具。 |
-| xdist `loadgroup` | Keep each `xdist_group` together; dispatch unmarked tests as `load`. / 相同 `xdist_group` 留在同一 worker，未标记用例按 `load` 派发。 | Groups the Docker fixture without pinning other files. / 只聚合 Docker 夹具用例，其它文件可拆分。 |
+| xdist `loadgroup` | Keep each `xdist_group` together; dispatch unmarked tests as `load`. / 相同 `xdist_group` 留在同一 worker，未标记用例按 `load` 派发。 | Shares a Docker fixture but allows other workers to compete for resources. / 可复用 Docker 夹具，其它 worker 仍会争用资源。 |
+| Repository security scheduler / 本仓安全调度器 | Run the security group alone, then execute ordinary cases concurrently. / 安全组先独占执行，再并行执行普通用例。 | Protects container startup and cleanup; adds a serial phase. / 保护容器启动与清理，代价是增加独占阶段。 |
 | xdist `worksteal` | Redistribute queued tests from busy workers. / 空闲 worker 从繁忙队列取任务。 | Handles variable durations; no file affinity guarantee. / 应对耗时差异，不保证文件亲和。 |
 | Separate pytest shards / 多个 pytest 分片 | Manually partition node IDs and merge reports. / 自行划分节点并合并报告。 | Adds collection, completeness and reporting logic. / 需额外维护收集完整性与报告。 |
 | Python process pool / Python 进程池 | Execute picklable work in separate interpreters. / 独立解释器执行可序列化任务。 | Suitable for independent jobs; does not supply pytest scheduling or reporting. / 适合独立任务，不能直接替代 pytest 调度和报告。 |
@@ -110,29 +111,48 @@ and [PostgreSQL 17 CREATE DATABASE](https://www.postgresql.org/docs/17/sql-creat
 
 `make check-python` uses `uv run python -m scripts.run_pytest` for the full pytest step.
 The wrapper selects `--dist loadgroup` and explicitly loads `scripts.pytest_groups` with
-`-p` so the plugin also runs in workers. The plugin gives only
-`tests/operators/custom_sandbox/test_security.py` the same `xdist_group`, keeping its Docker
-session fixture on one worker. Other tests remain ungrouped and can be dispatched
-individually, even when they share a file. The scheduling marker does not change the
-existing `-m 'not integration'` selection or remove any collected test.
+`-p` so the plugin also runs in workers. The plugin marks only
+`tests/operators/custom_sandbox/test_security.py` with the security `xdist_group` and
+installs the scheduler in `scripts.pytest_scheduler`.
 
 `make check-python` 的完整 pytest 步骤通过 `uv run python -m scripts.run_pytest` 执行。
 默认选择 `--dist loadgroup`，通过 `-p` 显式加载 `scripts.pytest_groups`，确保 worker
-也执行插件。插件只给 `tests/operators/custom_sandbox/test_security.py` 加同一
-`xdist_group`，把 Docker session 夹具留在一个 worker；其它用例不分组，即使来自同一个
-文件也可独立派发。调度 marker 不改变原有 `-m 'not integration'` 过滤，不移除任何收集用例。
+也执行插件。插件只给 `tests/operators/custom_sandbox/test_security.py` 添加安全组
+`xdist_group`，并安装 `scripts.pytest_scheduler` 中的调度器。
 
-`loadfile` was considered to avoid duplicate Docker builds, but it also pins every heavy
-file to one worker. In the original baseline, the first of three CLI evaluation tests
-alone took roughly six minutes. Keeping that whole file together creates a tail that
-works against the fifteen-minute full-test target. Selective grouping retains the Docker
-benefit while allowing those evaluations to run on separate workers. That baseline
-observation explains the scheduler choice; it is not a final measurement of the new gate.
+The selected security tests run first on one worker while the other workers stay idle.
+Only after that phase completes do ordinary cases execute concurrently. Group affinity
+alone would avoid duplicate image builds but would still allow CPU and I/O contention
+during container startup and cleanup. The exclusive phase covers both. A security failure
+still fails the gate; the scheduler does not reinterpret a timeout or missing cleanup as
+success. A worker crash aborts the run rather than treating unfinished cases as completed.
+All phases belong to one pytest session with one merged coverage report.
 
-最初考虑 `loadfile` 以避免重复构建 Docker，但它也把所有重文件固定在单个 worker。
-原始基线的 CLI evaluation 文件有三个测试，仅首例就约六分钟，整文件串行形成的长尾
-不利于十五分钟完整测试目标。精确分组保留 Docker 夹具复用，同时允许这些 evaluation
-分发给不同 worker。这一基线观察用于解释选型，不代表新门禁的最终性能实测。
+被选中的安全用例先在一个 worker 上执行，其它 worker 保持空闲；独占阶段结束后，才并行
+执行普通用例。仅设置组亲和只能避免重复构建镜像，仍会在容器启动和清理时争用 CPU 与
+I/O；独占阶段同时保护这些操作。安全测试失败仍使门禁失败，调度器不会把超时或缺少清理
+视为成功；worker 崩溃会终止本次运行，不把未完成用例算作已完成。所有阶段属于同一个
+pytest 会话，最终只合并一份覆盖率报告。
+
+`scripts.pytest_priorities` holds a static list of complete node IDs for expensive cases.
+After the security phase, these cases are dispatched early to reduce the final long tail.
+Unlisted tests keep their relative order; no test is removed, duplicated or selected from
+a timing cache. The priority list contains no measured timings or machine-specific data.
+Other tests remain ungrouped and can run separately even when they share a file.
+
+`scripts.pytest_priorities` 保存昂贵用例的完整 node ID 静态列表。安全阶段后优先派发这些
+用例，减少末尾长尾；未列出的用例保持相对顺序。不会删除、重复用例，也不根据计时缓存
+筛选用例。优先级列表不包含实测耗时或机器专属数据；其它用例不分组，即使在同一文件中
+也可分别执行。
+
+`loadfile` was considered for fixture reuse, but it also serializes every case in a heavy
+CLI evaluation file. Selective grouping and explicit priorities avoid that file-wide
+restriction. Scheduling marks and priorities do not change `-m 'not integration'`, test
+membership, assertions or coverage thresholds.
+
+`loadfile` 有利于复用夹具，但也会让重型 CLI evaluation 文件内的所有用例串行执行。
+精确分组与显式优先级避免整文件绑定。调度 marker 和优先级不改变
+`-m 'not integration'`、用例集合、断言或覆盖率门槛。
 
 The worker policy in `scripts.test_workers.test_worker_count()` is
 `max(1, min(16, os.cpu_count() or 1))`. The cap bounds memory, process, database and temporary

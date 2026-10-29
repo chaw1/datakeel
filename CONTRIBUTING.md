@@ -70,16 +70,20 @@ database for tests.
 
 The Python and mutation steps use bounded parallel workers. Set `DATAKEEL_TEST_WORKERS=1`
 for serial execution or a positive integer to choose concurrency. The full pytest wrapper
-uses `loadgroup` and explicitly loads its grouping plugin in workers: only the real sandbox
-security test file shares a group to reuse its Docker fixture; other tests are dispatched
-individually. This scheduling marker does not alter `-m 'not integration'` or test
-selection. See the bilingual [test execution guide](docs/TEST_SPEED.md) for scheduling,
-isolation and measurement details.
+uses a custom `loadgroup` scheduler and explicitly loads its plugin in workers. The real
+sandbox security group runs alone first while other workers stay idle, protecting Docker
+startup and cleanup. The remaining tests then run concurrently, with a static full-node-ID
+priority list dispatching costly cases early; unlisted tests retain their relative order.
+This remains one pytest session: no tests are omitted or repeated, security failures still
+fail the gate, and `-m 'not integration'` and coverage thresholds remain unchanged. See the
+bilingual [test execution guide](docs/TEST_SPEED.md) for scheduling, isolation and
+measurement details.
 
 Python 测试和变异步骤默认有限并行；`DATAKEEL_TEST_WORKERS=1` 切换串行，正整数指定并行数。
-完整 pytest 入口采用 `loadgroup` 并显式为 worker 加载分组插件，只把真实沙箱安全测试文件
-聚为一组以复用 Docker 夹具，其它用例独立派发。调度 marker 不改变
-`-m 'not integration'` 或用例选择。
+完整 pytest 入口采用自定义 `loadgroup` 调度器并显式为 worker 加载插件。真实沙箱安全组
+先独占执行，其它 worker 保持空闲，保护 Docker 启动和清理；随后并行执行其余测试，按静态
+完整 node ID 列表优先派发昂贵用例，未列出的用例保持相对顺序。仍为同一个 pytest 会话，
+不遗漏、不重复用例，安全失败仍使门禁失败，`-m 'not integration'` 与覆盖率门槛保持不变。
 调度、隔离和测量方法见[测试执行指南](docs/TEST_SPEED.md)。
 
 该入口还执行 README 命令和变异测试。默认使用 SQLite。每个 worker 迁移一个空模板，
