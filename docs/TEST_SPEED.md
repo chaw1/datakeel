@@ -150,10 +150,26 @@ Unlisted tests keep their relative order; no test is removed, duplicated or sele
 a timing cache. The priority list contains no measured timings or machine-specific data.
 Other tests remain ungrouped and can run separately even when they share a file.
 
+The exception is `ORDERED_MODULES` in `scripts.pytest_groups`: exact test modules whose
+cases share module state and therefore depend on serial order within the module.
+`tests/operators/pointcloud/test_shape.py` draws all generated shapes from one module-level
+seeded generator, so a case's data depends on which cases of that module ran before it
+in the same process. Split across workers, a threshold assertion failed in a full run
+(median 0.193, required above 0.2). Each listed module runs whole on one worker in
+collection order, so every case sees exactly its serial data. Add a module here when its
+cases share mutable module state; do not change its data or assertions for parallelism.
+
 `scripts.pytest_priorities` 保存昂贵用例的完整 node ID 静态列表。安全阶段后优先派发这些
 用例，减少末尾长尾；未列出的用例保持相对顺序。不会删除、重复用例，也不根据计时缓存
 筛选用例。优先级列表不包含实测耗时或机器专属数据；其它用例不分组，即使在同一文件中
 也可分别执行。
+
+例外是 `scripts.pytest_groups` 的 `ORDERED_MODULES`：其中模块的用例共享模块状态，结果依赖
+模块内的串行顺序。`tests/operators/pointcloud/test_shape.py` 的所有生成点云都取自同一个
+模块级固定种子随机数发生器，某个用例拿到的数据取决于同一进程里先跑了该模块哪些用例。
+拆到多个 worker 后，一次全量运行中阈值断言失败（中位数 0.193，要求大于 0.2）。列入的
+模块整体在一个 worker 上按收集顺序执行，每个用例拿到的数据与串行完全一致。今后若用例
+共享可变模块状态就加入此处，不要为并行改它的数据或断言。
 
 `loadfile` was considered for fixture reuse, but it also serializes every case in a heavy
 CLI evaluation file. Selective grouping and explicit priorities avoid that file-wide

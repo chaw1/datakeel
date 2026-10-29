@@ -17,14 +17,21 @@ if TYPE_CHECKING:
 
 SECURITY_NODE_PREFIX = "tests/operators/custom_sandbox/test_security.py::"
 SECURITY_GROUP = "custom-sandbox-security"
+# Exact test modules whose cases share module state, such as one seeded random generator.
+# Each runs whole on one worker in collection order, so every case sees its serial data.
+ORDERED_MODULES = ("tests/operators/pointcloud/test_shape.py",)
+ORDERED_GROUP_PREFIX = "ordered-module:"
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items: list[pytest.Item], config: pytest.Config) -> None:
     """Preserve selection and use the same stable ordering on every parallel worker."""
     for item in items:
+        module = item.nodeid.split("::", 1)[0]
         if item.nodeid.startswith(SECURITY_NODE_PREFIX):
             item.add_marker(pytest.mark.xdist_group(name=SECURITY_GROUP))
+        elif module in ORDERED_MODULES and "::" in item.nodeid:
+            item.add_marker(pytest.mark.xdist_group(name=ORDERED_GROUP_PREFIX + module))
     if hasattr(config, "workerinput"):
         prioritize_tests(items)
 

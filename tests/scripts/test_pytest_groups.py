@@ -79,6 +79,26 @@ def test_collection_keeps_existing_marks_and_selection_metadata(
     assert len(target.markers) == 2
 
 
+def test_order_dependent_module_stays_on_one_worker_in_collection_order(
+    pytestconfig: pytest.Config,
+) -> None:
+    """A module sharing one seeded generator keeps its serial order; neighbors stay free."""
+    module = pytest_groups.ORDERED_MODULES[0]
+    shared = [_Item(f"{module}::test_case_{number}") for number in range(3)]
+    others = [
+        _Item(module),
+        _Item(module.removesuffix(".py") + "_extra.py::test_case"),
+        _Item("tests/operators/pointcloud/test_other.py::test_case"),
+    ]
+    items = [shared[0], others[1], shared[1], others[0], shared[2], others[2]]
+    original = tuple(items)
+    pytest_groups.pytest_collection_modifyitems(cast("list[pytest.Item]", items), pytestconfig)
+    assert tuple(items) == original
+    expected = [("xdist_group", {"name": pytest_groups.ORDERED_GROUP_PREFIX + module})]
+    assert all([(mark.name, mark.kwargs) for mark in item.markers] == expected for item in shared)
+    assert all(not item.markers for item in others)
+
+
 @pytest.mark.parametrize("parallel", [False, True])
 def test_long_case_priority_preserves_selection_and_serial_order(*, parallel: bool) -> None:
     """Parallel ordering leaves unknown cases stable and serial ordering untouched."""
