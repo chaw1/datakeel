@@ -79,10 +79,10 @@ def test_ontology_endpoint_when_requested_exposes_valid_versioned_schemas(
     """Verify ontology endpoint when requested exposes valid versioned schemas."""
     client, _dataset_id = client_and_dataset
     value = client.get("/api/ontology").json()
-    assert len(value["object_types"]) == 14
-    assert len(value["link_types"]) == 9
-    assert len(value["functions"]) == 20
-    assert len(value["actions"]) == 37
+    assert len(value["object_types"]) == 28
+    assert len(value["link_types"]) == 16
+    assert len(value["functions"]) == 29
+    assert len(value["actions"]) == 58
     assert {"list_quality_rules", "get_table_quality"} <= {
         item["id"] for item in value["functions"]
     }

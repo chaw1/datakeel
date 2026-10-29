@@ -25,7 +25,10 @@ from datakeel.actions.dq_parameters import (
     RunQualityRuleParams,
     UpdateQualityRuleParams,
 )
+from datakeel.actions.identity_parameters import IDENTITY_PARAMETER_TYPES
 from datakeel.actions.kg_parameters import RunKGExtractionParams
+from datakeel.actions.production_catalog_parameters import CATALOG_PARAMETER_TYPES
+from datakeel.actions.production_parameters import PRODUCTION_PARAMETER_TYPES
 from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.actions.standard_parameters import (
     ConfirmStandardMappingParams,
@@ -99,6 +102,9 @@ class ExportParams(BoundaryModel):
 
 
 PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
+    **IDENTITY_PARAMETER_TYPES,
+    **PRODUCTION_PARAMETER_TYPES,
+    **CATALOG_PARAMETER_TYPES,
     **DATA_ASSET_PARAMETER_TYPES,
     "annotation_acceptance": AnnotationAcceptanceParams,
     "quarantine_files": SelectionParams,

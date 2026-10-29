@@ -12,6 +12,7 @@ from datakeel.storage.ask_rows import AskAnswerRow
 from datakeel.storage.database import DatasetRow, TaskRow, VersionRow
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_rows import KGRunRow
+from datakeel.storage.production_native import production_targets
 
 _MANIFEST_IDS = "datakeel.asset_manifest_ids"
 
@@ -19,6 +20,7 @@ _MANIFEST_IDS = "datakeel.asset_manifest_ids"
 def native_targets(session: Session, ref: AssetRef) -> tuple[AssetRef, ...]:
     """Resolve files, versions, tasks, graph runs and assertions without content reads."""
     result: list[AssetRef] = []
+    result.extend(production_targets(session, ref))
     if ref.asset_type == "resource" and session.get(DatasetRow, ref.asset_id):
         result.append(AssetRef(asset_id=ref.asset_id, version=ref.version))
     result.extend(_version_targets(session, ref))

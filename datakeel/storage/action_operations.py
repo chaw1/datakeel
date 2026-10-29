@@ -14,6 +14,7 @@ from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.datasheet_parameters import GenerateDatasheetParams, PublishDatasheetParams
 from datakeel.actions.dq_parameters import QualityActionParams
+from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import (
@@ -22,6 +23,8 @@ from datakeel.actions.parameters import (
     PipelineParams,
     parse_params,
 )
+from datakeel.actions.production_catalog_parameters import ProductionCatalogActionParams
+from datakeel.actions.production_parameters import ProductionActionParams
 from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.actions.standard_parameters import StandardActionParams
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
@@ -41,7 +44,12 @@ from datakeel.storage.datasets import latest_files
 from datakeel.storage.datasheet_actions import execute_datasheet
 from datakeel.storage.dq_actions import execute_quality_action
 from datakeel.storage.evidence_actions import decide_action
+from datakeel.storage.identity_actions import execute_identity_action
 from datakeel.storage.kg_store import schedule_extraction
+from datakeel.storage.production_actions import execute_production_action
+from datakeel.storage.production_catalog_actions import (
+    execute_catalog_action as execute_production_catalog,
+)
 from datakeel.storage.release_actions import publish_release
 from datakeel.storage.standard_changes import execute_standard_action
 
@@ -105,6 +113,9 @@ def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> Ope
 _TYPED_ACTIONS: tuple[
     tuple[type | UnionType, Callable[[Session, ActionPlan, Any], OperationResult]], ...
 ] = (
+    (IdentityActionParams, execute_identity_action),
+    (ProductionActionParams, execute_production_action),
+    (ProductionCatalogActionParams, execute_production_catalog),
     (DataAssetActionParams, execute_data_asset_action),
     (QualityActionParams, execute_quality_action),
     (AnnotationAcceptanceParams, inspect_action),

@@ -7,7 +7,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from datakeel.actions.parameters import parse_params
+from datakeel.actions.production_catalog_parameters import CATALOG_PARAMETER_TYPES
+from datakeel.actions.production_parameters import PRODUCTION_PARAMETER_TYPES
+from datakeel.actions.production_references import production_parameter_refs
 from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.models import JsonDocument
 from datakeel.storage.action_store import locked_plan
 from datakeel.storage.data_asset_access import require_access_in_session
 
@@ -17,6 +22,17 @@ if TYPE_CHECKING:
     from datakeel.actions.models import ActionPlan, ActionRun
     from datakeel.core.models import AssetRef
     from datakeel.storage.database import Database
+
+
+def _source_refs(plan: ActionPlan) -> list[AssetRef]:
+    refs = [item.asset_ref for item in plan.manifest.objects]
+    if (
+        plan.action_type in CATALOG_PARAMETER_TYPES
+        or plan.action_type in PRODUCTION_PARAMETER_TYPES
+    ):
+        params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
+        refs.extend(production_parameter_refs(params))
+    return refs
 
 
 def authorize_plans_in_session(
@@ -35,7 +51,8 @@ def authorize_plans_in_session(
     """
     groups: dict[str, tuple[AccessContext, list[AssetRef]]] = {}
     for plan in plans:
-        if not plan.manifest.objects:
+        sources = _source_refs(plan)
+        if not sources:
             continue
         scope = "export" if plan.action_type == "export_dataset" else "query"
         caller = access or AccessContext(
@@ -47,7 +64,7 @@ def authorize_plans_in_session(
             actor=actor if actor is not None else caller.actor, entry=caller.entry, scope=scope
         )
         _, refs = groups.setdefault(caller.model_dump_json(), (caller, []))
-        refs.extend(item.asset_ref for item in plan.manifest.objects)
+        refs.extend(sources)
     for caller, refs in groups.values():
         require_access_in_session(session, tuple(refs), caller, record=record)
 

@@ -33,6 +33,8 @@ from datakeel.storage.data_asset_review import (
     require_independent_reviewer,
 )
 from datakeel.storage.database import Database
+from datakeel.storage.identity_authorization import require_server_scope
+from datakeel.storage.production_human import require_production_human
 
 logger = logging.getLogger(__name__)
 
@@ -109,9 +111,20 @@ def _record_failure(
                 approval.consumed = True
         audit(session, plan, "EXECUTE", status, description)
         session.flush()
-        remember_operation(session, plan, request, identifier)
+        # A prepared production request can still be signed after an early denied attempt.
+        if "request_id" not in plan.canonical_params or status != "DENIED":
+            remember_operation(session, plan, request, identifier)
         publish(session, event)
         session.commit()
+
+
+def _production_request(
+    plan: ActionPlan, request: ExecuteRequest, access: AccessContext | None
+) -> ExecuteRequest:
+    require_production_human(plan, access)
+    if "request_id" in plan.canonical_params and request.operation_id is None:
+        return request.model_copy(update={"operation_id": plan.operation_id})
+    return request
 
 
 def execute_plan(
@@ -127,8 +140,10 @@ def execute_plan(
         with db.session() as session:
             lock_action_targets(db, session)
             row, plan = locked_plan(session, plan_id)
+            request = _production_request(plan, request, access)
             refuse_tool_decision(plan.action_type, access)
             validate_execution_request(plan, request)
+            require_server_scope(session, plan, request.actor)
             authorize_plans_in_session(session, (plan,), access, actor=request.actor, record=False)
             prior = replay_operation(session, plan, request)
             if prior is not None:

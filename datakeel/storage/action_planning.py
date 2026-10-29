@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.datasheet_parameters import GenerateDatasheetParams
 from datakeel.actions.dq_parameters import QualityActionParams
+from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.models import ActionContext, ActionImpact, ActionPlan
 from datakeel.actions.parameters import (
@@ -19,7 +20,9 @@ from datakeel.actions.parameters import (
     VersionParams,
     parse_params,
 )
-from datakeel.actions.policy import authorize, digest, plan_digest
+from datakeel.actions.policy import digest, plan_digest
+from datakeel.actions.production_catalog_parameters import ProductionCatalogActionParams
+from datakeel.actions.production_parameters import AssignTasksParams, ProductionActionParams
 from datakeel.actions.references import parameter_refs
 from datakeel.actions.registry import action_definition
 from datakeel.actions.release_parameters import PublishReleaseParams
@@ -51,11 +54,22 @@ from datakeel.storage.database import Database
 from datakeel.storage.datasheet_actions import prepare_datasheet
 from datakeel.storage.dq_actions import prepare_quality_params
 from datakeel.storage.evidence_actions import action_manifest
+from datakeel.storage.identity_actions import prepare_identity_params
+from datakeel.storage.identity_authorization import authorize_identity_plan, require_server_scope
 from datakeel.storage.kg_preparation import prepare_kg_params
+from datakeel.storage.production_catalog_plans import catalog_requires_approval
+from datakeel.storage.production_idempotency import remember_prepared, replay_prepared
 from datakeel.storage.release_actions import publication_impact
 
 
 def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
+    if isinstance(params, AssignTasksParams):
+        return len(params.task_ids)
+    if isinstance(params, IdentityActionParams | ProductionActionParams):
+        return 1
+    if isinstance(params, ProductionCatalogActionParams):
+        tasks = sum(item.asset_ref.asset_type == "production_task" for item in manifest.objects)
+        return tasks or max(len(manifest.objects), 1)
     if isinstance(params, SubmitCustomOperatorParams | QualityActionParams):
         return 1
     if isinstance(params, PublishReleaseParams):
@@ -77,7 +91,7 @@ def verify_plan(session: Session, plan: ActionPlan, expected_digest: str, actor:
     if expected_digest != plan.plan_digest or plan_digest(plan) != plan.plan_digest:
         msg = "Action plan_digest does not match the frozen plan"
         raise ConflictError(msg)
-    authorize(plan, actor)
+    authorize_identity_plan(session, plan, actor)
     verify_target_state(session, plan)
 
 
@@ -99,6 +113,7 @@ def _prepare_params(session: Session, action_type: str, params: JsonDocument) ->
     if isinstance(parsed, SubmitCustomOperatorParams):
         parsed = prepare_submission(parsed)
     parsed = prepare_data_asset_params(session, parsed)
+    parsed = prepare_identity_params(session, parsed)
     if isinstance(parsed, RunKGExtractionParams):
         parsed = prepare_kg_params(session, parsed)
     if isinstance(parsed, PipelineParams) and parsed.pipeline is None:
@@ -114,6 +129,17 @@ def _prepare_params(session: Session, action_type: str, params: JsonDocument) ->
             raise ValidationError(msg)
         parsed = parsed.model_copy(update={"destination": destination})
     return parsed
+
+
+def _reversible(session: Session, params: BoundaryModel, *, declared: bool) -> bool:
+    return (
+        declared
+        and not relaxes_asset_access(session, params)
+        and not (
+            isinstance(params, ProductionCatalogActionParams)
+            and catalog_requires_approval(session, params)
+        )
+    )
 
 
 def _new_plan(
@@ -156,7 +182,7 @@ def _new_plan(
             "state_digest": snapshot_digest(session, parsed, manifest),
             "created_at": created,
             "expires_at": created + timedelta(seconds=context.ttl_seconds),
-            "reversible": definition.reversible and not relaxes_asset_access(session, parsed),
+            "reversible": _reversible(session, parsed, declared=definition.reversible),
             "external": external,
             "impact": ActionImpact(
                 object_count=_impact_count(session, parsed, manifest),
@@ -190,14 +216,22 @@ def prepare_action(
     refuse_tool_decision(action_type, access)
     with db.session() as session:
         db.lock_writes(session)
-        plan = _new_plan(action_type, params, context or ActionContext(), session)
-        authorize(plan, plan.actor)
+        resolved = context or ActionContext()
+        prior = replay_prepared(session, action_type, params, resolved)
+        if prior is not None:
+            require_server_scope(session, prior, resolved.actor)
+            authorize_plans_in_session(session, (prior,), access, actor=resolved.actor)
+            session.commit()
+            return prior
+        plan = _new_plan(action_type, params, resolved, session)
+        authorize_identity_plan(session, plan, plan.actor)
         require_independent_reviewer(session, plan.action_type, plan.canonical_params, plan.actor)
         authorize_plans_in_session(session, (plan,), access, actor=plan.actor)
         session.add(
             ActionPlanRow(id=plan.id, action_type=action_type, payload=plan.model_dump(mode="json"))
         )
         session.flush()
+        remember_prepared(session, plan, params)
         audit(session, plan, "PREPARE", "SUCCEEDED")
         session.commit()
         return plan

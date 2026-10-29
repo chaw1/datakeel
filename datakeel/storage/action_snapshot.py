@@ -11,8 +11,11 @@ from sqlalchemy.orm import Session
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.dq_parameters import QualityActionParams
+from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import DecideAssertionsParams, ExportParams
+from datakeel.actions.production_catalog_parameters import ProductionCatalogActionParams
+from datakeel.actions.production_parameters import ProductionActionParams
 from datakeel.actions.standard_parameters import StandardActionParams
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.models import BoundaryModel
@@ -27,13 +30,26 @@ from datakeel.storage.datasheet_actions import datasheet_state
 from datakeel.storage.dq_actions import quality_state
 from datakeel.storage.events import all_events
 from datakeel.storage.evidence_actions import decision_snapshot
+from datakeel.storage.identity_actions import identity_state
 from datakeel.storage.object_queries import evaluate_in_session
+from datakeel.storage.production_action_state import production_state
+from datakeel.storage.production_catalog_plans import catalog_state as production_catalog_state
 from datakeel.storage.standard_store import standards_state
+
+
+def _production_snapshots(session: Session, params: BoundaryModel) -> list[str]:
+    if isinstance(params, IdentityActionParams):
+        return [identity_state(session, params)]
+    if isinstance(params, ProductionActionParams):
+        return [production_state(session, params)]
+    if isinstance(params, ProductionCatalogActionParams):
+        return [production_catalog_state(session, params)]
+    return []
 
 
 def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> str:
     """Bind selected contents plus dataset metadata and exported event observations."""
-    values = [manifest.state_digest]
+    values = [manifest.state_digest, *_production_snapshots(session, params)]
     if isinstance(params, DataAssetActionParams):
         values.append(data_asset_state(session, params))
     if isinstance(params, QualityActionParams):

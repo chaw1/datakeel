@@ -11,8 +11,11 @@ from sqlalchemy.orm import Session
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.dq_parameters import QualityActionParams
+from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import DecideAssertionsParams, selection_for
+from datakeel.actions.production_catalog_parameters import ProductionCatalogActionParams
+from datakeel.actions.production_parameters import ProductionActionParams
 from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
@@ -28,6 +31,9 @@ from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow
 from datakeel.storage.kg_image_sources import image_review_references
 from datakeel.storage.object_projection import content_digest
 from datakeel.storage.object_queries import evaluate_in_session
+from datakeel.storage.production_catalog_plans import (
+    catalog_manifest as production_catalog_manifest,
+)
 from datakeel.storage.release_actions import publication_manifest
 
 
@@ -160,12 +166,16 @@ def action_manifest(
         return publication_manifest(session, params)
     if isinstance(params, AnnotationAcceptanceParams):
         return inspection_manifest(session, params)
+    if isinstance(params, ProductionCatalogActionParams):
+        return production_catalog_manifest(session, params)
     if isinstance(
         params,
         CatalogActionParams
         | SubmitCustomOperatorParams
         | DataAssetActionParams
-        | QualityActionParams,
+        | QualityActionParams
+        | IdentityActionParams
+        | ProductionActionParams,
     ):
         return catalog_manifest()
     if isinstance(params, DecideAssertionsParams):

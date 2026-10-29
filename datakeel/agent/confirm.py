@@ -3,6 +3,7 @@
 
 """Keep irreversible approval exclusively in the human interaction layer."""
 
+from datakeel.actions.production_language import PRODUCTION_LANGUAGE
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
@@ -15,6 +16,8 @@ def execute_reversible(
     """Execute only a successful reversible plan after checking authoritative plan policy."""
     plan = outcome.plan
     if outcome.status != "SUCCEEDED" or plan is None or plan.requires_approval or dry_run:
+        return None
+    if plan.action_type in PRODUCTION_LANGUAGE:
         return None
     return invoke_tool(
         db,
