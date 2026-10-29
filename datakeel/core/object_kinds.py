@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from datakeel.core.catalog_models import CATALOG_KINDS, CatalogObject
 from datakeel.core.kg_product import KGEntity
+from datakeel.core.production_kinds import PRODUCTION_KINDS
 from datakeel.core.question_models import QuestionProperties
 
 ObjectKind = str
@@ -20,6 +21,7 @@ _KINDS: dict[str, type[BaseModel] | None] = {
     "kg_entity": KGEntity,
     "image_transcript": None,
     "assertion": None,
+    **PRODUCTION_KINDS,
 }
 
 

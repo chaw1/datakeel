@@ -83,6 +83,10 @@ from datakeel.storage.kg_rows import KGCacheRow, KGRunRow
 from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 from datakeel.storage.metric_audit import MetricAuditRow
 from datakeel.storage.migrations import add_nullable_columns
+from datakeel.storage.production_schema import (
+    REGISTERED_PRODUCTION_MODELS,
+    install_production_schema,
+)
 from datakeel.storage.release_constraints import install_release_constraints
 from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
 from datakeel.storage.tool_rows import ToolInvocationRow
@@ -100,6 +104,7 @@ if TYPE_CHECKING:
 
 # Loading each mapping registers it in the single migration metadata collection.
 _REGISTERED_MODELS = (
+    *REGISTERED_PRODUCTION_MODELS,
     ReconciliationRow,
     ReleaseRow,
     ReleaseEntryRow,
@@ -316,6 +321,7 @@ class Database:
             install_evidence_constraints(connection, sqlite=self.sqlite)
             install_release_constraints(connection, sqlite=self.sqlite)
             install_asset_constraints(connection, sqlite=self.sqlite)
+            install_production_schema(connection, sqlite=self.sqlite)
             if self.sqlite:
                 for operation in ("UPDATE", "DELETE"):
                     connection.execute(
