@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { percentile } from "./workbench-helpers.mjs";
+import { percentile, selectedAnnotation } from "./workbench-helpers.mjs";
 
 export async function nextTaskLatency(h) {
   const data = await h.project("box");
@@ -47,10 +47,7 @@ export async function nextTaskLatency(h) {
       started,
     );
     assert.ok(
-      (await h.page
-        .getByLabel("Selected annotation", { exact: true })
-        .locator("option")
-        .count()) > 1,
+      (await selectedAnnotation(h.page).locator("option").count()) > 1,
       "Existing annotations must be visible",
     );
     samples.push({ taskId, milliseconds: elapsed });

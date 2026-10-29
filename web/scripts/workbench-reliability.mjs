@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { poll, tabTo } from "./workbench-helpers.mjs";
+import { poll, selectedAnnotation, tabTo } from "./workbench-helpers.mjs";
 import { addWithKeyboard } from "./workbench-keyboard.mjs";
 
 async function localDraft(page, key) {
@@ -95,10 +95,7 @@ export async function durableEditing(h) {
     offline.annotation,
   );
   assert.equal(
-    await h.page
-      .getByLabel("Selected annotation", { exact: true })
-      .locator("option")
-      .count(),
+    await selectedAnnotation(h.page).locator("option").count(),
     offline.annotation.boxes.length + 1,
   );
   await h.context.unroute("**/api/**", outage);

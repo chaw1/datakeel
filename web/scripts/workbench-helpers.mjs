@@ -30,6 +30,18 @@ export async function poll(read, predicate, description, timeout = 20_000) {
   throw new Error(`Timed out: ${description}`);
 }
 
+/**
+ * The "Selected annotation" list. A select's accessible name also carries its
+ * chosen option, so match the label prefix instead of an exact name.
+ */
+export function selectedAnnotation(page) {
+  return page.getByRole("combobox", { name: /^Selected annotation\b/ });
+}
+
+/** Move to the start of a textarea the way the platform does it. */
+export const textStartKey =
+  process.platform === "darwin" ? "Meta+ArrowUp" : "Control+Home";
+
 /** Move focus using real Tab events; queries never inject focus or UI state. */
 export async function tabTo(page, target) {
   await target.waitFor({ state: "visible" });

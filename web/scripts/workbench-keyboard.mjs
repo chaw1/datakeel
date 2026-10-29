@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 
-import { poll, tabTo } from "./workbench-helpers.mjs";
+import {
+  poll,
+  selectedAnnotation,
+  tabTo,
+  textStartKey,
+} from "./workbench-helpers.mjs";
 
 const regions = {
   box: "Bounding boxes",
@@ -46,7 +51,7 @@ export async function addWithKeyboard(h, kind) {
         exact: true,
       }),
     );
-    await page.keyboard.press("Control+Home");
+    await page.keyboard.press(textStartKey);
     for (let step = 0; step < 5; step += 1)
       await page.keyboard.press("Shift+ArrowRight");
     await page.keyboard.press("Enter");
@@ -125,9 +130,7 @@ export async function keyboardWorkflow(h) {
 async function historyEditor(h, kind, annotation) {
   const { page } = h;
   if (["box", "polygon"].includes(kind))
-    await page
-      .getByLabel("Selected annotation", { exact: true })
-      .selectOption("0");
+    await selectedAnnotation(page).selectOption("0");
   if (kind === "text_span")
     await page
       .getByRole("list", { name: "Text annotations", exact: true })
