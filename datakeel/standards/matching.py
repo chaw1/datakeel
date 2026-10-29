@@ -315,7 +315,12 @@ def _matches(
 @lru_cache(maxsize=8192)
 def _score(observed: frozenset[str], expected: frozenset[str], lock: _Lock) -> NameEvidence:
     observed_context, expected_context = observed & _CONTEXTUAL, expected & _CONTEXTUAL
-    if observed_context and expected_context and observed_context.isdisjoint(expected_context):
+    if (
+        observed_context
+        and expected_context
+        and observed_context.isdisjoint(expected_context)
+        and "amount" in observed_context | expected_context
+    ):
         return NameEvidence()
     matches = _matches(observed, expected, lock)
     business_hit = any(item.expected not in _GENERIC | _CONTEXTUAL for item in matches)

@@ -7,11 +7,26 @@ from scripts.mutation_models import Mutation
 
 STANDARD_MUTATIONS = (
     Mutation(
+        name="standards-date-time-context-recall",
+        path="standards/matching.py",
+        before='        and "amount" in observed_context | expected_context\n',
+        after="",
+        case=(
+            "tests/standards/test_mapping_accounting.py::"
+            "test_date_time_qualifiers_remain_mapping_candidates"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="standards-accounting-context-separation",
         path="standards/matching.py",
         before=(
-            "if observed_context and expected_context "
-            "and observed_context.isdisjoint(expected_context):"
+            "if (\n"
+            "        observed_context\n"
+            "        and expected_context\n"
+            "        and observed_context.isdisjoint(expected_context)\n"
+            '        and "amount" in observed_context | expected_context\n'
+            "    ):"
         ),
         after="if False:",
         case=(

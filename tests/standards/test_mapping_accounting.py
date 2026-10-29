@@ -122,3 +122,52 @@ def test_billing_cycle_abstains_from_amount_but_reaches_a_custom_cycle(
     )
     result = _suggest("billingCycle", custom)
     assert [candidate.standard_code for candidate in result.candidates] == ["invoice_cycle"]
+
+
+def _single_field_contract(code: str) -> StandardsContract:
+    return StandardsContract(
+        standards=(
+            FieldStandard(
+                code=code,
+                name_zh="生成测试字段",
+                name_en=code.replace("_", " "),
+                description="Generated contextual qualifier fixture",
+                data_type="string",
+                status="active",
+            ),
+        )
+    )
+
+
+def test_date_time_qualifiers_remain_mapping_candidates() -> None:
+    """Time and date retain the shared business meaning in both mapping directions."""
+    for observed, expected in (
+        ("order_time", "order_date"),
+        ("start_time", "start_date"),
+        ("order_date", "order_time"),
+        ("start_date", "start_time"),
+        ("invoice_cycle", "invoice_date"),
+        ("invoice_status", "invoice_time"),
+    ):
+        result = _suggest(observed, _single_field_contract(expected))
+        assert [item.standard_code for item in result.candidates] == [expected], (
+            observed,
+            expected,
+        )
+
+
+@pytest.mark.parametrize(
+    ("observed", "expected"),
+    [
+        ("paid_date", "paid_amount"),
+        ("paid_amount", "paid_date"),
+        ("invoice_cycle", "invoice_amount"),
+        ("invoice_status", "invoice_amount"),
+        ("invoice_time", "invoice_amount"),
+    ],
+)
+def test_amount_remains_incompatible_with_other_explicit_contexts(
+    observed: str, expected: str
+) -> None:
+    """A shared business word cannot turn a date, time, cycle or status into an amount."""
+    assert not _suggest(observed, _single_field_contract(expected)).candidates
