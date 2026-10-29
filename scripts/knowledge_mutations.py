@@ -38,8 +38,11 @@ KNOWLEDGE_MUTATIONS = (
     Mutation(
         name="knowledge-unsupported-route",
         path="ask/service.py",
-        before="if knowledge is not None:",
-        after="if knowledge is not None and not knowledge.unsupported_phrasing:",
+        before="if knowledge is not None and not contextual_metric:",
+        after=(
+            "if knowledge is not None and not contextual_metric "
+            "and not knowledge.unsupported_phrasing:"
+        ),
         case=(
             "tests/ask/test_knowledge_outcomes.py::"
             "test_ambiguous_intent_cannot_fall_back_to_metric_values"

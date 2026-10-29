@@ -35,6 +35,7 @@ from datakeel.storage.annotation_rows import (
     AnnotationInspectionRow,
     AnnotationSamplingRow,
 )
+from datakeel.storage.ask_conversation_rows import AskConversationRow
 from datakeel.storage.ask_rows import AskAnswerRow, AskSessionRow
 from datakeel.storage.base import Base
 from datakeel.storage.budget_rows import BudgetAccountRow, BudgetReservationRow
@@ -153,6 +154,7 @@ _REGISTERED_MODELS = (
     CatalogObjectRow,
     CatalogEdgeRow,
     MetricAuditRow,
+    AskConversationRow,
     AskSessionRow,
     AskAnswerRow,
     DatasheetRow,

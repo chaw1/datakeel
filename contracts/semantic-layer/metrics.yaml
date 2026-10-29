@@ -18,6 +18,8 @@ metrics:
   description: 以ERP已出库商品的出货价计量，未扣终端促销及退款。
   owner: 供应链负责人
   version: 1
+  unit: CNY
+  number_format: number
   measure:
     table: erp/main/shipments
     column: erp/main/shipments/shipped_amount
@@ -52,6 +54,8 @@ metrics:
   description: 以CRM已入账销售单的开票金额计量，含经销渠道。
   owner: 财务负责人
   version: 1
+  unit: CNY
+  number_format: number
   measure:
     table: crm/main/sales
     column: crm/main/sales/invoiced_amount
@@ -86,6 +90,8 @@ metrics:
   description: 以电商已完成订单的终端实付金额计量，包含订单优惠，未冲抵后续退款。
   owner: 零售运营负责人
   version: 1
+  unit: CNY
+  number_format: number
   measure:
     table: ecommerce/main/orders
     column: ecommerce/main/orders/paid_amount
@@ -124,6 +130,8 @@ metrics:
   description: 已完成终端订单的数量。
   owner: 零售运营负责人
   version: 1
+  unit: orders
+  number_format: integer
   measure:
     table: ecommerce/main/orders
     column: ecommerce/main/orders/id
@@ -159,6 +167,8 @@ metrics:
   description: 已批准退款单的金额，不代表退货率或原因。
   owner: 售后财务负责人
   version: 1
+  unit: CNY
+  number_format: number
   measure:
     table: ecommerce/main/returns
     column: ecommerce/main/returns/refund_amount
@@ -197,6 +207,8 @@ metrics:
   description: 2026年9月30日库存快照中的可用件数。
   owner: 仓储负责人
   version: 1
+  unit: units
+  number_format: integer
   measure:
     table: erp/main/inventory
     column: erp/main/inventory/quantity
@@ -228,6 +240,8 @@ metrics:
   description: CRM中登记的客户数，含个人及企业。
   owner: 客户运营负责人
   version: 1
+  unit: customers
+  number_format: integer
   measure:
     table: crm/main/customers
     column: crm/main/customers/id
@@ -264,6 +278,8 @@ metrics:
   description: 所有已登记售后工单数，含未关闭工单。
   owner: 售后服务负责人
   version: 1
+  unit: tickets
+  number_format: integer
   measure:
     table: service/main/tickets
     column: service/main/tickets/id
@@ -295,6 +311,8 @@ metrics:
   description: 维修记录中的人工费用，不含零件费用。
   owner: 维修负责人
   version: 1
+  unit: CNY
+  number_format: number
   measure:
     table: service/main/repairs
     column: service/main/repairs/labor_cost
@@ -326,6 +344,8 @@ metrics:
   description: 已完成支付流水的收款金额。
   owner: 资金负责人
   version: 1
+  unit: CNY
+  number_format: number
   measure:
     table: ecommerce/main/payments
     column: ecommerce/main/payments/amount
@@ -357,6 +377,8 @@ metrics:
   description: CRM已入账销售单的商品件数。
   owner: 财务负责人
   version: 1
+  unit: units
+  number_format: integer
   measure:
     table: crm/main/sales
     column: crm/main/sales/quantity
@@ -391,6 +413,8 @@ metrics:
   description: ERP已出库商品件数。
   owner: 供应链负责人
   version: 1
+  unit: units
+  number_format: integer
   measure:
     table: erp/main/shipments
     column: erp/main/shipments/quantity
@@ -422,6 +446,8 @@ metrics:
   description: 已完成终端订单中的商品件数。
   owner: 零售运营负责人
   version: 1
+  unit: units
+  number_format: integer
   measure:
     table: ecommerce/main/orders
     column: ecommerce/main/orders/quantity

@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     airflow_password: SecretStr | None = None
     airflow_timeout: float = Field(default=30, gt=0, le=120)
     airflow_run_limit: int = Field(default=10, ge=1, le=100)
+    ask_conversation_retention_days: int = Field(default=30, ge=1, le=3650)
     delegation_max_depth: int = Field(default=2, ge=1, le=8)
     delegation_max_parallel: int = Field(default=3, ge=1, le=16)
     sandbox_backend: Literal["container", "subprocess"] = "container"

@@ -61,6 +61,8 @@ class MetricDefinition(BoundaryModel):
     time: MetricTime
     dimensions: list[str] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
+    unit: str | None = Field(default=None, min_length=1, exclude_if=lambda value: value is None)
+    number_format: Literal["number", "integer", "percent"] = "number"
 
 
 class DimensionDefinition(BoundaryModel):
@@ -166,6 +168,7 @@ class CompileRequest(BoundaryModel):
     group_by: list[str] = Field(default_factory=list)
     time_range: TimeRange | None = None
     filters: list[MetricFilter] = Field(default_factory=list[MetricFilter])
+    time_grain: Literal["day", "month", "quarter", "year"] | None = None
 
 
 class CompiledQuery(BoundaryModel):
