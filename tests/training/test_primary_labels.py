@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Canonical primary labels affect allocation without discarding source annotations."""
+"""Canonical all-label inputs affect allocation without discarding source annotations."""
 
 from collections import Counter
 
@@ -25,7 +25,7 @@ def test_primary_label_order_is_canonical_and_full_annotations_are_preserved() -
                 ),
             ),
         )
-        for label, count in (("a", 55), ("b", 52), ("c", 52))
+        for label, count in (("a", 70), ("b", 70), ("c", 60))
         for index in range(count)
     )
     request = SplitRequest(name="primary", seed=7)
@@ -46,12 +46,14 @@ def test_primary_label_order_is_canonical_and_full_annotations_are_preserved() -
         and member.annotations == originals[member.sample_id].annotations
         for member in members
     )
-    totals = Counter(min(sample.labels) for sample in samples)
+    totals = Counter(label for sample in samples for label in sample.labels)
     for row in distributions(members):
-        primary = Counter(min(member.labels) for member in members if member.split == row.split)
+        counts = Counter(
+            label for member in members if member.split == row.split for label in member.labels
+        )
         assert all(
-            abs(primary[label] - count * getattr(request.ratios, row.split)) <= 1 + 1e-9
-            and abs(primary[label] / row.count - count / len(samples)) <= 0.02 + 1e-9
+            abs(counts[label] - count * getattr(request.ratios, row.split)) <= 1 + 1e-9
+            and abs(counts[label] / row.count - count / len(samples)) <= 0.02 + 1e-9
             for label, count in totals.items()
         )
         assert next(label.count for label in row.labels if label.label == "z") == row.count

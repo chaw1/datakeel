@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Primary-label allocation preserves indivisible groups with overlapping source labels."""
+"""All-label allocation preserves indivisible groups with overlapping source labels."""
 
 import numpy as np
 

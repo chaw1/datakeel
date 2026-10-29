@@ -28,6 +28,8 @@ from datakeel.storage.version_stream import require_version
 from datakeel.training.leakage import leakage_report
 from datakeel.training.splitting import distributions, split_samples
 
+SPLIT_ALGORITHM_VERSION = "1.3-iterative-text"
+
 
 def _build(
     dataset_id: str, version_id: str, request: SplitRequest, samples: tuple[TrainingSample, ...]
@@ -37,7 +39,7 @@ def _build(
         [
             dataset_id,
             version_id,
-            "1.2-primary-no-text",
+            SPLIT_ALGORITHM_VERSION,
             request.model_dump(mode="json"),
             [member.model_dump(mode="json") for member in members],
         ],
@@ -53,7 +55,7 @@ def _build(
         members=members,
         distributions=distributions(members),
         created_at=datetime(1970, 1, 1, tzinfo=UTC),
-        algorithm_version="1.2-primary-no-text",
+        algorithm_version=SPLIT_ALGORITHM_VERSION,
     )
 
 
