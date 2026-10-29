@@ -12,6 +12,7 @@ from datakeel.operators.custom_process import RuntimeFailureError
 
 _PROC_PIDTASKINFO = 4
 _MEBIBYTE = 1024 * 1024
+_EXIT_GRACE_SECONDS = 0.01
 
 
 class _TaskInfo(ctypes.Structure):
@@ -51,10 +52,23 @@ def memory_exceeded(process: subprocess.Popen[bytes], memory_mb: int) -> bool:
         if received == ctypes.sizeof(info) and info.resident_size > 0:
             return info.resident_size > memory_mb * _MEBIBYTE
     except (AttributeError, OSError) as error:
+        if _worker_exited(process):
+            return False
         msg = "Worker memory usage could not be verified"
         raise RuntimeFailureError(msg) from error
     # The worker may finish between the caller's poll and the native measurement.
-    if process.poll() is not None:
+    if _worker_exited(process):
         return False
     msg = "Worker memory usage could not be verified"
     raise RuntimeFailureError(msg)
+
+
+def _worker_exited(process: subprocess.Popen[bytes]) -> bool:
+    if process.poll() is not None:
+        return True
+    # Darwin may stop exposing task info just before waitpid reports child exit.
+    try:
+        process.wait(timeout=_EXIT_GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        return False
+    return True

@@ -157,3 +157,40 @@ def test_subprocess_unreadable_native_memory_fails_closed(
     assert len(killed_worker_groups) == 1
     with pytest.raises(ProcessLookupError):
         os.kill(killed_worker_groups[0], 0)
+
+
+def test_subprocess_completed_worker_cleanup_denial_preserves_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A missing or inaccessible completed group cannot overwrite a successful result."""
+    failures = iter((ProcessLookupError, PermissionError))
+
+    def denied_kill(pid: int, signum: int) -> None:
+        raise next(failures)
+
+    monkeypatch.setattr(custom_subprocess.os, "killpg", denied_kill)
+    monkeypatch.setattr(custom_subprocess, "memory_exceeded", lambda *_args: False)
+    for _ in range(2):
+        result = run_sandbox(
+            request("def run(inputs, params, ctx): return []"),
+            Settings(sandbox_backend="subprocess", sandbox_allow_subprocess=True),
+        )
+        assert result.success, result.stderr
+        assert result.exit_reason == "completed"
+
+
+def test_subprocess_repeated_short_workers_complete() -> None:
+    """Repeated quick workers retain actual native monitoring through normal exit."""
+    code = """from pathlib import Path
+
+def run(inputs, params, ctx):
+    (Path(ctx["output_dir"]) / "result").write_bytes(b"local")
+    return [{"path": "result", "metadata": {}}]
+"""
+    settings = Settings(sandbox_backend="subprocess", sandbox_allow_subprocess=True)
+    for attempt in range(60):
+        result = run_sandbox(request(code), settings)
+        assert result.success, f"attempt {attempt + 1}: {result.stderr}"
+        assert result.exit_reason == "completed"
+        assert len(result.outputs) == 1
+        assert result.outputs[0].content == b"local"

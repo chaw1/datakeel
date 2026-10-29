@@ -104,7 +104,7 @@ def _wait(
 def _kill_group(pid: int) -> None:
     try:
         os.killpg(pid, signal.SIGKILL)
-    except ProcessLookupError:
+    except (PermissionError, ProcessLookupError):
         return
 
 

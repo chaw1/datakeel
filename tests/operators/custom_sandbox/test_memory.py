@@ -5,16 +5,22 @@
 
 import ctypes
 import struct
+import subprocess
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import pytest
 
 from datakeel.operators import custom_memory
 from datakeel.operators.custom_process import RuntimeFailureError
 
-if TYPE_CHECKING:
-    import subprocess
+
+def _live_worker() -> subprocess.Popen[bytes]:
+    def wait(timeout: float) -> int:
+        command = "owned-worker"
+        raise subprocess.TimeoutExpired(command, timeout)
+
+    return cast("subprocess.Popen[bytes]", SimpleNamespace(pid=123, poll=lambda: None, wait=wait))
 
 
 @pytest.mark.parametrize(("resident", "expected"), [(64 * 1024 * 1024, False), (67108865, True)])
@@ -22,7 +28,7 @@ def test_native_memory_measurement_uses_owned_pid_and_byte_limit(
     monkeypatch: pytest.MonkeyPatch, resident: int, *, expected: bool
 ) -> None:
     """Native resident bytes are compared with the configured binary megabyte budget."""
-    process = cast("subprocess.Popen[bytes]", SimpleNamespace(pid=123, poll=lambda: None))
+    process = _live_worker()
 
     def measure(pid: int, flavor: int, argument: int, buffer: ctypes.c_void_p, size: int) -> int:
         assert (pid, flavor, argument, size) == (123, 4, 0, 96)
@@ -40,7 +46,7 @@ def test_live_worker_incomplete_native_measurement_is_rejected(
     monkeypatch: pytest.MonkeyPatch, returned: int
 ) -> None:
     """The native API must return exactly the SDK structure's complete size."""
-    process = cast("subprocess.Popen[bytes]", SimpleNamespace(pid=123, poll=lambda: None))
+    process = _live_worker()
     library = SimpleNamespace(proc_pidinfo=lambda *_args: returned)
     monkeypatch.setattr(custom_memory, "sys", SimpleNamespace(platform="darwin"))
     monkeypatch.setattr(custom_memory, "_library", lambda: library)
@@ -52,7 +58,7 @@ def test_live_worker_zero_native_resident_memory_is_rejected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A complete zero-filled native result cannot silently disable the limit."""
-    process = cast("subprocess.Popen[bytes]", SimpleNamespace(pid=123, poll=lambda: None))
+    process = _live_worker()
     library = SimpleNamespace(proc_pidinfo=lambda *_args: 96)
     monkeypatch.setattr(custom_memory, "sys", SimpleNamespace(platform="darwin"))
     monkeypatch.setattr(custom_memory, "_library", lambda: library)
@@ -69,6 +75,57 @@ def test_worker_exit_during_native_measurement_is_not_monitor_failure(
     monkeypatch.setattr(custom_memory, "sys", SimpleNamespace(platform="darwin"))
     monkeypatch.setattr(custom_memory, "_library", lambda: library)
     assert not custom_memory.memory_exceeded(process, 64)
+
+
+def test_worker_exit_during_native_exception_is_not_monitor_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Native failures observed after child exit do not reject a completed worker."""
+    failures = iter((AttributeError, PermissionError, ProcessLookupError) * 2)
+
+    def denied_library() -> None:
+        raise next(failures)
+
+    monkeypatch.setattr(custom_memory, "sys", SimpleNamespace(platform="darwin"))
+    monkeypatch.setattr(custom_memory, "_library", denied_library)
+    for returncode in (0, None):
+        process = cast(
+            "subprocess.Popen[bytes]",
+            SimpleNamespace(pid=123, poll=lambda code=returncode: code, wait=lambda **_kwargs: 0),
+        )
+        for _ in range(3):
+            failure = None
+            exceeded = True
+            try:
+                exceeded = custom_memory.memory_exceeded(process, 64)
+            except RuntimeFailureError as error:
+                failure = error
+            assert failure is None, str(failure)
+            assert not exceeded
+
+
+def test_live_worker_native_exception_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A worker still alive after the bounded exit wait cannot bypass native monitoring."""
+    process = _live_worker()
+    failures = iter((AttributeError, PermissionError, ProcessLookupError))
+
+    def denied_library() -> None:
+        raise next(failures)
+
+    monkeypatch.setattr(custom_memory, "sys", SimpleNamespace(platform="darwin"))
+    monkeypatch.setattr(custom_memory, "_library", denied_library)
+    for _ in range(3):
+        failure = None
+        exceeded = None
+        try:
+            exceeded = custom_memory.memory_exceeded(process, 64)
+        except RuntimeFailureError as error:
+            failure = error
+        assert isinstance(failure, RuntimeFailureError)
+        assert "could not be verified" in str(failure)
+        assert exceeded is None
 
 
 def test_other_posix_hosts_keep_worker_resource_limits(
