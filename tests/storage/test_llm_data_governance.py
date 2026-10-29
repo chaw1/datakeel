@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import delete, func, select, update
+from sqlalchemy import text as sql
 from sqlalchemy.exc import DBAPIError
 
 from datakeel.actions.models import ApprovalDecision, ExecuteRequest
@@ -147,6 +148,26 @@ def test_saved_training_reports_cannot_be_edited_or_deleted(db: Database, tmp_pa
     ):
         with db.session() as session, pytest.raises(DBAPIError, match="immutable"):
             session.execute(statement)
+
+
+def test_startup_rebinds_governance_guards_left_on_the_split_function(
+    db: Database, tmp_path: Path
+) -> None:
+    """Pre-merge PostgreSQL builds bound these guards to a function the split feature now owns."""
+    _, _, run = seed_training(db, tmp_path)
+    if not db.sqlite:
+        with db.engine.begin() as connection:
+            connection.execute(
+                sql(
+                    "DROP TRIGGER training_governance_runs_immutable ON training_governance_runs; "
+                    "CREATE TRIGGER training_governance_runs_immutable BEFORE UPDATE OR DELETE "
+                    "ON training_governance_runs FOR EACH ROW "
+                    "EXECUTE FUNCTION datakeel_immutable_training()"
+                )
+            )
+    db.migrate()
+    with db.session() as session, pytest.raises(DBAPIError, match="governance facts"):
+        session.execute(delete(TrainingRunRow).where(TrainingRunRow.id == run.id))
 
 
 def test_cleaning_freezes_state_of_unselected_hidden_preserved_files(

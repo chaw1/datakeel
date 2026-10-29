@@ -6,6 +6,8 @@
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
+from datakeel.storage.pg_triggers import ensure_pg_trigger
+
 _TABLES = ("training_evaluations", "training_governance_runs", "training_clean_versions")
 
 
@@ -30,11 +32,11 @@ def install_llm_data_constraints(connection: Connection, *, sqlite: bool) -> Non
                     )
                 )
         else:
-            # Recreate so triggers from older branch builds also point at this function.
-            connection.execute(text(f"DROP TRIGGER IF EXISTS {table}_immutable ON {table}"))
-            connection.execute(
-                text(
-                    f"CREATE TRIGGER {table}_immutable BEFORE UPDATE OR DELETE ON {table} "
-                    "FOR EACH ROW EXECUTE FUNCTION datakeel_immutable_llm_data()"
-                )
+            # Also re-points triggers that pre-merge builds bound to datakeel_immutable_training.
+            ensure_pg_trigger(
+                connection,
+                name=f"{table}_immutable",
+                table=table,
+                event="UPDATE OR DELETE",
+                function="datakeel_immutable_llm_data",
             )

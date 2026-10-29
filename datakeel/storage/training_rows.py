@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapped, mapped_column
 
 from datakeel.storage.base import Base
+from datakeel.storage.pg_triggers import ensure_pg_trigger
 
 
 class TrainingSplitRow(Base):
@@ -51,12 +52,12 @@ def install_training_constraints(connection: Connection, *, sqlite: bool) -> Non
                 "BEGIN RAISE EXCEPTION 'training splits are immutable'; END; $$ LANGUAGE plpgsql"
             )
         )
-        connection.execute(
-            text(
-                "DROP TRIGGER IF EXISTS training_immutable ON training_splits; "
-                "CREATE TRIGGER training_immutable BEFORE UPDATE OR DELETE ON training_splits "
-                "FOR EACH ROW EXECUTE FUNCTION datakeel_immutable_training()"
-            )
+        ensure_pg_trigger(
+            connection,
+            name="training_immutable",
+            table="training_splits",
+            event="UPDATE OR DELETE",
+            function="datakeel_immutable_training",
         )
         connection.execute(
             text(
@@ -69,10 +70,10 @@ def install_training_constraints(connection: Connection, *, sqlite: bool) -> Non
                 "RETURN NEW; END; $$ LANGUAGE plpgsql"
             )
         )
-        connection.execute(
-            text(
-                "DROP TRIGGER IF EXISTS training_version_immutable ON versions; "
-                "CREATE TRIGGER training_version_immutable BEFORE UPDATE ON versions "
-                "FOR EACH ROW EXECUTE FUNCTION datakeel_training_version()"
-            )
+        ensure_pg_trigger(
+            connection,
+            name="training_version_immutable",
+            table="versions",
+            event="UPDATE",
+            function="datakeel_training_version",
         )
