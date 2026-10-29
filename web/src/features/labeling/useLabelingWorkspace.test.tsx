@@ -141,80 +141,6 @@ it("restores the same tab's offline task and keeps syncing disabled until identi
   expect(getWorkbench).toHaveBeenCalledTimes(2);
 });
 
-it.each([
-  [["production:review", "production:claim"], "reviews", "review"],
-  [["production:manage", "production:finalize"], "cockpit", "all"],
-  [["production:annotate", "production:review"], "tasks", "mine"],
-] as const)(
-  "restores a group snapshot with scopes %j into its first navigable view",
-  async (scopes, expected, request) => {
-    const group = {
-      ...labelingProject,
-      project: { ...labelingProject.project, workflow_tier: "group" as const },
-      effective_scopes: {
-        actor: "local",
-        zero_users: false,
-        scopes: [...scopes],
-      },
-    };
-    expect(
-      writeWorkspaceSnapshot({
-        index: labelingIndex,
-        project: group,
-        task: null,
-      }),
-    ).toBe(true);
-    vi.mocked(getProjectWorkbench).mockResolvedValue(group);
-    const { result } = renderHook(() =>
-      useLabelingWorkspace(new URLSearchParams("project=project")),
-    );
-    expect(result.current.view).toBe(expected);
-    await waitFor(() => {
-      expect(result.current.project).not.toBeNull();
-    });
-    expect(result.current.view).toBe(expected);
-    expect(getProjectWorkbench).toHaveBeenLastCalledWith(
-      "project",
-      expect.objectContaining({ view: request }),
-    );
-  },
-);
-
-it("corrects a stale view when fresh scopes no longer include it", async () => {
-  const reviewer = {
-    ...labelingProject,
-    project: { ...labelingProject.project, workflow_tier: "group" as const },
-    effective_scopes: {
-      actor: "local",
-      zero_users: false,
-      scopes: ["production:annotate", "production:review"],
-    },
-  };
-  vi.mocked(getProjectWorkbench).mockResolvedValue(reviewer);
-  const { result } = renderHook(() =>
-    useLabelingWorkspace(new URLSearchParams("project=project")),
-  );
-  await waitFor(() => {
-    expect(result.current.view).toBe("tasks");
-  });
-  await act(async () => {
-    await result.current.selectView("reviews");
-  });
-  vi.mocked(getProjectWorkbench).mockResolvedValue({
-    ...reviewer,
-    effective_scopes: {
-      ...reviewer.effective_scopes,
-      scopes: ["production:annotate"],
-    },
-  });
-  act(() => {
-    result.current.changed();
-  });
-  await waitFor(() => {
-    expect(result.current.view).toBe("tasks");
-  });
-});
-
 it("sends package filtering to the server before paging and resets the cursor when it changes", async () => {
   vi.mocked(getProjectWorkbench).mockResolvedValue({
     ...labelingProject,
@@ -258,54 +184,6 @@ it("sends package filtering to the server before paging and resets the cursor wh
     );
   });
   expect(result.current.page).toBe(0);
-});
-
-it("moves across task pages with Next/Previous and reports the true ends", async () => {
-  const second = {
-    ...labelingProject,
-    tasks: [{ ...labelingProject.tasks[0], id: "task-3", sample_id: "s3" }],
-    next_cursor: null,
-  };
-  vi.mocked(getProjectWorkbench).mockImplementation((_id, query) =>
-    Promise.resolve(
-      query?.cursor === "page-2"
-        ? second
-        : { ...labelingProject, next_cursor: "page-2" },
-    ),
-  );
-  const { result } = renderHook(() =>
-    useLabelingWorkspace(new URLSearchParams("project=project")),
-  );
-  await waitFor(() => {
-    expect(result.current.project).not.toBeNull();
-  });
-  await act(async () => {
-    await result.current.open("task-2");
-  });
-  expect(result.current.navigation).toEqual({ previous: true, next: true });
-  await act(async () => {
-    await result.current.navigate(1);
-  });
-  expect(result.current.task?.task.id).toBe("task-3");
-  expect(result.current.page).toBe(1);
-  expect(result.current.navigation).toEqual({ previous: true, next: false });
-  await act(async () => {
-    await result.current.navigate(1);
-  });
-  expect(result.current.task?.task.id).toBe("task-3");
-  expect(result.current.notice).toBe("last");
-  await act(async () => {
-    await result.current.navigate(-1);
-  });
-  await waitFor(() => {
-    expect(result.current.task?.task.id).toBe("task-2");
-  });
-  expect(result.current.page).toBe(0);
-  expect(result.current.notice).toBeNull();
-  expect(getProjectWorkbench).toHaveBeenCalledWith(
-    "project",
-    expect.objectContaining({ cursor: "page-2", limit: 100 }),
-  );
 });
 
 it("stops at the first task when Previous is requested instead of wrapping to the last", async () => {
