@@ -41,7 +41,15 @@ class ProductionPackageInspectionRow(Base):
 
 
 def install_team_constraints(connection: Connection, *, sqlite: bool) -> None:
-    """Reject UPDATE and DELETE of release and inspection history in both databases."""
+    """Index the claim order and reject UPDATE and DELETE of release and inspection history."""
+    # Claims take the highest priority first and then the smallest identity. A mixed-direction
+    # index lets concurrent claimers walk the queue with SKIP LOCKED instead of sorting it.
+    connection.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS production_task_claim_order "
+            "ON production_tasks (project_id, state, priority DESC, id)"
+        )
+    )
     for table in TEAM_HISTORY_TABLES:
         if sqlite:
             for operation in ("UPDATE", "DELETE"):

@@ -77,7 +77,7 @@ def _record_failure(
     authorized: bool,
 ) -> None:
     with db.session() as session:
-        lock_action_targets(db, session)
+        lock_action_targets(db, session, plan_id)
         try:
             plan_row, plan = locked_plan(session, plan_id)
         except NotFoundError:
@@ -138,7 +138,7 @@ def execute_plan(
     record_attempt = False
     try:
         with db.session() as session:
-            lock_action_targets(db, session)
+            lock_action_targets(db, session, plan_id)
             row, plan = locked_plan(session, plan_id)
             request = _production_request(plan, request, access)
             refuse_tool_decision(plan.action_type, access)
