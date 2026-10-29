@@ -15,7 +15,7 @@ from sqlglot import exp
 from datakeel.core.catalog_models import SourceProperties
 from datakeel.core.dq_models import DqKind, DqParameters, DqResult, DqRule, DqTarget
 from datakeel.core.errors import ValidationError
-from datakeel.core.metric_models import QueryResult, Scalar
+from datakeel.core.metric_models import Scalar
 from datakeel.quality.dq_engine import execute_rule
 from datakeel.storage.database import Database
 
@@ -191,19 +191,19 @@ def test_sql_assertion_bindings_are_literals(tmp_path: Path) -> None:
 
 
 def test_scan_row_cap_refuses_partial_success(tmp_path: Path) -> None:
-    """A violation past the cap cannot become an apparently passing partial scan."""
+    """A violation past the batch size is still measured in a complete verdict."""
     source = business_source(tmp_path, (1, 2, None))
     rule = rule_of("not_null").model_copy(update={"max_rows": 2})
     result = execute_rule(rule, source, now=NOW)
-    assert result.status == "error"
-    assert "scan row limit" in result.message
+    assert result.status == "failed"
+    assert (result.failed_count, result.rows_scanned, result.coverage) == (1, 3, "complete")
 
 
 def test_sql_assertion_preflight_caps_source_not_just_output(tmp_path: Path) -> None:
-    """A one-row aggregate cannot conceal an oversized target source scan."""
+    """A one-row aggregate assertion runs even when the target exceeds max_rows."""
     source = business_source(tmp_path, tuple(range(11)))
     rule = rule_of("sql_assertion", DqParameters(sql="SELECT count(*) FROM observations"))
-    assert execute_rule(rule.model_copy(update={"max_rows": 10}), source).status == "error"
+    assert execute_rule(rule.model_copy(update={"max_rows": 10}), source).status == "failed"
 
 
 def test_database_enforces_sql_timeout(tmp_path: Path) -> None:
@@ -413,7 +413,7 @@ def test_extreme_drift_returns_explicit_error_instead_of_non_json_infinity(tmp_p
 
 
 def test_large_business_table_requires_explicit_bounded_scan_limit(db: Database) -> None:
-    """An 18,000-row table fails the default cap and passes only an explicit larger cap."""
+    """Table size does not change the default rule verdict or full coverage."""
     with db.engine.begin() as connection:
         if db.sqlite:
             schema = "main"
@@ -438,7 +438,7 @@ def test_large_business_table_requires_explicit_bounded_scan_limit(db: Database)
             )
         }
     )
-    assert execute_rule(rule, source, now=NOW).status == "error"
+    assert execute_rule(rule, source, now=NOW).status == "passed"
     result = execute_rule(rule.model_copy(update={"max_rows": 20000}), source, now=NOW)
     assert result.status == "passed"
     assert result.row_count == 18000
@@ -477,8 +477,9 @@ def test_numeric_distribution_rejects_boolean_and_nonfinite_driver_values(
     invalid: Scalar,
 ) -> None:
     """Driver-level booleans and nonfinite scalars cannot enter even a cold baseline."""
-    rows = QueryResult(columns=["value"], rows=[[10], [invalid]])
-    monkeypatch.setattr("datakeel.quality.dq_engine.read_rule_table", lambda *_args: rows)
+    monkeypatch.setattr(
+        "datakeel.quality.dq_statistics.iter_rule_values", lambda *_args: iter(((10, invalid),))
+    )
     rule = rule_of("distribution_drift", DqParameters(statistic=statistic, baseline_runs=1))
     assert execute_rule(rule, SourceProperties(dialect="sqlite"), now=NOW).status == "error"
 

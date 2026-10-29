@@ -83,7 +83,7 @@ class DqParameters(BoundaryModel):
 
 
 class DqQueryLimits(QueryLimits):
-    """Bound explicit quality scans independently from interactive metric result limits."""
+    """Bound scan batches and assertion result rows, independently of total table size."""
 
     max_rows: int = Field(default=10000, ge=1, le=100000)
 
@@ -177,6 +177,9 @@ class DqResult(BoundaryModel):
     threshold: float = Field(default=0, ge=0, allow_inf_nan=False)
     row_count: int = 0
     failed_count: int = 0
+    rows_total: int | None = Field(default=None, ge=0)
+    rows_scanned: int = Field(default=0, ge=0)
+    coverage: Literal["complete", "unknown"] = "unknown"
     samples: tuple[DqSample, ...] = ()
     metrics: DqMetrics = Field(default_factory=DqMetrics)
     started_at: datetime = Field(default_factory=utcnow)

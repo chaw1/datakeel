@@ -52,12 +52,14 @@ ignore_imports =
     datakeel.sample_standards -> datakeel.sample_enterprise.crm
 # Quality monitoring reuses the query safety boundary and existing controlled transactions.
     datakeel.quality.dq_source -> datakeel.metrics.execution
+    datakeel.quality.dq_statistics -> datakeel.metrics.execution
     datakeel.quality.dq_source -> datakeel.metrics.sql_safety
     datakeel.storage.dq_actions -> datakeel.actions.dq_parameters
     datakeel.storage.dq_actions -> datakeel.actions.models
     datakeel.storage.dq_actions -> datakeel.quality.dq_source
     datakeel.storage.dq_actions -> datakeel.quality.dq_types
     datakeel.storage.dq_views -> datakeel.quality.models
+    datakeel.storage.dq_views -> datakeel.quality.dq_report
     datakeel.storage.action_planning -> datakeel.actions.dq_parameters
     datakeel.storage.action_operations -> datakeel.actions.dq_parameters
     datakeel.storage.action_snapshot -> datakeel.actions.dq_parameters

@@ -5,10 +5,12 @@ import { expect, it, vi } from "vitest";
 import {
   dqIssue,
   dqRule,
+  dqView,
   mockQualityRulesApi,
 } from "../../test/qualityRuleFixtures";
 import { table } from "../catalog/fixtures";
 
+import { RuleDetails } from "./RuleDetails";
 import { RuleEditor } from "./RuleEditor";
 import { RuleIssues } from "./RuleIssues";
 import { RuleTrend } from "./RuleTrend";
@@ -134,7 +136,9 @@ it("keeps the default scan budget and prepares an explicit 20000-row budget with
   render(
     <RuleEditor rule={dqRule} onPrepared={onPrepared} onCancel={vi.fn()} />,
   );
-  const limit = screen.getByRole("spinbutton", { name: "Scan row limit" });
+  const limit = screen.getByRole("spinbutton", {
+    name: "Batch / assertion result row limit",
+  });
   expect(limit).toHaveValue(10000);
   expect(limit).toHaveAttribute("max", "100000");
   await user.clear(limit);
@@ -219,4 +223,11 @@ it("polls on a stable interval and calls the current reload callback after reren
   } finally {
     vi.useRealTimers();
   }
+});
+
+it("shows complete coverage in the persisted run details", async () => {
+  mockQualityRulesApi();
+  render(<RuleDetails view={dqView} onPrepared={vi.fn()} />);
+  expect(await screen.findAllByText("100% · 100/100 rows")).toHaveLength(2);
+  expect(screen.getByRole("columnheader", { name: "Coverage" })).toBeVisible();
 });

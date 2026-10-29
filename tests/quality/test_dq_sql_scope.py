@@ -139,11 +139,13 @@ def test_assertion_qualified_rewrite_preserves_named_binds_and_non_table_text(
     """PostgreSQL table qualification never rewrites :name binds, comments or string contents."""
     seen: list[str] = []
 
-    def capture(_url: str, query: CompiledQuery, _limits: QueryLimits) -> QueryResult:
-        seen.append(query.sql)
-        return QueryResult(columns=["amount"], rows=[])
+    def capture(
+        _url: str, queries: tuple[CompiledQuery, ...], _limits: QueryLimits
+    ) -> tuple[QueryResult, ...]:
+        seen.extend(query.sql for query in queries)
+        return QueryResult(columns=["amount"], rows=[]), QueryResult(columns=["count"], rows=[[0]])
 
-    monkeypatch.setattr("datakeel.quality.dq_source.execute_query", capture)
+    monkeypatch.setattr("datakeel.quality.dq_source.execute_queries", capture)
     sql = (
         'SELECT \'订单 orders :literal\' AS note, o.amount FROM "订单""orders" o '
         "/* 保留 :comment */ WHERE o.amount < :floor"
@@ -160,16 +162,16 @@ def test_assertion_qualified_rewrite_preserves_named_binds_and_non_table_text(
         rule,
         SourceProperties(connection_url="postgresql://unused.invalid/local", dialect="postgresql"),
     )
-    assert seen[-1] == sql.replace('FROM "订单""orders" o', 'FROM "MixedSchema"."订单""orders" o')
-    assert ":floor" in seen[-1]
-    assert "%(floor)s" not in seen[-1]
+    assert seen[0] == sql.replace('FROM "订单""orders" o', 'FROM "MixedSchema"."订单""orders" o')
+    assert ":floor" in seen[0]
+    assert "%(floor)s" not in seen[0]
 
 
 def test_sqlite_attached_schema_cannot_fall_back_to_main(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An explicitly attached target is used for both bounded preflight and actual assertions."""
+    """An explicitly attached target is used for both coverage counts and actual assertions."""
     primary, attached = tmp_path / "primary.sqlite", tmp_path / "attached.sqlite"
     for path, amount in ((primary, 7), (attached, -7)):
         with sqlite3.connect(path) as connection:

@@ -29,7 +29,7 @@ export const dqEn = {
   dqParameterHelp:
     "Use the example for this rule type. The server validates every parameter before preparing a frozen plan.",
   dqTimeout: "Timeout (milliseconds)",
-  dqMaxRows: "Scan row limit",
+  dqMaxRows: "Batch / assertion result row limit",
   dqEnabled: "Enabled",
   dqRules: "Rules · {count}",
   dqEmpty:
@@ -51,6 +51,9 @@ export const dqEn = {
   dqDuration: "Duration",
   dqDurationValue: "{value} ms",
   dqRows: "Rows scanned",
+  dqCoverage: "Coverage",
+  dqCoverageComplete: "100% · {scanned}/{total} rows",
+  dqCoverageUnknown: "Unknown",
   dqFailedRows: "Violating rows",
   dqSamples: "Redacted failure samples",
   dqTrend: "Result trend",

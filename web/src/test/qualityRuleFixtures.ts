@@ -45,6 +45,9 @@ export const dqResult: DqResult = {
   actual_value: 1,
   threshold: 0,
   row_count: 100,
+  rows_total: 100,
+  rows_scanned: 100,
+  coverage: "complete",
   failed_count: 1,
   samples: [{ row_number: 2, column: "paid_amount", value: "[REDACTED]" }],
   metrics: {

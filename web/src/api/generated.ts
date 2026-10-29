@@ -5452,6 +5452,12 @@ export interface components {
             /** Actual Value */
             actual_value?: number | null;
             /**
+             * Coverage
+             * @default unknown
+             * @enum {string}
+             */
+            coverage: "complete" | "unknown";
+            /**
              * Duration Ms
              * @default 0
              */
@@ -5479,6 +5485,13 @@ export interface components {
              * @default 0
              */
             row_count: number;
+            /**
+             * Rows Scanned
+             * @default 0
+             */
+            rows_scanned: number;
+            /** Rows Total */
+            rows_total?: number | null;
             /** Rule Id */
             rule_id: string;
             /**
