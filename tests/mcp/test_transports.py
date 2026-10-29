@@ -15,6 +15,8 @@ from fastmcp import Client
 from fastmcp.client.transports import SSETransport, StdioTransport
 from mcp_types import Implementation
 
+from datakeel.actions.models import ApprovalDecision, ExecuteRequest
+from datakeel.actions.service import approve_plan, execute_plan
 from datakeel.core.models import JsonDocument
 from datakeel.mcp import create_server
 from datakeel.ontology.tool_models import ToolOutcome
@@ -31,11 +33,11 @@ async def _call(client: Client, name: str, arguments: JsonDocument) -> ToolOutco
     return result
 
 
-async def _exercise(client: Client, dataset_id: str) -> None:
+async def _exercise(client: Client, db: Database, dataset_id: str) -> None:
     assert client.initialize_result is not None
     assert client.initialize_result.protocol_version == "2025-11-25"
     tools = await client.list_tools()
-    assert len(tools) == 59
+    assert len(tools) == 57
     assert {
         "query_kg",
         "explain_relation",
@@ -57,22 +59,29 @@ async def _exercise(client: Client, dataset_id: str) -> None:
     query = JsonDocument({"dataset_id": dataset_id, "quality_max": 0})
     before = await _call(client, "search_files", query)
     assert sum(item.asset_type == "file" for item in before.asset_refs) == 1
+    assert {"approve_plan", "execute_plan"}.isdisjoint(tool.name for tool in tools)
     arguments = JsonDocument(
         {"plan_id": prepared.plan.id, "plan_digest": prepared.plan.plan_digest}
     )
+    refused = await _call(client, "approve_plan", JsonDocument({**arguments.root, "approve": True}))
+    assert refused.status == "FAILED"
+    assert "Web UI or CLI" in (refused.error or "")
     assert (await _call(client, "execute_plan", arguments)).status == "FAILED"
-    approved = await _call(
-        client, "approve_plan", JsonDocument({**arguments.root, "approve": True})
+    assert sum(item.asset_type == "file" for item in before.asset_refs) == 1
+    # A person approves and executes on the Web UI (recorded as local); the client only prepared.
+    decision = ApprovalDecision(
+        plan_digest=prepared.plan.plan_digest, approve=True, reason="checked"
     )
-    assert approved.plan is not None
-    assert approved.plan.status == "APPROVED"
-    executed = await _call(client, "execute_plan", arguments)
-    assert executed.run is not None
-    assert executed.run.status == "SUCCEEDED"
-    assert executed.run.receipt is not None
-    assert executed.run.receipt.outputs
-    assert "agent:protocol-fixture/session:" in executed.run.receipt.on_behalf_of
-    assert (await _call(client, "execute_plan", arguments)).status == "FAILED"
+    assert approve_plan(db, prepared.plan.id, decision).status == "APPROVED"
+    executed = execute_plan(
+        db,
+        prepared.plan.id,
+        ExecuteRequest(plan_digest=prepared.plan.plan_digest),
+    )
+    assert executed.status == "SUCCEEDED"
+    assert executed.receipt is not None
+    assert executed.receipt.outputs
+    assert "agent:protocol-fixture/session:" in executed.receipt.on_behalf_of
     after = await _call(client, "search_files", query)
     assert all(item.asset_type != "file" for item in after.asset_refs)
     invalid = await _call(client, "get_quality", JsonDocument({"unexpected": 1}))
@@ -83,7 +92,13 @@ async def _exercise(client: Client, dataset_id: str) -> None:
 
 def _assert_audit(db: Database) -> None:
     invocations = list_invocations(db)
-    assert len(invocations) == 10
+    assert len(invocations) == 8
+    assert [
+        item.status for item in invocations if item.name in {"approve_plan", "execute_plan"}
+    ] == [
+        "FAILED",
+        "FAILED",
+    ]
     assert all(item.actor == "local" for item in invocations)
     assert all(item.agent_id == "protocol-fixture" for item in invocations)
     assert len({item.session_id for item in invocations}) == 1
@@ -125,7 +140,7 @@ def test_stdio_when_cli_subprocess_connects_controls_and_audits_real_calls(
             mode="legacy",
             client_info=Implementation(name="protocol-fixture", version="1"),
         ) as client:
-            await _exercise(client, dataset.id)
+            await _exercise(client, db, dataset.id)
 
     try:
         asyncio.run(scenario())
@@ -176,7 +191,7 @@ def test_sse_when_loopback_client_connects_controls_and_audits_real_calls(
                 mode="legacy",
                 client_info=Implementation(name="protocol-fixture", version="1"),
             ) as client:
-                await _exercise(client, dataset.id)
+                await _exercise(client, db, dataset.id)
         finally:
             server.should_exit = True
             await asyncio.wait_for(task, timeout=5)

@@ -11,12 +11,15 @@ from fastmcp import Client, Context
 from jsonschema import Draft202012Validator
 from mcp_types import Implementation
 
-from datakeel.actions.service import list_runs
+from datakeel.actions.models import ApprovalDecision, ExecuteRequest
+from datakeel.actions.parameters import PARAMETER_TYPES
+from datakeel.actions.service import approve_plan, execute_plan, get_plan, list_runs
 from datakeel.core.models import JsonDocument
 from datakeel.mcp import create_server
 from datakeel.mcp.catalog import tool_definitions
 from datakeel.mcp.dispatch import caller_context
 from datakeel.ontology import tooling
+from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.models import ObjectSet
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.storage.database import Database
@@ -45,7 +48,7 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             assert client.initialize_result.server_info.name == "Datakeel"
             listed = await client.list_tools()
         expected = {item.name: item for item in tool_definitions()}
-        assert len(listed) == len(expected) == 59
+        assert len(listed) == len(expected) == 57
         assert {
             "query_kg",
             "explain_relation",
@@ -83,6 +86,50 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
         assert list_invocations(db) == []
 
     asyncio.run(scenario())
+
+
+def test_server_exposes_no_approval_or_execution_tool_and_refuses_them(
+    db: Database, dataset: DatasetView
+) -> None:
+    """Approval and execution belong to a person on the Web UI or CLI, never to an MCP host."""
+    names = {item.name for item in tool_definitions()}
+    assert names.isdisjoint(tooling.CONTROL_TOOLS)
+    assert names == set(PARAMETER_MODELS) | set(PARAMETER_TYPES)
+    selection = JsonDocument({"selection": {"dataset_id": dataset.id, "quality_max": 0}})
+
+    async def scenario() -> tuple[ToolOutcome, ToolOutcome, ToolOutcome]:
+        async with Client(create_server(db), mode="legacy") as client:
+            listed = await client.list_tools()
+            assert all(
+                tool.annotations is not None and tool.annotations.destructive_hint is False
+                for tool in listed
+            )
+            prepared = await call(client, "delete_files", selection)
+            assert prepared.plan is not None
+            arguments = {"plan_id": prepared.plan.id, "plan_digest": prepared.plan.plan_digest}
+            approved = await call(
+                client, "approve_plan", JsonDocument({**arguments, "approve": True})
+            )
+            executed = await call(client, "execute_plan", JsonDocument(arguments))
+            return prepared, approved, executed
+
+    prepared, approved, executed = asyncio.run(scenario())
+    assert prepared.plan is not None
+    for outcome in (approved, executed):
+        assert outcome.status == "FAILED"
+        assert "Web UI or CLI" in (outcome.error or "")
+    assert get_plan(db, prepared.plan.id).status == "PREPARED"
+    assert list_runs(db) == []
+    assert len(evaluate(db, ObjectSet(dataset_id=dataset.id)).objects) == 2
+    statuses = {item.name: item.status for item in list_invocations(db)}
+    assert statuses["approve_plan"] == statuses["execute_plan"] == "FAILED"
+    decision = ApprovalDecision(
+        plan_digest=prepared.plan.plan_digest, approve=True, reason="checked"
+    )
+    assert approve_plan(db, prepared.plan.id, decision).status == "APPROVED"
+    request = ExecuteRequest(plan_digest=prepared.plan.plan_digest)
+    assert execute_plan(db, prepared.plan.id, request).status == "SUCCEEDED"
+    assert len(evaluate(db, ObjectSet(dataset_id=dataset.id)).objects) == 1
 
 
 @pytest.mark.parametrize(

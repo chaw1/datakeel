@@ -195,8 +195,6 @@ async def verify_stdio(config: CommandServer, environment: dict[str, str]) -> No
             "explain_sample",
             "quarantine_files",
             "decide_assertions",
-            "approve_plan",
-            "execute_plan",
             "ask_data",
             "list_metrics",
             "explain_metric",
@@ -204,6 +202,9 @@ async def verify_stdio(config: CommandServer, environment: dict[str, str]) -> No
         }
         if not required <= names:
             msg = "README MCP command did not expose the controlled tools"
+            raise RuntimeError(msg)
+        if names & {"approve_plan", "execute_plan"}:
+            msg = "README MCP command exposed an approval or execution tool"
             raise RuntimeError(msg)
         await verified_read(client, "list_datasets", JsonDocument({}))
         await verify_enterprise_stdio(client)

@@ -352,7 +352,7 @@ OpenLineage 导出是事件数组，逐个元素用官方 RunEvent Schema 校验
 
 ## MCP 接入
 
-`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **59 个工具**：20 个只读函数（含 `annotation_quality`、`list_quality_rules`、`get_table_quality`、`query_standard_coverage`、`list_standard_usage`、`query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），37 个**只准备计划**的动作（含质量规则维护与运行、`confirm_metric_draft`、问题单认领、`annotation_acceptance`、`publish_release`、`generate_datasheet`、`publish_datasheet`、`submit_custom_operator`、数据资产上架与授权、数据标准导入与映射、`run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚），以及显式 `approve_plan` / `execute_plan` 两个控制工具。每次调用记录状态、资产引用和调用方归因。外部 MCP 客户端需保留人工审批控制；内置 Agent 则走上面的 UI 确认流程。表合同、worker 定时检查、问题恢复和签名告警见[质量规则说明](docs/QUALITY_RULES.md)。
+`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **57 个工具**：20 个只读函数（含 `annotation_quality`、`list_quality_rules`、`get_table_quality`、`query_standard_coverage`、`list_standard_usage`、`query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample` 及下方四个），37 个**只准备计划**的动作（含质量规则维护与运行、`confirm_metric_draft`、问题单认领、`annotation_acceptance`、`publish_release`、`generate_datasheet`、`publish_datasheet`、`submit_custom_operator`、数据资产上架与授权、数据标准导入与映射、`run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚）。没有签批和执行工具：准备好的计划只能由人在 Web 界面或 CLI 审阅、签批并执行，MCP 客户端自己无法把计划走完；以 `approve_plan` / `execute_plan` 为名的调用会被拒绝并记入审计。每次调用记录状态、资产引用和调用方归因；内置 Agent 则走上面的 UI 确认流程。表合同、worker 定时检查、问题恢复和签名告警见[质量规则说明](docs/QUALITY_RULES.md)。
 
 Agent 和 MCP 同步提供 `ask_data`、`list_metrics`、`explain_metric`、`impact_of`。`ask_data` 只读源数据，在 Datakeel 保存答案及证据；涉及资产的调用记录 `asset_refs`，空的 `list_metrics` 结果可没有引用。工具、动作与 HTTP 使用同一套类型模型生成 schema。
 

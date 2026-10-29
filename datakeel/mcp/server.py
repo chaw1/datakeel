@@ -40,7 +40,7 @@ class ControlledTool(Tool):
             output_schema=OUTPUT_SCHEMA,
             annotations=ToolAnnotations(
                 read_only_hint=read_only,
-                destructive_hint=definition.name == "execute_plan",
+                destructive_hint=False,
                 idempotent_hint=read_only,
                 open_world_hint=False,
             ),
@@ -85,8 +85,8 @@ def create_server(db: Database) -> FastMCP:
     server = FastMCP(
         "Datakeel",
         instructions=(
-            "Action tools only prepare frozen plans. Obtain a human decision before "
-            "approve_plan, then explicitly call execute_plan; approvals cannot be reused."
+            "Action tools only prepare frozen plans. This server has no approve or execute "
+            "tool: a person reviews, approves and executes a plan on the Web UI or CLI."
         ),
     )
     for definition in definitions:

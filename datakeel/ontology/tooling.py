@@ -37,6 +37,7 @@ from datakeel.storage.tool_invocations import (
 )
 
 logger = logging.getLogger(__name__)
+CONTROL_TOOLS = frozenset({"approve_plan", "execute_plan"})
 
 
 def _plan_outcome(name: str, plan: ActionPlan) -> ToolOutcome:
@@ -119,6 +120,12 @@ def _dispatch(
             access=AccessContext(actor=context.actor, entry=entry, scope="query"),
         )
         return _plan_outcome(name, plan)
+    if name in CONTROL_TOOLS and entry == "mcp":
+        msg = (
+            f"{name} is not available through MCP: a person approves and executes plans "
+            "on the Web UI or CLI."
+        )
+        raise AuthorizationError(msg)
     return _control(
         db, name, arguments, AccessContext(actor=context.actor, entry=entry, scope="query")
     )
