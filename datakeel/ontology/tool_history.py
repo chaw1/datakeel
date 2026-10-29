@@ -36,6 +36,7 @@ DEFERRED_READ_FUNCTIONS = frozenset(
         "label_set_diff",
         "next_task",
         "production_objects",
+        "production_prelabel_accuracy",
     }
 )
 
