@@ -135,9 +135,21 @@ original category strings and absolute pixel `x1,y1,x2,y2` boxes. JSON `null` me
 `[]` means reviewed empty. JSON text columns keep the inferred schema identical across splits
 containing only empty annotations versus populated ones, without artificial examples. The
 archive includes these instructions in `README.md`. No `datasets` dependency is added.
-HF exports reject EXIF orientation values other than absent or 1: its default decoder
-automatically rotates or mirrors oriented images, which would invalidate raw pixel boxes
-and dimensions. The exporter neither transcodes pixels nor silently rewrites coordinates.
+COCO, YOLO and HF imagefolder exports share one EXIF orientation check: only absent or
+identity (1) orientation is accepted. Values 2–8 can rotate or mirror decoded pixels and
+invalidate the frozen raw-pixel boxes or dimensions. Normalize these sources and their
+annotations together before importing them again. The exporter neither transcodes pixels
+nor silently rewrites coordinates, and a refused export produces no archive.
+
+| Orientation policy | Benefit | Required trade-off |
+| ------------------ | ------- | ------------------ |
+| Reject nonidentity EXIF (chosen) | Preserve source bytes and the frozen annotation frame across all three formats | Oriented sources must be normalized before import |
+| Transpose pixels and transform boxes | Export oriented sources directly | Rewrite pixel bytes, dimensions and every box for each rotation/mirror, with new provenance semantics |
+
+Rejection keeps the existing HF policy and the source-byte export contract consistent.
+Pillow's [`exif_transpose`](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose)
+applies the orientation transform and removes its metadata; adopting it here would also
+require corresponding coordinate transforms rather than a pixel-only change.
 
 `MANIFEST.json` records the source version, optional release, split ID, seed, format and
 format version, total and per-split file counts, annotation counts and each source hash.

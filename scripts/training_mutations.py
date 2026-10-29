@@ -7,6 +7,41 @@ from scripts.mutation_models import Mutation
 
 TRAINING_MUTATIONS = (
     Mutation(
+        name="training-coco-exif-orientation-guard-omitted",
+        path="training/export_detection.py",
+        before=(
+            "for ordinal, item in enumerate(selected, 1):\n            validate_orientation(item)"
+        ),
+        after="for ordinal, item in enumerate(selected, 1):\n            pass",
+        case=(
+            "tests/training/test_export_orientation.py::"
+            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-yolo-exif-orientation-guard-omitted",
+        path="training/export_detection.py",
+        before='validate_image_extension(item, "yolo")\n        validate_orientation(item)',
+        after='validate_image_extension(item, "yolo")\n        pass',
+        case=(
+            "tests/training/test_export_orientation.py::"
+            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-shared-exif-orientation-guard-omitted",
+        path="training/export_common.py",
+        before="if image.getexif().get(274) not in (None, 1):",
+        after="if False:",
+        case=(
+            "tests/training/test_export_orientation.py::"
+            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="training-loader-extension-validation-omitted",
         path="training/export_common.py",
         before="if suffix not in supported:",

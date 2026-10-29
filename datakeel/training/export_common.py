@@ -180,6 +180,17 @@ def dimensions(item: TrainingExportItem) -> tuple[int, int]:
     return width, height
 
 
+def validate_orientation(item: TrainingExportItem) -> None:
+    """Refuse EXIF transformations that would change the source pixel coordinate frame."""
+    with Image.open(item.file.path) as image:
+        if image.getexif().get(274) not in (None, 1):
+            message = (
+                "Image export requires absent or identity EXIF orientation; "
+                "normalize the source orientation before importing"
+            )
+            raise ValidationError(message)
+
+
 def source_text(item: TrainingExportItem) -> str:
     """Decode verified UTF-8 bytes without changing CRLF or carriage-return character offsets."""
     content = Path(item.file.path).read_bytes()
