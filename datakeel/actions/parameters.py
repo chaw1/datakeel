@@ -94,9 +94,9 @@ class ExportParams(BoundaryModel):
     """Write a local export artifact under the configured exports directory."""
 
     dataset_id: str
-    format: Literal["croissant", "openlineage", "coco", "yolo", "imagefolder", "text_jsonl"] = (
-        "croissant"
-    )
+    format: Literal[
+        "croissant", "openlineage", "coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"
+    ] = "croissant"
     destination: str | None = None
     version_id: str | None = None
     release_id: str | None = None

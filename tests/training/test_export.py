@@ -85,7 +85,7 @@ def _write(export: TrainingExport, directory: Path) -> Path:
     return directory / "package"
 
 
-@pytest.mark.parametrize("format_name", ["coco", "yolo", "imagefolder"])
+@pytest.mark.parametrize("format_name", ["coco", "yolo", "imagefolder", "hf_imagefolder"])
 def test_training_export_same_source_is_byte_identical_and_manifest_pins_version(
     export: TrainingExport, tmp_path: Path, format_name: TrainingFormat
 ) -> None:
@@ -374,9 +374,9 @@ def test_imagefolder_classification_keeps_missing_detection_annotation_available
     assert json.loads((package / "classes.json").read_bytes()) == {"cat%2Frare": "cat/rare"}
 
 
-def test_removed_hf_training_format_is_rejected(export: TrainingExport) -> None:
-    """Both controlled-action and training boundaries reject the deferred format."""
+def test_unknown_training_format_is_rejected(export: TrainingExport) -> None:
+    """Both controlled-action and training boundaries reject unsupported formats."""
     with pytest.raises(SchemaValidationError, match="format"):
-        ExportParams.model_validate({"dataset_id": "dataset", "format": "hf_imagefolder"})
+        ExportParams.model_validate({"dataset_id": "dataset", "format": "unsupported"})
     with pytest.raises(SchemaValidationError, match="format"):
-        TrainingExport.model_validate({**export.model_dump(), "format": "hf_imagefolder"})
+        TrainingExport.model_validate({**export.model_dump(), "format": "unsupported"})

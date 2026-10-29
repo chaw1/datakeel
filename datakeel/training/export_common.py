@@ -41,6 +41,77 @@ _YOLO_SUFFIXES = frozenset(
         ".webp",
     }
 )
+# Hugging Face datasets ImageFolder.EXTENSIONS; decoding still uses the installed Pillow.
+_HF_IMAGEFOLDER_SUFFIXES = frozenset(
+    {
+        ".blp",
+        ".bmp",
+        ".dib",
+        ".bufr",
+        ".cur",
+        ".pcx",
+        ".dcx",
+        ".dds",
+        ".ps",
+        ".eps",
+        ".fit",
+        ".fits",
+        ".fli",
+        ".flc",
+        ".ftc",
+        ".ftu",
+        ".gbr",
+        ".gif",
+        ".grib",
+        ".png",
+        ".apng",
+        ".jp2",
+        ".j2k",
+        ".jpc",
+        ".jpf",
+        ".jpx",
+        ".j2c",
+        ".icns",
+        ".ico",
+        ".im",
+        ".iim",
+        ".tif",
+        ".tiff",
+        ".jfif",
+        ".jpe",
+        ".jpg",
+        ".jpeg",
+        ".mpg",
+        ".mpeg",
+        ".msp",
+        ".pcd",
+        ".pxr",
+        ".pbm",
+        ".pgm",
+        ".ppm",
+        ".pnm",
+        ".psd",
+        ".bw",
+        ".rgb",
+        ".rgba",
+        ".sgi",
+        ".ras",
+        ".tga",
+        ".icb",
+        ".vda",
+        ".vst",
+        ".webp",
+        ".wmf",
+        ".emf",
+        ".xbm",
+        ".xpm",
+    }
+)
+_FORMAT_SUFFIXES = {
+    "imagefolder": _IMAGEFOLDER_SUFFIXES,
+    "yolo": _YOLO_SUFFIXES,
+    "hf_imagefolder": _HF_IMAGEFOLDER_SUFFIXES,
+}
 
 
 def json_text(value: object) -> str:
@@ -59,10 +130,10 @@ def filename(item: TrainingExportItem) -> str:
 
 
 def validate_image_extension(
-    item: TrainingExportItem, format_name: Literal["imagefolder", "yolo"]
+    item: TrainingExportItem, format_name: Literal["imagefolder", "yolo", "hf_imagefolder"]
 ) -> None:
     """Reject source suffixes that the selected format's standard loader would ignore."""
-    supported = _IMAGEFOLDER_SUFFIXES if format_name == "imagefolder" else _YOLO_SUFFIXES
+    supported = _FORMAT_SUFFIXES[format_name]
     suffix = Path(item.file.filename).suffix.lower()
     if suffix not in supported:
         message = f"{format_name} does not support source image extension {suffix or '<none>'}"

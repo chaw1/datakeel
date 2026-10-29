@@ -10,8 +10,8 @@ from pydantic import ConfigDict, Field, model_validator
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel, FileItem
 
-TrainingFormat = Literal["coco", "yolo", "imagefolder", "text_jsonl"]
-TRAINING_FORMATS = frozenset({"coco", "yolo", "imagefolder", "text_jsonl"})
+TrainingFormat = Literal["coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"]
+TRAINING_FORMATS = frozenset({"coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"})
 
 
 class TrainingExportItem(BoundaryModel):
@@ -32,6 +32,22 @@ class TrainingExport(BoundaryModel):
     seed: int
     format: TrainingFormat
     items: tuple[TrainingExportItem, ...]
+
+
+class HfImageMetadata(BoundaryModel):
+    """Keep every split's inferred metadata schema stable, including unreviewed/empty labels.
+
+    JSON text columns preserve nullable variable-length annotations without Arrow inferring
+    incompatible list element types in splits containing only negative images.
+    """
+
+    file_name: str
+    sample_id: str
+    annotator_id: str
+    width: int
+    height: int
+    labels_json: str
+    boxes_json: str
 
 
 class CocoCategory(BoundaryModel):
