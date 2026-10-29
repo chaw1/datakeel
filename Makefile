@@ -28,7 +28,7 @@ check-python:
 	uv run python scripts/check_size.py
 	uv run python scripts/check_boundaries.py
 	uv run python scripts/check_web_tests.py
-	uv run pytest --cov=datakeel --cov-report=term-missing --cov-report=xml --cov-report=json --cov-fail-under=85
+	uv run python -m scripts.run_pytest --cov=datakeel --cov-report=term-missing --cov-report=xml --cov-report=json --cov-fail-under=85
 	uv run python scripts/check_coverage.py
 
 check-scale:

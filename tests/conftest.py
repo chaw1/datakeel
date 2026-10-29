@@ -13,6 +13,7 @@ import pytest
 from sqlalchemy import event, text
 
 from datakeel.storage.database import Database
+from tests.db_templates import DatabaseTemplate
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -52,8 +53,23 @@ def unmigrated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[D
     database.engine.dispose()
 
 
+@pytest.fixture(scope="session")
+def database_template(tmp_path_factory: pytest.TempPathFactory) -> Iterator[DatabaseTemplate]:
+    """Migrate one empty source per process while preserving independent test copies."""
+    template = DatabaseTemplate(
+        os.environ.get("DATAKEEL_TEST_DATABASE_URL"), tmp_path_factory.mktemp("database-template")
+    )
+    try:
+        yield template
+    finally:
+        template.close()
+
+
 @pytest.fixture
-def db(unmigrated_db: Database) -> Database:
-    """Provide the migrated database test fixture."""
-    unmigrated_db.migrate()
-    return unmigrated_db
+def db(
+    database_template: DatabaseTemplate, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[Database]:
+    """Provide a migrated copy with private facts, constraints, and object storage."""
+    monkeypatch.setenv("DATAKEEL_HOME", str(tmp_path / "home"))
+    with database_template.fresh(tmp_path / "test.db") as database:
+        yield database

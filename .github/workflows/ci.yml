@@ -3,6 +3,8 @@ on: [push, pull_request]
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      DATAKEEL_TEST_WORKERS: '4'
     strategy:
       matrix:
         database: [sqlite, postgres]

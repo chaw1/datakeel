@@ -13,7 +13,7 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pyright
 uv run lint-imports
-uv run pytest --cov=datakeel --cov-report=term-missing --cov-fail-under=85
+uv run python -m scripts.run_pytest --cov=datakeel --cov-report=term-missing --cov-fail-under=85
 (cd web && npm run lint && npm run typecheck && npm test -- --run && npm run build)
 uv run python scripts/license_audit.py
 ```
