@@ -58,6 +58,8 @@ def test_unregistered_actor_cannot_use_legacy_http_write_routes(
             "dataset_id",
             "document_id",
             "memory_id",
+            "version_id",
+            "run_id",
         ):
             path = path.replace("{" + name + "}", "unknown")
         response = client.request(method, path, json={}, headers={"X-Datakeel-Actor": "unknown"})

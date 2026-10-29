@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.service import prepare_action
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.api.identity_access import http_action_context
 from datakeel.core.data_asset_models import AccessContext, AccessScope
 from datakeel.core.llm_data_governance import (
     TrainingAnalysisRequest,
@@ -71,7 +72,10 @@ def clean(run_id: str, db: DatabaseDependency, request: Request) -> ActionPlan:
     """Prepare mandatory human approval bound to this exact dry run and frozen sources."""
     result = get_training_run(db, run_id, access=_access(request))
     return prepare_action(
-        db, "clean_training_data", JsonDocument({"dataset_id": result.dataset_id, "run_id": run_id})
+        db,
+        "clean_training_data",
+        JsonDocument({"dataset_id": result.dataset_id, "run_id": run_id}),
+        http_action_context(request),
     )
 
 

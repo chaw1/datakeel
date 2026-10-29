@@ -24,6 +24,8 @@ _MANAGER_ACTIONS = frozenset(
         "reopen_task",
         "import_predictions",
         "upgrade_project",
+        # Finalized project versions feed controlled training splits and exports.
+        "export_dataset",
     }
 )
 

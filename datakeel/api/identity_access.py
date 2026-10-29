@@ -45,6 +45,19 @@ MUTATION_ACTIONS: dict[tuple[str, str], str] = {
     ("POST", "/api/datasheets/{document_id}/publish"): "publish_datasheet",
     ("POST", "/api/agent/memories"): "manage_users",
     ("DELETE", "/api/agent/memories/{memory_id}"): "manage_users",
+    # Training splits exist only to define controlled export packages.
+    (
+        "POST",
+        "/api/datasets/{identifier}/versions/{version_id}/training/splits",
+    ): "export_dataset",
+    (
+        "POST",
+        "/api/datasets/{identifier}/versions/{version_id}/training/import-annotations",
+    ): "save_metadata",
+    # Text dry runs and evaluation registrations are durable inputs of the clean action.
+    ("POST", "/api/datasets/{dataset_id}/text-governance/analyze"): "clean_training_data",
+    ("POST", "/api/datasets/{dataset_id}/text-governance/evaluations"): "clean_training_data",
+    ("POST", "/api/training-governance/{run_id}/clean"): "clean_training_data",
 }
 
 # Read computations may retain audit/session state. Business writes inside tools remain scoped.
@@ -52,6 +65,8 @@ READ_OR_CONTROLLED_ROUTES = frozenset(
     {
         ("POST", "/api/production/functions/{name}"),
         ("POST", "/api/evidence/query"),
+        ("POST", "/api/datasets/{identifier}/versions/{version_id}/training/preview"),
+        ("POST", "/api/datasets/{identifier}/versions/{version_id}/training/leakage"),
         ("POST", "/api/ontology/object-sets/evaluate"),
         ("POST", "/api/kg/query"),
         ("POST", "/api/kg/graph"),
