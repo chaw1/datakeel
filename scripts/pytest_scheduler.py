@@ -68,7 +68,8 @@ class ExclusiveSecurityScheduling(LoadGroupScheduling):
 
     def _reschedule(self, node: WorkerController) -> None:
         if self._aborted:
-            node.shutdown()
+            if not node.shutting_down:
+                node.shutdown()
         elif not self._exclusive:
             super()._reschedule(node)
 
@@ -87,9 +88,9 @@ class ExclusiveSecurityScheduling(LoadGroupScheduling):
         self, node: WorkerController, item_index: int, duration: float = 0
     ) -> None:
         """Release ordinary work only after every sandbox test protocol has completed."""
+        super().mark_test_complete(node, item_index, duration)
         if self._aborted:
             return
-        super().mark_test_complete(node, item_index, duration)
         if self._exclusive and node is self._security_node:
             security = self.assigned_work[node][_SECURITY_GROUP]
             if all(security.values()):

@@ -127,12 +127,15 @@ during container startup and cleanup. The exclusive phase covers both. A securit
 still fails the gate; the scheduler does not reinterpret a timeout or missing cleanup as
 success. A worker crash aborts the run rather than treating unfinished cases as completed.
 All phases belong to one pytest session with one merged coverage report.
+The image fixture has module scope, so its cleanup completes with the final security
+test protocol before ordinary work starts.
 
 被选中的安全用例先在一个 worker 上执行，其它 worker 保持空闲；独占阶段结束后，才并行
 执行普通用例。仅设置组亲和只能避免重复构建镜像，仍会在容器启动和清理时争用 CPU 与
 I/O；独占阶段同时保护这些操作。安全测试失败仍使门禁失败，调度器不会把超时或缺少清理
 视为成功；worker 崩溃会终止本次运行，不把未完成用例算作已完成。所有阶段属于同一个
 pytest 会话，最终只合并一份覆盖率报告。
+镜像夹具使用模块作用域，其清理包含在最后一个安全用例的完整协议中，在普通阶段开始前完成。
 
 `scripts.pytest_priorities` holds a static list of complete node IDs for expensive cases.
 After the security phase, these cases are dispatched early to reduce the final long tail.

@@ -14,7 +14,8 @@ from datakeel.core.settings import Settings
 from datakeel.operators.custom_process import RuntimeFailureError, command, runtime_environment
 
 
-@pytest.fixture(scope="session")
+# End image ownership inside the security module's final test protocol.
+@pytest.fixture(scope="module")
 def sandbox_settings(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Settings]:
     """Require a locally built immutable sandbox image without skipping any security test."""
     executable = shutil.which("docker")

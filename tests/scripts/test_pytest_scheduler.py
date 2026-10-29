@@ -35,6 +35,7 @@ class _Node:
     gateway: _Gateway
     sent: list[list[int]] = field(default_factory=list)
     shutting_down: bool = False
+    shutdown_calls: int = 0
 
     def send_runtest_some(self, indices: list[int]) -> None:
         """Record work assignments without running a worker process."""
@@ -43,6 +44,7 @@ class _Node:
     def shutdown(self) -> None:
         """Retain the worker's public shutdown state for scheduler assertions."""
         self.shutting_down = True
+        self.shutdown_calls += 1
 
 
 class _Plugins:
@@ -136,6 +138,33 @@ def test_any_worker_crash_aborts_without_dispatching_more_work(crashed: int) -> 
     assert [entry.sent for entry in nodes] == sent
 
 
+def test_idle_crash_tracks_healthy_drain_without_requeuing_or_false_crash() -> None:
+    """A healthy worker finishes queued protocols after abort and exits normally."""
+    scheduler, nodes, config = _scheduler(
+        [
+            SECURITY + "[0]" + GROUP,
+            SECURITY + "[1]" + GROUP,
+            "test_plain.py::queued",
+            "test_plain.py::unassigned",
+        ]
+    )
+    healthy = cast("WorkerController", nodes[0])
+    idle = cast("WorkerController", nodes[1])
+    sent = [list(node.sent) for node in nodes]
+    scheduler.pytest_testnodedown(idle, "generated idle worker crash")
+    assert scheduler.remove_node(idle) is None
+    scheduler.schedule()
+    for index in (0, 1, 2):
+        scheduler.mark_test_complete(healthy, index)
+    scheduler.pytest_testnodedown(healthy, None)
+    assert scheduler.remove_node(healthy) is None
+    assert len(config.hook.reports) == 1
+    assert config.hook.reports[0].failed
+    assert [node.sent for node in nodes] == sent
+    assert nodes[0].shutdown_calls == 1
+    assert scheduler.tests_finished
+
+
 def _project(path: Path, security_count: int, ordinary_count: int, *, crash: bool = False) -> Path:
     results = path / "results"
     results.mkdir()
@@ -149,10 +178,12 @@ def _project(path: Path, security_count: int, ordinary_count: int, *, crash: boo
     )
     (path / "conftest.py").write_text(
         "import json, os\nfrom pathlib import Path\nimport pytest\n"
-        "@pytest.fixture(scope='session')\n"
+        "@pytest.fixture(scope='module')\n"
         "def security_instance(worker_id):\n"
         "    root = Path(os.environ['SPEED1_SCHEDULER_RESULTS'])\n"
         "    (root / ('fixture-' + worker_id)).touch()\n"
+        "    yield\n"
+        "    (root / ('cleanup-' + worker_id)).touch()\n"
         "@pytest.fixture\n"
         "def security_case(number, worker_id, security_instance):\n"
         "    root = Path(os.environ['SPEED1_SCHEDULER_RESULTS'])\n"
@@ -184,6 +215,7 @@ def _write_ordinary(path: Path, security_count: int, count: int) -> None:
         "def test_ordinary(number, worker_id):\n"
         "    root = Path(os.environ['SPEED1_SCHEDULER_RESULTS'])\n"
         f"    assert len(list(root.glob('security-*'))) == {security_count}\n"
+        f"    assert len(list(root.glob('cleanup-*'))) == {int(bool(security_count))}\n"
         "    (root / f'ordinary-{number}').write_text(json.dumps(worker_id))\n"
         "    (root / ('ready-' + worker_id)).touch()\n"
         "    deadline = time.monotonic() + 45\n"
@@ -245,6 +277,7 @@ def test_real_workers_run_security_exclusively_then_all_ordinary_cases(tmp_path:
     assert len(security) == 29
     assert len(set(security)) == 1
     assert len(list(results.glob("fixture-*"))) == 1
+    assert len(list(results.glob("cleanup-*"))) == 1
     assert len(ordinary) == 8
     assert set(ordinary) == {"gw0", "gw1"}
 
