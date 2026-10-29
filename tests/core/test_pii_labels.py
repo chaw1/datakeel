@@ -119,3 +119,29 @@ def test_containing_secret_guard_masks_every_fragment_around_an_embedded_url() -
     assignment = "password" + "="
     assert redact_pii(assignment + '"' + value + '"') == assignment + '"[SECRET]"'
     assert redact_pii("password:Qwerty123!&token:Abcd1234!") == "password:[SECRET]&token:[SECRET]"
+
+
+def test_crossing_credential_spans_cover_every_fragment() -> None:
+    """A partial bare-password match and a crossing URL must redact their entire union."""
+    for userinfo in ("中文口令", "p'assword", "p,assword", "p;assword"):
+        for separator in ("&", "|"):
+            url = "postgres://" + f"u:{userinfo}@example.org/0"
+            text = "密码:Qwerty123!" + separator + url + "」记得改。"
+            assert redact_pii(text) == "密码:[SECRET]」记得改。"
+            matches = detect_pii(text)
+            assert len(matches) == 1
+            assert matches[0].type == "secret"
+            assert text[matches[0].start : matches[0].end] == "Qwerty123!" + separator + url
+
+
+def test_credential_url_usernames_cannot_capture_prose_as_quoted_assignments() -> None:
+    """A label-like URL username is userinfo, even with quotes inside its password."""
+    for username in ("password", "token", "api_key"):
+        for quote in ("'", '"'):
+            url = "postgres://" + username + ":" + quote + "p4ssword@example.org/0"
+            suffix = "」记得改。" + quote
+            assert redact_pii(url + suffix) == "[CREDENTIAL_URL]" + suffix
+            assert redact_pii("密码:Qwerty123!&" + url + suffix) == "密码:[SECRET]" + suffix
+            following = "」记得改。 密码:" + quote + "Abcd1234!中文" + quote
+            expected = "[CREDENTIAL_URL]」记得改。 密码:" + quote + "[SECRET]" + quote
+            assert redact_pii(url + following) == expected

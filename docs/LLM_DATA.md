@@ -131,4 +131,6 @@ The CLI and discoverable Agent read tool `get_training_quality` answer what is w
 
 Credential assignments recognize English labels (including password, passwd, pwd, api_key, secret and token) and Chinese labels (密码、口令、密钥、令牌、访问密钥、访问令牌), with ASCII/full-width colons, equals signs, 是 or 为. Values of at least eight characters require a letter or digit; punctuation-only or empty assignments are ignored. Complete bare ASCII tokens, including password punctuation, are masked before adjacent Chinese prose. Quote values containing whitespace or Unicode text. Typed credential fields use the same labels. Detection is local and never validates a credential against a service.
 
-Existing typed redaction placeholders are not reported again. Nested surrounding brackets are retained regardless of their ordering.
+Credential URLs stop before CJK prose and Chinese punctuation after the userinfo; the complete username/password remains covered even when it contains Unicode or punctuation. Adjacent instructions and quotation marks are retained. Label-like usernames inside a URL are not interpreted as separate credential assignments; credentials after the URL are still checked independently.
+
+Existing typed redaction placeholders are not reported again. Nested surrounding brackets are retained regardless of their ordering. Overlapping findings cover their complete combined span, so a credential URL crossing a labelled password cannot leave either credential partly visible.

@@ -227,7 +227,12 @@ def _bare_secret(value: str, start: int) -> PiiMatch | None:
 def _credential_candidates(text: str) -> Iterator[PiiMatch]:
     if patterns.LABEL_HINT.search(text) is None:
         return
-    starts = [match.start() for match in patterns.CREDENTIAL_ASSIGNMENT.finditer(text)]
+    urls = tuple(patterns.CREDENTIAL_URL.finditer(text)) if "://" in text else ()
+    starts = [
+        match.start()
+        for match in patterns.CREDENTIAL_ASSIGNMENT.finditer(text)
+        if not any(url.start() <= match.start() < url.end() for url in urls)
+    ]
     for index, start in enumerate(starts):
         if match := patterns.LABELED_SECRET.match(text, start):
             end = min(
@@ -240,10 +245,15 @@ def _credential_candidates(text: str) -> Iterator[PiiMatch]:
                 yield candidate
     for match in patterns.BEARER.finditer(text):
         yield PiiMatch(type="secret", start=match.start("value"), end=match.end("value"))
-    for match in patterns.QUOTED_SECRET.finditer(text):
-        if candidate := _labeled_secret(match.group("value"), match.group("label")):
-            start = match.start("value")
-            yield PiiMatch(type="secret", start=start + candidate.start, end=start + candidate.end)
+    for start in starts:
+        match = patterns.QUOTED_SECRET.match(text, start)
+        if match is not None and (
+            candidate := _labeled_secret(match.group("value"), match.group("label"))
+        ):
+            value_start = match.start("value")
+            yield PiiMatch(
+                type="secret", start=value_start + candidate.start, end=value_start + candidate.end
+            )
 
 
 def _ip_candidates(text: str) -> Iterator[PiiMatch]:
@@ -319,13 +329,22 @@ def _labeled_secret(text: str, label: str | None) -> PiiMatch | None:
 
 
 def _outer_candidates(candidates: list[PiiMatch]) -> Iterator[PiiMatch]:
-    enclosing_start, limit = -1, -1
-    for match in sorted(candidates, key=lambda item: (item.start, -item.end)):
-        if match.end <= limit and (match.start, match.end) != (enclosing_start, limit):
+    """Cover every validated fragment when privacy spans cross or contain one another."""
+    enclosing: PiiMatch | None = None
+    for match in sorted(
+        candidates, key=lambda item: (item.start, -item.end, _PRIORITY.index(item.type))
+    ):
+        if enclosing is None:
+            enclosing = match
             continue
-        yield match
-        if match.end > limit:
-            enclosing_start, limit = match.start, match.end
+        if match.start < enclosing.end:
+            if match.end > enclosing.end:
+                enclosing = PiiMatch(type=enclosing.type, start=enclosing.start, end=match.end)
+            continue
+        yield enclosing
+        enclosing = match
+    if enclosing is not None:
+        yield enclosing
 
 
 def detect_pii(text: str, *, label: str | None = None) -> tuple[PiiMatch, ...]:

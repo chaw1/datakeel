@@ -7,6 +7,25 @@ from scripts.mutation_models import Mutation
 
 PII_MUTATIONS = (
     Mutation(
+        name="pii-url-userinfo-is-not-a-credential-assignment",
+        path="core/pii.py",
+        before='    urls = tuple(patterns.CREDENTIAL_URL.finditer(text)) if "://" in text else ()',
+        after="    urls = ()",
+        case="tests/core/test_pii_labels.py::test_credential_url_usernames_cannot_capture_prose_as_quoted_assignments",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-secret-crossing-span-union",
+        path="core/pii.py",
+        before=(
+            "                enclosing = "
+            "PiiMatch(type=enclosing.type, start=enclosing.start, end=match.end)"
+        ),
+        after="                pass",
+        case="tests/core/test_pii_labels.py::test_crossing_credential_spans_cover_every_fragment",
+        runner="pytest",
+    ),
+    Mutation(
         name="pii-secret-outer-span-before-inner-type-priority",
         path="core/pii.py",
         before="        _outer_candidates(candidates),",
@@ -44,6 +63,14 @@ PII_MUTATIONS = (
         before="and value not in _PLACEHOLDERS",
         after="and True",
         case="tests/core/test_pii_labels.py::test_placeholder_and_nested_delimiter_guard_keeps_only_the_secret_span",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-credential-url-cjk-terminator",
+        path="core/pii_patterns.py",
+        before=r"\u2e80-\ua4cf\uac00-\ud7af\uf900-\ufaff\ufe10-\ufe6f\uff00-\uffef\U00020000-\U000323af",
+        after="",
+        case="tests/core/test_pii_url_prose.py::test_url_prose_guard_preserves_suffix_without_leaking_credentials",
         runner="pytest",
     ),
     Mutation(
