@@ -85,6 +85,38 @@ it("invalidates a frozen plan when its export format changes", async () => {
   ).not.toBeInTheDocument();
 });
 
+it("prepares the HuggingFace format with the selected immutable split", async () => {
+  const user = userEvent.setup();
+  const fetch = vi.fn(() =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({ ...actionPlan, action_type: "export_dataset" }),
+      ),
+    ),
+  );
+  vi.stubGlobal("fetch", fetch);
+  render(<TrainingExport split={splitSet} />);
+  await user.selectOptions(
+    screen.getByLabelText("Training format"),
+    "hf_imagefolder",
+  );
+  await user.type(screen.getByLabelText("Archive filename"), "training.tar.gz");
+  await user.click(screen.getByRole("button", { name: "Review export plan" }));
+  await screen.findByRole("article", { name: "Action plan: export_dataset" });
+  expect(fetch).toHaveBeenCalledWith(
+    "/api/actions/export_dataset/prepare",
+    expect.objectContaining({
+      body: JSON.stringify({
+        dataset_id: "dataset-1",
+        version_id: "version-1",
+        split_set_id: "split-1",
+        format: "hf_imagefolder",
+        destination: "training.tar.gz",
+      }),
+    }),
+  );
+});
+
 it("shows export preparation failures without creating a download link", async () => {
   const user = userEvent.setup();
   vi.stubGlobal(

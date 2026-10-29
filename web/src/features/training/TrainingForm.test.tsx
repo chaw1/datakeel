@@ -6,7 +6,7 @@ import { leakage, splitSet } from "./testFixtures";
 import { TrainingForm } from "./TrainingForm";
 import { TrainingLeakage } from "./TrainingLeakage";
 
-it("validates ratio totals and accepts two sets with configurable image threshold", async () => {
+it("validates ratio totals and accepts two sets with configurable similarity thresholds", async () => {
   const user = userEvent.setup();
   const submit = vi.fn();
   render(<TrainingForm busy={false} onSubmit={submit} />);
@@ -20,9 +20,11 @@ it("validates ratio totals and accepts two sets with configurable image threshol
   await user.type(screen.getByLabelText("Train"), "0.9");
   await user.clear(screen.getByLabelText("Random seed"));
   await user.type(screen.getByLabelText("Random seed"), "7");
-  await user.click(screen.getByLabelText("Balance primary labels across sets"));
+  await user.click(screen.getByLabelText("Balance all labels across sets"));
   await user.clear(screen.getByLabelText("Image distance threshold"));
   await user.type(screen.getByLabelText("Image distance threshold"), "5");
+  await user.clear(screen.getByLabelText("Text distance threshold"));
+  await user.type(screen.getByLabelText("Text distance threshold"), "0");
   await user.click(
     screen.getByRole("button", { name: "Preview distribution" }),
   );
@@ -32,6 +34,7 @@ it("validates ratio totals and accepts two sets with configurable image threshol
       seed: 7,
       stratify: false,
       image_threshold: 5,
+      text_threshold: 0,
     }),
     true,
   );
@@ -48,14 +51,42 @@ it("requires an explicit leakage read and reports a clean result", async () => {
   await user.click(screen.getByRole("button", { name: "Check leakage" }));
   await screen.findByRole("status");
   expect(
+    screen.getByText("No cross-set leakage found for the checked signals."),
+  ).toBeVisible();
+  expect(
     screen.getByText(
-      "No exact-content, image or group leakage found. Text similarity was not checked.",
+      "Checked signals: Identical content, Similar images, Similar text, Shared group.",
     ),
   ).toBeVisible();
   expect(fetch).toHaveBeenCalledWith(
     "/api/datasets/dataset-1/versions/version-1/training/splits/split-1/leakage",
     expect.objectContaining({ method: "GET" }),
   );
+});
+
+it("shows the actual signal coverage of a legacy snapshot", async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            ...leakage,
+            checked_signals: ["exact", "image", "group"],
+            pairs: [],
+          }),
+        ),
+      ),
+    ),
+  );
+  render(<TrainingLeakage split={splitSet} />);
+  await user.click(screen.getByRole("button", { name: "Check leakage" }));
+  expect(
+    await screen.findByText(
+      "Checked signals: Identical content, Similar images, Shared group.",
+    ),
+  ).toBeVisible();
 });
 
 it("keeps disabled generated ratios out of directory split requests", async () => {

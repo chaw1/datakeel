@@ -1,7 +1,7 @@
 export const trainingEn = {
   trainingTitle: "Training sets",
   trainingDescription:
-    "Balance each sample’s first label in sorted order; distributions retain all labels. Groups and duplicates stay together before ratio targets.",
+    "Balance all labels with iterative stratification. Groups and duplicates stay together before ratio targets.",
   trainingVersion: "Training source version",
   trainingName: "Split set name",
   trainingNameExample: "baseline-80-10-10",
@@ -16,7 +16,7 @@ export const trainingEn = {
   trainingVal: "Validation",
   trainingTest: "Test",
   trainingSeed: "Random seed",
-  trainingStratify: "Balance primary labels across sets",
+  trainingStratify: "Balance all labels across sets",
   trainingGroup: "Group metadata field",
   trainingGroupHint: "For example, video_id or collection_batch",
   trainingAvoidLeakage: "Keep duplicates and related groups together",
@@ -47,10 +47,11 @@ export const trainingEn = {
   trainingLeakage: "Leakage report",
   trainingCheckLeakage: "Check leakage",
   trainingImageThreshold: "Image distance threshold",
+  trainingTextThreshold: "Text distance threshold",
   trainingLeakageHint:
-    "Checks exact content, image similarity and groups across sets. Text similarity is unavailable; identical text is still checked by SHA-256.",
-  trainingNoLeakage:
-    "No exact-content, image or group leakage found. Text similarity was not checked.",
+    "Checks exact content, image similarity, normalized text similarity and groups across sets. Saved snapshots retain their original signals.",
+  trainingNoLeakage: "No cross-set leakage found for the checked signals.",
+  trainingCheckedSignals: "Checked signals: {signals}.",
   trainingLeakageCount: "{count} cross-set evidence pairs",
   trainingExact: "Identical content",
   trainingImage: "Similar images",
@@ -60,12 +61,14 @@ export const trainingEn = {
   trainingLeft: "First sample / set",
   trainingRight: "Second sample / set",
   trainingDetail: "Evidence",
-  trainingThresholds: "Image distance threshold: {image} (64-bit Hamming).",
+  trainingThresholds:
+    "Distance thresholds: image {image}, text {text} (64-bit Hamming).",
   trainingExport: "Export training data",
   trainingFormat: "Training format",
   trainingCoco: "COCO detection",
   trainingYolo: "YOLO detection",
   trainingImagefolder: "ImageFolder classification",
+  trainingHfImagefolder: "HuggingFace imagefolder",
   trainingJsonl: "Text JSONL",
   trainingDestination: "Archive filename",
   trainingAnnotator: "Annotation author",

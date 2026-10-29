@@ -7567,10 +7567,11 @@ export interface components {
              * @default [
              *       "exact",
              *       "image",
+             *       "text",
              *       "group"
              *     ]
              */
-            checked_signals: ("exact" | "image" | "group")[];
+            checked_signals: components["schemas"]["LeakageKind"][];
             /** Dataset Id */
             dataset_id: string;
             /** Pairs */
@@ -9374,13 +9375,13 @@ export interface components {
             source: "generated" | "directory";
             /**
              * Stratify
-             * @description Stratify by the lexicographically smallest label; retain all annotations.
+             * @description Use every label in iterative multilabel stratification.
              * @default true
              */
             stratify: boolean;
             /**
              * Text Threshold
-             * @description Reserved for snapshot compatibility; ignored.
+             * @description Maximum 64-bit text simhash Hamming distance.
              * @default 3
              */
             text_threshold: number;

@@ -36,6 +36,7 @@ export function TrainingLeakage({ split }: { split: SplitSet }) {
           <p className="muted small">
             {t("trainingThresholds", {
               image: split.request.image_threshold,
+              text: split.request.text_threshold,
             })}
           </p>
         </div>
@@ -44,6 +45,15 @@ export function TrainingLeakage({ split }: { split: SplitSet }) {
         </button>
       </div>
       <ResourceState {...report} onRetry={report.reload} />
+      {report.value && (
+        <p className="muted small">
+          {t("trainingCheckedSignals", {
+            signals: report.value.checked_signals
+              .map((kind) => t(kinds[kind]))
+              .join(", "),
+          })}
+        </p>
+      )}
       {report.value && !report.value.pairs.length && (
         <p role="status">{t("trainingNoLeakage")}</p>
       )}

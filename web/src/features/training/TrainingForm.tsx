@@ -28,6 +28,7 @@ export function TrainingForm({
   const [group, setGroup] = useState("");
   const [avoidLeakage, setAvoidLeakage] = useState(true);
   const [imageThreshold, setImageThreshold] = useState("8");
+  const [textThreshold, setTextThreshold] = useState("3");
   const [source, setSource] = useState<"generated" | "directory">("generated");
   const ratioValues = Object.values(ratios).map(Number);
   const ratiosValid =
@@ -54,6 +55,7 @@ export function TrainingForm({
         group_field: group.trim() || null,
         avoid_leakage: avoidLeakage,
         image_threshold: Number(imageThreshold),
+        text_threshold: Number(textThreshold),
         source,
       },
       event.nativeEvent.submitter?.getAttribute("value") === "preview",
@@ -174,6 +176,20 @@ export function TrainingForm({
           value={imageThreshold}
           onChange={(event) => {
             setImageThreshold(event.target.value);
+          }}
+        />
+      </label>
+      <label>
+        {t("trainingTextThreshold")}
+        <input
+          type="number"
+          min="0"
+          max="64"
+          step="1"
+          required
+          value={textThreshold}
+          onChange={(event) => {
+            setTextThreshold(event.target.value);
           }}
         />
       </label>

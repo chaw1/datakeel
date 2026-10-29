@@ -61,6 +61,15 @@ export async function trainingSmoke({ page, json, screenshot, checks }) {
   const first = await save();
   assert.deepEqual(first.members, preview.members);
   assert.equal(first.request.seed, 42);
+  assert.equal(first.request.text_threshold, 3);
+  assert.equal(first.algorithm_version, "1.3-iterative-text");
+  assert.equal(
+    await section
+      .getByLabel("Training format", { exact: true })
+      .locator("option")
+      .count(),
+    5,
+  );
   await section
     .getByLabel("Split set name", { exact: true })
     .fill(`${name}-seed-7`);
@@ -89,13 +98,16 @@ export async function trainingSmoke({ page, json, screenshot, checks }) {
     .click();
   const leakage = await (await leakageResponse).json();
   assert.deepEqual(leakage.pairs, []);
+  assert.deepEqual(leakage.checked_signals, [
+    "exact",
+    "image",
+    "text",
+    "group",
+  ]);
   await section
-    .getByText(
-      "No exact-content, image or group leakage found. Text similarity was not checked.",
-      {
-        exact: true,
-      },
-    )
+    .getByText("No cross-set leakage found for the checked signals.", {
+      exact: true,
+    })
     .waitFor();
   const typography = await typographySample(page, "training-en");
   for (const theme of ["light", "dark"]) {

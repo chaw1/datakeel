@@ -35,7 +35,6 @@ it("previews configured ratios without saving and saves a named immutable split"
     screen.queryByRole("button", { name: "Review export plan" }),
   ).not.toBeInTheDocument();
   const request = { ...splitSet.request };
-  Reflect.deleteProperty(request, "text_threshold");
   expect(fetch).toHaveBeenCalledWith(
     "/api/datasets/dataset-1/versions/version-1/training/preview",
     expect.objectContaining({ body: JSON.stringify(request) }),
@@ -90,7 +89,7 @@ it("compares saved class distribution and exposes zero counts in the chart", asy
   expect(screen.getByText("sample-c")).toBeVisible();
 });
 
-it("reads directory splits and renders all three checked kinds of pair evidence", async () => {
+it("reads directory splits and renders all four checked kinds of pair evidence", async () => {
   const user = userEvent.setup();
   const fetch = vi.fn((path: string, init?: RequestInit) =>
     Promise.resolve(
@@ -123,15 +122,20 @@ it("reads directory splits and renders all three checked kinds of pair evidence"
     ).toBe(true);
   });
   await user.click(screen.getByRole("button", { name: "Check leakage" }));
-  await screen.findByRole("table", { name: "3 cross-set evidence pairs" });
-  for (const name of ["Identical content", "Similar images", "Shared group"])
+  await screen.findByRole("table", { name: "4 cross-set evidence pairs" });
+  for (const name of [
+    "Identical content",
+    "Similar images",
+    "Similar text",
+    "Shared group",
+  ])
     expect(screen.getByRole("rowheader", { name })).toBeVisible();
   expect(screen.getByText("image evidence")).toBeVisible();
   expect(
     within(
-      screen.getByRole("table", { name: "3 cross-set evidence pairs" }),
+      screen.getByRole("table", { name: "4 cross-set evidence pairs" }),
     ).getAllByText("sample-a"),
-  ).toHaveLength(3);
+  ).toHaveLength(4);
 });
 
 it("clears selected-version data and reports read failures with retry", async () => {

@@ -33,9 +33,21 @@ def test_cli_training_reads_previews_saves_and_compares(
     leakage = LeakageReport.model_validate_json(command("leakage", fixture.dataset_id))
     assert sorted(item.kind for item in leakage.pairs) == ["exact", "image"]
     saved = SplitSet.model_validate_json(
-        command("create", fixture.dataset_id, "--name", "cli", "--test", "0", "--val", "0.2")
+        command(
+            "create",
+            fixture.dataset_id,
+            "--name",
+            "cli",
+            "--test",
+            "0",
+            "--val",
+            "0.2",
+            "--text-threshold",
+            "0",
+        )
     )
     assert [item.count for item in saved.distributions] == [80, 20, 0]
+    assert saved.request.text_threshold == 0
     assert len(TypeAdapter(list[SplitSet]).validate_json(command("list", fixture.dataset_id))) == 1
     detail = SplitSet.model_validate_json(
         command("distribution", fixture.dataset_id, "--split-set", saved.id)

@@ -10,7 +10,7 @@ from datakeel.core.training_models import SplitRequest
 
 
 class TrainingDistributionParams(BoundaryModel):
-    """Inspect a saved split or preview primary-label strata without saving any new split."""
+    """Inspect a saved split or preview all-label strata without saving any new split."""
 
     dataset_id: str = Field(min_length=1)
     version_id: str | None = Field(default=None, min_length=1)
@@ -19,7 +19,7 @@ class TrainingDistributionParams(BoundaryModel):
 
 
 class TrainingLeakageParams(TrainingDistributionParams):
-    """Check exact, image and group pairs in saved or external directory splits."""
+    """Check exact, image, text and group pairs in saved or external directory splits."""
 
     request: SplitRequest = Field(
         default_factory=lambda: SplitRequest(name="directory-preview", source="directory")
