@@ -1,8 +1,49 @@
 # Near-duplicate acceleration / 近重复加速
 
-Datakeel keeps image decoding and the existing 64-bit dHash calculation in Python/Pillow. The optional `datakeel-accel` package replaces only integer hash comparison with a Rust kernel. Decoding and resampling differences therefore cannot change hashes between implementations. The main Datakeel wheel stays pure Python and has no dependency on the extension.
+Datakeel keeps image decoding and the existing 64-bit dHash calculation in Python/Pillow. The optional `datakeel-accel` package accelerates integer hash comparison and normalized training-text fingerprints. Decoding and resampling differences therefore cannot change image hashes between implementations. The main Datakeel wheel stays pure Python and has no dependency on the extension.
 
-Datakeel 保留 Python/Pillow 的图片解码与既有 64 位 dHash 计算，只把整数哈希比较交给可选的 `datakeel-accel` Rust 扩展。因此，两种实现不会因解码、缩放差异产生不同哈希。Datakeel 主包仍是纯 Python wheel，不依赖扩展。
+Datakeel 保留 Python/Pillow 的图片解码与既有 64 位 dHash 计算，由可选的 `datakeel-accel` Rust 扩展加速整数哈希比较和已规范化训练文本的指纹。因此，两种实现不会因解码、缩放差异产生不同图片哈希。Datakeel 主包仍是纯 Python wheel，不依赖扩展。
+
+## Training-text fingerprints / 训练文本指纹
+
+Training-data duplicate indexing selects the fingerprint implementation once when opening its
+disk index. Unicode normalization and case folding remain in Python. Rust receives the normalized
+text, deduplicates character trigrams, selects the first 512 features in lexical order, and computes
+the same eight-byte BLAKE2b hashes, 64-bit SimHash, and eight MinHash bands as the Python fallback.
+Unsigned arithmetic wraps at 64 bits; half-vote SimHash ties remain set. Bands keep their original
+offset byte and little-endian integer representation. Empty and short strings retain one feature.
+The two implementations must return identical fingerprint bits and band bytes.
+
+Long-text similarity can reuse exact packed trigram sets. Three Unicode scalar values occupy
+21 bits each in one unsigned 64-bit value, so this representation has no feature-hash collisions.
+Sorted unique values are packed as little-endian bytes; the Dice kernel counts their exact
+intersection and preserves Python's floating-point result. Each disk index retains at most 4096
+packed sets for texts of at most 4096 characters; larger texts bypass that cache. Texts of at most
+256 characters keep the original Python edit-confirmation path. Fingerprint feature hashes use
+a separate thread-local cache with at most 65536 entries; clearing a full cache changes no hash.
+
+训练数据去重索引在打开磁盘索引时只选择一次指纹实现。Unicode 规范化和大小写折叠仍在
+Python 中完成。Rust 接收规范化后的文本，去重字符三元组，按词典序选前 512 个特征，计算与
+Python 回退逐位一致的八字节 BLAKE2b、64 位 SimHash 和八组 MinHash 带。无符号计算按 64 位
+回绕，SimHash 票数相等时保留置位，带保留原偏移字节和小端整数编码。空文本和短文本仍有
+一个特征。两种实现的指纹位和索引带字节必须完全一致。
+
+长文本相似度可复用精确的三元组集合：每个 Unicode 码点占 21 位，三个码点无碰撞地打包为
+一个64位无符号值，排序去重后保存为小端字节。Dice 内核精确计数交集，浮点结果与 Python
+保持一致。每个磁盘索引最多缓存4096组、每组文本至多4096字符；更长文本绕过缓存。至多
+256字符的文本仍走原 Python 编辑确认路径。指纹特征摘要另有每线程最多65536项的缓存，
+缓存满后清空不改变任何摘要。
+
+The existing `DATAKEEL_ACCEL` setting also selects this kernel. In `auto`, an absent extension or
+an older installation without the selected training kernels uses Python. `off` always uses Python;
+`required` reports a clear installation error when the training kernel is unavailable. The optional
+extension's BLAKE2b dependency stays in `accel/` and is included in its locked license audit and
+distributed upstream notices. No Python runtime dependency is added.
+
+既有 `DATAKEEL_ACCEL` 配置也控制该内核。`auto` 在扩展缺失或旧安装缺少
+所需训练内核时回退 Python；`off` 始终使用 Python；`required` 在训练内核不可用时
+明确报告安装错误。可选扩展的 BLAKE2b 依赖只存在于 `accel/`，纳入锁定依赖许可审计及随包
+分发的上游声明，不增加 Python 运行依赖。
 
 ## Modes / 比较模式
 
@@ -40,6 +81,13 @@ uv run python -c 'import datakeel_accel; print(datakeel_accel.__version__)'
 `make check-rust` generates license notices, builds a local abi3 extension for Python 3.12 and later in a fresh output directory, scans the exact wheel for private artifacts, and installs that build. Prebuilt multi-platform wheels and package-index publication are outside this implementation. `make check` also builds and installs the extension and runs Rust formatting, Clippy, unit tests, license checks and Python/Rust consistency tests. Cargo is required for development gates; a missing toolchain fails with installation guidance.
 
 `make check-rust` 先生成许可声明，再在全新输出目录构建适用于 Python 3.12 及以上版本的本机 abi3 扩展，扫描准确的 wheel 是否包含私有产物，并安装本次构建；本期不提供多平台预构建 wheel 或包索引发布。`make check` 也会构建、安装扩展，并运行 Rust 格式、Clippy、单元测试、许可检查及 Python/Rust 一致性测试。开发门禁需要 Cargo；缺少工具链时会明确失败并给出安装提示。
+
+This installation is recommended for large training datasets and the 100,000-record, 60-second
+training-check target. Pure Python fallback keeps identical results; performance measurements
+must report its CPU and wall times separately from the installed-extension setup.
+
+大规模训练数据及 10 万条 60 秒训练检查目标推荐采用上述安装方式。纯 Python 回退保持结果
+一致；性能测量须分别报告纯 Python 与已安装扩展两种配置的 CPU、墙钟耗时。
 
 | `DATAKEEL_ACCEL` | Selection / 选择 |
 | --- | --- |

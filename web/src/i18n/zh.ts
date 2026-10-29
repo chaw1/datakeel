@@ -14,6 +14,7 @@ import { evidenceZh } from "./evidenceZh";
 import { graphZh } from "./graphZh";
 import { kgZh } from "./kgZh";
 import { knowledgeZh } from "./knowledgeZh";
+import { llmDataZh } from "./llmDataZh";
 import { mediaZh } from "./mediaZh";
 import { metadataZh } from "./metadataZh";
 import { metricRollbackZh } from "./metricRollbackZh";
@@ -27,6 +28,7 @@ import { workspaceZh } from "./workspaceZh";
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
   ...trainingZh,
+  ...llmDataZh,
   ...customOperatorZh,
   ...releaseZh,
   ...assetZh,

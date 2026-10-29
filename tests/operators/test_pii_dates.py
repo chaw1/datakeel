@@ -28,5 +28,5 @@ def test_redaction_still_removes_phone_formats(
 ) -> None:
     """International, local and compact phone numbers remain protected."""
     result = REGISTRY["text.pii_redact"].run([make_file(f"Call {value}.")], output_dir)
-    assert Path(result.files[0].path).read_text() == "Call [REDACTED]."
+    assert Path(result.files[0].path).read_text() == "Call [PHONE]."
     assert result.quality["redactions"] == 1

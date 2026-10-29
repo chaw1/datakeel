@@ -224,3 +224,21 @@ it.each([
     expect(params.get("prompt")).toContain(id);
   },
 );
+
+it("opens text data governance from dataset tabs and retains the source version", async () => {
+  const user = userEvent.setup();
+  const onOpen = vi.fn<(target: ObjectTarget) => void>();
+  render(
+    <ObjectPage target={{ kind: "dataset", id: dataset.id }} onOpen={onOpen} />,
+  );
+  await user.click(
+    await screen.findByRole("link", { name: "Text data governance" }),
+  );
+  expect(onOpen).toHaveBeenCalledWith(
+    expect.objectContaining({
+      kind: "dataset",
+      id: dataset.id,
+      tab: "text-governance",
+    }),
+  );
+});

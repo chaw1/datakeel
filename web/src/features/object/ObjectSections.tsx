@@ -2,6 +2,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { AnnotationQuality } from "../annotation/AnnotationQuality";
 import { Datasheets } from "../datasheets/Datasheets";
 import { Files } from "../files/Files";
+import { TrainingGovernance } from "../llm-data/TrainingGovernance";
 import Quality from "../quality/Quality";
 import { ReportView } from "../reports/ReportView";
 import { StandardsChecks } from "../standards/StandardsChecks";
@@ -69,6 +70,18 @@ export function ObjectSections({
         <AnnotationQuality
           datasetId={data.dataset?.id ?? target.datasetId ?? target.id}
           versionId={data.version?.id ?? data.versions[0]?.id}
+        />
+      );
+    case "text-governance":
+      return (
+        <TrainingGovernance
+          key={`${target.kind}:${target.id}`}
+          datasetId={data.dataset?.id ?? target.datasetId ?? target.id}
+          versions={data.versions}
+          files={data.files}
+          initialVersionId={data.version?.id ?? target.versionId}
+          initialOpen
+          onChanged={reload}
         />
       );
     case "report":

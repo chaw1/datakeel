@@ -5,12 +5,29 @@
 
 import hashlib
 import logging
+import os
+from types import SimpleNamespace
 
 import pytest
 
 from datakeel.core.custom_sandbox import SandboxLimits, SandboxRequest
 from datakeel.core.settings import Settings
+from datakeel.operators import custom_memory, custom_subprocess
 from datakeel.operators.custom_sandbox import run_sandbox
+
+
+@pytest.fixture
+def killed_worker_groups(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Track only worker groups explicitly killed by this invocation."""
+    killed: list[int] = []
+    killpg = os.killpg
+
+    def record_kill(pid: int, signum: int) -> None:
+        killed.append(pid)
+        killpg(pid, signum)
+
+    monkeypatch.setattr(custom_subprocess.os, "killpg", record_kill)
+    return killed
 
 
 def request(
@@ -91,3 +108,89 @@ def test_subprocess_memory_limit_rejects_large_allocation() -> None:
     )
     assert result.exit_reason == "memory_limit", result.stderr
     assert not result.outputs
+
+
+def test_subprocess_memory_limit_kills_and_reaps_owned_worker(
+    killed_worker_groups: list[int],
+) -> None:
+    """A real over-budget worker is terminated and cannot survive the invocation."""
+    code = """import time
+
+def run(inputs, params, ctx):
+    blocks = []
+    for _ in range(16):
+        blocks.append(bytearray(16 * 1024 * 1024))
+        time.sleep(0.02)
+    while True:
+        time.sleep(0.01)
+"""
+    result = run_sandbox(
+        request(code), Settings(sandbox_backend="subprocess", sandbox_allow_subprocess=True)
+    )
+    assert result.exit_reason == "memory_limit", result.stderr
+    assert not result.success
+    assert not result.outputs
+    assert len(killed_worker_groups) == 1
+    with pytest.raises(ProcessLookupError):
+        os.kill(killed_worker_groups[0], 0)
+
+
+def test_subprocess_unreadable_native_memory_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    killed_worker_groups: list[int],
+) -> None:
+    """A denied monitor prevents a successful result and still cleans the worker."""
+
+    def denied_library() -> None:
+        raise PermissionError
+
+    monkeypatch.setattr(custom_memory, "_library", denied_library)
+    monkeypatch.setattr(custom_memory, "sys", SimpleNamespace(platform="darwin"))
+    result = run_sandbox(
+        request("import time\ndef run(inputs, params, ctx): time.sleep(1); return []"),
+        Settings(sandbox_backend="subprocess", sandbox_allow_subprocess=True),
+    )
+    assert result.exit_reason == "runtime_error"
+    assert "memory usage could not be verified" in result.stderr
+    assert not result.success
+    assert not result.outputs
+    assert len(killed_worker_groups) == 1
+    with pytest.raises(ProcessLookupError):
+        os.kill(killed_worker_groups[0], 0)
+
+
+def test_subprocess_completed_worker_cleanup_denial_preserves_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A missing or inaccessible completed group cannot overwrite a successful result."""
+    failures = iter((ProcessLookupError, PermissionError))
+
+    def denied_kill(pid: int, signum: int) -> None:
+        raise next(failures)
+
+    monkeypatch.setattr(custom_subprocess.os, "killpg", denied_kill)
+    monkeypatch.setattr(custom_subprocess, "memory_exceeded", lambda *_args: False)
+    for _ in range(2):
+        result = run_sandbox(
+            request("def run(inputs, params, ctx): return []"),
+            Settings(sandbox_backend="subprocess", sandbox_allow_subprocess=True),
+        )
+        assert result.success, result.stderr
+        assert result.exit_reason == "completed"
+
+
+def test_subprocess_repeated_short_workers_complete() -> None:
+    """Repeated quick workers retain actual native monitoring through normal exit."""
+    code = """from pathlib import Path
+
+def run(inputs, params, ctx):
+    (Path(ctx["output_dir"]) / "result").write_bytes(b"local")
+    return [{"path": "result", "metadata": {}}]
+"""
+    settings = Settings(sandbox_backend="subprocess", sandbox_allow_subprocess=True)
+    for attempt in range(60):
+        result = run_sandbox(request(code), settings)
+        assert result.success, f"attempt {attempt + 1}: {result.stderr}"
+        assert result.exit_reason == "completed"
+        assert len(result.outputs) == 1
+        assert result.outputs[0].content == b"local"

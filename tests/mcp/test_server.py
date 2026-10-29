@@ -48,14 +48,21 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             assert client.initialize_result.server_info.name == "Datakeel"
             listed = await client.list_tools()
         expected = {item.name: item for item in tool_definitions()}
-        assert len(listed) == len(expected) == 59
+        assert len(listed) == len(expected) == 61
         assert {"training_distribution", "training_leakage"} <= {tool.name for tool in listed}
+        training = next(tool for tool in listed if tool.name == "get_training_quality")
+        assert training.annotations is not None
+        assert training.annotations.read_only_hint is True
+        assert training.annotations.idempotent_hint is True
+        assert training.input_schema["required"] == ["dataset_id"]
+        assert "version_id" in training.input_schema["properties"]
         assert {
             "query_kg",
             "explain_relation",
             "run_kg_extraction",
             "submit_custom_operator",
             "publish_release",
+            "clean_training_data",
             "create_data_asset",
             "update_data_asset",
             "publish_data_asset",

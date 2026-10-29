@@ -255,9 +255,17 @@ Click **Check leakage**. Clean data reports no cross-set matches for the listed 
 
 Under **Export training data**, select COCO, YOLO, ImageFolder, HuggingFace imagefolder or text JSONL to match the annotations. If samples have multiple annotations, select an **Annotation author** to define the training labels. Enter `training.tar.gz`. Click **Review export plan**, inspect the frozen source version, split, format and affected samples, and execute the controlled action after approval when required. Use **Download training archive** after success. Check both light and dark themes for readable tables, charts, evidence and plans. See [training datasets](TRAINING.md) for formats, thresholds and reproducibility. This is a manual extension to the tour; the screenshot replay retains its existing steps.
 
+## 18. Inspect and clean training records (2 minutes)
+
+Create an independent generated JSONL dataset with one valid conversation, one exact repeat, a preference pair with identical answers, and a record containing the reserved example address `reviewer@example.test`. Import your own generated evaluation questions as a text file in that same dataset. The [training-data guide](LLM_DATA.md) includes accepted formats and the HTTP import/analysis interfaces; no benchmark content or model is required.
+
+Open **Data library → your dataset → Text data governance**. Expand **Register your evaluation set**, give the set a name, select the imported evaluation file and register it. The new set is selected for checking. Keep automatic format detection and click **Analyze and preview cleaning**. Inspect rule counts, the language distribution, duplicate groups and evaluation hits. In **Redacted record samples**, the address appears as a highlighted `[EMAIL]`; bad records show file and line plus a drop reason. Download the complete decision ledger to inspect every keep/drop/redact decision. The dataset still has its original version.
+
+Switch between English/Chinese and Light/Dark to inspect the same report. Choose **Review cleaning plan**, verify the frozen source version and plan digest, then **Approve and create a cleaned training version**. The receipt links to lineage; **Versions** keeps the original manifest and adds the cleaned one. Generate a new offline datasheet for an analyzed version to inspect cited training facts. The automated tour creates its own generated seven-record fixture and exercises this entire approval path.
+
 ## Replay the tour and generate screenshots
 
-Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent three-file fixture before cleanup.
+Run this against a **fresh demo that has not been used yet**. The script follows the real UI in the order above. Both metric changes and rollbacks use UI controls to prepare a plan, review the approval sheet, and execute it. Direct API calls only read or poll evidence, except for creating the independent generated fixtures for cleanup and training governance.
 
 ```bash
 npm --prefix web ci
@@ -266,7 +274,7 @@ npm --prefix web exec -- playwright install chromium
 npm --prefix web run smoke:tour -- http://127.0.0.1:8773
 ```
 
-The script writes 21 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. The cleanup step also checks two quarantined files, explicit continuation after approval, one deletion record, one remaining file, and the unchanged original 400-file dataset. The graph step checks missing-tail evidence and the persisted rejection style; the annotation step checks that the reworked batch and Fleiss' κ are shown. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.
+The script writes 25 JPEG screenshots at `1440 × 900` to `docs/images/demo/`, each at most 400,000 bytes, directly from the browser without image post-processing. `artifacts/demo-tour/tour.json` records the actions, response status codes, objects and versions, screenshot dimensions and sizes, browser errors, and blocked external requests. Page text is saved beside it. The script also checks consistent impact counts in Chinese and English for both metric plans, the answer sequence `4,979,475 → 5,255,975 → 4,979,475`, and metric versions `1 → 2 → 3`. The cleanup step also checks two quarantined files, explicit continuation after approval, one deletion record, one remaining file, and the unchanged original 400-file dataset. The graph step checks missing-tail evidence and the persisted rejection style; the annotation step checks that the reworked batch and Fleiss' κ are shown. Success requires zero console or page errors and zero external requests. Start another fresh temporary workspace for every replay.
 
 ## Knowledge questions / 知识问数
 

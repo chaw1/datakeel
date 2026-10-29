@@ -1065,6 +1065,110 @@
     "queue": "cpu"
   },
   {
+    "id": "text.training_quality",
+    "version": "1.0.0",
+    "modality": "text",
+    "category": "quality",
+    "inputs": {
+      "files": "files.text"
+    },
+    "outputs": {
+      "files": "files.text"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Freeze the same rule configuration at pipeline and interactive boundaries.",
+      "properties": {
+        "format": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "messages",
+            "instruction",
+            "preference"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "max_tokens": {
+          "default": 8192,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "near_distance": {
+          "default": 8,
+          "maximum": 16,
+          "minimum": 0,
+          "title": "Near Distance",
+          "type": "integer"
+        },
+        "near_similarity": {
+          "default": 0.9,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Near Similarity",
+          "type": "number"
+        },
+        "repetition_threshold": {
+          "default": 0.45,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Repetition Threshold",
+          "type": "number"
+        },
+        "contamination_ngram": {
+          "default": 13,
+          "maximum": 100,
+          "minimum": 2,
+          "title": "Contamination Ngram",
+          "type": "integer"
+        },
+        "contamination_threshold": {
+          "default": 0.2,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Contamination Threshold",
+          "type": "number"
+        },
+        "refusal_phrases": {
+          "default": [
+            "as an ai language model",
+            "as an artificial intelligence",
+            "i cannot assist with",
+            "作为一个ai",
+            "作为人工智能",
+            "作为一个人工智能",
+            "我无法协助"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Refusal Phrases",
+          "type": "array"
+        },
+        "sample_limit": {
+          "default": 50,
+          "maximum": 200,
+          "minimum": 0,
+          "title": "Sample Limit",
+          "type": "integer"
+        },
+        "max_line_bytes": {
+          "default": 1048576,
+          "maximum": 16777216,
+          "minimum": 1024,
+          "title": "Max Line Bytes",
+          "type": "integer"
+        }
+      },
+      "title": "TrainingQualityParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
     "id": "pointcloud.probe",
     "version": "1.0.0",
     "modality": "point-cloud",

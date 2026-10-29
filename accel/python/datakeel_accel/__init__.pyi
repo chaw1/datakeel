@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-# Typed interface of the optional integer comparison extension.
+# Typed interface of the optional comparison and training fingerprint extension.
 
 from collections.abc import Sequence
 from typing import Literal
@@ -14,3 +14,6 @@ def compare(
     prefix_bits: int = 4,
     mode: Literal["prefix", "exact"] = "prefix",
 ) -> list[tuple[int, int, int]]: ...
+def training_fingerprint(text: str) -> tuple[int, bytes]: ...
+def training_shingles(text: str) -> bytes: ...
+def training_dice(left: bytes, right: bytes) -> float: ...

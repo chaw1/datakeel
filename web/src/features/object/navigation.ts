@@ -18,6 +18,7 @@ export const objectTabs = [
   "versions",
   "quality",
   "annotation-quality",
+  "text-governance",
   "report",
   "datasheets",
 ] as const;

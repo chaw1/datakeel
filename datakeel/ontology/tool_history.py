@@ -26,6 +26,7 @@ DEFERRED_READ_FUNCTIONS = frozenset(
         "annotation_quality",
         "training_distribution",
         "training_leakage",
+        "get_training_quality",
     }
 )
 

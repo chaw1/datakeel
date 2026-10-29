@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 import { evidenceTour } from "./demo-tour-evidence.mjs";
+import { llmDataJourney } from "./llm-data-smoke.mjs";
 import { annotationTour } from "./demo-tour-annotation.mjs";
 import { kgTour } from "./demo-tour-kg.mjs";
 import { enterpriseTour } from "./demo-tour-enterprise.mjs";
@@ -245,6 +246,32 @@ try {
   });
   await kgTour({ page, api, capture, report });
   await annotationTour({ page, base, api, capture, report });
+  report.trainingGovernance = await llmDataJourney({
+    page,
+    base: base.href,
+    json: api,
+    create: async (data) => {
+      const response = await context.request.post(
+        new URL("/api/datasets", base).href,
+        { data, maxRedirects: 0 },
+      );
+      assert.equal(response.status(), 201);
+      report.requests.push({
+        method: "POST",
+        path: "/api/datasets",
+        status: response.status(),
+        via: "fixture",
+      });
+      return response.json();
+    },
+    capture: (name, panel) =>
+      capture(
+        name,
+        "登记生成的评测题，检查文本数据治理的脱敏报告及浅深主题",
+        {},
+        panel,
+      ),
+  });
   assert.deepEqual(report.blockedRequests, []);
   assert.deepEqual(
     report.errors,
@@ -260,7 +287,7 @@ try {
     ),
     "Only isolated dataset fixture creation may bypass the UI",
   );
-  assert.equal(report.screenshots.length, 21);
+  assert.equal(report.screenshots.length, 25);
   report.status = "passed";
 } catch (error) {
   report.status = "failed";

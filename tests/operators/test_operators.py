@@ -123,7 +123,8 @@ def test_pii_redact_matches_email_and_phone(make_file: FileFactory, output_dir: 
     text = Path(result.files[0].path).read_text()
     assert "example.org" not in text
     assert "415" not in text
-    assert text.count("[REDACTED]") == 2
+    assert "[EMAIL]" in text
+    assert "[PHONE]" in text
     assert "A42" in text
     assert result.quality["redactions"] == 2
 
@@ -155,7 +156,7 @@ def test_text_quality_reports_unreadable_and_short(
 
 def test_manifest_schemas_and_validation(make_file: FileFactory, output_dir: Path) -> None:
     """Verify manifest schemas and validation."""
-    assert len(manifests()) == 41
+    assert len(manifests()) == 42
     snapshot = Path(__file__).resolve().parents[2] / "contracts/operators.json"
     assert json.loads(snapshot.read_text()) == [value.model_dump() for value in manifests()]
     for manifest in manifests():

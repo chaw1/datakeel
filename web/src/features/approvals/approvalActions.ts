@@ -2,6 +2,7 @@ import type { ActionPlan } from "../../api/types";
 import type { MessageKey } from "../../i18n/en";
 
 export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
+  clean_training_data: "llmDataCleanAction",
   submit_custom_operator: "customOperatorReviewAction",
   publish_release: "releaseApproval",
   create_data_asset: "assetNew",

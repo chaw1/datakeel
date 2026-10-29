@@ -9,6 +9,7 @@ from datakeel.core.ask_models import AskRequest
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError
 from datakeel.core.kg_queries import KGExplainQuery, KGQuery
+from datakeel.core.llm_data_governance import TrainingQualityQuery
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.standard_reporting_models import StandardCoverageParams, StandardUsageParams
 from datakeel.evidence.query_models import EvidenceQuery
@@ -21,6 +22,7 @@ from datakeel.ontology.data_asset_access import requested_refs
 from datakeel.ontology.dq_functions import QualityRulesParams, TableQualityParams, invoke_quality
 from datakeel.ontology.evidence_functions import invoke_evidence
 from datakeel.ontology.kg_functions import invoke_kg
+from datakeel.ontology.llm_data_functions import invoke_llm_data
 from datakeel.ontology.models import FunctionResult, FunctionType, ObjectSet, PropertyFilter
 from datakeel.ontology.parameters import (
     DatasetParams,
@@ -40,7 +42,7 @@ from datakeel.ontology.training_parameters import (
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
-from datakeel.storage.governance_service import get_quality, get_report
+from datakeel.storage.governance_service import read_governance
 from datakeel.storage.lineage_service import get_graph
 from datakeel.storage.object_queries import evaluate
 from datakeel.storage.task_queries import query_task
@@ -68,6 +70,7 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "annotation_quality": AnnotationQualityParams,
     "training_distribution": TrainingDistributionParams,
     "training_leakage": TrainingLeakageParams,
+    "get_training_quality": TrainingQualityQuery,
 }
 
 
@@ -135,14 +138,16 @@ def _search_files(db: Database, arguments: JsonDocument) -> FunctionResult:
     return _result("search_files", refs, manifest.model_dump(mode="json"))
 
 
-def _dataset_result(db: Database, name: str, arguments: JsonDocument) -> FunctionResult:
+def _dataset_result(
+    db: Database, name: str, arguments: JsonDocument, access: AccessContext | None = None
+) -> FunctionResult:
     params = DatasetParams.model_validate(arguments.root)
-    value = (
-        get_quality(db, params.dataset_id)
-        if name == "get_quality"
-        else get_report(db, params.dataset_id)
+    value = read_governance(db, params.dataset_id, report=name == "get_report", access=access)
+    return _result(
+        name,
+        [AssetRef(asset_id=params.dataset_id), *value.asset_refs],
+        value.data.model_dump(mode="json"),
     )
-    return _result(name, [AssetRef(asset_id=params.dataset_id)], value.model_dump(mode="json"))
 
 
 def _node_ref(node: GraphNode) -> AssetRef:
@@ -245,6 +250,10 @@ def invoke_function(
         result = invoke_catalog(db, name, arguments, access=caller)
     elif name == "list_datasets":
         result = _list_datasets(db, arguments, caller)
+    elif name == "get_training_quality":
+        result = invoke_llm_data(db, arguments, access=caller)
+    elif name in {"get_quality", "get_report"}:
+        result = _dataset_result(db, name, arguments, caller)
     elif name == "get_lineage":
         result = _lineage(db, arguments, caller)
     elif name in {"query_kg", "explain_relation"}:
@@ -264,8 +273,6 @@ def _invoke_function(db: Database, name: str, arguments: JsonDocument) -> Functi
         return _search_files(db, arguments)
     if name == "annotation_quality":
         return invoke_annotation_quality(db, arguments)
-    if name in {"get_quality", "get_report"}:
-        return _dataset_result(db, name, arguments)
     if name in {
         "query_evidence",
         "get_evidence",

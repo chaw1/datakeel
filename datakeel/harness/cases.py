@@ -21,6 +21,7 @@ from datakeel.harness.evidence_cases import seed_evidence_case
 from datakeel.harness.image_kg_cases import seed_image_kg_case
 from datakeel.harness.injection_cases import seed_injection_case
 from datakeel.harness.kg_cases import seed_kg_case
+from datakeel.harness.llm_data_cases import seed_llm_data_case
 from datakeel.harness.resources import contract_path
 from datakeel.harness.standard_cases import seed_standard_case
 from datakeel.harness.training_cases import seed_training_case
@@ -59,6 +60,7 @@ def seed_case(
         "quality",
         "annotation_qa",
         "training",
+        "llm_data",
     ] = "legacy",
     *,
     reviewed: bool = False,
@@ -72,6 +74,7 @@ def seed_case(
             review_enterprise_kg(db, fixture)
         return fixture
     builders = {
+        "llm_data": seed_llm_data_case,
         "kg": seed_kg_case,
         "image_kg": seed_image_kg_case,
         "standards": seed_standard_case,

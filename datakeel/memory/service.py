@@ -15,7 +15,7 @@ from datakeel.core.memory_models import (
     MemoryUseScope,
 )
 from datakeel.core.models import utcnow
-from datakeel.operators.text.pii_redact import EMAIL, PHONE
+from datakeel.core.pii import redact_pii
 from datakeel.storage import memory_store
 from datakeel.storage.database import Database
 
@@ -27,8 +27,8 @@ def create_memory(
     clock: Callable[[], datetime] = utcnow,
     policy: MemoryPolicy | None = None,
 ) -> MemoryEntry:
-    """Redact both supported PII classes before any memory content is persisted."""
-    content = PHONE.sub("[REDACTED]", EMAIL.sub("[REDACTED]", request.content))
+    """Redact shared privacy classes before any memory content is persisted."""
+    content = redact_pii(request.content, replacement="[REDACTED]")
     return memory_store.create(
         db, request.model_copy(update={"content": content}), clock(), policy or MemoryPolicy()
     )

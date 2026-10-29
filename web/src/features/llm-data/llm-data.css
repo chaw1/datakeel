@@ -1,0 +1,161 @@
+.llm-data-governance {
+  margin-block: calc(var(--space) * 6);
+}
+.llm-data-governance > summary {
+  font-size: var(--font-xl);
+  font-weight: 600;
+  cursor: pointer;
+}
+.llm-data-governance > summary:focus-visible,
+.llm-data-report summary:focus-visible {
+  outline: 2px solid var(--pencil);
+  outline-offset: var(--space);
+}
+.llm-data-controls,
+.llm-data-evaluation-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 3);
+  align-items: end;
+  margin-block: calc(var(--space) * 4);
+}
+.llm-data-controls label,
+.llm-data-evaluation-form > label {
+  display: grid;
+  gap: var(--space);
+  flex: 1;
+  min-width: 160px;
+}
+.llm-data-controls input,
+.llm-data-controls select,
+.llm-data-evaluation-form input {
+  width: 100%;
+}
+.llm-data-evaluation-form fieldset,
+.llm-data-evaluation-selection {
+  flex-basis: 100%;
+  border: 1px solid var(--rule);
+  padding: calc(var(--space) * 3);
+}
+.llm-data-checkbox {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+  padding-block: var(--space);
+}
+.llm-data-checkbox input {
+  width: auto;
+}
+.llm-data-report {
+  display: grid;
+  gap: calc(var(--space) * 5);
+}
+.llm-data-report h3,
+.llm-data-dry-run h3 {
+  font-size: var(--font-xl);
+}
+.llm-data-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: calc(var(--space) * 3);
+}
+.llm-data-metrics > div {
+  padding: calc(var(--space) * 3);
+  border: 1px solid var(--rule);
+}
+.llm-data-metrics dt {
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
+.llm-data-metrics dd {
+  margin: 0;
+  font-size: var(--font-2xl);
+  font-weight: 600;
+}
+.llm-data-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: calc(var(--space) * 6);
+}
+.llm-data-counts > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: calc(var(--space) * 2);
+  padding-block: var(--space);
+  border-block-end: 1px solid var(--rule);
+}
+.llm-data-counts dd {
+  margin: 0;
+}
+.llm-data-samples {
+  display: grid;
+  gap: calc(var(--space) * 4);
+}
+.llm-data-record,
+.llm-data-dry-run {
+  padding: calc(var(--space) * 4);
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+}
+.llm-data-report h4 {
+  font-family: var(--font-body);
+}
+.llm-data-record h4 {
+  margin-block: 0 calc(var(--space) * 2);
+  font-size: var(--font-md);
+}
+.llm-data-id,
+.llm-data-governance code,
+.llm-data-findings mark {
+  overflow-wrap: anywhere;
+}
+.llm-data-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--font-sm);
+  line-height: var(--line-body);
+  padding: calc(var(--space) * 3);
+  background: var(--ink-wash);
+  max-height: 280px;
+  overflow: auto;
+}
+.llm-data-findings {
+  display: grid;
+  gap: calc(var(--space) * 3);
+  padding-inline-start: calc(var(--space) * 5);
+}
+.llm-data-findings small,
+.llm-data-findings mark,
+.llm-data-findings li > code:last-child {
+  display: block;
+}
+.llm-data-findings small {
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
+.llm-data-findings mark {
+  color: var(--ink);
+  background: var(--warn-wash);
+  border-inline-start: 3px solid var(--warn);
+  padding: var(--space) calc(var(--space) * 2);
+  white-space: pre-wrap;
+}
+.llm-data-history {
+  display: grid;
+  gap: var(--space);
+  margin-block: calc(var(--space) * 4);
+}
+.llm-data-history select {
+  max-width: 100%;
+}
+.llm-data-governance summary {
+  overflow-wrap: anywhere;
+}
+.llm-data-preview mark {
+  color: var(--ink);
+  background: var(--warn-wash);
+  text-decoration: underline;
+  text-decoration-color: var(--warn);
+  text-decoration-thickness: 2px;
+}

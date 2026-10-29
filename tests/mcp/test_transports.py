@@ -13,7 +13,7 @@ import pytest
 import uvicorn
 from fastmcp import Client
 from fastmcp.client.transports import SSETransport, StdioTransport
-from mcp_types import Implementation
+from mcp_types import Implementation, Tool
 
 from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.service import approve_plan, execute_plan
@@ -33,11 +33,20 @@ async def _call(client: Client, name: str, arguments: JsonDocument) -> ToolOutco
     return result
 
 
+def _assert_training_quality_tool(tools: list[Tool]) -> None:
+    training = next(tool for tool in tools if tool.name == "get_training_quality")
+    assert training.annotations is not None
+    assert training.annotations.read_only_hint is True
+    assert training.input_schema["required"] == ["dataset_id"]
+    assert "version_id" in training.input_schema["properties"]
+
+
 async def _exercise(client: Client, db: Database, dataset_id: str) -> None:
     assert client.initialize_result is not None
     assert client.initialize_result.protocol_version == "2025-11-25"
     tools = await client.list_tools()
-    assert len(tools) == 59
+    assert len(tools) == 61
+    _assert_training_quality_tool(tools)
     assert {
         "query_kg",
         "explain_relation",
@@ -46,6 +55,7 @@ async def _exercise(client: Client, db: Database, dataset_id: str) -> None:
         "publish_release",
         "training_distribution",
         "training_leakage",
+        "clean_training_data",
     } <= {tool.name for tool in tools}
     assert {"list_quality_rules", "get_table_quality", "create_quality_rule"} <= {
         tool.name for tool in tools

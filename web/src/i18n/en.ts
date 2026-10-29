@@ -14,6 +14,7 @@ import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
 import { kgEn } from "./kgEn";
 import { knowledgeEn } from "./knowledgeEn";
+import { llmDataEn } from "./llmDataEn";
 import { mediaEn } from "./mediaEn";
 import { metadataEn } from "./metadataEn";
 import { metricRollbackEn } from "./metricRollbackEn";
@@ -26,6 +27,7 @@ import { workspaceEn } from "./workspaceEn";
 
 export const en = {
   ...trainingEn,
+  ...llmDataEn,
   ...customOperatorEn,
   ...releaseEn,
   ...assetEn,

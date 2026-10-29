@@ -15,6 +15,7 @@ from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.datasheet_parameters import GenerateDatasheetParams, PublishDatasheetParams
 from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
+from datakeel.actions.llm_data_parameters import CleanTrainingParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import (
     DecideAssertionsParams,
@@ -42,6 +43,7 @@ from datakeel.storage.datasheet_actions import execute_datasheet
 from datakeel.storage.dq_actions import execute_quality_action
 from datakeel.storage.evidence_actions import decide_action
 from datakeel.storage.kg_store import schedule_extraction
+from datakeel.storage.llm_data_actions import execute_training_clean
 from datakeel.storage.release_actions import publish_release
 from datakeel.storage.standard_changes import execute_standard_action
 
@@ -105,6 +107,7 @@ def _pipeline(session: Session, plan: ActionPlan, params: PipelineParams) -> Ope
 _TYPED_ACTIONS: tuple[
     tuple[type | UnionType, Callable[[Session, ActionPlan, Any], OperationResult]], ...
 ] = (
+    (CleanTrainingParams, execute_training_clean),
     (DataAssetActionParams, execute_data_asset_action),
     (QualityActionParams, execute_quality_action),
     (AnnotationAcceptanceParams, inspect_action),

@@ -80,6 +80,8 @@ from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.harness_rows import EvalRunRow, ModelCallTraceRow
 from datakeel.storage.kg_eval_rows import KGEvalRunRow
 from datakeel.storage.kg_rows import KGCacheRow, KGRunRow
+from datakeel.storage.llm_data_constraints import install_llm_data_constraints
+from datakeel.storage.llm_data_rows import TrainingCleanRow, TrainingEvaluationRow, TrainingRunRow
 from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 from datakeel.storage.metric_audit import MetricAuditRow
 from datakeel.storage.migrations import add_nullable_columns
@@ -102,6 +104,9 @@ if TYPE_CHECKING:
 # Loading each mapping registers it in the single migration metadata collection.
 _REGISTERED_MODELS = (
     TrainingSplitRow,
+    TrainingCleanRow,
+    TrainingEvaluationRow,
+    TrainingRunRow,
     ReconciliationRow,
     ReleaseRow,
     ReleaseEntryRow,
@@ -319,6 +324,7 @@ class Database:
             install_release_constraints(connection, sqlite=self.sqlite)
             install_asset_constraints(connection, sqlite=self.sqlite)
             install_training_constraints(connection, sqlite=self.sqlite)
+            install_llm_data_constraints(connection, sqlite=self.sqlite)
             if self.sqlite:
                 for operation in ("UPDATE", "DELETE"):
                     connection.execute(

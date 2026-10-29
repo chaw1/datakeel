@@ -6,6 +6,7 @@
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.core.agent_models import ToolDefinition
 from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
+from datakeel.core.llm_data_governance import TRAINING_QUALITY_DESCRIPTION
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.standard_functions import STANDARD_TOOL_DESCRIPTIONS
@@ -26,7 +27,11 @@ def tool_definitions() -> list[ToolDefinition]:
 
 
 def _description(name: str) -> str:
-    descriptions = {**STANDARD_TOOL_DESCRIPTIONS, **TRAINING_TOOL_DESCRIPTIONS}
+    descriptions = {
+        **STANDARD_TOOL_DESCRIPTIONS,
+        **TRAINING_TOOL_DESCRIPTIONS,
+        "get_training_quality": TRAINING_QUALITY_DESCRIPTION,
+    }
     if name in descriptions:
         return descriptions[name]
     if name == "ask_data":

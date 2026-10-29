@@ -70,7 +70,8 @@ def test_tracing_when_hostile_environment_runs_all_golden_without_external_socke
     monkeypatch.setattr(socket, "getaddrinfo", resolve)
     configure(enabled=True)
     report = run_evaluation(db)
-    assert report.total == report.passed == 51, [
+    assert report.total == report.passed == 52, [
         (case.id, case.failures) for case in report.cases if case.failures
     ]
+    assert "46-training-quality" in {case.id for case in report.cases}
     assert attempts == []

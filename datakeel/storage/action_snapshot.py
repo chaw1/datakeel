@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.dq_parameters import QualityActionParams
+from datakeel.actions.llm_data_parameters import CleanTrainingParams
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import DecideAssertionsParams, ExportParams
 from datakeel.actions.standard_parameters import StandardActionParams
@@ -27,6 +28,7 @@ from datakeel.storage.datasheet_actions import datasheet_state
 from datakeel.storage.dq_actions import quality_state
 from datakeel.storage.events import all_events
 from datakeel.storage.evidence_actions import decision_snapshot
+from datakeel.storage.llm_data_actions import training_state
 from datakeel.storage.object_queries import evaluate_in_session
 from datakeel.storage.standard_store import standards_state
 from datakeel.storage.training_export import training_export_state
@@ -34,13 +36,7 @@ from datakeel.storage.training_export import training_export_state
 
 def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> str:
     """Bind selected contents plus dataset metadata and exported event observations."""
-    values = [manifest.state_digest]
-    if isinstance(params, DataAssetActionParams):
-        values.append(data_asset_state(session, params))
-    if isinstance(params, QualityActionParams):
-        values.append(quality_state(session, params))
-    if isinstance(params, AnnotationAcceptanceParams):
-        values.append(annotation_snapshot(session, params))
+    values = [manifest.state_digest, *_domain_snapshots(session, params)]
     datasheet = datasheet_state(session, params)
     if datasheet:
         values.append(datasheet)
@@ -57,9 +53,9 @@ def snapshot_digest(session: Session, params: BoundaryModel, manifest: FrozenMan
 
 def _export_state(session: Session, params: ExportParams, manifest: FrozenManifest) -> list[str]:
     values: list[str] = []
-    training_state = training_export_state(session, params)
-    if training_state:
-        values.append(training_state)
+    exported = training_export_state(session, params)
+    if exported:
+        values.append(exported)
     dataset = evaluate_in_session(
         session,
         ObjectSet(
@@ -81,6 +77,19 @@ def _export_state(session: Session, params: ExportParams, manifest: FrozenManife
                 allow_nan=False,
             )
         )
+    return values
+
+
+def _domain_snapshots(session: Session, params: BoundaryModel) -> list[str]:
+    values: list[str] = []
+    if isinstance(params, CleanTrainingParams):
+        values.append(training_state(session, params))
+    if isinstance(params, DataAssetActionParams):
+        values.append(data_asset_state(session, params))
+    if isinstance(params, QualityActionParams):
+        values.append(quality_state(session, params))
+    if isinstance(params, AnnotationAcceptanceParams):
+        values.append(annotation_snapshot(session, params))
     return values
 
 

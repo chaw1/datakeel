@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import Field
 
 from datakeel.core.models import Record
+from datakeel.core.pii import PiiType
 
 ColumnType = Literal[
     "empty",
@@ -21,7 +22,7 @@ ColumnType = Literal[
     "enum",
     "string",
 ]
-PiiKind = Literal["email", "phone"]
+PiiKind = PiiType
 
 
 class ValueCount(Record):

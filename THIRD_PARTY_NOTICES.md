@@ -160,11 +160,18 @@ Debian license declarations are retained separately from the Python allowlist.
 | frontend | react-dom | 19.3.1 | MIT | package-lock.json and node_modules/react-dom/package.json |
 | frontend | scheduler | 0.28.0 | MIT | package-lock.json and node_modules/scheduler/package.json |
 | frontend | vite | 7.3.7 | MIT | package-lock.json and node_modules/vite/package.json |
+| rust | blake2 | 0.11.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | block-buffer | 0.12.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | cmov | 0.5.4 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | crossbeam-deque | 0.8.8 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | crossbeam-epoch | 0.9.21 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | crossbeam-utils | 0.8.23 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | crypto-common | 0.2.2 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | ctutils | 0.4.2 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | digest | 0.11.3 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | either | 1.19.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | heck | 0.5.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | hybrid-array | 0.4.15 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | libc | 0.2.191 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | once_cell | 1.21.4 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | portable-atomic | 1.15.0 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
@@ -179,6 +186,7 @@ Debian license declarations are retained separately from the Python allowlist.
 | rust | rayon-core | 1.13.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | syn | 3.0.9 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | target-lexicon | 0.13.5 | Apache-2.0 WITH LLVM-exception | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
+| rust | typenum | 1.20.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | rust | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
 | sandbox-python | cpython | 3.12.15 | PSF-2.0 | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/LICENSE.txt |
 | sandbox-python | numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/numpy-2.5.4.dist-info/licenses/LICENSE.txt |

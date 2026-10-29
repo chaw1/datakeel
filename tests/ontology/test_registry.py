@@ -38,8 +38,9 @@ def test_registry_when_built_exposes_all_declared_asset_and_read_function_types(
         "question",
         "kg_entity",
     }
-    assert len(value.functions) == 22
+    assert len(value.functions) == 23
     assert {"training_distribution", "training_leakage"} <= {item.id for item in value.functions}
+    assert "get_training_quality" in {item.id for item in value.functions}
     assert "annotation_quality" in {item.id for item in value.functions}
 
 

@@ -1,0 +1,43 @@
+id: 46-training-quality
+description: Inspect real generated SFT findings through the shared read-only training tool.
+fixture_kind: llm_data
+turns:
+  - input: What is wrong with this batch of SFT training data?
+    script:
+      - tool_calls:
+          - name: tool_search
+            arguments: {query: SFT}
+            id: 46-discover
+      - tool_calls:
+          - name: get_training_quality
+            arguments: {dataset_id: '{{dataset_id}}'}
+            id: 46-training
+      - content: The three records include one malformed JSON line and one exact duplicate. Review the dry run before approving cleaning.
+expect:
+  tool_sequence: [tool_search, get_training_quality]
+  tool_results:
+    - name: get_training_quality
+      content_schema:
+        type: object
+        required: [data]
+        properties:
+          data:
+            type: object
+            required: [records, valid_records, issue_counts, dropped, samples]
+            properties:
+              records: {const: 3}
+              valid_records: {const: 2}
+              dropped: {const: 2}
+              issue_counts:
+                type: object
+                required: [format_error, exact_duplicate]
+                properties:
+                  format_error: {const: 1}
+                  exact_duplicate: {const: 1}
+              samples:
+                type: array
+                minItems: 3
+                maxItems: 3
+  answer_contains: [malformed, duplicate, approving]
+  file_count: 1
+  max_turns: 3

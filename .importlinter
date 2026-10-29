@@ -8,7 +8,7 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.training | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Delivery services verify portable frozen release facts without importing API code.
 ignore_imports =
@@ -27,6 +27,21 @@ ignore_imports =
     datakeel.storage.training_download -> datakeel.actions.parameters
     datakeel.storage.action_export -> datakeel.training.export
     datakeel.storage.training_import -> datakeel.training.importers
+# LLM training-data governance reuses indexed hashes and typed offline analysis, never model adapters.
+    datakeel.llm_data.index -> datakeel.operators.evidence.near_duplicate_hashes
+    datakeel.storage.llm_data_selection -> datakeel.actions.llm_data_parameters
+    datakeel.storage.llm_data_selection -> datakeel.ontology.models
+    datakeel.storage.evidence_actions -> datakeel.actions.llm_data_parameters
+    datakeel.storage.llm_data_actions -> datakeel.actions.models
+    datakeel.storage.llm_data_actions -> datakeel.actions.llm_data_parameters
+    datakeel.storage.llm_data_actions -> datakeel.llm_data
+    datakeel.storage.llm_data_store -> datakeel.llm_data
+    datakeel.storage.llm_data_reads -> datakeel.llm_data
+    datakeel.ontology.llm_data_functions -> datakeel.storage.database
+    datakeel.ontology.llm_data_functions -> datakeel.storage.llm_data_reads
+    datakeel.storage.action_operations -> datakeel.actions.llm_data_parameters
+    datakeel.storage.action_snapshot -> datakeel.actions.llm_data_parameters
+    datakeel.operators.text.training_quality -> datakeel.llm_data
     datakeel.storage.delivery_service -> datakeel.delivery.manifest
     datakeel.storage.delivery_service -> datakeel.delivery.reconcile
     datakeel.storage.release_actions -> datakeel.actions.models
@@ -47,7 +62,6 @@ ignore_imports =
     datakeel.assets.access -> datakeel.storage.data_asset_access
     datakeel.storage.data_asset_quality -> datakeel.quality.scoring
 # Standards keep pure rules separate from typed source reads and controlled transactions.
-    datakeel.standards.checks -> datakeel.operators.text.pii_redact
     datakeel.storage.standard_changes -> datakeel.actions.models
     datakeel.storage.standard_changes -> datakeel.actions.standard_parameters
     datakeel.storage.standard_changes -> datakeel.actions.references
@@ -107,7 +121,6 @@ ignore_imports =
 # Generated media uses only the local command adapter.
     datakeel.sample_media.generator -> datakeel.operators.media.tools
 # Explicit memory services retain only typed projections across storage and tool boundaries.
-    datakeel.memory.service -> datakeel.operators.text.pii_redact
     datakeel.memory.service -> datakeel.storage.memory_store
     datakeel.memory.service -> datakeel.storage.database
     datakeel.memory.tools -> datakeel.ontology.tool_models

@@ -52,6 +52,7 @@ from datakeel.storage.datasheet_actions import prepare_datasheet
 from datakeel.storage.dq_actions import prepare_quality_params
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
+from datakeel.storage.llm_data_actions import prepare_training
 from datakeel.storage.release_actions import publication_impact
 from datakeel.storage.training_export import prepare_training_export
 
@@ -96,7 +97,9 @@ def verify_target_state(session: Session, plan: ActionPlan) -> None:
 
 def _prepare_params(session: Session, action_type: str, params: JsonDocument) -> BoundaryModel:
     parsed = prepare_catalog_params(session, parse_params(action_type, params))
-    parsed = prepare_datasheet(session, prepare_quality_params(session, parsed))
+    parsed = prepare_training(
+        session, prepare_datasheet(session, prepare_quality_params(session, parsed))
+    )
     if isinstance(parsed, SubmitCustomOperatorParams):
         parsed = prepare_submission(parsed)
     parsed = prepare_data_asset_params(session, parsed)

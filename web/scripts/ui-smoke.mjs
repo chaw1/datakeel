@@ -20,6 +20,7 @@ import { polishSmoke } from "./polish-smoke.mjs";
 import { refinementSmoke } from "./refinement-smoke.mjs";
 import { standardsSmoke } from "./standards-smoke.mjs";
 import { trainingSmoke } from "./training-smoke.mjs";
+import { llmDataJourney } from "./llm-data-smoke.mjs";
 import { workspaceSmoke } from "./workspace-smoke.mjs";
 import {
   cleanupFixture,
@@ -477,6 +478,16 @@ try {
   });
   const datasheet = await datasheetSmoke({ page, json, screenshot, checks });
   const training = await trainingSmoke({ page, json, screenshot, checks });
+  const llmData = await llmDataJourney({
+    page,
+    base: base.href,
+    json,
+    create: (data) => post("/api/datasets", data),
+    capture: (name) => screenshot(name, false),
+  });
+  checks.push(
+    "training rules, own evaluation registration, redacted highlights, four locale/theme variants, mobile width, dry-run without a version and approved cleaning",
+  );
   assert.deepEqual(errors, []);
   await writeFile(
     path.join(output, "evidence.json"),
@@ -502,6 +513,7 @@ try {
         customOperators,
         datasheet,
         training,
+        llmData,
         checks,
         errors,
       },

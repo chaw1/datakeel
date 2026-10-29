@@ -12,6 +12,7 @@ from typing import Any, cast
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
 from datakeel.quality.image_pointcloud import apply_image_pointcloud
+from datakeel.quality.llm_data import assess_training
 from datakeel.quality.media import apply_media, summarize_media
 from datakeel.quality.models import QualityConfig, QualityView
 from datakeel.quality.tabular import assess_tables, table_issues
@@ -144,6 +145,15 @@ def score_quality(
     if media is not None:
         complete_ids = {file.id for file in files if _complete(file, resolved)}
         apply_media(media, files, complete_ids, raw, details)
+    training = assess_training(files)
+    for dimension, measured in training.scores.items():
+        raw[dimension] = min(raw[dimension], measured)
+        details[dimension]["training_score"] = measured
+        details[dimension]["training_records"] = training.records
+        details[dimension]["training_issue_counts"] = training.issue_counts
+        details[dimension]["training_rule"] = (
+            "recorded affected-row fraction; overlapping signals use the maximum count"
+        )
     result = _summarize(raw, details, resolved, annotations, count)
     return result.model_copy(
         update={
