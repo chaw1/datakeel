@@ -104,8 +104,12 @@ def test_default_projection_reads_one_manifest_and_one_state_batch(db: Database,
     assert len(versions) == 1
     assert sum("FROM file_states" in statement for statement in statements) == 1
     version_queries = [statement for statement in statements if "FROM versions" in statement]
-    assert len(version_queries) == 1
-    assert "LIMIT" in version_queries[0]
+    limited = [statement for statement in version_queries if "LIMIT" in statement]
+    assert len(limited) == 1
+    # The file projection also indexes same-byte media measurements, but that read is
+    # filtered to manifests carrying a measurement and decoded nothing here.
+    assert len(version_queries) == (2 if kind == "file" else 1)
+    assert all("LIKE" in statement for statement in version_queries if statement not in limited)
 
 
 @pytest.mark.parametrize(("kind", "expected"), [("file", "old-z"), ("artifact", "new-a")])
