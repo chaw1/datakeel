@@ -135,15 +135,17 @@ def _continues_frame(
     question: str, parsed: ParsedQuestion, consumed: list[tuple[int, int]], layer: SemanticLayer
 ) -> bool:
     """Edit the saved frame only for sentences that signal an edit or are fully understood."""
-    if cues.edit_cue(question) or consumed:
-        return True
     mentions = dimension_mentions(question, layer)
-    if any(item.match_kind == "dimension_value" for item in mentions):
-        return True
     spans = [
         *((item.start, item.end) for item in parsed.matches),
         *((item.start, item.end) for item in mentions),
     ]
+    if cues.fresh_question(question, [*spans, *consumed]):
+        return False
+    if cues.edit_cue(question) or consumed:
+        return True
+    if any(item.match_kind == "dimension_value" for item in mentions):
+        return True
     return not cues.unknown_followup(question, spans)
 
 

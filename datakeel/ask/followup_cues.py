@@ -61,6 +61,11 @@ _EDIT_CUES = re.compile(
     r"without|drop|remove)\b",
     re.IGNORECASE,
 )
+_INTERROGATIVE = re.compile(
+    r"为什么|为何|怎么|怎样|如何|是否|有没有|会不会|"
+    r"\b(?:why|how|what|which|who|whom|whose|when|where|whether)\b",
+    re.IGNORECASE,
+)
 _FILLERS = re.compile(
     r"what\s+about|how\s+about|(?:can|could|would)\s+you|(?:show|give|tell)\s+me|"
     r"\b(?:please|then|now|and|also|instead|switch|change|replace|to|with|use|it|that|"
@@ -97,6 +102,13 @@ def continuation_spans(question: str) -> list[tuple[int, int]]:
 def edit_cue(question: str) -> bool:
     """Recognize wording that refers back to the previous query instead of opening a topic."""
     return _EDIT_CUES.search(question) is not None
+
+
+def fresh_question(question: str, understood: list[tuple[int, int]]) -> bool:
+    """Treat a question-form sentence with no understood slot as a new topic, not an edit."""
+    if understood or continuation_spans(question):
+        return False
+    return _INTERROGATIVE.search(question) is not None
 
 
 def metric_switch(question: str) -> bool:

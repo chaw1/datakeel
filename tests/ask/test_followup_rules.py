@@ -11,6 +11,7 @@ from datakeel.ask.followup_cues import (
     conflicting_edits,
     continuation_spans,
     edit_cue,
+    fresh_question,
 )
 from datakeel.ask.parser import parse_question
 from datakeel.core.ask_frame_models import AskQueryFrame
@@ -173,6 +174,33 @@ def test_sentences_without_edit_cues_never_inherit_the_previous_metric(
             item.definition.id for item in fresh.resolution.candidates
         ]
         assert turn.frame is None
+
+
+def test_question_form_sentences_with_cue_words_still_start_fresh(layer: SemanticLayer) -> None:
+    """A why/how question that no slot explains is a new topic even when it contains a cue word."""
+    cards = [MetricCard(definition=metric) for metric in layer.metrics]
+    for question in ("why did brand awareness drop", "其他客户为什么流失", "只看退货率是否合理"):
+        assert edit_cue(question), question
+        request = AskRequest(question=question, reference_instant=REFERENCE)
+        turn = prepare_metric_turn(request, layer, cards, _previous())
+        fresh = prepare_metric_turn(request, layer, cards, None)
+        assert not turn.follows, question
+        assert turn.resolution.status == fresh.resolution.status == "unanswerable"
+        assert turn.resolution.message == fresh.resolution.message
+        assert [item.definition.id for item in turn.resolution.candidates] == [
+            item.definition.id for item in fresh.resolution.candidates
+        ]
+        assert len(turn.resolution.candidates) == 3
+    for question in ("那为什么呢", "why did it drop in August 2026", "上个月多少"):
+        turn = prepare_metric_turn(
+            AskRequest(question=question, reference_instant=REFERENCE), layer, cards, _previous()
+        )
+        assert turn.follows, question
+        assert turn.resolution.candidates[0].definition.id == _previous().metric_id
+    assert fresh_question("why did brand awareness drop", [])
+    assert not fresh_question("why did brand awareness drop", [(4, 7)])
+    assert not fresh_question("那为什么呢", [])
+    assert not fresh_question("再详细点", [])
 
 
 def test_edit_cues_and_fully_understood_fragments_keep_the_conversation(

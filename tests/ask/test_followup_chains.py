@@ -203,12 +203,13 @@ def test_complete_new_topic_clears_previous_frame(
 def test_unregistered_concepts_in_a_conversation_answer_like_standalone_questions(
     db: Database, enterprise_sample: EnterpriseSample
 ) -> None:
-    """A sentence without any edit cue never inherits the previous metric as a follow-up."""
+    """A sentence that no slot explains never inherits the previous metric as a follow-up."""
     for question in (
         "退货率为什么上升",
         "客户满意度如何",
         "下个月市场份额会是多少",
         "品牌知名度提高了多少",
+        "why did brand awareness drop",
     ):
         first = ask_data(
             db, AskRequest(question="上个季度华东区零售额是多少", reference_instant=REFERENCE)

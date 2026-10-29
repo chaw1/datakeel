@@ -80,6 +80,17 @@ ASK_CHART_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="ask-followup-question-form-fresh",
+        path="ask/followup.py",
+        before="    if cues.fresh_question(question, [*spans, *consumed]):\n        return False",
+        after="",
+        case=(
+            "tests/ask/test_followup_chains.py::"
+            "test_unregistered_concepts_in_a_conversation_answer_like_standalone_questions"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="ask-followup-sliced-group-dropped",
         path="ask/followup.py",
         before="inherited_groups = set(previous.group_by if previous else ()) - sliced",
