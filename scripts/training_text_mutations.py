@@ -79,7 +79,18 @@ TRAINING_TEXT_MUTATIONS = (
         after="text.casefold()",
         case=(
             "tests/training/test_text_hashes.py::"
-            "test_unicode_canonical_composition_and_casefold_are_stable"
+            "test_formatting_variants_have_identical_normalized_text_and_hash"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-text-joined-combining-sequence-not-normalized",
+        path="training/text_hashes.py",
+        before='return unicodedata.normalize("NFKC", characters)',
+        after="return characters",
+        case=(
+            "tests/training/test_text_hashes.py::"
+            "test_removing_formatting_recomposes_combining_characters_idempotently"
         ),
         runner="pytest",
     ),

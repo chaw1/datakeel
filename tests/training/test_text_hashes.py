@@ -16,6 +16,7 @@ def test_formatting_variants_have_identical_normalized_text_and_hash() -> None:
         "A\r\nbrief\tdescription of\u2003a brown\rFOX",
         "a!b?r;i:e,f d/e+s=c<r>i^p~t`i|o_n[o]f{a}b\\r\"o'w:n.f,o;x",
         "\uff21 brief description\uff0cof a brown fox\uff01",
+        "\U0001d400 brief description of a brown fox",
         "a brief description—of a brown fox…",
     )
     original = "A brief description of a brown fox"
@@ -29,6 +30,19 @@ def test_unicode_canonical_composition_and_casefold_are_stable() -> None:
     assert normalize_text("CAFÉ Straße\r\n中文。") == "caféstrasse中文"
     assert simhash("CAFÉ Straße\r\n中文。") == simhash("cafe\u0301 STRASSE\t中 文")
     assert simhash("🦊") != simhash("🦉")
+
+
+def test_removing_formatting_recomposes_combining_characters_idempotently() -> None:
+    """Punctuation or whitespace inserted inside a combining sequence cannot alter its hash."""
+    for original, variants in (
+        ("cafe\u0301", ("cafe!\u0301", "cafe \u0301", "CAFÉ")),
+        ("Å", ("A \u030a", "A—\u030a", "a\u030a")),
+    ):
+        normalized = normalize_text(original)
+        assert normalize_text(normalized) == normalized
+        for variant in variants:
+            assert normalize_text(variant) == normalized
+            assert simhash(variant) == simhash(original)
 
 
 def test_empty_punctuation_has_no_similarity_signal_and_short_text_uses_one_feature() -> None:

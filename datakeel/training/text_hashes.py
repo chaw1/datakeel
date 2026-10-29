@@ -15,13 +15,14 @@ FEATURE_WIDTH = 3
 def normalize_text(text: str) -> str:
     """Fold Unicode compatibility and case, removing whitespace and punctuation."""
     folded = unicodedata.normalize("NFKC", unicodedata.normalize("NFKC", text).casefold())
-    return "".join(
+    characters = "".join(
         character
         for character in folded
         if not character.isspace()
         and character not in string.punctuation
         and not unicodedata.category(character).startswith("P")
     )
+    return unicodedata.normalize("NFKC", characters)
 
 
 def simhash(text: str) -> int | None:
