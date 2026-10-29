@@ -60,7 +60,8 @@ export async function addWithKeyboard(h, kind) {
 
 export async function keyboardWorkflow(h) {
   const checks = [];
-  await h.page.addInitScript(() => {
+  const countPointers = () => {
+    if (globalThis.__workbenchPointerEvents !== undefined) return;
     globalThis.__workbenchPointerEvents = 0;
     globalThis.document.addEventListener(
       "pointerdown",
@@ -69,7 +70,11 @@ export async function keyboardWorkflow(h) {
       },
       true,
     );
-  });
+  };
+  // Later loads get the counter from the init script; the document an earlier
+  // phase (W1) left open only changes its hash, so install it there as well.
+  await h.page.addInitScript(countPointers);
+  await h.page.evaluate(countPointers);
   for (const kind of Object.keys(regions)) {
     const taskId = await h.editableTask(kind);
     const before = await h.latest(taskId);
