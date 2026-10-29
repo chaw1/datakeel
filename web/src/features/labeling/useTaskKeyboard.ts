@@ -57,7 +57,7 @@ export function useTaskKeyboard(
       } else if (modifier && key === "y" && actions.editable && !typing) {
         event.preventDefault();
         actions.redo();
-      } else if (direction) {
+      } else if (direction && !typing) {
         event.preventDefault();
         actions.navigate(direction);
       } else if (event.key === "?" && !typing) {

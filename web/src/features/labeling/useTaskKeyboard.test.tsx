@@ -43,6 +43,21 @@ it("navigates with macOS Option+N/P, whose keys are a dead key and π", () => {
   expect(navigate).toHaveBeenCalledTimes(3);
 });
 
+it("leaves Option+N/P to a focused text field so macOS can type ñ and π", () => {
+  const navigate = vi.fn();
+  render(<Harness navigate={navigate} />);
+  const region = screen.getByRole("region", { name: "Annotation workbench" });
+  const field = document.createElement("textarea");
+  const input = document.createElement("input");
+  input.type = "text";
+  region.append(field, input);
+  fireEvent.keyDown(field, { key: "π", code: "KeyP", altKey: true });
+  fireEvent.keyDown(input, { key: "Dead", code: "KeyN", altKey: true });
+  expect(navigate).not.toHaveBeenCalled();
+  fireEvent.keyDown(region, { key: "π", code: "KeyP", altKey: true });
+  expect(navigate).toHaveBeenLastCalledWith(-1);
+});
+
 it("names the navigation modifier ⌥ on Apple keyboards and Alt elsewhere", () => {
   expect(
     altKeyName({
