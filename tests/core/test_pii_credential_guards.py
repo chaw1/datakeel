@@ -24,3 +24,16 @@ def test_bearer_boundary_cannot_leak_token() -> None:
     """Bearer tokens need the same multilingual left boundary as credential labels."""
     value = "a1B2c3D4" * 4
     assert redact_pii("认证是Bearer " + value) == "认证是Bearer [SECRET]"
+
+
+def test_privacy_prefilters_preserve_minimum_numeric_and_secret_shapes() -> None:
+    """Necessary-character filters cannot exclude short valid numbers or credential families."""
+    samples = {
+        "+12 34 56 78": "phone",
+        "AKIA" + "A1B2C3D4" * 2: "secret",
+        "ghr_" + "a1B2c3D4" * 4: "secret",
+        "eyJ" + "a1B2c3D4" * 2 + "." + "a1B2c3D4" * 2 + "." + "a1B2c3D4" * 2: "secret",
+        'API_KEY="q7R8s9T0"': "secret",
+    }
+    for value, kind in samples.items():
+        assert [item.type for item in detect_pii(value)] == [kind]

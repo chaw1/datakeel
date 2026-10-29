@@ -178,13 +178,15 @@ def _valid_phone(value: str) -> bool:
 
 
 def _candidates(text: str) -> Iterator[PiiMatch]:
-    simple: tuple[tuple[PiiType, Pattern[str]], ...] = (
-        ("credential_url", patterns.CREDENTIAL_URL),
-        ("secret", patterns.SECRET),
-        ("secret", patterns.PRIVATE_KEY),
-        ("email", patterns.EMAIL),
+    simple: tuple[tuple[PiiType, Pattern[str], bool], ...] = (
+        ("credential_url", patterns.CREDENTIAL_URL, "://" in text),
+        ("secret", patterns.SECRET, patterns.SECRET_HINT.search(text) is not None),
+        ("secret", patterns.PRIVATE_KEY, "PRIVATE KEY-----" in text),
+        ("email", patterns.EMAIL, "@" in text),
     )
-    for kind, pattern in simple:
+    for kind, pattern, possible in simple:
+        if not possible:
+            continue
         for match in pattern.finditer(text):
             end = match.end()
             if kind == "credential_url":
@@ -192,6 +194,16 @@ def _candidates(text: str) -> Iterator[PiiMatch]:
                     match.group().rstrip(".,;!?\u3002\uff0c\uff1b\uff01\uff1f")
                 )
             yield PiiMatch(type=kind, start=match.start(), end=end)
+    yield from _credential_candidates(text)
+    yield from _number_candidates(text)
+    yield from _ip_candidates(text)
+
+
+def _credential_candidates(text: str) -> Iterator[PiiMatch]:
+    if patterns.ASCII_LETTER.search(text) is None:
+        return
+    if patterns.LABEL_HINT.search(text) is None:
+        return
     for pattern in (patterns.LABELED_SECRET, patterns.BEARER):
         for match in pattern.finditer(text):
             yield PiiMatch(type="secret", start=match.start("value"), end=match.end("value"))
@@ -199,12 +211,14 @@ def _candidates(text: str) -> Iterator[PiiMatch]:
         if candidate := _labeled_secret(match.group("value"), match.group("label")):
             start = match.start("value")
             yield PiiMatch(type="secret", start=start + candidate.start, end=start + candidate.end)
-    yield from _number_candidates(text)
-    yield from _ip_candidates(text)
 
 
 def _ip_candidates(text: str) -> Iterator[PiiMatch]:
     for pattern in (patterns.IPV4, patterns.IPV6):
+        if (pattern is patterns.IPV4 and "." not in text) or (
+            pattern is patterns.IPV6 and ":" not in text
+        ):
+            continue
         for match in pattern.finditer(text):
             try:
                 ip_address(match.group())
@@ -226,6 +240,8 @@ def _ip_candidates(text: str) -> Iterator[PiiMatch]:
 
 
 def _number_candidates(text: str) -> Iterator[PiiMatch]:
+    if patterns.NUMBER_RUN.search(text) is None:
+        return
     checks: tuple[tuple[PiiType, Pattern[str], Callable[[str], bool]], ...] = (
         ("china_id", patterns.CHINA_ID, _valid_id),
         ("bank_card", patterns.BANK_CARD, _valid_card),

@@ -104,9 +104,12 @@ Some platforms, including macOS, ship OpenCV prebuilt wheels with GPL codecs suc
 ## 10. Optional Rust acceleration / 可选 Rust 加速
 
 `accel/` is a separate PyO3 + maturin distribution with Python 3.12 abi3 wheels. The main
-`datakeel` wheel remains pure Python and has no acceleration dependency. Rust receives only
-unsigned 64-bit hashes; Pillow decoding and dHash generation stay in Python. Both match modes
-must produce the same sorted direct index pairs as Python. See [build and modes](RUST_ACCEL.md).
+`datakeel` wheel remains pure Python and has no acceleration dependency. Image comparison receives
+only unsigned 64-bit hashes; Pillow decoding and dHash generation stay in Python. The training
+fingerprint kernel receives already-normalized text and must reproduce Python's SimHash and
+MinHash bands bit for bit. Its exact packed Unicode-trigram Dice kernel must preserve Python's
+floating-point similarity results and leave short-text edit matching in Python. Both image match modes must produce the same sorted direct index pairs
+as Python. See [build and modes](RUST_ACCEL.md).
 
 `make check-rust` requires `cargo fmt --check`, `cargo clippy --locked -- -D warnings`,
 `cargo test --locked`, a release extension build, and installed-backend consistency tests.
@@ -117,6 +120,8 @@ additional permissions for compiled artifacts. Other exceptions and unknown lice
 This Rust policy does not expand the Python or frontend policy. Upstream license and notice
 texts are regenerated from locked sources and included in the extension wheel.
 
-`accel/` 是独立可选包，主包不增加运行时依赖；Rust 只比较整数哈希，不参与图片解码或 dHash。
-两模式都以 Python 结果和小规模暴力法交叉核对。Rust 工具、构建、一致性和完整依赖许可审计
+`accel/` 是独立可选包，主包不增加运行时依赖；图片路径只比较整数哈希，不参与图片解码或
+dHash；训练文本路径只接收已规范化文本，SimHash、MinHash 带及长文本 Dice 浮点结果必须
+与 Python 逐位一致，短文本编辑匹配仍保留 Python。
+图片两模式都以 Python 结果和小规模暴力法交叉核对。Rust 工具、构建、一致性和完整依赖许可审计
 纳入门禁；锁文件固定依赖，上游许可原文随扩展分发，未知许可阻断。

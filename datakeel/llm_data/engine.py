@@ -184,7 +184,11 @@ def _inspect(
     except RecursionError:
         return _invalid(source, line, config, "JSON nesting exceeds the safe parser limit"), None
     identity = f"{source.file_id}:{line.number}:{line.digest[:16]}"
-    base_findings = (*check_record(parsed, config), *_preference_findings(parsed, config))
+    tokens = estimate_tokens(parsed.text)
+    base_findings = (
+        *check_record(parsed, config, estimated_tokens=tokens),
+        *_preference_findings(parsed, config),
+    )
     duplicate_findings = (
         index.check(identity, parsed.text, parsed.prompt, parsed.answer)
         if not {finding.code for finding in base_findings} & _BLOCKING
@@ -210,7 +214,7 @@ def _inspect(
         format=parsed.format,
         language=language,
         language_confidence=confidence,
-        estimated_tokens=estimate_tokens(parsed.text),
+        estimated_tokens=tokens,
         preview=preview[:_PREVIEW_LIMIT],
         issues=findings,
         decision=_decision(findings),

@@ -4,14 +4,32 @@
 """Disk-backed exact, prompt and bounded LSH indexes avoid pairwise corpus scans."""
 
 import sqlite3
+from collections import OrderedDict
 from collections.abc import Sequence
+from functools import lru_cache
 from pathlib import Path
 
 from datakeel.core.llm_data_models import TrainingConfig, TrainingIssue
-from datakeel.llm_data.similarity import digest, fingerprint, normalize, similarity
+from datakeel.llm_data.acceleration import resolve_fingerprint, resolve_similarity
+from datakeel.llm_data.similarity import digest, normalize
 from datakeel.operators.evidence.near_duplicate_hashes import compare_hashes
 
 _CANDIDATES_PER_BAND = 8
+_MAX_CACHED_BANDS = 65536
+_MAX_CACHED_BAND_BYTES = 64
+_MAX_CACHED_ROWS = 16384
+_MAX_CACHED_ROW_CHARACTERS = 8192
+type _CandidateRow = tuple[str, str, bytes, str, str]
+
+
+@lru_cache(maxsize=64)
+def _record_query(count: int) -> str:
+    # Only generated placeholders; record identities remain bound values.
+    return (
+        "SELECT id,record_id,normalized,simhash,prompt,answer FROM records WHERE id IN ("  # noqa: S608
+        + ",".join(["?"] * count)
+        + ")"
+    )
 
 
 class DuplicateIndex:
@@ -21,6 +39,10 @@ class DuplicateIndex:
         """Create a disposable index with a fixed 16 MiB page cache."""
         self.config = config
         self.backend = "python"
+        self.fingerprint = resolve_fingerprint()
+        self.similarity = resolve_similarity()
+        self._bands: OrderedDict[bytes, tuple[int, ...]] = OrderedDict()
+        self._rows: OrderedDict[int, _CandidateRow] = OrderedDict()
         self.connection = sqlite3.connect(path)
         self.connection.executescript(
             "PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA cache_size=-16384;"
@@ -35,30 +57,57 @@ class DuplicateIndex:
     def close(self) -> None:
         """Release the disposable index without requiring a durable transaction commit."""
         self.connection.close()
+        self._bands.clear()
+        self._rows.clear()
 
-    def _candidates(self, keys: Sequence[bytes]) -> list[tuple[str, str, bytes, str, str]]:
-        ids: set[int] = set()
-        for key in keys:
-            ids.update(
-                int(row[0])
-                for row in self.connection.execute(
-                    "SELECT record_id FROM bands WHERE key=? ORDER BY record_id DESC LIMIT ?",
-                    (key, _CANDIDATES_PER_BAND),
-                )
+    def _band_ids(self, key: bytes) -> tuple[int, ...]:
+        previous = self._bands.get(key)
+        if previous is not None:
+            self._bands.move_to_end(key)
+            return previous
+        identities = tuple(
+            int(row[0])
+            for row in self.connection.execute(
+                "SELECT record_id FROM bands WHERE key=? ORDER BY record_id DESC LIMIT ?",
+                (key, _CANDIDATES_PER_BAND),
             )
-        if not ids:
-            return []
-        placeholders = ",".join("?" for _ in ids)
-        # Only fixed SQL and generated placeholders; IDs remain bound values.
-        query = (
-            "SELECT record_id,normalized,simhash,prompt,answer FROM records WHERE id IN ("  # noqa: S608
-            + placeholders
-            + ") ORDER BY id"
         )
-        return [
-            (str(row[0]), str(row[1]), bytes(row[2]), str(row[3]), str(row[4]))
-            for row in self.connection.execute(query, tuple(sorted(ids)))
-        ]
+        if len(key) <= _MAX_CACHED_BAND_BYTES:
+            self._bands[key] = identities
+            if len(self._bands) > _MAX_CACHED_BANDS:
+                self._bands.popitem(last=False)
+        return identities
+
+    def _cache_row(self, identity: int, row: _CandidateRow) -> None:
+        if sum(len(row[index]) for index in (0, 1, 3, 4)) > _MAX_CACHED_ROW_CHARACTERS:
+            return
+        self._rows[identity] = row
+        if len(self._rows) > _MAX_CACHED_ROWS:
+            self._rows.popitem(last=False)
+
+    def _read_rows(self, identities: list[int]) -> dict[int, _CandidateRow]:
+        rows: dict[int, _CandidateRow] = {}
+        for values in self.connection.execute(_record_query(len(identities)), identities):
+            identity = int(values[0])
+            row = (str(values[1]), str(values[2]), bytes(values[3]), str(values[4]), str(values[5]))
+            rows[identity] = row
+            self._cache_row(identity, row)
+        return rows
+
+    def _candidates(self, keys: Sequence[bytes]) -> list[_CandidateRow]:
+        identities = {identity for key in keys for identity in self._band_ids(key)}
+        rows: dict[int, _CandidateRow] = {}
+        missing: list[int] = []
+        for identity in identities:
+            row = self._rows.get(identity)
+            if row is None:
+                missing.append(identity)
+            else:
+                rows[identity] = row
+                self._rows.move_to_end(identity)
+        if missing:
+            rows.update(self._read_rows(missing))
+        return [rows[identity] for identity in sorted(rows)]
 
     def _near(
         self, normalized: str, hashed: int, keys: tuple[bytes, ...], prompt: str, answer: str
@@ -67,11 +116,11 @@ class DuplicateIndex:
             distance = (hashed ^ int.from_bytes(prior_hash, "little")).bit_count()
             if distance > max(16, self.config.near_distance * 2):
                 continue
-            measured = similarity(normalized, prior)
+            measured = self.similarity(normalized, prior)
             if measured < self.config.near_similarity:
                 continue
             if (
-                min(similarity(prompt, prior_prompt), similarity(answer, prior_answer))
+                min(self.similarity(prompt, prior_prompt), self.similarity(answer, prior_answer))
                 < self.config.near_similarity
             ):
                 continue
@@ -115,7 +164,7 @@ class DuplicateIndex:
                 )
             )
         else:
-            hashed, keys = fingerprint(normalized) if approximate else (0, ())
+            hashed, keys = self.fingerprint(normalized) if approximate else (0, ())
             near = self._near(normalized, hashed, keys, normalized_prompt, normalized_answer)
             if near is not None:
                 findings.append(near)
@@ -137,15 +186,22 @@ class DuplicateIndex:
         bands: tuple[bytes, ...],
         parts: tuple[str, str],
     ) -> None:
+        hashed_bytes = hashed.to_bytes(8, "little")
         cursor = self.connection.execute(
             "INSERT INTO records(digest,record_id,normalized,simhash,prompt,answer) "
             "VALUES(?,?,?,?,?,?)",
-            (key, record_id, text, hashed.to_bytes(8, "little"), *parts),
+            (key, record_id, text, hashed_bytes, *parts),
         )
         identity = cursor.lastrowid
         self.connection.executemany(
             "INSERT INTO bands VALUES(?,?)", ((band, identity) for band in bands)
         )
+        if identity is not None:
+            self._cache_row(identity, (record_id, text, hashed_bytes, *parts))
+            for band in bands:
+                previous = self._bands.get(band)
+                if previous is not None:
+                    self._bands[band] = (identity, *previous[: _CANDIDATES_PER_BAND - 1])
 
     def _prompt(self, record_id: str, prompt: str, answer: str) -> TrainingIssue | None:
         key, answer_key = digest(prompt), digest(answer)

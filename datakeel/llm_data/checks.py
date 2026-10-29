@@ -78,8 +78,8 @@ def repetition_ratio(text: str) -> float:
     tokens = _WORDS.findall(text.casefold())
     if len(tokens) < _MIN_REPETITION_UNITS:
         return 0
-    grams = [tuple(tokens[index : index + 3]) for index in range(len(tokens) - 2)]
-    return 1 - len(set(grams)) / len(grams)
+    grams = set(zip(tokens, tokens[1:], tokens[2:], strict=False))
+    return 1 - len(grams) / (len(tokens) - 2)
 
 
 def _privacy(
@@ -115,7 +115,7 @@ def _answer_findings(
     prompt: str, answer: str, field: str, config: TrainingConfig
 ) -> Iterator[TrainingIssue]:
     normalized = " ".join(answer.casefold().split())
-    compact = re.sub(r"\s+", "", normalized)
+    compact = normalized.replace(" ", "")
     if any(
         phrase.casefold() in normalized or re.sub(r"\s+", "", phrase.casefold()) in compact
         for phrase in config.refusal_phrases
@@ -162,10 +162,13 @@ def _quality_findings(
             yield from _answer_findings(record.prompt, answer, position, config)
 
 
-def check_record(record: ParsedTrainingRecord, config: TrainingConfig) -> tuple[TrainingIssue, ...]:
+def check_record(
+    record: ParsedTrainingRecord, config: TrainingConfig, *, estimated_tokens: int | None = None
+) -> tuple[TrainingIssue, ...]:
     """Return structural and measured heuristic signals with privacy-safe evidence."""
     findings = [*record.issues, *_privacy(record.payload), *_quality_findings(record, config)]
-    if estimate_tokens(record.text) > config.max_tokens:
+    tokens = estimate_tokens(record.text) if estimated_tokens is None else estimated_tokens
+    if tokens > config.max_tokens:
         findings.append(
             issue("token_limit", "text", "Estimated token count exceeds configured limit")
         )

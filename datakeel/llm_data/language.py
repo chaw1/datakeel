@@ -46,23 +46,25 @@ _LATIN_SCRIPT_RATIO = 0.8
 def identify_language(text: str) -> tuple[Language, float]:
     """Classify Chinese, English or mixed scripts, exposing uncertainty for short inputs."""
     chinese = len(_CJK.findall(text))
-    latin = len(_LATIN.findall(text))
+    ascii_text = text.isascii()
+    words = _WORDS.findall(text.casefold()) if ascii_text else []
+    latin = sum(map(len, words)) if ascii_text else len(_LATIN.findall(text))
     total = chinese + latin
     if not total:
         return "unknown", 0.0
-    words = _WORDS.findall(text.casefold())
-    common = sum(word in _COMMON for word in words)
     ratio = chinese / total
     if (
         chinese >= _MIN_CHINESE
         and latin >= _MIN_LATIN
         and _MIN_MIX_RATIO <= ratio <= _MAX_MIX_RATIO
-        and len(words) >= _MIN_WORDS
+        and len(_WORDS.findall(text.casefold())) >= _MIN_WORDS
     ):
         return "mixed", round(min(0.99, 0.65 + min(ratio, 1 - ratio) / 2 + total / 1000), 3)
     if ratio >= _CHINESE_MAJORITY:
         return "zh", round(min(0.99, 0.55 + ratio * 0.4 + total / 1000), 3)
-    if latin / max(1, sum(char.isalpha() for char in text)) >= _LATIN_SCRIPT_RATIO:
+    if ascii_text or latin / max(1, sum(map(str.isalpha, text))) >= _LATIN_SCRIPT_RATIO:
+        words = words or _WORDS.findall(text.casefold())
+        common = sum(word in _COMMON for word in words)
         return "en", round(min(0.99, 0.6 + common / max(1, len(words)) / 4 + total / 500), 3)
     return "unknown", round(latin / total / 2, 3)
 

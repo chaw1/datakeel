@@ -52,4 +52,37 @@ TRAINING_MUTATIONS = (
         case="tests/llm_data/test_contamination.py::test_short_lightly_edited_question_uses_conservative_fallback",
         runner="pytest",
     ),
+    Mutation(
+        name="training-native-fingerprint-parity",
+        path="llm_data/acceleration.py",
+        before="        return hashed, tuple(",
+        after="        return hashed ^ 1, tuple(",
+        case=(
+            "tests/llm_data/test_acceleration.py::"
+            "test_native_fingerprint_when_unicode_and_feature_sampling_vary_matches_every_byte"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-native-band-width",
+        path="llm_data/acceleration.py",
+        before="        if len(packed) != _BAND_COUNT * _BAND_BYTES:",
+        after="        if False:",
+        case=(
+            "tests/llm_data/test_acceleration.py::"
+            "test_native_band_width_when_invalid_is_rejected_with_a_typed_error"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-native-similarity-parity",
+        path="llm_data/acceleration.py",
+        before="        return dice(blobs(left), blobs(right))",
+        after="        return 0",
+        case=(
+            "tests/llm_data/test_acceleration.py::"
+            "test_native_similarity_when_lengths_and_scripts_vary_matches_python_float_bits"
+        ),
+        runner="pytest",
+    ),
 )

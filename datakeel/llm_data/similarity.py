@@ -33,8 +33,11 @@ _SEEDS = np.array(
     dtype=np.uint64,
 )
 _MAX_FEATURES = 512
+_MAX_CACHED_TEXT = 4096
 _SHORT_TEXT = 256
 _MIN_LENGTH_RATIO = 0.75
+MIN_LENGTH_RATIO = _MIN_LENGTH_RATIO
+SHORT_TEXT_LENGTH = _SHORT_TEXT
 _MIN_SHINGLE_OVERLAP = 0.5
 _NON_ALNUM = re.compile(r"[\W_]+")
 
@@ -77,13 +80,25 @@ def fingerprint(text: str) -> tuple[int, tuple[bytes, ...]]:
     return simhash, bands
 
 
+@lru_cache(maxsize=256)
+def _cached_shingles(text: str) -> frozenset[str]:
+    return frozenset(shingles(text))
+
+
+def _similarity_shingles(text: str) -> frozenset[str]:
+    # Bound both the number and size of retained entries, including custom line limits.
+    if len(text) <= _MAX_CACHED_TEXT:
+        return _cached_shingles(text)
+    return frozenset(shingles(text))
+
+
 def similarity(left: str, right: str) -> float:
     """Confirm LSH candidates using edits for short text and shingle Dice for longer text."""
     if left == right:
         return 1
     if min(len(left), len(right)) / max(1, len(left), len(right)) < _MIN_LENGTH_RATIO:
         return 0
-    left_set, right_set = shingles(left), shingles(right)
+    left_set, right_set = _similarity_shingles(left), _similarity_shingles(right)
     dice = 2 * len(left_set & right_set) / max(1, len(left_set) + len(right_set))
     if max(len(left), len(right)) <= _SHORT_TEXT:
         if dice < _MIN_SHINGLE_OVERLAP:

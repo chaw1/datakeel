@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "datakeel-accel"
 version = "0.1.0"
-description = "Optional Rust integer comparison kernels for Datakeel"
+description = "Optional Rust comparison and training fingerprint kernels for Datakeel"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 

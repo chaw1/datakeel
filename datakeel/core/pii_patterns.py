@@ -5,6 +5,14 @@
 
 import re
 
+# Necessary substrings only: these filters never establish a privacy finding.
+NUMBER_RUN = re.compile(r"[0-9][0-9 ()-]{6}")
+ASCII_LETTER = re.compile(r"[A-Za-z]")
+SECRET_HINT = re.compile(r"sk-|AKIA|ASIA|gh[pousr]_|github_pat_|xox[baprs]-|AIza|eyJ")
+LABEL_HINT = re.compile(
+    r"api|access|auth|secret|aws|client|github|gh|password|passwd|bearer", re.IGNORECASE
+)
+
 EMAIL = re.compile(
     r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9_%+-]+(?:\.[A-Za-z0-9_%+-]+)*@"
     r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
