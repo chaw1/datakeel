@@ -173,10 +173,10 @@ baselines from later queries. Numbers are rounded for display; thresholds use un
 | B1 whole-run parent peak / 整场主进程峰值 (GiB) | 1.795 | 1.425 |
 | B2 100k files / 8 workers | 18.68s; 5352.5 files/s | 23.51s; 4253.1 files/s |
 | B2 parent / sum of worker lifetime peaks (MiB) | 1311.2 / 3978.8 | 944.8 / 3374.2 |
-| B3 import / 导入 (s) | 80.23 | 82.65 |
-| B3 search / 搜索, p95 (ms) | 12.9 | 70.6 |
-| B3 object / 对象页, p95 (ms) | 0.4 | 1.6 |
-| B3 depth5 upstream/downstream, p95 (ms) | 843.1 / 946.2 | 1127.2 / 927.0 |
+| B3 import / 导入 (s) | 94.32 | 97.06 |
+| B3 search / 搜索, p95 (ms) | 70.8 | 232.8 |
+| B3 object / 对象页, p95 (ms) | 0.7 | 2.7 |
+| B3 depth5 upstream/downstream, p95 (ms) | 1212.0 / 1419.9 | 1378.0 / 1075.0 |
 | B4 fact rows / 事实行 | 1,000,000 | 10,000,000 |
 | B4 serial / 20 clients, p95 (ms) | 205.4 / 851.3 | 253.6 / 1331.4 |
 | B5 50 users / 300s, p50/p95/p99 (ms) | 10014 / 22098 / 27747 | 650 / 3678 / 4173 |
@@ -185,9 +185,9 @@ baselines from later queries. Numbers are rounded for display; thresholds use un
 | B6 retries / lost / duplicate publications | 1 / 0 / 0 | 1 / 0 / 0 |
 | B7 1m edges, depth5 p95 (ms) | 33.9 | 111.1 |
 
-B3 uses the original normal run for the retained production reader. A later event-reader candidate was measured and reverted: its normal upstream/downstream p95 increased to SQLite1011.6/1011.5ms and PG1255.1/1216.5ms. Complete historical event fields remain in the response; profiling identifies their decoding as the dominant lineage cost.
+B3 rows are the acceptance rerun of the final source tree (commit `5818ba1`, after the escaped-payload detection described below) on the retained production reader, taken while two full gates and another load test shared the machine (1-minute load 12–117). The implementer's earlier quiet-machine run before that detection measured search p95 at 12.9 / 70.6 ms and depth-5 upstream/downstream at 843.1 / 946.2 and 1127.2 / 927.0 ms (SQLite / PostgreSQL). A later event-reader candidate was measured and reverted: its normal upstream/downstream p95 increased to SQLite 1011.6/1011.5 ms and PG 1255.1/1216.5 ms. Complete historical event fields remain in the response; profiling identifies their decoding as the dominant lineage cost.
 
-B3 采用最终保留的原始事件读取路径实测。后续候选在正常20次查询中，上下游p95退化为SQLite1011.6/1011.5ms、PG1255.1/1216.5ms，已撤回。响应保留全部历史事件字段，profile表明其解码是血缘查询的主要成本。
+B3 各行是验收时在最终源码（提交 `5818ba1`，已包含下文的转义 payload 检测）上用保留的生产读取路径复测的数字，复测时本机同时跑着两套完整门禁和另一场压测（1 分钟负载 12–117）。实现方此前在空闲机器、加入该检测之前测得搜索 p95 为 12.9 / 70.6 ms，深度 5 上游/下游为 843.1 / 946.2 与 1127.2 / 927.0 ms（SQLite / PostgreSQL）。后续候选在正常 20 次查询中，上下游 p95 退化为 SQLite 1011.6/1011.5 ms、PG 1255.1/1216.5 ms，已撤回。响应保留全部历史事件字段，profile 表明其解码是血缘查询的主要成本。
 
 | L dataset: 1m metadata entries / 百万元数据 | SQLite | PostgreSQL |
 | --- | --- | --- |
@@ -195,9 +195,9 @@ B3 采用最终保留的原始事件读取路径实测。后续候选在正常20
 | first / deep page / search p95 (ms) | 553.1 / 880.3 / 5977.2 | 821.7 / 1032.3 / 2906.2 |
 | whole-run parent peak (GiB) | 2.980 | 1.994 |
 
-B1 M/L explicitly use the later `B1-*-stable.json` integer-key layout measurements, not the older files named `final`. B2/B6 likewise use the stable matrix. B3/B4/B7 retain earlier normal runs; B3 uses the retained event reader. These scenarios were not rerun after the later compatibility checks, stable read snapshots and catalog escaped-payload/source filtering changes. Their archived source fingerprints describe those measurements, not the final entire source tree.
+B1 M/L explicitly use the later `B1-*-stable.json` integer-key layout measurements, not the older files named `final`. B2/B6 likewise use the stable matrix. B3 uses the acceptance rerun on the final source tree under shared load. B4/B7 retain earlier normal runs and were not rerun after the later compatibility checks, stable read snapshots and catalog escaped-payload/source filtering changes; their archived source fingerprints describe those measurements, not the final entire source tree.
 
-B1 M/L 明确采用时间较晚、整数代理键布局的 `B1-*-stable.json`，不采用名称为 `final` 的较早文件；B2/B6 同样采用 stable 矩阵。B3/B4/B7 保留此前正常运行，B3 使用最终保留的事件读取器。这些场景没有在后续兼容标记、稳定读快照及目录特殊 payload/source 筛选修改后重测；归档源码指纹标识各自的测量代码，不等于最终整棵源码。
+B1 M/L 明确采用时间较晚、整数代理键布局的 `B1-*-stable.json`，不采用名称为 `final` 的较早文件；B2/B6 同样采用 stable 矩阵。B3 采用验收时在最终源码上、负载共享下的复测。B4/B7 保留此前正常运行，没有在后续兼容标记、稳定读快照及目录特殊 payload/source 筛选修改后重测；归档源码指纹标识各自的测量代码，不等于最终整棵源码。
 
 B5 uses only the two continued normal 300-second / 50-user runs on the frozen final source. The source fingerprint is checked before and after each run and is identical across both stacks. Earlier B5 discovery/surrogate baselines and failed diagnostics remain archived separately and are excluded from this table. SQLite returned two HTTP 500 responses on dataset-object reads; the normal-run log has no exception trace, so their cause is unproven. Both stacks exceed the one-second p95 target, and SQLite also fails the zero-error target. A separate 60-second diagnostic with the same fixture and 50 users completed 326 requests with no error, so it did not reproduce or explain the two failures; it is excluded from capacity evidence.
 
@@ -258,13 +258,15 @@ Catalog search and page filtering detect escaped NUL/surrogate content per store
 Ordinary rows project only navigation fields; unsafe rows read and validate the original object
 in Python, with a guarded SQL branch that avoids extracting any JSON text from that row.
 Exact source-ID equality and Unicode search both run over this narrow stream before pagination,
-so they still scan candidates. The B3 figures above predate this additional detection/filtering
-work; its M-scale cost and unsafe fallback capacity have not been remeasured.
+so they still scan candidates. The B3 figures above include this detection/filtering work:
+under shared load, search p95 went from 12.9 to 70.8 ms on SQLite and from 70.6 to 232.8 ms on
+PostgreSQL. The unsafe-row fallback capacity has not been measured.
 
 目录搜索与分页筛选逐行检测 payload 中转义的 NUL/代理字符串。普通行仅投影导航字段；特殊行
 读取原始对象并在 Python 验证，通过 SQL 条件分支避开该行的 JSON 文本提取。source_id 精确
-相等和 Unicode 搜索都在该窄字段流中、分页之前筛选，因此仍需扫描候选。上表 B3 数字尚未
-包含本轮检测与筛选开销；其 M 档成本和特殊回退容量没有重新测量。
+相等和 Unicode 搜索都在该窄字段流中、分页之前筛选，因此仍需扫描候选。上表 B3 数字已包含
+本轮检测与筛选开销：负载共享下搜索 p95 在 SQLite 上从 12.9 升到 70.8 ms，在 PostgreSQL 上从
+70.6 升到 232.8 ms；特殊行回退容量没有测量。
 
 Use a bounded file request such as `?limit=50&offset=0`; `q` is a literal NFC/casefold substring
 and `modality` is an exact filter. Deletion is applied before pagination, and authorization remains

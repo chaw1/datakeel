@@ -149,3 +149,22 @@ Integration changes in this version:
 - The image and point-cloud preset pipeline is `datakeel.pipeline.image_pointcloud.image_pointcloud_pipeline()`; `datakeel.pipeline.media.media_pipeline()` is the audio/video chain.
 - Point-cloud preview downloads go through the same data-asset download guard as file downloads.
 - Lineage records an approved custom operator's code hash as its operator version.
+
+## v0.14.0 release notes
+
+v0.14.0 adds two accepted feature tracks on top of v0.13.1 and one global hardening. Both tracks run entirely on local tools, use no model service, and keep the controlled-action and access-guard rules.
+
+| Track | What you can do now |
+|---|---|
+| Scale benchmark and capacity baseline | Run `python -m scripts.scale_bench B1 --size M --stack sqlite --seed 23 --output result.json` (B1–B7, S/M/L, SQLite or PostgreSQL) and get one JSON with machine, commit, scale, fixture fingerprint, latencies, counts, peak RSS and cleanup status; the same seed reproduces the same fixture on both stacks. Eight hot paths were bounded (file pages and global search, catalog and lineage reads, frozen file selection and object projection, task leases and final-state reads, upload completion) and `make check-scale` fails if version comparison turns quadratic again. [Capacity baseline](CAPACITY.md) states what was measured at M and L scale, which targets are met and which are not, and when to move from SQLite to PostgreSQL. |
+| Ask charts and follow-up questions | Every Ask answer carries a chart chosen from the result shape; the Web page draws it as SVG and lets you switch to the source table with the keyboard. Keep asking in one thread: `那华南呢`, `上个月呢`, `按渠道拆开`, `换成订单数`, `同比`, `what about South China`, `what about August 2026`; each turn shows "Understood as" with the complete question, ambiguous follow-ups clarify without a number, and every turn re-checks asset grants. Threads persist across restarts on SQLite and PostgreSQL, can be listed, reopened and deleted, and are retained for `DATAKEEL_ASK_CONVERSATION_RETENTION_DAYS` (default 30). HTTP, CLI, Agent tools and MCP share the same `conversation_id`. |
+
+**Approval is done by people only.** The MCP server no longer lists `approve_plan` or `execute_plan`; it exposes 57 tools — 20 reads and 37 actions that prepare frozen plans. A call by either name through MCP is refused with a reason and recorded as a failed invocation, and the plan stays prepared until a person approves and executes it on the Web UI or CLI. This is a behavior change for MCP hosts that scripted the approval step; the built-in Agent already used the UI approval flow.
+
+Known limits are documented in [Capacity baseline](CAPACITY.md) and [Charts and follow-up questions](ASK.md). In short: at M scale the PostgreSQL deep page, the filename+modality filter on both stacks, SQLite global search, SQLite peak memory in B1, depth-5 lineage and the fifty-user p95 are above their targets, and B5 on SQLite showed one or two HTTP 500s per ~1,300 requests whose cause is not yet confirmed; the catalog search figures were remeasured after escaped-payload detection and rose on both stacks. In Ask, a complete new question inside a thread (including an unanswerable one) starts a new frame, so a later `那华南呢` refers to the new topic.
+
+Integration changes in this version:
+
+- The media observation index decodes only version manifests that carry an image or point-cloud measurement, so the default file projection reads one manifest and one file-state batch however many versions a dataset has.
+- Inside a conversation, a question-form sentence that no slot explains (`why did brand awareness drop`) is answered like a new question — unanswerable with the three nearest metrics — rather than as a follow-up with one candidate.
+
