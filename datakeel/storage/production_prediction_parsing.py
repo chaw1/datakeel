@@ -34,6 +34,8 @@ class _CocoImage(BoundaryModel):
     file_name: str
     width: float = Field(gt=0, allow_inf_nan=False)
     height: float = Field(gt=0, allow_inf_nan=False)
+    # Training exports rename images; this extension keeps their exact source sample identity.
+    datakeel_sample_id: str | None = None
 
 
 class _CocoAnnotation(BoundaryModel):
@@ -111,7 +113,7 @@ def _coco_image(
     samples: tuple[PredictionSample, ...],
 ) -> ParsedPrediction:
     image = _CocoImage.model_validate(raw)
-    sample = _sample(str(image.id), image.file_name, samples)
+    sample = _sample(image.datakeel_sample_id or str(image.id), image.file_name, samples)
     if (sample.width is not None and sample.width != image.width) or (
         sample.height is not None and sample.height != image.height
     ):
