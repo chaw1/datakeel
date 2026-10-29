@@ -20,6 +20,8 @@ from rich.console import Console
 from datakeel.core.harness_eval import EvalCaseResult, EvalReport
 from scripts.mutation_catalog import FEATURE_MUTATIONS
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
+from scripts.mutation_parallel import ordered_parallel_map
+from scripts.test_workers import test_worker_count
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -204,7 +206,7 @@ def evaluate_image_test(directory: Path, node_id: str) -> TestMeasurement:
     """Accept only one declared test's call assertion, rejecting crashes and setup failures."""
     report = directory / "test-results.xml"
     process = subprocess.run(  # noqa: S603  # Fixed interpreter; repository-owned node id, no shell.
-        [sys.executable, "-m", "pytest", node_id, "-q", f"--junitxml={report}"],
+        [sys.executable, "-m", "pytest", "-n", "0", node_id, "-q", f"--junitxml={report}"],
         cwd=directory,
         env=local_environment(directory),
         capture_output=True,
@@ -342,11 +344,20 @@ def run_mutation(mutation: Mutation) -> MutationResult:
         )
 
 
+def evaluate_image_baseline(node_id: str) -> TestMeasurement:
+    """Measure one unchanged pytest target in its own disposable source tree."""
+    with TemporaryDirectory(prefix="datakeel-mutation-baseline-") as temporary:
+        directory = Path(temporary)
+        _copy_source(directory)
+        return evaluate_image_test(directory, node_id)
+
+
 def main() -> None:
     """Require green baselines and observed assertion failures with durable evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    workers = test_worker_count()
     with TemporaryDirectory(prefix="datakeel-mutation-baseline-") as temporary:
         directory = Path(temporary)
         _copy_source(directory)
@@ -354,19 +365,20 @@ def main() -> None:
         if code != 0 or baseline.passed != baseline.total:
             msg = "Golden baseline must pass before mutation testing"
             raise RuntimeError(msg)
-        image_baselines = [
-            evaluate_image_test(directory, mutation.case)
-            for mutation in MUTATIONS
-            if mutation.runner == "pytest"
-        ]
+        image_baselines = list(
+            ordered_parallel_map(
+                evaluate_image_baseline,
+                (mutation.case for mutation in MUTATIONS if mutation.runner == "pytest"),
+                workers=workers,
+            )
+        )
         if any(
             result.exit_code != 0 or result.passed != result.total for result in image_baselines
         ):
             msg = "Image baseline must pass before mutation testing"
             raise RuntimeError(msg)
     results: list[MutationResult] = []
-    for mutation in MUTATIONS:
-        result = run_mutation(mutation)
+    for result in ordered_parallel_map(run_mutation, MUTATIONS, workers=workers):
         results.append(result)
         Console().print(
             f"{result.name}: {'KILLED' if result.killed else 'SURVIVED'} "
