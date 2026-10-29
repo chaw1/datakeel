@@ -33,6 +33,8 @@ export const workbenchEn = {
   wbNext: "Next task",
   wbPrevious: "Previous task",
   wbBack: "Back to task list",
+  wbNoNextTask: "This is the last task in this view.",
+  wbNoPreviousTask: "This is the first task in this view.",
   wbSubmit: "Submit annotation",
   wbSubmitPersonal: "Mark complete",
   wbSave: "Save annotation",

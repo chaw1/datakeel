@@ -30,6 +30,8 @@ export const workbenchZh = {
   wbClaimReview: "领取下一条审核",
   wbNext: "下一条",
   wbPrevious: "上一条",
+  wbNoNextTask: "已经是这个视图的最后一条任务。",
+  wbNoPreviousTask: "已经是这个视图的第一条任务。",
   wbBack: "返回任务列表",
   wbSubmit: "提交标注",
   wbSubmitPersonal: "标记完成",

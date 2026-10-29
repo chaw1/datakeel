@@ -64,6 +64,10 @@
 .wb-toolbar {
   padding: calc(var(--space) * 2) 0;
 }
+.wb-nav-notice {
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
 .wb-drawer {
   background: var(--sheet);
   border: 1px solid var(--rule);

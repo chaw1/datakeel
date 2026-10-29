@@ -33,6 +33,8 @@ export function TaskSession({
   canSync,
   isIdentityVerified,
   onNavigate,
+  navigation = { previous: true, next: true },
+  notice = "",
   onChanged,
   onSnapshot,
   registerGuard,
@@ -43,6 +45,8 @@ export function TaskSession({
   canSync: boolean;
   isIdentityVerified?: () => boolean;
   onNavigate: (direction: -1 | 0 | 1) => void;
+  navigation?: { previous: boolean; next: boolean };
+  notice?: string;
   onChanged: () => void;
   onSnapshot: (task: TaskWorkbench) => void;
   registerGuard: (guard: (() => Promise<boolean>) | null) => void;
@@ -230,6 +234,8 @@ export function TaskSession({
         personal={personal}
         session={session}
         onNavigate={onNavigate}
+        navigation={navigation}
+        notice={notice}
         onSubmit={() => {
           void perform("submit");
         }}

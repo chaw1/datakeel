@@ -8,6 +8,7 @@ import {
 } from "../../api/production";
 
 import { correctedView } from "./model";
+import { pageQuery, taskNavigation } from "./paging";
 import { TaskPrefetchCache } from "./session/TaskPrefetchCache";
 import {
   readWorkspaceSnapshot,
@@ -65,6 +66,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
   const [packageId, setPackageId] = useState("");
   const [cursors, setCursors] = useState<string[]>([""]);
   const [refresh, setRefresh] = useState(0);
+  const [notice, setNotice] = useState<"first" | "last" | null>(null);
   const guard = useRef<(() => Promise<boolean>) | null>(null);
   const sequence = useRef(0);
   const [cache] = useState(
@@ -154,12 +156,10 @@ export function useLabelingWorkspace(params: URLSearchParams) {
   useEffect(() => {
     if (!projectId) return;
     let live = true;
-    void getProjectWorkbench(projectId, {
-      limit: 100,
-      cursor: cursors[page] ?? "",
-      packageId,
-      view: view === "reviews" ? "review" : view === "tasks" ? "mine" : "all",
-    })
+    void getProjectWorkbench(
+      projectId,
+      pageQuery(view, packageId, cursors[page] ?? ""),
+    )
       .then((data) => {
         if (
           live &&
@@ -194,6 +194,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
       live = false;
     };
   }, [projectId, refresh, view, page, cursors, packageId, cache]);
+  const { position, ...navigation } = taskNavigation(project, task, page);
   async function mayLeave() {
     return !guard.current || (await guard.current());
   }
@@ -277,10 +278,52 @@ export function useLabelingWorkspace(params: URLSearchParams) {
       return;
     }
     const list = project?.tasks ?? [];
-    const position = list.findIndex((item) => item.id === task?.task.id);
     const next =
-      position + direction >= 0 ? list.at(position + direction) : undefined;
-    if (next) await open(next.id);
+      position >= 0 && position + direction >= 0
+        ? list.at(position + direction)
+        : undefined;
+    if (next) {
+      setNotice(null);
+      await open(next.id);
+      return;
+    }
+    if (
+      !(direction === 1 ? navigation.next : navigation.previous) ||
+      !project
+    ) {
+      setNotice(direction === 1 ? "last" : "first");
+      return;
+    }
+    // Cross the page boundary: load the adjacent page, then open its edge task.
+    const target = page + direction;
+    const cursor =
+      direction === 1 ? (project.next_cursor ?? "") : (cursors[target] ?? "");
+    const request = ++sequence.current;
+    setBusy(true);
+    try {
+      const data = await getProjectWorkbench(
+        projectId,
+        pageQuery(view, packageId, cursor),
+      );
+      if (
+        request !== sequence.current ||
+        (verifiedActor.current !== null &&
+          data.effective_scopes.actor !== verifiedActor.current)
+      )
+        return;
+      if (direction === 1)
+        setCursors((values) => [...values.slice(0, page + 1), cursor]);
+      setPage(target);
+      setProject(data);
+      const edge = direction === 1 ? data.tasks.at(0) : data.tasks.at(-1);
+      setNotice(edge ? null : direction === 1 ? "last" : "first");
+      if (edge) await open(edge.id);
+    } catch (reason) {
+      if (request === sequence.current)
+        setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      if (request === sequence.current) setBusy(false);
+    }
   }
   async function paginate(direction: -1 | 1) {
     if (!(await mayLeave())) return;
@@ -321,6 +364,8 @@ export function useLabelingWorkspace(params: URLSearchParams) {
     error,
     busy,
     page,
+    navigation,
+    notice,
     packageId,
     selectPackage,
     view,

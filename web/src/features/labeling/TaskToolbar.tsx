@@ -10,6 +10,8 @@ export function TaskToolbar({
   personal,
   session,
   onNavigate,
+  navigation,
+  notice,
   onSubmit,
   help,
   setHelp,
@@ -19,6 +21,8 @@ export function TaskToolbar({
   personal: boolean;
   session: ReturnType<typeof useAnnotationSession>;
   onNavigate: (direction: -1 | 0 | 1) => void;
+  navigation: { previous: boolean; next: boolean };
+  notice: string;
   onSubmit: () => void;
   help: boolean;
   setHelp: (value: boolean) => void;
@@ -38,6 +42,7 @@ export function TaskToolbar({
         </button>
         <button
           type="button"
+          disabled={!navigation.previous}
           onClick={() => {
             onNavigate(-1);
           }}
@@ -46,6 +51,7 @@ export function TaskToolbar({
         </button>
         <button
           type="button"
+          disabled={!navigation.next}
           onClick={() => {
             onNavigate(1);
           }}
@@ -98,6 +104,9 @@ export function TaskToolbar({
         >
           {t("wbShortcuts")}
         </button>
+        <span role="status" className="wb-nav-notice">
+          {notice}
+        </span>
       </div>
       {help && (
         <section className="card wb-shortcuts" aria-label={t("wbShortcuts")}>

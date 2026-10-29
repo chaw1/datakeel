@@ -166,6 +166,14 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                   onNavigate={(direction) => {
                     void workspace.navigate(direction);
                   }}
+                  navigation={workspace.navigation}
+                  notice={
+                    workspace.notice === "last"
+                      ? t("wbNoNextTask")
+                      : workspace.notice === "first"
+                        ? t("wbNoPreviousTask")
+                        : ""
+                  }
                   onChanged={() => {
                     workspace.cache.invalidate(task.task.id);
                     workspace.changed();
