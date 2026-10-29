@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import pytest
 from fastmcp import Client, Context
 from jsonschema import Draft202012Validator
-from mcp_types import Implementation
+from mcp_types import Implementation, JSONRPCResponse
 
 from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.parameters import PARAMETER_TYPES
@@ -84,6 +84,37 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             assert tool.annotations is not None
             assert tool.annotations.open_world_hint is False
         assert list_invocations(db) == []
+
+    asyncio.run(scenario())
+
+
+def test_tool_listing_paginates_complete_schemas_below_sse_event_limit(db: Database) -> None:
+    """Keep each real protocol response within default SSE limits without dropping tools."""
+
+    async def scenario() -> None:
+        expected = {item.name for item in tool_definitions()}
+        names: list[str] = []
+        cursors: set[str] = set()
+        async with Client(create_server(db), mode="legacy") as client:
+            page = await client.list_tools_mcp()
+            assert page.next_cursor is not None
+            while True:
+                response = JSONRPCResponse(
+                    jsonrpc="2.0",
+                    id=1,
+                    result=page.model_dump(mode="json", by_alias=True, exclude_none=True),
+                )
+                encoded = response.model_dump_json(by_alias=True, exclude_none=True).encode()
+                assert len(encoded) < 1024 * 1024
+                names.extend(tool.name for tool in page.tools)
+                if page.next_cursor is None:
+                    break
+                assert page.next_cursor not in cursors
+                cursors.add(page.next_cursor)
+                page = await client.list_tools_mcp(cursor=page.next_cursor)
+            assert len(names) == len(set(names))
+            assert set(names) == expected
+            assert {tool.name for tool in await client.list_tools()} == expected
 
     asyncio.run(scenario())
 

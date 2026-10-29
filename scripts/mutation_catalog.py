@@ -16,6 +16,7 @@ from scripts.identity_mutations import IDENTITY_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
+from scripts.mcp_pagination_mutations import MCP_PAGINATION_MUTATIONS
 from scripts.metadata_mutations import METADATA_MUTATIONS
 from scripts.metric_mutations import METRIC_MUTATIONS
 from scripts.orchestration_mutations import ORCHESTRATION_MUTATIONS
@@ -28,6 +29,7 @@ from scripts.table_mutations import TABLE_MUTATIONS
 from scripts.timeseries_mutations import TIMESERIES_MUTATIONS
 
 FEATURE_MUTATIONS = (
+    *MCP_PAGINATION_MUTATIONS,
     *IDENTITY_MUTATIONS,
     *PRODUCTION_MUTATIONS,
     *PRODUCTION_TOOL_MUTATIONS,
