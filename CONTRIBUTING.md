@@ -63,8 +63,8 @@ To repeat the gate on PostgreSQL, set `DATAKEEL_TEST_DATABASE_URL` to a fresh lo
 you own. The fixture accepts only `localhost` or `127.0.0.1`. The test role needs `CREATEDB`
 and permission to clone its owned templates. UUID database names separate test copies;
 their copied schema names may be identical because the databases are independent.
-Cleanup drops only databases recorded as created by the fixture, without `FORCE` or
-terminating other sessions. Migration tests using `unmigrated_db` retain the original
+Cleanup drops only databases recorded as created by the fixture; `WITH (FORCE)` ends
+only sessions still connected to that UUID copy. Migration tests using `unmigrated_db` retain the original
 per-test empty-schema path and remove only that schema. Never use a shared or production
 database for tests.
 
@@ -93,7 +93,7 @@ Python 测试和变异步骤默认有限并行；`DATAKEEL_TEST_WORKERS=1` 切�
 PostgreSQL 验证时将 `DATAKEEL_TEST_DATABASE_URL` 指向自己新建的本地测试库，夹具仅接受
 `localhost` 或 `127.0.0.1`。测试角色须有 `CREATEDB` 及克隆自有模板的权限。UUID 库名隔离
 用例副本；独立数据库中的 schema 名可以相同。清理只删除夹具记录为自己创建的数据库，
-不使用 `FORCE` 或终止其它会话。`unmigrated_db` 迁移测试保留原有按用例创建空 schema 的路径，
+`WITH (FORCE)` 只结束仍连在该 UUID 副本上的会话。`unmigrated_db` 迁移测试保留原有按用例创建空 schema 的路径，
 只清理对应 schema。不要使用共享库或生产库跑测试。
 
 ## Capacity workloads / 容量压测

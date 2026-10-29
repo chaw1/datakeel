@@ -60,11 +60,18 @@ The fit assessment is based on this repository's fixtures and runners.
 - PostgreSQL fixtures reject hosts other than `localhost` or `127.0.0.1`. The local test
   role needs `CREATEDB` and permission to clone the template; the fixture owns the
   templates it creates. Cleanup drops only UUID databases recorded as created by that
-  template owner, after disposing their engines. It does not use `DROP DATABASE ... FORCE`
-  or terminate other connections.
+  template owner, after disposing their engines. The drop uses `WITH (FORCE)` so that,
+  like the original `DROP SCHEMA`, cleanup does not depend on the test having closed every
+  session (for example, a test that replaces `engine.dispose`). FORCE only ends sessions
+  connected to that UUID database; it never touches other databases or the container.
+  Each copy starts with one pooled connection, matching the original fixture's state after
+  `migrate()`, because offline tests forbid opening sockets after setup.
   / PostgreSQL 夹具继续拒绝 `localhost`、`127.0.0.1` 以外的主机。本地测试角色须有
   `CREATEDB` 及克隆模板的权限，夹具拥有自己创建的模板。清理先释放 engine，只删除当前
-  owner 记录为自己创建的 UUID 数据库，不使用 `DROP DATABASE ... FORCE` 或终止其它连接。
+  owner 记录为自己创建的 UUID 数据库。删除使用 `WITH (FORCE)`，与原 `DROP SCHEMA` 一样
+  不依赖用例关闭全部会话（例如用例替换了 `engine.dispose`）；FORCE 只结束连到该 UUID 库的
+  会话，不影响其它库或容器。每个副本交付前先建好一条池内连接，与原夹具 `migrate()` 后的
+  状态一致，因为离线用例在准备阶段后禁止新建 socket。
 - `unmigrated_db` retains the original migration-test path: each test gets an empty SQLite
   file or its own PostgreSQL schema in the supplied database, then executes the migrations
   under test. Teardown drops only that schema and disposes its engine.

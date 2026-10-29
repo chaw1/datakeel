@@ -29,6 +29,15 @@ def _remove_sqlite(path: Path) -> None:
         path.with_name(path.name + suffix).unlink(missing_ok=True)
 
 
+def _open_pooled_connection(database: Database) -> None:
+    """Leave one ready pooled connection, as the original fixture's migration did.
+
+    Offline tests forbid new sockets after setup and rely on that fixture connection.
+    """
+    with database.engine.connect():
+        pass
+
+
 def schema_database(url: URL, schema: str) -> Database:
     """Retain the original fixture's engine initialization and per-connection schema."""
     database = Database(url.render_as_string(hide_password=False))
@@ -103,8 +112,10 @@ class DatabaseTemplate:
     def _drop_database(self, name: str) -> None:
         assert name in self._owned
         assert self._admin is not None
+        # Like the original DROP SCHEMA, removal must not depend on the test having closed
+        # every session. FORCE ends only sessions on this UUID database owned by this fixture.
         with self._admin.connect() as connection:
-            connection.execute(text(f'DROP DATABASE "{name}"'))
+            connection.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
         self._owned.remove(name)
 
     @contextmanager
@@ -121,6 +132,7 @@ class DatabaseTemplate:
                 ):
                     source.backup(destination)
                 database = Database(f"sqlite:///{path}")
+                _open_pooled_connection(database)
                 yield database
             finally:
                 if database is not None:
@@ -133,6 +145,7 @@ class DatabaseTemplate:
         database = None
         try:
             database = schema_database(self._url.set(database=name), self._schema)
+            _open_pooled_connection(database)
             yield database
         finally:
             if database is not None:
