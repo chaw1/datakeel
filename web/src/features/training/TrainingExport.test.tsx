@@ -117,6 +117,17 @@ it("prepares the HuggingFace format with the selected immutable split", async ()
   );
 });
 
+it("uses a filename pattern that browsers compile with the v flag", () => {
+  render(<TrainingExport split={splitSet} />);
+  const pattern =
+    screen.getByLabelText("Archive filename").getAttribute("pattern") ?? "";
+  const filename = new RegExp(`^(?:${pattern})$`, "v");
+  expect(filename.test("training.tar.gz")).toBe(true);
+  for (const rejected of ["a/b.tar.gz", "a\\b.tar.gz", "training.zip"]) {
+    expect(filename.test(rejected)).toBe(false);
+  }
+});
+
 it("shows export preparation failures without creating a download link", async () => {
   const user = userEvent.setup();
   vi.stubGlobal(

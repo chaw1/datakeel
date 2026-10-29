@@ -18,6 +18,8 @@ const formats: Record<string, MessageKey> = {
   hf_imagefolder: "trainingHfImagefolder",
   text_jsonl: "trainingJsonl",
 };
+// Browsers compile `pattern` with the `v` flag, where `/` and `\` inside a class must be escaped.
+const DESTINATION_PATTERN = String.raw`[^\/\\]+[.]tar[.]gz`;
 
 export function TrainingExport({ split }: { split: SplitSet }) {
   const { t } = useI18n();
@@ -119,7 +121,7 @@ export function TrainingExport({ split }: { split: SplitSet }) {
             value={destination}
             disabled={busy}
             required
-            pattern="[^/\\\\]+[.]tar[.]gz"
+            pattern={DESTINATION_PATTERN}
             placeholder={t("trainingArchiveExample")}
             onChange={(event) => {
               setDestination(event.target.value);
