@@ -28,7 +28,7 @@ def sandbox_settings(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Setti
     # Build state belongs to this test session, outside the user's Docker configuration.
     environment["BUILDX_CONFIG"] = str(tmp_path_factory.mktemp("sandbox-buildx"))
     root = Path(__file__).resolve().parents[3]
-    image_name = "datakeel-sandbox-tests-speed1-" + uuid4().hex
+    image_name = "datakeel-sandbox-tests-" + uuid4().hex
     try:
         built = command(
             [
