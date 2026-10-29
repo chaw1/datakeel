@@ -478,3 +478,5 @@ S3 提供客户端契约测试，不自动连接真实 S3。LLM 成功分支用�
 ## 数据生产项目
 
 `uv run datakeel production demo` 生成带离线预测的个人图片标注项目。CLI 和 REST 支持标签集发布、只追加修订、小组派单/审核/返工，以及定稿到标准数据集版本。登记用户后由服务端按角色计算权限，零用户实例保留原有本机体验。详见[生产流程](docs/PRODUCTION.zh.md)和[HTTP 身份边界](docs/IDENTITY_ACCESS.zh.md)。
+
+标注生产：键盘标注、离线草稿、审核和定稿见[标注工作台指南](docs/ANNOTATION_WORKBENCH.zh.md)。

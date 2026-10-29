@@ -493,3 +493,5 @@ Open a dataset's **Text data governance** tab to inspect SFT, instruction and pr
 ## Production projects
 
 `uv run datakeel production demo` creates a small personal image-labeling project with imported offline predictions. CLI and REST support published label sets, immutable revisions, group assignment/review/rework and finalization into a normal dataset version. Registered users receive server-computed role scopes; zero-user installations retain the existing local experience. See [production workflows](docs/PRODUCTION.md) and [HTTP identity boundaries](docs/IDENTITY_ACCESS.md).
+
+Annotation production: see the [annotation workbench guide](docs/ANNOTATION_WORKBENCH.md) for keyboard editing, offline drafts, review and finalization.
