@@ -161,10 +161,10 @@ class ObjectSet(BoundaryModel):
     assertion_filters: list[AssertionFilter] = Field(
         default_factory=list[AssertionFilter], max_length=32, exclude_if=lambda value: not value
     )
-    split: Literal["train", "val"] | None = Field(
+    split: Literal["train", "val", "test"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    has_near_duplicate_in: Literal["train", "val"] | None = Field(
+    has_near_duplicate_in: Literal["train", "val", "test"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 

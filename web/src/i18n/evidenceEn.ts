@@ -27,7 +27,7 @@ export const evidenceEn = {
     "No source version is available for evidence extraction.",
   evPairedInstructions: "Generate or import paired samples locally",
   evPairedLayout:
-    "Put each image under train/ or val/, alongside caption.txt and annotations.json. A missing sidecar is allowed and produces unknown evidence. Use the paired importer to preserve these references; a regular upload does not create them.",
+    "Put each image under train/, val/ or test/, alongside caption.txt and annotations.json. A missing sidecar is allowed and produces unknown evidence. Use the paired importer to preserve these references; a regular upload does not create them.",
   evPairedEnvironment:
     "Run from the project directory, using the same DATAKEEL_HOME and DATAKEEL_DATABASE_URL as this local service. These commands create a new paired dataset without running extraction. For your own samples, skip generation and change the importer directory.",
   evPairedNext:
@@ -60,6 +60,7 @@ export const evidenceEn = {
   evSplit: "Sample split",
   evTrain: "Train",
   evVal: "Validation",
+  evTest: "Test",
   evGap: "Annotation gap",
   evMissingLabel: "No matching annotation",
   evGapPresent: "Confirmed label gap",

@@ -37,13 +37,15 @@ async def _exercise(client: Client, db: Database, dataset_id: str) -> None:
     assert client.initialize_result is not None
     assert client.initialize_result.protocol_version == "2025-11-25"
     tools = await client.list_tools()
-    assert len(tools) == 57
+    assert len(tools) == 59
     assert {
         "query_kg",
         "explain_relation",
         "run_kg_extraction",
         "submit_custom_operator",
         "publish_release",
+        "training_distribution",
+        "training_leakage",
     } <= {tool.name for tool in tools}
     assert {"list_quality_rules", "get_table_quality", "create_quality_rule"} <= {
         tool.name for tool in tools

@@ -23,6 +23,7 @@ from datakeel.harness.injection_cases import seed_injection_case
 from datakeel.harness.kg_cases import seed_kg_case
 from datakeel.harness.resources import contract_path
 from datakeel.harness.standard_cases import seed_standard_case
+from datakeel.harness.training_cases import seed_training_case
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths, list_files
 
@@ -57,6 +58,7 @@ def seed_case(
         "standards",
         "quality",
         "annotation_qa",
+        "training",
     ] = "legacy",
     *,
     reviewed: bool = False,
@@ -76,6 +78,7 @@ def seed_case(
         "enterprise": seed_enterprise_case,
         "asset_access": seed_asset_case,
         "annotation_qa": seed_annotation_case,
+        "training": seed_training_case,
         "injection": seed_injection_case,
         "evidence": seed_evidence_case,
     }

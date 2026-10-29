@@ -20,10 +20,12 @@ import { metricRollbackEn } from "./metricRollbackEn";
 import { objectEn } from "./objectEn";
 import { releaseEn } from "./releaseEn";
 import { standardsEn } from "./standardsEn";
+import { trainingEn } from "./trainingEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  ...trainingEn,
   ...customOperatorEn,
   ...releaseEn,
   ...assetEn,

@@ -1,0 +1,148 @@
+# 训练集切分与导出
+
+[English](TRAINING.md)
+
+打开数据集的「版本」页签，在「训练集」区域选择不可变源版本，设置训练、验证、
+测试比例、随机种子、是否按全部标签分层和可选的元数据组字段。「预览分布」只读计算，
+「保存不可变切分」创建挂在版本上的命名快照。同名同策略重试返回原快照；变更策略
+需要另起名称。设 `test=0` 可只切两个集合，例如 `train=0.8, val=0.2`，比例之和必须为 1。
+
+每个样本只属于一个集合。分布表按样本去重统计每个类别，多标签计数之和可以超过样本数。
+图条显示类别在集合中的占比。选择另一个已保存切分，可在界面对比分布；成员归属变化
+可通过下方的 CLI 或对比 API 查看。
+
+## 分层、按组与可复现性
+
+单标签数据按种子排序，从最大余数配额开始，再用整数运输求解调整。多标签采用迭代
+分层：先分配剩余最稀有标签，每放置一个样本，同时更新其全部标签的目标计数，再以整组
+转移和交换修正全部标签的配额与占比。内部计算对标签排序、去重；不可变切分仍保留原始
+标签及完整标注，各格式导出其支持的标注。
+
+对于可达输入，目标是每个标签在各集合的数量距比例目标不超过 1 个样本，样本数至少
+50 的类别在各集合的占比距全体不超过 2 个百分点。修正先检查这两项，再优化集合总量；
+多标签至多追加 16 个由种子确定的起点。这是有界搜索，不是通用整数可行性证明器，
+应核对自己数据的实际分布。
+
+同组和近重复关系的连通分量不可拆分，每个分量整体分配；隔离约束优先于标签平衡和
+精确比例。组字段可使用 `capture.session` 或 `metadata.capture.session` 这样的嵌套
+路径；字段缺失或为 null 不会把无关样本并成一组。
+
+即使没有分组，小整数集合也可能无解。例如 159 个样本的互斥类别计数 55/52/52，
+另有一个全体共有标签，按 80:10:10 切分。共有标签的 ±1 要求训练集大小 127–128，
+验证/测试各 15–16；但大小 16 时，5/16 与 6/16 都无法在 55/159 的 2 个百分点内，
+故两个小集合只能各 15，迫使训练集为 129，与共有标签配额冲突。超过验证集目标的
+原子组也可能使目标不可达。搜索未达到目标本身不能证明无解。结果始终显示实际计数，
+不会拆组或暗改声明的策略。
+
+新切分使用 `1.3-iterative-text`，算法版本纳入切分 ID。种子、完整策略、成员身份、
+源内容哈希和标注均冻结。包括 `1.2-primary-no-text` 在内的既有命名快照直接读取原文，
+不重算、不替换；同名同策略重试仍返回原快照。使用新算法或修订标注时须另建名称。
+
+## 泄漏检查
+
+生成切分默认避开重复边，并始终保持显式分组完整。「已有目录归属」读取导入样本的
+`train/`、`val/`、`test/` 归属，检查时保留原集合。逐对报告给出两个样本 ID、各自集合、
+信号、距离和解释：
+
+| 信号       | 默认规则                       |
+| ---------- | ------------------------------ |
+| 完全相同   | SHA-256 内容哈希相等           |
+| 图片近重复 | 64 位 dHash 的汉明距离不超过 8 |
+| 文本近重复 | 64 位归一文本 simhash 的汉明距离默认不超过 3 |
+| 组键重叠   | 指定元数据字段的非 null 值相同 |
+
+图片与文本阈值均可独立在 0–64 之间配置。比较复用可选 Rust 后端，未安装时使用结果一致的
+精确 Python 比较，不使用可能漏召回的前缀分桶。A–B、B–C 构成一个切分组，但报告不会
+凭传递关系虚构 A–C 这一对。图片哈希是相似性启发式，逐对证据应由使用者复核，
+不能当作语义等价证明。
+
+文本比较先做 Unicode NFKC 与 casefold，删除全部 Unicode P* 标点、ASCII 标点/符号及空白，再做一次 NFKC，
+使被标点或空白隔开的组合字符重新组合，随后用 SHA-256
+散列字符三元组，按频次投票得到 64 位 simhash；不足三个字符的非空文本作为一个特征。
+仅改大小写、空白或标点（含词内插入）的变体距离为 0，即使阈值设为 0 仍能召回。
+归一后为空则没有 simhash，逐字节相同仍走 SHA-256。归一只用于比较，不改变导出原文
+及字符偏移。短文本、三元组多重集相同的重排模板、或删除空格/符号后相同的文本
+（如 `C++` 与 `C`）可能碰撞；这是格式/相似性信号，
+不是语义等价证明。阈值 64 会匹配所有具有文本哈希的样本对，一般不适用。
+
+报告的 `checked_signals` 明确实际检查范围。已保存的 `1.2-primary-no-text` 快照继续
+只检查原三类信号，不读源文件补造文本哈希；另建命名切分或预览才计算新文本信号。
+干净报告只适用于列出的信号与配置阈值。
+
+纯色图额外确认颜色，避免不同颜色具有相同 dHash：缩成 32×32 RGB 后，各通道标准差
+均小于 3 为低纹理。如果任意一张为低纹理，另一张也须低纹理，且平均 RGB 每通道差值
+不超过 12 才报告近重复。有纹理图片仍使用配置的 dHash 阈值；纯色图缩放、JPEG 重压缩
+仍可匹配。
+
+## 导出训练包
+
+选择已保存切分、格式，以及多份审阅存在时的一名标注员。「审阅导出计划」复用
+`export_dataset` 受控动作，冻结版本、切分和对象/字节预算，经现有签批与执行流程
+产生包。完成后点击「下载训练包」；每次下载都会重查源数据的当前导出权限。导出回执进入血缘。
+
+| `format`      | 目录与标注约定                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------ |
+| `coco`        | `images/<split>/` 和 `annotations/instances_<split>.json`；整数 ID、像素 xywh、area、`iscrowd=0`             |
+| `yolo`        | `images/<split>/`、对应 `labels/<split>/*.txt` 和相对路径 `data.yaml`；类别从 0 开始，坐标为归一中心点和宽高 |
+| `imagefolder` | `<split>/<class>/<image>`；每张图必须恰好一个分类标签                                                        |
+| `hf_imagefolder` | `<split>/<image>` 和 `metadata.jsonl`；无损标量元数据，详见下文 |
+| `text_jsonl`  | `<split>.jsonl`，包含原文、分类标签和半开字符偏移片段                                                        |
+
+已审空框图片（`boxes=[]`）保留在 COCO images 中，YOLO 对应空 txt。未审框（`boxes=null`）
+拒绝导出检测格式，避免把未知当作负样本。YOLO 的所选数据须至少有一个明确的框类别；
+COCO 可以表示已审全空、无类别数据，这是合法的交换文档，不能构成有效的零类别训练任务。
+非法、越界框拒绝导出；ImageFolder
+拒绝缺分类或多标签。文本偏移计 Unicode 字符，不计 UTF-8 字节或 UTF-16 编码单元，
+并对未归一化的原文校验范围。
+ImageFolder 接受 torchvision 默认后缀：`.jpg`、`.jpeg`、`.png`、`.ppm`、`.bmp`、
+`.pgm`、`.tif`、`.tiff`、`.webp`。YOLO 接受 Ultralytics 图片后缀：`.avif`、`.bmp`、
+`.dng`、`.heic`、`.heif`、`.jp2`、`.jpeg`、`.jpg`、`.mpo`、`.png`、`.tif`、`.tiff`、
+`.webp`。两者均明确拒绝 GIF 等其他后缀，避免标准加载器静默忽略包内图片；不做转码。
+导入坐标若仅因浮点还原误差越过像素边界，且误差不超过图像尺寸的四个 ULP，则钳回边界；
+明显越界仍拒绝。
+
+HF imagefolder 的 `file_name` 相对所在切分的 `metadata.jsonl`，其余列为标量：
+`sample_id`、`annotator_id`、`width`、`height`、`labels_json`、`boxes_json`。
+解压后用 `datasets.load_dataset("imagefolder", data_dir="package")` 读取，HF 将 `val`
+识别为 `validation`。对两个 `_json` 列执行 `json.loads`，可恢复原类别字符串和像素
+`x1,y1,x2,y2` 框；JSON `null` 表示未审，`[]` 表示已审空。使用 JSON 文本列使全空
+与非空标注切分的推断 schema 一致，不添加虚假样本。包内 `README.md` 也说明此约定，
+不引入 `datasets` 依赖。HF 明确拒绝 EXIF 方向值非缺失且不为 1 的图像：默认
+加载器会自动旋转或镜像，导致原像素框和尺寸失配；导出器不转码，也不暗改框坐标。
+
+`MANIFEST.json` 包含源版本、可选发布、切分 ID、种子、格式及其版本、总文件与标注数、
+各集合计数和逐文件源哈希。文件名转换为稳定安全名称。tar 成员按路径排序，所有者、
+权限、时间固定；`.tar.gz` 和 `.tgz` 的 gzip 头也固定。同版本、同已保存切分、同标注员、
+同格式和压缩方式得到逐字节相同的包，不包含目的文件名或动作时间。无需新增训练库依赖。
+
+## CLI、Agent 和 HTTP
+
+```sh
+datakeel training distribution DATASET --version VERSION --train 0.8 --val 0.1 --test 0.1 --seed 42 --json
+datakeel training create DATASET --version VERSION --name baseline --group-field capture.session
+datakeel training list DATASET --version VERSION
+datakeel training leakage DATASET --version VERSION --split-set SPLIT --json
+datakeel training compare DATASET LEFT_SPLIT RIGHT_SPLIT
+```
+
+不传 `--split-set` 时，`distribution` 预览生成切分，`leakage` 检查目录归属。不传
+`--version` 时选择最新不可变版本，并在结果中返回确切 ID。Agent 和 MCP 按需发现
+`training_distribution`、`training_leakage`，均只读，返回与 CLI 相同的真实测量。
+
+API 前缀为 `/api/datasets/{dataset}/versions/{version}/training`：
+
+- `GET/POST /splits` 列出或保存切分；`POST /preview` 只计算。
+- `GET /splits/{id}` 读取详情；`GET /splits/{id}/leakage` 检查冻结的信号。
+- `POST /leakage` 检查预览；`GET /compare?left=ID&right=ID` 对比已保存切分。
+- `POST /import-annotations` 导入标准 COCO 或类型化 YOLO，为该版本追加不可变标注批次。
+  COCO 可用显式文件名映射解决重命名与同名歧义；YOLO 输入类别表、样本 ID、原图尺寸和逐图标签文本。
+
+导出通过 `POST /api/actions/export_dataset/prepare`，传入 `dataset_id`、`version_id`
+（或 `release_id`）、`split_set_id`、`format`，以及可选的 `annotator_id`、`destination`。
+原有元数据导出格式保持兼容。完整类型定义见[本机 API 参考](http://127.0.0.1:8765/api/docs)。
+
+格式规范：[HF imagefolder](https://huggingface.co/docs/datasets/image_dataset)、
+[COCO](https://cocodataset.org/#format-data)、
+[Ultralytics 检测](https://docs.ultralytics.com/datasets/detect/)、
+[Ultralytics 图片格式](https://docs.ultralytics.com/modes/predict/#image-and-video-formats)、
+[torchvision ImageFolder 源码](https://docs.pytorch.org/vision/stable/_modules/torchvision/datasets/folder.html)。

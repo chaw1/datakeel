@@ -20,11 +20,13 @@ import { metricRollbackZh } from "./metricRollbackZh";
 import { objectZh } from "./objectZh";
 import { releaseZh } from "./releaseZh";
 import { standardsZh } from "./standardsZh";
+import { trainingZh } from "./trainingZh";
 import { workflowZh } from "./workflowZh";
 import { workspaceZh } from "./workspaceZh";
 
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
+  ...trainingZh,
   ...customOperatorZh,
   ...releaseZh,
   ...assetZh,

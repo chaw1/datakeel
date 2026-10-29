@@ -38,7 +38,9 @@ export function supportsEvidence(version: Version) {
         record(paired) &&
         typeof paired.sample_key === "string" &&
         paired.sample_key.length > 0 &&
-        (paired.split === "train" || paired.split === "val") &&
+        (paired.split === "train" ||
+          paired.split === "val" ||
+          paired.split === "test") &&
         sidecar(paired.caption) &&
         sidecar(paired.annotation)
       );

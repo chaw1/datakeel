@@ -24,10 +24,10 @@ class GoldTarget(BoundaryModel):
     """Declare an independent ground-truth subset rather than a query-derived answer."""
 
     kind: QuestionKind
-    split: Literal["train", "val"] | None = None
+    split: Literal["train", "val", "test"] | None = None
     concept: str | None = None
     scene: str | None = None
-    peer_split: Literal["train", "val"] | None = None
+    peer_split: Literal["train", "val", "test"] | None = None
 
 
 class RetrievalMetrics(BoundaryModel):

@@ -53,6 +53,7 @@ from datakeel.storage.dq_actions import prepare_quality_params
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.kg_preparation import prepare_kg_params
 from datakeel.storage.release_actions import publication_impact
+from datakeel.storage.training_export import prepare_training_export
 
 
 def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
@@ -107,7 +108,9 @@ def _prepare_params(session: Session, action_type: str, params: JsonDocument) ->
         validate_custom_pipeline(session, parsed.pipeline)
         validate_shards(parsed.pipeline, parsed.shards)
     if isinstance(parsed, ExportParams):
-        destination = parsed.destination or f"{new_id()}.{parsed.format}.json"
+        parsed = prepare_training_export(session, parsed)
+        suffix = "json" if parsed.format in {"croissant", "openlineage"} else "tar"
+        destination = parsed.destination or f"{new_id()}.{parsed.format}.{suffix}"
         from_path = destination.replace("\\", "/")
         if "/" in from_path or from_path in {".", ".."}:
             msg = "Export destination must be a filename under the exports directory"

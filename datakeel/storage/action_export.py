@@ -5,6 +5,7 @@
 
 import json
 import os
+import tempfile
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -15,6 +16,7 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import AssetRef
 from datakeel.core.settings import get_settings
+from datakeel.core.training_export_models import TRAINING_FORMATS
 from datakeel.lineage.exports import export_croissant, export_openlineage
 from datakeel.lineage.service import graph
 from datakeel.storage.action_selection import selected_files
@@ -22,6 +24,8 @@ from datakeel.storage.data_asset_access import require_access_in_session
 from datakeel.storage.database import DatasetRow, data_dir
 from datakeel.storage.datasets import dataset_dict
 from datakeel.storage.events import all_events
+from datakeel.storage.training_export import training_export_inputs
+from datakeel.training.export import write_training_export
 
 
 def export_path(destination: str) -> Path:
@@ -53,7 +57,10 @@ def export_action(session: Session, plan: ActionPlan, params: ExportParams) -> O
         AccessContext(actor=plan.context.actor, entry="export", scope="export"),
         record=False,
     )
-    target = export_path(params.destination or f"{plan.id}.json")
+    suffix = "tar" if params.format in TRAINING_FORMATS else "json"
+    target = export_path(params.destination or f"{plan.id}.{suffix}")
+    if params.format in TRAINING_FORMATS:
+        return _training_action(session, plan, params, target)
     if params.format == "croissant":
         data = {**dataset_dict(dataset), "base_url": get_settings().base_url}
         payload = export_croissant(data, selected_files(session, plan)).model_dump(mode="json")
@@ -69,6 +76,42 @@ def export_action(session: Session, plan: ActionPlan, params: ExportParams) -> O
         generated_file=target,
         generated_inode=inode,
         details={"filename": target.name, "bytes": size},
+    )
+
+
+def _training_action(
+    session: Session, plan: ActionPlan, params: ExportParams, target: Path
+) -> OperationResult:
+    export = training_export_inputs(session, params, materialize=True)
+    selected = {item.asset_ref.asset_id for item in plan.manifest.objects}
+    if not {item.file.id for item in export.items} <= selected:
+        message = "Training export includes files outside the authorized action manifest"
+        raise ConflictError(message)
+    with tempfile.TemporaryDirectory(prefix=".training-", dir=target.parent) as temporary:
+        directory = Path(temporary)
+        archive = directory / target.name
+        write_training_export(export, directory / "package", archive)
+        os.link(archive, target)
+        inode, size = target.stat().st_ino, target.stat().st_size
+    return OperationResult(
+        outputs=[
+            AssetRef(
+                asset_type="artifact",
+                asset_id=f"export:{plan.id}",
+                version=params.version_id,
+                display_name=target.name,
+            )
+        ],
+        generated_file=target,
+        generated_inode=inode,
+        details={
+            "filename": target.name,
+            "bytes": size,
+            "format": params.format,
+            "source_version": params.version_id,
+            "split_set_id": params.split_set_id,
+            "file_count": len(export.items),
+        },
     )
 
 

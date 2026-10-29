@@ -14,7 +14,7 @@ class SampleSidecars(BoundaryModel):
     """Bind independently persisted sidecar bytes without consulting evaluation gold."""
 
     sample_key: str = Field(min_length=1)
-    split: Literal["train", "val"]
+    split: Literal["train", "val", "test"]
     caption: FileItem | None = None
     annotation: FileItem | None = None
 

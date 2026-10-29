@@ -86,6 +86,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/actions/{plan_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Export
+         * @description Download a completed export while rechecking current source export grants.
+         */
+        get: operations["download_export_api_actions__plan_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agent/conversations": {
         parameters: {
             query?: never;
@@ -1398,6 +1418,150 @@ export interface paths {
          * @description List a dataset's immutable manifest snapshots.
          */
         get: operations["versions_api_datasets__identifier__versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{identifier}/versions/{version_id}/training/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comparison
+         * @description Compare two split sets from this same version, including changed sample assignments.
+         */
+        get: operations["comparison_api_datasets__identifier__versions__version_id__training_compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{identifier}/versions/{version_id}/training/import-annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Annotations
+         * @description Import typed COCO or YOLO detection annotations through the existing review store.
+         */
+        post: operations["import_annotations_api_datasets__identifier__versions__version_id__training_import_annotations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{identifier}/versions/{version_id}/training/leakage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Report
+         * @description Inspect external directory splits without persisting their assignments.
+         */
+        post: operations["preview_report_api_datasets__identifier__versions__version_id__training_leakage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{identifier}/versions/{version_id}/training/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview
+         * @description Calculate seeded class distributions without creating a saved split set.
+         */
+        post: operations["preview_api_datasets__identifier__versions__version_id__training_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{identifier}/versions/{version_id}/training/splits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Splits
+         * @description List the named immutable split sets saved on this exact source version.
+         */
+        get: operations["splits_api_datasets__identifier__versions__version_id__training_splits_get"];
+        put?: never;
+        /**
+         * Generate Split
+         * @description Generate or import directory assignments and persist a named immutable split set.
+         */
+        post: operations["generate_split_api_datasets__identifier__versions__version_id__training_splits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{identifier}/versions/{version_id}/training/splits/{split_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Split Detail
+         * @description Read saved assignments, configuration and per-class distributions.
+         */
+        get: operations["split_detail_api_datasets__identifier__versions__version_id__training_splits__split_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{identifier}/versions/{version_id}/training/splits/{split_id}/leakage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Leakage
+         * @description Return direct cross-split sample pairs, signal types and Hamming distances.
+         */
+        get: operations["leakage_api_datasets__identifier__versions__version_id__training_splits__split_id__leakage_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4508,6 +4672,76 @@ export interface components {
             matrix: number[][];
         };
         /**
+         * CocoBox
+         * @description Store standard absolute xywh coordinates with explicit image/category identities.
+         */
+        CocoBox: {
+            /** Area */
+            area?: number | null;
+            /** Bbox */
+            bbox: [
+                number,
+                number,
+                number,
+                number
+            ];
+            /** Category Id */
+            category_id: number;
+            /** Id */
+            id: number;
+            /** Image Id */
+            image_id: number;
+            /**
+             * Iscrowd
+             * @default 0
+             * @enum {integer}
+             */
+            iscrowd: 0 | 1;
+        };
+        /**
+         * CocoCategory
+         * @description Describe a standard COCO detection category.
+         */
+        CocoCategory: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Supercategory
+             * @default
+             */
+            supercategory: string;
+        };
+        /**
+         * CocoDataset
+         * @description Accept standard detection COCO while ignoring unrelated upstream extensions.
+         */
+        CocoDataset: {
+            /** Annotations */
+            annotations: components["schemas"]["CocoBox"][];
+            /** Categories */
+            categories: components["schemas"]["CocoCategory"][];
+            /** Images */
+            images: components["schemas"]["CocoImage"][];
+        };
+        /**
+         * CocoImage
+         * @description Describe an image in a standard COCO detection document.
+         */
+        CocoImage: {
+            /** Datakeel Sample Id */
+            datakeel_sample_id?: string | null;
+            /** File Name */
+            file_name: string;
+            /** Height */
+            height: number;
+            /** Id */
+            id: number;
+            /** Width */
+            width: number;
+        };
+        /**
          * CodeEntry
          * @description Assign bilingual business labels to one scalar reference value.
          */
@@ -6002,7 +6236,7 @@ export interface components {
             /** Filters */
             filters?: components["schemas"]["PropertyFilter"][];
             /** Has Near Duplicate In */
-            has_near_duplicate_in?: ("train" | "val") | null;
+            has_near_duplicate_in?: ("train" | "val" | "test") | null;
             /**
              * Include Deleted
              * @default false
@@ -6047,7 +6281,7 @@ export interface components {
              */
             sort: "asset" | "review" | "filename" | "quality";
             /** Split */
-            split?: ("train" | "val") | null;
+            split?: ("train" | "val" | "test") | null;
             /** Version Ids */
             version_ids?: string[];
         };
@@ -6101,7 +6335,7 @@ export interface components {
             /** Source Version */
             source_version: string;
             /** Split */
-            split: ("train" | "val") | null;
+            split: ("train" | "val" | "test") | null;
             /** Thumbnail Url */
             thumbnail_url: string | null;
         };
@@ -7516,6 +7750,61 @@ export interface components {
             relation: "owner" | "upstream" | "downstream" | "owned";
         };
         /**
+         * LabelCount
+         * @description Count samples carrying a category, counting each category once per sample.
+         */
+        LabelCount: {
+            /** Count */
+            count: number;
+            /** Label */
+            label: string;
+        };
+        /** @enum {string} */
+        LeakageKind: "exact" | "image" | "text" | "group";
+        /**
+         * LeakagePair
+         * @description Describe one direct cross-partition match and the measured signal distance.
+         */
+        LeakagePair: {
+            /** Detail */
+            detail: string;
+            /** Distance */
+            distance: number;
+            kind: components["schemas"]["LeakageKind"];
+            /** Left Id */
+            left_id: string;
+            left_split: components["schemas"]["SplitName"];
+            /** Right Id */
+            right_id: string;
+            right_split: components["schemas"]["SplitName"];
+        };
+        /**
+         * LeakageReport
+         * @description Return direct pair evidence without merging transitive neighbors into false pairs.
+         */
+        LeakageReport: {
+            /**
+             * Checked Signals
+             * @default [
+             *       "exact",
+             *       "image",
+             *       "text",
+             *       "group"
+             *     ]
+             */
+            checked_signals: components["schemas"]["LeakageKind"][];
+            /** Dataset Id */
+            dataset_id: string;
+            /** Pairs */
+            pairs: components["schemas"]["LeakagePair"][];
+            /** Sample Count */
+            sample_count: number;
+            /** Split Set Id */
+            split_set_id: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
          * LineageEvent
          * @description Record an immutable attributed transformation or failure.
          */
@@ -8480,7 +8769,7 @@ export interface components {
             /** Filters */
             filters?: components["schemas"]["PropertyFilter"][];
             /** Has Near Duplicate In */
-            has_near_duplicate_in?: ("train" | "val") | null;
+            has_near_duplicate_in?: ("train" | "val" | "test") | null;
             /**
              * Include Deleted
              * @default false
@@ -8513,7 +8802,7 @@ export interface components {
              */
             schema_version: "1.0" | "1.1";
             /** Split */
-            split?: ("train" | "val") | null;
+            split?: ("train" | "val" | "test") | null;
             /** Version Ids */
             version_ids?: string[];
         };
@@ -9456,6 +9745,151 @@ export interface components {
             span_count_b: number;
         };
         /**
+         * SplitComparison
+         * @description Compare two immutable partition memberships from the same source version.
+         */
+        SplitComparison: {
+            /** Changed Sample Ids */
+            changed_sample_ids: string[];
+            /** Left */
+            left: components["schemas"]["SplitDistribution"][];
+            /** Left Id */
+            left_id: string;
+            /** Right */
+            right: components["schemas"]["SplitDistribution"][];
+            /** Right Id */
+            right_id: string;
+        };
+        /**
+         * SplitDistribution
+         * @description Report membership and multilabel category prevalence for one partition.
+         */
+        SplitDistribution: {
+            /** Count */
+            count: number;
+            /**
+             * Labels
+             * @default []
+             */
+            labels: components["schemas"]["LabelCount"][];
+            split: components["schemas"]["SplitName"];
+        };
+        /**
+         * SplitMember
+         * @description Freeze assignment, original content identity and annotation revision together.
+         */
+        SplitMember: {
+            /**
+             * Annotations
+             * @default []
+             */
+            annotations: components["schemas"]["AnnotationRecord"][];
+            /**
+             * Labels
+             * @default []
+             */
+            labels: string[];
+            /** Sample Id */
+            sample_id: string;
+            /** Sha256 */
+            sha256: string;
+            split: components["schemas"]["SplitName"];
+        };
+        /** @enum {string} */
+        SplitName: "train" | "val" | "test";
+        /**
+         * SplitRatios
+         * @description Select two or three nonempty partitions with normalized finite proportions.
+         */
+        SplitRatios: {
+            /**
+             * Test
+             * @default 0.1
+             */
+            test: number;
+            /**
+             * Train
+             * @default 0.8
+             */
+            train: number;
+            /**
+             * Val
+             * @default 0.1
+             */
+            val: number;
+        };
+        /**
+         * SplitRequest
+         * @description Freeze the complete versioned partition policy, including comparison thresholds.
+         */
+        SplitRequest: {
+            /**
+             * Avoid Leakage
+             * @default true
+             */
+            avoid_leakage: boolean;
+            /** Group Field */
+            group_field?: string | null;
+            /**
+             * Image Threshold
+             * @default 8
+             */
+            image_threshold: number;
+            /** Name */
+            name: string;
+            ratios?: components["schemas"]["SplitRatios"];
+            /**
+             * Seed
+             * @default 42
+             */
+            seed: number;
+            /**
+             * Source
+             * @default generated
+             * @enum {string}
+             */
+            source: "generated" | "directory";
+            /**
+             * Stratify
+             * @description Use every label in iterative multilabel stratification.
+             * @default true
+             */
+            stratify: boolean;
+            /**
+             * Text Threshold
+             * @description Maximum 64-bit text simhash Hamming distance.
+             * @default 3
+             */
+            text_threshold: number;
+        };
+        /**
+         * SplitSet
+         * @description Expose an immutable named partition belonging to exactly one source version.
+         */
+        SplitSet: {
+            /**
+             * Algorithm Version
+             * @default 1.0
+             */
+            algorithm_version: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Distributions */
+            distributions: components["schemas"]["SplitDistribution"][];
+            /** Id */
+            id: string;
+            /** Members */
+            members: components["schemas"]["SplitMember"][];
+            request: components["schemas"]["SplitRequest"];
+            /** Version Id */
+            version_id: string;
+        };
+        /**
          * SqlFailure
          * @description Keep the SQL origin and actionable parsing reason in import statistics.
          */
@@ -9988,6 +10422,35 @@ export interface components {
              * @enum {string}
              */
             type: "tool";
+        };
+        /**
+         * TrainingAnnotationImport
+         * @description Import COCO or YOLO detections into the existing immutable annotation history.
+         */
+        TrainingAnnotationImport: {
+            /**
+             * Annotator Id
+             * @default training
+             */
+            annotator_id: string;
+            coco?: components["schemas"]["CocoDataset"] | null;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "coco" | "yolo";
+            /** Idempotency Key */
+            idempotency_key: string;
+            /**
+             * Name
+             * @default Training annotations
+             */
+            name: string;
+            /** Sample Ids */
+            sample_ids?: {
+                [key: string]: string;
+            };
+            yolo?: components["schemas"]["YoloDataset"] | null;
         };
         /**
          * TranscriptionEstimate
@@ -10595,6 +11058,30 @@ export interface components {
             /** Verification Keywords */
             verification_keywords?: string[];
         };
+        /**
+         * YoloDataset
+         * @description Provide zero-indexed category names and one label text per source image.
+         */
+        YoloDataset: {
+            /** Images */
+            images: components["schemas"]["YoloImage"][];
+            /** Names */
+            names: string[];
+        };
+        /**
+         * YoloImage
+         * @description Carry normalized YOLO text together with the dimensions needed to restore pixels.
+         */
+        YoloImage: {
+            /** Height */
+            height: number;
+            /** Labels */
+            labels: string;
+            /** Sample Id */
+            sample_id: string;
+            /** Width */
+            width: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -10715,6 +11202,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActionRun"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_export_api_actions__plan_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -13022,6 +13540,283 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VersionView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    comparison_api_datasets__identifier__versions__version_id__training_compare_get: {
+        parameters: {
+            query: {
+                left: string;
+                right: string;
+            };
+            header?: never;
+            path: {
+                identifier: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplitComparison"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_annotations_api_datasets__identifier__versions__version_id__training_import_annotations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingAnnotationImport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnotationQualityReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_report_api_datasets__identifier__versions__version_id__training_leakage_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeakageReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_api_datasets__identifier__versions__version_id__training_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplitSet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    splits_api_datasets__identifier__versions__version_id__training_splits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplitSet"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_split_api_datasets__identifier__versions__version_id__training_splits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplitSet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    split_detail_api_datasets__identifier__versions__version_id__training_splits__split_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+                version_id: string;
+                split_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplitSet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leakage_api_datasets__identifier__versions__version_id__training_splits__split_id__leakage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+                version_id: string;
+                split_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeakageReport"];
                 };
             };
             /** @description Validation Error */

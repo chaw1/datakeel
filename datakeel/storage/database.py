@@ -86,6 +86,7 @@ from datakeel.storage.migrations import add_nullable_columns
 from datakeel.storage.release_constraints import install_release_constraints
 from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
 from datakeel.storage.tool_rows import ToolInvocationRow
+from datakeel.storage.training_rows import TrainingSplitRow, install_training_constraints
 from datakeel.storage.transcription_rows import TranscriptionRow
 from datakeel.storage.upload_rows import UploadRow
 from datakeel.storage.workflow_rows import (
@@ -100,6 +101,7 @@ if TYPE_CHECKING:
 
 # Loading each mapping registers it in the single migration metadata collection.
 _REGISTERED_MODELS = (
+    TrainingSplitRow,
     ReconciliationRow,
     ReleaseRow,
     ReleaseEntryRow,
@@ -316,6 +318,7 @@ class Database:
             install_evidence_constraints(connection, sqlite=self.sqlite)
             install_release_constraints(connection, sqlite=self.sqlite)
             install_asset_constraints(connection, sqlite=self.sqlite)
+            install_training_constraints(connection, sqlite=self.sqlite)
             if self.sqlite:
                 for operation in ("UPDATE", "DELETE"):
                     connection.execute(

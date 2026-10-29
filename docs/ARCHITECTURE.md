@@ -194,3 +194,19 @@ Resumable uploads stage bounded, atomically committed chunks under the configure
 `datasheets/` is a framework-free domain package: fixed chapter vocabulary, offline templates, the untrusted-data model prompt, Markdown/HTML rendering and the independent citation validator. `storage/datasheet_*.py` extracts version-pinned facts (manifest, metadata, quality, compliance, scoped lineage, evidence counts, review decisions and graph entities) and stores immutable documents. Each fact ID hashes its source type, source ID and field. Each fact also records a value kind and unit from a fixed field registry (`core/datasheet_types.py`); the prompt shows them as labelled display lines, and the validator compares numbers by unit class, so a percentage cites only a ratio and a unit-bearing number cites only the same unit. Generation and publication are controlled actions; template drafts are written inside the action transaction, while model drafts use the existing task queue, shard lease, persistent budget and trace (`call_type=extraction`, `agent_path=datasheets`). The model adapter lives in `worker/datasheet_model.py`, next to the KG execution and metering modules.
 
 说明书分两段：先确定性抽取并冻结事实，再由模板或可选模型写句子。无论哪一种，保存前都经同一校验器逐句检查：引用必须存在且至少一条属于本章；数字（含千分位、百分比、中英文数词）、日期和专有名词须能在被引用事实中找到，数字还须与事实的类型和单位一致（百分比只对应比例，带单位的数字只对应同单位事实）；不通过的句子删除并记入删句记录。外发模型冻结目的地址、价表与预算上界，非回环地址需要签批；发布动作不可逆，必须签批。新版本只给旧说明书加「已过期」标记，不改写旧事实与正文。校验是保守的字面支持检查，不做语义蕴含判断。详见 [DATASHEETS.md](DATASHEETS.md)。
+
+## 16. Training splits and exports / 训练集切分与导出
+
+`training/` owns deterministic grouping, seeded stratification, direct leakage signals,
+portable format writers and COCO/YOLO import adapters. It consumes frozen core models;
+source object materialization, current grants, immutable split rows and transaction
+boundaries stay in `storage/training_*.py`. Saved split members freeze annotation reviews
+and content hashes. Exact, dHash, normalized-text simhash and metadata group edges form indivisible
+connected components, while reports retain only direct measured pairs.
+
+训练预览只读计算，命名切分持久化为版本所属的不可变快照，源清单也受数据库约束保护。
+`export_dataset` 沿用原有签批、预算、冻结指纹、原子文件发布和血缘回执；训练格式追加版本、
+切分、标注员及可选发布身份。导出重新核对源内容，tar/gzip去除易变头信息，清单计数明确。
+未审框不冒充负样本；YOLO归一坐标仅对浮点精度范围内的边界误差校正。HTTP、CLI、Agent和
+MCP共享类型化存储入口；已有两集合目录和查询增加test值，保持旧调用兼容。详见
+[training guide](TRAINING.md)和[中文说明](TRAINING.zh.md)。

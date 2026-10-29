@@ -32,6 +32,11 @@ from datakeel.ontology.parameters import (
 )
 from datakeel.ontology.standard_functions import invoke_standard
 from datakeel.ontology.tool_refs import extract_refs
+from datakeel.ontology.training_functions import invoke_training
+from datakeel.ontology.training_parameters import (
+    TrainingDistributionParams,
+    TrainingLeakageParams,
+)
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
@@ -61,6 +66,8 @@ PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     "list_quality_rules": QualityRulesParams,
     "get_table_quality": TableQualityParams,
     "annotation_quality": AnnotationQualityParams,
+    "training_distribution": TrainingDistributionParams,
+    "training_leakage": TrainingLeakageParams,
 }
 
 
@@ -244,6 +251,8 @@ def invoke_function(
         result = invoke_kg(db, name, arguments, access=caller)
     elif name in {"query_evidence", "get_evidence", "explain_sample"}:
         result = invoke_evidence(db, name, arguments, access=caller)
+    elif name in {"training_distribution", "training_leakage"}:
+        result = invoke_training(db, name, arguments, caller)
     else:
         result = _invoke_function(db, name, arguments)
     require_access(db, (*result.asset_refs, *extract_refs(result.data)), caller)

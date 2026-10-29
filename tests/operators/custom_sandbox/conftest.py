@@ -15,7 +15,7 @@ from datakeel.operators.custom_process import RuntimeFailureError, command, runt
 
 
 @pytest.fixture(scope="session")
-def sandbox_settings() -> Iterator[Settings]:
+def sandbox_settings(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Settings]:
     """Require a locally built immutable sandbox image without skipping any security test."""
     executable = shutil.which("docker")
     if executable is None:
@@ -24,6 +24,8 @@ def sandbox_settings() -> Iterator[Settings]:
         )
     settings = Settings()
     environment = runtime_environment(settings.sandbox_docker_host)
+    # Build state belongs to this test session, outside the user's Docker configuration.
+    environment["BUILDX_CONFIG"] = str(tmp_path_factory.mktemp("sandbox-buildx"))
     root = Path(__file__).resolve().parents[3]
     image_name = "datakeel-sandbox-tests-" + uuid4().hex
     try:

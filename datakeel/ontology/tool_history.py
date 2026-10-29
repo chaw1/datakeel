@@ -24,6 +24,8 @@ DEFERRED_READ_FUNCTIONS = frozenset(
         "list_quality_rules",
         "get_table_quality",
         "annotation_quality",
+        "training_distribution",
+        "training_leakage",
     }
 )
 

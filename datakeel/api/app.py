@@ -35,6 +35,7 @@ from datakeel.api.routes import (
     standards_reporting,
     system,
     tasks,
+    training,
     uploads,
     workflow_runs,
 )
@@ -59,6 +60,7 @@ def create_app(db: Database | None = None) -> FastAPI:
     for router in (
         system.router,
         datasets.router,
+        training.router,
         delivery.router,
         releases.router,
         uploads.router,

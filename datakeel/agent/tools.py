@@ -22,6 +22,7 @@ from datakeel.ontology.standard_functions import STANDARD_TOOL_DESCRIPTIONS
 from datakeel.ontology.tool_history import DEFERRED_READ_FUNCTIONS
 from datakeel.ontology.tool_models import ToolCallContext, ToolInvocationStart, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
+from datakeel.ontology.training_functions import TRAINING_TOOL_DESCRIPTIONS
 from datakeel.storage.conversation_authorization import record_audit
 from datakeel.storage.database import Database
 from datakeel.storage.tool_invocations import (
@@ -52,7 +53,7 @@ def resident_tools() -> list[ToolDefinition]:
         ],
         ToolDefinition(
             name="tool_search",
-            description="Discover read tools or controlled actions; actions only prepare.",
+            description="Discover reads and prepare-only actions.",
             parameters=compact_schema(
                 JsonDocument.model_validate(ToolSearchParams.model_json_schema())
             ),
@@ -67,7 +68,9 @@ def deferred_tools() -> list[ToolDefinition]:
             name=item.id,
             description=ASK_DATA_DESCRIPTION
             if item.id == "ask_data"
-            else STANDARD_TOOL_DESCRIPTIONS.get(item.id, f"Read {item.id}"),
+            else {**STANDARD_TOOL_DESCRIPTIONS, **TRAINING_TOOL_DESCRIPTIONS}.get(
+                item.id, f"Read {item.id}"
+            ),
             parameters=compact_schema(item.input_schema),
         )
         for item in function_definitions()

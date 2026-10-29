@@ -9,7 +9,7 @@ from pydantic import Field
 
 from datakeel.core.models import BoundaryModel
 
-Split = Literal["train", "val"]
+Split = Literal["train", "val", "test"]
 Transformation = Literal["crop", "resize", "noise", "controlled_chain"]
 
 
