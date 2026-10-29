@@ -7,6 +7,20 @@ from scripts.mutation_models import Mutation
 
 STANDARD_MUTATIONS = (
     Mutation(
+        name="standards-all-context-groups-separate",
+        path="standards/matching.py",
+        before=(
+            "if observed_context and expected_context "
+            "and observed_context.isdisjoint(expected_context):"
+        ),
+        after="if False:",
+        case=(
+            "tests/standards/test_mapping_accounting.py::"
+            "test_context_group_separation_cannot_turn_status_or_cycle_into_dates"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="standards-chinese-cycle-context",
         path="standards/names.py",
         before='"周期": "cycle",',
@@ -20,8 +34,10 @@ STANDARD_MUTATIONS = (
     Mutation(
         name="standards-date-time-context-recall",
         path="standards/matching.py",
-        before='        and "amount" in observed_context | expected_context\n',
-        after="",
+        before=(
+            'return frozenset("date" if term == "time" else term for term in tokens & _CONTEXTUAL)'
+        ),
+        after="return tokens & _CONTEXTUAL",
         case=(
             "tests/standards/test_mapping_accounting.py::"
             "test_date_time_qualifiers_remain_mapping_candidates"
@@ -32,12 +48,8 @@ STANDARD_MUTATIONS = (
         name="standards-accounting-context-separation",
         path="standards/matching.py",
         before=(
-            "if (\n"
-            "        observed_context\n"
-            "        and expected_context\n"
-            "        and observed_context.isdisjoint(expected_context)\n"
-            '        and "amount" in observed_context | expected_context\n'
-            "    ):"
+            "if observed_context and expected_context "
+            "and observed_context.isdisjoint(expected_context):"
         ),
         after="if False:",
         case=(

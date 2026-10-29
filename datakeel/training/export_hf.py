@@ -5,13 +5,9 @@
 
 from pathlib import Path
 
-from PIL import Image
-
-from datakeel.core.errors import ValidationError
 from datakeel.core.training_export_models import (
     HfImageMetadata,
     TrainingExport,
-    TrainingExportItem,
 )
 from datakeel.training.export_common import (
     copy_source,
@@ -19,6 +15,7 @@ from datakeel.training.export_common import (
     filename,
     json_text,
     validate_image_extension,
+    validate_orientation,
 )
 
 _README = """# Hugging Face imagefolder
@@ -44,16 +41,6 @@ MANIFEST.json records original split names, source hashes, counts and identities
 """
 
 
-def _validate_orientation(item: TrainingExportItem) -> None:
-    with Image.open(item.file.path) as image:
-        if image.getexif().get(274) not in (None, 1):
-            message = (
-                "HF imagefolder requires absent or identity EXIF orientation; "
-                "normalize the source orientation before importing"
-            )
-            raise ValidationError(message)
-
-
 def write_hf_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]:
     """Write safe relative image links and nullable annotations as stable JSON text columns."""
     paths: dict[str, str] = {}
@@ -61,7 +48,7 @@ def write_hf_imagefolder(export: TrainingExport, directory: Path) -> dict[str, s
         rows: list[str] = []
         for item in (item for item in export.items if item.split == split):
             validate_image_extension(item, "hf_imagefolder")
-            _validate_orientation(item)
+            validate_orientation(item)
             width, height = dimensions(item)
             name = filename(item)
             relative = f"{split}/{name}"

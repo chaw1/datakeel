@@ -124,6 +124,10 @@ def test_coco_standard_documents_roundtrip_absolute_boxes_and_empty_images(
     for path in (package / "annotations").glob("*.json"):
         document = CocoDataset.model_validate_json(path.read_bytes())
         records.update((record.sample_id, record) for record in import_coco(document, "reviewer"))
+        for image in document.images:
+            assert image.file_name.startswith(f"images/{path.stem.removeprefix('instances_')}/")
+            assert (package / image.file_name).is_file()
+            assert not (path.parent / image.file_name).exists()
         for box in document.annotations:
             assert box.bbox == (10, 20, 30, 40)
             assert box.area == 1200

@@ -8,6 +8,9 @@ and a metadata group field. Preview reads the files and computes distributions w
 saving. **Save immutable split** creates a named, version-owned snapshot. Repeating the
 same name and policy returns that snapshot; changing its policy requires another name.
 
+The **Split source** and **Saved split set** selectors have explicit accessible names
+in both English and Chinese, matching their visible labels for assistive technology.
+
 Set `test=0` for two sets, for example `train=0.8, val=0.2`. Proportions must sum to one.
 Every sample appears once. The class table counts each label once per sample, so
 multilabel totals can exceed the number of samples. The adjacent meters show class
@@ -23,13 +26,30 @@ assignments against all label quotas and class prevalence together. Labels are d
 and sorted for computation; saved members retain the original labels and complete annotations.
 Each export writes the annotations supported by its format.
 
+**Annotation labels to balance** selects `all` (the default), `classification`, `detection`
+or `spans`. The default keeps the existing union of all annotation kinds; the other choices
+use only classification labels, box categories or text-span categories for allocation.
+Missing or reviewed-empty annotations of the selected kind contribute no labels. Reviews
+from all frozen annotators are included, as before. Every selected label participates;
+this choice does not reduce a multilabel sample to its first label.
+
+The selector changes only the algorithm's calculation inputs. Original member labels,
+complete annotations, group/duplicate isolation, displayed all-label distributions and
+exported annotations remain unchanged. It has no allocation effect when stratification is
+disabled or existing directory assignments are used. The CLI option is
+`--stratification-source classification`; HTTP, Agent and MCP use the typed
+`request.stratification_source` field (HTTP split/preview bodies carry it directly).
+Saved policies freeze the choice. Older snapshots missing the field mean `all`, retain
+their identities and can be retried under the same name. Choosing another source requires
+a new name. The default `all` policy retains the existing identity digest.
+
 For feasible inputs, the targets are at most one sample from each label's requested split
 count, and at most two percentage points from global prevalence for every category with at
 least 50 samples. Refinement checks both limits before overall split-size proximity, with
 up to 16 additional deterministic seeded starts for multilabel data. This is a bounded search,
 not a general integer-feasibility proof. Inspect the actual distribution for your data.
 
-Groups and connected duplicate clusters are indivisible; an entire connected component
+Explicit groups and, when duplicate avoidance is enabled, connected duplicate clusters are indivisible; an entire connected component
 receives one split. Their isolation takes priority over balance and exact ratios. A metadata
 field can be nested, for example `capture.session` or `metadata.capture.session`. A missing
 or null value does not join unrelated samples.
@@ -48,6 +68,13 @@ The seed, full policy, member identities, source hashes and annotations are froz
 named snapshots, including `1.2-primary-no-text`, are read without recalculation or replacement.
 Repeating the same name and policy returns that exact snapshot. Use a new name for the new
 algorithm or revised annotations.
+
+When a generated preview or saved set leaves a positive-ratio partition empty (for example,
+24/0/0), the distribution table explains that explicit groups and any enabled duplicate
+constraints take priority over ratio targets. Small sample counts and integer quotas can also
+leave partitions empty. Inspect the counts and try another seed or grouping policy; one result
+is not a proof that no alternative allocation exists. A partition explicitly assigned ratio
+zero does not trigger this message; existing directory assignments are not attributed to the generator.
 
 ## Leakage evidence
 
@@ -70,7 +97,7 @@ retains only measured direct edges. Image hashes are similarity heuristics; insp
 evidence rather than interpreting them as semantic identity.
 
 Text hashing applies Unicode NFKC normalization and case folding, then removes Unicode
-punctuation, ASCII punctuation/symbols and whitespace, then applies NFKC again so that
+punctuation, ASCII punctuation/symbols, whitespace and zero-width U+200B/U+200C/U+200D/U+2060/U+FEFF, then applies NFKC again so that
 combining characters separated by removed formatting recompose. It hashes character trigrams with SHA-256 and computes a weighted
 64-bit simhash; shorter nonempty text is one feature. Changes confined to case, whitespace or
 punctuation therefore have distance zero, including changes inside words, and are recalled
@@ -78,7 +105,19 @@ even with threshold zero. Empty normalized text has no simhash; byte-identical f
 match SHA-256. These transformations affect only comparison, never exported source text or
 character offsets. Short texts, rearranged templates with the same trigram multiset, and text that becomes
 identical after space or symbol removal (for example, `C++` and `C`) can collide: this signal is a formatting/similarity check, not semantic equivalence.
-A threshold of 64 matches every pair with a text hash and is usually unsuitable.
+A short numeric-template confirmation excludes texts of at most 80 normalized characters
+whose wording is identical after replacing decimal-number runs, but whose normalized numeric
+content differs: for example, `Order 1001 has shipped` and `Order 1002 has shipped` are separate
+records. Case, whitespace and punctuation variants of the same numeric content remain comparable;
+longer texts and different wording retain the configured similarity rule. Only SHA-256 content
+and template digests are frozen with new samples, not normalized source text. Existing saved
+samples without these digests retain their original text comparison and do not read source files
+to reconstruct them. A threshold of 64 matches every hashed pair except the template veto above
+and is usually unsuitable. Other short-text and template collisions remain possible.
+
+Byte-identical text files produce an exact SHA-256 pair only; the same pair is not
+counted again as text near-duplication. Formatting variants with different source
+bytes still produce the text signal.
 
 `checked_signals` states what a report actually checked. A saved `1.2-primary-no-text` snapshot
 keeps its original three signals and does not read source files to invent missing text hashes.
@@ -90,6 +129,10 @@ Flat images need an additional color confirmation to avoid dHash collisions: on 
 is below 3. If either image is low texture, both must be low texture and their mean RGB
 values must differ by at most 12 per channel. Textured images retain the configured
 dHash threshold. Resizing and JPEG recompression of a flat image remain comparable.
+
+Crops removing more than 10% from any image edge are outside the image similarity
+check's supported detection range. This limit does not guarantee recall for every smaller
+crop; the existing dHash threshold and color confirmation still apply.
 
 ## Training archives
 
@@ -106,6 +149,12 @@ source export permissions are rechecked on every download. Export receipts enter
 | `imagefolder` | `<split>/<class>/<image>`; requires exactly one classification label per image                                                  |
 | `hf_imagefolder` | `<split>/<image>` and `metadata.jsonl`; lossless scalar metadata, described below |
 | `text_jsonl`  | `<split>.jsonl`; exact text, labels and half-open character-offset spans                                                        |
+
+COCO `images[].file_name` is relative to the extracted archive root, including the
+`images/<split>/` prefix. Set the consumer's image root to that extracted root, not to
+`annotations/` or `images/<split>/`. This retains the existing layout and follows the
+[pycocotools convention of joining a caller-supplied root with `file_name`](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py).
+The annotation document's own directory is not the image root.
 
 Reviewed-empty images (`boxes=[]`) have an empty YOLO label file and remain in COCO images.
 Missing box reviews (`boxes=null`) are refused for detection exports, rather than treated
@@ -131,9 +180,27 @@ original category strings and absolute pixel `x1,y1,x2,y2` boxes. JSON `null` me
 `[]` means reviewed empty. JSON text columns keep the inferred schema identical across splits
 containing only empty annotations versus populated ones, without artificial examples. The
 archive includes these instructions in `README.md`. No `datasets` dependency is added.
-HF exports reject EXIF orientation values other than absent or 1: its default decoder
-automatically rotates or mirrors oriented images, which would invalidate raw pixel boxes
-and dimensions. The exporter neither transcodes pixels nor silently rewrites coordinates.
+COCO, YOLO and HF imagefolder exports share one EXIF orientation check: only absent or
+identity (1) orientation is accepted. Values 2–8 can rotate or mirror decoded pixels and
+invalidate the frozen raw-pixel boxes or dimensions. Normalize these sources and their
+annotations together before importing them again. The exporter neither transcodes pixels
+nor silently rewrites coordinates, and a refused export produces no archive.
+
+| Orientation policy | Benefit | Required trade-off |
+| ------------------ | ------- | ------------------ |
+| Reject nonidentity EXIF (chosen) | Preserve source bytes and the frozen annotation frame across all three formats | Oriented sources must be normalized before import |
+| Transpose pixels and transform boxes | Export oriented sources directly | Rewrite pixel bytes, dimensions and every box for each rotation/mirror, with new provenance semantics |
+
+Rejection keeps the existing HF policy and the source-byte export contract consistent.
+Pillow's [`exif_transpose`](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose)
+applies the orientation transform and removes its metadata; adopting it here would also
+require corresponding coordinate transforms rather than a pixel-only change.
+
+Training archive destinations accept only the case-sensitive suffixes `.tar`, `.tar.gz`
+and `.tgz`: `.tar` writes an uncompressed tar; `.tar.gz` and `.tgz` write gzip-compressed
+tar. Other suffixes (including `.zip`, `.json`, `.gz` and no suffix) are rejected before
+preparing a training export action. Metadata-only Croissant/OpenLineage exports retain
+their existing filename behavior. Direct archive writing enforces the same suffix rule.
 
 `MANIFEST.json` records the source version, optional release, split ID, seed, format and
 format version, total and per-split file counts, annotation counts and each source hash.

@@ -12,6 +12,7 @@ from datakeel.core.models import BoundaryModel, FileItem
 
 TrainingFormat = Literal["coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"]
 TRAINING_FORMATS = frozenset({"coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"})
+TRAINING_ARCHIVE_SUFFIXES = (".tar", ".tar.gz", ".tgz")
 
 
 class TrainingExportItem(BoundaryModel):

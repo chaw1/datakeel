@@ -212,7 +212,6 @@ def test_directory_preview_keeps_assignments_and_checks_text_near_duplicates(
     assert [(pair.kind, pair.left_id, pair.right_id, pair.distance) for pair in report.pairs] == [
         ("exact", "0", "3", 0),
         ("text", "0", "1", 0),
-        ("text", "0", "3", 0),
     ]
     assert report.checked_signals == ("exact", "image", "text", "group")
     samples = load_training_samples(db, fixture.dataset_id, fixture.version_id)
@@ -220,6 +219,35 @@ def test_directory_preview_keeps_assignments_and_checks_text_near_duplicates(
     assert all(sample.file.sha256 == digest(Path(sample.file.path)) for sample in samples)
     split = create_split(db, fixture.dataset_id, fixture.version_id, request)
     assert check_leakage(db, fixture.dataset_id, split.id).pairs == report.pairs
+
+
+@pytest.mark.parametrize("invisible", ["\u200b", "\u200c", "\u200d", "\u2060", "\ufeff"])
+def test_directory_preview_detects_zero_width_only_text_changes(
+    db: Database, tmp_path: Path, invisible: str
+) -> None:
+    """Actual source reads retain a zero-distance text edge across directory assignments."""
+    files: list[FileItem] = []
+    for index, content in enumerate(("订单已经发货", "订单已" + invisible + "经发货")):
+        path = tmp_path / f"invisible-{index}.txt"
+        path.write_text(content)
+        files.append(
+            FileItem(
+                id=str(index),
+                path=str(path),
+                filename=path.name,
+                modality="text",
+                sha256=digest(path),
+                metadata={"split": "train" if index == 0 else "test"},
+            )
+        )
+    fixture = _version(db, tuple(files))
+    report = preview_leakage(
+        db,
+        fixture.dataset_id,
+        fixture.version_id,
+        SplitRequest(name="invisible", source="directory", text_threshold=0),
+    )
+    assert [(pair.kind, pair.distance) for pair in report.pairs] == [("text", 0)]
 
 
 def test_image_resize_and_compression_are_recalled_with_clean_control(

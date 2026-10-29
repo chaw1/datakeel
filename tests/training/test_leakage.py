@@ -77,6 +77,24 @@ def test_three_signals_emit_pairs_with_distance_and_partitions() -> None:
     assert {pair.kind for pair in legacy.pairs} == {"exact", "image", "group"}
 
 
+def test_byte_identical_text_has_one_exact_pair_without_a_second_text_pair() -> None:
+    """A repeated file contributes one reported pair; missing hashes cannot imply exactness."""
+    samples = (_sample("left", "train", text_hash=123), _sample("right", "test", text_hash=123))
+    identical = (
+        samples[0],
+        samples[1].model_copy(
+            update={"file": samples[1].file.model_copy(update={"sha256": "left"})}
+        ),
+    )
+    assert [pair.kind for pair in leakage_report(identical, _split(identical)).pairs] == ["exact"]
+    assert [pair.kind for pair in leakage_report(samples, _split(samples)).pairs] == ["text"]
+    missing = tuple(
+        sample.model_copy(update={"file": sample.file.model_copy(update={"sha256": None})})
+        for sample in samples
+    )
+    assert [pair.kind for pair in leakage_report(missing, _split(samples)).pairs] == ["text"]
+
+
 def test_report_excludes_within_set_and_does_not_invent_transitive_pairs() -> None:
     """Exact comparison finds prefix-boundary neighbors without claiming transitive matches."""
     samples = (

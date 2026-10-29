@@ -69,7 +69,7 @@ HF_TRAINING_MUTATIONS = (
     Mutation(
         name="training-hf-loader-exif-orientation-guard-omitted",
         path="training/export_hf.py",
-        before="_validate_orientation(item)",
+        before="validate_orientation(item)",
         after="pass",
         case=(
             "tests/training/test_export_hf.py::"

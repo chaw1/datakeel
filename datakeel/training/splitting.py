@@ -14,6 +14,7 @@ from datakeel.core.training_models import (
     SplitMember,
     SplitName,
     SplitRequest,
+    StratificationSource,
     TrainingSample,
 )
 from datakeel.training.leakage import signal_pairs
@@ -146,9 +147,30 @@ def _directory(samples: tuple[TrainingSample, ...]) -> dict[int, SplitName]:
     return result
 
 
-def _canonical_labels(samples: tuple[TrainingSample, ...]) -> tuple[TrainingSample, ...]:
+def _stratification_labels(sample: TrainingSample, source: StratificationSource) -> tuple[str, ...]:
+    if source == "all":
+        return tuple(sorted(set(sample.labels)))
+    labels = {
+        label
+        for record in sample.annotations
+        for label in (
+            record.labels or ()
+            if source == "classification"
+            else (
+                tuple(box.category for box in record.boxes or ())
+                if source == "detection"
+                else tuple(span.category for span in record.spans or ())
+            )
+        )
+    }
+    return tuple(sorted(labels))
+
+
+def _canonical_labels(
+    samples: tuple[TrainingSample, ...], source: StratificationSource
+) -> tuple[TrainingSample, ...]:
     return tuple(
-        sample.model_copy(update={"labels": tuple(sorted(set(sample.labels)))})
+        sample.model_copy(update={"labels": _stratification_labels(sample, source)})
         for sample in samples
     )
 
@@ -194,7 +216,9 @@ def split_samples(
         assignments = _directory(ordered)
     else:
         groups = _groups(ordered, request)
-        assignments = _balanced_labels(_canonical_labels(ordered), groups, request)
+        assignments = _balanced_labels(
+            _canonical_labels(ordered, request.stratification_source), groups, request
+        )
     return tuple(
         SplitMember(
             sample_id=sample.file.id,

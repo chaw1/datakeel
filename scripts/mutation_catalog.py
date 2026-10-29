@@ -39,6 +39,7 @@ from scripts.training_hf_mutations import HF_TRAINING_MUTATIONS
 from scripts.training_identity_mutations import TRAINING_IDENTITY_MUTATIONS
 from scripts.training_multilabel_mutations import TRAINING_MULTILABEL_MUTATIONS
 from scripts.training_mutations import TRAINING_MUTATIONS
+from scripts.training_source_mutations import TRAINING_SOURCE_MUTATIONS
 from scripts.training_text_mutations import TRAINING_TEXT_MUTATIONS
 
 FEATURE_MUTATIONS = (
@@ -71,6 +72,7 @@ FEATURE_MUTATIONS = (
     *HF_TRAINING_MUTATIONS,
     *TRAINING_MULTILABEL_MUTATIONS,
     *TRAINING_TEXT_MUTATIONS,
+    *TRAINING_SOURCE_MUTATIONS,
     *MEDIA_MUTATIONS,
     *PII_MUTATIONS,
     *TEXT_DEDUP_MUTATIONS,

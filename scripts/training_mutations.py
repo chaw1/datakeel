@@ -7,6 +7,41 @@ from scripts.mutation_models import Mutation
 
 TRAINING_MUTATIONS = (
     Mutation(
+        name="training-coco-exif-orientation-guard-omitted",
+        path="training/export_detection.py",
+        before=(
+            "for ordinal, item in enumerate(selected, 1):\n            validate_orientation(item)"
+        ),
+        after="for ordinal, item in enumerate(selected, 1):\n            pass",
+        case=(
+            "tests/training/test_export_orientation.py::"
+            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-yolo-exif-orientation-guard-omitted",
+        path="training/export_detection.py",
+        before='validate_image_extension(item, "yolo")\n        validate_orientation(item)',
+        after='validate_image_extension(item, "yolo")\n        pass',
+        case=(
+            "tests/training/test_export_orientation.py::"
+            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-shared-exif-orientation-guard-omitted",
+        path="training/export_common.py",
+        before="if image.getexif().get(274) not in (None, 1):",
+        after="if False:",
+        case=(
+            "tests/training/test_export_orientation.py::"
+            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="training-loader-extension-validation-omitted",
         path="training/export_common.py",
         before="if suffix not in supported:",
@@ -115,6 +150,50 @@ TRAINING_MUTATIONS = (
         case=(
             "tests/training/test_primary_labels.py::"
             "test_primary_label_order_is_canonical_and_full_annotations_are_preserved"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-action-archive-suffix-validation-omitted",
+        path="actions/parameters.py",
+        before="self.format in TRAINING_FORMATS",
+        after="False and self.format in TRAINING_FORMATS",
+        case=(
+            "tests/training/test_archive_suffixes.py::"
+            "test_training_destination_rejects_unknown_suffix_before_action"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-writer-archive-suffix-validation-omitted",
+        path="training/export_common.py",
+        before="if not output.name.endswith(TRAINING_ARCHIVE_SUFFIXES):",
+        after="if False:",
+        case=(
+            "tests/training/test_archive_suffixes.py::"
+            "test_direct_archive_writer_rejects_unknown_suffix_without_creating_file"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-gzip-archive-written-as-tar",
+        path="training/export_common.py",
+        before='if output.name.endswith((".tar.gz", ".tgz"))',
+        after="if False",
+        case=(
+            "tests/training/test_archive_suffixes.py::"
+            "test_archive_compression_matches_suffix_and_remains_deterministic"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-coco-file-name-loses-archive-root-prefix",
+        path="training/export_detection.py",
+        before='relative = f"images/{split}/{filename(item)}"',
+        after='relative = f"{split}/{filename(item)}"',
+        case=(
+            "tests/training/test_export.py::"
+            "test_coco_standard_documents_roundtrip_absolute_boxes_and_empty_images"
         ),
         runner="pytest",
     ),

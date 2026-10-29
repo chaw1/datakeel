@@ -10063,6 +10063,11 @@ export interface components {
              */
             source: "generated" | "directory";
             /**
+             * @description Annotation labels to balance; all preserves the original policy.
+             * @default all
+             */
+            stratification_source: components["schemas"]["StratificationSource"];
+            /**
              * Stratify
              * @description Use every label in iterative multilabel stratification.
              * @default true
@@ -10301,6 +10306,8 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** @enum {string} */
+        StratificationSource: "all" | "classification" | "detection" | "spans";
         /**
          * TabularAssessment
          * @description Carry all profiled file evidence between scoring and report assembly.

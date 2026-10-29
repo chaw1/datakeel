@@ -35,12 +35,15 @@ def _build(
     dataset_id: str, version_id: str, request: SplitRequest, samples: tuple[TrainingSample, ...]
 ) -> SplitSet:
     members = split_samples(samples, request)
+    policy = request.model_dump(mode="json")
+    if request.stratification_source == "all":
+        policy.pop("stratification_source")
     identity = json.dumps(
         [
             dataset_id,
             version_id,
             SPLIT_ALGORITHM_VERSION,
-            request.model_dump(mode="json"),
+            policy,
             [member.model_dump(mode="json") for member in members],
         ],
         sort_keys=True,

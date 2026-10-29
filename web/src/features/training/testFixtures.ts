@@ -9,6 +9,7 @@ export const splitSet: SplitSet = {
     ratios: { train: 0.8, val: 0.1, test: 0.1 },
     seed: 42,
     stratify: true,
+    stratification_source: "all",
     group_field: "batch",
     avoid_leakage: true,
     image_threshold: 8,

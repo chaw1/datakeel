@@ -22,6 +22,7 @@ from datakeel.training.export_common import (
     filename,
     json_text,
     validate_image_extension,
+    validate_orientation,
 )
 
 
@@ -52,6 +53,7 @@ def write_coco(export: TrainingExport, directory: Path) -> dict[str, str]:
         images: list[CocoImage] = []
         annotations: list[CocoBox] = []
         for ordinal, item in enumerate(selected, 1):
+            validate_orientation(item)
             width, height = dimensions(item)
             relative = f"images/{split}/{filename(item)}"
             paths[item.file.id] = relative
@@ -99,6 +101,7 @@ def write_yolo(export: TrainingExport, directory: Path) -> dict[str, str]:
         (directory / "labels" / split).mkdir(parents=True, exist_ok=True)
     for item in export.items:
         validate_image_extension(item, "yolo")
+        validate_orientation(item)
         width, height = dimensions(item)
         name = filename(item)
         relative = f"images/{item.split}/{name}"

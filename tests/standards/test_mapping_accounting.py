@@ -154,14 +154,44 @@ def test_date_time_qualifiers_remain_mapping_candidates() -> None:
         ("start_time", "start_date"),
         ("order_date", "order_time"),
         ("start_date", "start_time"),
-        ("invoice_cycle", "invoice_date"),
-        ("invoice_status", "invoice_time"),
     ):
         result = _suggest(observed, _single_field_contract(expected))
         assert [item.standard_code for item in result.candidates] == [expected], (
             observed,
             expected,
         )
+    for observed, expected in (
+        ("invoice_cycle", "invoice_date"),
+        ("invoice_status", "invoice_time"),
+    ):
+        assert not _suggest(observed, _single_field_contract(expected)).candidates
+
+
+def test_shipped_context_groups_preserve_date_time_and_block_status_cycle(
+    contract: StandardsContract,
+) -> None:
+    """The real contract retains date/time recall while incompatible qualifiers abstain."""
+    for name in ("order_status", "订单周期"):
+        assert "order_date" not in {
+            item.standard_code for item in _suggest(name, contract).candidates
+        }
+    assert "order_date" in {
+        item.standard_code for item in _suggest("order_time", contract).candidates
+    }
+    assert "start_date" in {
+        item.standard_code for item in _suggest("start_time", contract).candidates
+    }
+
+
+def test_context_group_separation_cannot_turn_status_or_cycle_into_dates() -> None:
+    """Every explicitly different contextual group is incompatible in both directions."""
+    for observed in ("amount", "cycle", "status", "date", "time"):
+        for expected in ("amount", "cycle", "status", "date", "time"):
+            if observed == expected or {observed, expected} == {"date", "time"}:
+                continue
+            assert not _suggest(
+                "order_" + observed, _single_field_contract("order_" + expected)
+            ).candidates
 
 
 @pytest.mark.parametrize(

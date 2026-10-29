@@ -17,6 +17,11 @@ export const trainingEn = {
   trainingTest: "Test",
   trainingSeed: "Random seed",
   trainingStratify: "Balance all labels across sets",
+  trainingStratificationSource: "Annotation labels to balance",
+  trainingStratificationAll: "All annotation kinds (default)",
+  trainingStratificationClassification: "Classification labels",
+  trainingStratificationDetection: "Detection box categories",
+  trainingStratificationSpans: "Text span categories",
   trainingGroup: "Group metadata field",
   trainingGroupHint: "For example, video_id or collection_batch",
   trainingAvoidLeakage: "Keep duplicates and related groups together",
@@ -38,6 +43,8 @@ export const trainingEn = {
   trainingBefore: "Comparison split",
   trainingAfter: "Selected split",
   trainingSummary: "{count} samples · seed {seed}",
+  trainingEmptyRequestedSet:
+    "A set with a positive requested ratio is empty. Explicit groups and duplicate constraints that are enabled take priority over ratio targets; small sample counts and integer quotas can also leave sets empty. Inspect the counts and preview another seed or grouping policy. This result does not prove that no other split is possible.",
   trainingImmutableHint:
     "Saved membership and configuration are immutable and pinned to the source version.",
   trainingConfig: "Saved configuration",

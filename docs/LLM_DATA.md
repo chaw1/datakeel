@@ -128,3 +128,15 @@ uv run datakeel training-quality DATASET_ID --version-id VERSION_ID
 ```
 
 The CLI and discoverable Agent read tool `get_training_quality` answer what is wrong with a dataset using actual rule observations. They never publish cleaned files. If no saved report exists, the read path can compute local findings without changing dataset versions. A report describes rule evidence; it does not establish that the training data is correct, legally usable or complete.
+
+Credential assignments recognize English labels (including password, passwd, pwd, api_key, secret and token) and Chinese labels (密码、口令、密钥、令牌、访问密钥、访问令牌), with ASCII/full-width colons, equals signs, 是 or 为. The 是/为 separators also accept an optional ASCII/full-width colon, with surrounding whitespace retained. Values of at least eight characters require a letter or digit; punctuation-only or empty assignments are ignored. Complete bare ASCII tokens, including password punctuation, are masked before adjacent Chinese prose. Quote values containing whitespace or Unicode text. Typed credential fields use the same labels. Detection is local and never validates a credential against a service.
+
+Credential URLs stop before CJK prose and Chinese punctuation after the userinfo; the complete username/password remains covered even when it contains Unicode or punctuation. Adjacent instructions and quotation marks are retained. Label-like usernames inside a URL are not interpreted as separate credential assignments; credentials after the URL are still checked independently.
+
+The `scheme://userinfo@` prefix is always redacted even if the host is empty or starts with CJK text. CJK host text remains outside the redacted span, using the same boundary as adjacent prose.
+
+Bare credential values and credential URL hosts/paths share a prose-punctuation stop set, including full-width parentheses `（）`, ellipses `…` and em dashes `—`. These marks are retained beside a replacement. Quoted values and URL userinfo may contain these marks and are still redacted completely.
+
+Phone candidates require complete digit boundaries. Mainland 11-digit mobile numbers accept +86/0086 and spaces or hyphens; landlines require an area-code separator or paired ASCII/full-width parentheses around a 0xx/0xxx area code followed by a 7–8 digit subscriber number. Parenthesized North American area codes accept seven-digit subscriber numbers, including 3-4 grouping. Spaces or hyphens may follow the closing parenthesis. Explicit + international numbers retain the existing 8–15 digit bounds. Other long bare numbers, dates, decimal amounts, versions, postal codes and percentages are not inferred to be phones.
+
+Existing typed redaction placeholders are not reported again. Nested surrounding brackets are retained regardless of their ordering. Overlapping findings cover their complete combined span, so a credential URL crossing a labelled password cannot leave either credential partly visible.

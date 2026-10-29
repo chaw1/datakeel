@@ -95,6 +95,11 @@ def _text_pairs(samples: tuple[TrainingSample, ...], threshold: int) -> Iterator
     ]
     comparison = compare_hashes([value for _, value in values], threshold=threshold, mode="exact")
     for left, right, distance in comparison.pairs:
+        left_sample, right_sample = samples[values[left][0]], samples[values[right][0]]
+        if left_sample.file.sha256 and left_sample.file.sha256 == right_sample.file.sha256:
+            continue
+        if not _text_confirmation(left_sample, right_sample):
+            continue
         yield (
             values[left][0],
             values[right][0],
@@ -105,6 +110,17 @@ def _text_pairs(samples: tuple[TrainingSample, ...], threshold: int) -> Iterator
                 "Unicode NFKC/casefold, whitespace and punctuation removed"
             ),
         )
+
+
+def _text_confirmation(left: TrainingSample, right: TrainingSample) -> bool:
+    return not (
+        left.text_template_hash is not None
+        and right.text_template_hash is not None
+        and left.text_content_hash is not None
+        and right.text_content_hash is not None
+        and left.text_template_hash == right.text_template_hash
+        and left.text_content_hash != right.text_content_hash
+    )
 
 
 def leakage_report(samples: tuple[TrainingSample, ...], split: SplitSet) -> LeakageReport:

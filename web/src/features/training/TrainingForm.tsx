@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
+import { TrainingStratificationSource } from "./TrainingStratificationSource";
+
 import type { SplitRequest } from "../../api/training";
 import type { SubmitEvent } from "react";
 
@@ -25,6 +27,8 @@ export function TrainingForm({
   });
   const [seed, setSeed] = useState("42");
   const [stratify, setStratify] = useState(true);
+  const [stratificationSource, setStratificationSource] =
+    useState<SplitRequest["stratification_source"]>("all");
   const [group, setGroup] = useState("");
   const [avoidLeakage, setAvoidLeakage] = useState(true);
   const [imageThreshold, setImageThreshold] = useState("8");
@@ -52,6 +56,7 @@ export function TrainingForm({
               },
         seed: Number(seed),
         stratify,
+        stratification_source: stratificationSource,
         group_field: group.trim() || null,
         avoid_leakage: avoidLeakage,
         image_threshold: Number(imageThreshold),
@@ -77,6 +82,7 @@ export function TrainingForm({
       <label>
         {t("trainingSource")}
         <select
+          aria-label={t("trainingSource")}
           value={source}
           onChange={(event) => {
             setSource(
@@ -154,6 +160,11 @@ export function TrainingForm({
         />
         {t("trainingStratify")}
       </label>
+      <TrainingStratificationSource
+        value={stratificationSource}
+        disabled={source === "directory" || !stratify}
+        onChange={setStratificationSource}
+      />
       <label className="training-check">
         <input
           type="checkbox"

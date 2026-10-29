@@ -6,6 +6,7 @@
 import re
 from decimal import Decimal, InvalidOperation
 
+from datakeel.datasheets.number_labels import state_predicate
 from datakeel.datasheets.number_words import written_number_spans
 
 # A reading is a value and its unit class: "percent", "count:<object>", "bytes", "score", "ratio",
@@ -101,7 +102,7 @@ def _counted_object(text: str) -> str | None:
     ]
     if matches:
         for end, name in sorted(matches):
-            if _POST_COUNT.match(phrase[end:].strip()):
+            if _POST_COUNT.match(phrase[end:].strip()) or state_predicate(phrase[end:].strip()):
                 return f"count:{name}"
         end, name = max(matches)
         # Modifiers may precede the head, but an unrelated following noun changes it.
