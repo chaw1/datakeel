@@ -3,7 +3,7 @@ export const trainingEn = {
   trainingDescription:
     "Inspect SFT conversations, instructions and preference pairs before creating a cleaned version.",
   trainingOffline:
-    "Local rules and statistics. No model calls. Safety findings are rule screening and require review.",
+    "Local rules and statistics. No model calls. Review findings before cleaning.",
   trainingVersion: "Source dataset version",
   trainingFormat: "Record format",
   trainingAuto: "Detect automatically",

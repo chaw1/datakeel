@@ -71,7 +71,7 @@ The cleaning policy is deterministic:
 
 - Drop malformed/oversized records, invalid conversation structure, empty required fields, over-limit records, unclosed code fences, exact/near duplicates, indistinguishable preference answers and evaluation contamination.
 - Redact detected PII/secrets in retained records with typed placeholders such as `[EMAIL]`, `[PHONE]` and `[BANK_CARD]`. A blocking issue takes precedence over redaction.
-- Keep other records. Template responses, repetition, garbling, HTML/URL residue, short answers, prompt conflicts and optional safety-word matches remain review signals; they do not by themselves remove a record.
+- Keep other records. Template responses, repetition, garbling, HTML/URL residue, short answers and prompt conflicts remain review signals; they do not by themselves remove a record.
 
 Execution rereads the frozen source and evaluation bytes, reproduces the decisions and verifies hashes before publication. It writes `.clean.jsonl` outputs into a new immutable manifest; the old version remains available. A single dry run cannot publish another version. The lineage event links the source, resulting version and complete decision ledger, retaining counts, reasons and frozen configuration. Duplicate representatives follow the frozen source/record order.
 
@@ -87,13 +87,12 @@ Execution rereads the frozen source and evaluation bytes, reproduces the decisio
 | Prompt conflicts | A shared normalized prompt with different answers is flagged separately from duplicates.                                                                                                                                                |
 | PII/secrets      | Email, mainland/international phones, checksum-valid Chinese identity numbers, Luhn-valid bank cards, IPs, recognized key/token patterns and credential-bearing URLs. Invalid checksums are not treated as valid identity/card numbers. |
 | Preference pairs | Empty chosen responses; identical/near-identical answers; ratio of chosen responses longer than rejected.                                                                                                                               |
-| Safety           | Configurable word list with minimal Chinese/English credential-theft phrases; an empty list disables it. **Rule screening**, not a safety certification or semantic assessment.                                                         |
 
 Near-duplicate candidate lookup uses eight MinHash bands, at most eight candidates per band and at most 64 candidates per incoming record. The first retained original record remains the representative; duplicate samples are bounded representative-to-record groups, not an exhaustive transitive clustering. This cap bounds work and memory, and can miss matches in dense or unusual corpora. Similar wording can also have different meaning: review findings before removing records. These rules do not establish semantic answer quality.
 
 The shared `text.pii_redact` operator keeps its existing `emails`, `phones` and `replacement` parameter schema. The default literal `replacement="[REDACTED]"` selects the new typed placeholders; any other custom replacement is used verbatim. Email/phone toggles remain effective. Table PII inference and explicit memory writes reuse the same detector and validated number checks. Memory writes preserve the established generic `[REDACTED]` label for retained-context compatibility; training cleaning keeps typed placeholders.
 
-All thresholds and word lists are frozen in each report. The HTTP `config` object accepts `format`, `max_tokens`, `near_distance`, `near_similarity`, `repetition_threshold`, `refusal_phrases`, `safety_terms`, `contamination_ngram`, `contamination_threshold`, `sample_limit` and `max_line_bytes`. The Web form exposes the commonly changed subset; use HTTP for the remaining fields. Small n-grams or relaxed thresholds can increase false positives; inspect the ledger before cleaning.
+All thresholds and word lists are frozen in each report. The HTTP `config` object accepts `format`, `max_tokens`, `near_distance`, `near_similarity`, `repetition_threshold`, `refusal_phrases`, `contamination_ngram`, `contamination_threshold`, `sample_limit` and `max_line_bytes`. The Web form exposes the commonly changed subset; use HTTP for the remaining fields. Small n-grams or relaxed thresholds can increase false positives; inspect the ledger before cleaning.
 
 ## Quality and datasheets
 

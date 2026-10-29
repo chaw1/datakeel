@@ -432,17 +432,6 @@
           "title": "Refusal Phrases",
           "type": "array"
         },
-        "safety_terms": {
-          "default": [
-            "steal credentials",
-            "\u7a83\u53d6\u51ed\u8bc1"
-          ],
-          "items": {
-            "type": "string"
-          },
-          "title": "Safety Terms",
-          "type": "array"
-        },
         "sample_limit": {
           "default": 50,
           "maximum": 200,

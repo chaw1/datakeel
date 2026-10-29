@@ -9706,14 +9706,6 @@ export interface components {
              */
             repetition_threshold: number;
             /**
-             * Safety Terms
-             * @default [
-             *       "steal credentials",
-             *       "窃取凭证"
-             *     ]
-             */
-            safety_terms: string[];
-            /**
              * Sample Limit
              * @default 50
              */

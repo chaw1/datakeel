@@ -20,7 +20,6 @@ export const trainingRun: TrainingRun = {
       contamination_ngram: 13,
       contamination_threshold: 0.2,
       refusal_phrases: [],
-      safety_terms: [],
       sample_limit: 50,
       max_line_bytes: 1048576,
     },

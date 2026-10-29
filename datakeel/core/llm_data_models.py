@@ -31,7 +31,6 @@ class TrainingConfig(BoundaryModel):
         "作为一个人工智能",
         "我无法协助",
     )
-    safety_terms: tuple[str, ...] = ("steal credentials", "窃取凭证")
     sample_limit: int = Field(default=50, ge=0, le=200)
     max_line_bytes: int = Field(default=1048576, ge=1024, le=16777216)
 

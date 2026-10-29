@@ -71,7 +71,7 @@ PYTHON
 
 - 删除坏格式、超长行、结构错误、必填内容为空、词元超限、代码块未闭合、完全或近重复、无有效区分的偏好答案及评测污染记录。
 - 其余含 PII 或密钥的记录使用 `[EMAIL]`、`[PHONE]`、`[BANK_CARD]` 等带类型占位符脱敏。存在阻断问题时优先删除。
-- 保留其他记录。模板套话、重复率、乱码、HTML/URL 残留、短答案、同题不同答和可选安全词命中只作为审阅信号，单独命中不会删除记录。
+- 保留其他记录。模板套话、重复率、乱码、HTML/URL 残留、短答案和同题不同答只作为审阅信号，单独命中不会删除记录。
 
 执行前重新读取来源与评测字节，复现决定并验证哈希，然后发布 `.clean.jsonl` 到新的不可变版本清单；旧版本保留。一次试运行只能生成一次清洗版本。血缘连接来源、结果版本与完整逐条决定清单，记录计数、原因和冻结配置。重复记录保留的代表由冻结的文件和记录顺序决定。
 
@@ -87,13 +87,12 @@ PYTHON
 | 同题不同答 | 相同规范化 prompt 配不同回答时单独标记，不直接等同重复。                                                                                         |
 | PII 与密钥 | 邮箱、中国大陆及国际电话、校验位正确的身份证、Luhn 正确的银行卡、IP、可识别的密钥/令牌与带凭证 URL。校验错误的号码不会按有效身份证或银行卡报告。 |
 | 偏好对     | chosen 为空、两答案完全或近似相同，以及 chosen 长于 rejected 的比例。                                                                            |
-| 安全       | 可配置词表，默认仅含中英窃取凭证短语，可用空表关闭。明确是**规则粗筛**，不代表安全认证或语义判断。                                               |
 
 近重复候选使用 8 个 MinHash 分带，每带最多 8 个候选，每条记录最多比较 64 个候选。保留首个可保留的原始代表；报告中的重复样例是有上限的「代表—记录」组，不是穷举的传递闭包聚类。候选上限限制了工作量与内存，也可能漏掉密集或特殊语料中的匹配。相近措辞可能表达不同含义，删除前应人工审阅；规则不保证答案的语义质量。
 
 共享 `text.pii_redact` 算子保留原有 `emails`、`phones`、`replacement` 参数 schema。默认字面值 `replacement="[REDACTED]"` 现在选择带类型占位符；其他自定义 replacement 原样使用。邮箱和电话开关仍有效。表格 PII 推断和显式记忆写入复用同一检测器及有效号码校验。记忆写入保持既有的通用 `[REDACTED]` 标签，以兼容保留上下文；训练清洗继续使用带类型占位符。
 
-报告冻结全部阈值与词表。HTTP 的 `config` 支持 `format`、`max_tokens`、`near_distance`、`near_similarity`、`repetition_threshold`、`refusal_phrases`、`safety_terms`、`contamination_ngram`、`contamination_threshold`、`sample_limit`、`max_line_bytes`。Web 暴露常用选项，其余通过 HTTP 设置。过小 n-gram 或过松阈值可能增加误报，清洗前先审阅逐条清单。
+报告冻结全部阈值与词表。HTTP 的 `config` 支持 `format`、`max_tokens`、`near_distance`、`near_similarity`、`repetition_threshold`、`refusal_phrases`、`contamination_ngram`、`contamination_threshold`、`sample_limit`、`max_line_bytes`。Web 暴露常用选项，其余通过 HTTP 设置。过小 n-gram 或过松阈值可能增加误报，清洗前先审阅逐条清单。
 
 ## 质量分与说明书
 

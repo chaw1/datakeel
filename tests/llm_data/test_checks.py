@@ -61,10 +61,9 @@ def test_answer_quality_signals(answer: str, code: str) -> None:
 def test_custom_rules_and_token_limit() -> None:
     """Phrase vocabularies and tokenizer-free bounds are frozen configuration."""
     parsed = parse_record(json.dumps({"instruction": "a" * 100, "output": "neutral coarse signal"}))
-    findings = check_record(
-        parsed, TrainingConfig(max_tokens=1, safety_terms=("coarse",), refusal_phrases=("neutral",))
-    )
-    assert {"token_limit", "safety_rule", "template_response"} <= {item.code for item in findings}
+    findings = check_record(parsed, TrainingConfig(max_tokens=1, refusal_phrases=("neutral",)))
+    assert {"token_limit", "template_response"} <= {item.code for item in findings}
+    assert "safety_rule" not in {item.code for item in findings}
     assert estimate_tokens("中文") == 2
     assert repetition_ratio("The night is clear and the stars shine in a distant sky.") < 0.1
 

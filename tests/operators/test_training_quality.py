@@ -51,7 +51,16 @@ def test_training_operator_accepts_json_word_list_parameters(tmp_path: Path) -> 
         tmp_path, "records.jsonl", '{"instruction":"Question","output":"Custom screening phrase"}\n'
     )
     result = REGISTRY["text.training_quality"].run(
-        [training], tmp_path / "output", {"safety_terms": ["screening phrase"]}
+        [training], tmp_path / "output", {"refusal_phrases": ["screening phrase"]}
     )
     report = result.files[0].metadata["training_quality"]
-    assert report["issue_counts"]["safety_rule"] == 1
+    assert report["issue_counts"]["template_response"] == 1
+    assert "safety_rule" not in report["issue_counts"]
+
+
+def test_training_operator_rejects_removed_safety_configuration(tmp_path: Path) -> None:
+    """Removed screening parameters cannot silently remain in a frozen pipeline plan."""
+    with pytest.raises(ValueError, match="Extra inputs"):
+        REGISTRY["text.training_quality"].run(
+            [], tmp_path / "output", {"safety_terms": ["screening phrase"]}
+        )

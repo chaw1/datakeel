@@ -175,8 +175,6 @@ def check_record(record: ParsedTrainingRecord, config: TrainingConfig) -> tuple[
         )
     if _HTML_URL.search(record.text):
         findings.append(issue("html_url_residue", "text", "HTML markup or URL remains in text"))
-    if any(term.casefold() in record.text.casefold() for term in config.safety_terms if term):
-        findings.append(issue("safety_rule", "text", "Configured coarse screening term matched"))
     return tuple(findings)
 
 

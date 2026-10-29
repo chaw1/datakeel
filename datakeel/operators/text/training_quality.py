@@ -16,7 +16,7 @@ from datakeel.operators.base import Operator, OperatorResult, Params, annotate, 
 class TrainingQualityParams(Params, TrainingConfig):
     """Freeze the same rule configuration at pipeline and interactive boundaries."""
 
-    @field_validator("refusal_phrases", "safety_terms", mode="before")
+    @field_validator("refusal_phrases", mode="before")
     @classmethod
     def json_word_lists(cls, value: object) -> object:
         """Accept JSON arrays while retaining strict element and numeric validation."""

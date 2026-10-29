@@ -1,8 +1,7 @@
 export const trainingZh = {
   trainingTitle: "文本数据治理",
   trainingDescription: "逐条检查 SFT 对话、指令和偏好对，审阅后清洗出新版本。",
-  trainingOffline:
-    "使用本地规则和统计，不调用模型。安全问题仅为规则粗筛，需人工复核。",
+  trainingOffline: "使用本地规则和统计，不调用模型。清洗前请人工复核检查结果。",
   trainingVersion: "来源数据集版本",
   trainingFormat: "记录格式",
   trainingAuto: "自动识别",
