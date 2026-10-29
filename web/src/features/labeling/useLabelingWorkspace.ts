@@ -7,6 +7,7 @@ import {
   getWorkbench,
 } from "../../api/production";
 
+import { correctedView } from "./model";
 import { TaskPrefetchCache } from "./session/TaskPrefetchCache";
 import {
   readWorkspaceSnapshot,
@@ -45,10 +46,14 @@ export function useLabelingWorkspace(params: URLSearchParams) {
   const [projectId, setProjectId] = useState(
     params.get("project") ?? boot?.project?.project.id ?? "",
   );
-  const [view, setView] = useState<WorkbenchView>(
-    !boot?.project || boot.project.project.workflow_tier === "personal"
-      ? "data"
-      : "tasks",
+  const [view, setView] = useState<WorkbenchView>(() =>
+    boot?.project
+      ? correctedView(
+          "data",
+          boot.project.project.workflow_tier === "personal",
+          boot.project.effective_scopes,
+        )
+      : "data",
   );
   const [project, setProject] = useState<ProjectWorkbench | null>(
     boot?.project ?? null,
@@ -163,16 +168,12 @@ export function useLabelingWorkspace(params: URLSearchParams) {
         ) {
           setProject(data);
           setError("");
-          if (data.project.workflow_tier !== "personal" && view === "data")
-            setView(
-              data.effective_scopes.scopes.includes("production:annotate") ||
-                data.effective_scopes.scopes.includes("*") ||
-                data.effective_scopes.zero_users
-                ? "tasks"
-                : data.effective_scopes.scopes.includes("production:review")
-                  ? "reviews"
-                  : "cockpit",
-            );
+          const usable = correctedView(
+            view,
+            data.project.workflow_tier === "personal",
+            data.effective_scopes,
+          );
+          if (usable !== view) setView(usable);
         }
       })
       .catch((reason: unknown) => {

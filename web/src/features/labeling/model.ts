@@ -15,6 +15,37 @@ export function allowed(scopes: EffectiveScopes, scope: string) {
     scopes.scopes.includes(scope)
   );
 }
+export const viewMessages: Record<WorkbenchView, MessageKey> = {
+  data: "wbMyData",
+  tasks: "wbMyTasks",
+  reviews: "wbReviewQueue",
+  cockpit: "wbCockpit",
+};
+/** Role views the navigation offers, in display order; the first is the landing view. */
+export function workbenchViews(
+  personal: boolean,
+  scopes: EffectiveScopes,
+): WorkbenchView[] {
+  if (personal) return ["data"];
+  const views: WorkbenchView[] = [];
+  if (allowed(scopes, "production:annotate")) views.push("tasks");
+  if (allowed(scopes, "production:review")) views.push("reviews");
+  if (
+    allowed(scopes, "production:manage") ||
+    allowed(scopes, "production:finalize")
+  )
+    views.push("cockpit");
+  return views;
+}
+/** Keep a usable view; a restored or stale one outside the navigation becomes the first allowed. */
+export function correctedView(
+  view: WorkbenchView,
+  personal: boolean,
+  scopes: EffectiveScopes,
+): WorkbenchView {
+  const views = workbenchViews(personal, scopes);
+  return views.includes(view) ? view : (views[0] ?? "cockpit");
+}
 export const stateMessages: Record<ProductionTask["state"], MessageKey> = {
   pending: "wbPending",
   in_progress: "wbInProgress",

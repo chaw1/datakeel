@@ -2,7 +2,11 @@ import { useState } from "react";
 
 import { mutateProduction, actionDetails } from "../features/labeling/actions";
 import { FinalizationPanel } from "../features/labeling/FinalizationPanel";
-import { allowed } from "../features/labeling/model";
+import {
+  allowed,
+  viewMessages,
+  workbenchViews,
+} from "../features/labeling/model";
 import { ProjectCockpit } from "../features/labeling/ProjectCockpit";
 import { TaskList } from "../features/labeling/TaskList";
 import { TaskSession } from "../features/labeling/TaskSession";
@@ -134,20 +138,10 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
             <>
               <p className="muted">{t("wbActor", { actor: index.actor })}</p>
               <nav className="wb-role-nav" aria-label={t("wbNav")}>
-                {(personal
-                  ? ([["data", "wbMyData"]] as const)
-                  : [
-                      ...(can("production:annotate")
-                        ? [["tasks", "wbMyTasks"] as const]
-                        : []),
-                      ...(can("production:review")
-                        ? [["reviews", "wbReviewQueue"] as const]
-                        : []),
-                      ...(can("production:manage") || can("production:finalize")
-                        ? [["cockpit", "wbCockpit"] as const]
-                        : []),
-                    ]
-                ).map(([id, label]) => (
+                {(personal || workspace.verified
+                  ? workbenchViews(personal, project.effective_scopes)
+                  : []
+                ).map((id) => (
                   <button
                     type="button"
                     key={id}
@@ -156,7 +150,7 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                       void workspace.selectView(id);
                     }}
                   >
-                    {t(label)}
+                    {t(viewMessages[id])}
                   </button>
                 ))}
               </nav>

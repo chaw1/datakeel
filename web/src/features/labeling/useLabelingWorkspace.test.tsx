@@ -141,6 +141,80 @@ it("restores the same tab's offline task and keeps syncing disabled until identi
   expect(getWorkbench).toHaveBeenCalledTimes(2);
 });
 
+it.each([
+  [["production:review", "production:claim"], "reviews", "review"],
+  [["production:manage", "production:finalize"], "cockpit", "all"],
+  [["production:annotate", "production:review"], "tasks", "mine"],
+] as const)(
+  "restores a group snapshot with scopes %j into its first navigable view",
+  async (scopes, expected, request) => {
+    const group = {
+      ...labelingProject,
+      project: { ...labelingProject.project, workflow_tier: "group" as const },
+      effective_scopes: {
+        actor: "local",
+        zero_users: false,
+        scopes: [...scopes],
+      },
+    };
+    expect(
+      writeWorkspaceSnapshot({
+        index: labelingIndex,
+        project: group,
+        task: null,
+      }),
+    ).toBe(true);
+    vi.mocked(getProjectWorkbench).mockResolvedValue(group);
+    const { result } = renderHook(() =>
+      useLabelingWorkspace(new URLSearchParams("project=project")),
+    );
+    expect(result.current.view).toBe(expected);
+    await waitFor(() => {
+      expect(result.current.project).not.toBeNull();
+    });
+    expect(result.current.view).toBe(expected);
+    expect(getProjectWorkbench).toHaveBeenLastCalledWith(
+      "project",
+      expect.objectContaining({ view: request }),
+    );
+  },
+);
+
+it("corrects a stale view when fresh scopes no longer include it", async () => {
+  const reviewer = {
+    ...labelingProject,
+    project: { ...labelingProject.project, workflow_tier: "group" as const },
+    effective_scopes: {
+      actor: "local",
+      zero_users: false,
+      scopes: ["production:annotate", "production:review"],
+    },
+  };
+  vi.mocked(getProjectWorkbench).mockResolvedValue(reviewer);
+  const { result } = renderHook(() =>
+    useLabelingWorkspace(new URLSearchParams("project=project")),
+  );
+  await waitFor(() => {
+    expect(result.current.view).toBe("tasks");
+  });
+  await act(async () => {
+    await result.current.selectView("reviews");
+  });
+  vi.mocked(getProjectWorkbench).mockResolvedValue({
+    ...reviewer,
+    effective_scopes: {
+      ...reviewer.effective_scopes,
+      scopes: ["production:annotate"],
+    },
+  });
+  act(() => {
+    result.current.changed();
+  });
+  await waitFor(() => {
+    expect(result.current.view).toBe("tasks");
+  });
+});
+
 it("sends package filtering to the server before paging and resets the cursor when it changes", async () => {
   vi.mocked(getProjectWorkbench).mockResolvedValue({
     ...labelingProject,
