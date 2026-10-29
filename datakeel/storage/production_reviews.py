@@ -23,6 +23,9 @@ from datakeel.storage.production_tasks import (
     transition_task,
 )
 
+# Reopening these states sends finished work back, which is one rework round.
+REWORK_STATES = frozenset({"submitted", "in_review", "approved"})
+
 
 def submit_task(session: Session, params: SubmitTaskParams, actor: str) -> ProductionTask:
     """Approve personal work automatically, or submit the current group revision for review."""
@@ -95,14 +98,20 @@ def review_task(session: Session, params: ReviewTaskParams, actor: str) -> Revie
 
 
 def reopen_task(session: Session, params: ReopenTaskParams) -> ProductionTask:
-    """Reopen unfinalized work while retaining its prior revision, review and assignment history."""
+    """Return submitted or approved work for rework; reopening editable work changes nothing.
+
+    Only work that was submitted or approved and is sent back counts as a rework round, as in
+    design section 5. A pending or in-progress task is already open, so its round, state,
+    assignment and revisions stay as they are; the action audit still records the request.
+    """
     task = require_task(session, params.task_id)
     require_mutable_project(session, task.project_id)
     if task.state == "finalized":
         message = "Finalized tasks cannot be reopened"
         raise ConflictError(message)
-    finish_assignment(session, task.id, "review")
-    task.round += 1
-    task.approved_revision_id = None
-    transition_task(session, task, "pending")
+    if task.state in REWORK_STATES:
+        finish_assignment(session, task.id, "review")
+        task.round += 1
+        task.approved_revision_id = None
+        transition_task(session, task, "pending")
     return task_view(task)
