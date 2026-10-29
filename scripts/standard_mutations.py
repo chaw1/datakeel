@@ -7,6 +7,17 @@ from scripts.mutation_models import Mutation
 
 STANDARD_MUTATIONS = (
     Mutation(
+        name="standards-chinese-cycle-context",
+        path="standards/names.py",
+        before='"周期": "cycle",',
+        after='"周期": "period",',
+        case=(
+            "tests/standards/test_mapping_accounting.py::"
+            "test_billing_cycle_abstains_from_amount_but_reaches_a_custom_cycle"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="standards-date-time-context-recall",
         path="standards/matching.py",
         before='        and "amount" in observed_context | expected_context\n',

@@ -78,6 +78,7 @@ _CHINESE: dict[str, str] = {
     "类型": "type",
     "日期": "date",
     "时间": "time",
+    "周期": "cycle",
     "金额": "amount",
     "数量": "quantity",
     "区域": "region",

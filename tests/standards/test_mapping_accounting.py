@@ -106,7 +106,8 @@ def test_billing_cycle_abstains_from_amount_but_reaches_a_custom_cycle(
     contract: StandardsContract,
 ) -> None:
     """An invoice synonym does not turn an explicit billing cycle into a money amount."""
-    assert not _suggest("billingCycle", contract).candidates
+    for name in ("billingCycle", "账单周期"):
+        assert not _suggest(name, contract).candidates
     cycle = FieldStandard(
         code="invoice_cycle",
         name_zh="开票周期",
@@ -120,8 +121,15 @@ def test_billing_cycle_abstains_from_amount_but_reaches_a_custom_cycle(
         code_lists=contract.code_lists,
         synonyms=contract.synonyms,
     )
-    result = _suggest("billingCycle", custom)
-    assert [candidate.standard_code for candidate in result.candidates] == ["invoice_cycle"]
+    for name in ("billingCycle", "账单周期"):
+        result = _suggest(name, custom)
+        assert [candidate.standard_code for candidate in result.candidates] == ["invoice_cycle"]
+
+
+def test_chinese_cycle_qualifier_preserves_business_context() -> None:
+    """The shared cycle word normalizes consistently beyond a single accounting label."""
+    assert name_tokens("账单周期") == frozenset({"invoice", "cycle"})
+    assert name_tokens("订单周期") == frozenset({"order", "cycle"})
 
 
 def _single_field_contract(code: str) -> StandardsContract:
