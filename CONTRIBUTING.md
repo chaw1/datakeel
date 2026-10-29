@@ -53,9 +53,44 @@ For the same extended checks used in CI, run:
 bash scripts/ci-check.sh
 ```
 
-This also exercises README commands and mutation tests. SQLite is the default. To repeat the gate on PostgreSQL, set `DATAKEEL_TEST_DATABASE_URL` to a fresh local database you own; tests create and remove only their isolated schemas. Never use a shared or production database for tests.
+This also exercises README commands and mutation tests. SQLite is the default. Each worker
+migrates one empty source; each `db` fixture receives a complete SQLite backup or a fresh
+PostgreSQL database cloned from that worker's private source, retaining constraints,
+functions and triggers. Each test also has its own home directory. Copies are cleaned up
+after the test, and sources after the worker session.
 
-该入口还执行 README 命令和变异测试。默认使用 SQLite；PostgreSQL 验证时将 `DATAKEEL_TEST_DATABASE_URL` 指向自己新建的本地测试库，测试仅创建和清理各自隔离的 schema。不要使用共享库或生产库跑测试。
+To repeat the gate on PostgreSQL, set `DATAKEEL_TEST_DATABASE_URL` to a fresh local database
+you own. The fixture accepts only `localhost` or `127.0.0.1`. The test role needs `CREATEDB`
+and permission to clone its owned templates. UUID database names separate test copies;
+their copied schema names may be identical because the databases are independent.
+Cleanup drops only databases recorded as created by the fixture, without `FORCE` or
+terminating other sessions. Migration tests using `unmigrated_db` retain the original
+per-test empty-schema path and remove only that schema. Never use a shared or production
+database for tests.
+
+The Python and mutation steps use bounded parallel workers. Set `DATAKEEL_TEST_WORKERS=1`
+for serial execution or a positive integer to choose concurrency. The full pytest wrapper
+uses `loadgroup` and explicitly loads its grouping plugin in workers: only the real sandbox
+security test file shares a group to reuse its Docker fixture; other tests are dispatched
+individually. This scheduling marker does not alter `-m 'not integration'` or test
+selection. See the bilingual [test execution guide](docs/TEST_SPEED.md) for scheduling,
+isolation and measurement details.
+
+Python 测试和变异步骤默认有限并行；`DATAKEEL_TEST_WORKERS=1` 切换串行，正整数指定并行数。
+完整 pytest 入口采用 `loadgroup` 并显式为 worker 加载分组插件，只把真实沙箱安全测试文件
+聚为一组以复用 Docker 夹具，其它用例独立派发。调度 marker 不改变
+`-m 'not integration'` 或用例选择。
+调度、隔离和测量方法见[测试执行指南](docs/TEST_SPEED.md)。
+
+该入口还执行 README 命令和变异测试。默认使用 SQLite。每个 worker 迁移一个空模板，
+每个 `db` 夹具得到完整 SQLite backup 副本，或从该 worker 私有模板克隆的独立 PostgreSQL
+数据库，保留约束、函数与触发器。每个用例也有独立 home；用例结束清理副本，会话结束清理模板。
+
+PostgreSQL 验证时将 `DATAKEEL_TEST_DATABASE_URL` 指向自己新建的本地测试库，夹具仅接受
+`localhost` 或 `127.0.0.1`。测试角色须有 `CREATEDB` 及克隆自有模板的权限。UUID 库名隔离
+用例副本；独立数据库中的 schema 名可以相同。清理只删除夹具记录为自己创建的数据库，
+不使用 `FORCE` 或终止其它会话。`unmigrated_db` 迁移测试保留原有按用例创建空 schema 的路径，
+只清理对应 schema。不要使用共享库或生产库跑测试。
 
 ## Capacity workloads / 容量压测
 
