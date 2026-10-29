@@ -6,11 +6,13 @@ import { useI18n } from "../../../i18n/useI18n";
 import { arrowDelta, clamp, isTyping, movePoints } from "./geometry";
 import { ImageCanvas } from "./ImageCanvas";
 import { KeyboardRegion } from "./KeyboardRegion";
-import { PolygonControls } from "./PolygonControls";
+import { PolygonToolbar } from "./PolygonControls";
+import { PolygonDetails } from "./PolygonDetails";
 import { PolygonShape } from "./PolygonShape";
 import { shortcutLabel } from "./shortcuts";
 import { useCanvasTokens } from "./useCanvasTokens";
 
+import type { PolygonControlProps } from "./PolygonControls";
 import type { AnnotationPolygon, EditorProps, Point } from "./types";
 
 export function PolygonEditor(props: EditorProps) {
@@ -81,6 +83,39 @@ export function PolygonEditor(props: EditorProps) {
     setCursor(point);
     setDraft((points) => [...(points ?? []), point]);
   }
+  const controls: PolygonControlProps = {
+    labels: labels,
+    polygons: polygons,
+    selected: selected,
+    category: category,
+    pointIndex: pointIndex,
+    cursor: cursor,
+    draft: draft,
+    width: width,
+    height: height,
+    readOnly: readOnly,
+    onSelect: (index) => {
+      setSelected(index);
+      setPointIndex(0);
+    },
+    onPoint: setPointIndex,
+    onLabel: (next) => {
+      setLabel(next);
+      if (current) update({ ...current, category: next });
+    },
+    onCursor: setCursor,
+    onStart: start,
+    onAddPoint: () => {
+      addPoint();
+    },
+    onFinish: finish,
+    onCancel: () => {
+      setDraft(null);
+    },
+    onDelete: remove,
+    onDeletePoint: removePoint,
+    onChange: update,
+  };
   return (
     <KeyboardRegion
       label={t("wbEditorPolygon")}
@@ -162,39 +197,7 @@ export function PolygonEditor(props: EditorProps) {
     >
       <p className="muted">{t("wbEditorPolygonHint")}</p>
       {labels.length === 0 && <p role="status">{t("wbEditorNoLabels")}</p>}
-      <PolygonControls
-        labels={labels}
-        polygons={polygons}
-        selected={selected}
-        category={category}
-        pointIndex={pointIndex}
-        cursor={cursor}
-        draft={draft}
-        width={width}
-        height={height}
-        readOnly={readOnly}
-        onSelect={(index) => {
-          setSelected(index);
-          setPointIndex(0);
-        }}
-        onPoint={setPointIndex}
-        onLabel={(next) => {
-          setLabel(next);
-          if (current) update({ ...current, category: next });
-        }}
-        onCursor={setCursor}
-        onStart={start}
-        onAddPoint={() => {
-          addPoint();
-        }}
-        onFinish={finish}
-        onCancel={() => {
-          setDraft(null);
-        }}
-        onDelete={remove}
-        onDeletePoint={removePoint}
-        onChange={update}
-      />
+      <PolygonToolbar {...controls} />
       <ImageCanvas
         width={width}
         height={height}
@@ -252,6 +255,7 @@ export function PolygonEditor(props: EditorProps) {
           </>
         )}
       </ImageCanvas>
+      <PolygonDetails {...controls} />
     </KeyboardRegion>
   );
 }

@@ -188,6 +188,35 @@ it("draws and edits polygon vertices entirely through keyboard events", () => {
   fireEvent.keyDown(editor, { key: "ArrowRight" });
   expect(annotation().polygons?.[0]?.points[0]).toEqual({ x: 1011, y: 750 });
 });
+it("keeps everything above the polygon canvas unchanged while drawing", () => {
+  mount("polygon");
+  const editor = screen.getByRole("region", { name: "Polygons" });
+  const canvas = screen.getByRole("application", { name: "Annotation canvas" });
+  // Rows rendered before the canvas, at each level that contains it.
+  const above = () => {
+    const rows: string[] = [];
+    for (let parent = canvas.parentElement; parent;) {
+      for (const child of Array.from(parent.children)) {
+        if (child.contains(canvas)) break;
+        rows.push(`${child.tagName}.${child.className}`);
+      }
+      parent = parent === editor ? null : parent.parentElement;
+    }
+    return rows;
+  };
+  const before = above();
+  expect(before.length).toBeGreaterThan(0);
+  fireEvent.keyDown(editor, { key: "p" });
+  fireEvent.keyDown(editor, { key: " " });
+  const addPoint = screen.getByRole("button", { name: "Add point (Space)" });
+  expect(
+    canvas.compareDocumentPosition(addPoint) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  for (const key of [" ", "ArrowDown", " ", "Enter"])
+    fireEvent.keyDown(editor, { key });
+  expect(screen.getByRole("spinbutton", { name: "Point x" })).toBeVisible();
+  expect(above()).toEqual(before);
+});
 it("labels nested Unicode selections and preserves code-point coordinates", () => {
   const { annotation } = mount("text_span", { text: "A😀中文 nested" });
   const source = screen.getByRole("textbox", {
