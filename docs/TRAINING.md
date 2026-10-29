@@ -94,6 +94,11 @@ that is a valid interchange document, not a useful zero-class training task.
 Invalid or out-of-bounds boxes are refused. ImageFolder rejects missing or multiple class
 labels. Text offsets count Unicode characters, not UTF-8 bytes or UTF-16 code units, and
 the exporter validates them against the original unnormalized text.
+ImageFolder accepts the default torchvision suffixes: `.jpg`, `.jpeg`, `.png`, `.ppm`,
+`.bmp`, `.pgm`, `.tif`, `.tiff`, `.webp`. YOLO accepts Ultralytics image suffixes:
+`.avif`, `.bmp`, `.dng`, `.heic`, `.heif`, `.jp2`, `.jpeg`, `.jpg`, `.mpo`, `.png`,
+`.tif`, `.tiff`, `.webp`. Both reject other suffixes, including GIF, instead of producing
+archives whose images the standard loader would ignore. Sources are never transcoded.
 Imported coordinates that exceed a pixel boundary only by floating-point roundoff
 (at most four ULPs of the image extent) are clamped to that boundary; real overflow is refused.
 
@@ -136,4 +141,6 @@ Prepare exports through `POST /api/actions/export_dataset/prepare` with `dataset
 request schemas and examples are in the local [API reference](http://127.0.0.1:8765/api/docs).
 
 Format references: [COCO](https://cocodataset.org/#format-data),
-[Ultralytics detection](https://docs.ultralytics.com/datasets/detect/).
+[Ultralytics detection](https://docs.ultralytics.com/datasets/detect/),
+[Ultralytics image formats](https://docs.ultralytics.com/modes/predict/#image-and-video-formats),
+[torchvision ImageFolder source](https://docs.pytorch.org/vision/stable/_modules/torchvision/datasets/folder.html).

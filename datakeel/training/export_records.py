@@ -14,6 +14,7 @@ from datakeel.training.export_common import (
     filename,
     json_text,
     source_text,
+    validate_image_extension,
 )
 
 
@@ -25,6 +26,7 @@ def write_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]
         if labels is None or len(labels) != 1:
             message = "ImageFolder requires exactly one classification label per image"
             raise ValidationError(message)
+        validate_image_extension(item, "imagefolder")
         dimensions(item)
         relative = f"{item.split}/{class_directory(labels[0])}/{filename(item)}"
         copy_source(item, directory / relative)

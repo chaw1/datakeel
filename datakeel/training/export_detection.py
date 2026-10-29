@@ -16,7 +16,13 @@ from datakeel.core.training_export_models import (
     TrainingExport,
     TrainingExportItem,
 )
-from datakeel.training.export_common import copy_source, dimensions, filename, json_text
+from datakeel.training.export_common import (
+    copy_source,
+    dimensions,
+    filename,
+    json_text,
+    validate_image_extension,
+)
 
 
 def detection_categories(items: tuple[TrainingExportItem, ...]) -> tuple[str, ...]:
@@ -92,6 +98,7 @@ def write_yolo(export: TrainingExport, directory: Path) -> dict[str, str]:
         (directory / "images" / split).mkdir(parents=True, exist_ok=True)
         (directory / "labels" / split).mkdir(parents=True, exist_ok=True)
     for item in export.items:
+        validate_image_extension(item, "yolo")
         width, height = dimensions(item)
         name = filename(item)
         relative = f"images/{item.split}/{name}"

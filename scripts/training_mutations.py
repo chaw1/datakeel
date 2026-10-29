@@ -7,6 +7,17 @@ from scripts.mutation_models import Mutation
 
 TRAINING_MUTATIONS = (
     Mutation(
+        name="training-loader-extension-validation-omitted",
+        path="training/export_common.py",
+        before="if suffix not in supported:",
+        after="if False and suffix not in supported:",
+        case=(
+            "tests/training/test_loader_extensions.py::"
+            "test_imagefolder_rejects_normally_imported_gif"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="training-distribution-erases-measurements",
         path="ontology/training_functions.py",
         before='data=value.model_dump(mode="json"),',

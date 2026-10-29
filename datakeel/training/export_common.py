@@ -10,6 +10,7 @@ import shutil
 import tarfile
 from contextlib import ExitStack
 from pathlib import Path
+from typing import Literal
 from urllib.parse import quote
 
 from PIL import Image
@@ -20,6 +21,26 @@ from datakeel.training.importers import validate_box
 
 _MAX_SUFFIX_LENGTH = 12
 _MAX_CLASS_BYTES = 200
+_IMAGEFOLDER_SUFFIXES = frozenset(
+    {".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp"}
+)
+_YOLO_SUFFIXES = frozenset(
+    {
+        ".avif",
+        ".bmp",
+        ".dng",
+        ".heic",
+        ".heif",
+        ".jp2",
+        ".jpeg",
+        ".jpg",
+        ".mpo",
+        ".png",
+        ".tif",
+        ".tiff",
+        ".webp",
+    }
+)
 
 
 def json_text(value: object) -> str:
@@ -35,6 +56,17 @@ def filename(item: TrainingExportItem) -> str:
     if not suffix or len(suffix) > _MAX_SUFFIX_LENGTH or not suffix[1:].isalnum():
         suffix = ".bin"
     return hashlib.sha256(item.file.id.encode()).hexdigest() + suffix
+
+
+def validate_image_extension(
+    item: TrainingExportItem, format_name: Literal["imagefolder", "yolo"]
+) -> None:
+    """Reject source suffixes that the selected format's standard loader would ignore."""
+    supported = _IMAGEFOLDER_SUFFIXES if format_name == "imagefolder" else _YOLO_SUFFIXES
+    suffix = Path(item.file.filename).suffix.lower()
+    if suffix not in supported:
+        message = f"{format_name} does not support source image extension {suffix or '<none>'}"
+        raise ValidationError(message)
 
 
 def class_directory(category: str) -> str:

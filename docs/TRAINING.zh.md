@@ -75,6 +75,10 @@ COCO 可以表示已审全空、无类别数据，这是合法的交换文档，
 非法、越界框拒绝导出；ImageFolder
 拒绝缺分类或多标签。文本偏移计 Unicode 字符，不计 UTF-8 字节或 UTF-16 编码单元，
 并对未归一化的原文校验范围。
+ImageFolder 接受 torchvision 默认后缀：`.jpg`、`.jpeg`、`.png`、`.ppm`、`.bmp`、
+`.pgm`、`.tif`、`.tiff`、`.webp`。YOLO 接受 Ultralytics 图片后缀：`.avif`、`.bmp`、
+`.dng`、`.heic`、`.heif`、`.jp2`、`.jpeg`、`.jpg`、`.mpo`、`.png`、`.tif`、`.tiff`、
+`.webp`。两者均明确拒绝 GIF 等其他后缀，避免标准加载器静默忽略包内图片；不做转码。
 导入坐标若仅因浮点还原误差越过像素边界，且误差不超过图像尺寸的四个 ULP，则钳回边界；
 明显越界仍拒绝。
 
@@ -110,4 +114,6 @@ API 前缀为 `/api/datasets/{dataset}/versions/{version}/training`：
 原有元数据导出格式保持兼容。完整类型定义见[本机 API 参考](http://127.0.0.1:8765/api/docs)。
 
 格式规范：[COCO](https://cocodataset.org/#format-data)、
-[Ultralytics 检测](https://docs.ultralytics.com/datasets/detect/)。
+[Ultralytics 检测](https://docs.ultralytics.com/datasets/detect/)、
+[Ultralytics 图片格式](https://docs.ultralytics.com/modes/predict/#image-and-video-formats)、
+[torchvision ImageFolder 源码](https://docs.pytorch.org/vision/stable/_modules/torchvision/datasets/folder.html)。
