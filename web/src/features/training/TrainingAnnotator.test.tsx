@@ -50,12 +50,13 @@ it("requires an author and locks the reviewed parameters while preparing", async
     "Archive filename",
   ])
     expect(screen.getByLabelText(label)).toBeDisabled();
-  await act(() => {
+  await act(async () => {
     pending.complete?.(
       new Response(
         JSON.stringify({ ...actionPlan, action_type: "export_dataset" }),
       ),
     );
+    await Promise.resolve();
   });
   await screen.findByRole("article", { name: "Action plan: export_dataset" });
   for (const label of [
