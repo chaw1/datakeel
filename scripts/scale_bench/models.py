@@ -83,6 +83,7 @@ class Config(BenchModel):
     workers: int = Field(default=8, ge=1, le=32)
     think_ms: int = Field(default=1000, ge=0, le=60_000)
     duration_seconds: float | None = Field(default=None, gt=0, le=3600)
+    virtual_users: int | None = Field(default=None, ge=1, le=200)
 
 
 class Context(BenchModel):

@@ -302,8 +302,9 @@ def run(context: Context) -> ScenarioResult:
     seconds = context.config.duration_seconds or (
         scale.duration_seconds if context.config.size == "S" else B8_SECONDS
     )
-    tasks = max(scale.tasks, scale.virtual_users * 4)
-    actors = tuple(f"annotator-{index:03d}" for index in range(scale.virtual_users))
+    users = context.config.virtual_users or scale.virtual_users
+    tasks = max(scale.tasks, users * 4)
+    actors = tuple(f"annotator-{index:03d}" for index in range(users))
     project_id = seed_project(context.db, tasks, LEASE_MINUTES)
     register_annotators(context.db, project_id, actors)
     check_resources(context)
