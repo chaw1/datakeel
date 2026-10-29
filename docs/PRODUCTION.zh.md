@@ -8,7 +8,7 @@
 
 `GET /api/ontology` 注册十四个新增对象：用户 `user`、团队 `team`、角色 `role`、技能 `skill`、标签集 `label_set`、模板 `template`、项目 `project`、任务包 `task_package`、生产任务 `production_task`、指派 `assignment`、标注修订 `annotation_revision`、审核 `review`、模型 `model`、预标注运行 `prelabel_run`。原有 worker 的 `task` 身份保持独立。全部对象使用 `AssetRef`；标签集身份带版本。
 
-项目包含任务包，包包含任务；任务关联指派、修订和审核。用户团队、角色和技能、指派人、审核目标、上一修订以及项目输入配置使用统一链接合同。通过 `GET /api/production/objects/{kind}` 读取事实投影，可按 `object_id`、`project_id`、`task_id`、`version`、`limit` 筛选。团队和技能提供增删改，技能派单留到下一阶段。
+项目包含任务包，包包含任务；任务关联指派、修订和审核。用户团队、角色和技能、指派人、审核目标、上一修订以及项目输入配置使用统一链接合同。通过 `GET /api/production/objects/{kind}` 读取事实投影，可按 `object_id`、`project_id`、`task_id`、`version`、`limit` 筛选。团队和技能提供增删改；团队档的技能派单比较的就是技能的 `level`（1–10）。
 
 ## 状态机与档位
 
@@ -27,9 +27,9 @@
 | --- | --- |
 | 个人 `personal`，默认 | 保存或导入预测后提交即通过。没有指派和审核记录，动作审计记 `SYSTEM_APPROVAL`。 |
 | 小组 `group` | 点名派单或自行抢单，提交、审核、带问题返工、原人再提交、通过。允许自标自审。 |
-| 团队 `team` | 可以升档且保留全部历史。本期不启用心跳、技能匹配、标审分离和任务包抽检验收。 |
+| 团队 `team` | 在小组档规则上，加上强制租约与心跳、按项目选的派单方式（指派、技能匹配、抢单）、严格标审分离，以及定稿前每个任务包都走 P26 抽检验收。见[团队档](#团队档)。 |
 
-`upgrade_project` 只允许向前升档。拒绝降档，因为已经发生的审核历史不能解释成早期流程。项目加入第二位参与者时，相关回执只返回一次 `suggest_review: true`，不自动升档。指派记录有租约到期时间，本期不自动续租或回收。
+`upgrade_project` 只允许向前升档。拒绝降档，因为已经发生的审核历史不能解释成早期流程。项目加入第二位参与者时，相关回执只返回一次 `suggest_review: true`，不自动升档。每条指派都记录租约到期时间，只有团队档会执行（小组档和个人档行为不变）。
 
 个人档升档时，已有人工保存、仍可编辑的任务会补上原作者的标注指派。原作者可按现有持有人校验继续保存、提交送审或释放，不需要重开任务，轮次不增加；任务状态和修订历史保持不变。无作者任务、纯模型预测和已通过任务不新增指派。保留历史所有权不会授予角色范围，仍需通过当前账号权限校验；释放后必须重新领取或被指派才能继续。
 
@@ -39,11 +39,11 @@
 
 | 动作 | 是否签批 |
 | --- | --- |
-| `create_label_set`、`split_packages`、`assign_tasks`、`claim_task`、`release_task`、`save_revision`、`submit_task`、`review_task`、`reopen_task`、`upgrade_project`、`manage_users`、`manage_skills`、`import_predictions` | 否 |
-| `publish_label_set`、`create_project`、`register_model`、`update_model`、`define_role`、`update_role`、`finalize_project` | 人工签批 |
+| `create_label_set`、`split_packages`、`assign_tasks`、`claim_task`、`release_task`、`heartbeat`、`save_revision`、`submit_task`、`review_task`、`reopen_task`、`revoke_assignment`、`configure_project`、`upgrade_project`、`manage_users`、`manage_skills`、`import_predictions` | 否 |
+| `publish_label_set`、`create_project`、`register_model`、`update_model`、`define_role`、`update_role`、`accept_package`、`finalize_project` | 人工签批 |
 | `run_prelabel` | 任务数 × 配置单价超过请求预算时签批 |
 
-模板增删改使用 `create_label_set` 的 `target: "template"` 和 `operation: "create" | "update" | "delete"`；用户和团队使用 `manage_users`，技能使用 `manage_skills`。本体动作 schema 给出字段、范围、中英文说法和例句。本期不注册 `heartbeat` 与 `accept_package`。
+模板增删改使用 `create_label_set` 的 `target: "template"` 和 `operation: "create" | "update" | "delete"`；用户和团队使用 `manage_users`，技能使用 `manage_skills`。本体动作 schema 给出字段、范围、中英文说法和例句。
 
 同一操作人、动作、请求 ID 和完全相同的输入重发，返回原计划；成功执行重发返回原 run 和回执。输入或调用方限制不同会冲突。签批前误点执行的拒绝有审计，签批后仍可执行。修正失败请求要使用新 ID。保存修订的 `previous_revision_id` 必须匹配服务端最新版，否则 HTTP 409 返回 `latest_revision`。两栈都用数据库约束禁止修订 UPDATE/DELETE，并以部分唯一索引保证一个任务同阶段只有一个有效指派。并发抢单的失败方继续选择下一条。
 
@@ -59,6 +59,24 @@
 
 MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批或执行生产计划。旧有非生产可逆动作行为保留兼容。人通过 Web 审批卡、CLI 或显式 API 请求签批和执行。
 
+## 团队档
+
+团队档是在小组档上多加的规则；对象、状态和动作都一样，小组档和个人档行为完全不变。
+
+**租约。** 领取或被指派就是一份租约，时长 `lease_minutes`（默认 10 分钟，按项目设，`configure_project` 可改）。持有人用 `heartbeat` 续租（工作台每 2 分钟发一次）。过期后持有人的所有写操作（`save_revision`、`submit_task`、`heartbeat`、`review_task`）都会明确报「租约已过期」冲突，不会悄悄成功；已被收回时错误里也会说明。回收器（reaper）跑在现有 worker 循环里，也可以手动 `datakeel production reap [--now ISO] [--limit N]`。过期的标注退回 `pending`，过期的审核退回 `submitted`；已保存的修订和修订指针都保留，下一位持有人接着改。租约只在本阶段进行中才计时：任务等审核时，标注员保留的指派不会被收回；返工退回时重新起租。每次收回在只追加表 `production_lease_releases` 里记一行，主键就是指派 ID；回收器在任务行锁下（PG 用 `FOR UPDATE SKIP LOCKED`）重读指派再决定，所以多个回收进程并发或重复跑，每份租约都只收回一次，中途崩溃重跑即可。小组档升到团队档后，开始执行已记录的到期时间。
+
+**派单。** `dispatch_strategy` 按项目设：`assign`（经理指派，禁止自领）、`skill`（经理用 `assign_tasks` 加 `strategy: "skill"` 派；自领也要够格）、`claim`（自领，默认）。三种都写同一张指派表，「一个任务同阶段只有一个有效指派」的唯一索引照常生效；每条指派用 `dispatch` 记来源（`assign`、`skill`、`claim`、`preserved`）。技能要求写明标注类型、领域和 `min_level`。某人绑定的有效技能类型和领域都匹配、等级不低于要求才算够格；等级只做门槛。在够格且有该阶段权限的人里，任务按优先级从高到低、再按任务 ID 排，每条派给本项目该阶段当前有效指派最少的人，并列取用户 ID 最小的；每派一条就把这人负载加一，所以同样输入结果完全可复现。返工只派回原标注员，审核派单跳过标过这条任务的人。`max_active_tasks`（项目设置或单次请求）限制每人同时持有的有效指派：技能批量派到上限就停，没派出的任务在 `unassigned` 里带原因列出；指名批量超上限整批拒绝；到上限再自领会被拒。
+
+**标审分离。** 团队档里，任何一轮标过这条任务的人都不能审它：当前标注员、所有人工修订的作者、所有曾持有标注指派的人都排除在外。领取审核（审核队列直接跳过）、指派审核、提交审核结论三处都检查，所以改派、事后换角色、重开都绕不过去。小组档仍允许自标自审。
+
+**抽检验收。** 一个任务包的任务全部通过后，`package_acceptance` 给出 P26 抽样预览（`method` 取 `aql` 配 `aql`，或 `ratio` 配 `ratio` 和 `acceptance_number`，另有 `seed`）；抽样单位是包里的样本，批量、样本量、抽中的样本和判定数与 P26 `annotation_qa` 抽检走同一段代码。人签 `accept_package`，对每个抽中的单位各给一条检查结果（必须恰好是抽中的那些）。不合格数不超过接收数就收；否则包里每条任务（抽没抽中都算）退回 `pending`，轮次加一，仍归原标注员。团队档定稿要求每个任务包最近一次结论是「收」，且覆盖当前的通过版本；重开再通过的任务需要重新验收。
+
+**管理与轮次。** `revoke_assignment`（范围 `production:assign`，项目经理和管理员有）把进行中的标注或审核退回队列，保留修订，并记下收回原因；任何持有人都能收回，包括还没人登记时指派给 `local` 的任务。已提交或已通过的工作改用重开。`reopen_task` 只有把已提交或已通过的工作退回才算一轮返工；重开待标或标注中的任务，轮次、状态、指派和修订都不变（设计稿第 5 节）。
+
+**只读。** `lease_status` 按到期时间列出计时中的租约，分为正常、`expiring_within_seconds`（默认 120 秒）内将到期、已过期三类，并附最近收回记录和原因。`skill_workload` 按有效技能汇总有效指派数和已完成任务数。`package_acceptance` 返回任务包状态（`in_progress`、`ready`、`accepted`、`rejected`）、进度、就绪时的抽样预览和最近一次结论。
+
+**角色。** `heartbeat`（`production:claim`）放在标注员和质检员模板；`configure_project`（`production:manage`）、`revoke_assignment`（`production:assign`）、`accept_package`（`production:accept`）放在项目经理模板；管理员拥有全部范围，验收方仍然只读。MCP 和 Agent 只能准备这些计划，不能签批或执行。
+
 ## 标签改版、预测与定稿
 
 标签集发布后该版本不可改。新版本必须给改名、删除、合并、拆分提供完整来源和目标映射；拆分必须人工处理。发布不会改写历史修订。影响数精确统计旧版本项目中每任务最新修订内受影响的分类标签、框、文本片段实例，另报受影响修订数；被后续修订替代的历史不属于迁移目标。`label_set_diff` 按当前事实重新计算，不估算。
@@ -71,7 +89,7 @@ MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批
 
 模板目前校验框、分类和文本片段，支持 `min_annotations`、`max_annotations` 规则。可以登记多边形/关键点模板身份；在对应核心内容模型实现前，保存不支持的内容会明确拒绝。
 
-定稿要求所有任务有已通过修订。同一事务冻结这些修订，写新版本的原生标注、精确标注/标签统计，复用 `import_annotations` 的事务内入口生成标准 `AnnotationBatch`，更新状态计数并记下生产项目血缘。输入版本和历史修订保持原样。
+定稿要求所有任务有已通过修订，团队档还要求每个任务包都已验收。同一事务冻结这些修订，写新版本的原生标注、精确标注/标签统计，复用 `import_annotations` 的事务内入口生成标准 `AnnotationBatch`，更新状态计数并记下生产项目血缘。输入版本和历史修订保持原样。
 
 ## CLI、API 与只读工具
 
@@ -86,7 +104,7 @@ uv run datakeel production read project_progress project.json --actor local
 
 演示生成三张图片、已发布标签集、个人项目和导入的假预测。个人档顺序为：建标签集 → 发布 → 建项目 → 切包 → 登记模型 → 导入 COCO/YOLO 预测 → 改修订 → 提交 → 定稿。小组档先登记用户、绑定项目角色，新建时设 `workflow_tier: "group"`，然后派单/抢单 → 保存 → 提交 → 领取审核/审核；返工必须带 `issues`，回到原标注员再次保存提交后通过、定稿。仅对上表要求的步骤签批。
 
-REST 使用 `POST /api/actions/{action_type}/prepare`、`GET /api/actions/plans/{id}`、`POST /api/approvals/{id}`、`POST /api/actions/{id}/execute`，决定时带回计划摘要。只读函数统一使用 `POST /api/production/functions/{name}`，也注册给 Agent/MCP：项目进度 `project_progress`、包状态 `package_status`、工作量 `annotator_workload`、返工率 `rework_rate`、一致性 `annotation_consistency`、置信度分布 `prelabel_confidence`、标签集差异 `label_set_diff`、下一条任务 `next_task`、对象投影 `production_objects`。
+REST 使用 `POST /api/actions/{action_type}/prepare`、`GET /api/actions/plans/{id}`、`POST /api/approvals/{id}`、`POST /api/actions/{id}/execute`，决定时带回计划摘要。只读函数统一使用 `POST /api/production/functions/{name}`，也注册给 Agent/MCP：项目进度 `project_progress`、包状态 `package_status`、工作量 `annotator_workload`、返工率 `rework_rate`、一致性 `annotation_consistency`、置信度分布 `prelabel_confidence`、标签集差异 `label_set_diff`、下一条任务 `next_task`、对象投影 `production_objects`，团队档另有租约状态 `lease_status`、按技能工作量 `skill_workload`、任务包验收 `package_acceptance`。
 
 一致性复用现有标注质检；置信度分布统计所有有置信度的模型修订。返工率为每个原标注员收到的返工决定数除以其全部审核决定数。
 
@@ -98,6 +116,9 @@ REST 使用 `POST /api/actions/{action_type}/prepare`、`GET /api/actions/plans/
 | 只追加修订、部分唯一指派索引 | 原地覆盖；仅应用判断 | 保留审计历史，两栈都以数据库约束处理并发。[约束实现](../datakeel/storage/production_rows.py)。 |
 | 复用动作范围的角色 | 额外授权服务或库 | 保持同一权限和审计事实源，不加运行依赖。[注册表](../datakeel/actions/registry.py)、[服务端授权](../datakeel/storage/identity_authorization.py)。 |
 | 类型化 COCO/YOLO 文本解析 | 增加格式库；读取任意服务端路径 | 延续像素坐标约定，限制输入并逐文件报告。[原有适配](../datakeel/storage/annotation_legacy.py)、[解析器](../datakeel/storage/production_prediction_parsing.py)。 |
+| 回收器放在现有 worker 里，每条指派一行收回记录，任务行锁 + `SKIP LOCKED` | 单独调度进程；每条指派一个定时器；PG advisory lock；直接删过期行 | 不加进程不加依赖，崩溃重跑安全，主键保证只收回一次。和 [Amazon SQS 可见性超时](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html)、[Kubernetes Lease](https://kubernetes.io/docs/concepts/architecture/leases/) 同一模型；[`SKIP LOCKED`](https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE) 与现有 [worker 队列](../datakeel/storage/task_queue.py)一致。[回收器](../datakeel/storage/production_reaper.py)。 |
+| 技能匹配：等级做门槛，再按当前负载最少，再按用户 ID 最小 | 等级和负载加权打分；全局最优匹配（[匈牙利算法 `linear_sum_assignment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.linear_sum_assignment.html)）；轮流派 | 门槛做法与 [MTurk 资格要求](https://docs.aws.amazon.com/AWSMechTurk/latest/AWSMturkAPI/ApiReference_QualificationRequirementDataStructureArticle.html)（`GreaterThanOrEqualTo`）一致，等级不会拿来和负载互换；「派给最闲的人」好解释、可复现、不加依赖，验收方能独立算出同样结果。[派单](../datakeel/storage/production_dispatch.py)、[规则](../datakeel/storage/production_dispatch_rules.py)。 |
+| PG 上单任务动作不再拿全表动作锁；计数在提交前按固定顺序一次写入 | 每个动作都 `LOCK TABLE`；按项目加 advisory lock；每次状态迁移当场改计数 | B8 实测：全表锁把吞吐压在每秒 13 次（保存 p95 4.4 秒）；按项目加锁对单项目同样串行。去掉全表锁后，事务中途写计数行会让一次收回多条的回收器和领取互相死锁，所以改成每个事务在提交前按排序一次写完计数，回收器每收回一条单独提交。任务行锁和指派唯一索引保证这几个动作安全。[锁](../datakeel/storage/action_locks.py)、[计数](../datakeel/storage/production_counters.py)、[容量](CAPACITY.md)。 |
 | 新版本加既有标注导入 | 另造生产专用导出格式 | 发布和说明书继续读取既有合同。[定稿](../datakeel/storage/production_finalize.py)、[标注导入](../datakeel/storage/annotation_store.py)。 |
 
 回归使用生成数据，覆盖两条流程、两栈抢单、独立只读 golden、精确迁移数、预测部分失败、只追加历史、乐观冲突与授权上限。容量验证在一万任务项目测量只读下一条和完整准备加执行的保存链。
