@@ -25,6 +25,7 @@ export async function nextTaskLatency(h) {
         return (
           session &&
           !session.querySelector(".wb-image-editor [role=status]") &&
+          !session.querySelector(".wb-image-editor [role=alert]") &&
           session.querySelector("canvas") &&
           session.querySelectorAll("select option").length > 3
         );
