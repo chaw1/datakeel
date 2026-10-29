@@ -8,7 +8,7 @@ from sqlalchemy import select
 from datakeel.core.errors import NotFoundError
 from datakeel.storage.database import Database, TaskRow
 from datakeel.storage.task_models import TaskView
-from datakeel.storage.task_queue import task_dict
+from datakeel.storage.task_views import task_dict
 
 
 def query_task(db: Database, task_id: str) -> TaskView:
