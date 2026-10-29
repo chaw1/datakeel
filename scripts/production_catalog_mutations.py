@@ -31,11 +31,22 @@ PRODUCTION_CATALOG_MUTATIONS = (
     Mutation(
         name="production-prediction-image-bounds",
         path="storage/production_prediction_parsing.py",
-        before="x + box_width > width",
+        before="x + box_width > width + BOX_BOUNDS_TOLERANCE",
         after="False",
         case=(
             "tests/storage/test_production_prediction_parsing.py::"
             "test_coco_import_reports_each_bad_image_without_losing_valid_images"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="production-prediction-edge-roundoff",
+        path="storage/production_prediction_parsing.py",
+        before="BOX_BOUNDS_TOLERANCE = 1e-7",
+        after="BOX_BOUNDS_TOLERANCE = 0.0",
+        case=(
+            "tests/storage/test_production_prediction_parsing.py::"
+            "test_yolo_edge_roundoff_is_clipped_to_image_bounds[right]"
         ),
         runner="pytest",
     ),

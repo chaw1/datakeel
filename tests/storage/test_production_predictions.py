@@ -4,6 +4,7 @@
 """Offline model execution, import partial success and approved project finalization."""
 
 import json
+from typing import Literal
 
 import pytest
 from sqlalchemy import select
@@ -75,6 +76,43 @@ def test_prediction_import_keeps_valid_files_and_precise_model_provenance(db: Da
         assert revision.previous_revision_id is None
         assert not list(session.scalars(select(ProductionAssignmentRow)))
         assert not list(session.scalars(select(ProductionReviewRow)))
+
+
+@pytest.mark.parametrize("prediction_format", ["yolo", "coco"])
+def test_prediction_import_persists_clipped_edge_boxes(
+    db: Database, prediction_format: Literal["yolo", "coco"]
+) -> None:
+    """Rounded edge boxes survive import and the strict saved-revision geometry validation."""
+    fixture = catalog_project(db)
+    content = (
+        "0 0.81 0.5 0.38 0.2"
+        if prediction_format == "yolo"
+        else json.dumps(
+            [{"image_id": "sample-0", "category_id": "a", "bbox": [62, 32, 38.000000000000014, 16]}]
+        )
+    )
+    params = ImportPredictionsParams(
+        request_id="edge-import",
+        project_id=fixture.project.id,
+        model_id="fake",
+        format=prediction_format,
+        category_mapping={"a": "a"},
+        files=(PredictionFile(filename="sample-0.txt", content=content),),
+    )
+    with db.session() as session:
+        result = import_predictions(session, params, "local")
+        session.commit()
+    assert not result.failures
+    assert len(result.revision_ids) == 1
+    with db.session() as session:
+        row = session.get(ProductionRevisionRow, result.revision_ids[0])
+        assert row is not None
+        revision = AnnotationRevision.model_validate(row.payload)
+        assert revision.annotation.boxes is not None
+        box = revision.annotation.boxes[0]
+        assert (box.x1, box.y1, box.x2, box.y2) == pytest.approx((62, 32, 100, 48))
+        assert box.x2 == 100
+        assert require_task(session, fixture.tasks[0].id).latest_revision_id == revision.id
 
 
 def test_fake_prelabel_budget_and_finalization_reuse_annotation_batches(db: Database) -> None:

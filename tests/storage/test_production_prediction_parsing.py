@@ -149,6 +149,126 @@ def test_yolo_normalized_coordinates_round_trip_to_pixel_xyxy() -> None:
 
 
 @pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        ("0 0.18999999999999997 0.5 0.38 0.2", (0, 40, 38, 60)),
+        ("0 0.81 0.5 0.38 0.2", (62, 40, 100, 60)),
+        ("0 0.5 0.18999999999999997 0.2 0.38", (40, 0, 60, 38)),
+        ("0 0.5 0.81 0.2 0.38", (40, 62, 60, 100)),
+    ],
+    ids=("left", "right", "top", "bottom"),
+)
+def test_yolo_edge_roundoff_is_clipped_to_image_bounds(
+    content: str, expected: tuple[float, float, float, float]
+) -> None:
+    """All four edges tolerate subpixel arithmetic noise and return bounded coordinates."""
+    result = parse_yolo(
+        PredictionFile(filename="edge.txt", content=content),
+        _labels(),
+        {},
+        (PredictionSample(id="edge", filename="edge.png", width=100, height=100),),
+    )
+    assert not result.failures
+    boxes = result.predictions[0].annotation.boxes
+    assert boxes is not None
+    box = boxes[0]
+    assert (box.x1, box.y1, box.x2, box.y2) == pytest.approx(expected)
+    assert 0 <= box.x1 < box.x2 <= 100
+    assert 0 <= box.y1 < box.y2 <= 100
+
+
+@pytest.mark.parametrize(
+    ("coordinates", "expected"),
+    [
+        ((-1e-14, 40, 38, 20), (0, 40, 38, 60)),
+        ((62, 40, 38.000000000000014, 20), (62, 40, 100, 60)),
+        ((40, -1e-14, 20, 38), (40, 0, 60, 38)),
+        ((40, 62, 20, 38.000000000000014), (40, 62, 60, 100)),
+    ],
+    ids=("left", "right", "top", "bottom"),
+)
+def test_coco_edge_roundoff_is_clipped_to_image_bounds(
+    coordinates: tuple[float, float, float, float], expected: tuple[float, float, float, float]
+) -> None:
+    """COCO xywh calculations share the same bounded edge handling as YOLO."""
+    result = parse_coco(
+        PredictionFile(
+            filename="edge.json",
+            content=json.dumps([{"image_id": "edge", "category_id": 1, "bbox": coordinates}]),
+        ),
+        _labels(),
+        {"1": "cat"},
+        (PredictionSample(id="edge", filename="edge.png", width=100, height=100),),
+    )
+    assert not result.failures
+    boxes = result.predictions[0].annotation.boxes
+    assert boxes is not None
+    box = boxes[0]
+    assert (box.x1, box.y1, box.x2, box.y2) == pytest.approx(expected)
+    assert 0 <= box.x1 < box.x2 <= 100
+    assert 0 <= box.y1 < box.y2 <= 100
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "0 0.189999998 0.5 0.38 0.2",
+        "0 0.810000002 0.5 0.38 0.2",
+        "0 0.5 0.189999998 0.2 0.38",
+        "0 0.5 0.810000002 0.2 0.38",
+        "0 0.1799 0.5 0.38 0.2",
+        "0 0.8201 0.5 0.38 0.2",
+        "0 0.5 0.1799 0.2 0.38",
+        "0 0.5 0.8201 0.2 0.38",
+    ],
+)
+def test_yolo_boxes_beyond_pixel_tolerance_are_rejected(content: str) -> None:
+    """Both 2e-7 pixel overflow and greater-than-one-pixel overflow remain invalid."""
+    result = parse_yolo(
+        PredictionFile(filename="edge.txt", content=content),
+        _labels(),
+        {},
+        (PredictionSample(id="edge", filename="edge.png", width=100, height=100),),
+    )
+    assert not result.predictions
+    assert len(result.failures) == 1
+
+
+@pytest.mark.parametrize(
+    "coordinates",
+    [
+        (-2e-7, 40, 38, 20),
+        (62, 40, 38.0000002, 20),
+        (40, -2e-7, 20, 38),
+        (40, 62, 20, 38.0000002),
+        (-1.01, 40, 38, 20),
+        (62, 40, 39.01, 20),
+        (40, -1.01, 20, 38),
+        (40, 62, 20, 39.01),
+        (-5e-8, 40, 1e-8, 20),
+        (100.00000001, 40, 1e-8, 20),
+        (40, -5e-8, 20, 1e-8),
+        (40, 100.00000001, 20, 1e-8),
+    ],
+)
+def test_coco_boxes_beyond_tolerance_or_without_clipped_area_are_rejected(
+    coordinates: tuple[float, float, float, float],
+) -> None:
+    """Tolerance never admits actual overflow or a box wholly outside the image."""
+    result = parse_coco(
+        PredictionFile(
+            filename="edge.json",
+            content=json.dumps([{"image_id": "edge", "category_id": 1, "bbox": coordinates}]),
+        ),
+        _labels(),
+        {"1": "cat"},
+        (PredictionSample(id="edge", filename="edge.png", width=100, height=100),),
+    )
+    assert not result.predictions
+    assert len(result.failures) == 1
+
+
+@pytest.mark.parametrize(
     "content",
     [
         "",

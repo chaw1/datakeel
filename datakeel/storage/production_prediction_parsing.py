@@ -22,6 +22,8 @@ from datakeel.core.production_catalog_models import (
 from datakeel.core.production_prediction_models import PredictionParseResult, PredictionSample
 
 YOLO_FIELDS_WITH_CONFIDENCE = 6
+# Pixel arithmetic may cross an exact edge by a few ulps; never scale this allowance by size.
+BOX_BOUNDS_TOLERANCE = 1e-7
 
 
 class _CocoImage(BoundaryModel):
@@ -86,15 +88,19 @@ def _box(
     category: str, coordinates: tuple[float, float, float, float], width: float, height: float
 ) -> AnnotationBox:
     x, y, box_width, box_height = coordinates
+    x1, y1 = max(0.0, x), max(0.0, y)
+    x2, y2 = min(width, x + box_width), min(height, y + box_height)
     if not all(math.isfinite(value) for value in coordinates) or (
-        min(x, y) < 0
+        min(x, y) < -BOX_BOUNDS_TOLERANCE
         or min(box_width, box_height) <= 0
-        or x + box_width > width
-        or y + box_height > height
+        or x + box_width > width + BOX_BOUNDS_TOLERANCE
+        or y + box_height > height + BOX_BOUNDS_TOLERANCE
+        or x1 >= x2
+        or y1 >= y2
     ):
         message = "Prediction box is outside image bounds or has no positive area"
         raise ValidationError(message)
-    return AnnotationBox(category=category, x1=x, y1=y, x2=x + box_width, y2=y + box_height)
+    return AnnotationBox(category=category, x1=x1, y1=y1, x2=x2, y2=y2)
 
 
 def _coco_image(
