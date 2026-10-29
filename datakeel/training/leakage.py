@@ -95,6 +95,9 @@ def _text_pairs(samples: tuple[TrainingSample, ...], threshold: int) -> Iterator
     ]
     comparison = compare_hashes([value for _, value in values], threshold=threshold, mode="exact")
     for left, right, distance in comparison.pairs:
+        left_sample, right_sample = samples[values[left][0]], samples[values[right][0]]
+        if left_sample.file.sha256 and left_sample.file.sha256 == right_sample.file.sha256:
+            continue
         yield (
             values[left][0],
             values[right][0],

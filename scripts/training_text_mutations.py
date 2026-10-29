@@ -7,6 +7,19 @@ from scripts.mutation_models import Mutation
 
 TRAINING_TEXT_MUTATIONS = (
     Mutation(
+        name="training-exact-text-is-not-reported-again-as-near",
+        path="training/leakage.py",
+        before=(
+            "if left_sample.file.sha256 and left_sample.file.sha256 == right_sample.file.sha256:"
+        ),
+        after="if False:",
+        case=(
+            "tests/training/test_leakage.py::"
+            "test_byte_identical_text_has_one_exact_pair_without_a_second_text_pair"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="training-text-zero-width-normalization",
         path="training/text_hashes.py",
         before="and character not in _ZERO_WIDTH",

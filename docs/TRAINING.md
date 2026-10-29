@@ -80,6 +80,10 @@ character offsets. Short texts, rearranged templates with the same trigram multi
 identical after space or symbol removal (for example, `C++` and `C`) can collide: this signal is a formatting/similarity check, not semantic equivalence.
 A threshold of 64 matches every pair with a text hash and is usually unsuitable.
 
+Byte-identical text files produce an exact SHA-256 pair only; the same pair is not
+counted again as text near-duplication. Formatting variants with different source
+bytes still produce the text signal.
+
 `checked_signals` states what a report actually checked. A saved `1.2-primary-no-text` snapshot
 keeps its original three signals and does not read source files to invent missing text hashes.
 Create a new named split or preview to compute the new text signal. A clean report applies

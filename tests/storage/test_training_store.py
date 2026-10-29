@@ -212,7 +212,6 @@ def test_directory_preview_keeps_assignments_and_checks_text_near_duplicates(
     assert [(pair.kind, pair.left_id, pair.right_id, pair.distance) for pair in report.pairs] == [
         ("exact", "0", "3", 0),
         ("text", "0", "1", 0),
-        ("text", "0", "3", 0),
     ]
     assert report.checked_signals == ("exact", "image", "text", "group")
     samples = load_training_samples(db, fixture.dataset_id, fixture.version_id)
