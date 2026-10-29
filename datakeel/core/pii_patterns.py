@@ -51,11 +51,18 @@ LABELED_IP = re.compile(
     r"(?<![\w:])[^\W\d][\w-]{0,63}\s*:\s*"
     r"(?P<value>[0-9A-Fa-f:][A-Za-z0-9_.:%-]*)(?![A-Za-z0-9_.:%-])"
 )
+# Shared prose punctuation ends bare credentials and the host/path of credential URLs.
+# Userinfo and quoted values retain their own boundaries so their contents stay covered.
+CREDENTIAL_PROSE_STOPS = (
+    r"\uff0c。\uff1b\uff01\uff1f\uff1a「」《》、【】“”\u2018\u2019"
+    r"\uff08\uff09\u2026\u2014"
+)
 CREDENTIAL_URL = re.compile(
     r"(?<![A-Za-z0-9_+.-])[A-Za-z][A-Za-z0-9+.-]{1,20}://"
     r"[^\s/@]+@"
-    r"(?:\[[0-9A-Fa-f:.]+\]|[^\s<>\[\](){}\"'`“”\u2018\u2019"
-    r"\u2e80-\ua4cf\uac00-\ud7af\uf900-\ufaff\ufe10-\ufe6f\uff00-\uffef\U00020000-\U000323af])*"
+    r"(?:\[[0-9A-Fa-f:.]+\]|[^\s<>\[\](){}\"'`"
+    + CREDENTIAL_PROSE_STOPS
+    + r"\u2e80-\ua4cf\uac00-\ud7af\uf900-\ufaff\ufe10-\ufe6f\uff00-\uffef\U00020000-\U000323af])*"
 )
 SECRET = re.compile(
     r"(?<![A-Za-z0-9_])(?:"
@@ -80,9 +87,7 @@ CREDENTIAL_VALUE_START = (
     r"(?!" + CREDENTIAL_LABEL_PATTERN.replace("(?P<label>", "(?:") + CREDENTIAL_SEPARATOR + r")"
 )
 # Stop bare values before surrounding prose; quotes permit spaces and escaped punctuation.
-BARE_CREDENTIAL_PATTERN = (
-    r"[^\s\"'<>,;\uff0c。\uff1b\uff01\uff1f\uff1a「」《》、【】“”\u2018\u2019\u3400-\u9fff]{8,}"
-)
+BARE_CREDENTIAL_PATTERN = r"[^\s\"'<>,;" + CREDENTIAL_PROSE_STOPS + r"\u3400-\u9fff]{8,}"
 LABELED_SECRET = re.compile(
     CREDENTIAL_LABEL_PATTERN
     + CREDENTIAL_SEPARATOR

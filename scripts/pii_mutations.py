@@ -7,6 +7,14 @@ from scripts.mutation_models import Mutation
 
 PII_MUTATIONS = (
     Mutation(
+        name="pii-shared-prose-punctuation",
+        path="core/pii_patterns.py",
+        before=r"\uff08\uff09\u2026\u2014",
+        after="",
+        case="tests/core/test_pii_credential_punctuation.py::test_shared_prose_punctuation_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
         name="pii-compound-credential-separator",
         path="core/pii_patterns.py",
         before=r"[是为]\s*[:\uff1a]?",
@@ -76,8 +84,8 @@ PII_MUTATIONS = (
     Mutation(
         name="pii-secret-adjacent-assignment-delimiters",
         path="core/pii_patterns.py",
-        before=r"<>,;\uff0c",
-        after=r"<>\uff0c",
+        before=r"<>,;",
+        after=r"<>",
         case="tests/core/test_pii_labels.py::test_placeholder_and_nested_delimiter_guard_keeps_only_the_secret_span",
         runner="pytest",
     ),
