@@ -7,14 +7,13 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from datakeel.core.datasheet_execution import DatasheetCompletion
 from datakeel.core.dq_monitor import DqCompletion
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_execution import PendingExtraction
 from datakeel.core.kg_execution import KGCompletion
-from datakeel.core.media_metadata import media_failure
 from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
 from datakeel.pipeline import Pipeline, validate_pipeline
 from datakeel.pipeline.sharding import validate_shards
@@ -179,7 +178,10 @@ class DatabaseQueue:
         with self.db.session() as session:
             self.db.lock_writes(session)
             shard = session.scalar(
-                select(ShardRow).where(ShardRow.id == lease.shard_id).with_for_update()
+                select(ShardRow)
+                .options(load_only(ShardRow.state, ShardRow.lease_owner))
+                .where(ShardRow.id == lease.shard_id)
+                .with_for_update()
             )
             if not shard or shard.state != "RUNNING" or shard.lease_owner != lease.owner:
                 return False
@@ -208,7 +210,10 @@ class DatabaseQueue:
                 select(TaskRow).where(TaskRow.id == lease.task_id).with_for_update()
             )
             shard = session.scalar(
-                select(ShardRow).where(ShardRow.id == lease.shard_id).with_for_update()
+                select(ShardRow)
+                .options(load_only(ShardRow.state, ShardRow.lease_owner, ShardRow.heartbeat_at))
+                .where(ShardRow.id == lease.shard_id)
+                .with_for_update()
             )
             if not shard or shard.state != "RUNNING" or shard.lease_owner != lease.owner:
                 return False
@@ -227,9 +232,8 @@ class DatabaseQueue:
             ):
                 msg = "Successful datasheet tasks require their exact checked completion"
                 raise ConflictError(msg)
-            shard.state = "FAILED" if error else "COMPLETED"
+            shard.state, shard.lease_owner = "FAILED" if error else "COMPLETED", None
             shard.outputs = [item.model_dump(mode="json") for item in outputs]
-            shard.lease_owner = None
             for event in events:
                 append_event(session, event)
             if isinstance(evidence, DqCompletion):
@@ -325,47 +329,6 @@ class DatabaseQueue:
             return len(rows)
 
 
-def task_dict(db: Database, task: TaskRow) -> dict[str, Any]:
-    """Serialize a stored task with its current shard progress."""
-    with db.session() as session:
-        shards = list(session.scalars(select(ShardRow).where(ShardRow.task_id == task.id)))
-    completed = sum(shard.state == "COMPLETED" for shard in shards)
-    state = (
-        "RUNNING"
-        if task.state == "QUEUED" and any(s.state == "RUNNING" for s in shards)
-        else task.state
-    )
-    failures = [
-        failure.model_dump(mode="json")
-        for shard in shards
-        for item in shard.outputs or []
-        if (
-            failure := media_failure(
-                str(item.get("id", "")), str(item.get("filename", "")), item.get("metadata") or {}
-            )
-        )
-        is not None
-    ]
-    return {
-        "id": task.id,
-        "dataset_id": task.dataset_id,
-        "input_version_id": task.input_version_id,
-        "state": state,
-        "progress": round(completed / task.total_shards * 100, 1),
-        "total_shards": task.total_shards,
-        "completed_shards": completed,
-        "error": task.error,
-        "created_at": task.created_at,
-        "finished_at": task.finished_at,
-        "shards": [
-            {"id": s.id, "state": s.state, "attempts": s.attempts, "ordinal": s.ordinal}
-            for s in shards
-        ],
-        "failed_files": failures,
-        "partial": state == "COMPLETED" and bool(failures),
-    }
-
-
 def _canonical_pipeline(value: dict[str, Any] | None) -> dict[str, Any] | None:
     return Pipeline.model_validate(value).model_dump(mode="json") if value is not None else None
 
@@ -385,14 +348,15 @@ def _source_version(session: Session, task: TaskRow) -> str:
     if task.input_version_id is not None:
         return task.input_version_id
     version = session.scalar(
-        select(VersionRow)
+        select(VersionRow.id)
         .where(VersionRow.dataset_id == task.dataset_id)
         .order_by(VersionRow.created_at, VersionRow.id)
+        .limit(1)
     )
     if version is None:
         msg = "Task source manifest version is missing"
         raise NotFoundError(msg)
-    return version.id
+    return version
 
 
 def _validate_registered_pipeline(session: Session, value: dict[str, Any] | None) -> None:

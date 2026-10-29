@@ -14,8 +14,8 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   await requireSuccess(response);
   return response.json() as Promise<T>;
 }
-export function get<T>(path: string): Promise<T> {
-  return request(path, { method: "GET" });
+export function get<T>(path: string, headers?: HeadersInit): Promise<T> {
+  return request(path, { method: "GET", ...(headers ? { headers } : {}) });
 }
 export function post<T>(path: string, body: unknown): Promise<T> {
   return request(path, {

@@ -28,6 +28,7 @@ from datakeel.cli import (
     workflow,
 )
 from datakeel.cli.ask import ask
+from datakeel.cli.ask import register_parser as register_ask_parser
 from datakeel.cli.ask_evaluation import evaluate_ask
 from datakeel.cli.catalog import rebuild as rebuild_catalog
 from datakeel.cli.demo import demo, seed_demo
@@ -87,9 +88,7 @@ def parser() -> argparse.ArgumentParser:
     ask_evaluation = commands.add_parser("eval-ask")
     ask_evaluation.add_argument("--questions", type=Path)
     ask_evaluation.add_argument("--json", action="store_true", dest="json_output")
-    question = commands.add_parser("ask")
-    question.add_argument("question")
-    question.add_argument("--reference-instant")
+    register_ask_parser(commands)
     export = commands.add_parser("export")
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
@@ -220,7 +219,7 @@ def _database_command(db: Database, args: argparse.Namespace) -> None:
     elif args.command == "rebuild-catalog":
         rebuild_catalog(db, args.expected_hash)
     elif args.command == "ask":
-        ask(db, args.question, args.reference_instant)
+        ask(db, args.question, args.reference_instant, args.conversation_id)
 
 
 def _evaluation_command(db: Database, args: argparse.Namespace) -> None:

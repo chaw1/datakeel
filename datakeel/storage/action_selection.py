@@ -12,6 +12,8 @@ from datakeel.ontology.models import FrozenManifest, FrozenObject
 from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.file_state import FileStateRow
 
+type _FileIndex = dict[str, dict[str, object]]
+
 
 def dataset_id_for(item: FrozenObject) -> str:
     """Resolve the owning dataset identifier recorded in the frozen object."""
@@ -33,20 +35,33 @@ def require_unique_file_sources(manifest: FrozenManifest) -> None:
             raise ConflictError(msg)
 
 
+def _source_index(session: Session, dataset_id: str, version_id: str | None) -> _FileIndex:
+    dataset = session.get(DatasetRow, dataset_id)
+    if dataset is None:
+        msg = "Selected dataset no longer exists"
+        raise NotFoundError(msg)
+    version = session.get(VersionRow, version_id) if version_id is not None else None
+    manifest = version.manifest if version else dataset.files
+    result: _FileIndex = {}
+    for entry in manifest:
+        identity = entry["id"]
+        if isinstance(identity, str):
+            result.setdefault(identity, entry)
+    return result
+
+
 def selected_files(session: Session, plan: ActionPlan) -> list[FileItem]:
-    """Read exact manifest entries named by the already revalidated selection."""
+    """Read frozen entries, indexing each selected dataset/version at most once."""
     require_unique_file_sources(plan.manifest)
+    indexes: dict[tuple[str, str | None], _FileIndex] = {}
     selected: dict[str, FileItem] = {}
     for item in plan.manifest.objects:
-        dataset_id = dataset_id_for(item)
-        dataset = session.get(DatasetRow, dataset_id)
-        if dataset is None:
-            msg = "Selected dataset no longer exists"
-            raise NotFoundError(msg)
-        version_id = item.properties.get("version_id")
-        version = session.get(VersionRow, version_id) if isinstance(version_id, str) else None
-        manifest = version.manifest if version else dataset.files
-        record = next((entry for entry in manifest if entry["id"] == item.asset_ref.asset_id), None)
+        version = item.properties.get("version_id")
+        version_id = version if isinstance(version, str) else None
+        key = (dataset_id_for(item), version_id)
+        if key not in indexes:
+            indexes[key] = _source_index(session, *key)
+        record = indexes[key].get(item.asset_ref.asset_id)
         if record is None:
             msg = "Selected file no longer belongs to its frozen version"
             raise ConflictError(msg)

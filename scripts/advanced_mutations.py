@@ -7,6 +7,17 @@ from scripts.mutation_models import Mutation
 
 ADVANCED_MUTATIONS = (
     Mutation(
+        name="mcp-control-tools-denied",
+        path="ontology/tooling.py",
+        before='    if name in CONTROL_TOOLS and entry == "mcp":',
+        after="    if False:",
+        case=(
+            "tests/mcp/test_server.py::"
+            "test_server_exposes_no_approval_or_execution_tool_and_refuses_them"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="canary-output-guard",
         path="core/canary.py",
         before="return any(is_leak(canary, text) for text in texts)",

@@ -214,6 +214,8 @@ ignore_imports =
     datakeel.storage.lineage_service -> datakeel.lineage.collapse
     datakeel.storage.lineage_service -> datakeel.lineage.models
     datakeel.storage.lineage_service -> datakeel.lineage.service
+# Indexed catalog adjacency consumes the same frozen graph query as lineage reads.
+    datakeel.storage.catalog_graph -> datakeel.lineage.models
     datakeel.storage.task_queue -> datakeel.pipeline
     datakeel.storage.views -> datakeel.governance.models
 # Persistence implements action transactions with pure policy/receipt helpers and ontology projections.
@@ -327,7 +329,8 @@ ignore_imports =
     datakeel.ask.service -> datakeel.metrics.compiler
     datakeel.ask.service -> datakeel.metrics.execution
     datakeel.ask.service -> datakeel.metrics.projection
-    datakeel.ask.service -> datakeel.storage.ask_store
+# Question turns atomically persist independent actor-owned query frames and answer evidence.
+    datakeel.ask.service -> datakeel.storage.ask_conversations
     datakeel.ask.service -> datakeel.storage.catalog_store
     datakeel.ask.service -> datakeel.storage.database
 # Question recognition and answer assembly share one frozen current-graph read.
@@ -337,6 +340,8 @@ ignore_imports =
     datakeel.ontology.catalog_functions -> datakeel.storage.metric_store
     datakeel.ontology.catalog_functions -> datakeel.storage.catalog_queries
     datakeel.ontology.catalog_functions -> datakeel.storage.database
+# Cached question-tool replays verify that their independently owned Ask thread still exists.
+    datakeel.ontology.tooling -> datakeel.storage.ask_conversations
 # Metadata actions freeze independent catalog state and commit versioned semantics atomically.
     datakeel.storage.catalog_action_state -> datakeel.actions.catalog_parameters
     datakeel.storage.catalog_action_state -> datakeel.catalog.service

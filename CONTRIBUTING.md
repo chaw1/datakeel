@@ -57,6 +57,17 @@ This also exercises README commands and mutation tests. SQLite is the default. T
 
 该入口还执行 README 命令和变异测试。默认使用 SQLite；PostgreSQL 验证时将 `DATAKEEL_TEST_DATABASE_URL` 指向自己新建的本地测试库，测试仅创建和清理各自隔离的 schema。不要使用共享库或生产库跑测试。
 
+## Capacity workloads / 容量压测
+
+The reproducible S/M/L workloads, measurement boundaries and operating limits are documented in
+[CAPACITY.md](docs/CAPACITY.md). `make check` includes the S dataset smoke and a fourfold-growth
+regression guard with a quadratic negative control. Run large workloads independently with result
+JSON and profiles outside the checkout, against explicitly authorized local fixtures.
+
+可复现的 S/M/L 场景、计量范围与使用边界见 [CAPACITY.md](docs/CAPACITY.md)。`make check` 包含
+S 数据集冒烟与四倍规模退化检查，并用 O(n²) 变异验证拦截能力。大规模运行应独立执行，结果
+JSON 与 profile 放在仓库之外，且只使用明确授权的本地 fixture。
+
 ## Reports and pull requests / 问题与合并请求
 
 Search existing issues before filing a report. Use the bug template for expected and actual behavior, a minimal reproduction, version details and redacted logs. Use the feature template for the user problem, proposed outcome and acceptance criteria. Reports may be written in English or Chinese.

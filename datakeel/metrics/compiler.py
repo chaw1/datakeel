@@ -18,6 +18,7 @@ from datakeel.core.metric_models import (
 from datakeel.metrics.compiler_filters import column_expression, filter_expression, identifier
 from datakeel.metrics.date_boundaries import time_predicates
 from datakeel.metrics.sql_safety import validate_select
+from datakeel.metrics.time_grouping import time_group
 
 _TABLE_ID_PARTS = 3
 _AGGREGATIONS: dict[str, type[exp.AggFunc]] = {
@@ -43,7 +44,9 @@ def compile_metric(
     parameters = ParameterBindings()
     predicates = [filter_expression(item, metric.measure.table, parameters) for item in conditions]
     group_columns = [_dimension(allowed, item).column for item in request.group_by]
-    groups = [column_expression(item, metric.measure.table) for item in group_columns]
+    groups: list[exp.Expr] = [
+        column_expression(item, metric.measure.table) for item in group_columns
+    ]
     measure = column_expression(metric.measure.column, metric.measure.table)
     aggregate = (
         exp.Count(this=exp.Distinct(expressions=[measure]))
@@ -57,8 +60,18 @@ def compile_metric(
             time_predicates(time_column, request.time_range, request.dialect, parameters)
         )
         columns.add(metric.time.column)
+    projections: list[exp.Expr] = list(groups)
+    if request.time_grain is not None:
+        bucket = time_group(
+            column_expression(metric.time.column, metric.measure.table),
+            request.time_grain,
+            request.dialect,
+        )
+        groups.append(bucket)
+        projections.append(exp.alias_(bucket.copy(), "time_bucket", quoted=True))
+        columns.add(metric.time.column)
     statement = (
-        exp.select(*groups, exp.alias_(aggregate, "value", quoted=True))
+        exp.select(*projections, exp.alias_(aggregate, "value", quoted=True))
         .from_(exp.Table(this=identifier(table), db=identifier(schema)))
         .where(*predicates)
     )

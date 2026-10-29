@@ -1,6 +1,6 @@
-.PHONY: check fix check-public check-python check-web check-licenses check-rust
+.PHONY: check fix check-public check-python check-web check-licenses check-rust check-scale
 
-check: check-public check-rust check-python check-web check-licenses
+check: check-public check-rust check-python check-scale check-web check-licenses
 
 check-public:
 	uv run python scripts/check_public_worktree.py
@@ -30,6 +30,9 @@ check-python:
 	uv run python scripts/check_web_tests.py
 	uv run pytest --cov=datakeel --cov-report=term-missing --cov-report=xml --cov-report=json --cov-fail-under=85
 	uv run python scripts/check_coverage.py
+
+check-scale:
+	uv run python -m scripts.scale_bench.smoke --verify-mutation
 
 check-web:
 	cd web && npm run check:source && npm run lint && npm run typecheck && npm test -- --run && npm run build && npm run check:source

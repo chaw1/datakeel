@@ -16,17 +16,24 @@ const examples = [
 
 export function AskComposer({
   busy,
+  disabled = false,
   onSubmit,
   initialQuestion = "",
   initialMetricId,
+  onActorChange,
+  initialActor = "local-user",
 }: {
   busy: boolean;
+  disabled?: boolean;
   initialQuestion?: string;
   initialMetricId?: string;
+  onActorChange?: (actor: string) => void;
+  initialActor?: string;
   onSubmit: (request: AskRequest) => void;
 }) {
   const { t } = useI18n();
-  const [actor, setActor] = useState("local-user");
+  const waiting = busy || disabled;
+  const [actor, setActor] = useState(initialActor);
   const [question, setQuestion] = useState(initialQuestion);
   const [metricId, setMetricId] = useState(initialMetricId);
   const isComposing = useCompositionGuard();
@@ -38,7 +45,7 @@ export function AskComposer({
         event.preventDefault();
         if (
           isComposing() ||
-          busy ||
+          waiting ||
           !question.trim() ||
           !reference ||
           !actor.trim()
@@ -71,9 +78,10 @@ export function AskComposer({
         id="ask-actor"
         value={actor}
         required
-        disabled={busy}
+        disabled={waiting}
         onChange={(event) => {
           setActor(event.target.value);
+          onActorChange?.(event.target.value.trim());
         }}
       />
       <p className="muted">{t("assetActorHelp")}</p>
@@ -88,7 +96,7 @@ export function AskComposer({
         rows={3}
         maxLength={2000}
         required
-        disabled={busy}
+        disabled={waiting}
         placeholder={t("askPlaceholder")}
         onChange={(event) => {
           setQuestion(event.target.value);
@@ -101,7 +109,7 @@ export function AskComposer({
             key={label}
             className="ask-example"
             type="button"
-            disabled={busy}
+            disabled={waiting}
             onClick={() => {
               setQuestion(t(value));
               setMetricId(undefined);
@@ -126,7 +134,7 @@ export function AskComposer({
             min="0001-01-01"
             max="9999-12-31"
             required
-            disabled={busy}
+            disabled={waiting}
             aria-describedby="ask-reference-hint"
             onChange={(event) => {
               setReference(event.target.value);
@@ -141,7 +149,7 @@ export function AskComposer({
           }}
           type="submit"
           className="button primary"
-          disabled={busy || !question.trim() || !reference || !actor.trim()}
+          disabled={waiting || !question.trim() || !reference || !actor.trim()}
         >
           {t(busy ? "askWorking" : "askSubmit")}
         </button>

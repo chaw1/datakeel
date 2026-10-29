@@ -289,3 +289,17 @@ uv run datakeel import dbt --source-id shop \
 Open **Catalog → Import metadata**. Reuse your database source ID, select a local `manifest.json`, and optionally include `catalog.json` and `run_results.json`. Import the artifacts and inspect the new, changed, deleted-at-source, and unchanged counts. Switch to Airflow to import an offline REST v1 DAG export. The imported-object browser filters DAGs, tasks, consumers, and metric drafts; select an object to inspect its schedule, ownership, latest state, freshness, and lineage.
 
 Metric drafts remain outside the semantic layer until their complete definition is reviewed and explicitly approved in the standard confirmation plan. Repeating an identical import should report unchanged objects. Removed source objects keep their deletion marker. See [Metadata imports](METADATA_IMPORTS.en.md) for CLI, HTTP, export formats, and OpenLineage authentication.
+
+## Ask for charts and follow up
+
+Open **Ask data**, start a new conversation, and keep reference date `2026-10-01`. Ask
+`上个季度各区域零售额是多少` (last quarter's retail revenue by region). Check the complete
+**Understood as** question and the bars, then switch to the table to compare every value.
+Continue with `what about South China`, `by month`, and `switch to order count`. Each turn
+updates the metric, filters or grouping while keeping the other query conditions. An ambiguous
+follow-up asks for clarification before returning a number.
+
+Try both themes and use the keyboard to select the table view. Refresh and reopen the saved
+thread from the conversation list; create a separate conversation in another browser tab.
+Delete a thread and refresh the list to check that it is gone. Revoked asset grants also block
+old-history reads. See [Ask data](ASK.md) for chart rules, comparisons, retention and CLI/API usage.

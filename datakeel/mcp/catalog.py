@@ -9,17 +9,11 @@ from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.standard_functions import STANDARD_TOOL_DESCRIPTIONS
-from datakeel.ontology.tool_models import ApproveToolParams, ExecuteToolParams
 
 
 def tool_definitions() -> list[ToolDefinition]:
-    """Describe registered reads, prepare-only actions, and two explicit controls."""
-    models = {
-        **PARAMETER_MODELS,
-        **PARAMETER_TYPES,
-        "approve_plan": ApproveToolParams,
-        "execute_plan": ExecuteToolParams,
-    }
+    """Describe registered reads and prepare-only actions; approval and execution stay human."""
+    models = {**PARAMETER_MODELS, **PARAMETER_TYPES}
     return [
         ToolDefinition(
             name=name,
@@ -37,8 +31,4 @@ def _description(name: str) -> str:
         return ASK_DATA_DESCRIPTION
     if name in PARAMETER_TYPES:
         return f"Prepare {name}; return a frozen impact plan without executing it."
-    if name == "approve_plan":
-        return "Record an explicit human approval or rejection bound to the exact plan digest."
-    if name == "execute_plan":
-        return "Execute a prepared plan once, enforcing required approval and frozen target state."
     return f"Read {name} without changing dataset contents."

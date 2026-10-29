@@ -6,14 +6,24 @@
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.ask.access import answer_refs, query_refs
+from datakeel.ask.charts import answer_chart
+from datakeel.ask.comparisons import (
+    comparison_changes,
+    comparison_message,
+    comparison_unit_mismatch,
+)
 from datakeel.ask.consumption import leftover_fragments
-from datakeel.ask.dimensions import parse_dimensions
+from datakeel.ask.followup import (
+    MetricTurn,
+    interpreted_question,
+    prepare_metric_turn,
+    previous_period,
+)
 from datakeel.ask.knowledge_parser import metric_recognition, parse_knowledge_question
 from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
 from datakeel.ask.models import DimensionParse, Leftovers, QueryContext
-from datakeel.ask.parser import parse_question
 from datakeel.ask.profile import parse_profile_question, profile_answer
-from datakeel.ask.resolution import resolve_metric
+from datakeel.core.ask_frame_models import AskComparison, AskQueryFrame
 from datakeel.core.ask_models import (
     AskAnswer,
     AskInterpretation,
@@ -25,12 +35,12 @@ from datakeel.core.ask_models import (
 from datakeel.core.catalog_models import CatalogSnapshot, SourceProperties
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ExecutionError, NotFoundError, ValidationError
-from datakeel.core.metric_models import CompileRequest, MetricCard
+from datakeel.core.metric_models import CompiledQuery, CompileRequest, MetricCard, QueryResult
 from datakeel.core.models import new_id
 from datakeel.metrics.compiler import compile_metric
 from datakeel.metrics.execution import execute_query
 from datakeel.metrics.projection import resolved_metric_cards, semantic_layer
-from datakeel.storage.ask_store import store_answer
+from datakeel.storage.ask_conversations import get_conversation, store_conversation_turn
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
@@ -50,12 +60,28 @@ def ask_data(
         update={"scope": "query"}
     )
     request = request.model_copy(update={"actor": caller.actor})
-    answer = _ask_data(db, request, caller)
+    previous = (
+        get_conversation(db, request.conversation_id, caller.actor)
+        if request.conversation_id is not None
+        else None
+    )
+    request = request.model_copy(update={"conversation_id": request.conversation_id or new_id()})
+    answer = _ask_data(db, request, caller, previous.current_frame if previous else None)
+    answer = answer.model_copy(
+        update={
+            "conversation_id": request.conversation_id,
+            "interpreted_question": answer.interpreted_question
+            or interpreted_question(answer.query_frame, answer.metric_card, request.question),
+        }
+    )
+    answer = answer_chart(answer)
     require_access(db, answer_refs(answer), caller, record=record_usage)
-    return store_answer(db, request, answer)
+    return store_conversation_turn(db, request, answer, previous)
 
 
-def _ask_data(db: Database, request: AskRequest, access: AccessContext) -> AskAnswer:
+def _ask_data(
+    db: Database, request: AskRequest, access: AccessContext, previous: AskQueryFrame | None
+) -> AskAnswer:
     profile = parse_profile_question(request)
     if profile is not None:
         return profile_answer(request, profile, read_profiles(db))
@@ -63,6 +89,7 @@ def _ask_data(db: Database, request: AskRequest, access: AccessContext) -> AskAn
         snapshot = read_snapshot(session)
     context = QueryContext(snapshot=snapshot, layer=semantic_layer(snapshot))
     graph = read_link_context(db)
+    turn = prepare_metric_turn(request, context.layer, resolved_metric_cards(snapshot), previous)
     knowledge = parse_knowledge_question(
         request.question,
         snapshot,
@@ -70,21 +97,33 @@ def _ask_data(db: Database, request: AskRequest, access: AccessContext) -> AskAn
         graph,
         subject_id=request.subject_id or request.metric_id,
     )
-    if knowledge is not None:
+    contextual_metric = (
+        turn.follows
+        and knowledge is not None
+        and (
+            (
+                bool(knowledge.intent_candidates)
+                and any(item.metric_id for item in turn.parsed.matches)
+            )
+            or turn.resolution.status == "resolved"
+        )
+    )
+    if knowledge is not None and not contextual_metric:
         require_access(
             db, tuple(item.asset_ref for item in knowledge.candidates), access, record=False
         )
         return knowledge_answer(db, request, knowledge, snapshot, context.layer, graph).model_copy(
             update={"recognition": knowledge.recognition}
         )
-    parsed = parse_question(request, context.layer)
-    resolution = resolve_metric(parsed, resolved_metric_cards(snapshot), request.metric_id)
-    if resolution.status != "resolved":
-        answer = _nonanswer(request, parsed, resolution).model_copy(
-            update={"interpretation": _interpretation(parsed, resolution, DimensionParse())}
+    if turn.resolution.status != "resolved":
+        answer = _nonanswer(request, turn.parsed, turn.resolution).model_copy(
+            update={
+                "interpretation": _interpretation(turn.parsed, turn.resolution, turn.dimensions),
+                "query_frame": previous if turn.follows else None,
+            }
         )
     else:
-        answer = _answer(db, request, parsed, resolution, context, access)
+        answer = _answer(db, request, turn, context, access)
         answer = related_knowledge(db, answer, snapshot, graph)
     return answer.model_copy(
         update={"recognition": metric_recognition(request.question, snapshot, context.layer)}
@@ -94,36 +133,32 @@ def _ask_data(db: Database, request: AskRequest, access: AccessContext) -> AskAn
 def _answer(
     db: Database,
     request: AskRequest,
-    parsed: ParsedQuestion,
-    resolution: MetricResolution,
+    turn: MetricTurn,
     context: QueryContext,
     access: AccessContext,
 ) -> AskAnswer:
+    parsed, resolution, dimensions = turn.parsed, turn.resolution, turn.dimensions
     card = resolution.candidates[0]
-    occupied = tuple((item.start, item.end) for item in parsed.matches if item.metric_id)
-    dimensions = parse_dimensions(request.question, card, context.layer, occupied)
-    parsed = parsed.model_copy(update={"matches": parsed.matches + dimensions.matches})
-    interpretation = _interpretation(parsed, resolution, dimensions)
-    refusal = _condition_refusal(resolution, dimensions, _leftovers(parsed, dimensions))
+    frame = turn.frame
+    if frame is None:
+        msg = "Resolved metric turn has no query frame"
+        raise ValidationError(msg)
+    interpreted = dimensions.model_copy(update={"slices": frame.slices, "group_by": frame.group_by})
+    parsed = parsed.model_copy(update={"time_range": frame.time_range})
+    interpretation = _interpretation(parsed, resolution, interpreted)
+    extra = dimensions.model_copy(update={"consumed": dimensions.consumed + turn.consumed})
+    refusal = _frame_refusal(resolution, frame, request.question) or _condition_refusal(
+        resolution, dimensions, _leftovers(parsed, extra)
+    )
     if refusal is not None:
         return _nonanswer(request, parsed, refusal).model_copy(
-            update={"interpretation": interpretation}
+            update={
+                "interpretation": interpretation,
+                "query_frame": turn.previous_frame,
+            }
         )
     try:
-        source = _source(context.snapshot, card)
-        dialect = "postgres" if source.dialect in {"postgres", "postgresql"} else "sqlite"
-        query = compile_metric(
-            card,
-            context.layer.dimensions,
-            CompileRequest(
-                dialect=dialect,
-                slices=list(dimensions.slices),
-                group_by=list(dimensions.group_by),
-                time_range=parsed.time_range,
-            ),
-        )
-        require_access(db, query_refs(query), access, record=False)
-        result = execute_query(source.connection_url or "", query)
+        query, result, comparison = _execute_frame(db, context, frame, card, access)
     except (ExecutionError, NotFoundError, ValidationError, ModelValidationError) as exc:
         refusal = MetricResolution(
             status="unanswerable",
@@ -131,22 +166,98 @@ def _answer(
             message=f"已登记指标暂时无法执行 ({type(exc).__name__})。",
         )
         return _nonanswer(request, parsed, refusal).model_copy(
-            update={"interpretation": interpretation}
+            update={"interpretation": interpretation, "query_frame": turn.previous_frame}
         )
     return AskAnswer(
         session_id=request.session_id or new_id(),
         question=request.question,
         status="answered",
-        message="答案来自登记指标与只读查询。",
+        message=comparison_message(comparison),
         reference_instant=request.reference_instant,
         metric_card=card,
         sql=query,
         result=result,
-        time_range=parsed.time_range,
+        comparison=comparison,
+        query_frame=frame,
+        interpreted_question=interpreted_question(frame, card, request.question, context.layer),
+        time_range=frame.time_range,
         matches=parsed.matches,
         lineage=LineageReference(asset_id=card.definition.id),
         interpretation=interpretation,
     )
+
+
+def _frame_refusal(
+    resolution: MetricResolution, frame: AskQueryFrame, question: str
+) -> MetricResolution | None:
+    if frame.share_of_result_rows and not (frame.group_by or frame.time_grain):
+        return resolution.model_copy(
+            update={"status": "clarification", "message": "结果行占比需要明确分组维度或时间粒度。"}
+        )
+    if comparison_unit_mismatch(question, frame):
+        return resolution.model_copy(
+            update={
+                "status": "clarification",
+                "message": "指定的对比周期与当前完整时间区间不一致。请明确月份或季度。",
+            }
+        )
+    if frame.comparison and previous_period(frame, frame.comparison) is None:
+        return _comparison_refusal(resolution, frame)
+    return None
+
+
+def _comparison_refusal(resolution: MetricResolution, frame: AskQueryFrame) -> MetricResolution:
+    label = "同比" if frame.comparison == "year_over_year" else "环比"
+    return resolution.model_copy(
+        update={"status": "clarification", "message": f"请明确{label}的时间范围。"}
+    )
+
+
+def _compile_frame(
+    context: QueryContext, frame: AskQueryFrame, card: MetricCard
+) -> tuple[SourceProperties, CompiledQuery]:
+    source = _source(context.snapshot, card)
+    dialect = "postgres" if source.dialect in {"postgres", "postgresql"} else "sqlite"
+    query = compile_metric(
+        card,
+        context.layer.dimensions,
+        CompileRequest(
+            dialect=dialect,
+            slices=list(frame.slices),
+            group_by=list(frame.group_by),
+            time_range=frame.time_range,
+            time_grain=frame.time_grain,
+        ),
+    )
+    return source, query
+
+
+def _execute_frame(
+    db: Database,
+    context: QueryContext,
+    frame: AskQueryFrame,
+    card: MetricCard,
+    access: AccessContext,
+) -> tuple[CompiledQuery, QueryResult, AskComparison | None]:
+    source, query = _compile_frame(context, frame, card)
+    require_access(db, query_refs(query), access, record=False)
+    result = execute_query(source.connection_url or "", query)
+    comparison = None
+    interval = previous_period(frame, frame.comparison) if frame.comparison else None
+    if interval is not None and frame.comparison is not None:
+        _, prior_query = _compile_frame(
+            context, frame.model_copy(update={"time_range": interval}), card
+        )
+        require_access(db, query_refs(prior_query), access, record=False)
+        previous = execute_query(source.connection_url or "", prior_query)
+        comparison = AskComparison(
+            mode=frame.comparison,
+            previous_time_range=interval,
+            previous_sql=prior_query,
+            previous_result=previous,
+            changes=comparison_changes(result, previous, frame, interval),
+        )
+    return query, result, comparison
 
 
 def _leftovers(parsed: ParsedQuestion, dimensions: DimensionParse) -> Leftovers:

@@ -4,6 +4,25 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-29
+
+### Added
+
+- Scale benchmark and capacity baseline: `python -m scripts.scale_bench <B1..B7> --size S|M|L --stack sqlite|postgres` runs file import and paging, parallel import, catalog and lineage, Ask over large fact tables, fifty concurrent users, ten thousand worker tasks under SIGKILL and a million-edge graph with a fixture fingerprint, a failure envelope and self-cleanup; `make check-scale` guards version comparison against quadratic regressions. [Capacity baseline](docs/CAPACITY.md) records the measured M/L figures, the targets not yet met and when to prefer PostgreSQL.
+- Bounded reads: `GET /api/datasets/{id}/files` accepts optional `offset`, `limit`, `q` and `modality`; file pages, global search, catalog and lineage reads, frozen file selection, object projection, task leases and upload completion no longer read the whole dataset or its version history.
+- Ask charts: an answer carries a declarative chart chosen from the result shape (value card, line, vertical or horizontal bars, grouped bars or table); the Web Ask page draws it as SVG with keyboard switching to the source table; metric contracts register units and number formats; the compiler buckets by day, month, quarter or year.
+- Ask conversations: HTTP, CLI, Agent tools and MCP accept `conversation_id` to keep asking in one thread; a follow-up changes only the named part (dimension value, time, grouping, metric, year-over-year, period-over-period or share) and shows "Understood as" with the complete question; ambiguous follow-ups clarify and return no number; threads persist in SQLite or PostgreSQL, are re-authorized on every turn and can be listed, reopened and deleted; `DATAKEEL_ASK_CONVERSATION_RETENTION_DAYS` sets retention.
+
+### Changed
+
+- **MCP no longer exposes `approve_plan` or `execute_plan`.** The server lists 57 tools (20 read functions and 37 plan-only actions). A call named `approve_plan` or `execute_plan` through MCP is refused with a reason and audited as a failed invocation; a person reviews, approves and executes prepared plans on the Web UI or CLI. Hosts that scripted approval through MCP must move that step to the CLI or Web UI.
+- Package, API and frontend versions advance to 0.14.0. The mutation gate has 192 anchors.
+- The media observation index decodes only version manifests that carry an image or point-cloud measurement, so the default file projection reads one manifest and one file-state batch regardless of version count.
+
+### Fixed
+
+- Inside a conversation, a question-form sentence that no slot explains (for example `why did brand awareness drop`) is answered like a new question — unanswerable with the three nearest metrics — instead of being treated as a follow-up with the previous metric as the only candidate.
+
 ## [0.13.1] - 2026-10-28
 
 ### Added

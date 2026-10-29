@@ -151,6 +151,18 @@ def test_execute_query_postgres_real_transaction(db: Database, layer: SemanticLa
     )
     source_url = db.engine.url.render_as_string(hide_password=False)
     assert execute_query(source_url, query).rows == [[20.0]]
+    for grain in ("day", "month", "quarter", "year"):
+        grouped = compile_metric(
+            MetricCard(definition=metric),
+            [],
+            CompileRequest(dialect="postgres", time_grain=grain),
+        )
+        expected = (
+            [["2026-07-01", 12.5], ["2026-09-01", 7.5]]
+            if grain in {"day", "month"}
+            else [["2026-07-01" if grain == "quarter" else "2026-01-01", 20.0]]
+        )
+        assert execute_query(source_url, grouped).rows == expected
     scalars = query.model_copy(
         update={"sql": "SELECT CAST(1.25 AS NUMERIC) AS amount, DATE '2026-07-01' AS date"}
     )

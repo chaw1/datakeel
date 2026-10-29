@@ -7,7 +7,7 @@ import json
 from copy import deepcopy
 
 from pydantic import Field, JsonValue
-from sqlalchemy import select
+from sqlalchemy import String, cast, or_, select
 from sqlalchemy.orm import Session
 
 from datakeel.core.models import BoundaryModel, FileItem, JsonDocument
@@ -69,9 +69,15 @@ def _measurements(file: FileItem) -> dict[str, JsonValue]:
 def read_media_observations(session: Session, dataset_id: str) -> MediaObservations:
     """Read newest measured revisions within one dataset into frozen typed observations."""
     observations: dict[str, MediaObservation] = {}
+    # Only manifests that can carry a measurement are decoded; a dataset with many
+    # unmeasured versions keeps its default file projection at one manifest read.
+    text = cast(VersionRow.manifest, String)
     versions = session.scalars(
         select(VersionRow)
-        .where(VersionRow.dataset_id == dataset_id)
+        .where(
+            VersionRow.dataset_id == dataset_id,
+            or_(text.like('%"overall_score"%'), text.like('%"pointcloud_probe"%')),
+        )
         .order_by(VersionRow.created_at.desc(), VersionRow.id.desc())
     )
     for version in versions:

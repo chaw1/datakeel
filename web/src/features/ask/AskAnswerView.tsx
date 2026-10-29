@@ -4,6 +4,7 @@ import { date } from "../../lib/format";
 
 import { answerFootnotes } from "./answerFootnotes";
 import { AnswerProvenance } from "./AnswerProvenance";
+import { AskChart } from "./AskChart";
 import { AskResolution } from "./AskResolution";
 import { KnowledgeAnswerView } from "./KnowledgeAnswerView";
 import { KnowledgeResolution } from "./KnowledgeResolution";
@@ -98,6 +99,10 @@ export function AskAnswerView({
           </time>
         </span>
       </header>
+      <p className="ask-understood">
+        {t("askUnderstood")}
+        {answer.interpreted_question || answer.question}
+      </p>
       {profileAnswer ? (
         <ProfileAnswerView
           answer={answer}
@@ -119,7 +124,14 @@ export function AskAnswerView({
             <span className="eyebrow">
               {answer.metric_card && metricName(answer.metric_card, locale)}
             </span>
-            {scalar ? (
+            {answer.chart ? (
+              <AskChart
+                key={answer.id}
+                answer={answer}
+                chart={answer.chart}
+                footnotes={footnotes}
+              />
+            ) : scalar ? (
               <div className="ask-number-line">
                 <output
                   className="ask-scalar answer-number"

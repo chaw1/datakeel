@@ -18,7 +18,7 @@ from datakeel.quality.image_pointcloud import assess_file
 from datakeel.storage.database import DatasetRow, TaskRow, VersionRow
 from datakeel.storage.datasets import dataset_dict
 from datakeel.storage.evidence_snapshot import EvidenceSnapshot, observed_file, read_snapshot
-from datakeel.storage.file_state import get_file_state
+from datakeel.storage.file_state import FileStateRow, FileStateView
 from datakeel.storage.media_observations import MediaObservations, read_media_observations
 
 
@@ -55,15 +55,16 @@ def _versions(session: Session, dataset_id: str, query: ObjectSet) -> list[Versi
         statement = statement.where(VersionRow.created_at <= query.created_before.timestamp())
     if query.object_type == "artifact":
         statement = statement.where(VersionRow.task_id.is_not(None))
-    values = list(session.scalars(statement.order_by(VersionRow.created_at.desc(), VersionRow.id)))
-    if (
-        query.object_type == "version"
-        or query.version_ids
-        or query.created_after
-        or query.created_before
-    ):
-        return values
-    return values[-1:] if query.object_type == "file" else values[:1]
+    include_all = query.object_type == "version" or bool(
+        query.version_ids or query.created_after or query.created_before
+    )
+    if not include_all and query.object_type == "file":
+        statement = statement.order_by(VersionRow.created_at, VersionRow.id.desc())
+    else:
+        statement = statement.order_by(VersionRow.created_at.desc(), VersionRow.id)
+    if not include_all:
+        statement = statement.limit(1)
+    return list(session.scalars(statement))
 
 
 def has_evidence_sources(
@@ -94,9 +95,8 @@ def file_quality(file: FileItem, dataset: DatasetRow) -> float:
 
 
 def _file_object(
-    session: Session, dataset: DatasetRow, version: VersionRow, item: FileItem, query: ObjectSet
+    state: FileStateView, dataset: DatasetRow, version: VersionRow, item: FileItem, query: ObjectSet
 ) -> FrozenObject | None:
-    state = get_file_state(session, dataset.id, item.id)
     if state.deleted and not query.include_deleted:
         return None
     properties: dict[str, JsonValue] = {
@@ -141,11 +141,20 @@ def _file_objects(
         and not (query.version_ids or query.created_after or query.created_before)
         else MediaObservations()
     )
+    states = {
+        row.file_id: FileStateView(
+            quarantined=row.quarantined, deleted=row.deleted, revision=row.revision
+        )
+        for row in session.scalars(
+            select(FileStateRow).where(FileStateRow.dataset_id == dataset.id)
+        )
+    }
+    default_state = FileStateView()
     for version in _versions(session, dataset.id, query):
         for raw in version.manifest:
             file = observations.observed(FileItem.model_validate(raw))
             file = observed_file(file, version.id, snapshot)
-            value = _file_object(session, dataset, version, file, query)
+            value = _file_object(states.get(file.id, default_state), dataset, version, file, query)
             if value is not None:
                 result.append(value)
     return result
