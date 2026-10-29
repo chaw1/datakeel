@@ -23,6 +23,10 @@ synonyms:
     alternatives: [stock, on hand]
   - canonical: amount
     alternatives: [total, value]
+  - canonical: invoice
+    alternatives: [bill, billing, billed, 开票, 发票, 账单, 票据]
+  - canonical: receipt
+    alternatives: [收据, 小票]
   - canonical: paid
     alternatives: [settled, remitted]
   - canonical: shipped

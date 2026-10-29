@@ -108,7 +108,7 @@ _TECHNICAL_CLOCK = frozenset(
 )
 _SYSTEM_WORDS = ("version", "revision", "tenant", "deleted", "removed", "latitude", "longitude")
 _COMPLETE_SKELETON_WEIGHT = 0.85
-_CONTEXTUAL = frozenset({"amount", "date", "status", "time"})
+_CONTEXTUAL = frozenset({"amount", "cycle", "date", "status", "time"})
 # Audit columns pair a record-maintenance verb with when (at, on, last) or who (by) changed it.
 _AUDIT_COMPANIONS = frozenset({"date", "time", "timestamp", "ts", "at", "on", "by", "last"})
 _KNOWN_DISCOUNT = 0.8
@@ -314,6 +314,9 @@ def _matches(
 
 @lru_cache(maxsize=8192)
 def _score(observed: frozenset[str], expected: frozenset[str], lock: _Lock) -> NameEvidence:
+    observed_context, expected_context = observed & _CONTEXTUAL, expected & _CONTEXTUAL
+    if observed_context and expected_context and observed_context.isdisjoint(expected_context):
+        return NameEvidence()
     matches = _matches(observed, expected, lock)
     business_hit = any(item.expected not in _GENERIC | _CONTEXTUAL for item in matches)
     complete_context = observed == expected and bool(expected - _GENERIC)
