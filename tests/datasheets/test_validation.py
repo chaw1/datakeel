@@ -30,7 +30,7 @@ def fact(
             "chapter": "composition",
             "source_type": "manifest",
             "source_id": "source-9999",
-            "field": "manifest.file_count",
+            "field": "custom.value",
             "value": value,
             "recorded_at": datetime(2026, 10, 27, tzinfo=UTC),
             **declared,
@@ -59,7 +59,7 @@ def checked(
     [
         ("The dataset contains 1,234 files.", 1234),
         ("The dataset contains \uff11\uff12\uff13\uff14 files.", 1234),
-        ("The quality score is 0.983.", "98.3%"),
+        ("The quality score is 98.3%.", "98.3%"),
         ("The quality score is -1.25.", -1.25),
         ("The quality score is 1.2e3.", 1200),
         ("Collection date: 2026/01/02.", "2026-01-02"),

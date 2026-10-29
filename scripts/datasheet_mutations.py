@@ -7,6 +7,25 @@ from scripts.mutation_models import Mutation
 
 DATASHEET_MUTATIONS = (
     Mutation(
+        name="datasheet-count-object-consistency",
+        path="datasheets/units.py",
+        before='("relations", r"relations?\\b|关系"),',
+        after='("files", r"relations?\\b|关系"),',
+        case="tests/datasheets/test_typed_numbers.py::test_count_object_guard_is_required",
+        runner="pytest",
+    ),
+    Mutation(
+        name="datasheet-bare-number-requires-label",
+        path="datasheets/units.py",
+        before="        return (value, None) in evidence",
+        after=(
+            "        return any(item == value for item, item_unit in evidence "
+            'if item_unit != "date")'
+        ),
+        case="tests/datasheets/test_typed_numbers.py::test_bare_number_guard_is_required",
+        runner="pytest",
+    ),
+    Mutation(
         name="datasheet-role-identity-support",
         path="datasheets/matching.py",
         before="        or not names_supported(text, facts)",

@@ -8,6 +8,7 @@ import unicodedata
 from collections.abc import Iterable
 from datetime import date
 from decimal import Decimal
+from typing import NamedTuple
 
 from pydantic import JsonValue
 
@@ -15,7 +16,14 @@ from datakeel.core.datasheet_models import DatasheetFact
 from datakeel.datasheets.names import names_supported
 from datakeel.datasheets.number_words import erase_written_numbers
 from datakeel.datasheets.sentences import split_sentences
-from datakeel.datasheets.units import NUMBER, Reading, supported, text_readings
+from datakeel.datasheets.units import (
+    NUMBER,
+    Reading,
+    count_unit,
+    reading_spans,
+    supported,
+    text_readings,
+)
 from datakeel.datasheets.vocabulary import (
     CHINESE_GRAMMAR,
     ENGLISH_GRAMMAR,
@@ -139,7 +147,9 @@ _MEASURED = {
 
 def _measured(fact: DatasheetFact) -> str | None:
     if fact.kind == "amount":
-        return f"amount:{fact.unit}" if fact.unit else None
+        return f"amount:{fact.unit}" if fact.unit else "amount"
+    if fact.kind == "count":
+        return count_unit(fact.unit or fact.field) or "count"
     return _MEASURED.get(fact.kind)
 
 
@@ -171,8 +181,70 @@ def fact_readings(fact: DatasheetFact) -> frozenset[Reading]:
     return frozenset(readings)
 
 
-def _unsupported_numbers(text: str, evidence: frozenset[Reading]) -> bool:
-    return not all(supported(item, evidence) for item in text_readings(_loose_numbers(text)))
+class _NumberEvidence(NamedTuple):
+    labels: tuple[str, ...]
+    readings: frozenset[Reading]
+
+
+def _number_evidence(fact: DatasheetFact) -> tuple[_NumberEvidence, ...]:
+    suffix = fact.field.rsplit(".", 1)[-1]
+    labels = (
+        fact.field,
+        suffix if "_" in suffix else "",
+        suffix.replace("_", " ") if "_" in suffix else "",
+        field_label(fact.field, "en"),
+        field_label(fact.field, "zh"),
+    )
+    evidence = [_NumberEvidence(tuple(normalized(label) for label in labels), fact_readings(fact))]
+    if isinstance(fact.value, dict):
+        for key, value in fact.value.items():
+            unit = count_unit(key) if fact.kind == "count" else None
+            child = fact.model_copy(
+                update={"value": value, "unit": unit.removeprefix("count:") if unit else fact.unit}
+            )
+            evidence.append(_NumberEvidence((normalized(key),), fact_readings(child)))
+    return tuple(evidence)
+
+
+def _has_label(context: str, labels: tuple[str, ...]) -> bool:
+    return any(
+        label in context
+        if _HAN.search(label)
+        else re.search(r"(?<!\w)" + re.escape(label) + r"(?!\w)", context) is not None
+        for label in labels
+        if label
+    )
+
+
+def _unsupported_numbers(text: str, evidence: tuple[_NumberEvidence, ...]) -> bool:
+    text = _loose_numbers(text)
+    spans = reading_spans(text)
+    recorded = frozenset(reading for item in evidence for reading in item.readings)
+    for index, (start, end, reading) in enumerate(spans):
+        previous = spans[index - 1][1] if index else 0
+        following = spans[index + 1][0] if index + 1 < len(spans) else len(text)
+        before = text[previous:start]
+        local = (
+            before
+            if any(_has_label(before, item.labels) for item in evidence)
+            else text[end:following]
+        )
+        labelled = frozenset(
+            (value, reading[1])
+            for item in evidence
+            if _has_label(local, item.labels)
+            for value, unit in item.readings
+            if (reading[1] is None and unit != "date")
+            or (reading[1] == "count" and unit is not None and unit.startswith("count"))
+        )
+        available = (
+            frozenset(item for item in recorded if item[1] is None)
+            if reading[1] == "count"
+            else recorded
+        )
+        if not supported(reading, available | labelled):
+            return True
+    return False
 
 
 def numeric_issues(text: str, facts: tuple[DatasheetFact, ...]) -> tuple[str, ...]:
@@ -180,7 +252,7 @@ def numeric_issues(text: str, facts: tuple[DatasheetFact, ...]) -> tuple[str, ..
     candidates = tuple(normalized(part) for fact in facts for part in value_strings(fact.value))
     dates = {item for part in candidates for item in _dates(part)}
     dates.update(fact.recorded_at.date().isoformat() for fact in facts)
-    numbers = frozenset(item for fact in facts for item in fact_readings(fact))
+    numbers = tuple(item for fact in facts for item in _number_evidence(fact))
     issues: list[str] = []
     if _dates(normalized(text)) - dates:
         issues.append("unsupported_date")

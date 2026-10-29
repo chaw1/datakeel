@@ -51,7 +51,7 @@ USD = {"kind": "amount", "unit": "USD"}
         ("Image ratio: 98.3 percent.", "custom.image_ratio", 0.983, RATIO),
         ("Image ratio: 0.983 (ratio).", "custom.image_ratio", 0.983, RATIO),
         ("Image percentage: 98.3%.", "custom.image_share", 98.3, PERCENT),
-        ("Image percentage: 0.983.", "custom.image_share", 98.3, PERCENT),
+        ("custom.image_share: 98.3.", "custom.image_share", 98.3, PERCENT),
         ("Image ratio: fifty percent.", "custom.image_ratio", 0.5, RATIO),
         ("Labelled images: 98.3%.", "metadata.description", "98.3% labelled images", {}),
         ("Total bytes: 4,815,739 bytes.", "manifest.total_bytes", 4815739, {}),
@@ -129,7 +129,7 @@ def test_fact_kind_comes_from_the_field_or_the_value_shape(
 def test_explicit_kind_is_preserved_and_measured_leaves_share_it() -> None:
     """Callers may declare a kind, and every numeric leaf of a count table is a count."""
     table = _fact("manifest.modalities", {"image": 200, "text": 198})
-    assert {unit for _value, unit in fact_readings(table)} == {"count"}
+    assert {unit for _value, unit in fact_readings(table)} == {"count:files"}
     ratio = _fact("custom.share", 0.5, kind="ratio", unit=None)
     assert ratio.kind == "ratio"
     assert ratio.model_copy() == DatasheetFact.model_validate(ratio.model_dump(mode="json"))
@@ -170,3 +170,111 @@ def test_date_and_clock_parts_are_never_loose_numbers(text: str, reasons: tuple[
         update={"id": "f2"}
     )
     assert _cited_reasons(text, score, created) == reasons
+
+
+@pytest.mark.parametrize(
+    ("text", "field", "value"),
+    [
+        ("The dataset contains 54 files.", "kg.relation_count", 54),
+        ("数据集包含54个文件。", "kg.relation_count", 54),
+        ("The graph contains 50 relations.", "manifest.file_count", 50),
+        ("图谱包含50条关系。", "manifest.file_count", 50),
+        ("Evidence assertion count: 54 assertions.", "kg.relation_count", 54),
+        ("数据集包含54张图片。", "kg.relation_count", 54),
+    ],
+)
+def test_counting_a_different_object_is_dropped(text: str, field: str, value: int) -> None:
+    """Equal counts cannot exchange files, relations, assertions or images across objects."""
+    assert "unsupported_number" in _reasons(text, _fact(field, value))
+
+
+@pytest.mark.parametrize(
+    ("text", "field", "value", "declared"),
+    [
+        ("The dataset contains 50 files.", "manifest.file_count", 50, {}),
+        ("数据集包含50个文件。", "manifest.file_count", 50, {}),
+        ("The graph contains 54 relations.", "kg.relation_count", 54, {}),
+        ("图谱包含54条关系。", "kg.relation_count", 54, {}),
+        ("Evidence assertion count: 12 assertions.", "assertions.count", 12, {}),
+        ("数据集包含200张图片。", "custom.images", 200, {"kind": "count", "unit": "images"}),
+        ("文件数量=50个。", "manifest.file_count", 50, {}),
+        ("图谱关系数量=54条。", "kg.relation_count", 54, {}),
+        ("The dataset contains 50 image files.", "manifest.file_count", 50, {}),
+    ],
+)
+def test_counting_the_same_object_and_labelled_classifiers_are_kept(
+    text: str, field: str, value: int, declared: dict[str, object]
+) -> None:
+    """A precise object noun or the matching field label retains the intended count."""
+    assert _reasons(text, _fact(field, value, **declared)) == ()
+
+
+@pytest.mark.parametrize(
+    ("text", "field", "value", "declared"),
+    [
+        ("There are 54.", "kg.relation_count", 54, {}),
+        ("The dataset contains 50.", "manifest.file_count", 50, {}),
+        ("数据集共有54。", "kg.relation_count", 54, {}),
+        ("数据集包含50。", "manifest.file_count", 50, {}),
+        ("The quality score is 54.", "kg.relation_count", 54, {}),
+        ("Total bytes: 54.", "kg.relation_count", 54, {}),
+        ("Image percentage: 0.983.", "custom.image_share", 98.3, PERCENT),
+        ("There are 54.", "custom.cost", 54, {"kind": "amount", "unit": None}),
+        ("数据集共有54个。", "custom.total", 54, {"kind": "count", "unit": None}),
+    ],
+)
+def test_bare_numbers_cannot_borrow_an_unlabelled_typed_value(
+    text: str, field: str, value: float, declared: dict[str, object]
+) -> None:
+    """A typed value supports a bare numeral only under that fact's own field label."""
+    assert "unsupported_number" in _reasons(text, _fact(field, value, **declared))
+
+
+@pytest.mark.parametrize(
+    ("text", "field", "value", "declared"),
+    [
+        ("File count=50.", "manifest.file_count", 50, {}),
+        ("文件数量为50。", "manifest.file_count", 50, {}),
+        ("Relation count: 54.", "kg.relation_count", 54, {}),
+        ("图谱关系数量=54。", "kg.relation_count", 54, {}),
+        ("Quality score=87.5.", "quality.total", 87.5, {}),
+        ("质量总分为87.5。", "quality.total", 87.5, {}),
+        ("There are 54.", "custom.value", 54, {}),
+        ("数据集有54。", "custom.note", "54", {}),
+        ("There are 54.", "custom.record", {"value": 54}, {}),
+    ],
+)
+def test_labelled_bare_numbers_and_untyped_values_are_kept(
+    text: str, field: str, value: JsonValue, declared: dict[str, object]
+) -> None:
+    """Exact label/value pairs survive, while number, text and record facts stay untyped."""
+    assert _reasons(text, _fact(field, value, **declared)) == ()
+
+
+def test_count_object_guard_is_required() -> None:
+    """Collapsing relations into file counts exposes the original cross-object acceptance."""
+    assert _reasons("The dataset contains 54 files.", _fact("kg.relation_count", 54)) == (
+        "unsupported_number",
+    )
+
+
+def test_bare_number_guard_is_required() -> None:
+    """Value equality alone cannot justify an unlabelled cardinal from a measured fact."""
+    assert _reasons("There are 54.", _fact("kg.relation_count", 54)) == ("unsupported_number",)
+
+
+def test_nearby_labels_do_not_lend_their_value_to_another_label() -> None:
+    """One correct relation count cannot launder the wrong file count in the same sentence."""
+    files = _fact("manifest.file_count", 50)
+    relations = _fact("kg.relation_count", 54).model_copy(update={"id": "f2"})
+    assert "unsupported_number" in _cited_reasons(
+        "File count=54 and relation count=54.", files, relations
+    )
+    assert _cited_reasons("File count=50 and relation count=54.", files, relations) == ()
+
+
+def test_count_noun_phrases_retain_their_head_object() -> None:
+    """Text observations are observations, and image files remain files in both languages."""
+    observation = _fact("metadata.description", "200 generated text observations")
+    assert _reasons("The dataset contains 200 observations.", observation) == ()
+    assert _reasons("数据集包含200条文本观测。", observation) == ()

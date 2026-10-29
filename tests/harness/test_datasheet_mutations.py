@@ -64,7 +64,7 @@ def test_datasheet_invented_date_cannot_be_published() -> None:
 
 def test_datasheet_numeric_owner_name_cannot_be_published() -> None:
     """A count of one cannot establish an owner named with the written numeral."""
-    assert _rejected("Owner='ONE'.", ("f1",), 1)
+    assert _rejected("Owner='ONE'.", ("f1",), 1, field="custom.value")
 
 
 def test_datasheet_percentage_of_a_count_cannot_be_published() -> None:
