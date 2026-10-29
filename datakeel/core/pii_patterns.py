@@ -74,7 +74,7 @@ CREDENTIAL_LABEL_PATTERN = (
     r"(?:github|gh)[_-]?token|password|passwd|pwd|secret|token|"
     r"访问密钥|访问令牌|密码|口令|密钥|令牌)"
 )
-CREDENTIAL_SEPARATOR = r"[\"']?\s*[:=\uff1a是为]\s*"
+CREDENTIAL_SEPARATOR = r"[\"']?\s*(?:[:=\uff1a]|[是为]\s*[:\uff1a]?)\s*"
 CREDENTIAL_ASSIGNMENT = re.compile(CREDENTIAL_LABEL_PATTERN + CREDENTIAL_SEPARATOR, re.IGNORECASE)
 CREDENTIAL_VALUE_START = (
     r"(?!" + CREDENTIAL_LABEL_PATTERN.replace("(?P<label>", "(?:") + CREDENTIAL_SEPARATOR + r")"

@@ -7,6 +7,14 @@ from scripts.mutation_models import Mutation
 
 PII_MUTATIONS = (
     Mutation(
+        name="pii-compound-credential-separator",
+        path="core/pii_patterns.py",
+        before=r"[是为]\s*[:\uff1a]?",
+        after=r"[是为]",
+        case="tests/core/test_pii_credential_separators.py::test_compound_separator_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
         name="pii-parenthesized-phone-recall",
         path="core/pii.py",
         before='        ("phone", patterns.PARENTHESIZED_PHONE, _valid_phone),',
@@ -124,7 +132,7 @@ PII_MUTATIONS = (
     Mutation(
         name="pii-multilingual-credential-separators",
         path="core/pii_patterns.py",
-        before=r"[:=\uff1a是为]",
+        before=r"(?:[:=\uff1a]|[是为]\s*[:\uff1a]?)",
         after="[:=]",
         case="tests/core/test_pii_labels.py::test_multilingual_assignment_guard_cannot_leave_a_secret_suffix",
         runner="pytest",
