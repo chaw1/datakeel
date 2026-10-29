@@ -33,6 +33,10 @@ export function useLabelingWorkspace(params: URLSearchParams) {
       : stored;
   });
   const [verified, setVerified] = useState(false);
+  const identityVerified = useRef(false);
+  const identityEpoch = useRef(0);
+  const isIdentityVerified = useCallback(() => identityVerified.current, []);
+  const verificationRetries = useRef(0);
   const verifiedActor = useRef(boot?.index.actor ?? null);
   const [identityRefresh, setIdentityRefresh] = useState(0);
   const [index, setIndex] = useState<WorkbenchIndex | null>(
@@ -77,9 +81,11 @@ export function useLabelingWorkspace(params: URLSearchParams) {
   }, []);
   useEffect(() => {
     let live = true;
+    const epoch = identityEpoch.current;
+    let retry: ReturnType<typeof setTimeout> | undefined;
     void getWorkbench()
       .then((data) => {
-        if (live) {
+        if (live && epoch === identityEpoch.current) {
           if (
             verifiedActor.current !== null &&
             verifiedActor.current !== data.actor
@@ -98,13 +104,17 @@ export function useLabelingWorkspace(params: URLSearchParams) {
             setRefresh((n) => n + 1);
           }
           verifiedActor.current = data.actor;
+          identityVerified.current = true;
+          verificationRetries.current = 0;
           setVerified(true);
           setIndex(data);
           setProjectId((id) => id || data.projects[0]?.id || "");
         }
       })
       .catch((reason: unknown) => {
-        if (live) {
+        if (live && epoch === identityEpoch.current) {
+          identityVerified.current = false;
+          setVerified(false);
           if (
             reason instanceof ApiError &&
             [401, 403].includes(reason.status)
@@ -116,10 +126,24 @@ export function useLabelingWorkspace(params: URLSearchParams) {
             setProject(null);
           }
           setError(reason instanceof Error ? reason.message : String(reason));
+          if (
+            reason instanceof TypeError ||
+            (reason instanceof ApiError &&
+              [408, 429, 502, 503, 504].includes(reason.status))
+          ) {
+            const delay = Math.min(
+              1000 * 2 ** verificationRetries.current++,
+              5000,
+            );
+            retry = setTimeout(() => {
+              setIdentityRefresh((n) => n + 1);
+            }, delay);
+          }
         }
       });
     return () => {
       live = false;
+      clearTimeout(retry);
     };
   }, [boot, identityRefresh, cache]);
   useEffect(() => {
@@ -272,12 +296,15 @@ export function useLabelingWorkspace(params: URLSearchParams) {
   }
   useEffect(() => {
     const reconnect = () => {
+      identityEpoch.current++;
+      identityVerified.current = false;
+      setVerified(false);
       setIdentityRefresh((n) => n + 1);
       setRefresh((n) => n + 1);
     };
-    window.addEventListener("online", reconnect);
+    window.addEventListener("online", reconnect, true);
     return () => {
-      window.removeEventListener("online", reconnect);
+      window.removeEventListener("online", reconnect, true);
     };
   }, []);
   useEffect(() => {
@@ -286,6 +313,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
   return {
     index,
     verified,
+    isIdentityVerified,
     projectId,
     project,
     task,

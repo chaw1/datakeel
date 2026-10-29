@@ -20,6 +20,7 @@ export function FinalizationPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function prepare() {
+    if (!ready || busy) return;
     setBusy(true);
     setError("");
     try {
@@ -33,7 +34,7 @@ export function FinalizationPanel({
     }
   }
   async function finalize() {
-    if (!plan || busy) return;
+    if (!plan || busy || !ready) return;
     setBusy(true);
     setError("");
     try {
@@ -87,7 +88,7 @@ export function FinalizationPanel({
           <button
             type="button"
             className="button primary"
-            disabled={busy}
+            disabled={!ready || busy}
             onClick={() => {
               void finalize();
             }}

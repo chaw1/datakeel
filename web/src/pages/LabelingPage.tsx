@@ -167,6 +167,7 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                   task={task}
                   actor={index.actor}
                   canSync={workspace.verified}
+                  isIdentityVerified={workspace.isIdentityVerified}
                   project={project}
                   onNavigate={(direction) => {
                     void workspace.navigate(direction);
@@ -243,7 +244,7 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
               )}
               {!task && can("production:finalize") && (
                 <FinalizationPanel
-                  key={projectId}
+                  key={`${index.actor}:${projectId}`}
                   projectId={projectId}
                   ready={
                     project.progress.total > 0 &&

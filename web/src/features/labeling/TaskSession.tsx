@@ -31,6 +31,7 @@ export function TaskSession({
   project,
   actor,
   canSync,
+  isIdentityVerified,
   onNavigate,
   onChanged,
   onSnapshot,
@@ -40,6 +41,7 @@ export function TaskSession({
   project: ProjectWorkbench;
   actor: string;
   canSync: boolean;
+  isIdentityVerified?: () => boolean;
   onNavigate: (direction: -1 | 0 | 1) => void;
   onChanged: () => void;
   onSnapshot: (task: TaskWorkbench) => void;
@@ -90,7 +92,8 @@ export function TaskSession({
   }, [actor, refreshSnapshot]);
   const save = useCallback(
     async (annotation: AnnotationRecord, previousRevisionId: string | null) => {
-      if (!canSync) throw new ApiError(503, t("wbOffline"));
+      if (!canSync || isIdentityVerified?.() === false)
+        throw new ApiError(503, t("wbOffline"));
       const run = await mutateProduction("save_revision", {
         task_id: task.task.id,
         previous_revision_id: previousRevisionId,
@@ -107,7 +110,15 @@ export function TaskSession({
         revisionId: saved.revision.id,
       };
     },
-    [task.task.id, onChanged, t, canSync, refreshSnapshot, acceptSnapshot],
+    [
+      task.task.id,
+      onChanged,
+      t,
+      canSync,
+      isIdentityVerified,
+      refreshSnapshot,
+      acceptSnapshot,
+    ],
   );
   const session = useAnnotationSession({
     key: `${actor}:${project.project.id}:${task.task.id}`,
@@ -135,7 +146,7 @@ export function TaskSession({
   }, [flush, registerGuard]);
   async function perform(operation: "submit" | "approve" | "rework") {
     if (busy || (operation === "submit" ? !editable : !reviewable)) return;
-    if (!canSync) {
+    if (!canSync || isIdentityVerified?.() === false) {
       setError(t("wbOffline"));
       return;
     }
@@ -148,6 +159,18 @@ export function TaskSession({
     try {
       if (!(await flush())) return;
       const fresh = await getTaskWorkbench(task.task.id);
+      if (isIdentityVerified?.() === false) {
+        setError(t("wbOffline"));
+        return;
+      }
+      if (
+        operation !== "submit" &&
+        (fresh.task.latest_revision_id ?? null) !== session.revisionId
+      ) {
+        await reload();
+        setError(t("wbReviewChanged"));
+        return;
+      }
       await mutateProduction(
         operation === "submit" ? "submit_task" : "review_task",
         {
@@ -155,7 +178,7 @@ export function TaskSession({
           ...(operation === "submit"
             ? {}
             : {
-                revision_id: fresh.task.latest_revision_id ?? "",
+                revision_id: session.revisionId ?? "",
                 decision: operation,
                 issues: operation === "rework" ? [issue.trim()] : [],
               }),

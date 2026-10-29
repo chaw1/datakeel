@@ -54,6 +54,7 @@ export const workbenchZh = {
   wbRework: "打回返工",
   wbReviewIssue: "审核问题",
   wbReviewRequired: "请填写问题后再打回。",
+  wbReviewChanged: "发现了新的修订，请重新检查标注后再作出审核决定。",
   wbFinalize: "查看定稿计划",
   wbFinalization: "定稿已通过的项目",
   wbSignFinalize: "签批并定稿项目",

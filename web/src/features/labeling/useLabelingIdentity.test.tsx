@@ -69,6 +69,7 @@ beforeEach(() => {
     .mockImplementation((id) => Promise.resolve(task(id)));
 });
 afterEach(() => {
+  vi.useRealTimers();
   sessionStorage.clear();
 });
 
@@ -171,4 +172,45 @@ it("removes a previously verified project's task and scoped controls when the ne
   expect(result.current.cache.peek("task-1")).toBeNull();
   expect(readWorkspaceSnapshot("actor-a")?.project).toBeNull();
   expect(readWorkspaceSnapshot("actor-a")?.task).toBeNull();
+});
+
+it("retries transient identity verification without enabling writes early", async () => {
+  vi.useFakeTimers();
+  const initial = project("actor-a", ["production:annotate"]);
+  vi.mocked(getWorkbench)
+    .mockRejectedValueOnce(new ApiError(503, "Restarting"))
+    .mockResolvedValueOnce(index(initial));
+  vi.mocked(getProjectWorkbench).mockResolvedValue(initial);
+  const { result } = renderHook(() =>
+    useLabelingWorkspace(new URLSearchParams()),
+  );
+  await act(async () => {
+    await Promise.resolve();
+  });
+  expect(result.current.verified).toBe(false);
+  expect(result.current.isIdentityVerified()).toBe(false);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(999);
+  });
+  expect(getWorkbench).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  expect(getWorkbench).toHaveBeenCalledTimes(2);
+  expect(result.current.verified).toBe(true);
+  expect(result.current.isIdentityVerified()).toBe(true);
+});
+
+it("does not blindly retry a denied identity", async () => {
+  vi.useFakeTimers();
+  vi.mocked(getWorkbench).mockRejectedValue(new ApiError(403, "Revoked"));
+  const { result } = renderHook(() =>
+    useLabelingWorkspace(new URLSearchParams()),
+  );
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10000);
+  });
+  expect(getWorkbench).toHaveBeenCalledTimes(1);
+  expect(result.current.verified).toBe(false);
+  expect(result.current.isIdentityVerified()).toBe(false);
 });

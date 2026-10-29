@@ -56,6 +56,8 @@ export const workbenchEn = {
   wbRework: "Return for rework",
   wbReviewIssue: "Review issue",
   wbReviewRequired: "Describe an issue before returning this task.",
+  wbReviewChanged:
+    "A newer revision was found. Review its annotations before making a decision.",
   wbFinalize: "Review finalization plan",
   wbFinalization: "Finalize approved project",
   wbSignFinalize: "Approve and finalize project",

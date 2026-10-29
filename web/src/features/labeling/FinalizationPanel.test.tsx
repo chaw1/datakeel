@@ -48,3 +48,21 @@ it("disables finalization while any task is not approved", () => {
     screen.getByRole("button", { name: "Review finalization plan" }),
   ).toBeDisabled();
 });
+
+it("blocks an already prepared signature when the project stops being ready", async () => {
+  vi.mocked(actions.prepareProduction).mockResolvedValue(actionPlan);
+  const props = { projectId: "project", ready: true, onChanged: vi.fn() };
+  const { rerender } = render(<FinalizationPanel {...props} />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review finalization plan" }),
+  );
+  const signature = await screen.findByRole("button", {
+    name: "Approve and finalize project",
+  });
+  expect(signature).toBeEnabled();
+  rerender(<FinalizationPanel {...props} ready={false} />);
+  expect(signature).toBeDisabled();
+  fireEvent.click(signature);
+  expect(actions.executeProduction).not.toHaveBeenCalled();
+  expect(props.onChanged).not.toHaveBeenCalled();
+});
