@@ -19,6 +19,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapped, mapped_column
 
 from datakeel.storage.base import Base
+from datakeel.storage.pg_triggers import ensure_pg_trigger
 
 
 class ProductionProjectRow(Base):
@@ -145,10 +146,11 @@ def install_production_constraints(connection: Connection, *, sqlite: bool) -> N
                     )
                 )
         else:
-            connection.execute(text(f"DROP TRIGGER IF EXISTS {table}_immutable ON {table}"))
-            connection.execute(
-                text(
-                    f"CREATE TRIGGER {table}_immutable BEFORE UPDATE OR DELETE ON {table} "
-                    "FOR EACH ROW EXECUTE FUNCTION datakeel_immutable_production()"
-                )
+            # Current triggers need no table DDL, so startup never queues behind open writers.
+            ensure_pg_trigger(
+                connection,
+                name=f"{table}_immutable",
+                table=table,
+                event="UPDATE OR DELETE",
+                function="datakeel_immutable_production",
             )

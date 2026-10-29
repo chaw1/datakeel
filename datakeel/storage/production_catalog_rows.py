@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapped, mapped_column
 
 from datakeel.storage.base import Base
+from datakeel.storage.pg_triggers import ensure_pg_trigger
 
 
 class ProductionLabelSetRow(Base):
@@ -71,13 +72,10 @@ def install_catalog_constraints(connection: Connection, *, sqlite: bool) -> None
         $$ LANGUAGE plpgsql
         """)
     )
-    connection.execute(
-        text("""
-        DO $$ BEGIN IF NOT EXISTS (
-            SELECT 1 FROM pg_trigger WHERE tgname = 'datakeel_label_set_immutable'
-            AND tgrelid = 'production_label_sets'::regclass
-        ) THEN CREATE TRIGGER datakeel_label_set_immutable
-        BEFORE UPDATE OR DELETE ON production_label_sets FOR EACH ROW
-        EXECUTE FUNCTION datakeel_immutable_label_set(); END IF; END $$
-        """)
+    ensure_pg_trigger(
+        connection,
+        name="datakeel_label_set_immutable",
+        table="production_label_sets",
+        event="UPDATE OR DELETE",
+        function="datakeel_immutable_label_set",
     )
