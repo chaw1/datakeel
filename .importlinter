@@ -27,6 +27,7 @@ ignore_imports =
     datakeel.storage.training_download -> datakeel.actions.parameters
     datakeel.storage.action_export -> datakeel.training.export
     datakeel.storage.training_import -> datakeel.training.importers
+    datakeel.storage.training_import -> datakeel.training.native
 # LLM training-data governance reuses indexed hashes and typed offline analysis, never model adapters.
     datakeel.llm_data.index -> datakeel.operators.evidence.near_duplicate_hashes
     datakeel.storage.llm_data_selection -> datakeel.actions.llm_data_parameters

@@ -2354,6 +2354,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/production/projects/{project_id}/workbench": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Project Workbench
+         * @description Read exact production configuration, role scopes, measurements and a task page.
+         */
+        get: operations["project_workbench_api_production_projects__project_id__workbench_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/production/tasks/{task_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Task Content
+         * @description View a version-pinned source or a small image preview under the same source grants.
+         */
+        get: operations["task_content_api_production_tasks__task_id__content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/production/tasks/{task_id}/workbench": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Task Workbench
+         * @description Read one sample with its complete revision, assignment and review evidence.
+         */
+        get: operations["task_workbench_api_production_tasks__task_id__workbench_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/production/workbench": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Workbench
+         * @description Discover readable production projects and the server-selected human identity.
+         */
+        get: operations["workbench_api_production_workbench_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quality/issues": {
         parameters: {
             query?: never;
@@ -3581,6 +3661,10 @@ export interface components {
          * @description Preserve an xyxy box, including invalid coordinates for rule review.
          */
         AnnotationBox: {
+            /** Attributes */
+            attributes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
             /** Category */
             category: string;
             /** X1 */
@@ -3635,6 +3719,30 @@ export interface components {
             rework_of?: string | null;
             /** Version Id */
             version_id: string;
+        };
+        /**
+         * AnnotationPoint
+         * @description Keep one finite source-image pixel coordinate in a polygon.
+         */
+        AnnotationPoint: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /**
+         * AnnotationPolygon
+         * @description Preserve a closed polygon without duplicating its first vertex at the end.
+         */
+        AnnotationPolygon: {
+            /** Attributes */
+            attributes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Category */
+            category: string;
+            /** Points */
+            points: components["schemas"]["AnnotationPoint"][];
         };
         /**
          * AnnotationQAResult
@@ -3724,6 +3832,10 @@ export interface components {
         AnnotationRecord: {
             /** Annotator Id */
             annotator_id: string;
+            /** Attributes */
+            attributes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
             /** Boxes */
             boxes?: components["schemas"]["AnnotationBox"][] | null;
             /** Image Height */
@@ -3732,6 +3844,8 @@ export interface components {
             image_width?: number | null;
             /** Labels */
             labels?: string[] | null;
+            /** Polygons */
+            polygons?: components["schemas"]["AnnotationPolygon"][] | null;
             /** Sample Id */
             sample_id: string;
             /** Spans */
@@ -3740,16 +3854,70 @@ export interface components {
             text_length?: number | null;
         };
         /**
+         * AnnotationRevision
+         * @description Append one annotation and its precise human or model provenance forever.
+         */
+        AnnotationRevision: {
+            /** Actor */
+            actor: string;
+            annotation: components["schemas"]["AnnotationRecord"];
+            /** Confidence */
+            confidence?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Model Name */
+            model_name?: string | null;
+            /** Model Version */
+            model_version?: string | null;
+            /** Previous Revision Id */
+            previous_revision_id: string | null;
+            /**
+             * Source
+             * @default human
+             * @enum {string}
+             */
+            source: "human" | "model";
+            /** Task Id */
+            task_id: string;
+        };
+        /**
          * AnnotationSpan
          * @description Preserve a half-open character span for agreement and boundary review.
          */
         AnnotationSpan: {
+            /** Attributes */
+            attributes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
             /** Category */
             category: string;
             /** End */
             end: number;
             /** Start */
             start: number;
+        };
+        /**
+         * AnnotatorWorkload
+         * @description Report distinct handled tasks, submissions and human rework decisions.
+         */
+        AnnotatorWorkload: {
+            /** Actor */
+            actor: string;
+            /** Assigned */
+            assigned: number;
+            /** Completed */
+            completed: number;
+            /** Review Count */
+            review_count: number;
+            /** Rework Count */
+            rework_count: number;
+            /** Rework Rate */
+            rework_rate: number;
         };
         /**
          * ApprovalDecision
@@ -4266,6 +4434,38 @@ export interface components {
              */
             occurred_at: string;
             scope: components["schemas"]["AccessScope"];
+        };
+        /**
+         * Assignment
+         * @description Identify an actor's exclusive effective assignment for one task stage.
+         */
+        Assignment: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Actor */
+            actor: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Lease Expires At
+             * Format: date-time
+             */
+            lease_expires_at: string;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "annotation" | "review";
+            /** Task Id */
+            task_id: string;
         };
         /**
          * AutoRoutingConfig
@@ -4850,6 +5050,10 @@ export interface components {
         CocoBox: {
             /** Area */
             area?: number | null;
+            /** Attributes */
+            attributes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
             /** Bbox */
             bbox: [
                 number,
@@ -5109,6 +5313,30 @@ export interface components {
             };
             /** Issues */
             issues: components["schemas"]["IssueView"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ConfidenceBucket
+         * @description Count model revisions in a half-open bucket, with 1 included in the last.
+         */
+        ConfidenceBucket: {
+            /** Count */
+            count: number;
+            /** Lower */
+            lower: number;
+            /** Upper */
+            upper: number;
+        };
+        /**
+         * ConfidenceDistribution
+         * @description Count all model-source revision confidence observations for a project.
+         */
+        ConfidenceDistribution: {
+            /** Buckets */
+            buckets: components["schemas"]["ConfidenceBucket"][];
+            /** Project Id */
+            project_id: string;
             /** Total */
             total: number;
         };
@@ -6323,6 +6551,26 @@ export interface components {
             reasons: string[];
             /** Text */
             text: string;
+        };
+        /**
+         * EffectiveScopes
+         * @description Report current server authority and the legacy zero-user compatibility mode.
+         */
+        EffectiveScopes: {
+            /** Actor */
+            actor: string;
+            /** Project Id */
+            project_id?: string | null;
+            /**
+             * Scopes
+             * @default []
+             */
+            scopes: string[];
+            /**
+             * Zero Users
+             * @default false
+             */
+            zero_users: boolean;
         };
         /**
          * EntityLink
@@ -7956,6 +8204,78 @@ export interface components {
             /** Label */
             label: string;
         };
+        /**
+         * LabelMigration
+         * @description Declare how existing annotations are reviewed when label identities change.
+         */
+        LabelMigration: {
+            /**
+             * Operation
+             * @enum {string}
+             */
+            operation: "rename" | "delete" | "merge" | "split";
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /** Source Ids */
+            source_ids: string[];
+            /**
+             * Strategy
+             * @default map
+             * @enum {string}
+             */
+            strategy: "map" | "drop" | "manual";
+            /**
+             * Target Ids
+             * @default []
+             */
+            target_ids: string[];
+        };
+        /**
+         * LabelSet
+         * @description Keep one draft or immutable published vocabulary version.
+         */
+        LabelSet: {
+            /**
+             * Affected Annotations
+             * @default 0
+             */
+            affected_annotations: number;
+            /**
+             * Affected Revisions
+             * @default 0
+             */
+            affected_revisions: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Labels */
+            labels: components["schemas"]["ProductionLabel"][];
+            /**
+             * Migration
+             * @default []
+             */
+            migration: components["schemas"]["LabelMigration"][];
+            /** Name */
+            name: string;
+            /** Previous Version */
+            previous_version?: number | null;
+            /**
+             * Published
+             * @default false
+             */
+            published: boolean;
+            /** Published At */
+            published_at?: string | null;
+            /** Version */
+            version: number;
+        };
         /** @enum {string} */
         LeakageKind: "exact" | "image" | "text" | "group";
         /**
@@ -9229,6 +9549,143 @@ export interface components {
             outputs: string[];
         };
         /**
+         * PrelabelAccuracy
+         * @description Report exact model-draft agreement only against approved human reference revisions.
+         */
+        PrelabelAccuracy: {
+            /** Assessed Tasks */
+            assessed_tasks: number;
+            /** Exact Match Rate */
+            exact_match_rate?: number | null;
+            /** Exact Match Tasks */
+            exact_match_tasks: number;
+            /** Project Id */
+            project_id: string;
+        };
+        /**
+         * ProductionLabel
+         * @description Describe a stable label identity and its optional tree presentation.
+         */
+        ProductionLabel: {
+            /** Attributes */
+            attributes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Color */
+            color?: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Shortcut */
+            shortcut?: string | null;
+        };
+        /**
+         * ProductionProgress
+         * @description Project current counters and repeatedly reworked tasks without counting all tasks.
+         */
+        ProductionProgress: {
+            /** Counts */
+            counts: components["schemas"]["StateCount"][];
+            /** Package Id */
+            package_id?: string | null;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Rework Task Ids
+             * @default []
+             */
+            rework_task_ids: string[];
+            /** Status */
+            status: string;
+            /** Total */
+            total: number;
+        };
+        /**
+         * ProductionTask
+         * @description Track one sample, its immutable revision heads and explicit rework round.
+         */
+        ProductionTask: {
+            /** Annotator Id */
+            annotator_id?: string | null;
+            /** Approved Revision Id */
+            approved_revision_id?: string | null;
+            /** Confidence */
+            confidence?: number | null;
+            /** Id */
+            id: string;
+            /** Latest Revision Id */
+            latest_revision_id?: string | null;
+            /** Package Id */
+            package_id: string;
+            /**
+             * Priority
+             * @default 0
+             */
+            priority: number;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Round
+             * @default 0
+             */
+            round: number;
+            /** Sample Id */
+            sample_id: string;
+            /**
+             * State
+             * @default pending
+             * @enum {string}
+             */
+            state: "pending" | "in_progress" | "submitted" | "in_review" | "approved" | "finalized";
+        };
+        /**
+         * ProductionTemplate
+         * @description Configure one supported core annotation representation and validation rules.
+         */
+        ProductionTemplate: {
+            /**
+             * Annotation Type
+             * @default box
+             * @enum {string}
+             */
+            annotation_type: "box" | "polygon" | "keypoints" | "classification" | "text_span";
+            /**
+             * Archived
+             * @default false
+             */
+            archived: boolean;
+            /** Component Config */
+            component_config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Revision
+             * @default 1
+             */
+            revision: number;
+            /** Validation Rules */
+            validation_rules?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /**
+         * ProductionWorkload
+         * @description Contain exact workload and rework measurements for one project.
+         */
+        ProductionWorkload: {
+            /** Annotators */
+            annotators: components["schemas"]["AnnotatorWorkload"][];
+            /** Project Id */
+            project_id: string;
+        };
+        /**
          * ProfileAnswer
          * @description Keep sampling-axis measurements distinct from per-column missing-value claims.
          */
@@ -9338,6 +9795,49 @@ export interface components {
             time_column: string;
             /** Version Id */
             version_id: string;
+        };
+        /**
+         * Project
+         * @description Bind production to immutable input data and published annotation rules.
+         */
+        Project: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Finalized Version Id */
+            finalized_version_id?: string | null;
+            /**
+             * Guidelines
+             * @default
+             */
+            guidelines: string;
+            /** Id */
+            id: string;
+            /** Label Set Id */
+            label_set_id: string;
+            /** Label Set Version */
+            label_set_version: number;
+            /** Name */
+            name: string;
+            /**
+             * Review Prompt Shown
+             * @default false
+             */
+            review_prompt_shown: boolean;
+            /** Template Id */
+            template_id?: string | null;
+            /** Version Id */
+            version_id: string;
+            /**
+             * Workflow Tier
+             * @default personal
+             * @enum {string}
+             */
+            workflow_tier: "personal" | "group" | "team";
         };
         /**
          * PropertyFilter
@@ -9588,6 +10088,37 @@ export interface components {
             idempotency_key: string;
             /** Plan Id */
             plan_id: string;
+        };
+        /**
+         * Review
+         * @description Retain a human decision against an exact submitted revision and round.
+         */
+        Review: {
+            /** Actor */
+            actor: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approve" | "rework";
+            /** Id */
+            id: string;
+            /**
+             * Issues
+             * @default []
+             */
+            issues: string[];
+            /** Revision Id */
+            revision_id: string;
+            /** Round */
+            round: number;
+            /** Task Id */
+            task_id: string;
         };
         /**
          * ReworkComparison
@@ -10288,6 +10819,22 @@ export interface components {
             revision: number;
         };
         /**
+         * StateCount
+         * @description Expose one incrementally maintained state counter.
+         */
+        StateCount: {
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "in_progress" | "submitted" | "in_review" | "approved" | "finalized";
+        };
+        /**
          * StaticCheck
          * @description Display advisory source findings without treating them as containment.
          */
@@ -10419,6 +10966,30 @@ export interface components {
             shards: number;
             /** Version Id */
             version_id?: string | null;
+        };
+        /**
+         * TaskPackage
+         * @description Describe a reproducible partition whose status comes from task counters.
+         */
+        TaskPackage: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Split Rule
+             * @default count
+             */
+            split_rule: string;
+            /** Task Count */
+            task_count: number;
         };
         /**
          * TaskView
@@ -10657,9 +11228,11 @@ export interface components {
         };
         /**
          * TrainingAnnotationImport
-         * @description Import COCO or YOLO detections into the existing immutable annotation history.
+         * @description Import portable detections or lossless core records into immutable annotation history.
          */
         TrainingAnnotationImport: {
+            /** Annotations Jsonl */
+            annotations_jsonl?: string | null;
             /**
              * Annotator Id
              * @default training
@@ -10670,7 +11243,7 @@ export interface components {
              * Format
              * @enum {string}
              */
-            format: "coco" | "yolo";
+            format: "coco" | "yolo" | "annotations_jsonl";
             /** Idempotency Key */
             idempotency_key: string;
             /**
@@ -11402,6 +11975,93 @@ export interface components {
              * @enum {string}
              */
             type: "whole";
+        };
+        /**
+         * WorkbenchIndex
+         * @description List only readable projects and the caller's actual global server identity.
+         */
+        WorkbenchIndex: {
+            /** Actor */
+            actor: string;
+            effective_scopes: components["schemas"]["EffectiveScopes"];
+            /** Projects */
+            projects: components["schemas"]["Project"][];
+            /** Zero Users */
+            zero_users: boolean;
+        };
+        /**
+         * WorkbenchProject
+         * @description Reuse production facts and measurements for role-specific workbench pages.
+         */
+        WorkbenchProject: {
+            agreement: components["schemas"]["AnnotationQAResult"];
+            confidence: components["schemas"]["ConfidenceDistribution"];
+            effective_scopes: components["schemas"]["EffectiveScopes"];
+            label_set: components["schemas"]["LabelSet"];
+            /** Next Cursor */
+            next_cursor?: string | null;
+            /** Packages */
+            packages: components["schemas"]["TaskPackage"][];
+            prelabel_accuracy: components["schemas"]["PrelabelAccuracy"];
+            progress: components["schemas"]["ProductionProgress"];
+            project: components["schemas"]["Project"];
+            /**
+             * Task Risks
+             * @default []
+             */
+            task_risks: components["schemas"]["WorkbenchTaskRisk"][];
+            /** Tasks */
+            tasks: components["schemas"]["ProductionTask"][];
+            template: components["schemas"]["ProductionTemplate"] | null;
+            workload: components["schemas"]["ProductionWorkload"];
+        };
+        /**
+         * WorkbenchSample
+         * @description Expose source content without returning a private path or object-store key.
+         */
+        WorkbenchSample: {
+            /** Content Url */
+            content_url: string;
+            /** Id */
+            id: string;
+            /** Image Height */
+            image_height?: number | null;
+            /** Image Width */
+            image_width?: number | null;
+            /** Media Type */
+            media_type: string;
+            /** Name */
+            name: string;
+            /** Text */
+            text?: string | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+        };
+        /**
+         * WorkbenchTask
+         * @description Return one sample and its exact append-only revision and review histories.
+         */
+        WorkbenchTask: {
+            /** Assignments */
+            assignments: components["schemas"]["Assignment"][];
+            /** Reviews */
+            reviews: components["schemas"]["Review"][];
+            /** Revisions */
+            revisions: components["schemas"]["AnnotationRevision"][];
+            sample: components["schemas"]["WorkbenchSample"];
+            task: components["schemas"]["ProductionTask"];
+        };
+        /**
+         * WorkbenchTaskRisk
+         * @description Measure the current human annotation's content difference from its latest model draft.
+         */
+        WorkbenchTaskRisk: {
+            /** Model Confidence */
+            model_confidence?: number | null;
+            /** Prelabel Difference */
+            prelabel_difference?: number | null;
+            /** Task Id */
+            task_id: string;
         };
         /**
          * WorkflowAudit
@@ -15613,6 +16273,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    project_workbench_api_production_projects__project_id__workbench_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+                view?: "all" | "mine" | "review";
+                package_id?: string | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchProject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    task_content_api_production_tasks__task_id__content_get: {
+        parameters: {
+            query?: {
+                thumbnail?: boolean;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    task_workbench_api_production_tasks__task_id__workbench_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchTask"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workbench_api_production_workbench_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchIndex"];
                 };
             };
         };

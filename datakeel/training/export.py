@@ -17,6 +17,7 @@ from datakeel.training.export_detection import (
 )
 from datakeel.training.export_hf import write_hf_imagefolder
 from datakeel.training.export_records import write_imagefolder, write_text_jsonl
+from datakeel.training.native import write_annotations_jsonl
 
 FORMAT_VERSION = "1.0"
 _WRITERS: dict[str, Callable[[TrainingExport, Path], dict[str, str]]] = {
@@ -25,10 +26,21 @@ _WRITERS: dict[str, Callable[[TrainingExport, Path], dict[str, str]]] = {
     "imagefolder": write_imagefolder,
     "hf_imagefolder": write_hf_imagefolder,
     "text_jsonl": write_text_jsonl,
+    "annotations_jsonl": write_annotations_jsonl,
 }
 
 
 def _count(item: TrainingExportItem, format_name: str) -> int:
+    if format_name == "annotations_jsonl":
+        return sum(
+            len(value or ())
+            for value in (
+                item.annotation.labels,
+                item.annotation.boxes,
+                item.annotation.polygons,
+                item.annotation.spans,
+            )
+        )
     if format_name in {"coco", "yolo"}:
         return len(item.annotation.boxes or ())
     if format_name == "imagefolder":

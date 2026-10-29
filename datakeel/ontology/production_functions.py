@@ -3,6 +3,8 @@
 
 """Expose authoritative production queries to both read-only tool transports."""
 
+from typing import TYPE_CHECKING
+
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 from datakeel.core.production_reads import (
@@ -20,7 +22,11 @@ from datakeel.storage.production_statistics import (
     annotator_workload,
     confidence_distribution,
     production_agreement,
+    production_prelabel_accuracy,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 PRODUCTION_READ_MODELS: dict[str, type[BoundaryModel]] = {
     "project_progress": ProjectReadParams,
@@ -29,6 +35,7 @@ PRODUCTION_READ_MODELS: dict[str, type[BoundaryModel]] = {
     "rework_rate": ProjectReadParams,
     "annotation_consistency": ProjectReadParams,
     "prelabel_confidence": ProjectReadParams,
+    "production_prelabel_accuracy": ProjectReadParams,
     "label_set_diff": LabelSetDiffParams,
     "next_task": NextTaskParams,
     "production_objects": ProductionObjectQuery,
@@ -79,10 +86,10 @@ def _project_read(
         query = PackageReadParams.model_validate(arguments.root)
         return project_progress(db, query.project_id, query.package_id)
     project = ProjectReadParams.model_validate(arguments.root)
-    if name == "project_progress":
-        return project_progress(db, project.project_id)
-    if name == "prelabel_confidence":
-        return confidence_distribution(db, project.project_id)
-    if name == "annotation_consistency":
-        return production_agreement(db, project.project_id)
-    return annotator_workload(db, project.project_id)
+    readers: dict[str, Callable[[Database, str], BoundaryModel]] = {
+        "project_progress": project_progress,
+        "prelabel_confidence": confidence_distribution,
+        "production_prelabel_accuracy": production_prelabel_accuracy,
+        "annotation_consistency": production_agreement,
+    }
+    return readers.get(name, annotator_workload)(db, project.project_id)

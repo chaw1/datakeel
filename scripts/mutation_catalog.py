@@ -40,8 +40,10 @@ from scripts.training_identity_mutations import TRAINING_IDENTITY_MUTATIONS
 from scripts.training_multilabel_mutations import TRAINING_MULTILABEL_MUTATIONS
 from scripts.training_mutations import TRAINING_MUTATIONS
 from scripts.training_text_mutations import TRAINING_TEXT_MUTATIONS
+from scripts.workbench_mutations import WORKBENCH_MUTATIONS
 
 FEATURE_MUTATIONS = (
+    *WORKBENCH_MUTATIONS,
     *MCP_PAGINATION_MUTATIONS,
     *IDENTITY_MUTATIONS,
     *PRODUCTION_MUTATIONS,

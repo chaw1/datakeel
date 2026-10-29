@@ -158,3 +158,12 @@ class ConfidenceDistribution(BoundaryModel):
     project_id: str
     total: int
     buckets: tuple[ConfidenceBucket, ...]
+
+
+class PrelabelAccuracy(BoundaryModel):
+    """Report exact model-draft agreement only against approved human reference revisions."""
+
+    project_id: str
+    assessed_tasks: int = Field(ge=0)
+    exact_match_tasks: int = Field(ge=0)
+    exact_match_rate: float | None = Field(default=None, ge=0, le=1)

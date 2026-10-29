@@ -75,6 +75,7 @@ def write_coco(export: TrainingExport, directory: Path) -> dict[str, str]:
                         bbox=bbox,
                         area=bbox[2] * bbox[3],
                         iscrowd=0,
+                        attributes=box.attributes,
                     )
                 )
         document = CocoDataset(

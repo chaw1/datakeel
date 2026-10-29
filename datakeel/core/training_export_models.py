@@ -5,13 +5,17 @@
 
 from typing import Annotated, Literal
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel, FileItem
 
-TrainingFormat = Literal["coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"]
-TRAINING_FORMATS = frozenset({"coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"})
+TrainingFormat = Literal[
+    "coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl", "annotations_jsonl"
+]
+TRAINING_FORMATS = frozenset(
+    {"coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl", "annotations_jsonl"}
+)
 
 
 class TrainingExportItem(BoundaryModel):
@@ -80,6 +84,7 @@ class CocoBox(BoundaryModel):
     bbox: tuple[float, float, float, float]
     area: float | None = None
     iscrowd: Literal[0, 1] = 0
+    attributes: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class CocoDataset(BoundaryModel):
@@ -108,21 +113,24 @@ class YoloDataset(BoundaryModel):
 
 
 class TrainingAnnotationImport(BoundaryModel):
-    """Import COCO or YOLO detections into the existing immutable annotation history."""
+    """Import portable detections or lossless core records into immutable annotation history."""
 
-    format: Literal["coco", "yolo"]
+    format: Literal["coco", "yolo", "annotations_jsonl"]
     name: str = Field(default="Training annotations", min_length=1, max_length=200)
     annotator_id: str = Field(default="training", min_length=1, max_length=200)
     idempotency_key: str = Field(min_length=1, max_length=200)
     coco: CocoDataset | None = None
     yolo: YoloDataset | None = None
     sample_ids: dict[str, str] = Field(default_factory=dict)
+    annotations_jsonl: str | None = Field(default=None, max_length=10_000_000)
 
     @model_validator(mode="after")
     def matching_format(self) -> "TrainingAnnotationImport":
         """Reject ambiguous documents instead of silently ignoring an extra payload."""
-        if (self.coco is not None) != (self.format == "coco") or (self.yolo is not None) != (
-            self.format == "yolo"
+        if (
+            (self.coco is not None) != (self.format == "coco")
+            or (self.yolo is not None) != (self.format == "yolo")
+            or (self.annotations_jsonl is not None) != (self.format == "annotations_jsonl")
         ):
             message = "Supply exactly the document matching the selected import format"
             raise ValueError(message)

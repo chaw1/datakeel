@@ -16,6 +16,7 @@ _PRODUCTION_READS = frozenset(
         "rework_rate",
         "annotation_consistency",
         "prelabel_confidence",
+        "production_prelabel_accuracy",
         "label_set_diff",
         "next_task",
         "production_objects",

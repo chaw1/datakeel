@@ -99,7 +99,14 @@ class ExportParams(BoundaryModel):
 
     dataset_id: str
     format: Literal[
-        "croissant", "openlineage", "coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl"
+        "croissant",
+        "openlineage",
+        "coco",
+        "yolo",
+        "imagefolder",
+        "hf_imagefolder",
+        "text_jsonl",
+        "annotations_jsonl",
     ] = "croissant"
     destination: str | None = None
     version_id: str | None = None

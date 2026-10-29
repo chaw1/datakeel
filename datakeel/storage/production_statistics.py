@@ -14,6 +14,7 @@ from datakeel.core.production_models import (
     AnnotatorWorkload,
     ConfidenceBucket,
     ConfidenceDistribution,
+    PrelabelAccuracy,
     ProductionWorkload,
 )
 from datakeel.storage.database import Database
@@ -23,6 +24,62 @@ from datakeel.storage.production_rows import (
     ProductionTaskRow,
 )
 from datakeel.storage.production_tasks import require_project
+from datakeel.storage.workbench_risk import prelabel_difference
+
+
+def _preceding_model(
+    revisions: dict[str, AnnotationRevision], approved: AnnotationRevision
+) -> AnnotationRevision | None:
+    identifier = approved.previous_revision_id
+    seen: set[str] = set()
+    while identifier is not None and identifier not in seen:
+        seen.add(identifier)
+        revision = revisions.get(identifier)
+        if revision is None or revision.task_id != approved.task_id:
+            return None
+        if revision.source == "model":
+            return revision
+        identifier = revision.previous_revision_id
+    return None
+
+
+def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccuracy:
+    """Compare each approved human head with its closest preceding model-source draft.
+
+    This is exact labelled-content agreement, including shape and record attributes,
+    not geometric IoU or human-to-human agreement. Unreviewed tasks and approved
+    model-only revisions never serve as human references; absent references yield null.
+    """
+    with db.session() as session:
+        require_project(session, project_id)
+        revisions = {
+            row.id: AnnotationRevision.model_validate(row.payload)
+            for row in session.scalars(
+                select(ProductionRevisionRow).where(ProductionRevisionRow.project_id == project_id)
+            )
+        }
+        tasks = session.scalars(
+            select(ProductionTaskRow).where(
+                ProductionTaskRow.project_id == project_id,
+                ProductionTaskRow.state.in_(("approved", "finalized")),
+                ProductionTaskRow.approved_revision_id.is_not(None),
+            )
+        )
+        assessed = exact = 0
+        for task in tasks:
+            approved = revisions.get(task.approved_revision_id or "")
+            if approved is None or approved.source != "human":
+                continue
+            model = _preceding_model(revisions, approved)
+            if model is not None:
+                assessed += 1
+                exact += prelabel_difference(approved.annotation, model.annotation) == 0
+    return PrelabelAccuracy(
+        project_id=project_id,
+        assessed_tasks=assessed,
+        exact_match_tasks=exact,
+        exact_match_rate=exact / assessed if assessed else None,
+    )
 
 
 def annotator_workload(db: Database, project_id: str) -> ProductionWorkload:

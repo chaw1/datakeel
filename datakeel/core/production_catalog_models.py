@@ -92,6 +92,16 @@ class ProductionTemplate(BoundaryModel):
     @model_validator(mode="after")
     def supported_validation_rules(self) -> "ProductionTemplate":
         """Reject unsupported rules so saving never silently bypasses a configured constraint."""
+        components = self.component_config.get("components")
+        supported = {"box", "polygon", "classification", "text_span"}
+        if components is not None and (
+            not isinstance(components, list)
+            or not components
+            or any(not isinstance(value, str) or value not in supported for value in components)
+            or len({str(value) for value in components}) != len(components)
+        ):
+            message = "Template components must be distinct supported annotation types"
+            raise ValueError(message)
         if set(self.validation_rules) - {"min_annotations", "max_annotations"}:
             message = "Supported template rules are min_annotations and max_annotations"
             raise ValueError(message)
