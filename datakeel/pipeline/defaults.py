@@ -45,6 +45,7 @@ def default_pipeline() -> Pipeline:
                 "convert.files",
                 "text_quality.files",
                 "table_profile.files",
+                "modality.pointcloud",
                 "modality.other",
                 "nonempty.false",
             ],

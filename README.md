@@ -147,6 +147,10 @@ The five operators are `evidence.image_phash`, `evidence.caption_mentions`, `evi
 
 The [near-duplicate contract](contracts/evidence/near_duplicate.yaml) fixes 64-bit dHash and Hamming distance ≤8. The default `mode: prefix` compares hashes within four-bit prefix buckets and can miss pairs across buckets. `mode: exact` uses disjoint-segment indexing to recover every pair within the threshold, with additional indexing and comparison cost. Each direct pair is stored once and queried in both directions; there is no transitive expansion or automatic merge. The optional `datakeel-accel` package runs the same integer comparisons in Rust; `DATAKEEL_ACCEL=auto|off|required` selects its use, with Python fallback in `auto`. See [build instructions, measured performance and implementation reports](docs/RUST_ACCEL.md). The model-extractor interface and fake adapter have unit tests only; neither runs in the extraction DAG, evidence evaluation or model budget.
 
+## Image quality and point clouds
+
+`image.quality` scores blur, exposure, noise, resolution and solid color, with each failed check's measured reason. PLY (ASCII and both binary byte orders) and PCD (ASCII and binary) point clouds can be probed, cleaned, voxel-downsampled, filtered for statistical outliers, checked for suspected unit mismatch and rendered as top-down PNG previews. Results feed the five quality dimensions, reports, lineage and the file object page. Run `uv run python scripts/demo_media.py --output <new-directory>` for an offline end-to-end example; see [image and point-cloud quality](docs/MEDIA_QUALITY.md) for signals, defaults and limits.
+
 ## Extract and review a text knowledge graph
 
 The demo includes **Business notes · knowledge graph demo**: 24 recorded passages, three clearly labelled scripted long documents and one deliberate truncation. Open **Knowledge graph**, search for `Vivo`, and inspect the pending-review relation. The evidence sentence is present; the tail entity is not. Reject it through the existing review action and confirm the graph shows a rejected edge. Source verification and human review remain separate.
@@ -470,6 +474,8 @@ Import screenshots, scans or diagrams, then select an image transcription profil
 Local OCR requires user-installed third-party packages: `pip install rapidocr==3.10.0 onnxruntime`. They are not Datakeel dependencies and are outside its license audit. Some OpenCV prebuilt packages (including macOS wheels) bundle GPL codecs such as x264/x265; ONNX Runtime includes MPL-2.0 Eigen. Assess these licenses yourself before redistribution. Offline replay needs none of these packages.
 
 See [table and time-series profiling](docs/TIMESERIES.md) for a one-command generated sensor week, deterministic detection rules and controlled catalog profiles.
+
+Local recording preprocessing, generated samples and source-time lineage are documented in [Audio and video preprocessing](docs/MEDIA.md).
 
 ## Custom operators
 

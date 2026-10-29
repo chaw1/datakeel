@@ -44,6 +44,9 @@ def _slots(node: Node) -> tuple[dict[str, str], dict[str, str]]:
         "image": "files.image",
         "text": "files.text",
         "table": "files.table",
+        "audio": "files.audio",
+        "video": "files.video",
+        "pointcloud": "files.point-cloud",
         "other": "files.any",
     }
 

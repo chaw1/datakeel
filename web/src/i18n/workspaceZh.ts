@@ -52,6 +52,9 @@ export const workspaceZh = {
   workbenchRuns: "查看运行中流水线",
   datasetQualityCount: "{count} 个数据集低于 60 分",
   runDetailsTitle: "流水线详情",
+  partiallyCompleted: "部分完成：部分录制处理失败",
+  failedRecordings: "处理失败的录制",
+  partiallyCompletedShort: "部分完成",
   localRuntime: "本地运行",
   workingCount: "{count} 项待办",
 };

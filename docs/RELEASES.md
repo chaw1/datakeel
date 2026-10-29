@@ -131,3 +131,21 @@ Two release fixes accompany these tracks:
 
 - **Large releases and versions.** Publishing a release and creating a version from a selection now accept an explicit budget, up to a configurable ceiling of 1,000,000 objects and 1 TiB by default. The requested budget is frozen into the plan the user approves. See [Large releases](#large-releases-and-versions).
 - **Version comparison on ICU databases.** Comparison now orders file IDs by code point on PostgreSQL (`COLLATE "C"`), so mixed-case or hyphenated IDs are classified correctly on databases whose default collation is ICU. If a database still returns files out of order, the comparison stops with an error instead of misclassifying files.
+
+## v0.13.1 release notes
+
+v0.13.1 adds two accepted feature tracks on top of v0.13.0. Both run entirely on local tools, use no model service, and keep the controlled-action and access-guard rules of v0.13.0.
+
+| Track | What you can do now |
+|---|---|
+| Audio and video preprocessing | Probe recordings with user-installed `ffmpeg`/`ffprobe`; find black, solid, frozen and blurred frames, repeated video, silence, clipping, loudness outside an accepted range and repeated audio; align several recordings of the same event; cut fixed-window clips only from clean ranges and normalize them; keep the original recordings next to the clips with source-time lineage. Long recordings get a timeout that scales with duration and resolution; a recording that fails is listed with its operator and reason while the rest of the batch completes; truncated files are reported against the duration their header promised. `demo-media` runs the chain on generated recordings or on your own local files. |
+| Image quality and point clouds | Score images for blur, exposure, noise, resolution and solid color with the measured reason for each failed check; probe PLY/PCD point clouds, suspect unit mismatches, clean invalid coordinates, downsample by voxel, flag statistical outliers that are isolated points or separated clusters while keeping occluded or distant real structure, and view a top-down PNG preview on the file object page. Undeclared capture forms only receive sparse-coverage hints; declared forms are judged. An unreadable image or scan is listed with its reason and the batch still completes. |
+
+Known limits are documented in [Audio and video preprocessing](MEDIA.md) and [Image and point-cloud quality](MEDIA_QUALITY.md). In short: clipping in lossy-encoded speech and music is only partly recalled and works as a file-level hint rather than a per-segment map; fine-textured frames may not match across frame rates; a transport stream with flipped bits is not flagged; sparse clusters close to real structure can be missed; and point-cloud defaults were calibrated on generated scans only.
+
+Integration changes in this version:
+
+- Quality scoring applies tabular rules, image and point-cloud multipliers and recording deductions in that order. The quality view carries a `media` summary only when recordings were measured; image and point-cloud observations are stored under `image_pointcloud` in the dimension details and reported in their own chapters.
+- The image and point-cloud preset pipeline is `datakeel.pipeline.image_pointcloud.image_pointcloud_pipeline()`; `datakeel.pipeline.media.media_pipeline()` is the audio/video chain.
+- Point-cloud preview downloads go through the same data-asset download guard as file downloads.
+- Lineage records an approved custom operator's code hash as its operator version.

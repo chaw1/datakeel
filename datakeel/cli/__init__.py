@@ -18,6 +18,7 @@ from datakeel.cli import (
     delivery,
     kg_evaluation,
     kg_image_evaluation,
+    media_demo,
     metadata_imports,
     quality,
     release_plans,
@@ -98,6 +99,7 @@ def parser() -> argparse.ArgumentParser:
         routing,
         kg_evaluation,
         timeseries_demo,
+        media_demo,
         custom_operators,
         delivery,
         data_assets,
@@ -184,6 +186,7 @@ def main() -> None:
 # Feature command groups that own their own dispatch over the initialized fact store.
 _MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
     "timeseries-demo": timeseries_demo.dispatch,
+    "demo-media": media_demo.dispatch,
     "custom-operator": custom_operators.dispatch,
     "version-diff": delivery.database_command,
     "release-export": delivery.database_command,

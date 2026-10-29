@@ -3,6 +3,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { date, taskProgress } from "../../lib/format";
 
 import { StateBadge } from "./StateBadge";
+import { TaskOutcome } from "./TaskOutcome";
 
 import type { Task } from "../../api/types";
 export function Tasks({
@@ -33,6 +34,7 @@ export function Tasks({
             <strong>{t("datasetProcessing")}</strong>
             <span className="mono">{task.id}</span>
             {task.error && <p className="error-text">{task.error}</p>}
+            <TaskOutcome task={task} />
           </div>
           <div className="task-progress">
             <div>

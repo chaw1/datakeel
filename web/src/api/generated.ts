@@ -1174,6 +1174,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/datasets/{identifier}/files/{file_id}/pointcloud-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pointcloud Preview
+         * @description View a PNG preview from the same dataset/version scope as its point cloud.
+         */
+        get: operations["pointcloud_preview_api_datasets__identifier__files__file_id__pointcloud_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/datasets/{identifier}/metadata": {
         parameters: {
             query?: never;
@@ -6075,6 +6095,7 @@ export interface components {
             filename: string;
             /** Id */
             id: string;
+            media?: components["schemas"]["MediaFileView"] | null;
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -7482,6 +7503,250 @@ export interface components {
             table: string;
         };
         /**
+         * MediaAlignment
+         * @description Describe a recording's shared signal relative to the first input.
+         *
+         *     A positive offset means the shared signal occurs later in this recording;
+         *     subtract the offset from this recording's timestamps to match the reference.
+         *     Unalignable signals have a null offset, never an invented zero offset.
+         */
+        MediaAlignment: {
+            /**
+             * Aligned
+             * @default false
+             */
+            aligned: boolean;
+            /**
+             * Confidence
+             * @default 0
+             */
+            confidence: number;
+            /** Offset Ms */
+            offset_ms?: number | null;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "reference" | "matched" | "silence" | "ambiguous" | "no_common_signal" | "missing_audio";
+            /** Reference File Id */
+            reference_file_id: string;
+        };
+        /**
+         * MediaFailure
+         * @description Name a recording that could not be processed, the operator and the reason.
+         */
+        MediaFailure: {
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Operator */
+            operator: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * MediaFileScore
+         * @description Explain one recording or clip's measured signal deductions.
+         */
+        MediaFileScore: {
+            /** Accepted Lufs */
+            accepted_lufs?: [
+                number,
+                number
+            ] | null;
+            /** Dimensions */
+            dimensions: {
+                [key: string]: number;
+            };
+            /** Duration Ms */
+            duration_ms: number;
+            /** Effective Duration Ms */
+            effective_duration_ms: number;
+            /** File Id */
+            file_id: string;
+            /** Filename */
+            filename: string;
+            /** Loudness Lufs */
+            loudness_lufs?: number | null;
+            /** Loudness Tolerance Lu */
+            loudness_tolerance_lu?: number | null;
+            /** Reasons */
+            reasons: string[];
+            /** Total */
+            total: number;
+        };
+        /**
+         * MediaFileView
+         * @description Expose typed recording measurements and source ranges to object pages.
+         */
+        MediaFileView: {
+            alignment?: components["schemas"]["MediaAlignment"] | null;
+            /** History */
+            history?: components["schemas"]["MediaStep"][];
+            /** Issues */
+            issues?: components["schemas"]["MediaInterval"][];
+            /** Metrics */
+            metrics?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            probe: components["schemas"]["MediaProbe"];
+            /** Source Asset Id */
+            source_asset_id?: string | null;
+            /** Source End Ms */
+            source_end_ms?: number | null;
+            /** Source File Id */
+            source_file_id?: string | null;
+            /**
+             * Source Start Ms
+             * @default 0
+             */
+            source_start_ms: number;
+        };
+        /**
+         * MediaInterval
+         * @description Locate a measured issue in the recording's local timeline.
+         */
+        MediaInterval: {
+            /** Code */
+            code: string;
+            /** End Ms */
+            end_ms: number;
+            /**
+             * Severity
+             * @default warning
+             * @enum {string}
+             */
+            severity: "info" | "warning" | "critical";
+            /** Start Ms */
+            start_ms: number;
+        };
+        /**
+         * MediaProbe
+         * @description Describe decoded recording properties in milliseconds and display coordinates.
+         */
+        MediaProbe: {
+            /**
+             * Audio Tracks
+             * @default 0
+             */
+            audio_tracks: number;
+            /**
+             * Channels
+             * @default 0
+             */
+            channels: number;
+            /**
+             * Codec
+             * @default
+             */
+            codec: string;
+            /** Declared Duration Ms */
+            declared_duration_ms?: number | null;
+            /** Duration Ms */
+            duration_ms: number;
+            /**
+             * Format
+             * @default
+             */
+            format: string;
+            /**
+             * Frame Rate
+             * @default 0
+             */
+            frame_rate: number;
+            /**
+             * Height
+             * @default 0
+             */
+            height: number;
+            /**
+             * Rotation
+             * @default 0
+             */
+            rotation: number;
+            /**
+             * Sample Rate
+             * @default 0
+             */
+            sample_rate: number;
+            /**
+             * Width
+             * @default 0
+             */
+            width: number;
+        };
+        /**
+         * MediaStep
+         * @description Freeze one transformation and its immediate source time range.
+         */
+        MediaStep: {
+            /** End Ms */
+            end_ms?: number | null;
+            /** Operator */
+            operator: string;
+            /** Parameters */
+            parameters: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Parameters Digest */
+            parameters_digest: string;
+            /** Source File Id */
+            source_file_id: string;
+            /**
+             * Start Ms
+             * @default 0
+             */
+            start_ms: number;
+            /**
+             * Version
+             * @default 1.0.0
+             */
+            version: string;
+        };
+        /**
+         * MediaSummary
+         * @description Aggregate original recordings separately from their derived clips.
+         *
+         *     Recordings that failed are listed in ``failures`` instead of being scored;
+         *     ``partial`` is true when some recordings failed while others were processed.
+         */
+        MediaSummary: {
+            /**
+             * Clip Count
+             * @default 0
+             */
+            clip_count: number;
+            /**
+             * Duplicate Count
+             * @default 0
+             */
+            duplicate_count: number;
+            /**
+             * Effective Duration Ms
+             * @default 0
+             */
+            effective_duration_ms: number;
+            /** Failures */
+            failures?: components["schemas"]["MediaFailure"][];
+            /** Files */
+            files?: components["schemas"]["MediaFileScore"][];
+            /** Issue Distribution */
+            issue_distribution?: {
+                [key: string]: number;
+            };
+            /**
+             * Original Duration Ms
+             * @default 0
+             */
+            original_duration_ms: number;
+            /**
+             * Partial
+             * @default false
+             */
+            partial: boolean;
+        };
+        /**
          * MemoryCreate
          * @description Bind an explicit write to its optional source and replay key.
          */
@@ -8478,6 +8743,7 @@ export interface components {
             grade: string;
             /** Issues */
             issues: components["schemas"]["IssueView"][];
+            media?: components["schemas"]["MediaSummary"] | null;
             rules?: components["schemas"]["DqSummary"] | null;
             tabular?: components["schemas"]["TabularAssessment"] | null;
             /** Total */
@@ -9300,6 +9566,9 @@ export interface components {
         /**
          * TaskView
          * @description Persisted task state and derived completion progress.
+         *
+         *     ``failed_files`` lists recordings published with a processing failure, and
+         *     ``partial`` marks a completed task whose output includes such failures.
          */
         TaskView: {
             /** Completed Shards */
@@ -9310,12 +9579,19 @@ export interface components {
             dataset_id: string;
             /** Error */
             error: string | null;
+            /** Failed Files */
+            failed_files?: components["schemas"]["MediaFailure"][];
             /** Finished At */
             finished_at: number | null;
             /** Id */
             id: string;
             /** Input Version Id */
             input_version_id: string | null;
+            /**
+             * Partial
+             * @default false
+             */
+            partial: boolean;
             /** Progress */
             progress: number;
             /** Shards */
@@ -12105,6 +12381,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pointcloud_preview_api_datasets__identifier__files__file_id__pointcloud_preview_get: {
+        parameters: {
+            query?: {
+                version?: string | null;
+            };
+            header?: never;
+            path: {
+                identifier: string;
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
                 };
             };
             /** @description Validation Error */

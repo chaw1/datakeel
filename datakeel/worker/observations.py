@@ -3,11 +3,15 @@
 
 """Build lineage observations for concurrent pipeline operator callbacks."""
 
+import hashlib
+import json
 import threading
 
 from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.operators import REGISTRY
 from datakeel.pipeline import Node, Pipeline, PipelineObservation
 from datakeel.storage.task_queue import Lease
+from datakeel.worker.media_observations import media_events
 
 
 class Observations:
@@ -20,6 +24,7 @@ class Observations:
         self.nodes = {node.id: node for node in definition.nodes}
         self.events: list[LineageEvent] = []
         self.lock = threading.Lock()
+        self.original_ids = {file.id for file in lease.inputs}
 
     def ancestors(self, reference: str) -> list[AssetRef]:
         """Resolve routing nodes to their nearest upstream producing assets."""
@@ -49,11 +54,41 @@ class Observations:
             for reference in node.inputs.values():
                 for ref in self.ancestors(reference):
                     upstream[ref.asset_id] = ref
+            self.events.extend(media_events(self.lease, value, self._artifact(node)))
+            media = value.operator.startswith(("pointcloud.", "image.quality"))
+            file_inputs = (
+                [
+                    AssetRef(
+                        asset_type="file" if key in self.original_ids else "artifact",
+                        asset_id=key,
+                        version=self.lease.input_version_id if key in self.original_ids else None,
+                    )
+                    for key in value.inputs
+                ]
+                if media
+                else []
+            )
+            file_outputs = (
+                [
+                    AssetRef(asset_type="artifact", asset_id=key)
+                    for key in value.outputs
+                    if key not in value.inputs
+                ]
+                if media and value.run_state == "COMPLETED"
+                else []
+            )
+            parameter_digest = hashlib.sha256(
+                json.dumps(value.params, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
             self.events.append(
                 LineageEvent(
                     idempotency_key=f"shard:{self.lease.shard_id}:node:{identifier}",
-                    inputs=list(upstream.values()) or [self.source],
-                    outputs=[self._artifact(node)] if value.run_state == "COMPLETED" else [],
+                    inputs=[*(list(upstream.values()) or [self.source]), *file_inputs],
+                    outputs=(
+                        [self._artifact(node), *file_outputs]
+                        if value.run_state == "COMPLETED"
+                        else []
+                    ),
                     operator=value["operator"],
                     source_ref=self.lease.task_id,
                     run_state=value.get("run_state", "COMPLETED"),
@@ -62,6 +97,16 @@ class Observations:
                         **value.get("quality", {}),
                         "input_count": value.get("input_count", 0),
                         "output_count": value.get("output_count", 0),
+                        "operator_version": _operator_version(value.operator),
+                        "params_sha256": parameter_digest,
                     },
                 )
             )
+
+
+def _operator_version(operator: str) -> str:
+    """Registered operators carry a manifest version; approved custom ones are pinned by hash."""
+    registered = REGISTRY.get(operator)
+    if registered is not None:
+        return registered.manifest.version
+    return operator.rpartition("@")[2]

@@ -1,5 +1,6 @@
 import { objectHref } from "../features/object/navigation";
 import { StateBadge } from "../features/tasks/StateBadge";
+import { TaskOutcome } from "../features/tasks/TaskOutcome";
 import { useI18n } from "../i18n/useI18n";
 import { date, timestamp } from "../lib/format";
 
@@ -23,6 +24,7 @@ export function RunsPage({
         data.datasets.find((dataset) => dataset.id === task.dataset_id)?.name ??
         t("datasetProcessing"),
       state: task.state,
+      partial: task.partial,
       created: timestamp(task.created_at),
       completed: task.finished_at === null ? null : timestamp(task.finished_at),
       href: `#/runs?type=pipeline&run=${encodeURIComponent(task.id)}`,
@@ -32,6 +34,7 @@ export function RunsPage({
       kind: "action",
       name: run.action_type,
       state: run.status,
+      partial: false,
       created: timestamp(run.created_at),
       completed: run.completed_at ? timestamp(run.completed_at) : null,
       href: objectHref({ kind: "action_run", id: run.id }),
@@ -106,6 +109,12 @@ export function RunsPage({
                 <td>{row.name}</td>
                 <td>
                   <StateBadge state={row.state} />
+                  {row.partial && (
+                    <span className="warning-text">
+                      {" "}
+                      {t("partiallyCompletedShort")}
+                    </span>
+                  )}
                 </td>
                 <td>{date(row.created)}</td>
                 <td>
@@ -142,6 +151,7 @@ export function RunsPage({
           >
             {t("openDataset")}
           </a>
+          <TaskOutcome task={task} />
           <pre>{JSON.stringify(task, null, 2)}</pre>
         </section>
       )}

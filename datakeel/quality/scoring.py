@@ -11,6 +11,8 @@ from typing import Any, cast
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
+from datakeel.quality.image_pointcloud import apply_image_pointcloud
+from datakeel.quality.media import apply_media, summarize_media
 from datakeel.quality.models import QualityConfig, QualityView
 from datakeel.quality.tabular import assess_tables, table_issues
 
@@ -137,11 +139,17 @@ def score_quality(
             details[dimension]["tabular_rule"] = (
                 "fraction of source rows affected by recorded rules"
             )
+    visual = apply_image_pointcloud(files, raw, details)
+    media = summarize_media(files)
+    if media is not None:
+        complete_ids = {file.id for file in files if _complete(file, resolved)}
+        apply_media(media, files, complete_ids, raw, details)
     result = _summarize(raw, details, resolved, annotations, count)
     return result.model_copy(
         update={
             "tabular": tabular if tabular.files else None,
-            "issues": [*result.issues, *table_issues(tabular)],
+            "media": media,
+            "issues": [*result.issues, *table_issues(tabular), *visual],
         }
     )
 

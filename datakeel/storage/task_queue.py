@@ -14,6 +14,7 @@ from datakeel.core.dq_monitor import DqCompletion
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_execution import PendingExtraction
 from datakeel.core.kg_execution import KGCompletion
+from datakeel.core.media_metadata import media_failure
 from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
 from datakeel.pipeline import Pipeline, validate_pipeline
 from datakeel.pipeline.sharding import validate_shards
@@ -334,6 +335,17 @@ def task_dict(db: Database, task: TaskRow) -> dict[str, Any]:
         if task.state == "QUEUED" and any(s.state == "RUNNING" for s in shards)
         else task.state
     )
+    failures = [
+        failure.model_dump(mode="json")
+        for shard in shards
+        for item in shard.outputs or []
+        if (
+            failure := media_failure(
+                str(item.get("id", "")), str(item.get("filename", "")), item.get("metadata") or {}
+            )
+        )
+        is not None
+    ]
     return {
         "id": task.id,
         "dataset_id": task.dataset_id,
@@ -349,6 +361,8 @@ def task_dict(db: Database, task: TaskRow) -> dict[str, Any]:
             {"id": s.id, "state": s.state, "attempts": s.attempts, "ordinal": s.ordinal}
             for s in shards
         ],
+        "failed_files": failures,
+        "partial": state == "COMPLETED" and bool(failures),
     }
 
 

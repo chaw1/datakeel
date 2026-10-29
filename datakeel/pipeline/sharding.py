@@ -12,7 +12,11 @@ def validate_shards(pipeline: Pipeline | None, shards: int) -> None:
     if (
         pipeline is not None
         and shards != 1
-        and any(node.operator == "evidence.near_duplicate" for node in pipeline.nodes)
+        and any(
+            node.operator
+            in {"evidence.near_duplicate", "media.align", "audio.dedup", "video.dedup"}
+            for node in pipeline.nodes
+        )
     ):
-        msg = "evidence.near_duplicate requires exactly one shard for global candidate recall"
+        msg = "Pairwise media/evidence operators require exactly one shard for global recall"
         raise ValidationError(msg)

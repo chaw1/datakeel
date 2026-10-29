@@ -14,14 +14,14 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import Image, PngImagePlugin
 
 from datakeel.operators import REGISTRY
 from datakeel.operators.image import helpers, parallel
-from datakeel.operators.image.limits import ImageResourceLimit
 
 if TYPE_CHECKING:
     from datakeel.core.models import FileItem
+    from datakeel.operators.base import OperatorResult
     from tests.operators.factories import FileFactory, ImageFactory
 
 
@@ -151,28 +151,63 @@ def test_parallel_transform_exception_propagates_and_joins_workers(
     assert completed == [files[1].id]
 
 
+def _failure(result: OperatorResult, file: FileItem) -> dict[str, object]:
+    """Return the recorded failure of one input file in an operator result."""
+    failed = next(item for item in result.files if item.id == file.id)
+    detail = failed.metadata["image_error"]
+    assert isinstance(detail, dict)
+    return detail
+
+
 @pytest.mark.parametrize("name", ["image.resize", "image.thumbnail", "image.convert"])
-def test_batch_decoding_retains_resource_limits_and_corrupt_errors(
+def test_batch_records_corrupt_and_oversized_files_and_keeps_the_rest(
     make_image: ImageFactory,
     make_file: FileFactory,
     output_dir: Path,
     monkeypatch: pytest.MonkeyPatch,
     name: str,
 ) -> None:
-    """Retain original decoder safeguards and exception types in batch operations."""
+    """Record decoder and byte-limit failures per file instead of failing the batch."""
     valid = make_image()
     broken = make_file(b"invalid image", "broken.png", "image")
-    with pytest.raises(OSError, match="cannot identify image"):
-        REGISTRY[name].run([valid, broken], output_dir)
+    result = REGISTRY[name].run([valid, broken], output_dir)
+    assert [file.id == broken.id for file in result.files] == [False, True]
+    assert "image_error" not in result.files[0].metadata
+    assert result.files[0].metadata["source_file_id"] == valid.id
+    failure = _failure(result, broken)
+    assert failure["operator"] == name
+    assert "cannot identify image file 'broken.png'" in str(failure["reason"])
+    assert broken.path not in str(failure["reason"])
+    assert result.quality["partial"] is True
+    assert result.quality["failed_count"] == 1
+    assert result.quality["issues"][-1]["code"] == "image_unreadable"
+    assert result.quality["issues"][-1]["severity"] == "error"
     with monkeypatch.context() as small_limit:
         small_limit.setattr(helpers, "MAX_IMAGE_BYTES", 1)
-        with pytest.raises(ImageResourceLimit, match="bytes"):
-            REGISTRY[name].run([valid, valid], output_dir)
+        limited = REGISTRY[name].run([valid, valid], output_dir)
+    assert limited.quality["failed_count"] == 2
+    assert "bytes" in str(_failure(limited, valid)["reason"])
+    clean = REGISTRY[name].run([valid, valid], output_dir)
+    assert clean.quality["partial"] is False
+    assert clean.quality["failed_count"] == 0
     assert REGISTRY[name].run([], output_dir).files == []
 
 
+def test_failed_image_passes_later_steps_with_its_first_reason(
+    make_image: ImageFactory, make_file: FileFactory, output_dir: Path
+) -> None:
+    """Skip an image an earlier step could not read instead of decoding it again."""
+    broken = make_file(b"invalid image", "broken.png", "image")
+    resized = REGISTRY["image.resize"].run([broken, make_image()], output_dir)
+    preview = REGISTRY["image.thumbnail"].run(resized.files, output_dir)
+    assert preview.files[0] == resized.files[0]
+    assert _failure(preview, broken)["operator"] == "image.resize"
+    assert preview.quality["failed_count"] == 1
+    assert "image_error" not in preview.files[1].metadata
+
+
 def test_batch_rejects_oversized_header_before_decoding(
-    make_image: ImageFactory, output_dir: Path
+    make_image: ImageFactory, output_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Keep the 16-million-pixel guard when a batch mixes small and oversized inputs."""
     valid, oversized = make_image(), make_image(width=2, height=2)
@@ -180,14 +215,24 @@ def test_batch_rejects_oversized_header_before_decoding(
     data[16:24] = struct.pack(">II", 4001, 4000)
     data[29:33] = struct.pack(">I", zlib.crc32(data[12:29]))
     Path(oversized.path).write_bytes(data)
-    with pytest.raises(ImageResourceLimit, match="pixels"):
-        REGISTRY["image.resize"].run([valid, oversized], output_dir)
+    original_load = PngImagePlugin.PngImageFile.load
+
+    def guarded_load(image: PngImagePlugin.PngImageFile) -> object:
+        if image.size == (4001, 4000):
+            msg = "Oversized image reached pixel decoding"
+            raise AssertionError(msg)
+        return original_load(image)
+
+    monkeypatch.setattr(PngImagePlugin.PngImageFile, "load", guarded_load)
+    result = REGISTRY["image.resize"].run([valid, oversized], output_dir)
+    assert "pixels" in str(_failure(result, oversized)["reason"])
+    assert result.quality["failed_count"] == 1
 
 
-def test_header_bomb_falls_back_to_original_serial_error_order(
+def test_header_bomb_is_recorded_in_source_order(
     make_image: ImageFactory, output_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Defer preflight decompression errors until the original decoder reaches that input."""
+    """Record a decompression bomb for its own file and still convert the others."""
     valid, oversized = make_image(), make_image()
     original_open = Image.open
 
@@ -198,6 +243,8 @@ def test_header_bomb_falls_back_to_original_serial_error_order(
         return original_open(path)
 
     monkeypatch.setattr(Image, "open", inspect)
-    with pytest.raises(Image.DecompressionBombError, match="oversized header"):
-        REGISTRY["image.convert"].run([valid, oversized], output_dir)
+    result = REGISTRY["image.convert"].run([valid, oversized], output_dir)
+    failure = _failure(result, oversized)
+    assert failure["reason"] == "DecompressionBombError: oversized header"
+    assert [file.id == oversized.id for file in result.files] == [False, True]
     assert len(list(output_dir.glob("*.png"))) == 1

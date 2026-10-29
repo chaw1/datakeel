@@ -1,6 +1,655 @@
 [
   {
+    "id": "audio.probe",
+    "version": "1.0.0",
+    "modality": "audio",
+    "category": "inspection",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Declare an operator with no configurable parameters.",
+      "properties": {},
+      "title": "EmptyParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.vad",
+    "version": "1.0.0",
+    "modality": "audio",
+    "category": "quality",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Estimate activity from short-time RMS, without a speech recognition model.",
+      "properties": {
+        "threshold_dbfs": {
+          "default": -40.0,
+          "maximum": 0,
+          "minimum": -100,
+          "title": "Threshold Dbfs",
+          "type": "number"
+        },
+        "frame_ms": {
+          "default": 20,
+          "maximum": 100,
+          "minimum": 5,
+          "title": "Frame Ms",
+          "type": "integer"
+        },
+        "min_activity_ms": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Min Activity Ms",
+          "type": "integer"
+        },
+        "min_silence_ms": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Min Silence Ms",
+          "type": "integer"
+        }
+      },
+      "title": "ActivityParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.trim_silence",
+    "version": "1.0.0",
+    "modality": "audio",
+    "category": "transformation",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Trim leading and trailing silence while preserving internal timing.",
+      "properties": {
+        "threshold_dbfs": {
+          "default": -40.0,
+          "maximum": 0,
+          "minimum": -100,
+          "title": "Threshold Dbfs",
+          "type": "number"
+        },
+        "frame_ms": {
+          "default": 20,
+          "maximum": 100,
+          "minimum": 5,
+          "title": "Frame Ms",
+          "type": "integer"
+        },
+        "min_activity_ms": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Min Activity Ms",
+          "type": "integer"
+        },
+        "min_silence_ms": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Min Silence Ms",
+          "type": "integer"
+        },
+        "padding_ms": {
+          "default": 20,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Padding Ms",
+          "type": "integer"
+        }
+      },
+      "title": "TrimParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.loudness",
+    "version": "1.0.0",
+    "modality": "audio",
+    "category": "quality",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Measure EBU R128 loudness and optionally create a normalized PCM artifact.\n\nIntegrated loudness inside ``[acceptable_min_lufs, acceptable_max_lufs]``, widened\nby ``loudness_tolerance_lu`` on both sides, is not flagged. The default range runs\nfrom the EBU R128 broadcast target (-23 LUFS) to the -14 LUFS normalization level\nof the loudest common streaming platforms, with R128's +/-1 LU tolerance; set the\nrange to -23..-23 for strict broadcast delivery (-23 +/- 1). ``target_lufs`` is the\nlevel that ``normalize`` produces.",
+      "properties": {
+        "normalize": {
+          "default": false,
+          "title": "Normalize",
+          "type": "boolean"
+        },
+        "target_lufs": {
+          "default": -23.0,
+          "maximum": -5,
+          "minimum": -70,
+          "title": "Target Lufs",
+          "type": "number"
+        },
+        "acceptable_min_lufs": {
+          "default": -23.0,
+          "maximum": -5,
+          "minimum": -70,
+          "title": "Acceptable Min Lufs",
+          "type": "number"
+        },
+        "acceptable_max_lufs": {
+          "default": -14.0,
+          "maximum": -5,
+          "minimum": -70,
+          "title": "Acceptable Max Lufs",
+          "type": "number"
+        },
+        "loudness_tolerance_lu": {
+          "default": 1.0,
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Loudness Tolerance Lu",
+          "type": "number"
+        },
+        "true_peak_dbfs": {
+          "default": -1.0,
+          "maximum": 0,
+          "minimum": -9,
+          "title": "True Peak Dbfs",
+          "type": "number"
+        },
+        "loudness_range_lu": {
+          "default": 7.0,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Loudness Range Lu",
+          "type": "number"
+        }
+      },
+      "title": "LoudnessParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.clipping",
+    "version": "1.0.0",
+    "modality": "audio",
+    "category": "quality",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Find full-scale plateaus and near-full-scale dwelling without downmixing channels.",
+      "properties": {
+        "threshold": {
+          "default": 0.999,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "min_consecutive_samples": {
+          "default": 3,
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Min Consecutive Samples",
+          "type": "integer"
+        },
+        "saturation_level": {
+          "default": 0.85,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Saturation Level",
+          "type": "number"
+        },
+        "saturation_occupancy": {
+          "default": 0.45,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Saturation Occupancy",
+          "type": "number"
+        },
+        "window_ms": {
+          "default": 20,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Window Ms",
+          "type": "integer"
+        },
+        "merge_gap_ms": {
+          "default": 50,
+          "maximum": 5000,
+          "minimum": 0,
+          "title": "Merge Gap Ms",
+          "type": "integer"
+        }
+      },
+      "title": "ClippingParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "audio.dedup",
+    "version": "1.0.0",
+    "modality": "audio",
+    "category": "deduplication",
+    "inputs": {
+      "files": "files.audio"
+    },
+    "outputs": {
+      "files": "files.audio"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Compare MFCC spectral shape and fluctuation time course within a duration tolerance.\n\nVarying sound is a copy when its MFCC fluctuations correlate within ``max_lag_ms``;\nsteady tones are compared by spectral shape alone.",
+      "properties": {
+        "correlation_threshold": {
+          "default": 0.6,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Correlation Threshold",
+          "type": "number"
+        },
+        "shape_threshold": {
+          "default": 0.75,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Shape Threshold",
+          "type": "number"
+        },
+        "stationary_threshold": {
+          "default": 0.95,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Stationary Threshold",
+          "type": "number"
+        },
+        "max_lag_ms": {
+          "default": 200,
+          "maximum": 5000,
+          "minimum": 0,
+          "title": "Max Lag Ms",
+          "type": "integer"
+        },
+        "duration_tolerance": {
+          "default": 0.05,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Duration Tolerance",
+          "type": "number"
+        },
+        "remove": {
+          "default": true,
+          "title": "Remove",
+          "type": "boolean"
+        }
+      },
+      "title": "DedupParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.probe",
+    "version": "1.0.0",
+    "modality": "video",
+    "category": "inspection",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Declare an operator with no configurable parameters.",
+      "properties": {},
+      "title": "EmptyParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.invalid_frames",
+    "version": "1.0.0",
+    "modality": "video",
+    "category": "quality",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Configure signal thresholds at the documented 160 by 90 analysis scale.\n\n``sample_fps`` is the maximum analysis rate: slower video is examined frame by\nframe, so interval boundaries are exact to one frame.",
+      "properties": {
+        "sample_fps": {
+          "default": 30.0,
+          "maximum": 60,
+          "minimum": 1,
+          "title": "Sample Fps",
+          "type": "number"
+        },
+        "black_threshold": {
+          "default": 16.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Black Threshold",
+          "type": "number"
+        },
+        "solid_std_threshold": {
+          "default": 2.0,
+          "maximum": 128,
+          "minimum": 0,
+          "title": "Solid Std Threshold",
+          "type": "number"
+        },
+        "freeze_difference": {
+          "default": 0.75,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Freeze Difference",
+          "type": "number"
+        },
+        "freeze_local_difference": {
+          "default": 2.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Freeze Local Difference",
+          "type": "number"
+        },
+        "freeze_locality": {
+          "default": 10.0,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Freeze Locality",
+          "type": "number"
+        },
+        "freeze_noise_ratio": {
+          "default": 0.5,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Freeze Noise Ratio",
+          "type": "number"
+        },
+        "freeze_duration_ms": {
+          "default": 1200,
+          "minimum": 100,
+          "title": "Freeze Duration Ms",
+          "type": "integer"
+        },
+        "blur_variance_threshold": {
+          "default": 8.0,
+          "minimum": 0,
+          "title": "Blur Variance Threshold",
+          "type": "number"
+        },
+        "minimum_interval_ms": {
+          "default": 200,
+          "minimum": 0,
+          "title": "Minimum Interval Ms",
+          "type": "integer"
+        },
+        "remove": {
+          "default": false,
+          "title": "Remove",
+          "type": "boolean"
+        },
+        "invalid_ratio_threshold": {
+          "default": 0.99,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Invalid Ratio Threshold",
+          "type": "number"
+        }
+      },
+      "title": "InvalidFramesParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.dedup",
+    "version": "1.0.0",
+    "modality": "video",
+    "category": "deduplication",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Search repeated windows frame by frame and extend each match to its real extent.\n\nRepeats lasting at least 1.5 windows are located wherever they start. Frames\nmatch when the thumbnail differs little on average (``max_spatial_difference``)\nand nowhere by much (``max_local_difference``, so a changed clock digit or a\nsubject elsewhere in a static scene is not a match), and when the picture\nchanges the same way; windows of static picture are never reported.",
+      "properties": {
+        "window_ms": {
+          "default": 2000,
+          "maximum": 60000,
+          "minimum": 500,
+          "title": "Window Ms",
+          "type": "integer"
+        },
+        "sample_fps": {
+          "default": 30.0,
+          "maximum": 60,
+          "minimum": 1,
+          "title": "Sample Fps",
+          "type": "number"
+        },
+        "max_hamming": {
+          "default": 6.0,
+          "maximum": 32,
+          "minimum": 0,
+          "title": "Max Hamming",
+          "type": "number"
+        },
+        "max_brightness_difference": {
+          "default": 16.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Max Brightness Difference",
+          "type": "number"
+        },
+        "max_spatial_difference": {
+          "default": 2.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Max Spatial Difference",
+          "type": "number"
+        },
+        "max_local_difference": {
+          "default": 32.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Max Local Difference",
+          "type": "number"
+        },
+        "minimum_clip_ms": {
+          "default": 250,
+          "minimum": 0,
+          "title": "Minimum Clip Ms",
+          "type": "integer"
+        },
+        "remove": {
+          "default": false,
+          "title": "Remove",
+          "type": "boolean"
+        }
+      },
+      "title": "DedupParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.segment",
+    "version": "1.0.0",
+    "modality": "video",
+    "category": "segmentation",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Choose fixed time windows, preserving a shorter final segment by default.\n\nWith ``skip_issues`` the windows are laid only inside ranges free of the\nissue intervals already annotated on the file (invalid frames, duplicates).",
+      "properties": {
+        "window_ms": {
+          "default": 10000,
+          "maximum": 3600000,
+          "minimum": 100,
+          "title": "Window Ms",
+          "type": "integer"
+        },
+        "minimum_duration_ms": {
+          "default": 100,
+          "minimum": 1,
+          "title": "Minimum Duration Ms",
+          "type": "integer"
+        },
+        "skip_issues": {
+          "default": false,
+          "title": "Skip Issues",
+          "type": "boolean"
+        }
+      },
+      "title": "SegmentParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "video.normalize",
+    "version": "1.0.0",
+    "modality": "video",
+    "category": "normalization",
+    "inputs": {
+      "files": "files.video"
+    },
+    "outputs": {
+      "files": "files.video"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Declare an MPEG-4/AAC MP4 with square pixels and letterboxed content.",
+      "properties": {
+        "width": {
+          "default": 640,
+          "maximum": 4096,
+          "minimum": 2,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "default": 360,
+          "maximum": 4096,
+          "minimum": 2,
+          "title": "Height",
+          "type": "integer"
+        },
+        "frame_rate": {
+          "default": 30.0,
+          "maximum": 120,
+          "minimum": 1,
+          "title": "Frame Rate",
+          "type": "number"
+        }
+      },
+      "title": "NormalizeParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "media.align",
+    "version": "1.0.0",
+    "modality": "any",
+    "category": "alignment",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Bound the lag search and require distinct, strongly matching signals.",
+      "properties": {
+        "max_offset_seconds": {
+          "default": 30.0,
+          "exclusiveMinimum": 0,
+          "maximum": 300,
+          "title": "Max Offset Seconds",
+          "type": "number"
+        },
+        "min_overlap_ms": {
+          "default": 500,
+          "maximum": 60000,
+          "minimum": 100,
+          "title": "Min Overlap Ms",
+          "type": "integer"
+        },
+        "min_correlation": {
+          "default": 0.55,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Min Correlation",
+          "type": "number"
+        },
+        "max_secondary_ratio": {
+          "default": 0.9,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Max Secondary Ratio",
+          "type": "number"
+        },
+        "max_analysis_seconds": {
+          "default": 120.0,
+          "maximum": 600,
+          "minimum": 1,
+          "title": "Max Analysis Seconds",
+          "type": "number"
+        }
+      },
+      "title": "AlignParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
     "id": "file.dedup",
+    "version": "1.0.0",
     "modality": "any",
     "category": "deduplication",
     "inputs": {
@@ -20,6 +669,7 @@
   },
   {
     "id": "file.corrupt_check",
+    "version": "1.0.0",
     "modality": "any",
     "category": "validation",
     "inputs": {
@@ -45,6 +695,7 @@
   },
   {
     "id": "file.empty_check",
+    "version": "1.0.0",
     "modality": "any",
     "category": "validation",
     "inputs": {
@@ -70,6 +721,7 @@
   },
   {
     "id": "image.quality",
+    "version": "1.0.0",
     "modality": "image",
     "category": "quality",
     "inputs": {
@@ -80,12 +732,19 @@
     },
     "parameters": {
       "additionalProperties": false,
-      "description": "Define the image-quality measurement thresholds.",
+      "description": "Define image-quality thresholds in 8-bit luminance, pixels and noise measures.\n\nSixteen-bit samples are rescaled to 8-bit levels before measuring.\nDefaults come from generated scenes saved as PNG and JPEG.\n``min_sharpness`` bounds the contrast-invariant edge sharpness: clean,\nhazy, snowy, minimal and low-contrast scenes measured at least 1.29, and\nthe same scenes under Gaussian blur of sigma 1.5 or more at most 0.95.\n``min_highlight`` bounds\nthe 99.9th luminance percentile: clean scenes reached at least 144 and\nhalved exposures at most 110. ``max_impulse_fraction`` sits between clean\nscenes (at most 0.00003) and 1% salt-and-pepper noise (at least 0.0068).\n``blur_threshold`` is the earlier absolute Laplacian variance, which\nfalls with contrast; it is off unless set.",
       "properties": {
         "blur_threshold": {
-          "default": 50.0,
+          "default": 0.0,
           "minimum": 0,
           "title": "Blur Threshold",
+          "type": "number"
+        },
+        "min_sharpness": {
+          "default": 1.0,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Min Sharpness",
           "type": "number"
         },
         "min_brightness": {
@@ -102,10 +761,59 @@
           "title": "Max Brightness",
           "type": "number"
         },
+        "min_highlight": {
+          "default": 120.0,
+          "maximum": 255,
+          "minimum": 0,
+          "title": "Min Highlight",
+          "type": "number"
+        },
         "min_resolution": {
           "default": 64,
           "minimum": 1,
           "title": "Min Resolution",
+          "type": "integer"
+        },
+        "max_noise_sigma": {
+          "default": 12.0,
+          "exclusiveMinimum": 0,
+          "maximum": 255,
+          "title": "Max Noise Sigma",
+          "type": "number"
+        },
+        "impulse_level": {
+          "default": 48.0,
+          "exclusiveMinimum": 0,
+          "maximum": 255,
+          "title": "Impulse Level",
+          "type": "number"
+        },
+        "max_impulse_fraction": {
+          "default": 0.003,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Max Impulse Fraction",
+          "type": "number"
+        },
+        "min_color_stddev": {
+          "default": 5.0,
+          "exclusiveMinimum": 0,
+          "maximum": 128,
+          "title": "Min Color Stddev",
+          "type": "number"
+        },
+        "max_clipped_fraction": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Max Clipped Fraction",
+          "type": "number"
+        },
+        "analysis_size": {
+          "default": 512,
+          "maximum": 2048,
+          "minimum": 32,
+          "title": "Analysis Size",
           "type": "integer"
         }
       },
@@ -116,6 +824,7 @@
   },
   {
     "id": "image.resize",
+    "version": "1.0.0",
     "modality": "image",
     "category": "transform",
     "inputs": {
@@ -155,6 +864,7 @@
   },
   {
     "id": "image.thumbnail",
+    "version": "1.0.0",
     "modality": "image",
     "category": "preview",
     "inputs": {
@@ -182,6 +892,7 @@
   },
   {
     "id": "image.convert",
+    "version": "1.0.0",
     "modality": "image",
     "category": "transform",
     "inputs": {
@@ -219,6 +930,7 @@
   },
   {
     "id": "text.encoding_fix",
+    "version": "1.0.0",
     "modality": "text",
     "category": "transform",
     "inputs": {
@@ -249,6 +961,7 @@
   },
   {
     "id": "text.pii_redact",
+    "version": "1.0.0",
     "modality": "text",
     "category": "privacy",
     "inputs": {
@@ -286,6 +999,7 @@
   },
   {
     "id": "text.dedup",
+    "version": "1.0.0",
     "modality": "text",
     "category": "deduplication",
     "inputs": {
@@ -318,6 +1032,7 @@
   },
   {
     "id": "text.quality",
+    "version": "1.0.0",
     "modality": "text",
     "category": "quality",
     "inputs": {
@@ -350,7 +1065,415 @@
     "queue": "cpu"
   },
   {
+    "id": "pointcloud.probe",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "quality",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Control statistical, sparse-coverage and unit-suspicion file-level policy.\n\n``max_outlier_ratio`` defaults to 0.04%, near the geometric middle of\nthe worst clean generated scan (0.029%, a sparse 32-ring street) and the\nleast flagged generated scan with 0.5% embedded outliers (0.060%, a\n2.6-million-point drive of 24 frames). Sampled files are judged by the\nlower end of the 95% interval, so sampling error alone cannot raise an\nissue.",
+      "properties": {
+        "neighbors": {
+          "default": 12,
+          "maximum": 64,
+          "minimum": 2,
+          "title": "Neighbors",
+          "type": "integer"
+        },
+        "local_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Local Ratio",
+          "type": "number"
+        },
+        "link_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Link Ratio",
+          "type": "number"
+        },
+        "cluster_gap": {
+          "default": 5.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Cluster Gap",
+          "type": "number"
+        },
+        "min_cluster_points": {
+          "default": 50,
+          "minimum": 2,
+          "title": "Min Cluster Points",
+          "type": "integer"
+        },
+        "min_cluster_fraction": {
+          "default": 0.01,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Min Cluster Fraction",
+          "type": "number"
+        },
+        "sparse_cluster_ratio": {
+          "default": 10.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Sparse Cluster Ratio",
+          "type": "number"
+        },
+        "sensor": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "terrestrial",
+            "vehicle_lidar",
+            "depth_camera",
+            "object"
+          ],
+          "title": "Sensor",
+          "type": "string"
+        },
+        "max_outlier_ratio": {
+          "default": 0.0004,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Max Outlier Ratio",
+          "type": "number"
+        },
+        "max_relative_spacing": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Relative Spacing"
+        },
+        "expected_max_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Max Extent"
+        },
+        "reference_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Extent"
+        },
+        "scale_ratio": {
+          "default": 1000.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Ratio",
+          "type": "number"
+        },
+        "scale_tolerance": {
+          "default": 2.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Tolerance",
+          "type": "number"
+        }
+      },
+      "title": "ProbeParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.clean",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Remove invalid coordinates and optionally clip an inclusive source-unit box.",
+      "properties": {
+        "remove_invalid": {
+          "default": true,
+          "title": "Remove Invalid",
+          "type": "boolean"
+        },
+        "min_bound": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Bound"
+        },
+        "max_bound": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Bound"
+        }
+      },
+      "title": "CleanParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.downsample",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Select the source-unit voxel size for stable first-point sampling.",
+      "properties": {
+        "voxel_size": {
+          "default": 0.1,
+          "exclusiveMinimum": 0,
+          "title": "Voxel Size",
+          "type": "number"
+        }
+      },
+      "title": "DownsampleParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.outliers",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "transform",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Remove isolated points and separated small clusters with the probe's rule.",
+      "properties": {
+        "neighbors": {
+          "default": 12,
+          "maximum": 64,
+          "minimum": 2,
+          "title": "Neighbors",
+          "type": "integer"
+        },
+        "local_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Local Ratio",
+          "type": "number"
+        },
+        "link_ratio": {
+          "default": 3.0,
+          "exclusiveMinimum": 1,
+          "maximum": 100,
+          "title": "Link Ratio",
+          "type": "number"
+        },
+        "cluster_gap": {
+          "default": 5.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Cluster Gap",
+          "type": "number"
+        },
+        "min_cluster_points": {
+          "default": 50,
+          "minimum": 2,
+          "title": "Min Cluster Points",
+          "type": "integer"
+        },
+        "min_cluster_fraction": {
+          "default": 0.01,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Min Cluster Fraction",
+          "type": "number"
+        },
+        "sparse_cluster_ratio": {
+          "default": 10.0,
+          "exclusiveMinimum": 1,
+          "maximum": 1000,
+          "title": "Sparse Cluster Ratio",
+          "type": "number"
+        }
+      },
+      "title": "OutlierParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.unit_check",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "validation",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Flag implausibly large extents without rewriting ambiguous coordinates.",
+      "properties": {
+        "expected_max_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Max Extent"
+        },
+        "reference_extent": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Extent"
+        },
+        "scale_ratio": {
+          "default": 1000.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Ratio",
+          "type": "number"
+        },
+        "scale_tolerance": {
+          "default": 2.0,
+          "exclusiveMinimum": 1,
+          "title": "Scale Tolerance",
+          "type": "number"
+        }
+      },
+      "title": "UnitCheckParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "pointcloud.preview",
+    "version": "1.0.0",
+    "modality": "point-cloud",
+    "category": "visualization",
+    "inputs": {
+      "files": "files.point-cloud"
+    },
+    "outputs": {
+      "files": "files.point-cloud"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Bound a deterministic top-down PNG projection.",
+      "properties": {
+        "size": {
+          "default": 512,
+          "maximum": 2048,
+          "minimum": 32,
+          "title": "Size",
+          "type": "integer"
+        },
+        "color_by": {
+          "default": "height",
+          "enum": [
+            "height",
+            "intensity"
+          ],
+          "title": "Color By",
+          "type": "string"
+        }
+      },
+      "title": "PreviewParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
     "id": "evidence.image_phash",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -377,6 +1500,7 @@
   },
   {
     "id": "evidence.caption_mentions",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -403,6 +1527,7 @@
   },
   {
     "id": "evidence.annotation_labels",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -429,6 +1554,7 @@
   },
   {
     "id": "evidence.label_gap",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -455,6 +1581,7 @@
   },
   {
     "id": "evidence.near_duplicate",
+    "version": "1.0.0",
     "modality": "image",
     "category": "evidence",
     "inputs": {
@@ -497,6 +1624,7 @@
   },
   {
     "id": "table.profile",
+    "version": "1.0.0",
     "modality": "table",
     "category": "quality",
     "inputs": {
@@ -563,6 +1691,7 @@
   },
   {
     "id": "timeseries.timestamp_normalize",
+    "version": "1.0.0",
     "modality": "table",
     "category": "normalize",
     "inputs": {
@@ -617,6 +1746,7 @@
   },
   {
     "id": "timeseries.order_dedup",
+    "version": "1.0.0",
     "modality": "table",
     "category": "clean",
     "inputs": {
@@ -664,6 +1794,7 @@
   },
   {
     "id": "timeseries.gaps",
+    "version": "1.0.0",
     "modality": "table",
     "category": "quality",
     "inputs": {
@@ -721,6 +1852,7 @@
   },
   {
     "id": "timeseries.resample",
+    "version": "1.0.0",
     "modality": "table",
     "category": "transform",
     "inputs": {
@@ -785,6 +1917,7 @@
   },
   {
     "id": "timeseries.anomaly",
+    "version": "1.0.0",
     "modality": "table",
     "category": "quality",
     "inputs": {
@@ -916,6 +2049,7 @@
   },
   {
     "id": "timeseries.unit_check",
+    "version": "1.0.0",
     "modality": "table",
     "category": "quality",
     "inputs": {

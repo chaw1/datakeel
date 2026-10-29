@@ -206,6 +206,23 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+.object-pointcloud dl {
+  grid-template-columns: minmax(130px, 220px) minmax(0, 1fr);
+}
+.object-pointcloud figure {
+  margin: calc(var(--space) * 3) 0 0;
+}
+.object-pointcloud img {
+  display: block;
+  width: min(100%, 640px);
+  height: auto;
+  border: 1px solid var(--rule);
+}
+.object-pointcloud figcaption {
+  margin-top: calc(var(--space) * 2);
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
 .object-help {
   color: var(--muted);
   margin-bottom: calc(var(--space) * 3);
@@ -234,5 +251,8 @@
   .object-event {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space);
+  }
+  .object-pointcloud dl {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

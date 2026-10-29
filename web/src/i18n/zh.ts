@@ -14,6 +14,7 @@ import { evidenceZh } from "./evidenceZh";
 import { graphZh } from "./graphZh";
 import { kgZh } from "./kgZh";
 import { knowledgeZh } from "./knowledgeZh";
+import { mediaZh } from "./mediaZh";
 import { metadataZh } from "./metadataZh";
 import { metricRollbackZh } from "./metricRollbackZh";
 import { objectZh } from "./objectZh";
@@ -32,6 +33,7 @@ export const zh: Record<MessageKey, string> = {
   ...metadataZh,
   ...annotationZh,
   ...datasheetZh,
+  ...mediaZh,
   ...kgZh,
   ...knowledgeZh,
   ...metricRollbackZh,

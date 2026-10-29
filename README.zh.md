@@ -144,6 +144,10 @@ metrics:
 
 [近重复合同](contracts/evidence/near_duplicate.yaml) 固定 64 位 dHash、汉明距离 ≤8。默认 `mode: prefix` 按前 4 位分桶，可能漏掉跨桶样本对；`mode: exact` 用互不重叠的多段索引找全阈值内的直接样本对，增加索引与比较成本。每个直接样本对只存一次、双向查询，不做传递扩展或自动合并。可选 `datakeel-accel` 包用 Rust 执行相同的整数比较；`DATAKEEL_ACCEL=auto|off|required` 控制实现，`auto` 未安装时回退 Python。[构建步骤、实测性能和实现报告](docs/RUST_ACCEL.md)说明具体用法。模型抽取器接口和 fake 适配器仅做单元测试，不进入抽取 DAG、证据评测或模型预算。
 
+## 图片质量与点云
+
+`image.quality` 按模糊、曝光、噪声、分辨率、纯色五项打分，并给出每项不合格的测量原因。PLY（ASCII 及大小端二进制）与 PCD（ASCII、二进制）点云可探测、清洗、体素降采样、去统计离群点、检查疑似单位错配并生成俯视 PNG 预览。结果进入五维质量评分、报告、血缘和文件对象页。运行 `uv run python scripts/demo_media.py --output <新目录>` 可离线跑通完整链路；信号、默认阈值与局限见[图片与点云质量](docs/MEDIA_QUALITY.md)。
+
 ## 抽取与复核文本知识图谱
 
 演示增加 **Business notes · knowledge graph demo**：24 篇录制短文、3 篇明确标注的脚本长文，以及 1 个故意截断的样例。打开「知识图谱」，查找 `Vivo`，查看待复核关系：证据句存在，但尾实体不在原文。通过既有复核动作拒绝它，再确认图中该边变为已拒绝。原文核对和人工判断保持独立。
@@ -455,6 +459,8 @@ S3 提供客户端契约测试，不自动连接真实 S3。LLM 成功分支用�
 本地 OCR 的第三方包由用户自行安装：`pip install rapidocr==3.10.0 onnxruntime`。它们不是 Datakeel 的依赖，也不在 Datakeel 的许可审计范围内。部分平台（例如 macOS）的 OpenCV 预编译包捆绑 x264/x265 等 GPL 编解码库，ONNX Runtime 含 MPL-2.0 的 Eigen；需要再分发时须自行评估。离线回放无需安装这些包。
 
 [表格与时序剖析](docs/TIMESERIES.md)包含一条命令生成传感器周数据、统计检查规则和受控目录剖析说明。
+
+音视频本地预处理、合成演示与原始时间区间血缘见[音视频预处理说明](docs/MEDIA.md)。
 
 ## 自定义算子
 
