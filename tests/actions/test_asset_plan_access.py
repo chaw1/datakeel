@@ -106,11 +106,11 @@ def test_action_prepare_cannot_borrow_a_different_access_subject(db: Database) -
 
 
 def test_mcp_export_plan_keeps_actual_entry_and_export_scope(db: Database) -> None:
-    """The real MCP control chain records one export use per successful source response."""
+    """MCP prepares under its own entry; refused approval reads nothing; a person finishes it."""
     source = seed_action_source(db)
     grant(db, source.asset, "valid", "export")
 
-    async def run() -> None:
+    async def run() -> ToolOutcome:
         async with Client(create_server(db), mode="legacy") as client:
             prepared = await client.call_tool("export_dataset", {"dataset_id": source.dataset_id})
             outcome = ToolOutcome.model_validate(prepared.structured_content)
@@ -119,13 +119,24 @@ def test_mcp_export_plan_keeps_actual_entry_and_export_scope(db: Database) -> No
             arguments = {"plan_id": outcome.plan.id, "plan_digest": outcome.plan.plan_digest}
             for name in ("approve_plan", "execute_plan"):
                 params = {**arguments, "approve": True} if name == "approve_plan" else arguments
-                response = await client.call_tool(name, params)
-                assert ToolOutcome.model_validate(response.structured_content).status == "SUCCEEDED"
+                response = await client.call_tool(name, params, raise_on_error=False)
+                refused = ToolOutcome.model_validate(response.structured_content)
+                assert refused.status == "FAILED"
+                assert "Web UI or CLI" in (refused.error or "")
+                assert source.marker not in refused.model_dump_json()
+            return outcome
 
-    asyncio.run(run())
+    plan = asyncio.run(run()).plan
+    assert plan is not None
+    usages = list_usage(db, AssetUsageQuery(asset_id=source.asset.id))
+    assert [(item.entry, item.scope) for item in usages] == [("mcp", "export")]
+    service.approve_plan(db, plan.id, ApprovalDecision(approve=True, plan_digest=plan.plan_digest))
+    executed = service.execute_plan(db, plan.id, ExecuteRequest(plan_digest=plan.plan_digest))
+    assert executed.status == "SUCCEEDED"
     usages = list_usage(db, AssetUsageQuery(asset_id=source.asset.id))
     assert len(usages) == 3
-    assert {(item.entry, item.scope) for item in usages} == {("mcp", "export")}
+    assert all(item.scope == "export" for item in usages)
+    assert sum(item.entry == "mcp" for item in usages) == 1
 
 
 def _denied_history(db: Database, source: ActionSource, plan_id: str) -> None:
