@@ -156,8 +156,16 @@ Debian license declarations are retained separately from the Python allowlist.
 | python | zstandard | 0.25.0 | BSD-3-Clause | installed METADATA License-Expression |
 | frontend | @fontsource/source-code-pro | 5.3.1 | OFL-1.1 | package-lock.json and node_modules/@fontsource/source-code-pro/package.json |
 | frontend | @fontsource/source-serif-4 | 5.3.1 | OFL-1.1 | package-lock.json and node_modules/@fontsource/source-serif-4/package.json |
+| frontend | @types/react | 19.3.0 | MIT | package-lock.json and node_modules/@types/react/package.json |
+| frontend | @types/react-reconciler | 0.34.0 | MIT | package-lock.json and node_modules/@types/react-reconciler/package.json |
+| frontend | csstype | 3.2.3 | MIT | package-lock.json and node_modules/csstype/package.json |
+| frontend | its-fine | 2.1.1 | MIT | package-lock.json and node_modules/its-fine/package.json |
+| frontend | @types/react-reconciler | 0.28.9 | MIT | package-lock.json and node_modules/its-fine/node_modules/@types/react-reconciler/package.json |
+| frontend | konva | 10.9.0 | MIT | package-lock.json and node_modules/konva/package.json |
 | frontend | react | 19.3.1 | MIT | package-lock.json and node_modules/react/package.json |
 | frontend | react-dom | 19.3.1 | MIT | package-lock.json and node_modules/react-dom/package.json |
+| frontend | react-konva | 19.3.2 | MIT | package-lock.json and node_modules/react-konva/package.json |
+| frontend | react-reconciler | 0.34.0 | MIT | package-lock.json and node_modules/react-reconciler/package.json |
 | frontend | scheduler | 0.28.0 | MIT | package-lock.json and node_modules/scheduler/package.json |
 | frontend | vite | 7.3.7 | MIT | package-lock.json and node_modules/vite/package.json |
 | rust | blake2 | 0.11.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |

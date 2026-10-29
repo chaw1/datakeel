@@ -1,0 +1,50 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { expect, it, vi } from "vitest";
+
+import { actionPlan } from "../../test/actionFixtures";
+
+import * as actions from "./actions";
+import { FinalizationPanel } from "./FinalizationPanel";
+
+vi.mock("./actions", () => ({
+  prepareProduction: vi.fn(),
+  executeProduction: vi.fn(),
+}));
+it("prepares finalization and waits for a separate human signature before execution", async () => {
+  const plan = {
+    ...actionPlan,
+    id: "plan",
+    plan_digest: "digest",
+    canonical_params: { project_id: "project" },
+    impact: { ...actionPlan.impact, object_count: 2 },
+  };
+  vi.mocked(actions.prepareProduction).mockResolvedValue(plan);
+  const changed = vi.fn();
+  render(<FinalizationPanel projectId="project" ready onChanged={changed} />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review finalization plan" }),
+  );
+  expect(
+    await screen.findByRole("dialog", { name: "Finalize approved project" }),
+  ).toBeVisible();
+  expect(actions.executeProduction).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Approve and finalize project" }),
+  );
+  await waitFor(() => {
+    expect(actions.executeProduction).toHaveBeenCalledWith(plan, true);
+  });
+  expect(changed).toHaveBeenCalledOnce();
+});
+it("disables finalization while any task is not approved", () => {
+  render(
+    <FinalizationPanel
+      projectId="project"
+      ready={false}
+      onChanged={() => undefined}
+    />,
+  );
+  expect(
+    screen.getByRole("button", { name: "Review finalization plan" }),
+  ).toBeDisabled();
+});

@@ -20,13 +20,16 @@
     "check:tokens": "node scripts/check-tokens.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
     "test:style-gates": "node scripts/check-tokens.mjs --self-test && node scripts/check-contrast.mjs --self-test",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "smoke:workbench": "node scripts/workbench-smoke.mjs"
   },
   "dependencies": {
     "@fontsource/source-code-pro": "^5.3.1",
     "@fontsource/source-serif-4": "^5.3.1",
+    "konva": "10.9.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-konva": "19.3.2"
   },
   "devDependencies": {
     "@eslint/compat": "2.1.1",

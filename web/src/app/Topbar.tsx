@@ -29,17 +29,19 @@ export function Topbar({
     ? t(operation.label)
     : page === "workbench"
       ? t("workbench")
-      : page === "object"
-        ? locale === "en" && objectName && objectKind
-          ? localizedObjectName(objectKind, objectName, locale)
-          : t("pageObject")
-        : page === "runs"
-          ? t("runRecords")
-          : page === "quality" || page === "quality-rules"
-            ? t(page === "quality" ? "dataQuality" : "dqNav")
-            : page === "datasets"
-              ? t("dataLibraryLabel")
-              : (selected?.name ?? t("workspaceLabel"));
+      : page === "labeling"
+        ? t("wbNav")
+        : page === "object"
+          ? locale === "en" && objectName && objectKind
+            ? localizedObjectName(objectKind, objectName, locale)
+            : t("pageObject")
+          : page === "runs"
+            ? t("runRecords")
+            : page === "quality" || page === "quality-rules"
+              ? t(page === "quality" ? "dataQuality" : "dqNav")
+              : page === "datasets"
+                ? t("dataLibraryLabel")
+                : (selected?.name ?? t("workspaceLabel"));
   return (
     <header className="topbar">
       <div className="breadcrumb">

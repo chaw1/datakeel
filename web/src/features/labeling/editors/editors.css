@@ -1,0 +1,90 @@
+.wb-annotation-editor {
+  display: grid;
+  gap: calc(var(--space) * 4);
+  min-width: 0;
+}
+.wb-editor-toolbar,
+.wb-coordinate-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 2);
+  align-items: end;
+}
+.wb-editor-toolbar label,
+.wb-coordinate-fields label,
+.wb-properties label {
+  display: grid;
+  gap: var(--space);
+}
+.wb-coordinate-fields input {
+  width: 8rem;
+}
+.wb-canvas {
+  width: 100%;
+  min-height: 480px;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  touch-action: none;
+}
+.wb-canvas:focus-visible {
+  outline: 2px solid var(--pencil);
+  outline-offset: 2px;
+}
+.wb-properties {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  padding-block: calc(var(--space) * 2);
+}
+.wb-properties textarea {
+  font-family: var(--font-mono);
+  width: 100%;
+  resize: vertical;
+}
+.wb-properties button {
+  justify-self: start;
+}
+.wb-classification-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 3);
+  border: 1px solid var(--rule);
+  padding: calc(var(--space) * 4);
+}
+.wb-classification-labels label {
+  display: flex;
+  gap: calc(var(--space) * 2);
+  align-items: center;
+  padding: calc(var(--space) * 2);
+  background: var(--sheet);
+}
+.wb-span-source {
+  width: 100%;
+  min-height: 180px;
+  font: inherit;
+  resize: vertical;
+}
+.wb-span-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--rule);
+  padding: calc(var(--space) * 4);
+}
+.wb-span-mark {
+  color: var(--ink);
+  background: var(--pencil-wash);
+  border-bottom: 2px solid var(--pencil);
+}
+.wb-span-mark[data-nested="true"] {
+  box-shadow: inset 0 2px var(--pencil);
+}
+.wb-span-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 2);
+  padding: 0;
+  list-style: none;
+}
+.wb-span-list button[aria-pressed="true"] {
+  outline: 2px solid var(--pencil);
+}
