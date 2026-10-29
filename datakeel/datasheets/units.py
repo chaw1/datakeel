@@ -17,7 +17,7 @@ _COUNT_OBJECTS = (
     ("files", r"files?\b|文件"),
     ("images", r"images?\b|图片|图像"),
     ("texts", r"texts?\b|文本"),
-    ("assertions", r"assertions?\b|(?:证据)?断言"),
+    ("assertions", r"assertions?\b|(?:证据)?断言|证据"),
     ("relations", r"relations?\b|关系"),
     ("entities", r"entities\b|entity\b|实体"),
     ("records", r"records?\b|entries\b|entry\b|记录"),
@@ -37,6 +37,7 @@ _COUNT_OBJECTS = (
     ("tables", r"tables?\b|表"),
     ("videos", r"videos?\b|视频"),
     ("people", r"people\b|persons?\b|members?\b|人|成员"),
+    ("reviewers", r"reviewers?\b|审阅人|审核人"),
     ("versions", r"versions?\b|版本"),
     ("predicates", r"predicates?\b|谓词"),
     ("decisions", r"decisions?\b|决定"),
@@ -46,7 +47,12 @@ _COUNT_PATTERNS = tuple(
     (name, re.compile(r"(?<![a-z])(?:" + pattern + ")")) for name, pattern in _COUNT_OBJECTS
 )
 _CLASSIFIER = re.compile(r"\s?(?:[个张条份件项次位种篇段行列幅台处套本人]|名(?![称字])|组(?!织))")
-_COUNT_MODIFIER = re.compile(r"(?:generated|labelled|labeled)\s+")
+_PHRASE_END = re.compile(
+    r"\b(?:and|or|but|while|plus|is|are|was|were|be|has|have|had|of|in|for|from|to|with|as)\b"
+    r"|[\uff0c。\uff1b\uff1a、,;:.!?=(){}\[\]\n]|\d|和|与|以及|及|为|是|的"
+)
+_LATIN_PHRASE = re.compile(r"[a-z][a-z'-]*(?:\s+[a-z][a-z'-]*)*")
+_POST_COUNT = re.compile(r"(?:remain\w*|exist\w*|\w+ed|\w+ing)\b|已|未|被|仍")
 
 NUMBER = re.compile(
     r"(?<![A-Za-z0-9_.])[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?%?"
@@ -81,22 +87,38 @@ def count_unit(text: str) -> str | None:
     return None
 
 
+def count_label(text: str) -> str:
+    """Remove an optional leading classifier from a count-table label."""
+    return _CLASSIFIER.sub("", text.strip(), count=1).strip()
+
+
 def _counted_object(text: str) -> str | None:
-    unit = None
-    while text:
-        for object_name, pattern in _COUNT_PATTERNS:
-            if match := pattern.match(text):
-                unit = f"count:{object_name}"
-                text = text[match.end() :].lstrip()
-                break
-        else:
-            break
-    return unit
+    phrase = _PHRASE_END.split(text, maxsplit=1)[0].strip()
+    matches = [
+        (match.end(), name)
+        for name, pattern in _COUNT_PATTERNS
+        for match in pattern.finditer(phrase)
+    ]
+    if matches:
+        for end, name in sorted(matches):
+            if _POST_COUNT.match(phrase[end:].strip()):
+                return f"count:{name}"
+        end, name = max(matches)
+        # Modifiers may precede the head, but an unrelated following noun changes it.
+        tail = phrase[end:].strip()
+        return f"count:{name}" if not tail else "count:unknown"
+    # An explicit unfamiliar noun cannot be erased by a matching field label.
+    return (
+        "count:unknown"
+        if _LATIN_PHRASE.fullmatch(phrase) and not _POST_COUNT.fullmatch(phrase)
+        else None
+    )
 
 
 def _count_after(text: str, end: int) -> str | None:
     tail = text[end:].lstrip(" \t'\"\u2018\u2019\u201c\u201d")
-    candidates = (tail, _COUNT_MODIFIER.sub("", _CLASSIFIER.sub("", tail, count=1), count=1))
+    tail = re.sub(r"^of\s+(?:the\s+)?", "", tail)
+    candidates = (tail, count_label(tail))
     for candidate in candidates:
         if unit := _counted_object(candidate):
             return unit

@@ -10,7 +10,7 @@ from pydantic import JsonValue
 
 from datakeel.core.datasheet_models import DatasheetFact, DatasheetSection, DatasheetSentence
 from datakeel.core.datasheet_types import DatasheetValueKind, fact_type
-from datakeel.datasheets.matching import fact_readings
+from datakeel.datasheets.matching import fact_readings, numeric_issues
 from datakeel.datasheets.validation import validate_sections
 
 
@@ -278,3 +278,250 @@ def test_count_noun_phrases_retain_their_head_object() -> None:
     observation = _fact("metadata.description", "200 generated text observations")
     assert _reasons("The dataset contains 200 observations.", observation) == ()
     assert _reasons("数据集包含200条文本观测。", observation) == ()
+
+
+@pytest.mark.parametrize(
+    ("text", "field", "value", "drop"),
+    [
+        ("The archive holds 12 evidence assertions.", "assertions.count", 12, False),
+        ("该数据集包含 12 个 files。", "manifest.file_count", 12, False),
+        (
+            "包含 7 个 audio 文件和 5 个 text 文件。",
+            "manifest.modalities",
+            {"audio": 7, "text": 5},
+            False,
+        ),
+        (
+            "70 assertions are accepted and 30 are rejected.",
+            "assertions.status_counts",
+            {"accepted": 70, "rejected": 30},
+            False,
+        ),
+        ("图谱关系数为 12 条。", "kg.relation_count", 12, False),
+        ("Assertion count = 12.", "assertions.count", 12, False),
+        ("The archive holds 12 files.", "assertions.count", 12, True),
+        ("该数据集包含 12 条断言。", "manifest.file_count", 12, True),
+        ("图谱实体数为 12 个。", "kg.relation_count", 12, True),
+        ("The release has 12 reviewers.", "assertions.count", 12, True),
+        ("Version 12 is current.", "assertions.count", 12, True),
+        ("包含 7 个 image 文件。", "manifest.modalities", {"audio": 7, "text": 5}, True),
+    ],
+)
+def test_fix1_required_numeric_cases(
+    text: str, field: str, value: JsonValue, *, drop: bool
+) -> None:
+    """All twelve review examples retain their original wording and direct numeric verdict."""
+    assert bool(numeric_issues(text, (_fact(field, value),))) is drop
+
+
+@pytest.mark.parametrize(
+    ("text", "field", "value"),
+    [
+        ("The release contains 23 retained evidence assertions.", "assertions.count", 23),
+        ("该归档包含 23 条 evidence assertions。", "assertions.count", 23),
+        ("Assertion total: 23.", "assertions.count", 23),
+        ("共标注8158条证据。", "assertions.count", 8158),
+        ("质量评分为满分100.0。", "quality.total", 100.0),
+        ("The data quality rating is a perfect 100.", "quality.total", 100.0),
+        ("The archive stores 41 newly imported files.", "manifest.file_count", 41),
+        ("The archive has 41 files stored locally.", "manifest.file_count", 41),
+        ("23 evidence assertions remain available.", "assertions.count", 23),
+        ("文件总数为 41 个。", "manifest.file_count", 41),
+        ("该批次含 41 个 labelled image files。", "manifest.file_count", 41),
+        (
+            "There are 9 audio files and 4 text files.",
+            "manifest.modalities",
+            {"audio": 9, "text": 4},
+        ),
+        ("9 files are audio and 4 are text.", "manifest.modalities", {"audio": 9, "text": 4}),
+        ("9 table files and 4 unknown files.", "manifest.modalities", {"table": 9, "unknown": 4}),
+        ("9 files are audio while 4 are text.", "manifest.modalities", {"audio": 9, "text": 4}),
+        ("9 audio files plus 4 text files.", "manifest.modalities", {"audio": 9, "text": 4}),
+        (
+            "61 assertions were accepted and 14 were rejected.",
+            "assertions.status_counts",
+            {"accepted": 61, "rejected": 14},
+        ),
+        (
+            "Accepted: 61; rejected: 14.",
+            "assertions.status_counts",
+            {"accepted": 61, "rejected": 14},
+        ),
+        (
+            "Accepted assertions: 61, rejected assertions: 14.",
+            "assertions.status_counts",
+            {"accepted": 61, "rejected": 14},
+        ),
+    ],
+)
+def test_numeric_paraphrases_keep_their_measurement(
+    text: str, field: str, value: JsonValue
+) -> None:
+    """Modifiers, bilingual classifiers, short labels and omitted repeated nouns are supported."""
+    assert numeric_issues(text, (_fact(field, value),)) == ()
+
+
+@pytest.mark.parametrize(
+    ("text", "field", "value"),
+    [
+        ("Evidence assertion count: 23 reviewers.", "assertions.count", 23),
+        ("File count: 41 reviewers.", "manifest.file_count", 41),
+        ("File count: 41 of the reviewers.", "manifest.file_count", 41),
+        ("文件总数为 41 条关系。", "manifest.file_count", 41),
+        ("共标注8158条证据。", "kg.relation_count", 8158),
+        (
+            "There are 9 text files and 4 audio files.",
+            "manifest.modalities",
+            {"audio": 9, "text": 4},
+        ),
+        ("Audio: 4; text: 9.", "manifest.modalities", {"audio": 9, "text": 4}),
+        (
+            "14 assertions were accepted and 61 were rejected.",
+            "assertions.status_counts",
+            {"accepted": 61, "rejected": 14},
+        ),
+        (
+            "61 assertions were rejected and 14 were accepted.",
+            "assertions.status_counts",
+            {"accepted": 61, "rejected": 14},
+        ),
+        (
+            "Accepted: 14; rejected: 61.",
+            "assertions.status_counts",
+            {"accepted": 61, "rejected": 14},
+        ),
+        ("Assertion count=23.", "assertions.inactive_count", 23),
+    ],
+)
+def test_numeric_paraphrases_cannot_exchange_objects_or_record_keys(
+    text: str, field: str, value: JsonValue
+) -> None:
+    """A matching label never erases an explicit object or exchanges two count-table values."""
+    assert numeric_issues(text, (_fact(field, value),)) == ("unsupported_number",)
+
+
+def test_short_labels_bind_only_their_own_number() -> None:
+    """Two concise labels cannot exchange cited counts even when both facts are available."""
+    facts = (_fact("manifest.file_count", 41), _fact("kg.relation_count", 23))
+    assert numeric_issues("Files: 41; relations: 23.", facts) == ()
+    assert numeric_issues("Files: 23; relations: 23.", facts) == ("unsupported_number",)
+
+
+def test_count_modifier_support_is_required() -> None:
+    """The head noun remains recognizable after arbitrary count modifiers."""
+    assert (
+        numeric_issues(
+            "The archive holds 23 retained evidence assertions.", (_fact("assertions.count", 23),)
+        )
+        == ()
+    )
+    assert (
+        numeric_issues("23 evidence assertions remain available.", (_fact("assertions.count", 23),))
+        == ()
+    )
+
+    assert (
+        numeric_issues(
+            "File count: 41 files supporting reviewers.", (_fact("manifest.file_count", 41),)
+        )
+        == ()
+    )
+
+
+def test_short_measurement_label_support_is_required() -> None:
+    """A common short label retains the same counted object as the full display label."""
+    assert numeric_issues("图谱关系数为 23 条。", (_fact("kg.relation_count", 23),)) == ()
+
+
+def test_record_key_binding_is_required() -> None:
+    """An unmentioned modality cannot borrow another key's equal typed count."""
+    assert numeric_issues(
+        "There are 9 image files.", (_fact("manifest.modalities", {"audio": 9, "text": 4}),)
+    ) == ("unsupported_number",)
+
+
+def test_parallel_predicate_binding_is_required() -> None:
+    """An omitted noun retains its own following status, not the previous status."""
+    assert (
+        numeric_issues(
+            "61 assertions were accepted and 14 were rejected.",
+            (_fact("assertions.status_counts", {"accepted": 61, "rejected": 14}),),
+        )
+        == ()
+    )
+
+
+def test_explicit_unknown_noun_cannot_borrow_a_label() -> None:
+    """A count label cannot turn an unfamiliar noun into the recorded object."""
+    assert numeric_issues("File count: 41 contributors.", (_fact("manifest.file_count", 41),)) == (
+        "unsupported_number",
+    )
+    assert numeric_issues(
+        "File count: 41 of the reviewers.", (_fact("manifest.file_count", 41),)
+    ) == ("unsupported_number",)
+
+    assert numeric_issues(
+        "Assertion count: 23 files containing assertions.", (_fact("assertions.count", 23),)
+    ) == ("unsupported_number",)
+
+
+def test_record_keys_keep_their_parent_measurement() -> None:
+    """A predicate named files still counts assertions, and same keys retain their table."""
+    predicates = _fact("assertions.predicate_counts", {"files": 9, "relations": 4})
+    assert numeric_issues("9 files.", (predicates,)) == ("unsupported_number",)
+    assert numeric_issues("Files: 9 assertions.", (predicates,)) == ()
+    facts = (
+        _fact("assertions.status_counts", {"accepted": 61, "rejected": 14}),
+        _fact("assertions.verification_counts", {"accepted": 7, "rejected": 3}),
+    )
+    assert numeric_issues("Evidence verification counts: accepted=61.", facts) == (
+        "unsupported_number",
+    )
+    assert numeric_issues("Evidence verification counts: accepted=7.", facts) == ()
+
+
+def test_nearest_modality_cannot_be_overridden_by_a_later_key() -> None:
+    """An explicit image modifier cannot borrow an audio count elsewhere in the clause."""
+    assert numeric_issues(
+        "9 image files of audio.", (_fact("manifest.modalities", {"audio": 9, "text": 4}),)
+    ) == ("unsupported_number",)
+
+
+def test_bare_percent_restatements_require_the_actual_scale_and_measurement() -> None:
+    """The original disputed examples cannot silently rescale percentages into bare scores."""
+    assert numeric_issues(
+        "Image percentage: 0.983.", (_fact("custom.image_share", 98.3, **PERCENT),)
+    ) == ("unsupported_number",)
+    assert numeric_issues("The quality score is 0.983.", (_fact("custom.value", "98.3%"),)) == (
+        "unsupported_number",
+    )
+    assert _reasons("The quality score is 0.983.", _fact("quality.total", 0.983)) == ()
+
+
+def test_chinese_parallel_counts_keep_each_key_and_object() -> None:
+    """Common conjunctions separate modality counts without exchanging their evidence."""
+    facts = (_fact("manifest.modalities", {"audio": 8, "text": 6}),)
+    for conjunction in ("和", "与", "以及", "及", "、"):
+        assert numeric_issues(f"包含8个 audio 文件{conjunction}6个 text 文件。", facts) == ()
+        assert numeric_issues(f"包含6个 audio 文件{conjunction}8个 text 文件。", facts) == (
+            "unsupported_number",
+        )
+
+
+def test_record_keys_can_follow_numbers_with_the_object_omitted() -> None:
+    """A trailing record key names its value even when its word is not a count noun."""
+    modalities = (_fact("manifest.modalities", {"text": 8, "audio": 6}),)
+    assert numeric_issues("8 text files and 6 audio.", modalities) == ()
+    assert numeric_issues("包含8个 text 文件和6个 audio。", modalities) == ()
+    assert numeric_issues("8 text files and 8 audio.", modalities) == ("unsupported_number",)
+    verification = (_fact("assertions.verification_counts", {"verified": 17, "unverifiable": 9}),)
+    assert numeric_issues("17 assertions verified and 9 unverifiable.", verification) == ()
+
+
+def test_record_key_labels_cannot_erase_explicit_foreign_objects() -> None:
+    """A matching key before a number cannot cover an unrelated object after that number."""
+    facts = (_fact("manifest.modalities", {"text": 8, "audio": 6}),)
+    for noun in ("contributors", "relations"):
+        assert numeric_issues(f"8 text files and audio: 6 {noun}.", facts) == (
+            "unsupported_number",
+        )
