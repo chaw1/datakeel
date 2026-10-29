@@ -42,7 +42,7 @@ def test_reported_prose_punctuation_survives_exact_credential_redaction(
     assert redact_pii(text) == expected
 
 
-@pytest.mark.parametrize("label", ["password=", "api_key:", "密码\uff1a", "口令为"])
+@pytest.mark.parametrize("label", ["passwd=", "api_key:", "密码\uff1a", "口令为"])
 @pytest.mark.parametrize(
     ("prefix", "suffix"),
     [
