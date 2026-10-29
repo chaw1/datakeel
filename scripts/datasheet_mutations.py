@@ -7,6 +7,38 @@ from scripts.mutation_models import Mutation
 
 DATASHEET_MUTATIONS = (
     Mutation(
+        name="datasheet-short-label-keeps-modifiers",
+        path="datasheets/measurement_labels.py",
+        before="tuple(word for word in words[:-1] if word not in scopes)",
+        after="words[-2:-1]",
+        case="tests/datasheets/test_measurement_labels.py::test_short_label_modifiers_cannot_be_dropped",
+        runner="pytest",
+    ),
+    Mutation(
+        name="datasheet-short-label-specificity",
+        path="datasheets/measurement_labels.py",
+        before="if len(other) > len(label) and label in other",
+        after="if False",
+        case="tests/datasheets/test_measurement_labels.py::test_short_labels_cannot_borrow_values_across_modifiers",
+        runner="pytest",
+    ),
+    Mutation(
+        name="datasheet-short-label-chinese-connector",
+        path="datasheets/measurement_labels.py",
+        before='forms.add(stem[: -len(suffix)] + "的" + suffix)',
+        after="pass",
+        case="tests/datasheets/test_measurement_labels.py::test_qualified_short_label_derivation_is_required",
+        runner="pytest",
+    ),
+    Mutation(
+        name="datasheet-short-label-plural",
+        path="datasheets/measurement_labels.py",
+        before='return word if word.endswith("s") else word + "s"',
+        after="return word",
+        case="tests/datasheets/test_measurement_labels.py::test_qualified_short_label_derivation_is_required",
+        runner="pytest",
+    ),
+    Mutation(
         name="datasheet-product-review-state-keys",
         path="datasheets/number_labels.py",
         before="get_args(AssertionStatus)",
@@ -123,7 +155,7 @@ DATASHEET_MUTATIONS = (
     Mutation(
         name="datasheet-short-measurement-labels",
         path="datasheets/number_labels.py",
-        before="*_ALIASES.get(field, ()),",
+        before="*short_measurement_labels(field),",
         after="*(),",
         case="tests/datasheets/test_typed_numbers.py::test_short_measurement_label_support_is_required",
         runner="pytest",

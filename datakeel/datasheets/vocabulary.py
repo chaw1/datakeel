@@ -15,6 +15,11 @@ EVIDENCE_STATE_LABELS: dict[AssertionStatus | Verification, tuple[str, str]] = {
     "needs_review": ("待复核", "needs review"),
 }
 
+# Generic measurement grammar; field-specific aliases are derived from display labels.
+MEASUREMENT_SCOPES = (("证据", "evidence"), ("图谱", "graph"))
+COUNT_LABEL_SUFFIXES = ("数量", "总数", "数")
+SCORE_LABEL_SUFFIXES = ("总分", "分数", "得分", "评分")
+
 _TITLES = {
     "motivation": ("动机", "Motivation"),
     "composition": ("构成", "Composition"),

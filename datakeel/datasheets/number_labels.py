@@ -8,46 +8,9 @@ from itertools import product
 from typing import cast, get_args
 
 from datakeel.core.evidence_models import AssertionStatus, Verification
+from datakeel.datasheets.measurement_labels import short_measurement_labels, unshadowed_label
 from datakeel.datasheets.vocabulary import ENGLISH_GRAMMAR, EVIDENCE_STATE_LABELS, field_label
 
-_ALIASES = {
-    "manifest.file_count": (
-        "files",
-        "file total",
-        "total files",
-        "number of files",
-        "文件数",
-        "文件总数",
-    ),
-    "assertions.count": (
-        "assertions",
-        "assertion count",
-        "assertion total",
-        "total assertions",
-        "number of assertions",
-        "断言数",
-        "断言总数",
-        "证据断言数",
-    ),
-    "kg.relation_count": (
-        "relations",
-        "relation count",
-        "relation total",
-        "total relations",
-        "number of relations",
-        "关系数",
-        "关系总数",
-        "图谱关系数",
-    ),
-    "quality.total": ("quality total", "quality rating", "质量分数", "质量得分", "质量评分"),
-    "compliance.total": (
-        "compliance total",
-        "compliance rating",
-        "合规分数",
-        "合规得分",
-        "合规评分",
-    ),
-}
 _MODALITY_ALIASES = (
     ("image", "images", "图片", "图像"),
     ("audio", "音频"),
@@ -73,7 +36,7 @@ def number_labels(field: str) -> tuple[str, ...]:
         suffix.replace("_", " ") if "_" in suffix else "",
         field_label(field, "en"),
         field_label(field, "zh"),
-        *_ALIASES.get(field, ()),
+        *short_measurement_labels(field),
     )
 
 
@@ -135,14 +98,8 @@ def modality_key(context: str, *, before: bool) -> str | None:
 
 
 def has_label(context: str, labels: tuple[str, ...]) -> bool:
-    """Match complete Latin labels and contiguous Chinese labels without merging words."""
-    return any(
-        label in context
-        if _HAN.search(label)
-        else re.search(r"(?<!\w)" + re.escape(label) + r"(?!\w)", context) is not None
-        for label in labels
-        if label
-    )
+    """Match complete labels while preserving any longer measurement's qualifying words."""
+    return any(unshadowed_label(context, label) for label in labels if label)
 
 
 def number_context(before: str, after: str) -> tuple[str, str]:
