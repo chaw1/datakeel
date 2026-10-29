@@ -3,14 +3,14 @@
 
 """Dataset imports and immutable manifest snapshots."""
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from datakeel.core.models import AssetRef, FileItem, LineageEvent
+from datakeel.core.models import AssetRef, FileItem, JsonDocument, LineageEvent
 from datakeel.semantic import classify
 from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.events import append_event
@@ -58,26 +58,35 @@ def materialize_files(items: Sequence[FileItem | dict[str, Any]]) -> list[FileIt
     return result
 
 
-def import_dataset(
-    session: Session, name: str, paths: list[Path], metadata: dict[str, Any] | None = None
-) -> DatasetRow:
-    """Import local files and publish their initial lineage atomically."""
-    files: list[dict[str, Any]] = []
+def _prepared_files(paths: Sequence[Path]) -> Iterator[FileItem]:
     store = object_store()
     for path in paths:
         semantic = classify(path.name)
-        files.append(
-            persist_file(
-                FileItem(
-                    path=str(path.resolve()),
-                    filename=path.name,
-                    modality=semantic.get("modality", "unknown"),
-                    metadata={"semantic": semantic.model_dump(mode="json")},
-                ),
-                store,
-            ).model_dump(mode="json")
+        yield persist_file(
+            FileItem(
+                path=str(path.resolve()),
+                filename=path.name,
+                modality=semantic.get("modality", "unknown"),
+                metadata={"semantic": semantic.model_dump(mode="json")},
+            ),
+            store,
         )
-    dataset = DatasetRow(name=name, files=files, metadata_values=metadata or {})
+
+
+def prepare_files(paths: Sequence[Path]) -> tuple[FileItem, ...]:
+    """Hash and persist local content without opening a database transaction."""
+    return tuple(_prepared_files(paths))
+
+
+def publish_files(
+    session: Session,
+    name: str,
+    prepared: Iterable[FileItem],
+    metadata: JsonDocument | None = None,
+) -> DatasetRow:
+    """Publish an already persisted manifest and initial lineage inside one transaction."""
+    files = [item.model_dump(mode="json") for item in prepared]
+    dataset = DatasetRow(name=name, files=files, metadata_values=metadata.root if metadata else {})
     session.add(dataset)
     session.flush()
     version = VersionRow(dataset_id=dataset.id, manifest=files)
@@ -102,6 +111,15 @@ def import_dataset(
         ),
     )
     return dataset
+
+
+def import_dataset(
+    session: Session, name: str, paths: list[Path], metadata: dict[str, Any] | None = None
+) -> DatasetRow:
+    """Import local files and publish their initial lineage atomically."""
+    return publish_files(
+        session, name, _prepared_files(paths), JsonDocument.model_validate(metadata or {})
+    )
 
 
 def dataset_dict(dataset: DatasetRow) -> dict[str, Any]:

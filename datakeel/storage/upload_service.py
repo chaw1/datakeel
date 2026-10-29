@@ -11,11 +11,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
+from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.settings import get_settings
 from datakeel.core.uploads import UploadInput, UploadView
 from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.database import Database
-from datakeel.storage.datasets import import_dataset
+from datakeel.storage.datasets import prepare_files, publish_files
 from datakeel.storage.objects import object_store
 from datakeel.storage.upload_files import (
     assemble_file,
@@ -109,24 +110,52 @@ def put_chunk(db: Database, identifier: str, ordinal: int, content: bytes) -> Up
         return _view(row)
 
 
-def complete_upload(db: Database, identifier: str) -> UploadView:
-    """Hash the assembled file and actual object before publishing one atomic dataset."""
-    with response_lock(db, f"upload:{identifier}"), db.session() as session:
-        db.lock_writes(session)
+def _completion_input(db: Database, identifier: str) -> UploadInput | UploadView:
+    with db.session() as session:
         row = _require(session, identifier)
-        if row.dataset_id:
+        return _view(row) if row.dataset_id else UploadInput.model_validate(row.declaration)
+
+
+def _prepare_upload(identifier: str, body: UploadInput) -> tuple[FileItem, ...]:
+    with tempfile.TemporaryDirectory(prefix="datakeel-upload-") as directory:
+        target = Path(directory) / body.filename
+        assemble_file(identifier, body, target)
+        files = prepare_files([target])
+        key = files[0].metadata.get("object_key")
+        if not isinstance(key, str):
+            message = "Prepared upload has no stored object"
+            raise ValidationError(message)
+        verify_stored_object(object_store(), key, body)
+        return files
+
+
+def _publish_upload(
+    session: Session, identifier: str, body: UploadInput, files: tuple[FileItem, ...]
+) -> UploadView:
+    row = _require(session, identifier)
+    if _declaration_identity(UploadInput.model_validate(row.declaration)) != _declaration_identity(
+        body
+    ):
+        message = "Upload declaration changed during completion"
+        raise ConflictError(message)
+    if not row.dataset_id:
+        dataset = publish_files(session, body.name, files, JsonDocument(body.metadata))
+        row.dataset_id = dataset.id
+    return _view(row)
+
+
+def complete_upload(db: Database, identifier: str) -> UploadView:
+    """Verify content outside the writer transaction, then atomically publish one receipt."""
+    with response_lock(db, f"upload:{identifier}"):
+        body = _completion_input(db, identifier)
+        if isinstance(body, UploadView):
             # A retry also finishes cleanup that a crash after commit may have interrupted.
             discard_chunks(identifier)
-            return _view(row)
-        body = UploadInput.model_validate(row.declaration)
-        with tempfile.TemporaryDirectory(prefix="datakeel-upload-") as directory:
-            target = Path(directory) / body.filename
-            assemble_file(identifier, body, target)
-            dataset = import_dataset(session, body.name, [target], body.metadata)
-            key = str(dataset.files[0]["metadata"]["object_key"])
-            verify_stored_object(object_store(), key, body)
-        row.dataset_id = dataset.id
-        result = _view(row)
-        session.commit()
+            return body
+        files = _prepare_upload(identifier, body)
+        with db.session() as session:
+            db.lock_writes(session)
+            result = _publish_upload(session, identifier, body, files)
+            session.commit()
         discard_chunks(identifier)
         return result

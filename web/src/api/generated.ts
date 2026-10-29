@@ -12330,6 +12330,10 @@ export interface operations {
     files_api_datasets__identifier__files_get: {
         parameters: {
             query?: {
+                offset?: number;
+                limit?: number | null;
+                q?: string;
+                modality?: string | null;
                 version?: string | null;
             };
             header?: never;

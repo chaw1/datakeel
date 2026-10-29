@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.file_queries import FileQuery
 from datakeel.storage import dataset_service as service
 from datakeel.storage.dataset_service import DatasetInput
 from datakeel.storage.governance_service import dataset_quality_summaries
@@ -40,10 +41,14 @@ def dataset(identifier: str, db: DatabaseDependency) -> DatasetView:
 
 @router.get("/{identifier}/files")
 def files(
-    identifier: str, db: DatabaseDependency, request: Request, version: str | None = None
+    identifier: str,
+    db: DatabaseDependency,
+    request: Request,
+    query: Annotated[FileQuery, Query()],
+    version: str | None = None,
 ) -> list[FileView]:
     """Read original or versioned files without exposing local paths."""
-    return service.list_files(db, identifier, version, access=_query_access(request))
+    return service.list_files(db, identifier, version, access=_query_access(request), query=query)
 
 
 @router.get("/{identifier}/versions")

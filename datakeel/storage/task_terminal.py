@@ -17,16 +17,27 @@ from datakeel.storage.kg_store import finish_failed
 
 def complete_task(session: Session, task: TaskRow, error: str | None) -> None:
     """Finalize a failed task or the last completed shard while its parent is locked."""
-    siblings = list(session.scalars(select(ShardRow).where(ShardRow.task_id == task.id)))
     if error:
+        siblings = list(session.scalars(select(ShardRow).where(ShardRow.task_id == task.id)))
         task.state, task.error = "FAILED", error
         _cancel_shards(siblings)
-    elif all(sibling.state == "COMPLETED" for sibling in siblings):
+    elif (
+        session.scalar(
+            select(ShardRow.id)
+            .where(ShardRow.task_id == task.id, ShardRow.state != "COMPLETED")
+            .limit(1)
+        )
+        is None
+    ):
         task.state = "COMPLETED"
         manifest = [
             item
-            for sibling in sorted(siblings, key=lambda item: item.ordinal)
-            for item in sibling.outputs
+            for outputs in session.scalars(
+                select(ShardRow.outputs)
+                .where(ShardRow.task_id == task.id)
+                .order_by(ShardRow.ordinal)
+            )
+            for item in outputs
         ]
         if task.kg_run_id is None and task.dq_run_id is None and task.datasheet_job_id is None:
             session.add(VersionRow(dataset_id=task.dataset_id, task_id=task.id, manifest=manifest))

@@ -70,6 +70,11 @@ from datakeel.storage.dq_rows import (
 )
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
+from datakeel.storage.file_discovery import (
+    FileDiscoveryCheckpointRow,
+    FileDiscoveryRow,
+    install_file_discovery,
+)
 from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.harness_rows import EvalRunRow, ModelCallTraceRow
 from datakeel.storage.kg_eval_rows import KGEvalRunRow
@@ -121,6 +126,8 @@ _REGISTERED_MODELS = (
     DqIssueAuditRow,
     DqWebhookRow,
     FileStateRow,
+    FileDiscoveryRow,
+    FileDiscoveryCheckpointRow,
     DatasheetJobRow,
     BudgetAccountRow,
     BudgetReservationRow,
@@ -303,6 +310,7 @@ class Database:
                 )
             Base.metadata.create_all(connection)
             add_nullable_columns(connection)
+            install_file_discovery(connection, sqlite=self.sqlite)
             install_evidence_constraints(connection, sqlite=self.sqlite)
             install_release_constraints(connection, sqlite=self.sqlite)
             install_asset_constraints(connection, sqlite=self.sqlite)

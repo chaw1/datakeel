@@ -1,102 +1,19 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Discover current local objects from existing facts without maintaining an index."""
+"""Discover public objects with bounded result retention and exact Unicode ranking."""
 
+import heapq
 import unicodedata
-from itertools import zip_longest
-from typing import cast
+from collections.abc import Iterator
+from itertools import chain, zip_longest
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from datakeel.core.catalog_models import CatalogObject
-from datakeel.core.models import FileItem
-from datakeel.core.search_models import SEARCH_KINDS, SearchKind, SearchQuery, SearchResult
-from datakeel.storage.action_rows import ActionRunRow
-from datakeel.storage.catalog_rows import CatalogObjectRow
-from datakeel.storage.database import Database, DatasetRow, VersionRow
-from datakeel.storage.file_state import FileStateRow
-
-
-def _files(session: Session, versions: list[VersionRow]) -> list[SearchResult]:
-    states = {row.file_id: row for row in session.scalars(select(FileStateRow))}
-    files: dict[str, SearchResult] = {}
-    for version in versions:
-        for raw in version.manifest:
-            file = FileItem.model_validate(raw)
-            state = states.get(file.id)
-            status = (
-                "deleted"
-                if state and state.deleted
-                else "quarantined"
-                if state and state.quarantined
-                else "normal"
-            )
-            files.setdefault(
-                file.id,
-                SearchResult(
-                    kind="file",
-                    id=file.id,
-                    name=file.filename,
-                    dataset_id=version.dataset_id,
-                    version_id=version.id,
-                    status=status,
-                ),
-            )
-    return list(files.values())
-
-
-def _datasets(session: Session) -> list[SearchResult]:
-    datasets = list(session.scalars(select(DatasetRow).order_by(DatasetRow.id)))
-    versions = list(
-        session.scalars(select(VersionRow).order_by(VersionRow.created_at, VersionRow.id))
-    )
-    counts: dict[str, int] = {}
-    names = {row.id: row.name for row in datasets}
-    result = _files(session, versions)
-    for version in versions:
-        counts[version.dataset_id] = counts.get(version.dataset_id, 0) + 1
-        result.append(
-            SearchResult(
-                kind="version",
-                id=version.id,
-                name=f"{names[version.dataset_id]} · v{counts[version.dataset_id]}",
-                dataset_id=version.dataset_id,
-                version_id=version.id,
-                status="immutable",
-            )
-        )
-    result.extend(
-        SearchResult(
-            kind="dataset",
-            id=row.id,
-            name=row.name,
-            dataset_id=row.id,
-            status="versioned" if row.id in counts else "empty",
-        )
-        for row in datasets
-    )
-    return result
-
-
-def _catalog(session: Session) -> list[SearchResult]:
-    result: list[SearchResult] = []
-    for row in session.scalars(
-        select(CatalogObjectRow).where(
-            CatalogObjectRow.kind.in_(["table", "column", "metric", "term"])
-        )
-    ):
-        item = CatalogObject.model_validate(row.payload)
-        result.append(
-            SearchResult(
-                kind=cast("SearchKind", row.kind),
-                id=row.asset_id,
-                name=item.name,
-                english_name=item.english_name,
-            )
-        )
-    return result
+from datakeel.core.search_models import SEARCH_KINDS, SearchQuery, SearchResult
+from datakeel.storage.database import Database
+from datakeel.storage.file_discovery import begin_file_read
+from datakeel.storage.search_sources import dataset_results, file_results, other_results
 
 
 def _rank(item: SearchResult, query: str) -> tuple[int, str, str, str]:
@@ -116,34 +33,46 @@ def _rank(item: SearchResult, query: str) -> tuple[int, str, str, str]:
     return rank, name, item.kind, item.id
 
 
-def search_objects(db: Database, query: SearchQuery) -> list[SearchResult]:
-    """Search eight object kinds, prioritizing exact identities and unique ID prefixes."""
-    with db.session() as session:
-        items = _datasets(session) + _catalog(session)
-        items.extend(
-            SearchResult(
-                kind="action_run",
-                id=row.id,
-                name=row.action_type,
-                status=row.status,
-            )
-            for row in session.scalars(select(ActionRunRow))
-        )
-    needle = unicodedata.normalize("NFC", query.q).strip().casefold()
-    if needle:
-        matches = [
-            item
-            for item in items
-            if needle in item.id.casefold()
-            or needle in unicodedata.normalize("NFC", item.name).casefold()
-            or needle in unicodedata.normalize("NFC", item.english_name or "").casefold()
-        ]
-        return sorted(matches, key=lambda item: _rank(item, needle))[: query.limit]
-    groups = [
-        sorted(
-            (item for item in items if item.kind == kind),
-            key=lambda item: (item.name.casefold(), item.id),
-        )
+def _all(session: Session, query: SearchQuery) -> Iterator[SearchResult]:
+    return chain(dataset_results(session), file_results(session, query), other_results(session))
+
+
+def _matches(item: SearchResult, needle: str) -> bool:
+    return (
+        needle in item.id.casefold()
+        or needle in unicodedata.normalize("NFC", item.name).casefold()
+        or needle in unicodedata.normalize("NFC", item.english_name or "").casefold()
+    )
+
+
+def _initial(session: Session, limit: int) -> list[SearchResult]:
+    groups: dict[str, list[SearchResult]] = {kind: [] for kind in SEARCH_KINDS}
+    for item in _all(session, SearchQuery(limit=limit)):
+        values = groups[item.kind]
+        values.append(item)
+        if len(values) > limit:
+            values.sort(key=lambda value: (value.name.casefold(), value.id))
+            values.pop()
+    ordered = [
+        sorted(groups[kind], key=lambda value: (value.name.casefold(), value.id))
         for kind in SEARCH_KINDS
     ]
-    return [item for row in zip_longest(*groups) for item in row if item is not None][: query.limit]
+    return [item for row in zip_longest(*ordered) for item in row if item is not None][:limit]
+
+
+def search_objects(db: Database, query: SearchQuery) -> list[SearchResult]:
+    """Search public fields without loading all original manifest or catalog payloads."""
+    needle = unicodedata.normalize("NFC", query.q).strip().casefold()
+    with db.session() as session:
+        begin_file_read(session)
+        if not needle:
+            return _initial(session, query.limit)
+        return heapq.nsmallest(
+            query.limit,
+            (
+                item
+                for item in _all(session, SearchQuery(q=needle, limit=query.limit))
+                if _matches(item, needle)
+            ),
+            key=lambda item: _rank(item, needle),
+        )

@@ -7,7 +7,7 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from datakeel.core.datasheet_execution import DatasheetCompletion
 from datakeel.core.dq_monitor import DqCompletion
@@ -179,7 +179,10 @@ class DatabaseQueue:
         with self.db.session() as session:
             self.db.lock_writes(session)
             shard = session.scalar(
-                select(ShardRow).where(ShardRow.id == lease.shard_id).with_for_update()
+                select(ShardRow)
+                .options(load_only(ShardRow.state, ShardRow.lease_owner))
+                .where(ShardRow.id == lease.shard_id)
+                .with_for_update()
             )
             if not shard or shard.state != "RUNNING" or shard.lease_owner != lease.owner:
                 return False
@@ -208,7 +211,10 @@ class DatabaseQueue:
                 select(TaskRow).where(TaskRow.id == lease.task_id).with_for_update()
             )
             shard = session.scalar(
-                select(ShardRow).where(ShardRow.id == lease.shard_id).with_for_update()
+                select(ShardRow)
+                .options(load_only(ShardRow.state, ShardRow.lease_owner, ShardRow.heartbeat_at))
+                .where(ShardRow.id == lease.shard_id)
+                .with_for_update()
             )
             if not shard or shard.state != "RUNNING" or shard.lease_owner != lease.owner:
                 return False
@@ -227,9 +233,8 @@ class DatabaseQueue:
             ):
                 msg = "Successful datasheet tasks require their exact checked completion"
                 raise ConflictError(msg)
-            shard.state = "FAILED" if error else "COMPLETED"
+            shard.state, shard.lease_owner = "FAILED" if error else "COMPLETED", None
             shard.outputs = [item.model_dump(mode="json") for item in outputs]
-            shard.lease_owner = None
             for event in events:
                 append_event(session, event)
             if isinstance(evidence, DqCompletion):
@@ -385,14 +390,15 @@ def _source_version(session: Session, task: TaskRow) -> str:
     if task.input_version_id is not None:
         return task.input_version_id
     version = session.scalar(
-        select(VersionRow)
+        select(VersionRow.id)
         .where(VersionRow.dataset_id == task.dataset_id)
         .order_by(VersionRow.created_at, VersionRow.id)
+        .limit(1)
     )
     if version is None:
         msg = "Task source manifest version is missing"
         raise NotFoundError(msg)
-    return version.id
+    return version
 
 
 def _validate_registered_pipeline(session: Session, value: dict[str, Any] | None) -> None:

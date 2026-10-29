@@ -79,9 +79,10 @@ def version_summary(session: Session, dataset: DatasetRow, version_id: str) -> V
     return measured.summary(session, version_id)
 
 
-def _pairs(
+def merge_pairs(
     before: Iterator[FileItem], after: Iterator[FileItem]
 ) -> Iterator[tuple[FileItem | None, FileItem | None]]:
+    """Merge ordered identities in linear time with constant working memory."""
     left, right = next(before, None), next(after, None)
     while left is not None or right is not None:
         if right is None or (left is not None and left.id < right.id):
@@ -131,7 +132,7 @@ def _compare(
     measurements = (_Measurements(), _Measurements())
     files: list[DiffFile] = []
     matching = 0
-    for left, right in _pairs(
+    for left, right in merge_pairs(
         stream_manifest(session, before_id), stream_manifest(session, after_id)
     ):
         kind = _category(left, right)

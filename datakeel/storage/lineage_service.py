@@ -19,7 +19,7 @@ from datakeel.lineage.collapse import collapse_graph
 from datakeel.lineage.exports import export_croissant, export_openlineage
 from datakeel.lineage.models import GraphNode, GraphOverlay, GraphQuery, GraphView
 from datakeel.lineage.service import all_events, append_event, graph
-from datakeel.storage.catalog_store import read_snapshot
+from datakeel.storage.catalog_graph import graph_catalog
 from datakeel.storage.data_asset_access import (
     require_access_in_session,
     skip_protected_in_session,
@@ -54,6 +54,7 @@ def get_graph(
     """Return a bounded projection of the immutable event log."""
     with db.session() as session:
         options = query or GraphQuery(asset=asset, direction=direction, depth=depth)
+        catalog, truncated = graph_catalog(session, options)
         assertions: tuple[Assertion, ...] = ()
         if options.include_semantic:
             assertions = tuple(
@@ -75,10 +76,12 @@ def get_graph(
             options.hops if options.hops is not None else options.depth,
             GraphOverlay(
                 assertions=assertions,
-                catalog=read_snapshot(session) if options.include_catalog else None,
+                catalog=catalog,
             ),
             None if options.collapse else options.max_nodes,
         )
+        if truncated:
+            result = result.model_copy(update={"truncated": True})
         if options.collapse:
             result = collapse_graph(result, options.asset_id or options.asset, options.max_nodes)
         states = {state.file_id: state for state in session.scalars(select(FileStateRow))}
