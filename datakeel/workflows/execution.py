@@ -14,6 +14,7 @@ from datakeel.core.workflow_models import WorkflowRun
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.database import Database
+from datakeel.storage.identity_sessions import session_actor
 from datakeel.storage.task_queries import query_task
 from datakeel.workflows.models import ApprovalStep, BranchStep, OutputStep, ToolStep, WaitStep
 from datakeel.workflows.resolver import compare, resolve
@@ -41,15 +42,17 @@ def resolve_value(run: WorkflowRun, value: JsonValue) -> JsonValue:
     return resolve(value, run.inputs, outputs)
 
 
-def _context(run_id: str) -> ToolCallContext:
-    return ToolCallContext(agent_id="datakeel-workflow", session_id=run_id)
+def _context(db: Database, run_id: str) -> ToolCallContext:
+    return ToolCallContext(
+        actor=session_actor(db, run_id), agent_id="datakeel-workflow", session_id=run_id
+    )
 
 
 def call_tool(db: Database, run: WorkflowRun, step: ToolStep | ApprovalStep) -> ToolOutcome:
     """Prepare one action or read one function with a stable run-scoped invocation identity."""
     name = step.tool if isinstance(step, ToolStep) else step.action
     arguments = JsonDocument.model_validate(resolve_value(run, step.arguments.root))
-    outcome = invoke_tool(db, name, arguments, _context(run.id), call_id=step.id)
+    outcome = invoke_tool(db, name, arguments, _context(db, run.id), call_id=step.id)
     if outcome.status == "FAILED":
         raise ExecutionError(outcome.error or f"Workflow tool failed: {name}")
     return outcome
@@ -74,7 +77,7 @@ def execute_tool(db: Database, run: WorkflowRun, step: ToolStep) -> JsonValue:
                 "operation_id": plan.operation_id,
             }
         ),
-        _context(run.id),
+        _context(db, run.id),
         call_id=plan.operation_id,
     )
     if execution.status == "FAILED" or execution.run is None:
@@ -99,7 +102,7 @@ def wait_for_task(
                 db,
                 "get_task",
                 JsonDocument({"task_id": task_id}),
-                _context(run.id),
+                _context(db, run.id),
                 call_id=step.id,
             )
             return outcome.content.root["data"]

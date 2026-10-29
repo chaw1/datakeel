@@ -12,14 +12,16 @@ def receipt(
     plan: ActionPlan, run_id: str, outputs: list[AssetRef], *, error: str | None = None
 ) -> LineageEvent:
     """Record the actual outputs, retaining no output claims for failed attempts."""
-    refs = {item.asset_id: item for item in plan_refs(plan)}
+    refs = {_ref_key(item): item for item in plan_refs(plan)}
     for item in plan.manifest.objects:
         dataset_id = item.properties.get("dataset_id")
         if isinstance(dataset_id, str):
-            refs[dataset_id] = AssetRef(asset_id=dataset_id)
+            fallback = AssetRef(asset_id=dataset_id)
+            refs[_ref_key(fallback)] = fallback
     dataset_id = plan.canonical_params.get("dataset_id")
     if isinstance(dataset_id, str):
-        refs[dataset_id] = AssetRef(asset_id=dataset_id)
+        fallback = AssetRef(asset_id=dataset_id)
+        refs[_ref_key(fallback)] = fallback
     attributed = plan.actor
     if plan.agent_id or plan.session_id:
         attributed = f"agent:{plan.agent_id or 'local'}/session:{plan.session_id or 'local'}"
@@ -53,3 +55,7 @@ def receipt(
         run_state="FAIL" if error else "COMPLETED",
         quality={"error": error} if error else {"object_count": plan.impact.object_count},
     )
+
+
+def _ref_key(ref: AssetRef) -> tuple[str, str, str, str | None]:
+    return ref.namespace, ref.asset_type, ref.asset_id, ref.version

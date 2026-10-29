@@ -11,13 +11,16 @@ from datakeel.core.models import AssetRef
 from datakeel.storage.conversation_asset_refs import conversation_asset_refs, memory_asset_refs
 from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
+from datakeel.storage.identity_sessions import session_actor
 
-_CALLER = AccessContext(actor="local", entry="agent", scope="query")
+
+def _caller(actor: str) -> AccessContext:
+    return AccessContext(actor=actor, entry="agent", scope="query")
 
 
-def _allowed(db: Database, refs: tuple[AssetRef, ...]) -> bool:
+def _allowed(db: Database, refs: tuple[AssetRef, ...], actor: str) -> bool:
     try:
-        require_access(db, refs, _CALLER, record=False)
+        require_access(db, refs, _caller(actor), record=False)
     except AuthorizationError:
         return False
     return True
@@ -30,7 +33,9 @@ def project_agent_history(db: Database, conversation: Conversation) -> Conversat
     Stored transcripts and append-only audit are never rewritten.
     """
     try:
-        if _allowed(db, conversation_asset_refs(db, conversation.id)):
+        if _allowed(
+            db, conversation_asset_refs(db, conversation.id), session_actor(db, conversation.id)
+        ):
             return conversation
     except AuthorizationError:
         pass
@@ -50,23 +55,27 @@ def project_agent_history(db: Database, conversation: Conversation) -> Conversat
 def read_agent_histories(db: Database, conversations: list[Conversation]) -> list[Conversation]:
     """Project currently readable transcripts and audit their combined returned resources once."""
     views = [project_agent_history(db, item) for item in conversations]
-    refs = tuple(
-        ref
-        for original, view in zip(conversations, views, strict=True)
-        if original is view
-        for ref in conversation_asset_refs(db, original.id)
-    )
-    require_access(db, refs, _CALLER)
+    groups: dict[str, list[AssetRef]] = {}
+    for original, view in zip(conversations, views, strict=True):
+        if original is view:
+            actor = session_actor(db, original.id)
+            groups.setdefault(actor, []).extend(conversation_asset_refs(db, original.id))
+    for actor, refs in groups.items():
+        require_access(db, tuple(refs), _caller(actor))
     return views
 
 
 def require_agent_history(db: Database, conversation_id: str) -> None:
     """Authorize and audit an immutable response replay before returning any cached bytes."""
-    require_access(db, conversation_asset_refs(db, conversation_id), _CALLER)
+    require_access(
+        db,
+        conversation_asset_refs(db, conversation_id),
+        _caller(session_actor(db, conversation_id)),
+    )
 
 
 def visible_memories(
-    db: Database, entries: list[MemoryEntry], *, record: bool = False
+    db: Database, entries: list[MemoryEntry], *, record: bool = False, actor: str = "local"
 ) -> list[MemoryEntry]:
     """Exclude scoped or source-attributed memory whose underlying asset is no longer readable."""
     visible: list[MemoryEntry] = []
@@ -76,9 +85,9 @@ def visible_memories(
             refs = memory_asset_refs(db, [entry])
         except (AuthorizationError, NotFoundError):
             continue
-        if _allowed(db, refs):
+        if _allowed(db, refs, actor):
             visible.append(entry)
             returned_refs.extend(refs)
     if record:
-        require_access(db, tuple(returned_refs), _CALLER)
+        require_access(db, tuple(returned_refs), _caller(actor))
     return visible

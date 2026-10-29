@@ -11,6 +11,7 @@ from datakeel.core.memory_models import (
     MemoryDeletion,
     MemoryEntry,
     MemoryPolicy,
+    MemoryReadOptions,
     MemorySelection,
     MemoryUseScope,
 )
@@ -26,11 +27,16 @@ def create_memory(
     *,
     clock: Callable[[], datetime] = utcnow,
     policy: MemoryPolicy | None = None,
+    actor: str = "local",
 ) -> MemoryEntry:
     """Redact shared privacy classes before any memory content is persisted."""
     content = redact_pii(request.content, replacement="[REDACTED]")
     return memory_store.create(
-        db, request.model_copy(update={"content": content}), clock(), policy or MemoryPolicy()
+        db,
+        request.model_copy(update={"content": content}),
+        clock(),
+        policy or MemoryPolicy(),
+        actor=actor,
     )
 
 
@@ -41,6 +47,7 @@ def list_memories(
     clock: Callable[[], datetime] = utcnow,
     policy: MemoryPolicy | None = None,
     include_archived: bool = False,
+    actor: str = "local",
 ) -> list[MemoryEntry]:
     """List current entries; an optional dataset filter also includes global entries."""
     return memory_store.list_entries(
@@ -48,8 +55,7 @@ def list_memories(
         dataset_id,
         clock(),
         policy or MemoryPolicy(),
-        include_archived=include_archived,
-        record=True,
+        options=MemoryReadOptions(actor=actor, include_archived=include_archived, record=True),
     )
 
 
@@ -59,9 +65,10 @@ def get_memory(
     *,
     clock: Callable[[], datetime] = utcnow,
     policy: MemoryPolicy | None = None,
+    actor: str = "local",
 ) -> MemoryEntry:
     """Read current strength and provenance for one memory identity."""
-    return memory_store.get(db, identifier, clock(), policy or MemoryPolicy())
+    return memory_store.get(db, identifier, clock(), policy or MemoryPolicy(), actor=actor)
 
 
 def select_memories(
@@ -71,9 +78,12 @@ def select_memories(
     *,
     clock: Callable[[], datetime] = utcnow,
     policy: MemoryPolicy | None = None,
+    actor: str = "local",
 ) -> MemorySelection:
     """Retrieve a fresh bounded prompt without recording a model use yet."""
-    return memory_store.select_memories(db, query, dataset_id, clock(), policy or MemoryPolicy())
+    return memory_store.select_memories(
+        db, query, dataset_id, clock(), policy or MemoryPolicy(), actor=actor
+    )
 
 
 def reinforce_memories(
@@ -95,10 +105,13 @@ def retrieve(
     *,
     clock: Callable[[], datetime] = utcnow,
     policy: MemoryPolicy | None = None,
+    actor: str = "local",
 ) -> MemorySelection:
     """Select and reinforce with one clock sample for explicit non-model consumers."""
     now = clock()
-    selected = memory_store.select_memories(db, query, dataset_id, now, policy or MemoryPolicy())
+    selected = memory_store.select_memories(
+        db, query, dataset_id, now, policy or MemoryPolicy(), actor=actor
+    )
     memory_store.reinforce(
         db, [item.id for item in selected.entries], now, policy or MemoryPolicy()
     )

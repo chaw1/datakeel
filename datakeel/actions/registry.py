@@ -3,13 +3,20 @@
 
 """Declare built-in action policies separately from their execution handlers."""
 
+from datakeel.actions.identity_parameters import IDENTITY_POLICIES
 from datakeel.actions.parameters import PARAMETER_TYPES
+from datakeel.actions.production_catalog_parameters import CATALOG_POLICIES
+from datakeel.actions.production_language import action_language
+from datakeel.actions.production_parameters import PRODUCTION_POLICIES
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.models import ActionType
 
 POLICIES: dict[str, tuple[str, bool, str]] = {
     "clean_training_data": ("datasets:write", False, "Publish an approved clean training version"),
+    **IDENTITY_POLICIES,
+    **PRODUCTION_POLICIES,
+    **CATALOG_POLICIES,
     "submit_custom_operator": ("operators:submit", False, "Approve immutable custom Python code"),
     "create_data_asset": ("data-assets:write", True, "Create an asset draft"),
     "update_data_asset": ("data-assets:write", True, "Revise an asset card"),
@@ -69,6 +76,7 @@ def action_definition(action_type: str) -> ActionType:
         msg = f"Unknown action: {action_type}"
         raise ValidationError(msg)
     scope, reversible, effect = policy
+    phrases, examples = action_language(action_type)
     return ActionType(
         id=action_type,
         params_schema=JsonDocument.model_validate(PARAMETER_TYPES[action_type].model_json_schema()),
@@ -97,6 +105,8 @@ def action_definition(action_type: str) -> ActionType:
             "rollback_standards": "rollback_standards",
         }.get(action_type),
         handler=f"datakeel.actions.execute:{action_type}",
+        phrases=phrases,
+        examples=examples,
     )
 
 

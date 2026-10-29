@@ -25,7 +25,7 @@ from datakeel.ontology.tool_models import (
     ToolInvocationStart,
     ToolOutcome,
 )
-from datakeel.ontology.tool_refs import argument_refs, extract_refs, reconcile_refs
+from datakeel.ontology.tool_refs import argument_refs, extract_refs, production_tool, reconcile_refs
 from datakeel.storage.ask_conversations import get_conversation
 from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
@@ -139,7 +139,8 @@ def _finish(
             "invocation_id": identifier,
             "asset_refs": reconcile_refs(
                 outcome.asset_refs,
-                argument_refs(outcome.name, arguments.root) + extract_refs(outcome.content.root),
+                argument_refs(outcome.name, arguments.root)
+                + extract_refs(outcome.content.root, production=production_tool(outcome.name)),
             ),
         }
     )

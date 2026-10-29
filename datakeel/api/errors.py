@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from datakeel.core.errors import AuthorizationError, ConflictError, DatakeelError, NotFoundError
+from datakeel.storage.production_revisions import RevisionConflictError
 
 
 async def domain_error(_request: Request, exc: Exception) -> JSONResponse:
@@ -18,6 +19,16 @@ async def domain_error(_request: Request, exc: Exception) -> JSONResponse:
         status = 409
     elif isinstance(exc, AuthorizationError):
         status = 403
+    if isinstance(exc, RevisionConflictError):
+        return JSONResponse(
+            status_code=status,
+            content={
+                "detail": str(exc),
+                "latest_revision": exc.latest_revision.model_dump(mode="json")
+                if exc.latest_revision
+                else None,
+            },
+        )
     return JSONResponse(status_code=status, content={"detail": str(exc)})
 
 

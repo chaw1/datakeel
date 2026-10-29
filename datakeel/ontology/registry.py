@@ -20,6 +20,11 @@ from datakeel.ontology.models import (
     ObjectType,
     OntologyRegistry,
 )
+from datakeel.ontology.production_links import (
+    CONTAINMENT_DOMAINS,
+    CONTAINMENT_RANGES,
+    production_links,
+)
 from datakeel.ontology.properties import (
     DatasetProperties,
     FileProperties,
@@ -45,13 +50,21 @@ def object_definitions() -> list[ObjectType]:
             properties=JsonDocument.model_validate(model.model_json_schema()),
             identity_mapping=IdentityMapping(
                 asset_type=kind,
-                version_field="version_id" if kind in {"version", "file", "artifact"} else None,
+                version_field=_version_field(kind),
             ),
             description=f"Projection of authoritative {kind} facts; AssetRef is the sole identity.",
         )
         for kind in registered_object_kinds()
         if (model := object_property_model(kind)) is not None
     ]
+
+
+def _version_field(kind: str) -> str | None:
+    if kind in {"version", "file", "artifact"}:
+        return "version_id"
+    if kind == "label_set":
+        return "version"
+    return "revision" if kind in {"template", "model"} else None
 
 
 def link_definitions() -> list[LinkType]:
@@ -68,8 +81,8 @@ def link_definitions() -> list[LinkType]:
         ),
         LinkType(
             id="contains",
-            domain=["dataset", "version", "source", "table"],
-            range=["version", "file", "artifact", "table", "column"],
+            domain=CONTAINMENT_DOMAINS,
+            range=CONTAINMENT_RANGES,
             cardinality="one-to-many",
             semantics="contains",
             description="A manifest or dataset includes the target; inclusion is not derivation.",
@@ -94,6 +107,7 @@ def link_definitions() -> list[LinkType]:
             description="Content refers to another asset without asserting derivation.",
         ),
         *metadata_links(),
+        *production_links(),
     ]
 
 

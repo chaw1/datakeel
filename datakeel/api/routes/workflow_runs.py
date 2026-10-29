@@ -9,11 +9,13 @@ from typing import Annotated, cast
 from fastapi import APIRouter, Depends, Request
 
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.api.identity_access import http_actor
 from datakeel.api.routes.agent import EventStreamResponse
 from datakeel.api.workflow_stream import WorkflowStreamResponse
 from datakeel.core.agent_models import ResumeInput
 from datakeel.core.workflow_models import WorkflowAudit, WorkflowEvent, WorkflowRun, WorkflowStart
 from datakeel.runtime.workflow_service import resume_workflow, start_workflow
+from datakeel.storage.identity_sessions import require_session_actor, session_actor
 from datakeel.storage.workflow_recovery import list_audit
 from datakeel.storage.workflow_store import get_run, list_runs
 from datakeel.workflows.execution import WorkflowHooks
@@ -38,20 +40,23 @@ def definitions() -> list[WorkflowDefinition]:
 
 
 @router.get("/runs")
-def runs(db: DatabaseDependency) -> list[WorkflowRun]:
+def runs(db: DatabaseDependency, request: Request) -> list[WorkflowRun]:
     """List execution history, keeping each explicit run independent of conversations."""
-    return list_runs(db)
+    actor = http_actor(request)
+    return [run for run in list_runs(db) if session_actor(db, run.id) == actor]
 
 
 @router.get("/runs/{run_id}")
-def run(run_id: str, db: DatabaseDependency) -> WorkflowRun:
+def run(run_id: str, db: DatabaseDependency, request: Request) -> WorkflowRun:
     """Read a full durable timeline after a stream disconnect or page reload."""
+    require_session_actor(db, run_id, http_actor(request))
     return get_run(db, run_id)
 
 
 @router.get("/runs/{run_id}/audit")
-def audit(run_id: str, db: DatabaseDependency) -> list[WorkflowAudit]:
+def audit(run_id: str, db: DatabaseDependency, request: Request) -> list[WorkflowAudit]:
     """Inspect signed-resume authorization and interrupted-run evidence."""
+    require_session_actor(db, run_id, http_actor(request))
     return list_audit(db, run_id)
 
 
@@ -70,12 +75,15 @@ def _cancellable(hooks: WorkflowHooks | None, cancelled: Event) -> WorkflowHooks
     "/runs/{run_id}/resume", response_model=WorkflowEvent, response_class=EventStreamResponse
 )
 def resume(
-    run_id: str, body: ResumeInput, db: DatabaseDependency, hooks: HooksDependency
+    run_id: str, body: ResumeInput, db: DatabaseDependency, hooks: HooksDependency, request: Request
 ) -> EventStreamResponse:
     """Continue after a human decision; the request body itself grants no authority."""
     cancelled = Event()
     return WorkflowStreamResponse(
-        resume_workflow(db, run_id, body, hooks=_cancellable(hooks, cancelled)), cancelled
+        resume_workflow(
+            db, run_id, body, hooks=_cancellable(hooks, cancelled), actor=http_actor(request)
+        ),
+        cancelled,
     )
 
 
@@ -89,10 +97,17 @@ def definition(workflow_id: str) -> WorkflowDefinition:
     "/{workflow_id}/runs", response_model=WorkflowEvent, response_class=EventStreamResponse
 )
 def start(
-    workflow_id: str, body: WorkflowStart, db: DatabaseDependency, hooks: HooksDependency
+    workflow_id: str,
+    body: WorkflowStart,
+    db: DatabaseDependency,
+    hooks: HooksDependency,
+    request: Request,
 ) -> EventStreamResponse:
     """Start an explicitly requested workflow once and stream its durable snapshots."""
     cancelled = Event()
     return WorkflowStreamResponse(
-        start_workflow(db, workflow_id, body, hooks=_cancellable(hooks, cancelled)), cancelled
+        start_workflow(
+            db, workflow_id, body, hooks=_cancellable(hooks, cancelled), actor=http_actor(request)
+        ),
+        cancelled,
     )

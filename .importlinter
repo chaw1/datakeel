@@ -482,6 +482,68 @@ ignore_imports =
     datakeel.storage.annotation_actions -> datakeel.actions.models
     datakeel.storage.annotation_actions -> datakeel.ontology.models
 
+# Production schemas, transactional authorization and read adapters share typed domain contracts.
+    datakeel.ontology.production_functions -> datakeel.storage.database
+    datakeel.ontology.production_functions -> datakeel.storage.production_objects
+    datakeel.ontology.production_functions -> datakeel.storage.production_queries
+    datakeel.ontology.production_functions -> datakeel.storage.production_statistics
+    datakeel.storage.action_operations -> datakeel.actions.identity_parameters
+    datakeel.storage.action_operations -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.action_operations -> datakeel.actions.production_parameters
+    datakeel.storage.action_planning -> datakeel.actions.identity_parameters
+    datakeel.storage.action_planning -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.action_planning -> datakeel.actions.production_parameters
+    datakeel.storage.action_snapshot -> datakeel.actions.identity_parameters
+    datakeel.storage.action_snapshot -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.action_snapshot -> datakeel.actions.production_parameters
+    datakeel.storage.evidence_actions -> datakeel.actions.identity_parameters
+    datakeel.storage.evidence_actions -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.evidence_actions -> datakeel.actions.production_parameters
+    datakeel.storage.identity_actions -> datakeel.actions.identity_parameters
+    datakeel.storage.identity_actions -> datakeel.actions.models
+    datakeel.storage.identity_actions -> datakeel.actions.registry
+    datakeel.storage.identity_authorization -> datakeel.actions.identity_parameters
+    datakeel.storage.identity_authorization -> datakeel.actions.models
+    datakeel.storage.identity_authorization -> datakeel.actions.policy
+    datakeel.storage.identity_authorization -> datakeel.actions.registry
+    datakeel.storage.identity_mutations -> datakeel.actions.identity_parameters
+    datakeel.storage.identity_mutations -> datakeel.actions.models
+    datakeel.storage.identity_store -> datakeel.actions.registry
+    datakeel.storage.memory_store -> datakeel.actions.registry
+    datakeel.storage.production_action_state -> datakeel.actions.production_parameters
+    datakeel.storage.production_actions -> datakeel.actions.models
+    datakeel.storage.production_actions -> datakeel.actions.production_parameters
+    datakeel.storage.production_assignments -> datakeel.actions.production_parameters
+    datakeel.storage.production_catalog_actions -> datakeel.actions.models
+    datakeel.storage.production_catalog_actions -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.production_catalog_changes -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.production_catalog_plans -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.production_catalog_plans -> datakeel.ontology.models
+    datakeel.storage.production_finalize -> datakeel.actions.models
+    datakeel.storage.production_finalize -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.production_human -> datakeel.actions.models
+    datakeel.storage.production_human -> datakeel.actions.production_language
+    datakeel.storage.production_idempotency -> datakeel.actions.models
+    datakeel.storage.production_idempotency -> datakeel.actions.policy
+    datakeel.storage.production_objects -> datakeel.ontology.models
+    datakeel.storage.production_predictions -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.production_predictions -> datakeel.actions.production_parameters
+    datakeel.storage.production_projects -> datakeel.actions.production_parameters
+    datakeel.storage.production_reviews -> datakeel.actions.production_parameters
+    datakeel.storage.production_revisions -> datakeel.actions.production_parameters
+    datakeel.storage.production_statistics -> datakeel.annotation_qa
+
+# Production source grants and authoritative runtime session actors reuse existing contracts.
+    datakeel.delegation.service -> datakeel.storage.identity_sessions
+    datakeel.storage.action_access -> datakeel.actions.parameters
+    datakeel.storage.action_access -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.action_access -> datakeel.actions.production_parameters
+    datakeel.storage.action_access -> datakeel.actions.production_references
+    datakeel.workflows.execution -> datakeel.storage.identity_sessions
+
+# Tool reference inference keeps production and worker task identities distinct.
+    datakeel.ontology.tool_refs -> datakeel.actions.production_language
+
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks
 type = forbidden

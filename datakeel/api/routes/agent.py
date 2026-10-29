@@ -14,6 +14,7 @@ from starlette.background import BackgroundTask
 from datakeel.agent import service
 from datakeel.agent.models import AgentEvent, ConversationView
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.api.identity_access import http_actor
 from datakeel.core.agent_models import (
     ConversationAudit,
     ConversationCreate,
@@ -26,6 +27,7 @@ from datakeel.delegation.loader import list_agents
 from datakeel.delegation.models import AgentDefinition, CallTree
 from datakeel.delegation.tree import call_tree
 from datakeel.storage.conversation_authorization import list_audit
+from datakeel.storage.identity_sessions import require_session_actor
 
 router = APIRouter(prefix="/api/agent/conversations", tags=["agent"])
 
@@ -45,26 +47,27 @@ ProviderDependency = Annotated[Provider | None, Depends(get_provider)]
 
 
 @router.post("")
-def create(body: ConversationCreate, db: DatabaseDependency) -> ConversationView:
+def create(body: ConversationCreate, db: DatabaseDependency, request: Request) -> ConversationView:
     """Create a session with persistent limits and optional dataset context."""
-    return service.create_conversation(db, body)
+    return service.create_conversation(db, body, actor=http_actor(request))
 
 
 @router.get("")
-def list_all(db: DatabaseDependency) -> list[ConversationView]:
+def list_all(db: DatabaseDependency, request: Request) -> list[ConversationView]:
     """List recoverable local conversations."""
-    return service.list_conversations(db)
+    return service.list_conversations(db, actor=http_actor(request))
 
 
 @router.get("/{conversation_id}")
-def get(conversation_id: str, db: DatabaseDependency) -> ConversationView:
+def get(conversation_id: str, db: DatabaseDependency, request: Request) -> ConversationView:
     """Recover all persisted events and current human approval decisions."""
-    return service.get_conversation(db, conversation_id)
+    return service.get_conversation(db, conversation_id, actor=http_actor(request))
 
 
 @router.get("/{conversation_id}/tree")
-def tree(conversation_id: str, db: DatabaseDependency) -> CallTree:
+def tree(conversation_id: str, db: DatabaseDependency, request: Request) -> CallTree:
     """Read nested specialist sessions and every metered parent and child call."""
+    require_session_actor(db, conversation_id, http_actor(request))
     return call_tree(db, conversation_id)
 
 
@@ -87,11 +90,14 @@ def send(
     body: MessageInput,
     db: DatabaseDependency,
     provider: ProviderDependency,
+    request: Request,
 ) -> EventStreamResponse:
     """Stream durable events with explicit replay keys and no duplicate execution."""
     stream = cast(
         "Generator[AgentEvent, None, None]",
-        service.send_message(db, conversation_id, body, provider=provider),
+        service.send_message(
+            db, conversation_id, body, provider=provider, actor=http_actor(request)
+        ),
     )
     first = next(stream, None)
     return EventStreamResponse(
@@ -109,11 +115,14 @@ def resume(
     body: ResumeInput,
     db: DatabaseDependency,
     provider: ProviderDependency,
+    request: Request,
 ) -> EventStreamResponse:
     """Continue an approved pause without treating caller input as execution authority."""
     stream = cast(
         "Generator[AgentEvent, None, None]",
-        service.resume_conversation(db, conversation_id, body, provider=provider),
+        service.resume_conversation(
+            db, conversation_id, body, provider=provider, actor=http_actor(request)
+        ),
     )
     first = next(stream, None)
     return EventStreamResponse(
@@ -124,16 +133,19 @@ def resume(
 
 
 @router.get("/{conversation_id}/audit")
-def recovery_audit(conversation_id: str, db: DatabaseDependency) -> list[ConversationAudit]:
+def recovery_audit(
+    conversation_id: str, db: DatabaseDependency, request: Request
+) -> list[ConversationAudit]:
     """Read persisted resume denials, authorization checks and pause invalidations."""
+    require_session_actor(db, conversation_id, http_actor(request))
     return list_audit(db, conversation_id)
 
 
 @router.get("/{conversation_id}/routes")
-def routes(conversation_id: str, db: DatabaseDependency) -> list[RouteDecision]:
+def routes(conversation_id: str, db: DatabaseDependency, request: Request) -> list[RouteDecision]:
     """Read persisted workflow suggestions and free-Agent routing decisions."""
     return [
         event.route
-        for event in service.get_conversation(db, conversation_id).events
+        for event in service.get_conversation(db, conversation_id, actor=http_actor(request)).events
         if event.route is not None
     ]

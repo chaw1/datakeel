@@ -235,3 +235,11 @@ identity, findings, decision and reasons without retaining raw payloads in the r
 版本范围的报告供五维质量评分与带类型的说明书事实复用，不改图片评分权重或旧版本事实。
 共享隐私检测在 `core/`，表格、文本脱敏与显式记忆写入复用相同的号码校验和类型占位符。
 See [training governance](LLM_DATA.md) and [中文说明](LLM_DATA.zh.md).
+
+## 18. Production ontology and server role scopes / 生产本体与服务端角色范围
+
+People and production objects extend the existing ontology with the same AssetRef and link contracts. The worker's original `task` kind remains separate from `production_task`. Frozen core models describe identities and revisions; storage implements both database stacks, immutable revision triggers, partial unique active assignments and transactional state counters. Controlled actions retain the existing prepare, human approval, digest, audit and lineage protocol. Production reads share one adapter across HTTP, CLI, Agent and MCP. Model transports only prepare production writes; execution remains an explicit human operation.
+
+零用户模式保留原有本机范围；登记后按全平台和实际项目角色求并集，调用方只能收窄。旧 HTTP 写入口也经过统一范围检查；运行会话归属单独绑定到服务端 actor，避免借用默认本机身份。角色定义与修改在签批执行前不生效，签批和执行都复核权限授予上限。生产资产解析回输入数据集版本，沿用已有访问申请和授权边界。
+
+Personal submissions skip assignments and review records, while recording system approval in audit. Group work uses the same six states with explicit assignments and exact-revision reviews. Finalization imports approved revisions through the existing annotation importer and creates a regular dataset version with native annotation metadata. Label versions are sealed after publication; migration impact is measured over current revisions without rewriting historical evidence. Offline fake/import prediction providers add no runtime dependencies. See [production](PRODUCTION.md), [中文](PRODUCTION.zh.md) and the [HTTP identity matrix](IDENTITY_ACCESS.md).

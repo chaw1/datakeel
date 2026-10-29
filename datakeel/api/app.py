@@ -3,11 +3,12 @@
 
 """Assemble domain routers and the bundled local application."""
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from datakeel import __version__
 from datakeel.api.errors import register_errors
+from datakeel.api.identity_access import authorize_http_mutation
 from datakeel.api.routes import (
     actions,
     agent,
@@ -29,6 +30,7 @@ from datakeel.api.routes import (
     metadata_imports,
     ontology,
     openlineage,
+    production,
     quality_rules,
     releases,
     search,
@@ -54,7 +56,11 @@ def create_app(db: Database | None = None) -> FastAPI:
     load_config()
     recover_runs(database)
     app = FastAPI(
-        title="Datakeel", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
+        title="Datakeel",
+        version=__version__,
+        docs_url="/api/docs",
+        openapi_url="/api/openapi.json",
+        dependencies=[Depends(authorize_http_mutation)],
     )
     app.state.db = database
     register_errors(app)
@@ -75,6 +81,7 @@ def create_app(db: Database | None = None) -> FastAPI:
         standards_reporting.router,
         metadata_imports.router,
         openlineage.router,
+        production.router,
         ask.router,
         evidence.router,
         kg.router,

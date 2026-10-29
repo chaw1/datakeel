@@ -84,6 +84,8 @@ def create_server(db: Database) -> FastMCP:
     definitions = tool_definitions()
     server = FastMCP(
         "Datakeel",
+        # Keep complete per-tool schemas while bounding each standard tools/list response.
+        list_page_size=32,
         instructions=(
             "Action tools only prepare frozen plans. This server has no approve or execute "
             "tool: a person reviews, approves and executes a plan on the Web UI or CLI."

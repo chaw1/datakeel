@@ -4,7 +4,9 @@
 """Resume controlled effects through their durable plan operation identities."""
 
 from datakeel.actions.models import ExecuteRequest
+from datakeel.actions.production_language import PRODUCTION_LANGUAGE
 from datakeel.actions.service import execute_plan, get_plan
+from datakeel.core.data_asset_models import AccessContext
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.storage.action_store import list_runs
 from datakeel.storage.database import Database
@@ -23,6 +25,9 @@ def execute_approved(db: Database, plan_id: str) -> ToolOutcome:
             ExecuteRequest(
                 plan_digest=plan.plan_digest, operation_id=plan.operation_id, actor=plan.actor
             ),
+            access=AccessContext(actor=plan.actor, entry="agent", scope="query")
+            if plan.action_type in PRODUCTION_LANGUAGE
+            else None,
         )
     return ToolOutcome(
         name="execute_plan",

@@ -11,9 +11,12 @@ from sqlalchemy.orm import Session
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.dq_parameters import QualityActionParams
+from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.llm_data_parameters import CleanTrainingParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import DecideAssertionsParams, selection_for
+from datakeel.actions.production_catalog_parameters import ProductionCatalogActionParams
+from datakeel.actions.production_parameters import ProductionActionParams
 from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
@@ -30,6 +33,9 @@ from datakeel.storage.kg_image_sources import image_review_references
 from datakeel.storage.llm_data_selection import training_manifest
 from datakeel.storage.object_projection import content_digest
 from datakeel.storage.object_queries import evaluate_in_session
+from datakeel.storage.production_catalog_plans import (
+    catalog_manifest as production_catalog_manifest,
+)
 from datakeel.storage.release_actions import publication_manifest
 
 
@@ -154,22 +160,34 @@ def _file_manifest(
     )
 
 
-def action_manifest(
-    session: Session, params: BoundaryModel, query: ObjectSet | None = None
-) -> FrozenManifest:
-    """Use exact assertion endpoints for reviews and ordinary ObjectSets for other actions."""
+def _typed_manifest(session: Session, params: BoundaryModel) -> FrozenManifest | None:
+    """Freeze actions whose targets come from their own domain state rather than an ObjectSet."""
     if isinstance(params, CleanTrainingParams):
         return training_manifest(session, params)
     if isinstance(params, PublishReleaseParams):
         return publication_manifest(session, params)
     if isinstance(params, AnnotationAcceptanceParams):
         return inspection_manifest(session, params)
+    if isinstance(params, ProductionCatalogActionParams):
+        return production_catalog_manifest(session, params)
+    return None
+
+
+def action_manifest(
+    session: Session, params: BoundaryModel, query: ObjectSet | None = None
+) -> FrozenManifest:
+    """Use exact assertion endpoints for reviews and ordinary ObjectSets for other actions."""
+    typed = _typed_manifest(session, params)
+    if typed is not None:
+        return typed
     if isinstance(
         params,
         CatalogActionParams
         | SubmitCustomOperatorParams
         | DataAssetActionParams
-        | QualityActionParams,
+        | QualityActionParams
+        | IdentityActionParams
+        | ProductionActionParams,
     ):
         return catalog_manifest()
     if isinstance(params, DecideAssertionsParams):

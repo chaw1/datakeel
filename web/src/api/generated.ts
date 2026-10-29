@@ -2314,6 +2314,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/production/functions/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read Function
+         * @description Read progress, workload, rework, agreement, confidence, labels and next task.
+         */
+        post: operations["read_function_api_production_functions__name__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/production/objects/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Objects
+         * @description Project registered people and production objects with their exact AssetRef identity.
+         */
+        get: operations["objects_api_production_objects__kind__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quality/issues": {
         parameters: {
             query?: never;
@@ -3281,7 +3321,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -3335,7 +3375,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -3372,6 +3412,10 @@ export interface components {
             auth_scope: string;
             /** Effects */
             effects: string[];
+            /** Examples */
+            examples?: {
+                [key: string]: string[];
+            };
             /** Handler */
             handler: string;
             /** Id */
@@ -3379,6 +3423,10 @@ export interface components {
             /** Inverse Of */
             inverse_of?: string | null;
             params_schema: components["schemas"]["JsonDocument"];
+            /** Phrases */
+            phrases?: {
+                [key: string]: string[];
+            };
             /** Preconditions */
             preconditions: string[];
             /** Reversible */
@@ -6720,6 +6768,18 @@ export interface components {
             state_revision: number;
         };
         /**
+         * FunctionResult
+         * @description Return replayable read results and explicit identities for tool auditing.
+         */
+        FunctionResult: {
+            /** Asset Refs */
+            asset_refs: components["schemas"]["AssetRef"][];
+            data: components["schemas"]["JsonValue"];
+            /** Function */
+            function: string;
+            skipped?: components["schemas"]["SkippedEntries"] | null;
+        };
+        /**
          * FunctionType
          * @description Describe a read-only function and its validated input/output schemas.
          */
@@ -9856,6 +9916,22 @@ export interface components {
             ordinal: number;
             /** State */
             state: string;
+        };
+        /**
+         * SkippedEntries
+         * @description Identify entries a list-style read left out because the caller lacks a grant.
+         *
+         *     Only entry and asset identifiers are reported, never the skipped content.
+         */
+        SkippedEntries: {
+            /** Assets */
+            assets: string[];
+            /** Count */
+            count: number;
+            /** Ids */
+            ids: string[];
+            /** Reason */
+            reason: string;
         };
         /**
          * SpanAgreement
@@ -15456,6 +15532,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenLineageReceipt"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_function_api_production_functions__name__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JsonDocument"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunctionResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    objects_api_production_objects__kind__get: {
+        parameters: {
+            query?: {
+                object_id?: string | null;
+                project_id?: string | null;
+                task_id?: string | null;
+                version?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                kind: "user" | "team" | "role" | "skill" | "label_set" | "template" | "project" | "task_package" | "production_task" | "assignment" | "annotation_revision" | "review" | "model" | "prelabel_run";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunctionResult"];
                 };
             };
             /** @description Validation Error */

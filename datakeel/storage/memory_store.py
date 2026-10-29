@@ -9,12 +9,14 @@ from hashlib import sha256
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
+from datakeel.actions.registry import action_definition
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError
 from datakeel.core.memory_models import (
     MemoryCreate,
     MemoryDeletion,
     MemoryEntry,
     MemoryPolicy,
+    MemoryReadOptions,
     MemorySelection,
     MemoryUseScope,
 )
@@ -24,6 +26,7 @@ from datakeel.memory.retrieval import refreshed, reinforced, select_entries
 from datakeel.storage.conversation_rows import ConversationRow
 from datakeel.storage.data_asset_context import visible_memories
 from datakeel.storage.database import Database, DatasetRow
+from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 
 
@@ -87,11 +90,23 @@ def _consolidate(session: Session, now: datetime, policy: MemoryPolicy) -> None:
         request.memory_id = representatives.get(request.memory_id, request.memory_id)
 
 
-def create(db: Database, request: MemoryCreate, now: datetime, policy: MemoryPolicy) -> MemoryEntry:
+def create(
+    db: Database,
+    request: MemoryCreate,
+    now: datetime,
+    policy: MemoryPolicy,
+    *,
+    actor: str = "local",
+) -> MemoryEntry:
     """Commit a redacted write and deterministic retention under one collection lock."""
     digest = sha256(request.model_dump_json(exclude={"idempotency_key"}).encode()).hexdigest()
     with db.session() as session:
         _lock(db, session)
+        current = effective_scopes(session, actor)
+        scope = action_definition("manage_users").auth_scope
+        if "*" not in current.scopes and scope not in current.scopes:
+            msg = f"Memory writes require a server-authorized action scope: {scope}"
+            raise AuthorizationError(msg)
         previous = _replay(session, request, digest)
         if previous is not None:
             return _read(previous, now, policy)
@@ -122,36 +137,46 @@ def list_entries(
     now: datetime,
     policy: MemoryPolicy,
     *,
-    include_archived: bool = False,
-    record: bool = False,
+    options: MemoryReadOptions | None = None,
 ) -> list[MemoryEntry]:
     """List global and optionally matching dataset memories with current strength."""
     with db.session() as session:
         entries = [_read(row, now, policy) for row in _rows(session)]
+    selected_options = options or MemoryReadOptions()
     selected = [
         item
         for item in entries
-        if (include_archived or not item.archived)
+        if (selected_options.include_archived or not item.archived)
         and (dataset_id is None or item.dataset_id in {None, dataset_id})
     ]
-    return visible_memories(db, selected, record=record)
+    return visible_memories(
+        db, selected, record=selected_options.record, actor=selected_options.actor
+    )
 
 
-def get(db: Database, identifier: str, now: datetime, policy: MemoryPolicy) -> MemoryEntry:
+def get(
+    db: Database, identifier: str, now: datetime, policy: MemoryPolicy, *, actor: str = "local"
+) -> MemoryEntry:
     """Read one current entry or raise a typed not-found error after hard deletion."""
     with db.session() as session:
         result = _read(_existing(session, identifier), now, policy)
-    if not visible_memories(db, [result], record=True):
+    if not visible_memories(db, [result], record=True, actor=actor):
         msg = "Memory source requires an active query grant; apply for access"
         raise AuthorizationError(msg)
     return result
 
 
 def select_memories(
-    db: Database, query: str, dataset_id: str | None, now: datetime, policy: MemoryPolicy
+    db: Database,
+    query: str,
+    dataset_id: str | None,
+    now: datetime,
+    policy: MemoryPolicy,
+    *,
+    actor: str = "local",
 ) -> MemorySelection:
     """Read a fresh scope snapshot without strengthening memories before a model attempt."""
-    entries = list_entries(db, dataset_id, now, policy)
+    entries = list_entries(db, dataset_id, now, policy, options=MemoryReadOptions(actor=actor))
     return select_entries(
         [item for item in entries if item.dataset_id in {None, dataset_id}], query
     )

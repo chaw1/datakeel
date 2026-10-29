@@ -28,25 +28,41 @@ from datakeel.storage.conversation_resume import abandoned_token, begin_resume
 from datakeel.storage.data_asset_context import read_agent_histories, require_agent_history
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import get_dataset
+from datakeel.storage.identity_sessions import (
+    bind_session_actor,
+    require_session_actor,
+    session_actor,
+)
 
 
-def create_conversation(db: Database, request: ConversationCreate) -> ConversationView:
+def create_conversation(
+    db: Database, request: ConversationCreate, *, actor: str = "local"
+) -> ConversationView:
     """Validate an optional workspace and persist the new session configuration."""
     load_config()
     list_agents()
     if request.dataset_id is not None:
         get_dataset(db, request.dataset_id)
-    return conversation_view(db, memory.create(db, request))
+    conversation = memory.create(db, request)
+    bind_session_actor(db, conversation.id, actor)
+    return conversation_view(db, conversation)
 
 
-def get_conversation(db: Database, conversation_id: str) -> ConversationView:
+def get_conversation(
+    db: Database, conversation_id: str, *, actor: str | None = None
+) -> ConversationView:
     """Read all messages and hydrate plan cards with the latest human decisions."""
+    if actor is not None:
+        require_session_actor(db, conversation_id, actor)
     return conversation_view(db, read_agent_histories(db, [memory.get(db, conversation_id)])[0])
 
 
-def list_conversations(db: Database) -> list[ConversationView]:
+def list_conversations(db: Database, *, actor: str | None = None) -> list[ConversationView]:
     """List persisted local conversations with complete transcript views."""
-    return [conversation_view(db, item) for item in read_agent_histories(db, memory.list_all(db))]
+    selected = [
+        item for item in memory.list_all(db) if actor is None or session_actor(db, item.id) == actor
+    ]
+    return [conversation_view(db, item) for item in read_agent_histories(db, selected)]
 
 
 def send_message(
@@ -55,9 +71,12 @@ def send_message(
     request: MessageInput,
     *,
     provider: Provider | None = None,
+    actor: str | None = None,
 ) -> Iterator[AgentEvent]:
     """Stream durable events; replay a completed request without executing it again."""
     with response_lock(db, conversation_id):
+        if actor is not None:
+            require_session_actor(db, conversation_id, actor)
         _recover_lease(db, conversation_id)
         lease = memory.begin(db, conversation_id, request)
         yield from _deliver(
@@ -71,9 +90,12 @@ def resume_conversation(
     request: ResumeInput,
     *,
     provider: Provider | None = None,
+    actor: str | None = None,
 ) -> Iterator[AgentEvent]:
     """Resume a signed pause with a separate response lease and no synthetic user turn."""
     with response_lock(db, conversation_id):
+        if actor is not None:
+            require_session_actor(db, conversation_id, actor)
         _recover_lease(db, conversation_id)
         lease = begin_resume(db, conversation_id, request)
         yield from _deliver(

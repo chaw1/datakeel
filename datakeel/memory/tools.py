@@ -35,6 +35,7 @@ def invoke_memory(db: Database, call: ToolCall, context: ToolCallContext) -> Too
                 source_conversation_id=context.session_id,
                 idempotency_key=invocation_identity(context.session_id, call.id) or call.id,
             ),
+            actor=context.actor,
         )
         return ToolOutcome(
             name=call.name,

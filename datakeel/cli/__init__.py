@@ -21,6 +21,7 @@ from datakeel.cli import (
     llm_data,
     media_demo,
     metadata_imports,
+    production,
     quality,
     release_plans,
     routing,
@@ -110,6 +111,7 @@ def parser() -> argparse.ArgumentParser:
         metadata_imports,
         release_plans,
         training,
+        production,
     ):
         module.register_parser(commands)
     return result
@@ -201,6 +203,7 @@ _MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
     "import": metadata_imports.dispatch,
     "release-plan": release_plans.dispatch,
     "training": training.dispatch,
+    "production": production.dispatch,
 }
 
 

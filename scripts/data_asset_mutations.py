@@ -51,7 +51,7 @@ DATA_ASSET_MUTATIONS = (
     Mutation(
         name="asset-plan-manifest",
         path="storage/action_access.py",
-        before="if not plan.manifest.objects:",
+        before="if not sources:",
         after="if True:",
         case=(
             "tests/actions/test_asset_plan_access.py::"
@@ -109,8 +109,8 @@ DATA_ASSET_MUTATIONS = (
     Mutation(
         name="asset-relaxation-approval",
         path="storage/action_planning.py",
-        before='"reversible": definition.reversible and not relaxes_asset_access(session, parsed),',
-        after='"reversible": definition.reversible,',
+        before="        and not relaxes_asset_access(session, params)\n",
+        after="",
         case=(
             "tests/assets/test_asset_relaxation.py::"
             "test_agent_relaxing_protected_asset_requires_human_approval[public-restricted]"

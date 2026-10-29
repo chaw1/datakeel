@@ -124,36 +124,44 @@ def import_annotations(
     db: Database, dataset_id: str, request: AnnotationImportRequest
 ) -> AnnotationQualityReport:
     """Save generated metrics and rework history atomically; identical retries reuse a report."""
-    request_digest = content_digest(request.model_dump(mode="json"))
     with db.session() as session:
         db.lock_writes(session)
-        version = require_annotation_version(session, dataset_id, request.version_id)
-        _validate_membership(version, request.batch)
-        previous = session.scalar(
-            select(AnnotationBatchRow).where(
-                AnnotationBatchRow.dataset_id == dataset_id,
-                AnnotationBatchRow.idempotency_key == request.idempotency_key,
-            )
-        )
-        if previous is not None:
-            if previous.request_digest != request_digest:
-                message = "Annotation import identity already belongs to different inputs"
-                raise ConflictError(message)
-            return AnnotationQualityReport.model_validate(previous.report)
-        report = _new_report(session, dataset_id, request)
-        session.add(
-            AnnotationBatchRow(
-                id=report.id,
-                dataset_id=dataset_id,
-                version_id=request.version_id,
-                idempotency_key=request.idempotency_key,
-                request_digest=request_digest,
-                batch=request.batch.model_dump(mode="json"),
-                report=report.model_dump(mode="json"),
-                created_at=report.created_at.timestamp(),
-            )
-        )
+        report = import_annotations_in_session(session, dataset_id, request)
         session.commit()
+    return report
+
+
+def import_annotations_in_session(
+    session: Session, dataset_id: str, request: AnnotationImportRequest
+) -> AnnotationQualityReport:
+    """Reuse the annotation importer inside a caller-owned atomic production transaction."""
+    request_digest = content_digest(request.model_dump(mode="json"))
+    version = require_annotation_version(session, dataset_id, request.version_id)
+    _validate_membership(version, request.batch)
+    previous = session.scalar(
+        select(AnnotationBatchRow).where(
+            AnnotationBatchRow.dataset_id == dataset_id,
+            AnnotationBatchRow.idempotency_key == request.idempotency_key,
+        )
+    )
+    if previous is not None:
+        if previous.request_digest != request_digest:
+            message = "Annotation import identity already belongs to different inputs"
+            raise ConflictError(message)
+        return AnnotationQualityReport.model_validate(previous.report)
+    report = _new_report(session, dataset_id, request)
+    session.add(
+        AnnotationBatchRow(
+            id=report.id,
+            dataset_id=dataset_id,
+            version_id=request.version_id,
+            idempotency_key=request.idempotency_key,
+            request_digest=request_digest,
+            batch=request.batch.model_dump(mode="json"),
+            report=report.model_dump(mode="json"),
+            created_at=report.created_at.timestamp(),
+        )
+    )
     return report
 
 

@@ -26,6 +26,7 @@ from datakeel.actions.dq_parameters import (
 )
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import ExportParams, parse_params
+from datakeel.actions.production_references import production_parameter_refs
 from datakeel.actions.standard_parameters import (
     ConfirmStandardMappingParams,
     ImportStandardsParams,
@@ -40,7 +41,7 @@ from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 
 def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
     """Read typed action targets independently of legacy ObjectSet membership."""
-    feature = _feature_refs(params) or _quality_refs(params)
+    feature = production_parameter_refs(params) or _feature_refs(params) or _quality_refs(params)
     if feature:
         return feature
     return _catalog_refs(params)

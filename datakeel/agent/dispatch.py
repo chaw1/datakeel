@@ -14,6 +14,7 @@ from datakeel.core.models import JsonDocument
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.storage import conversation_store as memory
 from datakeel.storage.database import Database
+from datakeel.storage.identity_sessions import session_actor
 
 
 class ToolDispatcher:
@@ -23,7 +24,11 @@ class ToolDispatcher:
         """Attach the response lease and already restored progress counters."""
         self.db, self.conversation_id, self.token, self.guard = db, conversation_id, token, guard
         self.catalog = ToolCatalog(memory.get(db, conversation_id))
-        self.context = ToolCallContext(agent_id="datakeel-agent", session_id=conversation_id)
+        self.context = ToolCallContext(
+            actor=session_actor(db, conversation_id),
+            agent_id="datakeel-agent",
+            session_id=conversation_id,
+        )
 
     def dispatch(
         self,

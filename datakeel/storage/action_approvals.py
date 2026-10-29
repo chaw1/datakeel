@@ -18,6 +18,8 @@ from datakeel.storage.data_asset_review import (
     require_independent_reviewer,
 )
 from datakeel.storage.database import Database
+from datakeel.storage.identity_authorization import require_role_grant, require_server_scope
+from datakeel.storage.production_human import require_production_human
 
 
 def approve_plan(
@@ -31,8 +33,16 @@ def approve_plan(
     with db.session() as session:
         db.lock_writes(session)
         row, plan = locked_plan(session, plan_id)
+        require_production_human(plan, access)
         refuse_tool_decision(plan.action_type, access)
-        verify_plan(session, plan, decision.plan_digest, decision.actor)
+        role_action = plan.action_type in {"define_role", "update_role"}
+        verify_plan(
+            session, plan, decision.plan_digest, plan.actor if role_action else decision.actor
+        )
+        if role_action:
+            require_server_scope(session, plan, decision.actor)
+        if decision.approve:
+            require_role_grant(session, plan, decision.actor)
         require_independent_reviewer(
             session, plan.action_type, plan.canonical_params, decision.actor
         )
@@ -54,7 +64,8 @@ def approve_plan(
             )
         )
         row.status = status
-        audit(session, plan, "APPROVAL", status, decision.reason)
+        approved_by = plan.model_copy(update={"actor": decision.actor}) if role_action else plan
+        audit(session, approved_by, "APPROVAL", status, decision.reason)
         session.commit()
         return plan.model_copy(update={"status": status})
 
@@ -84,7 +95,10 @@ def consume_approval(session: Session, plan: ActionPlan) -> None:
     if approval.plan_digest != plan.plan_digest:
         msg = "Human approval no longer matches the plan"
         raise ConflictError(msg)
-    if approval.actor != plan.actor:
+    if approval.actor != plan.actor and plan.action_type not in {"define_role", "update_role"}:
         msg = "Human approval actor does not match the prepared plan"
         raise AuthorizationError(msg)
+    if plan.action_type in {"define_role", "update_role"}:
+        require_server_scope(session, plan, approval.actor)
+    require_role_grant(session, plan, approval.actor)
     approval.consumed = True

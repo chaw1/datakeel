@@ -1,0 +1,9 @@
+{
+  "project_progress": {"total": 3, "status": "pending"},
+  "package_status": {"total": 3, "status": "pending"},
+  "annotator_workload": {"annotators": []},
+  "rework_rate": {"annotators": []},
+  "annotation_consistency": {"sample_count": 0, "annotator_count": 0},
+  "prelabel_confidence": {"total": 0},
+  "label_set_diff": {"added": [], "removed": [], "renamed": [], "affected_annotations": 0, "affected_revisions": 0}
+}
