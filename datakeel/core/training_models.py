@@ -42,13 +42,13 @@ class SplitRequest(BoundaryModel):
     seed: int = 42
     stratify: bool = Field(
         default=True,
-        description="Stratify by the lexicographically smallest label; retain all annotations.",
+        description="Use every label in iterative multilabel stratification.",
     )
     group_field: str | None = Field(default=None, min_length=1, max_length=200)
     avoid_leakage: bool = True
     image_threshold: int = Field(default=8, ge=0, le=64)
     text_threshold: int = Field(
-        default=3, ge=0, le=64, description="Reserved for snapshot compatibility; ignored."
+        default=3, ge=0, le=64, description="Maximum 64-bit text simhash Hamming distance."
     )
     source: Literal["generated", "directory"] = "generated"
 
@@ -67,7 +67,7 @@ class TrainingSample(BoundaryModel):
         default=None,
         ge=0,
         lt=1 << 64,
-        description="Reserved for snapshot compatibility; ignored.",
+        description="64-bit simhash of normalized text; absent for empty normalized content.",
     )
 
 
@@ -128,7 +128,7 @@ class LeakageReport(BoundaryModel):
     dataset_id: str
     version_id: str
     sample_count: int = Field(ge=0)
-    checked_signals: tuple[Literal["exact", "image", "group"], ...] = ("exact", "image", "group")
+    checked_signals: tuple[LeakageKind, ...] = ("exact", "image", "text", "group")
     pairs: tuple[LeakagePair, ...]
 
 

@@ -1,10 +1,10 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Direct pair evidence and independent clean controls for the three checked signals."""
+"""Direct pair evidence and independent clean controls for all four checked signals."""
 
 from datakeel.core.models import FileItem, utcnow
-from datakeel.core.training_models import SplitRequest, SplitSet, TrainingSample
+from datakeel.core.training_models import SplitRatios, SplitRequest, SplitSet, TrainingSample
 from datakeel.training.leakage import leakage_report
 from datakeel.training.splitting import distributions, split_samples
 
@@ -64,16 +64,17 @@ def test_three_signals_emit_pairs_with_distance_and_partitions() -> None:
         *samples[2:],
     )
     report = leakage_report(samples, _split(samples))
-    assert report.checked_signals == ("exact", "image", "group")
-    assert {pair.kind for pair in report.pairs} == {"exact", "image", "group"}
-    assert len(report.pairs) == 3
+    assert report.checked_signals == ("exact", "image", "text", "group")
+    assert {pair.kind for pair in report.pairs} == {"exact", "image", "text", "group"}
+    assert len(report.pairs) == 4
     assert all(pair.left_split != pair.right_split and pair.detail for pair in report.pairs)
     assert next(pair.distance for pair in report.pairs if pair.kind == "image") == 1
-    legacy_policy = _split(samples).model_copy(
-        update={"request": SplitRequest(name="legacy", text_threshold=64)}
-    )
-    assert leakage_report(samples, legacy_policy).pairs == report.pairs
     assert samples[4].model_dump()["text_hash"] == 123
+    legacy = leakage_report(
+        samples, _split(samples).model_copy(update={"algorithm_version": "1.2-primary-no-text"})
+    )
+    assert legacy.checked_signals == ("exact", "image", "group")
+    assert {pair.kind for pair in legacy.pairs} == {"exact", "image", "group"}
 
 
 def test_report_excludes_within_set_and_does_not_invent_transitive_pairs() -> None:
@@ -88,3 +89,55 @@ def test_report_excludes_within_set_and_does_not_invent_transitive_pairs() -> No
     )
     pairs = leakage_report(samples, split).pairs
     assert {(pair.left_id, pair.right_id) for pair in pairs} == {("a", "b")}
+
+
+def test_text_threshold_is_inclusive_and_prefix_boundaries_are_lossless() -> None:
+    """Hamming thresholds change direct text pairs without inferring transitive matches."""
+    samples = (
+        _sample("a", "train", text_hash=0),
+        _sample("b", "val", text_hash=1 << 63),
+        _sample("c", "test", text_hash=(1 << 63) | 255),
+    )
+    split = _split(samples)
+    pairs = leakage_report(samples, split).pairs
+    assert [(pair.left_id, pair.right_id, pair.distance) for pair in pairs] == [("a", "b", 1)]
+    assert not leakage_report(
+        samples, split.model_copy(update={"request": SplitRequest(name="none", text_threshold=0)})
+    ).pairs
+    wider = leakage_report(
+        samples, split.model_copy(update={"request": SplitRequest(name="wide", text_threshold=8)})
+    ).pairs
+    assert [(pair.left_id, pair.right_id, pair.distance) for pair in wider] == [
+        ("a", "b", 1),
+        ("b", "c", 8),
+    ]
+    all_pairs = leakage_report(
+        samples, split.model_copy(update={"request": SplitRequest(name="all", text_threshold=64)})
+    ).pairs
+    assert len(all_pairs) == 3
+
+
+def test_generated_split_co_locates_text_duplicate_components() -> None:
+    """Text edges join the same indivisible groups as content, images and explicit group keys."""
+    samples = (
+        _sample("a", "train", text_hash=0),
+        _sample("b", "val", text_hash=1 << 63),
+        _sample("c", "test", text_hash=(1 << 63) | 255),
+        _sample("clean", "test", text_hash=(1 << 64) - 1),
+    )
+    ratios = SplitRatios(train=0.5, val=0.25, test=0.25)
+    assignments = {
+        member.sample_id: member.split
+        for member in split_samples(
+            samples, SplitRequest(name="components", ratios=ratios, text_threshold=8)
+        )
+    }
+    assert assignments["a"] == assignments["b"] == assignments["c"]
+    unguarded = {
+        member.sample_id: member.split
+        for member in split_samples(
+            samples,
+            SplitRequest(name="unguarded", ratios=ratios, avoid_leakage=False, text_threshold=8),
+        )
+    }
+    assert len({unguarded[identity] for identity in ("a", "b", "c")}) > 1

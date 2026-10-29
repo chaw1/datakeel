@@ -17,6 +17,7 @@ ignore_imports =
     datakeel.storage.training_store -> datakeel.training.splitting
     datakeel.storage.training_inputs -> datakeel.operators.evidence.image_phash
     datakeel.storage.training_inputs -> datakeel.operators.image.helpers
+    datakeel.storage.training_inputs -> datakeel.training.text_hashes
     datakeel.training.leakage -> datakeel.operators.evidence.near_duplicate_hashes
     datakeel.ontology.training_functions -> datakeel.storage.database
     datakeel.ontology.training_functions -> datakeel.storage.dataset_service

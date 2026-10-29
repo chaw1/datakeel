@@ -94,7 +94,7 @@ def test_create_freezes_policy_members_and_lineage_with_exact_retry(
     """A named exact retry preserves the original result without appending another event."""
     request = SplitRequest(name="baseline", group_field="batch.id")
     split = create_split(db, training.dataset_id, training.version_id, request)
-    assert split.algorithm_version == "1.2-primary-no-text"
+    assert split.algorithm_version == "1.3-iterative-text"
     assert split == create_split(db, training.dataset_id, training.version_id, request)
     assert split == get_split(db, training.dataset_id, split.id)
     assert list_splits(db, training.dataset_id, training.version_id) == (split,)
@@ -182,10 +182,10 @@ def test_split_freezes_annotation_revision_and_new_policy_reads_latest(
     ) == ("before",)
 
 
-def test_directory_preview_keeps_assignments_and_checks_only_exact_text_duplicates(
+def test_directory_preview_keeps_assignments_and_checks_text_near_duplicates(
     db: Database, tmp_path: Path
 ) -> None:
-    """Text SHA equality is checked; formatting similarity and legacy text hashes are ignored."""
+    """Formatting variants yield simhash evidence while an unrelated control stays clean."""
     files: list[FileItem] = []
     texts = (
         "A brief description, of a brown fox!",
@@ -210,11 +210,13 @@ def test_directory_preview_keeps_assignments_and_checks_only_exact_text_duplicat
     request = SplitRequest(name="external", source="directory")
     report = preview_leakage(db, fixture.dataset_id, fixture.version_id, request)
     assert [(pair.kind, pair.left_id, pair.right_id, pair.distance) for pair in report.pairs] == [
-        ("exact", "0", "3", 0)
+        ("exact", "0", "3", 0),
+        ("text", "0", "1", 0),
+        ("text", "0", "3", 0),
     ]
-    assert report.checked_signals == ("exact", "image", "group")
+    assert report.checked_signals == ("exact", "image", "text", "group")
     samples = load_training_samples(db, fixture.dataset_id, fixture.version_id)
-    assert all(sample.text_hash is None for sample in samples)
+    assert all(sample.text_hash is not None for sample in samples)
     assert all(sample.file.sha256 == digest(Path(sample.file.path)) for sample in samples)
     split = create_split(db, fixture.dataset_id, fixture.version_id, request)
     assert check_leakage(db, fixture.dataset_id, split.id).pairs == report.pairs
@@ -361,10 +363,16 @@ def test_corrupt_training_image_fails_before_saving_split(db: Database, tmp_path
 def test_existing_algorithm_snapshot_is_returned_without_rewriting(
     db: Database, training: TrainingFixture
 ) -> None:
-    """The primary-label algorithm keeps older immutable names and snapshots readable."""
+    """New algorithms keep older immutable names and snapshots readable."""
     request = SplitRequest(name="legacy")
     preview = preview_split(db, training.dataset_id, training.version_id, request)
-    legacy = preview.model_copy(update={"id": "legacy-split", "algorithm_version": "1.0"})
+    legacy = preview.model_copy(
+        update={"id": "legacy-split", "algorithm_version": "1.2-primary-no-text"}
+    )
+    old_samples = tuple(
+        sample.model_copy(update={"file": sample.file.model_copy(update={"path": "unavailable"})})
+        for sample in load_training_samples(db, training.dataset_id, training.version_id)
+    )
     with db.session() as session:
         session.add(
             TrainingSplitRow(
@@ -374,10 +382,15 @@ def test_existing_algorithm_snapshot_is_returned_without_rewriting(
                 name=request.name,
                 created_at=legacy.created_at.timestamp(),
                 payload=legacy.model_dump(mode="json"),
-                samples=[],
+                samples=[
+                    sample.model_dump(mode="json", exclude={"text_hash"}) for sample in old_samples
+                ],
             )
         )
         session.commit()
     assert create_split(db, training.dataset_id, training.version_id, request) == legacy
     assert get_split(db, training.dataset_id, legacy.id) == legacy
+    report = check_leakage(db, training.dataset_id, legacy.id)
+    assert report.checked_signals == ("exact", "image", "group")
+    assert not report.pairs
     assert preview.id != legacy.id

@@ -27,6 +27,7 @@ from datakeel.storage.database import Database
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.objects import digest
 from datakeel.storage.version_stream import require_version, stream_manifest
+from datakeel.training.text_hashes import simhash
 
 if TYPE_CHECKING:
     from pydantic import JsonValue
@@ -133,12 +134,13 @@ def _sample(
         raise ConflictError(message)
     file = file.model_copy(update={"sha256": checksum})
     image_hash = None
+    text_hash = None
     image_uniform, image_color = False, None
     if file.modality == "image":
         image_hash, image_uniform, image_color = _image_signal(file)
     if file.modality == "text":
         try:
-            Path(file.path).read_bytes().decode("utf-8-sig")
+            text_hash = simhash(Path(file.path).read_bytes().decode("utf-8-sig"))
         except UnicodeError as error:
             message = f"Training text is not UTF-8: {file.id}"
             raise ValidationError(message) from error
@@ -163,6 +165,7 @@ def _sample(
         image_hash=image_hash,
         image_uniform=image_uniform,
         image_color=image_color,
+        text_hash=text_hash,
     )
 
 

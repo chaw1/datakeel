@@ -84,13 +84,36 @@ def signal_pairs(
     yield from _equal_pairs(samples, "exact")
     yield from _equal_pairs(samples, "group")
     yield from _image_pairs(samples, request.image_threshold)
+    yield from _text_pairs(samples, request.text_threshold)
+
+
+def _text_pairs(samples: tuple[TrainingSample, ...], threshold: int) -> Iterator[SignalPair]:
+    values = [
+        (index, value)
+        for index, sample in enumerate(samples)
+        if (value := sample.text_hash) is not None
+    ]
+    comparison = compare_hashes([value for _, value in values], threshold=threshold, mode="exact")
+    for left, right, distance in comparison.pairs:
+        yield (
+            values[left][0],
+            values[right][0],
+            "text",
+            distance,
+            (
+                f"64-bit text simhash Hamming distance <= {threshold}; "
+                "Unicode NFKC/casefold, whitespace and punctuation removed"
+            ),
+        )
 
 
 def leakage_report(samples: tuple[TrainingSample, ...], split: SplitSet) -> LeakageReport:
-    """Measure exact, image and group signals and retain only cross-partition pairs."""
+    """Measure direct cross-partition signals, preserving older snapshots without text hashes."""
     assignments: dict[str, SplitName] = {member.sample_id: member.split for member in split.members}
     pairs: list[LeakagePair] = []
     for left, right, kind, distance, detail in signal_pairs(samples, split.request):
+        if kind == "text" and split.algorithm_version == "1.2-primary-no-text":
+            continue
         left_id, right_id = samples[left].file.id, samples[right].file.id
         if assignments[left_id] != assignments[right_id]:
             pairs.append(
@@ -109,6 +132,10 @@ def leakage_report(samples: tuple[TrainingSample, ...], split: SplitSet) -> Leak
         dataset_id=split.dataset_id,
         version_id=split.version_id,
         sample_count=len(samples),
-        checked_signals=("exact", "image", "group"),
+        checked_signals=("exact", "image", "text", "group"),
         pairs=tuple(sorted(pairs, key=lambda pair: (pair.kind, pair.left_id, pair.right_id))),
+    ).model_copy(
+        update={"checked_signals": ("exact", "image", "group")}
+        if split.algorithm_version == "1.2-primary-no-text"
+        else {}
     )
