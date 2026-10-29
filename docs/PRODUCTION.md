@@ -31,6 +31,8 @@ Rework returns a task to `pending`, increments its round and retains the origina
 
 `upgrade_project` permits only forward transitions. Downgrading is rejected because completed review history cannot be reinterpreted as an earlier workflow. A second project participant produces `suggest_review: true` once in the relevant receipt. It never changes the tier automatically. Assignment leases have expiry timestamps; this phase does not expire or renew them automatically.
 
+When a personal project upgrades, editable tasks with saved human work receive an annotation assignment for their existing author. The author can continue saving, submit for review or release the task through the normal holder checks, without reopening or incrementing the round. Task state and revision history are preserved; unowned tasks, model-only predictions and approved work receive no new assignment. Preserving historical ownership grants no role scopes and does not bypass current account authorization. After release, the author must claim or receive an assignment again.
+
 ## Controlled writes
 
 Each request has a required client-generated `request_id`. Prepare, inspect and execute through the existing action protocol. Actions always record audit, lineage and a durable receipt, including actions without an approval step.

@@ -19,7 +19,7 @@ from datakeel.core.models import new_id, utcnow
 from datakeel.core.production_models import Assignment, AssignmentStage, ProductionTask
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_rows import UserRow
-from datakeel.storage.production_projects import record_project_member
+from datakeel.storage.production_members import record_project_member
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
     ProductionPackageRow,
@@ -63,12 +63,29 @@ def create_assignment(
     actor: str,
     stage: AssignmentStage,
 ) -> Assignment:
-    """Insert a new effective assignment; its uniqueness is a database invariant."""
+    """Assign new work only to an eligible active person."""
+    require_registered_assignee(session, actor)
+    return _insert_assignment(session, task, actor, stage)
+
+
+def preserve_personal_assignment(session: Session, task: ProductionTaskRow) -> Assignment:
+    """Carry existing authorship through a tier upgrade independently of current account status."""
+    if task.annotator_id is None:
+        message = "Only existing personal authorship can be preserved"
+        raise ValidationError(message)
+    return _insert_assignment(session, task, task.annotator_id, "annotation")
+
+
+def _insert_assignment(
+    session: Session,
+    task: ProductionTaskRow,
+    actor: str,
+    stage: AssignmentStage,
+) -> Assignment:
     project = require_mutable_project(session, task.project_id)
     if project.workflow_tier == "personal":
         message = "Personal projects do not create assignment records"
         raise ValidationError(message)
-    require_registered_assignee(session, actor)
     existing = active_assignment(session, task.id, stage)
     if existing is not None:
         message = "Task already has an effective assignment for this stage"

@@ -6,8 +6,9 @@
 import json
 from collections import defaultdict
 from pathlib import PurePosixPath
+from typing import cast
 
-from sqlalchemy import func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from datakeel.actions.production_parameters import (
@@ -17,9 +18,11 @@ from datakeel.actions.production_parameters import (
 )
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import FileItem, new_id, utcnow
-from datakeel.core.production_models import Project, TaskPackage
+from datakeel.core.production_models import Project, TaskPackage, TaskState
 from datakeel.storage.annotation_store import require_annotation_version
+from datakeel.storage.production_assignments import preserve_personal_assignment
 from datakeel.storage.production_catalog import require_label_set, require_template
+from datakeel.storage.production_members import record_project_member
 from datakeel.storage.production_rows import (
     ProductionMemberRow,
     ProductionPackageRow,
@@ -27,9 +30,13 @@ from datakeel.storage.production_rows import (
     ProductionSummaryRow,
     ProductionTaskRow,
 )
-from datakeel.storage.production_tasks import initialize_summary, require_mutable_project
+from datakeel.storage.production_tasks import (
+    initialize_summary,
+    require_mutable_project,
+    transition_task,
+)
 
-REVIEW_SUGGESTION_MEMBERS = 2
+__all__ = ["create_project", "record_project_member", "split_packages", "upgrade_project"]
 
 
 def create_project(session: Session, params: CreateProjectParams, actor: str) -> Project:
@@ -48,35 +55,6 @@ def create_project(session: Session, params: CreateProjectParams, actor: str) ->
     session.add(ProductionMemberRow(project_id=project.id, actor=actor))
     initialize_summary(session, project.id)
     return project
-
-
-def record_project_member(session: Session, project_id: str, actor: str) -> bool:
-    """Return the review suggestion exactly once when a second participant first appears."""
-    row = session.get(
-        ProductionProjectRow, project_id, with_for_update=True, populate_existing=True
-    )
-    if row is None:
-        require_mutable_project(session, project_id)
-        return False
-    if session.get(ProductionMemberRow, (project_id, actor)) is not None:
-        return False
-    session.add(ProductionMemberRow(project_id=project_id, actor=actor))
-    session.flush()
-    count = (
-        session.scalar(
-            select(func.count())
-            .select_from(ProductionMemberRow)
-            .where(ProductionMemberRow.project_id == project_id)
-        )
-        or 0
-    )
-    project = Project.model_validate(row.payload)
-    suggest = count >= REVIEW_SUGGESTION_MEMBERS and not project.review_prompt_shown
-    if suggest:
-        row.payload = project.model_copy(update={"review_prompt_shown": True}).model_dump(
-            mode="json"
-        )
-    return suggest
 
 
 def _groups(files: list[FileItem], params: SplitPackagesParams) -> list[list[FileItem]]:
@@ -178,4 +156,28 @@ def upgrade_project(session: Session, params: UpgradeProjectParams) -> Project:
     upgraded = project.model_copy(update={"workflow_tier": params.workflow_tier})
     if row is not None:
         row.payload = upgraded.model_dump(mode="json")
-    return upgraded
+    if project.workflow_tier == "personal" and upgraded.workflow_tier != "personal":
+        session.flush()
+        _preserve_personal_assignments(session, project.id)
+    return require_mutable_project(session, project.id)
+
+
+def _preserve_personal_assignments(session: Session, project_id: str) -> None:
+    """Carry unfinished human work into group ownership without creating a rework round."""
+    tasks = session.scalars(
+        select(ProductionTaskRow)
+        .where(
+            ProductionTaskRow.project_id == project_id,
+            ProductionTaskRow.state.in_(("pending", "in_progress")),
+            ProductionTaskRow.annotator_id.is_not(None),
+            ProductionTaskRow.latest_revision_id.is_not(None),
+        )
+        .order_by(ProductionTaskRow.id)
+        .with_for_update()
+    )
+    for task in tasks:
+        if task.annotator_id is None:
+            continue
+        previous_state = cast("TaskState", task.state)
+        preserve_personal_assignment(session, task)
+        transition_task(session, task, previous_state)

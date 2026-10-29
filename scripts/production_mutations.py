@@ -50,4 +50,15 @@ PRODUCTION_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="production-upgrade-retains-personal-owner",
+        path="storage/production_projects.py",
+        before='if project.workflow_tier == "personal" and upgraded.workflow_tier != "personal":',
+        after="if False:",
+        case=(
+            "tests/api/test_production_flows.py::"
+            "test_http_personal_upgrade_resumes_author_then_reviews_and_finalizes[submit]"
+        ),
+        runner="pytest",
+    ),
 )
