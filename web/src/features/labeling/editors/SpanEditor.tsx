@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useI18n } from "../../../i18n/useI18n";
 
@@ -22,6 +22,7 @@ export function SpanEditor({
 }: EditorProps) {
   const { t } = useI18n();
   const source = useRef<HTMLTextAreaElement>(null);
+  const sourceSelection = useRef({ start: 0, end: 0 });
   const [label, setLabel] = useState(labels[0]?.id ?? "");
   const [range, setRange] = useState({ start: 0, end: 0 });
   const [selected, setSelected] = useState(-1);
@@ -32,6 +33,18 @@ export function SpanEditor({
   const category = labels.some((item) => item.id === label)
     ? label
     : (labels[0]?.id ?? "");
+  useEffect(() => {
+    // A read-only textarea ignores Shift + arrows in Chromium, so the source stays
+    // editable for selection and refuses every text change instead.
+    const node = source.current;
+    const refuse = (event: Event) => {
+      event.preventDefault();
+    };
+    node?.addEventListener("beforeinput", refuse);
+    return () => {
+      node?.removeEventListener("beforeinput", refuse);
+    };
+  }, []);
   function update(span: AnnotationSpan) {
     if (!readOnly)
       onChange({
@@ -48,7 +61,9 @@ export function SpanEditor({
       text_length: textLength,
       spans: [...spans, { category, start, end, attributes: {} }],
     });
-    setSelected(spans.length);
+    // Stay on a new selection: the offsets must never silently edit the span just added.
+    setRange({ start, end });
+    setSelected(-1);
   }
   function remove() {
     if (readOnly || !current) return;
@@ -69,14 +84,14 @@ export function SpanEditor({
     <KeyboardRegion
       label={t("wbEditorSpan")}
       onKeyDown={(event) => {
-        if (
-          !readOnly &&
-          !isTyping(event.target) &&
-          (event.key === "Delete" || event.key === "Backspace")
-        ) {
+        if (readOnly || isTyping(event.target)) return;
+        if (event.key === "Escape" && current) {
+          event.preventDefault();
+          setSelected(-1);
+        } else if (event.key === "Delete" || event.key === "Backspace") {
           event.preventDefault();
           remove();
-        } else if (!readOnly && !isTyping(event.target)) {
+        } else {
           const picked = shortcutLabel(event, labels, template);
           if (picked) {
             event.preventDefault();
@@ -90,6 +105,7 @@ export function SpanEditor({
       {labels.length === 0 && <p role="status">{t("wbEditorNoLabels")}</p>}
       <LabelPicker
         labels={labels}
+        template={template}
         value={current?.category ?? category}
         readOnly={readOnly}
         onChange={(next) => {
@@ -103,10 +119,16 @@ export function SpanEditor({
           ref={source}
           className="wb-span-source"
           value={text}
-          readOnly
+          aria-readonly="true"
+          inputMode="none"
           spellCheck={false}
+          onChange={() => undefined}
           onSelect={(event) => {
             const next = selection(event.currentTarget);
+            // Focus alone (e.g. tabbing through) must not replace typed offsets.
+            const last = sourceSelection.current;
+            if (next.start === last.start && next.end === last.end) return;
+            sourceSelection.current = next;
             setRange(next);
             if (next.end > next.start) setSelected(-1);
           }}
@@ -118,7 +140,7 @@ export function SpanEditor({
               event.altKey
             )
               return;
-            if (event.key === "Enter" && !readOnly) {
+            if (event.key === "Enter") {
               event.preventDefault();
               const next = selection(event.currentTarget);
               add(next.start, next.end);
@@ -126,6 +148,14 @@ export function SpanEditor({
           }}
         />
       </label>
+      <p className="muted" aria-live="polite">
+        {current
+          ? t("wbEditorSpanEditing", {
+              start: current.start,
+              end: current.end,
+            })
+          : t("wbEditorSpanNew")}
+      </p>
       <div className="wb-coordinate-fields">
         <CoordinateField
           label={t("wbEditorStart")}
@@ -160,6 +190,15 @@ export function SpanEditor({
         </button>
         <button type="button" disabled={readOnly || !current} onClick={remove}>
           {t("wbEditorDelete")}
+        </button>
+        <button
+          type="button"
+          disabled={!current}
+          onClick={() => {
+            setSelected(-1);
+          }}
+        >
+          {t("wbEditorNewSpan")}
         </button>
       </div>
       <SpanPreview text={text} spans={spans} labels={labels} />

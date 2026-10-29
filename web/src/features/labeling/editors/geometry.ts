@@ -70,9 +70,17 @@ export function arrowDelta(key: string, step = 1): Point | null {
     }[key] ?? null
   );
 }
+/** A source text that only takes a selection, never typed characters. */
+export function isSelectableSource(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLTextAreaElement &&
+    (target.readOnly || target.getAttribute("aria-readonly") === "true")
+  );
+}
 export function isTyping(target: EventTarget | null): boolean {
   return (
     target instanceof HTMLElement &&
+    !isSelectableSource(target) &&
     (target.isContentEditable ||
       target instanceof HTMLTextAreaElement ||
       target instanceof HTMLSelectElement ||

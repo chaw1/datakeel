@@ -33,7 +33,12 @@ export const wbEditorEn = {
   wbEditorClassificationHint:
     "Use Tab and Space, arrow keys for single choice, or the label's displayed shortcut. Labels save immediately.",
   wbEditorSpanHint:
-    "Select text with the pointer or Shift + arrows, then press Enter to label it. Nested selections are supported. Offsets count Unicode characters.",
+    "Tab to the source text, select characters with Shift + arrows or the pointer, then press Enter to label them. You can also type start and end offsets and choose Label selection. Number keys pick the label, also on the Label list. Nested spans are supported; offsets count Unicode characters.",
+  wbEditorSpanNew:
+    "Offsets describe a new selection. Choose a span below to edit it.",
+  wbEditorSpanEditing:
+    "Offsets edit the selected span {start}–{end}. Press Escape for a new selection.",
+  wbEditorNewSpan: "New selection (Escape)",
   wbEditorMulti: "Select multiple labels",
   wbEditorSingle: "Select one label",
   wbEditorClear: "Clear labels",

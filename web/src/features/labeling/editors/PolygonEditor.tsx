@@ -84,6 +84,7 @@ export function PolygonEditor(props: EditorProps) {
     setDraft((points) => [...(points ?? []), point]);
   }
   const controls: PolygonControlProps = {
+    template: props.template,
     labels: labels,
     polygons: polygons,
     selected: selected,

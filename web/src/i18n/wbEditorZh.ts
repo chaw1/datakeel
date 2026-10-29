@@ -33,7 +33,11 @@ export const wbEditorZh = {
   wbEditorClassificationHint:
     "使用 Tab 和空格，单选时使用方向键，或按标签显示的快捷键。选定后立即保存。",
   wbEditorSpanHint:
-    "用鼠标或 Shift + 方向键选字，按 Enter 打标签。支持嵌套选择，偏移量按 Unicode 字符计数。",
+    "用 Tab 进入原文，用 Shift + 方向键或鼠标选字，按 Enter 打标签。也可以输入起止字符，再点「标注选区」。数字键选择标签，在标签下拉框上同样有效。支持嵌套片段，偏移量按 Unicode 字符计数。",
+  wbEditorSpanNew: "起止字符表示一个新选区。在下方选中片段后才会修改它。",
+  wbEditorSpanEditing:
+    "起止字符正在修改选中的片段 {start}–{end}。按 Esc 回到新选区。",
+  wbEditorNewSpan: "新选区（Esc）",
   wbEditorMulti: "可选多个标签",
   wbEditorSingle: "选择一个标签",
   wbEditorClear: "清空标签",

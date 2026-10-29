@@ -2,10 +2,16 @@ import { useI18n } from "../../../i18n/useI18n";
 
 import { LabelPicker } from "./LabelPicker";
 
-import type { AnnotationPolygon, Point, ProductionLabel } from "./types";
+import type {
+  AnnotationPolygon,
+  Point,
+  ProductionLabel,
+  ProductionTemplate,
+} from "./types";
 
 export interface PolygonControlProps {
   labels: readonly ProductionLabel[];
+  template: ProductionTemplate;
   polygons: readonly AnnotationPolygon[];
   selected: number;
   category: string;
@@ -31,6 +37,7 @@ export interface PolygonControlProps {
 /** Stable controls above the canvas: drawing must never change the canvas position. */
 export function PolygonToolbar({
   labels,
+  template,
   polygons,
   selected,
   category,
@@ -46,6 +53,7 @@ export function PolygonToolbar({
     <div className="wb-editor-toolbar">
       <LabelPicker
         labels={labels}
+        template={template}
         value={current?.category ?? category}
         onChange={onLabel}
         readOnly={readOnly}

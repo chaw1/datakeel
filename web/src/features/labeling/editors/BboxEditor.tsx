@@ -117,6 +117,7 @@ export function BboxEditor(props: EditorProps) {
       <div className="wb-editor-toolbar">
         <LabelPicker
           labels={labels}
+          template={props.template}
           value={current?.category ?? category}
           readOnly={readOnly}
           onChange={(next) => {

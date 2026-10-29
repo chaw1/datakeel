@@ -210,7 +210,7 @@ export function TaskSession({
   });
   useEffect(() => {
     const target = root.current?.querySelector<HTMLElement>(
-      ".wb-canvas,input[type=radio],input[type=checkbox],textarea[readonly]",
+      ".wb-canvas,input[type=radio],input[type=checkbox],.wb-span-source",
     );
     (target ?? root.current)?.focus({ preventScroll: true });
   }, []);

@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+import { isSelectableSource } from "./editors/geometry";
+
 import type { RefObject } from "react";
 
 /**
@@ -32,7 +34,7 @@ export function useTaskKeyboard(
       if (event.isComposing || event.defaultPrevented) return;
       const typing =
         (event.target instanceof HTMLTextAreaElement &&
-          !event.target.readOnly) ||
+          !isSelectableSource(event.target)) ||
         (event.target instanceof HTMLInputElement &&
           !["checkbox", "radio", "button", "range"].includes(
             event.target.type,
