@@ -69,6 +69,7 @@ export function TrainingExport({ split }: { split: SplitSet }) {
           {t("trainingFormat")}
           <select
             value={format}
+            disabled={busy}
             onBlur={(event) => {
               setFormat(event.target.value);
             }}
@@ -90,6 +91,7 @@ export function TrainingExport({ split }: { split: SplitSet }) {
             {t("trainingAnnotator")}
             <select
               value={annotatorId}
+              disabled={busy}
               required={needsAnnotator}
               onBlur={(event) => {
                 setAnnotatorId(event.target.value);
@@ -113,6 +115,7 @@ export function TrainingExport({ split }: { split: SplitSet }) {
           {t("trainingDestination")}
           <input
             value={destination}
+            disabled={busy}
             required
             pattern="[^/\\\\]+[.]tar[.]gz"
             placeholder={t("trainingArchiveExample")}
