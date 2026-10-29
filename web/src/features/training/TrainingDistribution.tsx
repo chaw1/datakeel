@@ -12,6 +12,12 @@ export function TrainingDistribution({ split }: { split: SplitSet }) {
     ),
   ].sort();
   const rows = [null, ...labels];
+  const ratios = split.request.ratios ?? { train: 0.8, val: 0.1, test: 0.1 };
+  const hasEmptyRequestedSet =
+    split.request.source === "generated" &&
+    split.distributions.some(
+      (item) => ratios[item.split] > 0 && item.count === 0,
+    );
   return (
     <section aria-label={`${t("trainingDistribution")}: ${split.request.name}`}>
       <h4>{split.request.name}</h4>
@@ -21,6 +27,11 @@ export function TrainingDistribution({ split }: { split: SplitSet }) {
           seed: split.request.seed,
         })}
       </p>
+      {hasEmptyRequestedSet && (
+        <p className="muted small" role="status">
+          {t("trainingEmptyRequestedSet")}
+        </p>
+      )}
       <div className="table-scroll">
         <table className="training-distribution">
           <caption>{t("trainingDistribution")}</caption>

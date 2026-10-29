@@ -26,13 +26,30 @@ assignments against all label quotas and class prevalence together. Labels are d
 and sorted for computation; saved members retain the original labels and complete annotations.
 Each export writes the annotations supported by its format.
 
+**Annotation labels to balance** selects `all` (the default), `classification`, `detection`
+or `spans`. The default keeps the existing union of all annotation kinds; the other choices
+use only classification labels, box categories or text-span categories for allocation.
+Missing or reviewed-empty annotations of the selected kind contribute no labels. Reviews
+from all frozen annotators are included, as before. Every selected label participates;
+this choice does not reduce a multilabel sample to its first label.
+
+The selector changes only the algorithm's calculation inputs. Original member labels,
+complete annotations, group/duplicate isolation, displayed all-label distributions and
+exported annotations remain unchanged. It has no allocation effect when stratification is
+disabled or existing directory assignments are used. The CLI option is
+`--stratification-source classification`; HTTP, Agent and MCP use the typed
+`request.stratification_source` field (HTTP split/preview bodies carry it directly).
+Saved policies freeze the choice. Older snapshots missing the field mean `all`, retain
+their identities and can be retried under the same name. Choosing another source requires
+a new name. The default `all` policy retains the existing identity digest.
+
 For feasible inputs, the targets are at most one sample from each label's requested split
 count, and at most two percentage points from global prevalence for every category with at
 least 50 samples. Refinement checks both limits before overall split-size proximity, with
 up to 16 additional deterministic seeded starts for multilabel data. This is a bounded search,
 not a general integer-feasibility proof. Inspect the actual distribution for your data.
 
-Groups and connected duplicate clusters are indivisible; an entire connected component
+Explicit groups and, when duplicate avoidance is enabled, connected duplicate clusters are indivisible; an entire connected component
 receives one split. Their isolation takes priority over balance and exact ratios. A metadata
 field can be nested, for example `capture.session` or `metadata.capture.session`. A missing
 or null value does not join unrelated samples.
@@ -51,6 +68,13 @@ The seed, full policy, member identities, source hashes and annotations are froz
 named snapshots, including `1.2-primary-no-text`, are read without recalculation or replacement.
 Repeating the same name and policy returns that exact snapshot. Use a new name for the new
 algorithm or revised annotations.
+
+When a generated preview or saved set leaves a positive-ratio partition empty (for example,
+24/0/0), the distribution table explains that explicit groups and any enabled duplicate
+constraints take priority over ratio targets. Small sample counts and integer quotas can also
+leave partitions empty. Inspect the counts and try another seed or grouping policy; one result
+is not a proof that no alternative allocation exists. A partition explicitly assigned ratio
+zero does not trigger this message; existing directory assignments are not attributed to the generator.
 
 ## Leakage evidence
 
@@ -106,6 +130,10 @@ is below 3. If either image is low texture, both must be low texture and their m
 values must differ by at most 12 per channel. Textured images retain the configured
 dHash threshold. Resizing and JPEG recompression of a flat image remain comparable.
 
+Crops removing more than 10% from any image edge are outside the image similarity
+check's supported detection range. This limit does not guarantee recall for every smaller
+crop; the existing dHash threshold and color confirmation still apply.
+
 ## Training archives
 
 Select a saved split, a format and, when multiple reviews exist, an explicit annotator.
@@ -121,6 +149,12 @@ source export permissions are rechecked on every download. Export receipts enter
 | `imagefolder` | `<split>/<class>/<image>`; requires exactly one classification label per image                                                  |
 | `hf_imagefolder` | `<split>/<image>` and `metadata.jsonl`; lossless scalar metadata, described below |
 | `text_jsonl`  | `<split>.jsonl`; exact text, labels and half-open character-offset spans                                                        |
+
+COCO `images[].file_name` is relative to the extracted archive root, including the
+`images/<split>/` prefix. Set the consumer's image root to that extracted root, not to
+`annotations/` or `images/<split>/`. This retains the existing layout and follows the
+[pycocotools convention of joining a caller-supplied root with `file_name`](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py).
+The annotation document's own directory is not the image root.
 
 Reviewed-empty images (`boxes=[]`) have an empty YOLO label file and remain in COCO images.
 Missing box reviews (`boxes=null`) are refused for detection exports, rather than treated
@@ -161,6 +195,12 @@ Rejection keeps the existing HF policy and the source-byte export contract consi
 Pillow's [`exif_transpose`](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose)
 applies the orientation transform and removes its metadata; adopting it here would also
 require corresponding coordinate transforms rather than a pixel-only change.
+
+Training archive destinations accept only the case-sensitive suffixes `.tar`, `.tar.gz`
+and `.tgz`: `.tar` writes an uncompressed tar; `.tar.gz` and `.tgz` write gzip-compressed
+tar. Other suffixes (including `.zip`, `.json`, `.gz` and no suffix) are rejected before
+preparing a training export action. Metadata-only Croissant/OpenLineage exports retain
+their existing filename behavior. Direct archive writing enforces the same suffix rule.
 
 `MANIFEST.json` records the source version, optional release, split ID, seed, format and
 format version, total and per-split file counts, annotation counts and each source hash.

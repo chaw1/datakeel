@@ -13,6 +13,7 @@ from datakeel.core.models import BoundaryModel, FileItem
 
 type SplitName = Literal["train", "val", "test"]
 type LeakageKind = Literal["exact", "image", "text", "group"]
+type StratificationSource = Literal["all", "classification", "detection", "spans"]
 
 
 class SplitRatios(BoundaryModel):
@@ -43,6 +44,10 @@ class SplitRequest(BoundaryModel):
     stratify: bool = Field(
         default=True,
         description="Use every label in iterative multilabel stratification.",
+    )
+    stratification_source: StratificationSource = Field(
+        default="all",
+        description="Annotation labels to balance; all preserves the original policy.",
     )
     group_field: str | None = Field(default=None, min_length=1, max_length=200)
     avoid_leakage: bool = True

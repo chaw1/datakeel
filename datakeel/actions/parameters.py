@@ -3,9 +3,9 @@
 
 """Validated canonical parameter schemas for built-in controlled actions."""
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import Field, JsonValue, field_validator
+from pydantic import Field, JsonValue, field_validator, model_validator
 
 from datakeel.actions.catalog_parameters import (
     ConfirmMetricDraftParams,
@@ -40,6 +40,7 @@ from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.core.training_export_models import TRAINING_ARCHIVE_SUFFIXES, TRAINING_FORMATS
 from datakeel.core.transcription_auto import require_current_auto_policy
 from datakeel.ontology.models import ObjectSet, PropertyFilter
 from datakeel.pipeline import Pipeline, validate_pipeline
@@ -103,6 +104,18 @@ class ExportParams(BoundaryModel):
     release_id: str | None = None
     split_set_id: str | None = None
     annotator_id: str | None = None
+
+    @model_validator(mode="after")
+    def training_archive_extension(self) -> Self:
+        """Bind training archive compression to an explicit supported filename suffix."""
+        if (
+            self.format in TRAINING_FORMATS
+            and self.destination is not None
+            and not self.destination.endswith(TRAINING_ARCHIVE_SUFFIXES)
+        ):
+            message = "Training archive filename must end in .tar, .tar.gz or .tgz"
+            raise ValueError(message)
+        return self
 
 
 PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {

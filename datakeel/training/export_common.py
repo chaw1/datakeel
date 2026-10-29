@@ -16,7 +16,7 @@ from urllib.parse import quote
 from PIL import Image
 
 from datakeel.core.errors import ConflictError, ValidationError
-from datakeel.core.training_export_models import TrainingExportItem
+from datakeel.core.training_export_models import TRAINING_ARCHIVE_SUFFIXES, TrainingExportItem
 from datakeel.training.importers import validate_box
 
 _MAX_SUFFIX_LENGTH = 12
@@ -202,6 +202,9 @@ def source_text(item: TrainingExportItem) -> str:
 
 def write_archive(directory: Path, output: Path) -> None:
     """Create byte-stable tar or gzip tar with neutral host metadata and gzip headers."""
+    if not output.name.endswith(TRAINING_ARCHIVE_SUFFIXES):
+        message = "Training archive filename must end in .tar, .tar.gz or .tgz"
+        raise ValidationError(message)
     with output.open("wb") as raw, ExitStack() as stack:
         sink = (
             stack.enter_context(gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0))

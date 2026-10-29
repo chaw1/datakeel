@@ -47,6 +47,12 @@ def _split_arguments(parser: argparse.ArgumentParser, command: str) -> None:
     parser.add_argument(
         "--no-stratify", action="store_true", help="Disable all-label iterative stratification"
     )
+    parser.add_argument(
+        "--stratification-source",
+        choices=("all", "classification", "detection", "spans"),
+        default="all",
+        help="Choose annotation labels to balance; defaults to all annotation kinds",
+    )
     parser.add_argument("--directory", action="store_true", default=command == "leakage")
     parser.add_argument("--image-threshold", type=int, default=8)
     parser.add_argument("--text-threshold", type=int, default=3)
@@ -58,6 +64,7 @@ def _request(args: argparse.Namespace) -> SplitRequest:
         ratios=SplitRatios(train=args.train, val=args.val, test=args.test),
         seed=args.seed,
         stratify=not args.no_stratify,
+        stratification_source=args.stratification_source,
         group_field=args.group_field,
         source="directory" if args.directory else "generated",
         image_threshold=args.image_threshold,

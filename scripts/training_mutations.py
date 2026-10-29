@@ -153,4 +153,48 @@ TRAINING_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="training-action-archive-suffix-validation-omitted",
+        path="actions/parameters.py",
+        before="self.format in TRAINING_FORMATS",
+        after="False and self.format in TRAINING_FORMATS",
+        case=(
+            "tests/training/test_archive_suffixes.py::"
+            "test_training_destination_rejects_unknown_suffix_before_action"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-writer-archive-suffix-validation-omitted",
+        path="training/export_common.py",
+        before="if not output.name.endswith(TRAINING_ARCHIVE_SUFFIXES):",
+        after="if False:",
+        case=(
+            "tests/training/test_archive_suffixes.py::"
+            "test_direct_archive_writer_rejects_unknown_suffix_without_creating_file"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-gzip-archive-written-as-tar",
+        path="training/export_common.py",
+        before='if output.name.endswith((".tar.gz", ".tgz"))',
+        after="if False",
+        case=(
+            "tests/training/test_archive_suffixes.py::"
+            "test_archive_compression_matches_suffix_and_remains_deterministic"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-coco-file-name-loses-archive-root-prefix",
+        path="training/export_detection.py",
+        before='relative = f"images/{split}/{filename(item)}"',
+        after='relative = f"{split}/{filename(item)}"',
+        case=(
+            "tests/training/test_export.py::"
+            "test_coco_standard_documents_roundtrip_absolute_boxes_and_empty_images"
+        ),
+        runner="pytest",
+    ),
 )
