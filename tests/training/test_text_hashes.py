@@ -56,3 +56,14 @@ def test_empty_punctuation_has_no_similarity_signal_and_short_text_uses_one_feat
 def test_simhash_stable_fingerprint_keeps_feature_multiplicities_and_zero_ties() -> None:
     """A fixed public synthetic phrase locks deterministic weighting, digest bytes and tie bits."""
     assert simhash("ababa abaca") == 0x6024ACC0F5F32E88
+
+
+def test_zero_width_formatting_cannot_hide_an_identical_text() -> None:
+    """All five specified invisible formats vanish before hashing and Unicode recomposition."""
+    for invisible in "\u200b\u200c\u200d\u2060\ufeff":
+        for text in ("A brown fox", "订单已经发货", "cafe\u0301"):
+            variant = invisible.join(text)
+            assert normalize_text(variant) == normalize_text(text)
+            assert simhash(variant) == simhash(text)
+        assert normalize_text(invisible) == ""
+        assert simhash(invisible) is None

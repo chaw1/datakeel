@@ -7,6 +7,17 @@ from scripts.mutation_models import Mutation
 
 TRAINING_TEXT_MUTATIONS = (
     Mutation(
+        name="training-text-zero-width-normalization",
+        path="training/text_hashes.py",
+        before="and character not in _ZERO_WIDTH",
+        after="and True",
+        case=(
+            "tests/training/test_text_hashes.py::"
+            "test_zero_width_formatting_cannot_hide_an_identical_text"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="training-text-signal-omitted",
         path="training/leakage.py",
         before="yield from _text_pairs(samples, request.text_threshold)",

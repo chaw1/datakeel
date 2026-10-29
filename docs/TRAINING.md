@@ -70,7 +70,7 @@ retains only measured direct edges. Image hashes are similarity heuristics; insp
 evidence rather than interpreting them as semantic identity.
 
 Text hashing applies Unicode NFKC normalization and case folding, then removes Unicode
-punctuation, ASCII punctuation/symbols and whitespace, then applies NFKC again so that
+punctuation, ASCII punctuation/symbols, whitespace and zero-width U+200B/U+200C/U+200D/U+2060/U+FEFF, then applies NFKC again so that
 combining characters separated by removed formatting recompose. It hashes character trigrams with SHA-256 and computes a weighted
 64-bit simhash; shorter nonempty text is one feature. Changes confined to case, whitespace or
 punctuation therefore have distance zero, including changes inside words, and are recalled

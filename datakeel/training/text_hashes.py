@@ -10,6 +10,7 @@ from collections import Counter
 
 HASH_BITS = 64
 FEATURE_WIDTH = 3
+_ZERO_WIDTH = frozenset("\u200b\u200c\u200d\u2060\ufeff")
 
 
 def normalize_text(text: str) -> str:
@@ -19,6 +20,7 @@ def normalize_text(text: str) -> str:
         character
         for character in folded
         if not character.isspace()
+        and character not in _ZERO_WIDTH
         and character not in string.punctuation
         and not unicodedata.category(character).startswith("P")
     )
