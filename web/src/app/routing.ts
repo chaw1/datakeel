@@ -16,6 +16,7 @@ export type Route = {
 };
 const pages: Page[] = [
   "workbench",
+  "labeling",
   "datasets",
   "catalog",
   "data-assets",

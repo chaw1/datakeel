@@ -111,7 +111,7 @@ def training_export_inputs(
         if file.sha256 != member.sha256:
             message = "Training source hash differs from the frozen split"
             raise ConflictError(message)
-        if file.modality == modality:
+        if params.format == "annotations_jsonl" or file.modality == modality:
             items.append(
                 TrainingExportItem(
                     file=file,

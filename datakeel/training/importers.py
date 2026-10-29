@@ -61,6 +61,7 @@ def import_coco(
             y1=y,
             x2=_restored_coordinate(x + width, image.width),
             y2=_restored_coordinate(y + height, image.height),
+            attributes=item.attributes,
         )
         validate_box(box, image.width, image.height)
         boxes[item.image_id].append(box)

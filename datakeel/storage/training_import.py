@@ -13,6 +13,7 @@ from datakeel.storage.annotation_store import import_annotations, require_annota
 from datakeel.storage.database import Database
 from datakeel.storage.training_inputs import authorize_training
 from datakeel.training.importers import import_coco, import_yolo
+from datakeel.training.native import import_annotations_jsonl
 
 
 def import_training_annotations(
@@ -38,6 +39,8 @@ def import_training_annotations(
         if request.coco is not None
         else import_yolo(request.yolo, request.annotator_id)
         if request.yolo is not None
+        else import_annotations_jsonl(request.annotations_jsonl)
+        if request.annotations_jsonl is not None
         else ()
     )
     return import_annotations(

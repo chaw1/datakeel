@@ -69,7 +69,7 @@ MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批
 
 普通图片导入目前不会读图片头补齐清单宽高。除非项目绑定的版本已记录尺寸，YOLO 需显式提供 `image_width`、`image_height`。完整 COCO 文档可在 `images` 中逐图提供尺寸；多图 COCO results 数组要求每个 `image_id` 精确匹配项目样本 ID 或唯一文件名，且每图有可用宽高，不按项目顺序猜配导出序号。缺少尺寸时，使用完整 COCO 文档，或按图分文件绑定 `sample_id` 并提供宽高。
 
-模板目前校验框、分类和文本片段，支持 `min_annotations`、`max_annotations` 规则。可以登记多边形/关键点模板身份；在对应核心内容模型实现前，保存不支持的内容会明确拒绝。
+模板校验框、多边形、分类和文本片段，`component_config.components` 可配置启用组件集合，支持 `min_annotations`、`max_annotations`；`label_mode: "single"` 约束单选。关键点内容仍不支持。编辑和训练集无损往返见[工作台指南](ANNOTATION_WORKBENCH.zh.md)。
 
 定稿要求所有任务有已通过修订。同一事务冻结这些修订，写新版本的原生标注、精确标注/标签统计，复用 `import_annotations` 的事务内入口生成标准 `AnnotationBatch`，更新状态计数并记下生产项目血缘。输入版本和历史修订保持原样。
 
@@ -86,9 +86,9 @@ uv run datakeel production read project_progress project.json --actor local
 
 演示生成三张图片、已发布标签集、个人项目和导入的假预测。个人档顺序为：建标签集 → 发布 → 建项目 → 切包 → 登记模型 → 导入 COCO/YOLO 预测 → 改修订 → 提交 → 定稿。小组档先登记用户、绑定项目角色，新建时设 `workflow_tier: "group"`，然后派单/抢单 → 保存 → 提交 → 领取审核/审核；返工必须带 `issues`，回到原标注员再次保存提交后通过、定稿。仅对上表要求的步骤签批。
 
-REST 使用 `POST /api/actions/{action_type}/prepare`、`GET /api/actions/plans/{id}`、`POST /api/approvals/{id}`、`POST /api/actions/{id}/execute`，决定时带回计划摘要。只读函数统一使用 `POST /api/production/functions/{name}`，也注册给 Agent/MCP：项目进度 `project_progress`、包状态 `package_status`、工作量 `annotator_workload`、返工率 `rework_rate`、一致性 `annotation_consistency`、置信度分布 `prelabel_confidence`、标签集差异 `label_set_diff`、下一条任务 `next_task`、对象投影 `production_objects`。
+REST 使用 `POST /api/actions/{action_type}/prepare`、`GET /api/actions/plans/{id}`、`POST /api/approvals/{id}`、`POST /api/actions/{id}/execute`，决定时带回计划摘要。只读函数统一使用 `POST /api/production/functions/{name}`，也注册给 Agent/MCP：项目进度 `project_progress`、包状态 `package_status`、工作量 `annotator_workload`、返工率 `rework_rate`、一致性 `annotation_consistency`、置信度分布 `prelabel_confidence`、标签集差异 `label_set_diff`、下一条任务 `next_task`、对象投影 `production_objects`、预标注完全一致率 `production_prelabel_accuracy`。
 
-一致性复用现有标注质检；置信度分布统计所有有置信度的模型修订。返工率为每个原标注员收到的返工决定数除以其全部审核决定数。
+一致性复用现有标注质检；置信度分布统计所有有置信度的模型修订。返工率为每个原标注员收到的返工决定数除以其全部审核决定数。`production_prelabel_accuracy` 对已通过/定稿的人工修订与其最近前序模型修订比较，返回参考任务数、完全一致数和比率（无参考时为 null）；属性、重复形状及已审核空值区别均纳入比较。
 
 ## 实现选择与来源
 

@@ -23,10 +23,14 @@ import { productionEn } from "./productionEn";
 import { releaseEn } from "./releaseEn";
 import { standardsEn } from "./standardsEn";
 import { trainingEn } from "./trainingEn";
+import { wbEditorEn } from "./wbEditorEn";
+import { workbenchEn } from "./workbenchEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  ...workbenchEn,
+  ...wbEditorEn,
   ...trainingEn,
   ...llmDataEn,
   ...productionEn,

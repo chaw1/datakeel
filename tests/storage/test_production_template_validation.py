@@ -80,10 +80,10 @@ def test_templates_validate_expected_content_and_cardinality(db: Database, kind:
 
 
 def test_future_template_types_are_objects_but_do_not_invent_core_content(db: Database) -> None:
-    """Polygon/keypoint templates can be managed before their core content models are introduced."""
+    """Keypoint templates can be managed before their core content models are introduced."""
     fixture = catalog_project(db)
     with db.session() as session:
-        template = ProductionTemplate(id="future", name="Polygon", annotation_type="polygon")
+        template = ProductionTemplate(id="future", name="Keypoints", annotation_type="keypoints")
         manage_template(
             session, CreateLabelSetParams(request_id="future", target="template", template=template)
         )

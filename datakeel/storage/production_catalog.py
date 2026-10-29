@@ -81,6 +81,7 @@ def annotation_categories(annotation: AnnotationRecord) -> tuple[str, ...]:
     return (
         *(annotation.labels or ()),
         *(box.category for box in annotation.boxes or ()),
+        *(polygon.category for polygon in annotation.polygons or ()),
         *(span.category for span in annotation.spans or ()),
     )
 
@@ -109,6 +110,14 @@ def normalize_annotation(
                 for span in annotation.spans
             )
             if annotation.spans is not None
+            else None,
+            "polygons": tuple(
+                polygon.model_copy(
+                    update={"category": identities.get(polygon.category, polygon.category)}
+                )
+                for polygon in annotation.polygons
+            )
+            if annotation.polygons is not None
             else None,
         }
     )
@@ -144,6 +153,24 @@ def _validate_geometry(annotation: AnnotationRecord) -> None:
         ):
             message = "Annotation span is outside text bounds"
             raise ValidationError(message)
+    for polygon in annotation.polygons or ():
+        points = polygon.points
+        if any(
+            point.x < 0
+            or point.y < 0
+            or (annotation.image_width is not None and point.x > annotation.image_width)
+            or (annotation.image_height is not None and point.y > annotation.image_height)
+            for point in points
+        ):
+            message = "Annotation polygon is outside image bounds"
+            raise ValidationError(message)
+        area = sum(
+            left.x * right.y - right.x * left.y
+            for left, right in zip(points, (*points[1:], points[0]), strict=True)
+        )
+        if len({(point.x, point.y) for point in points}) != len(points) or area == 0:
+            message = "Annotation polygons require distinct vertices and nonzero area"
+            raise ValidationError(message)
 
 
 def _validate_template(template: ProductionTemplate, annotation: AnnotationRecord) -> None:
@@ -151,16 +178,30 @@ def _validate_template(template: ProductionTemplate, annotation: AnnotationRecor
         "box": annotation.boxes,
         "classification": annotation.labels,
         "text_span": annotation.spans,
+        "polygon": annotation.polygons,
     }
     if template.annotation_type not in content:
         message = "This template's content type is not supported by the current core schema"
         raise ValidationError(message)
-    if content[template.annotation_type] is None or any(
-        value is not None for kind, value in content.items() if kind != template.annotation_type
+    configured = template.component_config.get("components")
+    enabled = (
+        {value for value in configured if isinstance(value, str)}
+        if isinstance(configured, list)
+        else {template.annotation_type}
+    )
+    if not any(content[kind] is not None for kind in enabled) or any(
+        value is not None for kind, value in content.items() if kind not in enabled
     ):
         message = "Annotation content does not match the project's template type"
         raise ValidationError(message)
-    count = len(content[template.annotation_type] or ())
+    count = sum(len(content[kind] or ()) for kind in enabled)
+    if (
+        "classification" in enabled
+        and template.component_config.get("label_mode") == "single"
+        and len(annotation.labels or ()) > 1
+    ):
+        message = "Single-select classification templates accept at most one label"
+        raise ValidationError(message)
     minimum = template.validation_rules.get("min_annotations", 0)
     maximum = template.validation_rules.get("max_annotations", 100000)
     if (

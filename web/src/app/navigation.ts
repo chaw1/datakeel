@@ -1,6 +1,7 @@
 import type { MessageKey } from "../i18n/en";
 export type Page =
   | "workbench"
+  | "labeling"
   | "runs"
   | "object"
   | "datasets"

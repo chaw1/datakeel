@@ -4,6 +4,7 @@ import { useWorkspace } from "../features/datasets/useWorkspace";
 import { objectHref } from "../features/object/navigation";
 import { ObjectPage } from "../features/object/ObjectPage";
 import { useI18n } from "../i18n/useI18n";
+import { LabelingPage } from "../pages/LabelingPage";
 import { LibraryPage } from "../pages/LibraryPage";
 import { QualityRulesPage } from "../pages/QualityRulesPage";
 import { QualityWorkspacePage } from "../pages/QualityWorkspacePage";
@@ -102,6 +103,8 @@ export default function App() {
           )}
           {page === "workbench" ? (
             <WorkbenchPage data={dashboard.value} />
+          ) : page === "labeling" ? (
+            <LabelingPage params={route.params} />
           ) : page === "datasets" ? (
             <LibraryPage
               datasets={datasets}

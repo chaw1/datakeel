@@ -155,6 +155,7 @@ def _sample(
                 for label in (
                     *(record.labels or ()),
                     *(box.category for box in record.boxes or ()),
+                    *(polygon.category for polygon in record.polygons or ()),
                     *(span.category for span in record.spans or ()),
                 )
             }

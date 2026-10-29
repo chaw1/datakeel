@@ -1,11 +1,15 @@
 {
   "schema_version": 1,
-  "source_hash": "4ebbf50223fe99e4172ebc8c2d69c3d5742008de15d14c6b0288c2ba87fe5c83",
+  "source_hash": "e44634b8175622e3dcf3e69bbc3305f27a632c2cd67e305d6e9a060e5f318ae7",
   "packages": [
     "node_modules/@fontsource/source-code-pro",
     "node_modules/@fontsource/source-serif-4",
+    "node_modules/its-fine",
+    "node_modules/konva",
     "node_modules/react",
     "node_modules/react-dom",
+    "node_modules/react-konva",
+    "node_modules/react-reconciler",
     "node_modules/scheduler",
     "node_modules/vite"
   ]

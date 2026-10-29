@@ -1,0 +1,219 @@
+.wb-page {
+  display: grid;
+  gap: calc(var(--space) * 4);
+}
+.wb-page .page-heading {
+  margin-bottom: 0;
+}
+.wb-module-bar,
+.wb-toolbar,
+.wb-role-nav,
+.wb-list-heading,
+.wb-pagination {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 3);
+  flex-wrap: wrap;
+}
+.wb-module-bar {
+  padding: calc(var(--space) * 4);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: calc(var(--space) * 2);
+}
+.wb-module-bar label,
+.wb-template label,
+.wb-review-controls label {
+  display: grid;
+  gap: var(--space);
+}
+.wb-module-bar select {
+  max-width: min(100%, 320px);
+}
+.wb-progress {
+  display: grid;
+  gap: var(--space);
+  min-width: 180px;
+  flex: 1;
+}
+.wb-progress progress {
+  width: 100%;
+  accent-color: var(--ok);
+}
+.wb-role-nav button[aria-current="page"] {
+  border-color: var(--ink);
+  background: var(--ink-wash);
+  font-weight: 600;
+}
+.wb-work-area {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: calc(var(--space) * 4);
+  align-items: start;
+}
+.wb-editor {
+  min-width: 0;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: calc(var(--space) * 2);
+  padding: calc(var(--space) * 3);
+}
+.wb-session {
+  min-width: 0;
+}
+.wb-toolbar {
+  padding: calc(var(--space) * 2) 0;
+}
+.wb-nav-notice {
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
+.wb-drawer {
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: calc(var(--space) * 2);
+  padding: calc(var(--space) * 3);
+  max-height: 75vh;
+  overflow: auto;
+}
+.wb-drawer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+}
+.wb-drawer code {
+  overflow-wrap: anywhere;
+  font-size: var(--font-xs);
+}
+.wb-drawer li {
+  margin-bottom: calc(var(--space) * 4);
+}
+.wb-drawer time {
+  display: block;
+  font-size: var(--font-xs);
+  color: var(--muted);
+}
+.wb-drawer pre,
+.wb-finalization pre {
+  overflow: auto;
+  max-height: 240px;
+  font-size: var(--font-xs);
+}
+.wb-guide {
+  white-space: pre-wrap;
+}
+.wb-save-state {
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
+.wb-save-conflict,
+.wb-save-error {
+  color: var(--red);
+}
+.wb-conflict {
+  display: flex;
+  gap: calc(var(--space) * 2);
+  padding: calc(var(--space) * 3);
+  background: var(--warn-wash);
+}
+.wb-review-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 3);
+  margin-top: calc(var(--space) * 4);
+}
+.wb-review-controls label {
+  flex: 1;
+  min-width: 220px;
+}
+.wb-list-heading {
+  justify-content: space-between;
+}
+.wb-task-table {
+  table-layout: fixed;
+  width: 100%;
+}
+.wb-task-table td {
+  overflow-wrap: anywhere;
+}
+.wb-task-table th:first-child {
+  width: 40%;
+}
+.wb-task-table button {
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.wb-pagination {
+  justify-content: end;
+  margin-block: calc(var(--space) * 3);
+}
+.wb-cockpit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--space) * 4);
+}
+.wb-cockpit > .card {
+  padding: calc(var(--space) * 5) calc(var(--space) * 6);
+}
+.wb-cockpit h2 {
+  margin-top: 0;
+}
+.wb-counts {
+  display: flex;
+  gap: calc(var(--space) * 5);
+  flex-wrap: wrap;
+}
+.wb-counts dd {
+  font-size: var(--font-2xl);
+  font-family: var(--font-mono);
+  margin: 0;
+}
+.wb-counts dt {
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
+.wb-template {
+  margin-top: calc(var(--space) * 4);
+}
+.wb-template form {
+  display: grid;
+  gap: calc(var(--space) * 3);
+  max-width: 720px;
+}
+.wb-template fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 3);
+  border: 1px solid var(--rule);
+}
+.wb-template fieldset label {
+  display: flex;
+  align-items: center;
+}
+.wb-finalization {
+  margin-top: calc(var(--space) * 3);
+}
+.wb-finalization code {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1100px) {
+  .wb-work-area {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wb-drawer {
+    max-height: none;
+  }
+}
+@media (max-width: 700px) {
+  .wb-cockpit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wb-module-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .wb-toolbar button {
+    flex-grow: 1;
+  }
+}

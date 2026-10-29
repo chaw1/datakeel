@@ -8,7 +8,10 @@ import type { Dataset } from "../api/types";
 const groups = [
   {
     label: "workbench",
-    items: [{ id: "workbench", label: "workbench", icon: "grid" }],
+    items: [
+      { id: "workbench", label: "workbench", icon: "grid" },
+      { id: "labeling", label: "wbNav", icon: "grid" },
+    ],
   },
   {
     label: "dataGroup",

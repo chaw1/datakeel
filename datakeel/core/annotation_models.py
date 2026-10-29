@@ -5,7 +5,7 @@
 
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, JsonValue, model_validator
 
 from datakeel.core.models import BoundaryModel
 
@@ -18,6 +18,7 @@ class AnnotationBox(BoundaryModel):
     y1: float = Field(allow_inf_nan=False)
     x2: float = Field(allow_inf_nan=False)
     y2: float = Field(allow_inf_nan=False)
+    attributes: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class AnnotationSpan(BoundaryModel):
@@ -26,6 +27,22 @@ class AnnotationSpan(BoundaryModel):
     category: str
     start: int
     end: int
+    attributes: dict[str, JsonValue] = Field(default_factory=dict)
+
+
+class AnnotationPoint(BoundaryModel):
+    """Keep one finite source-image pixel coordinate in a polygon."""
+
+    x: float = Field(allow_inf_nan=False)
+    y: float = Field(allow_inf_nan=False)
+
+
+class AnnotationPolygon(BoundaryModel):
+    """Preserve a closed polygon without duplicating its first vertex at the end."""
+
+    category: str
+    points: tuple[AnnotationPoint, ...] = Field(min_length=3)
+    attributes: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class AnnotationRecord(BoundaryModel):
@@ -36,6 +53,8 @@ class AnnotationRecord(BoundaryModel):
     labels: tuple[str, ...] | None = None
     boxes: tuple[AnnotationBox, ...] | None = None
     spans: tuple[AnnotationSpan, ...] | None = None
+    polygons: tuple[AnnotationPolygon, ...] | None = None
+    attributes: dict[str, JsonValue] = Field(default_factory=dict)
     text_length: int | None = Field(default=None, ge=0)
     image_width: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     image_height: float | None = Field(default=None, gt=0, allow_inf_nan=False)
