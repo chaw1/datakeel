@@ -69,6 +69,12 @@ class TrainingSample(BoundaryModel):
         lt=1 << 64,
         description="64-bit simhash of normalized text; absent for empty normalized content.",
     )
+    text_content_hash: str | None = Field(
+        default=None, description="Frozen normalized-content digest for short numeric templates."
+    )
+    text_template_hash: str | None = Field(
+        default=None, description="Frozen numeric-template digest; absent in older snapshots."
+    )
 
 
 class SplitMember(BoundaryModel):

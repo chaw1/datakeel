@@ -7,6 +7,52 @@ from scripts.mutation_models import Mutation
 
 TRAINING_TEXT_MUTATIONS = (
     Mutation(
+        name="training-short-numeric-template-confirmation-omitted",
+        path="training/leakage.py",
+        before="if not _text_confirmation(",
+        after="if False and not _text_confirmation(",
+        case=(
+            "tests/training/test_text_templates.py::"
+            "test_short_numeric_templates_are_not_near_duplicates_even_at_maximum_threshold"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-short-numeric-template-boundary-excludes-80",
+        path="training/text_hashes.py",
+        before="len(normalized) > SHORT_TEMPLATE_MAX_LENGTH",
+        after="len(normalized) >= SHORT_TEMPLATE_MAX_LENGTH",
+        case=(
+            "tests/training/test_text_templates.py::"
+            "test_template_length_boundary_and_long_near_duplicate_recall"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-short-template-digests-not-frozen",
+        path="storage/training_inputs.py",
+        before=(
+            "text_content_hash=text_content_hash,\n        text_template_hash=text_template_hash,"
+        ),
+        after="text_content_hash=None,\n        text_template_hash=None,",
+        case=(
+            "tests/training/test_text_templates.py::"
+            "test_materialized_templates_freeze_both_confirmation_digests"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
+        name="training-short-template-legacy-signal-suppressed",
+        path="training/leakage.py",
+        before="return not (",
+        after="return left.text_template_hash is not None and not (",
+        case=(
+            "tests/training/test_text_templates.py::"
+            "test_older_snapshots_without_template_digests_keep_their_original_text_signal"
+        ),
+        runner="pytest",
+    ),
+    Mutation(
         name="training-exact-text-is-not-reported-again-as-near",
         path="training/leakage.py",
         before=(

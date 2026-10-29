@@ -4,12 +4,16 @@
 """Generate stable 64-bit text simhashes without modifying source content."""
 
 import hashlib
+import json
+import re
 import string
 import unicodedata
 from collections import Counter
 
 HASH_BITS = 64
 FEATURE_WIDTH = 3
+SHORT_TEMPLATE_MAX_LENGTH = 80
+_DECIMAL_RUNS = re.compile(r"\d+")
 _ZERO_WIDTH = frozenset("\u200b\u200c\u200d\u2060\ufeff")
 
 
@@ -25,6 +29,20 @@ def normalize_text(text: str) -> str:
         and not unicodedata.category(character).startswith("P")
     )
     return unicodedata.normalize("NFKC", characters)
+
+
+def short_template_hashes(text: str) -> tuple[str | None, str | None]:
+    """Fingerprint short numeric templates without retaining their source text or values."""
+    normalized = normalize_text(text)
+    if len(normalized) > SHORT_TEMPLATE_MAX_LENGTH or _DECIMAL_RUNS.search(normalized) is None:
+        return None, None
+    template = json.dumps(
+        _DECIMAL_RUNS.split(normalized), ensure_ascii=False, separators=(",", ":")
+    )
+    return (
+        hashlib.sha256(normalized.encode("utf-8")).hexdigest(),
+        hashlib.sha256(template.encode("utf-8")).hexdigest(),
+    )
 
 
 def simhash(text: str) -> int | None:

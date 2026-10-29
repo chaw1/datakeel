@@ -78,7 +78,15 @@ even with threshold zero. Empty normalized text has no simhash; byte-identical f
 match SHA-256. These transformations affect only comparison, never exported source text or
 character offsets. Short texts, rearranged templates with the same trigram multiset, and text that becomes
 identical after space or symbol removal (for example, `C++` and `C`) can collide: this signal is a formatting/similarity check, not semantic equivalence.
-A threshold of 64 matches every pair with a text hash and is usually unsuitable.
+A short numeric-template confirmation excludes texts of at most 80 normalized characters
+whose wording is identical after replacing decimal-number runs, but whose normalized numeric
+content differs: for example, `Order 1001 has shipped` and `Order 1002 has shipped` are separate
+records. Case, whitespace and punctuation variants of the same numeric content remain comparable;
+longer texts and different wording retain the configured similarity rule. Only SHA-256 content
+and template digests are frozen with new samples, not normalized source text. Existing saved
+samples without these digests retain their original text comparison and do not read source files
+to reconstruct them. A threshold of 64 matches every hashed pair except the template veto above
+and is usually unsuitable. Other short-text and template collisions remain possible.
 
 Byte-identical text files produce an exact SHA-256 pair only; the same pair is not
 counted again as text near-duplication. Formatting variants with different source
