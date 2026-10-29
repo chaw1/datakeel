@@ -9,15 +9,18 @@ gain changes and lossy re-encoding. Steady tones have no fluctuation, so their s
 shape alone decides.
 """
 
+from collections.abc import Callable, Iterator
+from functools import lru_cache
 from itertools import pairwise
 from typing import NamedTuple
 
 import numpy as np
 from numpy.typing import NDArray
 
-from datakeel.operators.audio.common import SAMPLE_RATE
+from datakeel.core.models import FileItem
 from datakeel.operators.audio.models import Fingerprint
 from datakeel.operators.audio.params import DedupParams
+from datakeel.operators.audio.streaming import SAMPLE_RATE, audio_buffer
 
 _FFT_SIZE = 512
 _FRAME_SIZE = 400
@@ -30,6 +33,8 @@ _TIME_BINS = 64
 _STEADY_FLUCTUATION = 0.05
 _BLOCK_MS = _BLOCK_FRAMES * _HOP_SIZE * 1000 // SAMPLE_RATE
 _MIN_SCALE = 1e-12
+_BATCH_FRAMES = 1000
+type SampleReader = Callable[[int, int], NDArray[np.float64]]
 
 
 class Signature(NamedTuple):
@@ -39,6 +44,7 @@ class Signature(NamedTuple):
     blocks: NDArray[np.float64]
 
 
+@lru_cache(maxsize=1)
 def _mel_filters() -> NDArray[np.float64]:
     mel_max = float(2595 * np.log10(1 + SAMPLE_RATE / 2 / 700))
     mel_points = np.arange(_MEL_FILTERS + 2, dtype=np.float64) * mel_max / (_MEL_FILTERS + 1)
@@ -60,27 +66,59 @@ def _mel_filters() -> NDArray[np.float64]:
 
 def signature(samples: NDArray[np.float64]) -> Signature:
     """Return 50 ms block MFCCs, excluding the gain-dependent zeroth coefficient."""
-    duration_ms = round(samples.size * 1000 / SAMPLE_RATE)
-    if samples.size < _FRAME_SIZE:
-        samples = np.pad(samples, (0, _FRAME_SIZE - samples.size))
-    emphasized = np.append(samples[0], samples[1:] - 0.97 * samples[:-1])
-    frames = np.lib.stride_tricks.sliding_window_view(emphasized, _FRAME_SIZE)[::_HOP_SIZE]
-    spectrum = np.abs(np.fft.rfft(frames * np.hamming(_FRAME_SIZE), n=_FFT_SIZE)) ** 2
-    mel_power = spectrum @ _mel_filters().T
-    # A relative 60 dB floor suppresses PCM quantization noise after gain changes.
-    floor = max(float(mel_power.max()) * 1e-6, 1e-30)
+    return _signature(samples.size, lambda start, stop: samples[start:stop])
+
+
+def file_signature(file: FileItem) -> Signature:
+    """Measure strongest-channel MFCCs in bounded, overlapped windows from scratch PCM."""
+    with audio_buffer(file) as decoded:
+        channel = decoded.strongest_channel()
+        return _signature(
+            decoded.samples, lambda start, stop: decoded.read(start, stop)[:, channel]
+        )
+
+
+def _mel_chunks(total: int, read: SampleReader) -> Iterator[NDArray[np.float64]]:
+    frames = 1 + (max(total, _FRAME_SIZE) - _FRAME_SIZE) // _HOP_SIZE
+    for first in range(0, frames, _BATCH_FRAMES):
+        count = min(_BATCH_FRAMES, frames - first)
+        start = first * _HOP_SIZE
+        stop = start + (count - 1) * _HOP_SIZE + _FRAME_SIZE
+        samples = read(max(0, start - 1), min(total, stop))
+        if total < _FRAME_SIZE:
+            samples = np.pad(samples, (0, _FRAME_SIZE - total))
+        emphasized = (
+            samples[1:] - 0.97 * samples[:-1]
+            if start
+            else np.append(samples[0], samples[1:] - 0.97 * samples[:-1])
+        )
+        windows = np.lib.stride_tricks.sliding_window_view(emphasized, _FRAME_SIZE)[::_HOP_SIZE]
+        spectrum = np.abs(np.fft.rfft(windows * np.hamming(_FRAME_SIZE), n=_FFT_SIZE)) ** 2
+        yield spectrum @ _mel_filters().T
+
+
+def _signature(total: int, read: SampleReader) -> Signature:
+    duration_ms = round(total * 1000 / SAMPLE_RATE)
+    # The floor is track-global, so repeat bounded FFT passes instead of changing its semantics.
+    floor = max(max(float(chunk.max()) for chunk in _mel_chunks(total, read)) * 1e-6, 1e-30)
     basis = np.cos(
         np.pi
         / _MEL_FILTERS
         * (np.arange(_MEL_FILTERS) + 0.5)[None, :]
         * np.arange(1, _COEFFICIENTS + 1)[:, None]
     ) * np.sqrt(2 / _MEL_FILTERS)
-    coefficients = np.log(np.maximum(mel_power, floor)) @ basis.T
-    count = len(coefficients) // _BLOCK_FRAMES
-    if count == 0:
-        return Signature(duration_ms, coefficients.mean(axis=0, keepdims=True))
-    blocks = coefficients[: count * _BLOCK_FRAMES].reshape(count, _BLOCK_FRAMES, _COEFFICIENTS)
-    return Signature(duration_ms, blocks.mean(axis=1))
+    blocks: list[NDArray[np.float64]] = []
+    for mel_power in _mel_chunks(total, read):
+        coefficients = np.log(np.maximum(mel_power, floor)) @ basis.T
+        count = len(coefficients) // _BLOCK_FRAMES
+        if count:
+            grouped = coefficients[: count * _BLOCK_FRAMES].reshape(
+                count, _BLOCK_FRAMES, _COEFFICIENTS
+            )
+            blocks.append(grouped.mean(axis=1))
+        elif not blocks:
+            blocks.append(coefficients.mean(axis=0, keepdims=True))
+    return Signature(duration_ms, np.concatenate(blocks))
 
 
 def fingerprint(value: Signature) -> Fingerprint:

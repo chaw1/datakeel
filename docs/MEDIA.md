@@ -197,12 +197,24 @@ Known limits / 已知边界:
   R128's +/-1 LU tolerance; for broadcast delivery set both ends to -23. / 默认响度区间
   从 EBU R128 广播目标 -23 LUFS 到主流流媒体归一的 -14 LUFS，两端各留 R128 的 ±1 LU
   容差；广播交付把两端都设成 -23。
-- Audio operators hold the decoded track in memory (16 kHz float64 for activity,
-  trimming and fingerprints; the source rate in float32 for clipping), so their memory
-  grows with duration: the whole audio pipeline on a 30-minute mono recording peaked at
-  about 4.3 GB, fingerprinting alone at about 2.4 GB. / 音频算子把整条音轨解码进内存，
-  内存随时长线性增长：30 分钟单声道录音跑完整条音频流水线峰值约 4.3 GB，其中指纹去重
-  单独约 2.4 GB。
+- Audio decoding uses 65,536-sample blocks. Activity carries incomplete RMS frames;
+  fingerprints preserve pre-emphasis overlap, the strongest channel and the track-global
+  spectral floor; clipping preserves global peak histograms, plateau carry state and
+  overlapping, globally aligned windows. Multipass measurements spool PCM to automatically
+  removed scratch files; transformed WAV output is also streamed to disk. PCM and FFT
+  working memory are bounded; compact feature sequences and output intervals still grow
+  with recording length. Scratch disk must accommodate decoded PCM (8 bytes per channel
+  sample). On the same generated 30-minute, 44.1 kHz mono tone, default-pipeline Python
+  peak RSS fell from 5.78 GB to 142 MB (57.5 to 75.1 s), and fingerprinting from 2.27 GB
+  to 107 MB (4.41 to 2.48 s); outputs were identical. These are local measurements,
+  not universal timing guarantees. / 音频按 65,536 个采样点分块解码；活动检测保留不足一帧
+  的尾部，指纹保留预加重重叠、全轨最强通道和频谱下限，削波保留全轨峰值直方图、平台
+  跨块状态及全局对齐的重叠窗口。多遍分析把 PCM 写入自动清理的临时文件，变换后的 WAV
+  也分块落盘；PCM 与 FFT 工作内存有界，紧凑特征序列和输出区间仍随时长增长。临时磁盘
+  需容纳解码 PCM（每通道每采样点 8 字节）。同一条生成的 30 分钟、44.1kHz 单声道正弦
+  素材上，默认流水线 Python 峰值 RSS 从 5.78GB 降至 142MB（57.5→75.1 秒），指纹从
+  2.27GB 降至 107MB（4.41→2.48 秒），输出完全一致；这些是本机实测，不保证任意机器
+  均有相同耗时。
 - Copies at another frame rate are located to within one frame of the coarser stream
   (measured on 25 and 29.97 fps copies with hard cuts and moving subjects, 1 s windows).
   Fine textures (cellular-automaton or fractal patterns) rescaled to another size can

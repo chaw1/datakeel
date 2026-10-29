@@ -102,7 +102,9 @@ def run_tool_stderr(arguments: list[str], *, timeout: float | None = None) -> by
     return _run(arguments, timeout).stderr
 
 
-def stream_tool(arguments: list[str], chunk: int, *, timeout: float) -> Iterator[bytes]:
+def stream_tool(
+    arguments: list[str], chunk: int, *, timeout: float, allow_partial: bool = False
+) -> Iterator[bytes]:
     """Yield fixed-size output records while the command runs, within a hard time budget.
 
     Long recordings are analysed without holding every decoded frame in memory. A
@@ -134,7 +136,10 @@ def stream_tool(arguments: list[str], chunk: int, *, timeout: float) -> Iterator
                 raise ExecutionError(msg)
             while record := stdout.read(chunk):
                 if len(record) != chunk:
-                    partial = True
+                    if allow_partial:
+                        yield record
+                    else:
+                        partial = True
                     break
                 yield record
             code = process.wait()

@@ -38,15 +38,21 @@ _LEVELS = 4096
 _LEVEL_RANGE = 2.0
 
 
-def flat_tops(channel: NDArray[np.float32], sample_rate: int, window_ms: int) -> NDArray[np.bool_]:
+def flat_tops(
+    channel: NDArray[np.float32],
+    sample_rate: int,
+    window_ms: int,
+    *,
+    reference: float | None = None,
+) -> NDArray[np.bool_]:
     """Flag the tops of flat half-cycles near the peak level that occur in clusters.
 
     The channel is processed in blocks of whole half-cycles, so memory stays a small
     multiple of the decoded channel however long the recording is.
     """
-    width = max(1, round(sample_rate * _SMOOTH_MS / 1000))
+    width = smoothing_width(sample_rate)
     flagged = np.zeros(channel.shape, dtype=np.bool_)
-    reference = _peak_level(channel, width)
+    reference = _peak_level(channel, width) if reference is None else reference
     if reference <= 0:
         return flagged
     tops = [_block_tops(start, block, reference, width) for start, block in _blocks(channel, width)]
@@ -65,6 +71,26 @@ def flat_tops(channel: NDArray[np.float32], sample_rate: int, window_ms: int) ->
     ):
         flagged[start : stop + 1] = True
     return flagged
+
+
+def smoothing_width(sample_rate: int) -> int:
+    """Return the shared short moving-average width used by peak shape measurements."""
+    return max(1, round(sample_rate * _SMOOTH_MS / 1000))
+
+
+def peak_histogram(smoothed: NDArray[np.float32]) -> NDArray[np.int64]:
+    """Count levels in one already smoothed block for a track-global peak reference."""
+    levels = np.minimum(np.abs(smoothed) * (_LEVELS / _LEVEL_RANGE), _LEVELS - 1).astype(np.int32)
+    return np.bincount(levels, minlength=_LEVELS).astype(np.int64)
+
+
+def histogram_reference(histogram: NDArray[np.int64]) -> float:
+    """Return the original 99.9th-percentile reference from accumulated block counts."""
+    total = int(histogram.sum())
+    if not total:
+        return 0.0
+    index = int(np.searchsorted(np.cumsum(histogram), _PEAK_QUANTILE * total))
+    return (index + 1) / (_LEVELS / _LEVEL_RANGE)
 
 
 def _smoothed(
@@ -95,15 +121,9 @@ def _blocks(channel: NDArray[np.float32], width: int) -> Iterator[tuple[int, NDA
 def _peak_level(channel: NDArray[np.float32], width: int) -> float:
     """Return the smoothed track's 99.9th percentile magnitude from a level histogram."""
     histogram = np.zeros(_LEVELS, dtype=np.int64)
-    scale = _LEVELS / _LEVEL_RANGE
     for _, block in _blocks(channel, width):
-        levels = np.minimum(np.abs(block) * scale, _LEVELS - 1).astype(np.int32)
-        histogram += np.bincount(levels, minlength=_LEVELS)
-    total = int(histogram.sum())
-    if not total:
-        return 0.0
-    index = int(np.searchsorted(np.cumsum(histogram), _PEAK_QUANTILE * total))
-    return (index + 1) / scale
+        histogram += peak_histogram(block)
+    return histogram_reference(histogram)
 
 
 def _block_tops(

@@ -8,8 +8,13 @@ from typing import Any
 
 from datakeel.core.media_models import MediaInterval
 from datakeel.core.models import FileItem
-from datakeel.operators.audio.common import annotate_audio, fingerprint_samples
-from datakeel.operators.audio.fingerprint import Signature, fingerprint, is_duplicate, signature
+from datakeel.operators.audio.common import annotate_audio
+from datakeel.operators.audio.fingerprint import (
+    Signature,
+    file_signature,
+    fingerprint,
+    is_duplicate,
+)
 from datakeel.operators.audio.models import AudioMetrics
 from datakeel.operators.audio.params import DedupParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
@@ -23,7 +28,7 @@ def execute(files: list[FileItem], _output_dir: Path, params: DedupParams) -> Op
     issues: list[dict[str, Any]] = []
     for file in files:
         try:
-            measured = signature(fingerprint_samples(file))
+            measured = file_signature(file)
         except MEDIA_ERRORS as error:
             output.append(mark_failed(file, "audio.dedup", error))
             continue

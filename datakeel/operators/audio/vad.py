@@ -7,10 +7,9 @@ from pathlib import Path
 
 from datakeel.core.models import FileItem
 from datakeel.operators.audio.common import (
-    activity,
     activity_metrics,
-    activity_samples,
     annotate_audio,
+    measure_activity,
 )
 from datakeel.operators.audio.params import ActivityParams
 from datakeel.operators.base import Operator, OperatorResult, summarize
@@ -20,7 +19,7 @@ def execute(files: list[FileItem], _output_dir: Path, params: ActivityParams) ->
     """Report RMS activity and silence, including music or noise above the threshold."""
     output: list[FileItem] = []
     for file in files:
-        measured = activity(activity_samples(file), params)
+        measured = measure_activity(file, params)
         output.append(annotate_audio(file, activity_metrics(measured), measured.silent))
     return summarize(files, output)
 

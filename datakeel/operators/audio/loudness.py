@@ -15,13 +15,12 @@ from datakeel.core.media_models import MediaInterval
 from datakeel.operators.audio.common import annotate_audio
 from datakeel.operators.audio.models import AudioMetrics, LoudnessMeasurement
 from datakeel.operators.audio.params import LoudnessParams
+from datakeel.operators.audio.streaming import stream_artifact
 from datakeel.operators.base import Operator, OperatorResult, summarize
 from datakeel.operators.media.tools import (
     input_path,
-    media_artifact,
     media_timeout,
     probe_file,
-    run_tool,
     run_tool_stderr,
 )
 
@@ -84,7 +83,9 @@ def _normalize(
         + ":linear=true"
     )
     probe = probe_file(file)
-    content = run_tool(
+    return stream_artifact(
+        file,
+        output_dir,
         [
             "ffmpeg",
             "-v",
@@ -109,13 +110,6 @@ def _normalize(
             "wav",
             "pipe:1",
         ],
-        timeout=media_timeout(probe.duration_ms),
-    )
-    return media_artifact(
-        file,
-        output_dir,
-        content,
-        "wav",
         "audio.loudness",
         params,
         start_ms=0,
