@@ -33,6 +33,7 @@ export function TrainingSets({
             <label>
               {t("trainingVersion")}
               <select
+                aria-label={t("trainingVersion")}
                 value={versionId}
                 onBlur={(event) => {
                   setSelected(event.target.value);

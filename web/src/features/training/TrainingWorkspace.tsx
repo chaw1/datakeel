@@ -107,6 +107,7 @@ export function TrainingWorkspace({
           <label>
             {t("trainingCompare")}
             <select
+              aria-label={t("trainingCompare")}
               value={comparison?.id ?? ""}
               onBlur={(event) => {
                 setCompareId(event.target.value);

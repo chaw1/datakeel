@@ -34,6 +34,9 @@ it("requires an author and locks the reviewed parameters while preparing", async
     })),
   };
   render(<TrainingExport split={split} />);
+  for (const name of ["Training format", "Annotation author"]) {
+    expect(screen.getByRole("combobox", { name })).toBeVisible();
+  }
   await user.type(screen.getByLabelText("Archive filename"), "training.tar.gz");
   expect(
     screen.getByRole("button", { name: "Review export plan" }),

@@ -65,6 +65,12 @@ it("compares saved class distribution and exposes zero counts in the chart", asy
   );
   render(<TrainingSets datasetId="dataset-1" versions={[version]} />);
   await screen.findByRole("heading", { name: "baseline" });
+  for (const name of [
+    "Training source version",
+    "Compare with another split",
+  ]) {
+    expect(screen.getByRole("combobox", { name })).toBeVisible();
+  }
   await user.selectOptions(
     screen.getByLabelText("Compare with another split"),
     "split-2",

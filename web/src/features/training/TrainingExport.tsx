@@ -68,6 +68,7 @@ export function TrainingExport({ split }: { split: SplitSet }) {
         <label>
           {t("trainingFormat")}
           <select
+            aria-label={t("trainingFormat")}
             value={format}
             disabled={busy}
             onBlur={(event) => {
@@ -90,6 +91,7 @@ export function TrainingExport({ split }: { split: SplitSet }) {
           <label>
             {t("trainingAnnotator")}
             <select
+              aria-label={t("trainingAnnotator")}
               value={annotatorId}
               disabled={busy}
               required={needsAnnotator}
