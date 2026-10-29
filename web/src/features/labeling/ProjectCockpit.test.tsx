@@ -46,3 +46,43 @@ it("renders counters, rework identities and workload without recomputing facts",
   const row = screen.getByRole("row", { name: "member 11 7 4 25%" });
   expect(within(row).getAllByRole("cell")).toHaveLength(5);
 });
+
+it("names the people column and only shows agreement sections that have pairs", () => {
+  const { rerender } = render(<ProjectCockpit data={labelingProject} />);
+  expect(screen.getByRole("columnheader", { name: "Annotator" })).toBeVisible();
+  expect(screen.queryByText(/Current actor/)).toBeNull();
+  expect(screen.queryByRole("heading", { name: /Cohen κ/ })).toBeNull();
+  expect(screen.queryByRole("heading", { name: /mean IoU/ })).toBeNull();
+  expect(
+    screen.getByText("No overlapping annotations to compare yet."),
+  ).toBeVisible();
+  rerender(
+    <ProjectCockpit
+      data={{
+        ...labelingProject,
+        agreement: {
+          ...labelingProject.agreement,
+          boxes: [
+            {
+              annotator_a: "ann",
+              annotator_b: "qa",
+              mean_iou: 0.8,
+              sample_count: 2,
+              box_count_a: 2,
+              box_count_b: 2,
+              category_agreement: 1,
+              match_rate: 1,
+              matched_count: 2,
+            },
+          ],
+        },
+      }}
+    />,
+  );
+  expect(screen.getByRole("heading", { name: /mean IoU/ })).toBeVisible();
+  expect(screen.getByText("ann / qa: 0.800")).toBeVisible();
+  expect(screen.queryByRole("heading", { name: /Cohen κ/ })).toBeNull();
+  expect(
+    screen.queryByText("No overlapping annotations to compare yet."),
+  ).toBeNull();
+});

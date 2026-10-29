@@ -45,7 +45,7 @@ export const workbenchEn = {
   wbCommonKeys:
     "Ctrl/⌘+S save · Ctrl/⌘+Enter submit · Ctrl/⌘+Z undo · Ctrl/⌘+Shift+Z redo · {alt}+N next · {alt}+P previous · ? help",
   wbEditorKeys:
-    "Box: B add, arrows move, Shift+arrows resize, Ctrl/⌘+D copy. Polygon: P add point, Enter close. Classification: label number or configured shortcut. Text: select characters then add span; Tab reaches every field.",
+    "Box: B add, arrows move, Shift+arrows resize, Ctrl/⌘+D copy, Delete remove. Polygon: P start, arrows move the cursor, Space add point, Enter close, Escape cancel, Backspace delete the selected point. Classification: label number or configured shortcut. Text: Shift+arrows select characters, Enter label them, number keys pick the label, Escape return to a new selection. Tab reaches every field.",
   wbDrawer: "Annotation details",
   wbProperties: "Properties",
   wbHistory: "Revision history",
@@ -100,6 +100,8 @@ export const workbenchEn = {
     "This project uses the default box template. Configure a template when creating a project.",
   wbQuality: "Quality and rework",
   wbPeople: "People",
+  wbAnnotator: "Annotator",
+  wbNoAgreement: "No overlapping annotations to compare yet.",
   wbAssigned: "Assigned",
   wbCompleted: "Completed",
   wbReviewCount: "Reviews",

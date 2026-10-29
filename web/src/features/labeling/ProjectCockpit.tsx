@@ -26,28 +26,40 @@ export function ProjectCockpit({ data }: { data: ProjectWorkbench }) {
       <section className="card">
         <h2>{t("wbQuality")}</h2>
         <p>{t("wbTaskCount", { count: data.agreement.sample_count })}</p>
-        <h3>{t("wbBoxAgreement")}</h3>
-        <ul>
-          {data.agreement.boxes.map((pair) => (
-            <li key={`${pair.annotator_a}:${pair.annotator_b}`}>
-              {pair.annotator_a} / {pair.annotator_b}:{" "}
-              {pair.mean_iou == null
-                ? t("wbUnavailable")
-                : pair.mean_iou.toFixed(3)}
-            </li>
-          ))}
-        </ul>
-        <h3>{t("wbClassificationAgreement")}</h3>
-        <ul>
-          {data.agreement.classification.pairs.map((pair) => (
-            <li key={`${pair.annotator_a}:${pair.annotator_b}`}>
-              {pair.annotator_a} / {pair.annotator_b}:{" "}
-              {pair.cohen_kappa.value == null
-                ? t("wbUnavailable")
-                : pair.cohen_kappa.value.toFixed(3)}
-            </li>
-          ))}
-        </ul>
+        {data.agreement.boxes.length > 0 && (
+          <>
+            <h3>{t("wbBoxAgreement")}</h3>
+            <ul>
+              {data.agreement.boxes.map((pair) => (
+                <li key={`${pair.annotator_a}:${pair.annotator_b}`}>
+                  {pair.annotator_a} / {pair.annotator_b}:{" "}
+                  {pair.mean_iou == null
+                    ? t("wbUnavailable")
+                    : pair.mean_iou.toFixed(3)}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {data.agreement.classification.pairs.length > 0 && (
+          <>
+            <h3>{t("wbClassificationAgreement")}</h3>
+            <ul>
+              {data.agreement.classification.pairs.map((pair) => (
+                <li key={`${pair.annotator_a}:${pair.annotator_b}`}>
+                  {pair.annotator_a} / {pair.annotator_b}:{" "}
+                  {pair.cohen_kappa.value == null
+                    ? t("wbUnavailable")
+                    : pair.cohen_kappa.value.toFixed(3)}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {!data.agreement.boxes.length &&
+          !data.agreement.classification.pairs.length && (
+            <p className="muted">{t("wbNoAgreement")}</p>
+          )}
         <p>{t("wbRepeatedRework")}</p>
         {data.progress.rework_task_ids.length ? (
           <ul>
@@ -67,7 +79,7 @@ export function ProjectCockpit({ data }: { data: ProjectWorkbench }) {
           <table aria-label={t("wbPeople")}>
             <thead>
               <tr>
-                <th>{t("wbActor", { actor: "" })}</th>
+                <th>{t("wbAnnotator")}</th>
                 <th>{t("wbAssigned")}</th>
                 <th>{t("wbCompleted")}</th>
                 <th>{t("wbReviewCount")}</th>
