@@ -122,8 +122,8 @@ def _dispatch(
         return _plan_outcome(name, plan)
     if name in CONTROL_TOOLS and entry == "mcp":
         msg = (
-            f"{name} is not available through MCP: a person approves and executes plans "
-            "on the Web UI or CLI."
+            f"{name} is not available through MCP: a plan is approved or rejected by a person "
+            "in the Web UI or CLI, who also executes it."
         )
         raise AuthorizationError(msg)
     return _control(
