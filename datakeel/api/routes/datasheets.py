@@ -5,13 +5,14 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 
 from datakeel.actions.datasheet_parameters import GenerateDatasheetRequest
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.service import prepare_action
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.api.identity_access import http_action_context
 from datakeel.core.datasheet_execution import DatasheetJob
 from datakeel.core.datasheet_models import DatasheetComparison, DatasheetDocument
 from datakeel.core.models import JsonDocument
@@ -37,12 +38,14 @@ def generate(
     dataset_id: str,
     body: GenerateDatasheetRequest,
     db: DatabaseDependency,
+    request: Request,
 ) -> ActionPlan:
     """Freeze actual facts into a draft action; external model calls require approval."""
     return prepare_action(
         db,
         "generate_datasheet",
         JsonDocument.model_validate({**body.model_dump(mode="json"), "dataset_id": dataset_id}),
+        http_action_context(request),
     )
 
 
@@ -59,13 +62,14 @@ def document(document_id: str, db: DatabaseDependency) -> DatasheetDocument:
 
 
 @router.post("/datasheets/{document_id}/publish")
-def publish(document_id: str, db: DatabaseDependency) -> ActionPlan:
+def publish(document_id: str, db: DatabaseDependency, request: Request) -> ActionPlan:
     """Prepare publication for explicit review through the existing approval gate."""
     value = get_document(db, document_id)
     return prepare_action(
         db,
         "publish_datasheet",
         JsonDocument({"dataset_id": value.dataset_id, "document_id": value.id}),
+        http_action_context(request),
     )
 
 

@@ -11,6 +11,14 @@ from pydantic import Field, field_validator
 from datakeel.core.models import BoundaryModel, new_id
 
 
+class MemoryReadOptions(BoundaryModel):
+    """Keep actor, archival and audit selection inside one immutable read boundary."""
+
+    actor: str = "local"
+    include_archived: bool = False
+    record: bool = False
+
+
 class MemoryPolicy(BoundaryModel):
     """Bound deterministic retention while keeping retrieval constants fixed."""
 

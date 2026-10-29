@@ -5,12 +5,13 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.service import prepare_action
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.api.identity_access import http_action_context
 from datakeel.core.annotation_sampling import (
     AnnotationAcceptanceParams,
     AnnotationImportRequest,
@@ -79,12 +80,15 @@ def rework_export(
 
 @router.post("/acceptance/prepare")
 def prepare_acceptance(
-    dataset_id: str, body: AnnotationAcceptanceParams, db: DatabaseDependency
+    dataset_id: str, body: AnnotationAcceptanceParams, db: DatabaseDependency, request: Request
 ) -> ActionPlan:
     """Prepare a typed inspection plan whose approval and execution use existing actions."""
     if body.dataset_id != dataset_id:
         message = "Inspection dataset does not match the request path"
         raise ValidationError(message)
     return prepare_action(
-        db, "annotation_acceptance", JsonDocument.model_validate(body.model_dump(mode="json"))
+        db,
+        "annotation_acceptance",
+        JsonDocument.model_validate(body.model_dump(mode="json")),
+        http_action_context(request),
     )

@@ -4,7 +4,7 @@
 """Schedule immutable custom operators through the existing controlled task action."""
 
 from datakeel.actions import service
-from datakeel.actions.models import ActionRun, ExecuteRequest
+from datakeel.actions.models import ActionContext, ActionRun, ExecuteRequest
 from datakeel.core.custom_requests import RunCustomOperatorRequest
 from datakeel.core.models import JsonDocument
 from datakeel.pipeline.models import Node, Pipeline
@@ -13,7 +13,7 @@ from datakeel.storage.database import Database
 
 
 def schedule_custom_run(
-    db: Database, code_hash: str, request: RunCustomOperatorRequest
+    db: Database, code_hash: str, request: RunCustomOperatorRequest, *, actor: str = "local"
 ) -> ActionRun:
     """Resolve an approved version and freeze a single-node durable operator chain."""
     version = get_custom_operator(db, code_hash, request.name)
@@ -40,9 +40,10 @@ def schedule_custom_run(
                 "queue": "cpu",
             }
         ),
+        ActionContext(actor=actor),
     )
     return service.execute_plan(
         db,
         plan.id,
-        ExecuteRequest(plan_digest=plan.plan_digest, operation_id=plan.operation_id),
+        ExecuteRequest(plan_digest=plan.plan_digest, operation_id=plan.operation_id, actor=actor),
     )

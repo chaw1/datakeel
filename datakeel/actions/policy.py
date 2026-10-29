@@ -29,7 +29,9 @@ def plan_digest(plan: ActionPlan) -> str:
     return digest(plan.model_dump(mode="json", exclude=excluded))
 
 
-def authorize(plan: ActionPlan, actor: str) -> None:
+def authorize(
+    plan: ActionPlan, actor: str, *, effective_scopes: tuple[str, ...] | None = None
+) -> None:
     """Enforce actor, declared scope, budget, expiry, and complete selection."""
     definition = action_definition(plan.action_type)
     if actor != plan.actor:
@@ -37,6 +39,13 @@ def authorize(plan: ActionPlan, actor: str) -> None:
         raise AuthorizationError(msg)
     if "*" not in plan.context.scopes and definition.auth_scope not in plan.context.scopes:
         msg = f"Missing action scope: {definition.auth_scope}"
+        raise AuthorizationError(msg)
+    if (
+        effective_scopes is not None
+        and "*" not in effective_scopes
+        and definition.auth_scope not in effective_scopes
+    ):
+        msg = f"Missing server-authorized action scope: {definition.auth_scope}"
         raise AuthorizationError(msg)
     require_within_ceiling(plan.action_type, plan.context)
     impact = plan.impact

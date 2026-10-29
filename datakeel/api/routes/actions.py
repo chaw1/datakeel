@@ -9,18 +9,32 @@ from fastapi import APIRouter, Query, Request
 
 from datakeel.actions import service
 from datakeel.actions.budget import BudgetRequest, requested_context
-from datakeel.actions.models import ActionPlan, ActionRun, ApprovalDecision, ExecuteRequest
+from datakeel.actions.models import (
+    ActionContext,
+    ActionPlan,
+    ActionRun,
+    ApprovalDecision,
+    ExecuteRequest,
+)
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import JsonDocument
+from datakeel.storage.database import Database
+from datakeel.storage.identity_authorization import effective_scopes
 
 router = APIRouter(prefix="/api", tags=["actions"])
 
 
-def _require_local(actor: str) -> None:
-    if actor != "local":
-        msg = "HTTP action decisions must use the local user identity"
+def _http_actor(db: Database, request: Request) -> str:
+    actor = request.headers.get("X-Datakeel-Actor", "local")
+    with db.session() as session:
+        return "local" if effective_scopes(session, actor).zero_users else actor
+
+
+def _require_actor(db: Database, request: Request, actor: str) -> None:
+    if actor != _http_actor(db, request):
+        msg = "HTTP action decisions must use the request's human identity"
         raise AuthorizationError(msg)
 
 
@@ -47,6 +61,7 @@ def prepare(
     action_type: str,
     body: JsonDocument,
     db: DatabaseDependency,
+    request: Request,
     max_objects: Annotated[int | None, Query(ge=1)] = None,
     max_bytes: Annotated[int | None, Query(ge=1)] = None,
 ) -> ActionPlan:
@@ -56,24 +71,31 @@ def prepare(
     configured ceiling; the budget is frozen into the plan that the user approves.
     """
     budget = BudgetRequest(max_objects=max_objects, max_bytes=max_bytes)
-    return service.prepare_action(db, action_type, body, requested_context(action_type, budget))
+    context = ActionContext(actor=_http_actor(db, request))
+    return service.prepare_action(
+        db, action_type, body, requested_context(action_type, budget, context)
+    )
 
 
 @router.post("/approvals/{plan_id}")
-def approve(plan_id: str, body: ApprovalDecision, db: DatabaseDependency) -> ActionPlan:
+def approve(
+    plan_id: str, body: ApprovalDecision, db: DatabaseDependency, request: Request
+) -> ActionPlan:
     """Approve or reject one displayed plan digest as the local user."""
-    _require_local(body.actor)
+    _require_actor(db, request, body.actor)
     return service.approve_plan(db, plan_id, body)
 
 
 @router.post("/actions/{plan_id}/execute")
-def execute(plan_id: str, body: ExecuteRequest, db: DatabaseDependency) -> ActionRun:
+def execute(
+    plan_id: str, body: ExecuteRequest, db: DatabaseDependency, request: Request
+) -> ActionRun:
     """Execute once; missing/rejected/consumed approvals record DENIED with a reason.
 
     A first denied request retains its 403/409 error response. Read its durable run
     through GET /api/actions/runs, or replay its explicit operation_id for that run.
     """
-    _require_local(body.actor)
+    _require_actor(db, request, body.actor)
     return service.execute_plan(db, plan_id, body)
 
 

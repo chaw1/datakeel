@@ -18,6 +18,7 @@ from datakeel.core.workflow_models import (
 from datakeel.runtime.workflow_graph import WorkflowGraph
 from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.database import Database
+from datakeel.storage.identity_sessions import bind_session_actor, require_session_actor
 from datakeel.storage.workflow_recovery import begin_resume, finish_resume, interrupt_run
 from datakeel.storage.workflow_store import create_run, get_run, list_runs, set_status
 from datakeel.workflows.execution import WorkflowHooks
@@ -25,7 +26,12 @@ from datakeel.workflows.loader import get_workflow, validate_inputs
 
 
 def start_workflow(
-    db: Database, workflow_id: str, request: WorkflowStart, *, hooks: WorkflowHooks | None = None
+    db: Database,
+    workflow_id: str,
+    request: WorkflowStart,
+    *,
+    hooks: WorkflowHooks | None = None,
+    actor: str = "local",
 ) -> Generator[WorkflowEvent, None, None]:
     """Validate before any start and replay the original run without dispatching a second one."""
     definition = get_workflow(workflow_id)
@@ -40,6 +46,10 @@ def start_workflow(
                 steps=[WorkflowStep(id=step.id, type=step.type) for step in definition.steps],
             ),
         )
+        if created:
+            bind_session_actor(db, run.id, actor)
+        else:
+            require_session_actor(db, run.id, actor)
     if not created:
         yield WorkflowEvent(event="done", run=run)
         return
@@ -54,10 +64,16 @@ def start_workflow(
 
 
 def resume_workflow(
-    db: Database, run_id: str, request: ResumeInput, *, hooks: WorkflowHooks | None = None
+    db: Database,
+    run_id: str,
+    request: ResumeInput,
+    *,
+    hooks: WorkflowHooks | None = None,
+    actor: str = "local",
 ) -> Generator[WorkflowEvent, None, None]:
     """Resume only a durable signed gate, serializing callers and preserving its original plan."""
     with response_lock(db, f"workflow:{run_id}"):
+        require_session_actor(db, run_id, actor)
         if begin_resume(db, run_id, request):
             yield WorkflowEvent(event="done", run=get_run(db, run_id))
             return

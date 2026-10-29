@@ -11,6 +11,7 @@ from datakeel.actions import service as actions
 from datakeel.actions.models import ActionRun, ExecuteRequest
 from datakeel.actions.parameters import DecideAssertionsParams
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.api.identity_access import http_action_context
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import JsonDocument
 from datakeel.evidence.query_models import EvidenceQuery, EvidenceQueryResult, EvidenceSample
@@ -37,15 +38,20 @@ def asset(
 
 
 @router.post("/assertions/decide")
-def decide(body: DecideAssertionsParams, db: DatabaseDependency) -> ActionRun:
+def decide(body: DecideAssertionsParams, db: DatabaseDependency, request: Request) -> ActionRun:
     """Apply an explicit local decision through the same frozen-plan action boundary."""
     plan = actions.prepare_action(
-        db, "decide_assertions", JsonDocument.model_validate(body.model_dump(mode="json"))
+        db,
+        "decide_assertions",
+        JsonDocument.model_validate(body.model_dump(mode="json")),
+        http_action_context(request),
     )
     return actions.execute_plan(
         db,
         plan.id,
-        ExecuteRequest(plan_digest=plan.plan_digest, operation_id=plan.operation_id),
+        ExecuteRequest(
+            plan_digest=plan.plan_digest, operation_id=plan.operation_id, actor=plan.actor
+        ),
     )
 
 

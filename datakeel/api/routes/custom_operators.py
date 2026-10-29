@@ -3,12 +3,13 @@
 
 """Review custom code and schedule approved content-addressed operator versions."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from datakeel.actions import service
 from datakeel.actions.custom_runs import schedule_custom_run
 from datakeel.actions.models import ActionPlan, ActionRun
 from datakeel.api.dependencies import DatabaseDependency
+from datakeel.api.identity_access import http_action_context, http_actor
 from datakeel.core.custom_operators import (
     CustomOperatorRun,
     CustomOperatorSubmission,
@@ -26,10 +27,13 @@ router = APIRouter(prefix="/api/custom-operators", tags=["custom-operators"])
 
 
 @router.post("", status_code=201)
-def submit(body: CustomOperatorSubmission, db: DatabaseDependency) -> ActionPlan:
+def submit(body: CustomOperatorSubmission, db: DatabaseDependency, request: Request) -> ActionPlan:
     """Prepare code review; submission alone never authorizes execution."""
     return service.prepare_action(
-        db, "submit_custom_operator", JsonDocument(body.model_dump(mode="json"))
+        db,
+        "submit_custom_operator",
+        JsonDocument(body.model_dump(mode="json")),
+        http_action_context(request),
     )
 
 
@@ -71,6 +75,8 @@ def version(
 
 
 @router.post("/{code_hash}/runs", status_code=202)
-def run(code_hash: str, body: RunCustomOperatorRequest, db: DatabaseDependency) -> ActionRun:
+def run(
+    code_hash: str, body: RunCustomOperatorRequest, db: DatabaseDependency, request: Request
+) -> ActionRun:
     """Enqueue an approved custom version against the selected dataset snapshot."""
-    return schedule_custom_run(db, code_hash, body)
+    return schedule_custom_run(db, code_hash, body, actor=http_actor(request))

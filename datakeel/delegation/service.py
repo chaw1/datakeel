@@ -29,6 +29,7 @@ from datakeel.storage.conversation_authorization import record_audit
 from datakeel.storage.conversation_secrets import get_canary
 from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
+from datakeel.storage.identity_sessions import bind_session_actor, session_actor
 from datakeel.storage.tool_invocations import (
     begin_invocation,
     finish_invocation,
@@ -46,7 +47,7 @@ def _child(
         item.parent_conversation_id == parent.id and item.agent_name == definition.name
         for item in memory.list_all(db, include_children=True)
     )
-    return memory.store(
+    child = memory.store(
         db,
         Conversation(
             id=new_id(),
@@ -61,6 +62,8 @@ def _child(
             allowed_tools=definition.tools,
         ),
     )
+    bind_session_actor(db, child.id, session_actor(db, parent.id))
+    return child
 
 
 def _cached(db: Database, outcome: ToolOutcome) -> DelegationResult:
@@ -69,7 +72,11 @@ def _cached(db: Database, outcome: ToolOutcome) -> DelegationResult:
     if isinstance(child_id, str):
         refs = conversation_asset_refs(db, child_id)
         try:
-            require_access(db, refs, AccessContext(actor="local", entry="agent", scope="query"))
+            require_access(
+                db,
+                refs,
+                AccessContext(actor=session_actor(db, child_id), entry="agent", scope="query"),
+            )
         except AuthorizationError as error:
             return DelegationResult(
                 outcome=ToolOutcome(name=outcome.name, status="FAILED", error=str(error))
@@ -101,7 +108,10 @@ def _perform(
     refs = conversation_asset_refs(db, child.id)
     try:
         require_access(
-            db, refs, AccessContext(actor="local", entry="agent", scope="query"), record=False
+            db,
+            refs,
+            AccessContext(actor=session_actor(db, parent.id), entry="agent", scope="query"),
+            record=False,
         )
     except AuthorizationError as error:
         return DelegationResult(
@@ -146,7 +156,9 @@ def delegate(
             name=call.name,
             arguments_digest=arguments_digest,
             argument_keys=sorted(call.arguments.root),
-            context=ToolCallContext(session_id=parent.id, agent_id=parent.agent_path),
+            context=ToolCallContext(
+                actor=session_actor(db, parent.id), session_id=parent.id, agent_id=parent.agent_path
+            ),
             asset_refs=[],
             identifier=identity,
         ),

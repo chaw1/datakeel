@@ -23,6 +23,7 @@ from datakeel.storage.conversation_memory_sources import remember_memory_sources
 from datakeel.storage.conversation_secrets import get_canary
 from datakeel.storage.data_asset_context import project_agent_history
 from datakeel.storage.database import Database
+from datakeel.storage.identity_sessions import session_actor
 
 
 class ModelMeter:
@@ -129,6 +130,7 @@ class ModelMeter:
                 "",
             ),
             conversation.config.dataset_id,
+            actor=session_actor(self.db, self.conversation_id),
         )
         request = assemble(
             project_agent_history(self.db, conversation),
