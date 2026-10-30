@@ -3,6 +3,7 @@ export const intentZh = {
   intentAnswer: "读函数直接回答",
   intentClarify: "先问一句",
   intentRefuse: "没有权限",
+  intentUnsupported: "这件事做不到",
   intentByModel: "由模型理解",
   intentMissingScopes: "缺少权限：",
   intentCandidates: "选一个",

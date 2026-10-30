@@ -11,6 +11,7 @@ const kinds: Record<IntentResult["kind"], MessageKey> = {
   answer: "intentAnswer",
   clarify: "intentClarify",
   refuse: "intentRefuse",
+  unsupported: "intentUnsupported",
 };
 
 /** Render what the one-sentence entry decided: a plan, an answer, a question or a refusal. */
@@ -55,10 +56,10 @@ export function IntentCard({
               key={candidate.id}
               className="button subtle"
               disabled={busy || !onReply}
+              title={candidate.id}
               onClick={() => onReply?.(candidate.id)}
             >
               {candidate.label}
-              <code>{candidate.id}</code>
             </button>
           ))}
         </div>

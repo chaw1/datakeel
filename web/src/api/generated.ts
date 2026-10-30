@@ -150,6 +150,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agent/conversations/definitions/provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Provider Defaults
+         * @description The model new conversations use: the configured one, or the offline demo without keys.
+         */
+        get: operations["provider_defaults_api_agent_conversations_definitions_provider_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agent/conversations/{conversation_id}": {
         parameters: {
             query?: never;
@@ -369,7 +389,7 @@ export interface paths {
         put?: never;
         /**
          * Approve
-         * @description Approve or reject one displayed plan digest as the local user.
+         * @description Approve or reject one displayed plan digest as the request's person.
          */
         post: operations["approve_api_approvals__plan_id__post"];
         delete?: never;
@@ -5126,6 +5146,8 @@ export interface components {
              * @default 0
              */
             attempts: number;
+            /** Details */
+            details?: components["schemas"]["StepDetail"][];
             /** Error */
             error?: string | null;
             estimate?: components["schemas"]["StepEstimate"];
@@ -5713,6 +5735,19 @@ export interface components {
             /**
              * Provider
              * @default fake
+             * @enum {string}
+             */
+            provider: "fake" | "openai" | "anthropic";
+        };
+        /**
+         * ConversationDefaults
+         * @description The provider and model a new conversation uses unless the person picks another.
+         */
+        ConversationDefaults: {
+            /** Model */
+            model: string;
+            /**
+             * Provider
              * @enum {string}
              */
             provider: "fake" | "openai" | "anthropic";
@@ -6891,6 +6926,8 @@ export interface components {
              * @default offline-rules
              */
             model: string;
+            /** Notes */
+            notes?: string[];
             /**
              * Output Tokens
              * @default 0
@@ -7762,7 +7799,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "plan" | "answer" | "clarify" | "refuse";
+            kind: "plan" | "answer" | "clarify" | "refuse" | "unsupported";
             /** Missing Scopes */
             missing_scopes?: string[];
             /**
@@ -11504,6 +11541,22 @@ export interface components {
             message: string;
         };
         /**
+         * StepDetail
+         * @description One parameter of a step as a person reads it: names instead of ids, with counts.
+         */
+        StepDetail: {
+            /** Label */
+            label: string;
+            /**
+             * Tone
+             * @default param
+             * @enum {string}
+             */
+            tone: "param" | "default" | "added" | "removed" | "impact";
+            /** Value */
+            value: string;
+        };
+        /**
          * StepEstimate
          * @description Show what a step changes, what it costs and whether it needs a signature.
          */
@@ -13354,6 +13407,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentDefinition"][];
+                };
+            };
+        };
+    };
+    provider_defaults_api_agent_conversations_definitions_provider_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationDefaults"];
                 };
             };
         };

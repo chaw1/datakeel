@@ -1,4 +1,5 @@
 import { useI18n } from "../../i18n/useI18n";
+import { agentHref } from "../agent/agentLink";
 
 import { viewMessages, workbenchViews } from "./model";
 
@@ -12,7 +13,7 @@ export function ModuleBar({
   workspace: ReturnType<typeof useLabelingWorkspace>;
 }) {
   const { t } = useI18n();
-  const { index, project, projectId, packageId, view } = workspace;
+  const { index, project, projectId, packageId, view, task } = workspace;
   if (!index) return null;
   const personal = project?.project.workflow_tier === "personal";
   const complete =
@@ -88,6 +89,25 @@ export function ModuleBar({
           <span className="muted wb-actor">
             {t("wbActor", { actor: index.actor })}
           </span>
+          <a
+            className="button subtle"
+            href={agentHref({
+              project_id: project.project.id,
+              dataset_id: project.project.dataset_id,
+              version_id: project.project.version_id,
+              label_set_id: project.project.label_set_id,
+              package_id: packageId || null,
+              task_id: task?.task.id ?? null,
+              ...(task
+                ? {
+                    selected_kind: "production_task" as const,
+                    selected_ids: [task.task.id],
+                  }
+                : {}),
+            })}
+          >
+            {t("wbAskAgent")}
+          </a>
         </>
       )}
       <button type="button" onClick={workspace.changed}>

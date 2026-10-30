@@ -24,6 +24,7 @@ export const approvalEn = {
   approvalNoObjects: "No objects are selected in this plan.",
   approvalMoreObjects: "Show next objects ({count} remaining)",
   approvalFrozenAt: "Object revisions and parameters frozen at {date}.",
+  approvalSignerSelf: "You (the signed-in person)",
   approvalSigner: "Approver",
   approvalReturn: "Return",
   approvalSignAction: "Approve and {action}",

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createConversation } from "../api/agent";
 import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import { contextFromQuery } from "../features/agent/agentLink";
 import { ConversationSidebar } from "../features/agent/ConversationSidebar";
 import { ConversationTranscript } from "../features/agent/ConversationTranscript";
 import { MessageComposer } from "../features/agent/MessageComposer";
@@ -71,14 +72,15 @@ export function AgentPage({
     refresh();
     onDataChanged();
   }
-  // The planner reads what the person is looking at: the conversation's dataset first,
-  // then the dataset the workspace has open.
+  // The planner reads what the person is looking at: everything the entry link carried
+  // (project, task, package, selected rows), the conversation's dataset first, then the
+  // dataset the workspace has open.
   const pageContext = {
+    ...contextFromQuery(params),
     dataset_id:
       session.value?.config.dataset_id ??
       params.get("dataset") ??
       (datasetId || null),
-    selected_ids: [],
   };
   function say(content: string) {
     void session.send(content, pageContext).then(() => {

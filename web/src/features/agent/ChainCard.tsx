@@ -168,6 +168,19 @@ export function ChainCard({
                   <span className="badge amber">{t("chainExternal")}</span>
                 )}
               </p>
+              {!!step.details?.length && (
+                <dl className="chain-step-details">
+                  {step.details.map((detail) => (
+                    <div
+                      key={`${detail.label}:${detail.value}`}
+                      data-tone={detail.tone}
+                    >
+                      <dt>{detail.label}</dt>
+                      <dd>{detail.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
               {step.error && (
                 <p className="error-text" role="alert">
                   {t("chainFailedBecause", { reason: step.error })}

@@ -249,3 +249,31 @@ it("creates a dry-run conversation with the user's explicit budget", async () =>
   expect(body).toContain('"dry_run":true');
   expect(body).toContain('"provider":"fake"');
 });
+
+it("creates new conversations with the model the server has configured", async () => {
+  const user = userEvent.setup();
+  const fetch = vi.fn((path: string, init?: RequestInit) =>
+    Promise.resolve(
+      json(
+        path === "/api/agent/conversations/definitions/provider"
+          ? { provider: "openai", model: "auto" }
+          : path === "/api/agent/conversations" && init?.method !== "POST"
+            ? [conversation]
+            : conversation,
+      ),
+    ),
+  );
+  vi.stubGlobal("fetch", fetch);
+  render(<AgentPage {...props} />);
+  await screen.findByRole("textbox", { name: "Message" });
+  await user.click(screen.getByRole("button", { name: "New conversation" }));
+  await waitFor(() => {
+    expect(fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(
+      true,
+    );
+  });
+  const body = fetch.mock.calls.find(([, init]) => init?.method === "POST")?.[1]
+    ?.body;
+  expect(body).toContain('"provider":"openai"');
+  expect(body).toContain('"model":"auto"');
+});

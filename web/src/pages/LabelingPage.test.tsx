@@ -87,3 +87,16 @@ it("renders empty and failed reads without inventing project statistics", async 
   render(<LabelingPage params={new URLSearchParams()} />);
   expect(await screen.findByText(/No production projects yet/)).toBeVisible();
 });
+
+it("opens the one-sentence entry with the project the page shows", async () => {
+  render(<LabelingPage params={new URLSearchParams()} />);
+  const entry = await screen.findByRole("link", {
+    name: "Do it in one sentence",
+  });
+  const query = new URLSearchParams(
+    entry.getAttribute("href")?.split("?")[1] ?? "",
+  );
+  expect(query.get("project")).toBe(labelingProject.project.id);
+  expect(query.get("dataset")).toBe(labelingProject.project.dataset_id);
+  expect(query.get("version")).toBe(labelingProject.project.version_id);
+});

@@ -3,6 +3,7 @@ export const intentEn = {
   intentAnswer: "Answered by a read function",
   intentClarify: "One question first",
   intentRefuse: "Not allowed",
+  intentUnsupported: "Not something I can do here",
   intentByModel: "understood by the model",
   intentMissingScopes: "Missing permission:",
   intentCandidates: "Pick one",

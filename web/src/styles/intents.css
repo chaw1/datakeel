@@ -82,6 +82,42 @@
   font-size: var(--font-xs);
   font-family: var(--font-body);
 }
+.chain-step-details {
+  display: grid;
+  gap: calc(var(--space) * 1);
+  margin: calc(var(--space) * 2) 0 0;
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+}
+.chain-step-details > div {
+  display: grid;
+  grid-template-columns: minmax(6em, max-content) 1fr;
+  gap: calc(var(--space) * 3);
+}
+.chain-step-details dt {
+  color: var(--muted);
+}
+.chain-step-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.chain-step-details [data-tone="default"] dd {
+  color: var(--muted);
+}
+.chain-step-details [data-tone="added"] dd {
+  color: var(--ok);
+}
+.chain-step-details [data-tone="removed"] dd {
+  color: var(--red);
+}
+.chain-step-details [data-tone="impact"] {
+  border-left: 3px solid var(--warn);
+  padding-left: calc(var(--space) * 2);
+}
+.intent-unsupported {
+  border-left: 3px solid var(--muted);
+  padding: calc(var(--space) * 3) calc(var(--space) * 4);
+}
 .chain-notes {
   margin: 0 0 calc(var(--space) * 3) calc(var(--space) * 5);
   color: var(--muted);

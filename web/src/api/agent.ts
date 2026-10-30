@@ -1,11 +1,12 @@
 import { readServerSentEvents } from "../lib/sse";
 
-import { post, requireSuccess } from "./client";
+import { get, post, requireSuccess } from "./client";
 
 import type {
   AgentEvent,
   Conversation,
   ConversationCreate,
+  ConversationDefaults,
   MessageInput,
 } from "./types";
 
@@ -35,15 +36,43 @@ export function parseAgentEvent(data: string): AgentEvent {
     throw new Error("Invalid Agent text event");
   return value as AgentEvent;
 }
-export function createConversation(
+const providers: ConversationDefaults["provider"][] = [
+  "fake",
+  "openai",
+  "anthropic",
+];
+
+/** The configured model, or the offline demo when the server has no model key. */
+async function conversationDefaults(): Promise<ConversationDefaults> {
+  const fallback: ConversationDefaults = {
+    provider: "fake",
+    model: "fake-demo",
+  };
+  try {
+    const value = await get<Partial<ConversationDefaults>>(
+      "/api/agent/conversations/definitions/provider",
+    );
+    return value.provider &&
+      providers.includes(value.provider) &&
+      typeof value.model === "string" &&
+      value.model
+      ? { provider: value.provider, model: value.model }
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function createConversation(
   datasetId: string,
   dryRun: boolean,
   budget: ConversationCreate["budget"],
 ) {
+  const { provider, model } = await conversationDefaults();
   const body: ConversationCreate = {
     dataset_id: datasetId || null,
-    provider: "fake",
-    model: "fake-demo",
+    provider,
+    model,
     dry_run: dryRun,
     budget,
     max_turns: 12,

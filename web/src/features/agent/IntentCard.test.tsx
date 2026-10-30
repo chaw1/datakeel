@@ -196,3 +196,75 @@ it("speaks Chinese when the interface is Chinese", async () => {
   });
   expect(screen.getByText(/改 2 个对象/)).toBeVisible();
 });
+
+it("shows each step's parameters by name, with defaults and the label change marked", async () => {
+  const detailed: ActionChain = {
+    ...planned,
+    steps: [
+      {
+        ...planned.steps[0],
+        details: [
+          { label: "Label set", value: "Street scenes", tone: "param" },
+          { label: "Added labels", value: "Dog", tone: "added" },
+          {
+            label: "based on v1",
+            value: "1 labels kept · 0 annotations and 0 revisions affected",
+            tone: "impact",
+          },
+          { label: "package size", value: "100 (default)", tone: "default" },
+        ],
+      },
+      planned.steps[1],
+    ],
+  };
+  respond({ "GET /api/intents/chains/chain-1": detailed });
+  render(<IntentCard {...props} intent={intent({ chain: detailed })} />);
+  expect(await screen.findByText("Street scenes")).toBeVisible();
+  expect(screen.getByText("Dog").closest("[data-tone]")).toHaveAttribute(
+    "data-tone",
+    "added",
+  );
+  expect(
+    screen.getByText("100 (default)").closest("[data-tone]"),
+  ).toHaveAttribute("data-tone", "default");
+});
+
+it("answers a request the platform cannot do instead of leaving it silent", () => {
+  respond({});
+  render(
+    <IntentCard
+      {...props}
+      intent={intent({
+        kind: "unsupported",
+        text: "I cannot do that here. I can: plan and run actions… Could you rephrase?",
+      })}
+    />,
+  );
+  expect(screen.getByText("Not something I can do here")).toBeVisible();
+  expect(screen.getByText(/Could you rephrase/)).toBeVisible();
+});
+
+it("offers choices by name and replies with the chosen object", async () => {
+  const onReply = vi.fn();
+  respond({});
+  render(
+    <IntentCard
+      {...props}
+      onReply={onReply}
+      intent={intent({
+        kind: "clarify",
+        text: "Which person?",
+        clarification: {
+          question: "Which person?",
+          action: "assign_tasks",
+          fields: ["actor"],
+          candidates: [{ id: "user-7", label: "Li Lei", kind: "user" }],
+        },
+      })}
+    />,
+  );
+  const choice = screen.getByRole("button", { name: "Li Lei" });
+  expect(choice).not.toHaveTextContent("user-7");
+  await userEvent.setup().click(choice);
+  expect(onReply).toHaveBeenCalledWith("user-7");
+});
