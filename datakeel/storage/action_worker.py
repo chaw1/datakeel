@@ -45,7 +45,11 @@ def reconcile_runs(db: Database) -> int:
         rows = list(
             session.scalars(
                 select(ActionRunRow)
-                .where(ActionRunRow.status.in_(["QUEUED", "RUNNING"]))
+                # A cloud prelabel run is RUNNING without a worker task; its caller closes it.
+                .where(
+                    ActionRunRow.status.in_(["QUEUED", "RUNNING"]),
+                    ActionRunRow.task_id.is_not(None),
+                )
                 .with_for_update(skip_locked=True)
             )
         )

@@ -5,6 +5,7 @@
 
 import threading
 import time
+import warnings
 from datetime import timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -23,6 +24,7 @@ from datakeel.core.production_catalog_models import PrelabelRun
 from datakeel.core.production_models import ProductionTask
 from datakeel.prelabel import use_transport
 from datakeel.storage.action_rows import ActionRunRow
+from datakeel.storage.action_worker import reconcile_runs
 from datakeel.storage.database import Database
 from datakeel.storage.production_catalog_rows import ProductionPrelabelRunRow
 from datakeel.storage.production_predictions import run_prelabel
@@ -64,6 +66,8 @@ class ProbingVision(FakeVision):
         self.db, self.project_id, self.other = db, project_id, other_project_id
         self.write_seconds: float | None = None
         self.progress: tuple[PrelabelProgress, ...] = ()
+        self.reconciled: int | None = None
+        self.warnings: list[str] = []
         self._probe = threading.Lock()
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
@@ -77,6 +81,10 @@ class ProbingVision(FakeVision):
                 )
                 self.write_seconds = time.perf_counter() - started
                 self.progress = prelabel_progress(self.db, self.project_id)
+                with warnings.catch_warnings(record=True) as caught:
+                    warnings.simplefilter("always")
+                    self.reconciled = reconcile_runs(self.db)
+                self.warnings = [str(item.message) for item in caught]
         return super().__call__(request)
 
 
@@ -104,6 +112,8 @@ def test_model_calls_hold_no_lock_and_progress_is_readable_mid_run(
         details = run_action(db, "run_prelabel", _values(project.id))
     assert fake.write_seconds is not None
     assert fake.write_seconds < 1
+    # The worker's reconciler leaves the live run, which has no worker task, to its caller.
+    assert (fake.reconciled, fake.warnings) == (0, [])
     (running,) = fake.progress
     assert (running.status, running.planned_images) == ("running", 8)
     # Tasks run in id order, so the scripted failure may fall in either batch.
@@ -138,8 +148,14 @@ def test_a_second_live_run_on_the_project_is_refused_until_the_first_goes_silent
         first = run_prelabel(session, params.model_copy(update={"budget": 10}), "local")
         session.commit()
     fake = FakeVision()
-    with use_transport(httpx.MockTransport(fake)), pytest.raises(ConflictError, match="progress"):
-        run_action(db, "run_prelabel", _values(project.id))
+    refused: ConflictError | None = None
+    with use_transport(httpx.MockTransport(fake)):
+        try:
+            run_action(db, "run_prelabel", _values(project.id))
+        except ConflictError as error:
+            refused = error
+    assert refused is not None
+    assert "already in progress" in str(refused)
     assert not fake.requests
     with db.session() as session:
         row, run = locked_run(session, first.id)

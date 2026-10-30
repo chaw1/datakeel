@@ -243,8 +243,12 @@ def test_team_pass_through_keeps_its_trigger_out_of_review(
     with db.session() as session:
         task = require_task(session, item.task_id)
         project = require_project(session, task.project_id)
-        with pytest.raises(AuthorizationError):
+        refused: AuthorizationError | None = None
+        try:
             require_separation(session, project, task, "local")
+        except AuthorizationError as error:
+            refused = error
+        assert refused is not None
         require_separation(session, project, task, "reviewer-2")
 
 
@@ -265,8 +269,13 @@ def test_a_model_head_is_submitted_only_after_the_annotator_saves_it_as_their_ow
     for item in run.tiers:
         head = list_revisions(db, item.task_id)[-1]
         assert head.source == "model"
-        with pytest.raises(ValidationError, match="Save it as your own revision first"):
+        refused: ValidationError | None = None
+        try:
             run_action(db, "submit_task", {"task_id": item.task_id})
+        except ValidationError as error:
+            refused = error
+        assert refused is not None
+        assert "Save it as your own revision first" in str(refused)
         run_action(
             db,
             "save_revision",
