@@ -109,6 +109,7 @@ class PrelabelEstimate(BoundaryModel):
 
     images: int = Field(ge=0)
     already_done: int = Field(default=0, ge=0)
+    human_edited: int = Field(default=0, ge=0)
     calls_per_image: int = Field(default=1, ge=1)
     input_tokens_per_image: int = Field(default=0, ge=0)
     output_tokens_per_image: int = Field(default=0, ge=0)

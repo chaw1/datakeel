@@ -100,6 +100,19 @@ def write_model_draft(  # noqa: PLR0913  # The draft needs its task, model, acto
     return revision.id, routing.model_copy(update={"revision_id": revision.id})
 
 
+def human_head_task_ids(session: Session, tasks: list[ProductionTaskRow]) -> set[str]:
+    """Return tasks whose current head a person saved; a model draft must never bury it."""
+    heads = {task.latest_revision_id: task.id for task in tasks if task.latest_revision_id}
+    if not heads:
+        return set()
+    human = session.scalars(
+        select(ProductionRevisionRow.id).where(
+            ProductionRevisionRow.id.in_(list(heads)), ProductionRevisionRow.source == "human"
+        )
+    )
+    return {heads[identifier] for identifier in human}
+
+
 def prelabeled_task_ids(session: Session, task_ids: list[str], model: ProductionModel) -> set[str]:
     """Return tasks that already hold a draft from this exact model name and version."""
     done: set[str] = set()

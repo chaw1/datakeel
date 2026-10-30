@@ -34,7 +34,7 @@ from datakeel.storage.production_prelabel_runs import (
     prediction_tasks,
     save_run,
 )
-from datakeel.storage.production_prelabel_writes import prelabeled_task_ids
+from datakeel.storage.production_prelabel_writes import human_head_task_ids, prelabeled_task_ids
 from datakeel.storage.production_rows import ProductionTaskRow
 from datakeel.storage.production_tiers import project_thresholds
 
@@ -44,10 +44,11 @@ PRIOR_CALLS = 20
 
 
 class CloudTargets(NamedTuple):
-    """Tasks still to label, the samples skipped as done or locked, and each sample's size."""
+    """Tasks still to label, samples skipped as done, locked or human-edited, and sizes."""
 
     tasks: list[ProductionTaskRow]
     skipped: list[str]
+    edited: list[str]
     sizes: dict[str, tuple[int | None, int | None]]
     prompt_tokens: int
     output_tokens: int | None
@@ -80,7 +81,11 @@ def cloud_targets(
     *,
     lock: bool,
 ) -> CloudTargets:
-    """Select editable tasks without a draft from this model version; others are skipped."""
+    """Select editable tasks without a draft from this model version or a person's head.
+
+    A task whose current revision a person saved is skipped and counted on its own: drafting
+    over it would hide their work behind the model's and charge for an image already done.
+    """
     if lock:
         tasks = prediction_tasks(session, project.id, package_id)
     else:
@@ -89,8 +94,10 @@ def cloud_targets(
             statement = statement.where(ProductionTaskRow.package_id == package_id)
         tasks = list(session.scalars(statement.order_by(ProductionTaskRow.id)))
     done = prelabeled_task_ids(session, [task.id for task in tasks], model)
-    eligible = [task for task in tasks if task.state in EDITABLE_STATES and task.id not in done]
-    chosen = {task.id for task in eligible}
+    editable = [task for task in tasks if task.state in EDITABLE_STATES and task.id not in done]
+    human = human_head_task_ids(session, editable)
+    eligible = [task for task in editable if task.id not in human]
+    chosen = {task.id for task in eligible} | human
     sizes: dict[str, tuple[int | None, int | None]] = {
         sample.id: (
             round(sample.width) if sample.width else None,
@@ -102,6 +109,7 @@ def cloud_targets(
     return CloudTargets(
         eligible,
         [task.sample_id for task in tasks if task.id not in chosen],
+        [task.sample_id for task in editable if task.id in human],
         sizes,
         prompt_token_estimate(cloud_prompt(session, project, model)),
         output_tokens,
@@ -158,7 +166,7 @@ def cloud_estimate(model: ProductionModel, targets: CloudTargets) -> PrelabelEst
         message = "Cloud estimates need a cloud model"
         raise ValueError(message)
     sizes = [targets.sizes.get(task.sample_id, (None, None)) for task in targets.tasks]
-    return run_estimate(
+    estimate = run_estimate(
         model.cloud,
         model.unit_price,
         model.currency,
@@ -168,6 +176,7 @@ def cloud_estimate(model: ProductionModel, targets: CloudTargets) -> PrelabelEst
         output_tokens=targets.output_tokens,
         observed_calls=targets.observed_calls,
     )
+    return estimate.model_copy(update={"human_edited": len(targets.edited)})
 
 
 def cloud_request_for(session: Session, project: Project, model: ProductionModel) -> CloudRequest:
@@ -214,6 +223,7 @@ def start_cloud_prelabel(
             "budget": params.budget,
             "estimate": cloud_estimate(model, targets),
             "skipped_sample_ids": tuple(targets.skipped),
+            "human_edited_sample_ids": tuple(targets.edited),
             "thresholds": project_thresholds(session, project),
             "planned_images": len(targets.tasks),
             "updated_at": record.created_at,

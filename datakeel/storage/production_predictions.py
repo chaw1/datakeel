@@ -17,10 +17,12 @@ from datakeel.core.production_catalog_models import (
     ParsedPrediction,
     PredictionFailure,
     PrelabelRun,
+    ProductionModel,
 )
+from datakeel.core.production_models import Project
 from datakeel.core.production_prediction_models import PredictionSample
 from datakeel.storage.production_catalog import require_label_set, require_model
-from datakeel.storage.production_cloud_prelabel import start_cloud_prelabel
+from datakeel.storage.production_cloud_prelabel import EDITABLE_STATES, start_cloud_prelabel
 from datakeel.storage.production_prediction_parsing import parse_coco, parse_yolo
 from datakeel.storage.production_prelabel_runs import (
     new_run,
@@ -28,7 +30,7 @@ from datakeel.storage.production_prelabel_runs import (
     prediction_tasks,
     save_run,
 )
-from datakeel.storage.production_prelabel_writes import write_model_draft
+from datakeel.storage.production_prelabel_writes import human_head_task_ids, write_model_draft
 from datakeel.storage.production_tasks import require_mutable_project
 from datakeel.storage.production_tiers import project_thresholds
 
@@ -126,6 +128,17 @@ def run_prelabel(
     if model.provider != "fake" or "box" not in model.capabilities:
         message = "Only fake box models and cloud models can run prelabel"
         raise ValidationError(message)
+    return _fake_prelabel(session, params, actor, project, model)
+
+
+def _fake_prelabel(
+    session: Session,
+    params: RunPrelabelParams,
+    actor: str,
+    project: Project,
+    model: ProductionModel,
+) -> PrelabelRun:
+    """Draft a center box on every editable task except those whose head a person saved."""
     thresholds = project_thresholds(session, project)
     tiers: list[TaskTier] = []
     run = new_run(project.id, params.package_id, model)
@@ -135,7 +148,10 @@ def run_prelabel(
     failures: list[PredictionFailure] = []
     confidences: list[float] = []
     tasks = prediction_tasks(session, project.id, params.package_id)
+    human = human_head_task_ids(session, [task for task in tasks if task.state in EDITABLE_STATES])
     for task in tasks:
+        if task.id in human:
+            continue
         sample = samples[task.sample_id]
         prediction = _center_box(sample, label.name, model.name)
         try:
@@ -162,9 +178,11 @@ def run_prelabel(
                     message=str(exc),
                 )
             )
+    edited = tuple(task.sample_id for task in tasks if task.id in human)
+    update = {"thresholds": thresholds, "tiers": tuple(tiers), "human_edited_sample_ids": edited}
     return save_run(
         session,
-        run.model_copy(update={"thresholds": thresholds, "tiers": tuple(tiers)}),
+        run.model_copy(update=update),
         revision_ids,
         failures,
         confidences,

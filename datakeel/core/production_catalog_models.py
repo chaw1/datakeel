@@ -234,6 +234,7 @@ class PrelabelRun(BoundaryModel):
     calls: tuple[PrelabelCall, ...] = ()
     dropped: tuple[PrelabelDrop, ...] = ()
     skipped_sample_ids: tuple[str, ...] = ()
+    human_edited_sample_ids: tuple[str, ...] = ()
     stopped: PrelabelStop | None = None
     thresholds: ConfidenceThresholds | None = None
     tiers: tuple[TaskTier, ...] = ()
