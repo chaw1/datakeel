@@ -17,7 +17,7 @@ from datakeel.storage.production_dispatch_rules import active_loads, require_cap
 from datakeel.storage.production_load_locks import LoadLockError
 from datakeel.storage.production_queries import get_project
 from tests.production_helpers import production_fixture
-from tests.production_team_ops import team_project
+from tests.production_team_ops import failure, team_project
 from tests.production_team_support import ServiceRunner, grant_skills, register
 
 if TYPE_CHECKING:
@@ -63,6 +63,17 @@ class _Outcomes:
             self.succeeded.append(run.status)
 
 
+def _warm_up(runner: ServiceRunner, project_id: str, actor: str) -> None:
+    """Make the person a known member; a first appearance would serialize on the project row."""
+
+    def claim_and_release() -> None:
+        task_id = runner("claim_task", {"project_id": project_id}, actor).root["id"]
+        runner("release_task", {"task_id": task_id}, actor)
+
+    refused = failure(claim_and_release)
+    assert refused is None, refused
+
+
 def _run_together(*groups: tuple[list[ActionPlan], str, _Outcomes]) -> None:
     barrier = threading.Barrier(len(groups))
 
@@ -82,9 +93,7 @@ def test_concurrent_claims_by_one_person_stop_exactly_at_the_limit(db: Database)
     """Twelve prepared claims fired at once by one person: exactly the limit succeed."""
     project, _tasks = team_project(db, count=16, max_active_tasks=LIMIT)
     runner = ServiceRunner(db)
-    # Already a member: a first appearance would serialize on the project row by itself.
-    first = runner("claim_task", {"project_id": project.id}, "solo").root["id"]
-    runner("release_task", {"task_id": first}, "solo")
+    _warm_up(runner, project.id, "solo")
     plans = [runner.plan("claim_task", {"project_id": project.id}, "solo") for _ in range(12)]
     outcomes = _Outcomes(db)
     _run_together(*(([plan], "solo", outcomes) for plan in plans))
@@ -117,8 +126,7 @@ def test_skill_dispatch_racing_three_claimers_keeps_everyone_within_the_limit(
         "pm",
     )
     for actor in people:
-        first = runner("claim_task", {"project_id": project.id}, actor).root["id"]
-        runner("release_task", {"task_id": first}, actor)
+        _warm_up(runner, project.id, actor)
     outcomes = _Outcomes(db)
     claims = [
         ([runner.plan("claim_task", {"project_id": project.id}, actor) for _ in range(4)], actor)
