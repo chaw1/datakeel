@@ -6,6 +6,7 @@ import { useI18n } from "../../i18n/useI18n";
 
 import { actionDetails, mutateProduction } from "./actions";
 import { AnnotationEditor } from "./editors/AnnotationEditor";
+import { DetailsSlotContext } from "./editors/editorContext";
 import {
   allowed,
   defaultTemplate,
@@ -56,6 +57,8 @@ export function TaskSession({
   const [busy, setBusy] = useState(false);
   const [help, setHelp] = useState(false);
   const [issue, setIssue] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(true);
+  const [detailsSlot, setDetailsSlot] = useState<HTMLDivElement | null>(null);
   const [snapshot, setSnapshot] = useState(task);
   const snapshotRef = useRef(task);
   const acceptSnapshot = useCallback(
@@ -227,53 +230,69 @@ export function TaskSession({
       aria-label={t("wbNav")}
       data-task-id={task.task.id}
     >
-      <h2>{task.sample.name}</h2>
-      <TaskToolbar
-        editable={editable}
-        busy={busy}
-        personal={personal}
-        session={session}
-        onNavigate={onNavigate}
-        navigation={navigation}
-        notice={notice}
-        onSubmit={() => {
-          void perform("submit");
-        }}
-        help={help}
-        setHelp={setHelp}
-      />
-      <SessionStatus session={session} error={error} />
-      {!editable && <p className="muted">{t("wbReadOnly")}</p>}
-      <div className="wb-work-area">
-        <div className="wb-editor">
-          <AnnotationEditor
-            value={session.annotation}
-            onChange={session.edit}
-            labels={project.label_set.labels}
-            template={project.template ?? defaultTemplate}
-            mediaUrl={task.sample.content_url}
-            thumbnailUrl={
-              (task.sample.image_width ?? 0) > 3000 ||
-              (task.sample.image_height ?? 0) > 2000
-                ? (task.sample.thumbnail_url ?? undefined)
-                : undefined
-            }
-            text={task.sample.text ?? undefined}
-            readOnly={!editable || busy}
-          />
-        </div>
-        <TaskDrawer task={snapshot} project={project} />
-      </div>
-      {reviewable && (
-        <TaskReview
-          issue={issue}
+      <div className="wb-operation-bar">
+        <h2 className="wb-task-name">{task.sample.name}</h2>
+        <TaskToolbar
+          editable={editable}
           busy={busy}
-          onIssue={setIssue}
-          onReview={(decision) => {
-            void perform(decision);
+          personal={personal}
+          session={session}
+          onNavigate={onNavigate}
+          navigation={navigation}
+          notice={notice}
+          onSubmit={() => {
+            void perform("submit");
           }}
+          help={help}
+          setHelp={setHelp}
         />
-      )}
+        <SessionStatus session={session} error={error} />
+      </div>
+      <div
+        className="wb-work-area"
+        data-drawer={drawerOpen ? "open" : "closed"}
+      >
+        <div className="wb-editor">
+          <DetailsSlotContext value={detailsSlot}>
+            <AnnotationEditor
+              value={session.annotation}
+              onChange={session.edit}
+              labels={project.label_set.labels}
+              template={project.template ?? defaultTemplate}
+              mediaUrl={task.sample.content_url}
+              thumbnailUrl={
+                (task.sample.image_width ?? 0) > 3000 ||
+                (task.sample.image_height ?? 0) > 2000
+                  ? (task.sample.thumbnail_url ?? undefined)
+                  : undefined
+              }
+              text={task.sample.text ?? undefined}
+              readOnly={!editable || busy}
+            />
+          </DetailsSlotContext>
+        </div>
+        <TaskDrawer
+          task={snapshot}
+          project={project}
+          open={drawerOpen}
+          onToggle={() => {
+            setDrawerOpen(!drawerOpen);
+          }}
+          detailsRef={setDetailsSlot}
+        >
+          {!editable && <p className="muted">{t("wbReadOnly")}</p>}
+          {reviewable && (
+            <TaskReview
+              issue={issue}
+              busy={busy}
+              onIssue={setIssue}
+              onReview={(decision) => {
+                void perform(decision);
+              }}
+            />
+          )}
+        </TaskDrawer>
+      </div>
     </div>
   );
 }

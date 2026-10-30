@@ -1,5 +1,6 @@
 import { BboxEditor } from "./BboxEditor";
 import { ClassificationEditor } from "./ClassificationEditor";
+import { EditorDetails } from "./EditorDetails";
 import { PolygonEditor } from "./PolygonEditor";
 import { SpanEditor } from "./SpanEditor";
 import "./editors.css";
@@ -15,13 +16,23 @@ export function AnnotationEditor(props: EditorProps) {
         : [props.template.annotation_type],
     ),
   ];
+  const onImage = components.some((item) =>
+    ["box", "bbox", "polygon"].includes(item),
+  );
   return (
     <div className="wb-annotation-editor">
       {components.map((component) => {
         if (component === "box" || component === "bbox")
           return <BboxEditor key={component} {...props} />;
         if (component === "classification")
-          return <ClassificationEditor key={component} {...props} />;
+          // Beside an image, classification sits in the drawer so the canvas keeps its height.
+          return onImage ? (
+            <EditorDetails key={component} label={props.template.name}>
+              <ClassificationEditor {...props} />
+            </EditorDetails>
+          ) : (
+            <ClassificationEditor key={component} {...props} />
+          );
         if (component === "polygon")
           return <PolygonEditor key={component} {...props} />;
         if (component === "text_span" || component === "span")

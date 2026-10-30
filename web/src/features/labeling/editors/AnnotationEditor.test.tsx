@@ -24,6 +24,9 @@ vi.mock("react-konva", async () => {
     Transformer: node,
     Circle: node,
     Line: node,
+    Label: node,
+    Tag: node,
+    Text: node,
   };
 });
 const labels = [

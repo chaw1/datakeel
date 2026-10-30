@@ -3,8 +3,9 @@ import { Rect } from "react-konva";
 
 import { useI18n } from "../../../i18n/useI18n";
 
+import { BoxDetails } from "./BoxDetails";
 import { BoxShape } from "./BoxShape";
-import { CoordinateField } from "./CoordinateField";
+import { BoxToolbar } from "./BoxToolbar";
 import {
   arrowDelta,
   boxFromPoints,
@@ -14,8 +15,7 @@ import {
 } from "./geometry";
 import { ImageCanvas } from "./ImageCanvas";
 import { KeyboardRegion } from "./KeyboardRegion";
-import { LabelPicker } from "./LabelPicker";
-import { ShapeProperties } from "./ShapeProperties";
+import { labelStyle } from "./labelColors";
 import { shortcutLabel } from "./shortcuts";
 import { useCanvasTokens } from "./useCanvasTokens";
 
@@ -112,58 +112,30 @@ export function BboxEditor(props: EditorProps) {
         }
       }}
     >
-      <p className="muted">{t("wbEditorBoxHint")}</p>
       {labels.length === 0 && <p role="status">{t("wbEditorNoLabels")}</p>}
-      <div className="wb-editor-toolbar">
-        <LabelPicker
-          labels={labels}
-          template={props.template}
-          value={current?.category ?? category}
-          readOnly={readOnly}
-          onChange={(next) => {
-            setLabel(next);
-            if (current) update({ ...current, category: next });
-          }}
-        />
-        <button type="button" disabled={readOnly || !category} onClick={add}>
-          {t("wbEditorAddBox")}
-        </button>
-        <label>
-          {t("wbEditorSelected")}
-          <select
-            value={current ? selected : -1}
-            onChange={(event) => {
-              setSelected(Number(event.target.value));
-            }}
-            onBlur={(event) => {
-              setSelected(Number(event.target.value));
-            }}
-          >
-            <option value={-1}>{t("wbEditorNone")}</option>
-            {boxes.map((box, index) => (
-              <option key={index} value={index}>
-                {t("wbEditorAnnotationName", {
-                  label:
-                    labels.find((item) => item.id === box.category)?.name ??
-                    box.category,
-                  index: index + 1,
-                })}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" disabled={readOnly || !current} onClick={copy}>
-          {t("wbEditorCopy")}
-        </button>
-        <button type="button" disabled={readOnly || !current} onClick={remove}>
-          {t("wbEditorDelete")}
-        </button>
-      </div>
       <ImageCanvas
         width={width}
         height={height}
         mediaUrl={props.mediaUrl}
         thumbnailUrl={props.thumbnailUrl}
+        toolbar={
+          <BoxToolbar
+            labels={labels}
+            template={props.template}
+            boxes={boxes}
+            selected={current ? selected : -1}
+            category={current?.category ?? category}
+            readOnly={readOnly}
+            onLabel={(next) => {
+              setLabel(next);
+              if (current) update({ ...current, category: next });
+            }}
+            onSelect={setSelected}
+            onAdd={add}
+            onCopy={copy}
+            onDelete={remove}
+          />
+        }
         onStart={(point) => {
           if (!readOnly && category) setDraft({ start: point, end: point });
         }}
@@ -182,7 +154,7 @@ export function BboxEditor(props: EditorProps) {
             key={index}
             value={box}
             selected={index === selected}
-            color={tokens.accent}
+            style={labelStyle(labels, box.category, tokens)}
             width={width}
             height={height}
             readOnly={readOnly}
@@ -204,7 +176,7 @@ export function BboxEditor(props: EditorProps) {
             y={preview.y1}
             width={preview.x2 - preview.x1}
             height={preview.y2 - preview.y1}
-            stroke={tokens.accent}
+            stroke={labelStyle(labels, category, tokens).stroke}
             strokeWidth={2}
             strokeScaleEnabled={false}
             listening={false}
@@ -212,41 +184,13 @@ export function BboxEditor(props: EditorProps) {
           />
         )}
       </ImageCanvas>
-      {current && (
-        <>
-          <div className="wb-coordinate-fields">
-            {(["x1", "y1", "x2", "y2"] as const).map((field) => (
-              <CoordinateField
-                key={field}
-                label={t(
-                  (
-                    {
-                      x1: "wbEditorX1",
-                      y1: "wbEditorY1",
-                      x2: "wbEditorX2",
-                      y2: "wbEditorY2",
-                    } as const
-                  )[field],
-                )}
-                value={current[field]}
-                max={field.startsWith("x") ? width : height}
-                readOnly={readOnly}
-                onChange={(number) => {
-                  const next = { ...current, [field]: number };
-                  if (next.x2 > next.x1 && next.y2 > next.y1) update(next);
-                }}
-              />
-            ))}
-          </div>
-          <ShapeProperties
-            value={current.attributes}
-            readOnly={readOnly}
-            onChange={(attributes) => {
-              update({ ...current, attributes });
-            }}
-          />
-        </>
-      )}
+      <BoxDetails
+        {...props}
+        current={current}
+        width={width}
+        height={height}
+        onUpdate={update}
+      />
     </KeyboardRegion>
   );
 }

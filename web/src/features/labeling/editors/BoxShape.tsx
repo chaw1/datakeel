@@ -2,14 +2,16 @@ import { useEffect, useRef } from "react";
 import { Rect, Transformer } from "react-konva";
 
 import { clamp, moveBox } from "./geometry";
+import { ShapeLabel } from "./ShapeLabel";
 
+import type { LabelStyle } from "./labelColors";
 import type { AnnotationBox } from "./types";
 import type Konva from "konva";
 
 export function BoxShape({
   value,
   selected,
-  color,
+  style,
   width,
   height,
   readOnly,
@@ -18,7 +20,7 @@ export function BoxShape({
 }: {
   value: AnnotationBox;
   selected: boolean;
-  color: string;
+  style: LabelStyle;
   width: number;
   height: number;
   readOnly?: boolean;
@@ -41,7 +43,8 @@ export function BoxShape({
         y={value.y1}
         width={value.x2 - value.x1}
         height={value.y2 - value.y1}
-        stroke={color}
+        stroke={style.stroke}
+        fill={style.fill}
         strokeWidth={selected ? 3 : 2}
         strokeScaleEnabled={false}
         draggable={!readOnly}
@@ -78,13 +81,14 @@ export function BoxShape({
           onChange({ ...value, x1, y1, x2, y2 });
         }}
       />
+      <ShapeLabel x={value.x1} y={value.y1} style={style} />
       {selected && !readOnly && (
         <Transformer
           ref={transformer}
           rotateEnabled={false}
           flipEnabled={false}
-          anchorStroke={color}
-          borderStroke={color}
+          anchorStroke={style.stroke}
+          borderStroke={style.stroke}
           anchorSize={8}
           boundBoxFunc={(oldBox, newBox) =>
             newBox.width >= 2 && newBox.height >= 2 ? newBox : oldBox

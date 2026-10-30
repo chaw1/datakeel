@@ -1,9 +1,42 @@
 .wb-page {
   display: grid;
-  gap: calc(var(--space) * 4);
+  gap: calc(var(--space) * 3);
+  position: relative;
 }
-.wb-page .page-heading {
-  margin-bottom: 0;
+/* Focus mode: an open task fills the viewport below the top bar, without page scroll. */
+main:has(> .wb-page[data-focus="true"]) {
+  padding-top: calc(var(--space) * 2);
+  padding-bottom: 0;
+  max-width: none;
+}
+.wb-page[data-focus="true"] {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space) * 1.5);
+  overflow: hidden;
+}
+.wb-page[data-focus="true"] > .wb-session {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space) * 1.5);
+}
+.wb-page[data-focus="true"] ~ .page-footer {
+  display: none;
+}
+.wb-title {
+  font-size: var(--font-sm);
+  margin: 0;
+}
+.wb-busy {
+  position: absolute;
+  inset: auto 0 0 auto;
+  margin: 0;
+  padding: var(--space) calc(var(--space) * 2);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  z-index: 2;
 }
 .wb-module-bar,
 .wb-toolbar,
@@ -16,25 +49,38 @@
   flex-wrap: wrap;
 }
 .wb-module-bar {
-  padding: calc(var(--space) * 4);
+  padding: calc(var(--space) * 1.5) calc(var(--space) * 3);
+  gap: calc(var(--space) * 2) calc(var(--space) * 3);
   background: var(--sheet);
   border: 1px solid var(--rule);
   border-radius: calc(var(--space) * 2);
 }
-.wb-module-bar label,
+.wb-module-bar label {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 1.5);
+  font-size: var(--font-sm);
+}
+.wb-actor {
+  font-size: var(--font-sm);
+}
 .wb-template label,
 .wb-review-controls label {
   display: grid;
   gap: var(--space);
 }
 .wb-module-bar select {
-  max-width: min(100%, 320px);
+  max-width: min(100%, 220px);
+}
+.wb-page[data-focus="true"] .wb-actor {
+  display: none;
 }
 .wb-progress {
   display: grid;
-  gap: var(--space);
-  min-width: 180px;
-  flex: 1;
+  gap: 0;
+  min-width: 120px;
+  flex: 1 1 160px;
+  font-size: var(--font-sm);
 }
 .wb-progress progress {
   width: 100%;
@@ -47,22 +93,62 @@
 }
 .wb-work-area {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: calc(var(--space) * 4);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: calc(var(--space) * 2);
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+.wb-work-area[data-drawer="closed"] {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 .wb-editor {
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
   background: var(--sheet);
   border: 1px solid var(--rule);
   border-radius: calc(var(--space) * 2);
-  padding: calc(var(--space) * 3);
+  padding: calc(var(--space) * 1.5);
+}
+.wb-editor > .wb-annotation-editor {
+  flex: 1;
+  min-height: 0;
 }
 .wb-session {
   min-width: 0;
+  position: relative;
+}
+.wb-operation-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 1.5) calc(var(--space) * 3);
+}
+.wb-operation-bar .wb-toolbar {
+  padding: 0;
+}
+.wb-operation-bar p {
+  margin: 0;
+}
+.wb-task-name {
+  font-size: var(--font-sm);
+  margin: 0;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .wb-toolbar {
   padding: calc(var(--space) * 2) 0;
+}
+.wb-shortcuts {
+  position: absolute;
+  inset: calc(var(--space) * 12) calc(var(--space) * 4) auto auto;
+  max-width: 560px;
+  z-index: 3;
 }
 .wb-nav-notice {
   font-size: var(--font-sm);
@@ -72,9 +158,38 @@
   background: var(--sheet);
   border: 1px solid var(--rule);
   border-radius: calc(var(--space) * 2);
-  padding: calc(var(--space) * 3);
+  padding: calc(var(--space) * 2) calc(var(--space) * 3);
+  min-height: 0;
   max-height: 75vh;
   overflow: auto;
+}
+.wb-page[data-focus="true"] .wb-drawer {
+  max-height: none;
+}
+.wb-drawer[data-open="false"] {
+  padding: calc(var(--space) * 2);
+}
+.wb-drawer-toggle {
+  margin-bottom: calc(var(--space) * 2);
+}
+.wb-drawer[data-open="false"] .wb-drawer-toggle {
+  writing-mode: vertical-rl;
+  margin: 0;
+}
+.wb-drawer .wb-review-controls {
+  margin: 0 0 calc(var(--space) * 3);
+  padding: calc(var(--space) * 3);
+}
+.wb-drawer .wb-review-controls label {
+  min-width: 0;
+}
+.wb-editor-details {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  margin-bottom: calc(var(--space) * 3);
+}
+.wb-editor-details p {
+  margin: 0;
 }
 .wb-drawer-tabs {
   display: flex;

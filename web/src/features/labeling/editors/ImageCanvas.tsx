@@ -4,6 +4,8 @@ import { Group, Image as CanvasImage, Layer, Rect, Stage } from "react-konva";
 import { useI18n } from "../../../i18n/useI18n";
 import { altKeyName } from "../platformKeys";
 
+import { CanvasControls } from "./CanvasControls";
+import { CanvasScaleContext } from "./editorContext";
 import { arrowDelta, clamp } from "./geometry";
 import { useCanvasTokens } from "./useCanvasTokens";
 import { useImageSource } from "./useImageSource";
@@ -18,6 +20,10 @@ interface CanvasProps {
   mediaUrl?: string;
   thumbnailUrl?: string;
   children: ReactNode;
+  /** Editor controls shown in the single row above the canvas. */
+  toolbar?: ReactNode;
+  /** While drawing, existing annotations ignore the pointer so every press adds a point. */
+  drawing?: boolean;
   onStart?: (point: Point) => void;
   onMove?: (point: Point) => void;
   onFinish?: (point: Point) => void;
@@ -28,6 +34,8 @@ export function ImageCanvas({
   mediaUrl,
   thumbnailUrl,
   children,
+  toolbar,
+  drawing = false,
   onStart,
   onMove,
   onFinish,
@@ -47,7 +55,7 @@ export function ImageCanvas({
       if (entry && entry.contentRect.width > 0) {
         setViewport({
           width: Math.round(entry.contentRect.width),
-          height: 480,
+          height: Math.max(240, Math.round(entry.contentRect.height)),
         });
       }
     });
@@ -131,126 +139,112 @@ export function ImageCanvas({
   });
   return (
     <div className="wb-image-editor">
-      <div className="wb-editor-toolbar">
-        <button
-          type="button"
-          onClick={() => {
-            zoomBy(1.25);
-          }}
-        >
-          {t("wbEditorZoomIn")}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            zoomBy(0.8);
-          }}
-        >
-          {t("wbEditorZoomOut")}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setView({ zoom: 1, x: 0, y: 0 });
-          }}
-        >
-          {t("wbEditorFit")}
-        </button>
-        <button
-          type="button"
-          aria-pressed={pan}
-          onClick={() => {
-            setPan(!pan);
-          }}
-        >
-          {t("wbEditorPan")}
-        </button>
-        <output>
-          {t("wbEditorImageStatus", {
+      <div className="wb-tool-rail">
+        <div className="wb-editor-toolbar">{toolbar}</div>
+        <CanvasControls
+          pan={pan}
+          status={t("wbEditorImageStatus", {
             width,
             height,
             zoom: Math.round(scale * 100),
           })}
-        </output>
+          onZoom={(factor) => {
+            zoomBy(factor);
+          }}
+          onFit={() => {
+            setView({ zoom: 1, x: 0, y: 0 });
+          }}
+          onPan={() => {
+            setPan(!pan);
+          }}
+        />
+        <p className="muted wb-rail-hint">
+          {t("wbEditorPanHint", { alt: altKeyName() })}
+        </p>
       </div>
-      <p className="muted">{t("wbEditorPanHint", { alt: altKeyName() })}</p>
-      {failed ? (
-        <p role="alert">{t("wbEditorImageError")}</p>
-      ) : loading ? (
-        <p role="status">{t("wbEditorLoading")}</p>
-      ) : null}
-      {!mediaUrl && <p>{t("wbEditorNoImage")}</p>}
       <div
         ref={container}
         className="wb-canvas"
         role="application"
         aria-label={t("wbEditorCanvas")}
       >
-        <Stage
-          width={viewport.width}
-          height={viewport.height}
-          onMouseDown={(event) => {
-            container.current?.focus({ preventScroll: true });
-            pointEvent(event, onStart, true);
-          }}
-          onMouseMove={(event) => {
-            pointEvent(event, onMove);
-          }}
-          onMouseUp={(event) => {
-            pointEvent(event, onFinish);
-          }}
-          onTouchStart={(event) => {
-            container.current?.focus({ preventScroll: true });
-            pointEvent(event, onStart, true);
-          }}
-          onTouchMove={(event) => {
-            pointEvent(event, onMove);
-          }}
-          onTouchEnd={(event) => {
-            pointEvent(event, onFinish);
-          }}
-          onWheel={(event) => {
-            event.evt.preventDefault();
-            zoomBy(
-              event.evt.deltaY > 0 ? 0.9 : 1.1,
-              event.target.getStage()?.getPointerPosition() ?? undefined,
-            );
-          }}
-        >
-          <Layer>
-            <Group
-              x={center.x + view.x}
-              y={center.y + view.y}
-              scaleX={scale}
-              scaleY={scale}
-              draggable={pan}
-              onDragEnd={(event) => {
-                if (event.target !== event.currentTarget) return;
-                setView((current) => ({
-                  ...current,
-                  x: event.target.x() - center.x,
-                  y: event.target.y() - center.y,
-                }));
-              }}
-            >
-              <Rect
-                name="wb-canvas-background"
-                width={width}
-                height={height}
-                fill={tokens.background}
-              />
-              {image && (
-                <CanvasImage
-                  image={image}
+        <div className="wb-canvas-stage">
+          <Stage
+            width={viewport.width}
+            height={viewport.height}
+            onMouseDown={(event) => {
+              container.current?.focus({ preventScroll: true });
+              pointEvent(event, onStart, true);
+            }}
+            onMouseMove={(event) => {
+              pointEvent(event, onMove);
+            }}
+            onMouseUp={(event) => {
+              pointEvent(event, onFinish);
+            }}
+            onTouchStart={(event) => {
+              container.current?.focus({ preventScroll: true });
+              pointEvent(event, onStart, true);
+            }}
+            onTouchMove={(event) => {
+              pointEvent(event, onMove);
+            }}
+            onTouchEnd={(event) => {
+              pointEvent(event, onFinish);
+            }}
+            onWheel={(event) => {
+              event.evt.preventDefault();
+              zoomBy(
+                event.evt.deltaY > 0 ? 0.9 : 1.1,
+                event.target.getStage()?.getPointerPosition() ?? undefined,
+              );
+            }}
+          >
+            <Layer>
+              <Group
+                x={center.x + view.x}
+                y={center.y + view.y}
+                scaleX={scale}
+                scaleY={scale}
+                draggable={pan}
+                onDragEnd={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  setView((current) => ({
+                    ...current,
+                    x: event.target.x() - center.x,
+                    y: event.target.y() - center.y,
+                  }));
+                }}
+              >
+                <Rect
+                  name="wb-canvas-background"
                   width={width}
                   height={height}
-                  listening={false}
+                  fill={tokens.background}
                 />
-              )}
-              <Group listening={!pan}>{children}</Group>
-            </Group>
-          </Layer>
-        </Stage>
+                {image && (
+                  <CanvasImage
+                    image={image}
+                    width={width}
+                    height={height}
+                    listening={false}
+                  />
+                )}
+                <CanvasScaleContext value={scale}>
+                  <Group listening={!pan && !drawing}>{children}</Group>
+                </CanvasScaleContext>
+              </Group>
+            </Layer>
+          </Stage>
+        </div>
+        <div className="wb-canvas-notes">
+          {failed ? (
+            <p role="alert">{t("wbEditorImageError")}</p>
+          ) : loading ? (
+            <p role="status">{t("wbEditorLoading")}</p>
+          ) : null}
+          {!mediaUrl && <p>{t("wbEditorNoImage")}</p>}
+        </div>
       </div>
     </div>
   );

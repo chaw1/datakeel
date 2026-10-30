@@ -31,8 +31,17 @@ vi.mock("react-konva", async () => {
       shapes.circles.push(props);
       return createElement("div");
     },
+    Label: () => createElement("div"),
+    Tag: () => createElement("div"),
+    Text: () => createElement("div"),
   };
 });
+const shapeStyle = {
+  name: "Cat",
+  stroke: "var(--pencil)",
+  fill: "",
+  text: "var(--sheet)",
+};
 beforeEach(() => {
   shapes.rectangle = {};
   shapes.circles = [];
@@ -75,7 +84,7 @@ it("snaps an imperatively dragged box back even when its clamped record is uncha
     <BoxShape
       value={value}
       selected={false}
-      color="var(--pencil)"
+      style={shapeStyle}
       width={2000}
       height={1500}
       onSelect={vi.fn()}
@@ -95,7 +104,7 @@ it("sets all clamped transform geometry before resetting scale", () => {
     <BoxShape
       value={{ category: "cat", x1: 0, y1: 0, x2: 400, y2: 300 }}
       selected={false}
-      color="var(--pencil)"
+      style={shapeStyle}
       width={2000}
       height={1500}
       onSelect={vi.fn()}
@@ -133,7 +142,7 @@ it("snaps a vertex at the source boundary before emitting an unchanged polygon",
       value={value}
       selected
       selectedPoint={0}
-      color="var(--pencil)"
+      style={shapeStyle}
       width={2000}
       height={1500}
       onSelect={vi.fn()}

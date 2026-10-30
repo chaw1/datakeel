@@ -3,9 +3,11 @@ import { Circle, Line } from "react-konva";
 
 import { useI18n } from "../../../i18n/useI18n";
 
+import { EditorDetails } from "./EditorDetails";
 import { arrowDelta, clamp, isTyping, movePoints } from "./geometry";
 import { ImageCanvas } from "./ImageCanvas";
 import { KeyboardRegion } from "./KeyboardRegion";
+import { labelStyle } from "./labelColors";
 import { PolygonToolbar } from "./PolygonControls";
 import { PolygonDetails } from "./PolygonDetails";
 import { PolygonShape } from "./PolygonShape";
@@ -83,6 +85,7 @@ export function PolygonEditor(props: EditorProps) {
     setCursor(point);
     setDraft((points) => [...(points ?? []), point]);
   }
+  const drawStroke = labelStyle(labels, category, tokens).stroke;
   const controls: PolygonControlProps = {
     template: props.template,
     labels: labels,
@@ -196,14 +199,14 @@ export function PolygonEditor(props: EditorProps) {
         }
       }}
     >
-      <p className="muted">{t("wbEditorPolygonHint")}</p>
       {labels.length === 0 && <p role="status">{t("wbEditorNoLabels")}</p>}
-      <PolygonToolbar {...controls} />
       <ImageCanvas
         width={width}
         height={height}
         mediaUrl={props.mediaUrl}
         thumbnailUrl={props.thumbnailUrl}
+        toolbar={<PolygonToolbar {...controls} />}
+        drawing={draft !== null}
         onStart={addPoint}
         onMove={(point) => {
           if (draft !== null) setCursor(point);
@@ -215,7 +218,7 @@ export function PolygonEditor(props: EditorProps) {
             value={polygon}
             selected={selected === index}
             selectedPoint={pointIndex}
-            color={tokens.accent}
+            style={labelStyle(labels, polygon.category, tokens)}
             width={width}
             height={height}
             readOnly={readOnly}
@@ -238,7 +241,7 @@ export function PolygonEditor(props: EditorProps) {
           <>
             <Line
               points={[...draft, cursor].flatMap((point) => [point.x, point.y])}
-              stroke={tokens.accent}
+              stroke={drawStroke}
               strokeWidth={2}
               strokeScaleEnabled={false}
               listening={false}
@@ -248,7 +251,7 @@ export function PolygonEditor(props: EditorProps) {
               x={cursor.x}
               y={cursor.y}
               radius={Math.max(width, height) / 140}
-              stroke={tokens.accent}
+              stroke={drawStroke}
               strokeWidth={2}
               strokeScaleEnabled={false}
               listening={false}
@@ -256,7 +259,10 @@ export function PolygonEditor(props: EditorProps) {
           </>
         )}
       </ImageCanvas>
-      <PolygonDetails {...controls} />
+      <EditorDetails label={t("wbEditorPolygon")}>
+        <p className="muted">{t("wbEditorPolygonHint")}</p>
+        <PolygonDetails {...controls} />
+      </EditorDetails>
     </KeyboardRegion>
   );
 }

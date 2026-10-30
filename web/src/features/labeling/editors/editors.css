@@ -10,22 +10,100 @@
   gap: calc(var(--space) * 2);
   align-items: end;
 }
-.wb-editor-toolbar label,
 .wb-coordinate-fields label,
 .wb-properties label {
   display: grid;
   gap: var(--space);
 }
+.wb-editor-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 1.5);
+}
+.wb-editor-toolbar {
+  align-items: center;
+}
+.wb-image-editor {
+  display: grid;
+  grid-template-columns: 172px minmax(0, 1fr);
+  gap: calc(var(--space) * 2);
+  min-height: 0;
+  height: 100%;
+}
+.wb-tool-rail {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space) * 2);
+  min-height: 0;
+  overflow: auto;
+}
+.wb-tool-rail .wb-editor-toolbar {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+.wb-tool-rail label {
+  display: grid;
+  gap: var(--space);
+  font-size: var(--font-sm);
+}
+.wb-tool-rail select {
+  width: 100%;
+}
+.wb-rail-hint {
+  font-size: var(--font-xs);
+  margin: 0;
+}
 .wb-coordinate-fields input {
   width: 8rem;
 }
 .wb-canvas {
+  position: relative;
   width: 100%;
+  flex: 1;
   min-height: 480px;
   overflow: hidden;
   background: var(--paper);
   border: 1px solid var(--rule);
   touch-action: none;
+}
+.wb-page[data-focus="true"] .wb-canvas {
+  min-height: 240px;
+}
+.wb-page[data-focus="true"] .wb-image-editor {
+  flex: 1;
+}
+.wb-page[data-focus="true"] .wb-annotation-editor {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.wb-canvas-stage {
+  position: absolute;
+  inset: 0;
+}
+.wb-canvas-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space);
+  padding-top: calc(var(--space) * 2);
+  border-top: 1px solid var(--rule);
+  font-size: var(--font-xs);
+}
+.wb-canvas-notes {
+  position: absolute;
+  left: calc(var(--space) * 2);
+  bottom: calc(var(--space) * 2);
+  max-width: 70%;
+  pointer-events: none;
+  font-size: var(--font-xs);
+}
+.wb-canvas-notes p {
+  margin: 0;
+  padding: 0 var(--space);
+  background: var(--sheet);
 }
 .wb-canvas:focus-visible {
   outline: 2px solid var(--pencil);
@@ -87,4 +165,13 @@
 }
 .wb-span-list button[aria-pressed="true"] {
   outline: 2px solid var(--pencil);
+}
+@media (max-width: 700px) {
+  .wb-image-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wb-tool-rail .wb-editor-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }

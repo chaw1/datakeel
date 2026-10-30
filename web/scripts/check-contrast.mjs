@@ -13,6 +13,13 @@ const foregrounds = {
   red: 4.5,
   ok: 4.5,
   warn: 4.5,
+  // Annotation label colors: shape strokes on the canvas and text on label chips.
+  ...Object.fromEntries(
+    Array.from({ length: 8 }, (_, index) => [
+      `label-${String(index + 1)}`,
+      4.5,
+    ]),
+  ),
 };
 const requiredTokens = [
   ...backgrounds,
