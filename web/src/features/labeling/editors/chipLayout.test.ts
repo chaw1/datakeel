@@ -3,9 +3,11 @@ import { expect, it } from "vitest";
 import {
   CHIP_MAX_WIDTH,
   CHIP_MIN_WIDTH,
+  boxChipAnchor,
   chipLimit,
   chipPosition,
   chipTitleAt,
+  polygonChipAnchor,
 } from "./chipLayout";
 
 const size = { width: 40, height: 10 };
@@ -52,7 +54,7 @@ it("leaves a chip alone when its shape is entirely off screen", () => {
   });
 });
 
-it("names the topmost truncated chip under the pointer and nothing elsewhere", () => {
+it("names a truncated chip under the pointer and nothing elsewhere", () => {
   const rect = { x: 10, y: 10, width: 100, height: 18 };
   const long = { rect, name: "Refrigerated beverage display", truncated: true };
   const short = { rect, name: "Cat", truncated: false };
@@ -60,7 +62,36 @@ it("names the topmost truncated chip under the pointer and nothing elsewhere", (
   expect(chipTitleAt([long], { x: 111, y: 20 })).toBeNull();
   expect(chipTitleAt([long], { x: 50, y: 29 })).toBeNull();
   expect(chipTitleAt([short], { x: 50, y: 20 })).toBeNull();
+});
+
+it("names the chip drawn on top where chips overlap", () => {
+  const rect = { x: 10, y: 10, width: 100, height: 18 };
+  const long = { rect, name: "Refrigerated beverage display", truncated: true };
   const top = { ...long, name: "Shopping cart with handle" };
   expect(chipTitleAt([long, top], { x: 50, y: 20 })).toBe(top.name);
-  expect(chipTitleAt([long, short], { x: 50, y: 20 })).toBe(long.name);
+  // A whole short name drawn over a cut-off one is what the user sees, so it is named.
+  const short = { rect, name: "Cat", truncated: false };
+  expect(chipTitleAt([long, short], { x: 50, y: 20 })).toBe(short.name);
+  const dog = { rect, name: "Dog", truncated: false };
+  expect(chipTitleAt([dog, short], { x: 50, y: 20 })).toBe(short.name);
+  // Where the later chip ends, the pointer is over the earlier one alone.
+  const right = { ...short, rect: { ...rect, x: 80 } };
+  expect(chipTitleAt([long, right], { x: 50, y: 20 })).toBe(long.name);
+  expect(chipTitleAt([long, right], { x: 100, y: 20 })).toBe(right.name);
+});
+
+it("anchors box chips at the corner and polygon chips at the topmost vertex", () => {
+  const box = { x1: 10, y1: 20, x2: 90, y2: 80 };
+  expect(boxChipAnchor(box)).toEqual({ x: 10, y: 20, bounds: box });
+  const points = [
+    { x: 50, y: 40 },
+    { x: 30, y: 10 },
+    { x: 20, y: 10 },
+    { x: 70, y: 60 },
+  ];
+  expect(polygonChipAnchor(points)).toEqual({
+    x: 20,
+    y: 10,
+    bounds: { x1: 20, y1: 10, x2: 70, y2: 60 },
+  });
 });

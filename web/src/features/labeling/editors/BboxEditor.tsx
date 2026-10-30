@@ -7,6 +7,7 @@ import { attributeFields, withDefaults } from "./attributes";
 import { BoxDetails } from "./BoxDetails";
 import { BoxShape } from "./BoxShape";
 import { BoxToolbar } from "./BoxToolbar";
+import { boxChipAnchor } from "./chipLayout";
 import {
   arrowDelta,
   boxFromPoints,
@@ -19,6 +20,7 @@ import {
 import { ImageCanvas } from "./ImageCanvas";
 import { KeyboardRegion } from "./KeyboardRegion";
 import { labelStyle } from "./labelColors";
+import { ShapeLabels } from "./ShapeLabels";
 import { shortcutLabel } from "./shortcuts";
 import { useCanvasTokens } from "./useCanvasTokens";
 
@@ -205,6 +207,12 @@ export function BboxEditor(props: EditorProps) {
             dash={[4, 4]}
           />
         )}
+        <ShapeLabels
+          chips={boxes.map((box) => ({
+            ...boxChipAnchor(box),
+            style: labelStyle(labels, box.category, tokens),
+          }))}
+        />
       </ImageCanvas>
       <BoxDetails
         {...props}

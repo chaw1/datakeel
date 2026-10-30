@@ -1,7 +1,6 @@
 import { Circle, Line } from "react-konva";
 
 import { clamp, movePoints } from "./geometry";
-import { ShapeLabel } from "./ShapeLabel";
 
 import type { LabelStyle } from "./labelColors";
 import type { AnnotationPolygon } from "./types";
@@ -29,14 +28,6 @@ export function PolygonShape({
   onPoint: (index: number) => void;
   onChange: (value: AnnotationPolygon) => void;
 }) {
-  // Anchor the name at the topmost vertex (leftmost on ties).
-  const top = value.points.reduce(
-    (best, point) =>
-      point.y < best.y || (point.y === best.y && point.x < best.x)
-        ? point
-        : best,
-    value.points[0] ?? { x: 0, y: 0 },
-  );
   return (
     <>
       <Line
@@ -61,17 +52,6 @@ export function PolygonShape({
           event.target.position({ x: 0, y: 0 });
           onChange({ ...value, points });
         }}
-      />
-      <ShapeLabel
-        x={top.x}
-        y={top.y}
-        bounds={{
-          x1: Math.min(...value.points.map((point) => point.x)),
-          y1: Math.min(...value.points.map((point) => point.y)),
-          x2: Math.max(...value.points.map((point) => point.x)),
-          y2: Math.max(...value.points.map((point) => point.y)),
-        }}
-        style={style}
       />
       {selected &&
         value.points.map((point, index) => (
