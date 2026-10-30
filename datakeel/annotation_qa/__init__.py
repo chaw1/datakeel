@@ -3,6 +3,7 @@
 
 """Framework-free annotation agreement, review and repair algorithms."""
 
+from datakeel.annotation_qa.prelabel_metrics import prelabel_accuracy
 from datakeel.annotation_qa.rework import (
     changed_samples,
     compare_rework,
@@ -18,4 +19,5 @@ __all__ = [
     "export_rework_csv",
     "export_rework_json",
     "find_suspicions",
+    "prelabel_accuracy",
 ]

@@ -11,6 +11,15 @@ from pydantic import Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel
+from datakeel.core.prelabel_models import (
+    CloudModelConfig,
+    ConfidenceThresholds,
+    PrelabelCall,
+    PrelabelDrop,
+    PrelabelEstimate,
+    PrelabelStop,
+    TaskTier,
+)
 from datakeel.core.production_attributes import TemplateAttribute
 
 
@@ -133,18 +142,33 @@ class ProductionTemplate(BoundaryModel):
 
 
 class ProductionModel(BoundaryModel):
-    """Register a free offline provider or provenance for externally produced predictions."""
+    """Register an offline provider, imported-prediction provenance or a cloud vision model.
+
+    ``unit_price`` is a per-image charge; cloud models add token prices from ``cloud``.
+    """
 
     id: str
     name: str
     version: str
-    provider: Literal["fake", "import"]
+    provider: Literal["fake", "import", "cloud"]
     capabilities: tuple[
         Literal["box", "polygon", "keypoints", "classification", "text_span"], ...
     ] = ("box",)
     unit_price: float = Field(default=0, ge=0, allow_inf_nan=False)
     currency: str = "USD"
     revision: int = Field(default=1, ge=1)
+    cloud: CloudModelConfig | None = None
+
+    @model_validator(mode="after")
+    def cloud_configuration(self) -> "ProductionModel":
+        """Give cloud models exactly one endpoint and keep it off offline providers."""
+        if (self.provider == "cloud") != (self.cloud is not None):
+            message = "Cloud models require cloud settings; other providers must omit them"
+            raise ValueError(message)
+        if self.provider == "cloud" and not {"box", "classification"} & set(self.capabilities):
+            message = "Cloud prelabel models support box and classification capabilities"
+            raise ValueError(message)
+        return self
 
     def estimate_cost(self, count: int) -> float:
         """Compare decimal prices without rounding overruns at an exact declared budget."""
@@ -176,6 +200,7 @@ class ParsedPrediction(BoundaryModel):
     filename: str
     annotation: AnnotationRecord
     confidence: float = Field(ge=0, le=1, allow_inf_nan=False)
+    object_confidences: tuple[float, ...] = ()
 
 
 class PredictionImportResult(BoundaryModel):
@@ -200,3 +225,15 @@ class PrelabelRun(BoundaryModel):
     elapsed_seconds: float = Field(ge=0, allow_inf_nan=False)
     confidences: tuple[float, ...]
     created_at: datetime
+    provider: Literal["fake", "import", "cloud"] | None = None
+    currency: str | None = None
+    budget: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    estimate: PrelabelEstimate | None = None
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    calls: tuple[PrelabelCall, ...] = ()
+    dropped: tuple[PrelabelDrop, ...] = ()
+    skipped_sample_ids: tuple[str, ...] = ()
+    stopped: PrelabelStop | None = None
+    thresholds: ConfidenceThresholds | None = None
+    tiers: tuple[TaskTier, ...] = ()

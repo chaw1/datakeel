@@ -7,8 +7,8 @@ from collections import Counter
 
 from sqlalchemy import func, select
 
-from datakeel.annotation_qa import evaluate_annotations
-from datakeel.core.annotation_models import AnnotationBatch, AnnotationQAResult
+from datakeel.annotation_qa import evaluate_annotations, prelabel_accuracy
+from datakeel.core.annotation_models import AnnotationBatch, AnnotationQAResult, AnnotationRecord
 from datakeel.core.production_models import (
     AnnotationRevision,
     AnnotatorWorkload,
@@ -46,9 +46,11 @@ def _preceding_model(
 def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccuracy:
     """Compare each approved human head with its closest preceding model-source draft.
 
-    This is exact labelled-content agreement, including shape and record attributes,
-    not geometric IoU or human-to-human agreement. Unreviewed tasks and approved
-    model-only revisions never serve as human references; absent references yield null.
+    ``exact_match_*`` is exact labelled-content agreement, including shape and record
+    attributes. ``iou_50``/``iou_75`` match same-label objects one-to-one by descending IoU
+    (boxes and polygons by area, spans by character interval, label sets by identity), and
+    attribute agreement is reported separately among IoU >= 0.5 matches. Unreviewed tasks and
+    approved model-only revisions never serve as human references; absent references yield null.
     """
     with db.session() as session:
         require_project(session, project_id)
@@ -65,20 +67,25 @@ def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccur
                 ProductionTaskRow.approved_revision_id.is_not(None),
             )
         )
-        assessed = exact = 0
+        references: list[tuple[AnnotationRecord, AnnotationRecord]] = []
         for task in tasks:
             approved = revisions.get(task.approved_revision_id or "")
             if approved is None or approved.source != "human":
                 continue
             model = _preceding_model(revisions, approved)
             if model is not None:
-                assessed += 1
-                exact += prelabel_difference(approved.annotation, model.annotation) == 0
+                references.append((model.annotation, approved.annotation))
+    assessed = len(references)
+    exact = sum(prelabel_difference(human, model) == 0 for model, human in references)
+    iou_50, iou_75, attributes = prelabel_accuracy(references)
     return PrelabelAccuracy(
         project_id=project_id,
         assessed_tasks=assessed,
         exact_match_tasks=exact,
         exact_match_rate=exact / assessed if assessed else None,
+        iou_50=iou_50,
+        iou_75=iou_75,
+        attribute_agreement=attributes,
     )
 
 
