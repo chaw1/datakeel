@@ -7,8 +7,8 @@ name = Applications only depend on domain services and core
 type = layers
 layers =
     datakeel.cli
-    datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp | datakeel.intents
+    datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory | datakeel.label_drafts
     datakeel.core
 # Delivery services verify portable frozen release facts without importing API code.
 ignore_imports =
@@ -550,6 +550,22 @@ ignore_imports =
 
 # Tool reference inference keeps production and worker task identities distinct.
     datakeel.ontology.tool_refs -> datakeel.actions.production_language
+
+# One-sentence chains order existing controlled actions; drafting reads typed sources.
+    datakeel.agent.service -> datakeel.intents.turns
+    datakeel.api.routes.intents -> datakeel.intents.chains
+    datakeel.intents.turns -> datakeel.agent.demo
+    datakeel.intents.turns -> datakeel.agent.models
+    datakeel.intents.turns -> datakeel.agent.providers
+    datakeel.storage.intent_chains -> datakeel.actions.models
+    datakeel.storage.action_operations -> datakeel.actions.label_draft_parameters
+    datakeel.storage.action_planning -> datakeel.actions.label_draft_parameters
+    datakeel.storage.label_drafts -> datakeel.actions.label_draft_parameters
+    datakeel.storage.label_drafts -> datakeel.actions.models
+    datakeel.storage.label_drafts -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.label_drafts -> datakeel.label_drafts.model
+    datakeel.storage.label_drafts -> datakeel.label_drafts.models
+    datakeel.storage.label_drafts -> datakeel.label_drafts.offline
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

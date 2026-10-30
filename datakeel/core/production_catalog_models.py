@@ -10,6 +10,7 @@ from typing import Literal
 from pydantic import Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.label_guidelines import DraftSource, LabelGuidelines
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_attributes import TemplateAttribute
 
@@ -23,6 +24,11 @@ class ProductionLabel(BoundaryModel):
     color: str | None = None
     shortcut: str | None = None
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
+    name_zh: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    name_en: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    fields: tuple[TemplateAttribute, ...] = Field(
+        default=(), max_length=50, exclude_if=lambda value: not value
+    )
 
 
 class LabelMigration(BoundaryModel):
@@ -77,6 +83,8 @@ class LabelSet(BoundaryModel):
     affected_revisions: int = 0
     created_at: datetime
     published_at: datetime | None = None
+    guidelines: LabelGuidelines | None = Field(default=None, exclude_if=lambda value: value is None)
+    draft_source: DraftSource | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ProductionTemplate(BoundaryModel):

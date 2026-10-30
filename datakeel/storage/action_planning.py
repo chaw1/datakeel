@@ -12,6 +12,7 @@ from datakeel.actions.datasheet_parameters import GenerateDatasheetParams
 from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
+from datakeel.actions.label_draft_parameters import DraftLabelSetParams
 from datakeel.actions.models import ActionContext, ActionImpact, ActionPlan
 from datakeel.actions.parameters import (
     DecideAssertionsParams,
@@ -148,6 +149,21 @@ def _reversible(session: Session, params: BoundaryModel, *, declared: bool) -> b
     )
 
 
+def _external(action_type: str, parsed: object) -> bool:
+    kg = parsed.prepared if isinstance(parsed, RunKGExtractionParams) else None
+    return (
+        action_type == "export_dataset"
+        or bool(kg and kg.external)
+        or (
+            isinstance(parsed, GenerateDatasheetParams)
+            and parsed.mode == "model"
+            and parsed.prepared is not None
+            and parsed.prepared.external
+        )
+        or (isinstance(parsed, DraftLabelSetParams) and parsed.profile != "offline")
+    )
+
+
 def _new_plan(
     action_type: str, params: JsonDocument, context: ActionContext, session: Session
 ) -> ActionPlan:
@@ -157,16 +173,7 @@ def _new_plan(
     if isinstance(parsed, VersionParams | PipelineParams | ExportParams | RunKGExtractionParams):
         require_unique_file_sources(manifest)
     kg = parsed.prepared if isinstance(parsed, RunKGExtractionParams) else None
-    external = (
-        action_type == "export_dataset"
-        or bool(kg and kg.external)
-        or (
-            isinstance(parsed, GenerateDatasheetParams)
-            and parsed.mode == "model"
-            and parsed.prepared is not None
-            and parsed.prepared.external
-        )
-    )
+    external = _external(action_type, parsed)
     created = utcnow()
     plan = ActionPlan.model_validate(
         {

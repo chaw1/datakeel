@@ -27,6 +27,7 @@ from datakeel.actions.dq_parameters import (
 )
 from datakeel.actions.identity_parameters import IDENTITY_PARAMETER_TYPES
 from datakeel.actions.kg_parameters import RunKGExtractionParams
+from datakeel.actions.label_draft_parameters import DraftLabelSetParams
 from datakeel.actions.llm_data_parameters import CleanTrainingParams
 from datakeel.actions.production_catalog_parameters import CATALOG_PARAMETER_TYPES
 from datakeel.actions.production_parameters import PRODUCTION_PARAMETER_TYPES
@@ -133,6 +134,7 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     **PRODUCTION_PARAMETER_TYPES,
     **CATALOG_PARAMETER_TYPES,
     **DATA_ASSET_PARAMETER_TYPES,
+    "draft_label_set": DraftLabelSetParams,
     "clean_training_data": CleanTrainingParams,
     "annotation_acceptance": AnnotationAcceptanceParams,
     "quarantine_files": SelectionParams,
@@ -220,6 +222,13 @@ def selection_for(params: BoundaryModel) -> ObjectSet:
             dataset_id=params.dataset_id,
             limit=10000,
             version_ids=[params.version_id] if params.version_id else [],
+        )
+    if isinstance(params, DraftLabelSetParams):
+        return ObjectSet(
+            dataset_id=params.dataset_id,
+            limit=50,
+            version_ids=[params.version_id] if params.version_id else [],
+            filters=[PropertyFilter(field="id", operator="in", value=list(params.sample_ids))],
         )
     if isinstance(params, MetadataParams | GenerateDatasheetParams | PublishDatasheetParams):
         return ObjectSet(

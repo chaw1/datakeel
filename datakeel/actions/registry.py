@@ -4,6 +4,7 @@
 """Declare built-in action policies separately from their execution handlers."""
 
 from datakeel.actions.identity_parameters import IDENTITY_POLICIES
+from datakeel.actions.label_draft_parameters import DRAFT_POLICIES
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.actions.production_catalog_parameters import CATALOG_POLICIES
 from datakeel.actions.production_language import action_language
@@ -17,6 +18,7 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
     **IDENTITY_POLICIES,
     **PRODUCTION_POLICIES,
     **CATALOG_POLICIES,
+    **DRAFT_POLICIES,
     "submit_custom_operator": ("operators:submit", False, "Approve immutable custom Python code"),
     "create_data_asset": ("data-assets:write", True, "Create an asset draft"),
     "update_data_asset": ("data-assets:write", True, "Revise an asset card"),
