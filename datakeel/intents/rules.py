@@ -50,7 +50,6 @@ QUESTION = re.compile(
     r"\b(who|which|what|how many|how much|whether|is there|are there|does|show me|list)\b",
     re.IGNORECASE,
 )
-RANK_LIMIT = 12
 
 
 @lru_cache(maxsize=1)

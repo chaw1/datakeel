@@ -114,3 +114,30 @@ def test_failed_step_resumes_without_repeating_finished_targets(db: Database) ->
         tasks[0].id,
         tasks[1].id,
     }
+
+
+def test_partly_finished_fan_out_resumes_only_the_failed_target(db: Database) -> None:
+    """Item one executes, item two fails; resume re-runs only item two, never item one."""
+    project, tasks = team(db)
+    runner = ServiceRunner(db)
+    chain = plan(db, REASSIGN, PageContext(project_id=project.id), actor="boss").chain
+    assert chain is not None
+    second = str(chain.steps[0].items[1]["task_id"])
+    runner("revoke_assignment", {"task_id": second, "reason": "manual"}, "boss")
+    failed = advance_chain(db, chain.id, "boss")
+    assert failed.status == "failed"
+    assert failed.steps[0].status == "failed"
+    assert "assignment" in (failed.steps[0].error or "")
+    runner("assign_tasks", {"task_ids": [second], "actor": "wang"}, "boss")
+    resumed = advance_chain(db, chain.id, "boss")
+    assert resumed.status == "succeeded", resumed.steps
+    revokes = [
+        run
+        for run in service.list_runs(db)
+        if run.action_type == "revoke_assignment" and run.status == "SUCCEEDED"
+    ]
+    assert len(revokes) == 3
+    assert {task for _, task in held_tasks(db, "li", project_id=project.id)} == {
+        tasks[0].id,
+        tasks[1].id,
+    }

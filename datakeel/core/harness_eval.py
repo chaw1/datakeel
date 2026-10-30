@@ -80,6 +80,9 @@ class GoldenExpect(BoundaryModel):
     max_tokens: int = Field(default=100_000, ge=0)
     file_count: int | None = None
     quarantined_count: int | None = None
+    intent_kinds: list[str] | None = None
+    chain_actions: list[list[str]] | None = None
+    run_count: int | None = Field(default=None, ge=0)
 
 
 class GoldenCase(BoundaryModel):
@@ -101,6 +104,7 @@ class GoldenCase(BoundaryModel):
         "annotation_qa",
         "training",
         "llm_data",
+        "team",
     ] = "legacy"
     fixture_reviewed: bool = False
     config: ConversationCreate = Field(default_factory=ConversationCreate)
@@ -135,6 +139,8 @@ class EvalCaseResult(BoundaryModel):
     tool_results: list[ObservedToolResult] = Field(default_factory=list[ObservedToolResult])
     output_version_files: dict[str, list[str]] = Field(default_factory=dict[str, list[str]])
     fixture_error: str | None = None
+    intent_kinds: list[str] = Field(default_factory=list[str])
+    chain_actions: list[list[str]] = Field(default_factory=list[list[str]])
 
 
 class EvalReport(BoundaryModel):

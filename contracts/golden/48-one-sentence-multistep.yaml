@@ -1,0 +1,23 @@
+id: 48-one-sentence-multistep
+description: One sentence becomes an ordered four-step chain; nothing runs before a person
+  confirms it.
+turns:
+- input: Set up a box annotation project for car, truck with two people cross-checking,
+    packages of 2
+  script:
+  - agent: intent_planner
+    content: '{"kind": "none"}'
+expect:
+  intent_kinds:
+  - plan
+  chain_actions:
+  - - create_label_set
+    - publish_label_set
+    - create_project
+    - split_packages
+  run_count: 0
+  actions: []
+  answer_contains:
+  - Nothing changes until you confirm
+  max_turns: 0
+  max_tokens: 1000

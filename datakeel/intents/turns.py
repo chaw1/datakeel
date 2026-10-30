@@ -45,6 +45,13 @@ def planner_mode(provider: Provider, context: PageContext | None) -> PlannerMode
     return "rules" if isinstance(provider, DemoProvider) else "model"
 
 
+def _with_workspace(context: PageContext, conversation: Conversation) -> PageContext:
+    """A conversation opened on a dataset keeps that dataset as the default page."""
+    if context.dataset_id is None and conversation.config.dataset_id is not None:
+        return context.model_copy(update={"dataset_id": conversation.config.dataset_id})
+    return context
+
+
 def pending_question(conversation: Conversation) -> IntentResult | None:
     """The previous turn's open question, if that turn ended with one."""
     for document in reversed(conversation.events):
@@ -90,7 +97,7 @@ def planner_events(
         text=text,
         actor=session_actor(db, conversation.id),
         conversation_id=conversation.id,
-        context=context or PageContext(),
+        context=_with_workspace(context or PageContext(), conversation),
         pending=pending_question(conversation),
         focus=conversation_focus(db, conversation.id),
     )

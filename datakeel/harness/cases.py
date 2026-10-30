@@ -24,6 +24,7 @@ from datakeel.harness.kg_cases import seed_kg_case
 from datakeel.harness.llm_data_cases import seed_llm_data_case
 from datakeel.harness.resources import contract_path
 from datakeel.harness.standard_cases import seed_standard_case
+from datakeel.harness.team_cases import register_team
 from datakeel.harness.training_cases import seed_training_case
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths, list_files
@@ -61,6 +62,7 @@ def seed_case(
         "annotation_qa",
         "training",
         "llm_data",
+        "team",
     ] = "legacy",
     *,
     reviewed: bool = False,
@@ -87,6 +89,14 @@ def seed_case(
     }
     if kind in builders:
         return builders[kind](db, directory)
+    fixture = seed_legacy(db, directory)
+    if kind == "team":
+        register_team(db)
+    return fixture
+
+
+def seed_legacy(db: Database, directory: Path) -> CaseFixture:
+    """Import an empty text, healthy text, and tiny image."""
     empty, healthy, picture = [
         directory / name for name in ("empty.txt", "healthy.txt", "image.png")
     ]

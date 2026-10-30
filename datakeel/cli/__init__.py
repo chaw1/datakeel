@@ -55,6 +55,26 @@ from datakeel.worker.runner import run_worker
 
 __all__ = ["main", "seed_demo"]
 
+# Feature modules that register their own subcommands, in help order.
+_PARSER_MODULES = (
+    workflow,
+    routing,
+    kg_evaluation,
+    timeseries_demo,
+    media_demo,
+    llm_data,
+    custom_operators,
+    delivery,
+    data_assets,
+    standards,
+    quality,
+    metadata_imports,
+    release_plans,
+    training,
+    production,
+    intents,
+)
+
 
 def parser() -> argparse.ArgumentParser:
     """Build the stable public command grammar."""
@@ -97,24 +117,7 @@ def parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["openlineage", "croissant"], required=True)
     export.add_argument("--dataset")
     export.add_argument("--output", type=Path)
-    for module in (
-        workflow,
-        routing,
-        kg_evaluation,
-        timeseries_demo,
-        media_demo,
-        llm_data,
-        custom_operators,
-        delivery,
-        data_assets,
-        standards,
-        quality,
-        metadata_imports,
-        release_plans,
-        training,
-        production,
-        intents,
-    ):
+    for module in _PARSER_MODULES:
         module.register_parser(commands)
     return result
 

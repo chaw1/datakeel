@@ -1,0 +1,24 @@
+id: 48-one-sentence-clarify
+description: A model plan without a required project is answered with a question, then the
+  reply completes the plan without guessing.
+turns:
+- input: Split the project into packages of 10
+  script:
+  - agent: intent_planner
+    content: '{"kind": "plan", "steps": [{"id": "s1", "action": "split_packages", "params":
+      {"package_size": 10}}]}'
+- input: Cut the new project into packages of 10 please, it is called Traffic
+  script:
+  - agent: intent_planner
+    content: '{"kind": "plan", "steps": [{"id": "s1", "action": "split_packages", "params":
+      {"project_id": "Traffic", "package_size": 10}}]}'
+expect:
+  intent_kinds:
+  - clarify
+  - clarify
+  chain_actions: []
+  run_count: 0
+  actions: []
+  answer_contains:
+  - Traffic
+  max_tokens: 40000

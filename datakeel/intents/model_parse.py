@@ -19,13 +19,14 @@ from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import IntentDraft
 from datakeel.intents.recipes import RECIPE_GUIDE
-from datakeel.intents.rules import RANK_LIMIT, RankedEntry, full_registry
+from datakeel.intents.rules import RankedEntry, full_registry
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.models import OntologyRegistry
 
 AGENT_NAME = "intent_planner"
 PROMPT_VERSION = "intent-plan-v1"
-ALWAYS_SCHEMAS = frozenset({"draft_label_set", "create_label_set", "publish_label_set"})
+ALWAYS_SCHEMAS = frozenset({"draft_label_set"})
+SCHEMA_LIMIT = 8
 INSTRUCTIONS = (
     "You turn one request on the Datakeel data platform into controlled action steps or one "
     "read-only function call. You never execute anything: a person confirms every write. "
@@ -48,20 +49,19 @@ INSTRUCTIONS = (
 
 
 def _catalog_lines(registry: OntologyRegistry) -> str:
-    entries: list[tuple[str, str, dict[str, list[str]], dict[str, list[str]]]] = [
-        *(("action", item.id, item.phrases, item.examples) for item in registry.actions),
-        *(("read", item.id, item.phrases, item.examples) for item in registry.functions),
+    entries: list[tuple[str, str, dict[str, list[str]]]] = [
+        *(("action", item.id, item.phrases) for item in registry.actions),
+        *(("read", item.id, item.phrases) for item in registry.functions),
     ]
     lines: list[str] = []
-    for kind, name, phrases, examples in entries:
-        said = " / ".join(text for group in phrases.values() for text in group)
-        shown = " / ".join(text for group in examples.values() for text in group)
-        lines.append(f"{kind} {name}: {said} | e.g. {shown}")
+    for kind, name, phrases in entries:
+        said = " / ".join(group[0] for group in phrases.values() if group)
+        lines.append(f"{kind} {name}: {said}")
     return "\n".join(lines)
 
 
 def _schemas(ranked: list[RankedEntry], extra: frozenset[str]) -> str:
-    names = [item.name for item in ranked[:RANK_LIMIT]] + sorted(extra)
+    names = [item.name for item in ranked[:SCHEMA_LIMIT]] + sorted(extra)
     schemas: dict[str, object] = {}
     for name in dict.fromkeys(names):
         model = PARAMETER_TYPES.get(name) or PARAMETER_MODELS.get(name)
