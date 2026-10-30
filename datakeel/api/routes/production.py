@@ -74,7 +74,7 @@ def project_task_samples(
     db: DatabaseDependency,
     request: Request,
 ) -> WorkbenchTaskSamples:
-    """Name up to 500 tasks of the project by file name and recorded dataset path."""
+    """Name up to 500 tasks of the project by the file name recorded at import."""
     return task_samples(db, project_id, _caller(request), query)
 
 

@@ -42,12 +42,18 @@ class WorkbenchProjectQuery(BoundaryModel):
 
 
 class WorkbenchSampleName(BoundaryModel):
-    """Name a task's sample by its file name and dataset-relative path, never a server path."""
+    """Name a task's sample by the file name recorded at import, never a server path."""
 
     task_id: str
     sample_id: str
-    name: str
-    path: str
+    name: str = Field(description="The sample's file name, without any directory.")
+    path: str = Field(
+        description=(
+            "Currently the same file name: datasets record only the base file name at import, "
+            "so a path inside the dataset is not available until import records it. "
+            "Server paths and object keys are never returned."
+        )
+    )
 
 
 class WorkbenchTaskSampleQuery(BoundaryModel):

@@ -2383,7 +2383,7 @@ export interface paths {
         };
         /**
          * Project Task Samples
-         * @description Name up to 500 tasks of the project by file name and recorded dataset path.
+         * @description Name up to 500 tasks of the project by the file name recorded at import.
          */
         get: operations["project_task_samples_api_production_projects__project_id__task_samples_get"];
         put?: never;
@@ -12352,12 +12352,18 @@ export interface components {
         };
         /**
          * WorkbenchSampleName
-         * @description Name a task's sample by its file name and dataset-relative path, never a server path.
+         * @description Name a task's sample by the file name recorded at import, never a server path.
          */
         WorkbenchSampleName: {
-            /** Name */
+            /**
+             * Name
+             * @description The sample's file name, without any directory.
+             */
             name: string;
-            /** Path */
+            /**
+             * Path
+             * @description Currently the same file name: datasets record only the base file name at import, so a path inside the dataset is not available until import records it. Server paths and object keys are never returned.
+             */
             path: string;
             /** Sample Id */
             sample_id: string;

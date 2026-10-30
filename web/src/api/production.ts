@@ -50,7 +50,7 @@ export function getTaskWorkbench(taskId: string) {
   );
 }
 
-/** Name up to 500 tasks of one project by file name and dataset path. */
+/** Name up to 500 tasks of one project by the file name recorded at import. */
 export function getTaskSamples(projectId: string, taskIds: readonly string[]) {
   const query = new URLSearchParams();
   for (const id of taskIds.slice(0, 500)) query.append("task_id", id);

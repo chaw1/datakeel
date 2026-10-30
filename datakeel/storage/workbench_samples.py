@@ -36,7 +36,7 @@ _RECENT_RELEASES = 10
 
 
 def sample_names(session: Session, project: Project) -> dict[str, tuple[str, str]]:
-    """Map sample identities of the pinned version to their file name and recorded path."""
+    """Map pinned samples to their file name and recorded manifest name, today the same."""
     version = session.get(VersionRow, project.version_id)
     if version is None or version.dataset_id != project.dataset_id:
         return {}
@@ -65,7 +65,7 @@ def name_tasks(
 def matches_search(
     task: ProductionTask, names: dict[str, tuple[str, str]], search: str | None
 ) -> bool:
-    """Match a case-insensitive substring of the file name or its recorded path."""
+    """Match a case-insensitive substring of the sample's recorded file name."""
     if search is None:
         return True
     needle = search.casefold()
