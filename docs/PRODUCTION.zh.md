@@ -45,7 +45,7 @@
 
 模板增删改使用 `create_label_set` 的 `target: "template"` 和 `operation: "create" | "update" | "delete"`；用户和团队使用 `manage_users`，技能使用 `manage_skills`。本体动作 schema 给出字段、范围、中英文说法和例句。
 
-同一操作人、动作、请求 ID 和完全相同的输入重发，返回原计划；成功执行重发返回原 run 和回执。输入或调用方限制不同会冲突。签批前误点执行的拒绝有审计，签批后仍可执行。修正失败请求要使用新 ID。保存修订的 `previous_revision_id` 必须匹配服务端最新版，否则 HTTP 409 返回 `latest_revision`。两栈都用数据库约束禁止修订 UPDATE/DELETE，并以部分唯一索引保证一个任务同阶段只有一个有效指派。并发抢单的失败方继续选择下一条。
+同一操作人、动作、请求 ID 和完全相同的输入重发，返回原计划；成功执行重发返回原 run 和回执。输入或调用方限制不同会冲突。计划只冻结它的结论所依赖的事实，执行时这些事实变了就拒绝：单任务的看内容动作（`submit_task`、`review_task`、`reopen_task`、`release_task`、`heartbeat`）冻结整条任务、有效指派和项目；`revoke_assignment` 和 `assign_tasks` 只冻结每条任务的状态、轮次和当前持有人（指派 ID、人、阶段），所以从准备到确认之间持有人的自动保存、模型草稿导入和续租都不会让人已经看过的收回或派单失效，提交、轮次变化或换了持有人则会。验收和定稿照旧冻结准确的已通过修订。签批前误点执行的拒绝有审计，签批后仍可执行。修正失败请求要使用新 ID。保存修订的 `previous_revision_id` 必须匹配服务端最新版，否则 HTTP 409 返回 `latest_revision`。两栈都用数据库约束禁止修订 UPDATE/DELETE，并以部分唯一索引保证一个任务同阶段只有一个有效指派。并发抢单的失败方继续选择下一条。
 
 ## 身份和角色护栏
 
@@ -73,7 +73,7 @@ MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批
 
 **管理与轮次。** `revoke_assignment`（范围 `production:assign`，项目经理和管理员有）把进行中的标注或审核退回队列，保留修订，并记下收回原因；任何持有人都能收回，包括还没人登记时指派给 `local` 的任务。已提交或已通过的工作改用重开。`reopen_task` 只有把已提交或已通过的工作退回才算一轮返工；重开待标或标注中的任务，轮次、状态、指派和修订都不变（设计稿第 5 节）。
 
-**只读。** `lease_status` 按到期时间列出计时中的租约，分为正常、`expiring_within_seconds`（默认 120 秒）内将到期、已过期三类，并附最近收回记录和原因。`skill_workload` 按有效技能汇总有效指派数和已完成任务数。`package_acceptance` 返回任务包状态（`in_progress`、`ready`、`accepted`、`rejected`）、进度、就绪时的抽样预览和最近一次结论。
+**只读。** `lease_status` 按到期时间列出计时中的租约，分为正常、`expiring_within_seconds`（默认 120 秒）内将到期、已过期三类，并附最近收回记录和原因。每条指派给出实际生效的到期时间；升团队档时重新起租的指派，给的是重新起租后的截止，而不是旧记录里的时间。`skill_workload` 按有效技能汇总有效指派数和已完成任务数。`package_acceptance` 返回任务包状态（`in_progress`、`ready`、`accepted`、`rejected`）、进度、就绪时的抽样预览和最近一次结论。
 
 **角色。** `heartbeat`（`production:claim`）放在标注员和质检员模板；`configure_project`（`production:manage`）、`revoke_assignment`（`production:assign`）、`accept_package`（`production:accept`）放在项目经理模板；管理员拥有全部范围，验收方仍然只读。MCP 和 Agent 只能准备这些计划，不能签批或执行。
 
@@ -87,7 +87,21 @@ MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批
 
 普通图片导入目前不会读图片头补齐清单宽高。除非项目绑定的版本已记录尺寸，YOLO 需显式提供 `image_width`、`image_height`。完整 COCO 文档可在 `images` 中逐图提供尺寸；多图 COCO results 数组要求每个 `image_id` 精确匹配项目样本 ID 或唯一文件名，且每图有可用宽高，不按项目顺序猜配导出序号。缺少尺寸时，使用完整 COCO 文档，或按图分文件绑定 `sample_id` 并提供宽高。
 
-模板校验框、多边形、分类和文本片段，`component_config.components` 可配置启用组件集合，支持 `min_annotations`、`max_annotations`；`label_mode: "single"` 约束单选。关键点内容仍不支持。编辑和训练集无损往返见[工作台指南](ANNOTATION_WORKBENCH.zh.md)。
+模板校验框、多边形、分类和文本片段，`component_config.components` 可配置启用组件集合，支持 `min_annotations`、`max_annotations`；`label_mode: "single"` 约束单选。关键点内容仍不支持。
+
+**属性字段。** 模板最多定义 50 个带类型的 `attributes`。每个字段有 `key`（标识符）、`name_zh`、`name_en`、`type`、`target`、`required` 和可选的 `default`：
+
+| `type` | 存的值 | 额外定义 |
+| --- | --- | --- |
+| `boolean` | `true` / `false` | — |
+| `enum` | 一个选项的 `value` | `options`（`value`、`name_zh`、`name_en`），至少一个、不重复 |
+| `multi_enum` | 不重复的选项值列表 | 同上 `options` |
+| `number` | 有限数字（布尔不算） | 可选 `minimum`、`maximum` |
+| `text` | 字符串 | `max_length`（默认 200，最多 2000） |
+
+`target: "object"`（默认）作用于每个框、多边形和文本片段；`target: "record"` 作用于整条标注记录，分类任务的属性就放这里。同一 target 下 key 不重复；选项和范围要符合类型；默认值本身必须合法。工作台按这些字段渲染表单；没有定义字段的老模板照旧使用自由的属性字典。
+
+人工 `save_revision` 每次按当前模板检查：类型不对或缺必填项返回 HTTP 422，并写明 key 和位置，例如 `Attribute "kind" is required on box 1`、`Attribute "count" on polygon 2 must be a number between 0 and 10`、`Attribute "quality" is required on the record`（位置从 1 数）。缺 key 或为 `null` 算缺失；必填时空的 `multi_enum` 列表和空白文本也算缺失。`submit_task` 对头修订再查一次，所以保存之后模板新加的必填项会挡住提交，填好才行。模型修订（导入和预标注）只查类型，不会因为人还没填某个字段而导入失败。模板没定义的 key 原样保留。编辑和训练集无损往返见[工作台指南](ANNOTATION_WORKBENCH.zh.md)。
 
 定稿要求所有任务有已通过修订，团队档还要求每个任务包都已验收。同一事务冻结这些修订，写新版本的原生标注、精确标注/标签统计，复用 `import_annotations` 的事务内入口生成标准 `AnnotationBatch`，更新状态计数并记下生产项目血缘。输入版本和历史修订保持原样。
 
@@ -103,6 +117,8 @@ uv run datakeel production read project_progress project.json --actor local
 ```
 
 演示生成三张图片、已发布标签集、个人项目和导入的假预测。个人档顺序为：建标签集 → 发布 → 建项目 → 切包 → 登记模型 → 导入 COCO/YOLO 预测 → 改修订 → 提交 → 定稿。小组档先登记用户、绑定项目角色，新建时设 `workflow_tier: "group"`，然后派单/抢单 → 保存 → 提交 → 领取审核/审核；返工必须带 `issues`，回到原标注员再次保存提交后通过、定稿。仅对上表要求的步骤签批。
+
+工作台还用几个 HTTP 只读接口读同一套事实，权限与项目、任务一致：`GET /api/production/workbench`；`GET /api/production/projects/{id}/workbench`（分页、`view` 取 `all`/`mine`/`review`、`package_id`，以及 `search`：按样本文件名做不区分大小写的子串匹配，先过滤再分页；本页每条任务和每条返工多轮的任务都在 `task_samples` 里带文件名）；`GET /api/production/projects/{id}/task-samples?task_id=…`（一次最多 500 条，只返回属于该项目的任务，别的项目的 ID 忽略）；`GET /api/production/tasks/{id}/workbench`；`GET /api/production/tasks/{id}/status`——轻量轮询，返回任务、指派、每个计时中租约的实际生效 `expires_at`、`seconds_remaining`、`enforced`，以及最近 10 条租约释放记录，不读源文件。样本名取自钉住版本 manifest 的文件名，从不返回服务器路径或对象存储 key。团队档的 `review` 视图不列调用者标过的任务，口径与领取审核相同。`POST /api/production/projects/{id}/dispatch-preview` 不加锁、不写库，算出此刻 `assign_tasks`（`strategy: "skill"`）会怎么派：合格人员、每条任务派给谁、每人当前负载和新增条数、没派出去的任务及原因（`task_state_not_dispatchable`、`already_assigned`、`load_limit_reached`、`no_qualified_person`）。它和执行共用匹配代码；预览到执行之间负载变了，执行结果以回执为准。
 
 REST 使用 `POST /api/actions/{action_type}/prepare`、`GET /api/actions/plans/{id}`、`POST /api/approvals/{id}`、`POST /api/actions/{id}/execute`，决定时带回计划摘要。只读函数统一使用 `POST /api/production/functions/{name}`，也注册给 Agent/MCP：项目进度 `project_progress`、包状态 `package_status`、工作量 `annotator_workload`、返工率 `rework_rate`、一致性 `annotation_consistency`、置信度分布 `prelabel_confidence`、标签集差异 `label_set_diff`、下一条任务 `next_task`、对象投影 `production_objects`、预标注完全一致率 `production_prelabel_accuracy`，团队档另有租约状态 `lease_status`、按技能工作量 `skill_workload`、任务包验收 `package_acceptance`。
 
@@ -121,6 +137,7 @@ REST 使用 `POST /api/actions/{action_type}/prepare`、`GET /api/actions/plans/
 | PG 上单任务动作不再拿全表动作锁；计数在提交前按固定顺序一次写入 | 每个动作都 `LOCK TABLE`；按项目加 advisory lock；每次状态迁移当场改计数 | B8 实测：全表锁把吞吐压在每秒 13 次（保存 p95 4.4 秒）；按项目加锁对单项目同样串行。去掉全表锁后，事务中途写计数行会让一次收回多条的回收器和领取互相死锁，所以改成每个事务在提交前按排序一次写完计数，回收器每收回一条单独提交。任务行锁和指派唯一索引保证这几个动作安全。[锁](../datakeel/storage/action_locks.py)、[计数](../datakeel/storage/production_counters.py)、[容量](CAPACITY.md)。 |
 | 所有动作先拿表级锁、再拿行锁：单任务动作一开始就拿 `lineage_events` 的 `ROW EXCLUSIVE`（4 张谓词表里它只写这一张，用来写回执） | 带表锁的动作先按 ID 锁任务行再拿表锁；把回执挪出持有行锁的那段；只在最外层对 `40P01` 重试一次 | 原来单任务动作先锁任务行、后插回执；项目经理的动作持有 `lineage_events` 的 `SHARE ROW EXCLUSIVE` 去等这条任务行，两边互等，用户收到 500。全局统一「先表后行」就没有环，这是 [PostgreSQL 死锁说明](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-DEADLOCKS)推荐的做法；`ROW EXCLUSIVE` 和 `SHARE ROW EXCLUSIVE` 冲突、和自己不冲突（[冲突表](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-TABLES)），标注员之间照样并发，和多粒度锁里的意向锁同理（Gray、Lorie、Putzolu，*Granularity of Locks in a Large Shared Data Base*，VLDB 1975）。先锁行要提前知道每个动作会碰的全部行（还有项目、任务包、成员行），漏一个就回到死锁；回执挪出事务就不再原子；只重试等于把环藏起来。B8 PG 50 人照样达标。[锁](../datakeel/storage/action_locks.py)、[容量](CAPACITY.md)。 |
 | 数负载前按（项目, 人）拿事务级 advisory lock，多人按用户 ID 排序；不持锁就不许数 | 锁这个人的用户行；每人一行负载计数、带条件更新；`SERIALIZABLE` 加重试；靠表锁 | 领取只锁自己拿到的那条任务，同一人的两个领取会同时看到「还没到上限」。[事务级 advisory lock](https://www.postgresql.org/docs/current/explicit-locking.html#ADVISORY-LOCKS) 不改表结构，提交或回滚自动释放，也不碰别的动作会改的行（用户行会被 `manage_users` 改写）；计数行要迁移，而且每种结束指派的路径都得维护它；`SERIALIZABLE` 在 50 人时会变成重试风暴。SQLite 写入本来就串行。「数之前断言已持锁」借鉴 Linux 的 `lockdep_assert_held`。[负载锁](../datakeel/storage/production_load_locks.py)。 |
+| 模板属性字段：模板上一列带类型的字段（`boolean`、`enum`、`multi_enum`、带范围的 `number`、`text`），作用于每个形状或整条记录，保存和提交时校验 | [CVAT](https://docs.cvat.ai/docs/workspace/tasks-page/) 按标签定义属性（select、radio、checkbox、`min;max;step` 的 number、text；[`mutable`、`default_value`](https://docs.cvat.ai/docs/api_sdk/sdk/reference/models/attribute/)）；[Label Studio](https://labelstud.io/tags/choices) 控件标签的 `required`、`perRegion`、`whenLabelValue`；[Labelbox](https://docs.labelbox.com/reference/ontology) 的单选、多选、自由文本分类，可全局也可挂在工具下；直接写一份 [JSON Schema](https://json-schema.org/draft/2020-12/json-schema-validation) | 五种类型覆盖 CVAT 的输入类型（radio 和 select 都是 `enum`）和 Labelbox 的三类分类；`target` 对应 Label Studio 的 `perRegion`。中英文名跟界面语言走。封闭的类型列表能渲染成全键盘表单，报错能指到 key 和第几个形状；任意 JSON Schema（组合、条件、引用）做不到这一点，除非再引一个 schema 转表单的引擎，即新依赖。按标签生效（CVAT、`whenLabelValue`）和逐帧可变对单张图片暂时用不上，以后可作为可选过滤条件加上。模型草稿只查类型，因为必填项由人而不是模型补齐。[模型](../datakeel/core/production_attributes.py)、[保存校验](../datakeel/storage/production_catalog.py)。 |
 | 新版本加既有标注导入 | 另造生产专用导出格式 | 发布和说明书继续读取既有合同。[定稿](../datakeel/storage/production_finalize.py)、[标注导入](../datakeel/storage/annotation_store.py)。 |
 
 回归使用生成数据，覆盖两条流程、两栈抢单、独立只读 golden、精确迁移数、预测部分失败、只追加历史、乐观冲突与授权上限。容量验证在一万任务项目测量只读下一条和完整准备加执行的保存链。
