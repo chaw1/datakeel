@@ -257,6 +257,22 @@ INTENT_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="intent-bracket-slip-repaired",
+        path="intents/model_parse.py",
+        before="            payload = repaired_json(match.group(0))",
+        after="            payload = json.loads(match.group(0))",
+        case=_CHECKS + "test_a_bracket_slip_or_unreadable_answer_still_ends_in_a_plan",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-unreadable-answer-asked-again",
+        path="intents/planner.py",
+        before="            response = complete(repair_request(request, response.content))",
+        after="            return None",
+        case=_CHECKS + "test_a_bracket_slip_or_unreadable_answer_still_ends_in_a_plan",
+        runner="pytest",
+    ),
+    Mutation(
         name="intent-subset-never-widens",
         path="intents/validate.py",
         before="    if wider_than_said(step, state.text):",

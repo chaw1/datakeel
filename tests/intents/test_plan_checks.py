@@ -375,3 +375,37 @@ def test_answers_and_draft_cards_read_as_names_not_ids(db: Database, tmp_path: P
     shown = [detail.value for detail in result.chain.steps[0].details]
     assert any(value.startswith("2 个文件: crossing-") for value in shown)
     assert not any(file in value for file in files for value in shown)
+
+
+def _raw(db: Database, text: str, answers: list[str], context: PageContext) -> IntentResult:
+    sent: list[ModelRequest] = []
+
+    def complete(request: ModelRequest) -> ModelResponse:
+        sent.append(request)
+        return ModelResponse(content=answers[min(len(sent), len(answers)) - 1])
+
+    turn = PlannerTurn(text=text, actor="boss", context=context)
+    result = plan_turn(db, turn, complete=complete, access=ModelAccess(model="m", allowed=True))
+    assert result is not None
+    assert len(sent) <= len(answers)
+    return result
+
+
+def test_a_bracket_slip_or_unreadable_answer_still_ends_in_a_plan(db: Database) -> None:
+    """One misplaced closer is undone, said inside params is read; garbage is asked again."""
+    project, _ = team(db)
+    context = PageContext(project_id=project.id)
+    slipped = (
+        '{"kind":"plan","steps":[{"id":"s1","action":"split_packages","params":{"project_id":"'
+        + project.id
+        + '","package_size":20,"said":{"project_id":"this project"}}]}],"notes":["n"]}'
+    )
+    result = _raw(db, "Split this project into packages of 20", [slipped], context)
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    assert result.chain.steps[0].params["package_size"] == 20
+    valid = json.dumps(_plan("split_packages", {"project_id": project.id, "package_size": 20}))
+    retried = _raw(db, "Split this project into packages of 20", ["no json here", valid], context)
+    assert retried.kind == "plan", retried.text
+    stuck = _raw(db, "Split this project into packages of 20", ["no json", "still none"], context)
+    assert stuck.kind == "unsupported"

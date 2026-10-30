@@ -169,9 +169,17 @@ def _model_draft(
     request = planner_request(access.model, turn.text, rank(words, full_registry()), catalog, scene)
     try:
         response = complete(request)
-        draft = parse_response(response.content, language_of(turn.text))
     except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError):
         return None
+    try:
+        draft = parse_response(response.content, language_of(turn.text))
+    except (DatakeelError, ModelValidationError, ValueError):
+        # One more call for an unreadable answer; a second failure ends as unsupported.
+        try:
+            response = complete(repair_request(request, response.content))
+            draft = parse_response(response.content, language_of(turn.text))
+        except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError):
+            return None
     return _repaired(turn, draft, catalog, complete, (request, response.content))
 
 

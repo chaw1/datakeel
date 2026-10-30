@@ -72,7 +72,13 @@ REPAIR = (
     "leave it out and the system will ask the person. Return the complete corrected JSON "
     "object only."
 )
+INVALID_JSON = (
+    "Your answer was not one valid JSON object. Return the complete corrected JSON object "
+    "only, with every bracket closed."
+)
 PLANNER_OUTPUT_TOKENS = 4000
+CLOSERS = {"{": "}", "[": "]"}
+REPAIR_SPAN = 200
 STEP_KEYS = ("id", "action", "params", "said")
 
 
@@ -188,13 +194,19 @@ def planner_request(
     )
 
 
-def repair_request(first: ModelRequest, answer: str, unknown: dict[str, list[str]]) -> ModelRequest:
-    """Ask once more with the same context, quoting the unknown parameter names."""
-    listed = "; ".join(f"{action}: {', '.join(names)}" for action, names in unknown.items())
+def repair_request(
+    first: ModelRequest, answer: str, unknown: dict[str, list[str]] | None = None
+) -> ModelRequest:
+    """Ask once more with the same context: unknown parameter names, or unreadable JSON."""
+    if unknown is None:
+        listed, prompt = "", INVALID_JSON
+    else:
+        listed = "; ".join(f"{action}: {', '.join(names)}" for action, names in unknown.items())
+        prompt = REPAIR.format(unknown=listed)
     messages = [
         *first.messages,
         ChatMessage(role="assistant", content=answer),
-        ChatMessage(role="user", content=REPAIR.format(unknown=listed)),
+        ChatMessage(role="user", content=prompt),
     ]
     note = ContextSegment(
         name="intent_repair",
@@ -225,10 +237,62 @@ def _tidy_step(step: dict[str, JsonValue], index: int) -> None:
     if not isinstance(params, dict):
         return
     params.pop("request_id", None)
+    inner = params.get("said")
+    # "said" written inside params is the step's own words map, not a parameter.
+    if isinstance(inner, dict) and all(isinstance(value, str) for value in inner.values()):
+        step.setdefault("said", params.pop("said"))
     for key, value in list(params.items()):
         # "$ref:s1.label_set_id" is the same reference written as a string.
         if isinstance(value, str) and value.startswith("$ref:"):
             params[key] = {"$ref": value.removeprefix("$ref:").strip()}
+
+
+def _closed(text: str) -> str:
+    """Close the brackets still open at the end, innermost first."""
+    stack: list[str] = []
+    quoted = escaped = False
+    for char in text:
+        if quoted:
+            quoted, escaped = (char != '"' or escaped), (char == "\\" and not escaped)
+        elif char == '"':
+            quoted = True
+        elif char in CLOSERS:
+            stack.append(char)
+        elif char in CLOSERS.values() and stack and CLOSERS[stack[-1]] == char:
+            stack.pop()
+    return text + "".join(CLOSERS[opener] for opener in reversed(stack))
+
+
+def repaired_json(text: str) -> JsonValue:
+    """Parse JSON with one bracket slip undone: a stray, swapped or missing closer.
+
+    Models sometimes write ``}}]}]`` for ``}}}]`` or stop before the last brackets. Each
+    candidate changes one closer (or closes what is left open) and must parse as a whole;
+    nothing else in the answer is rewritten.
+    """
+    try:
+        json.loads(text)
+    except json.JSONDecodeError as error:
+        failed = error.pos
+    else:
+        failed = len(text)
+    # The slip is nearest where parsing failed, so those closers are tried first.
+    closers = [index for index, char in enumerate(text) if char in "}]"]
+    positions = sorted(closers, key=lambda index: abs(index - failed))[:REPAIR_SPAN]
+    candidates = [_closed(text)]
+    for index in positions:
+        other = "]" if text[index] == "}" else "}"
+        head, tail = text[:index], text[index + 1 :]
+        candidates += [head + tail, head + other + tail, head + "}" + text[index:]]
+        candidates.append(head + "]" + text[index:])
+    for candidate in candidates:
+        try:
+            value: JsonValue = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        return value
+    message = "Unrepairable JSON"
+    raise json.JSONDecodeError(message, text, 0)
 
 
 def parse_response(content: str, language: str) -> IntentDraft:
@@ -239,9 +303,12 @@ def parse_response(content: str, language: str) -> IntentDraft:
         raise ValidationError(message)
     try:
         payload = json.loads(match.group(0))
-    except json.JSONDecodeError as error:
-        message = "Planner returned invalid JSON"
-        raise ValidationError(message) from error
+    except json.JSONDecodeError:
+        try:
+            payload = repaired_json(match.group(0))
+        except json.JSONDecodeError as error:
+            message = "Planner returned invalid JSON"
+            raise ValidationError(message) from error
     if not isinstance(payload, dict):
         message = "Planner returned a non-object"
         raise ValidationError(message)
