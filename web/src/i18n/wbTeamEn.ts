@@ -6,4 +6,23 @@ export const wbTeamEn = {
   wbUnnamedSample: "Unnamed sample",
   wbSearchTasks: "Search file names",
   wbSearchPlaceholder: "File name or path",
+  wbRecordAttributes: "Whole-item attributes",
+  wbAttributesAdvanced: "Advanced: raw attributes",
+  wbAttributeRequired: "required",
+  wbAttributeUnset: "Not set",
+  wbIncomplete: "Not saved · fill in the required attributes",
+  wbProblemRecord: "This item",
+  wbProblemBox: "Box {index}",
+  wbProblemPolygon: "Polygon {index}",
+  wbProblemSpan: "Span {index}",
+  wbAttributeMissing: "{where}: {field} is required",
+  wbAttributeInvalid:
+    "{where}: {field} has a value the template does not allow",
+  wbSubmitBlocked: "Cannot submit yet. {reason}",
+  wbChangedByOthers:
+    "Someone else just changed this task. Your edits are kept; try the action again.",
+  wbLeaseLost: "This task was taken back. Your draft is kept on this device.",
+  wbRedoAction: "Try again",
+  wbTemplateAttributes: "Attribute fields (JSON list: key, name_zh, name_en, type, required, default, options)",
+  wbInvalidAttributes: "Attribute fields must be a JSON list.",
 };

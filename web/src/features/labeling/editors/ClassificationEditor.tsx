@@ -4,7 +4,6 @@ import { useI18n } from "../../../i18n/useI18n";
 
 import { isTyping } from "./geometry";
 import { KeyboardRegion } from "./KeyboardRegion";
-import { ShapeProperties } from "./ShapeProperties";
 import { labelShortcut, shortcutLabel } from "./shortcuts";
 
 import type { EditorProps } from "./types";
@@ -79,13 +78,6 @@ export function ClassificationEditor({
       >
         {t("wbEditorClear")}
       </button>
-      <ShapeProperties
-        value={value.attributes}
-        readOnly={readOnly}
-        onChange={(attributes) => {
-          onChange({ ...value, attributes });
-        }}
-      />
     </KeyboardRegion>
   );
 }

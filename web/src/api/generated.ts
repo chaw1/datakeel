@@ -4534,6 +4534,18 @@ export interface components {
             task_id: string;
         };
         /**
+         * AttributeOption
+         * @description Name one stored choice value of an enumerated attribute in both languages.
+         */
+        AttributeOption: {
+            /** Name En */
+            name_en: string;
+            /** Name Zh */
+            name_zh: string;
+            /** Value */
+            value: string;
+        };
+        /**
          * AutoRoutingConfig
          * @description Keep every numerical routing threshold in the signed transcription profile.
          *
@@ -9796,6 +9808,11 @@ export interface components {
              * @default false
              */
             archived: boolean;
+            /**
+             * Attributes
+             * @default []
+             */
+            attributes: components["schemas"]["TemplateAttribute"][];
             /** Component Config */
             component_config?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -11249,6 +11266,52 @@ export interface components {
             state: string;
             /** Total Shards */
             total_shards: number;
+        };
+        /**
+         * TemplateAttribute
+         * @description Define one typed attribute that a form renders and the server validates on save.
+         *
+         *     ``object`` fields apply to every box, polygon and text span; ``record`` fields apply to the
+         *     annotation record itself, which is how classification work carries attributes.
+         */
+        TemplateAttribute: {
+            default?: components["schemas"]["JsonValue"];
+            /** Key */
+            key: string;
+            /**
+             * Max Length
+             * @default 200
+             */
+            max_length: number;
+            /** Maximum */
+            maximum?: number | null;
+            /** Minimum */
+            minimum?: number | null;
+            /** Name En */
+            name_en: string;
+            /** Name Zh */
+            name_zh: string;
+            /**
+             * Options
+             * @default []
+             */
+            options: components["schemas"]["AttributeOption"][];
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /**
+             * Target
+             * @default object
+             * @enum {string}
+             */
+            target: "object" | "record";
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "boolean" | "enum" | "multi_enum" | "number" | "text";
         };
         /**
          * TemplateView

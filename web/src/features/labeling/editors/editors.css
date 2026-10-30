@@ -175,3 +175,27 @@
     flex-wrap: wrap;
   }
 }
+.wb-attributes {
+  display: grid;
+  gap: calc(var(--space) * 2);
+}
+.wb-attribute-fields,
+.wb-attribute-choices {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  margin: 0;
+  border: 1px solid var(--rule);
+  padding: calc(var(--space) * 2);
+}
+.wb-attribute-fields label {
+  display: grid;
+  gap: var(--space);
+}
+.wb-attribute-fields .wb-attribute-check {
+  display: flex;
+  gap: var(--space);
+  align-items: center;
+}
+.wb-attribute-fields [aria-invalid="true"] {
+  outline: 2px solid var(--red);
+}

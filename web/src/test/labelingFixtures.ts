@@ -47,6 +47,7 @@ export const labelingProject: ProjectWorkbench = {
     component_config: {},
     revision: 1,
     archived: false,
+    attributes: [],
   },
   effective_scopes: { actor: "local", scopes: ["*"], zero_users: true },
   progress: {
@@ -91,6 +92,20 @@ export const labelingProject: ProjectWorkbench = {
     },
   ],
   task_risks: [],
+  task_samples: [
+    {
+      task_id: "task-1",
+      sample_id: "sample-1",
+      name: "harbor-001.png",
+      path: "harbor/day/harbor-001.png",
+    },
+    {
+      task_id: "task-2",
+      sample_id: "sample-2",
+      name: "harbor-002.png",
+      path: "harbor/day/harbor-002.png",
+    },
+  ],
   prelabel_accuracy: {
     project_id: "project",
     assessed_tasks: 0,

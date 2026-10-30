@@ -12,6 +12,7 @@ const template: ProductionTemplate = {
   annotation_type: "classification",
   revision: 2,
   archived: false,
+  attributes: [],
   component_config: { shortcuts: { cat: "c", dog: "v" } },
 };
 it("uses versioned template label shortcuts before label defaults", () => {

@@ -65,8 +65,12 @@ export class AnnotationSession {
     return () => this.listeners.delete(listener);
   };
 
-  setAdapters(save: SessionOptions["save"], reload: SessionOptions["reload"]) {
-    this.options = { ...this.options, save, reload };
+  setAdapters(
+    save: SessionOptions["save"],
+    reload: SessionOptions["reload"],
+    validate?: SessionOptions["validate"],
+  ) {
+    this.options = { ...this.options, save, reload, validate };
   }
 
   start() {
@@ -103,6 +107,7 @@ export class AnnotationSession {
   flush = async (): Promise<boolean> => {
     this.clearTimer();
     if (this.resolving || this.conflict) return false;
+    if (this.holdBack()) return false;
     while (this.dirty || this.inFlight) {
       if (!this.online) return false;
       const saved = await (this.inFlight ?? this.saveOnce());
@@ -156,6 +161,17 @@ export class AnnotationSession {
 
   private get dirty() {
     return !sameAnnotation(this.history.current, this.base.annotation);
+  }
+
+  /** Keep an incomplete edit local (the draft is persisted) until it can pass validation. */
+  private holdBack() {
+    const problem = this.dirty
+      ? (this.options.validate?.(this.history.current) ?? "")
+      : "";
+    if (problem) this.publish({ status: "incomplete", error: problem });
+    else if (this.snapshot.status === "incomplete")
+      this.publish({ status: this.status(), error: "" });
+    return !!problem;
   }
 
   private status(fallback: SessionSnapshot["status"] = "pending") {
@@ -225,7 +241,8 @@ export class AnnotationSession {
       !this.dirty ||
       !this.online ||
       this.conflict ||
-      this.inFlight
+      this.inFlight ||
+      this.holdBack()
     )
       return;
     this.timer = setTimeout(() => {

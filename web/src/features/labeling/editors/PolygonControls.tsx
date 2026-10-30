@@ -21,6 +21,7 @@ export interface PolygonControlProps {
   width: number;
   height: number;
   readOnly?: boolean;
+  advancedAttributes?: boolean;
   onSelect: (index: number) => void;
   onLabel: (label: string) => void;
   onPoint: (index: number) => void;

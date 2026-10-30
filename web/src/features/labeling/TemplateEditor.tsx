@@ -37,6 +37,17 @@ function shortcutMap(
   return value as Record<string, string>;
 }
 
+function attributeList(source: string, errorText: string) {
+  let value: unknown;
+  try {
+    value = JSON.parse(source || "[]");
+  } catch {
+    throw new Error(errorText);
+  }
+  if (!Array.isArray(value)) throw new Error(errorText);
+  return value as ProductionTemplate["attributes"];
+}
+
 export function TemplateEditor({
   project,
   onChanged,
@@ -67,6 +78,9 @@ export function TemplateEditor({
   const [mode, setMode] = useState(
     template?.component_config?.label_mode === "multi" ? "multi" : "single",
   );
+  const [attributes, setAttributes] = useState(
+    JSON.stringify(template?.attributes ?? [], null, 2),
+  );
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,6 +96,7 @@ export function TemplateEditor({
         template: {
           ...template,
           annotation_type: type,
+          attributes: attributeList(attributes, t("wbInvalidAttributes")),
           component_config: {
             ...template.component_config,
             components: selected.length ? selected : [type],
@@ -180,6 +195,15 @@ export function TemplateEditor({
               value={shortcuts}
               onChange={(event) => {
                 setShortcuts(event.target.value);
+              }}
+            />
+          </label>
+          <label>
+            {t("wbTemplateAttributes")}
+            <textarea
+              value={attributes}
+              onChange={(event) => {
+                setAttributes(event.target.value);
               }}
             />
           </label>

@@ -17,6 +17,7 @@ export function SessionStatus({
     offline: "wbOffline",
     conflict: "wbConflict",
     error: "wbSaveError",
+    incomplete: "wbIncomplete",
   } as const;
   return (
     <>

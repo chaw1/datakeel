@@ -1,8 +1,9 @@
 import { useI18n } from "../../../i18n/useI18n";
 
+import { AttributeForm } from "./AttributeForm";
+import { attributeFields } from "./attributes";
 import { CoordinateField } from "./CoordinateField";
 import { EditorDetails } from "./EditorDetails";
-import { ShapeProperties } from "./ShapeProperties";
 
 import type { AnnotationBox, EditorProps } from "./types";
 
@@ -19,6 +20,8 @@ export function BoxDetails({
   width,
   height,
   readOnly,
+  template,
+  advancedAttributes = true,
   onUpdate,
 }: EditorProps & {
   current: AnnotationBox | undefined;
@@ -47,9 +50,12 @@ export function BoxDetails({
               />
             ))}
           </div>
-          <ShapeProperties
+          <AttributeForm
+            label={t("wbEditorProperties")}
+            fields={attributeFields(template, "object")}
             value={current.attributes}
             readOnly={readOnly}
+            advanced={advancedAttributes}
             onChange={(attributes) => {
               onUpdate({ ...current, attributes });
             }}

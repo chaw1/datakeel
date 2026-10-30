@@ -8,10 +8,10 @@ import type { SessionOptions } from "./types";
 export function useAnnotationSession(options: SessionOptions) {
   const [session] = useState(() => new AnnotationSession(options));
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
-  const { save, reload } = options;
+  const { save, reload, validate } = options;
   useEffect(() => {
-    session.setAdapters(save, reload);
-  }, [session, save, reload]);
+    session.setAdapters(save, reload, validate);
+  }, [session, save, reload, validate]);
   useEffect(() => {
     const online = () => {
       session.setOnline(true);

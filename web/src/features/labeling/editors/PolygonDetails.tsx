@@ -1,12 +1,15 @@
 import { useI18n } from "../../../i18n/useI18n";
 
+import { AttributeForm } from "./AttributeForm";
+import { attributeFields } from "./attributes";
 import { CoordinateField } from "./CoordinateField";
-import { ShapeProperties } from "./ShapeProperties";
 
 import type { PolygonControlProps } from "./PolygonControls";
 
 /** Draft and vertex fields below the canvas, so their appearance never moves it. */
 export function PolygonDetails({
+  template,
+  advancedAttributes = true,
   polygons,
   selected,
   pointIndex,
@@ -121,9 +124,12 @@ export function PolygonDetails({
               {t("wbEditorDeletePoint")}
             </button>
           </div>
-          <ShapeProperties
+          <AttributeForm
+            label={t("wbEditorProperties")}
+            fields={attributeFields(template, "object")}
             value={current.attributes}
             readOnly={readOnly}
+            advanced={advancedAttributes}
             onChange={(attributes) => {
               onChange({ ...current, attributes });
             }}

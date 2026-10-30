@@ -3,6 +3,7 @@ import { Circle, Line } from "react-konva";
 
 import { useI18n } from "../../../i18n/useI18n";
 
+import { attributeFields, withDefaults } from "./attributes";
 import { EditorDetails } from "./EditorDetails";
 import { arrowDelta, clamp, isTyping, movePoints } from "./geometry";
 import { ImageCanvas } from "./ImageCanvas";
@@ -48,7 +49,17 @@ export function PolygonEditor(props: EditorProps) {
       ...value,
       image_width: width,
       image_height: height,
-      polygons: [...polygons, { category, points: draft, attributes: {} }],
+      polygons: [
+        ...polygons,
+        {
+          category,
+          points: draft,
+          attributes: withDefaults(
+            {},
+            attributeFields(props.template, "object"),
+          ),
+        },
+      ],
     });
     setSelected(polygons.length);
     setPointIndex(0);
@@ -98,6 +109,7 @@ export function PolygonEditor(props: EditorProps) {
     width: width,
     height: height,
     readOnly: readOnly,
+    advancedAttributes: props.advancedAttributes,
     onSelect: (index) => {
       setSelected(index);
       setPointIndex(0);

@@ -56,6 +56,7 @@ function mount(
             annotation_type: type,
             revision: 1,
             archived: false,
+            attributes: [],
             component_config: {},
             ...options.template,
           }}
@@ -135,6 +136,7 @@ describe("classification editor", () => {
         annotation_type: "classification",
         revision: 1,
         archived: false,
+        attributes: [],
       },
     });
     const editor = screen.getByRole("region", { name: "Classification" });
@@ -228,6 +230,7 @@ it("dispatches multiple configured components through the same annotation record
       annotation_type: "box",
       revision: 1,
       archived: false,
+      attributes: [],
       component_config: {
         components: ["bbox", "classification", "polygon", "span"],
       },

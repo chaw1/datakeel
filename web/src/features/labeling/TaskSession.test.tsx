@@ -251,8 +251,12 @@ it("keeps the displayed review revision bound when a later server conflict rejec
   });
   fireEvent.click(screen.getByRole("button", { name: "Approve revision" }));
   expect(
-    await screen.findByText("Review head changed during execution"),
+    await screen.findByText(
+      "Someone else just changed this task. Your edits are kept; try the action again.",
+    ),
   ).toBeVisible();
+  expect(screen.queryByText(/changed during execution/)).toBeNull();
+  expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
   expect(actions.mutateProduction).toHaveBeenCalledExactlyOnceWith(
     "review_task",
     {

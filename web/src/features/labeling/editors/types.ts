@@ -20,4 +20,6 @@ export interface EditorProps {
   thumbnailUrl?: string;
   text?: string;
   readOnly?: boolean;
+  /** Show raw attribute JSON behind "Advanced" (project managers); defaults to true. */
+  advancedAttributes?: boolean;
 }

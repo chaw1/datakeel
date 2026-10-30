@@ -16,10 +16,18 @@ export interface SessionOptions {
     expectedRevisionId: string | null,
   ) => Promise<SavedAnnotation>;
   reload: () => Promise<SavedAnnotation>;
+  /** Explain why an edit cannot be saved yet (missing required attributes), or return "". */
+  validate?: (annotation: AnnotationRecord) => string;
 }
 
 export type SaveStatus =
-  "saved" | "pending" | "saving" | "offline" | "conflict" | "error";
+  | "saved"
+  | "pending"
+  | "saving"
+  | "offline"
+  | "conflict"
+  | "error"
+  | "incomplete";
 
 export interface SessionSnapshot {
   annotation: AnnotationRecord;

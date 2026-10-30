@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { useI18n } from "../../../i18n/useI18n";
 
+import { AttributeForm } from "./AttributeForm";
+import { attributeFields, withDefaults } from "./attributes";
 import { CoordinateField } from "./CoordinateField";
 import { textareaCharacterOffset, isTyping } from "./geometry";
 import { KeyboardRegion } from "./KeyboardRegion";
 import { LabelPicker } from "./LabelPicker";
-import { ShapeProperties } from "./ShapeProperties";
 import { shortcutLabel } from "./shortcuts";
 import { SpanPreview } from "./SpanPreview";
 
@@ -19,6 +20,7 @@ export function SpanEditor({
   text = "",
   onChange,
   readOnly,
+  advancedAttributes = true,
 }: EditorProps) {
   const { t } = useI18n();
   const source = useRef<HTMLTextAreaElement>(null);
@@ -59,7 +61,15 @@ export function SpanEditor({
     onChange({
       ...value,
       text_length: textLength,
-      spans: [...spans, { category, start, end, attributes: {} }],
+      spans: [
+        ...spans,
+        {
+          category,
+          start,
+          end,
+          attributes: withDefaults({}, attributeFields(template, "object")),
+        },
+      ],
     });
     // Stay on a new selection: the offsets must never silently edit the span just added.
     setRange({ start, end });
@@ -226,9 +236,12 @@ export function SpanEditor({
         ))}
       </ul>
       {current && (
-        <ShapeProperties
+        <AttributeForm
+          label={t("wbEditorProperties")}
+          fields={attributeFields(template, "object")}
           value={current.attributes}
           readOnly={readOnly}
+          advanced={advancedAttributes}
           onChange={(attributes) => {
             update({ ...current, attributes });
           }}

@@ -3,6 +3,7 @@ import { Rect } from "react-konva";
 
 import { useI18n } from "../../../i18n/useI18n";
 
+import { attributeFields, withDefaults } from "./attributes";
 import { BoxDetails } from "./BoxDetails";
 import { BoxShape } from "./BoxShape";
 import { BoxToolbar } from "./BoxToolbar";
@@ -52,6 +53,8 @@ export function BboxEditor(props: EditorProps) {
     });
     setSelected(boxes.length);
   }
+  const defaults = () =>
+    withDefaults({}, attributeFields(props.template, "object"));
   function add() {
     append({
       category,
@@ -59,7 +62,7 @@ export function BboxEditor(props: EditorProps) {
       y1: height * 0.1,
       x2: width * 0.3,
       y2: height * 0.3,
-      attributes: {},
+      attributes: defaults(),
     });
   }
   function remove() {
@@ -145,7 +148,8 @@ export function BboxEditor(props: EditorProps) {
         onFinish={(point) => {
           if (!draft) return;
           const box = boxFromPoints(draft.start, point, category);
-          if (box.x2 - box.x1 >= 1 && box.y2 - box.y1 >= 1) append(box);
+          if (box.x2 - box.x1 >= 1 && box.y2 - box.y1 >= 1)
+            append({ ...box, attributes: defaults() });
           setDraft(null);
         }}
       >

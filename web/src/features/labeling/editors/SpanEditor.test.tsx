@@ -27,6 +27,7 @@ function mount(_kind: "text_span", options: Partial<EditorProps> = {}) {
             annotation_type: "text_span",
             revision: 1,
             archived: false,
+            attributes: [],
             component_config: {},
           }}
           {...options}

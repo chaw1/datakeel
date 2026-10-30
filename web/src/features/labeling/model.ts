@@ -86,6 +86,7 @@ export const defaultTemplate: ProductionTemplate = {
   validation_rules: {},
   revision: 1,
   archived: false,
+  attributes: [],
 };
 export function taskEditable(
   task: TaskWorkbench,
