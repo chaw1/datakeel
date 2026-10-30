@@ -13,8 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datakeel.core.models import BoundaryModel
-from scripts.shard_spec import ShardSpec, parse_shard
+from scripts.shard_spec import ShardModel, ShardSpec, parse_shard
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -25,7 +24,7 @@ OUTCOMES_FILE = "outcomes.json"
 _FAILED = ("failed", "error")
 
 
-class ShardSelection(BoundaryModel):
+class ShardSelection(ShardModel):
     """The complete collection seen by one process and the node IDs it kept."""
 
     shard: ShardSpec | None
@@ -33,7 +32,7 @@ class ShardSelection(BoundaryModel):
     selected: tuple[str, ...]
 
 
-class ShardOutcomes(BoundaryModel):
+class ShardOutcomes(ShardModel):
     """Final outcome and summed phase seconds for every reported node ID."""
 
     outcomes: dict[str, str]

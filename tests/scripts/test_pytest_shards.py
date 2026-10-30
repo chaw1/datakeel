@@ -9,7 +9,6 @@ import json
 import os
 import subprocess
 import sys
-from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -45,11 +44,12 @@ def test_plan_separates_measured_heavy_modules_before_filling_light_ones() -> No
     """Longest-first packing keeps the two slowest files apart and balances the rest."""
     nodes = [f"tests/test_{name}.py::test_case" for name in ("slow", "slower", "a", "b", "c")]
     durations = {"tests/test_slow.py": 90.0, "tests/test_slower.py": 100.0}
-    plan = plan_shards(nodes, 2, durations | {f"tests/test_{n}.py": 10.0 for n in "abc"})
+    durations |= {f"tests/test_{n}.py": 10.0 for n in "abc"}
+    plan = plan_shards(nodes, 2, durations)
     assert plan["tests/test_slow.py"] != plan["tests/test_slower.py"]
-    loads = Counter[int]()
+    loads = dict.fromkeys((1, 2), 0.0)
     for module, shard in plan.items():
-        loads[shard] += (durations | {f"tests/test_{n}.py": 10.0 for n in "abc"})[module]
+        loads[shard] += durations[module]
     assert max(loads.values()) - min(loads.values()) <= 10.0
 
 
@@ -286,6 +286,28 @@ def test_invalid_shard_option_is_a_usage_error(tmp_path: Path) -> None:
     process = _run(project, ["-p", "scripts.pytest_shards", "--shard=4/3"])
     assert process.returncode == pytest.ExitCode.USAGE_ERROR
     assert "shard index must be between 1 and N" in process.stderr
+
+
+def test_plugin_loads_without_importing_datakeel_before_coverage_starts() -> None:
+    """``-p`` plugins import before pytest-cov measures, so the plugin must not pull datakeel.
+
+    The first sharded CI run lost 49 covered lines of ``datakeel/__init__.py`` and
+    ``datakeel/core/models.py`` because the plugin imported ``BoundaryModel`` too early.
+    """
+    probe = (
+        "import sys\n"
+        "import scripts.pytest_shards\n"
+        "print(sorted(name for name in sys.modules if name.split('.')[0] == 'datakeel'))\n"
+    )
+    process = subprocess.run(  # noqa: S603  # Fixed interpreter and fixed probe source.
+        [sys.executable, "-c", probe],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    )
+    assert process.stdout.strip() == "[]"
 
 
 def test_durations_keep_the_slowest_stack_per_module(tmp_path: Path) -> None:

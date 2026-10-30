@@ -1,14 +1,23 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Parse the ``K/N`` shard selector shared by the pytest and mutation gates."""
+"""Parse the ``K/N`` shard selector shared by the pytest and mutation gates.
 
-from pydantic import Field
+The pytest shard plugin loads through ``-p`` before pytest-cov starts measuring, so this
+module and the plugin must not import ``datakeel``: an early import would leave the
+package's module-level lines unmeasured in every shard.
+"""
 
-from datakeel.core.models import BoundaryModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class ShardSpec(BoundaryModel):
+class ShardModel(BaseModel):
+    """The ``BoundaryModel`` contract (no unknown fields, no reassignment) without datakeel."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+class ShardSpec(ShardModel):
     """One 1-based shard of a fixed shard count."""
 
     index: int = Field(ge=1)
