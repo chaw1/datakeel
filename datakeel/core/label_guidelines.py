@@ -53,3 +53,5 @@ class DraftSource(BoundaryModel):
     plan_id: str | None = None
     drafted_at: datetime | None = None
     dropped_examples: int = Field(default=0, ge=0)
+    # Why each standard code became labels or an attribute, in the draft's language.
+    notes: tuple[str, ...] = Field(default_factory=tuple[str, ...], max_length=50)

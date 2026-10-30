@@ -49,9 +49,22 @@ def _attribute(source: AttributeSource) -> TemplateAttribute | None:
         return None
 
 
+def _roots(categories: list[CategorySource]) -> dict[str, str]:
+    """The top category key of every category, following parent keys."""
+    parents = {item.key: item.parent_key for item in categories}
+    roots: dict[str, str] = {}
+    for key in parents:
+        current, seen = key, {key}
+        while (parent := parents.get(current)) and parent in parents and parent not in seen:
+            current = parent
+            seen.add(current)
+        roots[key] = current
+    return roots
+
+
 def build_labels(inputs: DraftInputs) -> list[ProductionLabel]:
-    """One label per category, unique by name, with standard fields on root labels."""
-    fields = tuple(item for item in (_attribute(source) for source in inputs.attributes) if item)
+    """One label per category, unique by name, each with the attributes of its subtree."""
+    built = [(source, _attribute(source)) for source in inputs.attributes]
     labels: list[ProductionLabel] = []
     names: set[str] = set()
     ids: set[str] = set()
@@ -59,6 +72,7 @@ def build_labels(inputs: DraftInputs) -> list[ProductionLabel]:
     categories = list(inputs.categories) or [
         CategorySource(key=inputs.topic or inputs.name, name_zh=inputs.topic or inputs.name)
     ]
+    roots = _roots(categories)
     for category in categories:
         name = (
             category.name_zh
@@ -68,15 +82,17 @@ def build_labels(inputs: DraftInputs) -> list[ProductionLabel]:
         identifier = label_id(category.key)
         if name.casefold() in names or identifier in ids:
             continue
-        parent = keys.get(category.parent_key or "")
+        root = roots.get(category.key, category.key)
+        fields = tuple(field for source, field in built if field and source.scope in {None, root})
         labels.append(
             ProductionLabel(
                 id=identifier,
                 name=name,
-                parent_id=parent,
+                parent_id=keys.get(category.parent_key or ""),
                 name_zh=category.name_zh,
-                name_en=category.name_en or None,
-                fields=fields if parent is None else (),
+                name_en=category.name_en
+                or (category.name_zh if category.name_zh.isascii() else None),
+                fields=fields,
             )
         )
         names.add(name.casefold())
@@ -85,7 +101,8 @@ def build_labels(inputs: DraftInputs) -> list[ProductionLabel]:
     return labels
 
 
-def _examples(label: ProductionLabel, inputs: DraftInputs) -> tuple[GuidelineExample, ...]:
+def examples_for(label: ProductionLabel, inputs: DraftInputs) -> tuple[GuidelineExample, ...]:
+    """Positive samples carry the label; negative ones carry other labels only."""
     spellings = {label.id, label.name, label.name_zh or "", label.name_en or ""} - {""}
     positive = [s.id for s in inputs.samples if spellings & set(s.labels)][:EXAMPLES_PER_KIND]
     negative = [s.id for s in inputs.samples if s.labels and not spellings & set(s.labels)][
@@ -101,23 +118,21 @@ def _sentence(head: str, descriptions: dict[str, str], identifier: str) -> str:
     return f"{head} {descriptions.get(identifier, '')}".strip()
 
 
+def offline_rule(label: ProductionLabel, inputs: DraftInputs) -> LabelGuideline:
+    """A plain rule for one label, citing annotated samples as its examples."""
+    descriptions = {label_id(item.key): item.description for item in inputs.categories}
+    return LabelGuideline(
+        label_id=label.id,
+        text_zh=_sentence(f"标注所有「{label.name_zh or label.name}」。", descriptions, label.id),
+        text_en=_sentence(f"Annotate every {label.name_en or label.name}.", descriptions, label.id),
+        examples=examples_for(label, inputs),
+    )
+
+
 def offline_draft(inputs: DraftInputs) -> DraftOutcome:
     """Draft without any model: categories become labels, annotated samples become examples."""
     labels = build_labels(inputs)
-    descriptions = {label_id(item.key): item.description for item in inputs.categories}
-    rules = tuple(
-        LabelGuideline(
-            label_id=label.id,
-            text_zh=_sentence(
-                f"标注所有「{label.name_zh or label.name}」。", descriptions, label.id
-            ),
-            text_en=_sentence(
-                f"Annotate every {label.name_en or label.name}.", descriptions, label.id
-            ),
-            examples=_examples(label, inputs),
-        )
-        for label in labels
-    )
+    rules = tuple(offline_rule(label, inputs) for label in labels)
     overview_zh = (
         f"「{inputs.name}」标注指南草稿, 共 {len(labels)} 个标签。"
         "正反例来自已有标注的样本, 请人工检查后再发布。"

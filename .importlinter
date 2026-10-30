@@ -566,6 +566,7 @@ ignore_imports =
     datakeel.storage.label_drafts -> datakeel.label_drafts.model
     datakeel.storage.label_drafts -> datakeel.label_drafts.models
     datakeel.storage.label_drafts -> datakeel.label_drafts.offline
+    datakeel.storage.label_drafts -> datakeel.label_drafts.standards
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

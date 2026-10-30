@@ -5,11 +5,12 @@
 
 import base64
 import io
-import re
 from collections import defaultdict
 
 import httpx
 from PIL import Image, UnidentifiedImageError
+from pydantic import Field, JsonValue
+from pydantic import ValidationError as ModelValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -17,13 +18,12 @@ from datakeel.actions.label_draft_parameters import DraftLabelSetParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.production_catalog_parameters import CreateLabelSetParams
 from datakeel.core.annotation_models import AnnotationBatch
-from datakeel.core.errors import ValidationError
+from datakeel.core.errors import DatakeelError, ValidationError
 from datakeel.core.label_guidelines import DraftSource
-from datakeel.core.models import AssetRef, FileItem, utcnow
+from datakeel.core.models import AssetRef, BoundaryModel, FileItem, utcnow
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.core.settings import get_settings
-from datakeel.core.standard_models import CodeList, FieldStandard
-from datakeel.label_drafts.model import model_draft
+from datakeel.label_drafts.model import estimate_cost, model_draft
 from datakeel.label_drafts.models import (
     AttributeSource,
     CategorySource,
@@ -32,8 +32,10 @@ from datakeel.label_drafts.models import (
     SampleSource,
 )
 from datakeel.label_drafts.offline import offline_draft
-from datakeel.storage.action_selection import selected_files
+from datakeel.label_drafts.standards import classify_standards
+from datakeel.storage.action_selection import files_by_id, selected_files
 from datakeel.storage.annotation_rows import AnnotationBatchRow
+from datakeel.storage.database import Database
 from datakeel.storage.objects import object_store
 from datakeel.storage.production_catalog import annotation_categories, label_set_row
 from datakeel.storage.production_catalog_changes import create_label_set
@@ -41,70 +43,19 @@ from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.standard_store import state_in_session
 
 IMAGE_EDGE = 768
-CATEGORY_WORDS = re.compile(r"类型|类别|种类|分类|type|class|category|kind", re.IGNORECASE)
 BATCH_LIMIT = 20
+# Annotated samples a draft may cite as examples when existing annotations are a source.
+ANNOTATED_SAMPLES = 12
 
 
-def _standard_sources(
-    session: Session, codes: tuple[str, ...]
-) -> tuple[list[CategorySource], list[AttributeSource]]:
-    contract = state_in_session(session).contract
-    fields = {item.code: item for item in contract.standards}
-    lists = {item.code: item for item in contract.code_lists}
-    categories: list[CategorySource] = []
-    attributes: list[AttributeSource] = []
-    for code in _category_first(codes, fields, lists):
-        field = fields.get(code)
-        listing = lists.get(field.code_list or "") if field else lists.get(code)
-        if field is None and listing is None:
-            message = f"Unknown data standard code: {code}"
-            raise ValidationError(message)
-        options = (
-            tuple((str(e.value), e.label_zh, e.label_en) for e in listing.entries)
-            if listing
-            else ()
-        )
-        if listing is not None and not categories:
-            root = field.code if field else listing.code
-            categories.append(
-                CategorySource(
-                    key=root,
-                    name_zh=field.name_zh if field else listing.name,
-                    name_en=field.name_en if field else "",
-                    description=field.description if field else "",
-                )
-            )
-            categories += [
-                CategorySource(key=f"{root}.{value}", name_zh=zh, name_en=en, parent_key=root)
-                for value, zh, en in options
-            ]
-        elif field is not None:
-            attributes.append(
-                AttributeSource(
-                    key=field.code,
-                    name_zh=field.name_zh,
-                    name_en=field.name_en,
-                    data_type=field.data_type,
-                    options=options,
-                    required=field.required,
-                )
-            )
-    return categories, attributes
+class _Sources(BoundaryModel):
+    """What a draft reads, gathered the same way when it is planned and when it runs."""
 
-
-def _category_first(
-    codes: tuple[str, ...], fields: dict[str, FieldStandard], lists: dict[str, CodeList]
-) -> list[str]:
-    """The category tree comes from the code list that names a kind or class, else the largest."""
-
-    def rank(code: str) -> tuple[bool, int]:
-        field = fields.get(code)
-        listing = lists.get(field.code_list or "") if field else lists.get(code)
-        names = f"{code} {field.name_zh if field else ''} {field.name_en if field else ''}"
-        named = bool(CATEGORY_WORDS.search(names))
-        return (not named, -(len(listing.entries) if listing else -1))
-
-    return sorted(codes, key=rank)
+    categories: tuple[CategorySource, ...] = ()
+    attributes: tuple[AttributeSource, ...] = ()
+    notes: tuple[str, ...] = ()
+    annotated: dict[str, tuple[str, ...]] = Field(default_factory=dict[str, tuple[str, ...]])
+    examples: tuple[FileItem, ...] = ()
 
 
 def _label_set_sources(session: Session, identifiers: tuple[str, ...]) -> list[CategorySource]:
@@ -132,10 +83,11 @@ def _label_set_sources(session: Session, identifiers: tuple[str, ...]) -> list[C
     return found
 
 
-def _annotated(session: Session, datasets: tuple[str, ...]) -> dict[str, set[str]]:
-    labels: dict[str, set[str]] = defaultdict(set)
+def _annotated(session: Session, datasets: tuple[str, ...]) -> dict[str, dict[str, set[str]]]:
+    """Labels per annotated sample, grouped by the dataset that holds the sample."""
+    found: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     if not datasets:
-        return labels
+        return found
     rows = session.scalars(
         select(AnnotationBatchRow)
         .where(AnnotationBatchRow.dataset_id.in_(datasets))
@@ -144,8 +96,80 @@ def _annotated(session: Session, datasets: tuple[str, ...]) -> dict[str, set[str
     )
     for row in rows:
         for record in AnnotationBatch.model_validate(row.batch).annotations:
-            labels[record.sample_id].update(annotation_categories(record))
-    return labels
+            found[row.dataset_id][record.sample_id].update(annotation_categories(record))
+    return found
+
+
+def _unique(categories: list[CategorySource]) -> tuple[CategorySource, ...]:
+    """One source per key and name, so a category seen on many samples is counted once."""
+    keys: set[str] = set()
+    names: set[str] = set()
+    kept: list[CategorySource] = []
+    for item in categories:
+        name = item.name_zh.casefold()
+        if item.key in keys or (item.parent_key is None and name in names):
+            continue
+        keys.add(item.key)
+        names.add(name)
+        kept.append(item)
+    return tuple(kept)
+
+
+def draft_sources(session: Session, params: DraftLabelSetParams) -> _Sources:
+    """Standards, vocabularies, annotations and annotated example files of one draft.
+
+    Planning budgets with exactly these counts and execution checks the same counts, so a
+    draft approved at its estimate is never refused for counting its sources differently.
+    """
+    contract = state_in_session(session).contract
+    standards = classify_standards(contract, params.standard_codes, params.language)
+    categories = [*standards.categories, *_label_set_sources(session, params.label_set_ids)]
+    datasets = (*params.annotation_dataset_ids, *([params.dataset_id] if params.dataset_id else []))
+    grouped = _annotated(session, tuple(dict.fromkeys(datasets)))
+    annotated = {
+        sample: tuple(sorted(labels))
+        for samples in grouped.values()
+        for sample, labels in samples.items()
+    }
+    categories += [
+        CategorySource(key=value, name_zh=value, origin="annotation")
+        for value in sorted({label for labels in annotated.values() for label in labels})
+    ]
+    chosen = set(params.sample_ids)
+    examples: list[FileItem] = []
+    if params.annotation_dataset_ids:
+        for dataset, samples in grouped.items():
+            wanted = sorted(sample for sample in samples if sample not in chosen)
+            examples += files_by_id(session, dataset, wanted)
+    return _Sources(
+        categories=_unique(categories),
+        attributes=standards.attributes,
+        notes=standards.notes,
+        annotated=annotated,
+        examples=tuple(examples[:ANNOTATED_SAMPLES]),
+    )
+
+
+def planned_draft_cost(db: Database, params: dict[str, JsonValue]) -> float:
+    """The cost estimate execution will check, computed from the same sources."""
+    profile = str(params.get("profile") or "offline")
+    samples = params.get("sample_ids")
+    count = len(samples) if isinstance(samples, list) else 0
+    try:
+        checked = DraftLabelSetParams.model_validate(
+            {
+                **params,
+                "request_id": "estimate",
+                "name": params.get("name") or "draft",
+                "profile": "offline",
+                "max_cost_usd": 0,
+            }
+        )
+        with db.session() as session:
+            sources = draft_sources(session, checked)
+    except (ModelValidationError, DatakeelError):
+        return estimate_cost(profile, count)
+    return estimate_cost(profile, count + len(sources.examples), len(sources.categories))
 
 
 def _image(file: FileItem) -> str | None:
@@ -170,39 +194,36 @@ def _text(file: FileItem) -> str:
         return handle.read(1600).decode("utf-8", errors="ignore")[:400]
 
 
-def gather_inputs(session: Session, plan: ActionPlan, params: DraftLabelSetParams) -> DraftInputs:
+def _sample(file: FileItem, labels: tuple[str, ...], *, vision: bool) -> SampleSource:
+    return SampleSource(
+        id=file.id,
+        filename=file.filename,
+        modality=file.modality,
+        text=_text(file),
+        image_data_url=_image(file) if vision else None,
+        labels=labels,
+    )
+
+
+def gather_inputs(
+    session: Session, plan: ActionPlan, params: DraftLabelSetParams
+) -> tuple[DraftInputs, tuple[str, ...]]:
     """Read standards, existing vocabularies, annotations and the frozen sample files."""
-    categories, attributes = _standard_sources(session, params.standard_codes)
-    categories += _label_set_sources(session, params.label_set_ids)
-    annotated = _annotated(
-        session,
-        (*params.annotation_dataset_ids, *([params.dataset_id] if params.dataset_id else [])),
-    )
-    for sample_labels in annotated.values():
-        categories += [
-            CategorySource(key=value, name_zh=value, origin="annotation")
-            for value in sorted(sample_labels)
-        ]
+    sources = draft_sources(session, params)
     vision = params.profile == "cloud-vision"
+    files = [*(selected_files(session, plan) if params.sample_ids else []), *sources.examples]
     samples = tuple(
-        SampleSource(
-            id=file.id,
-            filename=file.filename,
-            modality=file.modality,
-            text=_text(file),
-            image_data_url=_image(file) if vision else None,
-            labels=tuple(sorted(annotated.get(file.id, set()))),
-        )
-        for file in (selected_files(session, plan) if params.sample_ids else [])
+        _sample(file, sources.annotated.get(file.id, ()), vision=vision) for file in files
     )
-    return DraftInputs(
+    inputs = DraftInputs(
         name=params.name,
         topic=params.topic,
         language=params.language,
-        categories=tuple(categories),
-        attributes=tuple(attributes),
+        categories=sources.categories,
+        attributes=sources.attributes,
         samples=samples,
     )
+    return inputs, sources.notes
 
 
 def _draft(inputs: DraftInputs, params: DraftLabelSetParams) -> DraftOutcome:
@@ -216,7 +237,7 @@ def execute_label_draft(
     session: Session, plan: ActionPlan, params: DraftLabelSetParams
 ) -> OperationResult:
     """Store the checked draft as a new unpublished label set version with its sources."""
-    inputs = gather_inputs(session, plan, params)
+    inputs, notes = gather_inputs(session, plan, params)
     outcome = _draft(inputs, params)
     created = create_label_set(
         session,
@@ -242,6 +263,7 @@ def execute_label_draft(
         plan_id=plan.id,
         drafted_at=utcnow(),
         dropped_examples=outcome.dropped_examples,
+        notes=notes,
     )
     value = created.model_copy(update={"draft_source": source})
     row = label_set_row(session, value.id, value.version, lock=True)

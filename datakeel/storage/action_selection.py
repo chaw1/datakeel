@@ -50,6 +50,14 @@ def _source_index(session: Session, dataset_id: str, version_id: str | None) -> 
     return result
 
 
+def files_by_id(session: Session, dataset_id: str, ids: list[str]) -> list[FileItem]:
+    """Current files of one dataset in the given order; ids it does not hold are skipped."""
+    if session.get(DatasetRow, dataset_id) is None:
+        return []
+    index = _source_index(session, dataset_id, None)
+    return [FileItem.model_validate(index[item]) for item in ids if item in index]
+
+
 def selected_files(session: Session, plan: ActionPlan) -> list[FileItem]:
     """Read frozen entries, indexing each selected dataset/version at most once."""
     require_unique_file_sources(plan.manifest)

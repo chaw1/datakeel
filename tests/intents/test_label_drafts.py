@@ -286,7 +286,10 @@ def test_recorded_model_draft_keeps_every_category_and_drops_invented_samples(
     with httpx.Client(transport=httpx.MockTransport(reply)) as client:
         outcome = model_draft(_inputs(), "cloud-vision", 0.05, client)
     assert {label.id for label in outcome.labels} == {"car", "bus"}
-    (rule,) = outcome.guidelines.rules
+    # Every label gets a rule: the one the model forgot is completed from the sources.
+    rules = {item.label_id: item for item in outcome.guidelines.rules}
+    assert set(rules) == {"car", "bus"}
+    rule = rules["car"]
     assert [item.sample_id for item in rule.examples] == ["s-1"]
     assert outcome.dropped_examples == 1
     assert outcome.input_tokens == 1200

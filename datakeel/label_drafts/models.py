@@ -32,6 +32,8 @@ class AttributeSource(BoundaryModel):
     data_type: str = "text"
     options: tuple[tuple[str, str, str], ...] = ()
     required: bool = False
+    # The category subtree this property belongs to; None puts it on every label.
+    scope: str | None = None
 
 
 class SampleSource(BoundaryModel):

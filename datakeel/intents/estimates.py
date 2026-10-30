@@ -9,9 +9,9 @@ from pydantic import ValidationError as ModelValidationError
 from datakeel.actions.registry import POLICIES
 from datakeel.core.intent_models import ChainStep, StepEstimate
 from datakeel.intents.catalog import EntityCatalog
-from datakeel.label_drafts.model import estimate_cost
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
+from datakeel.storage.label_drafts import planned_draft_cost
 from datakeel.storage.object_queries import evaluate
 
 GOVERNANCE = frozenset(
@@ -91,11 +91,7 @@ def estimate_step(
     }
     cost = 0.0
     if step.action == "draft_label_set":
-        samples = step.params.get("sample_ids")
-        cost = estimate_cost(
-            str(step.params.get("profile", "offline")),
-            len(samples) if isinstance(samples, list) else 0,
-        )
+        cost = planned_draft_cost(db, step.params)
     return StepEstimate(
         object_count=_count(db, step, catalog, previous),
         cost_usd=cost,
