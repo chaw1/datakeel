@@ -14,13 +14,18 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import NoReturn
 
 from rich.console import Console
 
 from datakeel.core.harness_eval import EvalCaseResult, EvalReport
+from scripts.core_mutations import CORE_MUTATIONS
 from scripts.mutation_catalog import FEATURE_MUTATIONS
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
 from scripts.mutation_parallel import ordered_parallel_map
+from scripts.mutation_shards import select_mutations
+from scripts.mutation_timeouts import EnvironmentFailure, retry_on_timeout
+from scripts.shard_spec import parse_shard
 from scripts.test_workers import test_worker_count
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
@@ -31,107 +36,7 @@ EVAL_TIMEOUT_SECONDS = 900
 
 
 MUTATIONS = (
-    Mutation(
-        name="resume-authorization",
-        path="runtime/graph.py",
-        before=(
-            "authorize_resume(self.db, self.conversation_id, request.plan_id, self.pending_plan())"
-        ),
-        after="pass",
-        case="tests/agent/test_resume.py::test_forged_resume_cases_are_denied_and_audited",
-        runner="pytest",
-    ),
-    Mutation(
-        name="tool-call-idempotency",
-        path="storage/tool_invocations.py",
-        before="if call_id is None:",
-        after="if True:",
-        case=(
-            "tests/runtime/test_recovery.py::"
-            "test_recovery_when_killed_after_interrupt_preserves_one_action_and_tool_call"
-        ),
-        runner="pytest",
-    ),
-    Mutation(
-        name="repeated-call",
-        path="agent/guards.py",
-        before="if self.calls[signature] >= REPEAT_LIMIT:",
-        after="if False:",
-        case="07-repeated-loop",
-    ),
-    Mutation(
-        name="budget-reservation",
-        path="storage/budget_service.py",
-        before="exceeded = any(",
-        after="exceeded = False and any(",
-        case="08-budget",
-    ),
-    Mutation(
-        name="dry-run", path="agent/confirm.py", before=" or dry_run:", after=":", case="11-dry-run"
-    ),
-    Mutation(
-        name="human-approval",
-        path="agent/confirm.py",
-        before=" or plan.requires_approval",
-        after="",
-        case="04-irreversible-approval",
-    ),
-    Mutation(
-        name="canonical-parameters",
-        path="storage/action_requests.py",
-        before="if request.canonical_params is not None and digest(request.canonical_params)",
-        after="if False and digest(request.canonical_params)",
-        case="06-frozen-approval",
-    ),
-    Mutation(
-        name="target-state",
-        path="storage/action_planning.py",
-        before=(
-            "if snapshot_digest(session, params, current) != plan.state_digest "
-            "or current.truncated:"
-        ),
-        after="if False:",
-        case="06-frozen-approval",
-    ),
-    Mutation(
-        name="missing-annotation-unknown",
-        path="operators/evidence/label_gap.py",
-        before='value = "unknown"',
-        after='value = "absent"',
-        case="14-evidence-unknown",
-    ),
-    Mutation(
-        name="near-duplicate-threshold",
-        path="operators/evidence/near_duplicate_hashes.py",
-        before="if (distance := (left_hash ^ right_hash).bit_count()) <= threshold",
-        after="if (distance := (left_hash ^ right_hash).bit_count()) <= threshold + 4",
-        case=(
-            "tests/operators/evidence/test_near_duplicate.py::"
-            "test_near_duplicate_when_chain_images_supplied_does_not_infer_endpoint_pair"
-        ),
-        runner="pytest",
-    ),
-    Mutation(
-        name="model-sql-bypass",
-        path="ask/rerank.py",
-        before="allowed = set(original)",
-        after="allowed = set(ranking.ordered_ids)",
-        case="tests/ask/test_mutation_boundaries.py::test_model_sql_cannot_cross_candidate_id_boundary",
-        runner="pytest",
-    ),
-    Mutation(
-        name="unanswerable-guessed-answer",
-        path="core/ask_models.py",
-        before=(
-            "if self.sql is not None or self.result is not None or self.metric_card is not None:"
-        ),
-        after="if False:",
-        case=(
-            "tests/ask/test_mutation_boundaries.py::"
-            "test_unanswerable_cannot_publish_a_guessed_numeric_answer"
-        ),
-        runner="pytest",
-    ),
+    *CORE_MUTATIONS,
     *WORKFLOW_MUTATIONS,
     *FEATURE_MUTATIONS,
 )
@@ -353,47 +258,94 @@ def evaluate_image_baseline(node_id: str) -> TestMeasurement:
         return evaluate_image_test(directory, node_id)
 
 
+def evaluate_golden_baseline() -> tuple[int, EvalReport]:
+    """Measure every unchanged golden case in its own disposable source tree."""
+    with TemporaryDirectory(prefix="datakeel-mutation-baseline-") as temporary:
+        directory = Path(temporary)
+        _copy_source(directory)
+        return _evaluate(directory)
+
+
+def _finish(
+    output: Path | None,
+    report: dict[str, object],
+    failures: list[EnvironmentFailure],
+    *,
+    killed: bool,
+) -> NoReturn:
+    """Write the report even for environment failures, then exit without a stack trace."""
+    if failures:
+        report["environment_failures"] = [failure.model_dump(mode="json") for failure in failures]
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
+    for failure in failures:
+        Console(soft_wrap=True).print(failure.describe(), markup=False, highlight=False)
+    raise SystemExit(not killed or bool(failures))
+
+
+def _measure_image_baselines(
+    mutations: tuple[Mutation, ...], workers: int
+) -> list[TestMeasurement | EnvironmentFailure]:
+    return list(
+        ordered_parallel_map(
+            lambda case: retry_on_timeout(
+                lambda: evaluate_image_baseline(case), f"pytest baseline {case}"
+            ),
+            (mutation.case for mutation in mutations if mutation.runner == "pytest"),
+            workers=workers,
+        )
+    )
+
+
 def main() -> None:
     """Require green baselines and observed assertion failures with durable evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--shard", type=parse_shard, help="Run only catalog shard K of N (K/N).")
     args = parser.parse_args()
+    mutations = MUTATIONS if args.shard is None else select_mutations(MUTATIONS, args.shard)
     workers = test_worker_count()
-    with TemporaryDirectory(prefix="datakeel-mutation-baseline-") as temporary:
-        directory = Path(temporary)
-        _copy_source(directory)
-        code, baseline = _evaluate(directory)
-        if code != 0 or baseline.passed != baseline.total:
-            msg = "Golden baseline must pass before mutation testing"
-            raise RuntimeError(msg)
-        image_baselines = list(
-            ordered_parallel_map(
-                evaluate_image_baseline,
-                (mutation.case for mutation in MUTATIONS if mutation.runner == "pytest"),
-                workers=workers,
-            )
-        )
-        if any(
-            result.exit_code != 0 or result.passed != result.total for result in image_baselines
-        ):
-            msg = "Image baseline must pass before mutation testing"
-            raise RuntimeError(msg)
+    report: dict[str, object] = {} if args.shard is None else {"shard": str(args.shard)}
+    golden = retry_on_timeout(evaluate_golden_baseline, "golden baseline")
+    if isinstance(golden, EnvironmentFailure):
+        empty = {"baseline": None, "image_baselines": [], "mutations": []}
+        _finish(args.output, report | empty, [golden], killed=False)
+    code, baseline = golden
+    if code != 0 or baseline.passed != baseline.total:
+        msg = "Golden baseline must pass before mutation testing"
+        raise RuntimeError(msg)
+    measured = _measure_image_baselines(mutations, workers)
+    failures = [item for item in measured if isinstance(item, EnvironmentFailure)]
+    image_baselines = [item for item in measured if isinstance(item, TestMeasurement)]
+    report["baseline"] = baseline.model_dump(mode="json")
+    report["image_baselines"] = [result.model_dump(mode="json") for result in image_baselines]
+    if failures:
+        _finish(args.output, report | {"mutations": []}, failures, killed=False)
+    if any(result.exit_code != 0 or result.passed != result.total for result in image_baselines):
+        msg = "Image baseline must pass before mutation testing"
+        raise RuntimeError(msg)
     results: list[MutationResult] = []
-    for result in ordered_parallel_map(run_mutation, MUTATIONS, workers=workers):
-        results.append(result)
-        Console().print(
-            f"{result.name}: {'KILLED' if result.killed else 'SURVIVED'} "
-            f"({result.passed}/{result.total} {result.runner} cases passed)"
-        )
-    report = {
-        "baseline": baseline.model_dump(mode="json"),
-        "image_baselines": [result.model_dump(mode="json") for result in image_baselines],
-        "mutations": [result.model_dump(mode="json") for result in results],
-    }
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
-    raise SystemExit(not all(result.killed for result in results))
+    outcomes = ordered_parallel_map(
+        lambda mutation: retry_on_timeout(
+            lambda: run_mutation(mutation), f"mutation {mutation.name}"
+        ),
+        mutations,
+        workers=workers,
+    )
+    for mutation, outcome in zip(mutations, outcomes, strict=True):
+        if isinstance(outcome, EnvironmentFailure):
+            failures.append(outcome)
+            status = "ENVIRONMENT FAILURE (timed out twice)"
+        else:
+            results.append(outcome)
+            status = (
+                f"{'KILLED' if outcome.killed else 'SURVIVED'} "
+                f"({outcome.passed}/{outcome.total} {outcome.runner} cases passed)"
+            )
+        Console().print(f"{mutation.name}: {status}")
+    report["mutations"] = [result.model_dump(mode="json") for result in results]
+    _finish(args.output, report, failures, killed=all(result.killed for result in results))
 
 
 if __name__ == "__main__":

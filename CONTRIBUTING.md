@@ -53,7 +53,11 @@ For the same extended checks used in CI, run:
 bash scripts/ci-check.sh
 ```
 
-This also exercises README commands and mutation tests. SQLite is the default. Each worker
+This also exercises README commands and mutation tests. CI runs the same commands split into
+parallel jobs per stack (pytest and mutation shards plus a report job that merges them); see
+[the CI layout](docs/TEST_SPEED.md#ci-layout--ci-分片). / 该脚本还执行 README 命令和变异测试；
+CI 在每个栈上把同一组命令拆成并行 job（pytest 分片、变异分片及合并判定的汇总 job）。
+SQLite is the default. Each worker
 migrates one empty source; each `db` fixture receives a complete SQLite backup or a fresh
 PostgreSQL database cloned from that worker's private source, retaining constraints,
 functions and triggers. Each test also has its own home directory. Copies are cleaned up

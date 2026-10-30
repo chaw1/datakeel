@@ -1,0 +1,40 @@
+name: Prepare the gate environment
+description: >-
+  The toolchains and locked dependencies of the original single CI job, shared by every
+  gate, test-shard and mutation-shard job. The report job only needs the Python environment.
+inputs:
+  toolchains:
+    description: Also install Node, Rust and ffmpeg and the locked frontend dependencies.
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v6
+      with:
+        python-version: '3.12'
+    - if: inputs.toolchains == 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: web/package-lock.json
+    - if: inputs.toolchains == 'true'
+      name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@1.96.0
+      with:
+        components: rustfmt, clippy
+    - if: inputs.toolchains == 'true'
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: accel
+        shared-key: accel
+    - if: inputs.toolchains == 'true'
+      name: Install user-provided media tools
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y ffmpeg
+    - shell: bash
+      run: uv sync --locked
+    - if: inputs.toolchains == 'true'
+      shell: bash
+      working-directory: web
+      run: npm ci

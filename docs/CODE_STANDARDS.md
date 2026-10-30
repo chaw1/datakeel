@@ -1,6 +1,6 @@
 # 代码规范（全部落成工具门禁）
 
-> 原则：规范只写能被工具检查的条目。`make check` 一条命令跑完所有门禁，CI 跑同一条命令。任何门禁不绿，改动不算完成。
+> 原则：规范只写能被工具检查的条目。`make check` 一条命令跑完所有门禁，CI 把同一组 make 目标拆到并行 job 上跑。任何门禁不绿，改动不算完成。
 
 ## 1. 一条命令
 
@@ -13,12 +13,13 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pyright
 uv run lint-imports
-uv run python -m scripts.run_pytest --cov=datakeel --cov-report=term-missing --cov-fail-under=85
+uv run python -m scripts.run_pytest --cov=datakeel --cov-report=
+uv run coverage report --show-missing --fail-under=85  # 再输出 xml、json 并执行 check_coverage.py
 (cd web && npm run lint && npm run typecheck && npm test -- --run && npm run build)
 uv run python scripts/license_audit.py
 ```
 
-另有 `make fix`（ruff format + ruff check --fix + prettier --write）。pre-commit 钩子只跑秒级子集（ruff format、ruff check、prettier）；pyright 与测试留给 `make check` 和 CI。仓库带 `.github/workflows/ci.yml` 跑 `make check`（SQLite + Postgres 服务容器两套矩阵）。
+另有 `make fix`（ruff format + ruff check --fix + prettier --write）。pre-commit 钩子只跑秒级子集（ruff format、ruff check、prettier）；pyright 与测试留给 `make check` 和 CI。仓库带 `.github/workflows/ci.yml`，在 SQLite 与 Postgres 服务容器两个栈上执行同一组 make 目标：每栈一个门禁 job、四个整文件 pytest 分片、两个变异分片和一个汇总 job；汇总 job 检查分片并集等于完整收集且无重复，合并覆盖率后按 85% 总线和模块线判定，合并变异报告后按原规则判定（见 [测试执行说明](TEST_SPEED.md#ci-layout--ci-分片)）。
 
 公开内容扫描首先检查工作树中所有已跟踪文件（含未暂存修改）和未忽略的未跟踪文件，复用公开导出的本机路径、内网地址、密钥、内部名称、邮箱及文件大小规则。忽略的本地生成数据不进入扫描；已跟踪文件即使匹配忽略规则也必须检查。报告仅输出相对文件名、行号和规则，不输出命中值。邮箱样例可使用 RFC 2606/6761 保留的 `example.com`、`example.org`、`example.net` 及其子域，以及以 `.example`、`.invalid`、`.test`、`.localhost` 结尾的域名；提交身份仍只接受既有 GitHub noreply 域名。
 

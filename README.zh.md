@@ -433,7 +433,7 @@ uv run python scripts/check_readme.py
 bash scripts/ci-check.sh
 ```
 
-`make check` 执行格式、Ruff ALL、严格类型、分层、规模、覆盖率与全部前端门禁。`uv run pre-commit install` 安装提交钩子。`bash scripts/ci-check.sh` 是本地 CI 等价入口，在同一门禁之外执行 README 命令与变异测试；默认 SQLite，设置新建本机库的 `DATAKEEL_TEST_DATABASE_URL` 即可重跑 Postgres。pytest 和变异步骤都多进程并行，并行数用 `DATAKEEL_TEST_WORKERS` 设置（`1` 为串行），详见[测试执行说明](docs/TEST_SPEED.md)。
+`make check` 执行格式、Ruff ALL、严格类型、分层、规模、覆盖率与全部前端门禁。`uv run pre-commit install` 安装提交钩子。`bash scripts/ci-check.sh` 是本地 CI 等价入口，在同一门禁之外执行 README 命令与变异测试；默认 SQLite，设置新建本机库的 `DATAKEEL_TEST_DATABASE_URL` 即可重跑 Postgres。pytest 和变异步骤都多进程并行，并行数用 `DATAKEEL_TEST_WORKERS` 设置（`1` 为串行）。GitHub CI 在两个栈上把同一组命令拆成并行 job（一个门禁 job、四个 pytest 分片、两个变异分片，以及检查分片完整性并合并覆盖率和变异结果的汇总 job），目标是每次运行 45 分钟以内，详见[测试执行说明](docs/TEST_SPEED.md)。
 
 前端构建自动复制到 `datakeel/web_dist`，改源码后需重新构建。开发端口5173代理API8765。语义 Python/TS 快照均有漂移检查，OpenLineage 官方 schema 固定在测试仓中，可离线校验。
 
