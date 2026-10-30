@@ -242,21 +242,21 @@ so each run is labelled with the load it saw.
 运行旁边每分钟记录一次 1 分钟负载。当晚其他工作树大部分时间在跑全量并行测试（17 个进程，占
 15 核中的 10–13 核），所以每次运行都标明当时的负载。
 
-| B8 M, 10 minutes / 10 分钟 | PostgreSQL 50, quiet | PostgreSQL 50, shared | SQLite 50, quiet | SQLite 20, shared | SQLite 50, shared |
-| --- | --- | --- | --- | --- | --- |
-| Commit / 提交 | `00994be` | `28953e2` | `00994be` | `00994be` | `2f23217` |
-| 1-minute load / 1 分钟负载 | 4.7–7.8 | 8–12, then 42–108 from minute 4 | 2.0–4.5 | 13–40 | 5–8, then 24–70 |
-| Claims / saves / submits | 7,160 / 21,480 / 7,010 | 4,963 / 14,889 / 4,863 | 7,384 / 22,152 / 7,234 | 2,936 / 8,808 / 2,876 | 6,900 / 20,700 / 6,750 |
-| Operations/s | 58.9 | 40.7 | 60.8 | 24.1 | 56.7 |
-| Duplicate claims / 重复领取 | 0 | 0 | 0 | 0 | 0 |
-| Abandoned leases reaped / released twice / claimed again | 150 / 0 / 150 | 100 / 0 / 100 | 150 / 0 / 150 | 60 / 0 / 60 | 150 / 0 / 150 |
-| Failed annotators / lease lost while working | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
-| next p50 / p95 / p99 (ms) | 38 / 81 / 114 | 394 / 1,285 / 1,794 | 5 / 17 / 76 | 9 / 23 / 70 | 10 / 106 / 618 |
-| save p50 / p95 / p99 (ms) | 39 / 77 / 96 | 339 / 1,030 / 1,338 | 9 / 52 / 109 | 13 / 42 / 89 | 23 / 309 / 1,004 |
-| submit p95 (ms) | 77 | 1,331 | 52 | 35 | 301 |
-| next p95 per minute (ms) | 281, 88, 75, 67, 61, 78, 66, 67, 62, 62 | 334, 91, 115, then 1,253–1,576 | 198, then 14–17 | 98, 19, 18, 21, 22, 30, 33, 20, 33, 13 | 216, 30, 78, 82, 80, 109, 124, 224, 396, 55 |
-| save p95 per minute (ms) | 92, 86, 75, 67, 66, 77, 66, 64, 65, 63 | 86, 86, 110, then 1,039–1,229 | 50–55 every minute | 33, 35, 38, 42, 44, 51, 84, 35, 55, 19 | 51, 125, 186, 292, 304, 467, 407, 713, 818, 239 |
-| Targets met / 达标 | Yes / 是 | No / 否 | Yes / 是 | Yes / 是 | next only / 仅下一条 |
+| B8 M, 10 minutes / 10 分钟 | PostgreSQL 50, quiet | PostgreSQL 50, shared | SQLite 50, quiet | SQLite 20, shared | SQLite 50, shared | PostgreSQL 50, quiet, FIX1 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Commit / 提交 | `00994be` | `28953e2` | `00994be` | `00994be` | `2f23217` | `4056141` |
+| 1-minute load / 1 分钟负载 | 4.7–7.8 | 8–12, then 42–108 from minute 4 | 2.0–4.5 | 13–40 | 5–8, then 24–70 | 3.9–6.9 |
+| Claims / saves / submits | 7,160 / 21,480 / 7,010 | 4,963 / 14,889 / 4,863 | 7,384 / 22,152 / 7,234 | 2,936 / 8,808 / 2,876 | 6,900 / 20,700 / 6,750 | 7,161 / 21,483 / 7,011 |
+| Operations/s | 58.9 | 40.7 | 60.8 | 24.1 | 56.7 | 58.9 |
+| Duplicate claims / 重复领取 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Abandoned leases reaped / released twice / claimed again | 150 / 0 / 150 | 100 / 0 / 100 | 150 / 0 / 150 | 60 / 0 / 60 | 150 / 0 / 150 | 150 / 0 / 150 |
+| Failed annotators / lease lost while working | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| next p50 / p95 / p99 (ms) | 38 / 81 / 114 | 394 / 1,285 / 1,794 | 5 / 17 / 76 | 9 / 23 / 70 | 10 / 106 / 618 | 35 / 69 / 99 |
+| save p50 / p95 / p99 (ms) | 39 / 77 / 96 | 339 / 1,030 / 1,338 | 9 / 52 / 109 | 13 / 42 / 89 | 23 / 309 / 1,004 | 36 / 66 / 85 |
+| submit p95 (ms) | 77 | 1,331 | 52 | 35 | 301 | 65 |
+| next p95 per minute (ms) | 281, 88, 75, 67, 61, 78, 66, 67, 62, 62 | 334, 91, 115, then 1,253–1,576 | 198, then 14–17 | 98, 19, 18, 21, 22, 30, 33, 20, 33, 13 | 216, 30, 78, 82, 80, 109, 124, 224, 396, 55 | 354, 62, 69, 70, 66, 66, 65, 63, 68, 68 |
+| save p95 per minute (ms) | 92, 86, 75, 67, 66, 77, 66, 64, 65, 63 | 86, 86, 110, then 1,039–1,229 | 50–55 every minute | 33, 35, 38, 42, 44, 51, 84, 35, 55, 19 | 51, 125, 186, 292, 304, 467, 407, 713, 818, 239 | 68, 62, 69, 66, 65, 65, 67, 62, 68, 64 |
+| Targets met / 达标 | Yes / 是 | No / 否 | Yes / 是 | Yes / 是 | next only / 仅下一条 | Yes / 是 |
 
 On a quiet host PostgreSQL meets every B8 target with 50 annotators: zero duplicate claims, save
 p95 77 ms and next p95 81 ms, flat from minute 2 to minute 10 while the revision and assignment
@@ -269,6 +269,13 @@ scale for the team tier is therefore 20 concurrent annotators on a shared host a
 dedicated one; use PostgreSQL when several workers or services share the database, and keep CPU
 headroom for it.
 
+The last column reruns the quiet PostgreSQL measurement after P29b-FIX1, where every action
+takes its table locks before any task row and claims serialize per person on an advisory lock.
+Throughput is unchanged (58.9 operations/s) and the tail is lower: next p95 69 ms, save p95
+66 ms, flat from minute 2 (the first minute's 354 ms is again the opening burst). Per-task
+actions lock `lineage_events` in ROW EXCLUSIVE mode, which does not conflict with itself, so
+annotators stay concurrent.
+
 机器空闲时，PostgreSQL 50 人达到 B8 全部目标：0 重复领取，保存 p95 77 ms、下一条 p95 81 ms，
 从第 2 分钟到第 10 分钟随着修订表和指派表增长一直持平（第 1 分钟 281 ms 是 50 人同时开领）。
 共享负载下同一份代码独占性照样成立，但延迟跟着负载走：另一套测试占去 10–13 核时，PostgreSQL
@@ -276,6 +283,11 @@ p95 超过 1 秒。SQLite 写入串行但调用在进程内：机器空闲时 50
 在共享负载下也达标，50 人在共享负载下下一条达标、保存不达标。因此团队档的 SQLite 文档规模是：
 共享机器上同时 20 名标注员，独占机器上 50 名；多个 worker 或服务共用数据库时用 PostgreSQL，并为
 它预留 CPU。
+
+最后一列是 P29b-FIX1 之后在机器空闲时重跑的 PostgreSQL：所有动作先拿表级锁再锁任务行，领取前按人
+拿 advisory lock 串行。吞吐不变（58.9 次/秒），尾部更低：下一条 p95 69 ms、保存 p95 66 ms，从第 2
+分钟起持平（第 1 分钟 354 ms 仍是开场同时领取）。单任务动作对 `lineage_events` 拿的是 ROW EXCLUSIVE，
+和自己不冲突，标注员之间仍然并发。
 
 How P29b reached this point on PostgreSQL, from 60-second diagnostic pilots (50 annotators) and
 earlier full runs:
