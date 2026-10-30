@@ -24,7 +24,8 @@ from datakeel.operators.evidence.common import EvidenceParams, anchor, publish, 
 from datakeel.operators.evidence.contracts import Lexicon, read_lexicon
 from datakeel.operators.evidence.facts import AnnotationBox, AnnotationFacts, ImageDimensions
 
-VERSION = "1.0"
+# 1.1: boxes moved to the upright (EXIF-applied) frame; 1.0 cache entries are stale.
+VERSION = "1.1"
 
 
 class CocoAnnotation(BoundaryModel):

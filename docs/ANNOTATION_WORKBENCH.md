@@ -62,6 +62,33 @@ Every image is shown, annotated, imported and exported **upright**: the frame af
 
 Annotations made up to v0.18.0 were drawn on stored pixels, so they are stored-frame data. This covers workbench revisions and every annotation batch imported into a dataset before the upgrade (the platform showed those on stored pixels too) as well as training splits frozen from them. Their rows have no `coordinate_frame` (NULL); rows written since say `display`. Reading a NULL row of an EXIF-oriented image converts boxes, polygon points and image size into the upright frame, so the same object stays framed, and the revision carries `coordinate_conversion` (orientation, Pillow transform, stored size). Nothing is written back: history and audit stay byte-identical, and repeated upgrades or reads never convert twice.
 
+**Evidence extracted up to v0.18.0** is also in the stored frame: `evidence.image_phash` recorded the stored size and `evidence.annotation_labels` placed boxes on stored pixels. Both extractors are now version `1.1` (the other three stay `1.0`). `uv run datakeel rebuild-evidence` does not correct those boxes: it replays the stored extraction results and never reads an image again. After upgrading, re-run the extraction once for every paired dataset that contains EXIF-oriented images. Set `DATASET_ID` (from `GET /api/datasets`) and `SOURCE_VERSION_ID` (the earliest version in `GET /api/datasets/$DATASET_ID/versions`, the one extraction reads); on an instance with registered users also set `ACTOR` to a person allowed to run pipelines. The script prepares the existing `run_pipeline` action with the current preset and executes it (a reversible local action, so no approval step):
+
+```bash
+uv run python - "$DATASET_ID" "$SOURCE_VERSION_ID" "${ACTOR:-local}" <<'PY'
+import json, sys, urllib.request
+from datakeel.pipeline.evidence import evidence_pipeline
+
+dataset_id, version_id, actor = sys.argv[1:]
+
+def post(path, body):
+    request = urllib.request.Request(
+        "http://127.0.0.1:8765/api/actions" + path,
+        json.dumps(body).encode(),
+        {"Content-Type": "application/json", "X-Datakeel-Actor": actor},
+    )
+    with urllib.request.urlopen(request) as response:
+        return json.load(response)
+
+pipeline = evidence_pipeline().model_dump(mode="json")
+plan = post("/run_pipeline/prepare", {"dataset_id": dataset_id, "version_id": version_id, "shards": 1, "pipeline": pipeline})
+run = post(f"/{plan['id']}/execute", {"plan_digest": plan["plan_digest"], "actor": actor})
+print(json.dumps({"plan_id": plan["id"], "status": run["status"]}))
+PY
+```
+
+A worker must be running (`uv run datakeel worker`) to process the queued task. The cache key includes each extractor's version, so only those two extractors read the images again while the other three come from the cache; every replaced assertion is invalidated with reason `extractor_version_changed`, so the audit keeps the old boxes and their review decisions. For the demo's paired dataset, running `uv run datakeel demo` again does the same.
+
 ## Lossless training round trips
 
 `AnnotationRecord` adds optional polygons and record/shape/span attributes. Existing fields and endpoints remain compatible. Finalized records can be exported with controlled `export_dataset`, `format: "annotations_jsonl"`. The archive contains `annotations.jsonl` with full core records; import through the existing version training `import-annotations` endpoint using `format: "annotations_jsonl"`, `annotations_jsonl`, and a fresh `idempotency_key`. Standard COCO/YOLO behavior is unchanged; those detection formats do not represent every workbench component/property.

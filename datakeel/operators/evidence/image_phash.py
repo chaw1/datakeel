@@ -18,7 +18,8 @@ from datakeel.operators.evidence.contracts import read_near_duplicate
 from datakeel.operators.evidence.facts import ImageDimensions
 from datakeel.operators.image.helpers import open_image
 
-VERSION = "1.0"
+# 1.1: image_dimensions became the upright (EXIF-applied) size; 1.0 cache entries are stale.
+VERSION = "1.1"
 
 
 def dhash(image: Image.Image) -> str:

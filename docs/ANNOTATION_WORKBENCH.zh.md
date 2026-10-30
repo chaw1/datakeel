@@ -62,6 +62,33 @@
 
 v0.18.0 及以前，工作台显示的是存储方向，所以那时画的标注是存储方向的坐标。数据集里升级前导入的标注批次也按存储方向看待（平台当时就是这么显示的），由它们冻结的训练切分同样如此。这些行没有 `coordinate_frame`（NULL），之后写入的行记 `display`。读取 NULL 行时，如果图片带 EXIF 方向，就把框、多边形顶点和图片宽高换算到摆正后的方向，框住的还是同一个物体；修订上带 `coordinate_conversion`（方向值、Pillow 变换名、存储宽高），可以追溯。换算结果不写回：修订历史和审计一个字节都不变，重复升级、重复读取都不会换算两次。
 
+**v0.18.0 及以前抽出的证据**也是存储方向的：`evidence.image_phash` 记的是存储宽高，`evidence.annotation_labels` 按存储像素放框。这两个抽取器现在是 `1.1` 版（另外三个仍是 `1.0`）。`uv run datakeel rebuild-evidence` 修不好这些框：它只重放已存的抽取结果，不会重新读图。升级后，对每个含带方向图片的配对数据集重跑一次抽取。先设好 `DATASET_ID`（来自 `GET /api/datasets`）和 `SOURCE_VERSION_ID`（`GET /api/datasets/$DATASET_ID/versions` 里最早的那个版本，抽取读的就是它）；有注册用户的实例还要把 `ACTOR` 设成有权运行管线的人。下面的脚本用当前的预设准备现有的 `run_pipeline` 动作并执行（这是可撤销的本地动作，不用审批）：
+
+```bash
+uv run python - "$DATASET_ID" "$SOURCE_VERSION_ID" "${ACTOR:-local}" <<'PY'
+import json, sys, urllib.request
+from datakeel.pipeline.evidence import evidence_pipeline
+
+dataset_id, version_id, actor = sys.argv[1:]
+
+def post(path, body):
+    request = urllib.request.Request(
+        "http://127.0.0.1:8765/api/actions" + path,
+        json.dumps(body).encode(),
+        {"Content-Type": "application/json", "X-Datakeel-Actor": actor},
+    )
+    with urllib.request.urlopen(request) as response:
+        return json.load(response)
+
+pipeline = evidence_pipeline().model_dump(mode="json")
+plan = post("/run_pipeline/prepare", {"dataset_id": dataset_id, "version_id": version_id, "shards": 1, "pipeline": pipeline})
+run = post(f"/{plan['id']}/execute", {"plan_digest": plan["plan_digest"], "actor": actor})
+print(json.dumps({"plan_id": plan["id"], "status": run["status"]}))
+PY
+```
+
+要有 worker 在跑（`uv run datakeel worker`）才会处理排队的任务。缓存键里有每个抽取器的版本号，所以只有这两个抽取器重新读图，另外三个直接用缓存；被替换的断言都以 `extractor_version_changed` 为原因作废，旧框和对它们的审核结论留在审计里。演示用的配对数据集，再跑一次 `uv run datakeel demo` 就行。
+
 ## 无损往返
 
 `AnnotationRecord` 增加可选多边形以及记录、形状和文本片段属性，保留旧字段与接口。定稿后通过受控 `export_dataset`，选择 `annotations_jsonl` 格式；归档中的 `annotations.jsonl` 保存完整核心记录。用已有版本训练集 `import-annotations` 接口传入 `format: "annotations_jsonl"`、`annotations_jsonl` 内容和新的 `idempotency_key` 即可导回。COCO/YOLO 行为不变，检测格式无法表达全部四种组件及属性。

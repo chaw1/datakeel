@@ -131,7 +131,7 @@ it("sends the explicit five-extractor chain with one global near-duplicate shard
         kind: "operator",
         operator: "evidence.image_phash",
         inputs: { files: "evidence_images.image" },
-        params: { extractor_version: "1.0" },
+        params: { extractor_version: "1.1" },
       },
       {
         id: "caption_mentions",
@@ -145,7 +145,7 @@ it("sends the explicit five-extractor chain with one global near-duplicate shard
         kind: "operator",
         operator: "evidence.annotation_labels",
         inputs: { files: "caption_mentions.files" },
-        params: { extractor_version: "1.0" },
+        params: { extractor_version: "1.1" },
       },
       {
         id: "label_gap",

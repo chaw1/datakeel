@@ -12,6 +12,10 @@ _EXPORT = "tests/training/test_export_upright.py::"
 _EVERY = _EXPORT + "test_every_exif_orientation_exports_pixels_and_boxes_in_one_upright_frame"
 _UNROTATED = "geometry.model_copy(update={'orientation': 1})"
 _IMAGEFOLDER = _EXPORT + "test_classification_imagefolder_is_upright_for_a_loader_that_ignores_exif"
+_UPGRADE = (
+    "tests/evidence/test_execution.py::"
+    "test_upgrade_re_extracts_stored_frame_boxes_instead_of_reusing_v0_18_cache"
+)
 
 ORIENTATION_MUTATIONS = (
     Mutation(
@@ -198,6 +202,22 @@ ORIENTATION_MUTATIONS = (
         before='_UPRIGHT_FORMATS = frozenset({"coco", "yolo", "hf_imagefolder", "imagefolder"})',
         after='_UPRIGHT_FORMATS = frozenset({"coco", "yolo", "hf_imagefolder"})',
         case=_IMAGEFOLDER,
+        runner="pytest",
+    ),
+    Mutation(
+        name="orientation-phash-version-retires-v0-18-cache",
+        path="operators/evidence/image_phash.py",
+        before='VERSION = "1.1"\n',
+        after='VERSION = "1.0"\n',
+        case=_UPGRADE,
+        runner="pytest",
+    ),
+    Mutation(
+        name="orientation-labels-version-retires-v0-18-cache",
+        path="operators/evidence/annotation_labels.py",
+        before='VERSION = "1.1"\n',
+        after='VERSION = "1.0"\n',
+        case=_UPGRADE,
         runner="pytest",
     ),
 )

@@ -139,7 +139,7 @@ metrics:
 
 来源版本已有配对样本元数据但尚未抽取时，点击 **准备运行证据抽取** 会生成绑定所示来源版本的 `run_pipeline` 计划。先查看冻结输入，再明确点击 **执行动作**；页面展示任务与动作回执，轮询进度，并在成功后刷新证据。普通文件数据集会在 **在本地生成或导入配对样本** 中说明配对要求：每个场景放在 `train/` 或 `val/` 下，图像与可选的 `caption.txt`、`annotations.json` 同目录。按页面给出的本地生成、导入命令执行，使用与服务相同的 `DATAKEEL_HOME` 和 `DATAKEEL_DATABASE_URL`；已有样本可跳过生成并修改导入目录。配对导入器保留引用关系，但不会自动抽取。刷新数据库后，在证据页选择新数据集，再准备抽取计划；缺少附属文件仍表示未知证据。
 
-五个算子为 `evidence.image_phash`、`evidence.caption_mentions`、`evidence.annotation_labels`、`evidence.label_gap`、`evidence.near_duplicate`。[词表](contracts/evidence/lexicon.yaml) 把 `pedestrian`、`行人` 及标注类别别名折叠为 canonical `person`；`night` 等场景概念同样使用 `mentions` 谓词。caption 派生状态只取 `present` 或 `unknown`，缺 sidecar 保持未知。只有 caption 提到某概念且已提供的标注文件漏标时，`label_gap` 才是 `present`；本版只有直接测量的 `corrupt` 可取 `absent`。文本锚点是 NFC 归一化后 Unicode 码点的半开区间 `[start, end)`，图像锚点是原图像素 `xyxy`，附原始宽高。
+五个算子为 `evidence.image_phash`、`evidence.caption_mentions`、`evidence.annotation_labels`、`evidence.label_gap`、`evidence.near_duplicate`。[词表](contracts/evidence/lexicon.yaml) 把 `pedestrian`、`行人` 及标注类别别名折叠为 canonical `person`；`night` 等场景概念同样使用 `mentions` 谓词。caption 派生状态只取 `present` 或 `unknown`，缺 sidecar 保持未知。只有 caption 提到某概念且已提供的标注文件漏标时，`label_gap` 才是 `present`；本版只有直接测量的 `corrupt` 可取 `absent`。文本锚点是 NFC 归一化后 Unicode 码点的半开区间 `[start, end)`，图像锚点是摆正后（应用 EXIF 方向）的原图像素 `xyxy`，附摆正后的宽高；v0.18.0 及以前抽出的证据怎么重抽，见[图片方向](docs/ANNOTATION_WORKBENCH.zh.md#图片方向)。
 
 [近重复合同](contracts/evidence/near_duplicate.yaml) 固定 64 位 dHash、汉明距离 ≤8。默认 `mode: prefix` 按前 4 位分桶，可能漏掉跨桶样本对；`mode: exact` 用互不重叠的多段索引找全阈值内的直接样本对，增加索引与比较成本。每个直接样本对只存一次、双向查询，不做传递扩展或自动合并。可选 `datakeel-accel` 包用 Rust 执行相同的整数比较；`DATAKEEL_ACCEL=auto|off|required` 控制实现，`auto` 未安装时回退 Python。[构建步骤、实测性能和实现报告](docs/RUST_ACCEL.md)说明具体用法。模型抽取器接口和 fake 适配器仅做单元测试，不进入抽取 DAG、证据评测或模型预算。
 

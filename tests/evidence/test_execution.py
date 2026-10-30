@@ -8,18 +8,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from PIL import Image
 from sqlalchemy import select
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_execution import EvidenceExecutionContext
+from datakeel.core.evidence_models import EvidenceValue, ImageRegion
 from datakeel.evidence.execution import EvidenceExecution
+from datakeel.operators.evidence import annotation_labels, image_phash
+from datakeel.operators.evidence.facts import ImageDimensions
 from datakeel.pipeline import run_pipeline
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence.generator import generate_samples
 from datakeel.storage.database import EventRow, ShardRow, TaskRow
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_decisions import list_decisions
-from datakeel.storage.evidence_import import import_evidence_samples
+from datakeel.storage.evidence_import import import_evidence_samples, source_manifest
 from datakeel.storage.evidence_projection import rebuild_evidence
 from datakeel.storage.evidence_runs import extraction_report
 from datakeel.storage.evidence_store import list_assertions
@@ -29,6 +33,7 @@ from datakeel.worker.runner import execute
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from datakeel.pipeline.models import Pipeline
     from datakeel.storage.database import Database
 
 
@@ -85,6 +90,85 @@ def test_worker_first_run_cache_reuse_and_one_extractor_version_invalidation(
     assert changed.extracted == 20
     assert changed.skipped_cached == 80
     assert {entry.actor for entry in list_decisions(db)} == {"evidence.caption_mentions"}
+    assert rebuild_evidence(db).matches
+
+
+def _run(db: Database, dataset_id: str, name: str, pipeline: Pipeline) -> str:
+    queue = DatabaseQueue(db)
+    task = queue.submit(dataset_id, name, pipeline)
+    lease = queue.claim()
+    assert lease is not None
+    assert execute(queue, lease)
+    return task
+
+
+def _person_box(db: Database, asset_id: str) -> tuple[tuple[float, ...], int, int]:
+    (region,) = (
+        anchor.selector
+        for assertion in list_assertions(db, asset_id)
+        if assertion.predicate == "annotated_as"
+        and isinstance(assertion.object, EvidenceValue)
+        and assertion.object.concept == "person"
+        for anchor in assertion.anchors
+        if isinstance(anchor.selector, ImageRegion)
+    )
+    return region.bbox, region.width, region.height
+
+
+def test_upgrade_re_extracts_stored_frame_boxes_instead_of_reusing_v0_18_cache(
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A v0.18.0 run cached stored-frame boxes at 1.0; the current preset must not reuse them."""
+    directory = tmp_path / "samples"
+    generate_samples(directory, samples=20)
+    scene = directory / "train/scene-0000"
+    with Image.open(scene / "image.png") as image:
+        stored = image.copy()
+    exif = Image.Exif()
+    exif[274] = 6
+    stored.save(scene / "image.png", exif=exif)
+    sidecar = (
+        '{"annotations":[{"category":"person","bbox":[24,28,48,72]}],"width":192,"height":128}'
+    )
+    (scene / "annotations.json").write_text(sidecar, encoding="utf-8")
+    dataset_id = import_evidence_samples(db, "upgraded samples", directory).id
+    rotated = next(
+        item.id
+        for item in source_manifest(db, dataset_id)[1]
+        if str(item.metadata["evidence_sample"]["sample_key"]).startswith("train/scene-0000/")
+    )
+    with monkeypatch.context() as legacy:
+        # v0.18.0 measured and framed boxes on stored pixels and pinned every extractor to 1.0.
+        legacy.setattr(annotation_labels, "_geometry", lambda _file: None)
+        legacy.setattr(
+            image_phash,
+            "_upright_size",
+            lambda image: ImageDimensions(width=image.width, height=image.height),
+        )
+        preset = evidence_pipeline()
+        old = preset.model_copy(
+            update={
+                "nodes": [
+                    node.model_copy(update={"params": {"extractor_version": "1.0"}})
+                    if node.operator
+                    else node
+                    for node in preset.nodes
+                ]
+            }
+        )
+        _run(db, dataset_id, "v0.18.0", old)
+    assert _person_box(db, rotated) == ((24, 28, 72, 100), 192, 128)
+    assert rebuild_evidence(db).matches
+    assert _person_box(db, rotated) == ((24, 28, 72, 100), 192, 128), "replay never re-extracts"
+    report = extraction_report(db, _run(db, dataset_id, "upgraded", evidence_pipeline()))
+    assert (report.extracted, report.skipped_cached) == (40, 60)
+    assert _person_box(db, rotated) == ((28, 24, 100, 72), 128, 192)
+    decisions = list_decisions(db)
+    assert {entry.actor for entry in decisions} == {
+        "evidence.image_phash",
+        "evidence.annotation_labels",
+    }
+    assert {entry.reason for entry in decisions} == {"extractor_version_changed"}
     assert rebuild_evidence(db).matches
 
 
