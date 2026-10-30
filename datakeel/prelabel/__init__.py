@@ -4,7 +4,7 @@
 """Cloud vision prelabel adapter: image preparation, prompt, retry-free transport and parsing."""
 
 from datakeel.prelabel.client import ProviderReply, open_client, request_view, use_transport
-from datakeel.prelabel.credentials import resolve_credential, use_keychain
+from datakeel.prelabel.credential_source import resolve_credential, use_keychain
 from datakeel.prelabel.estimate import (
     call_input_tokens,
     image_estimate,

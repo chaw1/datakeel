@@ -19,7 +19,7 @@ WORKBENCH_MUTATIONS = (
     ),
     Mutation(
         name="workbench-prelabel-approved-human-reference",
-        path="storage/production_statistics.py",
+        path="storage/production_prelabel_refs.py",
         before='if approved is None or approved.source != "human":',
         after="if approved is None:",
         case="tests/storage/test_workbench_accuracy.py::test_prelabel_accuracy_requires_approved_human_reference_and_model_history",
@@ -28,8 +28,8 @@ WORKBENCH_MUTATIONS = (
     Mutation(
         name="workbench-prelabel-exact-approved-properties",
         path="storage/production_statistics.py",
-        before="exact += prelabel_difference(approved.annotation, model.annotation) == 0",
-        after="exact += True",
+        before="exact = sum(prelabel_difference(human, model) == 0 for model, human in references)",
+        after="exact = len(references)",
         case="tests/storage/test_workbench_accuracy.py::test_prelabel_accuracy_compares_latest_preceding_model_with_exact_approved_properties",
         runner="pytest",
     ),
