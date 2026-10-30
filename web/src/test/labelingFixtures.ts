@@ -140,6 +140,7 @@ export const labelingProject: ProjectWorkbench = {
   },
   confidence_thresholds: null,
   prelabel_spend: [],
+  prelabel_progress: [],
 };
 export const labelingIndex: WorkbenchIndex = {
   actor: "local",

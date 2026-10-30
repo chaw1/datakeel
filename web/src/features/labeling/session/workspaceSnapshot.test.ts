@@ -83,6 +83,7 @@ function workspace(actor = "person-1"): WorkspaceSnapshot {
         },
       },
       prelabel_spend: [],
+      prelabel_progress: [],
       agreement: {
         annotator_count: 0,
         boxes: [],
@@ -186,12 +187,15 @@ it("drops a project snapshot saved before accuracy and spend facts existed", () 
   if (!snapshot.project) throw new Error("Missing fixture project");
   const withoutSpend: Record<string, unknown> = { ...snapshot.project };
   delete withoutSpend.prelabel_spend;
+  const withoutProgress: Record<string, unknown> = { ...snapshot.project };
+  delete withoutProgress.prelabel_progress;
   const exactOnly: Record<string, unknown> = {
     ...snapshot.project.prelabel_accuracy,
   };
   delete exactOnly.iou_50;
   for (const project of [
     withoutSpend,
+    withoutProgress,
     { ...snapshot.project, prelabel_accuracy: exactOnly },
   ])
     expect(

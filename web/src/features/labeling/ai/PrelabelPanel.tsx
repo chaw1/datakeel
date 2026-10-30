@@ -1,18 +1,27 @@
 import { useI18n } from "../../../i18n/useI18n";
 
 import { AccuracyHeadline } from "./AccuracyHeadline";
+import { PrelabelRuns } from "./PrelabelRuns";
 import { ThresholdBasis } from "./ThresholdBasis";
 import "./ai.css";
 
 import type { ProjectWorkbench } from "../../../api/production";
 
-/** Model drafts on this project: confidence, accuracy against approved work, tiers and spend. */
-export function PrelabelPanel({ data }: { data: ProjectWorkbench }) {
+/** Model drafts on this project: live runs, confidence, accuracy, tiers and spend. */
+export function PrelabelPanel({
+  data,
+  onRefresh,
+}: {
+  data: ProjectWorkbench;
+  /** Reload the cockpit's facts; polled while a cloud prelabel run is going. */
+  onRefresh?: () => void;
+}) {
   const { t, locale } = useI18n();
   const count = new Intl.NumberFormat(locale);
   return (
     <section className="card wb-prelabels" aria-label={t("wbPrelabels")}>
       <h2>{t("wbPrelabels")}</h2>
+      <PrelabelRuns runs={data.prelabel_progress} onRefresh={onRefresh} />
       <dl className="wb-counts">
         {data.confidence.buckets.map((bucket) => (
           <div key={bucket.lower}>

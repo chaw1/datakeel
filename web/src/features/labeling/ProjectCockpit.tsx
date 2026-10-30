@@ -145,7 +145,7 @@ export function ProjectCockpit({
           </table>
         </div>
       </section>
-      <PrelabelPanel data={data} />
+      <PrelabelPanel data={data} onRefresh={onChanged} />
       {!personal && can("production:manage") && (
         <ReviewSampling
           key={data.project.review_sample_rate}

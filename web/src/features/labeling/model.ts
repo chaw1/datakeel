@@ -1,3 +1,5 @@
+import { emptyContent } from "./templateContent";
+
 import type {
   EffectiveScopes,
   ProductionTask,
@@ -69,10 +71,14 @@ export function startsFromScratch(task: TaskWorkbench, personal: boolean) {
     latest.confidence_tier === "low"
   );
 }
-/** `scratch` ignores the latest revision, as if the task had none yet. */
+/**
+ * `scratch` ignores the latest revision, as if the task had none yet. An empty start
+ * carries an empty list for each component the template enables, so it can be saved.
+ */
 export function initialAnnotation(
   task: TaskWorkbench,
   actor: string,
+  template: ProductionTemplate,
   scratch = false,
 ): AnnotationRecord {
   const latest = scratch
@@ -88,6 +94,7 @@ export function initialAnnotation(
       text_length: task.sample.text
         ? Array.from(task.sample.text).length
         : null,
+      ...emptyContent(template),
     }),
     annotator_id: actor,
     image_width: latest?.annotation.image_width ?? task.sample.image_width,

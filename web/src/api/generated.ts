@@ -4006,6 +4006,8 @@ export interface components {
              * @default []
              */
             object_confidences: number[];
+            /** @description Set when a high-confidence model draft was submitted for review directly. */
+            pass_through?: components["schemas"]["PassThrough"] | null;
             /** Previous Revision Id */
             previous_revision_id: string | null;
             /**
@@ -4963,6 +4965,22 @@ export interface components {
             canonical: string;
         };
         /**
+         * CalibrationSegment
+         * @description One flat piece of the isotonic confidence-to-hit-rate curve over reviewed objects.
+         */
+        CalibrationSegment: {
+            /** High */
+            high: number;
+            /** Hits */
+            hits: number;
+            /** Low */
+            low: number;
+            /** Objects */
+            objects: number;
+            /** Rate */
+            rate: number;
+        };
+        /**
          * CallTree
          * @description Return independently auditable nodes and their individual model-call traces.
          */
@@ -5542,6 +5560,17 @@ export interface components {
              * @default 0
              */
             objects: number;
+            /**
+             * Pass Through
+             * @description False while defaults stand in for measured thresholds: high stays a draft.
+             * @default true
+             */
+            pass_through: boolean;
+            /**
+             * Segments
+             * @default []
+             */
+            segments: components["schemas"]["CalibrationSegment"][];
             /**
              * Source
              * @enum {string}
@@ -9884,6 +9913,29 @@ export interface components {
             tp: number;
         };
         /**
+         * PassThrough
+         * @description Who answers for a model draft submitted without a person, by which model and bar.
+         */
+        PassThrough: {
+            /** Confidence */
+            confidence: number;
+            /** High */
+            high: number;
+            /** Low */
+            low?: number | null;
+            /** Model Id */
+            model_id: string;
+            /** Reviewed Objects */
+            reviewed_objects: number;
+            /**
+             * Threshold Source
+             * @enum {string}
+             */
+            threshold_source: "configured" | "calibrated";
+            /** Triggered By */
+            triggered_by: string;
+        };
+        /**
          * Pipeline
          * @description Describe an acyclic set of nodes and the published output slots.
          */
@@ -9917,6 +9969,49 @@ export interface components {
             iou_75: components["schemas"]["IoUAccuracy"];
             /** Project Id */
             project_id: string;
+        };
+        /**
+         * PrelabelProgress
+         * @description Where a cloud prelabel run stands: images done and failed, money spent, last update.
+         */
+        PrelabelProgress: {
+            /** Budget */
+            budget?: number | null;
+            /** Completed Images */
+            completed_images: number;
+            /** Currency */
+            currency?: string | null;
+            /** Failed Images */
+            failed_images: number;
+            /** Model Id */
+            model_id: string;
+            /** Model Name */
+            model_name: string;
+            /** Model Version */
+            model_version: string;
+            /** Planned Images */
+            planned_images: number;
+            /** Run Id */
+            run_id: string;
+            /** Spent */
+            spent: number;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "completed" | "failed" | "abandoned";
+            /**
+             * Stopped
+             * @default false
+             */
+            stopped: boolean;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /**
          * ProductionLabel
@@ -10590,6 +10685,11 @@ export interface components {
             evidence: string[];
             /** Message */
             message: string;
+            /**
+             * Message Zh
+             * @default
+             */
+            message_zh: string;
             /**
              * Objects
              * @default []
@@ -12580,6 +12680,11 @@ export interface components {
             /** Packages */
             packages: components["schemas"]["TaskPackage"][];
             prelabel_accuracy: components["schemas"]["PrelabelAccuracy"];
+            /**
+             * Prelabel Progress
+             * @default []
+             */
+            prelabel_progress: components["schemas"]["PrelabelProgress"][];
             /**
              * Prelabel Spend
              * @default []

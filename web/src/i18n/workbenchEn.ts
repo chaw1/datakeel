@@ -137,6 +137,28 @@ export const workbenchEn = {
   wbThresholdLowCapped:
     "The low threshold was capped so it never exceeds the high threshold.",
   wbThresholdBasis: "Basis: {objects} reviewed model objects",
+  wbNoPassThrough:
+    "Not enough reviewed samples yet: high-confidence drafts are not passed straight to review",
+  wbCalibrationCurve: "Calibration curve",
+  wbCalibrationRange: "Confidence range",
+  wbCalibrationRule:
+    "High tier: the lowest confidence with a calibrated hit rate ≥ 95%. Drafts below the low threshold (calibrated hit rate < 50%) start from an empty annotation.",
+  wbPrelabelRuns: "Prelabel runs",
+  wbRunStatus: "Status",
+  wbRunImages: "Images done/planned",
+  wbRunFailedImages: "Failed images",
+  wbRunSpend: "Spent / budget",
+  wbRunUpdated: "Updated",
+  wbRunRunning: "Running",
+  wbRunCompleted: "Completed",
+  wbRunFailed: "Failed",
+  wbRunAbandoned: "Abandoned",
+  wbRunStopped: "Stopped at budget",
+  wbRunNoBudget: "no cap",
+  wbTooFewAnnotations:
+    "Needs at least {minimum} {minimum, plural, one {annotation} other {annotations}} (now {count})",
+  wbTooManyAnnotations:
+    "Allows at most {maximum} {maximum, plural, one {annotation} other {annotations}} (now {count})",
   wbTierHigh: "high",
   wbTierMedium: "medium",
   wbTierLow: "low",

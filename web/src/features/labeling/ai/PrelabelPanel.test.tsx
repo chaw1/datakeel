@@ -55,6 +55,12 @@ const measured: ProjectWorkbench = {
       { tier: "medium", objects: 12, hits: 9, rate: 0.75 },
       { tier: "low", objects: 6, hits: 2, rate: 1 / 3 },
     ],
+    segments: [
+      { low: 0.12, high: 0.4, objects: 6, hits: 2, rate: 1 / 3 },
+      { low: 0.4, high: 0.9, objects: 12, hits: 9, rate: 0.75 },
+      { low: 0.9, high: 0.99, objects: 30, hits: 29, rate: 29 / 30 },
+    ],
+    pass_through: true,
   },
   prelabel_spend: [
     {
@@ -104,6 +110,26 @@ it("shows thresholds, where they came from and the measured hit rate per tier", 
   expect(
     screen.queryByText("Not enough reviewed samples; using defaults"),
   ).toBeNull();
+  expect(screen.queryByText(/not passed straight to review/)).toBeNull();
+});
+
+it("shows the calibration curve the thresholds were read from and the rule in one line", () => {
+  render(<PrelabelPanel data={measured} />);
+  const curve = screen.getByRole("table", { name: "Calibration curve" });
+  expect(
+    within(curve).getByRole("row", {
+      name: "Confidence range Objects Hits Hit rate",
+    }),
+  ).toBeVisible();
+  expect(
+    within(curve).getByRole("row", { name: "0.12–0.40 6 2 33%" }),
+  ).toBeVisible();
+  expect(
+    within(curve).getByRole("row", { name: "0.90–0.99 30 29 97%" }),
+  ).toBeVisible();
+  expect(
+    screen.getByText(/the lowest confidence with a calibrated hit rate ≥ 95%/),
+  ).toHaveClass("muted");
 });
 
 it("says in plain words when too few reviewed objects exist and defaults apply", () => {
@@ -122,6 +148,8 @@ it("says in plain words when too few reviewed objects exist and defaults apply",
             minimum_objects: 30,
             notes: ["insufficient_samples"],
             tiers: [],
+            segments: [],
+            pass_through: false,
           },
         }}
       />
@@ -130,6 +158,10 @@ it("says in plain words when too few reviewed objects exist and defaults apply",
   expect(screen.getByText("样本不足，用默认值")).toBeVisible();
   expect(screen.getByText("12/30 个对象")).toBeVisible();
   expect(screen.getByText("默认值")).toBeVisible();
+  expect(
+    screen.getByText("样本不足，暂不直通：高档草稿先留给人改"),
+  ).toBeVisible();
+  expect(screen.queryByRole("table", { name: "校准曲线" })).toBeNull();
 });
 
 it("lists spend per model and keeps empty facts readable", () => {

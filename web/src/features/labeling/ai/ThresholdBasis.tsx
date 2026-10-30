@@ -1,5 +1,6 @@
 import { useI18n } from "../../../i18n/useI18n";
 
+import { CalibrationCurve } from "./CalibrationCurve";
 import { percent, tierMessages } from "./format";
 
 import type { components } from "../../../api/generated";
@@ -57,6 +58,11 @@ export function ThresholdBasis({
           </span>
         </p>
       )}
+      {!thresholds.pass_through && (
+        <p className="wb-threshold-note">
+          <strong>{t("wbNoPassThrough")}</strong>
+        </p>
+      )}
       {thresholds.notes.includes("low_capped") && (
         <p className="muted">{t("wbThresholdLowCapped")}</p>
       )}
@@ -87,6 +93,7 @@ export function ThresholdBasis({
           </table>
         </div>
       )}
+      <CalibrationCurve segments={thresholds.segments} />
     </>
   );
 }

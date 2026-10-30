@@ -15,6 +15,7 @@ export function TaskAiNotes({
   personal,
   reviewable,
   scratch,
+  passThrough = true,
   revisionId,
   onUseDraft,
   onLocate,
@@ -24,6 +25,8 @@ export function TaskAiNotes({
   reviewable: boolean;
   /** The editor started empty over a low-confidence draft. */
   scratch: boolean;
+  /** False while default thresholds stand in: a high draft is not passed straight to review. */
+  passThrough?: boolean;
   /** The revision the editor shows; locating only makes sense on the scored one. */
   revisionId: string | null;
   /** Load the hidden draft; absent when nothing may be edited or work has begun. */
@@ -45,6 +48,11 @@ export function TaskAiNotes({
           <p className="muted">
             {t("wbModelTier", { tier: t(tierMessages[tier]) })}
           </p>
+          {tier === "high" && !passThrough && (
+            <p className="wb-threshold-note">
+              <strong>{t("wbNoPassThrough")}</strong>
+            </p>
+          )}
           {scratch && <p>{t("wbScratchStart")}</p>}
           {scratch && onUseDraft && (
             <button type="button" onClick={onUseDraft}>

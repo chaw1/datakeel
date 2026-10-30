@@ -74,6 +74,7 @@ export function TaskSession({
   });
   const { snapshot, session } = data;
   const personal = project.project.workflow_tier === "personal";
+  const template = project.template ?? defaultTemplate;
   const editable =
     allowed(project.effective_scopes, "production:annotate") &&
     taskEditable(snapshot, actor, personal) &&
@@ -216,7 +217,7 @@ export function TaskSession({
               value={session.annotation}
               onChange={session.edit}
               labels={project.label_set.labels}
-              template={project.template ?? defaultTemplate}
+              template={template}
               mediaUrl={task.sample.content_url}
               thumbnailUrl={
                 (task.sample.image_width ?? 0) > 3000 ||
@@ -249,11 +250,12 @@ export function TaskSession({
             personal={personal}
             reviewable={reviewable}
             scratch={startsFromScratch(snapshot, personal)}
+            passThrough={project.confidence_thresholds?.pass_through !== false}
             revisionId={session.revisionId}
             onUseDraft={
               editable && !busy && !session.dirty
                 ? () => {
-                    session.edit(initialAnnotation(snapshot, actor));
+                    session.edit(initialAnnotation(snapshot, actor, template));
                   }
                 : undefined
             }

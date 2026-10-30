@@ -1,4 +1,5 @@
 import { useI18n } from "../../../i18n/useI18n";
+import { templateComponents } from "../templateContent";
 
 import { AttributeForm } from "./AttributeForm";
 import { attributeFields, withDefaults } from "./attributes";
@@ -13,14 +14,7 @@ import type { AnnotationRecord, EditorProps } from "./types";
 
 export function AnnotationEditor(props: EditorProps) {
   const { t } = useI18n();
-  const configured = props.template.component_config?.components;
-  const components = [
-    ...new Set(
-      Array.isArray(configured) && configured.length
-        ? configured.filter((item): item is string => typeof item === "string")
-        : [props.template.annotation_type],
-    ),
-  ];
+  const components = templateComponents(props.template);
   const onImage = components.some((item) =>
     ["box", "bbox", "polygon"].includes(item),
   );

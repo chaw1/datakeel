@@ -11,6 +11,7 @@ import { attributeProblems } from "./editors/attributes";
 import { defaultTemplate, initialAnnotation, startsFromScratch } from "./model";
 import { savedRevision } from "./savedRevision";
 import { useAnnotationSession } from "./session/useAnnotationSession";
+import { countProblem } from "./templateContent";
 
 import type {
   AnnotationRecord,
@@ -63,17 +64,19 @@ export function useTaskSessionData({
     if (request === reads.current) acceptSnapshot(fresh);
     return fresh;
   }, [task.task.id, acceptSnapshot]);
+  const template = project.template ?? defaultTemplate;
   const load = useCallback(async () => {
     const fresh = await refreshSnapshot();
     return {
       annotation: initialAnnotation(
         fresh,
         actor,
+        template,
         startsFromScratch(fresh, personal),
       ),
       revisionId: fresh.task.latest_revision_id ?? null,
     };
-  }, [actor, refreshSnapshot, personal]);
+  }, [actor, refreshSnapshot, personal, template]);
   const save = useCallback(
     async (annotation: AnnotationRecord, previousRevisionId: string | null) => {
       if (!canSync || isIdentityVerified?.() === false)
@@ -115,9 +118,11 @@ export function useTaskSessionData({
       onLeaseLost,
     ],
   );
-  const template = project.template ?? defaultTemplate;
+  /** The server's own save rules, so the person reads them in their language: count, then attributes. */
   const validate = useCallback(
     (annotation: AnnotationRecord) => {
+      const counted = countProblem(annotation, template, t);
+      if (counted) return counted;
       const first = attributeProblems(annotation, template).at(0);
       return first ? problemText(first, t, locale) : "";
     },
@@ -129,6 +134,7 @@ export function useTaskSessionData({
       annotation: initialAnnotation(
         task,
         actor,
+        template,
         startsFromScratch(task, personal),
       ),
       revisionId: task.task.latest_revision_id ?? null,
@@ -139,18 +145,21 @@ export function useTaskSessionData({
   });
   const { flush, dirty, reload } = session;
   const { annotation: shown, revisionId: shownRevision } = session;
-  /** An untouched empty start is what the person saw: save it so submit never sends the hidden low draft. */
-  const settleScratch = useCallback(async () => {
+  /**
+   * The server only takes a submission over the person's own revision. While the head is
+   * still a model draft, save what they see as theirs first: the empty start over a low
+   * draft (never the hidden draft), or a medium or personal draft confirmed unchanged.
+   */
+  const settleModelDraft = useCallback(async () => {
     const current = snapshotRef.current;
-    if (
-      dirty ||
-      !startsFromScratch(current, personal) ||
-      (current.task.latest_revision_id ?? null) !== shownRevision
-    )
+    const head = current.revisions.find(
+      (revision) => revision.id === current.task.latest_revision_id,
+    );
+    if (dirty || head?.source !== "model" || head.id !== shownRevision)
       return true;
     await save(shown, shownRevision);
     return reload();
-  }, [dirty, personal, shownRevision, save, shown, reload]);
+  }, [dirty, shownRevision, save, shown, reload]);
   const wasVerified = useRef(canSync);
   useEffect(() => {
     if (canSync && !wasVerified.current) {
@@ -165,5 +174,5 @@ export function useTaskSessionData({
       registerGuard(null);
     };
   }, [flush, registerGuard, leaveFreely]);
-  return { snapshot, session, refreshSnapshot, validate, settleScratch };
+  return { snapshot, session, refreshSnapshot, validate, settleModelDraft };
 }
