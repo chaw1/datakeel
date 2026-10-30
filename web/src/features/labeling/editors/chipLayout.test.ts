@@ -5,6 +5,7 @@ import {
   CHIP_MIN_WIDTH,
   chipLimit,
   chipPosition,
+  chipTitleAt,
 } from "./chipLayout";
 
 const size = { width: 40, height: 10 };
@@ -49,4 +50,17 @@ it("leaves a chip alone when its shape is entirely off screen", () => {
     x: 0,
     y: 0,
   });
+});
+
+it("names the topmost truncated chip under the pointer and nothing elsewhere", () => {
+  const rect = { x: 10, y: 10, width: 100, height: 18 };
+  const long = { rect, name: "Refrigerated beverage display", truncated: true };
+  const short = { rect, name: "Cat", truncated: false };
+  expect(chipTitleAt([long], { x: 50, y: 20 })).toBe(long.name);
+  expect(chipTitleAt([long], { x: 111, y: 20 })).toBeNull();
+  expect(chipTitleAt([long], { x: 50, y: 29 })).toBeNull();
+  expect(chipTitleAt([short], { x: 50, y: 20 })).toBeNull();
+  const top = { ...long, name: "Shopping cart with handle" };
+  expect(chipTitleAt([long, top], { x: 50, y: 20 })).toBe(top.name);
+  expect(chipTitleAt([long, short], { x: 50, y: 20 })).toBe(long.name);
 });

@@ -5,6 +5,8 @@ export const CHIP_PADDING = 3;
 export const CHIP_HEIGHT = CHIP_FONT_SIZE + CHIP_PADDING * 2;
 export const CHIP_MIN_WIDTH = 56;
 export const CHIP_MAX_WIDTH = 160;
+/** Konva node name shared by every label chip, used to find chips under the pointer. */
+export const CHIP_NAME = "wb-shape-label";
 
 export interface Bounds {
   x1: number;
@@ -48,4 +50,32 @@ export function chipPosition(
     x: Math.max(Math.min(x, visible.x2 - size.width), visible.x1),
     y: Math.max(Math.min(y, visible.y2 - size.height), visible.y1),
   };
+}
+
+export interface ChipHit {
+  rect: { x: number; y: number; width: number; height: number };
+  name: string;
+  truncated: boolean;
+}
+
+/**
+ * The full name to show for the pointer position: the topmost truncated chip under it.
+ * Chips never take pointer events, so presses reach the canvas or shape beneath them.
+ */
+export function chipTitleAt(
+  chips: readonly ChipHit[],
+  pointer: { x: number; y: number },
+): string | null {
+  for (const chip of [...chips].reverse()) {
+    const { x, y, width, height } = chip.rect;
+    if (
+      chip.truncated &&
+      pointer.x >= x &&
+      pointer.x <= x + width &&
+      pointer.y >= y &&
+      pointer.y <= y + height
+    )
+      return chip.name;
+  }
+  return null;
 }

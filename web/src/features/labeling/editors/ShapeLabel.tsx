@@ -4,6 +4,7 @@ import { Label, Tag, Text } from "react-konva";
 import {
   CHIP_FONT_SIZE,
   CHIP_HEIGHT,
+  CHIP_NAME,
   CHIP_PADDING,
   chipLimit,
   chipPosition,
@@ -16,7 +17,7 @@ import type Konva from "konva";
 
 /**
  * A label-name chip that keeps the same on-screen size at every zoom level. A name wider than
- * the chip may be ends in an ellipsis and shows in full on hover.
+ * the chip ends in an ellipsis; ImageCanvas shows it in full on hover.
  */
 export function ShapeLabel({
   x,
@@ -54,15 +55,10 @@ export function ShapeLabel({
       y={position.y}
       scaleX={inverse}
       scaleY={inverse}
-      listening={truncated}
-      name="wb-shape-label"
-      // Pointer events cover mouse, pen and touch; the full name is also in the label picker.
-      onPointerOver={(event) => {
-        event.target.getStage()?.container().setAttribute("title", style.name);
-      }}
-      onPointerOut={(event) => {
-        event.target.getStage()?.container().removeAttribute("title");
-      }}
+      // Presses pass through to the canvas or shape beneath; ImageCanvas shows the full name
+      // of a truncated chip on hover by hit-testing chips itself.
+      listening={false}
+      name={CHIP_NAME}
     >
       <Tag fill={style.stroke} cornerRadius={2} />
       <Text

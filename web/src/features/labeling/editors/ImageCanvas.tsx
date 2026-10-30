@@ -5,12 +5,14 @@ import { useI18n } from "../../../i18n/useI18n";
 import { altKeyName } from "../platformKeys";
 
 import { CanvasControls } from "./CanvasControls";
+import { CHIP_NAME, chipTitleAt } from "./chipLayout";
 import { CanvasScaleContext, CanvasViewContext } from "./editorContext";
 import { arrowDelta, clamp } from "./geometry";
 import { useCanvasTokens } from "./useCanvasTokens";
 import { useImageSource } from "./useImageSource";
 
 import type { Point } from "./types";
+import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { ReactNode } from "react";
 
@@ -104,6 +106,19 @@ export function ImageCanvas({
     const point = position(event);
     if (point) callback?.(point);
   }
+  /** Show a truncated chip's full name as the canvas tooltip while the pointer is over it. */
+  function showChipTitle(stage: Konva.Stage | null) {
+    if (!stage) return;
+    const pointer = stage.getPointerPosition();
+    const chips = stage.find<Konva.Label>(`.${CHIP_NAME}`).map((label) => ({
+      rect: label.getClientRect(),
+      name: label.getText().text(),
+      truncated: label.getText().ellipsis(),
+    }));
+    const title = pointer ? chipTitleAt(chips, pointer) : null;
+    if (title) stage.container().setAttribute("title", title);
+    else stage.container().removeAttribute("title");
+  }
   function zoomBy(
     factor: number,
     origin: Point = { x: viewport.width / 2, y: viewport.height / 2 },
@@ -185,7 +200,11 @@ export function ImageCanvas({
               pointEvent(event, onStart, true);
             }}
             onMouseMove={(event) => {
+              showChipTitle(event.target.getStage());
               pointEvent(event, onMove);
+            }}
+            onMouseLeave={(event) => {
+              event.target.getStage()?.container().removeAttribute("title");
             }}
             onMouseUp={(event) => {
               pointEvent(event, onFinish);
