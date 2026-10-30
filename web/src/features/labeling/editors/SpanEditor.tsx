@@ -10,6 +10,7 @@ import { KeyboardRegion } from "./KeyboardRegion";
 import { LabelPicker } from "./LabelPicker";
 import { shortcutLabel } from "./shortcuts";
 import { SpanPreview } from "./SpanPreview";
+import { useLocate } from "./useLocate";
 
 import type { AnnotationSpan, EditorProps } from "./types";
 
@@ -21,6 +22,7 @@ export function SpanEditor({
   onChange,
   readOnly,
   advancedAttributes = true,
+  locate,
 }: EditorProps) {
   const { t } = useI18n();
   const source = useRef<HTMLTextAreaElement>(null);
@@ -35,6 +37,12 @@ export function SpanEditor({
   const category = labels.some((item) => item.id === label)
     ? label
     : (labels[0]?.id ?? "");
+  useLocate("span", locate, (index) => {
+    const span = spans.at(index);
+    if (!span) return;
+    setSelected(index);
+    setRange({ start: span.start, end: span.end });
+  });
   useEffect(() => {
     // A read-only textarea ignores Shift + arrows in Chromium, so the source stays
     // editable for selection and refuses every text change instead.

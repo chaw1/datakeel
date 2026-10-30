@@ -37,7 +37,7 @@ export function useTaskActions({
   onReturned?: () => void;
 }) {
   const { t } = useI18n();
-  const { session, refreshSnapshot, validate } = data;
+  const { session, refreshSnapshot, validate, settleScratch } = data;
   const [error, setError] = useState("");
   const [retry, setRetry] = useState<TaskOperation | null>(null);
   const [busy, setBusy] = useState(false);
@@ -77,6 +77,7 @@ export function useTaskActions({
     setError("");
     try {
       if (!(await session.flush())) return;
+      if (operation === "submit" && !(await settleScratch())) return;
       const fresh = await getTaskWorkbench(task.task.id);
       if (isIdentityVerified?.() === false) {
         setError(t("wbOffline"));

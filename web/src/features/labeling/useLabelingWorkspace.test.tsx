@@ -258,6 +258,7 @@ it("persists a clean saved head immediately and restores it on an offline reload
         actor: "local",
         annotation,
         previous_revision_id: null,
+        object_confidences: [],
         source: "human",
         created_at: "2026-10-30T00:00:00Z",
       },

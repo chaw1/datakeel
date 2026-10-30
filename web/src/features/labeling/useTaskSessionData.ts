@@ -8,7 +8,7 @@ import { actionMessage, actionProblem } from "./actionErrors";
 import { actionDetails, mutateProduction } from "./actions";
 import { problemText } from "./attributeMessages";
 import { attributeProblems } from "./editors/attributes";
-import { defaultTemplate, initialAnnotation } from "./model";
+import { defaultTemplate, initialAnnotation, startsFromScratch } from "./model";
 import { savedRevision } from "./savedRevision";
 import { useAnnotationSession } from "./session/useAnnotationSession";
 
@@ -45,6 +45,7 @@ export function useTaskSessionData({
   leaveFreely?: boolean;
 }) {
   const { t, locale } = useI18n();
+  const personal = project.project.workflow_tier === "personal";
   const [snapshot, setSnapshot] = useState(task);
   const snapshotRef = useRef(task);
   const acceptSnapshot = useCallback(
@@ -65,10 +66,14 @@ export function useTaskSessionData({
   const load = useCallback(async () => {
     const fresh = await refreshSnapshot();
     return {
-      annotation: initialAnnotation(fresh, actor),
+      annotation: initialAnnotation(
+        fresh,
+        actor,
+        startsFromScratch(fresh, personal),
+      ),
       revisionId: fresh.task.latest_revision_id ?? null,
     };
-  }, [actor, refreshSnapshot]);
+  }, [actor, refreshSnapshot, personal]);
   const save = useCallback(
     async (annotation: AnnotationRecord, previousRevisionId: string | null) => {
       if (!canSync || isIdentityVerified?.() === false)
@@ -121,7 +126,11 @@ export function useTaskSessionData({
   const session = useAnnotationSession({
     key: `${actor}:${project.project.id}:${task.task.id}`,
     initial: {
-      annotation: initialAnnotation(task, actor),
+      annotation: initialAnnotation(
+        task,
+        actor,
+        startsFromScratch(task, personal),
+      ),
       revisionId: task.task.latest_revision_id ?? null,
     },
     save,
@@ -129,6 +138,19 @@ export function useTaskSessionData({
     validate,
   });
   const { flush, dirty, reload } = session;
+  const { annotation: shown, revisionId: shownRevision } = session;
+  /** An untouched empty start is what the person saw: save it so submit never sends the hidden low draft. */
+  const settleScratch = useCallback(async () => {
+    const current = snapshotRef.current;
+    if (
+      dirty ||
+      !startsFromScratch(current, personal) ||
+      (current.task.latest_revision_id ?? null) !== shownRevision
+    )
+      return true;
+    await save(shown, shownRevision);
+    return reload();
+  }, [dirty, personal, shownRevision, save, shown, reload]);
   const wasVerified = useRef(canSync);
   useEffect(() => {
     if (canSync && !wasVerified.current) {
@@ -143,5 +165,5 @@ export function useTaskSessionData({
       registerGuard(null);
     };
   }, [flush, registerGuard, leaveFreely]);
-  return { snapshot, session, refreshSnapshot, validate };
+  return { snapshot, session, refreshSnapshot, validate, settleScratch };
 }

@@ -1,0 +1,41 @@
+.wb-accuracy {
+  margin: 0;
+}
+.wb-accuracy strong {
+  font-size: var(--font-2xl);
+  font-family: var(--font-mono);
+  cursor: help;
+}
+.wb-accuracy-rule ul,
+.wb-ai-reasons,
+.wb-ai-evidence {
+  margin: calc(var(--space) * 2) 0;
+  padding-left: calc(var(--space) * 5);
+}
+.wb-thresholds dd {
+  font-size: var(--font-lg);
+}
+.wb-threshold-note strong {
+  color: var(--warn);
+}
+.wb-ai-review {
+  display: grid;
+  gap: calc(var(--space) * 2);
+}
+.wb-ai-review h3,
+.wb-ai-review p {
+  margin: 0;
+}
+.wb-ai-objects,
+.wb-model-draft,
+.wb-sampling-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+}
+.wb-sampling-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}

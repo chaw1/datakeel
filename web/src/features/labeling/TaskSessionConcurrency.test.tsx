@@ -37,6 +37,7 @@ it("stops a pending review before mutation if identity verification begins durin
         actor: "annotator",
         source: "human",
         previous_revision_id: null,
+        object_confidences: [],
         created_at: "2026-10-30T00:00:00Z",
         annotation: {
           sample_id: "sample-1",

@@ -2,13 +2,16 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useI18n } from "../../i18n/useI18n";
 
+import { TaskAiNotes } from "./ai/TaskAiNotes";
 import { AnnotationEditor } from "./editors/AnnotationEditor";
 import { DetailsSlotContext } from "./editors/editorContext";
 import {
   allowed,
   annotatedBy,
   defaultTemplate,
+  initialAnnotation,
   reworkIssues,
+  startsFromScratch,
   taskEditable,
 } from "./model";
 import { SessionStatus } from "./SessionStatus";
@@ -21,6 +24,7 @@ import { useTaskKeyboard } from "./useTaskKeyboard";
 import { useTaskSessionData } from "./useTaskSessionData";
 import { useTaskWatch } from "./useTaskWatch";
 
+import type { LocateRequest } from "./editors/types";
 import type { ProjectWorkbench, TaskWorkbench } from "../../api/production";
 
 export function TaskSession({
@@ -53,6 +57,7 @@ export function TaskSession({
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [detailsSlot, setDetailsSlot] = useState<HTMLDivElement | null>(null);
   const [locked, setLocked] = useState(false);
+  const [locate, setLocate] = useState<LocateRequest | null>(null);
   const data = useTaskSessionData({
     task,
     project,
@@ -225,6 +230,7 @@ export function TaskSession({
                 project.effective_scopes,
                 "production:manage",
               )}
+              locate={locate}
             />
           </DetailsSlotContext>
         </div>
@@ -238,6 +244,21 @@ export function TaskSession({
           detailsRef={setDetailsSlot}
         >
           {!editable && <p className="muted">{t("wbReadOnly")}</p>}
+          <TaskAiNotes
+            task={snapshot}
+            personal={personal}
+            reviewable={reviewable}
+            scratch={startsFromScratch(snapshot, personal)}
+            revisionId={session.revisionId}
+            onUseDraft={
+              editable && !busy && !session.dirty
+                ? () => {
+                    session.edit(initialAnnotation(snapshot, actor));
+                  }
+                : undefined
+            }
+            onLocate={setLocate}
+          />
           {reviewable && (
             <TaskReview
               issue={actions.issue}
