@@ -217,13 +217,24 @@ def test_main_worker_timeout_fails_without_publishing_a_success_report(
         lambda _node_id: Measurement(exit_code=0, passed=1, total=1, failures={}),
     )
 
-    def timeout(_mutation: Mutation) -> MutationResult:
+    attempts: list[str] = []
+
+    def timeout(mutation: Mutation) -> MutationResult:
+        attempts.append(mutation.name)
         raise subprocess.TimeoutExpired(cmd="synthetic-target", timeout=300)
 
     monkeypatch.setattr(mutate, "run_mutation", timeout)
-    with pytest.raises(subprocess.TimeoutExpired):
+    # SPEED-2: a timeout is retried once, then reported as an environment failure.
+    with pytest.raises(SystemExit) as exit_info:
         mutate.main()
-    assert not output.exists()
+    assert exit_info.value.code == 1
+    assert sorted(attempts) == ["first", "first", "second", "second"]
+    report = json.loads(output.read_text())
+    assert report["mutations"] == []
+    assert [item["target"] for item in report["environment_failures"]] == [
+        "mutation first",
+        "mutation second",
+    ]
 
 
 def test_image_baselines_get_separate_cleaned_source_copies(
