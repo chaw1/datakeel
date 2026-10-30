@@ -9,6 +9,7 @@ from typing import Literal, Protocol
 from pydantic import Field
 
 from datakeel.core.harness_models import BudgetLimits, TokenUsage
+from datakeel.core.intent_models import PageContext
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument, new_id, utcnow
 
 
@@ -100,6 +101,7 @@ class MessageInput(BoundaryModel):
 
     content: str = Field(min_length=1, max_length=80000)
     idempotency_key: str = Field(default_factory=new_id, min_length=1, max_length=200)
+    context: PageContext | None = None
 
 
 class ResumeInput(BoundaryModel):

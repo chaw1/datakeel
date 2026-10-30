@@ -16,6 +16,7 @@ from datakeel.cli import (
     custom_operators,
     data_assets,
     delivery,
+    intents,
     kg_evaluation,
     kg_image_evaluation,
     llm_data,
@@ -112,6 +113,7 @@ def parser() -> argparse.ArgumentParser:
         release_plans,
         training,
         production,
+        intents,
     ):
         module.register_parser(commands)
     return result
@@ -204,6 +206,7 @@ _MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
     "release-plan": release_plans.dispatch,
     "training": training.dispatch,
     "production": production.dispatch,
+    "intents": intents.dispatch,
 }
 
 

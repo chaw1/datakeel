@@ -1,0 +1,205 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Fill identities from the sentence, the page and the previous turn, never by guessing.
+
+Identity values are resolved against the catalog; one match is used, several become a
+choice, none becomes a question. Only container objects (dataset, version, project) may
+default to the page, the previous turn or a single existing object; people and tasks must
+come from the sentence or the page selection.
+"""
+
+from pydantic import Field, JsonValue
+
+from datakeel.actions.parameters import PARAMETER_TYPES
+from datakeel.core.intent_models import Candidate, Clarification, PageContext
+from datakeel.core.models import BoundaryModel, new_id
+from datakeel.intents.catalog import FIELD_KINDS, EntityCatalog, candidates
+from datakeel.intents.drafts import DraftStep
+from datakeel.intents.wording import field_label
+from datakeel.storage.database import Database
+from datakeel.storage.intent_reads import held_tasks
+
+CONTAINERS = ("dataset_id", "version_id", "project_id", "package_id", "label_set_id")
+SINGLE_DEFAULTS = frozenset({"dataset_id", "project_id"})
+SELECTION_LIMIT = 10000
+
+
+class FillState(BoundaryModel):
+    """Values available to every step: page context and the previous turn's objects."""
+
+    context: PageContext = Field(default_factory=PageContext)
+    focus: dict[str, str] = Field(default_factory=dict[str, str])
+    actor: str = "local"
+    language: str = "zh"
+
+
+class FillResult(BoundaryModel):
+    """Filled steps, or the first question that has to be answered before planning."""
+
+    steps: list[DraftStep] = Field(default_factory=list[DraftStep])
+    clarification: Clarification | None = None
+    empty_selection: str | None = None
+
+
+def _ask(
+    field: str, step: DraftStep, choices: list[Candidate], language: str, mention: str = ""
+) -> Clarification:
+    label = field_label(field, language)
+    if language == "zh":
+        question = (
+            f"「{mention}」对应多个{label}, 请选一个。"
+            if mention and len(choices) > 1
+            else f"找不到叫「{mention}」的{label}, 请从下面选或换个说法。"
+            if mention
+            else f"请告诉我{label}。"
+        )
+    else:
+        question = (
+            f'"{mention}" matches several: which {label}?'
+            if mention and len(choices) > 1
+            else f'No {label} named "{mention}"; pick one below or rephrase.'
+            if mention
+            else f"Which {label}?"
+        )
+    return Clarification(question=question, action=step.action, fields=[field], candidates=choices)
+
+
+def _context_value(field: str, state: FillState, catalog: EntityCatalog) -> str | None:
+    context = state.context
+    value: str | None = getattr(context, field, None)
+    if value is None and field == "dataset_id" and context.version_id:
+        version = catalog.get("version", context.version_id)
+        value = version.parent if version else None
+    if value is None and field == "dataset_id" and context.project_id:
+        project = catalog.get("project", context.project_id)
+        value = project.parent if project else None
+    return value or state.focus.get(field)
+
+
+def _default_container(
+    field: str, params: dict[str, JsonValue], state: FillState, catalog: EntityCatalog
+) -> str | None:
+    value = _context_value(field, state, catalog)
+    if value is not None:
+        return value
+    if field == "version_id":
+        dataset = params.get("dataset_id")
+        versions = catalog.of("version", dataset if isinstance(dataset, str) else None)
+        return versions[-1].id if isinstance(dataset, str) and versions else None
+    if field not in SINGLE_DEFAULTS:
+        return None
+    pool = catalog.of(FIELD_KINDS[field])
+    return pool[0].id if len(pool) == 1 else None
+
+
+def _resolve_identity(
+    field: str, value: str, step: DraftStep, state: FillState, catalog: EntityCatalog
+) -> str | Clarification:
+    kind = FIELD_KINDS[field]
+    if kind == "task":
+        return value
+    parent = None
+    if kind == "version":
+        dataset = step.params.get("dataset_id")
+        parent = dataset if isinstance(dataset, str) else None
+    found = catalog.match(kind, value, parent)
+    if len(found) == 1:
+        return found[0].id
+    pool = found or catalog.of(kind, parent)
+    return _ask(field, step, candidates(pool), state.language, value)
+
+
+def _tasks(
+    db: Database, selector: dict[str, JsonValue], state: FillState, catalog: EntityCatalog
+) -> list[str] | Clarification:
+    holder = str(selector.get("holder", ""))
+    step = DraftStep(id="selector", action="assign_tasks")
+    people = catalog.match("user", holder)
+    if len(people) != 1:
+        asked = _ask(
+            "holder", step, candidates(people or catalog.of("user")), state.language, holder
+        )
+        return asked.model_copy(update={"fields": ["$tasks.holder"]})
+    project = (
+        selector.get("project_id") or state.context.project_id or state.focus.get("project_id")
+    )
+    held = held_tasks(
+        db,
+        people[0].id,
+        project_id=project if isinstance(project, str) else None,
+        untouched=selector.get("untouched") is True,
+    )
+    projects = sorted({item[0] for item in held})
+    if len(projects) > 1:
+        choices = [entry for entry in catalog.of("project") if entry.id in projects]
+        asked = _ask("project_id", step, candidates(choices), state.language)
+        return asked.model_copy(update={"fields": ["$tasks.project_id"]})
+    return [task for _, task in held]
+
+
+def fill_steps(
+    db: Database, steps: list[DraftStep], state: FillState, catalog: EntityCatalog
+) -> FillResult:
+    """Resolve every identity and selector; stop at the first question."""
+    filled: list[DraftStep] = []
+    for step in steps:
+        params = dict(step.params)
+        model = PARAMETER_TYPES.get(step.action)
+        if model is not None and "request_id" in model.model_fields:
+            params.setdefault("request_id", new_id())
+        current = step.model_copy(update={"params": params})
+        for field in list(params):
+            value = params[field]
+            if isinstance(value, dict) and "$tasks" in value:
+                raw = value["$tasks"]
+                selector: dict[str, JsonValue] = raw if isinstance(raw, dict) else {}
+                found = _tasks(db, selector, state, catalog)
+                if isinstance(found, Clarification):
+                    return FillResult(clarification=found)
+                if not found:
+                    return FillResult(empty_selection=str(selector.get("holder", "")))
+                identifiers: list[JsonValue] = list(found)
+                params[field] = identifiers if field.endswith("_ids") else {"$each": identifiers}
+            elif field in FIELD_KINDS and isinstance(value, str):
+                resolved = _resolve_identity(field, value, current, state, catalog)
+                if isinstance(resolved, Clarification):
+                    return FillResult(clarification=resolved)
+                params[field] = resolved
+        filled.append(current.model_copy(update={"params": params}))
+    return FillResult(steps=filled)
+
+
+def _selection_defaults(
+    params: dict[str, JsonValue], required: set[str], context: PageContext
+) -> None:
+    selected: list[JsonValue] = list(context.selected_ids)
+    tasks = selected if context.selected_kind == "production_task" else []
+    current: list[JsonValue] = tasks or ([context.task_id] if context.task_id else [])
+    if "task_id" in required and "task_id" not in params and current:
+        params["task_id"] = {"$each": current} if len(current) > 1 else current[0]
+    if "task_ids" in required and "task_ids" not in params and current:
+        params["task_ids"] = current
+    files = selected if context.selected_kind in {None, "file"} else []
+    if "selection" in required and "selection" not in params and files:
+        condition: dict[str, JsonValue] = {"field": "id", "operator": "in", "value": files}
+        params["selection"] = {
+            "dataset_id": context.dataset_id,
+            "filters": [condition],
+            "limit": SELECTION_LIMIT,
+        }
+
+
+def fill_defaults(
+    step: DraftStep, required: set[str], state: FillState, catalog: EntityCatalog
+) -> DraftStep:
+    """Add page, previous-turn or single-object values for missing container identities."""
+    params = dict(step.params)
+    for field in CONTAINERS:
+        if field in params or field not in required:
+            continue
+        value = _default_container(field, params, state, catalog)
+        if value is not None:
+            params[field] = value
+    _selection_defaults(params, required, state.context)
+    return step.model_copy(update={"params": params})

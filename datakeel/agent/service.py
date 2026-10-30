@@ -17,8 +17,10 @@ from datakeel.core.agent_models import (
     ResumeInput,
 )
 from datakeel.core.errors import ValidationError
+from datakeel.core.intent_models import PageContext
 from datakeel.core.models import JsonDocument
 from datakeel.delegation.loader import list_agents
+from datakeel.intents.turns import planner_events
 from datakeel.routing.config import load_config
 from datakeel.routing.service import model_decisions, route_message
 from datakeel.runtime.graph import AgentGraph
@@ -80,7 +82,10 @@ def send_message(
         _recover_lease(db, conversation_id)
         lease = memory.begin(db, conversation_id, request)
         yield from _deliver(
-            db, conversation_id, lease, _response_events(db, conversation_id, lease.token, provider)
+            db,
+            conversation_id,
+            lease,
+            _response_events(db, conversation_id, lease.token, provider, context=request.context),
         )
 
 
@@ -144,6 +149,8 @@ def _response_events(
     token: str,
     provider: Provider | None,
     resume: ResumeInput | None = None,
+    *,
+    context: PageContext | None = None,
 ) -> Iterator[AgentEvent]:
     conversation = memory.get(db, conversation_id)
     config = conversation.config
@@ -164,7 +171,12 @@ def _response_events(
                 else None
             )
             graph.workflow_confirmation_required = route is not None and route.requires_confirmation
-            yield from events
+            planned = (
+                planner_events(db, conversation, selected, context, token)
+                if route is not None and route.workflow_id is None
+                else None
+            )
+            yield from events if planned is None else planned
             if route is not None and route.workflow_id is not None:
                 yield AgentEvent(event="route", route=route)
     except ValidationError as error:

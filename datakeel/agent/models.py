@@ -10,6 +10,7 @@ from pydantic import Field
 
 from datakeel.actions.models import ActionPlan
 from datakeel.core.agent_models import ChatMessage, ConversationCreate, ToolCall
+from datakeel.core.intent_models import IntentResult
 from datakeel.core.models import BoundaryModel, new_id
 from datakeel.core.routing_models import ModelRouteDecision, RouteDecision
 from datakeel.ontology.tool_models import ToolOutcome
@@ -28,6 +29,7 @@ class AgentEvent(BoundaryModel):
         "stopped",
         "done",
         "route",
+        "intent",
     ]
     text: str | None = None
     call: ToolCall | None = None
@@ -40,6 +42,7 @@ class AgentEvent(BoundaryModel):
     conversation_id: str | None = None
     tokens: int = Field(default=0, ge=0)
     used_memory_ids: list[str] = Field(default_factory=list[str])
+    intent: IntentResult | None = None
 
 
 class ConversationView(BoundaryModel):

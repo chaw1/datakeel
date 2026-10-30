@@ -78,6 +78,7 @@ from datakeel.storage.file_discovery import (
 )
 from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.harness_rows import EvalRunRow, ModelCallTraceRow
+from datakeel.storage.intent_rows import ActionChainRow
 from datakeel.storage.kg_eval_rows import KGEvalRunRow
 from datakeel.storage.kg_rows import KGCacheRow, KGRunRow
 from datakeel.storage.llm_data_constraints import install_llm_data_constraints
@@ -107,6 +108,7 @@ if TYPE_CHECKING:
 
 # Loading each mapping registers it in the single migration metadata collection.
 _REGISTERED_MODELS = (
+    ActionChainRow,
     TrainingSplitRow,
     TrainingCleanRow,
     TrainingEvaluationRow,
