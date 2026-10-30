@@ -10,6 +10,7 @@
 @import "./styles/operations.css";
 @import "./styles/graph-states.css";
 @import "./styles/agent.css";
+@import "./styles/intents.css";
 @import "./styles/evidence.css";
 @import "./styles/catalog-graph.css";
 @import "./styles/workspace.css";

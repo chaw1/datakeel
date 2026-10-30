@@ -1914,6 +1914,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intents/chains/{chain_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Chain
+         * @description Read a chain with each step's plans, runs, outputs and failure reason.
+         */
+        get: operations["read_chain_api_intents_chains__chain_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intents/chains/{chain_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Chain
+         * @description Confirm and run, continue after a signature, or resume after a failed step.
+         *
+         *     Every step is prepared and executed through the ordinary action services as the
+         *     requesting person. Steps that need a signature wait in the approval queue; steps
+         *     that already executed are never run again.
+         */
+        post: operations["run_chain_api_intents_chains__chain_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/kg/entities/{entity_id}/links": {
         parameters: {
             query?: never;
@@ -3427,6 +3471,60 @@ export interface components {
         /** @enum {string} */
         AccessScope: "query" | "export" | "download";
         /**
+         * ActionChain
+         * @description Order existing action plans for one sentence and record each step's progress.
+         */
+        ActionChain: {
+            /**
+             * Actor
+             * @default local
+             */
+            actor: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /** Id */
+            id?: string;
+            /**
+             * Language
+             * @default zh
+             * @enum {string}
+             */
+            language: "zh" | "en";
+            /** Model */
+            model?: string | null;
+            /** Notes */
+            notes?: string[];
+            /**
+             * Parser
+             * @default rules
+             * @enum {string}
+             */
+            parser: "rules" | "model";
+            /**
+             * Status
+             * @default planned
+             * @enum {string}
+             */
+            status: "planned" | "running" | "awaiting_approval" | "succeeded" | "failed";
+            /** Steps */
+            steps: components["schemas"]["ChainStep"][];
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at?: string;
+        };
+        /**
          * ActionContext
          * @description Declare the local actor, tool attribution, and enforced request limits.
          */
@@ -3481,7 +3579,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data" | "draft_label_set";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -3535,7 +3633,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data" | "draft_label_set";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -3636,9 +3734,10 @@ export interface components {
              * Event
              * @enum {string}
              */
-            event: "text" | "tool_call" | "tool_result" | "plan" | "receipt" | "stopped" | "done" | "route";
+            event: "text" | "tool_call" | "tool_result" | "plan" | "receipt" | "stopped" | "done" | "route" | "intent";
             /** Id */
             id?: string;
+            intent?: components["schemas"]["IntentResult"] | null;
             /** Model Routes */
             model_routes?: components["schemas"]["ModelRouteDecision"][];
             outcome?: components["schemas"]["ToolOutcome"] | null;
@@ -4933,6 +5032,18 @@ export interface components {
             tools: string[];
         };
         /**
+         * Candidate
+         * @description One object the person can pick when a mention is ambiguous.
+         */
+        Candidate: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+        };
+        /**
          * CatalogLink
          * @description Declare one explicit relationship, without inferring a Cartesian product.
          */
@@ -4999,6 +5110,54 @@ export interface components {
             /** Owners */
             owners: components["schemas"]["CatalogObject"][];
             table: components["schemas"]["CatalogObject"];
+        };
+        /**
+         * ChainStep
+         * @description One existing controlled action, possibly fanned out over several targets.
+         *
+         *     ``params`` may contain ``{"$ref": "<step id>.<output>"}`` values that resolve from an
+         *     earlier step's receipt when this step is prepared. ``items`` lists per-target overrides.
+         */
+        ChainStep: {
+            /** Action */
+            action: string;
+            /**
+             * Attempts
+             * @default 0
+             */
+            attempts: number;
+            /** Error */
+            error?: string | null;
+            estimate?: components["schemas"]["StepEstimate"];
+            /** Id */
+            id: string;
+            /** Items */
+            items?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Outputs */
+            outputs?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Params */
+            params?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Plan Ids */
+            plan_ids?: string[];
+            /** Run Ids */
+            run_ids?: string[];
+            /**
+             * Scope
+             * @default
+             */
+            scope: string;
+            /**
+             * Status
+             * @default planned
+             * @enum {string}
+             */
+            status: "planned" | "awaiting_approval" | "running" | "succeeded" | "failed";
         };
         /**
          * ChapterView
@@ -5093,6 +5252,20 @@ export interface components {
             name: "file_count" | "bytes" | "hashes" | "annotations" | "metadata" | "lineage";
             /** Passed */
             passed: boolean;
+        };
+        /**
+         * Clarification
+         * @description Ask for a missing required value or a choice between named objects.
+         */
+        Clarification: {
+            /** Action */
+            action?: string | null;
+            /** Candidates */
+            candidates?: components["schemas"]["Candidate"][];
+            /** Fields */
+            fields?: string[];
+            /** Question */
+            question: string;
         };
         /**
          * ClassConfusion
@@ -6680,6 +6853,70 @@ export interface components {
             table: string;
         };
         /**
+         * DraftSource
+         * @description Which standard, annotations, samples and model produced a drafted version.
+         */
+        DraftSource: {
+            /**
+             * Annotation Dataset Ids
+             * @default []
+             */
+            annotation_dataset_ids: string[];
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd: number;
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /** Drafted At */
+            drafted_at?: string | null;
+            /**
+             * Dropped Examples
+             * @default 0
+             */
+            dropped_examples: number;
+            /**
+             * Input Tokens
+             * @default 0
+             */
+            input_tokens: number;
+            /**
+             * Label Set Ids
+             * @default []
+             */
+            label_set_ids: string[];
+            /**
+             * Model
+             * @default offline-rules
+             */
+            model: string;
+            /**
+             * Output Tokens
+             * @default 0
+             */
+            output_tokens: number;
+            /** Plan Id */
+            plan_id?: string | null;
+            /**
+             * Profile
+             * @default offline
+             */
+            profile: string;
+            /**
+             * Sample Ids
+             * @default []
+             */
+            sample_ids: string[];
+            /**
+             * Standard Codes
+             * @default []
+             */
+            standard_codes: string[];
+            /** Version Id */
+            version_id?: string | null;
+        };
+        /**
          * DroppedSentence
          * @description Preserve rejected text and every independent citation failure reason.
          */
@@ -7174,12 +7411,20 @@ export interface components {
          * @description Describe a read-only function and its validated input/output schemas.
          */
         FunctionType: {
+            /** Examples */
+            examples?: {
+                [key: string]: string[];
+            };
             /** Handler */
             handler: string;
             /** Id */
             id: string;
             input_schema: components["schemas"]["JsonDocument"];
             output_schema: components["schemas"]["JsonDocument"];
+            /** Phrases */
+            phrases?: {
+                [key: string]: string[];
+            };
             /** Read Scope */
             read_scope: string;
             /**
@@ -7295,6 +7540,24 @@ export interface components {
              * @default false
              */
             truncated: boolean;
+        };
+        /**
+         * GuidelineExample
+         * @description Point at one real sample that shows (positive) or does not show (negative) a label.
+         */
+        GuidelineExample: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "positive" | "negative";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Sample Id */
+            sample_id: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -7482,6 +7745,39 @@ export interface components {
             reason: string;
             /** Sample Id */
             sample_id: string;
+        };
+        /**
+         * IntentResult
+         * @description What the one-sentence entry decided for this turn.
+         */
+        IntentResult: {
+            answer?: components["schemas"]["ReadAnswer"] | null;
+            chain?: components["schemas"]["ActionChain"] | null;
+            clarification?: components["schemas"]["Clarification"] | null;
+            /** Draft */
+            draft?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "plan" | "answer" | "clarify" | "refuse";
+            /** Missing Scopes */
+            missing_scopes?: string[];
+            /**
+             * Parser
+             * @default rules
+             * @enum {string}
+             */
+            parser: "rules" | "model";
+            /**
+             * Request
+             * @default
+             */
+            request: string;
+            /** Text */
+            text: string;
         };
         /**
          * IssueView
@@ -8347,6 +8643,50 @@ export interface components {
             label: string;
         };
         /**
+         * LabelGuideline
+         * @description How to annotate one label, with examples that cite sample identities.
+         */
+        LabelGuideline: {
+            /**
+             * Examples
+             * @default []
+             */
+            examples: components["schemas"]["GuidelineExample"][];
+            /** Label Id */
+            label_id: string;
+            /**
+             * Text En
+             * @default
+             */
+            text_en: string;
+            /**
+             * Text Zh
+             * @default
+             */
+            text_zh: string;
+        };
+        /**
+         * LabelGuidelines
+         * @description Written annotation guidelines for a whole label set version.
+         */
+        LabelGuidelines: {
+            /**
+             * Overview En
+             * @default
+             */
+            overview_en: string;
+            /**
+             * Overview Zh
+             * @default
+             */
+            overview_zh: string;
+            /**
+             * Rules
+             * @default []
+             */
+            rules: components["schemas"]["LabelGuideline"][];
+        };
+        /**
          * LabelMigration
          * @description Declare how existing annotations are reviewed when label identities change.
          */
@@ -8395,6 +8735,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            draft_source?: components["schemas"]["DraftSource"] | null;
+            guidelines?: components["schemas"]["LabelGuidelines"] | null;
             /** Id */
             id: string;
             /** Labels */
@@ -9022,6 +9364,7 @@ export interface components {
         MessageInput: {
             /** Content */
             content: string;
+            context?: components["schemas"]["PageContext"] | null;
             /** Idempotency Key */
             idempotency_key?: string;
         };
@@ -9717,6 +10060,31 @@ export interface components {
             tp: number;
         };
         /**
+         * PageContext
+         * @description Describe what the person is looking at when they type a request.
+         */
+        PageContext: {
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /** Label Set Id */
+            label_set_id?: string | null;
+            /** Package Id */
+            package_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /**
+             * Selected Ids
+             * @default []
+             */
+            selected_ids: string[];
+            /** Selected Kind */
+            selected_kind?: ("file" | "production_task" | "task_package") | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Version Id */
+            version_id?: string | null;
+        };
+        /**
          * Pipeline
          * @description Describe an acyclic set of nodes and the published output slots.
          */
@@ -9756,10 +10124,16 @@ export interface components {
             };
             /** Color */
             color?: string | null;
+            /** Fields */
+            fields?: components["schemas"]["TemplateAttribute"][];
             /** Id */
             id: string;
             /** Name */
             name: string;
+            /** Name En */
+            name_en?: string | null;
+            /** Name Zh */
+            name_zh?: string | null;
             /** Parent Id */
             parent_id?: string | null;
             /** Shortcut */
@@ -10161,6 +10535,19 @@ export interface components {
              * @default false
              */
             truncated: boolean;
+        };
+        /**
+         * ReadAnswer
+         * @description The read-only function that answered directly and its exact arguments.
+         */
+        ReadAnswer: {
+            /** Arguments */
+            arguments?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            data?: components["schemas"]["JsonValue"];
+            /** Function */
+            function: string;
         };
         /**
          * ReconcileReport
@@ -11115,6 +11502,34 @@ export interface components {
             line: number;
             /** Message */
             message: string;
+        };
+        /**
+         * StepEstimate
+         * @description Show what a step changes, what it costs and whether it needs a signature.
+         */
+        StepEstimate: {
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd: number;
+            /**
+             * Exact
+             * @default false
+             */
+            exact: boolean;
+            /**
+             * External
+             * @default false
+             */
+            external: boolean;
+            /** Object Count */
+            object_count?: number | null;
+            /**
+             * Requires Approval
+             * @default false
+             */
+            requires_approval: boolean;
         };
         /** @enum {string} */
         StratificationSource: "all" | "classification" | "detection" | "spans";
@@ -16007,6 +16422,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthView"];
+                };
+            };
+        };
+    };
+    read_chain_api_intents_chains__chain_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chain_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionChain"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_chain_api_intents_chains__chain_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chain_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionChain"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

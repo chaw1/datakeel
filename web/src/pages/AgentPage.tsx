@@ -71,6 +71,21 @@ export function AgentPage({
     refresh();
     onDataChanged();
   }
+  // The planner reads what the person is looking at: the conversation's dataset first,
+  // then the dataset the workspace has open.
+  const pageContext = {
+    dataset_id:
+      session.value?.config.dataset_id ??
+      params.get("dataset") ??
+      (datasetId || null),
+    selected_ids: [],
+  };
+  function say(content: string) {
+    void session.send(content, pageContext).then(() => {
+      conversations.reload();
+      onDataChanged();
+    });
+  }
   return (
     <>
       <div className="page-heading">
@@ -164,6 +179,7 @@ export function AgentPage({
                 busy={session.live.running}
                 onResolved={resolved}
                 onOpenReceipt={onOpenReceipt}
+                onReply={say}
               />
               {session.live.error && (
                 <div className="error-banner" role="alert">
@@ -187,12 +203,7 @@ export function AgentPage({
             initialContent={initialContent}
             disabled={!session.value || session.loading || !!session.live.error}
             busy={session.live.running}
-            onSend={(content) => {
-              void session.send(content).then(() => {
-                conversations.reload();
-                onDataChanged();
-              });
-            }}
+            onSend={say}
           />
         </section>
       </div>

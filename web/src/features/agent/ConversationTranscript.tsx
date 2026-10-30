@@ -14,12 +14,14 @@ export function ConversationTranscript({
   busy,
   onResolved,
   onOpenReceipt,
+  onReply,
 }: {
   conversation: Conversation;
   live: { content: string; events: AgentEvent[] };
   busy: boolean;
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
+  onReply?: (content: string) => void;
 }) {
   const { t } = useI18n();
   const panel = useRef<HTMLDivElement>(null);
@@ -76,6 +78,7 @@ export function ConversationTranscript({
             busy={busy}
             onResolved={onResolved}
             onOpenReceipt={onOpenReceipt}
+            onReply={onReply}
             visibleReceipts={
               new Set(
                 events

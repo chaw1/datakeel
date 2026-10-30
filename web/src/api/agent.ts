@@ -18,6 +18,7 @@ const events: AgentEvent["event"][] = [
   "stopped",
   "done",
   "route",
+  "intent",
 ];
 export function parseAgentEvent(data: string): AgentEvent {
   const value: unknown = JSON.parse(data);

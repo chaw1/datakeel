@@ -74,6 +74,28 @@ def _package_size(text: str) -> int | None:
     return int(next(value for value in match.groupdict().values() if value))
 
 
+def _project_notes(text: str, language: str, tier: str) -> tuple[str, list[str]]:
+    """Project guidelines for spot checks, and readable notes for what the steps imply."""
+    notes: list[str] = []
+    guidelines = ""
+    sampled = _SAMPLE.search(text)
+    if sampled:
+        rate = sampled.group("rate")
+        guidelines = (
+            f"每个任务包验收时抽检 {rate}% (accept_package) 。"
+            if language == "zh"
+            else f"Each package is accepted by inspecting a {rate}% sample (accept_package)."
+        )
+        notes.append(guidelines)
+    if tier == "team":
+        notes.append(
+            "两人交叉: 项目用团队流程, 每个任务都由另一人复核。"
+            if language == "zh"
+            else "Two people cross-check: the team workflow adds a second reviewer to every task."
+        )
+    return guidelines, notes
+
+
 def setup_project(text: str) -> IntentDraft | None:
     """Label set, publication, project and packages for a new annotation job."""
     match = _ZH_SETUP.search(text) or _EN_SETUP.search(text)
@@ -89,22 +111,13 @@ def setup_project(text: str) -> IntentDraft | None:
         if language == "zh"
         else (" ".join(labels).title() + " annotation")
     )
-    notes: list[str] = []
-    guidelines = ""
-    sampled = _SAMPLE.search(text)
-    if sampled:
-        rate = sampled.group("rate")
-        notes.append(f"sample_acceptance:{rate}%")
-        guidelines = (
-            f"每个任务包验收时抽检 {rate}% (accept_package) 。"
-            if language == "zh"
-            else f"Each package is accepted by inspecting a {rate}% sample (accept_package)."
-        )
+    tier = _tier(text)
+    guidelines, notes = _project_notes(text, language, tier)
     project: dict[str, JsonValue] = {
         "name": name,
         "label_set_id": {"$ref": "s1.label_set_id"},
         "label_set_version": {"$ref": "s1.label_set_version"},
-        "workflow_tier": _tier(text),
+        "workflow_tier": tier,
         "guidelines": guidelines,
     }
     split: dict[str, JsonValue] = {"project_id": {"$ref": "s3.project_id"}}
