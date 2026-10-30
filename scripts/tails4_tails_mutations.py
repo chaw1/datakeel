@@ -6,6 +6,7 @@
 from scripts.mutation_models import Mutation
 
 _EN = "tests/ask/test_interpretation_en.py::"
+_ASSIGNEES = "tests/mcp/test_production_assignees.py::"
 
 TAILS_MUTATIONS = (
     Mutation(
@@ -38,6 +39,22 @@ TAILS_MUTATIONS = (
         before="english_name=item.english_name,",
         after="english_name=None,",
         case=_EN + "test_recognized_metric_subject_carries_its_registered_english_name",
+        runner="pytest",
+    ),
+    Mutation(
+        name="mcp-assignees-registered",
+        path="ontology/production_functions.py",
+        before='    "assignees": AssigneesParams,\n',
+        after="",
+        case=_ASSIGNEES + "test_assignees_is_a_read_only_mcp_tool",
+        runner="pytest",
+    ),
+    Mutation(
+        name="mcp-assignees-stage",
+        path="ontology/production_functions.py",
+        before="return assignees(db, query.project_id, caller, query.stage)",
+        after='return assignees(db, query.project_id, caller, "annotation")',
+        case=_ASSIGNEES + "test_mcp_assignees_matches_http_for_each_stage",
         runner="pytest",
     ),
 )

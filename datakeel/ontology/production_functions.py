@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
 from datakeel.core.production_reads import (
+    AssigneesParams,
     LabelSetDiffParams,
     LeaseStatusParams,
     NextTaskParams,
@@ -31,6 +32,7 @@ from datakeel.storage.production_team_reads import (
     package_acceptance_status,
     skill_workload,
 )
+from datakeel.storage.workbench_assignees import assignees
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -50,6 +52,7 @@ PRODUCTION_READ_MODELS: dict[str, type[BoundaryModel]] = {
     "lease_status": LeaseStatusParams,
     "skill_workload": ProjectReadParams,
     "package_acceptance": PackageAcceptanceParams,
+    "assignees": AssigneesParams,
 }
 
 
@@ -94,6 +97,9 @@ def invoke_production(
 def _project_read(
     db: Database, name: str, arguments: JsonDocument, caller: AccessContext
 ) -> BoundaryModel | None:
+    if name == "assignees":
+        query = AssigneesParams.model_validate(arguments.root)
+        return assignees(db, query.project_id, caller, query.stage)
     if name == "next_task":
         query = NextTaskParams.model_validate(arguments.root)
         return next_task(db, query.project_id, caller.actor, query.package_id)

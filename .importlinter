@@ -488,6 +488,7 @@ ignore_imports =
     datakeel.ontology.production_functions -> datakeel.storage.production_objects
     datakeel.ontology.production_functions -> datakeel.storage.production_queries
     datakeel.ontology.production_functions -> datakeel.storage.production_statistics
+    datakeel.ontology.production_functions -> datakeel.storage.workbench_assignees
     datakeel.storage.action_operations -> datakeel.actions.identity_parameters
     datakeel.storage.action_operations -> datakeel.actions.production_catalog_parameters
     datakeel.storage.action_operations -> datakeel.actions.production_parameters

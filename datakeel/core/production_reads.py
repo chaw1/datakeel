@@ -41,6 +41,12 @@ class PackageReadParams(ProjectReadParams):
     package_id: str = Field(min_length=1)
 
 
+class AssigneesParams(ProjectReadParams):
+    """List who a manager can assign this stage's work to by name, as the HTTP list does."""
+
+    stage: Literal["annotation", "review"] = "annotation"
+
+
 class LeaseStatusParams(ProjectReadParams):
     """Read effective team leases, those expiring within a window and recent reclaims."""
 

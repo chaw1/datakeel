@@ -52,7 +52,7 @@ def test_registry_when_built_exposes_all_declared_asset_and_read_function_types(
         "model",
         "prelabel_run",
     }
-    assert len(value.functions) == 36
+    assert len(value.functions) == 36 + 1  # TAILS-4: T3 assignees
     assert "production_prelabel_accuracy" in {item.id for item in value.functions}
     assert {"training_distribution", "training_leakage"} <= {item.id for item in value.functions}
     assert "get_training_quality" in {item.id for item in value.functions}
