@@ -174,3 +174,64 @@ it("moves across task pages with Next/Previous and reports the true ends", async
     expect.objectContaining({ cursor: "page-2", limit: 100 }),
   );
 });
+
+it("queues Previous presses made while pages load and lands on the right task across two page edges", async () => {
+  const pageOf = (ids: string[], next: string | null) => ({
+    ...labelingProject,
+    tasks: ids.map((id) => ({
+      ...labelingProject.tasks[0],
+      id,
+      sample_id: `s-${id}`,
+    })),
+    next_cursor: next,
+  });
+  const pages: Record<string, ReturnType<typeof pageOf>> = {
+    "": pageOf(["t1", "t2"], "p2"),
+    p2: pageOf(["t3", "t4"], "p3"),
+    p3: pageOf(["t5"], null),
+  };
+  // Every page and task read resolves late, as on a slow connection.
+  const later = <T,>(value: T) =>
+    new Promise<T>((resolve) => {
+      setTimeout(() => {
+        resolve(value);
+      }, 100);
+    });
+  vi.mocked(getProjectWorkbench).mockImplementation((_id, query) =>
+    later(pages[query?.cursor ?? ""]),
+  );
+  vi.mocked(getTaskWorkbench).mockImplementation((id) => later(textTask(id)));
+  const { result } = renderHook(() =>
+    useLabelingWorkspace(new URLSearchParams("project=project")),
+  );
+  await waitFor(() => {
+    expect(result.current.project?.tasks.at(0)?.id).toBe("t1");
+  });
+  await act(async () => {
+    await result.current.open("t1");
+  });
+  for (let index = 0; index < 4; index++)
+    await act(async () => {
+      await result.current.navigate(1);
+    });
+  expect(result.current.task?.task.id).toBe("t5");
+  expect(result.current.page).toBe(2);
+  result.current.cache.clear();
+  // Four presses 60 ms apart while each step is still loading: t4, t3 (page edge), t2, t1 (page edge).
+  const presses: Promise<void>[] = [];
+  for (let index = 0; index < 4; index++) {
+    await act(async () => {
+      presses.push(result.current.navigate(-1));
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
+  }
+  await act(async () => {
+    await Promise.all(presses);
+  });
+  await waitFor(() => {
+    expect(result.current.task?.task.id).toBe("t1");
+  });
+  expect(result.current.page).toBe(0);
+  expect(result.current.notice).toBeNull();
+  expect(result.current.busy).toBe(false);
+});

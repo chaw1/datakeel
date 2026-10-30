@@ -15,6 +15,7 @@ import {
   writeWorkspaceSnapshot,
   clearWorkspaceSnapshot,
 } from "./session/workspaceSnapshot";
+import { useNavigationQueue } from "./useNavigationQueue";
 
 import type { WorkbenchView } from "./model";
 import type {
@@ -196,27 +197,31 @@ export function useLabelingWorkspace(params: URLSearchParams) {
       live = false;
     };
   }, [projectId, refresh, view, page, cursors, packageId, search, cache]);
-  const { position, ...navigation } = taskNavigation(project, task, page);
+  const edges = taskNavigation(project, task, page);
+  const navigation = { previous: edges.previous, next: edges.next };
   async function mayLeave() {
     return !guard.current || (await guard.current());
   }
-  async function open(taskId: string) {
-    if (!(await mayLeave())) return;
+  async function openTask(taskId: string): Promise<TaskWorkbench | null> {
+    if (!(await mayLeave())) return null;
     const request = ++sequence.current;
     setError("");
     const cached = cache.peek(taskId);
     if (cached) {
       setBusy(false);
       setTask(cached);
-      return;
+      return cached;
     }
     setBusy(true);
     try {
       const loaded = await cache.get(taskId);
-      if (request === sequence.current) setTask(loaded);
+      if (request !== sequence.current) return null;
+      setTask(loaded);
+      return loaded;
     } catch (reason) {
       if (request === sequence.current)
         setError(reason instanceof Error ? reason.message : String(reason));
+      return null;
     } finally {
       if (request === sequence.current) setBusy(false);
     }
@@ -279,61 +284,47 @@ export function useLabelingWorkspace(params: URLSearchParams) {
       setCursors([""]);
     }
   }
-  async function navigate(direction: -1 | 0 | 1) {
-    if (!(await mayLeave())) return;
-    if (direction === 0) {
-      sequence.current++;
-      setTask(null);
-      return;
-    }
-    const list = project?.tasks ?? [];
-    const next =
-      position >= 0 && position + direction >= 0
-        ? list.at(position + direction)
-        : undefined;
-    if (next) {
-      setNotice(null);
-      await open(next.id);
-      return;
-    }
-    if (
-      !(direction === 1 ? navigation.next : navigation.previous) ||
-      !project
-    ) {
-      setNotice(direction === 1 ? "last" : "first");
-      return;
-    }
-    // Cross the page boundary: load the adjacent page, then open its edge task.
-    const target = page + direction;
-    const cursor =
-      direction === 1 ? (project.next_cursor ?? "") : (cursors[target] ?? "");
-    const request = ++sequence.current;
-    setBusy(true);
-    try {
-      const data = await getProjectWorkbench(
-        projectId,
-        pageQuery(view, packageId, cursor, search),
-      );
-      if (
-        request !== sequence.current ||
-        (verifiedActor.current !== null &&
-          data.effective_scopes.actor !== verifiedActor.current)
-      )
-        return;
-      if (direction === 1)
-        setCursors((values) => [...values.slice(0, page + 1), cursor]);
-      setPage(target);
-      setProject(data);
-      const edge = direction === 1 ? data.tasks.at(0) : data.tasks.at(-1);
-      setNotice(edge ? null : direction === 1 ? "last" : "first");
-      if (edge) await open(edge.id);
-    } catch (reason) {
-      if (request === sequence.current)
-        setError(reason instanceof Error ? reason.message : String(reason));
-    } finally {
-      if (request === sequence.current) setBusy(false);
-    }
+  async function open(taskId: string) {
+    await openTask(taskId);
   }
+  const navigate = useNavigationQueue(
+    { project, task, page, cursors },
+    {
+      mayLeave,
+      open: openTask,
+      close: () => {
+        sequence.current++;
+        setTask(null);
+      },
+      setNotice,
+      loadPage: async (target, cursor, nextCursors) => {
+        const request = ++sequence.current;
+        setBusy(true);
+        try {
+          const data = await getProjectWorkbench(
+            projectId,
+            pageQuery(view, packageId, cursor, search),
+          );
+          if (
+            request !== sequence.current ||
+            (verifiedActor.current !== null &&
+              data.effective_scopes.actor !== verifiedActor.current)
+          )
+            return null;
+          setCursors(nextCursors);
+          setPage(target);
+          setProject(data);
+          return data;
+        } catch (reason) {
+          if (request === sequence.current)
+            setError(reason instanceof Error ? reason.message : String(reason));
+          return null;
+        } finally {
+          if (request === sequence.current) setBusy(false);
+        }
+      },
+    },
+  );
   async function paginate(direction: -1 | 1) {
     if (!(await mayLeave())) return;
     if (direction === 1 && project?.next_cursor) {
