@@ -9,6 +9,7 @@ import { TaskList } from "../features/labeling/TaskList";
 import { TaskSearch } from "../features/labeling/TaskSearch";
 import { TaskSession } from "../features/labeling/TaskSession";
 import { TemplateEditor } from "../features/labeling/TemplateEditor";
+import { TemplateVersions } from "../features/labeling/TemplateVersions";
 import { useLabelingWorkspace } from "../features/labeling/useLabelingWorkspace";
 import { useViewportFill } from "../features/labeling/useViewportFill";
 import { useI18n } from "../i18n/useI18n";
@@ -198,6 +199,14 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                     datasetId: project.project.dataset_id,
                     versionId: project.project.version_id,
                   }}
+                  onChanged={workspace.changed}
+                />
+              )}
+              {!task && personal && (
+                // Personal projects have no cockpit; the template lock lives next to the editor.
+                <TemplateVersions
+                  data={project}
+                  canUpgrade={can("production:manage")}
                   onChanged={workspace.changed}
                 />
               )}
