@@ -172,3 +172,52 @@ it("locks without save errors or raw server text when a take-back beats the hold
     screen.getByText("Not saved · draft kept on this device"),
   ).toBeVisible();
 });
+
+it("treats a submission that comes back pending one round later as returned, with the reviewer's notes", async () => {
+  const returned = {
+    ...held,
+    task: { ...held.task, state: "pending" as const, round: 1 },
+    reviews: [
+      {
+        id: "review-1",
+        task_id: "task-1",
+        revision_id: "revision-1",
+        decision: "rework" as const,
+        issues: ["Box too loose"],
+        actor: "rev",
+        round: 0,
+        created_at: "2026-10-30T00:02:00Z",
+      },
+    ],
+  };
+  let submitted = false;
+  vi.mocked(actions.mutateProduction).mockImplementation((name) => {
+    if (name === "submit_task") submitted = true;
+    return Promise.resolve({ status: "SUCCEEDED" } as ActionRun);
+  });
+  vi.mocked(production.getTaskWorkbench).mockImplementation(() =>
+    Promise.resolve(submitted ? returned : held),
+  );
+  vi.mocked(production.getTaskStatus).mockImplementation(() =>
+    Promise.resolve(
+      submitted ? status({ task: returned.task, leases: [] }) : status(),
+    ),
+  );
+  render(
+    <TaskSession
+      task={held}
+      project={team}
+      actor="local"
+      canSync
+      onNavigate={vi.fn()}
+      onChanged={vi.fn()}
+      onSnapshot={vi.fn()}
+      registerGuard={vi.fn()}
+    />,
+  );
+  await advance(10);
+  fireEvent.click(screen.getByRole("button", { name: "Submit annotation" }));
+  await advance(10);
+  expect(screen.getByText("This task was returned for rework.")).toBeVisible();
+  expect(screen.getByText("Reviewer: Box too loose")).toBeVisible();
+});

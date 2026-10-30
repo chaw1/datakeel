@@ -191,5 +191,8 @@ export function useTaskWatch({
     dismiss: () => {
       setChange(null);
     },
+    notifyReturned: () => {
+      setChange({ kind: "returned" });
+    },
   };
 }

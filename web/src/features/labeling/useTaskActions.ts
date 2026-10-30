@@ -23,6 +23,7 @@ export function useTaskActions({
   canSync,
   isIdentityVerified,
   onChanged,
+  onReturned,
 }: {
   task: TaskWorkbench;
   project: ProjectWorkbench;
@@ -32,6 +33,8 @@ export function useTaskActions({
   canSync: boolean;
   isIdentityVerified?: () => boolean;
   onChanged: () => void;
+  /** A reviewer returned the task before this page saw its own submission land. */
+  onReturned?: () => void;
 }) {
   const { t } = useI18n();
   const { session, refreshSnapshot, validate } = data;
@@ -100,7 +103,13 @@ export function useTaskActions({
               }),
         },
       );
-      await refreshSnapshot();
+      const after = await refreshSnapshot();
+      if (
+        operation === "submit" &&
+        ["pending", "in_progress"].includes(after.task.state) &&
+        after.task.round > fresh.task.round
+      )
+        onReturned?.();
       onChanged();
     } catch (reason) {
       if (actionProblem(reason) === "changed") setRetry(operation);

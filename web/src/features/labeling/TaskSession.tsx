@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useI18n } from "../../i18n/useI18n";
 
 import { AnnotationEditor } from "./editors/AnnotationEditor";
 import { DetailsSlotContext } from "./editors/editorContext";
-import { allowed, annotatedBy, defaultTemplate, taskEditable } from "./model";
+import {
+  allowed,
+  annotatedBy,
+  defaultTemplate,
+  reworkIssues,
+  taskEditable,
+} from "./model";
 import { SessionStatus } from "./SessionStatus";
 import { TaskDrawer } from "./TaskDrawer";
 import { TaskReview } from "./TaskReview";
@@ -78,6 +84,7 @@ export function TaskSession({
         assignment.stage === "review" &&
         assignment.actor !== actor,
     );
+  const returned = useRef<() => void>(() => undefined);
   const actions = useTaskActions({
     task,
     project,
@@ -87,6 +94,9 @@ export function TaskSession({
     canSync,
     isIdentityVerified,
     onChanged,
+    onReturned: () => {
+      returned.current();
+    },
   });
   const { perform, busy, error, retry } = actions;
   const watch = useTaskWatch({
@@ -101,6 +111,9 @@ export function TaskSession({
     onLost: () => {
       setLocked(true);
     },
+  });
+  useLayoutEffect(() => {
+    returned.current = watch.notifyReturned;
   });
   const root = useRef<HTMLDivElement>(null);
   useTaskKeyboard(root, {
@@ -156,6 +169,7 @@ export function TaskSession({
             void watch.renew();
           }}
           locked={locked}
+          issues={reworkIssues(snapshot)}
           onExport={() => {
             exportDraft(session.annotation, task.sample.name);
           }}

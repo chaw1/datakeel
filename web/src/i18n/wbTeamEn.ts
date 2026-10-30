@@ -46,6 +46,7 @@ export const wbTeamEn = {
     "Could not renew the lease: {reason}. It will be retried automatically.",
   wbRenewNow: "Renew now",
   wbTaskReturned: "This task was returned for rework.",
+  wbReturnedIssues: "Reviewer: {issues}",
   wbTaskEditedElsewhere:
     "Someone else just saved a newer version of this task.",
   wbTaskStateChanged: "This task changed elsewhere and is now: {state}.",

@@ -42,6 +42,7 @@ export const wbTeamZh: Record<keyof typeof wbTeamEn, string> = {
   wbRenewFailed: "续租失败：{reason}。会自动再试。",
   wbRenewNow: "立即续租",
   wbTaskReturned: "这条任务被打回返工了。",
+  wbReturnedIssues: "质检意见：{issues}",
   wbTaskEditedElsewhere: "别人刚保存了这条任务的新版本。",
   wbTaskStateChanged: "这条任务在别处被改了，现在是：{state}。",
   wbKeysMoveBox: "方向键移动框（Shift 一次 10 像素）· R 调边",

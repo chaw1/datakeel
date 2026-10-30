@@ -34,6 +34,7 @@ export function TaskWatchNotice({
   onRenew,
   locked,
   change,
+  issues = [],
   onExport,
   onReload,
   onBack,
@@ -44,6 +45,8 @@ export function TaskWatchNotice({
   onRenew: () => void;
   locked: boolean;
   change: TaskChange | null;
+  /** Reviewer notes behind the current rework round. */
+  issues?: string[];
   onExport: () => void;
   onReload: () => void;
   onBack: () => void;
@@ -91,6 +94,11 @@ export function TaskWatchNotice({
                     state: t(stateMessages[change.state]),
                   })}
           </span>
+          {change.kind === "returned" && issues.length > 0 && (
+            <span className="wb-watch-issues">
+              {t("wbReturnedIssues", { issues: issues.join("; ") })}
+            </span>
+          )}
           <button type="button" className="button primary" onClick={onReload}>
             {t("wbReload")}
           </button>

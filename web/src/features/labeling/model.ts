@@ -117,3 +117,14 @@ export function annotatedBy(task: TaskWorkbench, actor: string) {
     )
   );
 }
+/** The reviewer's notes that sent the task into its current rework round, if any. */
+export function reworkIssues(task: TaskWorkbench) {
+  return (
+    task.reviews
+      .filter(
+        (review) =>
+          review.decision === "rework" && review.round === task.task.round - 1,
+      )
+      .at(-1)?.issues ?? []
+  );
+}
