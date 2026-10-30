@@ -7,6 +7,7 @@ import re
 
 from pydantic import Field, JsonValue
 from pydantic import ValidationError as ModelValidationError
+from pydantic_core import ErrorDetails
 
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.actions.registry import POLICIES
@@ -19,12 +20,18 @@ from datakeel.intents.drafts import DraftStep
 from datakeel.intents.estimates import estimate_step
 from datakeel.intents.fill import FillState, context_value
 from datakeel.intents.object_edits import operation_needs
-from datakeel.intents.wording import invalid_question, missing_question, subset_question
+from datakeel.intents.verify import says_whole
+from datakeel.intents.wording import (
+    invalid_question,
+    missing_question,
+    subset_question,
+)
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.storage.database import Database
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.production_queries import project_for_params
 
+FILE_CHANGES = frozenset({"quarantine_files", "unquarantine_files", "delete_files"})
 REFERENCE = re.compile(r"^(?P<step>s\d{1,2})\.(?P<output>[a-z_]+_(?:id|ids|version))$")
 # A sentence that describes part of a dataset; a plan for the whole dataset is then wrong.
 SUBSET = re.compile(
@@ -59,7 +66,8 @@ def _placeholder(value: JsonValue) -> JsonValue:
             output = str(value["$ref"])
             if output.endswith("_version"):
                 return 1
-            return ["placeholder"] if output.endswith("_ids") else "placeholder"
+            listed = output.endswith("_ids") and "$nth" not in value
+            return ["placeholder"] if listed else "placeholder"
         if "$each" in value:
             each = value["$each"]
             return each[0] if isinstance(each, list) and each else "placeholder"
@@ -116,6 +124,16 @@ def _schema_problems(step: DraftStep) -> tuple[list[str], str | None]:
     ], invalid
 
 
+def bad_value(item: ErrorDetails, action: str) -> str:
+    """One rejected value as "field:expected", without the validator's own message."""
+    location = item["loc"]
+    field = str(location[0]) if location else action
+    context = item.get("ctx") or {}
+    limits = [str(context[key]) for key in ("ge", "gt", "le", "lt") if key in context]
+    expected = str(context.get("expected", "")) or "-".join(limits)
+    return f"{field}:{expected}"
+
+
 def _validated(step: DraftStep) -> tuple[list[str], str | None]:
     model = PARAMETER_TYPES[step.action]
     try:
@@ -135,8 +153,9 @@ def _validated(step: DraftStep) -> tuple[list[str], str | None]:
             named = _named_fields(message, absent)
             missing += [name for name in named if name not in missing]
             if not named:
-                others.append(message)
-        return missing, "; ".join(others) or None
+                # Only the field and the allowed values or range reach the person.
+                others.append(bad_value(item, step.action))
+        return missing, "|".join(others) or None
     return [], None
 
 
@@ -214,9 +233,14 @@ def _missing(
 
 
 def wider_than_said(step: DraftStep, text: str) -> bool:
-    """A whole-dataset selection for a sentence that names a subset is a wrong plan."""
+    """A whole-dataset selection is wrong unless the words ask for all of it.
+
+    Changing files (quarantine, delete, restore) needs 全部/所有/all for the whole dataset;
+    any sentence that names a subset never gets the whole dataset.
+    """
     selection = step.params.get("selection")
-    if not isinstance(selection, dict) or not SUBSET.search(text):
+    changes = step.action in FILE_CHANGES and not says_whole(text)
+    if not isinstance(selection, dict) or not (SUBSET.search(text) or changes):
         return False
     narrowed = any(
         selection.get(key) not in (None, [], "")
@@ -260,7 +284,9 @@ def check_step(
         return StepCheck(error=problem)
     missing, invalid = _schema_problems(step)
     granted, project_known = _granted(db, step, actor)
-    if not granted and (project_known or "project_id" not in missing):
+    # Refuse once the project is known or nothing is missing that would reveal it; a missing
+    # task or project is asked for first.
+    if not granted and (project_known or not missing):
         return StepCheck(missing_scopes=[POLICIES[step.action][0]])
     asked = _question(step, missing, invalid, state, catalog)
     if asked is not None:

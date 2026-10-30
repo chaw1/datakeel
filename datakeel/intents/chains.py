@@ -49,6 +49,20 @@ def _merge(total: dict[str, JsonValue], extra: dict[str, JsonValue]) -> None:
             total.setdefault(key, value)
 
 
+def _nth_of(found: JsonValue, position: JsonValue, reference: str) -> JsonValue:
+    """One item of a list output ("the first package the split made"), 1-based."""
+    if position is None:
+        return found
+    if (
+        not isinstance(found, list)
+        or not isinstance(position, int)
+        or not 0 < position <= len(found)
+    ):
+        message = f"{reference} has no item {position}"
+        raise ValidationError(message)
+    return found[position - 1]
+
+
 def resolve_refs(value: JsonValue, chain: ActionChain) -> JsonValue:
     """Replace ``{"$ref": "s1.label_set_id"}`` with the earlier step's receipt value."""
     if isinstance(value, dict) and "$ref" in value:
@@ -57,7 +71,8 @@ def resolve_refs(value: JsonValue, chain: ActionChain) -> JsonValue:
         if source is None or source.status != "succeeded" or output not in source.outputs:
             message = f"{value['$ref']} is not available from an executed earlier step"
             raise ValidationError(message)
-        return source.outputs[output]
+        found = source.outputs[output]
+        return _nth_of(found, value.get("$nth"), str(value["$ref"]))
     if isinstance(value, dict):
         return {key: resolve_refs(item, chain) for key, item in value.items()}
     if isinstance(value, list):

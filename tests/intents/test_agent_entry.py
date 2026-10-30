@@ -149,7 +149,11 @@ def test_messages_without_page_context_keep_the_free_conversation(
 
 
 def test_model_cannot_invent_identities_or_actions(db: Database, tmp_path: Path) -> None:
-    """An invented dataset becomes a question; an unregistered action is refused."""
+    """An invented dataset becomes a question; an unregistered action is not supported.
+
+    FIX2: refusals are kept for missing permissions; an action the registry does not have
+    ends as unsupported, and nothing runs either way.
+    """
     images(db, tmp_path / "images")
     conversation = create_conversation(db, ConversationCreate())
     invented = {
@@ -168,5 +172,5 @@ def test_model_cannot_invent_identities_or_actions(db: Database, tmp_path: Path)
     assert question.kind == "clarify"
     refused = _send(db, conversation.id, "drop everything now please, all of it", provider)
     refusal = next(event.intent for event in refused if event.intent is not None)
-    assert refusal.kind == "refuse"
+    assert refusal.kind == "unsupported"
     assert service.list_runs(db) == []

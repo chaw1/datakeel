@@ -17,7 +17,8 @@ _ZH_SETUP = re.compile(
     r"(?P<shape>框|多边形|关键点|分类|文本)?标注(?:项目)?"
 )
 _EN_SETUP = re.compile(
-    r"\b(?:set up|create|start|build|make)\b.{0,40}?\b(?P<shape>box|bounding box|polygon|"
+    r"\b(?:set up|create|start|build|make)\s+(?:(?:an?|the|new)\s+)*"
+    r"(?P<before>[a-z][a-z ,/&-]{0,40}?)??\s*\b(?P<shape>box|bounding box|polygon|"
     r"classification|keypoint)?\s*(?:annotation|labell?ing)\b(?:\s+project)?"
     r"(?:\s+(?:for|of)\s+(?P<labels>[a-z ,/&-]{2,60}?))?"
     r"(?=[.;]|,\s*(?:with|and|packages?|then|cross|two)\b|\s+(?:with|in|on|using)\b|$)",
@@ -37,6 +38,11 @@ _EN_REASSIGN = re.compile(
 _DRAFT = re.compile(
     r"(?:起草|草拟|拟一份|拟个|先拟|draft)(?P<topic>.{0,40}?)"
     r"(?:标签集|标签|label set|labels?|指南|guidelines?)",
+    re.IGNORECASE,
+)
+# A "for ..." phrase that names the data to annotate rather than what to label.
+_DATA_PHRASE = re.compile(
+    r"\b(?:these|this|those|the|my|our)\b|\b(?:images?|pictures?|photos?|files?|data(?:set)?)$",
     re.IGNORECASE,
 )
 _SPLIT = re.compile(r"[、,\uff0c/和与及&]|\band\b", re.IGNORECASE)
@@ -101,12 +107,24 @@ def _project_notes(text: str, language: str, tier: str) -> tuple[str, list[str]]
     return guidelines, notes
 
 
+def _setup_labels(match: re.Match[str]) -> list[str]:
+    """The objects to label, from "for traffic lights" or "a traffic light box ...".
+
+    A "for" phrase that only points at the data ("for these street images") names no label.
+    """
+    after = match.group("labels") or ""
+    if after and not _DATA_PHRASE.search(after):
+        return _labels(after)
+    groups = match.groupdict()
+    return _labels(groups.get("before") or "") if "before" in groups else _labels(after)
+
+
 def setup_project(text: str) -> IntentDraft | None:
     """Label set, publication, project and packages for a new annotation job."""
     match = _ZH_SETUP.search(text) or _EN_SETUP.search(text)
     if match is None or "起草" in text or re.search(r"\bdraft\b", text, re.IGNORECASE):
         return None
-    labels = _labels(match.group("labels") or "")
+    labels = _setup_labels(match)
     if not labels:
         return None
     language = language_of(text)

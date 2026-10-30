@@ -408,4 +408,6 @@ def test_a_bracket_slip_or_unreadable_answer_still_ends_in_a_plan(db: Database) 
     retried = _raw(db, "Split this project into packages of 20", ["no json here", valid], context)
     assert retried.kind == "plan", retried.text
     stuck = _raw(db, "Split this project into packages of 20", ["no json", "still none"], context)
-    assert stuck.kind == "unsupported"
+    # FIX2: an answer that stays unreadable is a failed model call, said as such.
+    assert stuck.kind == "failed"
+    assert "could not be read" in stuck.text

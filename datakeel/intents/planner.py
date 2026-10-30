@@ -10,13 +10,12 @@ once through the audited tool boundary with the person's own access.
 
 from collections.abc import Callable
 
-import httpx
 from pydantic import Field, JsonValue
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.core.agent_models import ModelRequest, ModelResponse
 from datakeel.core.errors import DatakeelError
-from datakeel.core.intent_models import IntentResult, PageContext, ParserKind
+from datakeel.core.intent_models import Clarification, IntentResult, PageContext, ParserKind
 from datakeel.core.models import BoundaryModel
 from datakeel.intents.catalog import EntityCatalog, build_catalog
 from datakeel.intents.drafts import DraftStep, IntentDraft, language_of
@@ -27,16 +26,19 @@ from datakeel.intents.model_parse import (
     planner_request,
     repair_request,
 )
+from datakeel.intents.outcomes import PlannerFailure, call_model, failed, no_fit
 from datakeel.intents.recipes import match_recipe, recipe_covers
 from datakeel.intents.resolve import Resolver, page_state
 from datakeel.intents.rules import full_registry, is_question, rank
-from datakeel.intents.wording import unsupported_text
+from datakeel.intents.verify import draft_problems
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.storage.database import Database
+from datakeel.storage.identity_store import get_bindings
 from datakeel.storage.intent_chains import list_chains
 
 Complete = Callable[[ModelRequest], ModelResponse]
+UNREADABLE = (DatakeelError, ModelValidationError, ValueError)
 READ_SCORE = 2.5
 READ_MARGIN = 1.5
 REPLY_LIMIT = 40
@@ -154,33 +156,64 @@ def merge_reply(turn: PlannerTurn, *, picked_only: bool = False) -> IntentDraft 
     return draft.model_copy(update={"steps": steps})
 
 
+def _roles(db: Database, actor: str) -> list[str]:
+    """The speaker's roles, so the model picks the verb's action for this person."""
+    return sorted({binding.role_id for binding in get_bindings(db, actor)})
+
+
+def _parsed(complete: Complete, request: ModelRequest, language: str) -> tuple[IntentDraft, str]:
+    """Ask, and ask once more for an unreadable answer; a second failure is a failure."""
+    response = call_model(complete, request)
+    try:
+        return parse_response(response.content, language), response.content
+    except UNREADABLE:
+        response = call_model(complete, repair_request(request, response.content))
+    try:
+        return parse_response(response.content, language), response.content
+    except UNREADABLE as error:
+        reason = "unreadable"
+        raise PlannerFailure(reason) from error
+
+
 def _model_draft(
-    turn: PlannerTurn, catalog: EntityCatalog, complete: Complete, access: ModelAccess
-) -> IntentDraft | None:
+    db: Database,
+    turn: PlannerTurn,
+    catalog: EntityCatalog,
+    complete: Complete,
+    access: ModelAccess,
+) -> IntentDraft:
+    """One bounded model call, repaired at most once per kind of problem; errors surface."""
     pending = turn.pending
     scene = PlannerScene(
         context=turn.context,
         focus=turn.focus,
         open_request=pending.request if pending else "",
         open_question=pending.text if pending else "",
+        speaker=turn.actor,
+        roles=_roles(db, turn.actor),
     )
     words = f"{pending.request} {turn.text}" if pending else turn.text
-    scene = scene.model_copy(update={"speaker": turn.actor})
     request = planner_request(access.model, turn.text, rank(words, full_registry()), catalog, scene)
+    language = language_of(turn.text)
+    draft, content = _parsed(complete, request, language)
+    draft, content = _repaired(turn, draft, catalog, complete, (request, content))
+    state = page_state(turn.context, turn.focus, turn.actor, draft.language, words)
+    problems = draft_problems(db, draft, state, catalog)
+    if not problems:
+        return draft
+    # One repair round for broken rules; whatever is still broken becomes a question.
+    hints = [problem.hint for problem in problems]
     try:
-        response = complete(request)
-    except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError):
-        return None
-    try:
-        draft = parse_response(response.content, language_of(turn.text))
-    except (DatakeelError, ModelValidationError, ValueError):
-        # One more call for an unreadable answer; a second failure ends as unsupported.
-        try:
-            response = complete(repair_request(request, response.content))
-            draft = parse_response(response.content, language_of(turn.text))
-        except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError):
-            return None
-    return _repaired(turn, draft, catalog, complete, (request, response.content))
+        fixed = parse_response(
+            call_model(complete, repair_request(request, content, problems=hints)).content,
+            draft.language,
+        )
+    except UNREADABLE:
+        fixed = draft
+    left = draft_problems(db, fixed, state, catalog)
+    if not left:
+        return fixed
+    return fixed.model_copy(update={"question": left[0].question(draft.language)})
 
 
 def _unknown(turn: PlannerTurn, draft: IntentDraft, catalog: EntityCatalog) -> dict[str, list[str]]:
@@ -199,7 +232,7 @@ def _repaired(
     catalog: EntityCatalog,
     complete: Complete,
     first: tuple[ModelRequest, str],
-) -> IntentDraft:
+) -> tuple[IntentDraft, str]:
     """One repair round for parameter names the action does not take.
 
     Unknown names are never dropped silently: the model gets one chance to use the schema's
@@ -207,16 +240,19 @@ def _repaired(
     """
     unknown = _unknown(turn, draft, catalog)
     if not unknown:
-        return draft
+        return draft, first[1]
+    response = call_model(complete, repair_request(first[0], first[1], unknown))
     try:
-        response = complete(repair_request(first[0], first[1], unknown))
         repaired = parse_response(response.content, draft.language)
-    except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError):
-        return draft
-    return repaired if repaired.steps or repaired.kind == "none" else draft
+    except UNREADABLE:
+        return draft, first[1]
+    if repaired.steps or repaired.kind == "none":
+        return repaired, response.content
+    return draft, first[1]
 
 
 def _draft(
+    db: Database,
     turn: PlannerTurn,
     catalog: EntityCatalog,
     complete: Complete | None,
@@ -232,10 +268,22 @@ def _draft(
     if recipe is not None and (not model or recipe_covers(turn.text)):
         return recipe, "rules", turn.text
     if model and complete is not None:
-        drafted = _model_draft(turn, catalog, complete, access)
-        if drafted is not None:
-            return drafted, "model", turn.text
+        return _model_draft(db, turn, catalog, complete, access), "model", turn.text
     return (_read_rule(turn.text) if access.read_rules else None), "rules", turn.text
+
+
+def _no_plan(draft: IntentDraft | None, turn: PlannerTurn, *, asked: bool) -> IntentResult | None:
+    """A question the checks left open, a related-actions question, or unsupported."""
+    if draft is not None and draft.question:
+        clarification = Clarification(question=draft.question)
+        return IntentResult(
+            kind="clarify", text=draft.question, request=turn.text, clarification=clarification
+        )
+    if not asked:
+        return None
+    # A model was asked: every sentence ends with an answer, never in silence.
+    language = draft.language if draft is not None else language_of(turn.text)
+    return no_fit(draft, turn.text, language)
 
 
 def plan_turn(
@@ -248,13 +296,12 @@ def plan_turn(
     """Return a checked result, or None when the free conversation should answer instead."""
     granted = access or ModelAccess()
     catalog = build_catalog(db, turn.context.project_id)
-    draft, parser, request = _draft(turn, catalog, complete, granted)
-    if draft is None or draft.kind == "none" or not draft.steps:
-        if granted.allowed and complete is not None:
-            # A model was asked: every sentence ends with an answer, never in silence.
-            language = draft.language if draft is not None else language_of(turn.text)
-            return unsupported(turn.text, language)
-        return None
+    try:
+        draft, parser, request = _draft(db, turn, catalog, complete, granted)
+    except PlannerFailure as failure:
+        return failed(turn.text, failure.reason, language_of(turn.text))
+    if draft is None or draft.question or draft.kind == "none" or not draft.steps:
+        return _no_plan(draft, turn, asked=granted.allowed and complete is not None)
     words = f"{request} {turn.text}" if request != turn.text else turn.text
     state = page_state(turn.context, turn.focus, turn.actor, draft.language, words)
     tool = ToolCallContext(actor=turn.actor, session_id=turn.conversation_id)
@@ -272,8 +319,3 @@ def plan_turn(
         origin = (parser, granted.model if parser == "model" else None)
         result = resolver.plan(writes, request, turn.conversation_id, origin)
     return result.model_copy(update={"parser": parser})
-
-
-def unsupported(text: str, language: str) -> IntentResult:
-    """Say plainly that this is not something the platform can do, and what it can do."""
-    return IntentResult(kind="unsupported", text=unsupported_text(language), request=text)

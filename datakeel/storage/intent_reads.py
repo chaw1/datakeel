@@ -5,6 +5,7 @@
 
 from sqlalchemy import func, select
 
+from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.storage.database import Database
 from datakeel.storage.production_catalog_impact import migration_impact
@@ -12,6 +13,70 @@ from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
 
 OPEN_STATES = ("pending", "in_progress")
+
+
+class TaskSnapshot(BoundaryModel):
+    """One task as a one-sentence selector sees it: list number, state and current holder."""
+
+    id: str
+    number: int
+    state: str
+    round: int
+    package_id: str
+    annotated: bool
+    holder: str | None = None
+    stage: str | None = None
+
+
+def task_snapshots(db: Database, project_id: str, limit: int = 10000) -> list[TaskSnapshot]:
+    """Every task of one project in the task list's order, with its active assignment."""
+    bounded = min(max(limit, 1), 10000)
+    with db.session() as session:
+        rows = session.scalars(
+            select(ProductionTaskRow)
+            .where(ProductionTaskRow.project_id == project_id)
+            .order_by(ProductionTaskRow.id)
+            .limit(bounded)
+        ).all()
+        held = session.execute(
+            select(
+                ProductionAssignmentRow.task_id,
+                ProductionAssignmentRow.actor,
+                ProductionAssignmentRow.stage,
+            )
+            .join(ProductionTaskRow, ProductionAssignmentRow.task_id == ProductionTaskRow.id)
+            .where(
+                ProductionTaskRow.project_id == project_id,
+                ProductionAssignmentRow.active.is_(True),
+            )
+        ).all()
+    holders = {str(task): (str(actor), str(stage)) for task, actor, stage in held}
+    return [
+        TaskSnapshot(
+            id=row.id,
+            number=number,
+            state=row.state,
+            round=row.round,
+            package_id=row.package_id,
+            annotated=row.latest_revision_id is not None,
+            holder=holders.get(row.id, (None, None))[0],
+            stage=holders.get(row.id, (None, None))[1],
+        )
+        for number, row in enumerate(rows, start=1)
+    ]
+
+
+def task_holders(db: Database, task_ids: list[str]) -> dict[str, str]:
+    """Who currently holds each of these tasks for annotation; unheld tasks are absent."""
+    if not task_ids:
+        return {}
+    statement = select(ProductionAssignmentRow.task_id, ProductionAssignmentRow.actor).where(
+        ProductionAssignmentRow.task_id.in_(task_ids[:10000]),
+        ProductionAssignmentRow.active.is_(True),
+        ProductionAssignmentRow.stage == "annotation",
+    )
+    with db.session() as session:
+        return {str(task): str(actor) for task, actor in session.execute(statement).all()}
 
 
 def held_tasks(

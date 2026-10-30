@@ -222,12 +222,38 @@ def nothing_to_change(kind: str, holder: str, language: str) -> str:
 
 
 def invalid_question(problem: str, language: str) -> str:
-    """A value the action rejects, said as a request to change it rather than an error."""
+    """Values the action rejects, named with what is allowed; never the raw error."""
+    parts: list[str] = []
+    for entry in problem.split("|"):
+        field, _, expected = entry.partition(":")
+        label = field_label(field, language)
+        if language == "zh":
+            parts.append(f"「{label}」的值不行" + (f"(可以是 {expected})" if expected else ""))
+        else:
+            parts.append(
+                f'the value for "{label}"' + (f" (allowed: {expected})" if expected else "")
+            )
+    joined = "; ".join(parts)
+    if language == "zh":
+        return f"这个计划还不能执行: {joined}。请改一下说法或补充后再试。"
+    return f"This plan cannot run yet: {joined} is not allowed. Please adjust and try again."
+
+
+def broken_plan(language: str) -> str:
+    """A planned step failed an internal check; say so plainly, nothing was changed."""
+    if language == "zh":
+        return "这个计划里有一步我没法核对清楚, 所以没有生成卡片, 什么都没改。请换个说法再试。"
     return (
-        f"这个计划还不能执行: {problem}。请改一下说法或补充后再试。"
-        if language == "zh"
-        else f"This plan cannot run yet: {problem}. Please adjust and try again."
+        "I could not check one step of this plan, so no card was made and nothing changed. "
+        "Please rephrase and try again."
     )
+
+
+def already_so(language: str) -> str:
+    """Every step would leave things as they are: nothing to confirm."""
+    if language == "zh":
+        return "已经是这样了, 没有要改的, 所以没有生成计划。"
+    return "It is already like that; there is nothing to change, so no plan was made."
 
 
 def unknown_labels_question(unknown: list[str], existing: list[str], language: str) -> str:
@@ -236,3 +262,93 @@ def unknown_labels_question(unknown: list[str], existing: list[str], language: s
     if language == "zh":
         return f"标签集里没有「{'、'.join(unknown)}」。现有标签: {'、'.join(shown)}。要改哪一个?"
     return f"The label set has no {', '.join(unknown)}. It has: {', '.join(shown)}. Which one?"
+
+
+FAILURE_REASONS = {
+    "timeout": ("超时", "it timed out"),
+    "unreadable": ("回答无法解析", "its answer could not be read"),
+    "network": ("网络错误", "a network error"),
+    "provider": ("模型服务没有返回可用结果", "the model service returned no usable result"),
+}
+
+
+def model_failed(reason: str, language: str) -> str:
+    """The model call itself failed: say so with the reason; nothing was changed."""
+    zh = language == "zh"
+    known = FAILURE_REASONS.get(reason)
+    if known is not None:
+        said = known[0 if zh else 1]
+    elif reason.startswith("http_"):
+        said = f"HTTP {reason.removeprefix('http_')}"
+    else:
+        said = "调用出错" if zh else "the call failed"
+    if zh:
+        return f"模型调用失败 ({said}), 这句话还没处理, 什么都没改。可以稍后重试。"
+    return (
+        f"The model call failed ({said}), so this sentence was not handled and nothing "
+        "changed. Please try again."
+    )
+
+
+def internal_failure(language: str) -> str:
+    """An internal check failed: say it plainly without exposing the raw error."""
+    if language == "zh":
+        return "处理这句话时平台内部出错了, 什么都没改。请换个说法, 或稍后再试。"
+    return (
+        "Something went wrong inside the platform while handling this sentence; nothing "
+        "changed. Please rephrase or try again later."
+    )
+
+
+def related_question(titles: list[str], language: str) -> str:
+    """The model found no fit, but the registry has related actions: ask which one."""
+    if language == "zh":
+        return (
+            f"我没能把这句话对上具体的操作。相关的有: {'、'.join(titles)}。"
+            "你想做哪一个? 也可以换个说法。"
+        )
+    return (
+        f"I could not match this to a specific operation. Related ones: {', '.join(titles)}. "
+        "Which one did you mean? You can also rephrase."
+    )
+
+
+EXCLUSION_REASONS = {
+    "held": ("在别人手上", "someone else holds them"),
+    "annotated": ("已有人工标注", "they already have saved annotation"),
+}
+
+
+def excluded_text(excluded: dict[str, int], language: str) -> str:
+    """Why a described group became smaller: protected tasks the words did not ask for."""
+    if not excluded:
+        return ""
+    total = sum(excluded.values())
+    if language == "zh":
+        parts = [f"{count} 条{EXCLUSION_REASONS[key][0]}" for key, count in excluded.items()]
+        return f" 排除了 {total} 条: {', '.join(parts)}; 话里没说要动这些。"
+    parts = [f"{count} because {EXCLUSION_REASONS[key][1]}" for key, count in excluded.items()]
+    return f" Left out {total}: {'; '.join(parts)}; the request did not ask for them."
+
+
+def disabled_question(name: str, language: str) -> str:
+    """A disabled account cannot be given work; say so and ask who else."""
+    if language == "zh":
+        return f"{name} 的账号已停用, 不能接收任务。要先启用这个账号, 还是换一个人?"
+    return (
+        f"{name}'s account is disabled, so it cannot receive work. "
+        "Enable it first, or pick someone else?"
+    )
+
+
+def whole_tasks_question(language: str) -> str:
+    """The words did not say which tasks; never assume every task in the project."""
+    if language == "zh":
+        return (
+            "是这个项目里的全部任务吗? 如果是请说「全部」, "
+            "否则说一下是哪些任务(谁手上的、没人领的、第几个)。"
+        )
+    return (
+        'Every task in this project? Say "all" if so; otherwise say which ones (whose, '
+        "unassigned, or their numbers)."
+    )

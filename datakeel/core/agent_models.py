@@ -58,6 +58,9 @@ class ModelRequest(BoundaryModel):
     max_output_tokens: int = Field(default=1024, ge=1)
     agent_name: str = "main"
     agent_path: str = "main"
+    # Planners that must return one JSON object ask for steady, JSON-only answers.
+    temperature: float | None = Field(default=None, ge=0, le=2)
+    json_output: bool = False
 
 
 class ModelResponse(BoundaryModel):

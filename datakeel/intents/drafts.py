@@ -29,6 +29,8 @@ class IntentDraft(BoundaryModel):
     steps: list[DraftStep] = Field(default_factory=list[DraftStep], max_length=50)
     question: str = ""
     notes: list[str] = Field(default_factory=list[str])
+    # With kind none: registered names the model found close to the request.
+    related: list[str] = Field(default_factory=list[str], max_length=10)
     language: Literal["zh", "en"] = "zh"
     confident: bool = False
 

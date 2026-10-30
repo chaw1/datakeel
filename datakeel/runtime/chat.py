@@ -14,10 +14,11 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_core.messages.ai import InputTokenDetails, UsageMetadata
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import Runnable
+from langchain_openai import ChatOpenAI
 from openai import APIStatusError as OpenAIStatusError
 from openai import APITimeoutError as OpenAITimeoutError
 from openai import OpenAIError
-from pydantic import PrivateAttr
+from pydantic import JsonValue, PrivateAttr
 
 from datakeel.core.agent_models import ChatMessage, ModelRequest, ModelResponse, Provider, ToolCall
 from datakeel.core.errors import ProviderError, ValidationError
@@ -138,9 +139,16 @@ def _invoke(model: BaseChatModel, request: ModelRequest) -> ModelResponse:
     tools = [
         {"type": "function", "function": tool.model_dump(mode="json")} for tool in request.tools
     ]
+    options: dict[str, JsonValue] = {}
+    if request.temperature is not None:
+        options["temperature"] = request.temperature
+    if request.json_output and isinstance(model, ChatOpenAI):
+        # OpenAI-compatible endpoints (DeepSeek, Bailian) then return one JSON object only.
+        options["response_format"] = {"type": "json_object"}
     with tracing_disabled():
         runnable = model.bind_tools(tools) if tools else model
-        message = runnable.invoke(
+        bound = runnable.bind(**options) if options else runnable
+        message = bound.invoke(
             [_message(item) for item in request.messages],
             model=request.model,
             max_tokens=request.max_output_tokens,

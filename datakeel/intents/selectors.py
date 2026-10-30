@@ -17,24 +17,10 @@ from datakeel.core.models import AssetRef
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_store import list_assertions
-from datakeel.storage.intent_reads import held_tasks
 from datakeel.storage.object_queries import evaluate
-from datakeel.storage.production_queries import list_tasks
 
 SELECTION_LIMIT = 10000
-OPEN_STATES = frozenset({"pending", "in_progress"})
 DUPLICATE_STATUSES = frozenset({"candidate", "accepted"})
-
-
-def positions(selector: dict[str, JsonValue]) -> list[int] | None:
-    """1-based positions from {"first": n} or {"positions": [..]}; None when absent."""
-    first = selector.get("first")
-    if isinstance(first, int) and first > 0:
-        return list(range(1, min(first, SELECTION_LIMIT) + 1))
-    raw = selector.get("positions")
-    if isinstance(raw, list):
-        return [item for item in raw if isinstance(item, int) and item > 0]
-    return None
 
 
 def pick(values: list[str], wanted: list[int] | None) -> list[str] | None:
@@ -44,23 +30,6 @@ def pick(values: list[str], wanted: list[int] | None) -> list[str] | None:
     if not wanted or max(wanted) > len(values):
         return None
     return [values[index - 1] for index in wanted]
-
-
-def project_tasks(
-    db: Database, project_id: str, *, holder: str | None, untouched: bool, open_only: bool
-) -> list[str]:
-    """Task ids of one project in the order the task list shows them (by id)."""
-    if holder is not None:
-        return [
-            task for _, task in held_tasks(db, holder, project_id=project_id, untouched=untouched)
-        ]
-    tasks = list_tasks(db, project_id)
-    return [
-        task.id
-        for task in tasks
-        if (not open_only or task.state in OPEN_STATES)
-        and (not untouched or task.latest_revision_id is None)
-    ]
 
 
 def _dataset_files(db: Database, dataset_id: str, version_id: str | None) -> list[str]:

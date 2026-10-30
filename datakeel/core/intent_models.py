@@ -16,7 +16,7 @@ from datakeel.core.models import BoundaryModel, new_id, utcnow
 
 StepStatus = Literal["planned", "awaiting_approval", "running", "succeeded", "failed"]
 ChainStatus = Literal["planned", "running", "awaiting_approval", "succeeded", "failed"]
-IntentKind = Literal["plan", "answer", "clarify", "refuse", "unsupported"]
+IntentKind = Literal["plan", "answer", "clarify", "refuse", "unsupported", "failed"]
 DetailTone = Literal["param", "default", "added", "removed", "impact"]
 ParserKind = Literal["rules", "model"]
 

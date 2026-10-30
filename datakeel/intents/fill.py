@@ -11,10 +11,13 @@ grounded in the page, the previous turn or the person's words (see ``grounding``
 Parameters the action does not have are reported, never dropped silently.
 """
 
+from collections import Counter
+
 from pydantic import Field, JsonValue
 
 from datakeel.actions.parameters import PARAMETER_TYPES
-from datakeel.core.intent_models import Candidate, Clarification, PageContext
+from datakeel.core.errors import NotFoundError
+from datakeel.core.intent_models import Clarification
 from datakeel.core.models import BoundaryModel, new_id
 from datakeel.intents.catalog import (
     FIELD_KINDS,
@@ -26,24 +29,19 @@ from datakeel.intents.catalog import (
 )
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.edits import prepare_label_edit
+from datakeel.intents.fill_state import FillState, ask, context_value
 from datakeel.intents.grounding import grounded
+from datakeel.intents.group_fill import numbered, selector_value
 from datakeel.intents.object_edits import LIST_EDITS, new_object_field, prepare_user_edit
-from datakeel.intents.selectors import (
-    file_selection,
-    ordinal_question,
-    page_selection,
-    pick,
-    positions,
-    project_tasks,
-)
+from datakeel.intents.selectors import page_selection
 from datakeel.intents.wording import (
-    field_label,
-    nothing_to_change,
+    disabled_question,
     unknown_labels_question,
     unknown_question,
 )
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.storage.database import Database
+from datakeel.storage.production_queries import get_task
 
 CONTAINERS = ("dataset_id", "version_id", "project_id", "package_id", "label_set_id")
 SINGLE_DEFAULTS = frozenset({"dataset_id", "project_id"})
@@ -53,16 +51,16 @@ EDIT_KEYS = {
     "create_label_set": frozenset({"add_labels", "remove_labels", "rename_labels"}),
     "manage_users": frozenset(LIST_EDITS),
 }
-
-
-class FillState(BoundaryModel):
-    """Values available to every step: page context and the previous turn's objects."""
-
-    context: PageContext = Field(default_factory=PageContext)
-    focus: dict[str, str] = Field(default_factory=dict[str, str])
-    actor: str = "local"
-    language: str = "zh"
-    text: str = ""
+# Fields that hand work to a person: a disabled account cannot take it.
+RECEIVERS = frozenset({"actor", "leader_id", "assignee"})
+__all__ = [
+    "FillResult",
+    "FillState",
+    "context_value",
+    "fill_defaults",
+    "fill_steps",
+    "latest_revision",
+]
 
 
 class FillResult(BoundaryModel):
@@ -71,46 +69,7 @@ class FillResult(BoundaryModel):
     steps: list[DraftStep] = Field(default_factory=list[DraftStep])
     clarification: Clarification | None = None
     empty_selection: str | None = None
-
-
-def _ask(
-    field: str, step: DraftStep, choices: list[Candidate], language: str, mention: str = ""
-) -> Clarification:
-    label = field_label(field, language)
-    if language == "zh":
-        question = (
-            f"「{mention}」对应多个{label}, 是哪一个?"
-            if mention and len(choices) > 1
-            else f"没找到叫「{mention}」的{label}, 是下面哪一个?"
-            if mention and choices
-            else f"没找到叫「{mention}」的{label}, 换个说法试试?"
-            if mention
-            else f"是哪个{label}?"
-        )
-    else:
-        question = (
-            f'"{mention}" matches several; which {label}?'
-            if mention and len(choices) > 1
-            else f'No {label} is called "{mention}"; is it one of these?'
-            if mention and choices
-            else f'No {label} is called "{mention}"; could you rephrase?'
-            if mention
-            else f"Which {label}?"
-        )
-    return Clarification(question=question, action=step.action, fields=[field], candidates=choices)
-
-
-def context_value(field: str, state: FillState, catalog: EntityCatalog) -> str | None:
-    """The page's (or the previous turn's) object for one container field."""
-    context = state.context
-    value: str | None = getattr(context, field, None)
-    if value is None and field == "dataset_id" and context.version_id:
-        version = catalog.get("version", context.version_id)
-        value = version.parent if version else None
-    if value is None and field == "dataset_id" and context.project_id:
-        project = catalog.get("project", context.project_id)
-        value = project.parent if project else None
-    return value or state.focus.get(field)
+    excluded: dict[str, dict[str, int]] = Field(default_factory=dict[str, dict[str, int]])
 
 
 def _default_container(
@@ -156,12 +115,17 @@ def _resolve_identity(
     said = step.said.get(field)
     only = step.action in PARAMETER_MODELS and len(catalog.of(kind, parent)) == 1
     if len(found) == 1 and (only or grounded(field, found[0], state.text, page, said)):
+        if found[0].status != "active" and field in RECEIVERS:
+            active = [entry for entry in catalog.of(kind) if entry.status == "active"]
+            question = disabled_question(found[0].label, state.language)
+            asked = ask(field, step, candidates(active), state.language)
+            return asked.model_copy(update={"question": question})
         return found[0].id
     if len(found) == 1:
         # Named by nobody: the model copied it from the catalog, so ask instead of guessing.
-        return _ask(field, step, candidates(catalog.of(kind, parent)), state.language)
+        return ask(field, step, candidates(catalog.of(kind, parent)), state.language)
     pool = found or catalog.of(kind, parent)
-    return _ask(field, step, candidates(pool), state.language, said or value)
+    return ask(field, step, candidates(pool), state.language, said or value)
 
 
 def _resolve_list(
@@ -175,54 +139,9 @@ def _resolve_list(
             continue
         found = catalog.match(kind, value)
         if len(found) != 1:
-            return _ask(field, step, candidates(found or catalog.of(kind)), state.language, value)
+            return ask(field, step, candidates(found or catalog.of(kind)), state.language, value)
         resolved.append(found[0].id)
     return resolved
-
-
-def _holder(raw: JsonValue, state: FillState, catalog: EntityCatalog) -> str | Clarification | None:
-    if not isinstance(raw, str) or not raw.strip():
-        return None
-    people = (
-        [entry for entry in catalog.of("user") if entry.id == state.actor]
-        if raw.strip().casefold() in SELF_WORDS
-        else catalog.match("user", raw)
-    )
-    if len(people) == 1:
-        return people[0].id
-    step = DraftStep(id="selector", action="assign_tasks")
-    asked = _ask("holder", step, candidates(people or catalog.of("user")), state.language, raw)
-    return asked.model_copy(update={"fields": ["$tasks.holder"]})
-
-
-def _tasks(
-    db: Database, selector: dict[str, JsonValue], state: FillState, catalog: EntityCatalog
-) -> list[str] | Clarification:
-    holder = _holder(selector.get("holder"), state, catalog)
-    if isinstance(holder, Clarification):
-        return holder
-    project = (
-        selector.get("project_id") or state.context.project_id or state.focus.get("project_id")
-    )
-    if not isinstance(project, str):
-        step = DraftStep(id="selector", action="assign_tasks")
-        asked = _ask("project_id", step, candidates(catalog.of("project")), state.language)
-        return asked.model_copy(update={"fields": ["$tasks.project_id"]})
-    untouched = selector.get("untouched") is True
-    found = project_tasks(db, project, holder=holder, untouched=untouched, open_only=True)
-    chosen = pick(found, positions(selector))
-    return ordinal_question("task", state.language) if chosen is None else chosen
-
-
-def _nth_package(
-    value: dict[str, JsonValue], state: FillState, catalog: EntityCatalog
-) -> str | Clarification:
-    project = state.context.project_id or state.focus.get("project_id")
-    packages = catalog.of("package", project) if project else []
-    position = value.get("$nth")
-    wanted = [position] if isinstance(position, int) else []
-    chosen = pick([entry.id for entry in packages], wanted)
-    return chosen[0] if chosen else ordinal_question("package", state.language)
 
 
 def known_fields(
@@ -284,53 +203,23 @@ def _prepared(step: DraftStep, params: dict[str, JsonValue], names: list[str], t
         params["name"] = names[-1]
 
 
-def _selector_value(
-    db: Database,
-    field: str,
-    value: dict[str, JsonValue],
-    current: DraftStep,
-    state: FillState,
-    catalog: EntityCatalog,
-) -> JsonValue | Clarification:
-    """Resolve a $tasks, $nth or $files selector; {"$empty": sentence} means nothing matches."""
-    if "$tasks" in value:
-        raw = value["$tasks"]
-        found = _tasks(db, raw if isinstance(raw, dict) else {}, state, catalog)
-        if isinstance(found, Clarification):
-            return found
-        if not found:
-            holder = raw.get("holder") if isinstance(raw, dict) else None
-            return {"$empty": nothing_to_change("tasks", str(holder or ""), state.language)}
-        identifiers: list[JsonValue] = list(found)
-        return identifiers if field.endswith("_ids") else {"$each": identifiers}
-    if "$nth" in value:
-        return _nth_package(value, state, catalog)
-    spec = value["$files"]
-    selection = file_selection(
-        db,
-        spec if isinstance(spec, dict) else {},
-        context_value("dataset_id", state, catalog),
-        state.context.version_id,
-        list(state.context.selected_ids),
-    )
-    if selection is not None and selection.get("$empty"):
-        return {"$empty": nothing_to_change("files", "", state.language)}
-    return selection if selection is not None else _ask(field, current, [], state.language)
-
-
 def _fill_value(
     db: Database,
     field: str,
-    value: JsonValue,
     current: DraftStep,
     state: FillState,
     catalog: EntityCatalog,
+    excluded: Counter[str],
 ) -> JsonValue | Clarification:
     """Resolve one value: selectors, single identities and lists of identities."""
+    value = current.params[field]
+    value = numbered(field, value) or value
     if isinstance(value, dict) and (
-        "$tasks" in value or "$files" in value or ("$nth" in value and field == "package_id")
+        "$tasks" in value
+        or "$files" in value
+        or ("$nth" in value and "$ref" not in value and field == "package_id")
     ):
-        return _selector_value(db, field, value, current, state, catalog)
+        return selector_value(db, (field, value), current, state, catalog, excluded)
     if field in FIELD_KINDS and isinstance(value, str):
         return _resolve_identity(field, value, current, state, catalog)
     if field in LIST_KINDS and isinstance(value, list):
@@ -344,6 +233,7 @@ def fill_steps(
     """Resolve every identity and selector; stop at the first question."""
     filled: list[DraftStep] = []
     names: list[str] = []
+    left_out: dict[str, dict[str, int]] = {}
     for step in steps:
         params, unknown = known_fields(step, state, catalog)
         if unknown:
@@ -352,8 +242,9 @@ def fill_steps(
         _prepared(step, params, names, state.text)
         fresh = new_object_field(step.action, params)
         current = step.model_copy(update={"params": params})
+        excluded: Counter[str] = Counter()
         for field in [name for name in params if name != fresh]:
-            resolved = _fill_value(db, field, params[field], current, state, catalog)
+            resolved = _fill_value(db, field, current, state, catalog, excluded)
             if isinstance(resolved, Clarification):
                 return FillResult(clarification=resolved)
             if isinstance(resolved, dict) and set(resolved) == {"$empty"}:
@@ -369,7 +260,9 @@ def fill_steps(
             params = edit.params
         params = prepare_user_edit(db, params) if step.action == "manage_users" else params
         filled.append(current.model_copy(update={"params": params}))
-    return FillResult(steps=filled)
+        if excluded:
+            left_out[step.id] = dict(excluded)
+    return FillResult(steps=filled, excluded=left_out)
 
 
 def fill_defaults(
@@ -389,3 +282,17 @@ def fill_defaults(
             params[field] = value
     page_selection(params, required, state.context)
     return step.model_copy(update={"params": params})
+
+
+def latest_revision(db: Database, step: DraftStep) -> DraftStep:
+    """A review decision is about the task's latest revision unless one is named."""
+    task = step.params.get("task_id")
+    if step.action != "review_task" or "revision_id" in step.params or not isinstance(task, str):
+        return step
+    try:
+        revision = get_task(db, task).latest_revision_id
+    except NotFoundError:
+        return step
+    if revision is None:
+        return step
+    return step.model_copy(update={"params": {**step.params, "revision_id": revision}})

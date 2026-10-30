@@ -18,7 +18,7 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-overreach-refused-while-planning",
         path="intents/validate.py",
-        before='    if not granted and (project_known or "project_id" not in missing):',
+        before="    if not granted and (project_known or not missing):",
         after="    if False:",
         # FIX1: permission is refused earlier (resolve.overreach); this check still guards a
         # project that only becomes known while filling.
@@ -28,8 +28,8 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-unknown-name-is-asked-not-guessed",
         path="intents/fill.py",
-        before="    return _ask(field, step, candidates(pool), state.language, said or value)",
-        after="    return pool[0].id if pool else _ask(field, step, [], state.language, value)",
+        before="    return ask(field, step, candidates(pool), state.language, said or value)",
+        after="    return pool[0].id if pool else ask(field, step, [], state.language, value)",
         case=_EXAMPLES + "test_unknown_person_is_asked_with_candidates_and_the_reply_resumes",
         runner="pytest",
     ),
@@ -93,7 +93,7 @@ INTENT_MUTATIONS = (
     ),
     Mutation(
         name="draft-keeps-every-source-category",
-        path="label_drafts/model.py",
+        path="label_drafts/checked.py",
         before="    baseline = build_labels(inputs)\n",
         after="    baseline = build_labels(inputs)[:1]\n",
         case=_DRAFTS + "test_recorded_model_draft_keeps_every_category_and_drops_invented_samples",
@@ -101,7 +101,7 @@ INTENT_MUTATIONS = (
     ),
     Mutation(
         name="draft-drops-invented-sample-examples",
-        path="label_drafts/model.py",
+        path="label_drafts/checked.py",
         before="            if value.sample_id in samples:",
         after="            if True:",
         case=_DRAFTS + "test_recorded_model_draft_keeps_every_category_and_drops_invented_samples",
@@ -194,8 +194,8 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-every-sentence-is-answered",
         path="intents/planner.py",
-        before="            return unsupported(turn.text, language)",
-        after="            return None",
+        before="    return no_fit(draft, turn.text, language)",
+        after="    return None",
         case=_CHECKS + "test_nothing_registered_fits_gets_a_plain_answer_listing_what_works",
         runner="pytest",
     ),
@@ -267,8 +267,8 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-unreadable-answer-asked-again",
         path="intents/planner.py",
-        before="            response = complete(repair_request(request, response.content))",
-        after="            return None",
+        before="        response = call_model(complete, repair_request(request, response.content))",
+        after='        raise PlannerFailure("unreadable")',
         case=_CHECKS + "test_a_bracket_slip_or_unreadable_answer_still_ends_in_a_plan",
         runner="pytest",
     ),
@@ -319,8 +319,11 @@ INTENT_MUTATIONS = (
     Mutation(
         name="draft-billed-failure-recorded",
         path="label_drafts/model.py",
-        before="        raise ValidationError(message) from error\n    return outcome.model_copy(",
-        after="        raise\n    return outcome.model_copy(",
+        before=(
+            '    return BilledDraftError(f"{error}; billed calls recorded: {recorded}", '
+            "tuple(calls))"
+        ),
+        after="    return BilledDraftError(str(error), tuple(calls))",
         case=_SOURCES + "test_failed_model_answer_is_recorded_with_its_tokens_and_cost",
         runner="pytest",
     ),

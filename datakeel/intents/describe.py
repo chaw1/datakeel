@@ -71,6 +71,13 @@ def _reference(value: dict[str, JsonValue], language: str) -> str:
         return (
             f"{step} 生成的{label}版本" if language == "zh" else f"the {label} version from {step}"
         )
+    position = value.get("$nth")
+    if isinstance(position, int):
+        return (
+            f"{step} 生成的第 {position} 个{label}"
+            if language == "zh"
+            else f"item {position} of the {label} created by {step}"
+        )
     return f"{step} 生成的{label}" if language == "zh" else f"the {label} created by {step}"
 
 

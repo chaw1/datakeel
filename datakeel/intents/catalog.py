@@ -62,6 +62,9 @@ class CatalogEntry(BoundaryModel):
     names: tuple[str, ...] = ()
     parent: str | None = None
     size: int | None = None
+    status: str = "active"
+    # Facts the planner needs beside the name, e.g. a skill's annotation type and domain.
+    note: str = ""
 
 
 class EntityCatalog(BoundaryModel):
@@ -119,10 +122,12 @@ class EntityCatalog(BoundaryModel):
 
 
 def candidates(entries: list[CatalogEntry]) -> list[Candidate]:
-    """Present catalog entries as choices."""
-    return [Candidate(id=entry.id, label=entry.label, kind=entry.kind) for entry in entries][
-        :CANDIDATE_LIMIT
-    ]
+    """Present catalog entries as choices; a disabled account is never offered."""
+    return [
+        Candidate(id=entry.id, label=entry.label, kind=entry.kind)
+        for entry in entries
+        if entry.status == "active"
+    ][:CANDIDATE_LIMIT]
 
 
 def build_catalog(db: Database, project_id: str | None = None) -> EntityCatalog:
@@ -133,9 +138,9 @@ def build_catalog(db: Database, project_id: str | None = None) -> EntityCatalog:
             id=user.id,
             label=user.display_name,
             names=(user.id, user.display_name),
+            status=user.status,
         )
         for user in list_users(db)[:CATALOG_LIMIT]
-        if user.status == "active"
     ]
     projects = list_projects(db)[:CATALOG_LIMIT]
     entries += [
@@ -193,7 +198,13 @@ def _people_catalog(db: Database) -> list[CatalogEntry]:
         if role.status == "active"
     ]
     entries += [
-        CatalogEntry(kind="skill", id=skill.id, label=skill.name, names=(skill.id, skill.name))
+        CatalogEntry(
+            kind="skill",
+            id=skill.id,
+            label=skill.name,
+            names=(skill.id, skill.name),
+            note=f"annotation_type={skill.annotation_type} domain={skill.domain}",
+        )
         for skill in list_skills(db)[:CATALOG_LIMIT]
         if skill.status == "active"
     ]

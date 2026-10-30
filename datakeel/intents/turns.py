@@ -20,13 +20,8 @@ from datakeel.core.intent_models import IntentResult, PageContext
 from datakeel.core.routing_models import TierState
 from datakeel.intents.drafts import language_of
 from datakeel.intents.model_parse import AGENT_NAME
-from datakeel.intents.planner import (
-    ModelAccess,
-    PlannerTurn,
-    conversation_focus,
-    plan_turn,
-    unsupported,
-)
+from datakeel.intents.outcomes import internal_error, unsupported
+from datakeel.intents.planner import ModelAccess, PlannerTurn, conversation_focus, plan_turn
 from datakeel.routing.accounting import CallContext, ModelAccount
 from datakeel.routing.config import load_config
 from datakeel.routing.tiers import select_model
@@ -122,7 +117,8 @@ def planner_events(
             access=access,
         )
     except DatakeelError:
-        result = None
+        # The raw error stays in the server log; the person hears a plain sentence.
+        result = internal_error(text, language_of(text)) if mode == "model" else None
     if result is None and mode == "model":
         # A real model was in the loop: answer every sentence instead of a silent free loop.
         result = unsupported(text, language_of(text))

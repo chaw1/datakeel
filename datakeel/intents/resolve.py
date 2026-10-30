@@ -8,6 +8,7 @@ import os
 from pydantic import JsonValue
 from pydantic import ValidationError as ModelValidationError
 
+from datakeel.actions.registry import POLICIES
 from datakeel.core.intent_models import (
     ActionChain,
     ChainStep,
@@ -15,13 +16,23 @@ from datakeel.core.intent_models import (
     IntentResult,
     PageContext,
     ParserKind,
+    StepDetail,
 )
 from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
-from datakeel.intents.fill import FillState, fill_defaults, fill_steps
+from datakeel.intents.fill import FillState, fill_defaults, fill_steps, latest_revision
+from datakeel.intents.outcomes import unsupported
 from datakeel.intents.validate import check_step, overreach, required_fields
-from datakeel.intents.wording import field_label, plan_text, refusal
+from datakeel.intents.verify import unchanged
+from datakeel.intents.wording import (
+    already_so,
+    broken_plan,
+    excluded_text,
+    field_label,
+    plan_text,
+    refusal,
+)
 from datakeel.label_drafts.model import PROFILES
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.models import ObjectSet
@@ -134,13 +145,20 @@ class Resolver:
         return step.model_copy(update={"params": params})
 
     def _checked(
-        self, draft: IntentDraft, steps: list[DraftStep], text: str
+        self,
+        draft: IntentDraft,
+        steps: list[DraftStep],
+        text: str,
+        excluded: dict[str, dict[str, int]] | None = None,
     ) -> list[ChainStep] | IntentResult:
         checked: list[ChainStep] = []
+        left_out = excluded or {}
         for position, step in enumerate(steps):
             current = self._draft_sources(step, text) if step.action == "draft_label_set" else step
             required = required_fields(current.action)
-            current = fill_defaults(current, required, self.state, self.catalog)
+            current = latest_revision(
+                self.db, fill_defaults(current, required, self.state, self.catalog)
+            )
             result = check_step(self.db, current, self.state, self.catalog, checked)
             if result.clarification is not None:
                 rest = [*checked_drafts(checked), current, *steps[position + 1 :]]
@@ -153,11 +171,13 @@ class Resolver:
                     request=text,
                     missing_scopes=result.missing_scopes,
                 )
+            if result.step is None and current.action not in POLICIES:
+                # An action the registry does not have: nothing registered does this.
+                return unsupported(text, draft.language)
             if result.step is None:
-                zh = draft.language == "zh"
-                prefix = "这个计划不能执行: " if zh else "This plan cannot run: "
-                return IntentResult(kind="refuse", text=prefix + (result.error or ""), request=text)
-            checked.append(result.step)
+                # The internal reason stays out of the answer; the person hears a plain one.
+                return IntentResult(kind="clarify", text=broken_plan(draft.language), request=text)
+            checked.append(_with_exclusions(result.step, left_out.get(step.id), draft.language))
         return checked
 
     def plan(
@@ -186,9 +206,11 @@ class Resolver:
             return self._clarify(draft, filled.clarification, text)
         if filled.empty_selection is not None:
             return IntentResult(kind="answer", text=filled.empty_selection, request=text)
-        checked = self._checked(draft, filled.steps, text)
+        checked = self._checked(draft, filled.steps, text, filled.excluded)
         if isinstance(checked, IntentResult):
             return checked
+        if all(unchanged(self.db, step) for step in checked):
+            return IntentResult(kind="answer", text=already_so(draft.language), request=text)
         chain = save_chain(
             self.db,
             ActionChain(
@@ -211,6 +233,15 @@ class Resolver:
             request=text,
             chain=chain,
         )
+
+
+def _with_exclusions(step: ChainStep, excluded: dict[str, int] | None, language: str) -> ChainStep:
+    """Say on the card how many described tasks protection left out, and why."""
+    if not excluded:
+        return step
+    label = "已排除" if language == "zh" else "Left out"
+    detail = StepDetail(label=label, value=excluded_text(excluded, language).strip(), tone="impact")
+    return step.model_copy(update={"details": [*step.details, detail]})
 
 
 def checked_drafts(steps: list[ChainStep]) -> list[DraftStep]:
