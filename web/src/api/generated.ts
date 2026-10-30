@@ -2444,6 +2444,10 @@ export interface paths {
         /**
          * Task Content
          * @description View a version-pinned source or a small image preview under the same source grants.
+         *
+         *     Images are always shown upright: EXIF-oriented sources are re-encoded without the tag and
+         *     with the EXIF Orientation already applied to the pixels (JPEG stays JPEG, others PNG;
+         *     thumbnails are JPEG).
          */
         get: operations["task_content_api_production_tasks__task_id__content_get"];
         put?: never;
@@ -3936,6 +3940,9 @@ export interface components {
         /**
          * AnnotationRevision
          * @description Append one annotation and its precise human or model provenance forever.
+         *
+         *     ``coordinate_conversion`` is set only on reads of a revision saved in the stored pixel
+         *     frame (before v0.19) of an EXIF-oriented image, naming the transform applied on read.
          */
         AnnotationRevision: {
             /** Actor */
@@ -3943,6 +3950,7 @@ export interface components {
             annotation: components["schemas"]["AnnotationRecord"];
             /** Confidence */
             confidence?: number | null;
+            coordinate_conversion?: components["schemas"]["CoordinateConversion"] | null;
             /**
              * Created At
              * Format: date-time
@@ -5582,6 +5590,32 @@ export interface components {
             pending_plans?: components["schemas"]["ActionPlan"][];
             /** Turns */
             turns: number;
+        };
+        /**
+         * CoordinateConversion
+         * @description Trace a read-time conversion of a stored-frame annotation into the upright frame.
+         */
+        CoordinateConversion: {
+            /**
+             * From Frame
+             * @default stored
+             * @enum {string}
+             */
+            from_frame: "display" | "stored";
+            /** Orientation */
+            orientation: number;
+            /** Stored Height */
+            stored_height: number;
+            /** Stored Width */
+            stored_width: number;
+            /**
+             * To Frame
+             * @default display
+             * @enum {string}
+             */
+            to_frame: "display" | "stored";
+            /** Transform */
+            transform: string;
         };
         /**
          * CostSummary
@@ -11581,6 +11615,11 @@ export interface components {
              */
             annotator_id: string;
             coco?: components["schemas"]["CocoDataset"] | null;
+            /**
+             * Coordinate Frame
+             * @description Pixel frame of the coordinates: display (EXIF Orientation applied) or stored (raw pixel order). Omitted: YOLO is upright; COCO and JSONL records are inferred from their image width/height, and square images default to upright.
+             */
+            coordinate_frame?: ("display" | "stored") | null;
             /**
              * Format
              * @enum {string}
