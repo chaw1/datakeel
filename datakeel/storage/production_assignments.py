@@ -154,7 +154,9 @@ def assign_tasks(session: Session, params: AssignTasksParams) -> tuple[Assignmen
         raise ValidationError(message)
     project = require_mutable_project(session, tasks[0].project_id)
     lock_people(session, project.id, (params.actor,))
-    require_capacity(session, project, params.actor, params.stage, len(tasks))
+    require_capacity(
+        session, project, params.actor, params.stage, len(tasks), params.max_active_tasks
+    )
     return tuple(create_assignment(session, task, params.actor, params.stage) for task in tasks)
 
 

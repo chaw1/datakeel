@@ -538,6 +538,7 @@ ignore_imports =
     datakeel.storage.production_acceptance -> datakeel.actions.models
     datakeel.storage.production_acceptance -> datakeel.actions.production_catalog_parameters
     datakeel.storage.production_dispatch -> datakeel.actions.production_parameters
+    datakeel.storage.production_dispatch_plans -> datakeel.actions.production_parameters
     datakeel.storage.production_reaper -> datakeel.actions.production_parameters
 
 # Production source grants and authoritative runtime session actors reuse existing contracts.
