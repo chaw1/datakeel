@@ -184,3 +184,19 @@ class SkillDispatchPreview(BoundaryModel):
     picks: tuple[DispatchPick, ...]
     people: tuple[DispatchLoad, ...]
     unassigned: tuple[DispatchSkip, ...]
+
+
+class AssignablePerson(BoundaryModel):
+    """One active registered person who may receive one stage's work in a project."""
+
+    actor: str
+    display_name: str
+    current: int = Field(ge=0)
+
+
+class WorkbenchAssignees(BoundaryModel):
+    """Who a manager can assign by name; earlier holders such as `local` need no account."""
+
+    project_id: str
+    stage: AssignmentStage
+    people: tuple[AssignablePerson, ...]

@@ -70,7 +70,9 @@ export function SkillDispatch({
   return (
     <section className="card wb-dispatch" aria-label={t("wbSkillDispatch")}>
       <h2>{t("wbSkillDispatch")}</h2>
-      {!open.length ? (
+      {!data.project.skill_requirement ? (
+        <p className="muted">{t("wbSkillDispatchNeedsRequirement")}</p>
+      ) : !open.length ? (
         <p className="muted">{t("wbNothingToDispatch")}</p>
       ) : (
         <fieldset disabled={busy || !!plan}>

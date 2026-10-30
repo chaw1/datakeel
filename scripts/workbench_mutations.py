@@ -212,4 +212,20 @@ WORKBENCH_MUTATIONS = (
         case=_ATTRIBUTES + "test_submission_rechecks_the_head_against_a_newer_required_field",
         runner="pytest",
     ),
+    Mutation(
+        name="workbench-assignees-stage-scope",
+        path="storage/workbench_assignees.py",
+        before='and {required, "*"} & set(effective_scopes(session, user.id, project_id).scopes)',
+        after="",
+        case="tests/storage/test_workbench_assignees.py::test_assignees_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-assignees-caller-may-assign",
+        path="storage/workbench_assignees.py",
+        before='if not {"production:assign", "*"} & set(caller_scopes):',
+        after="if False:",
+        case="tests/storage/test_workbench_assignees.py::test_assignees_mutation_guard",
+        runner="pytest",
+    ),
 )

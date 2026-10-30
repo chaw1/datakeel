@@ -16,6 +16,7 @@ vi.mock("../../../api/production", () => ({
   readProduction: vi.fn(),
   getTaskSamples: vi.fn(),
   previewDispatch: vi.fn(),
+  getAssignees: vi.fn(),
 }));
 vi.mock("../actions", () => ({
   prepareProduction: vi.fn(),
@@ -24,7 +25,15 @@ vi.mock("../actions", () => ({
 
 const team: ProjectWorkbench = {
   ...labelingProject,
-  project: { ...labelingProject.project, workflow_tier: "team" },
+  project: {
+    ...labelingProject.project,
+    workflow_tier: "team",
+    skill_requirement: {
+      annotation_type: "box",
+      domain: "street",
+      min_level: 3,
+    },
+  },
 };
 const withStates = (first: string, second: string): ProjectWorkbench => ({
   ...team,
@@ -78,6 +87,11 @@ beforeEach(() => {
   );
   vi.mocked(production.getTaskSamples).mockResolvedValue({
     items: labelingProject.task_samples,
+  });
+  vi.mocked(production.getAssignees).mockResolvedValue({
+    project_id: "project",
+    stage: "annotation",
+    people: [],
   });
 });
 

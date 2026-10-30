@@ -17,6 +17,7 @@ export type SkillDispatchPreview =
   components["schemas"]["SkillDispatchPreview"];
 export type SkillDispatchPreviewRequest =
   components["schemas"]["SkillDispatchPreviewRequest"];
+export type WorkbenchAssignees = components["schemas"]["WorkbenchAssignees"];
 
 export function getWorkbench() {
   return get<WorkbenchIndex>("/api/production/workbench");
@@ -74,6 +75,16 @@ export function previewDispatch(
   return post<SkillDispatchPreview>(
     `/api/production/projects/${encodeURIComponent(projectId)}/dispatch-preview`,
     request,
+  );
+}
+
+/** Registered people who may take one stage's work here, with their open load. */
+export function getAssignees(
+  projectId: string,
+  stage: "annotation" | "review" = "annotation",
+) {
+  return get<WorkbenchAssignees>(
+    `/api/production/projects/${encodeURIComponent(projectId)}/assignees?stage=${stage}`,
   );
 }
 

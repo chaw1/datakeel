@@ -2354,6 +2354,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/production/projects/{project_id}/assignees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Project Assignees
+         * @description List registered people who can take this stage's work, for assigning by name.
+         */
+        get: operations["project_assignees_api_production_projects__project_id__assignees_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/production/projects/{project_id}/dispatch-preview": {
         parameters: {
             query?: never;
@@ -4494,6 +4514,18 @@ export interface components {
              */
             occurred_at: string;
             scope: components["schemas"]["AccessScope"];
+        };
+        /**
+         * AssignablePerson
+         * @description One active registered person who may receive one stage's work in a project.
+         */
+        AssignablePerson: {
+            /** Actor */
+            actor: string;
+            /** Current */
+            current: number;
+            /** Display Name */
+            display_name: string;
         };
         /**
          * Assignment
@@ -12261,6 +12293,21 @@ export interface components {
             type: "whole";
         };
         /**
+         * WorkbenchAssignees
+         * @description Who a manager can assign by name; earlier holders such as `local` need no account.
+         */
+        WorkbenchAssignees: {
+            /** People */
+            people: components["schemas"]["AssignablePerson"][];
+            /** Project Id */
+            project_id: string;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "annotation" | "review";
+        };
+        /**
          * WorkbenchIndex
          * @description List only readable projects and the caller's actual global server identity.
          */
@@ -16623,6 +16670,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FunctionResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    project_assignees_api_production_projects__project_id__assignees_get: {
+        parameters: {
+            query?: {
+                stage?: "annotation" | "review";
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchAssignees"];
                 };
             };
             /** @description Validation Error */

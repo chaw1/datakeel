@@ -19,6 +19,7 @@ vi.mock("../../../api/production", () => ({
   readProduction: vi.fn(),
   getTaskSamples: vi.fn(),
   previewDispatch: vi.fn(),
+  getAssignees: vi.fn(),
 }));
 vi.mock("../actions", () => ({
   prepareProduction: vi.fn(),
@@ -28,6 +29,17 @@ vi.mock("../actions", () => ({
 const team: ProjectWorkbench = {
   ...labelingProject,
   project: { ...labelingProject.project, workflow_tier: "team" },
+};
+const skilled: ProjectWorkbench = {
+  ...team,
+  project: {
+    ...team.project,
+    skill_requirement: {
+      annotation_type: "box",
+      domain: "street",
+      min_level: 3,
+    },
+  },
 };
 const sampling = {
   lot_size: 2,
@@ -77,17 +89,22 @@ beforeEach(() => {
   vi.mocked(production.getTaskSamples).mockResolvedValue({
     items: labelingProject.task_samples,
   });
+  vi.mocked(production.getAssignees).mockResolvedValue({
+    project_id: "project",
+    stage: "annotation",
+    people: [],
+  });
   vi.mocked(actions.prepareProduction).mockReset();
   vi.mocked(actions.executeProduction)
     .mockReset()
     .mockResolvedValue({ status: "SUCCEEDED" } as ActionRun);
 });
 
-function mount(scopes: string[]) {
+function mount(scopes: string[], data: ProjectWorkbench = team) {
   const changed = vi.fn();
   render(
     <ProjectCockpit
-      data={team}
+      data={data}
       can={(scope) => scopes.includes(scope)}
       onChanged={changed}
     />,
@@ -169,7 +186,7 @@ it("previews a skill dispatch per person with reasons, then signs the plan", asy
     unassigned: [{ task_id: "task-2", reason: "load_limit_reached" }],
   });
   vi.mocked(actions.prepareProduction).mockResolvedValue(plan);
-  mount(["production:assign"]);
+  mount(["production:assign"], skilled);
   fireEvent.change(
     screen.getByRole("spinbutton", {
       name: "At most this many open tasks per person",
@@ -246,4 +263,15 @@ it("keeps team panels away from personal projects and read-only people", () => {
     screen.queryByRole("table", { name: "Package acceptance" }),
   ).toBeNull();
   expect(screen.queryByRole("button", { name: "Preview dispatch" })).toBeNull();
+});
+
+it("explains that skill dispatch needs a project skill requirement instead of failing", () => {
+  mount(["production:assign"]);
+  expect(
+    screen.getByText(
+      "This project has no skill requirement yet, so nobody can be matched by skill. Assign tasks to a named person below.",
+    ),
+  ).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Preview dispatch" })).toBeNull();
+  expect(production.previewDispatch).not.toHaveBeenCalled();
 });

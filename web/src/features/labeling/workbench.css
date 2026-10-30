@@ -428,7 +428,8 @@ main:has(> .wb-page[data-focus="true"]) {
   overflow: auto;
   max-height: 240px;
 }
-.wb-dispatch fieldset {
+.wb-dispatch fieldset,
+.wb-named-dispatch fieldset {
   display: grid;
   gap: calc(var(--space) * 2);
   border: 0;

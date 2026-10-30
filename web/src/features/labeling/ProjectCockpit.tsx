@@ -2,6 +2,7 @@ import { useI18n } from "../../i18n/useI18n";
 
 import { stateMessages } from "./model";
 import { LeaseBoard } from "./team/LeaseBoard";
+import { NamedDispatch } from "./team/NamedDispatch";
 import { SkillDispatch } from "./team/SkillDispatch";
 import { TeamPackages } from "./team/TeamPackages";
 
@@ -33,6 +34,9 @@ export function ProjectCockpit({
           data={data}
           onChanged={onChanged}
         />
+      )}
+      {team && can("production:assign") && (
+        <NamedDispatch data={data} onChanged={onChanged} />
       )}
       {team && (
         <LeaseBoard
