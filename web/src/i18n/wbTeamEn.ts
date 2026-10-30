@@ -34,4 +34,17 @@ export const wbTeamEn = {
   wbFinalizeNothingBlocked:
     "Every task is approved; nothing blocks finalization",
   wbPlanRaw: "Details",
+  wbBackToList: "Back to list",
+  wbTaskReclaimed: "This task was taken back",
+  wbTaskReclaimedDetail:
+    "Editing is locked. Your draft is still on this device; export it to keep a copy.",
+  wbExportDraft: "Export draft",
+  wbLeaseRemaining: "Lease {time} left · renewed {count} times",
+  wbRenewFailed:
+    "Could not renew the lease: {reason}. It will be retried automatically.",
+  wbRenewNow: "Renew now",
+  wbTaskReturned: "This task was returned for rework.",
+  wbTaskEditedElsewhere:
+    "Someone else just saved a newer version of this task.",
+  wbTaskStateChanged: "This task changed elsewhere and is now: {state}.",
 };

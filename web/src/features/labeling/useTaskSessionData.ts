@@ -4,6 +4,7 @@ import { ApiError } from "../../api/client";
 import { getTaskWorkbench } from "../../api/production";
 import { useI18n } from "../../i18n/useI18n";
 
+import { actionMessage, actionProblem } from "./actionErrors";
 import { actionDetails, mutateProduction } from "./actions";
 import { problemText } from "./attributeMessages";
 import { attributeProblems } from "./editors/attributes";
@@ -27,6 +28,7 @@ export function useTaskSessionData({
   onChanged,
   onSnapshot,
   registerGuard,
+  onLeaseLost,
 }: {
   task: TaskWorkbench;
   project: ProjectWorkbench;
@@ -36,6 +38,8 @@ export function useTaskSessionData({
   onChanged: () => void;
   onSnapshot: (task: TaskWorkbench) => void;
   registerGuard: (guard: (() => Promise<boolean>) | null) => void;
+  /** The server reports this person's lease expired or the task was reclaimed. */
+  onLeaseLost?: () => void;
 }) {
   const { t, locale } = useI18n();
   const [snapshot, setSnapshot] = useState(task);
@@ -70,6 +74,16 @@ export function useTaskSessionData({
         task_id: task.task.id,
         previous_revision_id: previousRevisionId,
         annotation,
+      }).catch((reason: unknown) => {
+        const problem = actionProblem(reason);
+        if (problem === "lease") {
+          onLeaseLost?.();
+          // Not a 409: a reclaim is not a revision conflict to resolve by overwriting.
+          throw new ApiError(403, t("wbLeaseLost"));
+        }
+        if (problem === "changed")
+          throw new ApiError(409, actionMessage(reason, t));
+        throw reason;
       });
       const saved = savedRevision(snapshotRef.current, actionDetails(run));
       if (!saved) throw new Error(t("wbSaveError"));
@@ -90,6 +104,7 @@ export function useTaskSessionData({
       isIdentityVerified,
       refreshSnapshot,
       acceptSnapshot,
+      onLeaseLost,
     ],
   );
   const template = project.template ?? defaultTemplate;

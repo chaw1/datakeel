@@ -9,9 +9,11 @@ import { SessionStatus } from "./SessionStatus";
 import { TaskDrawer } from "./TaskDrawer";
 import { TaskReview } from "./TaskReview";
 import { TaskToolbar } from "./TaskToolbar";
+import { exportDraft, TaskWatchNotice } from "./TaskWatchNotice";
 import { useTaskActions } from "./useTaskActions";
 import { useTaskKeyboard } from "./useTaskKeyboard";
 import { useTaskSessionData } from "./useTaskSessionData";
+import { useTaskWatch } from "./useTaskWatch";
 
 import type { ProjectWorkbench, TaskWorkbench } from "../../api/production";
 
@@ -44,6 +46,7 @@ export function TaskSession({
   const [help, setHelp] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [detailsSlot, setDetailsSlot] = useState<HTMLDivElement | null>(null);
+  const [locked, setLocked] = useState(false);
   const data = useTaskSessionData({
     task,
     project,
@@ -53,12 +56,16 @@ export function TaskSession({
     onChanged,
     onSnapshot,
     registerGuard,
+    onLeaseLost: () => {
+      setLocked(true);
+    },
   });
   const { snapshot, session } = data;
   const personal = project.project.workflow_tier === "personal";
   const editable =
     allowed(project.effective_scopes, "production:annotate") &&
-    taskEditable(snapshot, actor, personal);
+    taskEditable(snapshot, actor, personal) &&
+    !locked;
   const reviewable =
     !personal &&
     allowed(project.effective_scopes, "production:review") &&
@@ -80,6 +87,18 @@ export function TaskSession({
     onChanged,
   });
   const { perform, busy, error, retry } = actions;
+  const watch = useTaskWatch({
+    taskId: task.task.id,
+    actor,
+    team: project.project.workflow_tier === "team",
+    state: snapshot.task.state,
+    revisionId: session.revisionId,
+    quiet: busy || ["saving", "pending"].includes(session.status),
+    locked,
+    onLost: () => {
+      setLocked(true);
+    },
+  });
   const root = useRef<HTMLDivElement>(null);
   useTaskKeyboard(root, {
     editable: editable && !busy,
@@ -128,6 +147,25 @@ export function TaskSession({
           setHelp={setHelp}
         />
         <SessionStatus session={session} error={error} />
+        <TaskWatchNotice
+          {...watch}
+          onRenew={() => {
+            void watch.renew();
+          }}
+          locked={locked}
+          onExport={() => {
+            exportDraft(session.annotation, task.sample.name);
+          }}
+          onReload={() => {
+            watch.dismiss();
+            void data.refreshSnapshot().then(() => {
+              if (!session.dirty) void session.reload();
+            });
+          }}
+          onBack={() => {
+            onNavigate(0);
+          }}
+        />
         {retry && (
           <button
             type="button"

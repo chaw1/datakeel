@@ -341,3 +341,22 @@ main:has(> .wb-page[data-focus="true"]) {
     flex-grow: 1;
   }
 }
+.wb-lease {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--font-sm);
+  font-variant-numeric: tabular-nums;
+}
+.wb-watch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 2);
+  align-items: center;
+  border: 1px solid var(--warn);
+  background: var(--warn-wash);
+  padding: calc(var(--space) * 2);
+}
+.wb-watch-locked {
+  border-color: var(--red);
+  background: var(--red-wash);
+}
