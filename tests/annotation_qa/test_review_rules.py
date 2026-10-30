@@ -7,6 +7,7 @@ from datakeel.annotation_qa import (
     HIGH_RISK,
     Draft,
     Neighbour,
+    agrees_with_draft,
     draft_reasons,
     near_duplicate_reason,
     risk_score,
@@ -115,3 +116,25 @@ def test_near_duplicate_side_that_matches_its_draft_stays_below_high_risk() -> N
     assert wrong is not None
     assert right.weight < HIGH_RISK <= wrong.weight
     assert "more likely wrong" in right.message
+
+
+def test_a_box_only_draft_says_nothing_about_the_chosen_classification() -> None:
+    """Template has labels and boxes, the draft only boxes: a correct head fully agrees."""
+    draft = _draft(_record([("cat", 20, 20, 80, 70)]), 0.95)
+    assert draft.record.labels is None
+    head = _record([("cat", 22, 21, 81, 72)], labels=("day",))
+    assert agrees_with_draft(draft, head) is True
+    assert draft_reasons(draft, head, NAMES) == []
+    # A recorded but empty box list is still compared: deleting the draft's box disagrees.
+    assert agrees_with_draft(draft, _record([], labels=("day",))) is False
+
+
+def test_near_duplicates_compare_only_kinds_both_sides_recorded() -> None:
+    """Classification missing on one side is not a conflict; a recorded mismatch still is."""
+    head = _record([("cat", 20, 20, 80, 70)], labels=("day",))
+    unlabelled = _record([("cat", 21, 20, 80, 71)])
+    assert near_duplicate_reason(head, [Neighbour(unlabelled, None, "a.png")], agrees=None) is None
+    night = _record([("cat", 21, 20, 80, 71)], labels=("night",))
+    reason = near_duplicate_reason(head, [Neighbour(night, None, "a.png")], agrees=None)
+    assert reason is not None
+    assert [(item.kind, item.index) for item in reason.objects] == [("label_set", 0)]

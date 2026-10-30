@@ -57,9 +57,11 @@ def _planted(
     return labels, boxes
 
 
-def _run(db: Database, tasks: list[ProductionTask], order: list[int]) -> None:
+def _run(
+    db: Database, tasks: list[ProductionTask], order: list[int], *, labelled: bool = True
+) -> None:
     drafts = {
-        index: add_draft(db, task, _truth(index), 0.9 + (index % 5) * 0.01)
+        index: add_draft(db, task, _truth(index), 0.9 + (index % 5) * 0.01, labelled=labelled)
         for index, task in enumerate(tasks)
     }
     for index in order:
@@ -73,10 +75,16 @@ def _review(db: Database, task: ProductionTask) -> AIReview:
     return review
 
 
-def test_planted_errors_of_all_four_kinds_fill_the_top_ten(db: Database, tmp_path: Path) -> None:
-    """Ten planted mistakes in fifty drafted tasks: >= 8 in the top ten, <= 3 false alarms."""
+@pytest.mark.parametrize("draft", ["full", "box-only"])
+def test_planted_errors_of_all_four_kinds_fill_the_top_ten(
+    db: Database, tmp_path: Path, draft: str
+) -> None:
+    """Ten planted mistakes in fifty drafted tasks: >= 8 in the top ten, <= 3 false alarms.
+
+    The box-only variant is a model without classification on a labels-and-boxes template.
+    """
     project, tasks = seed_team_project(db, tmp_path / "images", 50, COPIES)
-    _run(db, tasks, list(range(50)))
+    _run(db, tasks, list(range(50)), labelled=draft == "full")
     planted = {*SWAPS, *SIZES, *NEAR_WRONG, *MULTI}
     assert len(planted) == 10
     queue = workbench_project(db, project.id, REVIEWER, WorkbenchProjectQuery(view="review"))
@@ -89,6 +97,9 @@ def test_planted_errors_of_all_four_kinds_fill_the_top_ten(db: Database, tmp_pat
     print(f"top-10 hits={hits}/10 false high-risk={len(false_alarms)}/40 {false_alarms}")  # noqa: T201  # Report the measured numbers.
     assert hits >= 8
     assert len(false_alarms) <= 3
+    # The correct half of each near-duplicate pair matches its draft on the kinds both have.
+    correct_halves = sorted({*COPIES, *COPIES.values()} - set(NEAR_WRONG))
+    assert [i for i in correct_halves if reviews[i].high_risk] == []
     shown = {risk.task_id: risk for risk in queue.task_risks}
     assert [shown[task.id].ai_risk for task in queue.tasks] == sorted(
         (reviews[index[task.id]].risk for task in queue.tasks), reverse=True

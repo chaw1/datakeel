@@ -14,6 +14,10 @@ Near-duplicate conflict: two near-duplicate images whose annotations do not agre
 once coordinates are scaled to each image's size. Both sides are flagged whoever submitted
 first; when exactly one side agrees with its own confident draft, that side stays below the
 high-risk line so the reviewer starts with the side more likely to be wrong.
+
+Every comparison looks only at the annotation kinds both sides recorded. A kind left at None
+was never recorded (a box-only model draft says nothing about the image's classification),
+while an empty tuple is a recorded "none", so a deleted last box still counts as different.
 """
 
 from collections.abc import Mapping, Sequence
@@ -51,6 +55,32 @@ class Neighbour(NamedTuple):
     record: AnnotationRecord
     agrees: bool | None
     name: str
+
+
+_FIELDS = {"label_set": "labels", "box": "boxes", "polygon": "polygons", "span": "spans"}
+
+
+def shared_kinds(
+    left: AnnotationRecord, right: AnnotationRecord
+) -> tuple[AnnotationRecord, AnnotationRecord]:
+    """Drop from both records every annotation kind that either side never recorded."""
+    unrecorded = {
+        field: None
+        for field in _FIELDS.values()
+        if getattr(left, field) is None or getattr(right, field) is None
+    }
+    return left.model_copy(update=unrecorded), right.model_copy(update=unrecorded)
+
+
+def _comparable(draft: Draft, head: AnnotationRecord) -> tuple[Draft, AnnotationRecord]:
+    """Narrow a draft and a head to their shared kinds, keeping each draft object's confidence."""
+    record, human = shared_kinds(draft.record, head)
+    confidences = tuple(
+        confidence
+        for item, confidence in zip(record_objects(draft.record), draft.confidences, strict=False)
+        if getattr(record, _FIELDS[item.kind]) is not None
+    )
+    return draft._replace(record=record, confidences=confidences), human
 
 
 def _ref(item: PrelabelObject) -> ObjectRef:
@@ -145,7 +175,8 @@ def _disagreement_reason(
 def draft_reasons(
     draft: Draft, head: AnnotationRecord, names: Mapping[str, str]
 ) -> list[RiskReason]:
-    """Flag label swaps against a confident draft and B1-unmatched objects."""
+    """Flag label swaps against a confident draft and B1-unmatched objects of shared kinds."""
+    draft, head = _comparable(draft, head)
     swaps = label_swaps(draft, head)
     reasons = [_swap_reason(draft, head, swap, names) for swap in swaps]
     disagreement = _disagreement_reason(draft, head, swaps)
@@ -154,7 +185,10 @@ def draft_reasons(
 
 def agrees_with_draft(draft: Draft | None, head: AnnotationRecord) -> bool | None:
     """Return whether every object matches a confident draft under B1, or None without one."""
-    if draft is None or min(draft.confidences, default=draft.confidence) < CONFIDENT_DRAFT:
+    if draft is None:
+        return None
+    draft, head = _comparable(draft, head)
+    if min(draft.confidences, default=draft.confidence) < CONFIDENT_DRAFT:
         return None
     return compare_records(draft.record, head).all_hit()
 
@@ -196,16 +230,18 @@ def near_duplicate_reason(
     agrees: bool | None,
 ) -> RiskReason | None:
     """Flag a head whose annotation differs from any near-duplicate image's annotation."""
-    scaled = _scaled(head)
-    compared = [(item, compare_records(_scaled(item.record), scaled)) for item in neighbours]
-    conflicts = [(item, comparison) for item, comparison in compared if not comparison.all_hit()]
+    conflicts: list[tuple[Neighbour, AnnotationRecord, set[int]]] = []
+    for item in neighbours:
+        theirs, ours = shared_kinds(_scaled(item.record), _scaled(head))
+        comparison = compare_records(theirs, ours)
+        if not comparison.all_hit():
+            conflicts.append((item, ours, {pair.human_index for pair in comparison.pairs}))
     if not conflicts:
         return None
-    other, comparison = conflicts[0]
-    likely_other = agrees is True and all(item.agrees is False for item, _ in conflicts)
-    matched = {pair.human_index for pair in comparison.pairs}
+    other, ours, matched = conflicts[0]
+    likely_other = agrees is True and all(item.agrees is False for item, _, _ in conflicts)
     objects = tuple(
-        _ref(item) for position, item in enumerate(record_objects(head)) if position not in matched
+        _ref(item) for position, item in enumerate(record_objects(ours)) if position not in matched
     )
     suffix, suffix_zh = (
         (

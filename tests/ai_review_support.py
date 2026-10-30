@@ -108,7 +108,9 @@ def seed_team_project(
 
 
 def record(
-    task: ProductionTask, labels: tuple[str, ...], boxes: list[tuple[str, tuple[float, ...]]]
+    task: ProductionTask,
+    labels: tuple[str, ...] | None,
+    boxes: list[tuple[str, tuple[float, ...]]],
 ) -> AnnotationRecord:
     """Build a full-size annotation with labels and categorised boxes."""
     return AnnotationRecord(
@@ -124,9 +126,15 @@ def record(
     )
 
 
-def add_draft(db: Database, task: ProductionTask, truth: Truth, confidence: float) -> str:
-    """Append the model draft (label set then box confidence) and return its id."""
-    annotation = record(task, (truth.scene,), [(truth.animal, truth.box)])
+def add_draft(
+    db: Database, task: ProductionTask, truth: Truth, confidence: float, *, labelled: bool = True
+) -> str:
+    """Append the model draft (label set then box confidence) and return its id.
+
+    ``labelled=False`` is a box-only model on a template that also asks for a classification.
+    """
+    annotation = record(task, (truth.scene,) if labelled else None, [(truth.animal, truth.box)])
+    box = min(1.0, confidence + 0.02)
     with db.session() as session:
         revision = append_revision(
             session,
@@ -140,7 +148,7 @@ def add_draft(db: Database, task: ProductionTask, truth: Truth, confidence: floa
                 model_name="fixture",
                 model_version="1",
                 confidence=confidence,
-                object_confidences=(confidence, min(1.0, confidence + 0.02)),
+                object_confidences=(confidence, box) if labelled else (box,),
             ),
             "local",
         )
