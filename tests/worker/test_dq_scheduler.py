@@ -4,12 +4,14 @@
 """Injected UTC clocks, concurrent schedule uniqueness and ordinary lease fencing."""
 
 import json
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 import pytest
 from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
 from datakeel.core.dq_cron import cron_matches, latest_match, validate_cron
 from datakeel.core.dq_models import DqResult, DqRule
@@ -55,19 +57,30 @@ def test_cron_ranges_steps_weekdays_and_standard_day_or() -> None:
     assert not cron_matches("15 9 * 2 *", sunday)
 
 
-def test_two_schedulers_use_one_slot_and_coalesce_missed_minutes(db: Database) -> None:
+def test_two_schedulers_use_one_slot_and_coalesce_missed_minutes(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Both workers enqueue one task for the current minute; skipped hours collapse into one."""
     rule = definition().model_copy(update={"cron": "0 * * * *"})
     with db.session() as session:
         upsert_rule(session, rule, None, "reviewer")
         session.commit()
     now = datetime(2026, 1, 1, 9, tzinfo=UTC)
+    # Hold both schedulers at the write lock so each has read the slot as due, even on a busy host.
+    both_read = threading.Barrier(2, timeout=30)
+    lock_writes = db.lock_writes
+
+    def lock_after_both_read(session: Session) -> None:
+        both_read.wait()
+        lock_writes(session)
 
     def tick(_index: int) -> tuple[DqRun, ...]:
         return schedule_due(db, now)
 
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(tick, range(2)))
+    with monkeypatch.context() as patch:
+        patch.setattr(db, "lock_writes", lock_after_both_read)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(tick, range(2)))
     assert results[0][0].task_id == results[1][0].task_id
     assert schedule_due(db, now + timedelta(minutes=5)) == ()
     next_slot = schedule_due(db, now + timedelta(hours=4))
