@@ -302,6 +302,27 @@ PLANNING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="intent-card-structured-values-read-as-names",
+        path="intents/describe.py",
+        before=(
+            '    nested = isinstance(value, (dict, list)) and field not in {"labels", "add_labels"}'
+        ),
+        after="    nested = False",
+        case=_SCOPE + "test_structured_values_on_the_card_read_as_names_not_keys_or_ids",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-card-names-every-registry-field",
+        path="intents/wording.py",
+        before=(
+            "    zh, en = FIELD_LABELS.get(field) or "
+            'MORE_LABELS.get(field, (field, field.replace("_", " ")))'
+        ),
+        after='    zh, en = FIELD_LABELS.get(field, (field, field.replace("_", " ")))',
+        case=_SCOPE + "test_structured_values_on_the_card_read_as_names_not_keys_or_ids",
+        runner="pytest",
+    ),
+    Mutation(
         name="intent-recipe-data-phrase-is-not-a-label",
         path="intents/recipes.py",
         before="    if after and not _DATA_PHRASE.search(after):",

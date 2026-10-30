@@ -126,6 +126,23 @@ def _plain(value: JsonValue, language: str, field: str = "") -> str:
     return _shorten(str(value))
 
 
+def _nested(value: JsonValue, catalog: EntityCatalog, language: str) -> str:
+    """A structured value as "name: value" pairs; known identities read as their names."""
+    if isinstance(value, dict):
+        pairs = [
+            f"{field_label(key, language)}: {_nested(item, catalog, language)}"
+            for key, item in value.items()
+            if key != "request_id"
+        ]
+        return "; ".join(pairs)
+    if isinstance(value, list):
+        return _listing([_nested(item, catalog, language) for item in value], language)
+    if isinstance(value, str):
+        known = next((entry for entry in catalog.entries if entry.id == value), None)
+        return known.label if known is not None else value
+    return _plain(value, language)
+
+
 def _value(
     db: Database, field: str, value: JsonValue, catalog: EntityCatalog, language: str
 ) -> str:
@@ -141,7 +158,8 @@ def _value(
         values: list[JsonValue] = value if isinstance(value, list) else [value]
         count = f"{len(values)} 个任务" if language == "zh" else f"{len(values)} tasks"
         return f"{count}: {_listing(task_positions(db, values, language), language)}"
-    return _plain(value, language, field)
+    nested = isinstance(value, (dict, list)) and field not in {"labels", "add_labels"}
+    return _shorten(_nested(value, catalog, language)) if nested else _plain(value, language, field)
 
 
 def _defaults(step: ChainStep, language: str) -> list[StepDetail]:

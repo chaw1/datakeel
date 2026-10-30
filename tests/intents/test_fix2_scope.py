@@ -442,3 +442,32 @@ def test_files_named_by_file_name_resolve_to_exactly_those(db: Database, tmp_pat
         db, "把 nope.png 隔离", [step("quarantine_files", {"selection": unknown})], context
     )
     assert asked.kind == "clarify"
+
+
+def test_structured_values_on_the_card_read_as_names_not_keys_or_ids(
+    db: Database, tmp_path: Path
+) -> None:
+    """Metadata and definitions show plain field names, and a known identity shows its name."""
+    dataset = images(db, tmp_path / "images")
+    context = PageContext(dataset_id=dataset.id)
+    values: dict[str, object] = {
+        "dataset_id": dataset.id,
+        "values": {"采集城市": "杭州"},
+        "reason": "补录",
+    }
+    text = "给这个数据集记一条元数据: 采集城市是杭州, 原因是补录"
+    result, _ = planned(db, text, [step("save_metadata", values)], context)
+    assert result.chain is not None, result.text
+    shown = {detail.label: detail.value for detail in result.chain.steps[0].details}
+    assert shown["元数据"] == "采集城市: 杭州"
+    target = {"asset_id": dataset.id}
+    definition: dict[str, object] = {
+        "definition": {"target": target, "name": "街景", "owner": "data-team"}
+    }
+    card, _ = planned(
+        db, "把这个数据集做成数据资产", [step("create_data_asset", definition)], context
+    )
+    assert card.chain is not None, card.text
+    (line,) = [item.value for item in card.chain.steps[0].details if item.label == "定义"]
+    assert dataset.name in line
+    assert dataset.id not in line

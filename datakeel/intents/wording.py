@@ -6,6 +6,7 @@
 from functools import lru_cache
 
 from datakeel.actions.parameters import PARAMETER_TYPES
+from datakeel.intents.field_names import MORE_LABELS
 from datakeel.intents.rules import full_registry
 
 FIELD_LABELS: dict[str, tuple[str, str]] = {
@@ -81,7 +82,7 @@ FIELD_LABELS: dict[str, tuple[str, str]] = {
 
 def field_label(field: str, language: str) -> str:
     """Name a parameter the way a person would."""
-    zh, en = FIELD_LABELS.get(field, (field, field.replace("_", " ")))
+    zh, en = FIELD_LABELS.get(field) or MORE_LABELS.get(field, (field, field.replace("_", " ")))
     return zh if language == "zh" else en
 
 
