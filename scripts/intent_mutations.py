@@ -249,6 +249,14 @@ INTENT_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="intent-answers-read-without-ids",
+        path="intents/answers.py",
+        before="    summary = readable(data)",
+        after="    summary = str(data)",
+        case=_CHECKS + "test_answers_and_draft_cards_read_as_names_not_ids",
+        runner="pytest",
+    ),
+    Mutation(
         name="intent-subset-never-widens",
         path="intents/validate.py",
         before="    if wider_than_said(step, state.text):",

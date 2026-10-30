@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from datakeel.core.agent_models import ModelRequest, ModelResponse
 from datakeel.core.intent_models import IntentResult, PageContext
 from datakeel.intents import selectors
+from datakeel.intents.answers import answer_text
 from datakeel.intents.catalog import CANDIDATE_LIMIT, build_catalog, candidates
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.fill import FillState
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest
+    from pydantic import JsonValue
 
     from datakeel.storage.database import Database
 
@@ -346,3 +348,30 @@ def test_new_objects_take_their_id_from_their_name_and_skill_grants_add(db: Data
     assert granted.kind == "plan", granted.text
     assert granted.chain is not None
     assert granted.chain.steps[0].params["skill_ids"] == ["ped", "car"]
+
+
+def test_answers_and_draft_cards_read_as_names_not_ids(db: Database, tmp_path: Path) -> None:
+    """A read answer drops identities; a draft card names its sample files."""
+    progress: JsonValue = {
+        "project_id": "6d924f29-ecc2-420f-9573-f1ef0124f472",
+        "total": 3,
+        "counts": [{"state": "pending", "count": 1}, {"state": "in_progress", "count": 2}],
+    }
+    text = answer_text("project_progress", progress, "zh")
+    assert "6d924f29" not in text
+    assert "pending 1, in_progress 2" in text
+    assert "{" not in text
+    dataset = images(db, tmp_path / "images")
+    whole = evaluate(db, ObjectSet(dataset_id=dataset.id, limit=100))
+    files = [item.asset_ref.asset_id for item in whole.objects][:2]
+    payload = _plan(
+        "draft_label_set",
+        {"name": "信号灯", "dataset_id": dataset.id, "sample_ids": files, "profile": "offline"},
+    )
+    result = model_plan(
+        db, "参考这两张图起草信号灯标签", payload, PageContext(dataset_id=dataset.id)
+    )
+    assert result.chain is not None, result.text
+    shown = [detail.value for detail in result.chain.steps[0].details]
+    assert any(value.startswith("2 个文件: crossing-") for value in shown)
+    assert not any(file in value for file in files for value in shown)

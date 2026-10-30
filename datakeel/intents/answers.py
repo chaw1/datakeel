@@ -3,7 +3,7 @@
 
 """Run one read-only function directly and phrase its result."""
 
-import json
+import re
 
 from pydantic import JsonValue
 
@@ -15,6 +15,8 @@ from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.database import Database
 
 SUMMARY_LIMIT = 600
+LIST_LIMIT = 10
+UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE)
 
 
 def _number(item: dict[str, JsonValue], key: str) -> float:
@@ -67,10 +69,48 @@ def answer_text(function: str, data: JsonValue, language: str) -> str:
     sentence = phrase(data, language) if phrase else None
     if sentence:
         return sentence
-    summary = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    summary = readable(data)
     if len(summary) > SUMMARY_LIMIT:
         summary = summary[:SUMMARY_LIMIT] + "…"
     return f"{action_title(function, language)}: {summary}"
+
+
+def _hidden(key: str, value: JsonValue) -> bool:
+    """Identities mean nothing to a person reading the answer; the data keeps them."""
+    if key == "id" or key.endswith(("_id", "_ids")):
+        return True
+    return isinstance(value, str) and UUID.fullmatch(value) is not None
+
+
+def _pair(item: dict[str, JsonValue]) -> str | None:
+    """{"state": "pending", "count": 1} reads as "pending 1"."""
+    shown = [(key, value) for key, value in item.items() if not _hidden(key, value)]
+    if len(shown) == 2 and all(not isinstance(value, dict | list) for _, value in shown):  # noqa: PLR2004
+        return f"{shown[0][1]} {shown[1][1]}"
+    return None
+
+
+def readable(data: JsonValue, depth: int = 0) -> str:
+    """A compact plain summary: names and numbers, without ids or JSON punctuation."""
+    if isinstance(data, dict):
+        parts = [
+            f"{key}: {readable(value, depth + 1)}"
+            for key, value in data.items()
+            if not _hidden(key, value) and value not in (None, [], {})
+        ]
+        joined = "; ".join(parts) if depth == 0 else ", ".join(parts)
+        return joined if depth == 0 else f"({joined})"
+    if isinstance(data, list):
+        items = [_pair(item) if isinstance(item, dict) else None for item in data[:LIST_LIMIT]]
+        shown = [
+            pair if pair is not None else readable(item, depth + 1)
+            for pair, item in zip(items, data[:LIST_LIMIT], strict=True)
+        ]
+        more = f" … +{len(data) - LIST_LIMIT}" if len(data) > LIST_LIMIT else ""
+        return ", ".join(shown) + more
+    if isinstance(data, float):
+        return f"{data:.4g}"
+    return "-" if data is None else str(data)
 
 
 def run_read(

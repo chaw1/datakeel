@@ -208,10 +208,15 @@ RECIPES: tuple[Callable[[str], IntentDraft | None], ...] = (
 )
 
 RECIPE_GUIDE = (
-    "Recipes: (1) a new annotation job = create_label_set -> publish_label_set "
-    "(projects need a published version) -> create_project (label_set_id/label_set_version "
-    "from s1, workflow_tier team when annotators and reviewers must differ) -> split_packages "
-    "(project_id from s3). (2) give X's untouched tasks to Y = revoke_assignment for each task "
+    "Recipes: (1) a new annotation job = create_label_set (labels: the objects the person "
+    "names, e.g. 红绿灯 for 红绿灯框标注; use draft_label_set only when the person asks for a "
+    "draft or names a standard, annotations or sample files to draft from) -> "
+    "publish_label_set (projects need a published version) -> create_project "
+    "(label_set_id/label_set_version from s1, workflow_tier team when two people cross-check "
+    "or annotators and reviewers must differ, a spot-check rate such as 抽 10%/10% sample goes "
+    "into guidelines as '每个任务包验收时抽检 10%' or 'Each package is accepted by inspecting "
+    "a 10% sample') -> split_packages (project_id from s3). (2) give X's untouched tasks to "
+    "Y = revoke_assignment for each task "
     '({"$tasks": {"holder": "X", "untouched": true}} as task_id, reason required) -> '
     'assign_tasks (task_ids: the same $tasks selector, actor: Y, strategy: "assign"). '
     "(3) drafting labels or guidelines from a standard, annotations or sample files = "

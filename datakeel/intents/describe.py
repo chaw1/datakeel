@@ -194,6 +194,15 @@ def _diff(db: Database, step: ChainStep, language: str) -> list[StepDetail]:
     ]
 
 
+def _samples(db: Database, step: ChainStep, language: str) -> str:
+    """Sample files by file name, read from the step's own dataset."""
+    ids, dataset = step.params.get("sample_ids"), step.params.get("dataset_id")
+    if not isinstance(ids, list) or not isinstance(dataset, str):
+        return _plain(ids, language)
+    condition: dict[str, JsonValue] = {"field": "id", "operator": "in", "value": ids}
+    return _selection(db, {"dataset_id": dataset, "filters": [condition]}, language)
+
+
 def _items(
     db: Database, key: str, values: list[JsonValue], catalog: EntityCatalog, language: str
 ) -> str:
@@ -209,7 +218,10 @@ def describe_step(
     """Human-readable lines for one checked step, generated only from its parameters."""
     details = [
         StepDetail(
-            label=field_label(name, language), value=_value(db, name, value, catalog, language)
+            label=field_label(name, language),
+            value=_samples(db, step, language)
+            if name == "sample_ids"
+            else _value(db, name, value, catalog, language),
         )
         for name, value in step.params.items()
         if name not in HIDDEN

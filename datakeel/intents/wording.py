@@ -68,6 +68,14 @@ FIELD_LABELS: dict[str, tuple[str, str]] = {
     "add_labels": ("新增标签", "labels to add"),
     "remove_labels": ("删除标签", "labels to remove"),
     "assignee": ("负责人", "assignee"),
+    "rename_labels": ("改名", "labels to rename"),
+    "add_skill_ids": ("要加的技能", "skills to add"),
+    "remove_skill_ids": ("要去掉的技能", "skills to remove"),
+    "add_team_ids": ("要加入的团队", "teams to join"),
+    "remove_team_ids": ("要退出的团队", "teams to leave"),
+    "annotation_type": ("标注类型", "annotation type"),
+    "domain": ("领域", "domain"),
+    "level": ("等级", "level"),
 }
 
 
