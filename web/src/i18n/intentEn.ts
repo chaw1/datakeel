@@ -4,6 +4,7 @@ export const intentEn = {
   intentClarify: "One question first",
   intentRefuse: "Not allowed",
   intentUnsupported: "Not something I can do here",
+  intentFailed: "Could not handle this",
   intentByModel: "understood by the model",
   intentMissingScopes: "Missing permission:",
   intentCandidates: "Pick one",

@@ -118,6 +118,10 @@
   border-left: 3px solid var(--muted);
   padding: calc(var(--space) * 3) calc(var(--space) * 4);
 }
+.intent-failed {
+  border-left: 3px solid var(--warn);
+  padding: calc(var(--space) * 3) calc(var(--space) * 4);
+}
 .chain-notes {
   margin: 0 0 calc(var(--space) * 3) calc(var(--space) * 5);
   color: var(--muted);

@@ -244,6 +244,22 @@ it("answers a request the platform cannot do instead of leaving it silent", () =
   expect(screen.getByText(/Could you rephrase/)).toBeVisible();
 });
 
+it("says a failed model call plainly instead of calling it unsupported", () => {
+  respond({});
+  render(
+    <IntentCard
+      {...props}
+      intent={intent({
+        kind: "failed",
+        text: "The model call failed (it timed out), so this sentence was not handled and nothing changed. Please try again.",
+      })}
+    />,
+  );
+  expect(screen.getByText("Could not handle this")).toBeVisible();
+  expect(screen.queryByText("Not something I can do here")).toBeNull();
+  expect(screen.getByText(/nothing changed/)).toBeVisible();
+});
+
 it("offers choices by name and replies with the chosen object", async () => {
   const onReply = vi.fn();
   respond({});

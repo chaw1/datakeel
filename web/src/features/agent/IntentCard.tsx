@@ -12,6 +12,7 @@ const kinds: Record<IntentResult["kind"], MessageKey> = {
   clarify: "intentClarify",
   refuse: "intentRefuse",
   unsupported: "intentUnsupported",
+  failed: "intentFailed",
 };
 
 /** Render what the one-sentence entry decided: a plan, an answer, a question or a refusal. */

@@ -4,6 +4,7 @@ export const intentZh = {
   intentClarify: "先问一句",
   intentRefuse: "没有权限",
   intentUnsupported: "这件事做不到",
+  intentFailed: "这次没处理成",
   intentByModel: "由模型理解",
   intentMissingScopes: "缺少权限：",
   intentCandidates: "选一个",

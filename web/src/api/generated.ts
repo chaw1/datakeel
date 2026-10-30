@@ -7803,7 +7803,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "plan" | "answer" | "clarify" | "refuse" | "unsupported";
+            kind: "plan" | "answer" | "clarify" | "refuse" | "unsupported" | "failed";
             /** Missing Scopes */
             missing_scopes?: string[];
             /**
