@@ -171,6 +171,13 @@ it("locks without save errors or raw server text when a take-back beats the hold
   expect(
     screen.getByText("Not saved · draft kept on this device"),
   ).toBeVisible();
+  // The holder keeps pressing Ctrl+S out of habit: nothing more goes to the server.
+  const sent = vi.mocked(actions.mutateProduction).mock.calls.length;
+  const region = screen.getByRole("region", { name: "Annotation workbench" });
+  fireEvent.keyDown(region, { key: "s", ctrlKey: true });
+  fireEvent.keyDown(region, { key: "Enter", ctrlKey: true });
+  await advance(1_000);
+  expect(vi.mocked(actions.mutateProduction).mock.calls).toHaveLength(sent);
 });
 
 it("treats a submission that comes back pending one round later as returned, with the reviewer's notes", async () => {

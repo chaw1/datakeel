@@ -118,11 +118,12 @@ export function TaskSession({
   const root = useRef<HTMLDivElement>(null);
   useTaskKeyboard(root, {
     editable: editable && !busy,
+    // Once the task is taken back, Ctrl+S and Ctrl+Enter have nothing left to send.
     save: () => {
-      void session.flush();
+      if (!locked) void session.flush();
     },
     submit: () => {
-      void perform("submit");
+      if (!locked) void perform("submit");
     },
     undo: session.undo,
     redo: session.redo,
