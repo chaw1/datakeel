@@ -12,6 +12,7 @@ from datakeel.core.errors import AuthorizationError, ConflictError, ValidationEr
 from datakeel.core.identity_models import Skill, User
 from datakeel.core.production_models import AssignmentStage, Project, SkillRequirement
 from datakeel.storage.identity_rows import SkillRow, UserRow
+from datakeel.storage.production_load_locks import lock_people, require_people_locked
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
 
 
@@ -65,6 +66,15 @@ def active_loads(
     return {actor: int(count) for actor, count in session.execute(statement).all()}
 
 
+def held_loads(
+    session: Session, project_id: str, stage: AssignmentStage, actors: Iterable[str]
+) -> dict[str, int]:
+    """Count loads for a limit decision; each person's load lock must already be held."""
+    people = tuple(actors)
+    require_people_locked(session, project_id, people)
+    return active_loads(session, project_id, stage, people)
+
+
 def load_limit(project: Project, override: int | None = None) -> int | None:
     """Apply a per-person limit only in the team tier; a request may set its own limit."""
     if project.workflow_tier != "team":
@@ -83,7 +93,7 @@ def require_capacity(
     limit = load_limit(project)
     if limit is None:
         return
-    load = active_loads(session, project.id, stage, (actor,)).get(actor, 0)
+    load = held_loads(session, project.id, stage, (actor,)).get(actor, 0)
     if load + adding > limit:
         message = (
             f"{actor} holds {load} active {stage} tasks; adding {adding} would exceed "
@@ -112,4 +122,5 @@ def require_claim_strategy(
             f"at level {requirement.min_level} or above"
         )
         raise AuthorizationError(message)
+    lock_people(session, project.id, (actor,))
     require_capacity(session, project, actor, stage)

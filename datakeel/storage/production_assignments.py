@@ -26,6 +26,7 @@ from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_rows import UserRow
 from datakeel.storage.production_dispatch_rules import require_capacity, require_claim_strategy
 from datakeel.storage.production_leases import end_assignment
+from datakeel.storage.production_load_locks import lock_people
 from datakeel.storage.production_members import record_project_member
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
@@ -152,6 +153,7 @@ def assign_tasks(session: Session, params: AssignTasksParams) -> tuple[Assignmen
         message = "Named assignment requires actor"
         raise ValidationError(message)
     project = require_mutable_project(session, tasks[0].project_id)
+    lock_people(session, project.id, (params.actor,))
     require_capacity(session, project, params.actor, params.stage, len(tasks))
     return tuple(create_assignment(session, task, params.actor, params.stage) for task in tasks)
 

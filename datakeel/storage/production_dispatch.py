@@ -15,7 +15,8 @@ from datakeel.core.production_team_models import DispatchSkip
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_rows import UserRow
 from datakeel.storage.production_assignments import active_assignment, create_assignment
-from datakeel.storage.production_dispatch_rules import active_loads, load_limit, qualifies
+from datakeel.storage.production_dispatch_rules import held_loads, load_limit, qualifies
+from datakeel.storage.production_load_locks import lock_people
 from datakeel.storage.production_rows import ProductionTaskRow
 from datakeel.storage.production_separation import annotators
 from datakeel.storage.production_tasks import require_mutable_project, require_task
@@ -93,7 +94,8 @@ def dispatch_by_skill(
     project, requirement, tasks = _dispatch_context(session, params)
     candidates = params.candidates or tuple(session.scalars(select(UserRow.id)))
     pool = qualified_pool(session, project, requirement, params.stage, candidates)
-    loads = dict.fromkeys(pool, 0) | active_loads(session, project.id, params.stage, pool)
+    lock_people(session, project.id, pool)
+    loads = dict.fromkeys(pool, 0) | held_loads(session, project.id, params.stage, pool)
     limit = load_limit(project, params.max_active_tasks)
     assigned: list[Assignment] = []
     skipped: list[DispatchSkip] = []
