@@ -8,7 +8,7 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp
-    datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
+    datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.prelabel | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory
     datakeel.core
 # Delivery services verify portable frozen release facts without importing API code.
 ignore_imports =
@@ -528,11 +528,26 @@ ignore_imports =
     datakeel.storage.production_idempotency -> datakeel.actions.policy
     datakeel.storage.production_objects -> datakeel.ontology.models
     datakeel.storage.production_predictions -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.production_predictions -> datakeel.actions.production_parameters
     datakeel.storage.production_projects -> datakeel.actions.production_parameters
     datakeel.storage.production_reviews -> datakeel.actions.production_parameters
     datakeel.storage.production_revisions -> datakeel.actions.production_parameters
     datakeel.storage.production_statistics -> datakeel.annotation_qa
+# AI prelabel: storage composes pure matching, tiers and risk rules from annotation_qa, the
+# provider-neutral cloud adapter in prelabel, and the existing perceptual-hash and near-duplicate
+# contracts; storage also owns the typed production parameters it executes.
+    datakeel.storage.production_ai_audit -> datakeel.actions.models
+    datakeel.storage.production_ai_review -> datakeel.annotation_qa
+    datakeel.storage.production_ai_review -> datakeel.operators.evidence.contracts
+    datakeel.storage.production_cloud_labeling -> datakeel.annotation_qa
+    datakeel.storage.production_cloud_labeling -> datakeel.prelabel
+    datakeel.storage.production_cloud_prelabel -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.production_cloud_prelabel -> datakeel.prelabel
+    datakeel.storage.production_prelabel_refs -> datakeel.annotation_qa
+    datakeel.storage.production_prelabel_writes -> datakeel.actions.production_parameters
+    datakeel.storage.production_prelabel_writes -> datakeel.annotation_qa
+    datakeel.storage.production_review_policy -> datakeel.actions.production_parameters
+    datakeel.storage.production_task_images -> datakeel.operators.evidence.image_phash
+    datakeel.storage.production_tiers -> datakeel.annotation_qa
 # Team-tier leases, skill dispatch and package acceptance execute typed production actions.
     datakeel.ontology.production_functions -> datakeel.storage.production_team_reads
     datakeel.storage.production_acceptance -> datakeel.actions.models

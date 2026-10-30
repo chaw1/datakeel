@@ -38,6 +38,7 @@ from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import FunctionResult
 from datakeel.ontology.production_functions import PRODUCTION_READ_MODELS
 from datakeel.storage.workbench_assignees import assignees
+from datakeel.storage.workbench_pixels import workbench_image
 from datakeel.storage.workbench_reads import (
     task_source,
     workbench_index,
@@ -122,7 +123,7 @@ def task_content(
     """View a version-pinned source or a small image preview under the same source grants."""
     path, name = task_source(db, task_id, _caller(request))
     if thumbnail:
-        with Image.open(path) as image:
+        with workbench_image(path) as image:
             preview = image.convert("RGB")
             preview.thumbnail((1024, 1024))
             output = io.BytesIO()

@@ -19,6 +19,7 @@ from datakeel.actions.production_catalog_parameters import (
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import AssetRef
 from datakeel.storage.production_acceptance import accept_package
+from datakeel.storage.production_ai_audit import audit_run_exemptions
 from datakeel.storage.production_catalog_changes import (
     create_label_set,
     manage_template,
@@ -56,6 +57,8 @@ def execute_catalog_action(
             if isinstance(params, ImportPredictionsParams)
             else run_prelabel(session, params, plan.actor)
         )
+        submitted = tuple(tier.task_id for tier in run.tiers if tier.routed == "submitted")
+        audit_run_exemptions(session, plan, submitted)
         return OperationResult(
             outputs=[
                 AssetRef(asset_type="prelabel_run", asset_id=run.id),

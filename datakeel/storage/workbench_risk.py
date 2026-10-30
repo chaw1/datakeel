@@ -13,6 +13,7 @@ from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.production_models import AnnotationRevision, ProductionTask
 from datakeel.core.workbench_models import WorkbenchTaskRisk
 from datakeel.storage.database import Database
+from datakeel.storage.production_ai_rows import latest_reviews
 from datakeel.storage.production_rows import ProductionRevisionRow
 
 
@@ -55,6 +56,7 @@ def task_risks(db: Database, tasks: Sequence[ProductionTask]) -> tuple[Workbench
             )
         ):
             revisions[row.task_id].append(AnnotationRevision.model_validate(row.payload))
+        reviews = latest_reviews(session, tuple(task.id for task in tasks))
     result: list[WorkbenchTaskRisk] = []
     for task in tasks:
         ordered = sorted(revisions[task.id], key=lambda item: (item.created_at, item.id))
@@ -65,11 +67,19 @@ def task_risks(db: Database, tasks: Sequence[ProductionTask]) -> tuple[Workbench
             if head is not None and head.source == "human" and model is not None
             else None
         )
+        review = reviews.get(task.id)
+        if review is not None and review.revision_id != task.latest_revision_id:
+            review = None
         result.append(
             WorkbenchTaskRisk(
                 task_id=task.id,
                 prelabel_difference=difference,
                 model_confidence=model.confidence if model else None,
+                ai_risk=review.risk if review else None,
+                high_risk=review.high_risk if review else False,
+                review_decision=review.decision if review else None,
+                risk_reasons=review.reasons if review else (),
+                confidence_tier=model.confidence_tier if model else None,
             )
         )
     return tuple(result)
@@ -78,13 +88,15 @@ def task_risks(db: Database, tasks: Sequence[ProductionTask]) -> tuple[Workbench
 def review_order(
     tasks: Sequence[ProductionTask], risks: Sequence[WorkbenchTaskRisk]
 ) -> tuple[ProductionTask, ...]:
-    """Prioritize rework rounds, lower model confidence, then greater prelabel differences."""
+    """Order by AI pre-review risk, then rework rounds, model confidence and differences."""
     differences = {risk.task_id: risk.prelabel_difference or 0.0 for risk in risks}
     confidences = {risk.task_id: risk.model_confidence for risk in risks}
+    scores = {risk.task_id: risk.ai_risk or 0.0 for risk in risks}
     return tuple(
         sorted(
             tasks,
             key=lambda task: (
+                -scores[task.id],
                 -task.round,
                 confidences[task.id]
                 if confidences[task.id] is not None

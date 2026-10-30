@@ -149,6 +149,7 @@ def _coco_image(
             image_height=image.height,
         ),
         confidence=sum(item.score for item in records) / len(records),
+        object_confidences=tuple(item.score for item in records),
     )
 
 
@@ -338,6 +339,7 @@ def parse_yolo(
                 image_height=height,
             ),
             confidence=sum(confidence for _, confidence in records) / len(records),
+            object_confidences=tuple(confidence for _, confidence in records),
         )
     except (ValueError, ModelValidationError) as exc:
         return _failure(file.filename, "invalid", str(exc))

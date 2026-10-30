@@ -8,7 +8,7 @@ from collections import Counter
 from sqlalchemy import func, select
 
 from datakeel.annotation_qa import evaluate_annotations, prelabel_accuracy
-from datakeel.core.annotation_models import AnnotationBatch, AnnotationQAResult, AnnotationRecord
+from datakeel.core.annotation_models import AnnotationBatch, AnnotationQAResult
 from datakeel.core.production_models import (
     AnnotationRevision,
     AnnotatorWorkload,
@@ -18,6 +18,7 @@ from datakeel.core.production_models import (
     ProductionWorkload,
 )
 from datakeel.storage.database import Database
+from datakeel.storage.production_prelabel_refs import approved_references
 from datakeel.storage.production_rows import (
     ProductionReviewRow,
     ProductionRevisionRow,
@@ -25,22 +26,6 @@ from datakeel.storage.production_rows import (
 )
 from datakeel.storage.production_tasks import require_project
 from datakeel.storage.workbench_risk import prelabel_difference
-
-
-def _preceding_model(
-    revisions: dict[str, AnnotationRevision], approved: AnnotationRevision
-) -> AnnotationRevision | None:
-    identifier = approved.previous_revision_id
-    seen: set[str] = set()
-    while identifier is not None and identifier not in seen:
-        seen.add(identifier)
-        revision = revisions.get(identifier)
-        if revision is None or revision.task_id != approved.task_id:
-            return None
-        if revision.source == "model":
-            return revision
-        identifier = revision.previous_revision_id
-    return None
 
 
 def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccuracy:
@@ -54,27 +39,10 @@ def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccur
     """
     with db.session() as session:
         require_project(session, project_id)
-        revisions = {
-            row.id: AnnotationRevision.model_validate(row.payload)
-            for row in session.scalars(
-                select(ProductionRevisionRow).where(ProductionRevisionRow.project_id == project_id)
-            )
-        }
-        tasks = session.scalars(
-            select(ProductionTaskRow).where(
-                ProductionTaskRow.project_id == project_id,
-                ProductionTaskRow.state.in_(("approved", "finalized")),
-                ProductionTaskRow.approved_revision_id.is_not(None),
-            )
-        )
-        references: list[tuple[AnnotationRecord, AnnotationRecord]] = []
-        for task in tasks:
-            approved = revisions.get(task.approved_revision_id or "")
-            if approved is None or approved.source != "human":
-                continue
-            model = _preceding_model(revisions, approved)
-            if model is not None:
-                references.append((model.annotation, approved.annotation))
+        references = [
+            (model.annotation, human.annotation)
+            for model, human in approved_references(session, project_id)
+        ]
     assessed = len(references)
     exact = sum(prelabel_difference(human, model) == 0 for model, human in references)
     iou_50, iou_75, attributes = prelabel_accuracy(references)

@@ -13,6 +13,7 @@ from datakeel.actions.production_parameters import (
 from datakeel.core.errors import AuthorizationError, ConflictError, ValidationError
 from datakeel.core.models import new_id, utcnow
 from datakeel.core.production_models import ProductionTask, Project, Review
+from datakeel.storage.production_ai_review import prereview
 from datakeel.storage.production_assignments import active_assignment, finish_assignment
 from datakeel.storage.production_catalog import require_complete_attributes
 from datakeel.storage.production_leases import arm_lease, raise_if_reclaimed, require_live_lease
@@ -48,6 +49,8 @@ def submit_task(session: Session, params: SubmitTaskParams, actor: str) -> Produ
         transition_task(session, task, "approved")
     else:
         transition_task(session, task, "submitted")
+    if head is not None:
+        prereview(session, project, task, head)
     return task_view(task)
 
 

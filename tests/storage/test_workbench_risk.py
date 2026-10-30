@@ -113,15 +113,19 @@ def test_model_risk_survives_human_save_and_review_pagination(db: Database, tmp_
     assert get_task(db, tasks[0].id).confidence is None
     caller = AccessContext(actor="local", entry="ask", scope="query")
     first = workbench_project(db, project.id, caller, WorkbenchProjectQuery(limit=1, view="review"))
-    assert first.tasks[0].id == tasks[0].id
-    assert first.task_risks[0].model_confidence == 0.2
-    assert first.task_risks[0].prelabel_difference == 0
+    # P31a D2: the AI pre-review risk leads the review order; emptying a confident draft is risky.
+    assert first.tasks[0].id == tasks[1].id
+    assert first.task_risks[0].prelabel_difference == pytest.approx(2 / 3)
+    assert first.task_risks[0].ai_risk is not None
+    assert first.task_risks[0].ai_risk > 0
     second = workbench_project(
         db,
         project.id,
         caller,
         WorkbenchProjectQuery(limit=1, cursor=first.next_cursor, view="review"),
     )
-    assert second.tasks[0].id == tasks[1].id
-    assert second.task_risks[0].prelabel_difference == pytest.approx(2 / 3)
+    assert second.tasks[0].id == tasks[0].id
+    assert second.task_risks[0].model_confidence == 0.2
+    assert second.task_risks[0].prelabel_difference == 0
+    assert (second.task_risks[0].ai_risk or 0) < first.task_risks[0].ai_risk
     assert second.next_cursor is None

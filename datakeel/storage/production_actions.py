@@ -32,6 +32,7 @@ from datakeel.core.production_models import (
     Review,
 )
 from datakeel.storage.action_store import audit
+from datakeel.storage.production_ai_audit import audit_run_exemptions
 from datakeel.storage.production_assignments import assign_tasks, claim_task, release_task
 from datakeel.storage.production_dispatch import dispatch_by_skill
 from datakeel.storage.production_projects import (
@@ -103,16 +104,7 @@ def _editing_action(
     if isinstance(params, SaveRevisionParams):
         return _save(session, plan, params)
     if isinstance(params, SubmitTaskParams):
-        task = submit_task(session, params, plan.actor)
-        if require_project(session, task.project_id).workflow_tier == "personal":
-            audit(
-                session,
-                plan,
-                "SYSTEM_APPROVAL",
-                "APPROVED",
-                "Personal submission automatically passed",
-            )
-        return _result("production_task", task)
+        return _submit(session, plan, params)
     if isinstance(params, ReviewTaskParams):
         return _result("review", review_task(session, params, plan.actor))
     if isinstance(params, ReopenTaskParams):
@@ -121,6 +113,20 @@ def _editing_action(
         return _result("project", upgrade_project(session, params))
     message = "Unknown production workflow action parameters"
     raise ValidationError(message)
+
+
+def _submit(session: Session, plan: ActionPlan, params: SubmitTaskParams) -> OperationResult:
+    task = submit_task(session, params, plan.actor)
+    if require_project(session, task.project_id).workflow_tier == "personal":
+        audit(
+            session,
+            plan,
+            "SYSTEM_APPROVAL",
+            "APPROVED",
+            "Personal submission automatically passed",
+        )
+    audit_run_exemptions(session, plan, (task.id,))
+    return _result("production_task", task)
 
 
 def _save(session: Session, plan: ActionPlan, params: SaveRevisionParams) -> OperationResult:

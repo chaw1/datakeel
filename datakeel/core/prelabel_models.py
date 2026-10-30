@@ -29,6 +29,7 @@ class CloudModelConfig(BoundaryModel):
     base_url: str = Field(min_length=1, max_length=500)
     model: str = Field(min_length=1, max_length=200)
     credential_env: str = Field(pattern=r"^[A-Z][A-Z0-9_]{0,99}$")
+    credential_source: Literal["env", "keychain"] = "env"
     input_price: float = Field(ge=0, allow_inf_nan=False)
     output_price: float = Field(ge=0, allow_inf_nan=False)
     coordinate_space: Literal["normalized_1000", "pixel"] = "normalized_1000"
@@ -39,6 +40,7 @@ class CloudModelConfig(BoundaryModel):
     max_output_tokens: int = Field(default=1024, ge=16, le=32768)
     timeout_seconds: float = Field(default=60, gt=0, le=600)
     cross_check: bool = True
+    confidence_source: Literal["self", "cross_check", "combined"] = "combined"
     request_parameters: dict[str, JsonValue] = Field(
         default_factory=lambda: {"enable_thinking": False}
     )
