@@ -6,7 +6,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { MetadataEvidence } from "../catalog/MetadataEvidence";
 import { TableQualityRules } from "../qualityRules/TableQualityRules";
 
-import { objectHref, readObjectTarget } from "./navigation";
+import { objectHref, objectTabsFor, readObjectTarget } from "./navigation";
 import { ObjectFacts } from "./ObjectFacts";
 import { ObjectHeader } from "./ObjectHeader";
 import { ObjectSections } from "./ObjectSections";
@@ -44,7 +44,11 @@ export function ObjectPage({
   const { t, locale } = useI18n();
   const resource = useObject(target);
   const data = resource.value;
-  const tab = target.tab ?? "relations";
+  const tabs = objectTabsFor(target.kind);
+  // A link may carry another kind's tab, such as a metric opened with `tab=versions`; that
+  // tab would load dataset-only sections under the metric's id, so the default tab is shown.
+  const tab =
+    target.tab && tabs.includes(target.tab) ? target.tab : "relations";
   useEffect(() => {
     if (data)
       onNameChange?.(
@@ -95,22 +99,9 @@ export function ObjectPage({
         ?.scrollIntoView({ block: "start" });
     }
   }
-  const tabs: ObjectTab[] = ["facts", "relations", "evidence", "history"];
-  if (target.kind === "dataset")
-    tabs.push(
-      "files",
-      "versions",
-      "quality",
-      "annotation-quality",
-      "text-governance",
-      "report",
-      "datasheets",
-    );
-  if (target.kind === "version")
-    tabs.push("files", "annotation-quality", "text-governance");
-  if (target.kind === "file") tabs.push("quality");
   const resolved = {
     ...target,
+    tab,
     datasetId: data?.target.datasetId ?? target.datasetId,
   };
   return (
