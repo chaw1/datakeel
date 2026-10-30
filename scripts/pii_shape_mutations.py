@@ -9,6 +9,7 @@ _PATTERNS = "core/pii_patterns.py"
 _NORTH_AMERICAN = (
     "tests/core/test_pii_phone_north_american.py::test_north_american_phone_mutation_guard"
 )
+_HALF_BRACKET = "tests/core/test_pii_phone_half_brackets.py::test_half_bracket_mutation_guard"
 # The North American alternative of the bracketed-phone expression, verbatim.
 _BRANCH = 'r"|(?:\\([2-9][0-9]{2}\\)|\\uff08[2-9][0-9]{2}\\uff09)[ -]*[2-9][0-9]{2}[ -]?[0-9]{4}"'
 
@@ -35,6 +36,30 @@ PII_SHAPE_MUTATIONS = (
         before="uff09)[ -]*[2-9][0-9]{2}[ -]?[0-9]{4}",
         after="uff09)[ -]*[0-9]{3}[ -]?[0-9]{4}",
         case=_NORTH_AMERICAN,
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-half-bracket-rejected",
+        path="core/pii.py",
+        before="    if _splits_brackets(value):\n        return False\n",
+        after="",
+        case=_HALF_BRACKET,
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-half-bracket-closing-first",
+        path="core/pii.py",
+        before="        if depth < 0:\n            return True\n",
+        after="",
+        case=_HALF_BRACKET,
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-half-bracket-left-open",
+        path="core/pii.py",
+        before="    return depth > 0\n",
+        after="    return False\n",
+        case=_HALF_BRACKET,
         runner="pytest",
     ),
 )

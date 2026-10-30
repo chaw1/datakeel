@@ -145,7 +145,22 @@ def _card_prefix(digits: str) -> bool:
     )
 
 
+def _splits_brackets(value: str) -> bool:
+    """Return whether a candidate starts or ends between a pair of ASCII brackets.
+
+    Only the generic pattern can contain a lone bracket; full-width pairs never enter it.
+    """
+    depth = 0
+    for char in value:
+        depth += (char == "(") - (char == ")")
+        if depth < 0:
+            return True
+    return depth > 0
+
+
 def _valid_phone(value: str) -> bool:
+    if _splits_brackets(value):
+        return False
     digits = "".join(char for char in value if char.isdigit())
     digits = digits.removeprefix("00")
     if not _MIN_PHONE_DIGITS <= len(digits) <= _MAX_PHONE_DIGITS or len(set(digits)) == 1:
