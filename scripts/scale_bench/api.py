@@ -122,8 +122,10 @@ async def _load(
         deadline = started + context.scale.duration_seconds
 
         async def user(number: int) -> None:
+            # Check the deadline after each request: on a slow runner a user scheduled late
+            # still measures its first route instead of finding the deadline already passed.
             index = number
-            while perf_counter() < deadline:
+            while True:
                 before = perf_counter()
                 route = _ROUTES[index % len(_ROUTES)]
                 try:
@@ -138,6 +140,8 @@ async def _load(
                 histograms[route].add(milliseconds, error=error is not None)
                 histograms["all"].add(milliseconds, error=error is not None)
                 index += 1
+                if perf_counter() >= deadline:
+                    break
 
         await asyncio.gather(*(user(index) for index in range(context.scale.virtual_users)))
         return histograms, perf_counter() - started, errors

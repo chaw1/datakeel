@@ -51,3 +51,29 @@ def test_api_workload_exercises_all_four_http_routes(db: Database, tmp_path: Pat
     assert result.metrics["error_rate"] == 0
     assert set(result.latencies) == {"list", "search", "object", "ask", "all"}
     assert all(item.count > 0 for item in result.latencies.values())
+
+
+def test_api_workload_measures_every_route_when_deadline_passes_first(
+    db: Database, tmp_path: Path
+) -> None:
+    """A runner too slow to start users before the deadline still measures each route once."""
+    schema = None
+    if not db.sqlite:
+        with db.engine.connect() as connection:
+            schema = str(connection.execute(text("SELECT current_schema()")).scalar_one())
+    context = Context(
+        config=Config(scenario="B5"),
+        db=db,
+        root=tmp_path,
+        schema_name=schema,
+        scale=SCALES["S"].model_copy(update={"duration_seconds": 1e-9}),
+    )
+    result = run(context)
+    assert result.metrics["error_rate"] == 0
+    assert {key: item.count for key, item in result.latencies.items()} == {
+        "list": 1,
+        "search": 1,
+        "object": 1,
+        "ask": 1,
+        "all": 4,
+    }
