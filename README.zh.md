@@ -195,7 +195,7 @@ Agent 使用 LangGraph，在同一 SQLite 或 PostgreSQL 数据库中同步保�
 
 委派工具通过 `tool_search` 加载。输入 `委派目录分析` 可运行独立子会话；嵌套步骤显示工具和 token，所有费用计入根会话。内置目录分析、证据审核和指标管理三个子 Agent，均不能准备不可逆动作。工具数据进入不可信 JSON 信封，canary 泄漏会在保存回复和执行工具前停止；注入仍可能诱导可逆动作，不可逆动作始终需要人工签批。
 
-「记忆」面板支持显式添加、数据集筛选与确认删除，写入前脱敏邮箱和电话；跨会话按相关度和衰减强度取用，当前取用条目显示在 Agent 页。删除后再开会话提同样问题，可确认不再取用。定义、参数、API 和 golden 格式见 [Agent 参考](docs/AGENT.md)。
+「记忆」面板支持显式添加、数据集筛选与确认删除，写入前脱敏邮箱和电话；跨会话按相关度和衰减强度取用，当前取用条目显示在 Agent 页。删除后再开会话提同样问题，可确认不再取用。定义、参数、API 和 golden 格式见 [Agent 参考](docs/AGENT.md)。直接说「把小王手里没动的任务分给小李」，智能体会拼出一串受控动作，缺什么就问，确认后才执行，详见[一句话做事](docs/ONE_SENTENCE.zh.md)。
 
 ### 可选真实 provider 配置
 
@@ -351,7 +351,7 @@ OpenLineage 导出是事件数组，逐个元素用官方 RunEvent Schema 校验
 
 ## MCP 接入
 
-`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **99 个工具**：36 个只读函数（含 `training_distribution`、`training_leakage`、`get_training_quality`、`annotation_quality`、`list_quality_rules`、`get_table_quality`、`query_standard_coverage`、`list_standard_usage`、`query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample`、`project_progress`、`next_task`、`production_prelabel_accuracy` 和团队档 `lease_status` 等 13 个生产只读函数及下方四个），63 个**只准备计划**的动作（含 `clean_training_data`、`define_role`、`save_revision`、`finalize_project` 等角色与生产动作、质量规则维护与运行、`confirm_metric_draft`、问题单认领、`annotation_acceptance`、`publish_release`、`generate_datasheet`、`publish_datasheet`、`submit_custom_operator`、数据资产上架与授权、数据标准导入与映射、`run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚）。没有签批和执行工具：准备好的计划只能由人在 Web 界面或 CLI 审阅、签批并执行，MCP 客户端自己无法把计划走完；以 `approve_plan` / `execute_plan` 为名的调用会被拒绝并记入审计。每次调用记录状态、资产引用和调用方归因；内置 Agent 则走上面的 UI 确认流程。表合同、worker 定时检查、问题恢复和签名告警见[质量规则说明](docs/QUALITY_RULES.md)。
+`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **100 个工具**：36 个只读函数（含 `training_distribution`、`training_leakage`、`get_training_quality`、`annotation_quality`、`list_quality_rules`、`get_table_quality`、`query_standard_coverage`、`list_standard_usage`、`query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample`、`project_progress`、`next_task`、`production_prelabel_accuracy` 和团队档 `lease_status` 等 13 个生产只读函数及下方四个），64 个**只准备计划**的动作（含 `clean_training_data`、`draft_label_set`、`define_role`、`save_revision`、`finalize_project` 等角色与生产动作、质量规则维护与运行、`confirm_metric_draft`、问题单认领、`annotation_acceptance`、`publish_release`、`generate_datasheet`、`publish_datasheet`、`submit_custom_operator`、数据资产上架与授权、数据标准导入与映射、`run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚）。没有签批和执行工具：准备好的计划只能由人在 Web 界面或 CLI 审阅、签批并执行，MCP 客户端自己无法把计划走完；以 `approve_plan` / `execute_plan` 为名的调用会被拒绝并记入审计。每次调用记录状态、资产引用和调用方归因；内置 Agent 则走上面的 UI 确认流程。表合同、worker 定时检查、问题恢复和签名告警见[质量规则说明](docs/QUALITY_RULES.md)。
 
 Agent 和 MCP 同步提供 `ask_data`、`list_metrics`、`explain_metric`、`impact_of`。`ask_data` 只读源数据，在 Datakeel 保存答案及证据；涉及资产的调用记录 `asset_refs`，空的 `list_metrics` 结果可没有引用。工具、动作与 HTTP 使用同一套类型模型生成 schema。
 
