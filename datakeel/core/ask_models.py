@@ -115,6 +115,11 @@ class AskAnswer(BoundaryModel):
     reference_instant: AwareDatetime
     conversation_id: str | None = None
     interpreted_question: str = ""
+    interpreted_question_en: str = Field(
+        default="",
+        description="The same interpretation in English, for an English interface.",
+        exclude_if=lambda value: not value,
+    )
     query_frame: AskQueryFrame | None = None
     comparison: AskComparison | None = None
     chart: ChartSpec | None = Field(default=None, exclude_if=lambda value: value is None)

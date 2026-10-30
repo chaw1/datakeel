@@ -20,6 +20,11 @@ class KnowledgeSubject(BoundaryModel):
 
     asset_ref: AssetRef
     name: str
+    english_name: str | None = Field(
+        default=None,
+        description="The registered English name of a catalog subject, when it has one.",
+        exclude_if=lambda value: value is None,
+    )
     kind: Literal["metric", "table", "view", "owner", "kg_entity"]
     entity_type: str | None = None
     dataset_id: str | None = None

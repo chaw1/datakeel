@@ -4083,6 +4083,12 @@ export interface components {
              * @default []
              */
             matches: components["schemas"]["MatchEvidence"][];
+            /**
+             * Interpreted Question En
+             * @description The same interpretation in English, for an English interface.
+             * @default
+             */
+            interpreted_question_en: string;
             /** Message */
             message: string;
             metric_card?: components["schemas"]["MetricCard"] | null;
@@ -8331,6 +8337,11 @@ export interface components {
             /** Name */
             name: string;
             /**
+            /**
+             * English Name
+             * @description The registered English name of a catalog subject, when it has one.
+             */
+            english_name?: string | null;
              * Relation
              * @enum {string}
              */

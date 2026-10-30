@@ -35,6 +35,7 @@ from scripts.release_mutations import RELEASE_MUTATIONS
 from scripts.sandbox_mutations import SANDBOX_MUTATIONS
 from scripts.standard_mutations import LEXICAL_RULE_MUTATIONS, STANDARD_MUTATIONS
 from scripts.table_mutations import TABLE_MUTATIONS
+from scripts.tails4_tails_mutations import TAILS_MUTATIONS
 from scripts.tails4_workload_mutations import WORKLOAD_MUTATIONS
 from scripts.text_dedup_mutations import TEXT_DEDUP_MUTATIONS
 from scripts.timeseries_mutations import TIMESERIES_MUTATIONS
@@ -90,4 +91,5 @@ FEATURE_MUTATIONS = (
     *LLM_DATA_GOVERNANCE_MUTATIONS,
     *SANDBOX_MUTATIONS,
     *TRAINING_IDENTITY_MUTATIONS,
+    *TAILS_MUTATIONS,
 )

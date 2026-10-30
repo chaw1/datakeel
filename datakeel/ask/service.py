@@ -19,6 +19,7 @@ from datakeel.ask.followup import (
     prepare_metric_turn,
     previous_period,
 )
+from datakeel.ask.interpretation_en import interpreted_question_en
 from datakeel.ask.knowledge_parser import metric_recognition, parse_knowledge_question
 from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
 from datakeel.ask.models import DimensionParse, Leftovers, QueryContext
@@ -72,6 +73,8 @@ def ask_data(
             "conversation_id": request.conversation_id,
             "interpreted_question": answer.interpreted_question
             or interpreted_question(answer.query_frame, answer.metric_card, request.question),
+            "interpreted_question_en": answer.interpreted_question_en
+            or interpreted_question_en(answer.query_frame, answer.metric_card, request.question),
         }
     )
     answer = answer_chart(answer)
@@ -180,6 +183,9 @@ def _answer(
         comparison=comparison,
         query_frame=frame,
         interpreted_question=interpreted_question(frame, card, request.question, context.layer),
+        interpreted_question_en=interpreted_question_en(
+            frame, card, request.question, context.layer
+        ),
         time_range=frame.time_range,
         matches=parsed.matches,
         lineage=LineageReference(asset_id=card.definition.id),

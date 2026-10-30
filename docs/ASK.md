@@ -44,7 +44,12 @@ quarter`) requires a complete calendar quarter. A request whose explicit compari
 does not match the current interval asks for clarification before querying.
 
 Each turn displays **Understood as / 理解为** followed by the complete question. Check this
-before using its result. Ambiguous follow-ups ask for clarification and return no number.
+before using its result. The English interface shows the English wording
+(`interpreted_question_en`): metric and dimension names use their registered English names,
+and recorded values such as 华东 stay as recorded. Answers saved before this wording existed
+show the question as asked. The recognised subject line also uses the subject's registered
+English name (`english_name`); names without one stay as registered.
+Ambiguous follow-ups ask for clarification and return no number.
 The conversation list can reopen or delete saved threads; reloads and process restarts recover
 them from SQLite or PostgreSQL. Separate browser tabs keep separate active thread selections.
 `DATAKEEL_ASK_CONVERSATION_RETENTION_DAYS` configures how long threads are retained.
