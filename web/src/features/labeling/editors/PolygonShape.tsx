@@ -62,7 +62,17 @@ export function PolygonShape({
           onChange({ ...value, points });
         }}
       />
-      <ShapeLabel x={top.x} y={top.y} style={style} />
+      <ShapeLabel
+        x={top.x}
+        y={top.y}
+        bounds={{
+          x1: Math.min(...value.points.map((point) => point.x)),
+          y1: Math.min(...value.points.map((point) => point.y)),
+          x2: Math.max(...value.points.map((point) => point.x)),
+          y2: Math.max(...value.points.map((point) => point.y)),
+        }}
+        style={style}
+      />
       {selected &&
         value.points.map((point, index) => (
           <Circle

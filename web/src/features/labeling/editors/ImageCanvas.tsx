@@ -5,7 +5,7 @@ import { useI18n } from "../../../i18n/useI18n";
 import { altKeyName } from "../platformKeys";
 
 import { CanvasControls } from "./CanvasControls";
-import { CanvasScaleContext } from "./editorContext";
+import { CanvasScaleContext, CanvasViewContext } from "./editorContext";
 import { arrowDelta, clamp } from "./geometry";
 import { useCanvasTokens } from "./useCanvasTokens";
 import { useImageSource } from "./useImageSource";
@@ -69,6 +69,14 @@ export function ImageCanvas({
   const center = {
     x: (viewport.width - width * fit) / 2,
     y: (viewport.height - height * fit) / 2,
+  };
+  // The image area on screen, so label chips can stay inside it while zoomed in.
+  const origin = { x: center.x + view.x, y: center.y + view.y };
+  const visible = {
+    x1: -origin.x / scale,
+    y1: -origin.y / scale,
+    x2: (viewport.width - origin.x) / scale,
+    y2: (viewport.height - origin.y) / scale,
   };
   function position(
     event: KonvaEventObject<MouseEvent | TouchEvent>,
@@ -231,7 +239,9 @@ export function ImageCanvas({
                   />
                 )}
                 <CanvasScaleContext value={scale}>
-                  <Group listening={!pan && !drawing}>{children}</Group>
+                  <CanvasViewContext value={visible}>
+                    <Group listening={!pan && !drawing}>{children}</Group>
+                  </CanvasViewContext>
                 </CanvasScaleContext>
               </Group>
             </Layer>

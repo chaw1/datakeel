@@ -81,7 +81,7 @@ export function BoxShape({
           onChange({ ...value, x1, y1, x2, y2 });
         }}
       />
-      <ShapeLabel x={value.x1} y={value.y1} style={style} />
+      <ShapeLabel x={value.x1} y={value.y1} bounds={value} style={style} />
       {selected && !readOnly && (
         <Transformer
           ref={transformer}
