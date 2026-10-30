@@ -15,6 +15,8 @@ export const labelingProject: ProjectWorkbench = {
     workflow_tier: "personal",
     guidelines: "",
     review_prompt_shown: false,
+    lease_minutes: 10,
+    dispatch_strategy: "claim",
     created_at: "2026-10-30T00:00:00Z",
   },
   packages: [

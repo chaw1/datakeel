@@ -20,4 +20,8 @@ export const productionEn = {
   productionReviewTask: "review task",
   productionReopenTask: "reopen task",
   productionUpgradeProject: "upgrade workflow tier",
+  productionHeartbeat: "renew lease",
+  productionRevokeAssignment: "revoke assignment",
+  productionConfigureProject: "configure team settings",
+  productionAcceptPackage: "accept package by sampling",
 };

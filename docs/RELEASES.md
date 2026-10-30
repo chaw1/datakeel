@@ -207,3 +207,43 @@ Integration changes in this version:
 - The Agent discovers `production_prelabel_accuracy` through `tool_search` like the other production reads, so its schema is not sent with every request.
 - The LLM training-data modules are named `llm_data` in code to keep them apart from training splits; public names are unchanged.
 
+## v0.16.0 release notes
+
+v0.16.0 adds the production team tier on top of v0.15.0 and makes the test and mutation gates run in parallel. Like v0.15.0 it calls no model service, and every write still goes through controlled actions and the access guards.
+
+| Track | What you can do now |
+|---|---|
+| Team tier | Set a project to `workflow_tier: "team"` (or upgrade a group project) to run it with several annotators and reviewers. Claims and assignments become leases of `lease_minutes` that the holder renews with `heartbeat`; a reaper in the worker (or `datakeel production reap`) returns abandoned work to its queue without losing a revision, and releases every lease exactly once. Choose per project whether managers assign, the system dispatches by skill (level threshold, then fewest active tasks, then user id) or people claim, and cap each person with `max_active_tasks`. Nobody reviews a task they annotated in any round. When a package is fully approved, `package_acceptance` previews a P26 sample and a person signs `accept_package`: a pass accepts the package, a fail sends the whole package back for rework. A team project finalizes only after every package is accepted. Managers can take work back with `revoke_assignment`, including tasks still held by the unregistered `local`. [Production workflows](PRODUCTION.md#team-tier). |
+| Team-tier capacity (B8) | `python -m scripts.scale_bench B8` runs 50 virtual annotators for 10 minutes against 10,000 tasks with two reaper processes, then checks the database for overlapping claims and double releases. On a quiet development machine PostgreSQL measured next-task p95 69–72 ms and save p95 66–67 ms over two runs, SQLite next-task p95 17 ms and save p95 52–55 ms, both with 0 duplicate claims. [Capacity](CAPACITY.md). |
+| Faster gates | `make check` runs pytest on parallel workers, each test on its own copy of a migrated database, and the mutation gate runs mutations side by side in separate source copies. On the 15-core development machine the SQLite pytest step fell from 94 minutes to about 12.5 and the PostgreSQL step from more than 85 minutes to about 18. `DATAKEEL_TEST_WORKERS` picks the worker count; `1` runs serially. No test or threshold changed. [Test execution guide](TEST_SPEED.md). |
+
+**The team tier now enforces its rules.** In v0.15.0 a team project still behaved like a group project. Now an expired lease turns the holder's save, submit, heartbeat and review into an explicit 409 and the reaper reclaims the work; annotators cannot review their own tasks; `max_active_tasks` refuses claims and assignments above the cap; and finalization requires every package to be accepted. Upgrading to the team tier starts a full lease for every open assignment. Group and personal projects behave exactly as before.
+
+**`reopen_task` changed.** It counts a rework round only when submitted, in-review or approved work is sent back. Reopening a pending or in-progress task now leaves its round, state, assignment and revisions as they are; before, it added a round and sent in-progress work back to pending.
+
+**MCP now exposes 99 tools instead of 92**: 36 read functions (new: `lease_status`, `skill_workload`, `package_acceptance`) and 63 actions that only prepare plans (new: `heartbeat`, `revoke_assignment`, `configure_project`, `accept_package`). There is still no approve or execute tool. MCP hosts that pin the tool list must refresh it.
+
+**New scope `production:accept`.** `accept_package` needs it; the `project_manager` and `administrator` templates have it and the acceptance observer stays read-only. `heartbeat` uses the existing `production:claim`. Built-in templates you have not edited pick this up on upgrade; an edited template keeps its saved scopes, so add `production:accept` yourself where needed.
+
+**PostgreSQL locking changed for production work.** Claim, release, heartbeat, save, submit and review no longer take the table-wide action lock. They first take a `lineage_events` lock that conflicts only with table-wide actions, then their task row, so annotators run concurrently while every action still locks tables before rows. Counting a person's load is serialized per project and person with an advisory lock. SQLite is unchanged.
+
+**Other behavior changes.** Running the PostgreSQL test suite needs a database role with `CREATEDB`, because each test gets its own cloned database. `assign_tasks` gains `strategy: "skill"` and returns `unassigned`; projects gain `lease_minutes`, `dispatch_strategy`, `skill_requirement` and `max_active_tasks`. The only new CLI command is `datakeel production reap`. Nothing was renamed or removed: OpenAPI keeps 164 paths, adds the `SkillRequirement` schema (376 to 377), four `action_type` values and fields that are optional or have defaults. The database gains two append-only tables and one nullable column. The mutation gate has 386 anchors, the golden suite 52 cases and the operator catalog 42 operators.
+
+Known limits:
+
+- Revoking or reassigning a task whose holder keeps autosaving usually fails with a 409 ("Action target state changed after preparation"). The manager's plan freezes the whole task, including its latest revision, and every save changes it; in a public reproduction with a save every 2 seconds and 3 seconds between preparing and confirming, none of six revokes went through. Nothing is lost; prepare again and confirm quickly. The fix, freezing only the state, round and holder, is planned with the next workbench update.
+- Right after an upgrade to the team tier, `lease_status` shows each open assignment's old recorded expiry, which is already in the past, while `seconds_remaining` reflects the lease actually enforced. The first heartbeat corrects it. Assignments that were already open in a project upgraded to the team tier under v0.15.0 have no enforced deadline until their first heartbeat.
+- Two rules are still open and may change: the load cap counts submitted work waiting for review, and a single `assign_tasks` request may pass a `max_active_tasks` above the project's cap. Rework goes only to the original annotator; after a revoke it cannot be assigned to anyone else (409), so rework whose annotator has left stays stuck until that person returns.
+- The annotation workbench does not send heartbeats yet and has no screens for leases, revoking, team settings or package acceptance. In a team project, renew leases and run these actions through the API, CLI or MCP-prepared plans until the next workbench update.
+- Skill requirements are set per project or per request, not per package. `datakeel production reap --now` records the time you pass as the release time.
+- PostgreSQL makes about 50 database round trips per production action, so its latency rises steeply when CPU is contended; keep headroom (see [Capacity](CAPACITY.md)).
+- Tests: on PostgreSQL every per-test database drop forces a checkpoint, which keeps the parallel PostgreSQL pytest step at about 18–21 minutes on the development machine. Where Docker resolves the sandbox base image over a slow registry connection, the first sandbox security test can wait about two minutes while the other workers stay idle. The custom scheduler builds on private pytest-xdist interfaces, so the dependency is pinned below 4. CI timings with four workers are estimates until the first CI run.
+
+Integration changes in this version:
+
+- Merging the team tier with v0.15.0's `production_prelabel_accuracy` combined both sides: the production read dispatcher serves all thirteen reads, `production_prelabel_accuracy` and the three team reads are deferred Agent tools, the production guides list all of them, and the counts were recomputed (MCP 99, Agent deferred 92, ontology functions 36, mutation anchors 386).
+- `web/src/api/generated.ts` was regenerated from the merged OpenAPI; the automatic merge had missed the new `Project` and `Assignment` fields and `SkillRequirement`.
+- The approval sheet labels `heartbeat`, `revoke_assignment`, `configure_project` and `accept_package` in English and Chinese, and the workbench test fixtures carry the new project fields, so the frontend type-checks again.
+- The production guide no longer says the workbench sends heartbeats; the identity guide lists the team-tier scopes.
+- The concurrent two-scheduler worker test waits at a barrier so both schedulers deterministically read the due window.
+

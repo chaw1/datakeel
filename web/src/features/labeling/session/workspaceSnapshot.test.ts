@@ -20,6 +20,8 @@ function workspace(actor = "person-1"): WorkspaceSnapshot {
     guidelines: "",
     review_prompt_shown: false,
     workflow_tier: "group" as const,
+    lease_minutes: 10,
+    dispatch_strategy: "claim" as const,
     created_at: "2026-10-30T00:00:00Z",
   };
   const task = {

@@ -22,4 +22,8 @@ export const productionZh: Record<keyof typeof productionEn, string> = {
   productionReviewTask: "审核任务",
   productionReopenTask: "重开任务",
   productionUpgradeProject: "升级工作流档位",
+  productionHeartbeat: "续租",
+  productionRevokeAssignment: "收回指派",
+  productionConfigureProject: "配置团队档",
+  productionAcceptPackage: "抽检验收任务包",
 };
