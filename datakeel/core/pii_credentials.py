@@ -59,6 +59,8 @@ _NAMED_LABELS = frozenset(
 _SEGMENT = re.compile(r"[_.\-\s]+")
 _PROSE_WORD = re.compile(r"[^\W\d_]+(?:['\u2019-][^\W\d_]+)*")
 _HEX = re.compile(r"[0-9A-Fa-f]{16,}")
+_DIGITS = re.compile(r"[0-9]+")
+_WORD_PART = re.compile(r"['\u2019-]")
 _BASE64 = re.compile(r"(?:[A-Za-z0-9+/]{16,}|[A-Za-z0-9_-]{16,})={0,2}")
 _MASK = re.compile(r"[*xX•●#.\-_]+")
 _WRAPPED_WORD = re.compile(r"(?:[<\[{(]{1,2}\s*[A-Za-z][A-Za-z _-]{0,39}\s*[>\]})]{1,2}|\$\{\w+\})")
@@ -99,20 +101,26 @@ def _entropy(value: str) -> float:
     return -sum(count / len(value) * math.log2(count / len(value)) for count in counts.values())
 
 
+def _inner_capital(word: str) -> bool:
+    """Return whether any hyphen/apostrophe part has a capital after its first letter."""
+    return any(any(char.isupper() for char in part[1:]) for part in _WORD_PART.split(word) if part)
+
+
 def credential_like(value: str) -> bool:
     """Return whether a generic-label value looks like an issued credential.
 
-    The value has no whitespace and either has at least eight characters from two of the
-    letter, digit and symbol classes, or is a hex/base64 string of at least sixteen. Trailing
-    sentence punctuation is ignored, and hyphenated prose words count as letters only.
+    The value has no whitespace and at least eight characters, and it has two of the letter,
+    digit and symbol classes, is all digits, is all letters with a capital after the first,
+    or is a hex/base64 string of at least sixteen. Trailing sentence punctuation is ignored;
+    hyphenated prose words count as letters only, and a capitalised word stays prose.
     """
     value = value.rstrip(".,;:!?")
-    if not value or any(char.isspace() for char in value):
+    if len(value) < _MIN_SECRET_LENGTH or any(char.isspace() for char in value):
         return False
-    if _HEX.fullmatch(value):
+    if _DIGITS.fullmatch(value) or _HEX.fullmatch(value):
         return True
     if _PROSE_WORD.fullmatch(value):
-        return (
+        return _inner_capital(value) or (
             len(value) >= _MIN_ENCODED_LENGTH
             and _BASE64.fullmatch(value) is not None
             and _entropy(value) >= _MIN_WORD_ENTROPY
@@ -122,8 +130,7 @@ def credential_like(value: str) -> bool:
         + any(char.isdigit() for char in value)
         + any(not char.isalnum() for char in value)
     )
-    # Digits-only runs are hex above; letter-only base64 is the prose-word branch.
-    return len(value) >= _MIN_SECRET_LENGTH and classes >= _MIN_CHARACTER_CLASSES
+    return classes >= _MIN_CHARACTER_CLASSES
 
 
 def _accepts(value: str, kind: LabelKind | None) -> bool:

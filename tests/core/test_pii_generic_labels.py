@@ -80,7 +80,7 @@ def test_password_labels_ignore_the_generic_shape_rule(label: str, separator: st
         ("abc def12", False),
         ("ab1!", False),
         ("abcdefgh", False),
-        ("12345678", False),
+        ("12345678", True),
         ("abc12345", True),
         ("abcdefg#", True),
         ("abcdefg!", False),
