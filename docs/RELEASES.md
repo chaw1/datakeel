@@ -247,3 +247,40 @@ Integration changes in this version:
 - The production guide no longer says the workbench sends heartbeats; the identity guide lists the team-tier scopes.
 - The concurrent two-scheduler worker test waits at a barrier so both schedulers deterministically read the due window.
 
+## v0.17.0 release notes
+
+v0.17.0 makes the annotation workbench comfortable for long sessions and gives the v0.16.0 team tier its screens. It calls no model service; every write still goes through controlled actions and the access guards, and MCP and agents can still only prepare plans.
+
+| Track | What you can do now |
+|---|---|
+| Full-window work area | An open task fills the window below the module and operation bars: on a 1440×1000 window the canvas takes 0.816 of the height and on 1280×720 0.744 (about 0.71 in the team tier, which adds the lease timer), with no page scroll. **Hide details** collapses the right drawer (664 → 919 px of canvas width at 1440). Boxes and polygons use their label's colour, or a fixed eight-colour palette, with a label-name chip that keeps its screen size at any zoom. Tasks are named and searched by file name everywhere. [Workbench guide](ANNOTATION_WORKBENCH.md). |
+| Attribute forms | Templates define typed attribute fields (`boolean`, `enum`, `multi_enum`, `number`, `text`) with Chinese and English names, `required`, a default and a target of every shape or the whole record. The workbench renders a keyboard-reachable form; a missing required field blocks autosave and submission and names the shape and field, and the server returns 422 for the same mistakes from any client. [Attribute fields](PRODUCTION.md#labels-predictions-and-finalization). |
+| Precise keyboard editing | Arrow keys move by one source-image pixel and Shift+arrows by ten at any zoom; `R` switches between moving, the right/bottom edges and the left/top edges of a box, or to the selected polygon point. `Alt+N` / `Alt+P` pressed during loading are queued, so rapid presses across page edges land on the right task. |
+| Tasks that refresh themselves | An open task polls a small status read every 5 seconds (30 while hidden) and says when it was returned for rework, changed elsewhere or got someone else's revision. In the team tier the page renews its lease automatically, shows the time left and, when the lease expires or a manager takes the task back, locks editing and lets you export the draft. The design compares polling, server-sent events and WebSocket. [Open tasks refresh themselves](ANNOTATION_WORKBENCH.md#open-tasks-refresh-themselves). |
+| Team-tier cockpit | Managers see each package's acceptance state and sampling, accept or reject a package by marking the sampled tasks, preview a skill dispatch (who gets how many, why a task is skipped) before signing it, and take work back from **Who holds what**. Each step shows a plan in plain words before anyone signs. The finalization plan likewise says how many approved tasks go into which dataset version and what blocks it. |
+
+**Reclaiming and dispatching no longer fail while the holder keeps saving.** `revoke_assignment` and `assign_tasks` plans now freeze only each task's state, round and current holders, so autosaves, model draft imports and lease renewals between preparing and confirming leave them valid; a submission, a new round or a new holder still voids them. With a save every 2 seconds and 3 seconds between preparing and confirming, six of six reclaims succeeded on SQLite and on PostgreSQL (none did in v0.16.0). Other actions freeze exactly what they did before.
+
+**`lease_status` shows the deadline actually enforced**, including after an upgrade to the team tier restarted a lease.
+
+**Templates with attribute fields reject human revisions that break them.** A person's `save_revision` with a wrong type or a missing required field fails with 422 naming the key and the shape, and `submit_task` checks the head revision again. Model revisions are only type-checked. Templates without attribute fields behave as before.
+
+**Workbench changes you will notice.** Shift+arrows no longer resize a box; use `R` to switch to its edges. In the team tier the review view and the opened task hide approve and return controls for work you annotated (the server already refused it). Raw JSON attribute editing is offered only to project managers, under **Advanced: raw attributes**; tasks on templates without attribute fields still open and save as before. A concurrent change shows "Someone else just changed this task" with **Try again** instead of raw server text.
+
+**Other changes.** New HTTP reads: `GET /api/production/tasks/{id}/status`, `GET /api/production/projects/{id}/task-samples` and `POST /api/production/projects/{id}/dispatch-preview` (computes without locking or writing), plus a `search` query on the project workbench list. OpenAPI grows from 164 to 167 paths and from 377 to 389 schemas; nothing was removed and no required field was added. MCP still has 99 tools; the `create_label_set` template only gains the optional `attributes`. No CLI command, table or migration changed. The mutation gate has 402 anchors (sixteen added), the golden suite 52 cases and the operator catalog 42 operators.
+
+Known limits:
+
+- Datasets record only a file's base name at import, so the workbench shows and searches file names, not paths inside the dataset: files with the same name in different folders look identical and searching a folder name finds nothing.
+- A template with both box and polygon components shows two canvases stacked.
+- At fit zoom a very long label name can be partly covered by a neighbouring chip, and at high zoom a chip stays at its shape's top-left corner even when that corner is off screen.
+- Attribute fields apply to every shape or to the record; they cannot yet depend on the label.
+- A dispatch preview does not reserve anything; if loads change before execution, the receipt is authoritative.
+- Still open from v0.16.0: the load cap counts submitted work waiting for review, a single `assign_tasks` request may pass a `max_active_tasks` above the project's cap, and rework goes only to the original annotator, so rework whose annotator has left stays stuck. Skill requirements are set per project or per request, not per package. Assignments that were already open when a project was upgraded to the team tier under v0.15.0 have no enforced deadline until their first heartbeat, which the workbench now sends when the task is opened. PostgreSQL makes about 50 database round trips per production action, so keep CPU headroom (see [Capacity](CAPACITY.md)).
+
+Integration changes in this version:
+
+- The production guide no longer says the workbench does not send heartbeats; it links to the workbench's automatic renewal.
+- The README states the new mutation count and what the v0.17.0 anchors protect, and the workbench pointer mentions attribute forms and the team-tier cockpit.
+- The workbench guide states that tasks on older templates still open and save and that only project managers see raw JSON attributes; the API descriptions of the sample `path` now say it is the file name until imports record a path inside the dataset; the two workbench limits on file names and long label chips are in the [backlog](BACKLOG.md).
+
