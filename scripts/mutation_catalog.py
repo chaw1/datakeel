@@ -28,6 +28,7 @@ from scripts.orchestration_mutations import ORCHESTRATION_MUTATIONS
 from scripts.pii_mutations import PII_MUTATIONS
 from scripts.production_catalog_mutations import PRODUCTION_CATALOG_MUTATIONS
 from scripts.production_mutations import PRODUCTION_MUTATIONS
+from scripts.production_team_mutations import PRODUCTION_TEAM_MUTATIONS
 from scripts.production_tool_mutations import PRODUCTION_TOOL_MUTATIONS
 from scripts.release_mutations import RELEASE_MUTATIONS
 from scripts.sandbox_mutations import SANDBOX_MUTATIONS
@@ -50,6 +51,7 @@ FEATURE_MUTATIONS = (
     *PRODUCTION_MUTATIONS,
     *PRODUCTION_TOOL_MUTATIONS,
     *PRODUCTION_CATALOG_MUTATIONS,
+    *PRODUCTION_TEAM_MUTATIONS,
     *ADVANCED_MUTATIONS,
     *KG_MUTATIONS,
     *KNOWLEDGE_MUTATIONS,

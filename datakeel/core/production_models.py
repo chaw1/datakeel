@@ -12,6 +12,8 @@ from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel
 
 WorkflowTier = Literal["personal", "group", "team"]
+DispatchStrategy = Literal["assign", "skill", "claim"]
+AssignmentSource = Literal["assign", "skill", "claim", "preserved"]
 TaskState = Literal["pending", "in_progress", "submitted", "in_review", "approved", "finalized"]
 AssignmentStage = Literal["annotation", "review"]
 TASK_STATES: tuple[TaskState, ...] = (
@@ -22,6 +24,14 @@ TASK_STATES: tuple[TaskState, ...] = (
     "approved",
     "finalized",
 )
+
+
+class SkillRequirement(BoundaryModel):
+    """Require a matching skill type and domain at or above a minimum level."""
+
+    annotation_type: str = Field(min_length=1)
+    domain: str = Field(min_length=1)
+    min_level: int = Field(default=1, ge=1, le=10)
 
 
 class Project(BoundaryModel):
@@ -39,6 +49,10 @@ class Project(BoundaryModel):
     created_at: datetime
     finalized_version_id: str | None = None
     review_prompt_shown: bool = False
+    lease_minutes: int = Field(default=10, ge=1, le=1440)
+    dispatch_strategy: DispatchStrategy = "claim"
+    skill_requirement: SkillRequirement | None = None
+    max_active_tasks: int | None = Field(default=None, ge=1, le=10000)
 
 
 class TaskPackage(BoundaryModel):
@@ -78,6 +92,9 @@ class Assignment(BoundaryModel):
     lease_expires_at: datetime
     active: bool = True
     created_at: datetime
+    dispatch: AssignmentSource | None = None
+    ended_at: datetime | None = None
+    end_reason: str | None = None
 
 
 class AnnotationRevision(BoundaryModel):

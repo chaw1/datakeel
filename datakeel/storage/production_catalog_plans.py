@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.actions.production_catalog_parameters import (
+    AcceptPackageParams,
     CreateLabelSetParams,
     FinalizeProjectParams,
     ImportPredictionsParams,
@@ -20,6 +21,7 @@ from datakeel.core.models import AssetRef
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet
 from datakeel.storage.object_projection import content_digest
+from datakeel.storage.production_acceptance import require_inspectable
 from datakeel.storage.production_catalog import require_label_set, require_model
 from datakeel.storage.production_catalog_impact import migration_impact
 from datakeel.storage.production_catalog_rows import (
@@ -50,6 +52,15 @@ def catalog_objects(session: Session, params: ProductionCatalogActionParams) -> 
         return [_freeze("template", row.id, row.payload)] if row else []
     if isinstance(params, CreateLabelSetParams | PublishLabelSetParams):
         return _label_objects(session, params)
+    if isinstance(params, AcceptPackageParams):
+        project, tasks, _ = require_inspectable(session, params)
+        return [
+            _freeze("project", project.id, project.model_dump(mode="json")),
+            *(
+                _freeze("production_task", task.id, task_view(task).model_dump(mode="json"))
+                for task in tasks
+            ),
+        ]
     if isinstance(params, ImportPredictionsParams | RunPrelabelParams | FinalizeProjectParams):
         project = require_project(session, params.project_id)
         objects = [_freeze("project", project.id, project.model_dump(mode="json"))]

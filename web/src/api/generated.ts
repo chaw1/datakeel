@@ -3401,7 +3401,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -3455,7 +3455,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -4452,6 +4452,12 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Dispatch */
+            dispatch?: ("assign" | "skill" | "claim" | "preserved") | null;
+            /** End Reason */
+            end_reason?: string | null;
+            /** Ended At */
+            ended_at?: string | null;
             /** Id */
             id: string;
             /**
@@ -9808,6 +9814,12 @@ export interface components {
             created_at: string;
             /** Dataset Id */
             dataset_id: string;
+            /**
+             * Dispatch Strategy
+             * @default claim
+             * @enum {string}
+             */
+            dispatch_strategy: "assign" | "skill" | "claim";
             /** Finalized Version Id */
             finalized_version_id?: string | null;
             /**
@@ -9821,6 +9833,13 @@ export interface components {
             label_set_id: string;
             /** Label Set Version */
             label_set_version: number;
+            /**
+             * Lease Minutes
+             * @default 10
+             */
+            lease_minutes: number;
+            /** Max Active Tasks */
+            max_active_tasks?: number | null;
             /** Name */
             name: string;
             /**
@@ -9828,6 +9847,7 @@ export interface components {
              * @default false
              */
             review_prompt_shown: boolean;
+            skill_requirement?: components["schemas"]["SkillRequirement"] | null;
             /** Template Id */
             template_id?: string | null;
             /** Version Id */
@@ -10447,6 +10467,21 @@ export interface components {
             ordinal: number;
             /** State */
             state: string;
+        };
+        /**
+         * SkillRequirement
+         * @description Require a matching skill type and domain at or above a minimum level.
+         */
+        SkillRequirement: {
+            /** Annotation Type */
+            annotation_type: string;
+            /** Domain */
+            domain: string;
+            /**
+             * Min Level
+             * @default 1
+             */
+            min_level: number;
         };
         /**
          * SkippedEntries

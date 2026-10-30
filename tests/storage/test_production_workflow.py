@@ -223,11 +223,18 @@ def test_upgrade_retains_identity_revisions_and_rejects_downgrade(db: Database) 
 def test_reopen_before_finalize_preserves_revisions_and_reports_repeated_rework(
     db: Database,
 ) -> None:
-    """Reopening changes task counters and rounds while retaining append-only annotation history."""
+    """Reopening approved work counts rounds while retaining append-only annotation history.
+
+    P29b: only submitted or approved work sent back is a rework round, so each cycle submits
+    (personal approval) before reopening.
+    """
     project, tasks = production_fixture(db)
     revision = save(db, tasks[0])
     for _ in range(3):
         with db.session() as session:
+            submit_task(
+                session, SubmitTaskParams(request_id=new_id(), task_id=tasks[0].id), "local"
+            )
             reopen_task(
                 session,
                 ReopenTaskParams(

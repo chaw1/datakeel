@@ -9,6 +9,7 @@ from pydantic import Field
 
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import LabelMigration
+from datakeel.core.production_team_models import PackageSamplingParams
 
 ProductionKind = Literal[
     "user",
@@ -38,6 +39,17 @@ class PackageReadParams(ProjectReadParams):
     """Read task counters for a package belonging to the selected project."""
 
     package_id: str = Field(min_length=1)
+
+
+class LeaseStatusParams(ProjectReadParams):
+    """Read effective team leases, those expiring within a window and recent reclaims."""
+
+    expiring_within_seconds: int = Field(default=120, ge=0, le=86400)
+    limit: int = Field(default=100, ge=1, le=10000)
+
+
+class PackageAcceptanceParams(PackageReadParams, PackageSamplingParams):
+    """Read a package's acceptance state and preview the P26 sample for these settings."""
 
 
 class NextTaskParams(ProjectReadParams):

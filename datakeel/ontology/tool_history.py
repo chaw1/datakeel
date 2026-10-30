@@ -37,6 +37,9 @@ DEFERRED_READ_FUNCTIONS = frozenset(
         "next_task",
         "production_objects",
         "production_prelabel_accuracy",
+        "lease_status",
+        "skill_workload",
+        "package_acceptance",
     }
 )
 

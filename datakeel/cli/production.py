@@ -4,6 +4,7 @@
 """Prepare, inspect, approve and execute production workflows from a local terminal."""
 
 import argparse
+from datetime import UTC, datetime
 from pathlib import Path
 
 from rich.console import Console
@@ -15,6 +16,7 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.ontology.functions import invoke_function
 from datakeel.storage.database import Database
+from datakeel.storage.production_reaper import reap_expired_leases
 
 
 def register_parser(commands: CommandGroup) -> None:
@@ -37,6 +39,14 @@ def register_parser(commands: CommandGroup) -> None:
     read.add_argument("file", type=Path)
     read.add_argument("--actor", default="local")
     subcommands.add_parser("demo")
+    reap = subcommands.add_parser("reap")
+    reap.add_argument("--now", help="UTC ISO time to evaluate leases against; defaults to now")
+    reap.add_argument("--limit", type=int, default=500)
+
+
+def _utc(value: str) -> datetime:
+    moment = datetime.fromisoformat(value)
+    return moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
 
 
 def _control(db: Database, args: argparse.Namespace) -> BoundaryModel:
@@ -77,6 +87,8 @@ def dispatch(db: Database, args: argparse.Namespace) -> None:
         from datakeel.cli.production_demo import seed_production_demo  # noqa: PLC0415
 
         result = seed_production_demo(db)
+    elif args.production_command == "reap":
+        result = reap_expired_leases(db, now=_utc(args.now) if args.now else None, limit=args.limit)
     else:
         result = _control(db, args)
     Console().print(result.model_dump_json(), markup=False, highlight=False, soft_wrap=True)

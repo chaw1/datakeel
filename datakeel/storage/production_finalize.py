@@ -19,6 +19,7 @@ from datakeel.storage.annotation_store import (
     require_annotation_version,
 )
 from datakeel.storage.database import VersionRow
+from datakeel.storage.production_acceptance import require_packages_accepted
 from datakeel.storage.production_catalog import annotation_categories
 from datakeel.storage.production_rows import (
     ProductionProjectRow,
@@ -38,6 +39,7 @@ def finalize_project(session: Session, params: FinalizeProjectParams) -> Operati
     )
     project = require_mutable_project(session, params.project_id)
     tasks = _final_tasks(session, project.id)
+    require_packages_accepted(session, project)
     revisions = _approved_revisions(session, tasks)
     source = require_annotation_version(session, project.dataset_id, project.version_id)
     version = VersionRow(

@@ -20,6 +20,9 @@ _PRODUCTION_READS = frozenset(
         "label_set_diff",
         "next_task",
         "production_objects",
+        "lease_status",
+        "skill_workload",
+        "package_acceptance",
     }
 )
 

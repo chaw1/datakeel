@@ -5,11 +5,16 @@
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel
-from datakeel.core.production_models import AssignmentStage, WorkflowTier
+from datakeel.core.production_models import (
+    AssignmentStage,
+    DispatchStrategy,
+    SkillRequirement,
+    WorkflowTier,
+)
 
 
 class ProductionActionParams(BoundaryModel):
@@ -29,6 +34,10 @@ class CreateProjectParams(ProductionActionParams):
     template_id: str | None = None
     workflow_tier: WorkflowTier = "personal"
     guidelines: str = ""
+    lease_minutes: int = Field(default=10, ge=1, le=1440)
+    dispatch_strategy: DispatchStrategy = "claim"
+    skill_requirement: SkillRequirement | None = None
+    max_active_tasks: int | None = Field(default=None, ge=1, le=10000)
 
 
 class SplitPackagesParams(ProductionActionParams):
@@ -41,11 +50,26 @@ class SplitPackagesParams(ProductionActionParams):
 
 
 class AssignTasksParams(ProductionActionParams):
-    """Assign named tasks to one person without skill matching in this phase."""
+    """Assign tasks to one named person, or match team skills and load deterministically."""
 
     task_ids: tuple[str, ...] = Field(min_length=1, max_length=10000)
-    actor: str = Field(min_length=1)
+    actor: str | None = Field(default=None, min_length=1)
     stage: AssignmentStage = "annotation"
+    strategy: Literal["assign", "skill"] = "assign"
+    candidates: tuple[str, ...] = Field(default=(), max_length=10000)
+    skill_requirement: SkillRequirement | None = None
+    max_active_tasks: int | None = Field(default=None, ge=1, le=10000)
+
+    @model_validator(mode="after")
+    def require_target(self) -> "AssignTasksParams":
+        """Name exactly one person for manual assignment and nobody for skill matching."""
+        if self.strategy == "assign" and self.actor is None:
+            message = "Named assignment requires actor"
+            raise ValueError(message)
+        if self.strategy == "skill" and self.actor is not None:
+            message = "Skill dispatch selects people itself; omit actor"
+            raise ValueError(message)
+        return self
 
 
 class ClaimTaskParams(ProductionActionParams):
@@ -97,6 +121,30 @@ class ReopenTaskParams(TaskIdentityParams):
     reason: str = Field(min_length=1)
 
 
+class HeartbeatParams(TaskIdentityParams):
+    """Renew the caller's own team-tier lease before it expires."""
+
+    stage: AssignmentStage = "annotation"
+
+
+class RevokeAssignmentParams(TaskIdentityParams):
+    """Take an effective assignment back from any holder while keeping every revision."""
+
+    stage: AssignmentStage = "annotation"
+    reason: str = Field(min_length=1, max_length=2000)
+
+
+class ConfigureProjectParams(ProductionActionParams):
+    """Change team lease, dispatch and load settings; omitted fields stay unchanged."""
+
+    project_id: str
+    lease_minutes: int | None = Field(default=None, ge=1, le=1440)
+    dispatch_strategy: DispatchStrategy | None = None
+    skill_requirement: SkillRequirement | None = None
+    max_active_tasks: int | None = Field(default=None, ge=1, le=10000)
+    clear: tuple[Literal["skill_requirement", "max_active_tasks"], ...] = ()
+
+
 class UpgradeProjectParams(ProductionActionParams):
     """Upgrade the workflow tier in place, retaining all object identities and history."""
 
@@ -115,6 +163,9 @@ PRODUCTION_PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "review_task": ReviewTaskParams,
     "reopen_task": ReopenTaskParams,
     "upgrade_project": UpgradeProjectParams,
+    "heartbeat": HeartbeatParams,
+    "revoke_assignment": RevokeAssignmentParams,
+    "configure_project": ConfigureProjectParams,
 }
 
 PRODUCTION_POLICIES: dict[str, tuple[str, bool, str]] = {
@@ -128,4 +179,7 @@ PRODUCTION_POLICIES: dict[str, tuple[str, bool, str]] = {
     "review_task": ("production:review", True, "Approve or rework a submitted revision"),
     "reopen_task": ("production:manage", True, "Reopen a task before project finalization"),
     "upgrade_project": ("production:manage", True, "Upgrade workflow without migrating data"),
+    "heartbeat": ("production:claim", True, "Renew an owned team-tier assignment lease"),
+    "revoke_assignment": ("production:assign", True, "Reclaim an assignment, keeping revisions"),
+    "configure_project": ("production:manage", True, "Configure team leases, dispatch and load"),
 }

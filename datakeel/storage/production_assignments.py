@@ -16,15 +16,24 @@ from datakeel.actions.production_parameters import (
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from datakeel.core.identity_models import User
 from datakeel.core.models import new_id, utcnow
-from datakeel.core.production_models import Assignment, AssignmentStage, ProductionTask
+from datakeel.core.production_models import (
+    Assignment,
+    AssignmentSource,
+    AssignmentStage,
+    ProductionTask,
+)
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_rows import UserRow
+from datakeel.storage.production_dispatch_rules import require_capacity, require_claim_strategy
+from datakeel.storage.production_leases import end_assignment
+from datakeel.storage.production_load_locks import lock_people
 from datakeel.storage.production_members import record_project_member
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
     ProductionPackageRow,
     ProductionTaskRow,
 )
+from datakeel.storage.production_separation import exclude_own_work, require_separation
 from datakeel.storage.production_tasks import (
     require_mutable_project,
     require_task,
@@ -48,13 +57,13 @@ def active_assignment(
     )
 
 
-def finish_assignment(session: Session, task_id: str, stage: AssignmentStage) -> None:
+def finish_assignment(
+    session: Session, task_id: str, stage: AssignmentStage, reason: str = "finished"
+) -> None:
     """Retire an assignment without deleting its actor and lease history."""
     row = active_assignment(session, task_id, stage)
     if row is not None:
-        assignment = Assignment.model_validate(row.payload).model_copy(update={"active": False})
-        row.active, row.payload = False, assignment.model_dump(mode="json")
-        session.flush()
+        end_assignment(session, row, reason, utcnow())
 
 
 def create_assignment(
@@ -62,10 +71,11 @@ def create_assignment(
     task: ProductionTaskRow,
     actor: str,
     stage: AssignmentStage,
+    source: AssignmentSource = "assign",
 ) -> Assignment:
     """Assign new work only to an eligible active person."""
     require_registered_assignee(session, actor)
-    return _insert_assignment(session, task, actor, stage)
+    return _insert_assignment(session, task, actor, stage, source)
 
 
 def preserve_personal_assignment(session: Session, task: ProductionTaskRow) -> Assignment:
@@ -73,7 +83,7 @@ def preserve_personal_assignment(session: Session, task: ProductionTaskRow) -> A
     if task.annotator_id is None:
         message = "Only existing personal authorship can be preserved"
         raise ValidationError(message)
-    return _insert_assignment(session, task, task.annotator_id, "annotation")
+    return _insert_assignment(session, task, task.annotator_id, "annotation", "preserved")
 
 
 def _insert_assignment(
@@ -81,6 +91,7 @@ def _insert_assignment(
     task: ProductionTaskRow,
     actor: str,
     stage: AssignmentStage,
+    source: AssignmentSource,
 ) -> Assignment:
     project = require_mutable_project(session, task.project_id)
     if project.workflow_tier == "personal":
@@ -90,6 +101,8 @@ def _insert_assignment(
     if existing is not None:
         message = "Task already has an effective assignment for this stage"
         raise ConflictError(message)
+    if stage == "review":
+        require_separation(session, project, task, actor)
     now = utcnow()
     assignment = Assignment(
         id=new_id(),
@@ -97,7 +110,8 @@ def _insert_assignment(
         actor=actor,
         stage=stage,
         created_at=now,
-        lease_expires_at=now + timedelta(minutes=10),
+        lease_expires_at=now + timedelta(minutes=project.lease_minutes),
+        dispatch=source,
     )
     session.add(
         ProductionAssignmentRow(
@@ -107,6 +121,9 @@ def _insert_assignment(
             stage=stage,
             active=True,
             payload=assignment.model_dump(mode="json"),
+            lease_expires_at=assignment.lease_expires_at.timestamp()
+            if project.workflow_tier == "team"
+            else None,
         )
     )
     if stage == "annotation":
@@ -132,6 +149,12 @@ def assign_tasks(session: Session, params: AssignTasksParams) -> tuple[Assignmen
     if any(task.state != expected for task in tasks):
         message = "Task state does not permit assignment for this stage"
         raise ConflictError(message)
+    if params.actor is None:
+        message = "Named assignment requires actor"
+        raise ValidationError(message)
+    project = require_mutable_project(session, tasks[0].project_id)
+    lock_people(session, project.id, (params.actor,))
+    require_capacity(session, project, params.actor, params.stage, len(tasks))
     return tuple(create_assignment(session, task, params.actor, params.stage) for task in tasks)
 
 
@@ -142,6 +165,7 @@ def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> Product
         message = "Personal projects use next_task directly without assignments"
         raise ValidationError(message)
     require_stage_authority(session, actor, project.id, params.stage)
+    require_claim_strategy(session, project, actor, params.stage)
     _validate_package(session, params)
     expected = "pending" if params.stage == "annotation" else "submitted"
     query = select(ProductionTaskRow).where(
@@ -159,6 +183,8 @@ def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> Product
         query = query.where(
             or_(ProductionTaskRow.round == 0, ProductionTaskRow.annotator_id == actor)
         )
+    elif project.workflow_tier == "team":
+        query = exclude_own_work(query, actor)
     if params.package_id is not None:
         query = query.where(ProductionTaskRow.package_id == params.package_id)
     task = session.scalar(
@@ -169,7 +195,7 @@ def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> Product
     if task is None:
         message = "No available production task"
         raise NotFoundError(message)
-    create_assignment(session, task, actor, params.stage)
+    create_assignment(session, task, actor, params.stage, "claim")
     session.flush()
     return task_view(task)
 
@@ -195,7 +221,7 @@ def release_task(session: Session, params: ReleaseTaskParams, actor: str) -> Pro
     if task.state != expected:
         message = "Submitted or approved annotations cannot be released"
         raise ConflictError(message)
-    finish_assignment(session, task.id, params.stage)
+    finish_assignment(session, task.id, params.stage, "released")
     transition_task(session, task, "pending" if params.stage == "annotation" else "submitted")
     return task_view(task)
 

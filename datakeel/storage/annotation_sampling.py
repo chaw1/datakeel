@@ -7,6 +7,7 @@ import hashlib
 import math
 from fractions import Fraction
 
+from pydantic import JsonValue
 from sqlalchemy.orm import Session
 
 from datakeel.core.annotation_aql import lookup_aql
@@ -45,10 +46,9 @@ def ratio_sample_size(lot_size: int, ratio: float) -> int:
     return max(1, math.ceil(Fraction(str(ratio)) * lot_size))
 
 
-def _sampling_plan(
-    batch: AnnotationBatch, request: SamplingRequest, template: SamplingPlan
-) -> SamplingPlan:
-    identifiers = tuple(sorted({item.sample_id for item in batch.annotations}))
+def sampling_selection(unit_ids: tuple[str, ...], request: SamplingRequest) -> dict[str, JsonValue]:
+    """Compute the lot, sample and decision numbers that every P26-style inspection shares."""
+    identifiers = tuple(sorted(set(unit_ids)))
     lookup = lookup_aql(len(identifiers), request.aql) if request.method == "aql" else None
     count = (
         lookup.sample_size if lookup else ratio_sample_size(len(identifiers), request.ratio or 1)
@@ -57,16 +57,23 @@ def _sampling_plan(
     if acceptance >= count:
         message = "Acceptance number must be smaller than the inspected sample size"
         raise ValidationError(message)
-    return template.model_copy(
-        update={
-            "lot_size": len(identifiers),
-            "sample_size": count,
-            "sample_ids": select_sample(identifiers, count, request.seed),
-            "acceptance_number": acceptance,
-            "rejection_number": acceptance + 1,
-            "code_letter": lookup.code_letter if lookup else None,
-            "effective_code_letter": lookup.effective_code_letter if lookup else None,
-        }
+    return {
+        "lot_size": len(identifiers),
+        "sample_size": count,
+        "sample_ids": list(select_sample(identifiers, count, request.seed)),
+        "acceptance_number": acceptance,
+        "rejection_number": acceptance + 1,
+        "code_letter": lookup.code_letter if lookup else None,
+        "effective_code_letter": lookup.effective_code_letter if lookup else None,
+    }
+
+
+def _sampling_plan(
+    batch: AnnotationBatch, request: SamplingRequest, template: SamplingPlan
+) -> SamplingPlan:
+    identifiers = tuple(item.sample_id for item in batch.annotations)
+    return SamplingPlan.model_validate(
+        {**template.model_dump(mode="json"), **sampling_selection(identifiers, request)}
     )
 
 

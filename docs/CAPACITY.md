@@ -19,17 +19,19 @@ uv run python -m scripts.scale_bench B1 --size M --stack sqlite --seed 23 \
   --output /tmp/datakeel-b1-sqlite.json
 uv run python -m scripts.scale_bench B4 --size M --stack postgres --seed 23 \
   --output /tmp/datakeel-b4-postgres.json
+uv run python -m scripts.scale_bench B8 --size M --stack postgres --workers 10 --think-ms 1000 \
+  --output /tmp/datakeel-b8-postgres.json
 uv run python -m scripts.scale_bench.smoke --verify-mutation
 ```
 
-Choose B1–B7 and S/M/L. PostgreSQL requires `DATAKEEL_TEST_DATABASE_URL` supplied by an authorized
+Choose B1–B8 and S/M/L. PostgreSQL requires `DATAKEEL_TEST_DATABASE_URL` supplied by an authorized
 local database launcher. Only loopback hosts are accepted. Each invocation creates a random private
 schema, migrates it, and drops only that schema on exit; SQLite and object files use a temporary
 home removed on exit. Never point this tool at shared application data. Queue heavy runs with your
 runner's load coordinator. Optional `--profile /tmp/datakeel.prof` enables cProfile and marks its
 observational overhead in the result.
 
-可选择 B1–B7 和 S/M/L。PostgreSQL 连接必须由已授权的本地数据库启动器提供
+可选择 B1–B8 和 S/M/L。PostgreSQL 连接必须由已授权的本地数据库启动器提供
 `DATAKEEL_TEST_DATABASE_URL`，仅允许回环地址。每次运行创建独立随机 schema，迁移后执行场景，
 退出时只清理本次 schema；SQLite 与对象文件使用独立临时 home 并在退出时清理。不可指向共享
 应用数据。重负载运行应接入执行机的负载排队器。可选 `--profile /tmp/datakeel.prof` 启用
@@ -44,6 +46,7 @@ cProfile；带 profile 的数字包含观测开销，不能与正常容量数字
 | B5 HTTP clients / HTTP 客户端 | 4 users, 2 seconds | 50 users, 300 seconds | 50 users, 300 seconds |
 | B6 crash recovery / 故障恢复 | 16 tasks, 8 workers | 10,000 tasks, 8 workers | 20,000 tasks, 8 workers |
 | B7 catalog graph / 目录图 | 1,000 edges | 1,000,000 edges | 2,000,000 edges |
+| B8 team claims / 团队档领取 | 4 annotators, 16 tasks, 2 seconds | 50 annotators, 10,000 tasks, 600 seconds | 50 annotators, 20,000 tasks, 600 seconds |
 
 The seed identifies logical input data; product-generated UUIDs, timestamps and temporary paths are
 excluded from its recipe fingerprint. JSON records machine/stack/database versions, revision,
@@ -209,6 +212,109 @@ B4 早于源码/profile 字段加入，选源表保留缺失值；原命令是�
 
 <!-- CAPACITY_RESULTS_END -->
 
+### B8 team-tier claims / 团队档多人领取
+
+B8 seeds one team-tier project (10,000 tasks in packages of 1,000, two labels, one-minute leases)
+and runs virtual annotators as threads spread over spawned processes. Each annotator repeats claim,
+three saves on its own revision chain, and submit, pausing 0.5–1.5 × `--think-ms` (default one
+second) before each step. Every 40th claimed task is abandoned unsubmitted, so its lease expires
+while two reaper processes run every two seconds. Latency is measured at the controlled-action
+boundary (prepare plus execute, as the Web API and CLI call it) without HTTP. After the run B8
+reads every annotation assignment back from the database: overlapping holding windows on one task
+count as a duplicate claim, and each reaper records the assignments it released so a double
+release is visible. Targets for 50 annotators over ten minutes: zero duplicate claims, save p95
+≤ 200 ms and next-task (claim) p95 ≤ 300 ms. `--virtual-users` changes only the annotator count.
+
+B8 生成一个团队档项目（1 万任务，每包 1000，两个标签，租约 1 分钟），虚拟标注员是分布在多个
+spawn 进程里的线程。每人循环：领取、在自己的修订链上保存三次、提交；每一步前停
+0.5–1.5 倍 `--think-ms`（默认 1 秒）。每领到第 40 个任务就弃置不交，让租约过期，同时两个回收
+进程每 2 秒跑一次。延迟在受控动作边界测量（准备加执行，Web API 和 CLI 走的就是这条路），不含
+HTTP。跑完后从数据库读回全部标注指派：同一任务的持有时间窗重叠即算重复领取；每个回收进程
+记录自己收回的指派，重复收回可见。50 人、10 分钟的目标：0 重复领取、保存 p95 ≤ 200 ms、
+下一条（领取）p95 ≤ 300 ms。`--virtual-users` 只改人数。
+
+Measured 2026-10-30 (Asia/Shanghai) on the shared workstation described above with `--workers 10
+--think-ms 1000`; the one-minute load average was sampled every minute beside each run. Other
+worktrees ran full parallel test suites (17 processes, 10–13 of 15 cores) for most of the night,
+so each run is labelled with the load it saw.
+
+2026-10-30（Asia/Shanghai）在上文的共享工作站上实测，参数 `--workers 10 --think-ms 1000`，每次
+运行旁边每分钟记录一次 1 分钟负载。当晚其他工作树大部分时间在跑全量并行测试（17 个进程，占
+15 核中的 10–13 核），所以每次运行都标明当时的负载。
+
+| B8 M, 10 minutes / 10 分钟 | PostgreSQL 50, quiet | PostgreSQL 50, shared | SQLite 50, quiet | SQLite 20, shared | SQLite 50, shared | PostgreSQL 50, quiet, FIX1 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Commit / 提交 | `00994be` | `28953e2` | `00994be` | `00994be` | `2f23217` | `4056141` |
+| 1-minute load / 1 分钟负载 | 4.7–7.8 | 8–12, then 42–108 from minute 4 | 2.0–4.5 | 13–40 | 5–8, then 24–70 | 3.9–6.9 |
+| Claims / saves / submits | 7,160 / 21,480 / 7,010 | 4,963 / 14,889 / 4,863 | 7,384 / 22,152 / 7,234 | 2,936 / 8,808 / 2,876 | 6,900 / 20,700 / 6,750 | 7,161 / 21,483 / 7,011 |
+| Operations/s | 58.9 | 40.7 | 60.8 | 24.1 | 56.7 | 58.9 |
+| Duplicate claims / 重复领取 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Abandoned leases reaped / released twice / claimed again | 150 / 0 / 150 | 100 / 0 / 100 | 150 / 0 / 150 | 60 / 0 / 60 | 150 / 0 / 150 | 150 / 0 / 150 |
+| Failed annotators / lease lost while working | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| next p50 / p95 / p99 (ms) | 38 / 81 / 114 | 394 / 1,285 / 1,794 | 5 / 17 / 76 | 9 / 23 / 70 | 10 / 106 / 618 | 35 / 69 / 99 |
+| save p50 / p95 / p99 (ms) | 39 / 77 / 96 | 339 / 1,030 / 1,338 | 9 / 52 / 109 | 13 / 42 / 89 | 23 / 309 / 1,004 | 36 / 66 / 85 |
+| submit p95 (ms) | 77 | 1,331 | 52 | 35 | 301 | 65 |
+| next p95 per minute (ms) | 281, 88, 75, 67, 61, 78, 66, 67, 62, 62 | 334, 91, 115, then 1,253–1,576 | 198, then 14–17 | 98, 19, 18, 21, 22, 30, 33, 20, 33, 13 | 216, 30, 78, 82, 80, 109, 124, 224, 396, 55 | 354, 62, 69, 70, 66, 66, 65, 63, 68, 68 |
+| save p95 per minute (ms) | 92, 86, 75, 67, 66, 77, 66, 64, 65, 63 | 86, 86, 110, then 1,039–1,229 | 50–55 every minute | 33, 35, 38, 42, 44, 51, 84, 35, 55, 19 | 51, 125, 186, 292, 304, 467, 407, 713, 818, 239 | 68, 62, 69, 66, 65, 65, 67, 62, 68, 64 |
+| Targets met / 达标 | Yes / 是 | No / 否 | Yes / 是 | Yes / 是 | next only / 仅下一条 | Yes / 是 |
+
+On a quiet host PostgreSQL meets every B8 target with 50 annotators: zero duplicate claims, save
+p95 77 ms and next p95 81 ms, flat from minute 2 to minute 10 while the revision and assignment
+tables grow (the first minute's 281 ms is all 50 annotators claiming at once). Under shared load
+the same code still holds exclusivity, but latency follows the load: with 10–13 cores taken by
+another test suite, PostgreSQL p95 exceeds one second. SQLite serializes writers but its calls are
+in-process: 50 annotators met every target on a quiet host (save p95 52 ms), 20 met them even under
+shared load, and 50 under shared load met the next-task target but not save. The documented SQLite
+scale for the team tier is therefore 20 concurrent annotators on a shared host and 50 on a
+dedicated one; use PostgreSQL when several workers or services share the database, and keep CPU
+headroom for it.
+
+The last column reruns the quiet PostgreSQL measurement after P29b-FIX1, where every action
+takes its table locks before any task row and claims serialize per person on an advisory lock.
+Throughput is unchanged (58.9 operations/s) and the tail is lower: next p95 69 ms, save p95
+66 ms, flat from minute 2 (the first minute's 354 ms is again the opening burst). Per-task
+actions lock `lineage_events` in ROW EXCLUSIVE mode, which does not conflict with itself, so
+annotators stay concurrent.
+
+机器空闲时，PostgreSQL 50 人达到 B8 全部目标：0 重复领取，保存 p95 77 ms、下一条 p95 81 ms，
+从第 2 分钟到第 10 分钟随着修订表和指派表增长一直持平（第 1 分钟 281 ms 是 50 人同时开领）。
+共享负载下同一份代码独占性照样成立，但延迟跟着负载走：另一套测试占去 10–13 核时，PostgreSQL
+p95 超过 1 秒。SQLite 写入串行但调用在进程内：机器空闲时 50 人全部达标（保存 p95 52 ms），20 人
+在共享负载下也达标，50 人在共享负载下下一条达标、保存不达标。因此团队档的 SQLite 文档规模是：
+共享机器上同时 20 名标注员，独占机器上 50 名；多个 worker 或服务共用数据库时用 PostgreSQL，并为
+它预留 CPU。
+
+最后一列是 P29b-FIX1 之后在机器空闲时重跑的 PostgreSQL：所有动作先拿表级锁再锁任务行，领取前按人
+拿 advisory lock 串行。吞吐不变（58.9 次/秒），尾部更低：下一条 p95 69 ms、保存 p95 66 ms，从第 2
+分钟起持平（第 1 分钟 354 ms 仍是开场同时领取）。单任务动作对 `lineage_events` 拿的是 ROW EXCLUSIVE，
+和自己不冲突，标注员之间仍然并发。
+
+How P29b reached this point on PostgreSQL, from 60-second diagnostic pilots (50 annotators) and
+earlier full runs:
+
+P29b 在 PostgreSQL 上的调整过程（60 秒诊断试跑，50 人；以及更早的完整运行）：
+
+| Change / 改动 | ops/s | next p95 (ms) | save p95 (ms) | Finding / 发现 |
+| --- | --- | --- | --- | --- |
+| Before: every action takes `LOCK TABLE datasets, lineage_events, versions, file_states` | 13.3 | 4,885 | 4,421 | All actions serialized / 全部动作串行 |
+| Per-task actions skip that lock | 0.9 | — | — | 49 of 50 annotators died on deadlocks: membership bookkeeping locked the project row after the task row / 成员记录在任务行之后锁项目行，死锁 |
+| Known members skip the project row lock | 54.6 | 519 | 70 | Claim sorted 10,000 rows / 领取排序全表 |
+| Claim-order index `(project_id, state, priority DESC, id)` | 56.0 | 356 | 59 | Remaining tail: the opening burst / 剩余尾部是开场 50 人同时领取 |
+| First 10-minute run / 第一次 10 分钟 | — | — | — | Reapers releasing several tasks per transaction deadlocked with claims on counter rows; each release now commits alone / 回收器一个事务收回多条，与领取在计数行上死锁；改为逐条提交 |
+| Second 10-minute run (load 26–36) | 38.1 | 3,154 | 685 | 0 duplicates; latency followed the load (a 240-second rerun fell from 1.8 s to 245 ms next p95 as load dropped). To shorten hot-row locks, counters are now written once, sorted, at commit / 0 重复；延迟跟着负载走（240 秒复测负载下降时下一条 p95 从 1.8 秒降到 245 ms）。为缩短热点行锁，计数改为提交前按序一次写入 |
+| Fourth 10-minute run (load 52–194, `00994be`) | 33.3 | 1,829 | 1,146 | 0 duplicates; another worktree's suite ran throughout. 97 tasks abandoned, the 50 whose lease expired before the end were each released once / 0 重复；全程有其他测试在跑。弃置 97 条，其中结束前到期的 50 条各收回一次 |
+
+Each operation is still 48–54 database round trips (authorization reads repeat across the
+prepare, execute and audit sessions), and PostgreSQL runs in a local VM, so CPU contention
+stretches every round trip; SQLite's in-process calls degrade far less. Fewer round trips per
+action is the next lever.
+
+每个操作仍有 48–54 次数据库往返（授权读取在准备、执行、审计几个会话里重复），PostgreSQL 跑在
+本机虚拟机里，CPU 争抢会拉长每一次往返；SQLite 进程内调用受影响小得多。减少每个动作的往返
+次数是下一步的抓手。
+
+
+
 ## Operational limits / 使用边界
 
 File discovery uses a rebuildable projection of public fields from each immutable version.
@@ -300,6 +406,7 @@ Recommended use is bounded by what was actually measured:
 | Controlled version creation / 受控版本生成 | At most 10,000 selected files per operation; narrow larger datasets. / 单次最多选择1万文件，大数据集应缩小筛选。 |
 | 100,000-file processing / 10万文件批处理 | Measured with eight workers; allocate memory for the parent and all workers, then rerun with real file sizes. / 已测8个worker，须同时预留主进程和全部worker内存，并按真实文件大小复测。 |
 | 100,000-file interactive reads / 10万文件交互读取 | Prefer PostgreSQL and 50-entry pages; the complete 300ms read target is not established. / 优先PG和每页50条，完整300ms读取目标尚未达到。 |
+| Team-tier annotators on one instance / 团队档同时标注人数 | PostgreSQL: 50 measured within the B8 targets on a quiet host; its latency rises steeply under CPU contention, so keep headroom. SQLite: 20 on a shared host, 50 on a dedicated one (both measured within target). / PG：空闲机器上 50 人达标，CPU 争抢时延迟陡增，需预留余量；SQLite 共享机器 20 人、独占机器 50 人（均实测达标）。 |
 | 50 simultaneous users / 50人并发 | Do not promise a one-second p95 from this matrix; measure a lower client count before adopting an interactive SLA. / 本矩阵不支持承诺p95一秒，应先实测较低并发。 |
 | 1,000,000-entry manifests / 百万清单 | Offline metadata persistence/comparison only; no measured interactive operating ceiling. / 仅作为离线元数据持久化与对比实验，没有已验证的交互上限。 |
 

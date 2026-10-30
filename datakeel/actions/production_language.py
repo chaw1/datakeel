@@ -76,6 +76,30 @@ PRODUCTION_LANGUAGE: dict[str, tuple[str, str, str, str]] = {
         "把个人项目升为小组档",
         "Upgrade the personal project to group workflow",
     ),
+    "heartbeat": (
+        "续租",
+        "renew lease",
+        "我还在标这条, 续租",
+        "Keep my lease on this task alive",
+    ),
+    "revoke_assignment": (
+        "收回指派",
+        "revoke assignment",
+        "把小王手里没动的任务收回到待标",
+        "Take the untouched task back from its holder",
+    ),
+    "configure_project": (
+        "配置团队档",
+        "configure team settings",
+        "租约改成十五分钟, 按技能派单, 每人最多五条",
+        "Use 15-minute leases, skill dispatch and at most five tasks each",
+    ),
+    "accept_package": (
+        "抽检验收任务包",
+        "accept package by sampling",
+        "按 AQL 2.5 抽检这个任务包并验收",
+        "Inspect this package at AQL 2.5 and accept it",
+    ),
     "register_model": (
         "登记预标注模型",
         "register prelabel model",

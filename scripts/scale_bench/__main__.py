@@ -35,6 +35,7 @@ MODULES = {
     "B5": "api",
     "B6": "worker",
     "B7": "graph",
+    "B8": "production_team",
 }
 
 
@@ -46,6 +47,9 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=23)
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--think-ms", type=int, default=1000, help="B8 mean pause per step")
+    parser.add_argument("--duration-seconds", type=float, help="B8 run length override")
+    parser.add_argument("--virtual-users", type=int, help="B8 annotator count override")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--profile", type=Path)
     return parser.parse_args()

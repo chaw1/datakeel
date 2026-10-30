@@ -5,11 +5,12 @@
 
 from typing import cast
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.production_models import TASK_STATES, ProductionTask, Project, TaskState
+from datakeel.storage.production_counters import defer_counter_change
 from datakeel.storage.production_rows import (
     ProductionProjectRow,
     ProductionSummaryRow,
@@ -77,18 +78,8 @@ def initialize_summary(session: Session, scope_id: str, total: int = 0) -> None:
 
 
 def transition_task(session: Session, task: ProductionTaskRow, state: TaskState) -> None:
-    """Move task state and adjust package and project counters in the same transaction."""
+    """Move task state; package and project counters change when the same transaction commits."""
     if task.state == state:
         return
-    for scope in (task.project_id, task.package_id):
-        session.execute(
-            update(ProductionSummaryRow)
-            .where(ProductionSummaryRow.scope_id == scope, ProductionSummaryRow.state == task.state)
-            .values(count=ProductionSummaryRow.count - 1)
-        )
-        session.execute(
-            update(ProductionSummaryRow)
-            .where(ProductionSummaryRow.scope_id == scope, ProductionSummaryRow.state == state)
-            .values(count=ProductionSummaryRow.count + 1)
-        )
+    defer_counter_change(session, (task.project_id, task.package_id), task.state, state)
     task.state = state
