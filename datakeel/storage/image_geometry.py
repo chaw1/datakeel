@@ -8,6 +8,7 @@ import warnings
 from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
+from typing import NamedTuple
 
 from PIL import Image, ImageOps
 from pydantic import JsonValue
@@ -17,6 +18,7 @@ from datakeel.core.models import FileItem
 from datakeel.storage.objects import object_store
 
 _UNREADABLE = (OSError, ValueError, Image.DecompressionBombError)
+_JPEG_MODES = frozenset({"L", "RGB", "CMYK"})
 
 
 def read_geometry(path: Path) -> ImageGeometry | None:
@@ -90,21 +92,40 @@ def file_geometry(file: FileItem) -> ImageGeometry | None:
     return read_geometry(path) if path is not None and path.is_file() else None
 
 
-def upright_bytes(path: Path, *, thumbnail: int | None = None) -> bytes | None:
+class UprightImage(NamedTuple):
+    """Re-encoded upright pixels and their media type."""
+
+    content: bytes
+    media_type: str
+
+
+def upright_bytes(path: Path, *, thumbnail: int | None = None) -> UprightImage | None:
     """Encode upright pixels without EXIF orientation; None means the original is already upright.
 
-    Full-size output is lossless PNG. Thumbnails are JPEG and always re-encoded.
+    Full-size JPEG sources stay JPEG at quality 95 with 4:4:4 chroma (a quarter of a lossless
+    PNG's bytes for a phone photo); every other format is lossless PNG. Thumbnails are JPEG
+    and always re-encoded.
     """
     with Image.open(path) as image:
         orientation = orientation_value(image.getexif().get(ORIENTATION_TAG))
         if thumbnail is None and orientation == 1:
             return None
+        source_format = image.format
         upright = ImageOps.exif_transpose(image)
         output = io.BytesIO()
-        if thumbnail is None:
-            upright.save(output, "PNG")
-            return output.getvalue()
-        preview = upright.convert("RGB")
-        preview.thumbnail((thumbnail, thumbnail))
-        preview.save(output, "JPEG", quality=80)
-        return output.getvalue()
+        if thumbnail is not None:
+            preview = upright.convert("RGB")
+            preview.thumbnail((thumbnail, thumbnail))
+            preview.save(output, "JPEG", quality=80)
+            return UprightImage(output.getvalue(), "image/jpeg")
+        if source_format == "JPEG" and upright.mode in _JPEG_MODES:
+            upright.save(
+                output,
+                "JPEG",
+                quality=95,
+                subsampling=0,
+                icc_profile=image.info.get("icc_profile"),
+            )
+            return UprightImage(output.getvalue(), "image/jpeg")
+        upright.save(output, "PNG", icc_profile=image.info.get("icc_profile"))
+        return UprightImage(output.getvalue(), "image/png")

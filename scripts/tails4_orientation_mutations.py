@@ -166,4 +166,20 @@ ORIENTATION_MUTATIONS = (
         "test_rotated_photo_with_stored_size_sidecar_lands_in_the_upright_frame",
         runner="pytest",
     ),
+    Mutation(
+        name="orientation-served-jpeg-stays-jpeg",
+        path="storage/image_geometry.py",
+        before='        if source_format == "JPEG" and upright.mode in _JPEG_MODES:\n',
+        after="        if False:\n",
+        case=_RECORDS + "test_rotated_jpeg_is_served_as_upright_jpeg_and_revalidated",
+        runner="pytest",
+    ),
+    Mutation(
+        name="orientation-served-repeat-is-304",
+        path="api/routes/production.py",
+        before='        if request.headers.get("if-none-match") == tag:\n',
+        after="        if False:\n",
+        case=_RECORDS + "test_rotated_jpeg_is_served_as_upright_jpeg_and_revalidated",
+        runner="pytest",
+    ),
 )

@@ -120,15 +120,22 @@ def task_content(
 ) -> FileResponse | Response:
     """View a version-pinned source or a small image preview under the same source grants.
 
-    Images are always shown upright: EXIF-oriented sources are re-encoded as orientation-free
-    PNG (thumbnails as JPEG) with the EXIF Orientation already applied to the pixels.
+    Images are always shown upright: EXIF-oriented sources are re-encoded without the tag and
+    with the EXIF Orientation already applied to the pixels (JPEG stays JPEG, others PNG;
+    thumbnails are JPEG).
     """
     path, name = task_source(db, task_id, _caller(request))
     media_type = mimetypes.guess_type(name)[0]
     if thumbnail or (media_type is not None and media_type.startswith("image/")):
+        # Revalidated on every view (grants are checked above), so a repeat costs one 304.
+        stat = path.stat()
+        tag = f'"upright-{int(thumbnail)}-{stat.st_mtime_ns:x}-{stat.st_size:x}"'
+        headers = {"ETag": tag, "Cache-Control": "private, no-cache"}
+        if request.headers.get("if-none-match") == tag:
+            return Response(status_code=304, headers=headers)
         upright = upright_bytes(path, thumbnail=1024 if thumbnail else None)
         if upright is not None:
-            return Response(upright, media_type="image/jpeg" if thumbnail else "image/png")
+            return Response(upright.content, media_type=upright.media_type, headers=headers)
     return FileResponse(path, media_type=media_type, filename=name)
 
 

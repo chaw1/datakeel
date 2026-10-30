@@ -332,3 +332,25 @@ def test_served_canvas_and_thumbnail_match_what_a_browser_shows(
             assert np.array_equal(np.asarray(served.convert("RGB")), np.asarray(expected))
             thumbnail = Image.open(io.BytesIO(client.get(view.sample.thumbnail_url or "").content))
             assert thumbnail.size == expected.size
+
+
+def test_rotated_jpeg_is_served_as_upright_jpeg_and_revalidated(
+    db: Database, tmp_path: Path
+) -> None:
+    """A phone JPEG stays a JPEG once upright; a repeat view under the same grant gets a 304."""
+    project, _ = _project(db, tmp_path, {"phone.jpg": 6})
+    with TestClient(create_app(db)) as client:
+        (task,) = list_tasks(db, project)
+        view = WorkbenchTask.model_validate(
+            client.get(f"/api/production/tasks/{task.id}/workbench").json()
+        )
+        for url in (view.sample.content_url, view.sample.thumbnail_url or ""):
+            first = client.get(url)
+            assert first.headers["content-type"] == "image/jpeg"
+            served = Image.open(io.BytesIO(first.content))
+            assert served.getexif().get(274) in (None, 1)
+            assert served.size == STORED[::-1]
+            pixels = np.asarray(served.convert("RGB")).astype(int)
+            assert np.abs(pixels[10, 30] - (230, 20, 20)).max() < 24, "red mark moved upright"
+            again = client.get(url, headers={"If-None-Match": first.headers["etag"]})
+            assert (again.status_code, again.content) == (304, b"")

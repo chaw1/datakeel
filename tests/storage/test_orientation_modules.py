@@ -30,7 +30,7 @@ def test_extraction_transcription_and_workbench_see_identical_upright_pixels(
     geometry = read_geometry(path)
     assert geometry is not None
     served = upright_bytes(path)
-    canvas = Image.open(io.BytesIO(served)) if served is not None else Image.open(path)
+    canvas = Image.open(io.BytesIO(served.content)) if served is not None else Image.open(path)
     transcribed = normalize_image(path.read_bytes())
     assert (transcribed.width, transcribed.height) == (geometry.width, geometry.height)
     assert canvas.size == (geometry.width, geometry.height)
