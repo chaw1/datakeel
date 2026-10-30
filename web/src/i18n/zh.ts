@@ -3,6 +3,7 @@ import { agentZh } from "./agentZh";
 import { annotationZh } from "./annotationZh";
 import { approvalsMetricZh } from "./approvalsMetricZh";
 import { approvalZh } from "./approvalZh";
+import { askReasonZh } from "./askReasonZh";
 import { askZh } from "./askZh";
 import { assetZh } from "./assetZh";
 import { catalogZh } from "./catalogZh";
@@ -67,6 +68,7 @@ export const zh: Record<MessageKey, string> = {
   ...agentZh,
   ...advancedZh,
   ...askZh,
+  ...askReasonZh,
   ...evidenceZh,
   ...catalogZh,
   askNav: "问数",

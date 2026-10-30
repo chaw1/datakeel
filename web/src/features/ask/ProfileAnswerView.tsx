@@ -2,6 +2,8 @@ import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { objectHref } from "../object/navigation";
 
+import { profileMessage } from "./reasonText";
+
 import type { AskAnswer } from "../../api/ask";
 
 export function ProfileAnswerView({
@@ -19,7 +21,7 @@ export function ProfileAnswerView({
   return (
     <section className="ask-result" aria-label={t("askProfileTitle")}>
       <h2>{t("askProfileTitle")}</h2>
-      <p>{answer.message}</p>
+      <p>{profileMessage(answer, t)}</p>
       {dataset && (
         <p>
           <a href={objectHref({ kind: "dataset", id: dataset.dataset_id })}>

@@ -4,6 +4,7 @@ import { annotationEn } from "./annotationEn";
 import { approvalEn } from "./approvalEn";
 import { approvalsMetricEn } from "./approvalsMetricEn";
 import { askEn } from "./askEn";
+import { askReasonEn } from "./askReasonEn";
 import { assetEn } from "./assetEn";
 import { catalogEn } from "./catalogEn";
 import { commandEn } from "./commandEn";
@@ -66,6 +67,7 @@ export const en = {
   ...agentEn,
   ...advancedEn,
   ...askEn,
+  ...askReasonEn,
   ...evidenceEn,
   ...catalogEn,
   askNav: "Ask data",

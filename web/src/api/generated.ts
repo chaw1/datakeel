@@ -4104,6 +4104,8 @@ export interface components {
             query_frame?: components["schemas"]["AskQueryFrame"] | null;
             /** Question */
             question: string;
+            /** @description The coded reason behind a refusal or clarification, for wording in the interface language. Answers recorded before reasons had codes carry only `message`. */
+            reason?: components["schemas"]["AskReason"] | null;
             recognition?: components["schemas"]["KnowledgeRecognition"] | null;
             /**
              * Reference Instant
@@ -4228,6 +4230,29 @@ export interface components {
             /** Time Grain */
             time_grain?: ("day" | "month" | "quarter" | "year") | null;
             time_range?: components["schemas"]["TimeRange"] | null;
+        };
+        /**
+         * AskReason
+         * @description Why a numeric question was refused or sent back, as a code each interface words itself.
+         */
+        AskReason: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "ambiguous_metric" | "unresolved_metric" | "time_unparsed" | "generic_metric" | "no_metric" | "selected_metric_missing" | "selected_metric_unresolved" | "execution_failed" | "time_not_understood" | "unsupported_calculation" | "unclear_condition" | "share_needs_grouping" | "comparison_period_mismatch" | "year_over_year_needs_range" | "previous_period_needs_range" | "same_period_needs_range" | "followup_time_unparsed" | "followup_metric_unavailable" | "followup_dimensions_unclear" | "followup_comparison_unclear" | "followup_change_unclear";
+            /**
+             * Fragments
+             * @description Words of the question the reason names, in question order.
+             * @default []
+             */
+            fragments: string[];
+            /**
+             * Notes
+             * @description Parser findings or error types the reason names, in English.
+             * @default []
+             */
+            notes: string[];
         };
         /**
          * AskRequest

@@ -5,6 +5,7 @@ import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { objectHref } from "../object/navigation";
 
 import { metricName, metricOwner } from "./metricLabels";
+import { metricReason } from "./reasonText";
 
 import type { AskAnswer } from "../../api/ask";
 
@@ -19,6 +20,7 @@ export function AskResolution({
   const isComposing = useCompositionGuard();
   const [todo, setTodo] = useState("");
   const clarification = answer.status === "clarification";
+  const reason = metricReason(answer, t, locale);
   const reasonKey = /时间|time|date/i.test(answer.message)
     ? "askReasonTime"
     : /目录对象|字段|unresolved|field/i.test(answer.message)
@@ -42,7 +44,7 @@ export function AskResolution({
           <p className="ask-refusal-reason">{t(reasonKey)}</p>
           <details className="ask-detail">
             <summary>{t("askReasonDetail")}</summary>
-            <p>{answer.message}</p>
+            <p>{reason}</p>
           </details>
         </>
       )}
@@ -110,7 +112,7 @@ export function AskResolution({
                 ),
               ].join(", ");
               setTodo(
-                `${t("askTodoTitle")}\n${t("askQuestion")}: ${answer.question}\n${t("askReasonDetail")}: ${answer.message}\n${t("askOwner")}: ${owners || t("askNoCandidates")}`,
+                `${t("askTodoTitle")}\n${t("askQuestion")}: ${answer.question}\n${t("askReasonDetail")}: ${reason}\n${t("askOwner")}: ${owners || t("askNoCandidates")}`,
               );
             }}
           >

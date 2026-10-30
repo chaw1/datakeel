@@ -5,6 +5,7 @@ import { useI18n } from "../../i18n/useI18n";
 
 import { AskChartSvg } from "./AskChartSvg";
 import { chartNumber } from "./chartData";
+import { metricName } from "./metricLabels";
 
 import "./charts.css";
 
@@ -24,7 +25,7 @@ const chartLabels = {
 
 export function AskChart({
   answer,
-  chart,
+  chart: recorded,
   footnotes,
 }: {
   answer: AskAnswer;
@@ -32,6 +33,19 @@ export function AskChart({
   footnotes: FootnoteItem[];
 }) {
   const { t, locale } = useI18n();
+  // The recorded caption uses the metric's registered name; word it in the interface language.
+  const name = answer.metric_card
+    ? metricName(answer.metric_card, locale)
+    : recorded.title;
+  const chart: ChartSpec = {
+    ...recorded,
+    title: name,
+    description: t("askChartCaption", {
+      name,
+      rows: answer.result?.rows.length ?? 0,
+      columns: answer.result?.columns.join(", ") ?? "",
+    }),
+  };
   const selectId = useId();
   const descriptionId = useId();
   const [type, setType] = useState<ChartType>(chart.type);

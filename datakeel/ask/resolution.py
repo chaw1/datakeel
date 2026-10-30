@@ -6,6 +6,7 @@
 from difflib import SequenceMatcher
 
 from datakeel.ask.generic import generic_candidates
+from datakeel.ask.reasons import refusal
 from datakeel.core.ask_models import MatchEvidence, MetricResolution, ParsedQuestion
 from datakeel.core.metric_models import MetricCard
 
@@ -35,23 +36,11 @@ def resolve_metric(
         )
     )
     if len(candidates) > 1:
-        return MetricResolution(
-            status="clarification",
-            candidates=candidates,
-            message="问题对应多个指标。请选择需要的指标口径。",
-        )
+        return refusal("clarification", candidates, "ambiguous_metric")
     if not candidates or candidates[0].status != "resolved":
-        return MetricResolution(
-            status="unanswerable",
-            candidates=candidates,
-            message="指标引用的目录对象尚未解析。无法执行问数。",
-        )
+        return refusal("unanswerable", candidates, "unresolved_metric")
     if parsed.issues:
-        return MetricResolution(
-            status="unanswerable",
-            candidates=candidates,
-            message="无法可靠解析时间条件: " + "; ".join(parsed.issues),
-        )
+        return refusal("unanswerable", candidates, "time_unparsed", notes=parsed.issues)
     return MetricResolution(status="resolved", candidates=candidates, message="已定位登记指标。")
 
 
@@ -59,16 +48,8 @@ def _unscored(parsed: ParsedQuestion, cards: list[MetricCard]) -> MetricResoluti
     """Clarify generic heads such as amount or 金额; otherwise suggest the nearest metrics."""
     generic = generic_candidates(parsed.question, parsed.matches, cards)
     if generic:
-        return MetricResolution(
-            status="clarification",
-            candidates=generic,
-            message="问题只提到泛称, 对应多个可能的指标。请选择需要的指标口径。",
-        )
-    return MetricResolution(
-        status="unanswerable",
-        candidates=nearest_metrics(parsed.question, cards),
-        message="无法用已登记指标回答。以下是最接近的指标。",
-    )
+        return refusal("clarification", generic, "generic_metric")
+    return refusal("unanswerable", nearest_metrics(parsed.question, cards), "no_metric")
 
 
 def _outermost(matches: tuple[MatchEvidence, ...]) -> list[MatchEvidence]:
@@ -92,17 +73,11 @@ def _pinned_metric(
 ) -> MetricResolution:
     candidates = tuple(card for card in cards if card.definition.id == metric_id)
     if not candidates:
-        return MetricResolution(
-            status="unanswerable",
-            candidates=nearest_metrics(parsed.question, cards),
-            message="选定指标不存在。请选择已登记指标。",
+        return refusal(
+            "unanswerable", nearest_metrics(parsed.question, cards), "selected_metric_missing"
         )
     if candidates[0].status != "resolved" or parsed.issues or not parsed.matches:
-        return MetricResolution(
-            status="unanswerable",
-            candidates=candidates,
-            message="选定指标或问题条件尚未解析。无法执行问数。",
-        )
+        return refusal("unanswerable", candidates, "selected_metric_unresolved")
     return MetricResolution(
         status="resolved", candidates=candidates, message="已使用明确选定的指标。"
     )

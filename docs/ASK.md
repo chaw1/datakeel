@@ -49,6 +49,13 @@ before using its result. The English interface shows the English wording
 and recorded values such as 华东 stay as recorded. Answers saved before this wording existed
 show the question as asked. The recognised subject line also uses the subject's registered
 English name (`english_name`); names without one stay as registered.
+A refusal or clarification records its reason as a code with the words it names (`reason`:
+`code`, `fragments`, `notes`), and **Recorded reason** words it in the interface language;
+`message` keeps the Chinese wording it always had. Answers saved before reasons had codes show
+`message` as stored. Chart captions use the metric's name in the interface language.
+A time expression that is recognised but cannot become an interval (上个世纪, 上世纪 90 年代,
+去年同期 on its own, 2019 财年, Q5, last century, the nineties) refuses with that reason
+instead of answering for all time; windows that do parse, such as 近 18 个月, still answer.
 Ambiguous follow-ups ask for clarification and return no number.
 The conversation list can reopen or delete saved threads; reloads and process restarts recover
 them from SQLite or PostgreSQL. Separate browser tabs keep separate active thread selections.

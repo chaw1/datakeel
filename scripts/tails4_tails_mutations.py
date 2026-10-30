@@ -8,6 +8,8 @@ from scripts.mutation_models import Mutation
 _EN = "tests/ask/test_interpretation_en.py::"
 _ASSIGNEES = "tests/mcp/test_production_assignees.py::"
 _TASK_PATH = "tests/storage/test_workbench_task_path.py::"
+_REASONS = "tests/ask/test_coded_reasons.py::"
+_UNSUPPORTED_TIME = _REASONS + "test_unsupported_time_words_refuse_with_a_coded_time_reason"
 
 TAILS_MUTATIONS = (
     Mutation(
@@ -64,6 +66,46 @@ TAILS_MUTATIONS = (
         before="path=relative,",
         after="path=name,",
         case=_TASK_PATH + "test_opened_task_shows_the_relative_path_listed_for_it",
+        runner="pytest",
+    ),
+    Mutation(
+        name="ask-reason-carried-to-answer",
+        path="ask/service.py",
+        before="reason=resolution.reason,",
+        after="reason=None,",
+        case=_UNSUPPORTED_TIME,
+        runner="pytest",
+    ),
+    Mutation(
+        name="ask-time-century-words",
+        path="ask/time_vocabulary.py",
+        before=r'r"(?:上个|这个|下个|上|本|下)?\s*世纪|\d*\s*年代|同期|"',
+        after=r'r"\d*\s*年代|同期|"',
+        case=_UNSUPPORTED_TIME,
+        runner="pytest",
+    ),
+    Mutation(
+        name="ask-time-same-period-word",
+        path="ask/time_vocabulary.py",
+        before=r'\d*\s*年代|同期|"',
+        after=r'\d*\s*年代|"',
+        case=_UNSUPPORTED_TIME,
+        runner="pytest",
+    ),
+    Mutation(
+        name="ask-time-english-decade-words",
+        path="ask/time_vocabulary.py",
+        before=r'r"centur(?:y|ies)|(?:twen|thir|for|fif|six|seven|eigh|nine)ties|noughties|"',
+        after=r'r"centur(?:y|ies)|"',
+        case=_UNSUPPORTED_TIME,
+        runner="pytest",
+    ),
+    Mutation(
+        name="ask-reason-condition-wording",
+        path="ask/reasons.py",
+        before='"; ".join([*notes, *(f"未理解「{item}」" for item in fragments)])',
+        after='"; ".join([*(f"未理解「{item}」" for item in fragments), *notes])',
+        case=_REASONS + "test_every_code_has_a_chinese_wording_and_old_answers_still_load",
         runner="pytest",
     ),
 )

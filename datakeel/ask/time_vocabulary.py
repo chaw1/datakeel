@@ -106,6 +106,7 @@ _EN_TIME_WORDS = (
     r"today|yesterday|tomorrow|tonight|ytd|mtd|qtd|wtd|fy\d*|fiscal|since|until|till|"
     r"recently|latest|weekends?|weekdays?|holidays?|fortnights?|seasons?|seasonal|peak|off-peak|"
     r"mornings?|evenings?|nights?|overnight|hours?|hourly|noon|midnight|semesters?|decades?|"
+    r"centur(?:y|ies)|(?:twen|thir|for|fif|six|seven|eigh|nine)ties|noughties|"
     r"christmas|easter|black\s+friday|lunar"
 )
 TIME_LIKE = re.compile(
@@ -116,6 +117,7 @@ TIME_LIKE = re.compile(
     r"(?<![0-9])(?:19|20)\d{2}(?![0-9])|"
     r"\d+\s*(?:年|月|季|周|天|日|号)|[一二两三四五六七八九十]+\s*(?:月|季)|"
     r"(?:上|本|这|下|当|今|去|明|前)\s*(?:个|一)?\s*(?:年|月|季|周|星期|天)|"
+    r"(?:上个|这个|下个|上|本|下)?\s*世纪|\d*\s*年代|同期|"
     r"截至|截止|以来|至今|月底|月末|年底|年末|季末|年初|月初|期末|期初|最近|近期|过去|未来|"
     r"上半年|下半年|年度|季度|全年|财年|财季|会计年度|学年|农历|春节|国庆|元旦|节假日|假期|节日|"
     r"旺季|淡季|周末|工作日|上旬|中旬|下旬|月中|年中|季中|半月|双十一|双11|夜间|白天|早上|晚上|凌晨",
