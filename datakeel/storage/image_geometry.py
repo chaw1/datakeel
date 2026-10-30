@@ -92,6 +92,18 @@ def file_geometry(file: FileItem) -> ImageGeometry | None:
     return read_geometry(path) if path is not None and path.is_file() else None
 
 
+def legacy_geometry(file: FileItem) -> dict[str, JsonValue] | None:
+    """Return the size fields an older image record lacks, read from its header.
+
+    Imports up to v0.18.0 recorded the stored width/height and no orientation. Reads overlay
+    the upright values; the immutable manifest is never rewritten. None means nothing to add.
+    """
+    if file.modality != "image" or recorded_geometry(file.metadata) is not None:
+        return None
+    geometry = file_geometry(file)
+    return None if geometry is None else geometry_metadata(geometry)
+
+
 class UprightImage(NamedTuple):
     """Re-encoded upright pixels and their media type."""
 

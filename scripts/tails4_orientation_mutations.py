@@ -12,6 +12,7 @@ _EXPORT = "tests/training/test_export_upright.py::"
 _EVERY = _EXPORT + "test_every_exif_orientation_exports_pixels_and_boxes_in_one_upright_frame"
 _UNROTATED = "geometry.model_copy(update={'orientation': 1})"
 _IMAGEFOLDER = _EXPORT + "test_classification_imagefolder_is_upright_for_a_loader_that_ignores_exif"
+_LEGACY = "tests/storage/test_orientation_legacy_reads.py::"
 _UPGRADE = (
     "tests/evidence/test_execution.py::"
     "test_upgrade_re_extracts_stored_frame_boxes_instead_of_reusing_v0_18_cache"
@@ -218,6 +219,22 @@ ORIENTATION_MUTATIONS = (
         before='VERSION = "1.1"\n',
         after='VERSION = "1.0"\n',
         case=_UPGRADE,
+        runner="pytest",
+    ),
+    Mutation(
+        name="orientation-v0-18-file-list-reads-upright",
+        path="storage/dataset_service.py",
+        before="    if added is not None:\n",
+        after="    if False:\n",
+        case=_LEGACY + "test_v0_18_file_list_reads_upright_size_stored_size_and_orientation",
+        runner="pytest",
+    ),
+    Mutation(
+        name="orientation-v0-18-evidence-sample-upright-size",
+        path="storage/evidence_snapshot.py",
+        before="    if geometry is not None:\n",
+        after="    if False:\n",
+        case=_LEGACY + "test_v0_18_evidence_sample_reports_the_upright_size",
         runner="pytest",
     ),
 )

@@ -15,8 +15,6 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_execution import EvidenceExecutionContext
 from datakeel.core.evidence_models import EvidenceValue, ImageRegion
 from datakeel.evidence.execution import EvidenceExecution
-from datakeel.operators.evidence import annotation_labels, image_phash
-from datakeel.operators.evidence.facts import ImageDimensions
 from datakeel.pipeline import run_pipeline
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence.generator import generate_samples
@@ -29,6 +27,7 @@ from datakeel.storage.evidence_runs import extraction_report
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.worker.runner import execute
+from tests.evidence.helpers import stored_frame_extractors
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -139,12 +138,7 @@ def test_upgrade_re_extracts_stored_frame_boxes_instead_of_reusing_v0_18_cache(
     )
     with monkeypatch.context() as legacy:
         # v0.18.0 measured and framed boxes on stored pixels and pinned every extractor to 1.0.
-        legacy.setattr(annotation_labels, "_geometry", lambda _file: None)
-        legacy.setattr(
-            image_phash,
-            "_upright_size",
-            lambda image: ImageDimensions(width=image.width, height=image.height),
-        )
+        stored_frame_extractors(legacy)
         preset = evidence_pipeline()
         old = preset.model_copy(
             update={

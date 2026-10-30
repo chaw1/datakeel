@@ -23,6 +23,7 @@ from datakeel.storage.datasets import dataset_dict, import_dataset
 from datakeel.storage.file_discovery import begin_file_read, requires_python_files
 from datakeel.storage.file_pages import read_file_page
 from datakeel.storage.file_state import FileStateRow, get_file_state, overlay_files
+from datakeel.storage.image_geometry import legacy_geometry
 from datakeel.storage.media_artifacts import PreviewArtifact
 from datakeel.storage.objects import object_store
 from datakeel.storage.version_stream import dataset_settings
@@ -54,11 +55,20 @@ def require_dataset(session: Session, identifier: str, *, lock: bool = False) ->
     return row
 
 
+def _public_record(item: dict[str, JsonValue]) -> dict[str, JsonValue]:
+    record = {key: value for key, value in item.items() if key != "path"}
+    added = (
+        legacy_geometry(FileItem.model_validate(item)) if item.get("modality") == "image" else None
+    )
+    if added is not None:
+        metadata = item.get("metadata")
+        record["metadata"] = {**(metadata if isinstance(metadata, dict) else {}), **added}
+    return record
+
+
 def public_files(values: list[dict[str, JsonValue]]) -> list[FileView]:
-    """Validate manifest records after excluding private paths."""
-    return [
-        FileView.model_validate({k: v for k, v in item.items() if k != "path"}) for item in values
-    ]
+    """Validate manifest records after excluding private paths; older images read upright."""
+    return [FileView.model_validate(_public_record(item)) for item in values]
 
 
 def _file_count(session: Session, row: DatasetRow) -> int:
