@@ -149,12 +149,17 @@ def test_named_batches_and_claims_respect_the_same_limit(db: Database) -> None:
         )
     )
     assert isinstance(over, ConflictError), over
+    assert str(over) == (
+        "ann-1 holds 0 active annotation tasks; adding 3 would exceed the limit of 2"
+    )
     assert all(not list_assignments(db, task.id) for task in tasks)
     runner("assign_tasks", {"task_ids": [tasks[0].id], "actor": "ann-1"}, "pm")
     runner("claim_task", {"project_id": project.id}, "ann-1")
     refused = failure(lambda: runner("claim_task", {"project_id": project.id}, "ann-1"))
     assert isinstance(refused, ConflictError), refused
-    assert "limit is 2" in str(refused)
+    assert str(refused) == (
+        "ann-1 holds 2 active annotation tasks; adding 1 would exceed the limit of 2"
+    )
     runner("claim_task", {"project_id": project.id}, "ann-2")
 
 

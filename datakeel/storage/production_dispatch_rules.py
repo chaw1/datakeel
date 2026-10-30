@@ -85,7 +85,10 @@ def require_capacity(
         return
     load = active_loads(session, project.id, stage, (actor,)).get(actor, 0)
     if load + adding > limit:
-        message = f"{actor} holds {load} active {stage} tasks; the limit is {limit}"
+        message = (
+            f"{actor} holds {load} active {stage} tasks; adding {adding} would exceed "
+            f"the limit of {limit}"
+        )
         raise ConflictError(message)
 
 
