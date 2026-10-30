@@ -30,6 +30,11 @@ const statusTones: Record<ChainStep["status"], string> = {
   failed: "red",
 };
 
+// Action names are written to sit inside sentences ("Sign and publish label set").
+function sentenceCase(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function useRuns(chain: ActionChain) {
   const wanted = chain.steps.flatMap((step) => step.run_ids ?? []);
   const key = wanted.join(",");
@@ -137,7 +142,9 @@ export function ChainCard({
           return (
             <li key={step.id} data-status={step.status}>
               <div className="chain-step-head">
-                <span>{t(approvalActions[step.action as never])}</span>
+                <span>
+                  {sentenceCase(t(approvalActions[step.action as never]))}
+                </span>
                 <code>{step.action}</code>
                 <span className={`badge ${statusTones[step.status]}`}>
                   {t(statusKeys[step.status])}

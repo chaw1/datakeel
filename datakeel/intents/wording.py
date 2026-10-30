@@ -89,8 +89,15 @@ def plan_text(count: int, approvals: int, language: str) -> str:
     if language == "zh":
         tail = f", 其中 {approvals} 步要签批" if approvals else ""
         return f"已拟好 {count} 步计划{tail}。确认后才会执行; 没确认前什么都不会改。"
-    tail = f"; {approvals} need a signed approval" if approvals else ""
+    steps = "1 step" if count == 1 else f"{count} steps"
+    tail = (
+        "; 1 needs a signed approval"
+        if approvals == 1
+        else f"; {approvals} need a signed approval"
+        if approvals
+        else ""
+    )
     return (
-        f"Planned {count} step(s){tail}. Nothing changes until you confirm; "
+        f"Planned {steps}{tail}. Nothing changes until you confirm; "
         "then each step runs with its own receipt."
     )

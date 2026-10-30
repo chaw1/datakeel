@@ -43,7 +43,11 @@ _TEAM = re.compile(
     r"交叉|互审|标审分离|两人|双人|cross[- ]?check|cross[- ]?review|two people", re.IGNORECASE
 )
 _GROUP = re.compile(r"小组|审核|review", re.IGNORECASE)
-_SAMPLE = re.compile(r"(?:抽|抄|抽检|sample|inspect)\s*(?P<rate>\d{1,2})\s*%", re.IGNORECASE)
+_SAMPLE = re.compile(
+    r"(?:抽|抄|抽检|sample|inspect)\s*(?P<rate>\d{1,2})\s*%|"
+    r"(?P<after>\d{1,2})\s*%\s*(?:的)?(?:抽检|抽查|spot[- ]?check|sample|inspection)",
+    re.IGNORECASE,
+)
 _PACKAGE = re.compile(
     r"每(?:包|个包)\s*(?P<a>\d{1,5})|每\s*(?P<b>\d{1,5})\s*(?:张|条|个)(?:一|切一|为一)?包|"
     r"packages? of (?P<c>\d{1,5})|(?P<d>\d{1,5}) (?:per|each) package",
@@ -80,7 +84,7 @@ def _project_notes(text: str, language: str, tier: str) -> tuple[str, list[str]]
     guidelines = ""
     sampled = _SAMPLE.search(text)
     if sampled:
-        rate = sampled.group("rate")
+        rate = sampled.group("rate") or sampled.group("after")
         guidelines = (
             f"每个任务包验收时抽检 {rate}% (accept_package) 。"
             if language == "zh"

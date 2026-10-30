@@ -47,6 +47,16 @@ def test_project_sentence_plans_four_ordered_steps_without_changing_anything(
     assert not list_projects(db)
 
 
+def test_spot_check_rate_written_after_the_number_is_kept(db: Database, tmp_path: Path) -> None:
+    """The English order "10% spot check" gives the same acceptance guideline."""
+    dataset = images(db, tmp_path / "images")
+    text = "Set up a box annotation project for traffic light, cross-check and a 10% spot check"
+    result = plan(db, text, PageContext(dataset_id=dataset.id))
+    assert result.chain is not None
+    assert "10% sample" in str(result.chain.steps[2].params["guidelines"])
+    assert len(result.chain.notes) == 2
+
+
 def test_confirmed_chain_stops_for_each_signature_and_matches_manual_receipts(
     db: Database, tmp_path: Path
 ) -> None:
