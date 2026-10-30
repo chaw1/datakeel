@@ -27,23 +27,32 @@ from datakeel.intents.catalog import (
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.edits import prepare_label_edit
 from datakeel.intents.grounding import grounded
+from datakeel.intents.object_edits import LIST_EDITS, new_object_field, prepare_user_edit
 from datakeel.intents.selectors import (
     file_selection,
     ordinal_question,
+    page_selection,
     pick,
     positions,
     project_tasks,
 )
-from datakeel.intents.wording import field_label, nothing_to_change, unknown_question
+from datakeel.intents.wording import (
+    field_label,
+    nothing_to_change,
+    unknown_labels_question,
+    unknown_question,
+)
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.storage.database import Database
 
 CONTAINERS = ("dataset_id", "version_id", "project_id", "package_id", "label_set_id")
 SINGLE_DEFAULTS = frozenset({"dataset_id", "project_id"})
-SELECTION_LIMIT = 10000
 TASK_PLURALS = {"task_ids": "task_id", "task_id": "task_ids"}
-# Intent-only spellings of an edit that ``prepare_label_edit`` turns into the full list.
-EDIT_KEYS = {"create_label_set": frozenset({"add_labels", "remove_labels"})}
+# Intent-only spellings of an edit that is applied to what exists into the full list.
+EDIT_KEYS = {
+    "create_label_set": frozenset({"add_labels", "remove_labels", "rename_labels"}),
+    "manage_users": frozenset(LIST_EDITS),
+}
 
 
 class FillState(BoundaryModel):
@@ -341,8 +350,9 @@ def fill_steps(
             question = unknown_question(step.action, list(unknown), state.language)
             return FillResult(clarification=Clarification(question=question, action=step.action))
         _prepared(step, params, names, state.text)
+        fresh = new_object_field(step.action, params)
         current = step.model_copy(update={"params": params})
-        for field in list(params):
+        for field in [name for name in params if name != fresh]:
             resolved = _fill_value(db, field, params[field], current, state, catalog)
             if isinstance(resolved, Clarification):
                 return FillResult(clarification=resolved)
@@ -350,29 +360,16 @@ def fill_steps(
                 return FillResult(empty_selection=str(resolved["$empty"]))
             params[field] = resolved
         if step.action == "create_label_set":
-            params = prepare_label_edit(db, params)
+            edit = prepare_label_edit(db, params)
+            if edit.unknown:
+                question = unknown_labels_question(edit.unknown, edit.existing, state.language)
+                return FillResult(
+                    clarification=Clarification(question=question, action=step.action)
+                )
+            params = edit.params
+        params = prepare_user_edit(db, params) if step.action == "manage_users" else params
         filled.append(current.model_copy(update={"params": params}))
     return FillResult(steps=filled)
-
-
-def _selection_defaults(
-    params: dict[str, JsonValue], required: set[str], context: PageContext
-) -> None:
-    selected: list[JsonValue] = list(context.selected_ids)
-    tasks = selected if context.selected_kind == "production_task" else []
-    current: list[JsonValue] = tasks or ([context.task_id] if context.task_id else [])
-    if "task_id" in required and "task_id" not in params and current:
-        params["task_id"] = {"$each": current} if len(current) > 1 else current[0]
-    if "task_ids" in required and "task_ids" not in params and current:
-        params["task_ids"] = current
-    files = selected if context.selected_kind in {None, "file"} else []
-    if "selection" in required and "selection" not in params and files:
-        condition: dict[str, JsonValue] = {"field": "id", "operator": "in", "value": files}
-        params["selection"] = {
-            "dataset_id": context.dataset_id,
-            "filters": [condition],
-            "limit": SELECTION_LIMIT,
-        }
 
 
 def fill_defaults(
@@ -390,5 +387,5 @@ def fill_defaults(
         value = _default_container(field, params, state, catalog, single=single)
         if value is not None:
             params[field] = value
-    _selection_defaults(params, required, state.context)
+    page_selection(params, required, state.context)
     return step.model_copy(update={"params": params})

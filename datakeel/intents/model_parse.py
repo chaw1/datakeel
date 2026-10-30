@@ -55,9 +55,15 @@ INSTRUCTIONS = (
     "untouched may be added). A subset of files is never the whole dataset: the selected "
     'files are {"$files": {"kind": "selected"}}, near-duplicate copies are {"$files": '
     '{"kind": "near_duplicates"}} as selection. To change an existing label set give '
-    "label_set_id with add_labels (new labels) and/or remove_labels (names); never re-list "
-    "the existing labels and never drop labels the person did not name. Leave optional "
-    "parameters out unless the person set them. Use only parameter names from the "
+    "label_set_id with add_labels (new labels), remove_labels (names) and/or rename_labels "
+    '([{"from": "old name", "to": "new name"}]); never write migration, it is derived; '
+    "never re-list "
+    "the existing labels and never drop labels the person did not name. To give a person "
+    "skills or teams, or take them away, use manage_users operation=update with "
+    "add_skill_ids/remove_skill_ids/add_team_ids/remove_team_ids (skill_ids replaces the "
+    "whole list). A new skill, role, team or person is named by name; its id is derived. "
+    "Leave optional "
+    "parameters out unless the person gave them. Use only parameter names from the "
     'schemas. kind=none when nothing fits; then add "reason". ' + RECIPE_GUIDE
 )
 REPAIR = (

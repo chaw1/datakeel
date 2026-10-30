@@ -202,12 +202,50 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-edit-starts-from-current-version",
         path="intents/edits.py",
-        before=(
-            '    params["labels"] = _merged(current, [*_list(params.get("labels")), '
-            "*_list(adds)], removes)"
-        ),
-        after='    params["labels"] = with_label_ids([*_list(params.get("labels")), *_list(adds)])',
+        before="    labels = _apply(current, edit)",
+        after='    labels = _apply(current.model_copy(update={"labels": ()}), edit)',
         case=_CHECKS + "test_adding_a_label_keeps_the_existing_labels_and_shows_the_change",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-edit-derives-its-migration",
+        path="intents/edits.py",
+        before=(
+            '    params["migration"] = needed_migration(base, labels, edit) '
+            "if base is not None else []"
+        ),
+        after='    params["migration"] = []',
+        case=_CHECKS + "test_renaming_and_removing_labels_carry_their_migration_to_execution",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-new-object-id-from-its-name",
+        path="intents/fill.py",
+        before="        fresh = new_object_field(step.action, params)",
+        after="        fresh = None",
+        case=_CHECKS + "test_new_objects_take_their_id_from_their_name_and_skill_grants_add",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-skill-grant-adds-to-held",
+        path="intents/fill.py",
+        before=(
+            '        params = prepare_user_edit(db, params) if step.action == "manage_users" '
+            "else params"
+        ),
+        after="        params = dict(params)",
+        case=_CHECKS + "test_new_objects_take_their_id_from_their_name_and_skill_grants_add",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-operation-needs-asked-first",
+        path="intents/validate.py",
+        before=(
+            "        name for name in operation_needs(step.action, step.params) "
+            "if name not in missing"
+        ),
+        after="        name for name in () if name not in missing",
+        case=_CHECKS + "test_new_objects_take_their_id_from_their_name_and_skill_grants_add",
         runner="pytest",
     ),
     Mutation(

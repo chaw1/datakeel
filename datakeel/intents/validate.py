@@ -18,6 +18,7 @@ from datakeel.intents.describe import describe_step
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.estimates import estimate_step
 from datakeel.intents.fill import FillState, context_value
+from datakeel.intents.object_edits import operation_needs
 from datakeel.intents.wording import invalid_question, missing_question, subset_question
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.storage.database import Database
@@ -108,7 +109,14 @@ def _named_fields(message: str, absent: set[str]) -> list[str]:
 
 
 def _schema_problems(step: DraftStep) -> tuple[list[str], str | None]:
-    """Missing parameters (also those a rule requires) and any other invalid value."""
+    """Missing parameters (also those a rule or the operation requires) and other problems."""
+    missing, invalid = _validated(step)
+    return missing + [
+        name for name in operation_needs(step.action, step.params) if name not in missing
+    ], invalid
+
+
+def _validated(step: DraftStep) -> tuple[list[str], str | None]:
     model = PARAMETER_TYPES[step.action]
     try:
         model.model_validate({key: _placeholder(value) for key, value in step.params.items()})

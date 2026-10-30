@@ -220,3 +220,11 @@ def invalid_question(problem: str, language: str) -> str:
         if language == "zh"
         else f"This plan cannot run yet: {problem}. Please adjust and try again."
     )
+
+
+def unknown_labels_question(unknown: list[str], existing: list[str], language: str) -> str:
+    """A label the person named is not in the label set: say which ones are."""
+    shown = existing[:8]
+    if language == "zh":
+        return f"标签集里没有「{'、'.join(unknown)}」。现有标签: {'、'.join(shown)}。要改哪一个?"
+    return f"The label set has no {', '.join(unknown)}. It has: {', '.join(shown)}. Which one?"

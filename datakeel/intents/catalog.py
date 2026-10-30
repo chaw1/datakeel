@@ -46,6 +46,10 @@ LIST_KINDS: dict[str, str] = {
     "team_ids": "team",
     "label_set_ids": "label_set",
     "annotation_dataset_ids": "dataset",
+    "add_skill_ids": "skill",
+    "remove_skill_ids": "skill",
+    "add_team_ids": "team",
+    "remove_team_ids": "team",
 }
 
 

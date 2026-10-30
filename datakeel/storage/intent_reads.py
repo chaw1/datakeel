@@ -46,10 +46,12 @@ def held_tasks(
         return [(str(project), str(task)) for project, task in session.execute(statement).all()]
 
 
-def latest_label_set(db: Database, label_set_id: str) -> LabelSet | None:
-    """The newest stored version of one label set, published or not."""
+def latest_label_set(
+    db: Database, label_set_id: str, version: int | None = None
+) -> LabelSet | None:
+    """The newest stored version of one label set (or the given one), published or not."""
     with db.session() as session:
-        version = session.scalar(
+        version = version or session.scalar(
             select(func.max(ProductionLabelSetRow.version)).where(
                 ProductionLabelSetRow.label_set_id == label_set_id
             )

@@ -19,7 +19,7 @@ from datakeel.intents.recipes import recipe_covers
 from datakeel.intents.validate import check_step
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.object_queries import evaluate
-from tests.intents.support import SETUP, images, model_plan, team
+from tests.intents.support import SETUP, images, model_plan, run_to_end, team
 from tests.production_helpers import production_fixture
 from tests.production_team_support import ServiceRunner
 
@@ -104,6 +104,9 @@ def test_me_is_the_speaker_and_positions_follow_the_task_list(db: Database) -> N
     params = result.chain.steps[0].params
     assert params["actor"] == "boss"
     assert params["task_ids"] == [tasks[0].id, tasks[1].id]
+    shown = [detail.value for detail in result.chain.steps[0].details]
+    assert "2 个任务: 第 1 个、第 2 个" in shown
+    assert not any(task.id in value for task in tasks for value in shown)
     beyond = _plan("assign_tasks", {"task_ids": {"$tasks": {"positions": [9]}}, "actor": "li"})
     asked = model_plan(db, "把第9个任务分给小李", beyond, PageContext(project_id=project.id))
     assert asked.kind == "clarify"
@@ -200,7 +203,10 @@ def test_a_subset_resolves_to_exact_files_and_never_widens(
     assert result.chain is not None
     selection = result.chain.steps[0].params["selection"]
     assert selection["filters"][0]["value"] == files[1:3]  # type: ignore[index,call-overload]
-    assert any(detail.value.startswith("2 个文件") for detail in result.chain.steps[0].details)
+    (shown,) = [item.value for item in result.chain.steps[0].details if "个文件" in item.value]
+    names = [str(item.properties["filename"]) for item in whole.objects[1:3]]
+    assert shown.startswith("2 个文件: ")
+    assert all(name in shown for name in names)
     wide = _plan("quarantine_files", {"selection": {"dataset_id": dataset.id}})
     asked = model_plan(db, "把重复的图隔离", wide, context)
     assert asked.kind == "clarify"
@@ -258,3 +264,85 @@ def test_a_version_left_out_beside_an_earlier_step_s_id_is_taken_from_that_step(
     publish, project = result.chain.steps[1].params, result.chain.steps[2].params
     assert publish["version"] == {"$ref": "s1.label_set_version"}
     assert project["label_set_version"] == {"$ref": "s1.label_set_version"}
+
+
+def test_renaming_and_removing_labels_carry_their_migration_to_execution(db: Database) -> None:
+    """A model's name-based migration is read as the change; the needed one is derived."""
+    project, _ = team(db)
+    label_set = project.label_set_id
+    renamed = _plan(
+        "create_label_set",
+        {
+            "operation": "update",
+            "label_set_id": label_set,
+            "labels": [{"id": "猫咪", "name": "猫咪"}],
+            "migration": [{"operation": "rename", "source_ids": ["Cat"], "target_ids": ["猫咪"]}],
+        },
+    )
+    result = model_plan(db, "把 Generated labels 里的 Cat 改名叫 猫咪", renamed, PageContext())
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    (step,) = result.chain.steps
+    assert [item["name"] for item in step.params["labels"]] == ["猫咪"]  # type: ignore[index,union-attr]
+    assert step.params["migration"] == [
+        {"operation": "rename", "source_ids": ["cat"], "target_ids": ["cat"]}
+    ]
+    assert any(detail.value == "Cat → 猫咪" for detail in step.details)
+    assert not any("source_ids" in detail.value for detail in step.details)
+    assert run_to_end(db, result.chain, "boss").status == "succeeded"
+    removed = _plan(
+        "create_label_set",
+        {"label_set_id": label_set, "add_labels": [{"name": "Dog"}], "remove_labels": ["猫咪"]},
+    )
+    again = model_plan(db, "Generated labels 删掉猫咪, 加一个 Dog", removed, PageContext())
+    assert again.chain is not None, again.text
+    params = again.chain.steps[0].params
+    assert [item["name"] for item in params["labels"]] == ["Dog"]  # type: ignore[index,union-attr]
+    assert params["migration"] == [
+        {"operation": "delete", "source_ids": ["cat"], "strategy": "manual"}
+    ]
+    assert run_to_end(db, again.chain, "boss").status == "succeeded"
+    unknown = _plan("create_label_set", {"label_set_id": label_set, "remove_labels": ["Horse"]})
+    asked = model_plan(db, "Generated labels 删掉 Horse 标签", unknown, PageContext())
+    assert asked.kind == "clarify"
+    assert asked.clarification is not None
+    assert "Horse" in asked.clarification.question
+    assert "Dog" in asked.clarification.question
+
+
+def test_new_objects_take_their_id_from_their_name_and_skill_grants_add(db: Database) -> None:
+    """A new skill is never asked for by id; giving li a skill keeps the ones li holds."""
+    team(db)
+    skill: dict[str, object] = {
+        "operation": "create",
+        "name": "车辆框",
+        "annotation_type": "box",
+        "domain": "交通",
+    }
+    created = model_plan(
+        db, "建一个技能叫车辆框, 框标注, 交通", _plan("manage_skills", skill), PageContext()
+    )
+    assert created.kind == "plan", created.text
+    assert created.chain is not None
+    assert created.chain.steps[0].params["skill_id"] == "车辆框"
+    del skill["domain"]
+    asked = model_plan(db, "建一个技能叫车辆框", _plan("manage_skills", skill), PageContext())
+    assert asked.clarification is not None
+    assert asked.clarification.fields == ["domain"]
+    runner = ServiceRunner(db)
+    for key, name in (("ped", "行人框"), ("car", "车辆框")):
+        runner("manage_skills", {**skill, "skill_id": key, "name": name, "domain": "交通"}, "boss")
+    runner("manage_users", {"operation": "update", "user_id": "li", "skill_ids": ["ped"]}, "boss")
+    granted = model_plan(
+        db,
+        "给小李加一个技能: 车辆框",
+        _plan(
+            "manage_users",
+            {"operation": "update", "user_id": "小李", "add_skill_ids": ["车辆框"]},
+            {"user_id": "小李"},
+        ),
+        PageContext(),
+    )
+    assert granted.kind == "plan", granted.text
+    assert granted.chain is not None
+    assert granted.chain.steps[0].params["skill_ids"] == ["ped", "car"]

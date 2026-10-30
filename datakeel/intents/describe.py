@@ -15,6 +15,7 @@ from pydantic import JsonValue
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.actions.parameters import PARAMETER_TYPES
+from datakeel.core.errors import NotFoundError
 from datakeel.core.intent_models import ChainStep, StepDetail
 from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog
 from datakeel.intents.edits import label_diff
@@ -22,9 +23,19 @@ from datakeel.intents.wording import FIELD_LABELS, field_label
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.object_queries import evaluate
+from datakeel.storage.production_queries import get_task, list_tasks
 
 HIDDEN = frozenset(
-    {"request_id", "expected_revision", "prepared", "target", "operation", "previous_version"}
+    {
+        "request_id",
+        "expected_revision",
+        "prepared",
+        "target",
+        "operation",
+        "previous_version",
+        # Derived from the label difference, which the card already shows in words.
+        "migration",
+    }
 )
 PREVIEW = 3
 TEXT_LIMIT = 120
@@ -68,9 +79,29 @@ def _selection(db: Database, value: dict[str, JsonValue], language: str) -> str:
         found = evaluate(db, ObjectSet.model_validate(value)).objects
     except (ModelValidationError, ValueError):
         return _shorten(json.dumps(value, ensure_ascii=False))
-    names = [str(item.properties.get("name") or item.asset_ref.asset_id) for item in found]
+    names = [
+        str(item.properties.get("filename") or item.properties.get("name") or "?") for item in found
+    ]
     count = f"{len(names)} 个文件" if language == "zh" else f"{len(names)} files"
     return f"{count}: {_listing(names, language)}" if names else count
+
+
+def task_positions(db: Database, ids: list[JsonValue], language: str) -> list[str]:
+    """Tasks have no names: show their position in the project's task list, as people see it."""
+    order: dict[str, int] = {}
+    names: list[str] = []
+    for value in ids:
+        try:
+            task = get_task(db, str(value))
+        except NotFoundError:
+            names.append("?")
+            continue
+        if task.id not in order:
+            listed = list_tasks(db, task.project_id)
+            order.update({item.id: index for index, item in enumerate(listed, start=1)})
+        position = order.get(task.id, 0)
+        names.append(f"第 {position} 个" if language == "zh" else f"#{position}")
+    return names
 
 
 def _labels(value: list[JsonValue], language: str) -> str:
@@ -81,8 +112,6 @@ def _labels(value: list[JsonValue], language: str) -> str:
 def _plain(value: JsonValue, language: str, field: str = "") -> str:
     if field in {"labels", "add_labels"} and isinstance(value, list):
         return _labels(value, language)
-    if field == "task_ids" and isinstance(value, list):
-        return f"{len(value)} 个任务" if language == "zh" else f"{len(value)} tasks"
     if isinstance(value, bool):
         return ("是" if value else "否") if language == "zh" else ("yes" if value else "no")
     if isinstance(value, (dict, list)):
@@ -101,6 +130,10 @@ def _value(
         return _listing([_name(LIST_KINDS[field], item, catalog) for item in value], language)
     if field == "selection" and isinstance(value, dict):
         return _selection(db, value, language)
+    if field in {"task_id", "task_ids"}:
+        values: list[JsonValue] = value if isinstance(value, list) else [value]
+        count = f"{len(values)} 个任务" if language == "zh" else f"{len(values)} tasks"
+        return f"{count}: {_listing(task_positions(db, values, language), language)}"
     return _plain(value, language, field)
 
 
@@ -161,6 +194,15 @@ def _diff(db: Database, step: ChainStep, language: str) -> list[StepDetail]:
     ]
 
 
+def _items(
+    db: Database, key: str, values: list[JsonValue], catalog: EntityCatalog, language: str
+) -> str:
+    """One step repeated per item: tasks as one list, other items each by name."""
+    if key in {"task_id", "task_ids"}:
+        return _value(db, "task_ids", values, catalog, language)
+    return _listing([_value(db, key, item, catalog, language) for item in values], language)
+
+
 def describe_step(
     db: Database, step: ChainStep, catalog: EntityCatalog, language: str
 ) -> list[StepDetail]:
@@ -178,8 +220,9 @@ def describe_step(
     if step.items:
         key = next(iter(step.items[0]))
         values = [item[key] for item in step.items]
-        names = [_value(db, key, item, catalog, language) for item in values]
         details.append(
-            StepDetail(label=field_label(key, language), value=_listing(names, language))
+            StepDetail(
+                label=field_label(key, language), value=_items(db, key, values, catalog, language)
+            )
         )
     return details + _diff(db, step, language) + _defaults(step, language)

@@ -12,7 +12,7 @@ question; a selector never widens to the whole dataset or project.
 
 from pydantic import JsonValue
 
-from datakeel.core.intent_models import Clarification
+from datakeel.core.intent_models import Clarification, PageContext
 from datakeel.core.models import AssetRef
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
@@ -126,3 +126,22 @@ def ordinal_question(kind: str, language: str) -> Clarification:
         else f"There are not that many {kind}s in the list; which ones do you mean?"
     )
     return Clarification(question=question, fields=[f"{kind}_id"])
+
+
+def page_selection(params: dict[str, JsonValue], required: set[str], context: PageContext) -> None:
+    """Selected tasks or files on the page fill a missing task or selection parameter."""
+    selected: list[JsonValue] = list(context.selected_ids)
+    tasks = selected if context.selected_kind == "production_task" else []
+    current: list[JsonValue] = tasks or ([context.task_id] if context.task_id else [])
+    if "task_id" in required and "task_id" not in params and current:
+        params["task_id"] = {"$each": current} if len(current) > 1 else current[0]
+    if "task_ids" in required and "task_ids" not in params and current:
+        params["task_ids"] = current
+    files = selected if context.selected_kind in {None, "file"} else []
+    if "selection" in required and "selection" not in params and files:
+        condition: dict[str, JsonValue] = {"field": "id", "operator": "in", "value": files}
+        params["selection"] = {
+            "dataset_id": context.dataset_id,
+            "filters": [condition],
+            "limit": SELECTION_LIMIT,
+        }
