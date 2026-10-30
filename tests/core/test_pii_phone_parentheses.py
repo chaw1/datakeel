@@ -58,11 +58,19 @@ def test_chinese_parenthesized_phone_variants_keep_complete_spans(
         "\uff08555\uff09 234-5678",
     ],
 )
-def test_parenthesized_area_code_must_be_mainland(phone: str) -> None:
-    """A bracketed area code needs a leading 0 or +86; other local shapes stay as written."""
-    assert not detect_pii(phone)
-    assert not detect_pii("Call " + phone + " today.")
-    assert redact_pii("记录" + phone + "。") == "记录" + phone + "。"
+def test_north_american_parenthesized_phone_variants_keep_complete_spans(phone: str) -> None:
+    """Recognize grouped North American numbers without leaving an opening bracket."""
+    matches = detect_pii(phone)
+    assert [(match.type, match.start, match.end) for match in matches] == [("phone", 0, len(phone))]
+    assert redact_pii(phone) == "[PHONE]"
+    assert redact_pii("Call " + phone + " today.") == "Call [PHONE] today."
+
+
+@pytest.mark.parametrize("value", ["(123) 456-7890", "\uff08123\uff09456-7890", "(555) 123-4567"])
+def test_parenthesized_area_and_exchange_starting_zero_or_one_are_not_phones(value: str) -> None:
+    """A North American area or exchange code never starts with 0 or 1."""
+    assert not detect_pii(value)
+    assert redact_pii("记录" + value + "。") == "记录" + value + "。"
 
 
 @pytest.mark.parametrize("phone", ["(415) 555-0132", "(212)555-0132", "(300) 200 3000"])

@@ -26,6 +26,7 @@ from scripts.metadata_mutations import METADATA_MUTATIONS
 from scripts.metric_mutations import METRIC_MUTATIONS
 from scripts.orchestration_mutations import ORCHESTRATION_MUTATIONS
 from scripts.pii_mutations import PII_MUTATIONS
+from scripts.pii_shape_mutations import PII_SHAPE_MUTATIONS
 from scripts.production_catalog_mutations import PRODUCTION_CATALOG_MUTATIONS
 from scripts.production_mutations import PRODUCTION_MUTATIONS
 from scripts.production_team_mutations import PRODUCTION_TEAM_MUTATIONS
@@ -79,6 +80,7 @@ FEATURE_MUTATIONS = (
     *TRAINING_SOURCE_MUTATIONS,
     *MEDIA_MUTATIONS,
     *PII_MUTATIONS,
+    *PII_SHAPE_MUTATIONS,
     *TEXT_DEDUP_MUTATIONS,
     *LLM_DATA_MUTATIONS,
     *LLM_DATA_PERFORMANCE_MUTATIONS,

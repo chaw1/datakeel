@@ -33,11 +33,13 @@ LOCAL_PHONE = re.compile(
     r"(?:0[1-9][0-9]{1,2}[ -]+[0-9]{3,4}[ -]?[0-9]{4}"
     r"|[2-9][0-9]{2}[ -][0-9]{3}[ -][0-9]{4})\Z"
 )
-# A bracketed area code is mainland evidence only when it starts with 0 or is +86.
+# A bracketed area code is a mainland 0xx/0xxx code, +86, or a North American NXX code
+# followed by an NXX exchange and four digits (N is 2-9).
 PARENTHESIZED_PHONE = re.compile(
     r"(?<![A-Za-z0-9_./\d$¥€£\uffe5-])"
     r"(?:(?:\(0[1-9][0-9]{1,2}\)|\uff080[1-9][0-9]{1,2}\uff09)"
     r"[ -]*[0-9]{3,4}[ -]?[0-9]{4}"
+    r"|(?:\([2-9][0-9]{2}\)|\uff08[2-9][0-9]{2}\uff09)[ -]*[2-9][0-9]{2}[ -]?[0-9]{4}"
     r"|(?:\(\+86\)|\uff08\+86\uff09)[ -]*"
     r"(?:1[3-9](?:[ -]?[0-9]){9}|0?[1-9][0-9]{1,2}[ -]*[0-9]{3,4}[ -]?[0-9]{4}))"
     r"(?![A-Za-z0-9_\d]|[ ()\uff08\uff09-]*[0-9]|\.[0-9]|%|元)"

@@ -98,6 +98,6 @@ def test_phone_reference_and_sequence_mutation_guard() -> None:
     assert redact_pii("订单号13800138000") == "订单号13800138000"
     assert redact_pii("No. 13800138000") == "No. 13800138000"
     assert redact_pii("文件 010-62345678号") == "文件 010-62345678号"
-    assert redact_pii("(300) 200 3000") == "(300) 200 3000"
+    assert redact_pii("(123) 456-7890") == "(123) 456-7890"
     assert redact_pii("010-62345678 021-55556666") == "[PHONE] [PHONE]"
     assert redact_pii("电话(0571) 8888-6666") == "电话[PHONE]"
