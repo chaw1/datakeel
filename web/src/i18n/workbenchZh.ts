@@ -163,6 +163,8 @@ export const workbenchZh = {
   wbAiDecisionExempt: "按抽检比例免审",
   wbAiDecisionPersonal: "个人项目：只提示，不拦截",
   wbAiNoReasons: "没有规则命中这次提交。",
+  wbAiTemplateViolation: "不符合模板",
+  wbAiDisagreement: "和高置信模型草稿差别大",
   wbAiWeight: "权重 {weight}",
   wbObjectLabelSet: "分类标签",
   wbObjectBox: "框 {index}",

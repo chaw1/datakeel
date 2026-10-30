@@ -238,6 +238,35 @@ it("shows reviewers the risk, decision and reasons above the controls and locate
   expect(screen.getByTestId("editor")).toHaveTextContent("box 1");
 });
 
+it("names known rules in the interface language and keeps template details", () => {
+  const reasons = [
+    {
+      code: "duplicate_bbox",
+      message: "The same annotator drew two nearly identical boxes",
+      weight: 0.5,
+      evidence: [],
+      objects: [],
+    },
+    {
+      code: "template_violation",
+      message: 'Attribute "kind" is required on box 1',
+      weight: 0.9,
+      evidence: [],
+      objects: [],
+    },
+  ];
+  mount(
+    task([draft, human], "submitted", review({ reasons })),
+    project("group", ["production:review"]),
+    "rev",
+  );
+  const panel = screen.getByRole("region", { name: "AI pre-review" });
+  expect(panel).toHaveTextContent("Duplicate box");
+  expect(panel).not.toHaveTextContent("nearly identical");
+  expect(panel).toHaveTextContent("Breaks the template");
+  expect(panel).toHaveTextContent('Attribute "kind" is required on box 1');
+});
+
 it("offers no locate buttons when the scored revision is not the one on screen", () => {
   mount(
     task([draft, human], "submitted", review({ revision_id: "older" })),

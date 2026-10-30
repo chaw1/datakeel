@@ -175,6 +175,8 @@ export const workbenchEn = {
   wbAiDecisionExempt: "Skipped review by sampling",
   wbAiDecisionPersonal: "Personal project: a hint only, nothing is blocked",
   wbAiNoReasons: "No rule flagged this submission.",
+  wbAiTemplateViolation: "Breaks the template",
+  wbAiDisagreement: "Departs from a confident model draft",
   wbAiWeight: "weight {weight}",
   wbObjectLabelSet: "labels",
   wbObjectBox: "box {index}",

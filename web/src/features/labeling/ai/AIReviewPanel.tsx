@@ -1,4 +1,5 @@
 import { useI18n } from "../../../i18n/useI18n";
+import { findingLabels } from "../../annotation/findingLabels";
 
 import { objectName, percent } from "./format";
 import "./ai.css";
@@ -8,6 +9,20 @@ import type { components } from "../../../api/generated";
 import type { MessageKey } from "../../../i18n/en";
 
 type AIReview = components["schemas"]["AIReview"];
+
+type RiskReason = AIReview["reasons"][number];
+
+/** Rule names in the interface language; the server's English message is the fallback. */
+const reasonLabels: Partial<Record<string, MessageKey>> = {
+  ...findingLabels,
+  template_violation: "wbAiTemplateViolation",
+  prelabel_disagreement: "wbAiDisagreement",
+};
+
+function reasonLabel(reason: RiskReason, t: (key: MessageKey) => string) {
+  const key = reasonLabels[reason.code];
+  return key ? t(key) : reason.message;
+}
 
 const decisions: Record<AIReview["decision"], MessageKey> = {
   review: "wbAiDecisionReview",
@@ -50,7 +65,10 @@ export function AIReviewPanel({
         <ul className="wb-ai-reasons">
           {review.reasons.map((reason, position) => (
             <li key={`${reason.code}:${String(position)}`}>
-              <strong>{reason.message}</strong>{" "}
+              <strong title={reason.message}>{reasonLabel(reason, t)}</strong>{" "}
+              {reason.code === "template_violation" && (
+                <span>{reason.message} </span>
+              )}
               <span className="muted">
                 {t("wbAiWeight", { weight: reason.weight.toFixed(2) })}
               </span>
