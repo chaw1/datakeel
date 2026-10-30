@@ -534,6 +534,7 @@ ignore_imports =
     datakeel.storage.production_reviews -> datakeel.actions.production_parameters
     datakeel.storage.production_revisions -> datakeel.actions.production_parameters
     datakeel.storage.production_statistics -> datakeel.annotation_qa
+    datakeel.storage.production_template_upgrade -> datakeel.actions.production_catalog_parameters
 # Team-tier leases, skill dispatch and package acceptance execute typed production actions.
     datakeel.ontology.production_functions -> datakeel.storage.production_team_reads
     datakeel.storage.production_acceptance -> datakeel.actions.models

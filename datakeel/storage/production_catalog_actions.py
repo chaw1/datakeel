@@ -15,6 +15,7 @@ from datakeel.actions.production_catalog_parameters import (
     PublishLabelSetParams,
     RegisterModelParams,
     RunPrelabelParams,
+    UpgradeProjectTemplateParams,
 )
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import AssetRef
@@ -27,9 +28,21 @@ from datakeel.storage.production_catalog_changes import (
 )
 from datakeel.storage.production_finalize import finalize_project
 from datakeel.storage.production_predictions import import_predictions, run_prelabel
+from datakeel.storage.production_template_upgrade import upgrade_project_template
 
 
-def _accept(session: Session, plan: ActionPlan, params: AcceptPackageParams) -> OperationResult:
+def _accept(
+    session: Session, plan: ActionPlan, params: AcceptPackageParams | UpgradeProjectTemplateParams
+) -> OperationResult:
+    if isinstance(params, UpgradeProjectTemplateParams):
+        project, upgrade = upgrade_project_template(session, params)
+        return OperationResult(
+            outputs=[AssetRef(asset_type="project", asset_id=project.id)],
+            details={
+                "project": project.model_dump(mode="json"),
+                "template_upgrade": upgrade.model_dump(mode="json"),
+            },
+        )
     inspection = accept_package(session, plan, params)
     return OperationResult(
         outputs=[
@@ -48,7 +61,7 @@ def execute_catalog_action(
     """Dispatch approved catalog writes without opening a nested top-level transaction."""
     if isinstance(params, FinalizeProjectParams):
         return finalize_project(session, params)
-    if isinstance(params, AcceptPackageParams):
+    if isinstance(params, AcceptPackageParams | UpgradeProjectTemplateParams):
         return _accept(session, plan, params)
     if isinstance(params, ImportPredictionsParams | RunPrelabelParams):
         run = (

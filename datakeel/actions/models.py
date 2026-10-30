@@ -40,6 +40,7 @@ ActionName = Literal[
     "revoke_assignment",
     "configure_project",
     "accept_package",
+    "upgrade_project_template",
     "create_data_asset",
     "update_data_asset",
     "publish_data_asset",

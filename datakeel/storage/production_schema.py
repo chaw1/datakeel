@@ -12,6 +12,7 @@ from datakeel.storage.production_catalog_rows import (
     ProductionModelRow,
     ProductionPrelabelRunRow,
     ProductionTemplateRow,
+    ProductionTemplateVersionRow,
     install_catalog_constraints,
 )
 from datakeel.storage.production_idempotency import ProductionPreparationRow
@@ -31,6 +32,7 @@ from datakeel.storage.production_team_rows import (
     ProductionPackageInspectionRow,
     install_team_constraints,
 )
+from datakeel.storage.production_template_versions import lock_existing_templates
 
 REGISTERED_PRODUCTION_MODELS = (
     *REGISTERED_IDENTITY_RUNTIME_ROWS,
@@ -43,6 +45,7 @@ REGISTERED_PRODUCTION_MODELS = (
     ProductionModelRow,
     ProductionPrelabelRunRow,
     ProductionTemplateRow,
+    ProductionTemplateVersionRow,
     ProductionPreparationRow,
     ProductionAssignmentRow,
     ProductionMemberRow,
@@ -62,3 +65,4 @@ def install_production_schema(connection: Connection, *, sqlite: bool) -> None:
     install_catalog_constraints(connection, sqlite=sqlite)
     install_production_constraints(connection, sqlite=sqlite)
     install_team_constraints(connection, sqlite=sqlite)
+    lock_existing_templates(connection, sqlite=sqlite)

@@ -37,6 +37,7 @@ from scripts.standard_mutations import LEXICAL_RULE_MUTATIONS, STANDARD_MUTATION
 from scripts.table_mutations import TABLE_MUTATIONS
 from scripts.tails4_orientation_mutations import ORIENTATION_MUTATIONS
 from scripts.tails4_tails_mutations import TAILS_MUTATIONS
+from scripts.tails4_template_mutations import TEMPLATE_LOCK_MUTATIONS
 from scripts.tails4_workload_mutations import WORKLOAD_MUTATIONS
 from scripts.text_dedup_mutations import TEXT_DEDUP_MUTATIONS
 from scripts.timeseries_mutations import TIMESERIES_MUTATIONS
@@ -55,6 +56,7 @@ FEATURE_MUTATIONS = (
     *PRODUCTION_MUTATIONS,
     *PRODUCTION_TOOL_MUTATIONS,
     *PRODUCTION_CATALOG_MUTATIONS,
+    *TEMPLATE_LOCK_MUTATIONS,
     *PRODUCTION_TEAM_MUTATIONS,
     *WORKLOAD_MUTATIONS,
     *ADVANCED_MUTATIONS,

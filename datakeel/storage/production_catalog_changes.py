@@ -22,6 +22,7 @@ from datakeel.storage.production_catalog_rows import (
     ProductionModelRow,
     ProductionTemplateRow,
 )
+from datakeel.storage.production_template_versions import record_template_version
 
 
 def create_label_set(session: Session, params: CreateLabelSetParams) -> LabelSet:
@@ -137,7 +138,10 @@ def publish_label_set(session: Session, params: PublishLabelSetParams) -> LabelS
 
 
 def manage_template(session: Session, params: CreateLabelSetParams) -> ProductionTemplate:
-    """Perform explicit create/update/archive operations through the declared catalog action."""
+    """Perform explicit create/update/archive operations through the declared catalog action.
+
+    Each write appends a new template version; projects keep reading the version they locked.
+    """
     template = params.template
     if template is None:
         message = "Template definition is required"
@@ -168,6 +172,7 @@ def manage_template(session: Session, params: CreateLabelSetParams) -> Productio
         row.revision = value.revision
         row.payload = value.model_dump(mode="json")
     session.flush()
+    record_template_version(session, value)
     return value
 
 

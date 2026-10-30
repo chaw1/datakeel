@@ -45,6 +45,14 @@ class Project(BoundaryModel):
     label_set_id: str
     label_set_version: int
     template_id: str | None = None
+    template_version: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Template revision this project is locked to; only a signed "
+            "upgrade_project_template changes it. Null only before the template lock migration."
+        ),
+    )
     workflow_tier: WorkflowTier = "personal"
     guidelines: str = ""
     created_at: datetime

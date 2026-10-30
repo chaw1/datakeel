@@ -17,6 +17,7 @@ from datakeel.storage.production_catalog_rows import (
     ProductionModelRow,
     ProductionTemplateRow,
 )
+from datakeel.storage.production_template_versions import locked_template
 
 if TYPE_CHECKING:
     from datakeel.core.production_models import Project
@@ -127,7 +128,7 @@ def normalize_annotation(
 def validate_annotation(
     session: Session, project: "Project", annotation: AnnotationRecord, *, complete: bool = True
 ) -> None:
-    """Validate labels, geometry and the project's template rules and attribute fields.
+    """Validate labels, geometry and the project's locked template rules and attribute fields.
 
     ``complete`` also requires every required attribute; model drafts are only type-checked.
     """
@@ -137,18 +138,19 @@ def validate_annotation(
         message = "Annotation categories must belong to the project's published label set"
         raise ValidationError(message)
     _validate_geometry(annotation)
-    if project.template_id is not None:
-        template = require_template(session, project.template_id)
-        _validate_template(template, annotation)
+    template = locked_template(session, project)
+    if template is not None:
+        validate_template_content(template, annotation)
         validate_attributes(template.attributes, annotation, complete=complete)
 
 
 def require_complete_attributes(
     session: Session, project: "Project", annotation: AnnotationRecord
 ) -> None:
-    """Recheck a submitted head against the current template's attribute fields."""
-    if project.template_id is not None:
-        validate_attributes(require_template(session, project.template_id).attributes, annotation)
+    """Recheck a submitted head against the project's locked template attribute fields."""
+    template = locked_template(session, project)
+    if template is not None:
+        validate_attributes(template.attributes, annotation)
 
 
 def _validate_geometry(annotation: AnnotationRecord) -> None:
@@ -189,7 +191,8 @@ def _validate_geometry(annotation: AnnotationRecord) -> None:
             raise ValidationError(message)
 
 
-def _validate_template(template: ProductionTemplate, annotation: AnnotationRecord) -> None:
+def validate_template_content(template: ProductionTemplate, annotation: AnnotationRecord) -> None:
+    """Check enabled components, single-select labels and the annotation-count rules."""
     content = {
         "box": annotation.boxes,
         "classification": annotation.labels,

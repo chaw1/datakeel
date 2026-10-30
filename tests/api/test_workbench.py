@@ -245,7 +245,7 @@ def test_workbench_mixed_template_accepts_its_configured_components(
     db: Database, tmp_path: Path
 ) -> None:
     """Configured box and classification components can autosave in one ordinary revision."""
-    _, tasks = seed_workbench(db, tmp_path / "mixed-http")
+    project, tasks = seed_workbench(db, tmp_path / "mixed-http")
     run_action(
         db,
         "create_label_set",
@@ -260,6 +260,8 @@ def test_workbench_mixed_template_accepts_its_configured_components(
             },
         },
     )
+    # TAILS-4 R1: a template change reaches an existing project only through a signed upgrade.
+    run_action(db, "upgrade_project_template", {"project_id": project.id})
     annotation = annotation_for("box", tasks[0].sample_id).model_copy(update={"labels": ("Cat",)})
     with TestClient(create_app(db)) as client:
         prepared = client.post(

@@ -26,7 +26,7 @@ from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import resolve_download
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.image_geometry import read_geometry
-from datakeel.storage.production_catalog import require_label_set, require_template
+from datakeel.storage.production_catalog import require_label_set
 from datakeel.storage.production_queries import (
     get_project,
     get_task,
@@ -46,6 +46,11 @@ from datakeel.storage.production_statistics import (
     production_prelabel_accuracy,
 )
 from datakeel.storage.production_tasks import task_view
+from datakeel.storage.production_template_versions import (
+    latest_label_set_version,
+    latest_template,
+    locked_template,
+)
 from datakeel.storage.workbench_risk import review_order, task_risks
 from datakeel.storage.workbench_samples import (
     matches_search,
@@ -131,7 +136,9 @@ def workbench_project(
         raise NotFoundError(message)
     with db.session() as session:
         labels = require_label_set(session, project.label_set_id, project.label_set_version)
-        template = require_template(session, project.template_id) if project.template_id else None
+        template = locked_template(session, project)
+        latest = latest_template(session, project.template_id) if project.template_id else None
+        latest_labels = latest_label_set_version(session, project.label_set_id)
         scopes = effective_scopes(session, caller.actor, project_id)
     tasks, risks, names = _tasks(db, project, caller, query)
     page, next_cursor = _page(tasks, query.limit, query.cursor)
@@ -144,6 +151,8 @@ def workbench_project(
         packages=packages,
         label_set=labels,
         template=template,
+        latest_template=latest,
+        latest_label_set_version=latest_labels,
         effective_scopes=scopes,
         progress=progress,
         workload=annotator_workload(db, project_id),
@@ -207,7 +216,7 @@ def workbench_task(db: Database, task_id: str, caller: AccessContext) -> Workben
     task = get_task(db, task_id)
     project = get_project(db, task.project_id)
     with db.session() as session:
-        template = require_template(session, project.template_id) if project.template_id else None
+        template = locked_template(session, project)
     configured = template.component_config.get("components") if template else None
     text_sample = template is not None and (
         template.annotation_type == "text_span"

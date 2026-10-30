@@ -91,7 +91,16 @@ class WorkbenchProject(BoundaryModel):
     project: Project
     packages: tuple[TaskPackage, ...]
     label_set: LabelSet
-    template: ProductionTemplate | None
+    template: ProductionTemplate | None = Field(
+        description="The template version this project is locked to"
+    )
+    latest_template: ProductionTemplate | None = Field(
+        default=None,
+        description="The template's current revision; newer than template when an upgrade exists",
+    )
+    latest_label_set_version: int | None = Field(
+        default=None, description="Newest published version of the project's label set"
+    )
     effective_scopes: EffectiveScopes
     progress: ProductionProgress
     workload: ProductionWorkload
