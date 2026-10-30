@@ -7,7 +7,7 @@ export const wbTeamZh: Record<keyof typeof wbTeamEn, string> = {
   wbEditorDetailsOf: "{name}详情",
   wbUnnamedSample: "未命名样本",
   wbSearchTasks: "按文件名搜索",
-  wbSearchPlaceholder: "文件名或路径",
+  wbSearchPlaceholder: "文件名",
   wbRecordAttributes: "整条数据的属性",
   wbShapeAttributes: "属性",
   wbAttributesAdvanced: "高级：原始属性",

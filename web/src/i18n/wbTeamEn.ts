@@ -5,7 +5,7 @@ export const wbTeamEn = {
   wbEditorDetailsOf: "{name} details",
   wbUnnamedSample: "Unnamed sample",
   wbSearchTasks: "Search file names",
-  wbSearchPlaceholder: "File name or path",
+  wbSearchPlaceholder: "File name",
   wbRecordAttributes: "Whole-item attributes",
   wbShapeAttributes: "Attributes",
   wbAttributesAdvanced: "Advanced: raw attributes",
