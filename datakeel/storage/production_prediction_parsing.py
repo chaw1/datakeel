@@ -171,6 +171,8 @@ def parse_coco(
     predictions: list[ParsedPrediction] = []
     failures = list(document.parse_failures)
     if not document.images:
+        if document.parse_failures:
+            return PredictionParseResult(failures=document.parse_failures)
         return _failure(file.filename, "empty", "Prediction document contains no images")
     for raw in document.images:
         filename = str(raw.get("file_name", file.filename))
@@ -214,12 +216,30 @@ def _coco_results(
     for identifier, records in groups.items():
         try:
             sample = _sample(binding or identifier, identifier, samples)
-            width, height = file.image_width or sample.width, file.image_height or sample.height
-            images.append(
-                {"id": identifier, "file_name": sample.filename, "width": width, "height": height}
-            )
         except ValidationError:
-            images.append({"id": identifier, "file_name": identifier, "width": 0, "height": 0})
+            failures.append(
+                PredictionFailure(
+                    filename=identifier,
+                    code="unknown_image",
+                    message=f"image_id {identifier} matches no project image; "
+                    f"{len(records)} results not imported",
+                )
+            )
+            continue
+        width, height = file.image_width or sample.width, file.image_height or sample.height
+        if width is None or height is None:
+            failures.append(
+                PredictionFailure(
+                    filename=sample.filename,
+                    sample_id=sample.id,
+                    code="unknown_size",
+                    message=f"Image {sample.filename} has no recorded width and height",
+                )
+            )
+            continue
+        images.append(
+            {"id": identifier, "file_name": sample.filename, "width": width, "height": height}
+        )
         annotations.extend({**record, "image_id": identifier} for record in records)
     return _CocoDocument(
         images=tuple(images), annotations=tuple(annotations), parse_failures=tuple(failures)
@@ -278,13 +298,23 @@ def parse_yolo(
     mapping: dict[str, str],
     samples: tuple[PredictionSample, ...],
 ) -> PredictionParseResult:
-    """Convert normalized YOLO boxes to the existing pixel xyxy annotation convention."""
+    """Convert normalized YOLO boxes to the existing pixel xyxy annotation convention.
+
+    Without explicit width and height the image's recorded size is used. When neither exists
+    the whole import is refused, naming the image, instead of guessing a size.
+    """
     try:
         sample = _yolo_sample(file, samples)
-        width, height = file.image_width or sample.width, file.image_height or sample.height
-        if width is None or height is None:
-            message = "YOLO imports require immutable image dimensions or explicit width and height"
-            raise ValidationError(message)
+    except ValidationError as exc:
+        return _failure(file.filename, "invalid", str(exc))
+    width, height = file.image_width or sample.width, file.image_height or sample.height
+    if width is None or height is None:
+        message = (
+            f"Image {sample.filename} has no recorded width and height; "
+            f"pass image_width and image_height with {file.filename}"
+        )
+        raise ValidationError(message)
+    try:
         if (sample.width is not None and sample.width != width) or (
             sample.height is not None and sample.height != height
         ):

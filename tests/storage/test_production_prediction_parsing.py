@@ -7,6 +7,7 @@ import json
 
 import pytest
 
+from datakeel.core.errors import ValidationError
 from datakeel.core.models import utcnow
 from datakeel.core.production_catalog_models import LabelSet, PredictionFile, ProductionLabel
 from datakeel.core.production_prediction_models import PredictionSample
@@ -303,7 +304,9 @@ def test_yolo_dimensions_and_identity_are_bound_to_the_project_sample() -> None:
         file.model_copy(update={"sample_id": None}), _labels(), {}, _samples()
     ).failures
     no_size = (PredictionSample(id="sample-0", filename="sample-0.png"),)
-    assert parse_yolo(file, _labels(), {}, no_size).failures
+    # TAILS-3 B2: without any size the whole import is refused, naming the image and the file.
+    with pytest.raises(ValidationError, match=r"sample-0\.png .*renamed\.txt"):
+        parse_yolo(file, _labels(), {}, no_size)
     explicit = file.model_copy(update={"image_width": 100, "image_height": 80})
     assert len(parse_yolo(explicit, _labels(), {}, no_size).predictions) == 1
 

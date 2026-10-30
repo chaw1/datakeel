@@ -85,7 +85,7 @@ MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批
 
 预测框四条边允许绝对 `1e-7` 像素的浮点舍入容差，通过后把坐标裁回图片边界。容差不随图片尺寸放大，只吸收转换噪声；超过容差或裁剪后没有正面积的框仍然拒绝。
 
-普通图片导入目前不会读图片头补齐清单宽高。除非项目绑定的版本已记录尺寸，YOLO 需显式提供 `image_width`、`image_height`。完整 COCO 文档可在 `images` 中逐图提供尺寸；多图 COCO results 数组要求每个 `image_id` 精确匹配项目样本 ID 或唯一文件名，且每图有可用宽高，不按项目顺序猜配导出序号。缺少尺寸时，使用完整 COCO 文档，或按图分文件绑定 `sample_id` 并提供宽高。
+图片导入时读图片头，把宽高记在清单元数据的 `width`、`height` 里；读不出来就两项都记为 `null`（未知）。YOLO 没带 `image_width`、`image_height` 时用记下的宽高；这张图也没有记录时，整份导入返回 422，写明是哪张图、哪个预测文件。完整 COCO 文档可在 `images` 中逐图提供尺寸。多图 COCO results 数组可以整份导入：按 `image_id` 分组，`image_id` 要精确匹配项目样本 ID 或唯一文件名，不按项目顺序猜配导出序号；对不上任何图的组列为 `unknown_image` 并写明有几条结果没导入，对上了但没有宽高的图列为 `unknown_size`，不会静默丢掉。
 
 模板校验框、多边形、分类和文本片段，`component_config.components` 可配置启用组件集合，支持 `min_annotations`、`max_annotations`；`label_mode: "single"` 约束单选。关键点内容仍不支持。
 
