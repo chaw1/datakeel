@@ -49,9 +49,9 @@ class WorkbenchSampleName(BoundaryModel):
     name: str = Field(description="The sample's file name, without any directory.")
     path: str = Field(
         description=(
-            "Currently the same file name: datasets record only the base file name at import, "
-            "so a path inside the dataset is not available until import records it. "
-            "Server paths and object keys are never returned."
+            "The path under the imported directory, such as `site-a/day-1/shelf.png`. "
+            "Files imported on their own, and datasets imported before relative paths were "
+            "recorded, show the file name. Server paths and object keys are never returned."
         )
     )
 
@@ -184,3 +184,19 @@ class SkillDispatchPreview(BoundaryModel):
     picks: tuple[DispatchPick, ...]
     people: tuple[DispatchLoad, ...]
     unassigned: tuple[DispatchSkip, ...]
+
+
+class AssignablePerson(BoundaryModel):
+    """One active registered person who may receive one stage's work in a project."""
+
+    actor: str
+    display_name: str
+    current: int = Field(ge=0)
+
+
+class WorkbenchAssignees(BoundaryModel):
+    """Who a manager can assign by name; earlier holders such as `local` need no account."""
+
+    project_id: str
+    stage: AssignmentStage
+    people: tuple[AssignablePerson, ...]

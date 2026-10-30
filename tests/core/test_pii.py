@@ -239,7 +239,8 @@ def test_labelled_value_when_context_supplied_uses_original_value_offsets(label:
     assert matches[0].end == len(value) + 2
     assert redact_pii(value, label=label) == "[SECRET]"
     assert not detect_pii("[SECRET]", label=label)
-    assert not detect_pii("short", label=label)
+    assert not detect_pii("abc", label=label)
+    assert bool(detect_pii("short", label=label)) is (label == "password")
     assert not detect_pii("a normal explanatory phrase", label="api_key")
 
 

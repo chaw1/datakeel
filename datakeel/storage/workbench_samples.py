@@ -6,6 +6,7 @@
 from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import PurePosixPath
+from typing import cast
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -35,8 +36,19 @@ from datakeel.storage.production_team_rows import ProductionLeaseReleaseRow
 _RECENT_RELEASES = 10
 
 
+def _relative_path(item: dict[str, object]) -> str | None:
+    metadata = item.get("metadata")
+    if not isinstance(metadata, dict):
+        return None
+    value = cast("dict[str, object]", metadata).get("relative_path")
+    return value if isinstance(value, str) and value else None
+
+
 def sample_names(session: Session, project: Project) -> dict[str, tuple[str, str]]:
-    """Map pinned samples to their file name and recorded manifest name, today the same."""
+    """Map pinned samples to their file name and path under the import root.
+
+    Datasets imported before directory imports recorded a relative path keep the file name.
+    """
     version = session.get(VersionRow, project.version_id)
     if version is None or version.dataset_id != project.dataset_id:
         return {}
@@ -44,7 +56,7 @@ def sample_names(session: Session, project: Project) -> dict[str, tuple[str, str
     for item in version.manifest:
         identifier, filename = item.get("id"), item.get("filename")
         if isinstance(identifier, str) and isinstance(filename, str):
-            path = filename.replace("\\", "/")
+            path = (_relative_path(item) or filename).replace("\\", "/")
             names[identifier] = (PurePosixPath(path).name or path, path)
     return names
 

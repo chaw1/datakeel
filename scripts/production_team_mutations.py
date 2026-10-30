@@ -146,4 +146,12 @@ PRODUCTION_TEAM_MUTATIONS = (
         "test_lease_status_after_upgrade_reports_the_enforced_deadline",
         runner="pytest",
     ),
+    Mutation(
+        name="production-reopen-open-work-keeps-round",
+        path="storage/production_reviews.py",
+        before="    if task.state in REWORK_STATES:",
+        after="    if True:",
+        case="tests/actions/test_production_reopen_reassign.py::test_reopen_round_mutation_guard",
+        runner="pytest",
+    ),
 )

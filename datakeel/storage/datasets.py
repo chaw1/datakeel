@@ -5,7 +5,7 @@
 
 from collections.abc import Iterable, Iterator, Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -15,8 +15,12 @@ from datakeel.semantic import classify
 from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.events import append_event
 from datakeel.storage.file_state import overlay_files
+from datakeel.storage.import_sources import image_dimensions, import_sources
 from datakeel.storage.media_artifacts import persist_preview
 from datakeel.storage.objects import ObjectStore, digest, object_store
+
+if TYPE_CHECKING:
+    from pydantic import JsonValue
 
 
 def persist_file(item: FileItem, store: ObjectStore | None = None) -> FileItem:
@@ -60,14 +64,21 @@ def materialize_files(items: Sequence[FileItem | dict[str, Any]]) -> list[FileIt
 
 def _prepared_files(paths: Sequence[Path]) -> Iterator[FileItem]:
     store = object_store()
-    for path in paths:
+    for path, relative in import_sources(paths):
         semantic = classify(path.name)
+        modality = semantic.get("modality", "unknown")
+        metadata: dict[str, JsonValue] = {"semantic": semantic.model_dump(mode="json")}
+        if relative is not None:
+            # Only the path under the chosen import root; the machine's own path stays private.
+            metadata["relative_path"] = relative
+        if modality == "image":
+            metadata.update(image_dimensions(path))
         yield persist_file(
             FileItem(
                 path=str(path.resolve()),
                 filename=path.name,
-                modality=semantic.get("modality", "unknown"),
-                metadata={"semantic": semantic.model_dump(mode="json")},
+                modality=modality,
+                metadata=metadata,
             ),
             store,
         )

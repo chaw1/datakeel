@@ -50,4 +50,28 @@ PRODUCTION_CATALOG_MUTATIONS = (
         ),
         runner="pytest",
     ),
+    Mutation(
+        name="import-records-image-size",
+        path="storage/datasets.py",
+        before="metadata.update(image_dimensions(path))",
+        after="pass",
+        case="tests/storage/test_import_size_predictions.py::test_import_size_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="yolo-unknown-size-refused-naming-image",
+        path="storage/production_prediction_parsing.py",
+        before="    if width is None or height is None:\n        message = (",
+        after="    if False:\n        message = (",
+        case="tests/storage/test_import_size_predictions.py::test_import_size_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="coco-results-unknown-ids-listed",
+        path="storage/production_prediction_parsing.py",
+        before="if document.parse_failures:",
+        after="if False:",
+        case="tests/storage/test_import_size_predictions.py::test_import_size_mutation_guard",
+        runner="pytest",
+    ),
 )

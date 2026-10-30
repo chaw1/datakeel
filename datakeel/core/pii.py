@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import re
 from datetime import date
 from ipaddress import IPv6Address, ip_address
 from typing import TYPE_CHECKING, Literal
@@ -14,6 +13,7 @@ from pydantic import Field
 
 from datakeel.core import pii_patterns as patterns
 from datakeel.core.models import Record
+from datakeel.core.pii_credentials import credential_spans, labeled_secret
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -37,32 +37,6 @@ _ID_LENGTH = 18
 _MAX_DECIMAL_DIGIT = 9
 _MIN_PHONE_DIGITS = 8
 _MAX_PHONE_DIGITS = 15
-_MIN_SECRET_LENGTH = 8
-_SECRET_LABELS = frozenset(
-    {
-        "apikey",
-        "accesstoken",
-        "authtoken",
-        "secretkey",
-        "secretaccesskey",
-        "awssecretaccesskey",
-        "clientsecret",
-        "githubtoken",
-        "ghtoken",
-        "password",
-        "passwd",
-        "pwd",
-        "secret",
-        "token",
-        "密码",
-        "口令",
-        "密钥",
-        "令牌",
-        "访问密钥",
-        "访问令牌",
-    }
-)
-_PLACEHOLDERS = frozenset(f"[{kind.upper()}]" for kind in _PRIORITY) | {"[REDACTED]"}
 _CARD_ISSUERS = (
     ({13, 16, 19}, "4", "4"),
     ({15}, "34", "34"),
@@ -171,7 +145,22 @@ def _card_prefix(digits: str) -> bool:
     )
 
 
+def _splits_brackets(value: str) -> bool:
+    """Return whether a candidate starts or ends between a pair of ASCII brackets.
+
+    Only the generic pattern can contain a lone bracket; full-width pairs never enter it.
+    """
+    depth = 0
+    for char in value:
+        depth += (char == "(") - (char == ")")
+        if depth < 0:
+            return True
+    return depth > 0
+
+
 def _valid_phone(value: str) -> bool:
+    if _splits_brackets(value):
+        return False
     digits = "".join(char for char in value if char.isdigit())
     digits = digits.removeprefix("00")
     if not _MIN_PHONE_DIGITS <= len(digits) <= _MAX_PHONE_DIGITS or len(set(digits)) == 1:
@@ -203,57 +192,10 @@ def _candidates(text: str) -> Iterator[PiiMatch]:
                     match.group().rstrip(".,;!?\u3002\uff0c\uff1b\uff01\uff1f")
                 )
             yield PiiMatch(type=kind, start=match.start(), end=end)
-    yield from _credential_candidates(text)
+    for start, end in credential_spans(text):
+        yield PiiMatch(type="secret", start=start, end=end)
     yield from _number_candidates(text)
     yield from _ip_candidates(text)
-
-
-def _bare_secret(value: str, start: int) -> PiiMatch | None:
-    value = value.rstrip(",;")
-    while any(
-        value.endswith(closing) and value.count(closing) > value.count(opening)
-        for opening, closing in (("(", ")"), ("[", "]"), ("{", "}"))
-    ):
-        value = value[:-1].rstrip(",;")
-    if (
-        len(value) >= _MIN_SECRET_LENGTH
-        and value not in _PLACEHOLDERS
-        and any(char.isalnum() for char in value)
-    ):
-        return PiiMatch(type="secret", start=start, end=start + len(value))
-    return None
-
-
-def _credential_candidates(text: str) -> Iterator[PiiMatch]:
-    if patterns.LABEL_HINT.search(text) is None:
-        return
-    urls = tuple(patterns.CREDENTIAL_URL.finditer(text)) if "://" in text else ()
-    starts = [
-        match.start()
-        for match in patterns.CREDENTIAL_ASSIGNMENT.finditer(text)
-        if not any(url.start() <= match.start() < url.end() for url in urls)
-    ]
-    for index, start in enumerate(starts):
-        if match := patterns.LABELED_SECRET.match(text, start):
-            end = min(
-                match.end("value"), starts[index + 1] if index + 1 < len(starts) else len(text)
-            )
-            value = text[match.start("value") : end]
-            if end < match.end("value"):
-                value = value.rstrip("&|")
-            if candidate := _bare_secret(value, match.start("value")):
-                yield candidate
-    for match in patterns.BEARER.finditer(text):
-        yield PiiMatch(type="secret", start=match.start("value"), end=match.end("value"))
-    for start in starts:
-        match = patterns.QUOTED_SECRET.match(text, start)
-        if match is not None and (
-            candidate := _labeled_secret(match.group("value"), match.group("label"))
-        ):
-            value_start = match.start("value")
-            yield PiiMatch(
-                type="secret", start=value_start + candidate.start, end=value_start + candidate.end
-            )
 
 
 def _ip_candidates(text: str) -> Iterator[PiiMatch]:
@@ -296,8 +238,35 @@ def _number_candidates(text: str) -> Iterator[PiiMatch]:
         for match in pattern.finditer(text):
             if pattern is not patterns.CHINA_MOBILE and _numeric_prefix(text, match.start()):
                 continue
+            if kind == "phone" and _reference_number(text, match.start(), match.end()):
+                continue
             if validate(match.group()):
                 yield PiiMatch(type=kind, start=match.start(), end=match.end())
+    yield from _phone_sequence_candidates(text)
+
+
+def _phone_sequence_candidates(text: str) -> Iterator[PiiMatch]:
+    """Report each complete phone in a run separated by single spaces."""
+    for sequence in patterns.PHONE_SEQUENCE.finditer(text):
+        for match in patterns.SEQUENCED_PHONE.finditer(text, sequence.start(), sequence.end()):
+            if _valid_phone(match.group()) and not _reference_number(
+                text, match.start(), match.end()
+            ):
+                yield PiiMatch(type="phone", start=match.start(), end=match.end())
+
+
+def _reference_number(text: str, start: int, end: int) -> bool:
+    """Treat numbers labelled as serial, order or batch identifiers as references."""
+    if text.startswith(patterns.PHONE_REFERENCE_AFTER, end):
+        return True
+    reference = patterns.PHONE_REFERENCE_BEFORE.search(text, max(0, start - 16), start)
+    if reference is None:
+        return False
+    label_start = reference.start()
+    label = patterns.PHONE_LABEL_BEFORE_REFERENCE.search(
+        text, max(0, label_start - 16), label_start
+    )
+    return label is None
 
 
 def _numeric_prefix(text: str, start: int) -> bool:
@@ -307,26 +276,6 @@ def _numeric_prefix(text: str, start: int) -> bool:
     while index >= 0 and text[index] in " -()\uff08\uff09":
         index -= 1
     return index >= 0 and text[index].isdigit()
-
-
-def _labeled_secret(text: str, label: str | None) -> PiiMatch | None:
-    if label is None:
-        return None
-    normalized = re.sub(r"[\W_]", "", label.casefold())
-    value = text.strip()
-    if (
-        normalized not in _SECRET_LABELS
-        or len(value) < _MIN_SECRET_LENGTH
-        or value in _PLACEHOLDERS
-        or not any(char.isalnum() for char in value)
-    ):
-        return None
-    if normalized not in {"password", "passwd", "pwd", "密码", "口令"} and not (
-        patterns.SECRET_VALUE.fullmatch(value)
-    ):
-        return None
-    start = len(text) - len(text.lstrip())
-    return PiiMatch(type="secret", start=start, end=start + len(value))
 
 
 def _outer_candidates(candidates: list[PiiMatch]) -> Iterator[PiiMatch]:
@@ -358,8 +307,8 @@ def detect_pii(text: str, *, label: str | None = None) -> tuple[PiiMatch, ...]:
     all offsets still refer to the original value, without a synthetic prefix.
     """
     candidates = list(_candidates(text))
-    if finding := _labeled_secret(text, label):
-        candidates.append(finding)
+    if finding := labeled_secret(text, label):
+        candidates.append(PiiMatch(type="secret", start=finding[0], end=finding[1]))
     selected: list[PiiMatch] = []
     for match in sorted(
         _outer_candidates(candidates),

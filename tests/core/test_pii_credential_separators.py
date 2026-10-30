@@ -56,7 +56,7 @@ def test_compound_separator_preserves_adjacent_assignment_labels(separator: str)
 
 
 @pytest.mark.parametrize("separator", ["是:", "是\uff1a ", "为:", "为\uff1a "])
-@pytest.mark.parametrize("value", ["", " ", "short", "!!!!!!!!", "[SECRET]", "[REDACTED]"])
+@pytest.mark.parametrize("value", ["", " ", "abc", "!!!!!!!!", "[SECRET]", "[REDACTED]"])
 def test_compound_separator_without_a_valid_secret_stays_negative(
     separator: str, value: str
 ) -> None:

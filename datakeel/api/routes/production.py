@@ -16,6 +16,7 @@ from datakeel.api.identity_access import http_actor
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import JsonDocument
+from datakeel.core.production_models import AssignmentStage
 from datakeel.core.production_reads import (
     ProductionKind,
     ProductionObjectFilters,
@@ -24,6 +25,7 @@ from datakeel.core.production_reads import (
 from datakeel.core.workbench_models import (
     SkillDispatchPreview,
     SkillDispatchPreviewRequest,
+    WorkbenchAssignees,
     WorkbenchIndex,
     WorkbenchProject,
     WorkbenchProjectQuery,
@@ -35,6 +37,7 @@ from datakeel.core.workbench_models import (
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import FunctionResult
 from datakeel.ontology.production_functions import PRODUCTION_READ_MODELS
+from datakeel.storage.workbench_assignees import assignees
 from datakeel.storage.workbench_reads import (
     task_source,
     workbench_index,
@@ -87,6 +90,17 @@ def project_dispatch_preview(
 ) -> SkillDispatchPreview:
     """Preview who a skill dispatch would assign each task to, and why others stay unassigned."""
     return dispatch_preview(db, project_id, _caller(request), body)
+
+
+@router.get("/projects/{project_id}/assignees")
+def project_assignees(
+    project_id: str,
+    db: DatabaseDependency,
+    request: Request,
+    stage: AssignmentStage = "annotation",
+) -> WorkbenchAssignees:
+    """List registered people who can take this stage's work, for assigning by name."""
+    return assignees(db, project_id, _caller(request), stage)
 
 
 @router.get("/tasks/{task_id}/status")
