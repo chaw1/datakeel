@@ -85,13 +85,26 @@ def _load_shards(root: Path) -> list[tuple[ShardSelection, ShardOutcomes | None]
     shards: list[tuple[ShardSelection, ShardOutcomes | None]] = []
     for selection_path in sorted(root.rglob(SELECTION_FILE)):
         outcomes_path = selection_path.with_name(OUTCOMES_FILE)
+        selection = _load_selection(selection_path)
         outcomes = (
-            ShardOutcomes.model_validate_json(outcomes_path.read_text(encoding="utf-8"))
+            _plain_outcomes(
+                ShardOutcomes.model_validate_json(outcomes_path.read_text(encoding="utf-8")),
+                selection,
+            )
             if outcomes_path.is_file()
             else None
         )
-        shards.append((_load_selection(selection_path), outcomes))
+        shards.append((selection, outcomes))
     return shards
+
+
+def _plain_outcomes(outcomes: ShardOutcomes, selection: ShardSelection) -> ShardOutcomes:
+    """Key reported results by the plain collection IDs the selection uses."""
+    rename = selection.reported_as
+    return ShardOutcomes(
+        outcomes={rename.get(node, node): outcome for node, outcome in outcomes.outcomes.items()},
+        durations={rename.get(node, node): spent for node, spent in outcomes.durations.items()},
+    )
 
 
 def summarize(shards: Sequence[tuple[ShardSelection, ShardOutcomes | None]]) -> Counter[str]:

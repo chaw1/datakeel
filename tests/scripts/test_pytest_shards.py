@@ -202,6 +202,15 @@ def _write_project(root: Path) -> None:
             "    pytest.skip('declared skip')\n",
             encoding="utf-8",
         )
+    # Grouped tests: on workers loadgroup reports them as ``<id>@together``.
+    (tests / "test_grouped.py").write_text(
+        "import pytest\n"
+        "@pytest.mark.xdist_group(name='together')\n"
+        "@pytest.mark.parametrize('number', range(2))\n"
+        "def test_grouped(number):\n"
+        "    assert number < 2\n",
+        encoding="utf-8",
+    )
 
 
 def test_real_xdist_shards_cover_the_collection_once_and_the_cli_agrees(tmp_path: Path) -> None:
@@ -229,7 +238,15 @@ def test_real_xdist_shards_cover_the_collection_once_and_the_cli_agrees(tmp_path
     arguments = ["--collection", str(tmp_path / "full"), "--shards", str(reports), "--count", "3"]
     checked = _check(arguments)
     assert checked.returncode == 0, checked.stdout
-    assert "collected 20; passed 15; skipped 5" in checked.stdout
+    assert "collected 22; passed 17; skipped 5" in checked.stdout
+    reported = {
+        renamed
+        for index in (1, 2, 3)
+        for renamed in json.loads((reports / f"shard-{index}" / SELECTION_FILE).read_text())[
+            "reported_as"
+        ]
+    }
+    assert reported == {f"tests/test_grouped.py::test_grouped[{n}]@together" for n in (0, 1)}
     target = reports / "shard-2" / SELECTION_FILE
     selection = json.loads(target.read_text())
     selection["selected"] = selection["selected"][1:]

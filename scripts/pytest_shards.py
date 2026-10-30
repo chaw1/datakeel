@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+from pydantic import Field
 
 from scripts.shard_spec import ShardModel, ShardSpec, parse_shard
 
@@ -25,11 +26,16 @@ _FAILED = ("failed", "error")
 
 
 class ShardSelection(ShardModel):
-    """The complete collection seen by one process and the node IDs it kept."""
+    """The complete collection seen by one process and the node IDs it kept.
+
+    IDs are the plain collection IDs; ``reported_as`` maps the IDs that test reports carry
+    when pytest-xdist's loadgroup appended an ``@group`` suffix back to the plain ones.
+    """
 
     shard: ShardSpec | None
     collected: tuple[str, ...]
     selected: tuple[str, ...]
+    reported_as: dict[str, str] = Field(default_factory=dict)
 
 
 class ShardOutcomes(ShardModel):
@@ -42,6 +48,18 @@ class ShardOutcomes(ShardModel):
 def module_of(nodeid: str) -> str:
     """Return the test file that owns a node ID; a whole file always stays in one shard."""
     return nodeid.split("::", 1)[0]
+
+
+def plain_nodeid(item: pytest.Item) -> str:
+    """Drop the exact ``@group`` suffix loadgroup appends on workers to grouped tests."""
+    names = {
+        str(mark.args[0] if mark.args else mark.kwargs.get("name", "default"))
+        for mark in item.iter_markers("xdist_group")
+    }
+    suffix = "@" + "_".join(sorted(names))
+    if names and item.nodeid.endswith(suffix):
+        return item.nodeid.removesuffix(suffix)
+    return item.nodeid
 
 
 def load_durations(path: Path = DURATIONS_PATH) -> dict[str, float]:
@@ -103,7 +121,8 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         spec = None if value is None else parse_shard(value)
     except ValueError as error:
         raise pytest.UsageError(str(error)) from error
-    collected = tuple(item.nodeid for item in items)
+    plain = {item.nodeid: plain_nodeid(item) for item in items}
+    collected = tuple(plain[item.nodeid] for item in items)
     if spec is not None:
         plan = plan_shards(collected, spec.count, load_durations())
         kept = [item for item in items if plan[module_of(item.nodeid)] == spec.index]
@@ -116,7 +135,14 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         directory = Path(report)
         directory.mkdir(parents=True, exist_ok=True)
         selection = ShardSelection(
-            shard=spec, collected=collected, selected=tuple(item.nodeid for item in items)
+            shard=spec,
+            collected=collected,
+            selected=tuple(plain[item.nodeid] for item in items),
+            reported_as={
+                item.nodeid: plain[item.nodeid]
+                for item in items
+                if item.nodeid != plain[item.nodeid]
+            },
         )
         (directory / SELECTION_FILE).write_text(selection.model_dump_json(), encoding="utf-8")
 
