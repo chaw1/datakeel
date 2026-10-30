@@ -12409,7 +12409,7 @@ export interface components {
             name: string;
             /**
              * Path
-             * @description Currently the same file name: datasets record only the base file name at import, so a path inside the dataset is not available until import records it. Server paths and object keys are never returned.
+             * @description The path under the imported directory, such as `site-a/day-1/shelf.png`. Files imported on their own, and datasets imported before relative paths were recorded, show the file name. Server paths and object keys are never returned.
              */
             path: string;
             /** Sample Id */

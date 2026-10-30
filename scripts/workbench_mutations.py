@@ -228,4 +228,28 @@ WORKBENCH_MUTATIONS = (
         case="tests/storage/test_workbench_assignees.py::test_assignees_mutation_guard",
         runner="pytest",
     ),
+    Mutation(
+        name="import-records-relative-path",
+        path="storage/datasets.py",
+        before='metadata["relative_path"] = relative',
+        after="pass",
+        case="tests/storage/test_import_layout.py::test_relative_path_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="import-skips-hidden-entries",
+        path="storage/import_sources.py",
+        before='or any(part.startswith(".") for part in relative.parts)',
+        after="",
+        case="tests/storage/test_import_layout.py::test_relative_path_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-sample-name-relative-path",
+        path="storage/workbench_samples.py",
+        before='path = (_relative_path(item) or filename).replace("\\\\", "/")',
+        after='path = filename.replace("\\\\", "/")',
+        case="tests/storage/test_import_layout.py::test_relative_path_mutation_guard",
+        runner="pytest",
+    ),
 )

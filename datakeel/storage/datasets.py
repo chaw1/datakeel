@@ -15,7 +15,7 @@ from datakeel.semantic import classify
 from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.events import append_event
 from datakeel.storage.file_state import overlay_files
-from datakeel.storage.import_sources import image_dimensions
+from datakeel.storage.import_sources import image_dimensions, import_sources
 from datakeel.storage.media_artifacts import persist_preview
 from datakeel.storage.objects import ObjectStore, digest, object_store
 
@@ -64,10 +64,13 @@ def materialize_files(items: Sequence[FileItem | dict[str, Any]]) -> list[FileIt
 
 def _prepared_files(paths: Sequence[Path]) -> Iterator[FileItem]:
     store = object_store()
-    for path in paths:
+    for path, relative in import_sources(paths):
         semantic = classify(path.name)
         modality = semantic.get("modality", "unknown")
         metadata: dict[str, JsonValue] = {"semantic": semantic.model_dump(mode="json")}
+        if relative is not None:
+            # Only the path under the chosen import root; the machine's own path stays private.
+            metadata["relative_path"] = relative
         if modality == "image":
             metadata.update(image_dimensions(path))
         yield persist_file(
