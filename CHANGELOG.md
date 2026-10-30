@@ -28,6 +28,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- The mutation gate gives each full golden evaluation 900 seconds instead of 300. Mutations run in parallel, and on a slow shared CI runner one evaluation exceeded 300 seconds and aborted the whole gate; test subprocesses keep their 300-second limit.
 - `Alt+N` / `Alt+P` pressed while a page or task is still loading are queued and replayed in order, so rapid presses across page edges land on the right task.
 - While drawing a polygon, a click on top of an existing shape adds a point, including the first one.
 - After a task is taken back, a save refused because the caller no longer holds it locks the page instead of showing a raw 403 and **Retry save**; **Back to list** leaves at once and reloads the list.

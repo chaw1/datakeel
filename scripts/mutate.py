@@ -25,8 +25,9 @@ from scripts.test_workers import test_worker_count
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
-# Shared CI runners can be several times slower than a laptop; this only bounds hangs.
+# Hang bounds only: CI runners are slow, and golden evaluations share them with other workers.
 SUBPROCESS_TIMEOUT_SECONDS = 300
+EVAL_TIMEOUT_SECONDS = 900
 
 
 MUTATIONS = (
@@ -176,7 +177,7 @@ def _evaluate(directory: Path) -> tuple[int, EvalReport]:
         env=local_environment(directory),
         capture_output=True,
         text=True,
-        timeout=SUBPROCESS_TIMEOUT_SECONDS,
+        timeout=EVAL_TIMEOUT_SECONDS,
         check=False,
     )
     if process.returncode not in (0, 1):
