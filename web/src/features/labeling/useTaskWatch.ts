@@ -18,6 +18,8 @@ type TaskState = ProductionTask["state"];
 
 /** Status reads every 5 s keep "changed elsewhere" notices well inside the 10 s budget. */
 export const WATCH_INTERVAL_MS = 5_000;
+/** A hidden tab reads every 30 s instead, and catches up as soon as it is shown again. */
+export const HIDDEN_WATCH_INTERVAL_MS = 30_000;
 /** Team leases are renewed every 2 minutes while the task is open, or sooner for short leases. */
 export const HEARTBEAT_INTERVAL_MS = 120_000;
 
@@ -112,11 +114,19 @@ export function useTaskWatch({
     return status;
   }, [accept, taskId]);
   useEffect(() => {
+    let last = 0;
     const poll = () => {
+      last = Date.now();
       void read().catch(() => undefined);
     };
     poll();
-    const timer = setInterval(poll, WATCH_INTERVAL_MS);
+    const timer = setInterval(() => {
+      if (
+        document.visibilityState !== "hidden" ||
+        Date.now() - last >= HIDDEN_WATCH_INTERVAL_MS
+      )
+        poll();
+    }, WATCH_INTERVAL_MS);
     const visible = () => {
       if (document.visibilityState === "visible") poll();
     };

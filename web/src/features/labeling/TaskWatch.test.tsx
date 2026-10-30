@@ -16,6 +16,7 @@ import * as actions from "./actions";
 import { TaskSession } from "./TaskSession";
 import {
   HEARTBEAT_INTERVAL_MS,
+  HIDDEN_WATCH_INTERVAL_MS,
   WATCH_INTERVAL_MS,
   heartbeatInterval,
 } from "./useTaskWatch";
@@ -129,6 +130,31 @@ it("renews at min(2 minutes, lease / 3), so a one-minute lease survives three mi
   for (let second = 0; second < 180; second += 5) await advance(5_000);
   expect(screen.queryByText("This task was taken back")).toBeNull();
   expect(heartbeats().length).toBeGreaterThanOrEqual(9);
+});
+
+it("slows status reads to every 30 s while hidden, catches up when shown, and keeps renewing", async () => {
+  let hidden = false;
+  const visibility = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockImplementation(() => (hidden ? "hidden" : "visible"));
+  mount();
+  await advance(10);
+  const reads = () => vi.mocked(production.getTaskStatus).mock.calls.length;
+  hidden = true;
+  const hiddenAt = reads();
+  await advance(HIDDEN_WATCH_INTERVAL_MS - WATCH_INTERVAL_MS);
+  expect(reads()).toBe(hiddenAt);
+  await advance(WATCH_INTERVAL_MS);
+  expect(reads()).toBe(hiddenAt + 1);
+  const beats = heartbeats().length;
+  await advance(HEARTBEAT_INTERVAL_MS);
+  expect(heartbeats().length).toBe(beats + 1);
+  hidden = false;
+  const shownAt = reads();
+  document.dispatchEvent(new Event("visibilitychange"));
+  await advance(1);
+  expect(reads()).toBe(shownAt + 1);
+  visibility.mockRestore();
 });
 
 it("never renews silently: a failed renewal is shown with a retry", async () => {
