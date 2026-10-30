@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from datakeel.actions.production_parameters import SaveRevisionParams
 from datakeel.core.errors import AuthorizationError, ConflictError, ValidationError
 from datakeel.core.models import new_id, utcnow
-from datakeel.core.production_models import AnnotationRevision
+from datakeel.core.production_models import AnnotationRevision, PassThrough
 from datakeel.storage.production_catalog import normalize_annotation, validate_annotation
 from datakeel.storage.production_leases import raise_if_reclaimed, require_live_lease
 from datakeel.storage.production_rows import (
@@ -66,6 +66,8 @@ def append_revision(
     task: ProductionTaskRow,
     params: SaveRevisionParams,
     actor: str,
+    *,
+    pass_through: PassThrough | None = None,
 ) -> AnnotationRevision:
     """Append a revision through compare-and-swap; model imports use the same immutable path."""
     project = require_mutable_project(session, task.project_id)
@@ -85,6 +87,7 @@ def append_revision(
         task_id=task.id,
         actor=actor,
         created_at=utcnow(),
+        pass_through=pass_through,
         **params.model_dump(exclude={"request_id", "task_id"}),
     )
     changed = session.scalar(

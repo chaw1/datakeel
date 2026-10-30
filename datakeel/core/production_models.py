@@ -101,6 +101,18 @@ class Assignment(BoundaryModel):
     end_reason: str | None = None
 
 
+class PassThrough(BoundaryModel):
+    """Who answers for a model draft submitted without a person, by which model and bar."""
+
+    model_id: str
+    confidence: float = Field(ge=0, le=1)
+    high: float = Field(ge=0, le=1)
+    low: float | None = Field(default=None, ge=0, le=1)
+    threshold_source: Literal["configured", "calibrated"]
+    reviewed_objects: int = Field(ge=0)
+    triggered_by: str
+
+
 class AnnotationRevision(BoundaryModel):
     """Append one annotation and its precise human or model provenance forever."""
 
@@ -118,6 +130,10 @@ class AnnotationRevision(BoundaryModel):
         description="Model confidence per object: label set, boxes, polygons, then spans.",
     )
     confidence_tier: ConfidenceTier | None = None
+    pass_through: PassThrough | None = Field(
+        default=None,
+        description="Set when a high-confidence model draft was submitted for review directly.",
+    )
     created_at: datetime
 
 

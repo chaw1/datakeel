@@ -8,148 +8,88 @@ projects a high-risk submission is always reviewed; a low-risk one is reviewed w
 reproducible draw falls under the project's review sample rate (100% by default, so every
 submission is reviewed as before) and is otherwise approved with an audit note. Personal
 projects only record the result for the annotator to see; nothing is blocked.
+
+Risk is recomputed when the evidence changes, not only at submission: when a head is scored,
+every near-duplicate partner still waiting for review is rescored against it and, if its
+reasons changed, gets a new append-only review row for the same revision with the original
+decision and draw. Both the review queue and the task view read the newest row, so they show
+the same recomputed reasons, and the history keeps every earlier score.
 """
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from datakeel.annotation_qa import (
-    HIGH_RISK,
-    compare_records,
-    disagreement_reason,
-    find_suspicions,
-    finding_reason,
-    record_objects,
-    risk_score,
-    sample_draw,
-)
-from datakeel.core.annotation_models import AnnotationBatch, AnnotationRecord, NearDuplicatePair
-from datakeel.core.errors import ValidationError
+from datakeel.annotation_qa import HIGH_RISK, risk_score, sample_draw
 from datakeel.core.models import new_id, utcnow
-from datakeel.core.prelabel_models import AIReview, ObjectRef, RiskReason
+from datakeel.core.prelabel_models import AIReview, RiskReason
 from datakeel.core.production_models import AnnotationRevision, Project
-from datakeel.operators.evidence.contracts import read_near_duplicate
-from datakeel.storage.production_ai_rows import ProductionAIReviewRow
+from datakeel.storage.production_ai_facts import load_facts
+from datakeel.storage.production_ai_rows import ProductionAIReviewRow, latest_reviews
+from datakeel.storage.production_ai_rules import head_reasons
 from datakeel.storage.production_assignments import finish_assignment
-from datakeel.storage.production_catalog import require_complete_attributes, validate_annotation
-from datakeel.storage.production_prelabel_refs import object_confidences
-from datakeel.storage.production_rows import ProductionRevisionRow, ProductionTaskRow
-from datakeel.storage.production_task_images import sample_hash, sample_keys
+from datakeel.storage.production_rows import ProductionTaskRow
 from datakeel.storage.production_tasks import transition_task
-from datakeel.storage.workbench_risk import prelabel_difference
 
-CONTEXT_LIMIT = 500
 EXEMPT_NOTE = "AI 预审低风险，按抽检比例免审 / AI pre-review low risk, exempt by review sampling"  # noqa: RUF001  # The audit wording is specified in Chinese.
-_CONTEXT_STATES = ("submitted", "in_review", "approved", "finalized")
+RESCORE_NOTE = (
+    "近重复图片有新提交，风险已重算 / Risk recomputed after a near-duplicate image was submitted"  # noqa: RUF001  # Reviewer-facing wording is bilingual.
+)
+_WAITING = ("submitted", "in_review")
 
 
-def _template_reasons(
-    session: Session, project: Project, annotation: AnnotationRecord
-) -> list[RiskReason]:
-    try:
-        validate_annotation(session, project, annotation, complete=True)
-        require_complete_attributes(session, project, annotation)
-    except ValidationError as error:
-        return [RiskReason(code="template_violation", weight=0.9, message=str(error))]
-    return []
-
-
-def _context(
-    session: Session, project: Project, task: ProductionTaskRow, head: AnnotationRecord
-) -> list[AnnotationRecord]:
-    rows = session.scalars(
-        select(ProductionTaskRow)
-        .where(
-            ProductionTaskRow.project_id == project.id,
-            ProductionTaskRow.id != task.id,
-            ProductionTaskRow.state.in_(_CONTEXT_STATES),
+def _store(session: Session, review: AIReview) -> None:
+    session.add(
+        ProductionAIReviewRow(
+            id=review.id,
+            task_id=review.task_id,
+            project_id=review.project_id,
+            revision_id=review.revision_id,
+            risk=review.risk,
+            payload=review.model_dump(mode="json"),
         )
-        .order_by(ProductionTaskRow.id.desc())
-        .limit(CONTEXT_LIMIT)
-    )
-    records = [head.model_copy(update={"annotator_id": "submitted"})]
-    for row in rows:
-        identifier = row.approved_revision_id or row.latest_revision_id
-        revision = session.get(ProductionRevisionRow, identifier) if identifier else None
-        if revision is not None:
-            record = AnnotationRevision.model_validate(revision.payload).annotation
-            records.append(record.model_copy(update={"annotator_id": "submitted"}))
-    return records
-
-
-def _near_duplicates(
-    session: Session, project: Project, records: list[AnnotationRecord]
-) -> tuple[NearDuplicatePair, ...]:
-    # Only label sets take part in the near-duplicate rule, so box work never decodes images.
-    if not records[0].labels or records[0].image_width is None:
-        return ()
-    keys = sample_keys(session, project)
-    threshold = read_near_duplicate().hamming_threshold
-    hashes = [
-        (item.sample_id, sample_hash(keys[item.sample_id]))
-        for item in records
-        if item.sample_id in keys
-    ]
-    own = next((value for sample, value in hashes if sample == records[0].sample_id), None)
-    if own is None:
-        return ()
-    return tuple(
-        NearDuplicatePair(sample_id=records[0].sample_id, other_sample_id=sample)
-        for sample, value in hashes
-        if sample != records[0].sample_id
-        and value is not None
-        and (own ^ value).bit_count() <= threshold
     )
 
 
-def _finding_reasons(
-    session: Session, project: Project, task: ProductionTaskRow, head: AnnotationRecord
+def _rescore(session: Session, previous: AIReview, reasons: list[RiskReason]) -> None:
+    """Append a new review of the same head when its reasons changed; decisions stay."""
+    if tuple(reasons) == previous.reasons:
+        return
+    risk = risk_score(reasons)
+    review = previous.model_copy(
+        update={
+            "id": new_id(),
+            "risk": risk,
+            "high_risk": risk >= HIGH_RISK,
+            "reasons": tuple(reasons),
+            "note": RESCORE_NOTE,
+            "created_at": utcnow(),
+        }
+    )
+    _store(session, AIReview.model_validate(review.model_dump()))
+
+
+def _score_with_partners(
+    session: Session, project: Project, task: ProductionTaskRow, head: AnnotationRevision
 ) -> list[RiskReason]:
-    records = _context(session, project, task, head)
-    batch = AnnotationBatch(
-        annotations=tuple(records), near_duplicates=_near_duplicates(session, project, records)
-    )
-    return [
-        finding_reason(item) for item in find_suspicions(batch) if item.sample_id == task.sample_id
-    ]
-
-
-def _disagreement(session: Session, head: AnnotationRevision) -> list[RiskReason]:
-    identifier = head.previous_revision_id
-    seen: set[str] = set()
-    while identifier is not None and identifier not in seen:
-        seen.add(identifier)
-        row = session.get(ProductionRevisionRow, identifier)
-        if row is None:
-            return []
-        revision = AnnotationRevision.model_validate(row.payload)
-        if revision.source == "model":
-            difference = prelabel_difference(head.annotation, revision.annotation)
-            matched = {
-                pair.human_index
-                for pair in compare_records(revision.annotation, head.annotation).pairs
-            }
-            objects = tuple(
-                ObjectRef.model_validate({"kind": item.kind, "index": item.position})
-                for position, item in enumerate(record_objects(head.annotation))
-                if position not in matched
-            )
-            confidences = object_confidences(revision) or (revision.confidence or 0.0,)
-            reason = disagreement_reason(min(confidences), difference, objects)
-            return [reason] if reason is not None else []
-        identifier = revision.previous_revision_id
-    return []
+    """Score the head, then rescore waiting near-duplicate partners that now see this head."""
+    facts = load_facts(session, project, task)
+    own = facts.tasks[task.id]
+    facts.tasks[task.id] = own._replace(head=head)
+    reasons, partners = head_reasons(session, project, facts, task.id, head)
+    for partner in partners:
+        item = facts.tasks[partner]
+        if item.head is not None and item.state in _WAITING:
+            partner_reasons, _ = head_reasons(session, project, facts, partner, item.head)
+            current = latest_reviews(session, (partner,)).get(partner)
+            if current is not None and current.revision_id == item.head.id:
+                _rescore(session, current, partner_reasons)
+    return reasons
 
 
 def prereview(
     session: Session, project: Project, task: ProductionTaskRow, head: AnnotationRevision
 ) -> AIReview:
     """Score the submitted head, decide review or exemption, and store the evidence."""
-    reasons = [
-        *_template_reasons(session, project, head.annotation),
-        *_finding_reasons(session, project, task, head.annotation),
-        *(_disagreement(session, head) if head.source == "human" else []),
-    ]
+    reasons = _score_with_partners(session, project, task, head)
     risk = risk_score(reasons)
     draw = sample_draw(task.id, task.round, head.id)
     high = risk >= HIGH_RISK
@@ -178,16 +118,7 @@ def prereview(
             "created_at": utcnow(),
         }
     )
-    session.add(
-        ProductionAIReviewRow(
-            id=review.id,
-            task_id=task.id,
-            project_id=project.id,
-            revision_id=head.id,
-            risk=risk,
-            payload=review.model_dump(mode="json"),
-        )
-    )
+    _store(session, review)
     if decision == "exempt":
         task.approved_revision_id = task.latest_revision_id
         finish_assignment(session, task.id, "annotation", "approved")

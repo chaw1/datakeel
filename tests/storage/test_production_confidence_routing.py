@@ -7,19 +7,28 @@ from pathlib import Path
 
 import httpx
 import pytest
+from sqlalchemy import select
 
-from datakeel.actions.production_parameters import ConfigureProjectParams, SaveRevisionParams
+from datakeel.actions.production_parameters import (
+    ConfigureProjectParams,
+    ReviewTaskParams,
+    SaveRevisionParams,
+)
 from datakeel.core.annotation_models import AnnotationBox, AnnotationRecord
 from datakeel.core.data_asset_models import AccessContext
-from datakeel.core.errors import ValidationError
+from datakeel.core.errors import AuthorizationError, ValidationError
 from datakeel.core.production_catalog_models import PrelabelRun
 from datakeel.core.production_models import ProductionTask
 from datakeel.prelabel import use_transport
+from datakeel.storage.action_rows import ActionAuditRow
 from datakeel.storage.database import Database
 from datakeel.storage.production_projects import configure_project
 from datakeel.storage.production_queries import get_task, list_revisions
+from datakeel.storage.production_reviews import review_task
 from datakeel.storage.production_revisions import append_revision
-from datakeel.storage.production_tasks import require_task
+from datakeel.storage.production_rows import ProductionReviewRow
+from datakeel.storage.production_separation import require_separation
+from datakeel.storage.production_tasks import require_project, require_task
 from datakeel.storage.workbench_reads import workbench_project
 from tests.prelabel_support import (
     CREDENTIAL_ENV,
@@ -131,11 +140,20 @@ def test_threshold_configuration_rejects_low_above_high(db: Database, tmp_path: 
 
 
 def _route(
-    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tier: str
+    db: Database,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tier: str,
+    high: float | None = 0.9,
 ) -> tuple[PrelabelRun, dict[int, str]]:
-    """Run a self-confidence cloud model over four images: high, medium, low and empty."""
+    """Run a self-confidence cloud model over four images: high, medium, low and empty.
+
+    ``high`` pins the project's high threshold; ``None`` leaves the cold-start defaults.
+    """
     monkeypatch.setenv(CREDENTIAL_ENV, FIXTURE_CREDENTIAL)
     project, _ = seed_cloud_project(db, tmp_path / tier, count=4, tier=tier)
+    if high is not None:
+        run_action(db, "configure_project", {"project_id": project.id, "confidence_high": high})
     run_action(db, "register_model", {"model": cloud_model(confidence_source="self")})
     fake = FakeVision(failures={3: "empty"}, confidence={0: 0.95, 1: 0.7, 2: 0.2})
     with use_transport(httpx.MockTransport(fake)):
@@ -152,6 +170,12 @@ def _route(
     return run, routed
 
 
+def _pass_through_lines(db: Database) -> list[str]:
+    with db.session() as session:
+        rows = session.scalars(select(ActionAuditRow).where(ActionAuditRow.phase == "PRELABEL"))
+        return [str(row.detail["message"]) for row in rows]
+
+
 def test_group_tiers_route_high_to_review_medium_to_draft_low_to_scratch(
     db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -163,7 +187,65 @@ def test_group_tiers_route_high_to_review_medium_to_draft_low_to_scratch(
     assert states == ["pending", "pending", "pending", "submitted"]
     assert sorted(tiers.values()) == ["high", "low", "low", "medium"]
     assert run.thresholds is not None
-    assert run.thresholds.source == "default"
+    assert run.thresholds.source == "configured"
+
+
+def test_pass_through_names_the_model_the_bar_and_the_person_who_ran_it(
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The submitted draft stays model-sourced and the triggering person answers for it."""
+    run, _ = _route(db, tmp_path, monkeypatch, "group")
+    item = next(tier for tier in run.tiers if tier.routed == "submitted")
+    task = get_task(db, item.task_id)
+    assert task.annotator_id == "local"
+    head = list_revisions(db, item.task_id)[-1]
+    assert head.id == item.revision_id
+    assert head.source == "model"
+    assert head.pass_through is not None
+    assert head.pass_through.model_dump() == {
+        "model_id": "vision",
+        "confidence": pytest.approx(0.95),
+        "high": 0.9,
+        "low": 0.5,
+        "threshold_source": "configured",
+        "reviewed_objects": 0,
+        "triggered_by": "local",
+    }
+    lines = _pass_through_lines(db)
+    assert len(lines) == 1
+    assert lines[0].startswith("模型高置信度直通 / Model high-confidence pass-through: ")
+    assert f"task={item.task_id}" in lines[0]
+    assert "model=vision" in lines[0]
+    assert "confidence=0.950; high=0.900; low=0.500" in lines[0]
+    assert "triggered_by=local" in lines[0]
+
+
+def test_cold_start_defaults_hold_high_drafts_for_a_person(
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With default thresholds nothing passes through; the high draft waits, saying why."""
+    run, routed = _route(db, tmp_path, monkeypatch, "group", high=None)
+    assert run.thresholds is not None
+    assert (run.thresholds.source, run.thresholds.pass_through) == ("default", False)
+    assert routed == {0: "draft", 1: "draft", 2: "scratch", 3: "scratch"}
+    held = next(tier for tier in run.tiers if tier.tier == "high")
+    assert held.note == "insufficient_samples"
+    assert {get_task(db, tier.task_id).state for tier in run.tiers} == {"pending"}
+    assert not _pass_through_lines(db)
+
+
+def test_team_pass_through_keeps_its_trigger_out_of_review(
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """In team projects the person who ran the model counts as annotator and cannot review."""
+    run, _ = _route(db, tmp_path, monkeypatch, "team")
+    item = next(tier for tier in run.tiers if tier.routed == "submitted")
+    with db.session() as session:
+        task = require_task(session, item.task_id)
+        project = require_project(session, task.project_id)
+        with pytest.raises(AuthorizationError):
+            require_separation(session, project, task, "local")
+        require_separation(session, project, task, "reviewer-2")
 
 
 def test_personal_tiers_are_only_hints(
@@ -173,3 +255,55 @@ def test_personal_tiers_are_only_hints(
     run, routed = _route(db, tmp_path, monkeypatch, "personal")
     assert set(routed.values()) == {"hint"}
     assert {get_task(db, tier.task_id).state for tier in run.tiers} == {"pending"}
+
+
+def test_a_model_head_is_submitted_only_after_the_annotator_saves_it_as_their_own(
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Submitting over a draft is refused with the reason; confirming it unchanged works."""
+    run, _ = _route(db, tmp_path, monkeypatch, "personal")
+    for item in run.tiers:
+        head = list_revisions(db, item.task_id)[-1]
+        assert head.source == "model"
+        with pytest.raises(ValidationError, match="Save it as your own revision first"):
+            run_action(db, "submit_task", {"task_id": item.task_id})
+        run_action(
+            db,
+            "save_revision",
+            {
+                "task_id": item.task_id,
+                "previous_revision_id": head.id,
+                "annotation": head.annotation.model_copy(
+                    update={"annotator_id": "local"}
+                ).model_dump(mode="json"),
+            },
+        )
+        run_action(db, "submit_task", {"task_id": item.task_id})
+        assert get_task(db, item.task_id).state == "approved"
+
+
+def test_review_of_a_pass_through_names_the_trigger_not_the_reviewer(
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The review row's annotator is who ran the model, even though nobody claimed the task."""
+    run, _ = _route(db, tmp_path, monkeypatch, "group")
+    item = next(tier for tier in run.tiers if tier.routed == "submitted")
+    with db.session() as session:
+        task = require_task(session, item.task_id)
+        task.annotator_id = None  # A pass-through recorded before attribution existed.
+        session.commit()
+        review_task(
+            session,
+            ReviewTaskParams(
+                request_id="review",
+                task_id=item.task_id,
+                revision_id=str(item.revision_id),
+                decision="approve",
+            ),
+            "reviewer-2",
+        )
+        row = session.scalar(
+            select(ProductionReviewRow).where(ProductionReviewRow.task_id == item.task_id)
+        )
+        assert row is not None
+        assert row.annotator_id == "local"

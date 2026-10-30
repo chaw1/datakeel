@@ -12,14 +12,16 @@ category rule reaches that alone.
 
 import hashlib
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
-from datakeel.core.annotation_models import AnnotationFinding
+from datakeel.annotation_qa.review_messages import finding_text
+from datakeel.core.annotation_models import AnnotationFinding, AnnotationRecord
 from datakeel.core.prelabel_models import ObjectRef, RiskReason
 
 HIGH_RISK = 0.3
 RULE_WEIGHTS: dict[str, float] = {
     "template_violation": 0.9,
+    "label_swap": 0.8,
     "invalid_bbox": 0.9,
     "invalid_span": 0.9,
     "minority_label": 0.7,
@@ -62,14 +64,20 @@ def finding_objects(finding: AnnotationFinding) -> tuple[ObjectRef, ...]:
     return tuple(ObjectRef.model_validate({"kind": kind, "index": index}) for kind, index in found)
 
 
-def finding_reason(finding: AnnotationFinding) -> RiskReason:
-    """Turn one P26 finding into a weighted, locatable risk reason."""
+def finding_reason(
+    finding: AnnotationFinding,
+    record: AnnotationRecord | None = None,
+    names: Mapping[str, str] | None = None,
+) -> RiskReason:
+    """Turn one P26 finding into a weighted, locatable reason worded for reviewers."""
+    objects = finding_objects(finding)
+    message, message_zh = finding_text(finding.code, objects, record, names or {})
     return RiskReason(
         code=finding.code,
         weight=RULE_WEIGHTS.get(finding.code, 0.3),
-        message=finding.reason,
-        evidence=finding.evidence[:4],
-        objects=finding_objects(finding),
+        message=message,
+        message_zh=message_zh,
+        objects=objects,
     )
 
 
@@ -80,11 +88,12 @@ def disagreement_reason(
     weight = round(DISAGREEMENT_WEIGHT * confidence * difference, 6)
     if weight <= 0:
         return None
+    sure = f"{round(confidence * 100)}%"
     return RiskReason(
         code="prelabel_disagreement",
         weight=min(weight, 1.0),
-        message="The submitted annotation departs from a confident model draft",
-        evidence=(f"model_confidence={confidence:.3f}; difference={difference:.3f}",),
+        message=f"The submitted annotation departs from a {sure} confident model draft",
+        message_zh=f"提交的标注和把握 {sure} 的模型草稿不一致",
         objects=objects,
     )
 

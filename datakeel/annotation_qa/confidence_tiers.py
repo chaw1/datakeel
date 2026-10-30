@@ -4,16 +4,22 @@
 """Derive high/low confidence thresholds from reviewed model objects and assign task tiers.
 
 Observations are (confidence, hit) for each model object of a draft that preceded an approved
-human revision, where hit means an IoU >= 0.5 same-label match. Candidate thresholds are the
-confidence values that occur. High is the lowest candidate t whose objects with confidence >= t
-hit at least 95% of the time; low is the highest candidate t whose objects with confidence < t
-hit less than 50% of the time, capped at high. With fewer than 30 observations the defaults
-0.85 and 0.5 apply.
+human revision, where hit means an IoU >= 0.5 same-label match. A non-decreasing calibration
+curve from confidence to hit rate is fitted by isotonic regression (pool adjacent violators):
+neighbouring confidence groups whose rates would fall are merged into one flat segment. High is
+the lowest confidence whose calibrated hit rate is at least 95%; low is the lowest confidence
+whose calibrated hit rate is at least 50%, and objects below it are low. With fewer than 30
+observations the defaults 0.85 and 0.5 apply and high drafts do not pass through to review.
 """
 
 from collections.abc import Sequence
 
-from datakeel.core.prelabel_models import ConfidenceThresholds, ConfidenceTier, TierRate
+from datakeel.core.prelabel_models import (
+    CalibrationSegment,
+    ConfidenceThresholds,
+    ConfidenceTier,
+    TierRate,
+)
 
 DEFAULT_HIGH = 0.85
 DEFAULT_LOW = 0.5
@@ -45,21 +51,41 @@ def _rate(values: Sequence[tuple[float, bool]]) -> float | None:
     return sum(hit for _, hit in values) / len(values) if values else None
 
 
-def high_threshold(observations: Sequence[tuple[float, bool]]) -> float | None:
-    """Return the lowest occurring t with hit rate >= 95% among confidence >= t, if any."""
-    for candidate in sorted({value for value, _ in observations}):
-        rate = _rate([item for item in observations if item[0] >= candidate])
-        if rate is not None and rate >= HIGH_HIT_RATE:
-            return candidate
+def calibration_curve(observations: Sequence[tuple[float, bool]]) -> tuple[CalibrationSegment, ...]:
+    """Fit the isotonic confidence-to-hit-rate curve; each flat piece is one segment.
+
+    Objects with equal confidence start as one block. Scanning upwards, a block whose rate is
+    below the block before it is pooled with it (and further back while the order still breaks),
+    which is the pool-adjacent-violators solution of the weighted least-squares fit.
+    """
+    blocks: list[list[float]] = []  # low, high, objects, hits
+    for value in sorted({confidence for confidence, _ in observations}):
+        inside = [hit for confidence, hit in observations if confidence == value]
+        blocks.append([value, value, len(inside), sum(inside)])
+        while len(blocks) > 1 and blocks[-2][3] * blocks[-1][2] > blocks[-1][3] * blocks[-2][2]:
+            last = blocks.pop()
+            blocks[-1][1:] = [last[1], blocks[-1][2] + last[2], blocks[-1][3] + last[3]]
+    return tuple(
+        CalibrationSegment(
+            low=low, high=high, objects=int(objects), hits=int(hits), rate=hits / objects
+        )
+        for low, high, objects, hits in blocks
+    )
+
+
+def high_threshold(segments: Sequence[CalibrationSegment]) -> float | None:
+    """Return the lowest confidence whose calibrated hit rate reaches 95%, if any does."""
+    for segment in segments:
+        if segment.rate >= HIGH_HIT_RATE:
+            return segment.low
     return None
 
 
-def low_threshold(observations: Sequence[tuple[float, bool]]) -> float | None:
-    """Return the highest occurring t with hit rate < 50% among confidence < t, if any."""
-    for candidate in sorted({value for value, _ in observations}, reverse=True):
-        rate = _rate([item for item in observations if item[0] < candidate])
-        if rate is not None and rate < LOW_HIT_RATE:
-            return candidate
+def low_threshold(segments: Sequence[CalibrationSegment]) -> float | None:
+    """Return the lowest confidence whose calibrated hit rate reaches 50%, if any does."""
+    for segment in segments:
+        if segment.rate >= LOW_HIT_RATE:
+            return segment.low
     return None
 
 
@@ -81,22 +107,26 @@ def calibrate(
 ) -> ConfidenceThresholds:
     """Prefer project-configured thresholds, else reviewed evidence, else documented defaults."""
     notes: list[str] = []
-    if len(observations) < MINIMUM_OBJECTS:
+    segments = calibration_curve(observations)
+    measured = len(observations) >= MINIMUM_OBJECTS
+    if not measured:
         high, low, source = DEFAULT_HIGH, DEFAULT_LOW, "default"
         notes.append("insufficient_samples")
     else:
-        high, low, source = high_threshold(observations), low_threshold(observations), "calibrated"
+        high, low, source = high_threshold(segments), low_threshold(segments), "calibrated"
         if high is None:
             notes.append("no_high_threshold")
         if low is None:
+            # Nothing reaches a 50% hit rate: every object starts its person from empty.
+            low = 1.0
             notes.append("no_low_threshold")
-        if high is not None and low is not None and low > high:
-            low = high
-            notes.append("low_capped")
     if configured != (None, None):
         high = configured[0] if configured[0] is not None else high
         low = configured[1] if configured[1] is not None else low
         source = "configured"
+    if high is not None and low > high:
+        low = high
+        notes.append("low_capped")
     return ConfidenceThresholds.model_validate(
         {
             "high": high,
@@ -106,5 +136,7 @@ def calibrate(
             "minimum_objects": MINIMUM_OBJECTS,
             "notes": tuple(notes),
             "tiers": tier_rates(observations, high, low),
+            "segments": segments,
+            "pass_through": measured or configured[0] is not None,
         }
     )

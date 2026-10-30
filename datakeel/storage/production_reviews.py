@@ -40,6 +40,12 @@ def submit_task(session: Session, params: SubmitTaskParams, actor: str) -> Produ
         message = "Submission requires an editable task with a saved revision"
         raise ConflictError(message)
     head = current_revision(session, task)
+    if head is not None and head.source == "model":
+        message = (
+            "The current revision is a model draft. Save it as your own revision first, "
+            "changed or unchanged, then submit"
+        )
+        raise ValidationError(message)
     if head is not None:
         require_complete_attributes(session, project, head.annotation)
     if task.annotator_id is None:
@@ -94,7 +100,7 @@ def review_task(session: Session, params: ReviewTaskParams, actor: str) -> Revie
             id=review.id,
             task_id=task.id,
             project_id=task.project_id,
-            annotator_id=task.annotator_id or actor,
+            annotator_id=_annotator(session, task),
             decision=params.decision,
             payload=review.model_dump(mode="json"),
         )
@@ -107,6 +113,20 @@ def review_task(session: Session, params: ReviewTaskParams, actor: str) -> Revie
     else:
         return_for_rework(session, project, task)
     return review
+
+
+def _annotator(session: Session, task: ProductionTaskRow) -> str:
+    """Name who answers for the reviewed work: the annotator, else the head revision's author.
+
+    A model pass-through names the person who triggered the run; the reviewer is never used.
+    """
+    if task.annotator_id is not None:
+        return task.annotator_id
+    head = current_revision(session, task)
+    if head is None:
+        message = "Review requires a submitted revision"
+        raise ConflictError(message)
+    return head.actor
 
 
 def return_for_rework(session: Session, project: Project, task: ProductionTaskRow) -> None:

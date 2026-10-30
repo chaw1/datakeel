@@ -6,7 +6,8 @@
 Personal projects only show the tier. In group and team projects a pending task whose new
 draft is high goes straight to review submission (where AI pre-review and review sampling
 decide what a person sees), medium keeps the draft for correction, and low keeps the draft
-for viewing while the workbench starts the person from an empty annotation.
+for viewing while the workbench starts the person from an empty annotation. High drafts only
+pass through once thresholds are measured or configured; cold-start defaults hold them.
 """
 
 from sqlalchemy.orm import Session
@@ -33,14 +34,22 @@ def revision_tier(revision: AnnotationRevision, thresholds: ConfidenceThresholds
     return task_tier(object_confidences(revision), thresholds.high, thresholds.low)
 
 
-def route_tier(project: Project, task: ProductionTaskRow, tier: ConfidenceTier) -> TaskTier:
-    """Decide what the tier changes; only untouched group/team tasks change flow."""
+def route_tier(
+    project: Project, task: ProductionTaskRow, tier: ConfidenceTier, *, pass_through: bool
+) -> TaskTier:
+    """Decide what the tier changes; only untouched group/team tasks change flow.
+
+    While the thresholds are still the cold-start defaults a high draft is held like a medium
+    one, with the reason recorded, because nothing measured yet says it is right 95% of the time.
+    """
+    note = ""
     if project.workflow_tier == "personal" or task.state != "pending":
         routed = "hint"
-    elif tier == "high":
+    elif tier == "high" and pass_through:
         routed = "submitted"
-    elif tier == "medium":
+    elif tier in {"high", "medium"}:
         routed = "draft"
+        note = "insufficient_samples" if tier == "high" else ""
     else:
         routed = "scratch"
-    return TaskTier(task_id=task.id, sample_id=task.sample_id, tier=tier, routed=routed)
+    return TaskTier(task_id=task.id, sample_id=task.sample_id, tier=tier, routed=routed, note=note)

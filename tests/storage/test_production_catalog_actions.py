@@ -16,7 +16,7 @@ from datakeel.actions.production_catalog_parameters import (
     RunPrelabelParams,
     UpdateModelParams,
 )
-from datakeel.actions.production_parameters import SubmitTaskParams
+from datakeel.actions.production_parameters import SaveRevisionParams, SubmitTaskParams
 from datakeel.actions.service import approve_plan, execute_plan, prepare_action
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import JsonDocument
@@ -29,6 +29,8 @@ from datakeel.core.production_catalog_models import (
 from datakeel.storage.database import Database
 from datakeel.storage.production_catalog import require_label_set, require_model, require_template
 from datakeel.storage.production_reviews import submit_task
+from datakeel.storage.production_revisions import append_revision, current_revision
+from datakeel.storage.production_tasks import require_task
 from tests.storage.production_catalog_fixtures import catalog_project
 
 
@@ -103,6 +105,20 @@ def test_prelabel_import_and_finalization_have_versioned_receipts(db: Database) 
     assert imported.receipt is not None
     with db.session() as session:
         for task in fixture.tasks:
+            row = require_task(session, task.id)
+            head = current_revision(session, row)
+            assert head is not None
+            append_revision(
+                session,
+                row,
+                SaveRevisionParams(
+                    request_id=f"confirm-{task.id}",
+                    task_id=task.id,
+                    previous_revision_id=head.id,
+                    annotation=head.annotation.model_copy(update={"annotator_id": "local"}),
+                ),
+                "local",
+            )
             submit_task(session, SubmitTaskParams(request_id=task.id, task_id=task.id), "local")
         session.commit()
     run = _execute(

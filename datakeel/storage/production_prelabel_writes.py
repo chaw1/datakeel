@@ -11,9 +11,9 @@ from datakeel.annotation_qa import record_objects, task_tier
 from datakeel.core.errors import ValidationError
 from datakeel.core.prelabel_models import ConfidenceThresholds, TaskTier
 from datakeel.core.production_catalog_models import ParsedPrediction, ProductionModel
-from datakeel.core.production_models import AnnotationRevision, Project
+from datakeel.core.production_models import AnnotationRevision, PassThrough, Project
 from datakeel.storage.production_ai_review import prereview
-from datakeel.storage.production_catalog import require_complete_attributes
+from datakeel.storage.production_catalog import normalize_annotation, require_complete_attributes
 from datakeel.storage.production_revisions import append_revision
 from datakeel.storage.production_rows import ProductionRevisionRow, ProductionTaskRow
 from datakeel.storage.production_tasks import transition_task
@@ -28,16 +28,32 @@ def prediction_confidences(prediction: ParsedPrediction) -> tuple[float, ...]:
     return (prediction.confidence,) * count
 
 
-def _auto_submit(
-    session: Session, project: Project, task: ProductionTaskRow, revision: AnnotationRevision
-) -> bool:
+def _pass_through(
+    session: Session,
+    project: Project,
+    prediction: ParsedPrediction,
+    model: ProductionModel,
+    actor: str,
+    thresholds: ConfidenceThresholds,
+) -> PassThrough | None:
+    """Name the model, its confidence and the bar it cleared, or hold a draft missing fields."""
     try:
-        require_complete_attributes(session, project, revision.annotation)
+        require_complete_attributes(
+            session, project, normalize_annotation(session, project, prediction.annotation)
+        )
     except ValidationError:
-        return False
-    transition_task(session, task, "submitted")
-    prereview(session, project, task, revision)
-    return True
+        return None
+    if thresholds.high is None or thresholds.source == "default":
+        return None
+    return PassThrough(
+        model_id=model.id,
+        confidence=prediction.confidence,
+        high=thresholds.high,
+        low=thresholds.low,
+        threshold_source=thresholds.source,
+        reviewed_objects=thresholds.objects,
+        triggered_by=actor,
+    )
 
 
 def write_model_draft(  # noqa: PLR0913  # The draft needs its task, model, actor, run and tiers.
@@ -51,10 +67,19 @@ def write_model_draft(  # noqa: PLR0913  # The draft needs its task, model, acto
     request_id: str,
     thresholds: ConfidenceThresholds,
 ) -> tuple[str, TaskTier]:
-    """Append the draft, tier it, and route untouched group/team tasks by that tier."""
+    """Append the draft, tier it, and route untouched group/team tasks by that tier.
+
+    A pass-through submission is answered for by the person who triggered the run: they become
+    the task's annotator, so team separation keeps them from reviewing it.
+    """
     confidences = prediction_confidences(prediction)
     tier = task_tier(confidences, thresholds.high, thresholds.low)
-    routing = route_tier(project, task, tier)
+    routing = route_tier(project, task, tier, pass_through=thresholds.pass_through)
+    accountable = None
+    if routing.routed == "submitted":
+        accountable = _pass_through(session, project, prediction, model, actor, thresholds)
+        if accountable is None:
+            routing = routing.model_copy(update={"routed": "draft"})
     params = SaveRevisionParams(
         request_id=request_id,
         task_id=task.id,
@@ -67,10 +92,12 @@ def write_model_draft(  # noqa: PLR0913  # The draft needs its task, model, acto
         object_confidences=confidences,
         confidence_tier=tier,
     )
-    revision = append_revision(session, task, params, actor)
-    if routing.routed == "submitted" and not _auto_submit(session, project, task, revision):
-        routing = routing.model_copy(update={"routed": "draft"})
-    return revision.id, routing
+    revision = append_revision(session, task, params, actor, pass_through=accountable)
+    if accountable is not None:
+        task.annotator_id = actor
+        transition_task(session, task, "submitted")
+        prereview(session, project, task, revision)
+    return revision.id, routing.model_copy(update={"revision_id": revision.id})
 
 
 def prelabeled_task_ids(session: Session, task_ids: list[str], model: ProductionModel) -> set[str]:

@@ -237,3 +237,10 @@ class PrelabelRun(BoundaryModel):
     stopped: PrelabelStop | None = None
     thresholds: ConfidenceThresholds | None = None
     tiers: tuple[TaskTier, ...] = ()
+    status: Literal["running", "completed", "failed", "abandoned"] = "completed"
+    actor: str | None = None
+    plan_id: str | None = None
+    planned_images: int = Field(default=0, ge=0)
+    completed_images: int = Field(default=0, ge=0)
+    failed_images: int = Field(default=0, ge=0)
+    updated_at: datetime | None = None

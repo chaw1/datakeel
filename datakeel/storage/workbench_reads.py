@@ -28,6 +28,7 @@ from datakeel.storage.dataset_service import resolve_download
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.production_catalog import require_label_set, require_template
 from datakeel.storage.production_prelabel_reads import (
+    prelabel_progress,
     prelabel_spend,
     project_confidence_thresholds,
     task_ai_review,
@@ -162,6 +163,7 @@ def workbench_project(
         + tuple(item for item in rework if item.task_id not in identities),
         confidence_thresholds=project_confidence_thresholds(db, project),
         prelabel_spend=prelabel_spend(db, project_id),
+        prelabel_progress=prelabel_progress(db, project_id),
     )
 
 

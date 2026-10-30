@@ -1,40 +1,24 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Run a registered cloud vision model over a project's untouched tasks under a hard budget.
+"""Select, price and start a cloud vision run over a project's untouched tasks.
 
 Rerunning the same action only reaches tasks that still lack a draft from this exact model
-version, so completed images are never paid for twice. Before each image the runner stops if the
-measured spend plus that image's estimate would pass the action budget; the run record keeps
-where it stopped, what it spent, and every call's tokens and cost.
+version, so completed images are never paid for twice. Starting a run is the short part inside
+the action's transaction; ``production_cloud_runner`` makes the calls afterwards.
 """
 
-from concurrent.futures import ThreadPoolExecutor
-from decimal import Decimal
 from typing import NamedTuple
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.actions.production_catalog_parameters import RunPrelabelParams
-from datakeel.core.errors import DatakeelError, ValidationError
-from datakeel.core.prelabel_models import (
-    ConfidenceThresholds,
-    PrelabelCall,
-    PrelabelDrop,
-    PrelabelEstimate,
-    PrelabelStop,
-    TaskTier,
-)
-from datakeel.core.production_catalog_models import (
-    PredictionFailure,
-    PrelabelRun,
-    ProductionModel,
-)
+from datakeel.core.errors import ValidationError
+from datakeel.core.prelabel_models import PrelabelEstimate
+from datakeel.core.production_catalog_models import PrelabelRun, ProductionModel
 from datakeel.core.production_models import Project
 from datakeel.prelabel import (
-    image_estimate,
-    open_client,
     prelabel_prompt,
     prompt_token_estimate,
     resolve_credential,
@@ -42,28 +26,21 @@ from datakeel.prelabel import (
 )
 from datakeel.storage.production_catalog import require_label_set, require_template
 from datakeel.storage.production_catalog_rows import ProductionPrelabelRunRow
-from datakeel.storage.production_cloud_labeling import (
-    FAILURE_MESSAGES,
-    CloudRequest,
-    ImageOutcome,
-    cloud_request,
-    label_image,
-)
+from datakeel.storage.production_cloud_labeling import CloudRequest, cloud_request
 from datakeel.storage.production_prelabel_runs import (
+    claim_run_slot,
     new_run,
     prediction_samples,
     prediction_tasks,
     save_run,
 )
-from datakeel.storage.production_prelabel_writes import prelabeled_task_ids, write_model_draft
+from datakeel.storage.production_prelabel_writes import prelabeled_task_ids
 from datakeel.storage.production_rows import ProductionTaskRow
-from datakeel.storage.production_task_images import sample_keys
 from datakeel.storage.production_tiers import project_thresholds
 
 EDITABLE_STATES = frozenset({"pending", "in_progress"})
 CLOUD_KINDS = frozenset({"box", "classification"})
 PRIOR_CALLS = 20
-PARALLEL_IMAGES = 4
 
 
 class CloudTargets(NamedTuple):
@@ -193,32 +170,8 @@ def cloud_estimate(model: ProductionModel, targets: CloudTargets) -> PrelabelEst
     )
 
 
-class _Ledger:
-    """Accumulate per-image results for one run."""
-
-    def __init__(self) -> None:
-        self.spent = Decimal(0)
-        self.calls: list[PrelabelCall] = []
-        self.drops: list[PrelabelDrop] = []
-        self.failures: list[PredictionFailure] = []
-        self.revision_ids: list[str] = []
-        self.confidences: list[float] = []
-        self.tiers: list[TaskTier] = []
-        self.sent = 0
-
-    def next_image_cost(self) -> Decimal | None:
-        """Use this run's measured average per sent image once one has been sent."""
-        return self.spent / self.sent if self.sent else None
-
-    def fail(self, task: ProductionTaskRow, code: str, message: str) -> None:
-        self.failures.append(
-            PredictionFailure(
-                filename=task.sample_id, sample_id=task.sample_id, code=code, message=message
-            )
-        )
-
-
-def _request(session: Session, project: Project, model: ProductionModel) -> CloudRequest:
+def cloud_request_for(session: Session, project: Project, model: ProductionModel) -> CloudRequest:
+    """Check the credential and template, then fix the prompt, labels and secret for a run."""
     if model.cloud is None:
         message = "Cloud prelabel needs a cloud model"
         raise ValidationError(message)
@@ -235,130 +188,35 @@ def _request(session: Session, project: Project, model: ProductionModel) -> Clou
     return cloud_request(model, kinds, labels, secret.get_secret_value(), single_label=single)
 
 
-class _Run(NamedTuple):
-    session: Session
-    params: RunPrelabelParams
-    actor: str
-    project: Project
-    model: ProductionModel
-    thresholds: ConfidenceThresholds
-
-
-def _record(run: _Run, ledger: _Ledger, task: ProductionTaskRow, outcome: ImageOutcome) -> None:
-    if outcome.calls:
-        ledger.spent += outcome.cost + Decimal(str(run.model.unit_price))
-        ledger.sent += 1
-    ledger.calls.extend(outcome.calls)
-    ledger.drops.extend(outcome.drops)
-    if outcome.prediction is None:
-        code = outcome.failure or "invalid_response"
-        ledger.fail(task, code, FAILURE_MESSAGES.get(code, "The provider returned an error"))
-        return
-    try:
-        with run.session.begin_nested():
-            revision_id, tier = write_model_draft(
-                run.session,
-                run.project,
-                task,
-                outcome.prediction,
-                run.model,
-                run.actor,
-                request_id=run.params.request_id,
-                thresholds=run.thresholds,
-            )
-    except DatakeelError as exc:
-        ledger.fail(task, "revision_rejected", str(exc))
-        return
-    ledger.revision_ids.append(revision_id)
-    ledger.confidences.append(outcome.prediction.confidence)
-    ledger.tiers.append(tier)
-
-
-def _next_cost(
-    run: _Run,
-    request: CloudRequest,
-    targets: CloudTargets,
-    ledger: _Ledger,
-    task: ProductionTaskRow,
-) -> Decimal:
-    size = targets.sizes.get(task.sample_id, (None, None))
-    return ledger.next_image_cost() or image_estimate(
-        request.config, run.model.unit_price, size, targets.output_tokens, targets.prompt_tokens
-    )
-
-
-def _label_all(
-    run: _Run, request: CloudRequest, targets: CloudTargets
-) -> tuple[_Ledger, PrelabelStop | None]:
-    """Send up to four images at a time, admitting each only if the budget still covers it."""
-    keys = sample_keys(run.session, run.project)
-    ledger = _Ledger()
-    budget = Decimal(str(run.params.budget))
-    position = 0
-    with open_client() as client, ThreadPoolExecutor(PARALLEL_IMAGES) as pool:
-        while position < len(targets.tasks):
-            batch: list[ProductionTaskRow] = []
-            planned = ledger.spent
-            for task in targets.tasks[position : position + PARALLEL_IMAGES]:
-                next_cost = _next_cost(run, request, targets, ledger, task)
-                if planned + next_cost > budget:
-                    break
-                planned += next_cost
-                batch.append(task)
-            if not batch:
-                task = targets.tasks[position]
-                return ledger, PrelabelStop(
-                    before_sample_id=task.sample_id,
-                    completed_images=position,
-                    remaining_images=len(targets.tasks) - position,
-                    spent=float(ledger.spent),
-                    budget=run.params.budget,
-                    next_image_estimate=float(_next_cost(run, request, targets, ledger, task)),
-                )
-
-            def send(task: ProductionTaskRow) -> ImageOutcome:
-                return label_image(request, task.sample_id, keys.get(task.sample_id), client)
-
-            outcomes = list(pool.map(send, batch))
-            for task, outcome in zip(batch, outcomes, strict=True):
-                _record(run, ledger, task, outcome)
-            position += len(batch)
-    return ledger, None
-
-
-def run_cloud_prelabel(
+def start_cloud_prelabel(
     session: Session,
     params: RunPrelabelParams,
     actor: str,
     project: Project,
     model: ProductionModel,
+    *,
+    plan_id: str | None,
 ) -> PrelabelRun:
-    """Label each remaining image, stopping before the action budget would be passed."""
-    record = new_run(project.id, params.package_id, model)
-    request = _request(session, project, model)
+    """Claim the project's run slot and freeze targets, estimate and thresholds; call nothing.
+
+    This is the short part inside the action's transaction. The model calls happen after it
+    commits, outside any transaction, and each batch of results is written on its own.
+    """
+    cloud_request_for(session, project, model)
+    claim_run_slot(session, project.id)
     targets = cloud_targets(session, project, model, params.package_id, lock=True)
-    thresholds = project_thresholds(session, project)
-    run = _Run(session, params, actor, project, model, thresholds)
-    ledger, stopped = _label_all(run, request, targets)
+    record = new_run(project.id, params.package_id, model)
     record = record.model_copy(
         update={
+            "status": "running",
+            "actor": actor,
+            "plan_id": plan_id,
             "budget": params.budget,
             "estimate": cloud_estimate(model, targets),
-            "input_tokens": sum(call.input_tokens for call in ledger.calls),
-            "output_tokens": sum(call.output_tokens for call in ledger.calls),
-            "calls": tuple(ledger.calls),
-            "dropped": tuple(ledger.drops),
             "skipped_sample_ids": tuple(targets.skipped),
-            "stopped": stopped,
-            "thresholds": thresholds,
-            "tiers": tuple(ledger.tiers),
+            "thresholds": project_thresholds(session, project),
+            "planned_images": len(targets.tasks),
+            "updated_at": record.created_at,
         }
     )
-    return save_run(
-        session,
-        record,
-        ledger.revision_ids,
-        ledger.failures,
-        ledger.confidences,
-        cost=float(ledger.spent),
-    )
+    return save_run(session, record, [], [], [], cost=0)

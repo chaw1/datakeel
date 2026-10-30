@@ -51,3 +51,16 @@ def lock_action_targets(db: Database, session: Session, plan_id: str | None = No
     tables, mode = table_locks(action_type)
     if tables:
         session.execute(text(f"LOCK TABLE {', '.join(tables)} IN {mode} MODE"))
+
+
+def lock_row_writes(db: Database, session: Session) -> None:
+    """Lock like a single-task action: work a long run writes in short per-batch transactions.
+
+    Taking the receipt table's ROW EXCLUSIVE lock before any task row keeps the same order as
+    every other action, so a batch never deadlocks with a table-wide action.
+    """
+    db.lock_writes(session)
+    if db.sqlite:
+        return
+    tables, mode = table_locks("save_revision")
+    session.execute(text(f"LOCK TABLE {', '.join(tables)} IN {mode} MODE"))

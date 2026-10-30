@@ -16,6 +16,7 @@ from datakeel.core.prelabel_models import (
     ConfidenceThresholds,
     ConfidenceTier,
     ModelSpend,
+    PrelabelProgress,
     RiskReason,
 )
 from datakeel.core.production_catalog_models import LabelSet, ProductionTemplate
@@ -116,6 +117,7 @@ class WorkbenchProject(BoundaryModel):
     task_samples: tuple[WorkbenchSampleName, ...] = ()
     confidence_thresholds: ConfidenceThresholds | None = None
     prelabel_spend: tuple[ModelSpend, ...] = ()
+    prelabel_progress: tuple[PrelabelProgress, ...] = ()
 
 
 class WorkbenchSample(BoundaryModel):

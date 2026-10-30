@@ -8,6 +8,7 @@ from scripts.mutation_models import Mutation
 _CLOUD = "tests/storage/test_production_cloud_prelabel.py::"
 _ROUTING = "tests/storage/test_production_confidence_routing.py::"
 _REVIEW = "tests/storage/test_production_ai_review.py::"
+_RULES = "tests/storage/test_production_ai_rules.py::"
 _TIERS = "tests/annotation_qa/test_confidence_tiers.py::"
 _ADAPTER = "tests/prelabel/test_prelabel_adapter.py::"
 
@@ -32,7 +33,7 @@ PRELABEL_MUTATIONS = (
     ),
     Mutation(
         name="prelabel-cloud-budget-stop",
-        path="storage/production_cloud_prelabel.py",
+        path="storage/production_cloud_runner.py",
         before="if planned + next_cost > budget:",
         after="if False:",
         case=_CLOUD + "test_budget_stops_mid_run_and_rerun_only_fills_unrun_images",
@@ -89,24 +90,24 @@ PRELABEL_MUTATIONS = (
     Mutation(
         name="tier-high-threshold-inclusive-rate",
         path="annotation_qa/confidence_tiers.py",
-        before="if rate is not None and rate >= HIGH_HIT_RATE:",
-        after="if rate is not None and rate > HIGH_HIT_RATE:",
+        before="if segment.rate >= HIGH_HIT_RATE:",
+        after="if segment.rate > HIGH_HIT_RATE:",
         case=_TIERS + "test_known_hit_rates_give_the_documented_thresholds",
         runner="pytest",
     ),
     Mutation(
         name="tier-low-threshold-strict-rate",
         path="annotation_qa/confidence_tiers.py",
-        before="if rate is not None and rate < LOW_HIT_RATE:",
-        after="if rate is not None and rate <= LOW_HIT_RATE:",
-        case=_ROUTING + "test_thresholds_are_back_calculated_from_approved_drafts",
+        before="if segment.rate >= LOW_HIT_RATE:",
+        after="if segment.rate > LOW_HIT_RATE:",
+        case=_TIERS + "test_known_hit_rates_give_the_documented_thresholds",
         runner="pytest",
     ),
     Mutation(
         name="tier-insufficient-samples-default",
         path="annotation_qa/confidence_tiers.py",
-        before="if len(observations) < MINIMUM_OBJECTS:",
-        after="if not observations:",
+        before="measured = len(observations) >= MINIMUM_OBJECTS",
+        after="measured = bool(observations)",
         case=_TIERS + "test_insufficient_samples_fall_back_to_defaults_with_reason",
         runner="pytest",
     ),
@@ -173,6 +174,39 @@ PRELABEL_MUTATIONS = (
         after="0,",
         case="tests/storage/test_workbench_risk.py::"
         "test_model_risk_survives_human_save_and_review_pagination",
+        runner="pytest",
+    ),
+    Mutation(
+        name="ai-review-label-swap",
+        path="annotation_qa/review_rules.py",
+        before="if best[0] >= HIT_IOU:",
+        after="if best[0] > 1:",
+        case="tests/annotation_qa/test_review_rules.py::"
+        "test_relabelling_a_confident_draft_box_is_a_high_risk_swap",
+        runner="pytest",
+    ),
+    Mutation(
+        name="ai-review-size-outlier-sees-drafts",
+        path="storage/production_ai_rules.py",
+        before="item.head.annotation if item.head else item.draft.record if item.draft else None",
+        after="item.head.annotation if item.head else None",
+        case=_RULES + "test_size_outlier_submitted_first_is_judged_against_draft_boxes",
+        runner="pytest",
+    ),
+    Mutation(
+        name="ai-review-near-duplicate-rescores-partner",
+        path="storage/production_ai_review.py",
+        before="if item.head is not None and item.state in _WAITING:",
+        after="if False:",
+        case=_RULES + "test_near_duplicate_conflict_flags_both_images_whatever_the_order[True]",
+        runner="pytest",
+    ),
+    Mutation(
+        name="ai-review-template-exclusive-groups",
+        path="storage/production_ai_rules.py",
+        before='raw = config.get("exclusive_label_groups")',
+        after="raw = None",
+        case=_RULES + "test_template_exclusive_labels_make_a_multiselect_conflict",
         runner="pytest",
     ),
     Mutation(

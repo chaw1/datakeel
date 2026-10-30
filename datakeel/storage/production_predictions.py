@@ -20,7 +20,7 @@ from datakeel.core.production_catalog_models import (
 )
 from datakeel.core.production_prediction_models import PredictionSample
 from datakeel.storage.production_catalog import require_label_set, require_model
-from datakeel.storage.production_cloud_prelabel import run_cloud_prelabel
+from datakeel.storage.production_cloud_prelabel import start_cloud_prelabel
 from datakeel.storage.production_prediction_parsing import parse_coco, parse_yolo
 from datakeel.storage.production_prelabel_runs import (
     new_run,
@@ -115,12 +115,14 @@ def _center_box(sample: PredictionSample, label: str, model_name: str) -> Parsed
     )
 
 
-def run_prelabel(session: Session, params: RunPrelabelParams, actor: str) -> PrelabelRun:
-    """Generate deterministic center boxes locally without constructing any model client."""
+def run_prelabel(
+    session: Session, params: RunPrelabelParams, actor: str, *, plan_id: str | None = None
+) -> PrelabelRun:
+    """Start a cloud run, or generate deterministic center boxes locally without any client."""
     project = require_mutable_project(session, params.project_id)
     model = require_model(session, params.model_id)
     if model.provider == "cloud":
-        return run_cloud_prelabel(session, params, actor, project, model)
+        return start_cloud_prelabel(session, params, actor, project, model, plan_id=plan_id)
     if model.provider != "fake" or "box" not in model.capabilities:
         message = "Only fake box models and cloud models can run prelabel"
         raise ValidationError(message)

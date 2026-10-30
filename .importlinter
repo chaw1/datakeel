@@ -536,18 +536,31 @@ ignore_imports =
 # provider-neutral cloud adapter in prelabel, and the existing perceptual-hash and near-duplicate
 # contracts; storage also owns the typed production parameters it executes.
     datakeel.storage.production_ai_audit -> datakeel.actions.models
+# Pre-review facts load project-wide drafts and read the near-duplicate hash threshold once.
+    datakeel.storage.production_ai_facts -> datakeel.annotation_qa
+    datakeel.storage.production_ai_facts -> datakeel.operators.evidence.contracts
     datakeel.storage.production_ai_review -> datakeel.annotation_qa
-    datakeel.storage.production_ai_review -> datakeel.operators.evidence.contracts
+# Pre-review rules apply the pure draft, near-duplicate and P26 rules to those facts.
+    datakeel.storage.production_ai_rules -> datakeel.annotation_qa
     datakeel.storage.production_cloud_labeling -> datakeel.annotation_qa
     datakeel.storage.production_cloud_labeling -> datakeel.prelabel
     datakeel.storage.production_cloud_prelabel -> datakeel.actions.production_catalog_parameters
     datakeel.storage.production_cloud_prelabel -> datakeel.prelabel
+# Cloud runs finish after the plan's transaction: the runner prices calls, the closer signs the receipt.
+    datakeel.storage.production_cloud_runner -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.production_cloud_runner -> datakeel.prelabel
+    datakeel.storage.action_deferred -> datakeel.actions.models
+    datakeel.storage.action_deferred -> datakeel.actions.policy
+    datakeel.storage.action_deferred -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.action_deferred -> datakeel.actions.receipts
     datakeel.storage.production_prelabel_refs -> datakeel.annotation_qa
     datakeel.storage.production_prelabel_writes -> datakeel.actions.production_parameters
     datakeel.storage.production_prelabel_writes -> datakeel.annotation_qa
     datakeel.storage.production_review_policy -> datakeel.actions.production_parameters
     datakeel.storage.production_task_images -> datakeel.operators.evidence.image_phash
     datakeel.storage.production_tiers -> datakeel.annotation_qa
+# The review queue measures draft difference with the same B1 IoU matching as accuracy.
+    datakeel.storage.workbench_risk -> datakeel.annotation_qa
 # Team-tier leases, skill dispatch and package acceptance execute typed production actions.
     datakeel.ontology.production_functions -> datakeel.storage.production_team_reads
     datakeel.storage.production_acceptance -> datakeel.actions.models

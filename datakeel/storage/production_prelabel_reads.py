@@ -1,13 +1,18 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Project-page reads for prelabel spend per model and the effective confidence thresholds."""
+"""Project-page reads: prelabel spend per model, run progress and the effective thresholds."""
 
 from decimal import Decimal
 
 from sqlalchemy import select
 
-from datakeel.core.prelabel_models import AIReview, ConfidenceThresholds, ModelSpend
+from datakeel.core.prelabel_models import (
+    AIReview,
+    ConfidenceThresholds,
+    ModelSpend,
+    PrelabelProgress,
+)
 from datakeel.core.production_catalog_models import PrelabelRun
 from datakeel.core.production_models import Project
 from datakeel.storage.database import Database
@@ -53,6 +58,40 @@ def prelabel_spend(db: Database, project_id: str) -> tuple[ModelSpend, ...]:
             }
         )
     return tuple(sorted(totals.values(), key=lambda item: (-item.cost, item.model_id)))
+
+
+def prelabel_progress(
+    db: Database, project_id: str, limit: int = 5
+) -> tuple[PrelabelProgress, ...]:
+    """Show the newest cloud runs, running ones first, as images done, failed and money spent."""
+    with db.session() as session:
+        rows = session.scalars(
+            select(ProductionPrelabelRunRow).where(
+                ProductionPrelabelRunRow.project_id == project_id,
+                ProductionPrelabelRunRow.payload["provider"].as_string() == "cloud",
+            )
+        )
+        runs = [PrelabelRun.model_validate(row.payload) for row in rows]
+    runs.sort(key=lambda run: (run.status != "running", -run.created_at.timestamp(), run.id))
+    return tuple(
+        PrelabelProgress(
+            run_id=run.id,
+            model_id=run.model_id,
+            model_name=run.model_name,
+            model_version=run.model_version,
+            status=run.status,
+            planned_images=run.planned_images,
+            completed_images=run.completed_images,
+            failed_images=run.failed_images,
+            spent=run.cost,
+            budget=run.budget,
+            currency=run.currency,
+            stopped=run.stopped is not None,
+            started_at=run.created_at,
+            updated_at=run.updated_at,
+        )
+        for run in runs[:limit]
+    )
 
 
 def project_confidence_thresholds(db: Database, project: Project) -> ConfidenceThresholds:

@@ -128,6 +128,16 @@ class TierRate(BoundaryModel):
     rate: float | None = Field(default=None, ge=0, le=1)
 
 
+class CalibrationSegment(BoundaryModel):
+    """One flat piece of the isotonic confidence-to-hit-rate curve over reviewed objects."""
+
+    low: float = Field(ge=0, le=1)
+    high: float = Field(ge=0, le=1)
+    objects: int = Field(ge=1)
+    hits: int = Field(ge=0)
+    rate: float = Field(ge=0, le=1)
+
+
 class ConfidenceThresholds(BoundaryModel):
     """Effective tier thresholds and the reviewed evidence they were derived from.
 
@@ -146,6 +156,11 @@ class ConfidenceThresholds(BoundaryModel):
         ...,
     ] = ()
     tiers: tuple[TierRate, ...] = ()
+    segments: tuple[CalibrationSegment, ...] = ()
+    pass_through: bool = Field(
+        default=True,
+        description="False while defaults stand in for measured thresholds: high stays a draft.",
+    )
 
 
 class TaskTier(BoundaryModel):
@@ -155,6 +170,8 @@ class TaskTier(BoundaryModel):
     sample_id: str
     tier: ConfidenceTier
     routed: Literal["hint", "submitted", "draft", "scratch"]
+    note: Literal["", "insufficient_samples"] = ""
+    revision_id: str | None = None
 
 
 class IoUAccuracy(BoundaryModel):
@@ -206,6 +223,7 @@ class RiskReason(BoundaryModel):
     code: str = Field(min_length=1, max_length=100)
     weight: float = Field(ge=0, le=1)
     message: str = Field(max_length=2000)
+    message_zh: str = Field(default="", max_length=2000)
     evidence: tuple[str, ...] = ()
     objects: tuple[ObjectRef, ...] = ()
 
@@ -226,3 +244,22 @@ class AIReview(BoundaryModel):
     decision: Literal["review", "exempt", "personal"]
     note: str = ""
     created_at: datetime
+
+
+class PrelabelProgress(BoundaryModel):
+    """Where a cloud prelabel run stands: images done and failed, money spent, last update."""
+
+    run_id: str
+    model_id: str
+    model_name: str
+    model_version: str
+    status: Literal["running", "completed", "failed", "abandoned"]
+    planned_images: int = Field(ge=0)
+    completed_images: int = Field(ge=0)
+    failed_images: int = Field(ge=0)
+    spent: float = Field(ge=0, allow_inf_nan=False)
+    budget: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    currency: str | None = None
+    stopped: bool = False
+    started_at: datetime
+    updated_at: datetime | None = None

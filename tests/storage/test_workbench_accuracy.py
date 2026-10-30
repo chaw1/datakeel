@@ -5,15 +5,18 @@
 
 from pathlib import Path
 
+import pytest
+
 from datakeel.actions.production_parameters import SaveRevisionParams
 from datakeel.api.app import create_app
 from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.errors import ValidationError
 from datakeel.core.production_models import ProductionTask
 from datakeel.storage.database import Database
 from datakeel.storage.production_queries import get_task
 from datakeel.storage.production_revisions import append_revision
 from datakeel.storage.production_statistics import production_prelabel_accuracy
-from datakeel.storage.production_tasks import require_task
+from datakeel.storage.production_tasks import require_task, transition_task
 from tests.asgi_client import TestClient
 from tests.workbench_helpers import annotation_for, run_action, seed_workbench
 
@@ -42,14 +45,24 @@ def _model(db: Database, task: ProductionTask, annotation: AnnotationRecord) -> 
 def test_prelabel_accuracy_requires_approved_human_reference_and_model_history(
     db: Database, tmp_path: Path
 ) -> None:
-    """Model-only approvals, human-only work and unsubmitted human drafts do not invent accuracy."""
+    """Model-only approvals, human-only work and unsubmitted human drafts do not invent accuracy.
+
+    An annotator can no longer submit a model head as it is; a model-only approval still arises
+    when a reviewer approves a high-confidence pass-through, which the fixture writes directly.
+    """
     project, tasks = seed_workbench(db, tmp_path / "unknown")
     empty = production_prelabel_accuracy(db, project.id)
     assert empty.assessed_tasks == 0
     assert empty.exact_match_rate is None
     head = _model(db, tasks[0], annotation_for("box", tasks[0].sample_id))
     head = _model(db, tasks[0], annotation_for("box", tasks[0].sample_id))
-    run_action(db, "submit_task", {"task_id": tasks[0].id})
+    with pytest.raises(ValidationError, match="Save it as your own revision first"):
+        run_action(db, "submit_task", {"task_id": tasks[0].id})
+    with db.session() as session:
+        task = require_task(session, tasks[0].id)
+        task.approved_revision_id = head
+        transition_task(session, task, "approved")
+        session.commit()
     run_action(
         db,
         "save_revision",

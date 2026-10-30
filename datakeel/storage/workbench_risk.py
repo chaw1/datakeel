@@ -9,6 +9,7 @@ from collections.abc import Sequence
 
 from sqlalchemy import select
 
+from datakeel.annotation_qa import compare_records
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.production_models import AnnotationRevision, ProductionTask
 from datakeel.core.workbench_models import WorkbenchTaskRisk
@@ -44,6 +45,17 @@ def prelabel_difference(human: AnnotationRecord, model: AnnotationRecord) -> flo
     return 1 - sum((left & right).values()) / sum(union.values()) if union else 0.0
 
 
+def draft_difference(human: AnnotationRecord, model: AnnotationRecord) -> float:
+    """Share of objects left unmatched by the B1 rule: same label, one-to-one, IoU >= 0.5.
+
+    A box moved by a few pixels still matches, so it is not a difference; two empty results
+    agree. Attributes are compared by the AI pre-review, not here.
+    """
+    comparison = compare_records(model, human)
+    total = comparison.model_count + comparison.human_count
+    return 1 - 2 * comparison.hits() / total if total else 0.0
+
+
 def task_risks(db: Database, tasks: Sequence[ProductionTask]) -> tuple[WorkbenchTaskRisk, ...]:
     """Compare each saved human head with the latest model-source revision on its own task."""
     if not tasks:
@@ -63,7 +75,7 @@ def task_risks(db: Database, tasks: Sequence[ProductionTask]) -> tuple[Workbench
         head = next((item for item in ordered if item.id == task.latest_revision_id), None)
         model = next((item for item in reversed(ordered) if item.source == "model"), None)
         difference = (
-            prelabel_difference(head.annotation, model.annotation)
+            draft_difference(head.annotation, model.annotation)
             if head is not None and head.source == "human" and model is not None
             else None
         )

@@ -7,6 +7,7 @@ import pytest
 
 from datakeel.annotation_qa.confidence_tiers import (
     calibrate,
+    calibration_curve,
     high_threshold,
     low_threshold,
     object_tier,
@@ -27,59 +28,88 @@ from datakeel.core.annotation_models import AnnotationFinding
 
 
 def _known_rates() -> list[tuple[float, bool]]:
-    """Forty objects whose hit rates per confidence band are known by construction."""
+    """Fifty objects whose hit rates per confidence band are known by construction."""
     rows: list[tuple[float, bool]] = []
     rows += [(0.95, True)] * 10
-    rows += [(0.9, True)] * 9 + [(0.9, False)]
-    rows += [(0.7, True)] * 6 + [(0.7, False)] * 4
+    rows += [(0.9, True)] * 19 + [(0.9, False)]
+    rows += [(0.7, True)] * 5 + [(0.7, False)] * 5
     rows += [(0.3, True)] * 2 + [(0.3, False)] * 8
     return rows
 
 
 def test_known_hit_rates_give_the_documented_thresholds() -> None:
-    """High is the lowest t with >=95% hits above; low the highest t with <50% hits below."""
+    """High is the lowest confidence calibrated to >=95% hits, low the lowest to >=50%."""
     rows = _known_rates()
-    # conf >= 0.9: 19/20 = 95% -> 0.9; conf >= 0.7: 25/30 < 95%.
-    assert high_threshold(rows) == pytest.approx(0.9)
-    # conf < 0.7: 2/10 = 20% (< 50%); conf < 0.9: 8/20 = 40% (< 50%); conf < 0.95: 17/30.
-    assert low_threshold(rows) == pytest.approx(0.9)
+    segments = calibration_curve(rows)
+    # Already non-decreasing: 0.3 -> 20%, 0.7 -> exactly 50%, 0.9 -> exactly 95%, 0.95 -> 100%.
+    assert [(item.low, item.objects, item.hits) for item in segments] == [
+        (0.3, 10, 2),
+        (0.7, 10, 5),
+        (0.9, 20, 19),
+        (0.95, 10, 10),
+    ]
+    assert high_threshold(segments) == pytest.approx(0.9)
+    assert low_threshold(segments) == pytest.approx(0.7)
     result = calibrate(rows)
-    assert (result.high, result.low, result.source) == (0.9, 0.9, "calibrated")
-    assert result.objects == 40
+    assert (result.high, result.low, result.source) == (0.9, 0.7, "calibrated")
+    assert result.objects == 50
+    assert result.pass_through is True
+    assert len(result.segments) == 4
     rates = {tier.tier: tier for tier in result.tiers}
-    assert (rates["high"].objects, rates["high"].hits) == (20, 19)
-    assert (rates["low"].objects, rates["low"].hits) == (20, 8)
-    assert rates["medium"].objects == 0
+    assert (rates["high"].objects, rates["high"].hits) == (30, 29)
+    assert (rates["medium"].objects, rates["medium"].hits) == (10, 5)
+    assert (rates["low"].objects, rates["low"].hits) == (10, 2)
 
 
-def test_low_threshold_never_passes_high_and_is_noted() -> None:
-    """Misses just above high can push the low search past it; low is then capped at high."""
+def test_violating_neighbours_are_pooled_into_one_flat_segment() -> None:
+    """A band that hits less often than the band below it is merged so the curve never falls."""
+    rows = [(0.4, False)] * 10 + [(0.6, True)] * 8 + [(0.6, False)] * 2
+    rows += [(0.7, True)] * 6 + [(0.7, False)] * 4 + [(0.9, True)] * 10
+    segments = calibration_curve(rows)
+    assert [(item.low, item.high, item.objects, item.hits) for item in segments] == [
+        (0.4, 0.4, 10, 0),
+        (0.6, 0.7, 20, 14),
+        (0.9, 0.9, 10, 10),
+    ]
+    assert segments[1].rate == pytest.approx(0.7)
+    # The 80%-accurate 0.6 band stays medium instead of being sent to an empty start.
+    assert calibrate(rows).low == pytest.approx(0.6)
+
+
+def test_a_configured_high_below_the_measured_low_caps_low_and_is_noted() -> None:
+    """The calibrated curve keeps low <= high; only a configured high can force the cap."""
     rows = [(0.5, False)] * 5 + [(0.6, False)] * 2 + [(0.99, True)] * 100
-    # conf >= 0.6: 100/102 hits -> high 0.6; conf < 0.99: 0/7 hits -> low 0.99 > high.
-    result = calibrate(rows)
-    assert (result.high, result.low) == (0.6, 0.6)
+    assert (calibrate(rows).high, calibrate(rows).low) == (0.99, 0.99)
+    result = calibrate(rows, (0.9, None))
+    assert (result.high, result.low) == (0.9, 0.9)
     assert result.notes == ("low_capped",)
 
 
 def test_insufficient_samples_fall_back_to_defaults_with_reason() -> None:
-    """Fewer than 30 reviewed objects use 0.85 and 0.5 and say why."""
+    """Fewer than 30 reviewed objects use 0.85 and 0.5, say why, and do not pass through."""
     result = calibrate([(0.9, True)] * 29)
     assert (result.high, result.low, result.source) == (0.85, 0.5, "default")
     assert result.notes == ("insufficient_samples",)
     assert result.objects == 29
+    assert result.pass_through is False
+    assert calibrate([(0.9, True)] * 30).pass_through is True
+    assert calibrate([(0.9, True)] * 29, (0.9, None)).pass_through is True
 
 
 def test_configured_thresholds_override_per_field() -> None:
     """A project may pin one or both thresholds; the other stays measured or default."""
     result = calibrate(_known_rates(), (0.97, None))
-    assert (result.high, result.low, result.source) == (0.97, 0.9, "configured")
+    assert (result.high, result.low, result.source) == (0.97, 0.7, "configured")
 
 
 def test_missing_thresholds_are_noted() -> None:
-    """All-miss evidence has no high threshold; all-hit evidence has no low threshold."""
+    """All-miss evidence has no high bar and starts every object empty; all-hit has no low."""
     misses = [(0.5, False)] * 15 + [(0.6, False)] * 15
-    assert calibrate(misses).notes == ("no_high_threshold",)
-    assert calibrate([(0.5, True)] * 30).notes == ("no_low_threshold",)
+    result = calibrate(misses)
+    assert result.notes == ("no_high_threshold", "no_low_threshold")
+    assert (result.high, result.low) == (None, 1.0)
+    hits = calibrate([(0.5, True)] * 30)
+    assert (hits.high, hits.low, hits.notes) == (0.5, 0.5, ())
 
 
 def test_task_tier_is_the_lowest_object_and_empty_is_low() -> None:

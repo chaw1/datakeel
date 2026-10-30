@@ -155,7 +155,12 @@ def test_low_risk_is_exempted_with_audit_and_high_risk_still_reviewed(
     assert risky is not None
     assert risky.high_risk
     assert risky.decision == "review"
-    assert [reason.code for reason in risky.reasons] == ["prelabel_disagreement"]
+    # The generated rectangles are near-duplicate images, so the empty head also conflicts
+    # with the exempted neighbour's box now that near-duplicates are checked for box work.
+    assert [reason.code for reason in risky.reasons] == [
+        "prelabel_disagreement",
+        "near_duplicate_conflict",
+    ]
     queue = workbench_project(db, project.id, CALLER, WorkbenchProjectQuery(view="review"))
     assert [task.id for task in queue.tasks] == [tasks[1].id]
     assert queue.task_risks[0].risk_reasons[0].code == "prelabel_disagreement"
