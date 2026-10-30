@@ -16,7 +16,8 @@ from datakeel.core.models import BoundaryModel, new_id, utcnow
 
 StepStatus = Literal["planned", "awaiting_approval", "running", "succeeded", "failed"]
 ChainStatus = Literal["planned", "running", "awaiting_approval", "succeeded", "failed"]
-IntentKind = Literal["plan", "answer", "clarify", "refuse"]
+IntentKind = Literal["plan", "answer", "clarify", "refuse", "unsupported"]
+DetailTone = Literal["param", "default", "added", "removed", "impact"]
 ParserKind = Literal["rules", "model"]
 
 
@@ -43,6 +44,14 @@ class StepEstimate(BoundaryModel):
     exact: bool = False
 
 
+class StepDetail(BoundaryModel):
+    """One parameter of a step as a person reads it: names instead of ids, with counts."""
+
+    label: str
+    value: str
+    tone: DetailTone = "param"
+
+
 class ChainStep(BoundaryModel):
     """One existing controlled action, possibly fanned out over several targets.
 
@@ -56,6 +65,7 @@ class ChainStep(BoundaryModel):
     items: list[dict[str, JsonValue]] = Field(default_factory=list[dict[str, JsonValue]])
     scope: str = ""
     estimate: StepEstimate = Field(default_factory=StepEstimate)
+    details: list[StepDetail] = Field(default_factory=list[StepDetail])
     status: StepStatus = "planned"
     attempts: int = Field(default=0, ge=0)
     plan_ids: list[str] = Field(default_factory=list[str])

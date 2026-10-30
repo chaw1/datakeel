@@ -20,14 +20,15 @@ from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
 from datakeel.intents.fill import FillState, fill_defaults, fill_steps
-from datakeel.intents.validate import check_step, required_fields
+from datakeel.intents.validate import check_step, overreach, required_fields
 from datakeel.intents.wording import field_label, plan_text, refusal
-from datakeel.label_drafts.model import PROFILES, estimate_cost
+from datakeel.label_drafts.model import PROFILES
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.models import ObjectSet
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.storage.database import Database
 from datakeel.storage.intent_chains import save_chain
+from datakeel.storage.label_drafts import planned_draft_cost
 from datakeel.storage.object_queries import evaluate
 
 DRAFT_SAMPLES = 8
@@ -121,16 +122,15 @@ class Resolver:
         if dataset and any(word in text.casefold() for word in ANNOTATION_WORDS):
             params.setdefault("annotation_dataset_ids", [dataset])
         chosen = params.get("sample_ids")
-        count = len(chosen) if isinstance(chosen, list) else 0
         if "profile" not in params:
-            profile = "cloud-vision" if count else "offline"
-            params["profile"] = (
-                profile
-                if profile in PROFILES and os.environ.get(PROFILES[profile].api_key_env)
-                else "offline"
+            # A configured model translates names and writes rules; images need the vision one.
+            wanted = ("cloud-vision", "cloud-text") if chosen else ("cloud-text",)
+            params["profile"] = next(
+                (name for name in wanted if os.environ.get(PROFILES[name].api_key_env)), "offline"
             )
         if params["profile"] != "offline" and "max_cost_usd" not in params:
-            params["max_cost_usd"] = max(estimate_cost(str(params["profile"]), count), 0.001)
+            # Execution checks the budget against the same sources counted here.
+            params["max_cost_usd"] = max(planned_draft_cost(self.db, params), 0.001)
         return step.model_copy(update={"params": params})
 
     def _checked(
@@ -167,17 +167,25 @@ class Resolver:
         conversation_id: str | None,
         origin: tuple[ParserKind, str | None] = ("rules", None),
     ) -> IntentResult:
-        """Fill, check and persist a chain; nothing is prepared or executed here."""
+        """Fill, check and persist a chain; nothing is prepared or executed here.
+
+        Permission comes first: a write the speaker may not perform is refused before any
+        question about its parameters is asked.
+        """
+        refused = overreach(self.db, draft.steps, self.state, self.catalog)
+        if refused is not None:
+            action, scopes = refused
+            return IntentResult(
+                kind="refuse",
+                text=refusal(action, scopes, draft.language),
+                request=text,
+                missing_scopes=scopes,
+            )
         filled = fill_steps(self.db, draft.steps, self.state, self.catalog)
         if filled.clarification is not None:
             return self._clarify(draft, filled.clarification, text)
         if filled.empty_selection is not None:
-            sentence = (
-                f"{filled.empty_selection} 手里没有符合条件的任务, 没有要改的。"
-                if draft.language == "zh"
-                else f"{filled.empty_selection} holds no matching tasks; nothing to change."
-            )
-            return IntentResult(kind="answer", text=sentence, request=text)
+            return IntentResult(kind="answer", text=filled.empty_selection, request=text)
         checked = self._checked(draft, filled.steps, text)
         if isinstance(checked, IntentResult):
             return checked
@@ -189,7 +197,9 @@ class Resolver:
                 text=text,
                 language=draft.language,
                 steps=checked,
-                notes=draft.notes,
+                # Only rule notes are kept: they are generated from the parameters. A model's
+                # own description could claim a change the parameters do not make.
+                notes=draft.notes if origin[0] == "rules" else [],
                 parser=origin[0],
                 model=origin[1],
             ),

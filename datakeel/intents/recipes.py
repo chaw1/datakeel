@@ -19,7 +19,8 @@ _ZH_SETUP = re.compile(
 _EN_SETUP = re.compile(
     r"\b(?:set up|create|start|build|make)\b.{0,40}?\b(?P<shape>box|bounding box|polygon|"
     r"classification|keypoint)?\s*(?:annotation|labell?ing)\b(?:\s+project)?"
-    r"(?:\s+(?:for|of)\s+(?P<labels>[a-z ,/&-]{2,60}?))?(?=[,.;]|\s+(?:with|in|on|using)\b|$)",
+    r"(?:\s+(?:for|of)\s+(?P<labels>[a-z ,/&-]{2,60}?))?"
+    r"(?=[.;]|,\s*(?:with|and|packages?|then|cross|two)\b|\s+(?:with|in|on|using)\b|$)",
     re.IGNORECASE,
 )
 _ZH_REASSIGN = re.compile(
@@ -225,3 +226,43 @@ def match_recipe(text: str) -> IntentDraft | None:
         if draft is not None:
             return draft
     return None
+
+
+# Words that carry no object or parameter of their own once a recipe matched.
+_FILLER = re.compile(
+    r"请|帮我|帮忙|麻烦|一下|一份|一个|这批|这些|这个|这里|当前|按照|按|根据|参考|基于|给|把|"
+    r"的|了|吧|呢|啊|和|与|及|并|然后|再|都|全部|所有|图片|照片|图像|图|张|项目|任务|数据集|"
+    r"数据|标签集|标签|标注|指南|说明|规范|吧|"
+    r"\b(?:please|kindly|for|these|this|the|a|an|on|in|of|to|with|and|then|it|them|all|"
+    r"images?|pictures?|photos?|files?|dataset|data|project|tasks?|labels?|guidelines?|"
+    r"annotations?|instructions?|from|using|based|current|here|me|us|can|you|could)\b",
+    re.IGNORECASE,
+)
+_MEANING = re.compile(r"[一-鿿]{2,}|[a-z]{2,}|\d", re.IGNORECASE)
+
+
+def _spans(text: str) -> list[tuple[int, int]]:
+    """Consumed spans, each extended to the end of its last word ("cross-check" + "ing")."""
+    patterns = (_ZH_SETUP, _EN_SETUP, _ZH_REASSIGN, _EN_REASSIGN, _DRAFT, _TEAM, _SAMPLE, _PACKAGE)
+    spans: list[tuple[int, int]] = []
+    for pattern in patterns:
+        for match in pattern.finditer(text):
+            end = match.end()
+            while end < len(text) and text[end].isascii() and text[end].isalnum():
+                end += 1
+            spans.append((match.start(), end))
+    return spans
+
+
+def recipe_covers(text: str) -> bool:
+    """True when a recipe uses every object and value the sentence mentions.
+
+    Whatever is left after removing what the recipes consumed and plain filler must carry
+    no meaning (no name, number or word of its own); otherwise a model plans the sentence,
+    because the recipe would silently ignore what it does not understand.
+    """
+    kept = list(text)
+    for start, end in _spans(text):
+        kept[start:end] = [" "] * (end - start)
+    leftover = _FILLER.sub(" ", "".join(kept))
+    return _MEANING.search(leftover) is None

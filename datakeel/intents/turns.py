@@ -18,8 +18,15 @@ from datakeel.core.agent_models import ChatMessage, Conversation, Provider, Scri
 from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import IntentResult, PageContext
 from datakeel.core.routing_models import TierState
+from datakeel.intents.drafts import language_of
 from datakeel.intents.model_parse import AGENT_NAME
-from datakeel.intents.planner import ModelAccess, PlannerTurn, conversation_focus, plan_turn
+from datakeel.intents.planner import (
+    ModelAccess,
+    PlannerTurn,
+    conversation_focus,
+    plan_turn,
+    unsupported,
+)
 from datakeel.routing.accounting import CallContext, ModelAccount
 from datakeel.routing.config import load_config
 from datakeel.routing.tiers import select_model
@@ -116,6 +123,9 @@ def planner_events(
         )
     except DatakeelError:
         result = None
+    if result is None and mode == "model":
+        # A real model was in the loop: answer every sentence instead of a silent free loop.
+        result = unsupported(text, language_of(text))
     if (
         isinstance(provider, FakeProvider)
         and head is not None

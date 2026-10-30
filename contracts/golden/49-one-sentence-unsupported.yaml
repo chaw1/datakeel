@@ -1,0 +1,18 @@
+id: 49-one-sentence-unsupported
+description: A sentence no registered action or read function fits gets a plain answer
+  listing what the platform can do, never silence or the free conversation.
+turns:
+- input: Book me a flight to Shanghai tomorrow
+  script:
+  - agent: intent_planner
+    content: '{"kind": "none", "reason": "travel booking"}'
+expect:
+  intent_kinds:
+  - unsupported
+  chain_actions: []
+  run_count: 0
+  actions: []
+  answer_contains:
+  - rephrase
+  max_turns: 0
+  max_tokens: 40000

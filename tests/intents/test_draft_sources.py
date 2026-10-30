@@ -231,7 +231,7 @@ def test_failed_model_answer_is_recorded_with_its_tokens_and_cost(
         pytest.raises(ValidationError, match=r"output_tokens=4000 cost_usd=0\.00"),
     ):
         draft_model.model_draft(inputs, "cloud-text", 0.05, client)
-    assert sent[0]["thinking"] == {"type": "disabled"}
+    assert sent[0].get("thinking") == {"type": "disabled"}
     dataset = images(db, tmp_path / "images", count=1)
     _annotate(db, dataset, ["轿车"])
     _recorded_draft(monkeypatch, [], empty)

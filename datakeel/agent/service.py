@@ -11,6 +11,7 @@ from datakeel.agent.models import AgentEvent, ConversationView
 from datakeel.agent.providers import FakeProvider
 from datakeel.core.agent_models import (
     ConversationCreate,
+    ConversationDefaults,
     ConversationLease,
     MessageInput,
     Provider,
@@ -19,6 +20,7 @@ from datakeel.core.agent_models import (
 from datakeel.core.errors import ValidationError
 from datakeel.core.intent_models import PageContext
 from datakeel.core.models import JsonDocument
+from datakeel.core.settings import get_settings
 from datakeel.delegation.loader import list_agents
 from datakeel.intents.turns import planner_events
 from datakeel.routing.config import load_config
@@ -187,3 +189,13 @@ def _response_events(
         model_routes=model_decisions(db, conversation_id, conversation.turns),
         used_memory_ids=graph.used_memories(),
     )
+
+
+def conversation_defaults() -> ConversationDefaults:
+    """The configured provider with routed models; the offline demo only without a key."""
+    settings = get_settings()
+    if settings.openai_api_key is not None:
+        return ConversationDefaults(provider="openai", model="auto")
+    if settings.anthropic_api_key is not None:
+        return ConversationDefaults(provider="anthropic", model="auto")
+    return ConversationDefaults(provider="fake", model="fake-demo")

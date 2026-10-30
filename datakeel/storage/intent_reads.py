@@ -3,9 +3,12 @@
 
 """Bounded reads behind one-sentence task selectors such as a holder's untouched tasks."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
+from datakeel.core.production_catalog_models import LabelSet
 from datakeel.storage.database import Database
+from datakeel.storage.production_catalog_impact import migration_impact
+from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
 
 OPEN_STATES = ("pending", "in_progress")
@@ -41,3 +44,30 @@ def held_tasks(
         statement = statement.where(ProductionTaskRow.latest_revision_id.is_(None))
     with db.session() as session:
         return [(str(project), str(task)) for project, task in session.execute(statement).all()]
+
+
+def latest_label_set(db: Database, label_set_id: str) -> LabelSet | None:
+    """The newest stored version of one label set, published or not."""
+    with db.session() as session:
+        version = session.scalar(
+            select(func.max(ProductionLabelSetRow.version)).where(
+                ProductionLabelSetRow.label_set_id == label_set_id
+            )
+        )
+        row = (
+            session.scalar(
+                select(ProductionLabelSetRow).where(
+                    ProductionLabelSetRow.label_set_id == label_set_id,
+                    ProductionLabelSetRow.version == version,
+                )
+            )
+            if version is not None
+            else None
+        )
+        return LabelSet.model_validate(row.payload) if row is not None else None
+
+
+def label_change_impact(db: Database, before: LabelSet, after: LabelSet) -> tuple[int, int]:
+    """Annotations and revisions a planned version would migrate, as label_set_diff counts."""
+    with db.session() as session:
+        return migration_impact(session, before, after)

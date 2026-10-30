@@ -20,10 +20,17 @@ from datakeel.core.intent_models import IntentResult, PageContext, ParserKind
 from datakeel.core.models import BoundaryModel
 from datakeel.intents.catalog import EntityCatalog, build_catalog
 from datakeel.intents.drafts import DraftStep, IntentDraft, language_of
-from datakeel.intents.model_parse import PlannerScene, parse_response, planner_request
-from datakeel.intents.recipes import match_recipe
+from datakeel.intents.fill import FillState, known_fields
+from datakeel.intents.model_parse import (
+    PlannerScene,
+    parse_response,
+    planner_request,
+    repair_request,
+)
+from datakeel.intents.recipes import match_recipe, recipe_covers
 from datakeel.intents.resolve import Resolver, page_state
 from datakeel.intents.rules import full_registry, is_question, rank
+from datakeel.intents.wording import unsupported_text
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.storage.database import Database
@@ -158,12 +165,47 @@ def _model_draft(
         open_question=pending.text if pending else "",
     )
     words = f"{pending.request} {turn.text}" if pending else turn.text
+    scene = scene.model_copy(update={"speaker": turn.actor})
     request = planner_request(access.model, turn.text, rank(words, full_registry()), catalog, scene)
     try:
         response = complete(request)
-        return parse_response(response.content, language_of(turn.text))
+        draft = parse_response(response.content, language_of(turn.text))
     except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError):
         return None
+    return _repaired(turn, draft, catalog, complete, (request, response.content))
+
+
+def _unknown(turn: PlannerTurn, draft: IntentDraft, catalog: EntityCatalog) -> dict[str, list[str]]:
+    state = FillState(context=turn.context, focus=turn.focus, actor=turn.actor)
+    found: dict[str, list[str]] = {}
+    for step in draft.steps:
+        _, unknown = known_fields(step, state, catalog)
+        if unknown:
+            found[step.action] = list(unknown)
+    return found
+
+
+def _repaired(
+    turn: PlannerTurn,
+    draft: IntentDraft,
+    catalog: EntityCatalog,
+    complete: Complete,
+    first: tuple[ModelRequest, str],
+) -> IntentDraft:
+    """One repair round for parameter names the action does not take.
+
+    Unknown names are never dropped silently: the model gets one chance to use the schema's
+    names; whatever is still unknown afterwards becomes a question to the person.
+    """
+    unknown = _unknown(turn, draft, catalog)
+    if not unknown:
+        return draft
+    try:
+        response = complete(repair_request(first[0], first[1], unknown))
+        repaired = parse_response(response.content, draft.language)
+    except (DatakeelError, httpx.HTTPError, ModelValidationError, ValueError):
+        return draft
+    return repaired if repaired.steps or repaired.kind == "none" else draft
 
 
 def _draft(
@@ -178,7 +220,8 @@ def _draft(
     if merged is not None and turn.pending is not None:
         return merged, turn.pending.parser, turn.pending.request
     recipe = match_recipe(turn.text)
-    if recipe is not None:
+    # With a model available, a recipe only answers when it uses everything that was said.
+    if recipe is not None and (not model or recipe_covers(turn.text)):
         return recipe, "rules", turn.text
     if model and complete is not None:
         drafted = _model_draft(turn, catalog, complete, access)
@@ -199,6 +242,10 @@ def plan_turn(
     catalog = build_catalog(db, turn.context.project_id)
     draft, parser, request = _draft(turn, catalog, complete, granted)
     if draft is None or draft.kind == "none" or not draft.steps:
+        if granted.allowed and complete is not None:
+            # A model was asked: every sentence ends with an answer, never in silence.
+            language = draft.language if draft is not None else language_of(turn.text)
+            return unsupported(turn.text, language)
         return None
     words = f"{request} {turn.text}" if request != turn.text else turn.text
     state = page_state(turn.context, turn.focus, turn.actor, draft.language, words)
@@ -217,3 +264,8 @@ def plan_turn(
         origin = (parser, granted.model if parser == "model" else None)
         result = resolver.plan(writes, request, turn.conversation_id, origin)
     return result.model_copy(update={"parser": parser})
+
+
+def unsupported(text: str, language: str) -> IntentResult:
+    """Say plainly that this is not something the platform can do, and what it can do."""
+    return IntentResult(kind="unsupported", text=unsupported_text(language), request=text)

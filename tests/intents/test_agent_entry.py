@@ -92,13 +92,15 @@ def test_conversation_view_reflects_chain_progress_after_confirmation(db: Databa
     assert shown.chain.steps[0].run_ids
 
 
-def test_planner_none_leaves_the_turn_to_the_free_conversation(db: Database) -> None:
-    """When nothing registered fits, the next scripted response answers as before."""
+def test_nothing_registered_fits_gets_a_plain_answer_not_a_free_loop(db: Database) -> None:
+    """A model was asked and nothing fits: say what the platform does; no free loop runs."""
     conversation = create_conversation(db, ConversationCreate())
     provider = FakeProvider([_planner({"kind": "none"}), ModelResponse(content="Hello there.")])
     events = _send(db, conversation.id, "hello", provider)
-    assert not [event for event in events if event.event == "intent"]
-    assert any(event.event == "text" and event.text == "Hello there." for event in events)
+    intents = [event.intent for event in events if event.intent is not None]
+    assert [intent.kind for intent in intents] == ["unsupported"]
+    assert "rephrase" in intents[0].text
+    assert not any(event.event == "text" and event.text == "Hello there." for event in events)
 
 
 def test_scripts_without_a_planner_entry_never_reach_the_planner(db: Database) -> None:
@@ -117,7 +119,8 @@ def test_rules_handle_recipe_sentences_and_drop_the_unused_planner_entry(
     dataset = images(db, tmp_path / "images")
     conversation = create_conversation(db, ConversationCreate())
     provider = FakeProvider([_planner({"kind": "none"})])
-    events = _send(db, conversation.id, SETUP, provider, PageContext(dataset_id=dataset.id))
+    covered = "建红绿灯框标注\uff0c两人交叉、抽 10%"
+    events = _send(db, conversation.id, covered, provider, PageContext(dataset_id=dataset.id))
     intent = next(event.intent for event in events if event.intent is not None)
     assert intent.parser == "rules"
     assert intent.chain is not None

@@ -1,0 +1,128 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Resolve descriptive selectors to concrete objects before a plan is shown.
+
+A sentence often names a subset rather than ids: "Wang's untouched tasks", "the first two
+tasks", "the second package", "the duplicate images". Each selector is resolved here with
+bounded read-only queries, in the order the interface shows them, so the plan card lists
+exactly the objects a confirmation would change. Anything that cannot be resolved becomes a
+question; a selector never widens to the whole dataset or project.
+"""
+
+from pydantic import JsonValue
+
+from datakeel.core.intent_models import Clarification
+from datakeel.core.models import AssetRef
+from datakeel.ontology.models import ObjectSet
+from datakeel.storage.database import Database
+from datakeel.storage.evidence_store import list_assertions
+from datakeel.storage.intent_reads import held_tasks
+from datakeel.storage.object_queries import evaluate
+from datakeel.storage.production_queries import list_tasks
+
+SELECTION_LIMIT = 10000
+OPEN_STATES = frozenset({"pending", "in_progress"})
+DUPLICATE_STATUSES = frozenset({"candidate", "accepted"})
+
+
+def positions(selector: dict[str, JsonValue]) -> list[int] | None:
+    """1-based positions from {"first": n} or {"positions": [..]}; None when absent."""
+    first = selector.get("first")
+    if isinstance(first, int) and first > 0:
+        return list(range(1, min(first, SELECTION_LIMIT) + 1))
+    raw = selector.get("positions")
+    if isinstance(raw, list):
+        return [item for item in raw if isinstance(item, int) and item > 0]
+    return None
+
+
+def pick(values: list[str], wanted: list[int] | None) -> list[str] | None:
+    """Keep the listed positions of an ordered list; None when a position does not exist."""
+    if wanted is None:
+        return values
+    if not wanted or max(wanted) > len(values):
+        return None
+    return [values[index - 1] for index in wanted]
+
+
+def project_tasks(
+    db: Database, project_id: str, *, holder: str | None, untouched: bool, open_only: bool
+) -> list[str]:
+    """Task ids of one project in the order the task list shows them (by id)."""
+    if holder is not None:
+        return [
+            task for _, task in held_tasks(db, holder, project_id=project_id, untouched=untouched)
+        ]
+    tasks = list_tasks(db, project_id)
+    return [
+        task.id
+        for task in tasks
+        if (not open_only or task.state in OPEN_STATES)
+        and (not untouched or task.latest_revision_id is None)
+    ]
+
+
+def _dataset_files(db: Database, dataset_id: str, version_id: str | None) -> list[str]:
+    versions = [version_id] if version_id else []
+    found = evaluate(
+        db, ObjectSet(dataset_id=dataset_id, version_ids=versions, limit=SELECTION_LIMIT)
+    )
+    return [item.asset_ref.asset_id for item in found.objects]
+
+
+def near_duplicates(db: Database, dataset_id: str, version_id: str | None) -> list[str]:
+    """Later copies of each near-duplicate pair; the first file of every group is kept."""
+    files = set(_dataset_files(db, dataset_id, version_id))
+    copies = {
+        item.object.asset_id
+        for item in list_assertions(db)
+        if item.predicate == "near_duplicate_of"
+        and isinstance(item.object, AssetRef)
+        and item.status in DUPLICATE_STATUSES
+        and item.subject.asset_id in files
+        and item.object.asset_id in files
+    }
+    return sorted(copies)
+
+
+def file_selection(
+    db: Database,
+    spec: dict[str, JsonValue],
+    dataset_id: str | None,
+    version_id: str | None,
+    selected: list[str],
+) -> dict[str, JsonValue] | None:
+    """Turn {"$files": {...}} into an exact id selection, or None when it cannot resolve."""
+    kind = spec.get("kind")
+    if dataset_id is None:
+        return None
+    if kind == "selected":
+        ids = list(selected)
+    elif kind == "near_duplicates":
+        ids = near_duplicates(db, dataset_id, version_id)
+    else:
+        return None
+    if not ids:
+        return {"dataset_id": dataset_id, "filters": [], "limit": 0, "$empty": True}
+    values: list[JsonValue] = list(ids)
+    condition: dict[str, JsonValue] = {"field": "id", "operator": "in", "value": values}
+    selection: dict[str, JsonValue] = {
+        "dataset_id": dataset_id,
+        "filters": [condition],
+        "limit": len(ids),
+    }
+    if version_id:
+        selection["version_ids"] = [version_id]
+    return selection
+
+
+def ordinal_question(kind: str, language: str) -> Clarification:
+    """Ask again when a position does not exist in the list the person sees."""
+    zh = {"package": "任务包", "task": "任务"}.get(kind, kind)
+    question = (
+        f"列表里没有这么多{zh}, 请说具体是哪几个。"
+        if language == "zh"
+        else f"There are not that many {kind}s in the list; which ones do you mean?"
+    )
+    return Clarification(question=question, fields=[f"{kind}_id"])

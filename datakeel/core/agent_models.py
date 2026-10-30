@@ -96,6 +96,13 @@ class ConversationCreate(BoundaryModel):
     max_output_tokens: int = Field(default=1024, ge=1, le=16384)
 
 
+class ConversationDefaults(BoundaryModel):
+    """The provider and model a new conversation uses unless the person picks another."""
+
+    provider: Literal["fake", "openai", "anthropic"]
+    model: str
+
+
 class MessageInput(BoundaryModel):
     """An idempotent user turn, independent of transport reconnects."""
 

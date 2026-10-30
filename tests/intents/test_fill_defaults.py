@@ -101,8 +101,8 @@ def test_draft_without_a_name_is_named_after_its_topic(db: Database) -> None:
     assert result.chain.steps[0].params["name"] == "animals"
 
 
-def test_unknown_keys_are_dropped_and_task_plurals_renamed(db: Database) -> None:
-    """An extra project_id and task_ids on a single-task action still give the plan."""
+def test_redundant_page_project_is_ignored_and_task_plurals_renamed(db: Database) -> None:
+    """A project_id repeating the page and task_ids on a single-task action still plan."""
     project, tasks = team(db)
     held = {"$tasks": {"holder": "小王", "untouched": True}}
     revoke: dict[str, object] = {"task_ids": held, "reason": "转给小赵"}

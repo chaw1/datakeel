@@ -18,6 +18,7 @@ from datakeel.api.identity_access import http_actor
 from datakeel.core.agent_models import (
     ConversationAudit,
     ConversationCreate,
+    ConversationDefaults,
     MessageInput,
     Provider,
     ResumeInput,
@@ -69,6 +70,12 @@ def tree(conversation_id: str, db: DatabaseDependency, request: Request) -> Call
     """Read nested specialist sessions and every metered parent and child call."""
     require_session_actor(db, conversation_id, http_actor(request))
     return call_tree(db, conversation_id)
+
+
+@router.get("/definitions/provider")
+def provider_defaults() -> ConversationDefaults:
+    """The model new conversations use: the configured one, or the offline demo without keys."""
+    return service.conversation_defaults()
 
 
 @router.get("/definitions/agents")

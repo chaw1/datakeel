@@ -20,6 +20,7 @@ from datakeel.mcp import create_server
 from datakeel.mcp.catalog import tool_definitions
 from tests.asgi_client import TestClient
 from tests.intents.support import REASSIGN, SETUP, approve_waiting, images, plan, team
+from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -94,3 +95,38 @@ def test_no_agent_or_mcp_tool_can_run_or_confirm_a_chain(db: Database) -> None:
 
     exposed = names | asyncio.run(listed())
     assert not [name for name in exposed if "chain" in name or "intent" in name]
+
+
+def test_new_web_conversations_use_the_configured_model(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The demo provider is only the fallback when no model key is configured."""
+    client = TestClient(create_app(db))
+    for name in ("DATAKEEL_OPENAI_API_KEY", "DATAKEEL_ANTHROPIC_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    route = "/api/agent/conversations/definitions/provider"
+    assert client.get(route).json() == {"provider": "fake", "model": "fake-demo"}
+    monkeypatch.setenv("DATAKEEL_OPENAI_API_KEY", "test-only")
+    assert client.get(route).json() == {"provider": "openai", "model": "auto"}
+
+
+def test_a_browser_signature_is_recorded_for_the_request_s_person(db: Database) -> None:
+    """With registered users the placeholder signer is the requester; others are refused."""
+    project, _ = team(db)
+    values = {
+        "name": "第二期",
+        "dataset_id": project.dataset_id,
+        "version_id": project.version_id,
+        "label_set_id": project.label_set_id,
+    }
+    runner_plan = ServiceRunner(db).plan("create_project", values, "boss")
+    assert runner_plan.requires_approval
+    client = TestClient(create_app(db))
+    decision = {"approve": True, "plan_digest": runner_plan.plan_digest}
+    route = f"/api/approvals/{runner_plan.id}"
+    headers = {"X-Datakeel-Actor": "boss"}
+    refused = client.post(route, json={**decision, "actor": "li"}, headers=headers)
+    assert refused.status_code == 403
+    signed = client.post(route, json={**decision, "actor": "local"}, headers=headers)
+    assert signed.status_code == 200, signed.text
+    assert service.get_plan(db, runner_plan.id).status == "APPROVED"
