@@ -53,7 +53,7 @@ def test_quoted_password_adjacent_to_chinese_masks_special_characters() -> None:
     "value",
     [
         "notpassword=p4ssword",
-        "my_api_key=p4ssword",
+        "my_api_keys=p4ssword",
         "xBearer a1B2c3D4a1B2c3D4",
         "0123456789abcdef" * 4,
         "123e4567-e89b-12d3-a456-426614174000",

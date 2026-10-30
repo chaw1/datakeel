@@ -40,7 +40,7 @@ PII_MUTATIONS = (
     ),
     Mutation(
         name="pii-url-userinfo-is-not-a-credential-assignment",
-        path="core/pii.py",
+        path="core/pii_credentials.py",
         before='    urls = tuple(patterns.CREDENTIAL_URL.finditer(text)) if "://" in text else ()',
         after="    urls = ()",
         case="tests/core/test_pii_labels.py::test_credential_url_usernames_cannot_capture_prose_as_quoted_assignments",
@@ -75,7 +75,7 @@ PII_MUTATIONS = (
     ),
     Mutation(
         name="pii-secret-independent-assignment-starts",
-        path="core/pii.py",
+        path="core/pii_credentials.py",
         before="patterns.CREDENTIAL_ASSIGNMENT.finditer(text)",
         after="patterns.LABELED_SECRET.finditer(text)",
         case="tests/core/test_pii_labels.py::test_containing_secret_guard_masks_every_fragment_around_an_embedded_url",
@@ -91,7 +91,7 @@ PII_MUTATIONS = (
     ),
     Mutation(
         name="pii-secret-nested-delimiter-trimming",
-        path="core/pii.py",
+        path="core/pii_credentials.py",
         before="    while any(",
         after="    if any(",
         case="tests/core/test_pii_labels.py::test_placeholder_and_nested_delimiter_guard_keeps_only_the_secret_span",
@@ -99,9 +99,15 @@ PII_MUTATIONS = (
     ),
     Mutation(
         name="pii-secret-placeholder-idempotence",
-        path="core/pii.py",
-        before="and value not in _PLACEHOLDERS",
-        after="and True",
+        path="core/pii_credentials.py",
+        before=(
+            "    return (\n"
+            "        value.upper() in PLACEHOLDERS\n"
+            "        or _MASK.fullmatch(value) is not None\n"
+            "        or _WRAPPED_WORD.fullmatch(value) is not None\n"
+            "    )"
+        ),
+        after="    return False",
         case="tests/core/test_pii_labels.py::test_placeholder_and_nested_delimiter_guard_keeps_only_the_secret_span",
         runner="pytest",
     ),
@@ -172,8 +178,8 @@ PII_MUTATIONS = (
     Mutation(
         name="pii-credential-label-ascii-boundary",
         path="core/pii_patterns.py",
-        before=r"(?:(?<![A-Za-z0-9_])|(?=[\u3400-\u9fff]))(?P<label>api",
-        after=r"\b(?P<label>api",
+        before=r"(?:(?<![A-Za-z0-9_])|(?=[\u3400-\u9fff]))(?P<label>",
+        after=r"\b(?P<label>",
         case="tests/core/test_pii_credential_guards.py::test_credential_label_boundary_cannot_leak_password",
         runner="pytest",
     ),
@@ -220,7 +226,7 @@ PII_MUTATIONS = (
     Mutation(
         name="pii-credential-field-context",
         path="core/pii.py",
-        before="    if finding := _labeled_secret(text, label):",
+        before="    if finding := labeled_secret(text, label):",
         after="    if False:",
         case="tests/core/test_pii.py::test_label_context_is_required_to_find_an_opaque_credential",
         runner="pytest",
@@ -239,6 +245,62 @@ PII_MUTATIONS = (
         before="    _validate_unicode(value)",
         after="    pass",
         case="tests/llm_data/test_engine.py::test_unicode_scalar_guard_when_removed_cannot_abort_the_cleaning_stream",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-generic-label-credential-shape",
+        path="core/pii_credentials.py",
+        before="        return credential_like(value)",
+        after="        return len(value) >= _MIN_SECRET_LENGTH",
+        case="tests/core/test_pii_generic_labels.py::test_generic_label_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-generic-label-hyphenated-prose",
+        path="core/pii_credentials.py",
+        before="    if _PROSE_WORD.fullmatch(value):",
+        after="    if False:",
+        case="tests/core/test_pii_generic_labels.py::test_generic_label_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-generic-label-word-entropy",
+        path="core/pii_credentials.py",
+        before="            and _entropy(value) >= _MIN_WORD_ENTROPY",
+        after="",
+        case="tests/core/test_pii_generic_labels.py::test_generic_label_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-short-password-minimum",
+        path="core/pii_credentials.py",
+        before="        return len(value) >= _MIN_PASSWORD_LENGTH",
+        after="        return len(value) >= _MIN_SECRET_LENGTH",
+        case="tests/core/test_pii_prefixed_keys.py::test_prefixed_key_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-prefixed-credential-keys",
+        path="core/pii_patterns.py",
+        before=r"(?:[A-Za-z0-9]{1,32}[_.-]){1,8}(?:",
+        after=r"(?!)(?:",
+        case="tests/core/test_pii_prefixed_keys.py::test_prefixed_key_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-prefixed-key-final-segment",
+        path="core/pii_credentials.py",
+        before="    if last in _PASSWORD_WORDS:",
+        after="    if segments[0] in _PASSWORD_WORDS:",
+        case="tests/core/test_pii_prefixed_keys.py::test_prefixed_key_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-mask-placeholders",
+        path="core/pii_credentials.py",
+        before="        or _MASK.fullmatch(value) is not None",
+        after="",
+        case="tests/core/test_pii_prefixed_keys.py::test_prefixed_key_mutation_guard",
         runner="pytest",
     ),
 )

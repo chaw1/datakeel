@@ -10,7 +10,7 @@ NUMBER_RUN = re.compile(r"[0-9][0-9 ()-]{6}")
 ASCII_LETTER = re.compile(r"[A-Za-z]")
 SECRET_HINT = re.compile(r"sk-|AKIA|ASIA|gh[pousr]_|github_pat_|xox[baprs]-|AIza|eyJ")
 LABEL_HINT = re.compile(
-    r"api|access|auth|secret|aws|client|github|gh|password|passwd|pwd|token|bearer|"
+    r"api|access|auth|secret|aws|client|github|gh|password|passwd|pwd|token|bearer|key|pass|"
     r"密码|口令|密钥|令牌",
     re.IGNORECASE,
 )
@@ -75,10 +75,23 @@ SECRET = re.compile(
     r"|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"
     r")(?![A-Za-z0-9_])"
 )
-CREDENTIAL_LABEL_PATTERN = (
-    r"(?:(?<![A-Za-z0-9_])|(?=[\u3400-\u9fff]))(?P<label>api[_-]?key|access[_-]?token|auth[_-]?token|"
+_ASCII_CREDENTIAL_LABELS = (
+    r"api[_-]?key|access[_-]?token|auth[_-]?token|"
     r"(?:aws[_-]?)?secret[_-]?(?:access[_-]?)?key|client[_-]?secret|"
-    r"(?:github|gh)[_-]?token|password|passwd|pwd|secret|token|"
+    r"(?:github|gh)[_-]?token|password|passwd|pwd|secret|token"
+)
+# Environment/config keys: bounded `_`, `-` or `.` segments before a credential word.
+_PREFIXED_CREDENTIAL_LABEL = (
+    r"(?:[A-Za-z0-9]{1,32}[_.-]){1,8}(?:"
+    + _ASCII_CREDENTIAL_LABELS
+    + r"|pass(?:phrase)?|private[_-]?key)"
+)
+CREDENTIAL_LABEL_PATTERN = (
+    r"(?:(?<![A-Za-z0-9_])|(?=[\u3400-\u9fff]))(?P<label>"
+    + _PREFIXED_CREDENTIAL_LABEL
+    + r"|"
+    + _ASCII_CREDENTIAL_LABELS
+    + r"|key|auth|"
     r"访问密钥|访问令牌|密码|口令|密钥|令牌)"
 )
 CREDENTIAL_SEPARATOR = r"[\"']?\s*(?:[:=\uff1a]|[是为]\s*[:\uff1a]?)\s*"
@@ -87,7 +100,7 @@ CREDENTIAL_VALUE_START = (
     r"(?!" + CREDENTIAL_LABEL_PATTERN.replace("(?P<label>", "(?:") + CREDENTIAL_SEPARATOR + r")"
 )
 # Stop bare values before surrounding prose; quotes permit spaces and escaped punctuation.
-BARE_CREDENTIAL_PATTERN = r"[^\s\"'<>,;" + CREDENTIAL_PROSE_STOPS + r"\u3400-\u9fff]{8,}"
+BARE_CREDENTIAL_PATTERN = r"[^\s\"'<>,;" + CREDENTIAL_PROSE_STOPS + r"\u3400-\u9fff]+"
 LABELED_SECRET = re.compile(
     CREDENTIAL_LABEL_PATTERN
     + CREDENTIAL_SEPARATOR

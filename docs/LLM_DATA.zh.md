@@ -129,7 +129,7 @@ uv run datakeel training-quality DATASET_ID --version-id VERSION_ID
 
 CLI 和 Agent 可发现的只读工具 `get_training_quality` 依据真实规则结果回答「这批 SFT 数据有什么问题」，不会发布清洗文件。没有保存报告时，只读路径可以本地计算问题，但不改变版本。报告提供规则证据，不能据此认定训练数据已经正确、合法或完整。
 
-凭证赋值识别英文标签（含 password、passwd、pwd、api_key、secret、token）与中文标签（密码、口令、密钥、令牌、访问密钥、访问令牌），支持半角/全角冒号、等号、「是」「为」。「是」「为」之后还可接半角或全角冒号，保留周围空白。值至少八个字符且须含字母或数字；空值、只有标点的赋值不报告。完整的裸 ASCII 值（含密码标点）在相邻中文说明前脱敏；含空白或 Unicode 文本的值请加引号。类型化凭证字段使用相同标签。识别完全在本地执行，不向任何服务验证凭证。
+凭证赋值识别英文标签（含 password、passwd、pwd、api_key、secret、token、key、auth）与中文标签（密码、口令、密钥、令牌、访问密钥、访问令牌），支持半角/全角冒号、等号、「是」「为」。「是」「为」之后还可接半角或全角冒号，保留周围空白。环境变量和配置风格的键，按 `_`、`-`、`.` 切开后最后一段是凭证词时也算标签，大小写不敏感：`DB_PASSWORD=`、`MYSQL_ROOT_PASSWORD:`、`REDIS_PASS=`、`GITHUB_TOKEN=`、`aws_secret_access_key =`、`STRIPE_SECRET_KEY=`；凭证词嵌在更长的一段里（`notpassword`、`max_tokens`）或后面还有别的段（`DB_PASSWORD_FILE`）都不算。密码类标签（password、passwd、pwd、pass、密码、口令）后的值满四个字符就脱敏。secret、token、key、auth 这几个英文通用词只在值像凭证时脱敏：不含空白，长度至少 8 且含字母、数字、符号中的至少两类，或是至少 16 位的 hex/base64 串；句末标点不计入，带连字符的单词算普通单词，所以 `The secret: practice every day.` 原样保留。其它标签的值至少八个字符。值须含字母或数字；空值、只有标点的值和已经打过码的值（`***`、`xxxx`、`<redacted>`、`[REDACTED]`、`${VAR}`）不报告。完整的裸 ASCII 值（含密码标点）在相邻中文说明前脱敏；含空白或 Unicode 文本的值请加引号。类型化凭证字段使用相同标签。识别完全在本地执行，不向任何服务验证凭证。
 
 带凭证 URL 在 userinfo 之后遇到 CJK 文字或中文标点即停止，保留紧邻的说明和引号；用户名/密码中的 Unicode 文字或标点仍完整覆盖。URL 内看似凭证标签的用户名不会被解释为独立赋值；URL 后的真实凭证仍独立检查。
 
