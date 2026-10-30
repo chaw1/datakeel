@@ -25,7 +25,7 @@ it("shows personal data counts from P29 projections without assignment or review
   await screen.findByRole("heading", { name: "My data" });
   expect(screen.getByText("Project progress · 0/2")).toBeVisible();
   expect(
-    screen.getByRole("button", { name: "Open task task-1" }),
+    screen.getByRole("button", { name: "Open task harbor-001.png" }),
   ).toBeVisible();
   expect(screen.queryByRole("button", { name: "Claim next task" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Review queue" })).toBeNull();

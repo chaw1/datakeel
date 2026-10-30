@@ -85,6 +85,7 @@ function workspace(actor = "person-1"): WorkspaceSnapshot {
         },
       },
       task_risks: [],
+      task_samples: [],
     },
     task: {
       task,

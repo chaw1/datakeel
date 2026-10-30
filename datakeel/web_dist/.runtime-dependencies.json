@@ -1,6 +1,10 @@
 {
   "schema_version": 1,
+<<<<<<< HEAD
   "source_hash": "1cf853237cb0210acd88fbaa85b9ee411627053ea8d06d7de9831493742f8308",
+=======
+  "source_hash": "d00e1bf5a0bfab13c5d19b71bfb2adfd0b13a03f0e60721c3abc4d181ee99b72",
+>>>>>>> be11090 (feat(workbench): 任务列表和驾驶舱显示文件名，可按文件名搜索)
   "packages": [
     "node_modules/@fontsource/source-code-pro",
     "node_modules/@fontsource/source-serif-4",

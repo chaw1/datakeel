@@ -245,6 +245,15 @@ main:has(> .wb-page[data-focus="true"]) {
 .wb-list-heading {
   justify-content: space-between;
 }
+.wb-task-search {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+  font-size: var(--font-sm);
+}
+.wb-task-search input {
+  min-width: 260px;
+}
 .wb-task-table {
   table-layout: fixed;
   width: 100%;

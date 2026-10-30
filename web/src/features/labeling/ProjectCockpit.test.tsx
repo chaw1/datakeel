@@ -16,6 +16,14 @@ it("renders counters, rework identities and workload without recomputing facts",
           counts: [{ state: "approved", count: 29 }],
           rework_task_ids: ["rework-task"],
         },
+        task_samples: [
+          {
+            task_id: "rework-task",
+            sample_id: "sample-9",
+            name: "dock-09.jpg",
+            path: "harbor/night/dock-09.jpg",
+          },
+        ],
         prelabel_accuracy: {
           project_id: "project",
           assessed_tasks: 4,
@@ -40,7 +48,11 @@ it("renders counters, rework identities and workload without recomputing facts",
   );
   expect(screen.getByText("37")).toBeVisible();
   expect(screen.getByText("29")).toBeVisible();
-  expect(screen.getByText("rework-task")).toBeVisible();
+  expect(screen.getByText("dock-09.jpg")).toHaveAttribute(
+    "title",
+    "harbor/night/dock-09.jpg",
+  );
+  expect(screen.queryByText("rework-task")).toBeNull();
   expect(screen.getByText("75%")).toBeVisible();
   expect(screen.getByText("Approved reference: 3/4 tasks")).toBeVisible();
   const row = screen.getByRole("row", { name: "member 11 7 4 25%" });

@@ -6,6 +6,7 @@ import { allowed } from "../features/labeling/model";
 import { ModuleBar } from "../features/labeling/ModuleBar";
 import { ProjectCockpit } from "../features/labeling/ProjectCockpit";
 import { TaskList } from "../features/labeling/TaskList";
+import { TaskSearch } from "../features/labeling/TaskSearch";
 import { TaskSession } from "../features/labeling/TaskSession";
 import { TemplateEditor } from "../features/labeling/TemplateEditor";
 import { useLabelingWorkspace } from "../features/labeling/useLabelingWorkspace";
@@ -143,8 +144,13 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                         </button>
                       )}
                   </div>
+                  <TaskSearch
+                    value={workspace.search}
+                    onSearch={workspace.searchTasks}
+                  />
                   <TaskList
                     tasks={project.tasks}
+                    samples={project.task_samples}
                     risks={project.task_risks}
                     onOpen={(item) => {
                       void workspace.open(item.id);

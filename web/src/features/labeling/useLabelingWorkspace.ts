@@ -64,6 +64,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(0);
   const [packageId, setPackageId] = useState("");
+  const [search, setSearch] = useState("");
   const [cursors, setCursors] = useState<string[]>([""]);
   const [refresh, setRefresh] = useState(0);
   const [notice, setNotice] = useState<"first" | "last" | null>(null);
@@ -105,6 +106,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
             setProject(null);
             setView("data");
             setPackageId("");
+            setSearch("");
             setPage(0);
             setCursors([""]);
             setProjectId(data.projects[0]?.id ?? "");
@@ -158,7 +160,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
     let live = true;
     void getProjectWorkbench(
       projectId,
-      pageQuery(view, packageId, cursors[page] ?? ""),
+      pageQuery(view, packageId, cursors[page] ?? "", search),
     )
       .then((data) => {
         if (
@@ -193,7 +195,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
     return () => {
       live = false;
     };
-  }, [projectId, refresh, view, page, cursors, packageId, cache]);
+  }, [projectId, refresh, view, page, cursors, packageId, search, cache]);
   const { position, ...navigation } = taskNavigation(project, task, page);
   async function mayLeave() {
     return !guard.current || (await guard.current());
@@ -247,6 +249,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
     setCursors([""]);
     setView("data");
     setPackageId("");
+    setSearch("");
   }, []);
   useEffect(() => {
     if (requested.current === requestedProject) return;
@@ -258,6 +261,12 @@ export function useLabelingWorkspace(params: URLSearchParams) {
     sequence.current++;
     setTask(null);
     setPackageId(id);
+    setPage(0);
+    setCursors([""]);
+  }
+  function searchTasks(text: string) {
+    sequence.current++;
+    setSearch(text);
     setPage(0);
     setCursors([""]);
   }
@@ -303,7 +312,7 @@ export function useLabelingWorkspace(params: URLSearchParams) {
     try {
       const data = await getProjectWorkbench(
         projectId,
-        pageQuery(view, packageId, cursor),
+        pageQuery(view, packageId, cursor, search),
       );
       if (
         request !== sequence.current ||
@@ -367,6 +376,8 @@ export function useLabelingWorkspace(params: URLSearchParams) {
     navigation,
     notice,
     packageId,
+    search,
+    searchTasks,
     selectPackage,
     view,
     cache,

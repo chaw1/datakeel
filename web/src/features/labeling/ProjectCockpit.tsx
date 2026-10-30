@@ -63,11 +63,16 @@ export function ProjectCockpit({ data }: { data: ProjectWorkbench }) {
         <p>{t("wbRepeatedRework")}</p>
         {data.progress.rework_task_ids.length ? (
           <ul>
-            {data.progress.rework_task_ids.map((id) => (
-              <li key={id}>
-                <code>{id}</code>
-              </li>
-            ))}
+            {data.progress.rework_task_ids.map((id) => {
+              const sample = data.task_samples.find(
+                (item) => item.task_id === id,
+              );
+              return (
+                <li key={id} title={sample?.path}>
+                  {sample?.name ?? t("wbUnnamedSample")}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p>{t("wbNoRepeatedRework")}</p>

@@ -2354,6 +2354,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/production/projects/{project_id}/dispatch-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Project Dispatch Preview
+         * @description Preview who a skill dispatch would assign each task to, and why others stay unassigned.
+         */
+        post: operations["project_dispatch_preview_api_production_projects__project_id__dispatch_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/production/projects/{project_id}/task-samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Project Task Samples
+         * @description Name up to 500 tasks of the project by file name and recorded dataset path.
+         */
+        get: operations["project_task_samples_api_production_projects__project_id__task_samples_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/production/projects/{project_id}/workbench": {
         parameters: {
             query?: never;
@@ -2386,6 +2426,26 @@ export interface paths {
          * @description View a version-pinned source or a small image preview under the same source grants.
          */
         get: operations["task_content_api_production_tasks__task_id__content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/production/tasks/{task_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Task Status View
+         * @description Poll a task's state, assignments, effective lease deadlines and recent releases.
+         */
+        get: operations["task_status_view_api_production_tasks__task_id__status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6159,6 +6219,38 @@ export interface components {
             weight: number;
         };
         /**
+         * DispatchLoad
+         * @description Count one qualified person's current load and the tasks the dispatch would add.
+         */
+        DispatchLoad: {
+            /** Actor */
+            actor: string;
+            /** Added */
+            added: number;
+            /** Current */
+            current: number;
+        };
+        /**
+         * DispatchPick
+         * @description Name the person a skill dispatch would give one task to.
+         */
+        DispatchPick: {
+            /** Actor */
+            actor: string;
+            /** Task Id */
+            task_id: string;
+        };
+        /**
+         * DispatchSkip
+         * @description Explain why one requested task received no skill-matched assignment.
+         */
+        DispatchSkip: {
+            /** Reason */
+            reason: string;
+            /** Task Id */
+            task_id: string;
+        };
+        /**
          * DqIssue
          * @description Track a contiguous failure episode through human confirmation.
          */
@@ -8328,6 +8420,47 @@ export interface components {
             version_id: string;
         };
         /**
+         * LeaseRelease
+         * @description Record the single release of one assignment by lease expiry or administrative reclaim.
+         */
+        LeaseRelease: {
+            /** Actor */
+            actor: string;
+            /** Assignment Id */
+            assignment_id: string;
+            /**
+             * Lease Expires At
+             * Format: date-time
+             */
+            lease_expires_at: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "expired" | "revoked";
+            /**
+             * Released At
+             * Format: date-time
+             */
+            released_at: string;
+            /** Released By */
+            released_by: string;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "annotation" | "review";
+            /** Task Id */
+            task_id: string;
+        };
+        /**
          * LineageEvent
          * @description Record an immutable attributed transformation or failure.
          */
@@ -10469,6 +10602,52 @@ export interface components {
             state: string;
         };
         /**
+         * SkillDispatchPreview
+         * @description Preview a skill dispatch with the same rules as execution: picks, loads and skips.
+         */
+        SkillDispatchPreview: {
+            /** Max Active Tasks */
+            max_active_tasks: number | null;
+            /** People */
+            people: components["schemas"]["DispatchLoad"][];
+            /** Picks */
+            picks: components["schemas"]["DispatchPick"][];
+            /** Project Id */
+            project_id: string;
+            /** Qualified */
+            qualified: string[];
+            skill_requirement: components["schemas"]["SkillRequirement"];
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "annotation" | "review";
+            /** Unassigned */
+            unassigned: components["schemas"]["DispatchSkip"][];
+        };
+        /**
+         * SkillDispatchPreviewRequest
+         * @description Describe a skill dispatch exactly as assign_tasks would receive it, without writing.
+         */
+        SkillDispatchPreviewRequest: {
+            /**
+             * Candidates
+             * @default []
+             */
+            candidates: string[];
+            /** Max Active Tasks */
+            max_active_tasks?: number | null;
+            skill_requirement?: components["schemas"]["SkillRequirement"] | null;
+            /**
+             * Stage
+             * @default annotation
+             * @enum {string}
+             */
+            stage: "annotation" | "review";
+            /** Task Ids */
+            task_ids: string[];
+        };
+        /**
          * SkillRequirement
          * @description Require a matching skill type and domain at or above a minimum level.
          */
@@ -12032,6 +12211,30 @@ export interface components {
             zero_users: boolean;
         };
         /**
+         * WorkbenchLease
+         * @description Expose one running assignment's effective deadline and remaining time at the read.
+         */
+        WorkbenchLease: {
+            /** Actor */
+            actor: string;
+            /** Assignment Id */
+            assignment_id: string;
+            /** Enforced */
+            enforced: boolean;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Seconds Remaining */
+            seconds_remaining: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "annotation" | "review";
+        };
+        /**
          * WorkbenchProject
          * @description Reuse production facts and measurements for role-specific workbench pages.
          */
@@ -12052,6 +12255,11 @@ export interface components {
              * @default []
              */
             task_risks: components["schemas"]["WorkbenchTaskRisk"][];
+            /**
+             * Task Samples
+             * @default []
+             */
+            task_samples: components["schemas"]["WorkbenchSampleName"][];
             /** Tasks */
             tasks: components["schemas"]["ProductionTask"][];
             template: components["schemas"]["ProductionTemplate"] | null;
@@ -12080,6 +12288,20 @@ export interface components {
             thumbnail_url?: string | null;
         };
         /**
+         * WorkbenchSampleName
+         * @description Name a task's sample by its file name and dataset-relative path, never a server path.
+         */
+        WorkbenchSampleName: {
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Sample Id */
+            sample_id: string;
+            /** Task Id */
+            task_id: string;
+        };
+        /**
          * WorkbenchTask
          * @description Return one sample and its exact append-only revision and review histories.
          */
@@ -12104,6 +12326,32 @@ export interface components {
             prelabel_difference?: number | null;
             /** Task Id */
             task_id: string;
+        };
+        /**
+         * WorkbenchTaskSamples
+         * @description Return sample names for the requested tasks that belong to the project.
+         */
+        WorkbenchTaskSamples: {
+            /** Items */
+            items: components["schemas"]["WorkbenchSampleName"][];
+        };
+        /**
+         * WorkbenchTaskStatus
+         * @description Report a task's current state, holders, leases and releases without reading its source.
+         */
+        WorkbenchTaskStatus: {
+            /** Assignments */
+            assignments: components["schemas"]["Assignment"][];
+            /** Leases */
+            leases: components["schemas"]["WorkbenchLease"][];
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Releases */
+            releases: components["schemas"]["LeaseRelease"][];
+            task: components["schemas"]["ProductionTask"];
         };
         /**
          * WorkflowAudit
@@ -16319,6 +16567,74 @@ export interface operations {
             };
         };
     };
+    project_dispatch_preview_api_production_projects__project_id__dispatch_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillDispatchPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillDispatchPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    project_task_samples_api_production_projects__project_id__task_samples_get: {
+        parameters: {
+            query?: {
+                task_id?: string[];
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchTaskSamples"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     project_workbench_api_production_projects__project_id__workbench_get: {
         parameters: {
             query?: {
@@ -16326,6 +16642,7 @@ export interface operations {
                 cursor?: string | null;
                 view?: "all" | "mine" | "review";
                 package_id?: string | null;
+                search?: string | null;
             };
             header?: never;
             path: {
@@ -16375,6 +16692,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    task_status_view_api_production_tasks__task_id__status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchTaskStatus"];
                 };
             };
             /** @description Validation Error */

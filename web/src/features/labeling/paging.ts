@@ -8,11 +8,13 @@ export function pageQuery(
   view: WorkbenchView,
   packageId: string,
   cursor: string,
+  search = "",
 ) {
   return {
     limit: PAGE_SIZE,
     cursor,
     packageId,
+    search: search.trim(),
     view:
       view === "reviews"
         ? ("review" as const)

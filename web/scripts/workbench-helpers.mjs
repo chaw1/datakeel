@@ -148,7 +148,7 @@ export function createHarness(context, page, base, output, manifest, report) {
         await page.keyboard.press("Enter");
       } else await back.click();
     }
-    const target = button(`Open task ${id}`);
+    const target = page.locator(`.wb-task-table button[data-task-id="${id}"]`);
     await target.waitFor();
     if (keyboard) {
       await tabTo(page, target);

@@ -54,8 +54,12 @@ export async function labelingSmoke({ page, json, post, screenshot, checks }) {
   await page
     .getByRole("combobox", { name: "Production project", exact: true })
     .selectOption(project.id);
+  const firstName = workbench.task_samples.find(
+    (item) => item.task_id === first.id,
+  )?.name;
+  assert.ok(firstName, "The task list must name each sample by file name");
   const open = page.getByRole("button", {
-    name: `Open task ${first.id}`,
+    name: `Open task ${firstName}`,
     exact: true,
   });
   await open.click();
