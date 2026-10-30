@@ -92,7 +92,11 @@ class ProductionTask(BoundaryModel):
 
 
 class Assignment(BoundaryModel):
-    """Identify an actor's exclusive effective assignment for one task stage."""
+    """Identify an actor's exclusive effective assignment for one task stage.
+
+    ``transferred_from`` names the original annotator when this assignment hands a rework
+    round over to someone else; it is None for every other assignment.
+    """
 
     id: str
     task_id: str
@@ -104,6 +108,7 @@ class Assignment(BoundaryModel):
     dispatch: AssignmentSource | None = None
     ended_at: datetime | None = None
     end_reason: str | None = None
+    transferred_from: str | None = None
 
 
 class AnnotationRevision(BoundaryModel):

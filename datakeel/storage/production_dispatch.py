@@ -24,8 +24,10 @@ from datakeel.storage.production_assignments import active_assignment, create_as
 from datakeel.storage.production_dispatch_rules import (
     active_loads,
     held_loads,
+    in_service,
     load_limit,
     qualifies,
+    rework_handover,
 )
 from datakeel.storage.production_load_locks import lock_people
 from datakeel.storage.production_rows import ProductionTaskRow
@@ -94,8 +96,11 @@ def _eligible(
     session: Session, task: ProductionTaskRow, stage: AssignmentStage, pool: tuple[str, ...]
 ) -> list[str]:
     if stage == "annotation":
-        if task.round > 0 and task.annotator_id is not None:
-            return [actor for actor in pool if actor == task.annotator_id]
+        # Rework stays with its original annotator while they are in service; a skill
+        # dispatch hands it to someone else only after that person has been deactivated.
+        original = task.annotator_id
+        if task.round > 0 and original is not None and in_service(session, original):
+            return [actor for actor in pool if actor == original]
         return list(pool)
     excluded = annotators(session, task)
     return [actor for actor in pool if actor not in excluded]
@@ -184,7 +189,16 @@ def preview_skill_dispatch(
         skill_requirement=requirement,
         max_active_tasks=limit,
         qualified=pool,
-        picks=tuple(DispatchPick(task_id=task.id, actor=actor) for task, actor in picks),
+        picks=tuple(
+            DispatchPick(
+                task_id=task.id,
+                actor=actor,
+                transferred_from=rework_handover(task, actor)
+                if request.stage == "annotation"
+                else None,
+            )
+            for task, actor in picks
+        ),
         people=tuple(
             DispatchLoad(actor=actor, current=current[actor], added=added[actor]) for actor in pool
         ),

@@ -68,6 +68,8 @@ export const wbCockpitZh: Record<keyof typeof wbCockpitEn, string> = {
   wbPrepareAssign: "准备派人计划",
   wbAssignPlan: "派人计划",
   wbAssignPlanText: "{count} 个任务派给 {name}。",
+  wbReworkHandover:
+    "返工任务 {name}（第 {round} 轮）从原标注员 {from} 转给 {to}。",
   wbSignAssign: "签批并派出",
   wbLeases: "谁手上有什么",
   wbNoLeases: "现在没人领着任务。",

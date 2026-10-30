@@ -5,6 +5,7 @@ import { useI18n } from "../../../i18n/useI18n";
 import { actionMessage } from "../actionErrors";
 import { executeProduction, prepareProduction } from "../actions";
 
+import { planHandovers } from "./handovers";
 import { needsApproval, PlanSigner } from "./PlanSigner";
 
 import type {
@@ -193,6 +194,16 @@ export function NamedDispatch({
               name: person?.display_name ?? actor,
             })}
           </p>
+          {planHandovers(plan).map((item) => (
+            <p key={item.task_id}>
+              {t("wbReworkHandover", {
+                name: name(item.task_id),
+                round: item.round,
+                from: item.from_actor,
+                to: item.to_actor,
+              })}
+            </p>
+          ))}
         </PlanSigner>
       )}
       {error && (

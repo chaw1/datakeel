@@ -49,8 +49,22 @@ class SplitPackagesParams(ProductionActionParams):
     metadata_field: str | None = None
 
 
+class ReworkTransfer(BoundaryModel):
+    """State that a named assignment hands one rework round from its annotator to another."""
+
+    task_id: str
+    round: int = Field(ge=1)
+    from_actor: str
+    to_actor: str
+
+
 class AssignTasksParams(ProductionActionParams):
-    """Assign tasks to one named person, or match team skills and load deterministically."""
+    """Assign tasks to one named person, or match team skills and load deterministically.
+
+    ``max_active_tasks`` may only lower the project's per-person limit. ``transfers`` is
+    written by the server when the plan is prepared: every rework task this named assignment
+    moves from its original annotator. Execution refuses a plan whose handovers changed.
+    """
 
     task_ids: tuple[str, ...] = Field(min_length=1, max_length=10000)
     actor: str | None = Field(default=None, min_length=1)
@@ -59,6 +73,7 @@ class AssignTasksParams(ProductionActionParams):
     candidates: tuple[str, ...] = Field(default=(), max_length=10000)
     skill_requirement: SkillRequirement | None = None
     max_active_tasks: int | None = Field(default=None, ge=1, le=10000)
+    transfers: tuple[ReworkTransfer, ...] = Field(default=(), max_length=10000)
 
     @model_validator(mode="after")
     def require_target(self) -> "AssignTasksParams":

@@ -69,6 +69,8 @@ export const wbCockpitEn = {
   wbPrepareAssign: "Prepare assignment plan",
   wbAssignPlan: "Assignment plan",
   wbAssignPlanText: "{count} tasks go to {name}.",
+  wbReworkHandover:
+    "Rework {name} (round {round}) is handed over from its original annotator {from} to {to}.",
   wbSignAssign: "Sign and assign",
   wbLeases: "Who holds what",
   wbNoLeases: "Nobody holds a task right now.",

@@ -103,6 +103,19 @@ def load_limit(project: Project, override: int | None = None) -> int | None:
     return override if override is not None else project.max_active_tasks
 
 
+def in_service(session: Session, actor: str) -> bool:
+    """Tell whether a person is a registered, active user (a deactivated one is not)."""
+    row = session.get(UserRow, actor)
+    return row is not None and User.model_validate(row.payload).status == "active"
+
+
+def rework_handover(task: ProductionTaskRow, actor: str) -> str | None:
+    """Name the original annotator a rework task would move away from, or None if it stays."""
+    if task.round > 0 and task.annotator_id is not None and task.annotator_id != actor:
+        return task.annotator_id
+    return None
+
+
 def require_capacity(
     session: Session,
     project: Project,

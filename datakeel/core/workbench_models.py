@@ -185,10 +185,15 @@ class SkillDispatchPreviewRequest(BoundaryModel):
 
 
 class DispatchPick(BoundaryModel):
-    """Name the person a skill dispatch would give one task to."""
+    """Name the person a skill dispatch would give one task to.
+
+    ``transferred_from`` is the original annotator when the pick hands rework over to someone
+    else, which skill dispatch does only after that annotator has been deactivated.
+    """
 
     task_id: str
     actor: str
+    transferred_from: str | None = None
 
 
 class DispatchLoad(BoundaryModel):

@@ -4536,6 +4536,9 @@ export interface components {
         /**
          * Assignment
          * @description Identify an actor's exclusive effective assignment for one task stage.
+         *
+         *     ``transferred_from`` names the original annotator when this assignment hands a rework
+         *     round over to someone else; it is None for every other assignment.
          */
         Assignment: {
             /**
@@ -4570,6 +4573,8 @@ export interface components {
             stage: "annotation" | "review";
             /** Task Id */
             task_id: string;
+            /** Transferred From */
+            transferred_from?: string | null;
         };
         /**
          * AttributeOption
@@ -6283,12 +6288,17 @@ export interface components {
         /**
          * DispatchPick
          * @description Name the person a skill dispatch would give one task to.
+         *
+         *     ``transferred_from`` is the original annotator when the pick hands rework over to someone
+         *     else, which skill dispatch does only after that annotator has been deactivated.
          */
         DispatchPick: {
             /** Actor */
             actor: string;
             /** Task Id */
             task_id: string;
+            /** Transferred From */
+            transferred_from?: string | null;
         };
         /**
          * DispatchSkip
