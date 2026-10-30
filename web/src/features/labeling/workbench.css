@@ -153,9 +153,27 @@ main:has(> .wb-page[data-focus="true"]) {
   grid-row: 1 / span 3;
   margin-top: 0;
 }
+/* Without a lease line (personal and group tiers) the save state shares the file-name row,
+   so those tiers get the canvas height back. Team-tier tasks keep the three-line stack. */
+.wb-operation-bar:not(:has(> .wb-lease)) {
+  grid-template-columns: auto auto minmax(0, 1fr);
+}
+.wb-operation-bar:not(:has(> .wb-lease)) > .wb-save-state {
+  grid-column: 2;
+  grid-row: 1;
+}
+.wb-operation-bar:not(:has(> .wb-lease)) > .wb-toolbar,
+.wb-operation-bar:not(:has(> .wb-lease)) > .wb-watch-locked {
+  grid-column: 3;
+  grid-row: 1;
+}
 .wb-operation-bar .wb-toolbar {
   gap: calc(var(--space) * 2);
   padding: 0;
+}
+/* The submit button keeps its colour but matches the row's other buttons in height. */
+.wb-operation-bar .wb-toolbar .button {
+  padding-block: calc(var(--space) * 0.75);
 }
 .wb-nav-notice:empty {
   display: none;
@@ -361,11 +379,18 @@ main:has(> .wb-page[data-focus="true"]) {
   }
 }
 @media (max-width: 700px) {
-  .wb-operation-bar {
+  .wb-operation-bar,
+  .wb-operation-bar:not(:has(> .wb-lease)) {
     grid-template-columns: minmax(0, 1fr);
   }
+  .wb-operation-bar:not(:has(> .wb-lease)) > .wb-save-state {
+    grid-column: 1;
+    grid-row: 2;
+  }
   .wb-operation-bar > .wb-toolbar,
-  .wb-operation-bar > .wb-watch-locked {
+  .wb-operation-bar > .wb-watch-locked,
+  .wb-operation-bar:not(:has(> .wb-lease)) > .wb-toolbar,
+  .wb-operation-bar:not(:has(> .wb-lease)) > .wb-watch-locked {
     grid-column: 1;
     grid-row: auto;
     margin-top: calc(var(--space) * 1.5);
