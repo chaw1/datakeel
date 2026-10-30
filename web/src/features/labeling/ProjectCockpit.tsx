@@ -1,13 +1,46 @@
 import { useI18n } from "../../i18n/useI18n";
 
 import { stateMessages } from "./model";
+import { LeaseBoard } from "./team/LeaseBoard";
+import { SkillDispatch } from "./team/SkillDispatch";
+import { TeamPackages } from "./team/TeamPackages";
 
 import type { ProjectWorkbench } from "../../api/production";
 
-export function ProjectCockpit({ data }: { data: ProjectWorkbench }) {
+export function ProjectCockpit({
+  data,
+  can = () => false,
+  onChanged = () => undefined,
+}: {
+  data: ProjectWorkbench;
+  can?: (scope: string) => boolean;
+  onChanged?: () => void;
+}) {
   const { t } = useI18n();
+  const team = data.project.workflow_tier === "team";
   return (
     <div className="wb-cockpit">
+      {team && (
+        <TeamPackages
+          data={data}
+          canAccept={can("production:accept")}
+          onChanged={onChanged}
+        />
+      )}
+      {team && can("production:assign") && (
+        <SkillDispatch
+          key={data.tasks.map((task) => `${task.id}:${task.state}`).join()}
+          data={data}
+          onChanged={onChanged}
+        />
+      )}
+      {team && (
+        <LeaseBoard
+          data={data}
+          canRevoke={can("production:assign")}
+          onChanged={onChanged}
+        />
+      )}
       <section className="card">
         <h2>{t("wbProgress")}</h2>
         <dl className="wb-counts">

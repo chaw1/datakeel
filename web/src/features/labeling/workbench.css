@@ -360,3 +360,31 @@ main:has(> .wb-page[data-focus="true"]) {
   border-color: var(--red);
   background: var(--red-wash);
 }
+.wb-plan,
+.wb-acceptance,
+.wb-revoke,
+.wb-dispatch-preview {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  margin-top: calc(var(--space) * 3);
+}
+.wb-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 2);
+}
+.wb-plan-summary {
+  margin: 0;
+  padding-left: calc(var(--space) * 5);
+}
+.wb-plan-details pre {
+  overflow: auto;
+  max-height: 240px;
+}
+.wb-dispatch fieldset {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}

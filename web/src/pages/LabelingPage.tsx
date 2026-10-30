@@ -112,7 +112,11 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                   registerGuard={workspace.registerGuard}
                 />
               ) : view === "cockpit" ? (
-                <ProjectCockpit data={project} />
+                <ProjectCockpit
+                  data={project}
+                  can={can}
+                  onChanged={workspace.changed}
+                />
               ) : (
                 <>
                   <div className="wb-list-heading">
