@@ -10,6 +10,8 @@ _RECORDS = "tests/storage/test_orientation_records.py::"
 _DATASETS = "tests/storage/test_orientation_datasets.py::"
 _EXPORT = "tests/training/test_export_upright.py::"
 _EVERY = _EXPORT + "test_every_exif_orientation_exports_pixels_and_boxes_in_one_upright_frame"
+_UNROTATED = "geometry.model_copy(update={'orientation': 1})"
+_IMAGEFOLDER = _EXPORT + "test_classification_imagefolder_is_upright_for_a_loader_that_ignores_exif"
 
 ORIENTATION_MUTATIONS = (
     Mutation(
@@ -180,6 +182,22 @@ ORIENTATION_MUTATIONS = (
         before='        if request.headers.get("if-none-match") == tag:\n',
         after="        if False:\n",
         case=_RECORDS + "test_rotated_jpeg_is_served_as_upright_jpeg_and_revalidated",
+        runner="pytest",
+    ),
+    Mutation(
+        name="orientation-imagefolder-writes-upright-pixels",
+        path="training/export_records.py",
+        before="        write_image(item, geometry, directory / relative)\n",
+        after=f"        write_image(item, {_UNROTATED}, directory / relative)\n",
+        case=_IMAGEFOLDER,
+        runner="pytest",
+    ),
+    Mutation(
+        name="orientation-imagefolder-manifest-traces-transform",
+        path="training/export.py",
+        before='_UPRIGHT_FORMATS = frozenset({"coco", "yolo", "hf_imagefolder", "imagefolder"})',
+        after='_UPRIGHT_FORMATS = frozenset({"coco", "yolo", "hf_imagefolder"})',
+        case=_IMAGEFOLDER,
         runner="pytest",
     ),
 )

@@ -175,3 +175,36 @@ def test_detection_size_is_the_upright_size_for_all_eight_values(tmp_path: Path)
         )
         upright = (STORED[1], STORED[0]) if geometry.orientation >= 5 else STORED
         assert dimensions(item.model_copy(update={"annotation": sizeless}), geometry) == upright
+
+
+def _torchvision_pixels(path: Path) -> Image.Image:
+    """Read like torchvision's default ImageFolder loader: decode and convert, no EXIF."""
+    with path.open("rb") as stream:
+        return Image.open(stream).convert("RGB")
+
+
+def test_classification_imagefolder_is_upright_for_a_loader_that_ignores_exif(
+    tmp_path: Path,
+) -> None:
+    """ImageFolder pixels already carry the orientation; the manifest names each transform."""
+    export = _export(tmp_path, "imagefolder")
+    originals = {item.file.id: Path(item.file.path).read_bytes() for item in export.items}
+    directory = tmp_path / "package"
+    write_training_export(export, directory, tmp_path / "export.tar")
+    rows = {
+        row["sample_id"]: row
+        for row in json.loads((directory / "MANIFEST.json").read_bytes())["files"]
+    }
+    for item in export.items:
+        row = rows[item.file.id]
+        orientation = int(item.file.id.removeprefix("image-"))
+        loaded = _torchvision_pixels(directory / row["path"])
+        with Image.open(item.file.path) as source:
+            expected = np.asarray(ImageOps.exif_transpose(source).convert("RGB"))
+        assert np.array_equal(np.asarray(loaded), expected), orientation
+        assert (row.get("source_orientation"), "exported_sha256" in row) == (
+            orientation,
+            orientation != 1,
+        )
+        assert (row.get("transform") == "none") == (orientation == 1)
+        assert Path(item.file.path).read_bytes() == originals[item.file.id]

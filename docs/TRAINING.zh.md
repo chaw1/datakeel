@@ -147,7 +147,7 @@ HF imagefolder 的 `file_name` 相对所在切分的 `metadata.jsonl`，其余�
 识别为 `validation`。对两个 `_json` 列执行 `json.loads`，可恢复原类别字符串和像素
 `x1,y1,x2,y2` 框；JSON `null` 表示未审，`[]` 表示已审空。使用 JSON 文本列使全空
 与非空标注切分的推断 schema 一致，不添加虚假样本。包内 `README.md` 也说明此约定，
-不引入 `datasets` 依赖。COCO、YOLO 与 HF imagefolder 导出的图片一律是**摆正后的方向**，和工作台
+不引入 `datasets` 依赖。COCO、YOLO、HF imagefolder 与分类用 ImageFolder 导出的图片一律是**摆正后的方向**（torchvision 默认的 ImageFolder 读图不看 EXIF，所以像素本身必须是正的），和工作台
 显示、标注用的是同一个坐标系（按 EXIF Orientation 变换，浏览器、Ultralytics、CVAT 都这么做）。
 方向缺失或为 1 的原图按字节原样复制；方向值 2–8 的图用 Pillow 摆正后写成无损 PNG、不带方向
 标记（导出文件名以 `.png` 结尾），任何加载器解出来的像素都和框对得上；宽高和框都按摆正后的

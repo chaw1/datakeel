@@ -23,7 +23,7 @@ from datakeel.training.export_records import write_imagefolder, write_text_jsonl
 from datakeel.training.native import write_annotations_jsonl
 
 FORMAT_VERSION = "1.0"
-_UPRIGHT_FORMATS = frozenset({"coco", "yolo", "hf_imagefolder"})
+_UPRIGHT_FORMATS = frozenset({"coco", "yolo", "hf_imagefolder", "imagefolder"})
 _WRITERS: dict[str, Callable[[TrainingExport, Path], dict[str, str]]] = {
     "coco": write_coco,
     "yolo": write_yolo,

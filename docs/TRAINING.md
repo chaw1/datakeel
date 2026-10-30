@@ -181,8 +181,10 @@ original category strings and absolute pixel `x1,y1,x2,y2` boxes. JSON `null` me
 `[]` means reviewed empty. JSON text columns keep the inferred schema identical across splits
 containing only empty annotations versus populated ones, without artificial examples. The
 archive includes these instructions in `README.md`. No `datasets` dependency is added.
-COCO, YOLO and HF imagefolder exports write every image **upright**, in the same frame the
-workbench shows and annotates (EXIF Orientation applied, as browsers, Ultralytics and CVAT do).
+COCO, YOLO, HF imagefolder and classification ImageFolder exports write every image **upright**,
+in the same frame the workbench shows and annotates (EXIF Orientation applied, as browsers,
+Ultralytics and CVAT do; torchvision's default ImageFolder loader ignores EXIF, so its pixels
+must already be upright).
 Sources with absent or identity (1) orientation are copied byte for byte. Values 2–8 are
 transposed with Pillow and written as lossless PNG without an orientation tag (the exported
 name ends in `.png`), so every decoder sees the same pixels as the boxes; width, height and
