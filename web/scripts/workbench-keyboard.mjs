@@ -30,9 +30,9 @@ export async function addWithKeyboard(h, kind) {
       for (const key of [
         "p",
         "Space",
-        "ArrowRight",
+        "Shift+ArrowRight",
         "Space",
-        "ArrowDown",
+        "Shift+ArrowDown",
         "Space",
         "Enter",
       ])

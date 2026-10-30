@@ -22,6 +22,8 @@ export interface PolygonControlProps {
   height: number;
   readOnly?: boolean;
   advancedAttributes?: boolean;
+  /** What the arrow keys change right now; R switches it. */
+  keyMode?: string;
   onSelect: (index: number) => void;
   onLabel: (label: string) => void;
   onPoint: (index: number) => void;
@@ -43,6 +45,7 @@ export function PolygonToolbar({
   selected,
   category,
   readOnly,
+  keyMode,
   onSelect,
   onLabel,
   onStart,
@@ -89,6 +92,11 @@ export function PolygonToolbar({
       <button type="button" disabled={readOnly || !current} onClick={onDelete}>
         {t("wbEditorDelete")}
       </button>
+      {keyMode && (
+        <p className="muted wb-key-mode" aria-live="polite">
+          {keyMode}
+        </p>
+      )}
     </div>
   );
 }

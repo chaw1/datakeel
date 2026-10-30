@@ -21,6 +21,7 @@ export function BoxToolbar({
   onAdd,
   onCopy,
   onDelete,
+  keyMode,
 }: {
   labels: readonly ProductionLabel[];
   template: ProductionTemplate;
@@ -33,6 +34,8 @@ export function BoxToolbar({
   onAdd: () => void;
   onCopy: () => void;
   onDelete: () => void;
+  /** What the arrow keys change right now; R switches it. */
+  keyMode?: string;
 }) {
   const { t } = useI18n();
   return (
@@ -85,6 +88,11 @@ export function BoxToolbar({
       >
         {t("wbEditorDelete")}
       </button>
+      {keyMode && (
+        <p className="muted wb-key-mode" aria-live="polite">
+          {keyMode}
+        </p>
+      )}
     </>
   );
 }

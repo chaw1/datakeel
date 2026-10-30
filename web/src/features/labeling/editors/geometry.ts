@@ -47,6 +47,22 @@ export function resizeBox(
     y2: Math.max(box.y1 + 1, clamp(box.y2 + dy, height)),
   };
 }
+/** Move the top-left corner, keeping at least one source pixel of size. */
+export function resizeBoxStart(
+  box: AnnotationBox,
+  dx: number,
+  dy: number,
+): AnnotationBox {
+  return {
+    ...box,
+    x1: Math.min(box.x2 - 1, Math.max(0, box.x1 + dx)),
+    y1: Math.min(box.y2 - 1, Math.max(0, box.y1 + dy)),
+  };
+}
+/** Arrow keys step one source pixel; Shift steps ten. */
+export function keyStep(event: { shiftKey: boolean }) {
+  return event.shiftKey ? 10 : 1;
+}
 export function movePoints(
   points: readonly Point[],
   dx: number,

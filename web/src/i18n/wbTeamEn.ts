@@ -47,4 +47,14 @@ export const wbTeamEn = {
   wbTaskEditedElsewhere:
     "Someone else just saved a newer version of this task.",
   wbTaskStateChanged: "This task changed elsewhere and is now: {state}.",
+  wbKeysMoveBox: "Arrows move the box (Shift: 10 px) · R: adjust edges",
+  wbKeysBoxEnd:
+    "Arrows move the right and bottom edges (Shift: 10 px) · R: next",
+  wbKeysBoxStart:
+    "Arrows move the left and top edges (Shift: 10 px) · R: move box",
+  wbKeysCursor: "Arrows move the cursor (Shift: 10 px) · Space adds a point",
+  wbKeysMovePolygon:
+    "Arrows move the polygon (Shift: 10 px) · R: move the selected point",
+  wbKeysPoint:
+    "Arrows move the selected point (Shift: 10 px) · R: move the polygon",
 };

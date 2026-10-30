@@ -5,7 +5,7 @@ import { useI18n } from "../../../i18n/useI18n";
 
 import { attributeFields, withDefaults } from "./attributes";
 import { EditorDetails } from "./EditorDetails";
-import { arrowDelta, clamp, isTyping, movePoints } from "./geometry";
+import { arrowDelta, clamp, isTyping, keyStep, movePoints } from "./geometry";
 import { ImageCanvas } from "./ImageCanvas";
 import { KeyboardRegion } from "./KeyboardRegion";
 import { labelStyle } from "./labelColors";
@@ -27,6 +27,8 @@ export function PolygonEditor(props: EditorProps) {
   const polygons = value.polygons ?? [];
   const [selected, setSelected] = useState(-1);
   const [pointIndex, setPointIndex] = useState(0);
+  // R switches the arrows between moving the whole polygon and its selected point.
+  const [vertexMode, setVertexMode] = useState(false);
   const [label, setLabel] = useState(labels[0]?.id ?? "");
   const [cursor, setCursor] = useState<Point>({ x: width / 2, y: height / 2 });
   const [draft, setDraft] = useState<Point[] | null>(null);
@@ -110,6 +112,12 @@ export function PolygonEditor(props: EditorProps) {
     height: height,
     readOnly: readOnly,
     advancedAttributes: props.advancedAttributes,
+    keyMode:
+      draft !== null
+        ? t("wbKeysCursor")
+        : vertexMode
+          ? t("wbKeysPoint")
+          : t("wbKeysMovePolygon"),
     onSelect: (index) => {
       setSelected(index);
       setPointIndex(0);
@@ -149,10 +157,7 @@ export function PolygonEditor(props: EditorProps) {
           ["Enter", " "].includes(event.key)
         )
           return;
-        const delta = arrowDelta(
-          event.key,
-          draft !== null ? (event.shiftKey ? 1 : 10) : 1,
-        );
+        const delta = arrowDelta(event.key, keyStep(event));
         if (event.key.toLowerCase() === "p") {
           event.preventDefault();
           start();
@@ -165,6 +170,9 @@ export function PolygonEditor(props: EditorProps) {
         } else if (event.key === " " && draft !== null) {
           event.preventDefault();
           addPoint();
+        } else if (event.key.toLowerCase() === "r" && current) {
+          event.preventDefault();
+          setVertexMode(!vertexMode);
         } else if (event.key === "Delete") {
           event.preventDefault();
           remove();
@@ -178,7 +186,7 @@ export function PolygonEditor(props: EditorProps) {
               x: clamp(cursor.x + delta.x, width),
               y: clamp(cursor.y + delta.y, height),
             });
-          else if (current && event.shiftKey) {
+          else if (current && vertexMode) {
             update({
               ...current,
               points: current.points.map((point, index) =>

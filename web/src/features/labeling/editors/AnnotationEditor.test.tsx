@@ -86,15 +86,37 @@ describe("box editor", () => {
     expect(annotation().boxes).toEqual([
       { category: "cat", x1: 200, y1: 150, x2: 600, y2: 450, attributes: {} },
     ]);
+    // Arrows step one source pixel and Shift+arrows ten, for moving and for edges alike.
     fireEvent.keyDown(editor, { key: "ArrowRight" });
     fireEvent.keyDown(editor, { key: "ArrowDown", shiftKey: true });
     expect(annotation().boxes?.[0]).toMatchObject({
       x1: 201,
+      y1: 160,
       x2: 601,
-      y2: 451,
+      y2: 460,
     });
+    fireEvent.keyDown(editor, { key: "r" });
+    expect(
+      screen.getByText(
+        "Arrows move the right and bottom edges (Shift: 10 px) · R: next",
+      ),
+    ).toBeVisible();
+    fireEvent.keyDown(editor, { key: "ArrowDown" });
+    fireEvent.keyDown(editor, { key: "ArrowRight", shiftKey: true });
+    fireEvent.keyDown(editor, { key: "r" });
+    fireEvent.keyDown(editor, { key: "ArrowLeft", shiftKey: true });
+    fireEvent.keyDown(editor, { key: "ArrowUp" });
+    expect(annotation().boxes?.[0]).toMatchObject({
+      x1: 191,
+      y1: 159,
+      x2: 611,
+      y2: 461,
+    });
+    fireEvent.keyDown(editor, { key: "r" });
+    fireEvent.keyDown(editor, { key: "ArrowLeft", shiftKey: true });
+    expect(annotation().boxes?.[0]).toMatchObject({ x1: 181, x2: 601 });
     fireEvent.keyDown(editor, { key: "d", ctrlKey: true });
-    expect(annotation().boxes?.[1]).toMatchObject({ x1: 211, y1: 160 });
+    expect(annotation().boxes?.[1]).toMatchObject({ x1: 191, y1: 169 });
     fireEvent.keyDown(editor, { key: "Delete" });
     expect(annotation().boxes).toHaveLength(1);
   });
@@ -168,30 +190,39 @@ describe("classification editor", () => {
 it("draws and edits polygon vertices entirely through keyboard events", () => {
   const { annotation } = mount("polygon");
   const editor = screen.getByRole("region", { name: "Polygons" });
-  for (const key of [
-    "p",
-    " ",
-    "ArrowRight",
-    " ",
-    "ArrowDown",
-    " ",
-    "ArrowLeft",
-    " ",
-    "Enter",
-  ])
-    fireEvent.keyDown(editor, { key });
+  for (const [key, shiftKey] of [
+    ["p", false],
+    [" ", false],
+    ["ArrowRight", true],
+    [" ", false],
+    ["ArrowDown", true],
+    [" ", false],
+    ["ArrowLeft", true],
+    [" ", false],
+    ["Enter", false],
+  ] as const)
+    fireEvent.keyDown(editor, { key, shiftKey });
   expect(annotation().polygons?.[0]?.points).toEqual([
     { x: 1000, y: 750 },
     { x: 1010, y: 750 },
     { x: 1010, y: 760 },
     { x: 1000, y: 760 },
   ]);
-  fireEvent.keyDown(editor, { key: "ArrowUp", shiftKey: true });
+  fireEvent.keyDown(editor, { key: "r" });
+  fireEvent.keyDown(editor, { key: "ArrowUp" });
   expect(annotation().polygons?.[0]?.points[0]).toEqual({ x: 1000, y: 749 });
+  expect(annotation().polygons?.[0]?.points[1]).toEqual({ x: 1010, y: 750 });
   fireEvent.keyDown(editor, { key: "Backspace" });
   expect(annotation().polygons?.[0]?.points).toHaveLength(3);
+  fireEvent.keyDown(editor, { key: "ArrowRight", shiftKey: true });
+  expect(annotation().polygons?.[0]?.points[0]).toEqual({ x: 1020, y: 750 });
+  fireEvent.keyDown(editor, { key: "r" });
   fireEvent.keyDown(editor, { key: "ArrowRight" });
-  expect(annotation().polygons?.[0]?.points[0]).toEqual({ x: 1011, y: 750 });
+  expect(annotation().polygons?.[0]?.points).toEqual([
+    { x: 1021, y: 750 },
+    { x: 1011, y: 760 },
+    { x: 1001, y: 760 },
+  ]);
 });
 it("keeps everything above the polygon canvas unchanged while drawing", () => {
   mount("polygon");

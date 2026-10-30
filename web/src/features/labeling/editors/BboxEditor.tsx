@@ -11,8 +11,10 @@ import {
   arrowDelta,
   boxFromPoints,
   isTyping,
+  keyStep,
   moveBox,
   resizeBox,
+  resizeBoxStart,
 } from "./geometry";
 import { ImageCanvas } from "./ImageCanvas";
 import { KeyboardRegion } from "./KeyboardRegion";
@@ -28,6 +30,8 @@ export function BboxEditor(props: EditorProps) {
   const tokens = useCanvasTokens();
   const [label, setLabel] = useState(labels[0]?.id ?? "");
   const [selected, setSelected] = useState(-1);
+  // R cycles what the arrows change: the whole box, its bottom-right, then its top-left edges.
+  const [edge, setEdge] = useState<"move" | "end" | "start">("move");
   const [draft, setDraft] = useState<{ start: Point; end: Point } | null>(null);
   const boxes = value.boxes ?? [];
   const current = selected >= 0 ? boxes.at(selected) : undefined;
@@ -84,7 +88,7 @@ export function BboxEditor(props: EditorProps) {
       label={t("wbEditorBox")}
       onKeyDown={(event) => {
         if (readOnly || isTyping(event.target) || event.altKey) return;
-        const delta = arrowDelta(event.key);
+        const delta = arrowDelta(event.key, keyStep(event));
         if (
           (event.ctrlKey || event.metaKey) &&
           event.key.toLowerCase() === "d"
@@ -98,12 +102,19 @@ export function BboxEditor(props: EditorProps) {
         } else if (event.key === "Delete" || event.key === "Backspace") {
           event.preventDefault();
           remove();
+        } else if (event.key.toLowerCase() === "r" && current) {
+          event.preventDefault();
+          setEdge(
+            ({ move: "end", end: "start", start: "move" } as const)[edge],
+          );
         } else if (delta && current) {
           event.preventDefault();
           update(
-            event.shiftKey
+            edge === "end"
               ? resizeBox(current, delta.x, delta.y, width, height)
-              : moveBox(current, delta.x, delta.y, width, height),
+              : edge === "start"
+                ? resizeBoxStart(current, delta.x, delta.y)
+                : moveBox(current, delta.x, delta.y, width, height),
           );
         } else {
           const picked = shortcutLabel(event, labels, props.template);
@@ -137,6 +148,13 @@ export function BboxEditor(props: EditorProps) {
             onAdd={add}
             onCopy={copy}
             onDelete={remove}
+            keyMode={
+              {
+                move: t("wbKeysMoveBox"),
+                end: t("wbKeysBoxEnd"),
+                start: t("wbKeysBoxStart"),
+              }[edge]
+            }
           />
         }
         onStart={(point) => {

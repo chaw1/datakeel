@@ -42,4 +42,10 @@ export const wbTeamZh: Record<keyof typeof wbTeamEn, string> = {
   wbTaskReturned: "这条任务被打回返工了。",
   wbTaskEditedElsewhere: "别人刚保存了这条任务的新版本。",
   wbTaskStateChanged: "这条任务在别处被改了，现在是：{state}。",
+  wbKeysMoveBox: "方向键移动框（Shift 一次 10 像素）· R 调边",
+  wbKeysBoxEnd: "方向键调右边和下边（Shift 一次 10 像素）· R 换边",
+  wbKeysBoxStart: "方向键调左边和上边（Shift 一次 10 像素）· R 回到移动",
+  wbKeysCursor: "方向键移动光标（Shift 一次 10 像素）· 空格加点",
+  wbKeysMovePolygon: "方向键移动多边形（Shift 一次 10 像素）· R 改调选中的点",
+  wbKeysPoint: "方向键移动选中的点（Shift 一次 10 像素）· R 改回移动多边形",
 };
