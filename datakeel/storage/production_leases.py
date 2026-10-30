@@ -104,9 +104,11 @@ def end_assignment(
 
 def enforced_deadline(row: ProductionAssignmentRow, assignment: Assignment) -> datetime:
     """Return the deadline actually enforced, which a team upgrade may have restarted."""
-    # A lease restarted by a team upgrade keeps its old record; report the deadline enforced.
-    recorded = assignment.lease_expires_at
-    enforced = row.lease_expires_at
+    return effective_deadline(assignment.lease_expires_at, row.lease_expires_at)
+
+
+def effective_deadline(recorded: datetime, enforced: float | None) -> datetime:
+    """Prefer the enforced column; a lease restarted by a team upgrade keeps its old record."""
     if enforced is None or abs(enforced - recorded.timestamp()) < _SAME_DEADLINE_SECONDS:
         return recorded
     return datetime.fromtimestamp(enforced, tz=UTC)

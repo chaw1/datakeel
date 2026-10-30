@@ -22,7 +22,7 @@ from datakeel.storage.database import Database
 from datakeel.storage.identity_rows import SkillRow, UserRow
 from datakeel.storage.production_acceptance import package_acceptance
 from datakeel.storage.production_dispatch_rules import active_loads
-from datakeel.storage.production_leases import running_lease
+from datakeel.storage.production_leases import effective_deadline, running_lease
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
     ProductionPackageRow,
@@ -58,7 +58,7 @@ def lease_status(db: Database, params: LeaseStatusParams) -> LeaseStatus:
         reclaimed = tuple(LeaseRelease.model_validate(payload) for payload in releases)
     views = [
         LeaseView(
-            assignment=Assignment.model_validate(payload),
+            assignment=_effective(Assignment.model_validate(payload), deadline),
             seconds_remaining=(deadline or 0) - now.timestamp(),
         )
         for payload, deadline in rows
@@ -75,6 +75,12 @@ def lease_status(db: Database, params: LeaseStatusParams) -> LeaseStatus:
         overdue=tuple(view for view in views if view.seconds_remaining <= 0),
         reclaimed=reclaimed,
     )
+
+
+def _effective(assignment: Assignment, deadline: float | None) -> Assignment:
+    # An upgrade restarts only the enforced column; report the deadline that will actually apply.
+    expires = effective_deadline(assignment.lease_expires_at, deadline)
+    return assignment.model_copy(update={"lease_expires_at": expires})
 
 
 def skill_workload(db: Database, project_id: str) -> ProductionSkillWorkload:

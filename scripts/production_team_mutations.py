@@ -126,4 +126,24 @@ PRODUCTION_TEAM_MUTATIONS = (
         case=_FREEZE + "test_revoke_plan_is_rejected_once_the_holder_submits",
         runner="pytest",
     ),
+    Mutation(
+        name="production-team-lease-status-enforced-deadline",
+        path="storage/production_team_reads.py",
+        before="assignment=_effective(Assignment.model_validate(payload), deadline),",
+        after="assignment=Assignment.model_validate(payload),",
+        case="tests/storage/test_production_lease_status.py::"
+        "test_lease_status_after_upgrade_reports_the_enforced_deadline",
+        runner="pytest",
+    ),
+    Mutation(
+        name="production-team-effective-deadline-prefers-column",
+        path="storage/production_leases.py",
+        before=(
+            "if enforced is None or abs(enforced - recorded.timestamp()) < _SAME_DEADLINE_SECONDS:"
+        ),
+        after="if True:",
+        case="tests/storage/test_production_lease_status.py::"
+        "test_lease_status_after_upgrade_reports_the_enforced_deadline",
+        runner="pytest",
+    ),
 )
