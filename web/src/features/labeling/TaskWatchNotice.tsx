@@ -60,8 +60,10 @@ export function TaskWatchNotice({
   if (locked)
     return (
       <div className="wb-watch wb-watch-locked" role="alert">
-        <strong>{t("wbTaskReclaimed")}</strong>
-        <span>{t("wbTaskReclaimedDetail")}</span>
+        <div className="wb-watch-text">
+          <strong>{t("wbTaskReclaimed")}</strong>
+          <span>{t("wbTaskReclaimedDetail")}</span>
+        </div>
         <button type="button" className="button primary" onClick={onExport}>
           {t("wbExportDraft")}
         </button>

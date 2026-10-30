@@ -41,6 +41,7 @@ export const workbenchEn = {
   wbUndo: "Undo",
   wbRedo: "Redo",
   wbShortcuts: "Keyboard shortcuts",
+  wbShortcutsShort: "?",
   wbClose: "Close",
   wbCommonKeys:
     "Ctrl/⌘+S save · Ctrl/⌘+Enter submit · Ctrl/⌘+Z undo · Ctrl/⌘+Shift+Z redo · {alt}+N next · {alt}+P previous · ? help",

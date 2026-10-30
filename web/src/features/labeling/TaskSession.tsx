@@ -148,20 +148,22 @@ export function TaskSession({
     >
       <div className="wb-operation-bar">
         <h2 className="wb-task-name">{task.sample.name}</h2>
-        <TaskToolbar
-          editable={editable}
-          busy={busy}
-          personal={personal}
-          session={session}
-          onNavigate={onNavigate}
-          navigation={navigation}
-          notice={notice}
-          onSubmit={() => {
-            void perform("submit");
-          }}
-          help={help}
-          setHelp={setHelp}
-        />
+        {!locked && (
+          <TaskToolbar
+            editable={editable}
+            busy={busy}
+            personal={personal}
+            session={session}
+            onNavigate={onNavigate}
+            navigation={navigation}
+            notice={notice}
+            onSubmit={() => {
+              void perform("submit");
+            }}
+            help={help}
+            setHelp={setHelp}
+          />
+        )}
         <SessionStatus session={session} error={error} locked={locked} />
         <TaskWatchNotice
           {...watch}

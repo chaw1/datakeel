@@ -121,19 +121,50 @@ main:has(> .wb-page[data-focus="true"]) {
   min-width: 0;
   position: relative;
 }
+/* Name, save state and lease stack on the left of the toolbar, so they cost no canvas height. */
 .wb-operation-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  flex-wrap: wrap;
-  gap: calc(var(--space) * 1.5) calc(var(--space) * 3);
+  gap: 0 calc(var(--space) * 3);
+}
+.wb-operation-bar > * {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: calc(var(--space) * 1.5);
+}
+.wb-operation-bar > .wb-task-name,
+.wb-operation-bar > .wb-save-state,
+.wb-operation-bar > .wb-lease {
+  grid-column: 1;
+  margin-top: 0;
+}
+.wb-operation-bar > .wb-save-state {
+  grid-row: 2;
+  font-size: var(--font-xs);
+}
+.wb-operation-bar > .wb-lease {
+  grid-row: 3;
+  font-size: var(--font-xs);
+}
+.wb-operation-bar > .wb-toolbar,
+.wb-operation-bar > .wb-watch-locked {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  margin-top: 0;
 }
 .wb-operation-bar .wb-toolbar {
+  gap: calc(var(--space) * 2);
   padding: 0;
+}
+.wb-nav-notice:empty {
+  display: none;
 }
 .wb-operation-bar p {
   margin: 0;
 }
 .wb-task-name {
+  grid-row: 1;
   font-size: var(--font-sm);
   margin: 0;
   max-width: 260px;
@@ -330,6 +361,15 @@ main:has(> .wb-page[data-focus="true"]) {
   }
 }
 @media (max-width: 700px) {
+  .wb-operation-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wb-operation-bar > .wb-toolbar,
+  .wb-operation-bar > .wb-watch-locked {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: calc(var(--space) * 1.5);
+  }
   .wb-cockpit {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -359,6 +399,13 @@ main:has(> .wb-page[data-focus="true"]) {
 .wb-watch-locked {
   border-color: var(--red);
   background: var(--red-wash);
+  padding: var(--space) calc(var(--space) * 2);
+}
+.wb-watch-text {
+  display: grid;
+}
+.wb-watch-text > span {
+  font-size: var(--font-xs);
 }
 .wb-plan,
 .wb-acceptance,

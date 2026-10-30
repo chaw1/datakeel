@@ -39,6 +39,7 @@ export const workbenchZh = {
   wbUndo: "撤销",
   wbRedo: "重做",
   wbShortcuts: "快捷键表",
+  wbShortcutsShort: "?",
   wbClose: "关闭",
   wbCommonKeys:
     "Ctrl/⌘+S 保存 · Ctrl/⌘+Enter 提交 · Ctrl/⌘+Z 撤销 · Ctrl/⌘+Shift+Z 重做 · {alt}+N 下一条 · {alt}+P 上一条 · ? 帮助",

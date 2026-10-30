@@ -98,11 +98,13 @@ export function TaskToolbar({
         <button
           type="button"
           aria-expanded={help}
+          aria-label={t("wbShortcuts")}
+          title={t("wbShortcuts")}
           onClick={() => {
             setHelp(!help);
           }}
         >
-          {t("wbShortcuts")}
+          {t("wbShortcutsShort")}
         </button>
         <span role="status" className="wb-nav-notice">
           {notice}
