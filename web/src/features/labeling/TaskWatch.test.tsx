@@ -14,7 +14,11 @@ import {
 
 import * as actions from "./actions";
 import { TaskSession } from "./TaskSession";
-import { HEARTBEAT_INTERVAL_MS, WATCH_INTERVAL_MS } from "./useTaskWatch";
+import {
+  HEARTBEAT_INTERVAL_MS,
+  WATCH_INTERVAL_MS,
+  heartbeatInterval,
+} from "./useTaskWatch";
 
 import type { AnnotationRecord, TaskWorkbench } from "../../api/production";
 import type { ActionRun } from "../../api/types";
@@ -90,6 +94,41 @@ it("renews a team lease on open and every two minutes and shows the time left", 
   expect(screen.getByText("Lease 10:00 left · renewed 1 times")).toBeVisible();
   await advance(HEARTBEAT_INTERVAL_MS * 3);
   expect(heartbeats()).toHaveLength(4);
+});
+
+it("renews at min(2 minutes, lease / 3), so a one-minute lease survives three minutes of work", async () => {
+  expect(heartbeatInterval(60)).toBe(20_000);
+  expect(heartbeatInterval(600)).toBe(HEARTBEAT_INTERVAL_MS);
+  expect(heartbeatInterval(null)).toBe(HEARTBEAT_INTERVAL_MS);
+  let renewedAt = Date.now();
+  vi.mocked(actions.mutateProduction).mockImplementation((name) => {
+    if (name === "heartbeat") renewedAt = Date.now();
+    return Promise.resolve({ status: "SUCCEEDED" } as ActionRun);
+  });
+  // The server's lease runs one minute from the latest renewal.
+  vi.mocked(production.getTaskStatus).mockImplementation(() =>
+    Promise.resolve(
+      status({
+        leases: [
+          {
+            ...status().leases[0],
+            seconds_remaining: Math.max(
+              0,
+              Math.round(60 - (Date.now() - renewedAt) / 1000),
+            ),
+          },
+        ],
+      }),
+    ),
+  );
+  mount(held, {
+    ...team,
+    project: { ...team.project, lease_minutes: 1 },
+  });
+  await advance(10);
+  for (let second = 0; second < 180; second += 5) await advance(5_000);
+  expect(screen.queryByText("This task was taken back")).toBeNull();
+  expect(heartbeats().length).toBeGreaterThanOrEqual(9);
 });
 
 it("never renews silently: a failed renewal is shown with a retry", async () => {

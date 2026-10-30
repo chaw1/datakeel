@@ -18,8 +18,15 @@ type TaskState = ProductionTask["state"];
 
 /** Status reads every 5 s keep "changed elsewhere" notices well inside the 10 s budget. */
 export const WATCH_INTERVAL_MS = 5_000;
-/** Team leases are renewed every 2 minutes while the task is open. */
+/** Team leases are renewed every 2 minutes while the task is open, or sooner for short leases. */
 export const HEARTBEAT_INTERVAL_MS = 120_000;
+
+/** Renew at least three times per lease: min(2 minutes, lease length / 3). */
+export function heartbeatInterval(leaseSeconds: number | null) {
+  return leaseSeconds && leaseSeconds > 0
+    ? Math.min(HEARTBEAT_INTERVAL_MS, (leaseSeconds * 1000) / 3)
+    : HEARTBEAT_INTERVAL_MS;
+}
 
 export type TaskChange =
   | { kind: "returned" }
@@ -38,6 +45,7 @@ export function useTaskWatch({
   revisionId,
   quiet,
   locked,
+  leaseMinutes,
   onLost,
 }: {
   taskId: string;
@@ -49,6 +57,8 @@ export function useTaskWatch({
   /** True while this page is saving or acting itself, so its own writes are not "changes". */
   quiet: boolean;
   locked: boolean;
+  /** The project's configured lease; replaced by what the server grants on each renewal. */
+  leaseMinutes?: number;
   onLost: () => void;
 }) {
   const { t } = useI18n();
@@ -57,6 +67,7 @@ export function useTaskWatch({
   const [now, setNow] = useState(() => Date.now());
   const [change, setChange] = useState<TaskChange | null>(null);
   const [renewals, setRenewals] = useState(0);
+  const [granted, setGranted] = useState<number | null>(null);
   const [heartbeatError, setHeartbeatError] = useState("");
   const shown = useRef({ state, revisionId, quiet, locked });
   useLayoutEffect(() => {
@@ -96,7 +107,9 @@ export function useTaskWatch({
     [actor],
   );
   const read = useCallback(async () => {
-    accept(await getTaskStatus(taskId));
+    const status = await getTaskStatus(taskId);
+    accept(status);
+    return status;
   }, [accept, taskId]);
   useEffect(() => {
     const poll = () => {
@@ -119,29 +132,42 @@ export function useTaskWatch({
       await mutateProduction("heartbeat", { task_id: taskId, stage });
       setHeartbeatError("");
       setRenewals((count) => count + 1);
-      await read();
+      const status = await read();
+      // Just renewed, so the time left is the lease length the server grants.
+      const mine = status.leases.find((lease) => lease.actor === actor);
+      if (mine?.enforced) setGranted(mine.seconds_remaining);
     } catch (reason) {
       if (actionProblem(reason) === "lease") lost.current();
       else setHeartbeatError(actionMessage(reason, t, t("wbError")));
     }
-  }, [read, stage, t, taskId]);
+  }, [actor, read, stage, t, taskId]);
   const renewing = useRef(renew);
   useLayoutEffect(() => {
     renewing.current = renew;
   });
-  // Renew on open, then every 2 minutes; restart only when the held lease changes.
+  const cadence = heartbeatInterval(
+    granted ?? (leaseMinutes ? leaseMinutes * 60 : null),
+  );
+  // Renew on open; restart only when the held lease changes.
   useEffect(() => {
     if (!team || !stage || locked) return;
-    const beat = () => {
+    const first = setTimeout(() => {
       void renewing.current();
-    };
-    const first = setTimeout(beat, 0);
-    const timer = setInterval(beat, HEARTBEAT_INTERVAL_MS);
+    }, 0);
     return () => {
       clearTimeout(first);
-      clearInterval(timer);
     };
   }, [team, stage, locked, taskId]);
+  // Then renew every min(2 minutes, lease / 3), including while the tab is hidden.
+  useEffect(() => {
+    if (!team || !stage || locked) return;
+    const timer = setInterval(() => {
+      void renewing.current();
+    }, cadence);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [team, stage, locked, taskId, cadence]);
   useEffect(() => {
     if (deadline === null || locked) return;
     const timer = setInterval(() => {

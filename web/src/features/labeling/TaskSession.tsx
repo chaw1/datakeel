@@ -97,6 +97,7 @@ export function TaskSession({
     revisionId: session.revisionId,
     quiet: busy || ["saving", "pending"].includes(session.status),
     locked,
+    leaseMinutes: project.project.lease_minutes,
     onLost: () => {
       setLocked(true);
     },
