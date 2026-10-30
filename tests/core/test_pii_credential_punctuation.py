@@ -124,3 +124,32 @@ def test_shared_prose_punctuation_mutation_guard() -> None:
         assert redact_pii("密码:Abc12345x" + suffix) == "密码:[SECRET]" + suffix
         url = "ftp://u:Passw0rd9@example.org/data"
         assert redact_pii(url + suffix) == "[CREDENTIAL_URL]" + suffix
+
+
+TRAILING_STOPS = ("\uff5e", "\u00b7", "\uff5c", "\u3009", "\u300f", "\u3015", "\u3017")
+
+
+@pytest.mark.parametrize("stop", TRAILING_STOPS)
+@pytest.mark.parametrize(
+    "label", ["密码\uff1a", "password" + "=", "api_key: ", "DB_PASSWORD" + "="]
+)
+def test_trailing_cjk_punctuation_stays_outside_the_secret(label: str, stop: str) -> None:
+    """Each newly listed CJK stop ends a bare credential and remains in the redacted text."""
+    value = "Qwerty123!@#"
+    text = "配置" + label + value + stop + "继续"
+    findings = detect_pii(text)
+    assert [text[item.start : item.end] for item in findings] == [value]
+    assert redact_pii(text) == "配置" + label + "[SECRET]" + stop + "继续"
+
+
+@pytest.mark.parametrize("stop", TRAILING_STOPS)
+def test_trailing_cjk_punctuation_stays_outside_credential_urls(stop: str) -> None:
+    """The shared stop set also ends a credential URL host or path."""
+    url = "ftp://u:Passw0rd9@example.org/data"
+    assert redact_pii(url + stop + "继续") == "[CREDENTIAL_URL]" + stop + "继续"
+
+
+def test_trailing_cjk_punctuation_mutation_guard() -> None:
+    """One measured anchor protects every newly added stop."""
+    for stop in TRAILING_STOPS:
+        assert redact_pii("密码:Abc12345x" + stop) == "密码:[SECRET]" + stop

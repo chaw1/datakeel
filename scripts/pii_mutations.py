@@ -335,4 +335,12 @@ PII_MUTATIONS = (
         case="tests/core/test_pii_phone_references.py::test_phone_reference_and_sequence_mutation_guard",
         runner="pytest",
     ),
+    Mutation(
+        name="pii-trailing-cjk-punctuation",
+        path="core/pii_patterns.py",
+        before=r"\uff5e\u00b7\uff5c\u3009\u300f\u3015\u3017",
+        after="",
+        case="tests/core/test_pii_credential_punctuation.py::test_trailing_cjk_punctuation_mutation_guard",
+        runner="pytest",
+    ),
 )

@@ -82,6 +82,7 @@ LABELED_IP = re.compile(
 CREDENTIAL_PROSE_STOPS = (
     r"\uff0c。\uff1b\uff01\uff1f\uff1a「」《》、【】“”\u2018\u2019"
     r"\uff08\uff09\u2026\u2014"
+    r"\uff5e\u00b7\uff5c\u3009\u300f\u3015\u3017"
 )
 CREDENTIAL_URL = re.compile(
     r"(?<![A-Za-z0-9_+.-])[A-Za-z][A-Za-z0-9+.-]{1,20}://"
