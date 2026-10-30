@@ -1,13 +1,20 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""P31a FIX1 anchors: runs outside transactions, accountable pass-through, calibration curve."""
+"""P31a FIX1/FIX2 anchors for prelabel runs, pass-through and the review rules.
+
+Runs outside transactions, accountable and signed pass-through, the calibration curve, human
+heads left alone, and near-duplicates compared on the annotation kinds both sides recorded.
+"""
 
 from scripts.mutation_models import Mutation
 
 _RUNNER = "tests/storage/test_production_cloud_runner.py::"
 _ROUTING = "tests/storage/test_production_confidence_routing.py::"
 _TIERS = "tests/annotation_qa/test_confidence_tiers.py::"
+_POLICY = "tests/storage/test_production_pass_through_policy.py::"
+_TARGETS = "tests/storage/test_production_prelabel_targets.py::"
+_RULES = "tests/annotation_qa/test_review_rules.py::"
 
 PRELABEL_RUN_MUTATIONS = (
     Mutation(
@@ -100,6 +107,38 @@ PRELABEL_RUN_MUTATIONS = (
         after="if False:",
         case=_ROUTING
         + "test_a_model_head_is_submitted_only_after_the_annotator_saves_it_as_their_own",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pass-through-relaxing-needs-approval",
+        path="storage/production_review_policy.py",
+        before="widened = new is not None and (old is None or new < old)",
+        after="widened = False",
+        case=_POLICY + "test_a_manual_bar_over_cold_start_and_any_lower_bar_need_approval",
+        runner="pytest",
+    ),
+    Mutation(
+        name="cloud-prelabel-skips-human-heads",
+        path="storage/production_cloud_prelabel.py",
+        before="eligible = [task for task in editable if task.id not in human]",
+        after="eligible = editable",
+        case=_TARGETS + "test_cloud_run_skips_and_counts_tasks_a_person_already_saved",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fake-prelabel-skips-human-heads",
+        path="storage/production_predictions.py",
+        before="if task.id in human:",
+        after="if False:",
+        case=_TARGETS + "test_fake_run_leaves_a_person_saved_task_alone",
+        runner="pytest",
+    ),
+    Mutation(
+        name="review-compares-only-shared-kinds",
+        path="annotation_qa/review_rules.py",
+        before="if getattr(left, field) is None or getattr(right, field) is None",
+        after="if False",
+        case=_RULES + "test_a_box_only_draft_says_nothing_about_the_chosen_classification",
         runner="pytest",
     ),
 )
