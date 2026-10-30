@@ -33,7 +33,7 @@ PRELABEL_MUTATIONS = (
     Mutation(
         name="prelabel-cloud-budget-stop",
         path="storage/production_cloud_prelabel.py",
-        before="if ledger.spent + next_cost > budget:",
+        before="if planned + next_cost > budget:",
         after="if False:",
         case=_CLOUD + "test_budget_stops_mid_run_and_rerun_only_fills_unrun_images",
         runner="pytest",
