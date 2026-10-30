@@ -77,6 +77,31 @@ def _references(step: DraftStep, earlier: set[str]) -> str | None:
     return None
 
 
+def paired_versions(step: DraftStep) -> DraftStep:
+    """A version left out beside an id from an earlier step comes from that same step.
+
+    ``publish_label_set(label_set_id=$ref s1.label_set_id)`` needs s1's version, which does
+    not exist yet; asking the person for that number would be wrong, so it is referenced.
+    """
+    model = PARAMETER_TYPES.get(step.action)
+    params = dict(step.params)
+    for key, value in step.params.items():
+        reference = value.get("$ref") if isinstance(value, dict) else None
+        match = REFERENCE.match(reference) if isinstance(reference, str) else None
+        output = match.group("output") if match is not None else ""
+        if match is None or not key.endswith("_id") or not output.endswith("_id"):
+            continue
+        base = output.removesuffix("_id")
+        names = [f"{key.removesuffix('_id')}_version"] + (
+            ["version"] if key == f"{base}_id" else []
+        )
+        for name in names:
+            if model is not None and name in model.model_fields and name not in params:
+                params[name] = {"$ref": f"{match.group('step')}.{base}_version"}
+                break
+    return step.model_copy(update={"params": params})
+
+
 def _named_fields(message: str, absent: set[str]) -> list[str]:
     """Absent parameters a validator message names, e.g. "assignment requires actor"."""
     return sorted(name for name in absent if re.search(rf"\b{re.escape(name)}\b", message))
@@ -221,6 +246,7 @@ def check_step(
     earlier, actor, language = {item.id for item in previous}, state.actor, state.language
     if step.action not in PARAMETER_TYPES or step.action not in POLICIES:
         return StepCheck(error=f"Unknown action: {step.action}")
+    step = paired_versions(step)
     problem = _references(step, earlier)
     if problem:
         return StepCheck(error=problem)

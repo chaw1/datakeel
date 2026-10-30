@@ -227,6 +227,15 @@ INTENT_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="intent-version-follows-earlier-step",
+        path="intents/validate.py",
+        before="    step = paired_versions(step)",
+        after="    step = step.model_copy()",
+        case=_CHECKS
+        + "test_a_version_left_out_beside_an_earlier_step_s_id_is_taken_from_that_step",
+        runner="pytest",
+    ),
+    Mutation(
         name="draft-plan-counts-sources-like-execution",
         path="storage/label_drafts.py",
         before=(

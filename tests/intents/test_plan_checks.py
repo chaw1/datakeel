@@ -233,3 +233,28 @@ def test_cards_show_names_and_marked_defaults_and_questions_offer_few_choices(
     assert asked.clarification is not None
     assert 0 < len(asked.clarification.candidates) <= CANDIDATE_LIMIT
     assert "id" not in asked.clarification.question.casefold()
+
+
+def test_a_version_left_out_beside_an_earlier_step_s_id_is_taken_from_that_step(
+    db: Database, tmp_path: Path
+) -> None:
+    """Publishing the label set made in s1 needs s1's version, not a question to the person."""
+    dataset = images(db, tmp_path / "images")
+    labels: dict[str, object] = {"name": "路口灯", "labels": ["红绿灯"]}
+    made = {"$ref": "s1.label_set_id"}
+    payload: dict[str, object] = {
+        "kind": "plan",
+        "steps": [
+            {"id": "s1", "action": "create_label_set", "params": labels},
+            {"id": "s2", "action": "publish_label_set", "params": {"label_set_id": made}},
+            {"id": "s3", "action": "create_project", "params": {"label_set_id": made}},
+        ],
+    }
+    result = model_plan(
+        db, "给这批路口图建红绿灯框标注", payload, PageContext(dataset_id=dataset.id)
+    )
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    publish, project = result.chain.steps[1].params, result.chain.steps[2].params
+    assert publish["version"] == {"$ref": "s1.label_set_version"}
+    assert project["label_set_version"] == {"$ref": "s1.label_set_version"}
