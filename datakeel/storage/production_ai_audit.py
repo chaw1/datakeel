@@ -5,17 +5,48 @@
 
 from collections.abc import Iterable
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.actions.models import ActionPlan
-from datakeel.core.prelabel_models import AIReview
+from datakeel.core.prelabel_models import AIReview, ConfidenceThresholds
 from datakeel.core.production_catalog_models import PrelabelRun
 from datakeel.core.production_models import AnnotationRevision
+from datakeel.storage.action_rows import ApprovalRow
 from datakeel.storage.action_store import audit
 from datakeel.storage.production_ai_rows import latest_reviews
 from datakeel.storage.production_rows import ProductionRevisionRow
 
 DIRECT_SUBMISSION = "模型高置信度直通 / Model high-confidence pass-through"
+
+
+def audit_pass_through_relaxed(
+    session: Session,
+    plan: ActionPlan,
+    before: ConfidenceThresholds,
+    after: ConfidenceThresholds,
+) -> None:
+    """Name the old and new pass-through bar and the person who signed the change."""
+    approver = session.scalar(
+        select(ApprovalRow.actor).where(
+            ApprovalRow.plan_id == plan.id, ApprovalRow.status == "APPROVED"
+        )
+    )
+    signer = approver or "-"
+    old_zh, old = (
+        (f"高档 {before.high:.2f}", f"high {before.high:.2f}")
+        if before.pass_through and before.high is not None
+        else ("未开启（冷启动）", "off (cold start)")  # noqa: RUF001  # Chinese punctuation is intended.
+    )
+    new = f"{after.high:.2f}" if after.high is not None else "-"
+    audit(
+        session,
+        plan,
+        "PASS_THROUGH",
+        "RELAXED",
+        f"放宽高置信度直通：{old_zh} → 高档 {new}，签批人 {signer} / "  # noqa: RUF001  # Chinese punctuation is intended.
+        f"High-confidence pass-through relaxed: {old} -> high {new}, approved by {signer}",
+    )
 
 
 def audit_exemptions(session: Session, plan: ActionPlan, reviews: Iterable[AIReview]) -> None:

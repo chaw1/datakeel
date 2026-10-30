@@ -60,7 +60,10 @@ from datakeel.storage.kg_preparation import prepare_kg_params
 from datakeel.storage.llm_data_actions import prepare_training
 from datakeel.storage.production_catalog_plans import catalog_requires_approval
 from datakeel.storage.production_idempotency import remember_prepared, replay_prepared
-from datakeel.storage.production_review_policy import lowers_review_sampling
+from datakeel.storage.production_review_policy import (
+    lowers_review_sampling,
+    relaxes_pass_through,
+)
 from datakeel.storage.release_actions import publication_impact
 from datakeel.storage.training_export import prepare_training_export
 
@@ -147,6 +150,7 @@ def _reversible(session: Session, params: BoundaryModel, *, declared: bool) -> b
             and catalog_requires_approval(session, params)
         )
         and not lowers_review_sampling(session, params)
+        and not relaxes_pass_through(session, params)
     )
 
 
