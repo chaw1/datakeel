@@ -188,6 +188,12 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                     approved === project.progress.total &&
                     !project.project.finalized_version_id
                   }
+                  summary={{
+                    tasks: approved,
+                    blocked: project.progress.total - approved,
+                    datasetId: project.project.dataset_id,
+                    versionId: project.project.version_id,
+                  }}
                   onChanged={workspace.changed}
                 />
               )}

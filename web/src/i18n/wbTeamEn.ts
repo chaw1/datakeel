@@ -23,6 +23,15 @@ export const wbTeamEn = {
     "Someone else just changed this task. Your edits are kept; try the action again.",
   wbLeaseLost: "This task was taken back. Your draft is kept on this device.",
   wbRedoAction: "Try again",
-  wbTemplateAttributes: "Attribute fields (JSON list: key, name_zh, name_en, type, required, default, options)",
+  wbTemplateAttributes:
+    "Attribute fields (JSON list: key, name_zh, name_en, type, required, default, options)",
   wbInvalidAttributes: "Attribute fields must be a JSON list.",
+  wbFinalizeTasks: "Finalize {count} approved tasks",
+  wbFinalizeTarget:
+    "Write them into dataset \u201c{dataset}\u201d as a new version built on version {version}",
+  wbFinalizeBlocked:
+    "{count} tasks are not approved yet and block finalization",
+  wbFinalizeNothingBlocked:
+    "Every task is approved; nothing blocks finalization",
+  wbPlanRaw: "Details",
 };

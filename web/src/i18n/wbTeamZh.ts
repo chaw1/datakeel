@@ -23,6 +23,13 @@ export const wbTeamZh: Record<keyof typeof wbTeamEn, string> = {
   wbChangedByOthers: "任务刚被别人改过。你的改动还在，请重新操作一次。",
   wbLeaseLost: "这条任务已被收回。你的草稿还留在本机。",
   wbRedoAction: "重新操作",
-  wbTemplateAttributes: "属性字段（JSON 列表：key、name_zh、name_en、type、required、default、options）",
+  wbTemplateAttributes:
+    "属性字段（JSON 列表：key、name_zh、name_en、type、required、default、options）",
   wbInvalidAttributes: "属性字段要写成 JSON 列表。",
+  wbFinalizeTasks: "要定稿 {count} 条已通过的任务",
+  wbFinalizeTarget:
+    "写进数据集「{dataset}」，在版本 {version} 的基础上生成一个新版本",
+  wbFinalizeBlocked: "还有 {count} 条没通过审核，会挡住定稿",
+  wbFinalizeNothingBlocked: "所有任务都已通过，没有被挡住的",
+  wbPlanRaw: "详情",
 };

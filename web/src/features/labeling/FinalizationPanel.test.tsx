@@ -66,3 +66,82 @@ it("blocks an already prepared signature when the project stops being ready", as
   expect(actions.executeProduction).not.toHaveBeenCalled();
   expect(props.onChanged).not.toHaveBeenCalled();
 });
+
+it("states the plan in plain words and keeps raw parameters under Details", () => {
+  vi.mocked(actions.prepareProduction).mockResolvedValue({
+    ...actionPlan,
+    canonical_params: { project_id: "project" },
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ name: "Harbour scenes" }), {
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    ),
+  );
+  render(
+    <FinalizationPanel
+      projectId="project"
+      ready={false}
+      summary={{
+        tasks: 8,
+        blocked: 2,
+        datasetId: "dataset-1",
+        versionId: "version-12345678",
+      }}
+      onChanged={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByText("2 tasks are not approved yet and block finalization"),
+  ).toBeVisible();
+  vi.unstubAllGlobals();
+});
+
+it("lists task count, target dataset and blockers once prepared", async () => {
+  vi.mocked(actions.prepareProduction).mockResolvedValue({
+    ...actionPlan,
+    canonical_params: { project_id: "project" },
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ name: "Harbour scenes" }), {
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    ),
+  );
+  render(
+    <FinalizationPanel
+      projectId="project"
+      ready
+      summary={{
+        tasks: 8,
+        blocked: 0,
+        datasetId: "dataset-1",
+        versionId: "version-12345678",
+      }}
+      onChanged={vi.fn()}
+    />,
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review finalization plan" }),
+  );
+  expect(await screen.findByText("Finalize 8 approved tasks")).toBeVisible();
+  expect(
+    await screen.findByText(
+      "Write them into dataset “Harbour scenes” as a new version built on version version-",
+    ),
+  ).toBeVisible();
+  expect(
+    screen.getByText("Every task is approved; nothing blocks finalization"),
+  ).toBeVisible();
+  expect(screen.getByText("Details")).toBeVisible();
+  expect(screen.getByText(/"project_id": "project"/)).not.toBeVisible();
+  vi.unstubAllGlobals();
+});
