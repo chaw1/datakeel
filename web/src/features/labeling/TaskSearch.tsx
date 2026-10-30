@@ -4,7 +4,7 @@ import { useI18n } from "../../i18n/useI18n";
 
 const DEBOUNCE_MS = 300;
 
-/** Filter the current task view by sample file name on the server. */
+/** Filter the current task view by sample relative path or file name on the server. */
 export function TaskSearch({
   value,
   onSearch,

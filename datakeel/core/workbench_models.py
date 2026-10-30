@@ -38,11 +38,22 @@ class WorkbenchProjectQuery(BoundaryModel):
     cursor: str | None = None
     view: WorkbenchView = "all"
     package_id: str | None = None
-    search: str | None = Field(default=None, min_length=1, max_length=200)
+    search: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+        description=(
+            "Keep tasks whose sample's relative path or file name contains this text, "
+            "ignoring case."
+        ),
+    )
 
 
 class WorkbenchSampleName(BoundaryModel):
-    """Name a task's sample by the file name recorded at import, never a server path."""
+    """Name a task's sample by the relative path or file name recorded at import.
+
+    Never a server path.
+    """
 
     task_id: str
     sample_id: str

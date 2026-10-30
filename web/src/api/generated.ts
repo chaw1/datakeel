@@ -2403,7 +2403,7 @@ export interface paths {
         };
         /**
          * Project Task Samples
-         * @description Name up to 500 tasks of the project by the file name recorded at import.
+         * @description Name up to 500 tasks of the project by the relative path or file name recorded at import.
          */
         get: operations["project_task_samples_api_production_projects__project_id__task_samples_get"];
         put?: never;
@@ -12428,7 +12428,9 @@ export interface components {
         };
         /**
          * WorkbenchSampleName
-         * @description Name a task's sample by the file name recorded at import, never a server path.
+         * @description Name a task's sample by the relative path or file name recorded at import.
+         *
+         *     Never a server path.
          */
         WorkbenchSampleName: {
             /**
@@ -16820,6 +16822,7 @@ export interface operations {
                 cursor?: string | null;
                 view?: "all" | "mine" | "review";
                 package_id?: string | null;
+                /** @description Keep tasks whose sample's relative path or file name contains this text, ignoring case. */
                 search?: string | null;
             };
             header?: never;

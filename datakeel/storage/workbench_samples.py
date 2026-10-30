@@ -77,7 +77,7 @@ def name_tasks(
 def matches_search(
     task: ProductionTask, names: dict[str, tuple[str, str]], search: str | None
 ) -> bool:
-    """Match a case-insensitive substring of the sample's recorded file name."""
+    """Match a case-insensitive substring of the sample's relative path or file name."""
     if search is None:
         return True
     needle = search.casefold()
