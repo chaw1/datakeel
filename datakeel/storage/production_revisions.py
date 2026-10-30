@@ -126,4 +126,4 @@ def _validate_revision(
         message = "Model revisions require model_name and model_version"
         raise ValidationError(message)
     project = require_mutable_project(session, task.project_id)
-    validate_annotation(session, project, params.annotation)
+    validate_annotation(session, project, params.annotation, complete=params.source == "human")

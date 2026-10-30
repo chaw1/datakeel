@@ -14,8 +14,9 @@ from datakeel.core.errors import AuthorizationError, ConflictError, ValidationEr
 from datakeel.core.models import new_id, utcnow
 from datakeel.core.production_models import ProductionTask, Project, Review
 from datakeel.storage.production_assignments import active_assignment, finish_assignment
+from datakeel.storage.production_catalog import require_complete_attributes
 from datakeel.storage.production_leases import arm_lease, raise_if_reclaimed, require_live_lease
-from datakeel.storage.production_revisions import require_holder
+from datakeel.storage.production_revisions import current_revision, require_holder
 from datakeel.storage.production_rows import ProductionReviewRow, ProductionTaskRow
 from datakeel.storage.production_separation import require_separation
 from datakeel.storage.production_tasks import (
@@ -37,6 +38,9 @@ def submit_task(session: Session, params: SubmitTaskParams, actor: str) -> Produ
     if task.state not in {"pending", "in_progress"} or task.latest_revision_id is None:
         message = "Submission requires an editable task with a saved revision"
         raise ConflictError(message)
+    head = current_revision(session, task)
+    if head is not None:
+        require_complete_attributes(session, project, head.annotation)
     if task.annotator_id is None:
         task.annotator_id = actor
     if project.workflow_tier == "personal":

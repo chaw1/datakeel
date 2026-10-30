@@ -6,6 +6,7 @@
 from scripts.mutation_models import Mutation
 
 _SAMPLES = "tests/storage/test_workbench_samples.py::"
+_ATTRIBUTES = "tests/api/test_workbench_attributes.py::"
 
 WORKBENCH_MUTATIONS = (
     Mutation(
@@ -159,6 +160,56 @@ WORKBENCH_MUTATIONS = (
         ),
         after="current = dict.fromkeys(pool, 0)",
         case=_SAMPLES + "test_dispatch_preview_matches_the_executed_skill_dispatch",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-attribute-required",
+        path="core/production_attributes.py",
+        before="if complete and field.required:",
+        after="if False:",
+        case=_ATTRIBUTES + "test_direct_saves_name_the_failing_attribute_with_http_422",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-attribute-every-shape",
+        path="core/production_attributes.py",
+        before='_check(shaped, shape.attributes, f"{kind} {index}", complete=complete)',
+        after="pass",
+        case=_ATTRIBUTES + "test_direct_saves_name_the_failing_attribute_with_http_422",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-attribute-number-maximum",
+        path="core/production_attributes.py",
+        before="high = field.maximum is not None and value > field.maximum",
+        after="high = False",
+        case="tests/core/test_production_attributes.py::"
+        "test_number_range_text_length_and_finite_values_are_enforced",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-attribute-default-checked",
+        path="core/production_attributes.py",
+        before="if self.default is not None and (problem := value_problem(self, self.default)):",
+        after="if False:",
+        case="tests/core/test_production_attributes.py::"
+        "test_inconsistent_definitions_are_rejected[default-outside-options]",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-attribute-model-draft",
+        path="storage/production_revisions.py",
+        before='complete=params.source == "human"',
+        after="complete=True",
+        case=_ATTRIBUTES + "test_model_drafts_skip_required_fields_but_not_their_types",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-attribute-submit-recheck",
+        path="storage/production_reviews.py",
+        before="require_complete_attributes(session, project, head.annotation)",
+        after="pass",
+        case=_ATTRIBUTES + "test_submission_rechecks_the_head_against_a_newer_required_field",
         runner="pytest",
     ),
 )

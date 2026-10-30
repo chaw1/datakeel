@@ -11,6 +11,7 @@ from pydantic import Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel
+from datakeel.core.production_attributes import TemplateAttribute
 
 
 class ProductionLabel(BoundaryModel):
@@ -86,8 +87,18 @@ class ProductionTemplate(BoundaryModel):
     annotation_type: Literal["box", "polygon", "keypoints", "classification", "text_span"] = "box"
     component_config: dict[str, JsonValue] = Field(default_factory=dict)
     validation_rules: dict[str, JsonValue] = Field(default_factory=dict)
+    attributes: tuple[TemplateAttribute, ...] = Field(default=(), max_length=50)
     revision: int = Field(default=1, ge=1)
     archived: bool = False
+
+    @model_validator(mode="after")
+    def distinct_attribute_keys(self) -> "ProductionTemplate":
+        """Give every record or shape attribute one definition so forms and checks agree."""
+        keys = [(field.target, field.key) for field in self.attributes]
+        if len(set(keys)) != len(keys):
+            message = "Template attribute keys must be distinct within each target"
+            raise ValueError(message)
+        return self
 
     @model_validator(mode="after")
     def supported_validation_rules(self) -> "ProductionTemplate":

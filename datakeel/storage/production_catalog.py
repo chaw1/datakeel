@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.errors import NotFoundError, ValidationError
+from datakeel.core.production_attributes import validate_attributes
 from datakeel.core.production_catalog_models import LabelSet, ProductionModel, ProductionTemplate
 from datakeel.storage.production_catalog_rows import (
     ProductionLabelSetRow,
@@ -123,8 +124,13 @@ def normalize_annotation(
     )
 
 
-def validate_annotation(session: Session, project: "Project", annotation: AnnotationRecord) -> None:
-    """Validate labels, geometry and the project's explicit reusable template rules."""
+def validate_annotation(
+    session: Session, project: "Project", annotation: AnnotationRecord, *, complete: bool = True
+) -> None:
+    """Validate labels, geometry and the project's template rules and attribute fields.
+
+    ``complete`` also requires every required attribute; model drafts are only type-checked.
+    """
     labels = require_label_set(session, project.label_set_id, project.label_set_version)
     allowed = {value for label in labels.labels for value in (label.id, label.name)}
     if not set(annotation_categories(annotation)) <= allowed:
@@ -132,7 +138,17 @@ def validate_annotation(session: Session, project: "Project", annotation: Annota
         raise ValidationError(message)
     _validate_geometry(annotation)
     if project.template_id is not None:
-        _validate_template(require_template(session, project.template_id), annotation)
+        template = require_template(session, project.template_id)
+        _validate_template(template, annotation)
+        validate_attributes(template.attributes, annotation, complete=complete)
+
+
+def require_complete_attributes(
+    session: Session, project: "Project", annotation: AnnotationRecord
+) -> None:
+    """Recheck a submitted head against the current template's attribute fields."""
+    if project.template_id is not None:
+        validate_attributes(require_template(session, project.template_id).attributes, annotation)
 
 
 def _validate_geometry(annotation: AnnotationRecord) -> None:
