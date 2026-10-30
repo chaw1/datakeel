@@ -101,6 +101,10 @@ class ConversationDefaults(BoundaryModel):
 
     provider: Literal["fake", "openai", "anthropic"]
     model: str
+    # Set when no configured model can serve "auto": the offline demo is used and the page
+    # says it is a configuration problem instead of letting the demo pass as the model.
+    problem: Literal["no_model_key", "unrouted_endpoint"] | None = None
+    endpoint: str | None = None
 
 
 class MessageInput(BoundaryModel):

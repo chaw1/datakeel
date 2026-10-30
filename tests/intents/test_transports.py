@@ -105,9 +105,19 @@ def test_new_web_conversations_use_the_configured_model(
     for name in ("DATAKEEL_OPENAI_API_KEY", "DATAKEEL_ANTHROPIC_API_KEY"):
         monkeypatch.delenv(name, raising=False)
     route = "/api/agent/conversations/definitions/provider"
-    assert client.get(route).json() == {"provider": "fake", "model": "fake-demo"}
+    demo = client.get(route).json()
+    assert (demo["provider"], demo["model"], demo["problem"]) == (
+        "fake",
+        "fake-demo",
+        "no_model_key",
+    )
     monkeypatch.setenv("DATAKEEL_OPENAI_API_KEY", "test-only")
-    assert client.get(route).json() == {"provider": "openai", "model": "auto"}
+    configured = client.get(route).json()
+    assert (configured["provider"], configured["model"], configured["problem"]) == (
+        "openai",
+        "auto",
+        None,
+    )
 
 
 def test_a_browser_signature_is_recorded_for_the_request_s_person(db: Database) -> None:

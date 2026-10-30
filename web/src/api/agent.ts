@@ -42,7 +42,12 @@ const providers: ConversationDefaults["provider"][] = [
   "anthropic",
 ];
 
-/** The configured model, or the offline demo when the server has no model key. */
+const problems: NonNullable<ConversationDefaults["problem"]>[] = [
+  "no_model_key",
+  "unrouted_endpoint",
+];
+
+/** The configured model, or the offline demo with the configuration problem behind it. */
 async function conversationDefaults(): Promise<ConversationDefaults> {
   const fallback: ConversationDefaults = {
     provider: "fake",
@@ -52,23 +57,34 @@ async function conversationDefaults(): Promise<ConversationDefaults> {
     const value = await get<Partial<ConversationDefaults>>(
       "/api/agent/conversations/definitions/provider",
     );
-    return value.provider &&
-      providers.includes(value.provider) &&
-      typeof value.model === "string" &&
-      value.model
-      ? { provider: value.provider, model: value.model }
-      : fallback;
+    if (
+      !value.provider ||
+      !providers.includes(value.provider) ||
+      typeof value.model !== "string" ||
+      !value.model
+    )
+      return fallback;
+    const problem =
+      value.problem && problems.includes(value.problem) ? value.problem : null;
+    return {
+      provider: value.provider,
+      model: value.model,
+      problem,
+      endpoint: typeof value.endpoint === "string" ? value.endpoint : null,
+    };
   } catch {
     return fallback;
   }
 }
 
+/** Create a conversation; `setup` says when no configured model could be used. */
 export async function createConversation(
   datasetId: string,
   dryRun: boolean,
   budget: ConversationCreate["budget"],
-) {
-  const { provider, model } = await conversationDefaults();
+): Promise<{ conversation: Conversation; setup: ConversationDefaults }> {
+  const setup = await conversationDefaults();
+  const { provider, model } = setup;
   const body: ConversationCreate = {
     dataset_id: datasetId || null,
     provider,
@@ -78,7 +94,11 @@ export async function createConversation(
     max_turns: 12,
     max_output_tokens: 1024,
   };
-  return post<Conversation>("/api/agent/conversations", body);
+  const conversation = await post<Conversation>(
+    "/api/agent/conversations",
+    body,
+  );
+  return { conversation, setup };
 }
 export async function streamMessage(
   id: string,

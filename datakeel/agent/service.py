@@ -23,7 +23,7 @@ from datakeel.core.models import JsonDocument
 from datakeel.core.settings import get_settings
 from datakeel.delegation.loader import list_agents
 from datakeel.intents.turns import planner_events
-from datakeel.routing.config import load_config
+from datakeel.routing.config import load_config, openai_host, route_problem
 from datakeel.routing.service import model_decisions, route_message
 from datakeel.runtime.graph import AgentGraph
 from datakeel.storage import conversation_store as memory
@@ -192,10 +192,17 @@ def _response_events(
 
 
 def conversation_defaults() -> ConversationDefaults:
-    """The configured provider with routed models; the offline demo only without a key."""
+    """The configured provider with routed models; the offline demo only with a reason.
+
+    "auto" is offered only when the routing knows which models the configured endpoint
+    serves; otherwise the demo is used and the reason names the configuration problem.
+    """
     settings = get_settings()
-    if settings.openai_api_key is not None:
-        return ConversationDefaults(provider="openai", model="auto")
-    if settings.anthropic_api_key is not None:
-        return ConversationDefaults(provider="anthropic", model="auto")
-    return ConversationDefaults(provider="fake", model="fake-demo")
+    problem = route_problem(settings)
+    if problem is not None:
+        endpoint = openai_host(settings) if problem == "unrouted_endpoint" else None
+        return ConversationDefaults(
+            provider="fake", model="fake-demo", problem=problem, endpoint=endpoint
+        )
+    provider = "openai" if settings.openai_api_key is not None else "anthropic"
+    return ConversationDefaults(provider=provider, model="auto")

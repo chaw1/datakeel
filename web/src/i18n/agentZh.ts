@@ -25,6 +25,11 @@ export const agentZh: Record<keyof typeof agentEn, string> = {
   dryRun: "预演模式",
   dryRunExplanation: "只准备计划，不执行动作。",
   dryRunPlansOnly: "预演模式：此会话只准备计划。",
+  modelSetupProblem: "没有可用的模型：这是配置问题",
+  modelSetupNoKey:
+    "服务器没有配置模型密钥（DATAKEEL_OPENAI_API_KEY 或 DATAKEEL_ANTHROPIC_API_KEY），这个会话用的是离线演示模型，只认固定说法。",
+  modelSetupUnrouted:
+    "模型地址 {endpoint} 在路由文件（endpoints）里没有登记可用的模型档位，所以没有用它；这个会话用的是离线演示模型。",
   createConversationError: "无法创建会话。",
   messageInput: "消息",
   messagePlaceholder: "询问数据情况，或描述想进行的变更…",

@@ -53,3 +53,27 @@ models:
     cache_read: 0.029
     cache_write: 0.029
     source: https://www.alibabacloud.com/help/en/model-studio/model-pricing (2026-10-27; China (Beijing); input <= 128K; no published cache-hit price)
+  # Checked 2026-10-31 on the official DeepSeek price page; peak prices (off-peak half).
+  - model: deepseek-v4-pro
+    provider: openai
+    input: 1.32
+    output: 3.96
+    cache_read: 0.044
+    cache_write: 1.32
+    source: https://api-docs.deepseek.com/quick_start/pricing (2026-10-31; peak; off-peak half)
+  # Checked 2026-10-31 on the Model Studio price page; China (Beijing), smallest input tier.
+  # No cache-hit price is published, so cached input is charged at the full input price.
+  - model: qwen3.8-max
+    provider: openai
+    input: 1.65
+    output: 4.951
+    cache_read: 1.65
+    cache_write: 1.65
+    source: https://www.alibabacloud.com/help/en/model-studio/model-pricing (2026-10-31; China (Beijing); input <= 1M)
+  - model: qwen3.7-plus
+    provider: openai
+    input: 0.276
+    output: 1.101
+    cache_read: 0.276
+    cache_write: 0.276
+    source: https://www.alibabacloud.com/help/en/model-studio/model-pricing (2026-10-31; China (Beijing); input <= 256K; limited-time 20% off)

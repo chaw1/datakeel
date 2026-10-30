@@ -12,7 +12,12 @@ import { money } from "../features/traces/format";
 import { useI18n } from "../i18n/useI18n";
 import { useResource } from "../lib/useResource";
 
-import type { Conversation, ConversationCreate, Dataset } from "../api/types";
+import type {
+  Conversation,
+  ConversationCreate,
+  ConversationDefaults,
+  Dataset,
+} from "../api/types";
 import type { LineageTarget } from "../app/navigation";
 
 export function AgentPage({
@@ -44,6 +49,7 @@ export function AgentPage({
   const session = useConversation(id);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [setup, setSetup] = useState<ConversationDefaults | null>(null);
   async function create(
     dataset: string,
     dryRun: boolean,
@@ -52,7 +58,12 @@ export function AgentPage({
     setCreating(true);
     setError("");
     try {
-      const value = await createConversation(dataset, dryRun, budget);
+      const { conversation: value, setup: used } = await createConversation(
+        dataset,
+        dryRun,
+        budget,
+      );
+      setSetup(used.problem ? used : null);
       setChosenConversation(value.id);
       onConversation(value.id);
       conversations.reload();
@@ -130,6 +141,20 @@ export function AgentPage({
           }}
         />
         <section className="card conversation-main">
+          {setup?.problem && (
+            <div className="warning-banner" role="status">
+              <div>
+                <strong>{t("modelSetupProblem")}</strong>
+                <p>
+                  {setup.problem === "no_model_key"
+                    ? t("modelSetupNoKey")
+                    : t("modelSetupUnrouted", {
+                        endpoint: setup.endpoint ?? "",
+                      })}
+                </p>
+              </div>
+            </div>
+          )}
           <ResourceState {...session} onRetry={session.reload} />
           {session.value ? (
             <>

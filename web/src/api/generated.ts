@@ -5744,8 +5744,12 @@ export interface components {
          * @description The provider and model a new conversation uses unless the person picks another.
          */
         ConversationDefaults: {
+            /** Endpoint */
+            endpoint?: string | null;
             /** Model */
             model: string;
+            /** Problem */
+            problem?: ("no_model_key" | "unrouted_endpoint") | null;
             /**
              * Provider
              * @enum {string}

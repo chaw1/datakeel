@@ -4,16 +4,19 @@
 """Load explicit provider routes and validate every priced fallback chain locally."""
 
 from pathlib import Path
+from typing import Literal
+from urllib.parse import urlsplit
 
 import yaml
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.harness_pricing import ModelPrice, PriceTable
-from datakeel.core.settings import get_settings
+from datakeel.core.settings import Settings, get_settings
 from datakeel.routing.models import ModelRoutingConfig, ProviderModels
 
 MAX_BACKUPS = 2
+OPENAI_HOST = "api.openai.com"
 
 
 def contract_path(name: str) -> Path:
@@ -93,6 +96,11 @@ def _read(path: Path) -> tuple[ModelRoutingConfig | None, list[str]]:
     prices = load_prices()
     for provider, settings in config.providers.items():
         errors.extend(_provider_errors(provider, settings, prices))
+    for host, settings in config.endpoints.items():
+        errors.extend(
+            error.replace("providers.openai", f"endpoints.{host}", 1)
+            for error in _provider_errors("openai", settings, prices)
+        )
     return config, [f"{path.name}:{error}" for error in errors]
 
 
@@ -107,8 +115,42 @@ def validate_config(path: Path | None = None) -> list[str]:
 
 
 def load_config(path: Path | None = None) -> ModelRoutingConfig:
-    """Reject invalid routing configuration instead of falling back to defaults."""
+    """Reject invalid routing configuration instead of falling back to defaults.
+
+    The OpenAI-compatible provider is routed to the tiers of the endpoint actually
+    configured, so "auto" only ever names a model that endpoint serves.
+    """
     config, errors = _read(routing_path(path))
     if config is None or errors:
         raise ValidationError("; ".join(errors))
-    return config
+    return configured(config)
+
+
+def openai_host(settings: Settings | None = None) -> str:
+    """Host name of the configured OpenAI-compatible endpoint, lower case."""
+    current = settings or get_settings()
+    return (urlsplit(current.openai_base_url or current.openai_url).hostname or "").casefold()
+
+
+def configured(config: ModelRoutingConfig, settings: Settings | None = None) -> ModelRoutingConfig:
+    """Replace the openai tiers with the configured endpoint's own tiers when it has some."""
+    tiers = config.endpoints.get(openai_host(settings))
+    if tiers is None:
+        return config
+    return config.model_copy(update={"providers": {**config.providers, "openai": tiers}})
+
+
+RouteProblem = Literal["no_model_key", "unrouted_endpoint"]
+
+
+def route_problem(settings: Settings | None = None) -> RouteProblem | None:
+    """Why "auto" has no configured model to use, or None when it has one."""
+    current = settings or get_settings()
+    if current.openai_api_key is None:
+        return None if current.anthropic_api_key is not None else "no_model_key"
+    if current.model_routing_file is not None:
+        return None
+    config, _ = _read(routing_path())
+    host = openai_host(current)
+    known = config is not None and host in config.endpoints
+    return None if known or host == OPENAI_HOST else "unrouted_endpoint"

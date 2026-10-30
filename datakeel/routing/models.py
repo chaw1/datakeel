@@ -31,6 +31,9 @@ class ModelRoutingConfig(BoundaryModel):
 
     version: Literal[1]
     providers: dict[Literal["fake", "openai", "anthropic"], ProviderModels]
+    # Tiers for OpenAI-compatible endpoints other than OpenAI, keyed by host name: a key for
+    # api.deepseek.com routes "auto" to the models that endpoint serves, never to gpt models.
+    endpoints: dict[str, ProviderModels] = Field(default_factory=dict[str, ProviderModels])
 
 
 class IntentCase(BoundaryModel):
