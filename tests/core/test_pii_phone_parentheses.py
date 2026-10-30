@@ -14,7 +14,7 @@ from datakeel.core.pii import detect_pii, redact_pii
         ("电话(0571) 8888-6666转人工", "(0571) 8888-6666", "电话[PHONE]转人工"),
         ("(021)68888888", "(021)68888888", "[PHONE]"),
         ("(0591) 5654-2998", "(0591) 5654-2998", "[PHONE]"),
-        ("(555) 123-4567", "(555) 123-4567", "[PHONE]"),
+        ("(+86) 138 0013 8000", "(+86) 138 0013 8000", "[PHONE]"),
     ],
 )
 def test_reported_parenthesized_phones_are_fully_redacted(
@@ -52,16 +52,24 @@ def test_chinese_parenthesized_phone_variants_keep_complete_spans(
         "(415) 555-0132",
         "(212)555-0132",
         "(555) 234-5678",
+        "(300) 200 3000",
         "\uff08415\uff09 555-0132",
         "\uff08212\uff09555-0132",
         "\uff08555\uff09 234-5678",
     ],
 )
-def test_north_american_parenthesized_phone_variants_keep_complete_spans(phone: str) -> None:
-    """Recognize grouped local North American numbers without leaving an opening bracket."""
-    matches = detect_pii(phone)
-    assert [(match.type, match.start, match.end) for match in matches] == [("phone", 0, len(phone))]
-    assert redact_pii(phone) == "[PHONE]"
+def test_parenthesized_area_code_must_be_mainland(phone: str) -> None:
+    """A bracketed area code needs a leading 0 or +86; other local shapes stay as written."""
+    assert not detect_pii(phone)
+    assert not detect_pii("Call " + phone + " today.")
+    assert redact_pii("记录" + phone + "。") == "记录" + phone + "。"
+
+
+@pytest.mark.parametrize("phone", ["(415) 555-0132", "(212)555-0132", "(300) 200 3000"])
+def test_international_prefix_keeps_foreign_parenthesized_recall(phone: str) -> None:
+    """An explicit country code remains phone evidence for bracketed foreign area codes."""
+    assert [match.type for match in detect_pii("+1 " + phone)] == ["phone"]
+    assert redact_pii("+1 " + phone) == "[PHONE]"
 
 
 @pytest.mark.parametrize(

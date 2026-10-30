@@ -303,4 +303,28 @@ PII_MUTATIONS = (
         case="tests/core/test_pii_prefixed_keys.py::test_prefixed_key_mutation_guard",
         runner="pytest",
     ),
+    Mutation(
+        name="pii-phone-mainland-area-code",
+        path="core/pii_patterns.py",
+        before=r"(?:(?:\(0[1-9][0-9]{1,2}\)|",
+        after=r"(?:(?:\([0-9]{3,4}\)|",
+        case="tests/core/test_pii_phone_references.py::test_phone_reference_and_sequence_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-reference-word",
+        path="core/pii.py",
+        before='if kind == "phone" and _reference_number(text, match.start(), match.end()):',
+        after="if False:",
+        case="tests/core/test_pii_phone_references.py::test_phone_reference_and_sequence_mutation_guard",
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-reference-suffix",
+        path="core/pii.py",
+        before="    if text.startswith(patterns.PHONE_REFERENCE_AFTER, end):",
+        after="    if False:",
+        case="tests/core/test_pii_phone_references.py::test_phone_reference_and_sequence_mutation_guard",
+        runner="pytest",
+    ),
 )

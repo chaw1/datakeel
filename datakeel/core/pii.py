@@ -223,8 +223,24 @@ def _number_candidates(text: str) -> Iterator[PiiMatch]:
         for match in pattern.finditer(text):
             if pattern is not patterns.CHINA_MOBILE and _numeric_prefix(text, match.start()):
                 continue
+            if kind == "phone" and _reference_number(text, match.start(), match.end()):
+                continue
             if validate(match.group()):
                 yield PiiMatch(type=kind, start=match.start(), end=match.end())
+
+
+def _reference_number(text: str, start: int, end: int) -> bool:
+    """Treat numbers labelled as serial, order or batch identifiers as references."""
+    if text.startswith(patterns.PHONE_REFERENCE_AFTER, end):
+        return True
+    reference = patterns.PHONE_REFERENCE_BEFORE.search(text, max(0, start - 16), start)
+    if reference is None:
+        return False
+    label_start = reference.start()
+    label = patterns.PHONE_LABEL_BEFORE_REFERENCE.search(
+        text, max(0, label_start - 16), label_start
+    )
+    return label is None
 
 
 def _numeric_prefix(text: str, start: int) -> bool:
