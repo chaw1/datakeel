@@ -23,7 +23,9 @@ from scripts.core_mutations import CORE_MUTATIONS
 from scripts.mutation_catalog import FEATURE_MUTATIONS
 from scripts.mutation_models import Mutation, MutationResult, TestMeasurement
 from scripts.mutation_parallel import ordered_parallel_map
+from scripts.mutation_shards import select_mutations
 from scripts.mutation_timeouts import EnvironmentFailure, retry_on_timeout
+from scripts.shard_spec import parse_shard
 from scripts.test_workers import test_worker_count
 from scripts.workflow_mutations import WORKFLOW_MUTATIONS
 
@@ -300,10 +302,11 @@ def main() -> None:
     """Require green baselines and observed assertion failures with durable evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--shard", type=parse_shard, help="Run only catalog shard K of N (K/N).")
     args = parser.parse_args()
-    mutations = MUTATIONS
+    mutations = MUTATIONS if args.shard is None else select_mutations(MUTATIONS, args.shard)
     workers = test_worker_count()
-    report: dict[str, object] = {}
+    report: dict[str, object] = {} if args.shard is None else {"shard": str(args.shard)}
     golden = retry_on_timeout(evaluate_golden_baseline, "golden baseline")
     if isinstance(golden, EnvironmentFailure):
         empty = {"baseline": None, "image_baselines": [], "mutations": []}
