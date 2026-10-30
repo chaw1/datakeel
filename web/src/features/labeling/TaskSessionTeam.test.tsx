@@ -95,3 +95,44 @@ it("lets the person leave a reclaimed task with an unsaved draft and refreshes t
   expect(changed).toHaveBeenCalledOnce();
   expect(navigate).toHaveBeenCalledWith(0);
 });
+
+it("never offers review controls on work this person annotated in a team project", async () => {
+  const submitted = {
+    ...held,
+    task: { ...held.task, state: "submitted" as const, annotator_id: "local" },
+    assignments: [{ ...held.assignments[0], active: false }],
+  };
+  vi.mocked(production.getTaskWorkbench).mockResolvedValue(submitted);
+  vi.mocked(production.getTaskStatus).mockResolvedValue(
+    status({
+      task: submitted.task,
+      assignments: submitted.assignments,
+      leases: [],
+    }),
+  );
+  const view = (actor: string) =>
+    render(
+      <TaskSession
+        task={submitted}
+        project={{
+          ...team,
+          effective_scopes: { actor, zero_users: false, scopes: ["*"] },
+        }}
+        actor={actor}
+        canSync
+        onNavigate={vi.fn()}
+        onChanged={vi.fn()}
+        onSnapshot={vi.fn()}
+        registerGuard={vi.fn()}
+      />,
+    );
+  const own = view("local");
+  await advance(10);
+  expect(screen.queryByRole("button", { name: "Approve revision" })).toBeNull();
+  own.unmount();
+  view("rev");
+  await advance(10);
+  expect(
+    screen.getByRole("button", { name: "Approve revision" }),
+  ).toBeVisible();
+});

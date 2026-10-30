@@ -104,3 +104,16 @@ export function taskEditable(
       ))
   );
 }
+/** Team tier: whoever annotated a task in any round never reviews it; the server refuses it too. */
+export function annotatedBy(task: TaskWorkbench, actor: string) {
+  return (
+    task.task.annotator_id === actor ||
+    task.revisions.some(
+      (revision) => revision.actor === actor && revision.source === "human",
+    ) ||
+    task.assignments.some(
+      (assignment) =>
+        assignment.stage === "annotation" && assignment.actor === actor,
+    )
+  );
+}

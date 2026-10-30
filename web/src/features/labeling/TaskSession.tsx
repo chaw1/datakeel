@@ -4,7 +4,7 @@ import { useI18n } from "../../i18n/useI18n";
 
 import { AnnotationEditor } from "./editors/AnnotationEditor";
 import { DetailsSlotContext } from "./editors/editorContext";
-import { allowed, defaultTemplate, taskEditable } from "./model";
+import { allowed, annotatedBy, defaultTemplate, taskEditable } from "./model";
 import { SessionStatus } from "./SessionStatus";
 import { TaskDrawer } from "./TaskDrawer";
 import { TaskReview } from "./TaskReview";
@@ -71,6 +71,7 @@ export function TaskSession({
     !personal &&
     allowed(project.effective_scopes, "production:review") &&
     ["submitted", "in_review"].includes(snapshot.task.state) &&
+    !annotatedBy(snapshot, actor) &&
     !snapshot.assignments.some(
       (assignment) =>
         assignment.active &&
