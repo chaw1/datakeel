@@ -277,11 +277,13 @@ def test_holder_saves_racing_manager_revoke_and_assign_never_deadlock(db: Databa
     finally:
         event.remove(db.engine, "after_cursor_execute", race.pause_inside_row_lock)
     assert race.unexpected == []
+    # A reclaim plan freezes only state, round and holders, so the reclaim prepared before the
+    # save waits for its row lock and then succeeds; the idle reclaim finds nothing left to take.
     assert race.outcomes == {
         "window": rounds,
         "save:ok": rounds,
-        "revoke_during_save:ConflictError": rounds,
-        "revoke:ok": rounds,
+        "revoke_during_save:ok": rounds,
+        "revoke:NotFoundError": rounds,
         "assign:ok": rounds,
     }
     counts = {item.state: item.count for item in project_progress(db, project.id).counts}

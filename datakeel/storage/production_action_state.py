@@ -12,6 +12,7 @@ from datakeel.actions.production_parameters import (
     ConfigureProjectParams,
     CreateProjectParams,
     ProductionActionParams,
+    RevokeAssignmentParams,
     SaveRevisionParams,
     SplitPackagesParams,
     TaskIdentityParams,
@@ -63,12 +64,36 @@ def production_state(session: Session, params: ProductionActionParams) -> str:
         )
     if isinstance(params, UpgradeProjectParams | ConfigureProjectParams):
         return content_digest(require_project(session, params.project_id).model_dump(mode="json"))
-    identifiers = (
-        params.task_ids
-        if isinstance(params, AssignTasksParams)
-        else ((params.task_id,) if isinstance(params, TaskIdentityParams) else ())
+    if isinstance(params, AssignTasksParams | RevokeAssignmentParams):
+        # Holder autosaves and heartbeats must not void a reclaim or a dispatch someone reviewed.
+        identifiers = (
+            params.task_ids if isinstance(params, AssignTasksParams) else (params.task_id,)
+        )
+        state = _holder_state
+    else:
+        identifiers = (params.task_id,) if isinstance(params, TaskIdentityParams) else ()
+        state = _task_state
+    return content_digest([state(session, identifier) for identifier in sorted(identifiers)])
+
+
+def _holder_state(session: Session, task_id: str) -> str:
+    """Freeze only what decides an assignment change: state, round and current holders."""
+    task = require_task(session, task_id)
+    holders = [
+        {"id": row.id, "actor": row.actor, "stage": row.stage}
+        for row in session.scalars(
+            select(ProductionAssignmentRow)
+            .where(
+                ProductionAssignmentRow.task_id == task_id,
+                ProductionAssignmentRow.active.is_(True),
+            )
+            .order_by(ProductionAssignmentRow.id)
+        )
+    ]
+    values = JsonDocument.model_validate(
+        {"task_id": task.id, "state": task.state, "round": task.round, "holders": holders}
     )
-    return content_digest([_task_state(session, identifier) for identifier in sorted(identifiers)])
+    return content_digest(values.root)
 
 
 def _task_state(session: Session, task_id: str) -> str:

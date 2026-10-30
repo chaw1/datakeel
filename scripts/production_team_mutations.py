@@ -16,6 +16,7 @@ _DISPATCH = "tests/actions/test_production_team_dispatch.py::"
 _ACCEPTANCE = "tests/actions/test_production_team_acceptance.py::"
 _LOCK_ORDER = "tests/actions/test_production_lock_order.py::"
 _LOAD_LOCKS = "tests/actions/test_production_load_locks.py::"
+_FREEZE = "tests/actions/test_production_plan_freeze.py::"
 
 PRODUCTION_TEAM_MUTATIONS = (
     Mutation(
@@ -107,6 +108,22 @@ PRODUCTION_TEAM_MUTATIONS = (
         ),
         after="    require_capacity(session, project, actor, stage)",
         case=_LOAD_LOCKS + "test_concurrent_claims_by_one_person_stop_exactly_at_the_limit",
+        runner="pytest",
+    ),
+    Mutation(
+        name="production-team-plan-freezes-holders-only",
+        path="storage/production_action_state.py",
+        before="if isinstance(params, AssignTasksParams | RevokeAssignmentParams):",
+        after="if False:",
+        case=_FREEZE + "test_revoke_plan_survives_holder_saves_and_heartbeats",
+        runner="pytest",
+    ),
+    Mutation(
+        name="production-team-plan-freezes-state",
+        path="storage/production_action_state.py",
+        before='{"task_id": task.id, "state": task.state, "round": task.round, "holders": holders}',
+        after='{"task_id": task.id, "round": task.round, "holders": holders}',
+        case=_FREEZE + "test_revoke_plan_is_rejected_once_the_holder_submits",
         runner="pytest",
     ),
 )
