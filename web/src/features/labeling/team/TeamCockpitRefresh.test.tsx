@@ -1,9 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import * as production from "../../../api/production";
 import { labelingProject } from "../../../test/labelingFixtures";
 import { ProjectCockpit } from "../ProjectCockpit";
+
+import { SkillDispatch } from "./SkillDispatch";
 
 import type {
   PackageAcceptance,
@@ -24,6 +26,13 @@ const team: ProjectWorkbench = {
   ...labelingProject,
   project: { ...labelingProject.project, workflow_tier: "team" },
 };
+const withStates = (first: string, second: string): ProjectWorkbench => ({
+  ...team,
+  tasks: team.tasks.map((task, index) => ({
+    ...task,
+    state: (index ? second : first) as typeof task.state,
+  })),
+});
 const accepted: PackageAcceptance = {
   project_id: "project",
   package_id: "package",
@@ -70,6 +79,46 @@ beforeEach(() => {
   vi.mocked(production.getTaskSamples).mockResolvedValue({
     items: labelingProject.task_samples,
   });
+});
+
+const box = (name: string) => screen.getByRole("checkbox", { name });
+
+it("resets the dispatch choice to whatever still waits after the task list refreshes", () => {
+  const view = render(
+    <SkillDispatch
+      data={withStates("pending", "pending")}
+      onChanged={vi.fn()}
+    />,
+  );
+  fireEvent.click(box("harbor-002.png"));
+  expect(screen.getByText("Tasks to dispatch (1 selected)")).toBeVisible();
+  view.rerender(
+    <SkillDispatch
+      data={withStates("pending", "pending")}
+      onChanged={vi.fn()}
+    />,
+  );
+  expect(screen.getByText("Tasks to dispatch (1 selected)")).toBeVisible();
+  // harbor-001 was dispatched: it leaves the list and the count.
+  view.rerender(
+    <SkillDispatch
+      data={withStates("in_progress", "pending")}
+      onChanged={vi.fn()}
+    />,
+  );
+  expect(screen.getByText("Tasks to dispatch (1 selected)")).toBeVisible();
+  expect(screen.queryByRole("checkbox", { name: "harbor-001.png" })).toBeNull();
+  expect(box("harbor-002.png")).toBeChecked();
+  // A rejected package hands harbor-001 back: it is waiting, so it is ticked.
+  view.rerender(
+    <SkillDispatch
+      data={withStates("pending", "pending")}
+      onChanged={vi.fn()}
+    />,
+  );
+  expect(screen.getByText("Tasks to dispatch (2 selected)")).toBeVisible();
+  expect(box("harbor-001.png")).toBeChecked();
+  expect(box("harbor-002.png")).toBeChecked();
 });
 
 it("shows the last sample once a package has been decided", async () => {

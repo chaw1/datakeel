@@ -31,9 +31,15 @@ export function SkillDispatch({
 }) {
   const { t } = useI18n();
   const open = data.tasks.filter((task) => task.state === "pending");
-  const [selected, setSelected] = useState<string[]>(() =>
-    open.map((task) => task.id),
-  );
+  const openIds = open.map((task) => task.id);
+  const basis = openIds.join("\n");
+  // Choices belong to one set of undispatched tasks; when it changes, start from all of them.
+  const [choice, setChoice] = useState({ basis, ids: openIds });
+  if (choice.basis !== basis) setChoice({ basis, ids: openIds });
+  const selected = choice.basis === basis ? choice.ids : openIds;
+  const setSelected = (ids: string[]) => {
+    setChoice({ basis, ids });
+  };
   const [cap, setCap] = useState("");
   const [preview, setPreview] = useState<SkillDispatchPreview | null>(null);
   const [plan, setPlan] = useState<ActionPlan | null>(null);
