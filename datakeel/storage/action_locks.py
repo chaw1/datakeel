@@ -17,6 +17,25 @@ from datakeel.storage.database import Database
 ROW_SCOPED_ACTIONS = frozenset(
     {"claim_task", "release_task", "heartbeat", "save_revision", "submit_task", "review_task"}
 )
+# Match existing worker order: append observations before publishing versions.
+PREDICATE_TABLES = ("datasets", "lineage_events", "versions", "file_states")
+TABLE_WIDE_MODE = "SHARE ROW EXCLUSIVE"
+
+
+def table_locks(action_type: str | None) -> tuple[tuple[str, ...], str]:
+    """Return the tables and mode an action locks on PostgreSQL before touching any row.
+
+    Every action takes its table-level locks first and its row locks afterwards, so no two
+    actions can wait for each other in opposite orders. Table-wide actions hold SHARE ROW
+    EXCLUSIVE on the predicate tables. Among those tables a single-task action writes only its
+    lineage receipt, so it takes that table's ROW EXCLUSIVE lock up front instead of at insert
+    time: the mode conflicts with the table-wide lock but not with itself, which keeps
+    annotators concurrent while a table-wide action never waits for a task row that a receipt
+    writer holds.
+    """
+    if action_type in ROW_SCOPED_ACTIONS:
+        return ("lineage_events",), "ROW EXCLUSIVE"
+    return PREDICATE_TABLES, TABLE_WIDE_MODE
 
 
 def lock_action_targets(db: Database, session: Session, plan_id: str | None = None) -> None:
@@ -24,15 +43,11 @@ def lock_action_targets(db: Database, session: Session, plan_id: str | None = No
     db.lock_writes(session)
     if db.sqlite:
         return
-    if plan_id is not None:
-        action_type = session.scalar(
-            select(ActionPlanRow.action_type).where(ActionPlanRow.id == plan_id)
-        )
-        if action_type in ROW_SCOPED_ACTIONS:
-            return
-    # Match existing worker order: append observations before publishing versions.
-    session.execute(
-        text(
-            "LOCK TABLE datasets, lineage_events, versions, file_states IN SHARE ROW EXCLUSIVE MODE"
-        )
+    action_type = (
+        session.scalar(select(ActionPlanRow.action_type).where(ActionPlanRow.id == plan_id))
+        if plan_id is not None
+        else None
     )
+    tables, mode = table_locks(action_type)
+    if tables:
+        session.execute(text(f"LOCK TABLE {', '.join(tables)} IN {mode} MODE"))

@@ -1,7 +1,12 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Mutation anchors for team leases, the single-release reaper, separation and acceptance."""
+"""Mutation anchors for team leases, the reaper, separation, acceptance and lock discipline.
+
+The full mutation run uses SQLite. The lock-order anchor therefore removes the declared up-front
+table lock, which every database reports; its PostgreSQL behavior tests turn red under the same
+change.
+"""
 
 from scripts.mutation_models import Mutation
 
@@ -9,6 +14,7 @@ _LEASES = "tests/storage/test_production_leases.py::"
 _SEPARATION = "tests/storage/test_production_separation.py::"
 _DISPATCH = "tests/actions/test_production_team_dispatch.py::"
 _ACCEPTANCE = "tests/actions/test_production_team_acceptance.py::"
+_LOCK_ORDER = "tests/actions/test_production_lock_order.py::"
 
 PRODUCTION_TEAM_MUTATIONS = (
     Mutation(
@@ -80,6 +86,15 @@ PRODUCTION_TEAM_MUTATIONS = (
             "            return_for_rework(session, project, task)"
         ),
         case=_ACCEPTANCE + "test_rejection_returns_every_package_task_for_one_more_round",
+        runner="pytest",
+    ),
+    Mutation(
+        name="production-team-table-locks-before-rows",
+        path="storage/action_locks.py",
+        before='        return ("lineage_events",), "ROW EXCLUSIVE"',
+        after='        return (), "ROW EXCLUSIVE"',
+        case=_LOCK_ORDER
+        + "test_single_task_actions_lock_every_predicate_table_they_write_up_front",
         runner="pytest",
     ),
 )
