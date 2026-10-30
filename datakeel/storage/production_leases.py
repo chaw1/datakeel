@@ -20,6 +20,8 @@ LEASED_STATES: dict[str, tuple[str, ...]] = {
     "review": ("in_review",),
 }
 RETURN_STATE: dict[str, str] = {"annotation": "pending", "review": "submitted"}
+# The indexed column stores a float; within this it is the recorded deadline itself.
+_SAME_DEADLINE_SECONDS = 1e-3
 
 
 def running_lease() -> ColumnElement[bool]:
@@ -66,20 +68,26 @@ def arm_lease(row: ProductionAssignmentRow, project: Project, now: datetime) -> 
     row.lease_expires_at = deadline.timestamp()
 
 
-def enforce_recorded_leases(session: Session, project_id: str) -> None:
-    """Begin enforcing the expiry already recorded on assignments created before the team tier."""
+def restart_leases(session: Session, project: Project, now: datetime) -> None:
+    """Start a full enforced lease at the upgrade moment for assignments made before the team tier.
+
+    Their recorded expiry dates from the original claim and was never enforced, so enforcing it
+    would reclaim work moments after an upgrade. Only the enforced deadline column is set; the
+    assignment records stay as they were and the next heartbeat renews both.
+    """
+    deadline = (now + timedelta(minutes=project.lease_minutes)).timestamp()
     rows = session.scalars(
         select(ProductionAssignmentRow)
         .join(ProductionTaskRow, ProductionTaskRow.id == ProductionAssignmentRow.task_id)
         .where(
-            ProductionTaskRow.project_id == project_id,
+            ProductionTaskRow.project_id == project.id,
             ProductionAssignmentRow.active.is_(True),
             ProductionAssignmentRow.lease_expires_at.is_(None),
         )
         .order_by(ProductionAssignmentRow.id)
     )
     for row in rows:
-        row.lease_expires_at = Assignment.model_validate(row.payload).lease_expires_at.timestamp()
+        row.lease_expires_at = deadline
 
 
 def end_assignment(
@@ -92,6 +100,15 @@ def end_assignment(
     row.active, row.payload = False, assignment.model_dump(mode="json")
     session.flush()
     return assignment
+
+
+def _enforced_deadline(row: ProductionAssignmentRow, assignment: Assignment) -> datetime:
+    # A lease restarted by a team upgrade keeps its old record; report the deadline enforced.
+    recorded = assignment.lease_expires_at
+    enforced = row.lease_expires_at
+    if enforced is None or abs(enforced - recorded.timestamp()) < _SAME_DEADLINE_SECONDS:
+        return recorded
+    return datetime.fromtimestamp(enforced, tz=UTC)
 
 
 def record_release(
@@ -113,7 +130,7 @@ def record_release(
             "actor": assignment.actor,
             "stage": assignment.stage,
             "reason": reason,
-            "lease_expires_at": assignment.lease_expires_at,
+            "lease_expires_at": _enforced_deadline(row, assignment),
             "released_at": assignment.ended_at,
             "released_by": released_by,
             "note": note,

@@ -23,7 +23,7 @@ from datakeel.core.production_models import Project, TaskPackage, TaskState
 from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.production_assignments import preserve_personal_assignment
 from datakeel.storage.production_catalog import require_label_set, require_template
-from datakeel.storage.production_leases import enforce_recorded_leases
+from datakeel.storage.production_leases import restart_leases
 from datakeel.storage.production_members import record_project_member
 from datakeel.storage.production_rows import (
     ProductionMemberRow,
@@ -179,7 +179,7 @@ def upgrade_project(session: Session, params: UpgradeProjectParams) -> Project:
         _preserve_personal_assignments(session, project.id)
     if upgraded.workflow_tier == "team":
         session.flush()
-        enforce_recorded_leases(session, project.id)
+        restart_leases(session, upgraded, utcnow())
     return require_mutable_project(session, project.id)
 
 

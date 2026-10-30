@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from datakeel.actions.production_parameters import UpgradeProjectParams
 from datakeel.core.errors import AuthorizationError, ConflictError, ValidationError
 from datakeel.core.models import new_id, utcnow
+from datakeel.core.production_team_models import LeaseRelease
 from datakeel.storage.production_leases import LeaseExpiredError, lease_expired
 from datakeel.storage.production_projects import upgrade_project
 from datakeel.storage.production_queries import get_task, list_assignments, list_revisions
@@ -275,11 +276,13 @@ def test_annotation_lease_pauses_while_the_task_waits_for_review(db: Database) -
     assert get_task(db, task.id).round == 1
 
 
-def test_upgrade_to_team_starts_enforcing_recorded_leases(db: Database) -> None:
-    """Group assignments keep their recorded deadline and become reapable after an upgrade."""
+def test_upgrade_to_team_restarts_open_leases_at_the_upgrade(db: Database) -> None:
+    """A group claim gets a full lease from the upgrade moment, not its old recorded deadline."""
     project, _tasks = production_fixture(db, "group")
     task = claim(db, project.id, "annotator-a")
+    set_deadline(db, task.id, -60)
     assignment = _effective(db, task.id)
+    before = utcnow()
     with db.session() as session:
         db.lock_writes(session)
         upgrade_project(
@@ -287,9 +290,21 @@ def test_upgrade_to_team_starts_enforcing_recorded_leases(db: Database) -> None:
             UpgradeProjectParams(request_id=new_id(), project_id=project.id, workflow_tier="team"),
         )
         session.commit()
-    assert _column(db, assignment.id) == assignment.lease_expires_at.timestamp()
-    assert _effective(db, task.id).lease_expires_at == assignment.lease_expires_at
-    assert reap_expired_leases(db, now=assignment.lease_expires_at).released == 1
+    after = utcnow()
+    column = _column(db, assignment.id)
+    assert column is not None
+    lease = timedelta(minutes=project.lease_minutes)
+    assert (before + lease).timestamp() <= column <= (after + lease).timestamp()
+    assert _effective(db, task.id) == assignment
+    assert reap_expired_leases(db, now=after).released == 0
+    save(db, task.id, "annotator-a")
+    reaped = reap_expired_leases(db, now=after + lease)
+    assert reaped.released == 1
+    with db.session() as session:
+        release = session.get(ProductionLeaseReleaseRow, assignment.id)
+        assert release is not None
+        recorded = LeaseRelease.model_validate(release.payload).lease_expires_at
+    assert abs(recorded.timestamp() - column) < 1e-3
 
 
 def test_heartbeat_is_holder_only_and_stage_bound(db: Database) -> None:
