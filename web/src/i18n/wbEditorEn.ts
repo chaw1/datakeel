@@ -27,9 +27,9 @@ export const wbEditorEn = {
   wbEditorDeletePoint: "Delete point (Backspace)",
   wbEditorDrawingPoints: "{count} points in current polygon",
   wbEditorBoxHint:
-    "Drag on the canvas to draw. B adds a box; arrows move it; Shift + arrows resize it; Ctrl/Cmd + D copies; Delete removes.",
+    "Drag on the canvas to draw. B adds a box; arrows move it 1 source pixel, Shift + arrows 10; R switches the arrows to the right/bottom edges, then the left/top edges; Ctrl/Cmd + D copies; Delete removes.",
   wbEditorPolygonHint:
-    "P starts a polygon. Arrows move the cursor; Space adds a point; Enter closes. Select a polygon to move it with arrows. Shift + arrows moves its selected point; Backspace removes a point.",
+    "P starts a polygon. Arrows move the cursor 1 source pixel (Shift + arrows: 10); Space or a click adds a point; Enter closes. Select a polygon to move it with arrows; R switches the arrows to its selected point; Backspace removes a point.",
   wbEditorClassificationHint:
     "Use Tab and Space, arrow keys for single choice, or the label's displayed shortcut. Labels save immediately.",
   wbEditorSpanHint:

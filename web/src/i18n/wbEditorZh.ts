@@ -27,9 +27,9 @@ export const wbEditorZh = {
   wbEditorDeletePoint: "删除顶点（Backspace）",
   wbEditorDrawingPoints: "当前多边形有 {count} 个顶点",
   wbEditorBoxHint:
-    "在画布拖动绘框。B 添加框；方向键移动；Shift + 方向键调边；Ctrl/Cmd + D 复制；Delete 删除。",
+    "在画布拖动绘框。B 添加框；方向键一次移动 1 个原图像素，Shift + 方向键一次 10 个；R 把方向键切到调右下边、再调左上边；Ctrl/Cmd + D 复制；Delete 删除。",
   wbEditorPolygonHint:
-    "P 开始绘制，方向键移动光标，空格添加顶点，Enter 闭合。选择多边形后用方向键移动，Shift + 方向键移动所选顶点，Backspace 删除顶点。",
+    "P 开始绘制，方向键移动光标 1 个原图像素（Shift + 方向键 10 个），空格或点击添加顶点，Enter 闭合。选择多边形后用方向键移动，R 把方向键切到所选顶点，Backspace 删除顶点。",
   wbEditorClassificationHint:
     "使用 Tab 和空格，单选时使用方向键，或按标签显示的快捷键。选定后立即保存。",
   wbEditorSpanHint:
