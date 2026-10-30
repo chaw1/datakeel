@@ -9,6 +9,13 @@ export function actionProblem(reason: unknown): ActionProblem {
   const text = reason instanceof Error ? reason.message.toLowerCase() : "";
   if (text.includes("lease expired") || text.includes("was reclaimed"))
     return "lease";
+  // A manager took the task back: the server refuses writes from the former holder.
+  if (
+    reason instanceof ApiError &&
+    reason.status === 403 &&
+    text.includes("assignment holder may")
+  )
+    return "lease";
   if (
     reason instanceof ApiError &&
     reason.status === 409 &&

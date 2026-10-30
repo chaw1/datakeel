@@ -22,6 +22,7 @@ export const wbTeamZh: Record<keyof typeof wbTeamEn, string> = {
   wbAttributeInvalid: "{where}的「{field}」填的值模板里没有",
   wbSubmitBlocked: "还不能提交：{reason}",
   wbChangedByOthers: "任务刚被别人改过。你的改动还在，请重新操作一次。",
+  wbDraftKeptLocally: "未保存 · 草稿留在本机",
   wbLeaseLost: "这条任务已被收回。你的草稿还留在本机。",
   wbRedoAction: "重新操作",
   wbTemplateAttributes:

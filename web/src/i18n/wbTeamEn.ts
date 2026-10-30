@@ -22,6 +22,7 @@ export const wbTeamEn = {
   wbSubmitBlocked: "Cannot submit yet. {reason}",
   wbChangedByOthers:
     "Someone else just changed this task. Your edits are kept; try the action again.",
+  wbDraftKeptLocally: "Not saved · draft kept on this device",
   wbLeaseLost: "This task was taken back. Your draft is kept on this device.",
   wbRedoAction: "Try again",
   wbTemplateAttributes:

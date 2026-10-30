@@ -136,3 +136,39 @@ it("never offers review controls on work this person annotated in a team project
     screen.getByRole("button", { name: "Approve revision" }),
   ).toBeVisible();
 });
+
+it("locks without save errors or raw server text when a take-back beats the holder's autosave", async () => {
+  vi.mocked(actions.mutateProduction).mockImplementation((name) =>
+    name === "save_revision"
+      ? Promise.reject(
+          new ApiError(
+            403,
+            "403 Only the current annotation assignment holder may modify this task",
+          ),
+        )
+      : Promise.resolve({ status: "SUCCEEDED" } as ActionRun),
+  );
+  render(
+    <TaskSession
+      task={held}
+      project={team}
+      actor="local"
+      canSync
+      onNavigate={vi.fn()}
+      onChanged={vi.fn()}
+      onSnapshot={vi.fn()}
+      registerGuard={vi.fn()}
+    />,
+  );
+  await advance(10);
+  fireEvent.click(screen.getByTestId("edit"));
+  await advance(1_000);
+  expect(screen.getByText("This task was taken back")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Export draft" })).toBeVisible();
+  expect(screen.queryByText(/assignment holder/)).toBeNull();
+  expect(screen.queryByText(/Could not save/)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Retry save" })).toBeNull();
+  expect(
+    screen.getByText("Not saved · draft kept on this device"),
+  ).toBeVisible();
+});

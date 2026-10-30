@@ -148,7 +148,7 @@ export function TaskSession({
           help={help}
           setHelp={setHelp}
         />
-        <SessionStatus session={session} error={error} />
+        <SessionStatus session={session} error={error} locked={locked} />
         <TaskWatchNotice
           {...watch}
           onRenew={() => {
@@ -170,7 +170,7 @@ export function TaskSession({
             onNavigate(0);
           }}
         />
-        {retry && (
+        {retry && !locked && (
           <button
             type="button"
             className="wb-retry-action"
