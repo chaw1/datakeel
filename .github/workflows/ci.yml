@@ -1,11 +1,35 @@
 name: Quality gates
-on: [push, pull_request]
+# Pull requests run once (no duplicate branch-push run), main runs on every push, tags reuse
+# the commit already verified on its pull request, and any branch can be run by hand.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-gates-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  DATAKEEL_TEST_WORKERS: '4'
+  PYTEST_SHARDS: '4'
+  MUTATION_SHARDS: '2'
+
+# Every stack runs the same gates: one job for the non-test gates, four whole-module pytest
+# shards, two mutation-catalog shards, and a report job that checks shard completeness and
+# applies the coverage and mutation rules to the merged evidence. fail-fast is off so a
+# failing stack never cancels the other one.
 jobs:
-  check:
+  gates:
+    name: gates (${{ matrix.database }})
     runs-on: ubuntu-latest
-    env:
-      DATAKEEL_TEST_WORKERS: '4'
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         database: [sqlite, postgres]
     services:
@@ -19,31 +43,176 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U datakeel"
           --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATAKEEL_TEST_DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgresql+pg8000://datakeel@127.0.0.1:5432/datakeel' || '' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: '3.12'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.96.0
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: accel
-      - name: Install user-provided media tools
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-      - run: uv sync --locked
-      - run: npm ci
-        working-directory: web
+      - uses: ./.github/actions/setup
       - name: Real container sandbox security tests (runtime required)
-        run: uv run pytest tests/operators/custom_sandbox/test_security.py -q
-      - name: Same gates as local development
         env:
-          DATAKEEL_TEST_DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgresql+pg8000://datakeel@127.0.0.1:5432/datakeel' || '' }}
-        run: scripts/ci-check.sh
+          DATAKEEL_TEST_DATABASE_URL: ''
+        run: uv run pytest tests/operators/custom_sandbox/test_security.py -q
+      - name: Frontend source hash before the gates
+        working-directory: web
+        run: npm run check:source
+      - name: Public content scan
+        run: make check-public
+      - name: Rust extension gates
+        run: make check-rust
+      - name: Collect the complete pytest suite (needs the installed extension)
+        run: make collect-tests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collection-${{ matrix.database }}
+          path: artifacts/ci/collection
+          if-no-files-found: error
+          retention-days: 7
+      - name: Python static gates
+        run: make check-python-static
+      - name: Scale smoke and its mutation
+        run: make check-scale
+      - name: Frontend gates and license audit
+        run: make check-web check-licenses
+      - name: Frontend source hash after the gates
+        working-directory: web
+        run: npm run check:source
+      - name: README commands
+        run: uv run python scripts/check_readme.py
+
+  pytest:
+    name: pytest ${{ matrix.shard }}/4 (${{ matrix.database }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgres]
+        shard: [1, 2, 3, 4]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: datakeel
+          POSTGRES_DB: datakeel
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U datakeel"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATAKEEL_TEST_DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgresql+pg8000://datakeel@127.0.0.1:5432/datakeel' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Build and install the Rust extension imported by accel tests
+        run: make install-accel
+      - name: Pytest shard with coverage
+        run: make check-pytest PYTEST_SHARD=${{ matrix.shard }}/${{ env.PYTEST_SHARDS }}
+      - name: Keep this shard's coverage data
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p artifacts/ci/coverage
+          mv .coverage artifacts/ci/coverage/.coverage.${{ matrix.database }}-${{ matrix.shard }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: pytest-${{ matrix.database }}-${{ matrix.shard }}
+          path: |
+            artifacts/ci/pytest
+            artifacts/ci/coverage
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  mutation:
+    name: mutation ${{ matrix.shard }}/2 (${{ matrix.database }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgres]
+        shard: [1, 2]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: datakeel
+          POSTGRES_DB: datakeel
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U datakeel"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATAKEEL_TEST_DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgresql+pg8000://datakeel@127.0.0.1:5432/datakeel' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Build and install the Rust extension imported by accel tests
+        run: make install-accel
+      - name: Mutation gate shard
+        run: >-
+          uv run python scripts/mutate.py
+          --shard ${{ matrix.shard }}/${{ env.MUTATION_SHARDS }}
+          --output artifacts/ci/mutation/mutation-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: mutation-${{ matrix.database }}-${{ matrix.shard }}
+          path: artifacts/ci/mutation
+          if-no-files-found: error
+          retention-days: 7
+
+  report:
+    name: report (${{ matrix.database }})
+    needs: [gates, pytest, mutation]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgres]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          toolchains: 'false'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: collection-${{ matrix.database }}
+          path: artifacts/ci/collection
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pytest-${{ matrix.database }}-*
+          path: artifacts/ci
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mutation-${{ matrix.database }}-*
+          path: artifacts/ci/mutation
+          merge-multiple: true
+      - name: Every collected test ran in exactly one shard
+        if: ${{ !cancelled() }}
+        run: make check-test-shards PYTEST_SHARDS=${{ env.PYTEST_SHARDS }}
+      - name: Merged coverage meets the total and module lines
+        if: ${{ !cancelled() }}
+        run: make combine-coverage check-coverage
+      - name: Merged mutation reports kill the whole catalog
+        if: ${{ !cancelled() }}
+        run: >-
+          uv run python -m scripts.merge_mutation_reports
+          --count ${{ env.MUTATION_SHARDS }}
+          --output artifacts/ci/mutation-report.json
+          artifacts/ci/mutation/mutation-*.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: report-${{ matrix.database }}
+          path: |
+            coverage.xml
+            coverage.json
+            artifacts/ci/mutation-report.json
+          retention-days: 14
