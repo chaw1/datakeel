@@ -37,7 +37,7 @@ class CloudModelConfig(BoundaryModel):
     max_image_side: int = Field(default=1280, ge=64, le=8192)
     prompt_tokens: int = Field(default=330, ge=0, le=100000)
     expected_output_tokens: int = Field(default=160, ge=1, le=32768)
-    max_output_tokens: int = Field(default=1024, ge=16, le=32768)
+    max_output_tokens: int = Field(default=2048, ge=16, le=32768)
     timeout_seconds: float = Field(default=60, gt=0, le=600)
     cross_check: bool = True
     confidence_source: Literal["self", "cross_check", "combined"] = "combined"
@@ -116,6 +116,7 @@ class PrelabelEstimate(BoundaryModel):
     total: float = Field(ge=0, allow_inf_nan=False)
     upper_bound: float = Field(ge=0, allow_inf_nan=False)
     currency: str
+    observed_calls: int = Field(default=0, ge=0)
 
 
 class TierRate(BoundaryModel):

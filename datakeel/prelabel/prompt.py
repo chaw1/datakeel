@@ -5,7 +5,7 @@
 
 import json
 
-PROMPT_VERSION = "prelabel-v1"
+PROMPT_VERSION = "prelabel-v2"
 
 
 def prelabel_prompt(
@@ -46,7 +46,7 @@ def prelabel_prompt(
         shape["labels"] = ["..."]
         shape["labels_confidence"] = 0.0
     parts.append(
-        "Reply with JSON only, no prose and no code fence, shaped like "
+        "Reply with compact single-line JSON only, no prose and no code fence, shaped like "
         + json.dumps(shape, ensure_ascii=False)
         + ". Use empty lists when nothing applies."
     )

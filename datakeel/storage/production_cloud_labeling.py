@@ -22,6 +22,7 @@ from datakeel.prelabel import (
     encode_view,
     parse_reply,
     prelabel_prompt,
+    prompt_token_estimate,
     request_view,
     token_cost,
 )
@@ -91,7 +92,8 @@ def _call(
     config = request.config
     input_tokens, output_tokens = reply.input_tokens, reply.output_tokens
     if reply.failure is None and not reply.usage_reported:
-        input_tokens = call_input_tokens(config, view.width, view.height)
+        prompt = prompt_token_estimate(request.prompt)
+        input_tokens = call_input_tokens(config, view.width, view.height, prompt)
         output_tokens = config.expected_output_tokens
     return PrelabelCall(
         sample_id=sample_id,

@@ -20,6 +20,7 @@ from datakeel.prelabel.images import SentImage
 
 Box = tuple[float, float, float, float]
 _MIN_SIDE = 1.0
+BOX_KEYS = ("box", "bbox_2d", "bbox")
 
 
 class Detection(NamedTuple):
@@ -40,9 +41,10 @@ class ParsedReply(NamedTuple):
 
 
 def _document(text: str) -> dict[str, JsonValue] | None:
+    """Find the first whole reply document; a bare list of objects counts as ``objects``."""
     decoder = json.JSONDecoder()
     for index, char in enumerate(text):
-        if char != "{":
+        if char not in "{[":
             continue
         try:
             value = cast("JsonValue", decoder.raw_decode(text, index)[0])
@@ -50,6 +52,36 @@ def _document(text: str) -> dict[str, JsonValue] | None:
             continue
         if isinstance(value, dict) and ("objects" in value or "labels" in value):
             return value
+        if isinstance(value, list) and value and all(isinstance(item, dict) for item in value):
+            return {"objects": value}
+    return None
+
+
+def _salvage(text: str) -> list[JsonValue]:
+    """Recover each complete object from a cut-off or malformed reply, in order."""
+    decoder = json.JSONDecoder()
+    found: list[JsonValue] = []
+    index = text.find("{")
+    while index != -1:
+        try:
+            decoded, end = decoder.raw_decode(text, index)
+        except ValueError:
+            index = text.find("{", index + 1)
+            continue
+        value = cast("JsonValue", decoded)
+        if isinstance(value, dict) and "label" in value and _box_value(value) is not None:
+            found.append(value)
+            index = text.find("{", end)
+        else:
+            index = text.find("{", index + 1)
+    return found
+
+
+def _box_value(row: dict[str, JsonValue]) -> JsonValue:
+    """Read the box under the requested key or the common ``bbox_2d`` / ``bbox`` aliases."""
+    for key in BOX_KEYS:
+        if key in row:
+            return row[key]
     return None
 
 
@@ -101,7 +133,7 @@ def _objects(
             drops.append(("malformed", "object is not a JSON object"))
             continue
         label = _label(row.get("label"), lookup)
-        coordinates = _coordinates(row.get("box"))
+        coordinates = _coordinates(_box_value(row))
         if label is None:
             drops.append(("unknown_label", str(row.get("label"))[:100]))
             continue
@@ -121,9 +153,15 @@ def parse_reply(
 ) -> ParsedReply | None:
     """Return parsed content, or ``None`` when the reply holds no usable JSON document."""
     document = _document(text)
+    salvaged: list[tuple[str, str]] = []
     if document is None:
-        return None
+        rows = _salvage(text)
+        if not rows:
+            return None
+        document = {"objects": rows}
+        salvaged.append(("malformed", f"reply was not one JSON document; kept {len(rows)} objects"))
     detections, drops = _objects(document.get("objects"), view, lookup, space)
+    drops = salvaged + drops
     labels: tuple[str, ...] | None = None
     raw_labels = document.get("labels")
     if isinstance(raw_labels, list):

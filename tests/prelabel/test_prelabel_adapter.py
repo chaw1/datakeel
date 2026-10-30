@@ -16,6 +16,7 @@ from datakeel.prelabel import (
     encode_view,
     image_estimate,
     parse_reply,
+    prompt_token_estimate,
     request_view,
     resolve_credential,
     run_estimate,
@@ -226,3 +227,38 @@ def test_config_rejects_unsafe_endpoints_and_reserved_parameters() -> None:
         _config(request_parameters={"messages": []})
     with pytest.raises(ValueError, match=r"pattern|string"):
         _config(credential_env="lowercase")
+
+
+def test_prompt_tokens_follow_the_measured_calibration() -> None:
+    """An 80-label prompt (1438 bytes) measured 460 tokens on qwen3.5-flash."""
+    assert prompt_token_estimate("x" * 1438) == pytest.approx(460, abs=5)
+    assert prompt_token_estimate("") == 25
+
+
+def test_parse_accepts_bare_lists_box_aliases_and_salvages_cut_off_replies() -> None:
+    """Real replies seen in the benchmark: a bare list, ``bbox_2d`` and a cut-off array."""
+    view = encode_view(Image.new("RGB", (100, 100)), 100)
+    bare = parse_reply(
+        '```json\n[{"label": "cat", "box": [0, 0, 500, 500]}]', view, LOOKUP, "normalized_1000"
+    )
+    assert bare is not None
+    assert [item.box for item in bare.objects] == [(0, 0, 50, 50)]
+    alias = parse_reply(
+        '{"objects": [{"label": "dog", "bbox_2d": [100, 100, 200, 200], "confidence": 0.9}]}',
+        view,
+        LOOKUP,
+        "normalized_1000",
+    )
+    assert alias is not None
+    assert [item.label for item in alias.objects] == ["dog"]
+    cut = parse_reply(
+        '{"objects": [{"label": "cat", "box": [0, 0, 100, 100]}, '
+        '{"label": "dog", "bbox_2d": [100, 100, 300, 300], "confidence": 0.5}, {"label": "ca',
+        view,
+        LOOKUP,
+        "normalized_1000",
+    )
+    assert cut is not None
+    assert [item.label for item in cut.objects] == ["cat", "dog"]
+    assert cut.drops[0][0] == "malformed"
+    assert "kept 2 objects" in cut.drops[0][1]

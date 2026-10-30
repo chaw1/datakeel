@@ -203,3 +203,21 @@ def test_missing_usage_is_priced_from_the_estimate(db: Database, tmp_path: Path)
     assert run.cost > 0
     assert run.estimate is not None
     assert run.cost == pytest.approx(run.estimate.total)
+
+
+@pytest.mark.usefixtures("credential")
+def test_estimates_learn_output_length_from_earlier_calls(db: Database, tmp_path: Path) -> None:
+    """Measured output lengths pull the estimate from the prior (twenty pseudo-calls)."""
+    project, _ = seed_cloud_project(db, tmp_path / "images", count=14)
+    run_action(db, "register_model", {"model": cloud_model(expected_output_tokens=500)})
+    # The first image is priced from the default; later ones from this run's measured mean.
+    first = _run(db, project.id, FakeVision(), budget=10 * 2 * PER_CALL + 0.1)
+    assert len(first.calls) == 20
+    assert first.estimate is not None
+    assert first.estimate.observed_calls == 0
+    assert first.estimate.output_tokens_per_image == 1000
+    second = _run(db, project.id, FakeVision())
+    assert second.estimate is not None
+    assert second.estimate.observed_calls == len(first.calls)
+    # (20 measured calls x 50 + 20 prior x 500) / 40 = 275 per call, two calls per image.
+    assert second.estimate.output_tokens_per_image == 550
