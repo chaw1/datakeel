@@ -327,4 +327,12 @@ PII_MUTATIONS = (
         case="tests/core/test_pii_phone_references.py::test_phone_reference_and_sequence_mutation_guard",
         runner="pytest",
     ),
+    Mutation(
+        name="pii-phone-single-space-sequence",
+        path="core/pii.py",
+        before="    yield from _phone_sequence_candidates(text)",
+        after="",
+        case="tests/core/test_pii_phone_references.py::test_phone_reference_and_sequence_mutation_guard",
+        runner="pytest",
+    ),
 )

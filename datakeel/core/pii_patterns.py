@@ -42,6 +42,18 @@ PARENTHESIZED_PHONE = re.compile(
     r"(?:1[3-9](?:[ -]?[0-9]){9}|0?[1-9][0-9]{1,2}[ -]*[0-9]{3,4}[ -]?[0-9]{4}))"
     r"(?![A-Za-z0-9_\d]|[ ()\uff08\uff09-]*[0-9]|\.[0-9]|%|元)"
 )
+_SEQUENCED_PHONE = (
+    r"0[1-9][0-9]{1,2}-[0-9]{7,8}"
+    r"|(?:\(|\uff08)0[1-9][0-9]{1,2}(?:\)|\uff09)[ -]?[0-9]{7,8}"
+    r"|(?:\+86[ -]?)?1[3-9][0-9]{9}"
+)
+# Complete phones separated by exactly one space are independent findings.
+PHONE_SEQUENCE = re.compile(
+    r"(?<![A-Za-z0-9_./\d$¥€£\uffe5-])"
+    r"(?:" + _SEQUENCED_PHONE + r")(?: (?:" + _SEQUENCED_PHONE + r"))+"
+    r"(?![A-Za-z0-9_\d]|[ ()\uff08\uff09-]*[0-9]|\.[0-9]|%|元)"
+)
+SEQUENCED_PHONE = re.compile(_SEQUENCED_PHONE)
 # Reference numbers: an identifier word immediately before, or 号 immediately after.
 PHONE_REFERENCE_BEFORE = re.compile(
     r"(?:编号|单号|批次号?|批号|序号|流水号|合同号|发票号|案号|文号|"

@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Reference numbers and foreign bracketed area codes are not mainland phones."""
+"""Reference numbers are not phones; complete phones separated by one space all count."""
 
 import pytest
 
@@ -52,11 +52,52 @@ def test_reference_veto_keeps_ordinary_phone_context(text: str, expected: str) -
     assert redact_pii(text) == expected
 
 
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        ("010-62345678", "021-55556666"),
+        ("0571-88886666", "010-62345678"),
+        ("(010)62345678", "(021)55556666"),
+        ("010-62345678", "13800138000"),
+        ("13800138000", "0755-12345678"),
+    ],
+)
+@pytest.mark.parametrize(("prefix", "suffix"), [("", ""), ("电话", "。"), ("Tel: ", " ok")])
+def test_single_space_separated_phones_are_both_found(
+    first: str, second: str, prefix: str, suffix: str
+) -> None:
+    """Two complete numbers one space apart become two phone findings."""
+    text = prefix + first + " " + second + suffix
+    assert [item.type for item in detect_pii(text)] == ["phone", "phone"]
+    assert redact_pii(text) == prefix + "[PHONE] [PHONE]" + suffix
+
+
+def test_three_space_separated_phones_are_all_found() -> None:
+    """Runs longer than two keep every complete number."""
+    text = "010-62345678 021-55556666 0755-12345678"
+    assert redact_pii(text) == "[PHONE] [PHONE] [PHONE]"
+
+
+@pytest.mark.parametrize(
+    ("text", "kept"),
+    [
+        ("记录 010-62345678 0215", "0215"),
+        ("记录 010-62345678 021-5555", "021-5555"),
+        ("记录 1001-2024 123456", "1001-2024 123456"),
+        ("记录 (0571)88886666 1", "(0571)88886666 1"),
+    ],
+)
+def test_incomplete_sequences_do_not_create_partial_phones(text: str, kept: str) -> None:
+    """A trailing fragment is never reported, and an ambiguous run keeps its digits."""
+    assert kept in redact_pii(text)
+
+
 def test_phone_reference_and_sequence_mutation_guard() -> None:
-    """One measured anchor protects reference and area-code precision."""
+    """One measured anchor protects both precision and two-landline recall."""
     assert redact_pii("编号\uff08010\uff092024-0315号") == "编号\uff08010\uff092024-0315号"
     assert redact_pii("订单号13800138000") == "订单号13800138000"
     assert redact_pii("No. 13800138000") == "No. 13800138000"
     assert redact_pii("文件 010-62345678号") == "文件 010-62345678号"
     assert redact_pii("(300) 200 3000") == "(300) 200 3000"
+    assert redact_pii("010-62345678 021-55556666") == "[PHONE] [PHONE]"
     assert redact_pii("电话(0571) 8888-6666") == "电话[PHONE]"

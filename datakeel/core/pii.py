@@ -227,6 +227,17 @@ def _number_candidates(text: str) -> Iterator[PiiMatch]:
                 continue
             if validate(match.group()):
                 yield PiiMatch(type=kind, start=match.start(), end=match.end())
+    yield from _phone_sequence_candidates(text)
+
+
+def _phone_sequence_candidates(text: str) -> Iterator[PiiMatch]:
+    """Report each complete phone in a run separated by single spaces."""
+    for sequence in patterns.PHONE_SEQUENCE.finditer(text):
+        for match in patterns.SEQUENCED_PHONE.finditer(text, sequence.start(), sequence.end()):
+            if _valid_phone(match.group()) and not _reference_number(
+                text, match.start(), match.end()
+            ):
+                yield PiiMatch(type="phone", start=match.start(), end=match.end())
 
 
 def _reference_number(text: str, start: int, end: int) -> bool:
