@@ -284,3 +284,37 @@ Integration changes in this version:
 - The README states the new mutation count and what the v0.17.0 anchors protect, and the workbench pointer mentions attribute forms and the team-tier cockpit.
 - The workbench guide states that tasks on older templates still open and save and that only project managers see raw JSON attributes; the API descriptions of the sample `path` now say it is the file name until imports record a path inside the dataset; the two workbench limits on file names and long label chips are in the [backlog](BACKLOG.md).
 
+## v0.18.0 release notes
+
+v0.18.0 brings GitHub CI down to about half an hour, closes gaps in redaction, lets reclaimed early work go to a named person, keeps folder paths and image sizes at import, and stops long label chips from getting in the way. It calls no model service; every write still goes through controlled actions and the access guards, and MCP and agents can still only prepare plans.
+
+| Track | What you can do now |
+|---|---|
+| CI in about half an hour | Each stack (SQLite and PostgreSQL) runs a gate job, four pytest shards, two mutation shards and a report job. The report checks that every collected test ran in exactly one shard, then merges coverage and mutation results and applies the unchanged thresholds. Three green runs took 27–29 minutes instead of about two and a half hours. A pull request starts one run, a tag push none, and one stack failing no longer cancels the other. [CI layout](TEST_SPEED.md#ci-layout--ci-分片). |
+| Redaction that fits real text | The English labels `secret`, `token`, `key` and `auth` mask only credential-like values, so prose such as `The secret: practice every day.` stays; passwords mask from four characters; `DB_PASSWORD=`, `GITHUB_TOKEN=` and other configuration keys are labels. Phones in brackets follow mainland and North American rules, a bracketed mobile prefix such as `(138) 1234 5678` is masked whole, and order or reference numbers are left alone. [Training data governance](LLM_DATA.md). |
+| Assign to a named person | In the team-tier cockpit a manager ticks unheld tasks, picks a registered annotator (shown with what they hold now), and signs a named assignment. Work assigned to `local` before anyone registered can be taken back and handed to a real person without registering `local`. [Workbench guide](ANNOTATION_WORKBENCH.md#saving-and-review). |
+| Folders and image sizes kept at import | Importing a directory records each file's path inside it; the workbench shows it on hover and finds tasks by folder name, and the machine's own path is never returned. Image imports record width and height from the header, so YOLO predictions need no size when the image has one; without any size the import is refused with the image named. |
+| Label chips out of the way | A chip is no wider than its shape (56–160 px), ends in an ellipsis with the full name on hover, stays inside the visible canvas when zoomed, and never takes the pointer, so drawing and selecting on top of it work as on the canvas. Without a lease timer the personal tier's canvas regains height (0.826 of a 1440×1000 window, 0.758 of 1280×720). |
+
+**Redaction masks less prose and more real secrets.** After `secret`, `token`, `key` or `auth` a value is masked only when it has no whitespace, at least eight characters and looks issued: two of letters, digits and symbols, all digits, all letters with a capital after the first, or a random-looking hex/base64 string of sixteen characters or more. In v0.17.0 any eight characters after `secret` or `token` were masked. Password-class labels now mask from four characters instead of eight, and configuration keys whose last segment is a credential word (`DB_PASSWORD=`, `REDIS_PASS=`, `STRIPE_SECRET_KEY=`) count as labels.
+
+**Phone detection is stricter.** A bracketed area code must be mainland (starting with 0, or `+86`) or North American (area and exchange both starting 2–9), so `(555) 123-4567` is no longer a phone. Digits right after 编号, 订单号, 批次, `No.`, `Order` or `#`, or right before 号, are references. Two phones separated by one space are reported separately, and a phone never starts or ends inside a pair of brackets.
+
+**YOLO imports without a size are refused as a whole.** When neither the request nor the recorded image has a size, the import returns 422 naming the image and the prediction file instead of listing a failure. Datasets imported before v0.18.0 have no recorded sizes: pass `image_width`/`image_height`, use a complete COCO document, or import the images again. A multi-image COCO results array lists results for unknown images as `unknown_image` (with how many were not imported) and images without a size as `unknown_size`.
+
+**The mutation gate survives a slow runner.** A subprocess that times out is measured once more in a fresh copy; a second timeout is listed as an environment failure, the report is still written and the gate fails with one line naming the mutation and command. A timeout never counts as a kill.
+
+**Other changes.** New HTTP read `GET /api/production/projects/{id}/assignees?stage=annotation` (or `review`), for callers who may assign. OpenAPI grows from 167 to 168 paths, 180 to 181 operations and 389 to 391 schemas; nothing was removed and no required field was added; the description of the workbench sample `path` now says it is the path under the imported directory. MCP still has 99 tools with unchanged schemas. No CLI command, table or migration changed. The mutation gate has 438 anchors (thirty-six added), the golden suite 52 cases and the operator catalog 42 operators.
+
+Known limits:
+
+- After `secret`, `token`, `key` or `auth`, an all-caps word (`token: IMPORTANT`), a camel-case word (`auth: JavaScript`) or eight or more digits (`key: 20261030`) is masked, because the rule cannot tell them from issued credentials.
+- Files imported on their own still show only the file name. Datasets imported before v0.18.0 show only file names and have no recorded image sizes until they are imported again.
+- The cockpit assigns annotation work by name; review work is not offered there, although the list read accepts `stage=review`. MCP always acts as `local`, so once people are registered it is refused like an HTTP call without a registered actor.
+- Still open from earlier versions: a template with both box and polygon components shows two canvases stacked; attribute fields cannot depend on the label; a dispatch preview reserves nothing; the load cap counts submitted work waiting for review; a single `assign_tasks` request may pass a `max_active_tasks` above the project's cap; rework goes only to the original annotator; skill requirements are set per project or per request, not per package; PostgreSQL makes about 50 database round trips per production action (see [Capacity](CAPACITY.md)).
+
+Integration changes in this version:
+
+- The README states the new mutation count, what the v0.18.0 anchors protect and how a timed-out mutation is handled, and the workbench pointer mentions assigning by name and folder paths.
+- The two workbench limits fixed here (file names only, long label chips) moved from the backlog's open list to its done list.
+
