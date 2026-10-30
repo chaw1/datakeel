@@ -1,20 +1,22 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { ApiError } from "../../api/client";
 import * as production from "../../api/production";
-import { labelingProject, labelingTask } from "../../test/labelingFixtures";
+import { labelingProject } from "../../test/labelingFixtures";
+import {
+  advance,
+  held,
+  revoked,
+  status,
+  team,
+} from "../../test/taskWatchFixtures";
 
 import * as actions from "./actions";
 import { TaskSession } from "./TaskSession";
 import { HEARTBEAT_INTERVAL_MS, WATCH_INTERVAL_MS } from "./useTaskWatch";
 
-import type {
-  AnnotationRecord,
-  ProjectWorkbench,
-  TaskWorkbench,
-  WorkbenchTaskStatus,
-} from "../../api/production";
+import type { AnnotationRecord, TaskWorkbench } from "../../api/production";
 import type { ActionRun } from "../../api/types";
 
 vi.mock("../../api/production", () => ({
@@ -46,58 +48,6 @@ vi.mock("./editors/AnnotationEditor", () => ({
   ),
 }));
 
-const assignment = {
-  id: "assignment-1",
-  task_id: "task-1",
-  actor: "local",
-  stage: "annotation" as const,
-  active: true,
-  created_at: "2026-10-30T00:00:00Z",
-  lease_expires_at: "2026-10-30T00:10:00Z",
-};
-const team: ProjectWorkbench = {
-  ...labelingProject,
-  project: { ...labelingProject.project, workflow_tier: "team" },
-};
-const held: TaskWorkbench = {
-  ...labelingTask,
-  task: { ...labelingTask.task, state: "in_progress" },
-  assignments: [assignment],
-};
-function status(
-  overrides: Partial<WorkbenchTaskStatus> = {},
-): WorkbenchTaskStatus {
-  return {
-    task: held.task,
-    assignments: [assignment],
-    leases: [
-      {
-        assignment_id: "assignment-1",
-        actor: "local",
-        stage: "annotation",
-        expires_at: "2026-10-30T00:10:00Z",
-        seconds_remaining: 600,
-        enforced: true,
-      },
-    ],
-    releases: [],
-    observed_at: "2026-10-30T00:00:00Z",
-    ...overrides,
-  };
-}
-const revoked = {
-  assignment_id: "assignment-1",
-  task_id: "task-1",
-  project_id: "project",
-  actor: "local",
-  stage: "annotation" as const,
-  reason: "revoked" as const,
-  note: "",
-  lease_expires_at: "2026-10-30T00:10:00Z",
-  released_at: "2026-10-30T00:01:00Z",
-  released_by: "manager",
-};
-
 beforeEach(() => {
   vi.useFakeTimers();
   vi.mocked(production.getTaskWorkbench).mockResolvedValue(held);
@@ -123,16 +73,6 @@ function mount(task = held, project = team) {
       registerGuard={vi.fn()}
     />,
   );
-}
-/** Advance the clock, then let reads, renders and the effects they schedule settle. */
-async function advance(ms: number) {
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(ms);
-  });
-  for (let step = 0; step < 3; step++)
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1);
-    });
 }
 const heartbeats = () =>
   vi

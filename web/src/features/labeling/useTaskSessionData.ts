@@ -29,6 +29,7 @@ export function useTaskSessionData({
   onSnapshot,
   registerGuard,
   onLeaseLost,
+  leaveFreely = false,
 }: {
   task: TaskWorkbench;
   project: ProjectWorkbench;
@@ -40,6 +41,8 @@ export function useTaskSessionData({
   registerGuard: (guard: (() => Promise<boolean>) | null) => void;
   /** The server reports this person's lease expired or the task was reclaimed. */
   onLeaseLost?: () => void;
+  /** The task was taken back: a save can never succeed, so leaving must not wait for one. */
+  leaveFreely?: boolean;
 }) {
   const { t, locale } = useI18n();
   const [snapshot, setSnapshot] = useState(task);
@@ -135,10 +138,10 @@ export function useTaskSessionData({
     wasVerified.current = canSync;
   }, [canSync, flush, dirty, reload]);
   useEffect(() => {
-    registerGuard(flush);
+    registerGuard(leaveFreely ? null : flush);
     return () => {
       registerGuard(null);
     };
-  }, [flush, registerGuard]);
+  }, [flush, registerGuard, leaveFreely]);
   return { snapshot, session, refreshSnapshot, validate };
 }

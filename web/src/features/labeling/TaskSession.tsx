@@ -59,6 +59,7 @@ export function TaskSession({
     onLeaseLost: () => {
       setLocked(true);
     },
+    leaveFreely: locked,
   });
   const { snapshot, session } = data;
   const personal = project.project.workflow_tier === "personal";
@@ -163,6 +164,8 @@ export function TaskSession({
             });
           }}
           onBack={() => {
+            // The list shown before may be stale: this task changed hands or state.
+            onChanged();
             onNavigate(0);
           }}
         />
