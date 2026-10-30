@@ -326,10 +326,12 @@ main:has(> .wb-page[data-focus="true"]) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: calc(var(--space) * 4);
 }
-.wb-cockpit > .card {
+.wb-cockpit > .card,
+.wb-template-versions {
   padding: calc(var(--space) * 5) calc(var(--space) * 6);
 }
-.wb-cockpit h2 {
+.wb-cockpit h2,
+.wb-template-versions h2 {
   margin-top: 0;
 }
 .wb-counts {
