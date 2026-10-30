@@ -563,6 +563,7 @@ ignore_imports =
     datakeel.storage.label_drafts -> datakeel.actions.label_draft_parameters
     datakeel.storage.label_drafts -> datakeel.actions.models
     datakeel.storage.label_drafts -> datakeel.actions.production_catalog_parameters
+    datakeel.storage.label_drafts -> datakeel.label_drafts.complete
     datakeel.storage.label_drafts -> datakeel.label_drafts.model
     datakeel.storage.label_drafts -> datakeel.label_drafts.models
     datakeel.storage.label_drafts -> datakeel.label_drafts.offline

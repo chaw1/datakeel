@@ -14,6 +14,7 @@ from datakeel.actions.policy import digest
 from datakeel.actions.receipts import receipt
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError
+from datakeel.core.label_guidelines import BilledDraftError
 from datakeel.core.models import JsonDocument, new_id, utcnow
 from datakeel.storage.action_access import authorize_plans_in_session
 from datakeel.storage.action_approvals import consume_approval
@@ -33,6 +34,7 @@ from datakeel.storage.data_asset_review import (
     require_independent_reviewer,
 )
 from datakeel.storage.database import Database
+from datakeel.storage.draft_metering import record_draft_calls
 from datakeel.storage.identity_authorization import require_server_scope
 from datakeel.storage.production_human import require_production_human
 
@@ -110,6 +112,9 @@ def _record_failure(
             if approval is not None:
                 approval.consumed = True
         audit(session, plan, "EXECUTE", status, description)
+        if isinstance(error, BilledDraftError):
+            # The rolled-back attempt still spent money at the provider.
+            record_draft_calls(session, plan.id, plan.session_id, error.calls)
         session.flush()
         # A prepared production request can still be signed after an early denied attempt.
         if "request_id" not in plan.canonical_params or status != "DENIED":

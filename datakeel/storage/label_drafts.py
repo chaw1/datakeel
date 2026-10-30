@@ -17,12 +17,13 @@ from sqlalchemy.orm import Session
 from datakeel.actions.label_draft_parameters import DraftLabelSetParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.production_catalog_parameters import CreateLabelSetParams
-from datakeel.core.annotation_models import AnnotationBatch
+from datakeel.core.annotation_models import AnnotationBatch, AnnotationRecord
 from datakeel.core.errors import DatakeelError, ValidationError
 from datakeel.core.label_guidelines import DraftSource
 from datakeel.core.models import AssetRef, BoundaryModel, FileItem, utcnow
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.core.settings import get_settings
+from datakeel.label_drafts.complete import offline_draft
 from datakeel.label_drafts.model import estimate_cost, model_draft
 from datakeel.label_drafts.models import (
     AttributeSource,
@@ -31,11 +32,12 @@ from datakeel.label_drafts.models import (
     DraftOutcome,
     SampleSource,
 )
-from datakeel.label_drafts.offline import offline_draft
+from datakeel.label_drafts.offline import observed_attributes
 from datakeel.label_drafts.standards import classify_standards
 from datakeel.storage.action_selection import files_by_id, selected_files
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.database import Database
+from datakeel.storage.draft_metering import record_draft_calls
 from datakeel.storage.objects import object_store
 from datakeel.storage.production_catalog import annotation_categories, label_set_row
 from datakeel.storage.production_catalog_changes import create_label_set
@@ -46,6 +48,7 @@ IMAGE_EDGE = 768
 BATCH_LIMIT = 20
 # Annotated samples a draft may cite as examples when existing annotations are a source.
 ANNOTATED_SAMPLES = 12
+OBSERVED_VALUES = 50
 
 
 class _Sources(BoundaryModel):
@@ -83,11 +86,32 @@ def _label_set_sources(session: Session, identifiers: tuple[str, ...]) -> list[C
     return found
 
 
-def _annotated(session: Session, datasets: tuple[str, ...]) -> dict[str, dict[str, set[str]]]:
-    """Labels per annotated sample, grouped by the dataset that holds the sample."""
+Observed = dict[str, dict[str, list[JsonValue]]]
+
+
+def _observe(observed: Observed, record: AnnotationRecord) -> None:
+    """Remember the attribute values people filled on each category, a few per attribute."""
+    parts = [
+        *((part.category, part.attributes) for part in record.boxes or ()),
+        *((part.category, part.attributes) for part in record.polygons or ()),
+        *((part.category, part.attributes) for part in record.spans or ()),
+        *((label, record.attributes) for label in record.labels or ()),
+    ]
+    for category, attributes in parts:
+        for key, value in attributes.items():
+            values = observed.setdefault(category, {}).setdefault(key, [])
+            if len(values) < OBSERVED_VALUES:
+                values.append(value)
+
+
+def _annotated(
+    session: Session, datasets: tuple[str, ...]
+) -> tuple[dict[str, dict[str, set[str]]], Observed]:
+    """Labels per annotated sample by dataset, and the attributes filled on each category."""
     found: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    observed: Observed = {}
     if not datasets:
-        return found
+        return found, observed
     rows = session.scalars(
         select(AnnotationBatchRow)
         .where(AnnotationBatchRow.dataset_id.in_(datasets))
@@ -97,7 +121,8 @@ def _annotated(session: Session, datasets: tuple[str, ...]) -> dict[str, dict[st
     for row in rows:
         for record in AnnotationBatch.model_validate(row.batch).annotations:
             found[row.dataset_id][record.sample_id].update(annotation_categories(record))
-    return found
+            _observe(observed, record)
+    return found, observed
 
 
 def _unique(categories: list[CategorySource]) -> tuple[CategorySource, ...]:
@@ -125,7 +150,7 @@ def draft_sources(session: Session, params: DraftLabelSetParams) -> _Sources:
     standards = classify_standards(contract, params.standard_codes, params.language)
     categories = [*standards.categories, *_label_set_sources(session, params.label_set_ids)]
     datasets = (*params.annotation_dataset_ids, *([params.dataset_id] if params.dataset_id else []))
-    grouped = _annotated(session, tuple(dict.fromkeys(datasets)))
+    grouped, observed = _annotated(session, tuple(dict.fromkeys(datasets)))
     annotated = {
         sample: tuple(sorted(labels))
         for samples in grouped.values()
@@ -143,7 +168,7 @@ def draft_sources(session: Session, params: DraftLabelSetParams) -> _Sources:
             examples += files_by_id(session, dataset, wanted)
     return _Sources(
         categories=_unique(categories),
-        attributes=standards.attributes,
+        attributes=(*standards.attributes, *observed_attributes(observed)),
         notes=standards.notes,
         annotated=annotated,
         examples=tuple(examples[:ANNOTATED_SAMPLES]),
@@ -239,6 +264,7 @@ def execute_label_draft(
     """Store the checked draft as a new unpublished label set version with its sources."""
     inputs, notes = gather_inputs(session, plan, params)
     outcome = _draft(inputs, params)
+    record_draft_calls(session, plan.id, plan.session_id, outcome.calls)
     created = create_label_set(
         session,
         CreateLabelSetParams(

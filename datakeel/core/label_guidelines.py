@@ -8,6 +8,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from datakeel.core.errors import ValidationError
 from datakeel.core.models import BoundaryModel
 
 
@@ -34,6 +35,30 @@ class LabelGuidelines(BoundaryModel):
     overview_zh: str = Field(default="", max_length=8000)
     overview_en: str = Field(default="", max_length=8000)
     rules: tuple[LabelGuideline, ...] = Field(default=(), max_length=500)
+
+
+class DraftCall(BoundaryModel):
+    """One billed drafting request, kept so its spend reaches the cost summary."""
+
+    model: str
+    purpose: Literal["draft", "repair"] = "draft"
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    cost_usd: float = Field(default=0, ge=0, allow_inf_nan=False)
+    input_price: float = Field(default=0, ge=0, allow_inf_nan=False)
+    output_price: float = Field(default=0, ge=0, allow_inf_nan=False)
+    # "unknown" when the provider answered without readable usage; cost is then the bound.
+    billing: Literal["actual", "unknown"] = "actual"
+    stop_reason: str = ""
+
+
+class BilledDraftError(ValidationError):
+    """A draft that failed after the provider had already billed one or more calls."""
+
+    def __init__(self, message: str, calls: tuple[DraftCall, ...]) -> None:
+        """Keep the billed calls for the failure record, not only in the message."""
+        super().__init__(message)
+        self.calls = calls
 
 
 class DraftSource(BoundaryModel):

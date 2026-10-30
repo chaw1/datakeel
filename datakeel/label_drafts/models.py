@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from datakeel.core.label_guidelines import LabelGuidelines
+from datakeel.core.label_guidelines import DraftCall, LabelGuidelines
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import ProductionLabel
 
@@ -68,3 +68,4 @@ class DraftOutcome(BoundaryModel):
     output_tokens: int = 0
     cost_usd: float = 0
     dropped_examples: int = 0
+    calls: tuple[DraftCall, ...] = ()

@@ -5,15 +5,17 @@
 
 import hashlib
 import re
+from collections.abc import Mapping, Sequence
 
-from pydantic import ValidationError
+from pydantic import JsonValue, ValidationError
 
-from datakeel.core.label_guidelines import GuidelineExample, LabelGuideline, LabelGuidelines
+from datakeel.core.label_guidelines import GuidelineExample, LabelGuideline
 from datakeel.core.production_attributes import AttributeOption, TemplateAttribute
 from datakeel.core.production_catalog_models import ProductionLabel
-from datakeel.label_drafts.models import AttributeSource, CategorySource, DraftInputs, DraftOutcome
+from datakeel.label_drafts.models import AttributeSource, CategorySource, DraftInputs
 
 EXAMPLES_PER_KIND = 3
+OPTION_LIMIT = 20
 
 
 def label_id(key: str) -> str:
@@ -31,6 +33,8 @@ def _attribute(source: AttributeSource) -> TemplateAttribute | None:
         if source.options
         else "number"
         if source.data_type in {"int", "integer", "decimal", "float", "number"}
+        else "boolean"
+        if source.data_type in {"bool", "boolean"}
         else "text"
     )
     try:
@@ -83,7 +87,8 @@ def build_labels(inputs: DraftInputs) -> list[ProductionLabel]:
         if name.casefold() in names or identifier in ids:
             continue
         root = roots.get(category.key, category.key)
-        fields = tuple(field for source, field in built if field and source.scope in {None, root})
+        scoped = [field for source, field in built if field and source.scope in {None, root}]
+        fields = tuple({field.key: field for field in reversed(scoped)}.values())[::-1]
         labels.append(
             ProductionLabel(
                 id=identifier,
@@ -129,19 +134,41 @@ def offline_rule(label: ProductionLabel, inputs: DraftInputs) -> LabelGuideline:
     )
 
 
-def offline_draft(inputs: DraftInputs) -> DraftOutcome:
-    """Draft without any model: categories become labels, annotated samples become examples."""
-    labels = build_labels(inputs)
-    rules = tuple(offline_rule(label, inputs) for label in labels)
-    overview_zh = (
-        f"「{inputs.name}」标注指南草稿, 共 {len(labels)} 个标签。"
-        "正反例来自已有标注的样本, 请人工检查后再发布。"
-    )
-    overview_en = (
-        f"Draft guidelines for {inputs.name}: {len(labels)} labels. Examples cite samples "
-        "that already carry annotations; review before publishing."
-    )
-    return DraftOutcome(
-        labels=tuple(labels),
-        guidelines=LabelGuidelines(overview_zh=overview_zh, overview_en=overview_en, rules=rules),
+def _attribute_key(raw: str) -> str:
+    """A valid attribute key; a non-ASCII or digit-led name gets a short digest."""
+    cleaned = re.sub(r"[^A-Za-z0-9_]+", "_", raw).strip("_").casefold()[:50]
+    if cleaned and cleaned == raw.casefold() and not cleaned[0].isdigit():
+        return cleaned
+    digest = hashlib.sha256(raw.encode()).hexdigest()[:8]
+    return f"attr_{cleaned}_{digest}" if cleaned else f"attr_{digest}"
+
+
+def _typed(values: Sequence[JsonValue]) -> dict[str, JsonValue]:
+    present = [value for value in values if value is not None]
+    if present and all(isinstance(value, bool) for value in present):
+        return {"data_type": "boolean"}
+    if present and all(isinstance(value, int | float) for value in present):
+        return {"data_type": "number"}
+    texts = sorted({value for value in present if isinstance(value, str) and value})
+    if texts and len(texts) <= OPTION_LIMIT and all(isinstance(value, str) for value in present):
+        return {"options": [[value, value, value] for value in texts]}
+    return {"data_type": "text"}
+
+
+def observed_attributes(
+    observed: Mapping[str, Mapping[str, Sequence[JsonValue]]],
+) -> tuple[AttributeSource, ...]:
+    """Attributes people already filled on each annotated category, typed by their values."""
+    return tuple(
+        AttributeSource.model_validate(
+            {
+                "key": _attribute_key(key),
+                "name_zh": key[:100],
+                "name_en": key[:100],
+                "scope": category,
+                **_typed(values),
+            }
+        )
+        for category, fields in sorted(observed.items())
+        for key, values in sorted(fields.items())
     )
