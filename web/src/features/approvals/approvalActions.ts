@@ -28,6 +28,7 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   revoke_assignment: "productionRevokeAssignment",
   configure_project: "productionConfigureProject",
   accept_package: "productionAcceptPackage",
+  upgrade_project_template: "productionUpgradeProjectTemplate",
   submit_custom_operator: "customOperatorReviewAction",
   publish_release: "releaseApproval",
   create_data_asset: "assetNew",

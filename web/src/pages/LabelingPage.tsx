@@ -203,7 +203,7 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
               )}
               {!task && can("production:manage") && (
                 <TemplateEditor
-                  key={`${projectId}:${String(project.template?.revision)}`}
+                  key={`${projectId}:${String((project.latest_template ?? project.template)?.revision)}`}
                   project={project}
                   onChanged={workspace.changed}
                 />

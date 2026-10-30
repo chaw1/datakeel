@@ -3481,7 +3481,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "upgrade_project_template" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -3535,7 +3535,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "upgrade_project_template" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -4076,6 +4076,12 @@ export interface components {
              * @default
              */
             interpreted_question: string;
+            /**
+             * Interpreted Question En
+             * @description The same interpretation in English, for an English interface.
+             * @default
+             */
+            interpreted_question_en: string;
             knowledge?: components["schemas"]["KnowledgeAnswer"] | null;
             lineage?: components["schemas"]["LineageReference"] | null;
             /**
@@ -4083,12 +4089,6 @@ export interface components {
              * @default []
              */
             matches: components["schemas"]["MatchEvidence"][];
-            /**
-             * Interpreted Question En
-             * @description The same interpretation in English, for an English interface.
-             * @default
-             */
-            interpreted_question_en: string;
             /** Message */
             message: string;
             metric_card?: components["schemas"]["MetricCard"] | null;
@@ -8294,6 +8294,11 @@ export interface components {
             dataset_id?: string | null;
             /** Dataset Name */
             dataset_name?: string | null;
+            /**
+             * English Name
+             * @description The registered English name of a catalog subject, when it has one.
+             */
+            english_name?: string | null;
             /** Entity Type */
             entity_type?: string | null;
             /**
@@ -8337,11 +8342,6 @@ export interface components {
             /** Name */
             name: string;
             /**
-            /**
-             * English Name
-             * @description The registered English name of a catalog subject, when it has one.
-             */
-            english_name?: string | null;
              * Relation
              * @enum {string}
              */
@@ -10043,6 +10043,11 @@ export interface components {
             skill_requirement?: components["schemas"]["SkillRequirement"] | null;
             /** Template Id */
             template_id?: string | null;
+            /**
+             * Template Version
+             * @description Template revision this project is locked to; only a signed upgrade_project_template changes it. Null only before the template lock migration.
+             */
+            template_version?: number | null;
             /** Version Id */
             version_id: string;
             /**
@@ -12364,6 +12369,13 @@ export interface components {
             confidence: components["schemas"]["ConfidenceDistribution"];
             effective_scopes: components["schemas"]["EffectiveScopes"];
             label_set: components["schemas"]["LabelSet"];
+            /**
+             * Latest Label Set Version
+             * @description Newest published version of the project's label set
+             */
+            latest_label_set_version?: number | null;
+            /** @description The template's current revision; newer than template when an upgrade exists */
+            latest_template?: components["schemas"]["ProductionTemplate"] | null;
             /** Next Cursor */
             next_cursor?: string | null;
             /** Packages */
@@ -12383,6 +12395,7 @@ export interface components {
             task_samples: components["schemas"]["WorkbenchSampleName"][];
             /** Tasks */
             tasks: components["schemas"]["ProductionTask"][];
+            /** @description The template version this project is locked to */
             template: components["schemas"]["ProductionTemplate"] | null;
             workload: components["schemas"]["ProductionWorkload"];
         };

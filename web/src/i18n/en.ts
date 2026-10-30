@@ -26,6 +26,7 @@ import { trainingEn } from "./trainingEn";
 import { wbCockpitEn } from "./wbCockpitEn";
 import { wbEditorEn } from "./wbEditorEn";
 import { wbTeamEn } from "./wbTeamEn";
+import { wbTemplateEn } from "./wbTemplateEn";
 import { workbenchEn } from "./workbenchEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
@@ -33,6 +34,7 @@ import { workspaceEn } from "./workspaceEn";
 export const en = {
   ...workbenchEn,
   ...wbTeamEn,
+  ...wbTemplateEn,
   ...wbCockpitEn,
   ...wbEditorEn,
   ...trainingEn,

@@ -26,6 +26,7 @@ import { trainingZh } from "./trainingZh";
 import { wbCockpitZh } from "./wbCockpitZh";
 import { wbEditorZh } from "./wbEditorZh";
 import { wbTeamZh } from "./wbTeamZh";
+import { wbTemplateZh } from "./wbTemplateZh";
 import { workbenchZh } from "./workbenchZh";
 import { workflowZh } from "./workflowZh";
 import { workspaceZh } from "./workspaceZh";
@@ -34,6 +35,7 @@ import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
   ...workbenchZh,
   ...wbTeamZh,
+  ...wbTemplateZh,
   ...wbCockpitZh,
   ...wbEditorZh,
   ...trainingZh,

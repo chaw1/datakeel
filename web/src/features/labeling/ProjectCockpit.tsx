@@ -5,6 +5,7 @@ import { LeaseBoard } from "./team/LeaseBoard";
 import { NamedDispatch } from "./team/NamedDispatch";
 import { SkillDispatch } from "./team/SkillDispatch";
 import { TeamPackages } from "./team/TeamPackages";
+import { TemplateVersions } from "./TemplateVersions";
 
 import type { ProjectWorkbench } from "../../api/production";
 
@@ -21,6 +22,11 @@ export function ProjectCockpit({
   const team = data.project.workflow_tier === "team";
   return (
     <div className="wb-cockpit">
+      <TemplateVersions
+        data={data}
+        canUpgrade={can("production:manage")}
+        onChanged={onChanged}
+      />
       {team && (
         <TeamPackages
           data={data}
