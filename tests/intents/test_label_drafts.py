@@ -293,6 +293,8 @@ def test_recorded_model_draft_keeps_every_category_and_drops_invented_samples(
     assert outcome.cost_usd > 0
     content = sent[0]["messages"]
     assert "image_url" in json.dumps(content)
+    # Hidden reasoning would spend the output budget and cut the JSON answer short.
+    assert sent[0]["enable_thinking"] is False
 
 
 def test_model_draft_refuses_a_budget_below_its_estimate(monkeypatch: pytest.MonkeyPatch) -> None:

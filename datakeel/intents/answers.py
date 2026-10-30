@@ -47,12 +47,26 @@ def _workload(data: JsonValue, language: str) -> str | None:
     )
 
 
+def _holding(data: JsonValue, language: str) -> str | None:
+    people = _people(data)
+    if not people:
+        return None
+    rows = sorted(people, key=lambda item: (-_number(item, "assigned"), str(item.get("actor"))))
+    parts = [
+        f"{item.get('actor')} {int(_number(item, 'assigned'))}/{int(_number(item, 'completed'))}"
+        for item in rows[:10]
+    ]
+    if language == "zh":
+        return "每人分到/已完成的任务数: " + ", ".join(parts) + "。"
+    return "Tasks assigned/completed per person: " + ", ".join(parts) + "."
+
+
 def answer_text(function: str, data: JsonValue, language: str) -> str:
     """Prefer a sentence for well-known reads, otherwise a compact data summary."""
-    if function in {"rework_rate", "annotator_workload"}:
-        sentence = _workload(data, language)
-        if sentence:
-            return sentence
+    phrase = {"rework_rate": _workload, "annotator_workload": _holding}.get(function)
+    sentence = phrase(data, language) if phrase else None
+    if sentence:
+        return sentence
     summary = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     if len(summary) > SUMMARY_LIMIT:
         summary = summary[:SUMMARY_LIMIT] + "…"

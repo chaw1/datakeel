@@ -133,8 +133,8 @@ PRODUCTION_LANGUAGE: dict[str, tuple[str, str, str, str]] = {
         "Finalize all approved revisions into a new dataset version",
     ),
     "manage_users": (
-        "管理用户和团队",
-        "manage users and teams",
+        "管理用户和团队、把人加进项目担任标注员等角色",
+        "manage users and teams, add a person to a project as annotator or reviewer",
         "登记标注员并绑定项目角色",
         "Register an annotator and bind a project role",
     ),

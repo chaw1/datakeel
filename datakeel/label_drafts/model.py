@@ -37,6 +37,8 @@ class DraftProfile(BoundaryModel):
     vision: bool
     input_price: float = Field(ge=0)
     output_price: float = Field(ge=0)
+    # Provider switches sent with every request, e.g. no hidden reasoning eating the output.
+    request_extra: dict[str, JsonValue] = Field(default_factory=dict[str, JsonValue])
 
 
 PROFILES: dict[str, DraftProfile] = {
@@ -59,6 +61,7 @@ PROFILES: dict[str, DraftProfile] = {
         vision=True,
         input_price=0.029,
         output_price=0.287,
+        request_extra={"enable_thinking": False},
     ),
 }
 
@@ -174,6 +177,7 @@ def request_body(inputs: DraftInputs, profile: DraftProfile) -> dict[str, JsonVa
                 image: dict[str, JsonValue] = {"url": sample.image_data_url}
                 content.append({"type": "image_url", "image_url": image})
     return {
+        **profile.request_extra,
         "model": profile.model,
         "temperature": 0,
         "max_tokens": OUTPUT_TOKENS,

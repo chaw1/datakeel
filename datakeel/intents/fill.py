@@ -5,8 +5,9 @@
 
 Identity values are resolved against the catalog; one match is used, several become a
 choice, none becomes a question. Only container objects (dataset, version, project) may
-default to the page, the previous turn or a single existing object; people and tasks must
-come from the sentence or the page selection.
+default to the page or the previous turn, and only reads also to a single existing object;
+people and tasks must come from the sentence or the page selection. A container a write
+names must be grounded in the page or the person's words (see ``grounding``).
 """
 
 from pydantic import Field, JsonValue
@@ -16,13 +17,16 @@ from datakeel.core.intent_models import Candidate, Clarification, PageContext
 from datakeel.core.models import BoundaryModel, new_id
 from datakeel.intents.catalog import FIELD_KINDS, EntityCatalog, candidates
 from datakeel.intents.drafts import DraftStep
+from datakeel.intents.grounding import grounded
 from datakeel.intents.wording import field_label
+from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.storage.database import Database
 from datakeel.storage.intent_reads import held_tasks
 
 CONTAINERS = ("dataset_id", "version_id", "project_id", "package_id", "label_set_id")
 SINGLE_DEFAULTS = frozenset({"dataset_id", "project_id"})
 SELECTION_LIMIT = 10000
+TASK_PLURALS = {"task_ids": "task_id", "task_id": "task_ids"}
 
 
 class FillState(BoundaryModel):
@@ -32,6 +36,7 @@ class FillState(BoundaryModel):
     focus: dict[str, str] = Field(default_factory=dict[str, str])
     actor: str = "local"
     language: str = "zh"
+    text: str = ""
 
 
 class FillResult(BoundaryModel):
@@ -78,7 +83,12 @@ def _context_value(field: str, state: FillState, catalog: EntityCatalog) -> str 
 
 
 def _default_container(
-    field: str, params: dict[str, JsonValue], state: FillState, catalog: EntityCatalog
+    field: str,
+    params: dict[str, JsonValue],
+    state: FillState,
+    catalog: EntityCatalog,
+    *,
+    single: bool,
 ) -> str | None:
     value = _context_value(field, state, catalog)
     if value is not None:
@@ -87,7 +97,7 @@ def _default_container(
         dataset = params.get("dataset_id")
         versions = catalog.of("version", dataset if isinstance(dataset, str) else None)
         return versions[-1].id if isinstance(dataset, str) and versions else None
-    if field not in SINGLE_DEFAULTS:
+    if not single or field not in SINGLE_DEFAULTS:
         return None
     pool = catalog.of(FIELD_KINDS[field])
     return pool[0].id if len(pool) == 1 else None
@@ -104,8 +114,13 @@ def _resolve_identity(
         dataset = step.params.get("dataset_id")
         parent = dataset if isinstance(dataset, str) else None
     found = catalog.match(kind, value, parent)
-    if len(found) == 1:
+    page = _context_value(field, state, catalog)
+    only = step.action in PARAMETER_MODELS and len(catalog.of(kind, parent)) == 1
+    if len(found) == 1 and (only or grounded(field, found[0], state.text, page)):
         return found[0].id
+    if len(found) == 1:
+        # Named by nobody: the model copied it from the catalog, so ask instead of guessing.
+        return _ask(field, step, candidates(catalog.of(kind, parent)), state.language)
     pool = found or catalog.of(kind, parent)
     return _ask(field, step, candidates(pool), state.language, value)
 
@@ -138,16 +153,60 @@ def _tasks(
     return [task for _, task in held]
 
 
+def _known_fields(step: DraftStep) -> dict[str, JsonValue]:
+    """Keep only the schema's parameters; a task field in the other plural is renamed."""
+    model = PARAMETER_TYPES.get(step.action) or PARAMETER_MODELS.get(step.action)
+    if model is None:
+        return dict(step.params)
+    fields = model.model_fields
+    params: dict[str, JsonValue] = {}
+    for key, value in step.params.items():
+        name = key
+        if key not in fields and key in TASK_PLURALS and TASK_PLURALS[key] in fields:
+            name = TASK_PLURALS[key]
+        if name in fields:
+            params.setdefault(name, value)
+    return params
+
+
+def _prepared(step: DraftStep, names: list[str], text: str) -> dict[str, JsonValue]:
+    """Add a request id, name a project after its new label set, keep the words as reason."""
+    params = _known_fields(step)
+    if step.action == "draft_label_set" and "name" not in params:
+        topic = params.get("topic")
+        if isinstance(topic, str) and topic.strip():
+            params["name"] = topic.strip()[:200]
+    if step.action == "revoke_assignment" and "reason" not in params and text:
+        # The audit trail then records why the tasks were taken back, in the person's words.
+        params["reason"] = text[:500]
+    model = PARAMETER_TYPES.get(step.action)
+    if model is not None and "request_id" in model.model_fields:
+        params.setdefault("request_id", new_id())
+    if step.action == "create_label_set":
+        if not isinstance(params.get("name"), str):
+            labels = params.get("labels")
+            spoken = [
+                str(item["name"])
+                for item in (labels if isinstance(labels, list) else [])
+                if isinstance(item, dict) and isinstance(item.get("name"), str)
+            ]
+            if spoken:
+                params["name"] = ", ".join(spoken)[:200]
+        if isinstance(params.get("name"), str):
+            names.append(str(params["name"]))
+    if step.action == "create_project" and "name" not in params and names:
+        params["name"] = names[-1]
+    return params
+
+
 def fill_steps(
     db: Database, steps: list[DraftStep], state: FillState, catalog: EntityCatalog
 ) -> FillResult:
     """Resolve every identity and selector; stop at the first question."""
     filled: list[DraftStep] = []
+    names: list[str] = []
     for step in steps:
-        params = dict(step.params)
-        model = PARAMETER_TYPES.get(step.action)
-        if model is not None and "request_id" in model.model_fields:
-            params.setdefault("request_id", new_id())
+        params = _prepared(step, names, state.text)
         current = step.model_copy(update={"params": params})
         for field in list(params):
             value = params[field]
@@ -193,12 +252,16 @@ def _selection_defaults(
 def fill_defaults(
     step: DraftStep, required: set[str], state: FillState, catalog: EntityCatalog
 ) -> DraftStep:
-    """Add page, previous-turn or single-object values for missing container identities."""
+    """Add page or previous-turn values for missing container identities.
+
+    Only a read may also fall back to the single existing object; a write asks instead.
+    """
     params = dict(step.params)
+    single = step.action in PARAMETER_MODELS
     for field in CONTAINERS:
         if field in params or field not in required:
             continue
-        value = _default_container(field, params, state, catalog)
+        value = _default_container(field, params, state, catalog, single=single)
         if value is not None:
             params[field] = value
     _selection_defaults(params, required, state.context)

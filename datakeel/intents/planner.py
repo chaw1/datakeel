@@ -200,7 +200,8 @@ def plan_turn(
     draft, parser, request = _draft(turn, catalog, complete, granted)
     if draft is None or draft.kind == "none" or not draft.steps:
         return None
-    state = page_state(turn.context, turn.focus, turn.actor, draft.language)
+    words = f"{request} {turn.text}" if request != turn.text else turn.text
+    state = page_state(turn.context, turn.focus, turn.actor, draft.language, words)
     tool = ToolCallContext(actor=turn.actor, session_id=turn.conversation_id)
     resolver = Resolver(db, catalog, state, tool)
     reads = [step for step in draft.steps if step.action in PARAMETER_MODELS]
@@ -210,6 +211,9 @@ def plan_turn(
         result = resolver.answer(draft, reads[0], request)
     else:
         writes = draft.model_copy(update={"steps": [s for s in draft.steps if s not in reads]})
+        if not writes.steps:
+            # Several reads and no write: answer the first read rather than build a chain.
+            return resolver.answer(draft, reads[0], request).model_copy(update={"parser": parser})
         origin = (parser, granted.model if parser == "model" else None)
         result = resolver.plan(writes, request, turn.conversation_id, origin)
     return result.model_copy(update={"parser": parser})

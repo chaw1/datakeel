@@ -9,6 +9,8 @@ _EXAMPLES = "tests/intents/test_examples.py::"
 _CHAINS = "tests/intents/test_chains.py::"
 _ENTRY = "tests/intents/test_agent_entry.py::"
 _DRAFTS = "tests/intents/test_label_drafts.py::"
+_GROUNDING = "tests/intents/test_grounding.py::"
+_DEFAULTS = "tests/intents/test_fill_defaults.py::"
 
 INTENT_MUTATIONS = (
     Mutation(
@@ -22,8 +24,8 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-unknown-name-is-asked-not-guessed",
         path="intents/fill.py",
-        before="    if len(found) == 1:\n        return found[0].id",
-        after="    if found := found or catalog.of(kind, parent):\n        return found[0].id",
+        before="    return _ask(field, step, candidates(pool), state.language, value)",
+        after="    return pool[0].id if pool else _ask(field, step, [], state.language, value)",
         case=_EXAMPLES + "test_unknown_person_is_asked_with_candidates_and_the_reply_resumes",
         runner="pytest",
     ),
@@ -99,6 +101,54 @@ INTENT_MUTATIONS = (
         before='    "draft_label_set": (\n        "production:manage",\n        False,',
         after='    "draft_label_set": (\n        "production:manage",\n        True,',
         case=_DRAFTS + "test_draft_sentence_plans_one_signed_step_and_writes_nothing",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-write-container-must-be-named",
+        path="intents/fill.py",
+        before="    if len(found) == 1 and (only or grounded(field, found[0], state.text, page)):",
+        after="    if len(found) == 1:",
+        case=_GROUNDING + "test_unnamed_single_project_copied_by_the_model_is_asked",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-only-reads-default-to-single-container",
+        path="intents/fill.py",
+        before="    single = step.action in PARAMETER_MODELS",
+        after="    single = True",
+        case=_GROUNDING + "test_a_write_missing_its_project_asks_even_with_one_project",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-project-named-after-its-label-set",
+        path="intents/fill.py",
+        before='    if step.action == "create_project" and "name" not in params and names:',
+        after="    if False:",
+        case=_GROUNDING + "test_project_created_with_its_label_set_is_named_after_it",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-revocation-keeps-request-as-reason",
+        path="intents/fill.py",
+        before='    if step.action == "revoke_assignment" and "reason" not in params and text:',
+        after="    if False:",
+        case=_DEFAULTS + "test_revocation_keeps_the_persons_words_as_its_reason",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-registry-read-prefix-dropped",
+        path="intents/model_parse.py",
+        before="        if bare in PARAMETER_MODELS and action not in PARAMETER_MODELS:",
+        after="        if False:",
+        case=_DEFAULTS + "test_read_prefix_copied_from_the_registry_is_dropped",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-unknown-model-params-dropped",
+        path="intents/fill.py",
+        before="        if name in fields:\n            params.setdefault(name, value)",
+        after="        params.setdefault(name, value)",
+        case=_DEFAULTS + "test_unknown_keys_are_dropped_and_task_plurals_renamed",
         runner="pytest",
     ),
 )

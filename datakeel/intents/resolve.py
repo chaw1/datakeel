@@ -216,7 +216,13 @@ def checked_drafts(steps: list[ChainStep]) -> list[DraftStep]:
 
 
 def page_state(
-    context: PageContext | None, focus: dict[str, str], actor: str, language: str
+    context: PageContext | None,
+    focus: dict[str, str],
+    actor: str,
+    language: str,
+    text: str = "",
 ) -> FillState:
-    """Bundle the page, the previous turn and the person for filling."""
-    return FillState(context=context or PageContext(), focus=focus, actor=actor, language=language)
+    """Bundle the page, the previous turn, the person and their words for filling."""
+    return FillState(
+        context=context or PageContext(), focus=focus, actor=actor, language=language, text=text
+    )

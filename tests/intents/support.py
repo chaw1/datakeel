@@ -5,15 +5,17 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 from PIL import Image
 
 from datakeel.actions import service
 from datakeel.actions.models import ApprovalDecision
+from datakeel.core.agent_models import ModelRequest, ModelResponse
 from datakeel.core.intent_models import ActionChain, IntentResult, PageContext
 from datakeel.intents.chains import advance_chain
-from datakeel.intents.planner import PlannerTurn, plan_turn
+from datakeel.intents.planner import ModelAccess, PlannerTurn, plan_turn
 from datakeel.storage.dataset_service import import_paths
 from tests.production_helpers import production_fixture
 from tests.production_team_support import ServiceRunner
@@ -97,3 +99,17 @@ def team(db: Database) -> tuple[Project, tuple[ProductionTask, ...]]:
         )
     runner("assign_tasks", {"task_ids": [tasks[0].id, tasks[1].id], "actor": "wang"}, "boss")
     return project, tasks
+
+
+def model_plan(
+    db: Database, text: str, payload: dict[str, object], context: PageContext
+) -> IntentResult:
+    """Plan one sentence through a recorded model answer instead of a provider."""
+
+    def complete(_request: ModelRequest) -> ModelResponse:
+        return ModelResponse(content=json.dumps(payload))
+
+    turn = PlannerTurn(text=text, actor="boss", context=context)
+    result = plan_turn(db, turn, complete=complete, access=ModelAccess(model="m", allowed=True))
+    assert result is not None
+    return result

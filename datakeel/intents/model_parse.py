@@ -156,6 +156,25 @@ def planner_request(
     )
 
 
+def _tidy_step(step: dict[str, JsonValue], index: int) -> None:
+    """Number the step, drop request ids and undo two common model spellings."""
+    step.setdefault("id", f"s{index + 1}")
+    action = step.get("action")
+    # Some models copy the registry's "read <name>" prefix into the name itself.
+    if isinstance(action, str) and action.startswith("read_"):
+        bare = action.removeprefix("read_")
+        if bare in PARAMETER_MODELS and action not in PARAMETER_MODELS:
+            step["action"] = bare
+    params = step.setdefault("params", {})
+    if not isinstance(params, dict):
+        return
+    params.pop("request_id", None)
+    for key, value in list(params.items()):
+        # "$ref:s1.label_set_id" is the same reference written as a string.
+        if isinstance(value, str) and value.startswith("$ref:"):
+            params[key] = {"$ref": value.removeprefix("$ref:").strip()}
+
+
 def parse_response(content: str, language: str) -> IntentDraft:
     """Read the first JSON object, tolerating code fences around it."""
     match = re.search(r"\{.*\}", content, re.DOTALL)
@@ -177,10 +196,7 @@ def parse_response(content: str, language: str) -> IntentDraft:
     steps = kept.get("steps")
     for index, step in enumerate(steps if isinstance(steps, list) else []):
         if isinstance(step, dict):
-            step.setdefault("id", f"s{index + 1}")
-            params = step.setdefault("params", {})
-            if isinstance(params, dict):
-                params.pop("request_id", None)
+            _tidy_step(step, index)
     try:
         return IntentDraft.model_validate({**kept, "language": language})
     except ModelValidationError as error:
