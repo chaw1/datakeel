@@ -13,7 +13,7 @@ from sqlalchemy import select
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.models import AssetRef
-from datakeel.core.production_models import ProductionTask
+from datakeel.core.production_models import ProductionTask, Project
 from datakeel.core.workbench_models import (
     WorkbenchIndex,
     WorkbenchProject,
@@ -38,6 +38,7 @@ from datakeel.storage.production_queries import (
     project_progress,
 )
 from datakeel.storage.production_rows import ProductionTaskRow
+from datakeel.storage.production_separation import exclude_own_work
 from datakeel.storage.production_statistics import (
     annotator_workload,
     confidence_distribution,
@@ -46,6 +47,12 @@ from datakeel.storage.production_statistics import (
 )
 from datakeel.storage.production_tasks import task_view
 from datakeel.storage.workbench_risk import review_order, task_risks
+from datakeel.storage.workbench_samples import (
+    matches_search,
+    name_tasks,
+    named_tasks,
+    sample_names,
+)
 
 
 def workbench_index(db: Database, caller: AccessContext) -> WorkbenchIndex:
@@ -71,21 +78,31 @@ def workbench_index(db: Database, caller: AccessContext) -> WorkbenchIndex:
 
 
 def _tasks(
-    db: Database, project_id: str, caller: AccessContext, query: WorkbenchProjectQuery
-) -> tuple[tuple[ProductionTask, ...], tuple[WorkbenchTaskRisk, ...]]:
+    db: Database,
+    project: Project,
+    caller: AccessContext,
+    query: WorkbenchProjectQuery,
+) -> tuple[tuple[ProductionTask, ...], tuple[WorkbenchTaskRisk, ...], dict[str, tuple[str, str]]]:
     with db.session() as session:
-        statement = select(ProductionTaskRow).where(ProductionTaskRow.project_id == project_id)
+        statement = select(ProductionTaskRow).where(ProductionTaskRow.project_id == project.id)
         if query.package_id is not None:
             statement = statement.where(ProductionTaskRow.package_id == query.package_id)
         if query.view == "review":
             statement = statement.where(ProductionTaskRow.state.in_(("submitted", "in_review")))
+            if project.workflow_tier == "team":
+                statement = exclude_own_work(statement, caller.actor)
         elif query.view == "mine":
             statement = statement.where(ProductionTaskRow.annotator_id == caller.actor)
+        names = sample_names(session, project)
         tasks = tuple(
-            task_view(row) for row in session.scalars(statement.order_by(ProductionTaskRow.id))
+            task
+            for task in (
+                task_view(row) for row in session.scalars(statement.order_by(ProductionTaskRow.id))
+            )
+            if matches_search(task, names, query.search)
         )
     risks = task_risks(db, tasks)
-    return (review_order(tasks, risks) if query.view == "review" else tasks), risks
+    return (review_order(tasks, risks) if query.view == "review" else tasks), risks, names
 
 
 def _page(
@@ -116,16 +133,19 @@ def workbench_project(
         labels = require_label_set(session, project.label_set_id, project.label_set_version)
         template = require_template(session, project.template_id) if project.template_id else None
         scopes = effective_scopes(session, caller.actor, project_id)
-    tasks, risks = _tasks(db, project_id, caller, query)
+    tasks, risks, names = _tasks(db, project, caller, query)
     page, next_cursor = _page(tasks, query.limit, query.cursor)
     identities = {task.id for task in page}
+    progress = project_progress(db, project_id)
+    with db.session() as session:
+        rework = named_tasks(session, project, progress.rework_task_ids)
     return WorkbenchProject(
         project=project,
         packages=packages,
         label_set=labels,
         template=template,
         effective_scopes=scopes,
-        progress=project_progress(db, project_id),
+        progress=progress,
         workload=annotator_workload(db, project_id),
         confidence=confidence_distribution(db, project_id),
         agreement=production_agreement(db, project_id),
@@ -133,6 +153,8 @@ def workbench_project(
         tasks=page,
         task_risks=tuple(risk for risk in risks if risk.task_id in identities),
         next_cursor=next_cursor,
+        task_samples=name_tasks(page, names)
+        + tuple(item for item in rework if item.task_id not in identities),
     )
 
 

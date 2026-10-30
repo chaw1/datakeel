@@ -3,6 +3,7 @@
 
 """Read-only workbench projections of version-pinned production facts."""
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import Field
@@ -14,6 +15,7 @@ from datakeel.core.production_catalog_models import LabelSet, ProductionTemplate
 from datakeel.core.production_models import (
     AnnotationRevision,
     Assignment,
+    AssignmentStage,
     ConfidenceDistribution,
     PrelabelAccuracy,
     ProductionProgress,
@@ -21,8 +23,10 @@ from datakeel.core.production_models import (
     ProductionWorkload,
     Project,
     Review,
+    SkillRequirement,
     TaskPackage,
 )
+from datakeel.core.production_team_models import DispatchSkip, LeaseRelease
 
 WorkbenchView = Literal["all", "mine", "review"]
 
@@ -34,6 +38,28 @@ class WorkbenchProjectQuery(BoundaryModel):
     cursor: str | None = None
     view: WorkbenchView = "all"
     package_id: str | None = None
+    search: str | None = Field(default=None, min_length=1, max_length=200)
+
+
+class WorkbenchSampleName(BoundaryModel):
+    """Name a task's sample by its file name and dataset-relative path, never a server path."""
+
+    task_id: str
+    sample_id: str
+    name: str
+    path: str
+
+
+class WorkbenchTaskSampleQuery(BoundaryModel):
+    """Select up to 500 tasks of one project whose sample names a page needs."""
+
+    task_id: tuple[str, ...] = Field(default=(), max_length=500)
+
+
+class WorkbenchTaskSamples(BoundaryModel):
+    """Return sample names for the requested tasks that belong to the project."""
+
+    items: tuple[WorkbenchSampleName, ...]
 
 
 class WorkbenchTaskRisk(BoundaryModel):
@@ -69,6 +95,7 @@ class WorkbenchProject(BoundaryModel):
     tasks: tuple[ProductionTask, ...]
     task_risks: tuple[WorkbenchTaskRisk, ...] = ()
     next_cursor: str | None = None
+    task_samples: tuple[WorkbenchSampleName, ...] = ()
 
 
 class WorkbenchSample(BoundaryModel):
@@ -92,3 +119,62 @@ class WorkbenchTask(BoundaryModel):
     revisions: tuple[AnnotationRevision, ...]
     reviews: tuple[Review, ...]
     assignments: tuple[Assignment, ...]
+
+
+class WorkbenchLease(BoundaryModel):
+    """Expose one running assignment's effective deadline and remaining time at the read."""
+
+    assignment_id: str
+    actor: str
+    stage: AssignmentStage
+    expires_at: datetime
+    seconds_remaining: float
+    enforced: bool
+
+
+class WorkbenchTaskStatus(BoundaryModel):
+    """Report a task's current state, holders, leases and releases without reading its source."""
+
+    task: ProductionTask
+    assignments: tuple[Assignment, ...]
+    leases: tuple[WorkbenchLease, ...]
+    releases: tuple[LeaseRelease, ...]
+    observed_at: datetime
+
+
+class SkillDispatchPreviewRequest(BoundaryModel):
+    """Describe a skill dispatch exactly as assign_tasks would receive it, without writing."""
+
+    task_ids: tuple[str, ...] = Field(min_length=1, max_length=10000)
+    stage: AssignmentStage = "annotation"
+    candidates: tuple[str, ...] = Field(default=(), max_length=10000)
+    skill_requirement: SkillRequirement | None = None
+    max_active_tasks: int | None = Field(default=None, ge=1, le=10000)
+
+
+class DispatchPick(BoundaryModel):
+    """Name the person a skill dispatch would give one task to."""
+
+    task_id: str
+    actor: str
+
+
+class DispatchLoad(BoundaryModel):
+    """Count one qualified person's current load and the tasks the dispatch would add."""
+
+    actor: str
+    current: int
+    added: int
+
+
+class SkillDispatchPreview(BoundaryModel):
+    """Preview a skill dispatch with the same rules as execution: picks, loads and skips."""
+
+    project_id: str
+    stage: AssignmentStage
+    skill_requirement: SkillRequirement
+    max_active_tasks: int | None
+    qualified: tuple[str, ...]
+    picks: tuple[DispatchPick, ...]
+    people: tuple[DispatchLoad, ...]
+    unassigned: tuple[DispatchSkip, ...]

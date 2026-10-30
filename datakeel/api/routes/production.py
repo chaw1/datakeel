@@ -22,10 +22,15 @@ from datakeel.core.production_reads import (
     ProductionObjectQuery,
 )
 from datakeel.core.workbench_models import (
+    SkillDispatchPreview,
+    SkillDispatchPreviewRequest,
     WorkbenchIndex,
     WorkbenchProject,
     WorkbenchProjectQuery,
     WorkbenchTask,
+    WorkbenchTaskSampleQuery,
+    WorkbenchTaskSamples,
+    WorkbenchTaskStatus,
 )
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import FunctionResult
@@ -36,6 +41,7 @@ from datakeel.storage.workbench_reads import (
     workbench_project,
     workbench_task,
 )
+from datakeel.storage.workbench_samples import dispatch_preview, task_samples, task_status
 
 router = APIRouter(prefix="/api/production", tags=["production"])
 
@@ -59,6 +65,34 @@ def project_workbench(
 ) -> WorkbenchProject:
     """Read exact production configuration, role scopes, measurements and a task page."""
     return workbench_project(db, project_id, _caller(request), query)
+
+
+@router.get("/projects/{project_id}/task-samples")
+def project_task_samples(
+    project_id: str,
+    query: Annotated[WorkbenchTaskSampleQuery, Query()],
+    db: DatabaseDependency,
+    request: Request,
+) -> WorkbenchTaskSamples:
+    """Name up to 500 tasks of the project by file name and recorded dataset path."""
+    return task_samples(db, project_id, _caller(request), query)
+
+
+@router.post("/projects/{project_id}/dispatch-preview")
+def project_dispatch_preview(
+    project_id: str,
+    body: SkillDispatchPreviewRequest,
+    db: DatabaseDependency,
+    request: Request,
+) -> SkillDispatchPreview:
+    """Preview who a skill dispatch would assign each task to, and why others stay unassigned."""
+    return dispatch_preview(db, project_id, _caller(request), body)
+
+
+@router.get("/tasks/{task_id}/status")
+def task_status_view(task_id: str, db: DatabaseDependency, request: Request) -> WorkbenchTaskStatus:
+    """Poll a task's state, assignments, effective lease deadlines and recent releases."""
+    return task_status(db, task_id, _caller(request))
 
 
 @router.get("/tasks/{task_id}/workbench")

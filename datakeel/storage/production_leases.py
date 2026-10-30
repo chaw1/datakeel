@@ -102,7 +102,8 @@ def end_assignment(
     return assignment
 
 
-def _enforced_deadline(row: ProductionAssignmentRow, assignment: Assignment) -> datetime:
+def enforced_deadline(row: ProductionAssignmentRow, assignment: Assignment) -> datetime:
+    """Return the deadline actually enforced, which a team upgrade may have restarted."""
     # A lease restarted by a team upgrade keeps its old record; report the deadline enforced.
     recorded = assignment.lease_expires_at
     enforced = row.lease_expires_at
@@ -130,7 +131,7 @@ def record_release(
             "actor": assignment.actor,
             "stage": assignment.stage,
             "reason": reason,
-            "lease_expires_at": _enforced_deadline(row, assignment),
+            "lease_expires_at": enforced_deadline(row, assignment),
             "released_at": assignment.ended_at,
             "released_by": released_by,
             "note": note,
