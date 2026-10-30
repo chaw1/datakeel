@@ -7,6 +7,7 @@ export const wbTeamEn = {
   wbSearchTasks: "Search file names",
   wbSearchPlaceholder: "File name or path",
   wbRecordAttributes: "Whole-item attributes",
+  wbShapeAttributes: "Attributes",
   wbAttributesAdvanced: "Advanced: raw attributes",
   wbAttributeRequired: "required",
   wbAttributeUnset: "Not set",

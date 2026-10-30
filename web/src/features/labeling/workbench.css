@@ -388,3 +388,13 @@ main:has(> .wb-page[data-focus="true"]) {
   margin: 0;
   padding: 0;
 }
+/* Team tables: the package table spans both columns; cells wrap instead of being clipped. */
+.wb-team-packages {
+  grid-column: 1 / -1;
+}
+.wb-cockpit .table-wrap {
+  overflow-x: auto;
+}
+.wb-cockpit table {
+  white-space: normal;
+}

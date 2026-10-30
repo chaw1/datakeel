@@ -9,6 +9,7 @@ export const wbTeamZh: Record<keyof typeof wbTeamEn, string> = {
   wbSearchTasks: "按文件名搜索",
   wbSearchPlaceholder: "文件名或路径",
   wbRecordAttributes: "整条数据的属性",
+  wbShapeAttributes: "属性",
   wbAttributesAdvanced: "高级：原始属性",
   wbAttributeRequired: "必填",
   wbAttributeUnset: "未选择",

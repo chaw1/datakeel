@@ -125,7 +125,7 @@ export function PolygonDetails({
             </button>
           </div>
           <AttributeForm
-            label={t("wbEditorProperties")}
+            label={t("wbShapeAttributes")}
             fields={attributeFields(template, "object")}
             value={current.attributes}
             readOnly={readOnly}
