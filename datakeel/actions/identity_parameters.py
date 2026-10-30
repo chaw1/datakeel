@@ -38,7 +38,7 @@ class ManageUsersParams(BoundaryModel):
 
 
 class ManageSkillsParams(BoundaryModel):
-    """Maintain skill metadata without enabling skill-based dispatch."""
+    """Create, update or retire skills that gate team skill dispatch and skill-gated claims."""
 
     request_id: str = Field(min_length=1, max_length=200)
     operation: Literal["create", "update", "delete"]
