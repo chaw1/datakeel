@@ -1,0 +1,110 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Read and record upright image geometry; serve upright pixels without rewriting originals."""
+
+import io
+import warnings
+from collections.abc import Mapping
+from functools import lru_cache
+from pathlib import Path
+
+from PIL import Image, ImageOps
+from pydantic import JsonValue
+
+from datakeel.core.image_orientation import ORIENTATION_TAG, ImageGeometry, orientation_value
+from datakeel.core.models import FileItem
+from datakeel.storage.objects import object_store
+
+_UNREADABLE = (OSError, ValueError, Image.DecompressionBombError)
+
+
+def read_geometry(path: Path) -> ImageGeometry | None:
+    """Read stored size and EXIF orientation from the header only; None when unreadable."""
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", Image.DecompressionBombWarning)
+            with Image.open(path) as image:
+                width, height = image.size
+                orientation = orientation_value(image.getexif().get(ORIENTATION_TAG))
+    except _UNREADABLE:
+        return None
+    if width <= 0 or height <= 0:
+        return None
+    return ImageGeometry(orientation=orientation, stored_width=width, stored_height=height)
+
+
+def geometry_metadata(geometry: ImageGeometry | None) -> dict[str, JsonValue]:
+    """Record upright width/height (the public size), stored size and orientation at import."""
+    if geometry is None:
+        return {
+            "width": None,
+            "height": None,
+            "stored_width": None,
+            "stored_height": None,
+            "orientation": 1,
+        }
+    return {
+        "width": geometry.width,
+        "height": geometry.height,
+        "stored_width": geometry.stored_width,
+        "stored_height": geometry.stored_height,
+        "orientation": geometry.orientation,
+    }
+
+
+def recorded_geometry(metadata: Mapping[str, JsonValue]) -> ImageGeometry | None:
+    """Use geometry recorded at import; older manifests lack it and return None."""
+    orientation = metadata.get("orientation")
+    width, height = metadata.get("stored_width"), metadata.get("stored_height")
+    if (
+        not isinstance(orientation, int)
+        or not isinstance(width, int)
+        or not isinstance(height, int)
+    ):
+        return None
+    if width <= 0 or height <= 0:
+        return None
+    return ImageGeometry(
+        orientation=orientation_value(orientation), stored_width=width, stored_height=height
+    )
+
+
+@lru_cache(maxsize=65536)
+def _object_geometry(key: str) -> ImageGeometry | None:
+    # Object keys are content addressed, so a key's geometry never changes.
+    return read_geometry(object_store().materialize(key))
+
+
+def file_geometry(file: FileItem) -> ImageGeometry | None:
+    """Resolve a stored file's upright geometry, backfilling older imports from the header."""
+    if file.modality != "image":
+        return None
+    recorded = recorded_geometry(file.metadata)
+    if recorded is not None:
+        return recorded
+    key = file.metadata.get("object_key")
+    if isinstance(key, str) and key:
+        return _object_geometry(key)
+    path = Path(file.path) if file.path else None
+    return read_geometry(path) if path is not None and path.is_file() else None
+
+
+def upright_bytes(path: Path, *, thumbnail: int | None = None) -> bytes | None:
+    """Encode upright pixels without EXIF orientation; None means the original is already upright.
+
+    Full-size output is lossless PNG. Thumbnails are JPEG and always re-encoded.
+    """
+    with Image.open(path) as image:
+        orientation = orientation_value(image.getexif().get(ORIENTATION_TAG))
+        if thumbnail is None and orientation == 1:
+            return None
+        upright = ImageOps.exif_transpose(image)
+        output = io.BytesIO()
+        if thumbnail is None:
+            upright.save(output, "PNG")
+            return output.getvalue()
+        preview = upright.convert("RGB")
+        preview.thumbnail((thumbnail, thumbnail))
+        preview.save(output, "JPEG", quality=80)
+        return output.getvalue()

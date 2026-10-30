@@ -13,13 +13,14 @@ from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from datakeel.core.annotation_models import AnnotationBatch, AnnotationRecord, AnnotationSpan
+from datakeel.core.annotation_models import AnnotationRecord, AnnotationSpan
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import AssetRef, FileItem, JsonDocument
 from datakeel.core.training_models import TrainingSample
 from datakeel.operators.evidence.image_phash import dhash
 from datakeel.operators.image.helpers import open_image
+from datakeel.storage.annotation_frames import batch_view
 from datakeel.storage.annotation_legacy import annotation_from_file
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.data_asset_access import require_access_in_session
@@ -70,7 +71,7 @@ def _annotations(
     )
     selected: dict[tuple[str, str], AnnotationRecord] = {}
     for row in rows:
-        for record in AnnotationBatch.model_validate(row.batch).annotations:
+        for record in batch_view(session, row).annotations:
             selected.setdefault((record.sample_id, record.annotator_id), record)
     grouped: dict[str, list[AnnotationRecord]] = defaultdict(list)
     for key, record in sorted(selected.items()):

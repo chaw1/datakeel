@@ -18,6 +18,7 @@ from datakeel.core.training_export_models import (
     TrainingFormat,
 )
 from datakeel.core.training_models import SplitMember, SplitSet
+from datakeel.storage.annotation_frames import DISPLAY_FRAME, legacy_record
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.object_projection import content_digest
 from datakeel.storage.release_service import iter_release_entries, require_release
@@ -35,7 +36,21 @@ def _split(session: Session, params: ExportParams) -> SplitSet:
     if split.version_id != params.version_id:
         message = "Training split does not belong to the selected source version"
         raise ValidationError(message)
-    return split
+    if row.coordinate_frame == DISPLAY_FRAME:
+        return split
+    # Splits frozen before v0.19 hold stored-frame annotations; convert them on read.
+    members = tuple(
+        member.model_copy(
+            update={
+                "annotations": tuple(
+                    legacy_record(session, split.version_id, record)[0]
+                    for record in member.annotations
+                )
+            }
+        )
+        for member in split.members
+    )
+    return split.model_copy(update={"members": members})
 
 
 def prepare_training_export(session: Session, params: ExportParams) -> ExportParams:

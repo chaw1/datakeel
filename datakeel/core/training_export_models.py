@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from pydantic import ConfigDict, Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.image_orientation import CoordinateFrame
 from datakeel.core.models import BoundaryModel, FileItem
 
 TrainingFormat = Literal[
@@ -124,6 +125,14 @@ class TrainingAnnotationImport(BoundaryModel):
     yolo: YoloDataset | None = None
     sample_ids: dict[str, str] = Field(default_factory=dict)
     annotations_jsonl: str | None = Field(default=None, max_length=10_000_000)
+    coordinate_frame: CoordinateFrame | None = Field(
+        default=None,
+        description=(
+            "Pixel frame of the coordinates: display (EXIF Orientation applied) or stored (raw "
+            "pixel order). Omitted: YOLO is upright; COCO and JSONL records are inferred from "
+            "their image width/height, and square images default to upright."
+        ),
+    )
 
     @model_validator(mode="after")
     def matching_format(self) -> "TrainingAnnotationImport":

@@ -181,21 +181,28 @@ original category strings and absolute pixel `x1,y1,x2,y2` boxes. JSON `null` me
 `[]` means reviewed empty. JSON text columns keep the inferred schema identical across splits
 containing only empty annotations versus populated ones, without artificial examples. The
 archive includes these instructions in `README.md`. No `datasets` dependency is added.
-COCO, YOLO and HF imagefolder exports share one EXIF orientation check: only absent or
-identity (1) orientation is accepted. Values 2–8 can rotate or mirror decoded pixels and
-invalidate the frozen raw-pixel boxes or dimensions. Normalize these sources and their
-annotations together before importing them again. The exporter neither transcodes pixels
-nor silently rewrites coordinates, and a refused export produces no archive.
+COCO, YOLO and HF imagefolder exports write every image **upright**, in the same frame the
+workbench shows and annotates (EXIF Orientation applied, as browsers, Ultralytics and CVAT do).
+Sources with absent or identity (1) orientation are copied byte for byte. Values 2–8 are
+transposed with Pillow and written as lossless PNG without an orientation tag (the exported
+name ends in `.png`), so every decoder sees the same pixels as the boxes; width, height and
+boxes use that upright frame. The source file itself is never modified. `MANIFEST.json`
+records per file `source_sha256`, `source_orientation`, `transform` (the Pillow transpose
+name, `none` for identity) and, for re-encoded files, `exported_sha256`; the export action's
+lineage details list the same facts as `upright_transforms`.
 
 | Orientation policy | Benefit | Required trade-off |
 | ------------------ | ------- | ------------------ |
-| Reject nonidentity EXIF (chosen) | Preserve source bytes and the frozen annotation frame across all three formats | Oriented sources must be normalized before import |
-| Transpose pixels and transform boxes | Export oriented sources directly | Rewrite pixel bytes, dimensions and every box for each rotation/mirror, with new provenance semantics |
+| Write upright pixels, coordinates already upright (chosen) | Matches browsers, Ultralytics (`exif_size`, EXIF-aware loading) and CVAT (`rotate_within_exif`); boxes line up with what every loader decodes | Oriented images are re-encoded in the archive (lossless PNG, larger than JPEG) |
+| Copy original bytes and keep the EXIF tag | Byte-identical archive images | Loaders disagree: torchvision/PIL without `exif_transpose` decode stored pixels while HF and Ultralytics rotate them |
+| Reject nonidentity EXIF (v0.18.0) | Simple | Phone photos cannot be exported without manual preprocessing |
+| Re-encode as JPEG | Smaller archive | Adds lossy artifacts to training pixels |
 
-Rejection keeps the existing HF policy and the source-byte export contract consistent.
 Pillow's [`exif_transpose`](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose)
-applies the orientation transform and removes its metadata; adopting it here would also
-require corresponding coordinate transforms rather than a pixel-only change.
+applies the transform and drops the tag; Ultralytics reads sizes with
+[`exif_size`](https://github.com/ultralytics/ultralytics/blob/main/ultralytics/data/utils.py)
+and CVAT rotates uploads with
+[`rotate_within_exif`](https://github.com/cvat-ai/cvat/blob/develop/cvat/apps/engine/media_extractors.py).
 
 Training archive destinations accept only the case-sensitive suffixes `.tar`, `.tar.gz`
 and `.tgz`: `.tar` writes an uncompressed tar; `.tar.gz` and `.tgz` write gzip-compressed
@@ -234,7 +241,11 @@ The API prefix is `/api/datasets/{dataset}/versions/{version}/training`:
 - `POST /import-annotations` imports standard COCO or typed YOLO labels into a new
   immutable annotation review batch for that version. An explicit COCO filename map
   resolves renamed or ambiguous images. YOLO supplies category names, sample IDs,
-  source dimensions and per-image label text.
+  source dimensions and per-image label text. Coordinates land in the upright frame:
+  YOLO rows are relative to the upright image (rescaled when the supplied size differs);
+  COCO and `annotations_jsonl` records whose width/height equal only the stored size
+  (a 90-degree orientation) are read as stored pixels and converted; square images
+  default to upright. `coordinate_frame: "display" | "stored"` overrides the inference.
 
 Prepare exports through `POST /api/actions/export_dataset/prepare` with `dataset_id`,
 `version_id` (or `release_id`), `split_set_id`, `format`, optional `annotator_id` and

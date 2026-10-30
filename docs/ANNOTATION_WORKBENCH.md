@@ -56,6 +56,12 @@ Team-tier projects add to the cockpit: each package's acceptance state and sampl
 
 The UI hides actions outside effective scopes. All writes still use the existing controlled action routes and server ownership/role checks. Source reads use existing project/source grants. A zero-user instance retains local personal behavior.
 
+## Image orientation
+
+Every image is shown, annotated, imported and exported **upright**: the frame after applying EXIF Orientation (tag 274, values 1–8, mirrors included), which is what a browser shows when it opens the original. The original file is never rewritten; its bytes and hash stay as imported. Import records the upright `width`/`height` (the public `image_width`/`image_height`), the stored `stored_width`/`stored_height` and `orientation` (an unreadable tag counts as 1); older datasets resolve the same three values from the stored file header on first use. The canvas (`/content`) and thumbnails are served as upright pixels without an orientation tag, so box, polygon and point coordinates are upright pixel coordinates.
+
+Annotations made up to v0.18.0 were drawn on stored pixels, so they are stored-frame data. This covers workbench revisions and every annotation batch imported into a dataset before the upgrade (the platform showed those on stored pixels too) as well as training splits frozen from them. Their rows have no `coordinate_frame` (NULL); rows written since say `display`. Reading a NULL row of an EXIF-oriented image converts boxes, polygon points and image size into the upright frame, so the same object stays framed, and the revision carries `coordinate_conversion` (orientation, Pillow transform, stored size). Nothing is written back: history and audit stay byte-identical, and repeated upgrades or reads never convert twice.
+
 ## Lossless training round trips
 
 `AnnotationRecord` adds optional polygons and record/shape/span attributes. Existing fields and endpoints remain compatible. Finalized records can be exported with controlled `export_dataset`, `format: "annotations_jsonl"`. The archive contains `annotations.jsonl` with full core records; import through the existing version training `import-annotations` endpoint using `format: "annotations_jsonl"`, `annotations_jsonl`, and a fresh `idempotency_key`. Standard COCO/YOLO behavior is unchanged; those detection formats do not represent every workbench component/property.

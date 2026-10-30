@@ -24,6 +24,8 @@ class TrainingSplitRow(Base):
     created_at: Mapped[float] = mapped_column(Float, index=True)
     payload: Mapped[dict[str, JsonValue]] = mapped_column(JSON)
     samples: Mapped[list[dict[str, JsonValue]]] = mapped_column(JSON)
+    # NULL marks splits frozen before v0.19, whose annotations are in the stored pixel frame.
+    coordinate_frame: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 def install_training_constraints(connection: Connection, *, sqlite: bool) -> None:

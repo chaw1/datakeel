@@ -3,13 +3,11 @@
 
 """Read production facts; all mutations use the existing controlled action endpoints."""
 
-import io
 import mimetypes
 from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse, Response
-from PIL import Image
 
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.api.identity_access import http_actor
@@ -37,6 +35,7 @@ from datakeel.core.workbench_models import (
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import FunctionResult
 from datakeel.ontology.production_functions import PRODUCTION_READ_MODELS
+from datakeel.storage.image_geometry import upright_bytes
 from datakeel.storage.workbench_assignees import assignees
 from datakeel.storage.workbench_reads import (
     task_source,
@@ -119,23 +118,18 @@ def task_workbench(task_id: str, db: DatabaseDependency, request: Request) -> Wo
 def task_content(
     task_id: str, db: DatabaseDependency, request: Request, *, thumbnail: bool = False
 ) -> FileResponse | Response:
-    """View a version-pinned source or a small image preview under the same source grants."""
+    """View a version-pinned source or a small image preview under the same source grants.
+
+    Images are always shown upright: EXIF-oriented sources are re-encoded as orientation-free
+    PNG (thumbnails as JPEG) with the EXIF Orientation already applied to the pixels.
+    """
     path, name = task_source(db, task_id, _caller(request))
-    if thumbnail:
-        with Image.open(path) as image:
-            preview = image.convert("RGB")
-            preview.thumbnail((1024, 1024))
-            output = io.BytesIO()
-            preview.save(output, "JPEG", quality=80)
-        return Response(output.getvalue(), media_type="image/jpeg")
     media_type = mimetypes.guess_type(name)[0]
-    if media_type is not None and media_type.startswith("image/"):
-        with Image.open(path) as image:
-            if image.getexif().get(274) not in (None, 1):
-                output = io.BytesIO()
-                image.save(output, "PNG", exif=b"")
-                return Response(output.getvalue(), media_type="image/png")
-    return FileResponse(path, media_type=mimetypes.guess_type(name)[0], filename=name)
+    if thumbnail or (media_type is not None and media_type.startswith("image/")):
+        upright = upright_bytes(path, thumbnail=1024 if thumbnail else None)
+        if upright is not None:
+            return Response(upright, media_type="image/jpeg" if thumbnail else "image/png")
+    return FileResponse(path, media_type=media_type, filename=name)
 
 
 @router.post("/functions/{name}")

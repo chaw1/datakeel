@@ -5,6 +5,7 @@
 
 import gzip
 import hashlib
+import io
 import json
 import shutil
 import tarfile
@@ -13,13 +14,15 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import quote
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from datakeel.core.errors import ConflictError, ValidationError
+from datakeel.core.image_orientation import ORIENTATION_TAG, ImageGeometry, orientation_value
 from datakeel.core.training_export_models import TRAINING_ARCHIVE_SUFFIXES, TrainingExportItem
 from datakeel.training.importers import validate_box
 
 _MAX_SUFFIX_LENGTH = 12
+_PNG_MODES = frozenset({"1", "L", "LA", "I", "I;16", "P", "RGB", "RGBA"})
 _MAX_CLASS_BYTES = 200
 _IMAGEFOLDER_SUFFIXES = frozenset(
     {".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp"}
@@ -165,30 +168,55 @@ def copy_source(item: TrainingExportItem, destination: Path) -> None:
         raise ConflictError(message)
 
 
-def dimensions(item: TrainingExportItem) -> tuple[int, int]:
-    """Read actual image dimensions and validate every detection against those pixels."""
+def source_geometry(item: TrainingExportItem) -> ImageGeometry:
+    """Read the source's stored size and EXIF orientation from its header."""
     with Image.open(item.file.path) as image:
         width, height = image.size
+        orientation = orientation_value(image.getexif().get(ORIENTATION_TAG))
+    return ImageGeometry(orientation=orientation, stored_width=width, stored_height=height)
+
+
+def image_filename(item: TrainingExportItem, geometry: ImageGeometry) -> str:
+    """Name re-encoded upright images .png; upright originals keep their own suffix."""
+    name = filename(item)
+    return name if geometry.orientation == 1 else str(Path(name).with_suffix(".png"))
+
+
+def write_image(item: TrainingExportItem, geometry: ImageGeometry, destination: Path) -> None:
+    """Copy an upright original, or write its upright pixels as lossless orientation-free PNG.
+
+    The verified source bytes are never modified; only the exported copy is re-encoded.
+    """
+    if geometry.orientation == 1:
+        copy_source(item, destination)
+        return
+    content = Path(item.file.path).read_bytes()
+    if hashlib.sha256(content).hexdigest() != item.file.sha256 or len(content) != item.file.size:
+        message = "Source content differs from the frozen dataset version; export refused"
+        raise ConflictError(message)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with Image.open(io.BytesIO(content)) as image:
+        upright = ImageOps.exif_transpose(image)
+        if upright.mode not in _PNG_MODES:
+            upright = upright.convert("RGBA" if "A" in upright.getbands() else "RGB")
+        options: dict[str, object] = {}
+        if isinstance(icc := image.info.get("icc_profile"), bytes):
+            options["icc_profile"] = icc
+        upright.save(destination, "PNG", **options)
+
+
+def dimensions(item: TrainingExportItem, geometry: ImageGeometry) -> tuple[int, int]:
+    """Return upright dimensions and validate every detection against those pixels."""
+    width, height = geometry.width, geometry.height
     annotation = item.annotation
     if (annotation.image_width is not None and annotation.image_width != width) or (
         annotation.image_height is not None and annotation.image_height != height
     ):
-        message = "Annotation dimensions differ from source image dimensions"
+        message = "Annotation dimensions differ from upright source image dimensions"
         raise ValidationError(message)
     for box in annotation.boxes or ():
         validate_box(box, width, height)
     return width, height
-
-
-def validate_orientation(item: TrainingExportItem) -> None:
-    """Refuse EXIF transformations that would change the source pixel coordinate frame."""
-    with Image.open(item.file.path) as image:
-        if image.getexif().get(274) not in (None, 1):
-            message = (
-                "Image export requires absent or identity EXIF orientation; "
-                "normalize the source orientation before importing"
-            )
-            raise ValidationError(message)
 
 
 def source_text(item: TrainingExportItem) -> str:

@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import Field
 
 from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.image_orientation import CoordinateConversion
 from datakeel.core.models import BoundaryModel
 
 WorkflowTier = Literal["personal", "group", "team"]
@@ -98,7 +99,11 @@ class Assignment(BoundaryModel):
 
 
 class AnnotationRevision(BoundaryModel):
-    """Append one annotation and its precise human or model provenance forever."""
+    """Append one annotation and its precise human or model provenance forever.
+
+    ``coordinate_conversion`` is set only on reads of a revision saved in the stored pixel
+    frame (before v0.19) of an EXIF-oriented image, naming the transform applied on read.
+    """
 
     id: str
     task_id: str
@@ -110,6 +115,7 @@ class AnnotationRevision(BoundaryModel):
     model_version: str | None = None
     confidence: float | None = Field(default=None, ge=0, le=1)
     created_at: datetime
+    coordinate_conversion: CoordinateConversion | None = None
 
 
 class Review(BoundaryModel):

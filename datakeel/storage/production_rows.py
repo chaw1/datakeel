@@ -96,6 +96,8 @@ class ProductionRevisionRow(Base):
     actor: Mapped[str] = mapped_column(String)
     confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     payload: Mapped[dict[str, JsonValue]] = mapped_column(JSON)
+    # NULL marks rows saved before v0.19 in the stored pixel frame; new rows say "display".
+    coordinate_frame: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class ProductionReviewRow(Base):

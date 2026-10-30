@@ -14,6 +14,7 @@ from datakeel.core.annotation_sampling import AnnotationImportRequest
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import AssetRef, FileItem, JsonDocument, new_id
 from datakeel.core.production_models import AnnotationRevision
+from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.annotation_store import (
     import_annotations_in_session,
     require_annotation_version,
@@ -110,7 +111,7 @@ def _approved_revisions(
         if row is None or row.task_id != task.id:
             message = "Approved revision does not belong to its production task"
             raise ConflictError(message)
-        revisions.append(AnnotationRevision.model_validate(row.payload))
+        revisions.append(revision_view(session, row))
     return tuple(revisions)
 
 

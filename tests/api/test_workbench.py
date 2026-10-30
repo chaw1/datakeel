@@ -223,21 +223,21 @@ def test_workbench_package_filter_precedes_pagination_and_keeps_project_progress
         assert invalid.status_code == 404
 
 
-def test_workbench_exif_media_and_thumbnails_use_the_same_source_pixel_frame(
+def test_workbench_exif_media_and_thumbnails_use_the_same_upright_pixel_frame(
     db: Database, tmp_path: Path
 ) -> None:
-    """EXIF presentation metadata never rotates only one of the displayed workbench images."""
+    """Canvas, thumbnail and reported size all use the EXIF-applied (upright) frame."""
     _, tasks = seed_workbench(db, tmp_path / "oriented", image_size=(100, 80), image_orientation=6)
     with TestClient(create_app(db)) as client:
         response = client.get(f"/api/production/tasks/{tasks[0].id}/workbench")
         assert response.status_code == 200, response.text
         sample = WorkbenchTask.model_validate(response.json()).sample
-        assert (sample.image_width, sample.image_height) == (100, 80)
+        assert (sample.image_width, sample.image_height) == (80, 100)
         for url in (sample.content_url, sample.thumbnail_url or ""):
             content = client.get(url)
             assert content.status_code == 200, content.text
             with Image.open(io.BytesIO(content.content)) as image:
-                assert image.size == (100, 80)
+                assert image.size == (80, 100)
                 assert image.getexif().get(274) in (None, 1)
 
 

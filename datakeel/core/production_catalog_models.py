@@ -10,6 +10,7 @@ from typing import Literal
 from pydantic import Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.image_orientation import CoordinateFrame
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_attributes import TemplateAttribute
 
@@ -159,6 +160,13 @@ class PredictionFile(BoundaryModel):
     sample_id: str | None = None
     image_width: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     image_height: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    coordinate_frame: CoordinateFrame | None = Field(
+        default=None,
+        description=(
+            "Pixel frame of the coordinates: display (EXIF Orientation applied, the default) "
+            "or stored (raw pixel order). Omitted: COCO is inferred from the image width/height."
+        ),
+    )
 
 
 class PredictionFailure(BoundaryModel):

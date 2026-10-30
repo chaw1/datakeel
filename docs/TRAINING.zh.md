@@ -147,20 +147,27 @@ HF imagefolder 的 `file_name` 相对所在切分的 `metadata.jsonl`，其余�
 识别为 `validation`。对两个 `_json` 列执行 `json.loads`，可恢复原类别字符串和像素
 `x1,y1,x2,y2` 框；JSON `null` 表示未审，`[]` 表示已审空。使用 JSON 文本列使全空
 与非空标注切分的推断 schema 一致，不添加虚假样本。包内 `README.md` 也说明此约定，
-不引入 `datasets` 依赖。COCO、YOLO 与 HF imagefolder 共用 EXIF 方向校验：只接受
-缺失或恒等方向值 1。方向值 2–8 可能使加载器旋转或镜像像素，导致冻结的原像素框和
-尺寸失配；须将源图和标注一起转正后重新导入。导出器不转码，也不暗改框坐标；
-拒绝时不产生归档。
+不引入 `datasets` 依赖。COCO、YOLO 与 HF imagefolder 导出的图片一律是**摆正后的方向**，和工作台
+显示、标注用的是同一个坐标系（按 EXIF Orientation 变换，浏览器、Ultralytics、CVAT 都这么做）。
+方向缺失或为 1 的原图按字节原样复制；方向值 2–8 的图用 Pillow 摆正后写成无损 PNG、不带方向
+标记（导出文件名以 `.png` 结尾），任何加载器解出来的像素都和框对得上；宽高和框都按摆正后的
+方向。原文件本身不改。`MANIFEST.json` 逐文件记下 `source_sha256`、`source_orientation`、
+`transform`（Pillow 变换名，方向 1 记 `none`），重新编码的再记 `exported_sha256`；导出动作的
+血缘明细 `upright_transforms` 也列出这些。
 
 | 方向处理方案 | 优点 | 代价 |
 | ------------ | ---- | ---- |
-| 拒绝非恒等 EXIF（本次选择） | 三种格式保持源字节和冻结标注的坐标系一致 | 有方向信息的来源须先转正再导入 |
-| 转正像素并变换框 | 可直接导出有方向信息的来源 | 每种旋转和镜像都须重写像素、尺寸及全部框，并定义新的来源血缘语义 |
+| 输出摆正后的像素，坐标本来就是摆正后的（本次选择） | 和浏览器、Ultralytics（`exif_size`、按 EXIF 读图）、CVAT（`rotate_within_exif`）一致；各加载器解出来都对得上框 | 带方向的图在训练包里要重新编码（无损 PNG，比 JPEG 大） |
+| 原字节复制，保留 EXIF 方向 | 训练包图片和原图字节一致 | 加载器不一致：torchvision/PIL 不做 `exif_transpose` 时读到存储方向，HF、Ultralytics 会转正 |
+| 拒收非 1 方向（v0.18.0） | 简单 | 手机照片要先人工处理才能导出 |
+| 重新编码成 JPEG | 训练包小 | 训练像素多一次有损压缩 |
 
-选择拒绝可沿用既有 HF 策略，保持原字节导出约定。Pillow 的
-[`exif_transpose`](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose)
-会按方向变换图像并移除方向元数据；若在此采用它，必须同时实现对应坐标变换，
-不能只转图不改框。
+Pillow 的 [`exif_transpose`](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.exif_transpose)
+按方向变换并去掉方向标记；Ultralytics 用
+[`exif_size`](https://github.com/ultralytics/ultralytics/blob/main/ultralytics/data/utils.py)
+读宽高，CVAT 上传时用
+[`rotate_within_exif`](https://github.com/cvat-ai/cvat/blob/develop/cvat/apps/engine/media_extractors.py)
+摆正。
 
 训练包目的文件名仅接受区分大小写的 `.tar`、`.tar.gz`、`.tgz`：`.tar` 写未压缩 tar，
 后两者写 gzip 压缩 tar。`.zip`、`.json`、单独 `.gz` 或无后缀等名称在训练导出动作准备前
@@ -193,6 +200,9 @@ API 前缀为 `/api/datasets/{dataset}/versions/{version}/training`：
 - `POST /leakage` 检查预览；`GET /compare?left=ID&right=ID` 对比已保存切分。
 - `POST /import-annotations` 导入标准 COCO 或类型化 YOLO，为该版本追加不可变标注批次。
   COCO 可用显式文件名映射解决重命名与同名歧义；YOLO 输入类别表、样本 ID、原图尺寸和逐图标签文本。
+  坐标统一落到摆正后的方向：YOLO 按摆正后的图解释（给的宽高不同就按摆正后的宽高缩放）；
+  COCO 和 `annotations_jsonl` 记录的宽高只和存储方向一致（转了 90°）时按存储方向读并换算，
+  正方形图分不出来，默认按摆正后的方向。`coordinate_frame: "display" | "stored"` 可覆盖推断。
 
 导出通过 `POST /api/actions/export_dataset/prepare`，传入 `dataset_id`、`version_id`
 （或 `release_id`）、`split_set_id`、`format`，以及可选的 `annotator_id`、`destination`。

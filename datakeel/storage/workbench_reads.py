@@ -7,7 +7,6 @@ import mimetypes
 from pathlib import Path
 from urllib.parse import quote
 
-from PIL import Image
 from sqlalchemy import select
 
 from datakeel.core.data_asset_models import AccessContext
@@ -26,6 +25,7 @@ from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import resolve_download
 from datakeel.storage.identity_authorization import effective_scopes
+from datakeel.storage.image_geometry import read_geometry
 from datakeel.storage.production_catalog import require_label_set, require_template
 from datakeel.storage.production_queries import (
     get_project,
@@ -179,8 +179,9 @@ def _sample(
     width, height, text = None, None, None
     thumbnail = None
     if media_type.startswith("image/"):
-        with Image.open(path) as image:
-            width, height = image.size
+        geometry = read_geometry(path)
+        if geometry is not None:
+            width, height = geometry.width, geometry.height
         thumbnail = url + "?thumbnail=true"
     elif media_type.startswith("text/"):
         try:

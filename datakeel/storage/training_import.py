@@ -9,8 +9,10 @@ from datakeel.core.annotation_models import AnnotationBatch
 from datakeel.core.annotation_sampling import AnnotationImportRequest, AnnotationQualityReport
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.training_export_models import TrainingAnnotationImport
+from datakeel.storage.annotation_frames import sample_geometry
 from datakeel.storage.annotation_store import import_annotations, require_annotation_version
 from datakeel.storage.database import Database
+from datakeel.storage.prediction_frames import upright_import
 from datakeel.storage.training_inputs import authorize_training
 from datakeel.training.importers import import_coco, import_yolo
 from datakeel.training.native import import_annotations_jsonl
@@ -43,6 +45,16 @@ def import_training_annotations(
         if request.annotations_jsonl is not None
         else ()
     )
+    with db.session() as session:
+        upright = tuple(
+            upright_import(
+                record,
+                sample_geometry(session, version_id, record.sample_id),
+                request.coordinate_frame,
+                normalized=request.yolo is not None,
+            )
+            for record in annotations
+        )
     return import_annotations(
         db,
         dataset_id,
@@ -50,6 +62,6 @@ def import_training_annotations(
             version_id=version_id,
             name=request.name,
             idempotency_key=request.idempotency_key,
-            batch=AnnotationBatch(annotations=annotations),
+            batch=AnnotationBatch(annotations=upright),
         ),
     )

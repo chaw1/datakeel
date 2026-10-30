@@ -198,25 +198,35 @@ def test_hf_loader_unsupported_extension_is_explicitly_rejected(
     assert not (tmp_path / "unsupported/export.tar.gz").exists()
 
 
-def test_hf_loader_exif_rotation_and_mirroring_are_explicitly_rejected(
+def test_hf_loader_exif_rotation_and_mirroring_are_written_upright(
     hf_export: TrainingExport, tmp_path: Path
 ) -> None:
-    """HF automatically orients decoded pixels, so raw-frame geometry must not be exported."""
+    """HF orients decoded pixels itself, so oriented sources are written upright without a tag."""
     for orientation in (6, 2):
         source = tmp_path / f"orientation-{orientation}.jpg"
         exif = Image.Exif()
         exif[274] = orientation
         Image.new("RGB", (47, 31), (60, 110, 90)).save(source, exif=exif)
-        item = _item(source, hf_export.items[2].annotation, "train")
-        caught: ValidationError | None = None
-        output = tmp_path / f"export-{orientation}"
-        try:
-            _write(hf_export.model_copy(update={"items": (item,)}), output)
-        except ValidationError as error:
-            caught = error
-        assert caught is not None, "HF must not silently rotate or mirror annotated image pixels"
-        assert "requires absent or identity EXIF orientation" in str(caught)
-        assert not (output / "export.tar.gz").exists()
+        original = source.read_bytes()
+        upright = (31, 47) if orientation == 6 else (47, 31)
+        annotation = AnnotationRecord(
+            sample_id="oriented",
+            annotator_id="r",
+            image_width=upright[0],
+            image_height=upright[1],
+            boxes=(AnnotationBox(category="cat", x1=1, y1=2, x2=20, y2=30),),
+        )
+        item = _item(source, annotation, "train")
+        package = _write(
+            hf_export.model_copy(update={"items": (item,)}), tmp_path / f"o{orientation}"
+        )
+        row = HfImageMetadata.model_validate_json((package / "train/metadata.jsonl").read_bytes())
+        assert (row.width, row.height) == upright
+        assert row.file_name.endswith(".png")
+        with Image.open(package / "train" / row.file_name) as image:
+            assert image.size == upright
+            assert image.getexif().get(274) is None
+        assert source.read_bytes() == original
 
 
 def test_hf_loader_identity_exif_preserves_dimensions_and_source_bytes(
