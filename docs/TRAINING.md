@@ -106,6 +106,7 @@ match SHA-256. These transformations affect only comparison, never exported sour
 character offsets. Short texts, rearranged templates with the same trigram multiset, and text that becomes
 identical after space or symbol removal (for example, `C++` and `C`) can collide: this signal is a formatting/similarity check, not semantic equivalence.
 A short numeric-template confirmation excludes texts of at most 80 normalized characters
+("short" counts characters, not bytes, so a whole 64-character Chinese paragraph qualifies)
 whose wording is identical after replacing decimal-number runs, but whose normalized numeric
 content differs: for example, `Order 1001 has shipped` and `Order 1002 has shipped` are separate
 records. Case, whitespace and punctuation variants of the same numeric content remain comparable;
