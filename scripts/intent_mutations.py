@@ -48,6 +48,14 @@ INTENT_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="chain-resume-resubmits-a-rejected-step",
+        path="intents/chains.py",
+        before='    if plan.status == "REJECTED" and not resuming:',
+        after='    if plan.status == "REJECTED":',
+        case=_CHAINS + "test_rejected_step_fails_and_resume_asks_for_a_new_signature",
+        runner="pytest",
+    ),
+    Mutation(
         name="chain-runs-only-for-its-requester",
         path="storage/intent_chains.py",
         before="        if chain.actor != actor:",

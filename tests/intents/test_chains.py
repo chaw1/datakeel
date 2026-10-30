@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from datakeel.actions import service
+from datakeel.actions.models import ApprovalDecision
 from datakeel.core.intent_models import PageContext
 from datakeel.intents.chains import advance_chain
 from datakeel.storage.production_queries import list_packages, list_projects
@@ -72,3 +73,27 @@ def test_confirmed_chain_stops_for_each_signature_and_matches_manual_receipts(
         assert run.receipt is not None
         assert run.receipt.on_behalf_of == "local"
         assert service.get_plan(db, run.plan_id).agent_id is None
+
+
+def test_rejected_step_fails_and_resume_asks_for_a_new_signature(
+    db: Database, tmp_path: Path
+) -> None:
+    """A rejection stops the chain with its reason; resuming submits a fresh plan to sign."""
+    dataset = images(db, tmp_path / "images")
+    chain = plan(db, SETUP, PageContext(dataset_id=dataset.id)).chain
+    assert chain is not None
+    waiting = advance_chain(db, chain.id, "local")
+    rejected_id = waiting.steps[1].plan_ids[0]
+    digest = service.get_plan(db, rejected_id).plan_digest
+    service.approve_plan(
+        db, rejected_id, ApprovalDecision(approve=False, plan_digest=digest, actor="local")
+    )
+    failed = advance_chain(db, chain.id, "local")
+    assert failed.status == "failed"
+    assert failed.steps[1].error == "The approver rejected this step"
+    resumed = advance_chain(db, chain.id, "local")
+    assert resumed.status == "awaiting_approval"
+    fresh = resumed.steps[1].plan_ids[0]
+    assert fresh != rejected_id
+    assert service.get_plan(db, fresh).status == "PREPARED"
+    assert [run.action_type for run in service.list_runs(db)] == ["create_label_set"]

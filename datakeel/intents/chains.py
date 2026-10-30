@@ -79,9 +79,12 @@ def _execute(
 
 
 def _existing(
-    db: Database, chain: ActionChain, plan_id: str
+    db: Database, chain: ActionChain, plan_id: str, *, resuming: bool
 ) -> tuple[TargetState, ActionRun | None, str | None] | None:
-    """Continue an earlier plan for this target, or return None to prepare a new one."""
+    """Continue an earlier plan for this target, or return None to prepare a new one.
+
+    A rejected plan fails the step; resuming that step asks for a new signature.
+    """
     plan = get_plan(db, plan_id)
     runs = plan_runs(db, [plan_id])[plan_id]
     succeeded = next((run for run in runs if run.status == "SUCCEEDED"), None)
@@ -90,9 +93,9 @@ def _existing(
     pending = next((run for run in runs if run.status in {"QUEUED", "RUNNING"}), None)
     if pending is not None:
         return "running", pending, None
-    if plan.status == "REJECTED":
+    if plan.status == "REJECTED" and not resuming:
         return "failed", None, "The approver rejected this step"
-    if plan.status == "FAILED" or plan.expires_at <= utcnow():
+    if plan.status in {"REJECTED", "FAILED"} or plan.expires_at <= utcnow():
         return None
     if plan.status == "APPROVED" or not plan.requires_approval:
         return _execute(db, chain, plan)
@@ -100,13 +103,19 @@ def _existing(
 
 
 def _run_target(
-    db: Database, chain: ActionChain, step: ChainStep, index: int, params: dict[str, JsonValue]
+    db: Database,
+    chain: ActionChain,
+    step: ChainStep,
+    index: int,
+    params: dict[str, JsonValue],
+    *,
+    resuming: bool,
 ) -> tuple[TargetState, str, ActionRun | None, str | None]:
     plan_id = step.plan_ids[index] if index < len(step.plan_ids) else ""
     request_id = f"{params.get('request_id', chain.id)}-{step.attempts}-{index}"
     try:
         if plan_id:
-            existing = _existing(db, chain, plan_id)
+            existing = _existing(db, chain, plan_id, resuming=resuming)
             if existing is not None:
                 return existing[0], plan_id, existing[1], existing[2]
             request_id = f"{request_id}-{new_id()[:8]}"
@@ -139,7 +148,9 @@ def _run_step(db: Database, chain: ActionChain, step: ChainStep) -> ChainStep:
     states: set[TargetState] = set()
     for index, item in enumerate(targets):
         snapshot = current.model_copy(update={"plan_ids": plan_ids})
-        state, plan_id, run, error = _run_target(db, chain, snapshot, index, {**base, **item})
+        state, plan_id, run, error = _run_target(
+            db, chain, snapshot, index, {**base, **item}, resuming=step.status == "failed"
+        )
         plan_ids[index] = plan_id
         if run is not None:
             run_ids[index] = run.id

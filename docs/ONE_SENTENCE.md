@@ -20,7 +20,7 @@ A plan is stored as an action chain. Each step is an ordinary controlled action;
 
 - **Confirm**: the person presses **Confirm and run** (or runs `datakeel intents run <chain>`; HTTP `POST /api/intents/chains/{id}/run`). Steps are prepared and executed one by one through the same services as manual actions, so receipts, audit and lineage are identical and name the person.
 - **Signatures**: a step that is irreversible, external or governed waits in the approval queue. Sign it in the chain card or on the Approvals page, then the chain continues.
-- **Failure**: the chain stops at the failed step with its reason; finished steps stay done. **Resume** (or the same CLI/HTTP call) skips steps and fan-out targets that already executed and never repeats them.
+- **Failure**: the chain stops at the failed step with its reason; finished steps stay done. **Resume** (or the same CLI/HTTP call) skips steps and fan-out targets that already executed and never repeats them. A rejected signature also fails the step; resuming submits a fresh plan for a new signature.
 - Only the person who asked can read or run a chain. MCP and the Agent can never confirm or execute a write: there is no MCP tool for chains, and the Agent only proposes.
 
 `datakeel intents plan "<sentence>" [--dataset --version --project --package --actor]` plans from the command line; `datakeel intents show <chain>` prints it.
