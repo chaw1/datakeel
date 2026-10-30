@@ -57,3 +57,11 @@ def signature(name: str) -> str:
 def all_signatures() -> dict[str, str]:
     """Every registered action and read function by name."""
     return {name: signature(name) for name in [*PARAMETER_TYPES, *PARAMETER_MODELS]}
+
+
+def choice_values(name: str, field: str) -> list[str]:
+    """The allowed values of one parameter with a short fixed choice; empty otherwise."""
+    model = PARAMETER_TYPES.get(name) or PARAMETER_MODELS.get(name)
+    info = model.model_fields.get(field) if model is not None else None
+    values = _literal(info.annotation) if info is not None else None
+    return [str(value) for value in values] if values and len(values) <= ENUM_LIMIT else []

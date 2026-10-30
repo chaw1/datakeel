@@ -73,14 +73,17 @@ INSTRUCTIONS = (
     "claim or release (放回) their own tasks. The 2nd package of the page project is "
     '{"$nth": 2} as package_id. A subset of files is never the whole dataset: the '
     'selected files are {"$files": {"kind": "selected"}}, near-duplicate copies are '
-    '{"$files": {"kind": "near_duplicates"}} as selection. To change an existing label set '
+    '{"$files": {"kind": "near_duplicates"}}, files named by file name are {"$files": '
+    '{"kind": "named", "names": ["a.png"]}} as selection. To change an existing label set '
     "give label_set_id with add_labels (new labels), remove_labels (names) and/or "
     'rename_labels ([{"from": "old name", "to": "new name"}]); never write migration, it '
     "is derived; never re-list the existing labels and never drop labels the person did "
     "not name. To give a person skills or teams, or take them away, use manage_users "
     "operation=update with user_id and add_skill_ids/remove_skill_ids/add_team_ids/"
     "remove_team_ids (skill_ids replaces the whole list); to enable or disable an account use "
-    "operation=update with status. A new skill, role, team, label set, project or person "
+    "operation=update with status; to give or take a role use operation=bind_role or "
+    "unbind_role with role_id (and project_id for one project). A new skill, role, team, "
+    "label set, project or person "
     "is named by name; its id is derived, so never look a new object up in the catalog. "
     "Leave optional parameters out unless the person gave them. Cloud model steps "
     "(draft_label_set with a cloud profile, run_prelabel) only when the person asks to "

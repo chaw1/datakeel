@@ -275,6 +275,33 @@ PLANNING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="intent-missing-choice-offers-its-values",
+        path="intents/validate.py",
+        before="    if field and not kind:",
+        after="    if False:",
+        case=_SCOPE + "test_a_missing_choice_is_asked_with_its_allowed_values",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-role-change-is-a-binding",
+        path="intents/verify.py",
+        before=(
+            '    if step.action != "manage_users" or params.get("operation") != "update" '
+            "or not roles:"
+        ),
+        after="    if True:",
+        case=_SCOPE + "test_a_role_is_bound_not_written_into_an_account_update",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-files-named-by-file-name",
+        path="intents/selectors.py",
+        before='    elif kind == "named":',
+        after="    elif False:",
+        case=_SCOPE + "test_files_named_by_file_name_resolve_to_exactly_those",
+        runner="pytest",
+    ),
+    Mutation(
         name="intent-recipe-data-phrase-is-not-a-label",
         path="intents/recipes.py",
         before="    if after and not _DATA_PHRASE.search(after):",

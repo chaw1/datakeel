@@ -40,6 +40,24 @@ def _dataset_files(db: Database, dataset_id: str, version_id: str | None) -> lis
     return [item.asset_ref.asset_id for item in found.objects]
 
 
+def named_files(
+    db: Database, dataset_id: str, version_id: str | None, names: list[str]
+) -> list[str] | None:
+    """Files named by their file names; None when any name is not in the dataset."""
+    versions = [version_id] if version_id else []
+    found = evaluate(
+        db, ObjectSet(dataset_id=dataset_id, version_ids=versions, limit=SELECTION_LIMIT)
+    )
+    by_name: dict[str, str] = {}
+    for item in found.objects:
+        for key in ("filename", "name", "path"):
+            value = item.properties.get(key)
+            if isinstance(value, str) and value:
+                by_name.setdefault(value.rsplit("/", 1)[-1].casefold(), item.asset_ref.asset_id)
+    chosen = [by_name.get(name.strip().rsplit("/", 1)[-1].casefold()) for name in names]
+    return None if not chosen or None in chosen else [item for item in chosen if item]
+
+
 def near_duplicates(db: Database, dataset_id: str, version_id: str | None) -> list[str]:
     """Later copies of each near-duplicate pair; the first file of every group is kept."""
     files = set(_dataset_files(db, dataset_id, version_id))
@@ -70,6 +88,13 @@ def file_selection(
         ids = list(selected)
     elif kind == "near_duplicates":
         ids = near_duplicates(db, dataset_id, version_id)
+    elif kind == "named":
+        raw = spec.get("names")
+        listed = [item for item in raw if isinstance(item, str)] if isinstance(raw, list) else []
+        named = named_files(db, dataset_id, version_id, listed)
+        if named is None:
+            return None
+        ids = named
     else:
         return None
     if not ids:

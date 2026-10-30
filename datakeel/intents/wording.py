@@ -224,7 +224,7 @@ def nothing_to_change(kind: str, holder: str, language: str) -> str:
 def invalid_question(problem: str, language: str) -> str:
     """Values the action rejects, named with what is allowed; never the raw error."""
     parts: list[str] = []
-    for entry in problem.split("|"):
+    for entry in dict.fromkeys(problem.split("|")):
         field, _, expected = entry.partition(":")
         label = field_label(field, language)
         if language == "zh":

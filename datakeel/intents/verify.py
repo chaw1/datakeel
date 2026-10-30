@@ -170,6 +170,22 @@ def _duplicate_problem(step: DraftStep, text: str, catalog: EntityCatalog) -> Pr
     )
 
 
+def _role_problem(step: DraftStep) -> Problem | None:
+    """An account update never changes roles; binding a role is its own operation."""
+    params = step.params
+    roles = params.get("role_id") or params.get("role_ids")
+    if step.action != "manage_users" or params.get("operation") != "update" or not roles:
+        return None
+    return Problem(
+        code="ineffective",
+        hint="operation=update does not change roles: give a role with operation=bind_role "
+        "and role_id (one step per role, project_id for one project); take one away with "
+        "unbind_role.",
+        question_zh="你是要给这个人加上这个角色吗? 请说一下角色和项目。",
+        question_en="Do you want to give this person that role? Please name the role and project.",
+    )
+
+
 def _dropped_problem(db: Database, step: DraftStep, text: str) -> Problem | None:
     """A full skill or team list that silently drops what the person did not mention."""
     if step.action != "manage_users" or step.params.get("operation") != "update":
@@ -210,6 +226,7 @@ def draft_problems(
             or _model_problem(step, state.text)
             or _duplicate_problem(step, state.text, catalog)
             or _dropped_problem(db, step, state.text)
+            or _role_problem(step)
         )
         if problem is not None:
             found.append(problem)

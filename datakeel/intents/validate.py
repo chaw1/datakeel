@@ -12,7 +12,7 @@ from pydantic_core import ErrorDetails
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.actions.registry import POLICIES
 from datakeel.core.errors import NotFoundError, ValidationError
-from datakeel.core.intent_models import ChainStep, Clarification
+from datakeel.core.intent_models import Candidate, ChainStep, Clarification
 from datakeel.core.models import BoundaryModel
 from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog, candidates
 from datakeel.intents.describe import describe_step
@@ -20,6 +20,7 @@ from datakeel.intents.drafts import DraftStep
 from datakeel.intents.estimates import estimate_step
 from datakeel.intents.fill import FillState, context_value
 from datakeel.intents.object_edits import operation_needs
+from datakeel.intents.signatures import choice_values
 from datakeel.intents.verify import says_whole
 from datakeel.intents.wording import (
     invalid_question,
@@ -224,6 +225,12 @@ def _missing(
     field = missing[0] if len(missing) == 1 else None
     kind = FIELD_KINDS.get(field or "") or LIST_KINDS.get(field or "")
     choices = candidates(catalog.of(kind)) if kind and kind != "task" else []
+    if field and not kind:
+        # A short choice of values (approve or rework, a workflow tier) is offered as is.
+        choices = [
+            Candidate(id=value, label=value, kind="value")
+            for value in choice_values(step.action, field)
+        ]
     return Clarification(
         question=missing_question(step.action, missing, state.language),
         action=step.action,

@@ -104,9 +104,15 @@ def _tasks(
 
 
 def numbered(field: str, value: JsonValue) -> dict[str, JsonValue] | None:
-    """Task numbers written as task ids ("#8", "第 8 个") become a numbers selector."""
+    """Task numbers written as task ids ("#8", "第 8 个") become a numbers selector.
+
+    A selector the model wrapped in a list (``[{"$tasks": {...}}]``) is the selector itself.
+    """
     if field not in TASK_FIELDS:
         return None
+    if isinstance(value, list) and len(value) == 1 and isinstance(value[0], dict):
+        inner = value[0]
+        return inner if "$tasks" in inner else None
     values = value if isinstance(value, list) else [value]
     found = [task_number(item) for item in values if isinstance(item, str)]
     if not values or len(found) != len(values) or None in found:

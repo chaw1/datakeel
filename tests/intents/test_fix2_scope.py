@@ -25,13 +25,18 @@ from datakeel.intents.model_parse import AGENT_NAME
 from datakeel.intents.planner import ModelAccess, PlannerTurn, plan_turn
 from datakeel.intents.recipes import match_recipe
 from datakeel.intents.task_scope import select_tasks
+from datakeel.ontology.models import ObjectSet
 from datakeel.storage.intent_reads import TaskSnapshot
+from datakeel.storage.object_queries import evaluate
 from datakeel.storage.production_queries import get_task, list_tasks
+from tests.intents.support import images
 from tests.production_helpers import production_fixture
 from tests.production_team_ops import save, submit
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pytest
 
     from datakeel.core.production_models import Project
@@ -122,6 +127,9 @@ def test_a_described_group_is_read_first_and_protected_tasks_are_left_out(db: Da
     numbered = step("assign_tasks", {"task_ids": ["#5"], "actor": "wang"})
     result, _ = planned(db, "Assign task #5 to Wang", [numbered], page)
     assert tasks_of(result) == [tasks[4]]
+    wrapped = step("assign_tasks", {"task_ids": [{"$tasks": {"numbers": [5, 6]}}], "actor": "li"})
+    result, _ = planned(db, "Assign tasks #5 and #6 to Li", [wrapped], page)
+    assert tasks_of(result) == tasks[4:6]
     bare, _ = planned(db, "把任务派给小李", [everything], page)
     assert bare.kind == "clarify"
     assert "全部" in bare.text
@@ -382,3 +390,55 @@ def test_a_full_skill_list_never_drops_skills_the_person_did_not_mention(db: Dat
     asked, _ = planned(db, "Add the 图片分类 skill to Li", [replaced, replaced], PageContext())
     assert asked.kind == "clarify"
     assert "车辆框" in asked.text or "box" in asked.text
+
+
+def test_a_missing_choice_is_asked_with_its_allowed_values(db: Database) -> None:
+    """A review decision left out is asked about with approve and rework to pick from."""
+    _, tasks = world(db)
+    undecided = step("review_task", {"task_id": tasks[3]})
+    result, _ = planned(db, "看下这条", [undecided], PageContext(task_id=tasks[3]), actor="zhao")
+    assert result.kind == "clarify"
+    assert result.clarification is not None
+    assert [item.id for item in result.clarification.candidates] == ["approve", "rework"]
+
+
+def test_a_role_is_bound_not_written_into_an_account_update(db: Database) -> None:
+    """Roles written into an account update change nothing: repaired once to bind_role."""
+    project, _ = world(db)
+    wrong = step(
+        "manage_users", {"operation": "update", "user_id": "wang", "role_ids": ["reviewer"]}
+    )
+    bind = {"operation": "bind_role", "user_id": "wang", "role_id": "reviewer"}
+    right = step("manage_users", {**bind, "project_id": project.id})
+    context = PageContext(project_id=project.id)
+    text = "给小王加上审核员角色, 在这个项目里"
+    result, sent = planned(db, text, [wrong, right], context)
+    assert len(sent) == 2
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    assert result.chain.steps[0].params["operation"] == "bind_role"
+    asked, _ = planned(db, text, [wrong, wrong], context)
+    assert asked.kind == "clarify"
+
+
+def test_files_named_by_file_name_resolve_to_exactly_those(db: Database, tmp_path: Path) -> None:
+    """A file the person names is that one file; a name not in the dataset is asked about."""
+    dataset = images(db, tmp_path / "images")
+    whole = evaluate(db, ObjectSet(dataset_id=dataset.id, limit=100))
+    target = whole.objects[1]
+    name = str(target.properties["filename"])
+    context = PageContext(dataset_id=dataset.id)
+    named = {"$files": {"kind": "named", "names": [name]}}
+    result, _ = planned(
+        db, f"把 {name} 隔离", [step("quarantine_files", {"selection": named})], context
+    )
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    selection = result.chain.steps[0].params["selection"]
+    assert isinstance(selection, dict)
+    assert selection["filters"][0]["value"] == [target.asset_ref.asset_id]  # type: ignore[index,call-overload]
+    unknown = {"$files": {"kind": "named", "names": ["nope.png"]}}
+    asked, _ = planned(
+        db, "把 nope.png 隔离", [step("quarantine_files", {"selection": unknown})], context
+    )
+    assert asked.kind == "clarify"
