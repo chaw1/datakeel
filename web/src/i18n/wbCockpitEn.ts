@@ -10,6 +10,7 @@ export const wbCockpitEn = {
   wbPackageAccepted: "Accepted",
   wbPackageRejected: "Rejected, back in rework",
   wbSamplingSummary: "Check {sample}, at most {allowed} may fail",
+  wbSamplingChecked: "Checked {sample} of {lot}",
   wbSamplingPending: "Sample is drawn once every task is approved",
   wbNoInspection: "Not inspected yet",
   wbInspectionAccepted:

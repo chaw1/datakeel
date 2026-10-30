@@ -84,7 +84,12 @@ export function TeamPackages({
                         sample: row.sampling.sample_size,
                         allowed: row.sampling.acceptance_number,
                       })
-                    : t("wbSamplingPending")}
+                    : row.latest
+                      ? t("wbSamplingChecked", {
+                          sample: row.latest.sampling.sample_size,
+                          lot: row.latest.sampling.lot_size,
+                        })
+                      : t("wbSamplingPending")}
                 </td>
                 <td>
                   {!row.latest

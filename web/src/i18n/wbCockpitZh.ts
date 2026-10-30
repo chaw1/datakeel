@@ -12,6 +12,7 @@ export const wbCockpitZh: Record<keyof typeof wbCockpitEn, string> = {
   wbPackageAccepted: "已验收通过",
   wbPackageRejected: "已拒收，返工中",
   wbSamplingSummary: "抽 {sample} 条，最多允许 {allowed} 条有问题",
+  wbSamplingChecked: "已抽检 {lot} 条中的 {sample} 条",
   wbSamplingPending: "全部通过审核后才抽样",
   wbNoInspection: "还没验收过",
   wbInspectionAccepted: "通过：抽 {sample} 条，{defective} 条有问题",
