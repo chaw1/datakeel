@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Privacy shape mutations: bracketed North American phones and half-bracket matches."""
+"""Privacy shape mutations: bracketed North American and mobile phones, half brackets."""
 
 from scripts.mutation_models import Mutation
 
@@ -10,6 +10,9 @@ _NORTH_AMERICAN = (
     "tests/core/test_pii_phone_north_american.py::test_north_american_phone_mutation_guard"
 )
 _HALF_BRACKET = "tests/core/test_pii_phone_half_brackets.py::test_half_bracket_mutation_guard"
+_BRACKETED_MOBILE = (
+    "tests/core/test_pii_phone_bracketed_mobile.py::test_bracketed_mobile_mutation_guard"
+)
 # The North American alternative of the bracketed-phone expression, verbatim.
 _BRANCH = 'r"|(?:\\([2-9][0-9]{2}\\)|\\uff08[2-9][0-9]{2}\\uff09)[ -]*[2-9][0-9]{2}[ -]?[0-9]{4}"'
 
@@ -60,6 +63,38 @@ PII_SHAPE_MUTATIONS = (
         before="    return depth > 0\n",
         after="    return False\n",
         case=_HALF_BRACKET,
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-bracketed-mobile-branch",
+        path=_PATTERNS,
+        before='r"|(?:\\(1[3-9][0-9]\\)|\\uff081[3-9][0-9]\\uff09)[ -]*[0-9]{4}[ -]?[0-9]{4}"',
+        after='r"|(?!)"',
+        case=_BRACKETED_MOBILE,
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-bracketed-mobile-prefix",
+        path=_PATTERNS,
+        before="\\(1[3-9][0-9]\\)|",
+        after="\\(1[0-9][0-9]\\)|",
+        case=_BRACKETED_MOBILE,
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-bracketed-mobile-wide-prefix",
+        path=_PATTERNS,
+        before="\\uff081[3-9][0-9]\\uff09)",
+        after="\\uff081[0-9][0-9]\\uff09)",
+        case=_BRACKETED_MOBILE,
+        runner="pytest",
+    ),
+    Mutation(
+        name="pii-phone-bracketed-mobile-body",
+        path=_PATTERNS,
+        before="uff09)[ -]*[0-9]{4}[ -]?[0-9]{4}",
+        after="uff09)[ -]*[0-9]{3,4}[ -]?[0-9]{4}",
+        case=_BRACKETED_MOBILE,
         runner="pytest",
     ),
 )
