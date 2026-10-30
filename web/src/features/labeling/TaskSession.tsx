@@ -69,6 +69,8 @@ export function TaskSession({
   });
   const { snapshot, session } = data;
   const personal = project.project.workflow_tier === "personal";
+  // The path under the import root; a task cached before paths were sent shows its file name.
+  const samplePath = task.sample.path || task.sample.name;
   const editable =
     allowed(project.effective_scopes, "production:annotate") &&
     taskEditable(snapshot, actor, personal) &&
@@ -148,7 +150,10 @@ export function TaskSession({
       data-task-id={task.task.id}
     >
       <div className="wb-operation-bar">
-        <h2 className="wb-task-name">{task.sample.name}</h2>
+        {/* Long paths are cut short by CSS; the title keeps the whole path on hover. */}
+        <h2 className="wb-task-name" title={samplePath}>
+          {samplePath}
+        </h2>
         {!locked && (
           <TaskToolbar
             editable={editable}

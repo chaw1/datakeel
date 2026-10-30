@@ -118,6 +118,12 @@ class WorkbenchSample(BoundaryModel):
 
     id: str
     name: str
+    path: str = Field(
+        description=(
+            "The path under the imported directory, such as `site-a/day-1/shelf.png`, or the "
+            "file name when none was recorded. Never a server path or object key."
+        )
+    )
     media_type: str
     text: str | None = None
     image_width: int | None = None

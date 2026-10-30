@@ -12416,6 +12416,11 @@ export interface components {
             media_type: string;
             /** Name */
             name: string;
+            /**
+             * Path
+             * @description The path under the imported directory, such as `site-a/day-1/shelf.png`, or the file name when none was recorded. Never a server path or object key.
+             */
+            path: string;
             /** Text */
             text?: string | null;
             /** Thumbnail Url */

@@ -179,7 +179,7 @@ def task_source(db: Database, task_id: str, caller: AccessContext) -> tuple[Path
 
 
 def _sample(
-    path: Path, name: str, task: ProductionTask, *, text_sample: bool = False
+    path: Path, name: str, task: ProductionTask, *, relative: str, text_sample: bool = False
 ) -> WorkbenchSample:
     media_type = mimetypes.guess_type(name)[0] or "application/octet-stream"
     if text_sample and not media_type.startswith("image/"):
@@ -201,6 +201,7 @@ def _sample(
     return WorkbenchSample(
         id=task.sample_id,
         name=name,
+        path=relative,
         media_type=media_type,
         text=text,
         image_width=width,
@@ -217,6 +218,7 @@ def workbench_task(db: Database, task_id: str, caller: AccessContext) -> Workben
     project = get_project(db, task.project_id)
     with db.session() as session:
         template = locked_template(session, project)
+        _, relative = sample_names(session, project).get(task.sample_id, (name, name))
     configured = template.component_config.get("components") if template else None
     text_sample = template is not None and (
         template.annotation_type == "text_span"
@@ -228,6 +230,7 @@ def workbench_task(db: Database, task_id: str, caller: AccessContext) -> Workben
             path,
             name,
             task,
+            relative=relative,
             text_sample=text_sample,
         ),
         revisions=tuple(

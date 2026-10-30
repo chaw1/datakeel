@@ -1,12 +1,13 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""TAILS-4 interface tails: English answer wording and the assignee read tool."""
+"""TAILS-4 interface tails: English answer wording, the assignee read tool and task paths."""
 
 from scripts.mutation_models import Mutation
 
 _EN = "tests/ask/test_interpretation_en.py::"
 _ASSIGNEES = "tests/mcp/test_production_assignees.py::"
+_TASK_PATH = "tests/storage/test_workbench_task_path.py::"
 
 TAILS_MUTATIONS = (
     Mutation(
@@ -55,6 +56,14 @@ TAILS_MUTATIONS = (
         before="return assignees(db, query.project_id, caller, query.stage)",
         after='return assignees(db, query.project_id, caller, "annotation")',
         case=_ASSIGNEES + "test_mcp_assignees_matches_http_for_each_stage",
+        runner="pytest",
+    ),
+    Mutation(
+        name="workbench-task-relative-path",
+        path="storage/workbench_reads.py",
+        before="path=relative,",
+        after="path=name,",
+        case=_TASK_PATH + "test_opened_task_shows_the_relative_path_listed_for_it",
         runner="pytest",
     ),
 )
