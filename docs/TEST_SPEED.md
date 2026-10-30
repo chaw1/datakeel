@@ -5,10 +5,12 @@ quality thresholds. `make check` still runs the complete gate; `scripts/ci-check
 runs the README checks and every declared mutation. The existing default
 `-m 'not integration'` is unchanged. Overall coverage remains at least 85%, and the
 domain coverage checks in `scripts/check_coverage.py` still run after the merged report.
+GitHub CI runs the same commands split across parallel jobs; see [CI layout](#ci-layout--ci-分片).
 
 并行只改变调度与夹具准备，不改变用例选择和质量门槛。`make check` 仍执行完整门禁；
 `scripts/ci-check.sh` 另执行 README 检查和全部变异锚。原有默认
 `-m 'not integration'` 不变，总覆盖率仍须达到 85%，合并报告后仍执行领域覆盖率检查。
+GitHub CI 把同一组命令拆到多个并行 job 上执行，见下文「CI 分片」。
 
 ## Scheduling options / 调度方式比较
 
@@ -20,7 +22,7 @@ domain coverage checks in `scripts/check_coverage.py` still run after the merged
 | xdist `loadgroup` | Keep each `xdist_group` together; dispatch unmarked tests as `load`. / 相同 `xdist_group` 留在同一 worker，未标记用例按 `load` 派发。 | Shares a Docker fixture but allows other workers to compete for resources. / 可复用 Docker 夹具，其它 worker 仍会争用资源。 |
 | Repository security scheduler / 本仓安全调度器 | Run the security group alone, then execute ordinary cases concurrently. / 安全组先独占执行，再并行执行普通用例。 | Protects container startup and cleanup; adds a serial phase. / 保护容器启动与清理，代价是增加独占阶段。 |
 | xdist `worksteal` | Redistribute queued tests from busy workers. / 空闲 worker 从繁忙队列取任务。 | Handles variable durations; no file affinity guarantee. / 应对耗时差异，不保证文件亲和。 |
-| Separate pytest shards / 多个 pytest 分片 | Manually partition node IDs and merge reports. / 自行划分节点并合并报告。 | Adds collection, completeness and reporting logic. / 需额外维护收集完整性与报告。 |
+| Separate pytest shards / 多个 pytest 分片 | Manually partition node IDs and merge reports. / 自行划分节点并合并报告。 | Used across CI jobs, with a completeness check and merged coverage. / CI 跨 job 使用，配完整性检查与覆盖率合并。 |
 | Python process pool / Python 进程池 | Execute picklable work in separate interpreters. / 独立解释器执行可序列化任务。 | Suitable for independent jobs; does not supply pytest scheduling or reporting. / 适合独立任务，不能直接替代 pytest 调度和报告。 |
 | Python thread pool / Python 线程池 | Share an interpreter while overlapping work. / 共用解释器并发执行。 | Suitable for supervising subprocesses, unsafe for simultaneous in-process pytest sessions. / 可管理子进程，不宜在同一进程并跑 pytest 会话。 |
 
@@ -87,13 +89,14 @@ The fit assessment is based on this repository's fixtures and runners.
   choosing worker count and scheduler; a scheduler does not make shared paths safe.
   / 真实沙箱夹具拥有唯一镜像 tag 和独立构建状态目录，只删除自己创建的精确 tag。
   选择并行数与调度方式时须考虑 session 夹具重复，调度方式本身不能隔离共享路径。
-- pytest-cov supports xdist and combines worker coverage into one report. Keep the existing
-  terminal, XML and JSON reports and apply all thresholds to the combined result.
+- pytest-cov supports xdist and combines worker coverage into one data file. `make check-coverage`
+  then writes the terminal, XML and JSON reports and applies all thresholds to that result;
+  CI first combines the data files of all shards.
   This differs from coverage in ordinary child processes: pytest-cov 7 removed its own
   subprocess instrumentation; enabling that separately would require coverage's subprocess
   patch and is outside the scheduling change.
-  / pytest-cov 原生支持 xdist 并合并 worker 覆盖率。保留终端、XML、JSON 报告，门槛作用于
-  合并结果。普通子进程覆盖率是另一件事：pytest-cov 7 已移除自己的子进程采集；如另行
+  / pytest-cov 原生支持 xdist，把各 worker 覆盖率合并成一个数据文件；`make check-coverage`
+  再输出终端、XML、JSON 报告，门槛作用于合并结果；CI 先合并所有分片的数据文件。普通子进程覆盖率是另一件事：pytest-cov 7 已移除自己的子进程采集；如另行
   启用，需要 coverage 的 subprocess patch，不应与本次调度改动混淆。
 
 Sources: [pytest-cov xdist support](https://pytest-cov.readthedocs.io/en/stable/xdist.html),
@@ -116,13 +119,15 @@ and [PostgreSQL 17 CREATE DATABASE](https://www.postgresql.org/docs/17/sql-creat
 
 ## Commands and default / 入口与默认值
 
-`make check-python` uses `uv run python -m scripts.run_pytest` for the full pytest step.
+`make check-python` runs `check-python-static`, then `check-pytest` (the full pytest step through
+`uv run python -m scripts.run_pytest`) and `check-coverage`.
 The wrapper selects `--dist loadgroup` and explicitly loads `scripts.pytest_groups` with
 `-p` so the plugin also runs in workers. The plugin marks only
 `tests/operators/custom_sandbox/test_security.py` with the security `xdist_group` and
 installs the scheduler in `scripts.pytest_scheduler`.
 
-`make check-python` 的完整 pytest 步骤通过 `uv run python -m scripts.run_pytest` 执行。
+`make check-python` 依次执行 `check-python-static`、`check-pytest`（完整 pytest 步骤，通过
+`uv run python -m scripts.run_pytest` 执行）和 `check-coverage`。
 默认选择 `--dist loadgroup`，通过 `-p` 显式加载 `scripts.pytest_groups`，确保 worker
 也执行插件。插件只给 `tests/operators/custom_sandbox/test_security.py` 添加安全组
 `xdist_group`，并安装 `scripts.pytest_scheduler` 中的调度器。
@@ -226,6 +231,74 @@ Executor `map` preserves catalogue order when collecting results.
 变异管理器使用 `ThreadPoolExecutor`：每项任务本来就启动独立解释器，再套进程池会增加解释器
 和序列化开销。pytest 子进程通过 `-n0` 禁用嵌套 xdist；每项基线也使用独立源码副本，所有
 基线通过后才启动变异池。通过 executor 的 `map` 按目录顺序收集结果。
+
+A subprocess timeout is not evidence either way. When a mutation or baseline exceeds its
+limit (300 seconds for one pytest target, 900 seconds for a complete golden evaluation), the
+whole measurement is repeated once in a fresh source copy. A second timeout is recorded under
+`environment_failures` in the report with the target and the command; the report is still
+written, the script prints one line per failure without a stack trace and exits nonzero. A
+timed-out mutation is never counted as killed, and a timed-out baseline still blocks every
+mutant. Other crashes still fail immediately.
+
+子进程超时不算任何证据。某个变异或基线超过上限（单个 pytest 目标 300 秒，完整 golden
+评测 900 秒）时，在新的源码副本里整体重跑一次；再次超时就在报告的
+`environment_failures` 里记下目标和命令，报告照常写出，每条失败打印一行、不打印 Python
+堆栈，脚本以非零退出。超时的变异不算 KILLED，超时的基线照样拦住所有变异；其它崩溃仍
+直接失败。
+
+## CI layout / CI 分片
+
+`.github/workflows/ci.yml` runs on pull requests, on pushes to `main` and by hand
+(`workflow_dispatch`). A pull request produces one run; a tag push produces none, because the
+tagged commit was already verified. A newer commit on the same pull request cancels its older
+run. Both stacks (SQLite and the PostgreSQL service) run the same jobs with `fail-fast: false`,
+so a failure on one stack never cancels the other:
+
+| Job / job | Commands / 命令 |
+| --- | --- |
+| `gates (<stack>)` | sandbox security tests; `npm run check:source`; `make check-public`; `make check-rust`; `make collect-tests`; `make check-python-static`; `make check-scale`; `make check-web check-licenses`; `npm run check:source`; `scripts/check_readme.py` |
+| `pytest K/4 (<stack>)` | `make install-accel`; `make check-pytest PYTEST_SHARD=K/4` |
+| `mutation K/2 (<stack>)` | `make install-accel`; `scripts/mutate.py --shard K/2 --output …` |
+| `report (<stack>)` | `make check-test-shards`; `make combine-coverage check-coverage`; `scripts/merge_mutation_reports.py` |
+
+`scripts.pytest_shards` keeps whole test files together, so module fixtures, the sandbox
+security group and `ORDERED_MODULES` stay on one shard. Files are packed longest first by
+the seconds in `scripts/pytest_durations.json`; a file without a measurement weighs its test
+count times the measured mean. Refresh the table from downloaded `pytest-*` artifacts with
+`uv run python -m scripts.pytest_durations <artifact directories>`; the slower stack's time
+is kept per file. The weights only affect balance, never selection. The report job checks
+that every shard ran once, each saw the same collection as an unsharded
+`pytest --collect-only`, their selections are disjoint and together equal that collection,
+no file was split, and every selected test passed or skipped. It then combines coverage and
+applies the 85% total line and `scripts/check_coverage.py`, and merges the mutation shard
+reports with the unsharded rules: green baselines, every catalogue mutation measured once and
+killed, no environment failures. Mutation shards deal golden and pytest mutations
+round-robin separately, keeping catalogue order inside each shard.
+
+Each shard job builds and installs the Rust extension itself (about 15 seconds with the shared
+Rust cache): test files import `datakeel_accel` at module level. Locally nothing changes:
+`make check` runs all of this unsharded in one command, and `scripts/ci-check.sh` adds the
+README checks and the whole mutation catalogue.
+
+工作流在 PR、推送 `main` 以及手动触发（`workflow_dispatch`）时运行。一个 PR 只产生一次
+运行；推 tag 不再运行，因为 tag 指向的提交已经在 PR 上验过；同一 PR 的新提交会取消旧
+运行。两个栈（SQLite 与 PostgreSQL 服务容器）跑同样的 job，关掉 fail-fast，一个栈失败不
+取消另一个。job 与命令见上表。
+
+`scripts.pytest_shards` 以整个测试文件为单位分片，模块夹具、沙箱安全组和
+`ORDERED_MODULES` 都留在同一片。按 `scripts/pytest_durations.json` 的秒数从长到短装进当前
+最轻的片；表里没有的文件按「条数 × 实测平均每条秒数」估算。用下载的 `pytest-*` 工件执行
+`uv run python -m scripts.pytest_durations <工件目录>` 刷新耗时表，每个文件取较慢栈的耗时。
+耗时只影响均衡，不影响选择哪些测试。report job 检查：每片恰好运行一次、每片看到的收集结果
+与不分片的 `pytest --collect-only` 相同、各片选择互不重叠且并集等于完整收集、没有文件被拆开、
+每条选中的测试都通过或跳过；再合并覆盖率，按 85% 总线和 `scripts/check_coverage.py` 判定；
+最后合并变异分片报告，按不分片时的规则判定：基线全绿、目录里每个变异恰好测一次且全部
+KILLED、没有环境失败。变异分片把 golden 型和 pytest 型变异各自轮流发到各片，片内保持目录
+顺序。
+
+每个分片 job 自己构建并安装 Rust 扩展（共享 Rust 缓存后约 15 秒），因为测试文件在模块顶层
+导入 `datakeel_accel`。本机用法不变：`make check` 一条命令不分片跑完以上全部，
+`scripts/ci-check.sh` 另跑 README 检查和完整变异目录。
 
 ## Measurement protocol / 测量方法
 
