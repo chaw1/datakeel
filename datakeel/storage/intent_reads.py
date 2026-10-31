@@ -7,11 +7,19 @@ from sqlalchemy import func, select
 
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import LabelSet
+from datakeel.core.production_models import AssignmentStage, Project
 from datakeel.storage.database import Database
 from datakeel.storage.display_order import ordered_task_rows
 from datakeel.storage.production_catalog_impact import migration_impact
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
+from datakeel.storage.production_dispatch_rules import active_loads
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
+from datakeel.storage.production_separation import annotators
+from datakeel.storage.production_template_versions import (
+    latest_label_set_version,
+    latest_template,
+    locked_template,
+)
 
 OPEN_STATES = ("pending", "in_progress")
 REVIEW_STATES = ("submitted", "in_review")
@@ -171,3 +179,34 @@ def held_projects(db: Database, actor: str) -> list[str]:
     )
     with db.session() as session:
         return sorted(str(project) for project in session.scalars(statement))
+
+
+def open_load(db: Database, project_id: str, stage: AssignmentStage, person: str) -> int:
+    """Open tasks a person holds in one stage, counted as the per-person limit counts them."""
+    with db.session() as session:
+        return active_loads(session, project_id, stage, (person,)).get(person, 0)
+
+
+def own_work(db: Database, task_ids: list[str], person: str) -> list[str]:
+    """Tasks among these the person annotated in any round, as review separation reads them."""
+    with db.session() as session:
+        return [
+            task
+            for task in task_ids
+            if (row := session.get(ProductionTaskRow, task)) is not None
+            and person in annotators(session, row)
+        ]
+
+
+def newer_versions(db: Database, project: Project) -> bool:
+    """Whether a newer template revision or published label-set version exists to move to."""
+    with db.session() as session:
+        locked = locked_template(session, project)
+        template = project.template_id
+        newer = (
+            locked is not None
+            and template is not None
+            and latest_template(session, template).revision > locked.revision
+        )
+        labels = latest_label_set_version(session, project.label_set_id)
+        return newer or (labels or 0) > project.label_set_version

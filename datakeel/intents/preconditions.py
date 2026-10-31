@@ -18,8 +18,10 @@ from pydantic import JsonValue
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import ChainStep
 from datakeel.core.production_models import Project
+from datakeel.intents.precondition_reasons import REASONS
 from datakeel.storage.database import Database
-from datakeel.storage.intent_reads import task_holders
+from datakeel.storage.identity_store import list_users
+from datakeel.storage.intent_reads import newer_versions, open_load, own_work, task_holders
 from datakeel.storage.production_acceptance import (
     acceptance_state,
     latest_inspection,
@@ -47,6 +49,8 @@ class Target:
     package: str | None
     actor: str
     stage: str
+    assignee: str | None = None
+    limit: int | None = None
 
 
 Found = tuple[str, dict[str, str]] | None
@@ -192,6 +196,48 @@ def _free_task(db: Database, target: Target) -> Found:
     )
 
 
+def _name(db: Database, person: str) -> str:
+    return next((user.display_name for user in list_users(db) if user.id == person), person)
+
+
+def _capacity(db: Database, target: Target) -> Found:
+    """A dispatch only lowers the per-person limit; in a team project the work must fit it."""
+    project, person = target.project, target.assignee
+    if project is None or not person:
+        return None
+    setting = project.max_active_tasks
+    if target.limit is not None and setting is not None and target.limit > setting:
+        return "above_limit", {"asked": str(target.limit), "limit": str(setting)}
+    limit = target.limit if target.limit is not None else setting
+    if project.workflow_tier != "team" or limit is None:
+        return None
+    stage = "review" if target.stage == "review" else "annotation"
+    load, adding = open_load(db, project.id, stage, person), max(len(target.tasks), 1)
+    if load + adding <= limit:
+        return None
+    values = {"load": str(load), "adding": str(adding), "limit": str(limit)}
+    return "over_limit", {"person": _name(db, person), **values}
+
+
+def _separate(db: Database, target: Target) -> Found:
+    """Team review never goes to anyone who annotated the task, in any round or handover."""
+    project, person = target.project, target.assignee
+    if project is None or project.workflow_tier != "team" or target.stage != "review":
+        return None
+    own = own_work(db, list(target.tasks), person) if person else []
+    return (
+        ("own_work", {"person": _name(db, person or ""), "count": str(len(own))}) if own else None
+    )
+
+
+def _upgradable(db: Database, target: Target) -> Found:
+    """Upgrading needs a newer template revision or a newer published label-set version."""
+    project = target.project
+    if project is None or newer_versions(db, project):
+        return None
+    return "up_to_date", {"name": project.name}
+
+
 @dataclass(frozen=True)
 class Precondition:
     """One shared check and the actions earlier in a plan that can change what it reads."""
@@ -218,6 +264,13 @@ PRECONDITIONS: dict[str, Precondition] = {
     "free_task": Precondition(
         _free_task, frozenset({"revoke_assignment", "release_task", "reopen_task", "review_task"})
     ),
+    "capacity": Precondition(
+        _capacity,
+        frozenset({"configure_project", "upgrade_project", "revoke_assignment", "release_task"})
+        | frozenset({"submit_task", "review_task"}),
+    ),
+    "separate": Precondition(_separate),
+    "upgradable": Precondition(_upgradable, frozenset({"create_label_set", "publish_label_set"})),
 }
 
 # What each registered state-changing action needs; execution refuses the rest.
@@ -232,9 +285,10 @@ NEEDS: dict[str, tuple[str, ...]] = {
     "revoke_assignment": ("finalized", "revocable"),
     "heartbeat": ("finalized", "leased"),
     "claim_task": ("finalized", "free_task"),
+    "assign_tasks": ("finalized", "capacity", "separate"),
+    "upgrade_project_template": ("finalized", "upgradable"),
     **dict.fromkeys(
         (
-            "assign_tasks",
             "reopen_task",
             "review_task",
             "configure_project",
@@ -243,89 +297,6 @@ NEEDS: dict[str, tuple[str, ...]] = {
             "import_predictions",
         ),
         _TASK_WORK,
-    ),
-}
-
-REASONS: dict[str, tuple[str, str]] = {
-    "finalized": (
-        "「{name}」已经定稿, 不能再改; 要接着做得新建一个项目",
-        '"{name}" is finalized and cannot change; start a new project to go on',
-    ),
-    "not_approved": (
-        "「{name}」还有 {count} 条任务没通过审核, 现在不能定稿; 可以先把这些任务审完",
-        (
-            '"{name}" still has {count} tasks not approved, so it cannot be finalized yet; '
-            "review them first"
-        ),
-    ),
-    "not_accepted": (
-        "「{name}」还有 {count} 个任务包没验收, 团队档要每个包都验收后才能定稿; 可以先验收这些包",
-        (
-            '"{name}" has {count} packages not accepted yet; a team project finalizes only after '
-            "every package is accepted, so accept them first"
-        ),
-    ),
-    "not_team": (
-        "只有团队档项目才按包验收, 「{name}」不是团队档",
-        'only team projects accept work package by package, and "{name}" is not one',
-    ),
-    "package_not_approved": (
-        "这个任务包里还有 {count} 条任务没通过审核, 现在不能验收; 可以先把它们审完",
-        (
-            "{count} tasks in that package are not approved yet, so it cannot be accepted; "
-            "review them first"
-        ),
-    ),
-    "accepted": (
-        "这个任务包已经验收通过了, 现在的状态就是已验收, 不用再验收",
-        "That package is already accepted; its state is accepted, so nothing to do",
-    ),
-    "not_held": (
-        "其中 {count} 条任务现在不在你手上, 只有领着任务的人才能保存或提交; 可以先领取或派给你",
-        (
-            "{count} of those tasks are not in your hands, and only the person holding a task can "
-            "save or hand it in; claim it or have it assigned to you first"
-        ),
-    ),
-    "not_saved": (
-        (
-            "其中 {count} 条任务没有可提交的标注 (还没保存过, 或已经提交了), 现在不能提交; "
-            "先标注并保存"
-        ),
-        (
-            "{count} of those tasks have nothing to hand in (nothing saved yet, or already handed "
-            "in); annotate and save first"
-        ),
-    ),
-    "not_releasable": (
-        "其中 {count} 条任务不在进行中 (已经提交、通过或还没开始), 不能放弃",
-        (
-            "{count} of those tasks are not in progress (handed in, approved or not started), so "
-            "they cannot be given up"
-        ),
-    ),
-    "split": (
-        "「{name}」已经切过包了, 不能再切",
-        '"{name}" is already split into packages and cannot be split again',
-    ),
-    "not_revocable": (
-        "其中 {count} 条任务已经提交或通过了, 不能收回; 要重做可以先重新打开",
-        (
-            "{count} of those tasks are already submitted or approved and cannot be taken back; "
-            "reopen them instead"
-        ),
-    ),
-    "no_lease": (
-        "「{name}」是小组档, 领到的任务不限时, 没有领取时限要续",
-        '"{name}" is a group project; claimed tasks are not timed, so there is no lease to renew',
-    ),
-    "nothing_free": (
-        "「{name}」里现在没有可领的任务 (都已经有人在做, 或者已经交了)",
-        'There is no task free to claim in "{name}" now (all are taken or handed in)',
-    ),
-    "nothing_free_package": (
-        "这个任务包里现在没有可领的任务 (都已经有人在做, 或者已经交了)",
-        "There is no task free to claim in that package now (all are taken or handed in)",
     ),
 }
 
@@ -354,12 +325,15 @@ def _target(db: Database, step: ChainStep, actor: str) -> Target:
         project = None
     package = step.params.get("package_id")
     stage = step.params.get("stage")
+    assignee, limit = step.params.get("actor"), step.params.get("max_active_tasks")
     return Target(
         project=project,
         tasks=_tasks(step),
         package=package if isinstance(package, str) else None,
         actor=actor,
         stage=stage if isinstance(stage, str) and stage else "annotation",
+        assignee=assignee if isinstance(assignee, str) and assignee else None,
+        limit=limit if isinstance(limit, int) and not isinstance(limit, bool) else None,
     )
 
 
