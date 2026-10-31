@@ -20,7 +20,7 @@ _FILE = _STATE + "test_a_task_named_by_its_file_is_that_task"
 _NARROW = _STATE + "test_numbers_that_are_not_places_narrow_the_described_group"
 _FOLLOWS = _STATE + "test_a_version_that_follows_its_label_set_is_not_asked"
 _EARLIER = _STATE + "test_an_earlier_step_changes_what_later_steps_may_do"
-_QUARANTINE = _STATE + "test_a_quarantine_change_that_changes_nothing_is_already_so"
+_THERE = _STATE + "test_adding_a_label_that_is_there_already_changes_nothing"
 _OWNER = "tests/intents/test_fix3_ownership.py::"
 _LIMITS = "tests/intents/test_fix3_limits.py::"
 
@@ -215,9 +215,15 @@ REQUEST_MUTATIONS = (
         _EARLIER,
     ),
     _anchor(
-        "fix3-a-quarantine-change-that-changes-nothing-is-already-so",
-        "intents/verify.py",
-        ('        "unquarantine_files": not_quarantined,\n', ""),
-        _QUARANTINE,
+        "fix3-adding-a-label-that-is-there-changes-nothing",
+        "intents/edits.py",
+        (
+            (
+                "        if _existing(labels, raw) is None "
+                "and (label := _label(raw, taken)) is not None:"
+            ),
+            "        if (label := _label(raw, taken)) is not None:",
+        ),
+        _THERE,
     ),
 )
