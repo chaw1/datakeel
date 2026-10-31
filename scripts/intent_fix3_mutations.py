@@ -13,6 +13,7 @@ from scripts.intent_fix3_owner_mutations import OWNER_MUTATIONS
 from scripts.intent_fix3_request_mutations import REQUEST_MUTATIONS
 from scripts.intent_fix4_mutations import EXPLORE_MUTATIONS
 from scripts.intent_fix5_mutations import FLOW_MUTATIONS
+from scripts.intent_fix6_mutations import FIX6_MUTATIONS
 from scripts.mutation_models import Mutation
 
 _SCOPE = "tests/intents/test_fix3_scope.py::"
@@ -105,7 +106,10 @@ STATE_AND_WORDS_MUTATIONS = (
     Mutation(
         name="fix3-p4-outgoing-check-finds-choice-words",
         path="intents/public_text.py",
-        before="        found += [word for word in WORD.findall(rest) if word in ZH_CHOICES]",
+        before=(
+            "        found += [word for word in WORD.findall(rest) if word in ZH_WORDS or word in "
+            "ZH_FIELDS]"
+        ),
         after="        found += []",
         case=_WORDS + "test_the_outgoing_check_repairs_known_names_and_replaces_the_rest",
         runner="pytest",
@@ -321,4 +325,5 @@ INTENT_FIX3_MUTATIONS = (
     *REQUEST_MUTATIONS,
     *EXPLORE_MUTATIONS,
     *FLOW_MUTATIONS,
+    *FIX6_MUTATIONS,
 )

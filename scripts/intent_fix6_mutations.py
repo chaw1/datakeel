@@ -1,0 +1,208 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""FIX6 anchors: every state-changing action's needs, later turns, groups and the exit."""
+
+from scripts.mutation_models import Mutation
+
+_T = "tests/intents/test_fix6_"
+
+
+def _anchor(name: str, path: str, change: tuple[str, str], case: str) -> Mutation:
+    before, after = change
+    return Mutation(
+        name=f"fix6-{name}", path=path, before=before, after=after, case=_T + case, runner="pytest"
+    )
+
+
+FIX6_MUTATIONS = (
+    _anchor(
+        "a-later-turns-back-reference-is-the-earlier-object",
+        "intents/fill.py",
+        (
+            (
+                "    back = earlier_object(field, current.params[field], state)  "
+                '# "刚才那个": last turn\'s'
+            ),
+            "    back = None",
+        ),
+        "turns.py::test_those_tasks_in_a_later_turn_are_the_ones_just_assigned",
+    ),
+    _anchor(
+        "the-previous-turn-keeps-objects-of-every-kind",
+        "intents/planner.py",
+        (
+            '            for key in {*CONTAINER_OUTPUTS, *FIELD_KINDS, "task_ids"}:',
+            "            for key in CONTAINER_OUTPUTS:",
+        ),
+        "turns.py::test_that_person_in_a_later_turn_is_the_one_named_before",
+    ),
+    _anchor(
+        "a-model-registered-earlier-is-not-looked-up",
+        "intents/created.py",
+        (
+            '        _known(created, "model", model.get("id"), (model.get("name"),))',
+            "        pass",
+        ),
+        "create.py::test_a_model_registered_earlier_in_the_plan_is_used_by_name_or_as_it",
+    ),
+    _anchor(
+        "it-in-a-plan-is-the-one-object-made-earlier",
+        "intents/created.py",
+        ("    if BACK.match(item.strip()) and len(made) == 1:", "    if False:"),
+        "create.py::test_a_model_registered_earlier_in_the_plan_is_used_by_name_or_as_it",
+    ),
+    _anchor(
+        "the-next-n-come-after-the-ones-taken",
+        "intents/segments.py",
+        ("    if not _segmented(spec, state):", "    if True:"),
+        "groups.py::test_the_next_two_are_counted_after_the_first_two",
+    ),
+    _anchor(
+        "one-group-for-two-steps-is-one-set",
+        "intents/segments.py",
+        (
+            "    same = None if _segmented(spec, state) else state.chosen.get(_key(spec))",
+            "    same = None",
+        ),
+        "groups.py::test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both",
+    ),
+    _anchor(
+        "each-groups-first-file-follows-the-list",
+        "intents/selectors.py",
+        (
+            "            left, right = sorted(pair, key=shown.__getitem__)",
+            "            left, right = sorted(pair)",
+        ),
+        "groups.py::test_each_groups_first_file_is_the_one_the_list_shows_first",
+    ),
+    _anchor(
+        "handing-in-needs-the-task-held-and-saved",
+        "intents/preconditions.py",
+        (
+            '    "submit_task": ("finalized", "held", "saved_and_open"),',
+            '    "submit_task": ("finalized",),',
+        ),
+        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first",
+    ),
+    _anchor(
+        "every-action-on-work-declares-its-needs",
+        "intents/preconditions.py",
+        ('    "split_packages": ("finalized", "not_split"),', ""),
+        "checks.py::test_every_registered_action_on_work_declares_its_preconditions",
+    ),
+    _anchor(
+        "what-the-state-lacks-is-said-before-a-value-is-asked",
+        "intents/validate.py",
+        (
+            "    reason = unmet(db, acting, actor, language, previous) if missing else None",
+            "    reason = None",
+        ),
+        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first",
+    ),
+    _anchor(
+        "an-earlier-step-can-meet-a-need",
+        "intents/preconditions.py",
+        ("        if rule.changed_by & changed:", "        if False:"),
+        "checks.py::test_an_earlier_step_that_meets_the_need_lets_the_plan_through",
+    ),
+    _anchor(
+        "already-so-states-the-current-state",
+        "intents/already.py",
+        (
+            "    return reason if reason not in IDLE else stated(db, step, catalog, language)",
+            "    return reason",
+        ),
+        "checks.py::test_a_change_to_what_is_already_so_states_the_current_state",
+    ),
+    _anchor(
+        "a-models-name-gives-its-version",
+        "intents/named_kinds.py",
+        ('    if spoken and not record.get("version"):', "    if False:"),
+        "create.py::test_what_a_new_models_name_says_is_never_asked",
+    ),
+    _anchor(
+        "a-skills-name-gives-its-type",
+        "intents/object_edits.py",
+        ('        named_skill_type(params)  # "夜间行人框选" is a box skill', "        pass"),
+        "create.py::test_a_new_skills_type_comes_from_its_name",
+    ),
+    _anchor(
+        "an-emptied-name-is-put-into-words",
+        "intents/public_text.py",
+        (
+            'EMPTY_NAME = (re.compile(r"叫「\\s*」的|「\\s*」"), re.compile(r\'called ""|""\'))',
+            'EMPTY_NAME = (re.compile(r"叫「\\s*」的"), re.compile(r\'called ""\'))',
+        ),
+        "checks.py::test_internal_names_never_leave_and_never_become_the_blank_sentence",
+    ),
+    _anchor(
+        "a-name-among-the-choices-is-asked-as-several",
+        "intents/public_text.py",
+        (
+            '        update["text"] = _ambiguous(str(update["text"]), offered, language)',
+            '        update["text"] = str(update["text"])',
+        ),
+        "checks.py::test_a_not_found_name_among_the_choices_is_asked_as_ambiguous",
+    ),
+    _anchor(
+        "a-clear-rule-reading-is-checked-as-that-action",
+        "intents/landing.py",
+        ("CLEAR_SCORE = 0.7", "CLEAR_SCORE = 0.9"),
+        "scope.py::test_a_none_that_names_the_one_action_that_does_it_is_checked_as_it",
+    ),
+    _anchor(
+        "own-work-in-one-project-is-answered",
+        "intents/read_scope.py",
+        (
+            "    own = len(mine) > 1 and len(working) == 1 and SELF.search(text) is not None",
+            "    own = False",
+        ),
+        "scope.py::test_own_work_in_one_project_is_answered_for_it_and_says_so",
+    ),
+    _anchor(
+        "a-named-setting-is-asked-its-value",
+        "intents/what_changes.py",
+        ("    named = _named(step, changes, said[0])", "    named = None"),
+        "scope.py::test_a_named_setting_is_asked_for_its_value_with_the_allowed_ones",
+    ),
+    _anchor(
+        "a-missing-file-selection-offers-choices",
+        "intents/validate.py",
+        (
+            (
+                '    if field == "selection":  # "把那张图隔离": the dataset\'s files, '
+                "or the datasets, to pick"
+            ),
+            "    if False:",
+        ),
+        "scope.py::test_a_missing_file_selection_offers_files_or_datasets",
+    ),
+    _anchor(
+        "near-duplicates-not-computed-are-said-computing",
+        "intents/selectors.py",
+        (
+            '        return {**empty, "$empty": True, **({"$pending": True} if waiting else {})}',
+            '        return {**empty, "$empty": True}',
+        ),
+        "scope.py::test_near_duplicates_not_yet_computed_are_said_to_be_computing",
+    ),
+    _anchor(
+        "a-status-question-is-read-not-changed",
+        "intents/planner.py",
+        (
+            (
+                "    draft = read_only(fitted(draft, ranked), turn.text, ranked)  "
+                '# "定稿了吗?" is a read'
+            ),
+            "    draft = fitted(draft, ranked)",
+        ),
+        "reads.py::test_a_write_proposed_for_a_status_question_becomes_a_read",
+    ),
+    _anchor(
+        "a-request-is-never-a-status-question",
+        "intents/readonly.py",
+        ("    if REQUEST.search(text):", "    if False:"),
+        "reads.py::test_requests_are_never_taken_for_questions",
+    ),
+)

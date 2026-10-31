@@ -141,11 +141,10 @@ REQUEST_MUTATIONS = (
         "intents/validate.py",
         (
             (
-                "    asked = _question(db, step, missing, invalid, state, catalog) or "
-                "unpublished_question(\n        db, step, [item.action for item in previous], "
-                "language\n    )"
+                "    asked = asked or unpublished_question(db, step, [item.action for item in "
+                "previous], language)"
             ),
-            "    asked = _question(db, step, missing, invalid, state, catalog)",
+            "    asked = asked",
         ),
         _STATES,
     ),
@@ -196,10 +195,10 @@ REQUEST_MUTATIONS = (
         "intents/impossible.py",
         (
             (
-                '    if found is None or (found[0].startswith("personal") '
-                "and _upgraded(db, step, earlier)):"
+                '    if found is not None and found[0].startswith("personal") '
+                "and _upgraded(db, step, earlier):"
             ),
-            "    if found is None:",
+            "    if False:",
         ),
         _EARLIER,
     ),
