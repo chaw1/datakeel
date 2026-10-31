@@ -131,7 +131,11 @@ def _catalog_lines(registry: OntologyRegistry) -> str:
     lines: list[str] = []
     signatures = all_signatures()
     for kind, name, phrases in entries:
-        said = " / ".join(group[0] for group in phrases.values() if group)
+        # A phrase that only spells the name out ("assign tasks") tells the model nothing more.
+        spelled = name.replace("_", " ").casefold()
+        said = " / ".join(
+            group[0] for group in phrases.values() if group and group[0].casefold() != spelled
+        )
         lines.append(f"{kind} {signatures.get(name, name)}: {said}")
     return "\n".join(lines)
 

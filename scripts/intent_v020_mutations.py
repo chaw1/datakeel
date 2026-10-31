@@ -67,4 +67,26 @@ INTENT_V020_MUTATIONS = (
         ("        or (cloud is not None and cloud[1]),", "        or False,"),
         _T + "test_a_cloud_pre_label_card_says_it_sends_images_out_and_what_it_costs",
     ),
+    _anchor(
+        "a-phrase-that-spells-the-name-is-left-out",
+        "intents/model_parse.py",
+        (
+            (
+                "            group[0] for group in phrases.values() "
+                "if group and group[0].casefold() != spelled"
+            ),
+            "            group[0] for group in phrases.values() if group",
+        ),
+        "tests/intents/test_registry_prompt.py::test_registry_lines_never_spell_a_name_out_twice",
+    ),
+    _anchor(
+        "server-written-handovers-stay-hidden",
+        "intents/signatures.py",
+        (
+            'HIDDEN = frozenset({"request_id", "expected_revision", "prepared", "transfers"})',
+            'HIDDEN = frozenset({"request_id", "expected_revision", "prepared"})',
+        ),
+        "tests/intents/test_registry_prompt.py::"
+        "test_server_written_handovers_are_not_offered_to_the_model",
+    ),
 )

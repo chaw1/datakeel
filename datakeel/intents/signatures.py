@@ -19,7 +19,8 @@ from datakeel.core.production_catalog_models import ProductionTemplate
 from datakeel.intents.field_names import ENUM_LABELS
 from datakeel.ontology.functions import PARAMETER_MODELS
 
-HIDDEN = frozenset({"request_id", "expected_revision", "prepared"})
+# Never the model's to fill: request ids, revisions read from state, server-written handovers.
+HIDDEN = frozenset({"request_id", "expected_revision", "prepared", "transfers"})
 ENUM_LIMIT = 9
 
 
