@@ -90,7 +90,10 @@ def leaks(text: str, language: str, allowed: set[str]) -> list[str]:
     """Internal names left in ``text`` once the allowed names are taken out."""
     rest = text
     for name in sorted(allowed, key=len, reverse=True):
-        rest = rest.replace(name, " ")
+        # A word the person said ("accept") never hides an internal name it is part of
+        # ("accept_package"): Latin names are taken out only as whole tokens.
+        whole = rf"(?<![A-Za-z0-9_]){re.escape(name)}(?![A-Za-z0-9_])"
+        rest = re.sub(whole, " ", rest) if name.isascii() else rest.replace(name, " ")
     found = UUID.findall(rest) + [item.strip() for item in REFERENCE.findall(rest)]
     found += SNAKE.findall(rest)
     if language == "zh":

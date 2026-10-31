@@ -9,7 +9,9 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
 from datakeel.core.release_models import ReleaseView
+from datakeel.intents.catalog import build_catalog
 from datakeel.intents.planner import ModelAccess, PlannerTurn, plan_turn
+from datakeel.intents.public_text import allowed_words, leaks
 from datakeel.intents.wording import action_title
 from tests.intents.fix3_support import NORTH, SOUTH, planned, shown, steps, targets, two_projects
 from tests.production_team_ops import save, submit
@@ -60,6 +62,13 @@ def test_a_group_left_unwrapped_or_counted_from_the_end_is_that_group(db: Databa
         PageContext(project_id=north.id),
     )
     assert targets(result) == tasks[5:6]
+    ServiceRunner(db)("assign_tasks", {"task_ids": tasks[5:6], "actor": "li"}, "boss")
+    place = steps(("assign_tasks", {"task_ids": {"$tasks": {"last": 1}}, "actor": "wang"}))
+    assert targets(planned(db, "把最后一个任务派给小王", [place], page)) == tasks[5:6]
+    free = steps(
+        ("assign_tasks", {"task_ids": {"$tasks": {"holder": "nobody", "last": 1}}, "actor": "wang"})
+    )
+    assert targets(planned(db, "把最后一个没人领的派给小王", [free], page)) == tasks[4:5]
 
 
 def test_assigning_for_review_takes_only_tasks_waiting_for_review(db: Database) -> None:
@@ -190,12 +199,14 @@ def test_role_cards_name_actions_and_permissions_in_words(db: Database) -> None:
         "allowed_actions": ["accept_package"],
         "scopes": ["production:accept"],
     }
-    result = planned(
-        db, "新建一个只能验收任务包的角色叫验收员", [steps(("define_role", role))], PageContext()
-    )
+    said = "Create a role called 验收员 that can only accept packages"
+    result = planned(db, said, [steps(("define_role", role))], PageContext())
     assert result.kind == "plan", result.text
     values = " ".join(shown(result).values())
     assert action_title("accept_package", "zh") in values
     assert "accept_package" not in values
     assert "production:accept" not in values
     assert NORTH not in values
+    catalog = build_catalog(db, None)
+    assert leaks("accept_package", "zh", allowed_words(catalog, said)) == ["accept_package"]
+    assert not leaks("frame_001.png", "zh", allowed_words(catalog, "看下 frame_001.png"))

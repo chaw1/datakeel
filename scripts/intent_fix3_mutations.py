@@ -8,6 +8,7 @@ plain outgoing words (P4), new versus existing names (P5), scope-less reads (P6)
 part of a request planned or explained (P7) and the two drafting side fixes (9.4).
 """
 
+from scripts.intent_fix3_limit_mutations import LIMITS_MUTATIONS
 from scripts.mutation_models import Mutation
 
 _SCOPE = "tests/intents/test_fix3_scope.py::"
@@ -304,4 +305,9 @@ PARTS_MUTATIONS = (
     ),
 )
 
-INTENT_FIX3_MUTATIONS = (*NAMES_AND_ORDER_MUTATIONS, *STATE_AND_WORDS_MUTATIONS, *PARTS_MUTATIONS)
+INTENT_FIX3_MUTATIONS = (
+    *NAMES_AND_ORDER_MUTATIONS,
+    *STATE_AND_WORDS_MUTATIONS,
+    *PARTS_MUTATIONS,
+    *LIMITS_MUTATIONS,
+)
