@@ -132,3 +132,18 @@ def test_a_model_update_reads_its_revision_from_the_catalog(db: Database) -> Non
     assert model["id"] == "box-1"
     assert model["version"] == "1.1"
     assert model["capabilities"] == ["box"]
+
+
+def test_a_model_that_cannot_do_the_step_is_said_not_asked(db: Database) -> None:
+    """Capability mismatch: "cannot" with the reason and the alternative, no question (11.2-5)."""
+    north, _, _ = two_projects(db)
+    _models(db)
+    shaped = ("run_prelabel", {"project_id": north.id, "model_id": "Shaper"})
+    alone = planned(db, "Shaper 帮 North Crossing 先预标一下", [steps(shaped)], PageContext())
+    assert alone.kind == "answer", alone.text
+    assert "做不了" in alone.text
+    assert "Boxer" in alone.text
+    assert "吗" not in alone.text
+    english = planned(db, "Let Shaper pre-label North Crossing", [steps(shaped)], PageContext())
+    assert english.kind == "answer", english.text
+    assert "cannot be done" in english.text

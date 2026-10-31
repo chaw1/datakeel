@@ -77,10 +77,10 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p5-a-model-that-cannot-pre-label-is-asked",
-        path="intents/validate.py",
-        before=" or model_question(db, step, language)",
-        after="",
+        name="fix3-p5-a-model-that-cannot-pre-label-is-said",
+        path="intents/impossible.py",
+        before="    mismatch = model_mismatch(db, step, language)",
+        after="    mismatch = None",
         case=_LIMITS
         + "test_a_pre_label_model_that_cannot_draw_boxes_is_said_and_box_models_offered",
         runner="pytest",

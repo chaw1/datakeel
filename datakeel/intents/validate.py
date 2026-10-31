@@ -21,7 +21,6 @@ from datakeel.intents.describe import describe_step
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.duplicates import (
     duplicate_question,
-    model_question,
     taken,
     unpublished_question,
 )
@@ -352,10 +351,8 @@ def check_step(
     found = taken(db, step, catalog)
     if found is not None:
         return StepCheck(clarification=duplicate_question(step, found, language))
-    asked = (
-        _question(step, missing, invalid, state, catalog)
-        or model_question(db, step, language)
-        or unpublished_question(db, step, [item.action for item in previous], language)
+    asked = _question(step, missing, invalid, state, catalog) or unpublished_question(
+        db, step, [item.action for item in previous], language
     )
     if asked is not None:
         return StepCheck(clarification=asked)

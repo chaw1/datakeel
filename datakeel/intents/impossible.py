@@ -16,6 +16,7 @@ from pydantic import JsonValue
 
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import ChainStep
+from datakeel.intents.capability import model_mismatch
 from datakeel.intents.wording import IDLE
 from datakeel.storage.database import Database
 from datakeel.storage.production_queries import (
@@ -130,6 +131,9 @@ def impossible(
 
     ``earlier`` are the plan's steps before this one, which run first.
     """
+    mismatch = model_mismatch(db, step, language)
+    if mismatch is not None:
+        return mismatch
     rule = RULES.get(step.action)
     found = rule(db, step) if rule is not None else None
     if found is None or (found[0].startswith("personal") and _upgraded(db, step, earlier)):

@@ -96,4 +96,12 @@ FLOW_MUTATIONS = (
         case=_FLOW + "test_a_model_update_reads_its_revision_from_the_catalog",
         runner="pytest",
     ),
+    Mutation(
+        name="fix5-a-model-that-cannot-is-said-not-asked",
+        path="intents/capability.py",
+        before="    if chosen is None or _runs_prelabel(chosen):",
+        after="    if True:",
+        case=_FLOW + "test_a_model_that_cannot_do_the_step_is_said_not_asked",
+        runner="pytest",
+    ),
 )

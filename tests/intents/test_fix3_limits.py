@@ -172,7 +172,10 @@ def test_a_release_tag_the_dataset_has_is_never_published_again(
 def test_a_pre_label_model_that_cannot_draw_boxes_is_said_and_box_models_offered(
     db: Database,
 ) -> None:
-    """A polygon model: what it does, and the models that can run, alone and in a chain."""
+    """A polygon model: what it does, and the models that can run, alone and in a chain.
+
+    FIX5 (11.2-5): said as "cannot" with the alternative, never rewritten as a question.
+    """
     _, south, _ = two_projects(db)
     run = ServiceRunner(db)
     for model, name, kind in (("boxer", "Boxer", "box"), ("shaper", "Shaper", "polygon")):
@@ -181,17 +184,21 @@ def test_a_pre_label_model_that_cannot_draw_boxes_is_said_and_box_models_offered
     page = PageContext(project_id=south.id)
     prelabel = ("run_prelabel", {"project_id": south.id, "model_id": "shaper"})
     result = planned(db, "用 Shaper 给这个项目跑预标注", [steps(prelabel)], page)
-    assert result.kind == "clarify", result.text
+    assert result.kind == "answer", result.text
     assert "多边形" in result.text
-    assert result.clarification is not None
-    assert [item.id for item in result.clarification.candidates] == ["boxer"]
+    assert "做不了" in result.text
+    assert "Boxer" in result.text
+    assert result.clarification is None
     english = planned(db, "Pre-label this project with Shaper", [steps(prelabel)], page)
     assert "only runs box models" in english.text
     lease = ("configure_project", {"project_id": south.id, "lease_minutes": 30})
     chained = planned(
         db, "领取时限改成 30 分钟, 再用 Shaper 跑预标注", [steps(lease, prelabel)], page
     )
-    assert chained.kind == "clarify", chained.text
+    assert chained.kind == "plan", chained.text
+    assert chained.chain is not None
+    assert [step.action for step in chained.chain.steps] == ["configure_project"]
+    assert "多边形" in chained.text
     boxed = ("run_prelabel", {"project_id": south.id, "model_id": "boxer"})
     assert planned(db, "用 Boxer 跑预标注", [steps(boxed)], page).kind == "plan"
 
