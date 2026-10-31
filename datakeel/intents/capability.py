@@ -10,11 +10,16 @@ rewritten into "use X instead?": choosing another model is the person's next sen
 """
 
 from pydantic import JsonValue
+from pydantic import ValidationError as ModelValidationError
 
+from datakeel.actions.production_catalog_parameters import RunPrelabelParams
+from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import ChainStep
+from datakeel.core.prelabel_models import PrelabelEstimate
 from datakeel.core.production_reads import ProductionObjectQuery
 from datakeel.intents.plain_words import enum_label
 from datakeel.storage.database import Database
+from datakeel.storage.production_catalog_plans import catalog_requires_approval, prelabel_estimate
 from datakeel.storage.production_objects import production_objects
 
 
@@ -54,3 +59,21 @@ def model_mismatch(db: Database, step: ChainStep, language: str) -> str | None:
         f'"{name}" {does} and pre-labelling only runs box models or cloud vision models, so it '
         f"cannot be done ({other})"
     )
+
+
+def cloud_prelabel(
+    db: Database, params: dict[str, JsonValue]
+) -> tuple[PrelabelEstimate, bool] | None:
+    """A cloud pre-label run's estimate and whether it is over budget, as preparation prices it.
+
+    None for an offline model or a step whose project or model is not settled yet.
+    """
+    try:
+        checked = RunPrelabelParams.model_validate({**params, "request_id": "plan"})
+        with db.session() as session:
+            estimate = prelabel_estimate(session, checked)
+            if estimate is None:
+                return None
+            return estimate, catalog_requires_approval(session, checked)
+    except (ModelValidationError, DatakeelError):
+        return None

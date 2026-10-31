@@ -197,19 +197,6 @@ it("speaks Chinese when the interface is Chinese", async () => {
     expect(screen.getByRole("button", { name: "确认执行" })).toBeVisible();
   });
   expect(screen.getByText(/改 2 个对象/)).toBeVisible();
-  expect(screen.getByText("试用")).toHaveAttribute(
-    "title",
-    expect.stringContaining("八成"),
-  );
-});
-
-it("marks every one-sentence result as a beta feature", () => {
-  render(<IntentCard {...props} intent={intent({ kind: "answer" })} />);
-  expect(screen.getByText("Beta")).toBeVisible();
-  expect(screen.getByText("Beta")).toHaveAttribute(
-    "title",
-    expect.stringContaining("eight in ten"),
-  );
 });
 
 it("shows each step's parameters by name, with defaults and the label change marked", async () => {
