@@ -199,7 +199,7 @@ Agent 使用 LangGraph，在同一 SQLite 或 PostgreSQL 数据库中同步保�
 
 ### 可选真实 provider 配置
 
-运行时支持 OpenAI chat-completions 和 Anthropic messages。离线演示与测试不调用真实服务。将 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY` 作为仓库外环境密钥配置，再通过 `POST /api/agent/conversations` 显式设置 `provider` / `model`：`openai` / `gpt-4.1-mini`，或 `anthropic` / `claude-haiku-4-5-20251001`。这些模型列在 `contracts/model-prices.yaml`，UI 默认创建离线会话。使用 `DATAKEEL_OPENAI_BASE_URL`（通常以 `/v1` 结尾）或 `DATAKEEL_ANTHROPIC_BASE_URL`（服务根地址）覆盖地址；OpenAI 兼容地址可指向其它兼容服务，模型使用前须有价目条目。`DATAKEEL_PROVIDER_TIMEOUT` 默认 30 秒。旧完整端点配置 `DATAKEEL_OPENAI_URL` / `DATAKEEL_ANTHROPIC_URL` 已弃用，仅再兼容一个版本，分别要求以 `/chat/completions` / `/v1/messages` 结尾；显式 BASE_URL 优先。选择真实 provider 并发送消息会发出计费请求；适配通过 LangChain chat model，仅用本机 HTTP fixture 验证协议；模型自动重试关闭。LangSmith 追踪强制关闭，即使设置 `LANGSMITH_TRACING` 或 `LANGCHAIN_TRACING_V2` 也不会启用，本版不提供追踪开关。旧的 `DATAKEEL_LLM_URL` 独立控制报告正文增强。
+运行时支持 OpenAI chat-completions 和 Anthropic messages。离线演示与测试不调用真实服务。将 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY` 作为仓库外环境密钥配置，再通过 `POST /api/agent/conversations` 显式设置 `provider` / `model`：`openai` / `gpt-4.1-mini`，或 `anthropic` / `claude-haiku-4-5-20251001`。这些模型列在 `contracts/model-prices.yaml`，UI 默认创建离线会话。使用 `DATAKEEL_OPENAI_BASE_URL`（通常以 `/v1` 结尾）或 `DATAKEEL_ANTHROPIC_BASE_URL`（服务根地址）覆盖地址；OpenAI 兼容地址可指向其它兼容服务，模型使用前须有价目条目。`DATAKEEL_PROVIDER_TIMEOUT` 默认 180 秒；一句话规划请求要 JSON 并走流式，推理模型想得久也不会中途超时。旧完整端点配置 `DATAKEEL_OPENAI_URL` / `DATAKEEL_ANTHROPIC_URL` 已弃用，仅再兼容一个版本，分别要求以 `/chat/completions` / `/v1/messages` 结尾；显式 BASE_URL 优先。选择真实 provider 并发送消息会发出计费请求；适配通过 LangChain chat model，仅用本机 HTTP fixture 验证协议；模型自动重试关闭。LangSmith 追踪强制关闭，即使设置 `LANGSMITH_TRACING` 或 `LANGCHAIN_TRACING_V2` 也不会启用，本版不提供追踪开关。旧的 `DATAKEEL_LLM_URL` 独立控制报告正文增强。
 
 ## 架构
 

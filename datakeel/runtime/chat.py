@@ -10,7 +10,14 @@ from anthropic import APIStatusError as AnthropicStatusError
 from anthropic import APITimeoutError as AnthropicTimeoutError
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.messages.ai import InputTokenDetails, UsageMetadata
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import Runnable
@@ -148,12 +155,37 @@ def _invoke(model: BaseChatModel, request: ModelRequest) -> ModelResponse:
     with tracing_disabled():
         runnable = model.bind_tools(tools) if tools else model
         bound = runnable.bind(**options) if options else runnable
-        message = bound.invoke(
-            [_message(item) for item in request.messages],
-            model=request.model,
-            max_tokens=request.max_output_tokens,
-        )
+        messages = [_message(item) for item in request.messages]
+        if request.json_output and isinstance(model, ChatOpenAI):
+            return _response(_streamed(bound, messages, request))
+        message = bound.invoke(messages, model=request.model, max_tokens=request.max_output_tokens)
     return _response(message)
+
+
+def _streamed(
+    bound: Runnable[LanguageModelInput, BaseMessage],
+    messages: list[BaseMessage],
+    request: ModelRequest,
+) -> AIMessage:
+    """Join a streamed answer into one message.
+
+    A reasoning model sends chunks while it thinks, so a long answer keeps the connection
+    busy instead of idling into the read timeout.
+    """
+    joined: AIMessageChunk | None = None
+    empty = "Provider returned an empty stream"
+    try:
+        for chunk in bound.stream(
+            messages, model=request.model, max_tokens=request.max_output_tokens, stream_usage=True
+        ):
+            if isinstance(chunk, AIMessageChunk):
+                joined = chunk if joined is None else joined + chunk
+    except AssertionError as error:
+        # The SDK's stream state asserts when a stream ends before any completion chunk.
+        raise ValueError(empty) from error
+    if joined is None:
+        raise ValueError(empty)
+    return joined
 
 
 class ChatProvider:
