@@ -223,6 +223,8 @@ def _dropped_problem(db: Database, step: DraftStep, text: str) -> Problem | None
     if step.action != "manage_users" or step.params.get("operation") != "update":
         return None
     wanted = step.params.get("user_id")
+    if not isinstance(wanted, str):
+        return None  # an account made earlier in the plan ({"$ref": ...}) holds nothing yet
     user = next(
         (item for item in list_users(db) if wanted in {item.id, item.display_name}),
         None,

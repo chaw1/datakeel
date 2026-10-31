@@ -20,7 +20,7 @@ from pydantic import JsonValue
 from datakeel.core.errors import NotFoundError
 from datakeel.core.production_models import ProductionTask
 from datakeel.intents.drafts import DraftStep
-from datakeel.intents.named_kinds import named_model
+from datakeel.intents.named_kinds import named_model, said_version
 from datakeel.intents.object_edits import current_model
 from datakeel.storage.database import Database
 from datakeel.storage.intent_reads import latest_label_set, newest_published_version
@@ -138,6 +138,9 @@ def derive(db: Database, step: DraftStep) -> DraftStep:
     """Fill every derivable parameter the step left out (or wrote as "latest")."""
     resolvers = DERIVED.get(step.action, {})
     params = dict(step.params)
+    spoken = said_version(step.said.get("label_set_id"))
+    if step.action == "create_project" and spoken and _wanted(params.get("label_set_version")):
+        params["label_set_version"] = spoken  # "第 2 版" is that version, never the newest
     for field, resolver in resolvers.items():
         if field in params and not _wanted(params[field]):
             continue

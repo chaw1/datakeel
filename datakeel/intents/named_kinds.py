@@ -19,6 +19,8 @@ KIND_WORDS: dict[str, tuple[str, ...]] = {
     "text_span": ("文本片段", "实体", "ner", "span"),
 }
 VERSION = re.compile(r"(?:^|[-_\s.])v(\d+(?:\.\d+)*)$", re.IGNORECASE)
+# "集装箱类型第 2 版", "version 2 of the labels": a label set version said in words.
+SAID_VERSION = re.compile(r"第\s*(\d+)\s*版|版本\s*(\d+)|\bversion\s*(\d+)", re.IGNORECASE)
 
 
 def named_kinds(name: str) -> list[str]:
@@ -38,6 +40,12 @@ def named_version(name: str) -> str | None:
     """The version a name ends with ("rain-poly-v2" is 2)."""
     found = VERSION.search(name.strip())
     return found.group(1) if found else None
+
+
+def said_version(said: str | None) -> int | None:
+    """The version number the person's words give ("第 2 版" is 2), if any."""
+    found = SAID_VERSION.search(said or "")
+    return int(next(group for group in found.groups() if group)) if found else None
 
 
 def named_skill_type(params: dict[str, JsonValue]) -> None:

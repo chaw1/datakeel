@@ -372,4 +372,19 @@ FIX6_MUTATIONS = (
         ),
         "create.py::test_action_names_written_as_scopes_grant_those_actions",
     ),
+    _anchor(
+        "a-referenced-account-is-not-looked-up-by-name",
+        "intents/verify.py",
+        (
+            "    if not isinstance(wanted, str):\n        return None  # an account made",
+            "    if False:\n        return None  # an account made",
+        ),
+        "create.py::test_an_account_made_earlier_can_be_given_a_skill_by_reference",
+    ),
+    _anchor(
+        "a-label-set-version-said-is-that-version",
+        "intents/derived.py",
+        ('        params["label_set_version"] = spoken  #', "        pass  #"),
+        "create.py::test_a_label_set_version_said_in_words_is_that_version",
+    ),
 )

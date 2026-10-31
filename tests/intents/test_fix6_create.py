@@ -9,8 +9,10 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
 from datakeel.intents.catalog import build_catalog
-from datakeel.intents.named_kinds import named_kinds, named_version
+from datakeel.intents.edits import latest_label_set
+from datakeel.intents.named_kinds import named_kinds, named_version, said_version
 from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
+from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database
@@ -207,3 +209,83 @@ def test_action_names_written_as_scopes_grant_those_actions(db: Database) -> Non
     scopes = result.chain.steps[0].params["scopes"]
     assert isinstance(scopes, list)
     assert {"production:accept", "production:review"} <= set(scopes)
+
+
+def test_an_account_made_earlier_can_be_given_a_skill_by_reference(db: Database) -> None:
+    """A new account referred to as {"$ref": ...} in the next step does not break planning."""
+    two_projects(db)
+    ServiceRunner(db)(
+        "manage_skills",
+        {
+            "operation": "create",
+            "skill_id": "lane-box",
+            "name": "车道框选",
+            "domain": "交通",
+            "annotation_type": "box",
+        },
+        "boss",
+    )
+    try:
+        result = planned(
+            db,
+            "New account lina for 李娜, and give her the 车道框选 skill",
+            [
+                steps(
+                    (
+                        "manage_users",
+                        {"operation": "create", "user_id": "lina", "display_name": "李娜"},
+                    ),
+                    (
+                        "manage_users",
+                        {
+                            "operation": "update",
+                            "user_id": {"$ref": "s1.user_id"},
+                            "skill_ids": ["车道框选"],
+                        },
+                    ),
+                )
+            ],
+            PageContext(),
+        )
+    except TypeError as error:  # a reference must never reach a lookup by name
+        raise AssertionError(str(error)) from error
+    assert result.kind == "plan", result.text
+
+
+def test_a_label_set_version_said_in_words_is_that_version(db: Database) -> None:
+    """A label set's "第 2 版" is that version, never quietly the newest published one."""
+    _, south, _ = two_projects(db)
+    current = latest_label_set(db, south.label_set_id)
+    assert current is not None
+    labels = [{"id": label.id, "name": label.name} for label in current.labels]
+    draft = {
+        "label_set_id": south.label_set_id,
+        "previous_version": current.version,
+        "name": current.name,
+    }
+    ServiceRunner(db)(
+        "create_label_set", {**draft, "labels": [*labels, {"id": "cone", "name": "锥桶"}]}, "boss"
+    )
+    dataset = build_catalog(db).get("dataset", south.dataset_id)
+    assert dataset is not None
+    step = {
+        "id": "s1",
+        "action": "create_project",
+        "params": {
+            "name": "车道复查",
+            "dataset_id": dataset.id,
+            "label_set_id": south.label_set_id,
+        },
+        "said": {"label_set_id": f"{current.name}第 2 版", "dataset_id": dataset.label},
+    }
+    result = planned(
+        db,
+        f"拿{current.name}第 2 版给{dataset.label}开个新项目, 叫「车道复查」",
+        [{"kind": "plan", "steps": [step]}],
+        PageContext(),
+    )
+    assert result.kind != "plan", result.text
+    assert "第 2 版" in result.text, result.text
+    assert said_version("集装箱类型第 2 版") == 2
+    assert said_version("version 3 of the labels") == 3
+    assert said_version("集装箱类型 v1") is None
