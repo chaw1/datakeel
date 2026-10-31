@@ -195,6 +195,10 @@ class OperationResult(BoundaryModel):
     generated_file: Path | None = None
     generated_inode: int | None = None
     details: dict[str, JsonValue] = Field(default_factory=dict)
+    deferred: str | None = Field(
+        default=None,
+        description="Identity of work that continues after this transaction commits.",
+    )
 
 
 class WorkerDecision(BoundaryModel):

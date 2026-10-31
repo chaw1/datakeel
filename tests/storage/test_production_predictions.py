@@ -8,13 +8,14 @@ from typing import Literal
 
 import pytest
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from datakeel.actions.production_catalog_parameters import (
     FinalizeProjectParams,
     ImportPredictionsParams,
     RunPrelabelParams,
 )
-from datakeel.actions.production_parameters import SubmitTaskParams
+from datakeel.actions.production_parameters import SaveRevisionParams, SubmitTaskParams
 from datakeel.core.errors import ConflictError
 from datakeel.core.production_catalog_models import PredictionFile
 from datakeel.core.production_models import AnnotationRevision
@@ -30,6 +31,7 @@ from datakeel.storage.production_catalog_plans import (
 from datakeel.storage.production_finalize import finalize_project
 from datakeel.storage.production_predictions import import_predictions, run_prelabel
 from datakeel.storage.production_reviews import submit_task
+from datakeel.storage.production_revisions import append_revision, current_revision
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
     ProductionReviewRow,
@@ -115,6 +117,25 @@ def test_prediction_import_persists_clipped_edge_boxes(
         assert require_task(session, fixture.tasks[0].id).latest_revision_id == revision.id
 
 
+def _confirm_and_submit(session: Session, task_id: str) -> None:
+    """Save the model draft unchanged as the annotator's own revision, then submit it."""
+    task = require_task(session, task_id)
+    head = current_revision(session, task)
+    assert head is not None
+    append_revision(
+        session,
+        task,
+        SaveRevisionParams(
+            request_id=f"confirm-{task_id}",
+            task_id=task_id,
+            previous_revision_id=head.id,
+            annotation=head.annotation.model_copy(update={"annotator_id": "local"}),
+        ),
+        "local",
+    )
+    submit_task(session, SubmitTaskParams(request_id=task_id, task_id=task_id), "local")
+
+
 def test_fake_prelabel_budget_and_finalization_reuse_annotation_batches(db: Database) -> None:
     """Only approved task heads finalize into a new compatible version in one transaction."""
     fixture = catalog_project(db)
@@ -135,7 +156,7 @@ def test_fake_prelabel_budget_and_finalization_reuse_annotation_batches(db: Data
         with pytest.raises(ConflictError, match="approved"):
             finalize_project(session, finalize)
         for task in fixture.tasks:
-            submit_task(session, SubmitTaskParams(request_id=task.id, task_id=task.id), "local")
+            _confirm_and_submit(session, task.id)
         output = finalize_project(session, finalize)
         version_id = str(output.details["version_id"])
         session.commit()
@@ -167,9 +188,7 @@ def test_prediction_state_errors_are_isolated_per_image(db: Database) -> None:
     )
     with db.session() as session:
         run_prelabel(session, run_params, "local")
-        submit_task(
-            session, SubmitTaskParams(request_id="submit", task_id=fixture.tasks[0].id), "local"
-        )
+        _confirm_and_submit(session, fixture.tasks[0].id)
         document = {
             "images": [
                 {"id": index, "file_name": f"sample-{index}.png", "width": 100, "height": 80}

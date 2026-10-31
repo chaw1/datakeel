@@ -41,6 +41,7 @@ it("keeps details in a collapsible drawer and names each box on the canvas", () 
         id: "revision",
         task_id: "task-1",
         previous_revision_id: null,
+        object_confidences: [],
         source: "human" as const,
         actor: "local",
         created_at: "2026-10-30T00:00:00Z",

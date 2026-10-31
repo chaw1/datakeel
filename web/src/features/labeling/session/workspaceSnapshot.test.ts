@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import { unmeasuredIoU } from "../../../test/labelingFixtures";
+
 import {
   clearWorkspaceSnapshot,
   readWorkspaceSnapshot,
@@ -22,6 +24,7 @@ function workspace(actor = "person-1"): WorkspaceSnapshot {
     workflow_tier: "group" as const,
     lease_minutes: 10,
     dispatch_strategy: "claim" as const,
+    review_sample_rate: 1,
     created_at: "2026-10-30T00:00:00Z",
   };
   const task = {
@@ -71,7 +74,16 @@ function workspace(actor = "person-1"): WorkspaceSnapshot {
         assessed_tasks: 0,
         exact_match_tasks: 0,
         exact_match_rate: null,
+        iou_50: unmeasuredIoU(0.5),
+        iou_75: unmeasuredIoU(0.75),
+        attribute_agreement: {
+          matched_objects: 0,
+          consistent_objects: 0,
+          rate: null,
+        },
       },
+      prelabel_spend: [],
+      prelabel_progress: [],
       agreement: {
         annotator_count: 0,
         boxes: [],
@@ -169,6 +181,30 @@ it("rejects scopes from another actor and unrelated project or task snapshots", 
   ).toBe(false);
   expect(writeWorkspaceSnapshot({ ...snapshot, project: null })).toBe(false);
   expect(readWorkspaceSnapshot()).toBeNull();
+});
+
+it("drops a project snapshot saved before accuracy and spend facts existed", () => {
+  const snapshot = workspace();
+  if (!snapshot.project) throw new Error("Missing fixture project");
+  const withoutSpend: Record<string, unknown> = { ...snapshot.project };
+  delete withoutSpend.prelabel_spend;
+  const withoutProgress: Record<string, unknown> = { ...snapshot.project };
+  delete withoutProgress.prelabel_progress;
+  const exactOnly: Record<string, unknown> = {
+    ...snapshot.project.prelabel_accuracy,
+  };
+  delete exactOnly.iou_50;
+  for (const project of [
+    withoutSpend,
+    withoutProgress,
+    { ...snapshot.project, prelabel_accuracy: exactOnly },
+  ])
+    expect(
+      writeWorkspaceSnapshot({
+        ...snapshot,
+        project: project as typeof snapshot.project,
+      }),
+    ).toBe(false);
 });
 
 it("clears the prior actor's tab snapshot when the server verifies a different actor", () => {

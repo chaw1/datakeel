@@ -2,13 +2,16 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useI18n } from "../../i18n/useI18n";
 
+import { TaskAiNotes } from "./ai/TaskAiNotes";
 import { AnnotationEditor } from "./editors/AnnotationEditor";
 import { DetailsSlotContext } from "./editors/editorContext";
 import {
   allowed,
   annotatedBy,
   defaultTemplate,
+  initialAnnotation,
   reworkIssues,
+  startsFromScratch,
   taskEditable,
 } from "./model";
 import { SessionStatus } from "./SessionStatus";
@@ -21,6 +24,7 @@ import { useTaskKeyboard } from "./useTaskKeyboard";
 import { useTaskSessionData } from "./useTaskSessionData";
 import { useTaskWatch } from "./useTaskWatch";
 
+import type { LocateRequest } from "./editors/types";
 import type { ProjectWorkbench, TaskWorkbench } from "../../api/production";
 
 export function TaskSession({
@@ -53,6 +57,7 @@ export function TaskSession({
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [detailsSlot, setDetailsSlot] = useState<HTMLDivElement | null>(null);
   const [locked, setLocked] = useState(false);
+  const [locate, setLocate] = useState<LocateRequest | null>(null);
   const data = useTaskSessionData({
     task,
     project,
@@ -71,6 +76,7 @@ export function TaskSession({
   const personal = project.project.workflow_tier === "personal";
   // The path under the import root; a task cached before paths were sent shows its file name.
   const samplePath = task.sample.path || task.sample.name;
+  const template = project.template ?? defaultTemplate;
   const editable =
     allowed(project.effective_scopes, "production:annotate") &&
     taskEditable(snapshot, actor, personal) &&
@@ -216,7 +222,7 @@ export function TaskSession({
               value={session.annotation}
               onChange={session.edit}
               labels={project.label_set.labels}
-              template={project.template ?? defaultTemplate}
+              template={template}
               mediaUrl={task.sample.content_url}
               thumbnailUrl={
                 (task.sample.image_width ?? 0) > 3000 ||
@@ -230,6 +236,7 @@ export function TaskSession({
                 project.effective_scopes,
                 "production:manage",
               )}
+              locate={locate}
             />
           </DetailsSlotContext>
         </div>
@@ -243,6 +250,22 @@ export function TaskSession({
           detailsRef={setDetailsSlot}
         >
           {!editable && <p className="muted">{t("wbReadOnly")}</p>}
+          <TaskAiNotes
+            task={snapshot}
+            personal={personal}
+            reviewable={reviewable}
+            scratch={startsFromScratch(snapshot, personal)}
+            passThrough={project.confidence_thresholds?.pass_through !== false}
+            revisionId={session.revisionId}
+            onUseDraft={
+              editable && !busy && !session.dirty
+                ? () => {
+                    session.edit(initialAnnotation(snapshot, actor, template));
+                  }
+                : undefined
+            }
+            onLocate={setLocate}
+          />
           {reviewable && (
             <TaskReview
               issue={actions.issue}

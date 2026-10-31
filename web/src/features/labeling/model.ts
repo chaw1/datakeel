@@ -1,3 +1,5 @@
+import { emptyContent } from "./templateContent";
+
 import type {
   EffectiveScopes,
   ProductionTask,
@@ -54,13 +56,36 @@ export const stateMessages: Record<ProductionTask["state"], MessageKey> = {
   approved: "wbApproved",
   finalized: "wbFinalized",
 };
-export function initialAnnotation(
-  task: TaskWorkbench,
-  actor: string,
-): AnnotationRecord {
+/**
+ * Group and team annotation over a low-confidence model draft starts from an empty
+ * annotation; the draft stays one click away. Personal projects only show the tier.
+ */
+export function startsFromScratch(task: TaskWorkbench, personal: boolean) {
   const latest = task.revisions.find(
     (revision) => revision.id === task.task.latest_revision_id,
   );
+  return (
+    !personal &&
+    ["pending", "in_progress"].includes(task.task.state) &&
+    latest?.source === "model" &&
+    latest.confidence_tier === "low"
+  );
+}
+/**
+ * `scratch` ignores the latest revision, as if the task had none yet. An empty start
+ * carries an empty list for each component the template enables, so it can be saved.
+ */
+export function initialAnnotation(
+  task: TaskWorkbench,
+  actor: string,
+  template: ProductionTemplate,
+  scratch = false,
+): AnnotationRecord {
+  const latest = scratch
+    ? undefined
+    : task.revisions.find(
+        (revision) => revision.id === task.task.latest_revision_id,
+      );
   return {
     ...(latest?.annotation ?? {
       sample_id: task.task.sample_id,
@@ -69,6 +94,7 @@ export function initialAnnotation(
       text_length: task.sample.text
         ? Array.from(task.sample.text).length
         : null,
+      ...emptyContent(template),
     }),
     annotator_id: actor,
     image_width: latest?.annotation.image_width ?? task.sample.image_width,

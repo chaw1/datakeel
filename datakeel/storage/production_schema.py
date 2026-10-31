@@ -7,6 +7,10 @@ from sqlalchemy.engine import Connection
 
 from datakeel.storage.identity_rows import RoleBindingRow, RoleRow, SkillRow, TeamRow, UserRow
 from datakeel.storage.identity_sessions import REGISTERED_IDENTITY_RUNTIME_ROWS
+from datakeel.storage.production_ai_rows import (
+    ProductionAIReviewRow,
+    install_ai_review_constraints,
+)
 from datakeel.storage.production_catalog_rows import (
     ProductionLabelSetRow,
     ProductionModelRow,
@@ -57,6 +61,7 @@ REGISTERED_PRODUCTION_MODELS = (
     ProductionTaskRow,
     ProductionLeaseReleaseRow,
     ProductionPackageInspectionRow,
+    ProductionAIReviewRow,
 )
 
 
@@ -65,4 +70,5 @@ def install_production_schema(connection: Connection, *, sqlite: bool) -> None:
     install_catalog_constraints(connection, sqlite=sqlite)
     install_production_constraints(connection, sqlite=sqlite)
     install_team_constraints(connection, sqlite=sqlite)
+    install_ai_review_constraints(connection, sqlite=sqlite)
     lock_existing_templates(connection, sqlite=sqlite)

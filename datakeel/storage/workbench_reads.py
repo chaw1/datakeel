@@ -27,6 +27,12 @@ from datakeel.storage.dataset_service import resolve_download
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.image_geometry import read_geometry
 from datakeel.storage.production_catalog import require_label_set
+from datakeel.storage.production_prelabel_reads import (
+    prelabel_progress,
+    prelabel_spend,
+    project_confidence_thresholds,
+    task_ai_review,
+)
 from datakeel.storage.production_queries import (
     get_project,
     get_task,
@@ -164,6 +170,9 @@ def workbench_project(
         next_cursor=next_cursor,
         task_samples=name_tasks(page, names)
         + tuple(item for item in rework if item.task_id not in identities),
+        confidence_thresholds=project_confidence_thresholds(db, project),
+        prelabel_spend=prelabel_spend(db, project_id),
+        prelabel_progress=prelabel_progress(db, project_id),
     )
 
 
@@ -240,4 +249,5 @@ def workbench_task(db: Database, task_id: str, caller: AccessContext) -> Workben
             sorted(list_reviews(db, task_id), key=lambda item: (item.created_at, item.id))
         ),
         assignments=list_assignments(db, task_id),
+        ai_review=task_ai_review(db, task_id),
     )

@@ -23,6 +23,7 @@ import { labelStyle } from "./labelColors";
 import { ShapeLabels } from "./ShapeLabels";
 import { shortcutLabel } from "./shortcuts";
 import { useCanvasTokens } from "./useCanvasTokens";
+import { useLocate } from "./useLocate";
 
 import type { AnnotationBox, EditorProps, Point } from "./types";
 
@@ -35,6 +36,7 @@ export function BboxEditor(props: EditorProps) {
   // R cycles what the arrows change: the whole box, its bottom-right, then its top-left edges.
   const [edge, setEdge] = useState<"move" | "end" | "start">("move");
   const [draft, setDraft] = useState<{ start: Point; end: Point } | null>(null);
+  useLocate("box", props.locate, setSelected);
   const boxes = value.boxes ?? [];
   const current = selected >= 0 ? boxes.at(selected) : undefined;
   const category =

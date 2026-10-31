@@ -46,6 +46,10 @@ function validProject(project: unknown, index: Record<string, unknown>) {
     !record(project.workload) ||
     !record(project.confidence) ||
     !record(project.prelabel_accuracy) ||
+    // Saved before object-level accuracy, spend or run progress existed: refetch instead of rendering holes.
+    !record(project.prelabel_accuracy.iou_50) ||
+    !Array.isArray(project.prelabel_spend) ||
+    !Array.isArray(project.prelabel_progress) ||
     !record(project.agreement) ||
     !(project.template === null || record(project.template))
   )

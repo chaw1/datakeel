@@ -17,7 +17,7 @@ from datakeel.storage.production_queries import get_task
 from datakeel.storage.production_revisions import append_revision
 from datakeel.storage.production_tasks import require_task
 from datakeel.storage.workbench_reads import workbench_project
-from datakeel.storage.workbench_risk import prelabel_difference, review_order
+from datakeel.storage.workbench_risk import draft_difference, prelabel_difference, review_order
 from tests.workbench_helpers import annotation_for, run_action, seed_workbench
 
 
@@ -113,15 +113,38 @@ def test_model_risk_survives_human_save_and_review_pagination(db: Database, tmp_
     assert get_task(db, tasks[0].id).confidence is None
     caller = AccessContext(actor="local", entry="ask", scope="query")
     first = workbench_project(db, project.id, caller, WorkbenchProjectQuery(limit=1, view="review"))
-    assert first.tasks[0].id == tasks[0].id
-    assert first.task_risks[0].model_confidence == 0.2
-    assert first.task_risks[0].prelabel_difference == 0
+    # P31a D2: the AI pre-review risk leads the review order; emptying a confident draft is risky.
+    assert first.tasks[0].id == tasks[1].id
+    # FIX1: the queue's difference uses B1 matching, so emptying a one-box draft is 100%.
+    assert first.task_risks[0].prelabel_difference == 1
+    assert first.task_risks[0].ai_risk is not None
+    assert first.task_risks[0].ai_risk > 0
     second = workbench_project(
         db,
         project.id,
         caller,
         WorkbenchProjectQuery(limit=1, cursor=first.next_cursor, view="review"),
     )
-    assert second.tasks[0].id == tasks[1].id
-    assert second.task_risks[0].prelabel_difference == pytest.approx(2 / 3)
+    assert second.tasks[0].id == tasks[0].id
+    assert second.task_risks[0].model_confidence == 0.2
+    assert second.task_risks[0].prelabel_difference == 0
+    assert (second.task_risks[0].ai_risk or 0) < first.task_risks[0].ai_risk
     assert second.next_cursor is None
+
+
+def test_queue_difference_ignores_a_few_pixels_and_counts_unmatched_objects() -> None:
+    """The B1 rule: a shifted box still matches; a missing or relabelled one does not."""
+    box = AnnotationBox(category="cat", x1=10, y1=10, x2=50, y2=40)
+    model = AnnotationRecord(sample_id="s", annotator_id="model", boxes=(box,))
+    moved = model.model_copy(
+        update={"boxes": (box.model_copy(update={"x1": 11, "x2": 51, "y1": 12, "y2": 42}),)}
+    )
+    assert draft_difference(moved, model) == 0
+    assert prelabel_difference(moved, model) == 1
+    other = box.model_copy(update={"category": "dog"})
+    assert draft_difference(model.model_copy(update={"boxes": (other,)}), model) == 1
+    assert draft_difference(model.model_copy(update={"boxes": (box, other)}), model) == (
+        pytest.approx(1 / 3)
+    )
+    empty = model.model_copy(update={"boxes": ()})
+    assert draft_difference(empty, empty) == 0

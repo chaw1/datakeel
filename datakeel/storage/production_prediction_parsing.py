@@ -161,6 +161,7 @@ def _coco_image(
         filename=image.file_name,
         annotation=upright_prediction(record, sample, frame),
         confidence=sum(item.score for item in records) / len(records),
+        object_confidences=tuple(item.score for item in records),
     )
 
 
@@ -353,6 +354,7 @@ def parse_yolo(
             filename=file.filename,
             annotation=upright_prediction(record, sample, frame),
             confidence=sum(confidence for _, confidence in records) / len(records),
+            object_confidences=tuple(confidence for _, confidence in records),
         )
     except (ValueError, ModelValidationError) as exc:
         return _failure(file.filename, "invalid", str(exc))

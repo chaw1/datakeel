@@ -11,6 +11,7 @@ from pydantic import Field
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.image_orientation import CoordinateConversion
 from datakeel.core.models import BoundaryModel
+from datakeel.core.prelabel_models import AttributeAgreement, ConfidenceTier, IoUAccuracy
 
 WorkflowTier = Literal["personal", "group", "team"]
 DispatchStrategy = Literal["assign", "skill", "claim"]
@@ -62,6 +63,9 @@ class Project(BoundaryModel):
     dispatch_strategy: DispatchStrategy = "claim"
     skill_requirement: SkillRequirement | None = None
     max_active_tasks: int | None = Field(default=None, ge=1, le=10000)
+    confidence_high: float | None = Field(default=None, ge=0, le=1)
+    confidence_low: float | None = Field(default=None, ge=0, le=1)
+    review_sample_rate: float = Field(default=1.0, gt=0, le=1)
 
 
 class TaskPackage(BoundaryModel):
@@ -111,6 +115,18 @@ class Assignment(BoundaryModel):
     transferred_from: str | None = None
 
 
+class PassThrough(BoundaryModel):
+    """Who answers for a model draft submitted without a person, by which model and bar."""
+
+    model_id: str
+    confidence: float = Field(ge=0, le=1)
+    high: float = Field(ge=0, le=1)
+    low: float | None = Field(default=None, ge=0, le=1)
+    threshold_source: Literal["configured", "calibrated"]
+    reviewed_objects: int = Field(ge=0)
+    triggered_by: str
+
+
 class AnnotationRevision(BoundaryModel):
     """Append one annotation and its precise human or model provenance forever.
 
@@ -127,6 +143,15 @@ class AnnotationRevision(BoundaryModel):
     model_name: str | None = None
     model_version: str | None = None
     confidence: float | None = Field(default=None, ge=0, le=1)
+    object_confidences: tuple[float, ...] = Field(
+        default=(),
+        description="Model confidence per object: label set, boxes, polygons, then spans.",
+    )
+    confidence_tier: ConfidenceTier | None = None
+    pass_through: PassThrough | None = Field(
+        default=None,
+        description="Set when a high-confidence model draft was submitted for review directly.",
+    )
     created_at: datetime
     coordinate_conversion: CoordinateConversion | None = None
 
@@ -197,9 +222,16 @@ class ConfidenceDistribution(BoundaryModel):
 
 
 class PrelabelAccuracy(BoundaryModel):
-    """Report exact model-draft agreement only against approved human reference revisions."""
+    """Report model-draft accuracy only against approved human reference revisions.
+
+    ``exact_match_*`` keeps the original whole-content agreement; ``iou_50`` and ``iou_75``
+    match same-label objects one-to-one by descending IoU.
+    """
 
     project_id: str
     assessed_tasks: int = Field(ge=0)
     exact_match_tasks: int = Field(ge=0)
     exact_match_rate: float | None = Field(default=None, ge=0, le=1)
+    iou_50: IoUAccuracy
+    iou_75: IoUAccuracy
+    attribute_agreement: AttributeAgreement

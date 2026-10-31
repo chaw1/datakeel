@@ -16,6 +16,7 @@ import { PolygonShape } from "./PolygonShape";
 import { ShapeLabels } from "./ShapeLabels";
 import { shortcutLabel } from "./shortcuts";
 import { useCanvasTokens } from "./useCanvasTokens";
+import { useLocate } from "./useLocate";
 
 import type { PolygonControlProps } from "./PolygonControls";
 import type { AnnotationPolygon, EditorProps, Point } from "./types";
@@ -34,6 +35,11 @@ export function PolygonEditor(props: EditorProps) {
   const [label, setLabel] = useState(labels[0]?.id ?? "");
   const [cursor, setCursor] = useState<Point>({ x: width / 2, y: height / 2 });
   const [draft, setDraft] = useState<Point[] | null>(null);
+  useLocate("polygon", props.locate, (index) => {
+    setDraft(null);
+    setSelected(index);
+    setPointIndex(0);
+  });
   const current = selected >= 0 ? polygons.at(selected) : undefined;
   const category = labels.some((item) => item.id === label)
     ? label

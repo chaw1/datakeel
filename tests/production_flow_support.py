@@ -21,7 +21,13 @@ from datakeel.core.production_models import (
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths, list_versions, require_dataset
 from datakeel.storage.datasheet_store import get_document
-from datakeel.storage.production_queries import get_task, list_assignments, list_reviews, list_tasks
+from datakeel.storage.production_queries import (
+    get_task,
+    list_assignments,
+    list_reviews,
+    list_revisions,
+    list_tasks,
+)
 from datakeel.storage.version_diff import version_summary
 
 
@@ -152,6 +158,7 @@ def personal_flow(db: Database, directory: Path, runner: FlowRunner) -> Producti
     )
     assert yolo.root["failures"] == []
     save_task(db, runner, first.id)
+    confirm_task(db, runner, second.id)
     for task in flow.tasks:
         runner("submit_task", {"task_id": task.id})
         assert get_task(db, task.id).state == "approved"
@@ -181,6 +188,24 @@ def save_task(
         actor,
     )
     return AnnotationRevision.model_validate(result.root, extra="ignore")
+
+
+def confirm_task(db: Database, runner: FlowRunner, task_id: str, actor: str = "local") -> None:
+    """Save the model draft at the head unchanged as the person's own revision before submit."""
+    task = get_task(db, task_id)
+    head = next(item for item in list_revisions(db, task_id) if item.id == task.latest_revision_id)
+    runner(
+        "save_revision",
+        {
+            "task_id": task.id,
+            "previous_revision_id": head.id,
+            "annotation": {
+                **head.annotation.model_dump(mode="json", exclude_none=True),
+                "annotator_id": actor,
+            },
+        },
+        actor,
+    )
 
 
 def group_flow(db: Database, directory: Path, runner: FlowRunner) -> ProductionFlow:

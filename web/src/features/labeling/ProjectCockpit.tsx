@@ -1,5 +1,7 @@
 import { useI18n } from "../../i18n/useI18n";
 
+import { PrelabelPanel } from "./ai/PrelabelPanel";
+import { ReviewSampling } from "./ai/ReviewSampling";
 import { stateMessages } from "./model";
 import { LeaseBoard } from "./team/LeaseBoard";
 import { NamedDispatch } from "./team/NamedDispatch";
@@ -20,6 +22,7 @@ export function ProjectCockpit({
 }) {
   const { t } = useI18n();
   const team = data.project.workflow_tier === "team";
+  const personal = data.project.workflow_tier === "personal";
   return (
     <div className="wb-cockpit">
       <TemplateVersions
@@ -148,29 +151,14 @@ export function ProjectCockpit({
           </table>
         </div>
       </section>
-      <section className="card">
-        <h2>{t("wbPrelabels")}</h2>
-        <dl className="wb-counts">
-          {data.confidence.buckets.map((bucket) => (
-            <div key={bucket.lower}>
-              <dt>{`${String(bucket.lower)} – ${String(bucket.upper)}`}</dt>
-              <dd>{bucket.count}</dd>
-            </div>
-          ))}
-        </dl>
-        <h3>{t("wbPrelabelAccuracy")}</h3>
-        <p>
-          {data.prelabel_accuracy.exact_match_rate == null
-            ? t("wbUnavailable")
-            : `${String(Math.round(data.prelabel_accuracy.exact_match_rate * 100))}%`}
-        </p>
-        <p>
-          {t("wbPrelabelReference", {
-            matched: data.prelabel_accuracy.exact_match_tasks,
-            assessed: data.prelabel_accuracy.assessed_tasks,
-          })}
-        </p>
-      </section>
+      <PrelabelPanel data={data} onRefresh={onChanged} />
+      {!personal && can("production:manage") && (
+        <ReviewSampling
+          key={data.project.review_sample_rate}
+          data={data}
+          onChanged={onChanged}
+        />
+      )}
     </div>
   );
 }

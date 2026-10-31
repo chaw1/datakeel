@@ -25,7 +25,7 @@ it("renders counters, rework identities and workload without recomputing facts",
           },
         ],
         prelabel_accuracy: {
-          project_id: "project",
+          ...labelingProject.prelabel_accuracy,
           assessed_tasks: 4,
           exact_match_tasks: 3,
           exact_match_rate: 0.75,
@@ -53,7 +53,7 @@ it("renders counters, rework identities and workload without recomputing facts",
     "harbor/night/dock-09.jpg",
   );
   expect(screen.queryByText("rework-task")).toBeNull();
-  expect(screen.getByText("75%")).toBeVisible();
+  expect(screen.getByText("Exact-match rate: 75%")).toBeVisible();
   expect(screen.getByText("Approved reference: 3/4 tasks")).toBeVisible();
   const row = screen.getByRole("row", { name: "member 11 7 4 25%" });
   expect(within(row).getAllByRole("cell")).toHaveLength(5);

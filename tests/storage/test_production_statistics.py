@@ -133,10 +133,13 @@ def test_empty_project_statistics_have_no_invented_observations(db: Database) ->
 
 
 def test_model_only_personal_submission_counts_the_human_submitter(db: Database) -> None:
-    """Submitting unchanged model predictions records the human submitter's completed task."""
+    """Confirming unchanged model predictions records the human submitter's completed task.
+
+    A model head cannot be submitted as it is; the submitter saves it unchanged as their own.
+    """
     project, tasks = production_fixture(db, count=1)
     with db.session() as session:
-        revision = append_revision(
+        draft = append_revision(
             session,
             require_task(session, tasks[0].id),
             SaveRevisionParams(
@@ -150,6 +153,17 @@ def test_model_only_personal_submission_counts_the_human_submitter(db: Database)
                 model_name="Fixture",
                 model_version="1",
                 confidence=0.8,
+            ),
+            "submitter",
+        )
+        revision = append_revision(
+            session,
+            require_task(session, tasks[0].id),
+            SaveRevisionParams(
+                request_id="confirm",
+                task_id=tasks[0].id,
+                previous_revision_id=draft.id,
+                annotation=draft.annotation.model_copy(update={"annotator_id": "submitter"}),
             ),
             "submitter",
         )

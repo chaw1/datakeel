@@ -27,6 +27,8 @@ from scripts.metric_mutations import METRIC_MUTATIONS
 from scripts.orchestration_mutations import ORCHESTRATION_MUTATIONS
 from scripts.pii_mutations import PII_MUTATIONS
 from scripts.pii_shape_mutations import PII_SHAPE_MUTATIONS
+from scripts.prelabel_mutations import PRELABEL_MUTATIONS
+from scripts.prelabel_run_mutations import PRELABEL_RUN_MUTATIONS
 from scripts.production_catalog_mutations import PRODUCTION_CATALOG_MUTATIONS
 from scripts.production_mutations import PRODUCTION_MUTATIONS
 from scripts.production_team_mutations import PRODUCTION_TEAM_MUTATIONS
@@ -57,6 +59,8 @@ FEATURE_MUTATIONS = (
     *PRODUCTION_TOOL_MUTATIONS,
     *PRODUCTION_CATALOG_MUTATIONS,
     *TEMPLATE_LOCK_MUTATIONS,
+    *PRELABEL_MUTATIONS,
+    *PRELABEL_RUN_MUTATIONS,
     *PRODUCTION_TEAM_MUTATIONS,
     *WORKLOAD_MUTATIONS,
     *ADVANCED_MUTATIONS,

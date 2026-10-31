@@ -3,6 +3,8 @@
 
 """Freeze catalog and project facts before production action signing and execution."""
 
+from decimal import Decimal
+
 from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,6 +21,7 @@ from datakeel.actions.production_catalog_parameters import (
     UpgradeProjectTemplateParams,
 )
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.core.prelabel_models import PrelabelEstimate
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet
 from datakeel.storage.object_projection import content_digest
@@ -30,6 +33,7 @@ from datakeel.storage.production_catalog_rows import (
     ProductionModelRow,
     ProductionTemplateRow,
 )
+from datakeel.storage.production_cloud_prelabel import cloud_estimate, cloud_targets
 from datakeel.storage.production_rows import ProductionTaskRow
 from datakeel.storage.production_tasks import require_project, task_view
 from datakeel.storage.production_template_upgrade import upgrade_plan
@@ -63,6 +67,15 @@ def catalog_objects(session: Session, params: ProductionCatalogActionParams) -> 
         if isinstance(params, ImportPredictionsParams | RunPrelabelParams):
             model = require_model(session, params.model_id)
             objects.append(_freeze("model", model.id, model.model_dump(mode="json")))
+            estimate = (
+                prelabel_estimate(session, params)
+                if isinstance(params, RunPrelabelParams)
+                else None
+            )
+            if estimate is not None:
+                objects.append(
+                    _freeze("prelabel_estimate", model.id, estimate.model_dump(mode="json"))
+                )
             if params.package_id is not None:
                 statement = statement.where(ProductionTaskRow.package_id == params.package_id)
         objects.extend(
@@ -160,10 +173,23 @@ def catalog_manifest(session: Session, params: ProductionCatalogActionParams) ->
     )
 
 
+def prelabel_estimate(session: Session, params: RunPrelabelParams) -> PrelabelEstimate | None:
+    """Price a cloud run over the images it would actually send; offline models have none."""
+    model = require_model(session, params.model_id)
+    if model.provider != "cloud":
+        return None
+    project = require_project(session, params.project_id)
+    targets = cloud_targets(session, project, model, params.package_id, lock=False)
+    return cloud_estimate(model, targets)
+
+
 def catalog_requires_approval(session: Session, params: ProductionCatalogActionParams) -> bool:
-    """Require a human decision when the fake provider's declared estimate exceeds budget."""
+    """Require a human decision when a prelabel run's estimate exceeds the action budget."""
     if not isinstance(params, RunPrelabelParams):
         return False
+    estimate = prelabel_estimate(session, params)
+    if estimate is not None:
+        return Decimal(str(estimate.total)) > Decimal(str(params.budget))
     model = require_model(session, params.model_id)
     statement = select(ProductionTaskRow.id).where(
         ProductionTaskRow.project_id == params.project_id

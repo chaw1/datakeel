@@ -25,6 +25,7 @@ from datakeel.storage.production_assignments import preserve_personal_assignment
 from datakeel.storage.production_catalog import require_label_set, require_template
 from datakeel.storage.production_leases import restart_leases
 from datakeel.storage.production_members import record_project_member
+from datakeel.storage.production_review_policy import require_ordered_thresholds
 from datakeel.storage.production_rows import (
     ProductionMemberRow,
     ProductionPackageRow,
@@ -204,8 +205,15 @@ def configure_project(session: Session, params: ConfigureProjectParams) -> Proje
     updates: dict[str, object] = {
         field: value for field in _TEAM_SETTINGS if (value := getattr(params, field)) is not None
     }
-    updates.update(dict.fromkeys(params.clear))
-    configured = _validate_dispatch(Project.model_validate({**project.model_dump(), **updates}))
+    for field in ("confidence_high", "confidence_low", "review_sample_rate"):
+        if (value := getattr(params, field)) is not None:
+            updates[field] = value
+    cleared = {"confidence_thresholds": ("confidence_high", "confidence_low")}
+    for name in params.clear:
+        updates.update(dict.fromkeys(cleared.get(name, (name,))))
+    configured = require_ordered_thresholds(
+        _validate_dispatch(Project.model_validate({**project.model_dump(), **updates}))
+    )
     if row is not None:
         row.payload = configured.model_dump(mode="json")
     return configured

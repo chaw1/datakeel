@@ -3,12 +3,13 @@
 
 """Typed production workflow mutations and their declared authorization policies."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel
+from datakeel.core.prelabel_models import ConfidenceTier
 from datakeel.core.production_models import (
     AssignmentStage,
     DispatchStrategy,
@@ -116,6 +117,16 @@ class SaveRevisionParams(TaskIdentityParams):
     model_name: str | None = None
     model_version: str | None = None
     confidence: float | None = Field(default=None, ge=0, le=1)
+    object_confidences: tuple[Annotated[float, Field(ge=0, le=1)], ...] = ()
+    confidence_tier: ConfidenceTier | None = None
+
+    @model_validator(mode="after")
+    def model_only_confidence(self) -> "SaveRevisionParams":
+        """Keep per-object confidence and tiers as model provenance, never human input."""
+        if self.source == "human" and (self.object_confidences or self.confidence_tier):
+            message = "Only model revisions carry object confidences and confidence tiers"
+            raise ValueError(message)
+        return self
 
 
 class SubmitTaskParams(TaskIdentityParams):
@@ -150,14 +161,34 @@ class RevokeAssignmentParams(TaskIdentityParams):
 
 
 class ConfigureProjectParams(ProductionActionParams):
-    """Change team lease, dispatch and load settings; omitted fields stay unchanged."""
+    """Change team, tier-threshold and review-sampling settings; omitted fields stay unchanged.
+
+    Lowering ``review_sample_rate`` below the current rate always requires a signed approval.
+    """
 
     project_id: str
     lease_minutes: int | None = Field(default=None, ge=1, le=1440)
     dispatch_strategy: DispatchStrategy | None = None
     skill_requirement: SkillRequirement | None = None
     max_active_tasks: int | None = Field(default=None, ge=1, le=10000)
-    clear: tuple[Literal["skill_requirement", "max_active_tasks"], ...] = ()
+    confidence_high: float | None = Field(default=None, ge=0, le=1)
+    confidence_low: float | None = Field(default=None, ge=0, le=1)
+    review_sample_rate: float | None = Field(default=None, gt=0, le=1)
+    clear: tuple[
+        Literal["skill_requirement", "max_active_tasks", "confidence_thresholds"], ...
+    ] = ()
+
+    @model_validator(mode="after")
+    def ordered_thresholds(self) -> "ConfigureProjectParams":
+        """Keep the low threshold at or below the high threshold when both are given."""
+        if (
+            self.confidence_high is not None
+            and self.confidence_low is not None
+            and self.confidence_low > self.confidence_high
+        ):
+            message = "confidence_low must not exceed confidence_high"
+            raise ValueError(message)
+        return self
 
 
 class UpgradeProjectParams(ProductionActionParams):

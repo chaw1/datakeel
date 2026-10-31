@@ -20,6 +20,7 @@ from datakeel.actions.production_catalog_parameters import (
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import AssetRef
 from datakeel.storage.production_acceptance import accept_package
+from datakeel.storage.production_ai_audit import audit_prelabel_run
 from datakeel.storage.production_catalog_changes import (
     create_label_set,
     manage_template,
@@ -28,6 +29,7 @@ from datakeel.storage.production_catalog_changes import (
 )
 from datakeel.storage.production_finalize import finalize_project
 from datakeel.storage.production_predictions import import_predictions, run_prelabel
+from datakeel.storage.production_prelabel_runs import prelabel_outputs
 from datakeel.storage.production_template_upgrade import upgrade_project_template
 
 
@@ -53,6 +55,22 @@ def _accept(
     )
 
 
+def _prelabel(
+    session: Session, plan: ActionPlan, params: ImportPredictionsParams | RunPrelabelParams
+) -> OperationResult:
+    run = (
+        import_predictions(session, params, plan.actor)
+        if isinstance(params, ImportPredictionsParams)
+        else run_prelabel(session, params, plan.actor, plan_id=plan.id)
+    )
+    details = run.model_dump(mode="json")
+    if run.status == "running":
+        # Cloud calls continue after this transaction commits; see action_deferred.
+        return OperationResult(outputs=prelabel_outputs(run), details=details, deferred=run.id)
+    audit_prelabel_run(session, plan, run)
+    return OperationResult(outputs=prelabel_outputs(run), details=details)
+
+
 def execute_catalog_action(
     session: Session,
     plan: ActionPlan,
@@ -64,21 +82,7 @@ def execute_catalog_action(
     if isinstance(params, AcceptPackageParams | UpgradeProjectTemplateParams):
         return _accept(session, plan, params)
     if isinstance(params, ImportPredictionsParams | RunPrelabelParams):
-        run = (
-            import_predictions(session, params, plan.actor)
-            if isinstance(params, ImportPredictionsParams)
-            else run_prelabel(session, params, plan.actor)
-        )
-        return OperationResult(
-            outputs=[
-                AssetRef(asset_type="prelabel_run", asset_id=run.id),
-                *(
-                    AssetRef(asset_type="annotation_revision", asset_id=identifier)
-                    for identifier in run.revision_ids
-                ),
-            ],
-            details=run.model_dump(mode="json"),
-        )
+        return _prelabel(session, plan, params)
     if isinstance(params, CreateLabelSetParams) and params.target == "template":
         template = manage_template(session, params)
         return OperationResult(

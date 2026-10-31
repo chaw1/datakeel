@@ -1,30 +1,9 @@
 import { annotationPath } from "../../api/annotation";
 import { useI18n } from "../../i18n/useI18n";
 
-import type { AnnotationReport } from "../../api/annotation";
-import type { MessageKey } from "../../i18n/en";
+import { findingLabels } from "./findingLabels";
 
-type FindingCode = AnnotationReport["result"]["findings"][number]["code"];
-const ruleLabels: Record<FindingCode, MessageKey> = {
-  minority_label: "annotationMinority",
-  near_duplicate_conflict: "annotationDuplicate",
-  bbox_size_outlier: "annotationBoxSize",
-  bbox_aspect_outlier: "annotationBoxAspect",
-  invalid_bbox: "annotationInvalidBox",
-  multilabel_conflict: "annotationMultilabel",
-  invalid_span: "annotationInvalidSpan",
-  bbox_category_minority: "annotationBoxCategory",
-  bbox_missing: "annotationBoxMissing",
-  bbox_extra: "annotationBoxExtra",
-  duplicate_bbox: "annotationBoxDuplicate",
-  span_category_minority: "annotationSpanCategory",
-  span_boundary_minority: "annotationSpanBoundary",
-  span_missing: "annotationSpanMissing",
-  span_extra: "annotationSpanExtra",
-  duplicate_span: "annotationSpanDuplicate",
-  span_length_outlier: "annotationSpanLength",
-  rare_category: "annotationRareCategory",
-};
+import type { AnnotationReport } from "../../api/annotation";
 
 export function AnnotationFindings({ report }: { report: AnnotationReport }) {
   const { t } = useI18n();
@@ -68,7 +47,7 @@ export function AnnotationFindings({ report }: { report: AnnotationReport }) {
                       <code>{finding.sample_id}</code>
                     </td>
                     <td>{finding.annotator_id}</td>
-                    <td>{t(ruleLabels[finding.code])}</td>
+                    <td>{t(findingLabels[finding.code])}</td>
                     <td>
                       {finding.reason}
                       <ul>

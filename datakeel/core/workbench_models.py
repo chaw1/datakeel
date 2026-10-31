@@ -11,6 +11,14 @@ from pydantic import Field
 from datakeel.core.annotation_models import AnnotationQAResult
 from datakeel.core.identity_models import EffectiveScopes
 from datakeel.core.models import BoundaryModel
+from datakeel.core.prelabel_models import (
+    AIReview,
+    ConfidenceThresholds,
+    ConfidenceTier,
+    ModelSpend,
+    PrelabelProgress,
+    RiskReason,
+)
 from datakeel.core.production_catalog_models import LabelSet, ProductionTemplate
 from datakeel.core.production_models import (
     AnnotationRevision,
@@ -85,6 +93,11 @@ class WorkbenchTaskRisk(BoundaryModel):
     task_id: str
     prelabel_difference: float | None = Field(default=None, ge=0, le=1)
     model_confidence: float | None = Field(default=None, ge=0, le=1)
+    ai_risk: float | None = Field(default=None, ge=0, le=1)
+    high_risk: bool = False
+    review_decision: Literal["review", "exempt", "personal"] | None = None
+    risk_reasons: tuple[RiskReason, ...] = ()
+    confidence_tier: ConfidenceTier | None = None
 
 
 class WorkbenchIndex(BoundaryModel):
@@ -122,6 +135,9 @@ class WorkbenchProject(BoundaryModel):
     task_risks: tuple[WorkbenchTaskRisk, ...] = ()
     next_cursor: str | None = None
     task_samples: tuple[WorkbenchSampleName, ...] = ()
+    confidence_thresholds: ConfidenceThresholds | None = None
+    prelabel_spend: tuple[ModelSpend, ...] = ()
+    prelabel_progress: tuple[PrelabelProgress, ...] = ()
 
 
 class WorkbenchSample(BoundaryModel):
@@ -151,6 +167,7 @@ class WorkbenchTask(BoundaryModel):
     revisions: tuple[AnnotationRevision, ...]
     reviews: tuple[Review, ...]
     assignments: tuple[Assignment, ...]
+    ai_review: AIReview | None = None
 
 
 class WorkbenchLease(BoundaryModel):

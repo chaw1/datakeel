@@ -17,6 +17,7 @@ from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundErro
 from datakeel.core.models import JsonDocument, new_id, utcnow
 from datakeel.storage.action_access import authorize_plans_in_session
 from datakeel.storage.action_approvals import consume_approval
+from datakeel.storage.action_deferred import complete_deferred
 from datakeel.storage.action_export import export_action, rollback_export
 from datakeel.storage.action_locks import lock_action_targets
 from datakeel.storage.action_operations import execute_business
@@ -42,16 +43,18 @@ logger = logging.getLogger(__name__)
 def _commit_result(
     session: Session, plan: ActionPlan, result: OperationResult, request: ExecuteRequest
 ) -> ActionRun:
+    """Record the attempt, its receipt unless work continues after commit, then commit."""
+    status = "QUEUED" if result.task_id else "RUNNING" if result.deferred else "SUCCEEDED"
     row = ActionRunRow(
         id=new_id(),
         plan_id=plan.id,
         action_type=plan.action_type,
-        status="QUEUED" if result.task_id else "SUCCEEDED",
+        status=status,
         task_id=result.task_id,
     )
     session.add(row)
     session.flush()
-    if result.task_id is None:
+    if result.task_id is None and result.deferred is None:
         event = receipt(plan, row.id, result.outputs)
         event = event.model_copy(update={"quality": {**event.quality, "details": result.details}})
         row.receipt = event.model_dump(mode="json")
@@ -63,7 +66,7 @@ def _commit_result(
             publish(session, event)
     audit(session, plan, "EXECUTE", row.status, digest(result.details))
     remember_operation(session, plan, request, row.id)
-    session.flush()
+    session.commit()
     return run_view(row)
 
 
@@ -167,9 +170,10 @@ def execute_plan(
             )
             row.status = "EXECUTED"
             run = _commit_result(session, plan, result, request)
-            session.commit()
             committed = True
-            return run
+            if result.deferred is None:
+                return run
+            deferred = (plan, run.id, result.deferred)
     except Exception as error:
         if not committed:
             rollback_export(result)
@@ -177,3 +181,5 @@ def execute_plan(
         if record_attempt:
             _record_failure(db, plan_id, error, request, attempted=attempted, authorized=authorized)
         raise
+    # Slow outside work (cloud model calls) runs after the plan's transaction has committed.
+    return complete_deferred(db, *deferred)

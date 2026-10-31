@@ -24,6 +24,25 @@ class _Box(BoundaryModel):
     bbox: tuple[StrictFloat, StrictFloat, StrictFloat, StrictFloat]
 
 
+def to_pixels(
+    bbox: tuple[float, float, float, float],
+    width: int,
+    height: int,
+    coordinate_space: CoordinateSpace = "pixel",
+) -> tuple[float, float, float, float]:
+    """Convert model xyxy output to pixels of the image the model was sent."""
+    if coordinate_space == "pixel":
+        return bbox
+    divisor = 1000 if coordinate_space == "normalized_1000" else 1
+    x1, y1, x2, y2 = bbox
+    return (
+        x1 / divisor * width,
+        y1 / divisor * height,
+        x2 / divisor * width,
+        y2 / divisor * height,
+    )
+
+
 def _rows(text: str) -> list[JsonValue]:
     decoder = json.JSONDecoder()
     for index, char in enumerate(text):
@@ -57,8 +76,6 @@ class LocatedTranscript(BoundaryModel):
         words: list[str] = []
         lines: list[OCRLine] = []
         ignored = 0
-        divisor = 1000 if coordinate_space == "normalized_1000" else 1
-        dimensions = (width, height)
         for row in _rows(text):
             try:
                 line = _VisualLine.model_validate(row)
@@ -70,12 +87,7 @@ class LocatedTranscript(BoundaryModel):
                 bbox = _Box.model_validate({"bbox": line.bbox}).bbox
                 region = ImageRegion.model_validate(
                     {
-                        "bbox": bbox
-                        if coordinate_space == "pixel"
-                        else tuple(
-                            value / divisor * dimensions[index % 2]
-                            for index, value in enumerate(bbox)
-                        ),
+                        "bbox": to_pixels(bbox, width, height, coordinate_space),
                         "width": width,
                         "height": height,
                     }

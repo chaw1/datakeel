@@ -3426,6 +3426,50 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AIReview
+         * @description Immutable AI pre-review of one submitted revision and its review-sampling decision.
+         */
+        AIReview: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "review" | "exempt" | "personal";
+            /** Draw */
+            draw: number;
+            /** High Risk */
+            high_risk: boolean;
+            /** Id */
+            id: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Reasons
+             * @default []
+             */
+            reasons: components["schemas"]["RiskReason"][];
+            /** Revision Id */
+            revision_id: string;
+            /** Risk */
+            risk: number;
+            /** Round */
+            round: number;
+            /** Sample Rate */
+            sample_rate: number;
+            /** Task Id */
+            task_id: string;
+        };
         /** @enum {string} */
         AccessEntry: "ask" | "export" | "download" | "mcp" | "agent";
         /** @enum {string} */
@@ -3950,6 +3994,8 @@ export interface components {
             annotation: components["schemas"]["AnnotationRecord"];
             /** Confidence */
             confidence?: number | null;
+            /** Confidence Tier */
+            confidence_tier?: ("high" | "medium" | "low") | null;
             coordinate_conversion?: components["schemas"]["CoordinateConversion"] | null;
             /**
              * Created At
@@ -3962,6 +4008,14 @@ export interface components {
             model_name?: string | null;
             /** Model Version */
             model_version?: string | null;
+            /**
+             * Object Confidences
+             * @description Model confidence per object: label set, boxes, polygons, then spans.
+             * @default []
+             */
+            object_confidences: number[];
+            /** @description Set when a high-confidence model draft was submitted for review directly. */
+            pass_through?: components["schemas"]["PassThrough"] | null;
             /** Previous Revision Id */
             previous_revision_id: string | null;
             /**
@@ -4610,6 +4664,18 @@ export interface components {
             transferred_from?: string | null;
         };
         /**
+         * AttributeAgreement
+         * @description Share of IoU >= 0.5 matched objects whose attributes are identical.
+         */
+        AttributeAgreement: {
+            /** Consistent Objects */
+            consistent_objects: number;
+            /** Matched Objects */
+            matched_objects: number;
+            /** Rate */
+            rate?: number | null;
+        };
+        /**
          * AttributeOption
          * @description Name one stored choice value of an enumerated attribute in both languages.
          */
@@ -4941,6 +5007,22 @@ export interface components {
             alternatives: string[];
             /** Canonical */
             canonical: string;
+        };
+        /**
+         * CalibrationSegment
+         * @description One flat piece of the isotonic confidence-to-hit-rate curve over reviewed objects.
+         */
+        CalibrationSegment: {
+            /** High */
+            high: number;
+            /** Hits */
+            hits: number;
+            /** Low */
+            low: number;
+            /** Objects */
+            objects: number;
+            /** Rate */
+            rate: number;
         };
         /**
          * CallTree
@@ -5493,6 +5575,56 @@ export interface components {
             project_id: string;
             /** Total */
             total: number;
+        };
+        /**
+         * ConfidenceThresholds
+         * @description Effective tier thresholds and the reviewed evidence they were derived from.
+         *
+         *     An object is high when confidence >= ``high`` and low when confidence < ``low``;
+         *     ``None`` means that tier is not used. A task takes its lowest object tier, and a
+         *     model draft without objects is low.
+         */
+        ConfidenceThresholds: {
+            /** High */
+            high?: number | null;
+            /** Low */
+            low?: number | null;
+            /**
+             * Minimum Objects
+             * @default 30
+             */
+            minimum_objects: number;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: ("insufficient_samples" | "no_high_threshold" | "no_low_threshold" | "low_capped")[];
+            /**
+             * Objects
+             * @default 0
+             */
+            objects: number;
+            /**
+             * Pass Through
+             * @description False while defaults stand in for measured thresholds: high stays a draft.
+             * @default true
+             */
+            pass_through: boolean;
+            /**
+             * Segments
+             * @default []
+             */
+            segments: components["schemas"]["CalibrationSegment"][];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "configured" | "calibrated" | "default";
+            /**
+             * Tiers
+             * @default []
+             */
+            tiers: components["schemas"]["TierRate"][];
         };
         /**
          * ConversationAudit
@@ -7559,6 +7691,33 @@ export interface components {
             sample_id: string;
         };
         /**
+         * IoUAccuracy
+         * @description Object-level precision, recall and F1 at one IoU threshold, plus all-hit tasks.
+         */
+        IoUAccuracy: {
+            /** All Hit Rate */
+            all_hit_rate?: number | null;
+            /**
+             * All Hit Tasks
+             * @default 0
+             */
+            all_hit_tasks: number;
+            /** F1 */
+            f1?: number | null;
+            /** Human Objects */
+            human_objects: number;
+            /** Model Objects */
+            model_objects: number;
+            /** Precision */
+            precision?: number | null;
+            /** Recall */
+            recall?: number | null;
+            /** Threshold */
+            threshold: number;
+            /** True Positives */
+            true_positives: number;
+        };
+        /**
          * IssueView
          * @description Measured quality or compliance issue.
          */
@@ -9470,6 +9629,30 @@ export interface components {
             tier: "simple" | "multi_step" | "high_risk";
         };
         /**
+         * ModelSpend
+         * @description Total measured prelabel spend of one model on one project.
+         */
+        ModelSpend: {
+            /** Cost */
+            cost: number;
+            /** Currency */
+            currency: string;
+            /** Images */
+            images: number;
+            /** Input Tokens */
+            input_tokens: number;
+            /** Model Id */
+            model_id: string;
+            /** Model Name */
+            model_name: string;
+            /** Model Version */
+            model_version: string;
+            /** Output Tokens */
+            output_tokens: number;
+            /** Runs */
+            runs: number;
+        };
+        /**
          * NearDuplicateCandidate
          * @description Explain one directly measured neighboring sample, without transitive expansion.
          */
@@ -9532,6 +9715,19 @@ export interface components {
             error?: string | null;
             /** Text */
             text: string;
+        };
+        /**
+         * ObjectRef
+         * @description Point at one object of a revision so a reviewer can jump to it.
+         */
+        ObjectRef: {
+            /** Index */
+            index: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "label_set" | "box" | "polygon" | "span";
         };
         /**
          * ObjectSet
@@ -9797,6 +9993,29 @@ export interface components {
             tp: number;
         };
         /**
+         * PassThrough
+         * @description Who answers for a model draft submitted without a person, by which model and bar.
+         */
+        PassThrough: {
+            /** Confidence */
+            confidence: number;
+            /** High */
+            high: number;
+            /** Low */
+            low?: number | null;
+            /** Model Id */
+            model_id: string;
+            /** Reviewed Objects */
+            reviewed_objects: number;
+            /**
+             * Threshold Source
+             * @enum {string}
+             */
+            threshold_source: "configured" | "calibrated";
+            /** Triggered By */
+            triggered_by: string;
+        };
+        /**
          * Pipeline
          * @description Describe an acyclic set of nodes and the published output slots.
          */
@@ -9813,17 +10032,66 @@ export interface components {
         };
         /**
          * PrelabelAccuracy
-         * @description Report exact model-draft agreement only against approved human reference revisions.
+         * @description Report model-draft accuracy only against approved human reference revisions.
+         *
+         *     ``exact_match_*`` keeps the original whole-content agreement; ``iou_50`` and ``iou_75``
+         *     match same-label objects one-to-one by descending IoU.
          */
         PrelabelAccuracy: {
             /** Assessed Tasks */
             assessed_tasks: number;
+            attribute_agreement: components["schemas"]["AttributeAgreement"];
             /** Exact Match Rate */
             exact_match_rate?: number | null;
             /** Exact Match Tasks */
             exact_match_tasks: number;
+            iou_50: components["schemas"]["IoUAccuracy"];
+            iou_75: components["schemas"]["IoUAccuracy"];
             /** Project Id */
             project_id: string;
+        };
+        /**
+         * PrelabelProgress
+         * @description Where a cloud prelabel run stands: images done and failed, money spent, last update.
+         */
+        PrelabelProgress: {
+            /** Budget */
+            budget?: number | null;
+            /** Completed Images */
+            completed_images: number;
+            /** Currency */
+            currency?: string | null;
+            /** Failed Images */
+            failed_images: number;
+            /** Model Id */
+            model_id: string;
+            /** Model Name */
+            model_name: string;
+            /** Model Version */
+            model_version: string;
+            /** Planned Images */
+            planned_images: number;
+            /** Run Id */
+            run_id: string;
+            /** Spent */
+            spent: number;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "completed" | "failed" | "abandoned";
+            /**
+             * Stopped
+             * @default false
+             */
+            stopped: boolean;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /**
          * ProductionLabel
@@ -10069,6 +10337,10 @@ export interface components {
          * @description Bind production to immutable input data and published annotation rules.
          */
         Project: {
+            /** Confidence High */
+            confidence_high?: number | null;
+            /** Confidence Low */
+            confidence_low?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -10109,6 +10381,11 @@ export interface components {
              * @default false
              */
             review_prompt_shown: boolean;
+            /**
+             * Review Sample Rate
+             * @default 1
+             */
+            review_sample_rate: number;
             skill_requirement?: components["schemas"]["SkillRequirement"] | null;
             /** Template Id */
             template_id?: string | null;
@@ -10478,6 +10755,33 @@ export interface components {
              * @default 0
              */
             unchanged_records: number;
+        };
+        /**
+         * RiskReason
+         * @description One rule hit that contributed to an AI pre-review risk score.
+         */
+        RiskReason: {
+            /** Code */
+            code: string;
+            /**
+             * Evidence
+             * @default []
+             */
+            evidence: string[];
+            /** Message */
+            message: string;
+            /**
+             * Message Zh
+             * @default
+             */
+            message_zh: string;
+            /**
+             * Objects
+             * @default []
+             */
+            objects: components["schemas"]["ObjectRef"][];
+            /** Weight */
+            weight: number;
         };
         /**
          * RouteCandidate
@@ -11455,6 +11759,23 @@ export interface components {
              * @enum {string}
              */
             type: "text_span";
+        };
+        /**
+         * TierRate
+         * @description Measured hit rate of reviewed model objects that fall in one tier.
+         */
+        TierRate: {
+            /** Hits */
+            hits: number;
+            /** Objects */
+            objects: number;
+            /** Rate */
+            rate?: number | null;
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "high" | "medium" | "low";
         };
         /**
          * TimeRange
@@ -12441,6 +12762,7 @@ export interface components {
         WorkbenchProject: {
             agreement: components["schemas"]["AnnotationQAResult"];
             confidence: components["schemas"]["ConfidenceDistribution"];
+            confidence_thresholds?: components["schemas"]["ConfidenceThresholds"] | null;
             effective_scopes: components["schemas"]["EffectiveScopes"];
             label_set: components["schemas"]["LabelSet"];
             /**
@@ -12455,6 +12777,16 @@ export interface components {
             /** Packages */
             packages: components["schemas"]["TaskPackage"][];
             prelabel_accuracy: components["schemas"]["PrelabelAccuracy"];
+            /**
+             * Prelabel Progress
+             * @default []
+             */
+            prelabel_progress: components["schemas"]["PrelabelProgress"][];
+            /**
+             * Prelabel Spend
+             * @default []
+             */
+            prelabel_spend: components["schemas"]["ModelSpend"][];
             progress: components["schemas"]["ProductionProgress"];
             project: components["schemas"]["Project"];
             /**
@@ -12527,6 +12859,7 @@ export interface components {
          * @description Return one sample and its exact append-only revision and review histories.
          */
         WorkbenchTask: {
+            ai_review?: components["schemas"]["AIReview"] | null;
             /** Assignments */
             assignments: components["schemas"]["Assignment"][];
             /** Reviews */
@@ -12541,10 +12874,26 @@ export interface components {
          * @description Measure the current human annotation's content difference from its latest model draft.
          */
         WorkbenchTaskRisk: {
+            /** Ai Risk */
+            ai_risk?: number | null;
+            /** Confidence Tier */
+            confidence_tier?: ("high" | "medium" | "low") | null;
+            /**
+             * High Risk
+             * @default false
+             */
+            high_risk: boolean;
             /** Model Confidence */
             model_confidence?: number | null;
             /** Prelabel Difference */
             prelabel_difference?: number | null;
+            /** Review Decision */
+            review_decision?: ("review" | "exempt" | "personal") | null;
+            /**
+             * Risk Reasons
+             * @default []
+             */
+            risk_reasons: components["schemas"]["RiskReason"][];
             /** Task Id */
             task_id: string;
         };

@@ -88,7 +88,7 @@ class ImportPredictionsParams(ProductionCatalogActionParams):
 
 
 class RunPrelabelParams(ProductionCatalogActionParams):
-    """Run the deterministic free model, requiring approval for a declared budget overrun."""
+    """Run a fake or cloud model; an estimate above ``budget`` needs approval, cloud stops there."""
 
     project_id: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
@@ -153,7 +153,11 @@ CATALOG_POLICIES: dict[str, tuple[str, bool, str]] = {
     "register_model": ("production:models", False, "Register an offline prelabel model"),
     "update_model": ("production:models", False, "Update an offline prelabel model"),
     "import_predictions": ("production:manage", True, "Import model-attributed revisions"),
-    "run_prelabel": ("production:manage", True, "Run deterministic offline prelabel model"),
+    "run_prelabel": (
+        "production:manage",
+        True,
+        "Run a prelabel model; cloud runs stop at the budget and need approval above it",
+    ),
     "finalize_project": ("production:finalize", False, "Publish finalized production annotations"),
     "accept_package": ("production:accept", False, "Accept or return a package by sampling"),
     "upgrade_project_template": (

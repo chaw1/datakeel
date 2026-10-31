@@ -1,8 +1,26 @@
+import type { components } from "../api/generated";
 import type {
   ProjectWorkbench,
   TaskWorkbench,
   WorkbenchIndex,
 } from "../api/production";
+
+/** Object-level accuracy at one IoU threshold with nothing assessed yet. */
+export function unmeasuredIoU(
+  threshold: number,
+): components["schemas"]["IoUAccuracy"] {
+  return {
+    threshold,
+    model_objects: 0,
+    human_objects: 0,
+    true_positives: 0,
+    precision: null,
+    recall: null,
+    f1: null,
+    all_hit_tasks: 0,
+    all_hit_rate: null,
+  };
+}
 
 export const labelingProject: ProjectWorkbench = {
   project: {
@@ -17,6 +35,7 @@ export const labelingProject: ProjectWorkbench = {
     review_prompt_shown: false,
     lease_minutes: 10,
     dispatch_strategy: "claim",
+    review_sample_rate: 1,
     created_at: "2026-10-30T00:00:00Z",
   },
   packages: [
@@ -111,7 +130,17 @@ export const labelingProject: ProjectWorkbench = {
     assessed_tasks: 0,
     exact_match_tasks: 0,
     exact_match_rate: null,
+    iou_50: unmeasuredIoU(0.5),
+    iou_75: unmeasuredIoU(0.75),
+    attribute_agreement: {
+      matched_objects: 0,
+      consistent_objects: 0,
+      rate: null,
+    },
   },
+  confidence_thresholds: null,
+  prelabel_spend: [],
+  prelabel_progress: [],
 };
 export const labelingIndex: WorkbenchIndex = {
   actor: "local",
