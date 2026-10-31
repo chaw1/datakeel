@@ -123,7 +123,7 @@ PLANNING_MUTATIONS = (
     Mutation(
         name="intent-task-numbers-are-named-tasks",
         path="intents/task_scope.py",
-        before="    named = _named(spec, len(tasks))",
+        before="    named = _named(tasks, spec, found[1])",
         after="    named = None",
         case=_GROUP,
         runner="pytest",

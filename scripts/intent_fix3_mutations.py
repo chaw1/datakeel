@@ -255,7 +255,7 @@ PARTS_MUTATIONS = (
     Mutation(
         name="fix3-p7-review-tasks-are-held-for-review",
         path="intents/group_fill.py",
-        before='    stage = stage if isinstance(stage, str) and stage else "annotation"',
+        before='    stage = explicit if isinstance(explicit, str) and explicit else "annotation"',
         after='    stage = "annotation"',
         case=_PARTS + "test_review_tasks_and_remaining_files_are_the_ones_meant",
         runner="pytest",

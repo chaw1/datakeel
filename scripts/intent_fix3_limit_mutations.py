@@ -23,8 +23,8 @@ LIMITS_MUTATIONS = (
     Mutation(
         name="fix3-the-last-n-tasks-are-counted-from-the-end",
         path="intents/task_scope.py",
-        before="    return list(range(max(total - last, 0) + 1, total + 1)) if last else None",
-        after="    return None",
+        before="    return listed[:first] if first else listed[-last:] if last else None",
+        after="    return listed[:first] if first else None",
         case=_LIMITS + "test_a_group_left_unwrapped_or_counted_from_the_end_is_that_group",
         runner="pytest",
     ),
