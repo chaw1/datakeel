@@ -299,6 +299,18 @@ def test_model_fields_beside_the_model_are_not_sent_back_for_repair(db: Database
     assert (model["id"], model["version"]) == ("shape-1", "1.4")
 
 
+def test_a_model_change_naming_no_stored_model_offers_the_models(db: Database) -> None:
+    """Which model to change is an object question: it comes with the models (11.2-7)."""
+    two_projects(db)
+    _models(db)
+    unknown = steps(("update_model", {"model": "Shaper 2.0"}))
+    result = planned(db, "Shaper 2.0 is out, move ours up", [unknown], PageContext())
+    assert result.kind == "clarify", result.text
+    assert result.clarification is not None
+    assert result.clarification.fields == ["model"]
+    assert {item.id for item in result.clarification.candidates} == {"box-1", "shape-1"}
+
+
 def test_a_label_set_said_as_the_catalog_shows_it_keeps_its_name(db: Database) -> None:
     """The catalog's "name vN" given back as the name is no rename (11.2-4, 11.2-8)."""
     _, south, _ = two_projects(db)

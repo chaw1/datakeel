@@ -9,12 +9,26 @@ a review); otherwise every object of the kind the speaker can see, up to five.
 """
 
 from datakeel.core.intent_models import Candidate
-from datakeel.intents.catalog import CANDIDATE_LIMIT, EntityCatalog, candidates
+from datakeel.intents.catalog import (
+    CANDIDATE_LIMIT,
+    FIELD_KINDS,
+    LIST_KINDS,
+    EntityCatalog,
+    candidates,
+)
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.fill_state import FillState
 from datakeel.intents.singular import which_task
 from datakeel.storage.database import Database
 from datakeel.storage.intent_reads import held_tasks
+
+# A field holding a stored object's whole record: a change to a model names one of them.
+RECORD_KINDS = {("update_model", "model"): "model"}
+
+
+def field_kind(action: str, field: str) -> str | None:
+    """The kind of object a field names, when it names one."""
+    return FIELD_KINDS.get(field) or LIST_KINDS.get(field) or RECORD_KINDS.get((action, field))
 
 
 def object_choices(

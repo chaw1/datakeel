@@ -248,4 +248,12 @@ FLOW_MUTATIONS = (
         case=_FLOW + "test_model_fields_beside_the_model_are_not_sent_back_for_repair",
         runner="pytest",
     ),
+    Mutation(
+        name="fix5-a-model-record-is-an-object-question",
+        path="intents/choices.py",
+        before='RECORD_KINDS = {("update_model", "model"): "model"}',
+        after="RECORD_KINDS: dict[tuple[str, str], str] = {}",
+        case=_FLOW + "test_a_model_change_naming_no_stored_model_offers_the_models",
+        runner="pytest",
+    ),
 )

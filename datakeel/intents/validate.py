@@ -15,8 +15,8 @@ from datakeel.actions.registry import POLICIES
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import Candidate, ChainStep, Clarification
 from datakeel.core.models import BoundaryModel
-from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog
-from datakeel.intents.choices import object_choices
+from datakeel.intents.catalog import EntityCatalog
+from datakeel.intents.choices import field_kind, object_choices
 from datakeel.intents.derived import derivable, derive, underivable
 from datakeel.intents.describe import describe_step
 from datakeel.intents.drafts import DraftStep
@@ -253,11 +253,11 @@ def _missing(
     if not asked:
         question = underivable(missing[0], state.language)
         return Clarification(question=question, action=step.action, fields=[])
-    missing = asked
+    missing = list(dict.fromkeys(asked))
     # Several values missing: the first object among them is asked with its choices.
-    objects = [name for name in missing if FIELD_KINDS.get(name) or LIST_KINDS.get(name)]
+    objects = [name for name in missing if field_kind(step.action, name)]
     field = missing[0] if len(missing) == 1 else next(iter(objects), None)
-    kind = FIELD_KINDS.get(field or "") or LIST_KINDS.get(field or "")
+    kind = field_kind(step.action, field or "")
     choices = object_choices(db, step, field or "", kind, state, catalog) if kind else []
     if field and not kind:
         # A short choice of values (approve or rework, a workflow tier) is offered as is.
