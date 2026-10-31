@@ -11,9 +11,10 @@ from collections import Counter
 
 from pydantic import JsonValue
 
-from datakeel.core.intent_models import Candidate, Clarification, PageContext
+from datakeel.core.intent_models import Clarification, PageContext
 from datakeel.intents.catalog import SELF_WORDS, EntityCatalog, candidates
 from datakeel.intents.drafts import DraftStep
+from datakeel.intents.exclusions import excluded_text, include_question
 from datakeel.intents.fill_state import (
     FillState,
     ask,
@@ -23,9 +24,12 @@ from datakeel.intents.fill_state import (
     project_in_scope,
 )
 from datakeel.intents.selectors import file_selection, named_files, ordinal_question, pick
+from datakeel.intents.singular import says_one, which_task
+from datakeel.intents.step_values import page_package
 from datakeel.intents.task_scope import (
     CONDITIONS,
     SELECTOR_KEYS,
+    Holder,
     from_end,
     is_nobody,
     place_number,
@@ -34,16 +38,18 @@ from datakeel.intents.task_scope import (
 )
 from datakeel.intents.verify import says_whole
 from datakeel.intents.wording import (
-    EXCLUSION_REASONS,
     nothing_to_change,
     whole_tasks_question,
 )
 from datakeel.storage.database import Database
-from datakeel.storage.intent_reads import held_projects, task_snapshots
+from datakeel.storage.identity_store import list_users
+from datakeel.storage.intent_reads import TaskSnapshot, held_projects, task_snapshots
 
 TASK_FIELDS = frozenset({"task_id", "task_ids"})
 # One's own work: with no task named or on the page, the task is the speaker's own.
 SELF_WORK = frozenset({"release_task", "submit_task", "heartbeat"})
+# Reads that take a task group: "my task" there is any task the person holds or annotated.
+TASK_READS = frozenset({"get_task", "lease_status", "production_objects"})
 # Giving back or keeping one's own task with no stage said finds a hold in either stage.
 ANY_STAGE = frozenset({"release_task", "heartbeat"})
 # Conditions that count within one project's list, so they never span projects.
@@ -147,9 +153,7 @@ def _tasks(
             else _choose_project(where, current, state, catalog)
         )
     project, holder = where
-    explicit = current.params.get("stage")
-    stage = explicit if isinstance(explicit, str) and explicit else "annotation"
-    stage = "review" if current.action == "review_task" else stage
+    stage = _stage(current)
     # Assigning for review only takes tasks waiting for review, so the stage is the condition.
     described = stage == "review" or any(key in spec for key in (*CONDITIONS, *ORDERED))
     if not described and not says_whole(state.text):
@@ -159,12 +163,37 @@ def _tasks(
             action=current.action,
             fields=["$tasks.numbers"],
         )
-    package = nth_package(spec["package"], project, state, catalog) if "package" in spec else None
+    package = page_package(db, spec.get("package"), state) or (
+        nth_package(spec["package"], project, state, catalog) if "package" in spec else None
+    )
     if isinstance(package, Clarification):
         return package
     spec = from_end(spec, state.text)
-    either = not explicit and current.action in ANY_STAGE
-    snapshots = task_snapshots(db, project)
+    if current.action == "revoke_assignment" and holder is not None and says_whole(state.text):
+        # "Mia 手上的都收回" asks for every one of her tasks, saved work included.
+        said = spec.get("include")
+        listed: list[JsonValue] = said if isinstance(said, list) else [str(said or "")]
+        spec = {**spec, "include": [*listed, "annotated"]}
+    # A task an earlier step of the plan takes back is free by the time this step runs.
+    snapshots = [
+        task.model_copy(update={"holder": None, "stage": None})
+        if task.stage is not None and state.freed.get(task.id) == task.stage
+        else task
+        for task in task_snapshots(db, project)
+    ]
+    return _in_stages(snapshots, spec, current, state, (holder, package))
+
+
+def _in_stages(
+    snapshots: list[TaskSnapshot],
+    spec: dict[str, JsonValue],
+    current: DraftStep,
+    state: FillState,
+    found: tuple[Holder, str | None],
+) -> tuple[list[str], dict[str, int]] | Clarification:
+    """Select in the step's stage; a give-back with no stage said looks in both."""
+    stage = _stage(current)
+    either = not current.params.get("stage") and current.action in ANY_STAGE
     ids: list[str] = []
     excluded: Counter[str] = Counter()
     held: set[str] = set()
@@ -174,7 +203,7 @@ def _tasks(
             spec,
             action=current.action,
             speaker=state.actor,
-            found=(holder, package),
+            found=found,
             stage=each,
         )
         if scope.missing:
@@ -188,6 +217,15 @@ def _tasks(
     return ids, dict(excluded)
 
 
+def _stage(current: DraftStep) -> str:
+    """The stage a selector looks at: the step's own, review for a review, any for a read."""
+    explicit = current.params.get("stage")
+    stage = explicit if isinstance(explicit, str) and explicit else "annotation"
+    stage = "review" if current.action == "review_task" else stage
+    # A read about someone's task finds what they annotated, whatever its state.
+    return "read" if current.action in TASK_READS else stage
+
+
 def own_task(action: str, params: dict[str, JsonValue], context: PageContext) -> None:
     """Giving back, handing in or keeping "my task" with none named: the speaker's own."""
     paged = context.task_id or (context.selected_kind == "production_task" and context.selected_ids)
@@ -197,19 +235,30 @@ def own_task(action: str, params: dict[str, JsonValue], context: PageContext) ->
 
 def _where(
     db: Database, spec: dict[str, JsonValue], state: FillState, catalog: EntityCatalog
-) -> tuple[str, str | None] | list[str] | Clarification:
+) -> tuple[str, Holder] | list[str] | Clarification:
     """(project, holder) of a selector, or the projects to choose from when none is said.
 
     Someone's tasks with no project said: the projects where that person holds work now.
+    A team named as the holder means its members.
     """
-    holder = _holder(spec, state, catalog)
-    if isinstance(holder, Clarification):
-        return holder
+    person = _holder(spec, state, catalog)
+    team = _members(db, spec.get("holder"), catalog) if isinstance(person, Clarification) else None
+    if isinstance(person, Clarification) and team is None:
+        return person
+    holder: Holder = team if team is not None else person if isinstance(person, str) else None
     project = _project(spec, state, catalog)
     if project is not None:
         return project, holder
-    held = held_projects(db, holder) if holder is not None else []
+    held = held_projects(db, holder) if isinstance(holder, str) else []
     return (held[0], holder) if len(held) == 1 else held
+
+
+def _members(db: Database, raw: JsonValue, catalog: EntityCatalog) -> frozenset[str] | None:
+    """The people of the one team the holder words name, or None."""
+    teams = catalog.match("team", raw) if isinstance(raw, str) else []
+    if len(teams) != 1:
+        return None
+    return frozenset(user.id for user in list_users(db) if teams[0].id in user.team_ids)
 
 
 def _choose_project(
@@ -285,9 +334,13 @@ def _task_slot(
         named = "" if is_nobody(holder, {}) else str(holder or "")
         if named.strip().casefold() in SELF_WORDS:
             named = "你" if state.language == "zh" else "you"
+        if set(left_out) == {"closed"}:
+            return {"$empty": excluded_text(left_out, state.language).strip()}
         if left_out:
             return include_question(left_out, named, current.action, state.language)
         return {"$empty": nothing_to_change("tasks", named, state.language)}
+    if len(ids) > 1 and field == "task_id" and says_one(state.text):
+        return which_task(db, ids, catalog, current.action, state.language)
     identifiers: list[JsonValue] = list(ids)
     return identifiers if field.endswith("_ids") else {"$each": identifiers}
 
@@ -341,28 +394,3 @@ def _holding_dataset(
         if named_files(db, entry.id, None, names) is not None
     ]
     return holding[0] if len(holding) == 1 else None
-
-
-def include_question(
-    left_out: dict[str, int], holder: str, action: str, language: str
-) -> Clarification:
-    """Every task the words describe is protected: ask to include them, never answer "none"."""
-    total = sum(left_out.values())
-    zh = language == "zh"
-    parts = [f"{count} 条{EXCLUSION_REASONS[key][0]}" for key, count in left_out.items()]
-    reasons = [f"{count} {EXCLUSION_REASONS[key][1]}" for key, count in left_out.items()]
-    if zh:
-        question = (
-            f"{holder}符合的 {total} 条任务里 {', '.join(parts)}, 默认不动。要连这些也算上吗?"
-        )
-    else:
-        whose = f" of {holder}" if holder else ""
-        question = (
-            f"All {total} matching tasks{whose} are left out by default "
-            f"({'; '.join(reasons)}). Include them too?"
-        )
-    label = "要, 这些也算上" if zh else "Yes, include them"
-    include = Candidate(id=",".join(sorted(left_out)), label=label, kind="include")
-    return Clarification(
-        question=question, action=action, fields=["$tasks.include"], candidates=[include]
-    )

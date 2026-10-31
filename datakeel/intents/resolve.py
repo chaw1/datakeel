@@ -22,6 +22,7 @@ from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
 from datakeel.intents.duplicates import duplicate_question, taken
+from datakeel.intents.exclusions import excluded_text
 from datakeel.intents.fill import FillState, fill_defaults, fill_steps, known_fields
 from datakeel.intents.fill_state import CONTAINER_KINDS, named_in_words
 from datakeel.intents.impossible import idle_reason, impossible
@@ -43,7 +44,6 @@ from datakeel.intents.verify import unchanged
 from datakeel.intents.wording import (
     already_so,
     broken_plan,
-    excluded_text,
     invalid_question,
     plan_text,
     refusal,
@@ -108,6 +108,9 @@ class Resolver:
         filled = fill_steps(self.db, [bounded], self.state, self.catalog)
         if filled.clarification is not None:
             return self._clarify(draft, filled.clarification, text)
+        if not filled.steps:
+            # The words describe tasks that do not exist: say so instead of reading nothing.
+            return IntentResult(kind="answer", text=filled.empty_selection or "", request=text)
         single = one_task(filled.steps[0].params, draft.language)
         if isinstance(single, Clarification):
             return self._clarify(draft, single.model_copy(update={"action": step.action}), text)

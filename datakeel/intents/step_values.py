@@ -10,13 +10,18 @@ kind with that name; sample files picked by name are those files' identities.
 
 from pydantic import JsonValue
 
+from datakeel.core.errors import NotFoundError
 from datakeel.core.intent_models import Clarification
 from datakeel.intents.catalog import EntityCatalog, candidates
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.fill_state import FillState, ask, context_value
 from datakeel.intents.object_edits import bound_projects
 from datakeel.storage.database import Database
+from datakeel.storage.production_queries import get_task
 
+THIS_PACKAGE = frozenset(
+    {"this", "this package", "the same package", "same", "这个", "这个包", "同一个包", "当前包"}
+)
 # Kinds a lineage or other any-kind asset identity may name.
 ASSET_KINDS = ("dataset", "version", "label_set", "project", "model")
 
@@ -60,3 +65,16 @@ def sample_files(params: dict[str, JsonValue]) -> None:
         if isinstance(condition, dict) and condition.get("field") == "id":
             params["sample_ids"] = condition.get("value")
             params.setdefault("dataset_id", chosen.get("dataset_id"))
+
+
+def page_package(db: Database, value: JsonValue, state: FillState) -> str | None:
+    """The page's package when the words say this package or the same package (同一个包)."""
+    if not isinstance(value, str) or value.strip().casefold() not in THIS_PACKAGE:
+        return None
+    context = state.context
+    if context.package_id or not context.task_id:
+        return context.package_id
+    try:
+        return get_task(db, context.task_id).package_id
+    except NotFoundError:
+        return None

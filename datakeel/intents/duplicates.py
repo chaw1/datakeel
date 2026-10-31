@@ -22,6 +22,7 @@ from datakeel.intents.catalog import CatalogEntry, EntityCatalog
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.plain_words import enum_label
 from datakeel.storage.database import Database
+from datakeel.storage.intent_reads import latest_label_set
 from datakeel.storage.production_objects import production_objects
 from datakeel.storage.release_service import list_releases
 
@@ -168,3 +169,28 @@ def model_question(db: Database, step: DraftStep, language: str) -> Clarificatio
     return Clarification(
         question=question, action=step.action, fields=["model_id"], candidates=usable
     )
+
+
+def unpublished_question(
+    db: Database, step: DraftStep, earlier: list[str], language: str
+) -> Clarification | None:
+    """A project on a label set version nobody published: say so, ask before planning it.
+
+    ``earlier`` are the actions of the steps before this one; a publish there publishes it.
+    """
+    label_set, version = step.params.get("label_set_id"), step.params.get("label_set_version")
+    if step.action != "create_project" or "publish_label_set" in earlier:
+        return None
+    if not isinstance(label_set, str) or not isinstance(version, int):
+        return None
+    found = latest_label_set(db, label_set, version)
+    if found is None or found.published:
+        return None
+    question = (
+        f"「{found.name}」第 {version} 版还没有发布, 建项目只能用已发布的版本。"
+        f"要先发布第 {version} 版, 还是用已发布的版本?"
+        if language == "zh"
+        else f'Version {version} of "{found.name}" is not published, and a project needs a '
+        f"published version. Publish version {version} first, or use a published one?"
+    )
+    return Clarification(question=question, action=step.action, fields=["label_set_version"])

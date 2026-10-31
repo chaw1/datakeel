@@ -45,6 +45,10 @@ FILTERS = frozenset(CONDITIONS) - {"package"}
 FROM_END = re.compile(r"倒数第|从后往前数?第|from the (?:end|bottom)|\bto[- ]last\b", re.IGNORECASE)
 
 
+# Whose tasks: one person, the members of a named team ("码头组的人"), or anyone.
+type Holder = str | frozenset[str] | None
+
+
 class TaskScope(BoundaryModel):
     """The tasks a selector names, what protection left out, or a number that is not listed."""
 
@@ -120,6 +124,9 @@ def _applies(task: TaskSnapshot, action: str, speaker: str, stage: str) -> bool:
     if action in {"revoke_assignment", "release_task", "heartbeat"}:
         held = task.holder is not None and task.stage == stage
         return held and (action == "revoke_assignment" or task.holder == speaker)
+    if action == "submit_task":
+        # Only an open task with saved work can be handed in.
+        return task.annotated and task.state in OPEN_STATES
     # Only a task handed in and not yet decided can be reviewed.
     return action != "review_task" or task.state in REVIEW_STATES
 
@@ -131,6 +138,8 @@ def _rounds(spec: dict[str, JsonValue]) -> int:
 
 def _held_by(task: TaskSnapshot, stage: str) -> str | None:
     """Who holds the task in this stage: an annotator while it is open, a reviewer in review."""
+    if stage == "read":
+        return task.holder
     if task.stage != stage:
         return None
     return task.holder if stage != "annotation" or task.state in OPEN_STATES else None
@@ -139,16 +148,17 @@ def _held_by(task: TaskSnapshot, stage: str) -> str | None:
 def _matches(
     task: TaskSnapshot,
     spec: dict[str, JsonValue],
-    found: tuple[str | None, str | None],
+    found: tuple[Holder, str | None],
     stage: str,
 ) -> bool:
     holder, package = found
     if is_nobody(spec.get("holder"), spec) and (task.holder is not None or task.state != "pending"):
         return False
-    # In review, or on a task nobody holds, "Mia's task" is also the one Mia annotated.
-    own = stage == "review" or (task.holder is None and task.state in OPEN_STATES)
+    # In review, on a task nobody holds, or in a read, "Mia's task" is also one she annotated.
+    own = stage in {"review", "read"} or (task.holder is None and task.state in OPEN_STATES)
     whose = {_held_by(task, stage), task.annotator if own else None}
-    if holder is not None and holder not in whose:
+    wanted = {holder} if isinstance(holder, str) else holder
+    if wanted is not None and not whose & wanted:
         return False
     state = spec.get("state")
     checks = (
@@ -160,7 +170,7 @@ def _matches(
     return not any(checks)
 
 
-def _unlocked(spec: dict[str, JsonValue], holder: str | None) -> set[str]:
+def _unlocked(spec: dict[str, JsonValue], holder: Holder) -> set[str]:
     """Protections the words lift: a named holder, a rework count, or an explicit include."""
     raw = spec.get("include")
     # A picked "include them too" answer arrives as one comma-joined string.
@@ -222,25 +232,44 @@ def _named(
     return named if named is not None else _places(inside, spec)
 
 
+def _taken_as_said(named: list[TaskSnapshot], action: str, stage: str) -> TaskScope:
+    """Named tasks are taken as said; for assigning, ones already handed in are left out."""
+    unique = list({task.id: task for task in named}.values())
+    if action != "assign_tasks":
+        return TaskScope(ids=[task.id for task in unique])
+    allowed = REVIEW_STATES if stage == "review" else OPEN_STATES
+    kept = [task.id for task in unique if task.state in allowed]
+    closed = len(unique) - len(kept)
+    return TaskScope(ids=kept, excluded={"closed": closed} if closed else {})
+
+
 def select_tasks(
     tasks: list[TaskSnapshot],
     spec: dict[str, JsonValue],
     *,
     action: str,
     speaker: str,
-    found: tuple[str | None, str | None] = (None, None),
+    found: tuple[Holder, str | None] = (None, None),
     stage: str = "annotation",
 ) -> TaskScope:
     """Resolve one selector over the project's tasks; ``found`` is (holder, package) ids.
 
     ``stage`` is the step's own: "his review tasks" are the ones he holds for review.
     """
+    said = numbers(spec)
+    if said is not None and any(key in spec for key in FILTERS):
+        # "没人领的任务, 第 2 和第 3 条": numbers outside the group are places in it.
+        described = [task for task in tasks if _applies(task, action, speaker, stage)]
+        described = [task for task in described if _matches(task, spec, found, stage)]
+        inside = {task.number for task in described}
+        if not all(n in inside for n in said) and all(n <= len(described) for n in said):
+            return TaskScope(ids=[described[n - 1].id for n in said])
     named = _named(tasks, spec, found[1])
     if named is not None:
         listed = {task.number: task for task in tasks}
         if any(number not in listed for number in named):
             return TaskScope(missing=True)
-        return TaskScope(ids=list(dict.fromkeys(listed[number].id for number in named)))
+        return _taken_as_said([listed[number] for number in named], action, stage)
     holder = found[0]
     group = [
         task

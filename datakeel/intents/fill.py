@@ -26,7 +26,7 @@ from datakeel.intents.catalog import (
     EntityCatalog,
     candidates,
 )
-from datakeel.intents.created import Created, earlier, remember
+from datakeel.intents.created import Created, earlier, freed, remember
 from datakeel.intents.derived import model_record
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.duplicates import new_name_fields
@@ -300,6 +300,7 @@ def fill_steps(
     names: list[str] = []
     created: Created = {}
     left_out: dict[str, dict[str, int]] = {}
+    state = state.model_copy(update={"freed": {}})
     for drafted in steps:
         step = model_record(drafted)
         params, unknown = known_fields(step, state, catalog)
@@ -337,6 +338,7 @@ def fill_steps(
             return FillResult(clarification=asked)
         filled.append(current.model_copy(update={"params": params}))
         remember(created, filled[-1], fresh)
+        state.freed.update(freed(filled[-1]))
         if excluded:
             left_out[step.id] = dict(excluded)
     return FillResult(steps=filled, excluded=left_out)

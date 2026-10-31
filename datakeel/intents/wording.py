@@ -348,24 +348,6 @@ def related_question(titles: list[str], language: str) -> str:
     )
 
 
-EXCLUSION_REASONS = {
-    "held": ("在别人手上", "someone else holds them"),
-    "annotated": ("已有人工标注", "they already have saved annotation"),
-}
-
-
-def excluded_text(excluded: dict[str, int], language: str) -> str:
-    """Why a described group became smaller: protected tasks the words did not ask for."""
-    if not excluded:
-        return ""
-    total = sum(excluded.values())
-    if language == "zh":
-        parts = [f"{count} 条{EXCLUSION_REASONS[key][0]}" for key, count in excluded.items()]
-        return f" 排除了 {total} 条: {', '.join(parts)}; 话里没说要动这些。"
-    parts = [f"{count} because {EXCLUSION_REASONS[key][1]}" for key, count in excluded.items()]
-    return f" Left out {total}: {'; '.join(parts)}; the request did not ask for them."
-
-
 def disabled_question(name: str, language: str) -> str:
     """A disabled account cannot be given work; say so and ask who else."""
     if language == "zh":

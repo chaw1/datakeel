@@ -32,6 +32,18 @@ def remember(created: Created, step: DraftStep, field: str | None) -> None:
             known[name.strip().casefold()] = identity
 
 
+def freed(step: DraftStep) -> dict[str, str]:
+    """Holds a filled take-back step ends: "先把小王那条收回, 再派给 Mia" frees that task."""
+    if step.action != "revoke_assignment":
+        return {}
+    value = step.params.get("task_id") or step.params.get("task_ids")
+    value = value.get("$each") if isinstance(value, dict) else value
+    stage = step.params.get("stage")
+    held = stage if isinstance(stage, str) and stage else "annotation"
+    listed = value if isinstance(value, list) else [value]
+    return {item: held for item in listed if isinstance(item, str)}
+
+
 def _found(known: dict[str, str], item: JsonValue) -> str | None:
     return known.get(item.strip().casefold()) if isinstance(item, str) else None
 

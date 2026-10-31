@@ -20,6 +20,8 @@ class FillState(BoundaryModel):
     actor: str = "local"
     language: str = "zh"
     text: str = ""
+    # task id -> stage of the hold an earlier step of the same plan takes back
+    freed: dict[str, str] = Field(default_factory=dict[str, str])
 
 
 def ask(

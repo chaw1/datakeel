@@ -19,7 +19,12 @@ from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog, can
 from datakeel.intents.derived import derivable, derive, underivable
 from datakeel.intents.describe import describe_step
 from datakeel.intents.drafts import DraftStep
-from datakeel.intents.duplicates import duplicate_question, model_question, taken
+from datakeel.intents.duplicates import (
+    duplicate_question,
+    model_question,
+    taken,
+    unpublished_question,
+)
 from datakeel.intents.estimates import estimate_step
 from datakeel.intents.fill import FillState
 from datakeel.intents.fill_state import project_in_scope
@@ -333,7 +338,11 @@ def check_step(
     found = taken(db, step, catalog)
     if found is not None:
         return StepCheck(clarification=duplicate_question(step, found, language))
-    asked = _question(step, missing, invalid, state, catalog) or model_question(db, step, language)
+    asked = (
+        _question(step, missing, invalid, state, catalog)
+        or model_question(db, step, language)
+        or unpublished_question(db, step, [item.action for item in previous], language)
+    )
     if asked is not None:
         return StepCheck(clarification=asked)
     return _card(db, step, state, catalog, previous)

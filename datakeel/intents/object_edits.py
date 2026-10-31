@@ -96,7 +96,9 @@ def prepare_user_edit(db: Database, params: dict[str, JsonValue]) -> dict[str, J
 def _scopes(params: dict[str, JsonValue], held: tuple[str, ...]) -> list[JsonValue]:
     """A role's scopes after the actions said to allow or deny; execution reads only scopes."""
     said = params.get("scopes")
-    scopes = {str(item) for item in said} if isinstance(said, list) else set(held)
+    # A scope the model made up ("review") is no scope; the actions said carry the meaning.
+    known = {policy[0] for policy in POLICIES.values()}
+    scopes = {str(item) for item in said} & known if isinstance(said, list) else set(held)
     for key, adding in (("allowed_actions", True), ("denied_actions", False)):
         listed = params.get(key)
         names = [str(item) for item in listed] if isinstance(listed, list) else []

@@ -56,8 +56,10 @@ REPLACE_WORDS = re.compile(
 )
 CREATE_WORDS = re.compile(r"新建|新的|创建|建一个|建个|另建|\bcreate\b|\bnew\b", re.IGNORECASE)
 WHOLE_WORDS = re.compile(
-    r"全部|所有|整个|全都|都|一切|\ball\b|\bevery\w*|\bentire\b|\bwhole\b", re.IGNORECASE
+    r"全部|所有|整个|全都|都|统统|一切|\ball\b|\bevery\w*|\bentire\b|\bwhole\b", re.IGNORECASE
 )
+# Task states a reopen leaves as they are: the work is still open.
+OPEN_TASKS = frozenset({"pending", "in_progress"})
 # Steps that send data to a cloud model or spend money.
 MODEL_ACTIONS = frozenset({"draft_label_set", "run_prelabel", "run_kg_extraction"})
 USER_FIELDS = ("status", "display_name", "skill_ids", "team_ids")
@@ -364,10 +366,22 @@ def _nobody_holds(db: Database, step: ChainStep) -> bool:
     return bool(tasks) and not task_holders(db, tasks, stage)
 
 
+def _already_open(db: Database, step: ChainStep) -> bool:
+    """Reopening tasks that are still pending or in progress changes nothing."""
+    entries = step.items or [step.params]
+    tasks = [str(entry.get("task_id")) for entry in entries if entry.get("task_id")]
+    try:
+        return bool(tasks) and all(get_task(db, task).state in OPEN_TASKS for task in tasks)
+    except NotFoundError:
+        return False
+
+
 def unchanged(db: Database, step: ChainStep) -> bool:
     """The step would leave everything exactly as it is."""
     if step.action in {"revoke_assignment", "release_task"}:
         return _nobody_holds(db, step)
+    if step.action == "reopen_task":
+        return _already_open(db, step)
     checks = {
         "create_label_set": _label_set_unchanged,
         "publish_label_set": _published,
