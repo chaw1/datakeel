@@ -62,6 +62,12 @@ def test_a_group_left_unwrapped_or_counted_from_the_end_is_that_group(db: Databa
         PageContext(project_id=north.id),
     )
     assert targets(result) == tasks[5:6]
+    # "最后一条" with nothing else said is the last in the whole list, even when another
+    # task is the last one the step could act on.
+    back = steps(("revoke_assignment", {"task_ids": {"$tasks": {"last": 1}}}))
+    result = planned(db, "把列表最后一条收回来", [back], page)
+    assert result.kind == "answer", result.text
+    assert "没有人领" in result.text
     ServiceRunner(db)("assign_tasks", {"task_ids": tasks[5:6], "actor": "li"}, "boss")
     place = steps(("assign_tasks", {"task_ids": {"$tasks": {"last": 1}}, "actor": "wang"}))
     assert targets(planned(db, "把最后一个任务派给小王", [place], page)) == tasks[5:6]

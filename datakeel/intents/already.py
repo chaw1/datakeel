@@ -106,6 +106,35 @@ STATES: dict[str, State] = {
 }
 
 
+def _ids(step: ChainStep, key: str) -> set[str]:
+    values = [{**step.params, **entry}.get(key) for entry in step.items or [step.params]]
+    flat = [item for value in values for item in (value if isinstance(value, list) else [value])]
+    return {item for item in flat if isinstance(item, str)}
+
+
+def given_back(checked: list[ChainStep], idle: dict[str, str]) -> dict[str, str]:
+    """A take-back whose tasks a later idle step would hand to the one holding them now.
+
+    "收回来再交给 X" when X already holds them would only take the tasks away from X, so the
+    take-back changes nothing the person wants either and is set aside with the same state.
+    """
+    found: dict[str, str] = {}
+    for index, step in enumerate(checked):
+        taken = _ids(step, "task_id") | _ids(step, "task_ids")
+        if step.action != "revoke_assignment" or step.id in idle or not taken:
+            continue
+        back = (
+            idle[later.id]
+            for later in checked[index + 1 :]
+            if later.id in idle
+            and later.action == "assign_tasks"
+            and taken <= _ids(later, "task_ids")
+        )
+        if (state := next(back, None)) is not None:
+            found[step.id] = state
+    return found
+
+
 def already_state(
     db: Database, step: ChainStep, catalog: EntityCatalog, language: str
 ) -> str | None:

@@ -258,6 +258,12 @@ class LabelEdit(BoundaryModel):
     existing: list[str] = Field(default_factory=list[str])
 
 
+def _shown_label(name: JsonValue, current: LabelSet) -> bool:
+    """Whether a name is the label set as the catalog shows it ("叶片 v2")."""
+    shown = "".join(f"{current.name}v{current.version}".split()).casefold()
+    return isinstance(name, str) and "".join(name.split()).casefold() == shown
+
+
 def prepare_label_edit(db: Database, params: dict[str, JsonValue]) -> LabelEdit:
     """Apply a spoken change to the latest version; new label sets only get label ids."""
     identifier = params.get("label_set_id")
@@ -273,6 +279,8 @@ def prepare_label_edit(db: Database, params: dict[str, JsonValue]) -> LabelEdit:
         return LabelEdit(params=params, unknown=unknown, existing=names)
     labels = _apply(current, edit)
     params["labels"] = list[JsonValue](labels)
+    if _shown_label(params.get("name"), current):
+        params.pop("name")  # the catalog shows "name vN": that label is not a new name
     params.setdefault("name", current.name)
     base = _base(db, current)
     params["migration"] = needed_migration(base, labels, edit) if base is not None else []

@@ -91,7 +91,10 @@ FLOW_MUTATIONS = (
     Mutation(
         name="fix5-a-model-is-found-by-its-name",
         path="intents/object_edits.py",
-        before="        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold()}:",
+        before=(
+            "        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold(),"
+            " shown.casefold()}:"
+        ),
         after="        if wanted == item.asset_ref.asset_id.casefold():",
         case=_FLOW + "test_a_model_update_reads_its_revision_from_the_catalog",
         runner="pytest",
@@ -200,6 +203,41 @@ FLOW_MUTATIONS = (
         before='    "annotator_id": "user",',
         after="",
         case=_FLOW + "test_a_person_named_for_an_annotator_filter_is_resolved",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix5-a-model-is-found-by-its-catalog-label",
+        path="intents/object_edits.py",
+        before=(
+            "        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold(),"
+            " shown.casefold()}:"
+        ),
+        after="        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold()}:",
+        case=_FLOW + "test_a_model_change_is_compared_and_read_as_the_catalog_holds_it",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix5-a-label-set-catalog-label-is-not-a-new-name",
+        path="intents/edits.py",
+        before='    if _shown_label(params.get("name"), current):',
+        after="    if False:",
+        case=_FLOW + "test_a_label_set_said_as_the_catalog_shows_it_keeps_its_name",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix5-a-take-back-given-right-back-is-idle",
+        path="intents/resolve.py",
+        before="        idle |= given_back(checked, idle)",
+        after="",
+        case=_FLOW + "test_taking_back_to_give_to_the_one_who_holds_them_is_already_so",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix5-the-same-state-is-said-once",
+        path="intents/wording.py",
+        before="    states = list(dict.fromkeys(state for state in states if state not in IDLE))",
+        after="    states = [state for state in states if state not in IDLE]",
+        case=_FLOW + "test_taking_back_to_give_to_the_one_who_holds_them_is_already_so",
         runner="pytest",
     ),
 )

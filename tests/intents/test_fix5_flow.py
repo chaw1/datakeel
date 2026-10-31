@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from datakeel.core.intent_models import IntentResult, PageContext
 from datakeel.core.release_models import ReleaseView
 from datakeel.intents.catalog import EntityCatalog
+from datakeel.intents.edits import latest_label_set
 from datakeel.intents.public_text import public_result
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from tests.intents.fix3_support import planned, shown, steps, targets, two_projects
@@ -273,6 +274,54 @@ def test_a_model_change_is_compared_and_read_as_the_catalog_holds_it(db: Databas
     model = bumped.chain.steps[0].params["model"]
     assert isinstance(model, dict)
     assert (model["id"], model["name"], model["version"]) == ("box-1", "Boxer", "1.2")
+    priced = ("update_model", {"model": "Shaper 1.0", "unit_price": 0.02})
+    found = planned(db, "Shaper 1.0 每张改收 0.02", [steps(priced)], PageContext())
+    assert found.kind == "plan", found.text
+    assert found.chain is not None
+    params = found.chain.steps[0].params
+    model = params["model"]
+    assert isinstance(model, dict)
+    assert (model["id"], model["name"], model["unit_price"]) == ("shape-1", "Shaper", 0.02)
+    assert params["expected_revision"] == 1
+
+
+def test_a_label_set_said_as_the_catalog_shows_it_keeps_its_name(db: Database) -> None:
+    """The catalog's "name vN" given back as the name is no rename (11.2-4, 11.2-8)."""
+    _, south, _ = two_projects(db)
+    current = latest_label_set(db, south.label_set_id)
+    assert current is not None
+    labels = [{"id": label.id, "name": label.name} for label in current.labels]
+    shown = {"label_set_id": south.label_set_id, "name": f"{current.name} v{current.version}"}
+    same = ("create_label_set", {**shown, "operation": "update", "labels": labels})
+    result = planned(db, f"{current.name} 的标签就留现在这几个", [steps(same)], PageContext())
+    assert result.kind == "answer", result.text
+    assert "已经是这样" in result.text
+    more = ("create_label_set", {**shown, "operation": "update", "add_labels": ["锥桶"]})
+    added = planned(db, f"给 {current.name} 加一个锥桶", [steps(more)], PageContext())
+    assert added.kind == "plan", added.text
+    assert added.chain is not None
+    assert added.chain.steps[0].params["name"] == current.name
+
+
+def test_taking_back_to_give_to_the_one_who_holds_them_is_already_so(db: Database) -> None:
+    """Take-back then hand-over to the person holding them now changes nothing (11.2-4)."""
+    _, south, tasks = two_projects(db)
+    page = PageContext(project_id=south.id)
+    pair = {"$tasks": {"numbers": [1, 2]}}
+
+    def back_to(actor: str) -> list[dict[str, object]]:
+        revoke = ("revoke_assignment", {"task_id": pair, "reason": "换人"})
+        return [steps(revoke, ("assign_tasks", {"task_ids": pair, "actor": actor}))]
+
+    same = planned(db, "南区车道 #1 #2 收回来整包交给小王", back_to("wang"), page)
+    assert same.kind == "answer", same.text
+    assert "已经在小王手上" in same.text
+    assert same.text.count("小王") == 1
+    moved = planned(db, "南区车道 #1 #2 收回来整包交给小李", back_to("li"), page)
+    assert moved.kind == "plan", moved.text
+    assert moved.chain is not None
+    assert [step.action for step in moved.chain.steps] == ["revoke_assignment", "assign_tasks"]
+    assert targets(moved) == tasks[0:2]
 
 
 def test_a_person_named_for_an_annotator_filter_is_resolved(db: Database) -> None:

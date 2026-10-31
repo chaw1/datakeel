@@ -18,7 +18,7 @@ from datakeel.core.intent_models import (
     ParserKind,
     StepDetail,
 )
-from datakeel.intents.already import already_state
+from datakeel.intents.already import already_state, given_back
 from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
@@ -298,6 +298,7 @@ class Resolver:
                 refused[step.id] = reason
             elif (state := already_state(self.db, step, self.catalog, draft.language)) is not None:
                 idle[step.id] = state
+        idle |= given_back(checked, idle)
         reasons = {**idle, **refused}
         narrowed = without(draft, reasons) if 0 < len(reasons) < len(checked) else None
         if narrowed is not None:

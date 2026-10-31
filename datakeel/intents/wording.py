@@ -290,7 +290,7 @@ IDLE = ("已经是这样了, 不用改", "it is already like that")
 
 def already_so(language: str, states: Sequence[str] = ()) -> str:
     """Every step would leave things as they are: the current state, nothing to confirm."""
-    states = [state for state in states if state not in IDLE]
+    states = list(dict.fromkeys(state for state in states if state not in IDLE))
     if states and language == "zh":
         return f"已经是这样了: {'; '.join(states)}, 不用做。"
     if states:

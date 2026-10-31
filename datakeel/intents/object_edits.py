@@ -161,7 +161,8 @@ def current_model(db: Database, model: dict[str, JsonValue]) -> ProductionModel 
     query = ProductionObjectQuery(kind="model")
     for item in production_objects(db, query):
         name = str(item.properties.get("name", ""))
-        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold()}:
+        shown = f"{name} {item.properties.get('version', '')}".strip()  # as the catalog shows it
+        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold(), shown.casefold()}:
             try:
                 with db.session() as session:
                     return require_model(session, item.asset_ref.asset_id)
