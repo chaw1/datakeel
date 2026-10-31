@@ -89,6 +89,8 @@ it("shows every step with impact, cost and signature before anything runs", asyn
   expect(within(steps[1]).getByText("Needs signature")).toBeVisible();
   expect(screen.getByText("Two people cross-check each task")).toBeVisible();
   expect(screen.getByText(/Nothing has changed yet/)).toBeVisible();
+  expect(screen.queryByText("create_label_set")).toBeNull();
+  expect(screen.queryByText("publish_label_set")).toBeNull();
   expect(
     fetch.mock.calls.some(([, init]) => init?.method === "POST"),
   ).toBeFalsy();

@@ -145,7 +145,6 @@ export function ChainCard({
                 <span>
                   {sentenceCase(t(approvalActions[step.action as never]))}
                 </span>
-                <code>{step.action}</code>
                 <span className={`badge ${statusTones[step.status]}`}>
                   {t(statusKeys[step.status])}
                 </span>
