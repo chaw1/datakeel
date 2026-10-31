@@ -200,7 +200,8 @@ FIX6_MUTATIONS = (
             'EMPTY_NAME = (re.compile(r"叫「\\s*」的|「\\s*」"), re.compile(r\'called ""|""\'))',
             'EMPTY_NAME = (re.compile(r"叫「\\s*」的"), re.compile(r\'called ""\'))',
         ),
-        "checks.py::test_internal_names_never_leave_and_never_become_the_blank_sentence",
+        "checks.py::test_internal_names_never_leave_and_never_become_the_blank_sentence"
+        "[empty-quote]",
     ),
     _anchor(
         "a-name-among-the-choices-is-asked-as-several",

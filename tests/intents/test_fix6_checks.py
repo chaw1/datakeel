@@ -114,21 +114,23 @@ def test_an_unmet_precondition_says_what_is_missing_and_what_first(
 
 
 def test_an_earlier_step_that_meets_the_need_lets_the_plan_through(db: Database) -> None:
-    """An earlier step that meets the need lets the plan through."""
-    _, _, tasks = two_projects(db)
+    """Reviews earlier in the plan meet the package's need: only the inspection is asked."""
+    two_projects(db)
+    both = {"$tasks": {"project": SOUTH, "numbers": [3, 4]}}
     result = planned(
         db,
-        "把南区车道第五条派给小李, 然后小李提交",
+        "先把南区车道第二包的两条都审过, 再验收第二包",
         [
             steps(
-                ("assign_tasks", {"task_ids": tasks[4:5], "actor": "小李"}),
-                ("save_revision", {"task_id": tasks[4], "annotations": []}),
+                ("review_task", {"task_id": both, "decision": "approve"}),
+                ("accept_package", {"package_id": {"$nth": 2}}),
             )
         ],
         PageContext(),
-        actor="li",
     )
-    assert "不在你手上" not in result.text
+    assert "没通过审核" not in result.text, result.text
+    assert result.clarification is not None, result.text
+    assert "抽检结果" in result.text, result.text
 
 
 def test_a_package_with_a_free_task_can_be_claimed_from(db: Database) -> None:
@@ -154,6 +156,7 @@ def test_a_package_with_a_free_task_can_be_claimed_from(db: Database) -> None:
         "没找到叫「」的项目",
         "配置团队档没有 「」 对应的设置",
     ],
+    ids=["field", "field-name", "ref", "choice-word", "empty-name", "empty-quote"],
 )
 def test_internal_names_never_leave_and_never_become_the_blank_sentence(leaky: str) -> None:
     """Internal names never leave and never become the blank sentence."""
