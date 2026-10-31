@@ -114,7 +114,9 @@ INVALID_JSON = (
     "Your answer was not one valid JSON object. Return the complete corrected JSON object "
     "only, with every bracket closed."
 )
-PLANNER_OUTPUT_TOKENS = 4000
+# Thinking models spend most of the output on reasoning before the JSON: 4000 left V4 Pro
+# with empty answers in FIX2, so the ceiling follows the vendors' recommended 16k.
+PLANNER_OUTPUT_TOKENS = 16384
 CLOSERS = {"{": "}", "[": "]"}
 REPAIR_SPAN = 200
 STEP_KEYS = ("id", "action", "params", "said")
