@@ -33,6 +33,7 @@ from datakeel.intents.read_scope import (
     missing_choices,
     one_task,
     own_projects,
+    production_read,
     scope_question,
     task_argument,
     unfiltered_note,
@@ -84,6 +85,7 @@ class Resolver:
         A filter the read does not take is not asked about: the answer comes without it and
         says so, rather than ending in a question about a setting.
         """
+        step = production_read(self.db, step)
         model = PARAMETER_MODELS[step.action]
         required = {
             str(name)

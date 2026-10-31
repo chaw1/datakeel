@@ -9,16 +9,21 @@ visible. A speaker in several projects is asked, with those projects to pick fro
 
 A read about one task said by its number ("第 4 个任务现在在谁手上") reads that task: the
 number is counted in the read's project like everywhere else, however the model wrote it.
+``get_task`` reads processing jobs, so a production task asked about that way is read from
+the production objects instead.
 """
 
 from pydantic import JsonValue
 
+from datakeel.core.errors import NotFoundError
 from datakeel.core.intent_models import Clarification
 from datakeel.intents.catalog import FIELD_KINDS, CatalogEntry, EntityCatalog, candidates
+from datakeel.intents.drafts import DraftStep
 from datakeel.intents.group_fill import numbered
 from datakeel.intents.wording import field_label
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import get_bindings
+from datakeel.storage.production_queries import get_task
 
 
 def own_projects(db: Database, actor: str, catalog: EntityCatalog) -> list[CatalogEntry]:
@@ -115,3 +120,22 @@ def one_task(params: dict[str, JsonValue], language: str) -> dict[str, JsonValue
         else "This read looks at one task at a time; which one?"
     )
     return Clarification(question=question, fields=["task_id"])
+
+
+def _production_task(db: Database, value: JsonValue) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        get_task(db, value)
+    except NotFoundError:
+        return False
+    return True
+
+
+def production_read(db: Database, step: DraftStep) -> DraftStep:
+    """A production task asked about through get_task (a processing job) reads that task."""
+    value = step.params.get("task_id")
+    if step.action != "get_task" or not (_task_said(value) or _production_task(db, value)):
+        return step
+    params: dict[str, JsonValue] = {"kind": "production_task", "task_id": value}
+    return step.model_copy(update={"action": "production_objects", "params": params})

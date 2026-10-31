@@ -236,6 +236,13 @@ def test_a_read_about_a_numbered_task_reads_that_task(db: Database) -> None:
     )
     assert english.answer is not None, english.text
     assert english.answer.arguments.get("task_id") == tasks[3]
+    for job in ({"task_id": {"$tasks": {"numbers": [4]}}}, {"task_id": tasks[3]}):
+        # get_task reads processing jobs; a production task is read as a production object.
+        read = steps(("get_task", job), kind="answer")
+        result = planned(db, said, [read], page)
+        assert result.answer is not None, result.text
+        assert result.answer.function == "production_objects"
+        assert result.answer.arguments.get("task_id") == tasks[3]
     two = {"kind": "task", "task_id": {"$tasks": {"numbers": [3, 4]}}}
     asked = planned(
         db, "第 3、4 个任务在谁手上", [steps(("production_objects", two), kind="answer")], page

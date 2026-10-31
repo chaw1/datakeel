@@ -117,4 +117,12 @@ LIMITS_MUTATIONS = (
         case=_LIMITS + "test_a_read_about_a_numbered_task_reads_that_task",
         runner="pytest",
     ),
+    Mutation(
+        name="fix3-a-production-task-is-not-read-as-a-job",
+        path="intents/resolve.py",
+        before="        step = production_read(self.db, step)\n",
+        after="",
+        case=_LIMITS + "test_a_read_about_a_numbered_task_reads_that_task",
+        runner="pytest",
+    ),
 )
