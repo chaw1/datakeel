@@ -104,4 +104,20 @@ FLOW_MUTATIONS = (
         case=_FLOW + "test_a_model_that_cannot_do_the_step_is_said_not_asked",
         runner="pytest",
     ),
+    Mutation(
+        name="fix5-a-place-is-located-before-protection",
+        path="intents/task_scope.py",
+        before='    if any(_count(spec, key) for key in ("first", "last", "from_end")):',
+        after="    if False:",
+        case=_FLOW + "test_a_place_is_counted_as_shown_and_protection_never_moves_it",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix5-a-kept-place-is-noted",
+        path="intents/task_scope.py",
+        before='    return scope.model_copy(update={"excluded": {**scope.excluded, **warned}})',
+        after="    return scope",
+        case=_FLOW + "test_a_place_is_counted_as_shown_and_protection_never_moves_it",
+        runner="pytest",
+    ),
 )

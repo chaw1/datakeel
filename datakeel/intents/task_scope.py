@@ -284,6 +284,8 @@ def select_tasks(
     guarded = set(PROTECTIONS.get(action, ())) - _unlocked(spec, holder)
     if stage != "annotation":
         guarded.discard("annotated")  # a task in review is annotated by definition
+    if any(_count(spec, key) for key in ("first", "last", "from_end")):
+        return _located(group, spec, guarded, (action, stage))
     kept: list[TaskSnapshot] = []
     for task in group:
         reason = _protection(task, guarded, stage)
@@ -291,6 +293,23 @@ def select_tasks(
             kept.append(task)
         else:
             excluded[reason] += 1
+    return TaskScope(ids=[task.id for task in kept], excluded=dict(excluded))
+
+
+def _located(
+    group: list[TaskSnapshot], spec: dict[str, JsonValue], guarded: set[str], step: tuple[str, str]
+) -> TaskScope:
+    """The first or last N are counted in the list as shown, before any protection.
+
+    Protection never moves the place to another task: a located task it would have left
+    out is taken as said, and the card says so ("kept_*").
+    """
     first, last, back = _count(spec, "first"), _count(spec, "last"), _count(spec, "from_end")
-    group = kept[:first] if first else kept[-last:] if last else kept[-back:][:1] if back else kept
-    return TaskScope(ids=[task.id for task in group], excluded=dict(excluded))
+    located = group[:first] if first else group[-last:] if last else group[-back:][:1]
+    scope = _taken_as_said(located, *step)
+    warned = Counter(
+        f"kept_{reason}"
+        for task in located
+        if task.id in scope.ids and (reason := _protection(task, guarded, step[1])) is not None
+    )
+    return scope.model_copy(update={"excluded": {**scope.excluded, **warned}})

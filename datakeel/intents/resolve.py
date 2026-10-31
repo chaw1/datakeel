@@ -23,7 +23,7 @@ from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
 from datakeel.intents.duplicates import duplicate_question, taken
-from datakeel.intents.exclusions import excluded_text
+from datakeel.intents.exclusions import excluded_text, exclusion_label
 from datakeel.intents.fill import FillState, fill_defaults, fill_steps, known_fields
 from datakeel.intents.fill_state import CONTAINER_KINDS, named_in_words
 from datakeel.intents.impossible import impossible
@@ -367,7 +367,7 @@ def _with_exclusions(step: ChainStep, excluded: dict[str, int] | None, language:
     """Say on the card how many described tasks protection left out, and why."""
     if not excluded:
         return step
-    label = "已排除" if language == "zh" else "Left out"
+    label = exclusion_label(excluded, language)
     detail = StepDetail(label=label, value=excluded_text(excluded, language).strip(), tone="impact")
     return step.model_copy(update={"details": [*step.details, detail]})
 

@@ -19,19 +19,43 @@ EXCLUSION_REASONS = {
 }
 
 
+def exclusion_label(excluded: dict[str, int], language: str) -> str:
+    """The card line's name: left out, or only a note about tasks kept as pointed at."""
+    note = all(key.startswith("kept_") for key in excluded)
+    if language == "zh":
+        return "提醒" if note else "已排除"
+    return "Note" if note else "Left out"
+
+
+def _kept_text(kept: dict[str, int], language: str) -> str:
+    """Tasks located by their place that protection would have left out: kept, said."""
+    reasons = {key.removeprefix("kept_"): count for key, count in kept.items()}
+    if language == "zh":
+        parts = [f"{count} 条{EXCLUSION_REASONS[key][0]}" for key, count in reasons.items()]
+        return f" 提醒: 你点到的任务里 {', '.join(parts)}, 按你说的位置照样算在内。"
+    parts = [f"{count} where {EXCLUSION_REASONS[key][1]}" for key, count in reasons.items()]
+    return f" Note: of the tasks you pointed at, {'; '.join(parts)}; kept as said."
+
+
 def excluded_text(excluded: dict[str, int], language: str) -> str:
     """Why a described group became smaller: protected tasks the words did not ask for."""
+    kept = {key: count for key, count in excluded.items() if key.startswith("kept_")}
+    excluded = {key: count for key, count in excluded.items() if key not in kept}
     if not excluded:
-        return ""
+        return _kept_text(kept, language) if kept else ""
     total, protected = sum(excluded.values()), bool(set(excluded) - {"closed"})
     if language == "zh":
         parts = [f"{count} 条{EXCLUSION_REASONS[key][0]}" for key, count in excluded.items()]
+        tail = _kept_text(kept, language) if kept else ""
         return (
             f" 排除了 {total} 条: {', '.join(parts)}{'; 话里没说要动这些' if protected else ''}。"
+            + tail
         )
     parts = [f"{count} because {EXCLUSION_REASONS[key][1]}" for key, count in excluded.items()]
     tail = "; the request did not ask for them" if protected else ""
-    return f" Left out {total}: {'; '.join(parts)}{tail}."
+    return f" Left out {total}: {'; '.join(parts)}{tail}." + (
+        _kept_text(kept, language) if kept else ""
+    )
 
 
 def include_question(

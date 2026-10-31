@@ -12,7 +12,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
-from tests.intents.fix3_support import planned, steps, two_projects
+from tests.intents.fix3_support import planned, shown, steps, targets, two_projects
+from tests.production_team_ops import save
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
@@ -147,3 +148,16 @@ def test_a_model_that_cannot_do_the_step_is_said_not_asked(db: Database) -> None
     english = planned(db, "Let Shaper pre-label North Crossing", [steps(shaped)], PageContext())
     assert english.kind == "answer", english.text
     assert "cannot be done" in english.text
+
+
+def test_a_place_is_counted_as_shown_and_protection_never_moves_it(db: Database) -> None:
+    """ "第一个包最后那条" is that task even when protection would leave it out (11.2-6)."""
+    _, south, tasks = two_projects(db)
+    save(db, tasks[1], "wang")
+    group = {"holder": "wang", "package": {"$nth": 1}, "last": 1}
+    revoke = ("revoke_assignment", {"task_id": {"$tasks": group}, "reason": "太慢"})
+    page = PageContext(project_id=south.id)
+    result = planned(db, "第一个包最后那条小王一直没交, 收回", [steps(revoke)], page)
+    assert result.kind == "plan", result.text
+    assert targets(result) == [tasks[1]]
+    assert "已有人工标注" in shown(result).get("提醒", ""), shown(result)
