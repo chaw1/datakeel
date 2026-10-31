@@ -21,6 +21,7 @@ from datakeel.intents.catalog import EntityCatalog, build_catalog
 from datakeel.intents.drafts import DraftStep, IntentDraft, language_of
 from datakeel.intents.explore import Lookups, explore_request, explored
 from datakeel.intents.fill import FillState, known_fields
+from datakeel.intents.landing import fitted
 from datakeel.intents.model_parse import (
     parse_response,
     planner_request,
@@ -211,6 +212,8 @@ def _model_draft(
     language = language_of(turn.text)
     draft, content = _parsed(complete, request, response, language)
     draft, content = _repaired(turn, draft, catalog, complete, (request, content))
+    # A "none" naming the one registered action that does it is checked as that action.
+    draft = fitted(draft)
     state = page_state(turn.context, turn.focus, turn.actor, draft.language, words)
     problems = draft_problems(db, draft, state, catalog)
     if not problems:

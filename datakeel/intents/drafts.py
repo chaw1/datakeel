@@ -52,6 +52,9 @@ class IntentDraft(BoundaryModel):
     related: list[str] = Field(default_factory=list[str], max_length=10)
     # With kind none: registered names the words fit equally well; only then is it asked.
     choose: list[str] = Field(default_factory=list[str], max_length=10)
+    # With kind none: the one registered action that does what was asked, were a value known
+    # or the speaker allowed; the flow checks it before saying the feature is missing.
+    fits: str = Field(default="", max_length=100)
     language: Literal["zh", "en"] = "zh"
     confident: bool = False
     # Parts of the request no step covers: each is reported, never dropped silently.

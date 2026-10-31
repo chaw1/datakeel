@@ -18,6 +18,7 @@ from datakeel.core.intent_models import (
     ParserKind,
     StepDetail,
 )
+from datakeel.intents.already import already_state
 from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
@@ -25,7 +26,7 @@ from datakeel.intents.duplicates import duplicate_question, taken
 from datakeel.intents.exclusions import excluded_text
 from datakeel.intents.fill import FillState, fill_defaults, fill_steps, known_fields
 from datakeel.intents.fill_state import CONTAINER_KINDS, named_in_words
-from datakeel.intents.impossible import idle_reason, impossible
+from datakeel.intents.impossible import impossible
 from datakeel.intents.outcomes import unsupported
 from datakeel.intents.partial import set_aside, skipped_lines, with_skipped, without
 from datakeel.intents.public_text import allowed_words, public_notes
@@ -40,7 +41,6 @@ from datakeel.intents.read_scope import (
     unfiltered_note,
 )
 from datakeel.intents.validate import bad_value, check_step, overreach, required_fields
-from datakeel.intents.verify import unchanged
 from datakeel.intents.wording import (
     already_so,
     broken_plan,
@@ -296,8 +296,8 @@ class Resolver:
             reason = impossible(self.db, step, draft.language, checked[:index])
             if reason is not None:
                 refused[step.id] = reason
-            elif unchanged(self.db, step):
-                idle[step.id] = idle_reason(step.action, draft.language)
+            elif (state := already_state(self.db, step, self.catalog, draft.language)) is not None:
+                idle[step.id] = state
         reasons = {**idle, **refused}
         narrowed = without(draft, reasons) if 0 < len(reasons) < len(checked) else None
         if narrowed is not None:
@@ -308,7 +308,8 @@ class Resolver:
             spoken = sentence[:1].upper() + sentence[1:] + ending
             return IntentResult(kind="answer", text=spoken, request=text)
         if checked and len(idle) == len(checked):
-            return IntentResult(kind="answer", text=already_so(draft.language), request=text)
+            text_now = already_so(draft.language, list(idle.values()))
+            return IntentResult(kind="answer", text=text_now, request=text)
         return None
 
     def _plan(

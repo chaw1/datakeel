@@ -38,7 +38,9 @@ INSTRUCTIONS = (
     "registered actions in execution order. kind=none: nothing registered does it, or "
     'chit-chat or how-to; add "reason", "related": up to two registered names closest to it '
     '(may be empty), and "choose": names, only when the words fit several registered '
-    "actions and you cannot tell which. "
+    "actions and you cannot tell which. A registered action that does what was asked is "
+    "never none for a missing value, an unclear object or the speaker's rights: plan it and "
+    'leave unknown values out (or name it in "fits"); the system asks or refuses. '
     "The registry below lists every action and read with its parameters (* = required, "
     "a|b = allowed values). Rules: use only registered names and their parameter names; "
     "omit request_id. Identity values (dataset_id, version_id, project_id, package_id, "
@@ -320,9 +322,12 @@ def _kept(document: dict[str, JsonValue]) -> dict[str, JsonValue]:
     """The draft's own keys; related names and skipped parts are reduced to plain text."""
     kept: dict[str, JsonValue] = {
         key: document[key]
-        for key in ("kind", "steps", "notes", "reason", "related", "choose")
+        for key in ("kind", "steps", "notes", "reason", "related", "choose", "fits")
         if key in document
     }
+    fits = kept.pop("fits", "")
+    if isinstance(fits, str) and fits:
+        kept["fits"] = fits[:100]
     if "skipped" in document:
         kept["skipped"] = skipped_parts(document["skipped"])
     if not isinstance(kept.get("reason", ""), str):

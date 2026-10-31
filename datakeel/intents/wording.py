@@ -4,7 +4,7 @@
 """Short Chinese and English wording for questions, refusals and plan summaries."""
 
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from functools import lru_cache
 
 from datakeel.actions.parameters import PARAMETER_TYPES
@@ -284,8 +284,17 @@ def broken_plan(language: str) -> str:
     )
 
 
-def already_so(language: str) -> str:
-    """Every step would leave things as they are: nothing to confirm."""
+# The generic "already so" of a step without its own comparison; it names no state.
+IDLE = ("已经是这样了, 不用改", "it is already like that")
+
+
+def already_so(language: str, states: Sequence[str] = ()) -> str:
+    """Every step would leave things as they are: the current state, nothing to confirm."""
+    states = [state for state in states if state not in IDLE]
+    if states and language == "zh":
+        return f"已经是这样了: {'; '.join(states)}, 不用做。"
+    if states:
+        return f"It is already so: {'; '.join(states)}; nothing to do."
     if language == "zh":
         return "已经是这样了, 没有要改的, 所以没有生成计划。"
     return "It is already like that; there is nothing to change, so no plan was made."

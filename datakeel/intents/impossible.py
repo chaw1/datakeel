@@ -16,6 +16,7 @@ from pydantic import JsonValue
 
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import ChainStep
+from datakeel.intents.wording import IDLE
 from datakeel.storage.database import Database
 from datakeel.storage.production_queries import (
     get_project,
@@ -149,4 +150,4 @@ def idle_reason(action: str, language: str) -> str:
         )
     if action == "assign_tasks":
         return "这些任务已经在这个人手上了" if zh else "those tasks are already with that person"
-    return "已经是这样了, 不用改" if zh else "it is already like that"
+    return IDLE[0] if zh else IDLE[1]
