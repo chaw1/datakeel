@@ -11,6 +11,7 @@ part of a request planned or explained (P7) and the two drafting side fixes (9.4
 from scripts.intent_fix3_limit_mutations import LIMITS_MUTATIONS
 from scripts.intent_fix3_owner_mutations import OWNER_MUTATIONS
 from scripts.intent_fix3_request_mutations import REQUEST_MUTATIONS
+from scripts.intent_fix4_mutations import EXPLORE_MUTATIONS
 from scripts.mutation_models import Mutation
 
 _SCOPE = "tests/intents/test_fix3_scope.py::"
@@ -314,4 +315,5 @@ INTENT_FIX3_MUTATIONS = (
     *LIMITS_MUTATIONS,
     *OWNER_MUTATIONS,
     *REQUEST_MUTATIONS,
+    *EXPLORE_MUTATIONS,
 )
