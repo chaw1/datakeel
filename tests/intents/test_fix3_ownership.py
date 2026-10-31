@@ -12,6 +12,7 @@ from datakeel.intents.answers import answer_text
 from datakeel.storage.dataset_service import list_files
 from datakeel.storage.identity_store import get_role
 from tests.intents.fix3_support import SOUTH, planned, shown, steps, targets, two_projects
+from tests.production_team_ops import save
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
@@ -23,6 +24,9 @@ if TYPE_CHECKING:
 def test_review_and_own_tasks_are_found_by_who_holds_or_handed_them_in(db: Database) -> None:
     """My review, the ones Li handed in, and putting mine back without a task named."""
     _, south, tasks = two_projects(db)
+    # Li also works on #5, saved but not handed in: it is not waiting for review.
+    ServiceRunner(db)("assign_tasks", {"task_ids": tasks[4:5], "actor": "li"}, "boss")
+    save(db, tasks[4], "li")
     page = PageContext(project_id=south.id)
     mine = {"$tasks": {"holder": "me"}}
     review = steps(("review_task", {"task_id": mine, "decision": "approve"}))
