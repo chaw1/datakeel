@@ -309,7 +309,8 @@ def plan_turn(
     reads = [step for step in draft.steps if step.action in PARAMETER_MODELS]
     if draft.kind == "answer" or (len(draft.steps) == 1 and reads):
         if not reads:
-            return None
+            # An answer naming no registered read still ends with an answer, never silence.
+            return _no_plan(draft, turn, asked=granted.allowed and complete is not None)
         result = resolver.answer(draft, reads[0], request)
     else:
         writes = draft.model_copy(update={"steps": [s for s in draft.steps if s not in reads]})

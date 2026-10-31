@@ -58,7 +58,13 @@ WHOLE_WORDS = re.compile(
 # Steps that send data to a cloud model or spend money.
 MODEL_ACTIONS = frozenset({"draft_label_set", "run_prelabel", "run_kg_extraction"})
 USER_FIELDS = ("status", "display_name", "skill_ids", "team_ids")
-PROJECT_FIELDS = ("lease_minutes", "dispatch_strategy", "max_active_tasks", "skill_requirement")
+PROJECT_FIELDS = (
+    "lease_minutes",
+    "dispatch_strategy",
+    "max_active_tasks",
+    "skill_requirement",
+    "workflow_tier",
+)
 
 
 class Problem(BoundaryModel):
@@ -314,6 +320,7 @@ def unchanged(db: Database, step: ChainStep) -> bool:
         "publish_label_set": _published,
         "manage_users": _user_unchanged,
         "configure_project": _project_unchanged,
+        "upgrade_project": _project_unchanged,
         "assign_tasks": _assigned_already,
     }
     check = checks.get(step.action)

@@ -471,3 +471,20 @@ def test_structured_values_on_the_card_read_as_names_not_keys_or_ids(
     (line,) = [item.value for item in card.chain.steps[0].details if item.label == "定义"]
     assert dataset.name in line
     assert dataset.id not in line
+
+
+def test_an_answer_naming_no_registered_read_still_gets_an_answer(db: Database) -> None:
+    """A model answer whose read is not registered ends as unsupported, never in silence."""
+    project, _ = world(db)
+    invented = {"kind": "answer", "steps": [{"id": "s1", "action": "read nothing", "params": {}}]}
+    result, _ = planned(db, "看看有没有泄漏", [invented], PageContext(project_id=project.id))
+    assert result.kind == "unsupported"
+
+
+def test_upgrading_to_the_tier_the_project_has_is_already_so(db: Database) -> None:
+    """The project is already on the team tier: answered, no card."""
+    project, _ = world(db)
+    same = step("upgrade_project", {"project_id": project.id, "workflow_tier": "team"})
+    result, _ = planned(db, "把这个项目升到团队档", [same], PageContext(project_id=project.id))
+    assert result.kind == "answer", result.text
+    assert result.chain is None

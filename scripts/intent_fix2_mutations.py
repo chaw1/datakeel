@@ -323,6 +323,27 @@ PLANNING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="intent-answer-without-a-read-is-answered",
+        path="intents/planner.py",
+        before=(
+            "            # An answer naming no registered read still ends with an answer, "
+            "never silence.\n"
+            "            return _no_plan("
+            "draft, turn, asked=granted.allowed and complete is not None)"
+        ),
+        after="            return None",
+        case=_SCOPE + "test_an_answer_naming_no_registered_read_still_gets_an_answer",
+        runner="pytest",
+    ),
+    Mutation(
+        name="intent-same-tier-is-already-so",
+        path="intents/verify.py",
+        before='        "upgrade_project": _project_unchanged,\n',
+        after="",
+        case=_SCOPE + "test_upgrading_to_the_tier_the_project_has_is_already_so",
+        runner="pytest",
+    ),
+    Mutation(
         name="intent-recipe-data-phrase-is-not-a-label",
         path="intents/recipes.py",
         before="    if after and not _DATA_PHRASE.search(after):",
