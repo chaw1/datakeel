@@ -12,11 +12,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
+from datakeel.core.release_models import ReleaseView
+from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from tests.intents.fix3_support import planned, shown, steps, targets, two_projects
 from tests.production_team_ops import save
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
+    import pytest
+
     from datakeel.storage.database import Database
 
 
@@ -151,7 +155,7 @@ def test_a_model_that_cannot_do_the_step_is_said_not_asked(db: Database) -> None
 
 
 def test_a_place_is_counted_as_shown_and_protection_never_moves_it(db: Database) -> None:
-    """ "第一个包最后那条" is that task even when protection would leave it out (11.2-6)."""
+    """The place 第一个包最后那条 is that task even when protection would leave it out (11.2-6)."""
     _, south, tasks = two_projects(db)
     save(db, tasks[1], "wang")
     group = {"holder": "wang", "package": {"$nth": 1}, "last": 1}
@@ -161,3 +165,56 @@ def test_a_place_is_counted_as_shown_and_protection_never_moves_it(db: Database)
     assert result.kind == "plan", result.text
     assert targets(result) == [tasks[1]]
     assert "已有人工标注" in shown(result).get("提醒", ""), shown(result)
+
+
+def test_a_release_tag_names_the_version_it_published(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dataset name with a release tag (v3.1.0) is the version that release froze (11.2-2)."""
+    _, south, _ = two_projects(db)
+    tagged = ReleaseView.model_construct(
+        id="r-9", dataset_id=south.dataset_id, version_id=south.version_id, tag="v3.1.0"
+    )
+
+    def releases(_db: Database, dataset: str) -> list[ReleaseView]:
+        return [tagged] if dataset == south.dataset_id else []
+
+    monkeypatch.setattr("datakeel.intents.catalog.list_releases", releases)
+    create = {
+        "name": "复核三期",
+        "dataset_id": south.dataset_id,
+        "version_id": "Generated production v3.1.0",
+        "label_set_id": south.label_set_id,
+    }
+    said = "用 Generated production v3.1.0 那版开个项目叫「复核三期」"
+    result = planned(db, said, [steps(("create_project", create))], PageContext())
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    assert result.chain.steps[0].params["version_id"] == south.version_id
+
+
+def test_a_project_on_a_label_set_never_published_says_what_to_do_first(db: Database) -> None:
+    """Preconditions are checked when planning: publish first, said before any card (11.2-3)."""
+    _, south, _ = two_projects(db)
+    with db.session() as session:
+        db.lock_writes(session)
+        first = session.get(ProductionLabelSetRow, f"{south.label_set_id}:1")
+        assert first is not None
+        payload = {**first.payload, "id": "cones", "name": "锥桶", "published": False}
+        row = ProductionLabelSetRow(
+            id="cones:1", label_set_id="cones", version=1, published=False, payload=payload
+        )
+        session.add(row)
+        session.commit()
+    create = {
+        "name": "锥桶标注",
+        "dataset_id": south.dataset_id,
+        "version_id": south.version_id,
+        "label_set_id": "cones",
+    }
+    said = "用这个数据集开个锥桶标注项目, 标签用锥桶那套"
+    page = PageContext(dataset_id=south.dataset_id)
+    asked = planned(db, said, [steps(("create_project", create))], page)
+    assert asked.kind == "clarify", asked.text
+    assert "还没有发布过" in asked.text
+    assert "先发布" in asked.text

@@ -133,8 +133,11 @@ def unpublished_question(
     label_set, version = step.params.get("label_set_id"), step.params.get("label_set_version")
     if step.action != "create_project" or "publish_label_set" in earlier:
         return None
-    if not isinstance(label_set, str) or not isinstance(version, int):
+    if not isinstance(label_set, str):
         return None
+    if not isinstance(version, int):
+        # No published version at all (none was derived): what is missing, what to do first.
+        return _never_published(db, step, label_set, language)
     found = latest_label_set(db, label_set, version)
     if found is None or found.published:
         return None
@@ -146,3 +149,20 @@ def unpublished_question(
         f"published version. Publish version {version} first, or use a published one?"
     )
     return Clarification(question=question, action=step.action, fields=["label_set_version"])
+
+
+def _never_published(
+    db: Database, step: DraftStep, label_set: str, language: str
+) -> Clarification | None:
+    """A project needs a published label set; this one never was: offer publishing first."""
+    found = latest_label_set(db, label_set)
+    if found is None or found.published:
+        return None
+    question = (
+        f"「{found.name}」还没有发布过, 建项目只能用已发布的标签集。"
+        f"可以先发布它 (第 {found.version} 版) 再建项目, 要这样做吗?"
+        if language == "zh"
+        else f'"{found.name}" has never been published, and a project needs a published label '
+        f"set. Publish it (version {found.version}) first and then create the project?"
+    )
+    return Clarification(question=question, action=step.action, fields=[])

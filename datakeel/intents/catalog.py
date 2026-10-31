@@ -5,6 +5,7 @@
 
 from pydantic import Field
 
+from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import Candidate
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_models import Project
@@ -14,6 +15,7 @@ from datakeel.storage.dataset_service import list_datasets, list_versions
 from datakeel.storage.identity_store import list_roles, list_skills, list_teams, list_users
 from datakeel.storage.production_objects import production_objects
 from datakeel.storage.production_queries import list_packages, list_projects
+from datakeel.storage.release_service import list_releases
 from datakeel.storage.standard_store import get_contract
 
 CATALOG_LIMIT = 60
@@ -165,20 +167,41 @@ def build_catalog(db: Database, project_id: str | None = None) -> EntityCatalog:
                 size=dataset.file_count,
             )
         )
-        versions = list(enumerate(list_versions(db, dataset.id), start=1))
-        entries += [
-            CatalogEntry(
-                kind="version",
-                id=version.id,
-                label=f"{dataset.name} · v{number}",
-                names=(version.id,),
-                parent=dataset.id,
-                size=version.file_count,
-            )
-            for number, version in versions[-5:]
-        ]
+        entries += _versions(db, dataset.id, dataset.name)
     entries += _label_sets(db) + _standards(db) + _people_catalog(db) + _models(db)
     return EntityCatalog(entries=entries)
+
+
+def _versions(db: Database, dataset: str, name: str) -> list[CatalogEntry]:
+    """The newest versions, and every version a release tag names ("门店货架 v2.0.0")."""
+    tags: dict[str, list[str]] = {}
+    try:
+        for release in list_releases(db, dataset):
+            tags.setdefault(release.version_id, []).append(release.tag)
+    except DatakeelError:
+        tags = {}
+    versions = list(enumerate(list_versions(db, dataset), start=1))
+    newest = {version.id for _, version in versions[-5:]}
+    return [
+        CatalogEntry(
+            kind="version",
+            id=version.id,
+            label=f"{name} · v{number}"
+            + (f" ({', '.join(tags[version.id])})" if version.id in tags else ""),
+            names=(
+                version.id,
+                *(
+                    said
+                    for tag in tags.get(version.id, [])
+                    for said in (tag, f"{name} {tag}", f"{name}{tag}", f"{name} · {tag}")
+                ),
+            ),
+            parent=dataset,
+            size=version.file_count,
+        )
+        for number, version in versions
+        if version.id in newest or version.id in tags
+    ]
 
 
 def _packages(

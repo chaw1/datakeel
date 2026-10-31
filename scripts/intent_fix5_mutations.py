@@ -120,4 +120,20 @@ FLOW_MUTATIONS = (
         case=_FLOW + "test_a_place_is_counted_as_shown_and_protection_never_moves_it",
         runner="pytest",
     ),
+    Mutation(
+        name="fix5-a-release-tag-names-its-version",
+        path="intents/catalog.py",
+        before="            tags.setdefault(release.version_id, []).append(release.tag)",
+        after="            del release",
+        case=_FLOW + "test_a_release_tag_names_the_version_it_published",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix5-a-never-published-label-set-is-said-first",
+        path="intents/duplicates.py",
+        before="        return _never_published(db, step, label_set, language)",
+        after="        return None",
+        case=_FLOW + "test_a_project_on_a_label_set_never_published_says_what_to_do_first",
+        runner="pytest",
+    ),
 )
