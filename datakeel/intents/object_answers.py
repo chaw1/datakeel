@@ -12,6 +12,7 @@ from collections import Counter
 from pydantic import JsonValue
 
 from datakeel.intents.plain_words import enum_label
+from datakeel.intents.wording import action_title
 
 KIND_WORDS = {
     "production_task": ("任务", "tasks"),
@@ -25,6 +26,13 @@ KIND_WORDS = {
     "model": ("模型", "models"),
     "prelabel_run": ("预标注运行", "pre-label runs"),
     "role": ("角色", "roles"),
+}
+LINEAGE_KINDS = {
+    **KIND_WORDS,
+    "dataset": ("数据集", "datasets"),
+    "version": ("数据集版本", "dataset versions"),
+    "file": ("文件", "files"),
+    "release": ("发布版本", "releases"),
 }
 NAME_KEYS = ("name", "display_name", "filename")
 PEOPLE_KEYS = ("annotator_id", "actor", "reviewer_id")
@@ -75,3 +83,32 @@ def objects_text(data: JsonValue, language: str) -> str | None:
     if people:
         parts.append(("涉及的人: " if zh else "people: ") + separator.join(people))
     return "; ".join(parts) + ("。" if zh else ".")
+
+
+def lineage_text(data: JsonValue, language: str) -> str | None:
+    """A lineage read as what it touches and the operations that made it, never node ids."""
+    nodes = data.get("nodes") if isinstance(data, dict) else None
+    if not isinstance(nodes, list):
+        return None
+    zh = language == "zh"
+    runs: Counter[str] = Counter()
+    kinds: Counter[str] = Counter()
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        kind, label = str(node.get("asset_type") or ""), str(node.get("label") or "")
+        if kind == "action_run":
+            runs[action_title(label, language)] += 1
+        else:
+            kinds[LINEAGE_KINDS.get(kind, ("其他对象", "other objects"))[0 if zh else 1]] += 1
+    if not kinds and not runs:
+        return "没有查到上下游记录。" if zh else "No lineage was recorded."
+    touched = ", ".join(
+        f"{word} {count} 个" if zh else f"{count} {word}" for word, count in kinds.items()
+    )
+    made = ", ".join(
+        f"{word} {count} 次" if zh else f"{word} x{count}" for word, count in runs.most_common()
+    )
+    if zh:
+        return f"上下游涉及: {touched or '无'}; 经过的操作: {made or '无'}。"
+    return f"Lineage touches: {touched or 'nothing'}; operations: {made or 'none'}."

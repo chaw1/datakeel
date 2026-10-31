@@ -49,11 +49,18 @@ def named_files(
         db, ObjectSet(dataset_id=dataset_id, version_ids=versions, limit=SELECTION_LIMIT)
     )
     by_name: dict[str, str] = {}
+    # "leaf-01" without its extension names the one file whose name it is the stem of.
+    stems: dict[str, set[str]] = {}
     for item in found.objects:
         for key in ("filename", "name", "path"):
             value = item.properties.get(key)
             if isinstance(value, str) and value:
-                by_name.setdefault(value.rsplit("/", 1)[-1].casefold(), item.asset_ref.asset_id)
+                base = value.rsplit("/", 1)[-1].casefold()
+                by_name.setdefault(base, item.asset_ref.asset_id)
+                stems.setdefault(base.rsplit(".", 1)[0], set()).add(item.asset_ref.asset_id)
+    for stem, owners in stems.items():
+        if len(owners) == 1:
+            by_name.setdefault(stem, next(iter(owners)))
     chosen = [by_name.get(name.strip().rsplit("/", 1)[-1].casefold()) for name in names]
     return None if not chosen or None in chosen else [item for item in chosen if item]
 

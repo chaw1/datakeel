@@ -226,9 +226,10 @@ def nothing_to_change(kind: str, holder: str, language: str) -> str:
     """Say plainly that a selector matched nothing, so no plan is made."""
     if kind == "tasks" and holder:
         return (
-            f"{holder} 手里没有符合条件的任务, 没有要改的。"
+            f"{holder}{'' if holder == '你' else ' '}手里没有符合条件的任务, 没有要改的。"
             if language == "zh"
-            else f"{holder} holds no matching tasks; nothing to change."
+            else f"{holder.capitalize()} {'hold' if holder == 'you' else 'holds'} no matching "
+            "tasks; nothing to change."
         )
     if kind == "tasks":
         return (

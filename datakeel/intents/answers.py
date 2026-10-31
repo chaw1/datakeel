@@ -10,7 +10,7 @@ from pydantic import JsonValue
 
 from datakeel.core.intent_models import ReadAnswer
 from datakeel.core.models import JsonDocument
-from datakeel.intents.object_answers import objects_text
+from datakeel.intents.object_answers import lineage_text, objects_text
 from datakeel.intents.plain_words import ENUM_LABELS, enum_label, key_label
 from datakeel.intents.wording import action_title
 from datakeel.ontology.tool_models import ToolCallContext
@@ -90,6 +90,7 @@ def answer_text(function: str, data: JsonValue, language: str) -> str:
         "annotator_workload": _holding,
         "ask_data": _unanswered,
         "production_objects": objects_text,
+        "get_lineage": lineage_text,
     }
     phrase = phrases.get(function)
     sentence = phrase(data, language) if phrase else None

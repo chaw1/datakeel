@@ -26,6 +26,7 @@ from datakeel.intents.signatures import choice_fields
 from datakeel.intents.wording import FIELD_LABELS, action_title, field_label
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
+from datakeel.storage.dataset_service import list_files
 from datakeel.storage.identity_store import list_users
 from datakeel.storage.object_queries import evaluate
 from datakeel.storage.production_queries import get_task, list_tasks
@@ -100,6 +101,14 @@ def _selection(db: Database, value: dict[str, JsonValue], language: str) -> str:
         found = evaluate(db, ObjectSet.model_validate(value)).objects
     except (ModelValidationError, ValueError):
         return _shorten(json.dumps(value, ensure_ascii=False))
+    dataset = value.get("dataset_id")
+    try:
+        listed = list_files(db, dataset) if isinstance(dataset, str) else []
+    except NotFoundError:
+        listed = []
+    # Files are named in the order the dataset lists them, like everywhere else.
+    order = {item.id: position for position, item in enumerate(listed)}
+    found = sorted(found, key=lambda item: order.get(item.asset_ref.asset_id, len(order)))
     names = [
         str(item.properties.get("filename") or item.properties.get("name") or "?") for item in found
     ]
@@ -194,10 +203,22 @@ def _value(
         return _name(FIELD_KINDS[field], value, catalog)
     if field in LIST_KINDS and isinstance(value, list):
         return _listing([_name(LIST_KINDS[field], item, catalog) for item in value], language)
-    if field == "selection" and isinstance(value, dict):
-        return _selection(db, value, language)
+    if field in {"selection", "model"} and isinstance(value, dict):
+        return (
+            _selection(db, value, language)
+            if field == "selection"
+            else _model_words(value, language)
+        )
     nested = isinstance(value, (dict, list)) and field not in LIST_WORDS
     return _shorten(_nested(value, catalog, language)) if nested else _plain(value, language, field)
+
+
+def _model_words(value: dict[str, JsonValue], language: str) -> str:
+    """A model definition as its name, version and what it annotates."""
+    name = f"{value.get('name') or value.get('id')} {value.get('version') or ''}".strip()
+    kinds = value.get("capabilities")
+    listed = [enum_label(str(item), language) for item in kinds] if isinstance(kinds, list) else []
+    return f"{name} ({_listing(listed, language)})" if listed else name
 
 
 def _defaults(step: ChainStep, language: str) -> list[StepDetail]:

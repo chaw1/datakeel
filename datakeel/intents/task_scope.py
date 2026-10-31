@@ -40,6 +40,9 @@ NOBODY = frozenset(
 )
 NUMBER = re.compile(r"^\s*(?:#|第|no\.?\s*)?\s*(\d{1,5})\s*(?:个|条|号)?\s*$", re.IGNORECASE)
 INCLUDES = frozenset({"held", "annotated"})
+# Conditions on the tasks themselves; a package is a place, not a condition.
+FILTERS = frozenset(CONDITIONS) - {"package"}
+FROM_END = re.compile(r"倒数第|从后往前数?第|from the (?:end|bottom)|\bto[- ]last\b", re.IGNORECASE)
 
 
 class TaskScope(BoundaryModel):
@@ -114,10 +117,11 @@ def _applies(task: TaskSnapshot, action: str, speaker: str, stage: str) -> bool:
     """Tasks the action can act on at all; anything else is not part of the group."""
     if action == "assign_tasks":
         return task.state in (REVIEW_STATES if stage == "review" else OPEN_STATES)
-    if action in {"revoke_assignment", "release_task"}:
+    if action in {"revoke_assignment", "release_task", "heartbeat"}:
         held = task.holder is not None and task.stage == stage
-        return held and (action != "release_task" or task.holder == speaker)
-    return True
+        return held and (action == "revoke_assignment" or task.holder == speaker)
+    # Only a task handed in and not yet decided can be reviewed.
+    return action != "review_task" or task.state in REVIEW_STATES
 
 
 def _rounds(spec: dict[str, JsonValue]) -> int:
@@ -141,8 +145,10 @@ def _matches(
     holder, package = found
     if is_nobody(spec.get("holder"), spec) and (task.holder is not None or task.state != "pending"):
         return False
-    held_by = _held_by(task, stage)
-    if holder is not None and held_by != holder:
+    # In review, or on a task nobody holds, "Mia's task" is also the one Mia annotated.
+    own = stage == "review" or (task.holder is None and task.state in OPEN_STATES)
+    whose = {_held_by(task, stage), task.annotator if own else None}
+    if holder is not None and holder not in whose:
         return False
     state = spec.get("state")
     checks = (
@@ -184,15 +190,36 @@ def _count(spec: dict[str, JsonValue], key: str) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 0
 
 
-def _named(spec: dict[str, JsonValue], total: int) -> list[int] | None:
-    """Numbers, or the first / last N said of the whole list, which name those places."""
+def from_end(spec: dict[str, JsonValue], text: str) -> dict[str, JsonValue]:
+    """One task counted from the end ("倒数第二条", "second to last"), not the last two."""
+    back = _count(spec, "last")
+    if not back or not FROM_END.search(text):
+        return spec
+    return {**{key: value for key, value in spec.items() if key != "last"}, "from_end": back}
+
+
+def _places(listed: list[int], spec: dict[str, JsonValue]) -> list[int] | None:
+    first, last, back = _count(spec, "first"), _count(spec, "last"), _count(spec, "from_end")
+    if back:
+        return [listed[-back] if back <= len(listed) else 0]
+    return listed[:first] if first else listed[-last:] if last else None
+
+
+def _named(
+    tasks: list[TaskSnapshot], spec: dict[str, JsonValue], package: str | None
+) -> list[int] | None:
+    """Numbers, or the first / last N said of a list, which name those places.
+
+    Within a named package a place counts in that package ("包 2 的第 2 个"), while a list
+    number that lies in the package is that task. Places are taken as said.
+    """
     named = numbers(spec)
-    if named is not None or any(key in spec for key in CONDITIONS):
+    if any(key in spec for key in FILTERS):
         return named
-    first, last = _count(spec, "first"), _count(spec, "last")
-    if first:
-        return list(range(1, first + 1))
-    return list(range(max(total - last, 0) + 1, total + 1)) if last else None
+    inside = [task.number for task in tasks if package is None or task.package_id == package]
+    if named is not None and package is not None:
+        return [n if n in inside else inside[n - 1] if n <= len(inside) else 0 for n in named]
+    return named if named is not None else _places(inside, spec)
 
 
 def select_tasks(
@@ -208,7 +235,7 @@ def select_tasks(
 
     ``stage`` is the step's own: "his review tasks" are the ones he holds for review.
     """
-    named = _named(spec, len(tasks))
+    named = _named(tasks, spec, found[1])
     if named is not None:
         listed = {task.number: task for task in tasks}
         if any(number not in listed for number in named):
@@ -231,6 +258,6 @@ def select_tasks(
             kept.append(task)
         else:
             excluded[reason] += 1
-    first, last = _count(spec, "first"), _count(spec, "last")
-    group = kept[:first] if first else kept[-last:] if last else kept
+    first, last, back = _count(spec, "first"), _count(spec, "last"), _count(spec, "from_end")
+    group = kept[:first] if first else kept[-last:] if last else kept[-back:][:1] if back else kept
     return TaskScope(ids=[task.id for task in group], excluded=dict(excluded))

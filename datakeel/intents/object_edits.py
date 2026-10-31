@@ -14,8 +14,11 @@ import re
 
 from pydantic import JsonValue
 
+from datakeel.actions.registry import POLICIES
+from datakeel.core.errors import NotFoundError
 from datakeel.storage.database import Database
-from datakeel.storage.identity_store import list_users
+from datakeel.storage.identity_store import get_bindings, get_role, list_users
+from datakeel.storage.production_catalog import require_model
 
 # (action, operation) -> (the new object's id field, the field that names it)
 NEW_OBJECTS: dict[tuple[str, str | None], tuple[str, str]] = {
@@ -88,3 +91,58 @@ def prepare_user_edit(db: Database, params: dict[str, JsonValue]) -> dict[str, J
             items = [item for item in items if item not in values]
         params[target] = items
     return params
+
+
+def _scopes(params: dict[str, JsonValue], held: tuple[str, ...]) -> list[JsonValue]:
+    """A role's scopes after the actions said to allow or deny; execution reads only scopes."""
+    said = params.get("scopes")
+    scopes = {str(item) for item in said} if isinstance(said, list) else set(held)
+    for key, adding in (("allowed_actions", True), ("denied_actions", False)):
+        listed = params.get(key)
+        names = [str(item) for item in listed] if isinstance(listed, list) else []
+        found = {POLICIES[name][0] for name in names if name in POLICIES}
+        scopes = scopes | found if adding else scopes - found
+    ordered: list[JsonValue] = [*sorted(scopes)]
+    return ordered
+
+
+def prepare_update(db: Database, action: str, params: dict[str, JsonValue]) -> None:
+    """An edit keeps what the words leave unsaid, at the revision it was read from."""
+    if action in {"define_role", "update_role"}:
+        try:
+            role = get_role(db, str(params.get("role_id"))) if action == "update_role" else None
+        except NotFoundError:
+            role = None
+        if role is not None:
+            kept = {
+                "name": role.name,
+                "description": role.description,
+                "project_id": role.project_id,
+            }
+            params.update(
+                {key: value for key, value in kept.items() if value and key not in params}
+            )
+            params.setdefault("expected_revision", role.revision)
+        params["scopes"] = _scopes(params, role.scopes if role is not None else ())
+    model = params.get("model")
+    if action != "update_model" or not isinstance(model, dict):
+        return
+    try:
+        with db.session() as session:
+            current = require_model(session, str(model.get("id")))
+    except NotFoundError:
+        return
+    params["model"] = {**current.model_dump(mode="json", exclude={"revision"}), **model}
+    params.setdefault("expected_revision", current.revision)
+
+
+def bound_projects(db: Database, params: dict[str, JsonValue]) -> list[str]:
+    """Projects the person given a role already works in, when the step names no project."""
+    user = params.get("user_id")
+    if params.get("operation") != "bind_role" or params.get("project_id"):
+        return []
+    try:
+        bindings = get_bindings(db, user) if isinstance(user, str) else ()
+    except NotFoundError:
+        return []
+    return sorted({item.project_id for item in bindings if item.project_id})

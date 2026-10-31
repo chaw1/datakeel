@@ -26,6 +26,7 @@ from datakeel.intents.catalog import (
     EntityCatalog,
     candidates,
 )
+from datakeel.intents.created import Created, earlier, remember
 from datakeel.intents.derived import model_record
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.duplicates import new_name_fields
@@ -34,14 +35,21 @@ from datakeel.intents.fill_state import (
     FillState,
     ask,
     context_value,
+    in_scope,
     named_in_words,
     project_in_scope,
 )
 from datakeel.intents.grounding import grounded
-from datakeel.intents.group_fill import numbered, selector_value
-from datakeel.intents.object_edits import LIST_EDITS, new_object_field, prepare_user_edit
+from datakeel.intents.group_fill import numbered, own_task, selector_value
+from datakeel.intents.object_edits import (
+    LIST_EDITS,
+    new_object_field,
+    prepare_update,
+    prepare_user_edit,
+)
 from datakeel.intents.selectors import page_selection
 from datakeel.intents.signatures import near_value
+from datakeel.intents.step_values import any_asset, role_project, sample_files
 from datakeel.intents.wording import (
     disabled_question,
     unknown_labels_question,
@@ -241,6 +249,8 @@ def _fill_value(
         return selector_value(db, (field, value), current, state, catalog, excluded)
     if field in FIELD_KINDS and isinstance(value, str):
         return _resolve_identity(field, value, current, state, catalog)
+    if field == "asset_id" and isinstance(value, str):
+        return any_asset(value, catalog)
     if field in LIST_KINDS and isinstance(value, list):
         return _resolve_list(field, value, current, state, catalog)
     return _selection_dataset(value, current, state, catalog) if field == "selection" else value
@@ -255,8 +265,31 @@ def _selection_dataset(
         return value
     if catalog.get("dataset", dataset) is not None:
         return value
+    paged = in_scope("dataset_id", None, state, catalog)
+    if not catalog.match("dataset", dataset) and paged is not None:
+        # An identity that names nothing ("this dataset", a mistyped id) is the page's.
+        return {**value, "dataset_id": paged}
     resolved = _resolve_identity("dataset_id", dataset, current, state, catalog)
     return resolved if isinstance(resolved, Clarification) else {**value, "dataset_id": resolved}
+
+
+def _field_value(
+    db: Database,
+    slot: tuple[str, Created],
+    current: DraftStep,
+    state: FillState,
+    catalog: EntityCatalog,
+    excluded: Counter[str],
+) -> JsonValue | Clarification:
+    """One value resolved; names of objects an earlier step creates stand for their ids."""
+    field, created = slot
+    made, current.params[field] = earlier(field, current.params[field], created)
+    if current.params[field] is None:
+        return made
+    resolved = _fill_value(db, field, current, state, catalog, excluded)
+    if isinstance(made, list) and made and isinstance(resolved, list):
+        return [*resolved, *made]
+    return resolved
 
 
 def fill_steps(
@@ -265,6 +298,7 @@ def fill_steps(
     """Resolve every identity and selector; stop at the first question."""
     filled: list[DraftStep] = []
     names: list[str] = []
+    created: Created = {}
     left_out: dict[str, dict[str, int]] = {}
     for drafted in steps:
         step = model_record(drafted)
@@ -274,18 +308,20 @@ def fill_steps(
             question = unknown_question(step.action, unknown, state.language)
             return FillResult(clarification=Clarification(question=question, action=step.action))
         _prepared(step, params, names, state.text)
+        own_task(step.action, params, state.context)
         fresh = new_object_field(step.action, params)
         current = step.model_copy(update={"params": params})
         excluded: Counter[str] = Counter()
         # New names are never looked up: the object they name does not exist yet.
         new = {fresh, *new_name_fields(step.action, params)}
         for field in [name for name in params if name not in new]:
-            resolved = _fill_value(db, field, current, state, catalog, excluded)
+            resolved = _field_value(db, (field, created), current, state, catalog, excluded)
             if isinstance(resolved, Clarification):
                 return FillResult(clarification=resolved)
             if isinstance(resolved, dict) and set(resolved) == {"$empty"}:
                 return FillResult(empty_selection=str(resolved["$empty"]), empty_step=step.id)
             params[field] = resolved
+        sample_files(params)
         if step.action == "create_label_set":
             edit = prepare_label_edit(db, params)
             if edit.unknown:
@@ -295,7 +331,12 @@ def fill_steps(
                 )
             params = edit.params
         params = prepare_user_edit(db, params) if step.action == "manage_users" else params
+        prepare_update(db, step.action, params)
+        asked = role_project(db, params, current, state, catalog)
+        if asked is not None:
+            return FillResult(clarification=asked)
         filled.append(current.model_copy(update={"params": params}))
+        remember(created, filled[-1], fresh)
         if excluded:
             left_out[step.id] = dict(excluded)
     return FillResult(steps=filled, excluded=left_out)

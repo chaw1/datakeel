@@ -11,7 +11,7 @@ from collections import Counter
 
 from pydantic import JsonValue
 
-from datakeel.core.intent_models import Candidate, Clarification
+from datakeel.core.intent_models import Candidate, Clarification, PageContext
 from datakeel.intents.catalog import SELF_WORDS, EntityCatalog, candidates
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.fill_state import (
@@ -22,10 +22,11 @@ from datakeel.intents.fill_state import (
     named_in_words,
     project_in_scope,
 )
-from datakeel.intents.selectors import file_selection, ordinal_question, pick
+from datakeel.intents.selectors import file_selection, named_files, ordinal_question, pick
 from datakeel.intents.task_scope import (
     CONDITIONS,
     SELECTOR_KEYS,
+    from_end,
     is_nobody,
     place_number,
     select_tasks,
@@ -41,6 +42,10 @@ from datakeel.storage.database import Database
 from datakeel.storage.intent_reads import held_projects, task_snapshots
 
 TASK_FIELDS = frozenset({"task_id", "task_ids"})
+# One's own work: with no task named or on the page, the task is the speaker's own.
+SELF_WORK = frozenset({"release_task", "submit_task", "heartbeat"})
+# Giving back or keeping one's own task with no stage said finds a hold in either stage.
+ANY_STAGE = frozenset({"release_task", "heartbeat"})
 # Conditions that count within one project's list, so they never span projects.
 ORDERED = ("numbers", "positions", "first", "last", "package")
 
@@ -142,8 +147,9 @@ def _tasks(
             else _choose_project(where, current, state, catalog)
         )
     project, holder = where
-    stage = current.params.get("stage")
-    stage = stage if isinstance(stage, str) and stage else "annotation"
+    explicit = current.params.get("stage")
+    stage = explicit if isinstance(explicit, str) and explicit else "annotation"
+    stage = "review" if current.action == "review_task" else stage
     # Assigning for review only takes tasks waiting for review, so the stage is the condition.
     described = stage == "review" or any(key in spec for key in (*CONDITIONS, *ORDERED))
     if not described and not says_whole(state.text):
@@ -156,17 +162,37 @@ def _tasks(
     package = nth_package(spec["package"], project, state, catalog) if "package" in spec else None
     if isinstance(package, Clarification):
         return package
-    scope = select_tasks(
-        task_snapshots(db, project),
-        spec,
-        action=current.action,
-        speaker=state.actor,
-        found=(holder, package),
-        stage=stage,
-    )
-    if scope.missing:
-        return ordinal_question("task", state.language)
-    return scope.ids, scope.excluded
+    spec = from_end(spec, state.text)
+    either = not explicit and current.action in ANY_STAGE
+    snapshots = task_snapshots(db, project)
+    ids: list[str] = []
+    excluded: Counter[str] = Counter()
+    held: set[str] = set()
+    for each in ("annotation", "review") if either else (stage,):
+        scope = select_tasks(
+            snapshots,
+            spec,
+            action=current.action,
+            speaker=state.actor,
+            found=(holder, package),
+            stage=each,
+        )
+        if scope.missing:
+            return ordinal_question("task", state.language)
+        ids += [task for task in scope.ids if task not in ids]
+        excluded.update(scope.excluded)
+        held |= {each} if scope.ids else set()
+    if either and len(held) == 1:
+        # The one stage the holds were found in is the stage the step gives back or keeps.
+        current.params["stage"] = held.pop()
+    return ids, dict(excluded)
+
+
+def own_task(action: str, params: dict[str, JsonValue], context: PageContext) -> None:
+    """Giving back, handing in or keeping "my task" with none named: the speaker's own."""
+    paged = context.task_id or (context.selected_kind == "production_task" and context.selected_ids)
+    if action in SELF_WORK and "task_id" not in params and not paged:
+        params["task_id"] = {"$tasks": {"holder": "me"}}
 
 
 def _where(
@@ -257,6 +283,8 @@ def _task_slot(
     if not ids:
         holder = spec.get("holder")
         named = "" if is_nobody(holder, {}) else str(holder or "")
+        if named.strip().casefold() in SELF_WORDS:
+            named = "你" if state.language == "zh" else "you"
         if left_out:
             return include_question(left_out, named, current.action, state.language)
         return {"$empty": nothing_to_change("tasks", named, state.language)}
@@ -284,6 +312,8 @@ def selector_value(
     spec = value["$files"]
     # The dataset the selection or the words name wins over the page's.
     dataset = in_scope("dataset_id", value.get("dataset_id"), state, catalog)
+    if dataset is None and isinstance(spec, dict):
+        dataset = _holding_dataset(db, spec, catalog)
     paged = dataset == context_value("dataset_id", state, catalog)
     selection = file_selection(
         db,
@@ -295,6 +325,22 @@ def selector_value(
     if selection is not None and selection.get("$empty"):
         return {"$empty": nothing_to_change("files", "", state.language)}
     return selection if selection is not None else ask(field, current, [], state.language)
+
+
+def _holding_dataset(
+    db: Database, spec: dict[str, JsonValue], catalog: EntityCatalog
+) -> str | None:
+    """Files named with no dataset said: the one dataset that has every one of them."""
+    raw = spec.get("names")
+    names = [item for item in raw if isinstance(item, str)] if isinstance(raw, list) else []
+    if spec.get("kind") != "named" or not names:
+        return None
+    holding = [
+        entry.id
+        for entry in catalog.of("dataset")
+        if named_files(db, entry.id, None, names) is not None
+    ]
+    return holding[0] if len(holding) == 1 else None
 
 
 def include_question(

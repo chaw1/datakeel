@@ -27,6 +27,7 @@ class TaskSnapshot(BoundaryModel):
     annotated: bool
     holder: str | None = None
     stage: str | None = None
+    annotator: str | None = None
 
 
 def task_snapshots(db: Database, project_id: str, limit: int = 10000) -> list[TaskSnapshot]:
@@ -63,6 +64,7 @@ def task_snapshots(db: Database, project_id: str, limit: int = 10000) -> list[Ta
             annotated=row.latest_revision_id is not None,
             holder=holders.get(row.id, (None, None))[0],
             stage=holders.get(row.id, (None, None))[1],
+            annotator=row.annotator_id,
         )
         for number, row in enumerate(rows, start=1)
     ]

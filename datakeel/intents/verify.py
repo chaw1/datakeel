@@ -23,7 +23,7 @@ from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
 from datakeel.intents.fill_state import FillState
 from datakeel.storage.database import Database
-from datakeel.storage.identity_store import get_bindings, list_users
+from datakeel.storage.identity_store import get_bindings, list_teams, list_users
 from datakeel.storage.intent_reads import latest_label_set, task_holders
 from datakeel.storage.production_queries import get_project, get_task
 
@@ -304,7 +304,17 @@ def _same(current: JsonValue, wanted: JsonValue) -> bool:
     return current == wanted
 
 
+def _team_unchanged(db: Database, params: dict[str, JsonValue]) -> bool:
+    """A team already named so and led by that person: making it so changes nothing."""
+    team = next((item for item in list_teams(db) if item.id == params.get("team_id")), None)
+    given = [field for field in ("name", "leader_id") if params.get(field) is not None]
+    current = team.model_dump(mode="json") if team is not None else {}
+    return bool(given) and team is not None and all(current[key] == params[key] for key in given)
+
+
 def _user_unchanged(db: Database, params: dict[str, JsonValue]) -> bool:
+    if params.get("operation") == "update_team":
+        return _team_unchanged(db, params)
     user = next((item for item in list_users(db) if item.id == params.get("user_id")), None)
     if user is None:
         return False
