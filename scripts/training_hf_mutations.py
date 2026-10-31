@@ -69,11 +69,14 @@ HF_TRAINING_MUTATIONS = (
     Mutation(
         name="training-hf-loader-exif-orientation-guard-omitted",
         path="training/export_hf.py",
-        before="validate_orientation(item)",
-        after="pass",
+        before="            write_image(item, geometry, directory / relative)",
+        after=(
+            '            write_image(item, geometry.model_copy(update={"orientation": 1}), '
+            "directory / relative)"
+        ),
         case=(
             "tests/training/test_export_hf.py::"
-            "test_hf_loader_exif_rotation_and_mirroring_are_explicitly_rejected"
+            "test_hf_loader_exif_rotation_and_mirroring_are_written_upright"
         ),
         runner="pytest",
     ),

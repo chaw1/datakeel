@@ -37,11 +37,8 @@ GUARD_MUTATIONS = (
     Mutation(
         name="ask-unconsumed-condition-guard",
         path="ask/service.py",
-        before=(
-            "    issues = [*dimensions.issues, "
-            '*(f"未理解「{item}」" for item in leftovers.conditions)]'
-        ),
-        after="    issues = [*dimensions.issues]",
+        before="    if dimensions.issues or leftovers.conditions:",
+        after="    if dimensions.issues:",
         case=_GUARD + "test_no_fragment_category_reaches_execution",
         runner="pytest",
     ),

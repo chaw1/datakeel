@@ -10,34 +10,46 @@ TRAINING_MUTATIONS = (
         name="training-coco-exif-orientation-guard-omitted",
         path="training/export_detection.py",
         before=(
-            "for ordinal, item in enumerate(selected, 1):\n            validate_orientation(item)"
+            "            paths[item.file.id] = relative\n"
+            "            write_image(item, geometry, directory / relative)"
         ),
-        after="for ordinal, item in enumerate(selected, 1):\n            pass",
+        after=(
+            "            paths[item.file.id] = relative\n"
+            '            write_image(item, geometry.model_copy(update={"orientation": 1}), '
+            "directory / relative)"
+        ),
         case=(
             "tests/training/test_export_orientation.py::"
-            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+            "test_detection_formats_write_every_rotated_or_mirrored_frame_upright"
         ),
         runner="pytest",
     ),
     Mutation(
         name="training-yolo-exif-orientation-guard-omitted",
         path="training/export_detection.py",
-        before='validate_image_extension(item, "yolo")\n        validate_orientation(item)',
-        after='validate_image_extension(item, "yolo")\n        pass',
+        before=(
+            "        paths[item.file.id] = relative\n"
+            "        write_image(item, geometry, directory / relative)"
+        ),
+        after=(
+            "        paths[item.file.id] = relative\n"
+            '        write_image(item, geometry.model_copy(update={"orientation": 1}), '
+            "directory / relative)"
+        ),
         case=(
             "tests/training/test_export_orientation.py::"
-            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+            "test_detection_formats_write_every_rotated_or_mirrored_frame_upright"
         ),
         runner="pytest",
     ),
     Mutation(
         name="training-shared-exif-orientation-guard-omitted",
         path="training/export_common.py",
-        before="if image.getexif().get(274) not in (None, 1):",
-        after="if False:",
+        before="    if geometry.orientation == 1:\n        copy_source(item, destination)\n",
+        after="    if True:\n        copy_source(item, destination)\n",
         case=(
             "tests/training/test_export_orientation.py::"
-            "test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames"
+            "test_detection_formats_write_every_rotated_or_mirrored_frame_upright"
         ),
         runner="pytest",
     ),
@@ -189,8 +201,8 @@ TRAINING_MUTATIONS = (
     Mutation(
         name="training-coco-file-name-loses-archive-root-prefix",
         path="training/export_detection.py",
-        before='relative = f"images/{split}/{filename(item)}"',
-        after='relative = f"{split}/{filename(item)}"',
+        before='relative = f"images/{split}/{image_filename(item, geometry)}"',
+        after='relative = f"{split}/{image_filename(item, geometry)}"',
         case=(
             "tests/training/test_export.py::"
             "test_coco_standard_documents_roundtrip_absolute_boxes_and_empty_images"

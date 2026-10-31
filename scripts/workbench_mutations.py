@@ -52,9 +52,9 @@ WORKBENCH_MUTATIONS = (
     Mutation(
         name="workbench-exif-coordinate-frame",
         path="api/routes/production.py",
-        before="if image.getexif().get(274) not in (None, 1):",
-        after="if False:",
-        case="tests/api/test_workbench.py::test_workbench_exif_media_and_thumbnails_use_the_same_source_pixel_frame",
+        before="        if upright is not None:",
+        after="        if False:",
+        case="tests/api/test_workbench.py::test_workbench_exif_media_and_thumbnails_use_the_same_upright_pixel_frame",
         runner="pytest",
     ),
     Mutation(
@@ -105,9 +105,9 @@ WORKBENCH_MUTATIONS = (
     ),
     Mutation(
         name="workbench-thumbnail-downsample",
-        path="api/routes/production.py",
-        before="preview.thumbnail((1024, 1024))",
-        after="pass",
+        path="storage/image_geometry.py",
+        before="            preview.thumbnail((thumbnail, thumbnail))",
+        after="            pass",
         case="tests/api/test_workbench.py::test_workbench_large_image_preview_is_downsampled_before_high_resolution_source",
         runner="pytest",
     ),
