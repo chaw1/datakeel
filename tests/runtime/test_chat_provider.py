@@ -548,7 +548,12 @@ def test_openai_when_json_output_requested_streams_and_joins_the_answer() -> Non
     )
 
     def respond(request: httpx.Request) -> httpx.Response:
-        bodies.append(json.loads(request.content))
+        body = json.loads(request.content)
+        bodies.append(body)
+        if body.get("stream") is not True:
+            message = {"role": "assistant", "content": '{"kind": "none"}'}
+            choice = {"message": message, "finish_reason": "stop"}
+            return httpx.Response(200, json={"choices": [choice], "usage": usage})
         return httpx.Response(200, headers={"content-type": "text/event-stream"}, content=stream)
 
     with (
@@ -563,8 +568,8 @@ def test_openai_when_json_output_requested_streams_and_joins_the_answer() -> Non
     ):
         result = provider.complete(_json_request())
     (body,) = bodies
-    assert body["stream"] is True
-    assert body["stream_options"] == {"include_usage": True}
+    assert body.get("stream") is True
+    assert body.get("stream_options") == {"include_usage": True}
     assert body["response_format"] == {"type": "json_object"}
     assert body["max_completion_tokens"] == 16384
     assert result.content == '{"kind": "none"}'

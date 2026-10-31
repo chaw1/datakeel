@@ -1,11 +1,12 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX4 regression anchors for the look-up-first planner: it reads only, and it stops."""
+"""FIX4 anchors: the look-up-first planner reads only and stops; planner requests stream."""
 
 from scripts.mutation_models import Mutation
 
 _EXPLORE = "tests/intents/test_fix4_explore.py::"
+_CHAT = "tests/runtime/test_chat_provider.py::"
 
 EXPLORE_MUTATIONS = (
     Mutation(
@@ -19,8 +20,8 @@ EXPLORE_MUTATIONS = (
     Mutation(
         name="fix4-explore-results-reach-the-model",
         path="intents/explore.py",
-        before="        request = _followed(request, response.content, found)",
-        after="        request = request",
+        before="        request, used = _followed(request, response, used, lookups)",
+        after="        used += 1",
         case=_EXPLORE + "test_look_ups_are_answered_and_the_plan_goes_through_the_usual_checks",
         runner="pytest",
     ),
@@ -35,9 +36,32 @@ EXPLORE_MUTATIONS = (
     Mutation(
         name="fix4-explore-stops-at-the-limit",
         path="intents/explore.py",
-        before="    for used in range(1, EXPLORE_LIMIT + 1):",
-        after="    for used in range(1, EXPLORE_LIMIT + 3):",
+        before="    while response.tool_calls and used < EXPLORE_LIMIT:",
+        after="    while response.tool_calls and used < EXPLORE_LIMIT + 2:",
         case=_EXPLORE + "test_look_ups_stop_at_the_limit_and_the_last_answer_is_read_as_the_plan",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix4-explore-calls-past-the-limit-are-not-run",
+        path="intents/explore.py",
+        before=(
+            '        found = lookups.found(look) if used <= EXPLORE_LIMIT else "No more look-ups."'
+        ),
+        after="        found = lookups.found(look)",
+        case=_EXPLORE + "test_several_look_ups_in_one_reply_count_against_the_limit",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix4-planner-json-requests-stream",
+        path="runtime/chat.py",
+        before=(
+            "        if request.json_output and isinstance(model, ChatOpenAI):\n"
+            "            return _response(_streamed(bound, messages, request))"
+        ),
+        after=(
+            "        if False:\n            return _response(_streamed(bound, messages, request))"
+        ),
+        case=_CHAT + "test_openai_when_json_output_requested_streams_and_joins_the_answer",
         runner="pytest",
     ),
 )
