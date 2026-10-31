@@ -141,10 +141,11 @@ REQUEST_MUTATIONS = (
         "intents/validate.py",
         (
             (
-                "        or unpublished_question(db, step, [item.action for item in previous], "
-                "language)\n"
+                "    asked = _question(db, step, missing, invalid, state, catalog) or "
+                "unpublished_question(\n        db, step, [item.action for item in previous], "
+                "language\n    )"
             ),
-            "",
+            "    asked = _question(db, step, missing, invalid, state, catalog)",
         ),
         _STATES,
     ),

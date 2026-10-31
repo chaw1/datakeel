@@ -137,10 +137,7 @@ OWNER_MUTATIONS = (
         "fix3-a-model-edit-keeps-the-rest",
         "intents/object_edits.py",
         (
-            (
-                '    params["model"] = '
-                '{**current.model_dump(mode="json", exclude={"revision"}), **model}'
-            ),
+            '    params["model"] = {**stored, **model, "id": current.id}',
             '    params["model"] = model',
         ),
         _EDITS,

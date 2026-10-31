@@ -180,7 +180,10 @@ PARTS_MUTATIONS = (
     Mutation(
         name="fix3-p7-idle-part-is-set-aside",
         path="intents/resolve.py",
-        before="            elif unchanged(self.db, step):",
+        before=(
+            "            elif (state := already_state(self.db, step, self.catalog, "
+            "draft.language)) is not None:"
+        ),
         after="            elif False:",
         case=_PARTS + "test_a_part_that_changes_nothing_or_matches_nothing_is_set_aside",
         runner="pytest",
