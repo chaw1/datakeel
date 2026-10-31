@@ -277,4 +277,68 @@ FIX6_MUTATIONS = (
         ("    if REQUEST.search(text):", "    if False:"),
         "reads.py::test_requests_are_never_taken_for_questions[is-it-possible]",
     ),
+    _anchor(
+        "submitted-work-is-not-taken-back",
+        "intents/preconditions.py",
+        (
+            '"revoke_assignment": ("finalized", "revocable"),',
+            '"revoke_assignment": ("finalized",),',
+        ),
+        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first[revoke-submitted]",
+    ),
+    _anchor(
+        "a-group-project-has-no-lease-to-renew",
+        "intents/preconditions.py",
+        ('"heartbeat": ("finalized", "leased"),', '"heartbeat": ("finalized",),'),
+        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first[heartbeat-group]",
+    ),
+    _anchor(
+        "nothing-free-is-not-claimed",
+        "intents/preconditions.py",
+        ('"claim_task": ("finalized", "free_task"),', '"claim_task": ("finalized",),'),
+        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first"
+        "[claim-nothing-free]",
+    ),
+    _anchor(
+        "a-free-task-can-be-claimed",
+        "intents/preconditions.py",
+        ("    if any(task.id not in holders for task in tasks):", "    if not tasks:"),
+        "checks.py::test_a_package_with_a_free_task_can_be_claimed_from",
+    ),
+    _anchor(
+        "joined-ids-are-several",
+        "intents/model_parse.py",
+        ("        value = _ids(key, given)", "        value = given"),
+        "turns.py::test_ids_copied_as_one_joined_string_are_still_several[joined]",
+    ),
+    _anchor(
+        "a-requirement-type-said-in-words-is-registered",
+        "intents/fill.py",
+        (
+            '    spoken_requirement(params)  # "分类标注" in a skill requirement is classification',
+            "    pass",
+        ),
+        "create.py::test_a_skill_requirement_said_in_words_is_the_registered_type",
+    ),
+    _anchor(
+        "the-minimum-level-has-a-label",
+        "intents/field_names.py",
+        ('    "min_level": ("最低等级", "minimum level"),\n', ""),
+        "create.py::test_a_skill_requirement_said_in_words_is_the_registered_type",
+    ),
+    _anchor(
+        "this-without-a-page-object-is-the-previous-turns",
+        "intents/fill_state.py",
+        (
+            "    this = THIS.match(value.strip()) and getattr(state.context, field, None) is None",
+            "    this = False",
+        ),
+        "turns.py::test_this_project_in_a_later_turn_is_the_one_just_changed",
+    ),
+    _anchor(
+        "nothing-matched-is-not-several",
+        "intents/fill_state.py",
+        ("    several = matched and len(choices) > 1", "    several = len(choices) > 1"),
+        "turns.py::test_a_name_that_matches_nothing_is_not_said_to_match_several",
+    ),
 )

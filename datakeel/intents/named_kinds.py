@@ -50,6 +50,17 @@ def named_skill_type(params: dict[str, JsonValue]) -> None:
         params["annotation_type"] = kinds[0]
 
 
+def spoken_requirement(params: dict[str, JsonValue]) -> None:
+    """A skill requirement's type said in words ("分类标注") is the registered type's name."""
+    need = params.get("skill_requirement")
+    said = need.get("annotation_type") if isinstance(need, dict) else None
+    if not isinstance(need, dict) or not isinstance(said, str) or said in KIND_WORDS:
+        return
+    kinds = named_kinds(said)
+    if len(kinds) == 1:
+        need["annotation_type"] = kinds[0]
+
+
 def named_model(record: dict[str, JsonValue], name: str) -> None:
     """What a model's name says outright ("rain-poly-v2") is never asked."""
     spoken, kinds = named_version(name), named_kinds(name)

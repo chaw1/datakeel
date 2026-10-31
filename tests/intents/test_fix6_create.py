@@ -146,3 +146,29 @@ def test_template_roles_are_found_by_their_chinese_names(db: Database) -> None:
     assert result.kind == "plan", result.text
     assert result.chain is not None
     assert result.chain.steps[0].params["role_id"] == "reviewer"
+
+
+def test_a_skill_requirement_said_in_words_is_the_registered_type(db: Database) -> None:
+    """A skill requirement's type said in words is the registered type, and the card names it."""
+    two_projects(db)
+    need = {"annotation_type": "分类标注", "domain": "交通", "min_level": 2}
+    result = planned(
+        db,
+        "把南区车道改成按技能派单, 要分类标注、交通领域、2 级以上",
+        [
+            steps(
+                (
+                    "configure_project",
+                    {"project_id": SOUTH, "dispatch_strategy": "skill", "skill_requirement": need},
+                )
+            )
+        ],
+        PageContext(),
+    )
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    assert result.chain.steps[0].params["skill_requirement"] == {
+        **need,
+        "annotation_type": "classification",
+    }
+    assert "最低等级" in result.text + str(result.model_dump()), result.text

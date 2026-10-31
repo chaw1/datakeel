@@ -263,9 +263,26 @@ def _tidy_step(step: dict[str, JsonValue], index: int) -> None:
     # "said" written inside params is the step's own words map, not a parameter.
     if isinstance(inner, dict) and all(isinstance(value, str) for value in inner.values()):
         step.setdefault("said", params.pop("said"))
-    for key, value in list(params.items()):
+    for key, given in list(params.items()):
         # "$ref:s1.label_set_id" is the same reference written as a string, also in a list.
+        value = _ids(key, given)
         params[key] = [_ref(item) for item in value] if isinstance(value, list) else _ref(value)
+
+
+def _ids(key: str, value: JsonValue) -> JsonValue:
+    """Several ids copied as one "a,b" string (the focus line joins them) are still several."""
+    listed = value if isinstance(value, list) else [value]
+    if not key.endswith("_ids") or not any(
+        isinstance(item, str) and "," in item and not item.startswith("$") for item in listed
+    ):
+        return value
+    split: list[JsonValue] = []
+    for item in listed:
+        if isinstance(item, str) and not item.startswith("$"):
+            split += [part.strip() for part in item.split(",") if part.strip()]
+        else:
+            split.append(item)
+    return split
 
 
 def _ref(value: JsonValue) -> JsonValue:

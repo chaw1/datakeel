@@ -207,6 +207,7 @@ ENUM_LABELS: dict[str, tuple[str, str]] = {
     "classification": ("分类", "classification"),
     "max_active_tasks": ("同时在手上限", "active task limit"),
     "skill_requirement": ("技能要求", "skill requirement"),
+    "min_level": ("最低等级", "minimum level"),
     # Keys read answers show (package acceptance, generic tool results).
     "inspections": ("抽检次数", "inspections"),
     "sampling": ("抽样方式", "sampling"),

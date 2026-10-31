@@ -28,7 +28,10 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-unknown-name-is-asked-not-guessed",
         path="intents/fill.py",
-        before="    return ask(field, step, candidates(pool), state.language, said or value)",
+        before=(
+            "    return ask(field, step, candidates(pool), state.language, said or value, "
+            "matched=bool(found))"
+        ),
         after="    return pool[0].id if pool else ask(field, step, [], state.language, value)",
         case=_EXAMPLES + "test_unknown_person_is_asked_with_candidates_and_the_reply_resumes",
         runner="pytest",

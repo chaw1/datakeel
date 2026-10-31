@@ -25,6 +25,7 @@ from datakeel.storage.production_acceptance import (
     latest_inspection,
     package_tasks,
 )
+from datakeel.storage.production_leases import LEASED_STATES
 from datakeel.storage.production_queries import (
     get_project,
     get_task,
@@ -150,6 +151,47 @@ def _not_split(db: Database, target: Target) -> Found:
     return "split", {"name": project.name}
 
 
+def _revocable(db: Database, target: Target) -> Found:
+    """Handed-in or approved work is not taken back; it is reopened instead."""
+    states = LEASED_STATES.get(target.stage, ())
+    try:
+        tasks = [get_task(db, task) for task in target.tasks]
+    except NotFoundError:
+        return None
+    late = [task for task in tasks if task.state not in states]
+    return ("not_revocable", {"count": str(len(late))}) if late else None
+
+
+def _leased(db: Database, target: Target) -> Found:
+    """Only team projects time a claim, so only they have a lease to renew."""
+    del db
+    project = target.project
+    if project is None or project.workflow_tier != "group":
+        return None
+    return "no_lease", {"name": project.name}
+
+
+def _free_task(db: Database, target: Target) -> Found:
+    """Claiming needs a task nobody holds in that stage (in the named package, if any)."""
+    project = target.project
+    if project is None or project.workflow_tier == "personal":
+        return None
+    expected = "pending" if target.stage == "annotation" else "submitted"
+    tasks = [
+        task
+        for task in list_tasks(db, project.id)
+        if task.state == expected
+        and target.package in (None, task.package_id)
+        and (target.stage != "annotation" or task.round == 0 or task.annotator_id == target.actor)
+    ]
+    holders = task_holders(db, [task.id for task in tasks], target.stage)
+    if any(task.id not in holders for task in tasks):
+        return None
+    return (
+        ("nothing_free_package", {}) if target.package else ("nothing_free", {"name": project.name})
+    )
+
+
 @dataclass(frozen=True)
 class Precondition:
     """One shared check and the actions earlier in a plan that can change what it reads."""
@@ -171,6 +213,11 @@ PRECONDITIONS: dict[str, Precondition] = {
     "saved_and_open": Precondition(_saved_and_open, frozenset({"save_revision", "reopen_task"})),
     "releasable": Precondition(_releasable, frozenset({"save_revision", "claim_task"})),
     "not_split": Precondition(_not_split),
+    "revocable": Precondition(_revocable, frozenset({"reopen_task", "review_task"})),
+    "leased": Precondition(_leased, frozenset({"upgrade_project"})),
+    "free_task": Precondition(
+        _free_task, frozenset({"revoke_assignment", "release_task", "reopen_task", "review_task"})
+    ),
 }
 
 # What each registered state-changing action needs; execution refuses the rest.
@@ -182,12 +229,12 @@ NEEDS: dict[str, tuple[str, ...]] = {
     "save_revision": ("finalized", "held"),
     "release_task": ("finalized", "releasable"),
     "split_packages": ("finalized", "not_split"),
+    "revoke_assignment": ("finalized", "revocable"),
+    "heartbeat": ("finalized", "leased"),
+    "claim_task": ("finalized", "free_task"),
     **dict.fromkeys(
         (
             "assign_tasks",
-            "claim_task",
-            "revoke_assignment",
-            "heartbeat",
             "reopen_task",
             "review_task",
             "configure_project",
@@ -260,6 +307,25 @@ REASONS: dict[str, tuple[str, str]] = {
     "split": (
         "「{name}」已经切过包了, 不能再切",
         '"{name}" is already split into packages and cannot be split again',
+    ),
+    "not_revocable": (
+        "其中 {count} 条任务已经提交或通过了, 不能收回; 要重做可以先重新打开",
+        (
+            "{count} of those tasks are already submitted or approved and cannot be taken back; "
+            "reopen them instead"
+        ),
+    ),
+    "no_lease": (
+        "「{name}」是小组档, 领到的任务不限时, 没有领取时限要续",
+        '"{name}" is a group project; claimed tasks are not timed, so there is no lease to renew',
+    ),
+    "nothing_free": (
+        "「{name}」里现在没有可领的任务 (都已经有人在做, 或者已经交了)",
+        'There is no task free to claim in "{name}" now (all are taken or handed in)',
+    ),
+    "nothing_free_package": (
+        "这个任务包里现在没有可领的任务 (都已经有人在做, 或者已经交了)",
+        "There is no task free to claim in that package now (all are taken or handed in)",
     ),
 }
 

@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+import pytest
+
 from datakeel.core.agent_models import ModelResponse
 from datakeel.core.intent_models import IntentResult, PageContext
 from datakeel.intents.planner import ModelAccess, PlannerTurn, conversation_focus, plan_turn
@@ -93,3 +95,65 @@ def test_a_name_that_is_not_a_back_reference_is_resolved_as_usual(db: Database) 
     )
     assert later.chain is not None
     assert later.chain.steps[0].params["actor"] == "wang"
+
+
+@pytest.mark.parametrize("copied", ["joined", "listed"])
+def test_ids_copied_as_one_joined_string_are_still_several(db: Database, copied: str) -> None:
+    """Ids the model copies from the focus line as one "a,b" string are still two tasks."""
+    _, _, tasks = two_projects(db)
+    turned(
+        db,
+        "c9",
+        "Hand 小李 the last two tasks of 南区车道",
+        steps(("assign_tasks", {"task_ids": tasks[4:6], "actor": "小李"})),
+    )
+    joined = ",".join(tasks[4:6])
+    later = turned(
+        db,
+        "c9",
+        "Actually, give those two to 小王 instead",
+        steps(
+            (
+                "assign_tasks",
+                {"task_ids": joined if copied == "joined" else [joined], "actor": "小王"},
+            )
+        ),
+    )
+    assert later.kind == "plan", later.text
+    assert targets(later) == tasks[4:6]
+
+
+def test_this_project_in_a_later_turn_is_the_one_just_changed(db: Database) -> None:
+    """With no project on the page, "这个项目" in a later turn is the previous turn's."""
+    north, _, _ = two_projects(db)
+    first = turned(
+        db,
+        "c10",
+        "North Crossing 每人最多同时做 3 条",
+        steps(("configure_project", {"project_id": "North Crossing", "max_active_tasks": 3})),
+    )
+    assert first.kind == "plan", first.text
+    later = turned(
+        db,
+        "c10",
+        "再把这个项目升级成团队档",
+        steps(("upgrade_project", {"project_id": "这个项目", "workflow_tier": "team"})),
+    )
+    assert later.kind == "plan", later.text
+    assert later.chain is not None
+    assert later.chain.steps[0].params["project_id"] == north.id
+
+
+def test_a_name_that_matches_nothing_is_not_said_to_match_several(db: Database) -> None:
+    """A name that matches nothing says nothing was found, then offers every choice."""
+    two_projects(db)
+    result = turned(
+        db,
+        "c11",
+        "把火星基地项目升级成团队档",
+        steps(("upgrade_project", {"project_id": "火星基地", "workflow_tier": "team"})),
+    )
+    assert result.clarification is not None, result.text
+    assert "对应多个" not in result.clarification.question
+    assert "没找到" in result.clarification.question
+    assert len(result.clarification.candidates) > 1

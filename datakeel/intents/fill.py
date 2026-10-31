@@ -42,6 +42,7 @@ from datakeel.intents.fill_state import (
 )
 from datakeel.intents.grounding import grounded, said_in
 from datakeel.intents.group_fill import numbered, own_task, selector_value
+from datakeel.intents.named_kinds import spoken_requirement
 from datakeel.intents.object_edits import (
     LIST_EDITS,
     new_object_field,
@@ -157,7 +158,7 @@ def _resolve_identity(
         # Named by nobody: the model copied it from the catalog, so ask instead of guessing.
         return ask(field, step, candidates(catalog.of(kind, parent)), state.language)
     pool = found or catalog.of(kind, parent)
-    return ask(field, step, candidates(pool), state.language, said or value)
+    return ask(field, step, candidates(pool), state.language, said or value, matched=bool(found))
 
 
 def _resolve_list(
@@ -171,7 +172,8 @@ def _resolve_list(
             continue
         found = catalog.match(kind, value)
         if len(found) != 1:
-            return ask(field, step, candidates(found or catalog.of(kind)), state.language, value)
+            pool = candidates(found or catalog.of(kind))
+            return ask(field, step, pool, state.language, value, matched=bool(found))
         resolved.append(found[0].id)
     return resolved
 
@@ -225,6 +227,7 @@ def _prepared(step: DraftStep, params: dict[str, JsonValue], names: list[str], t
         params["reason"] = text[:500]
     if "request_id" in fields:
         params.setdefault("request_id", new_id())
+    spoken_requirement(params)  # "分类标注" in a skill requirement is classification
     if step.action == "create_label_set":
         spoken = _label_names(params.get("labels") or params.get("add_labels"))
         if not isinstance(params.get("name"), str) and "label_set_id" not in params and spoken:

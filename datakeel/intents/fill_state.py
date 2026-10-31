@@ -30,14 +30,25 @@ class FillState(BoundaryModel):
 
 
 def ask(
-    field: str, step: DraftStep, choices: list[Candidate], language: str, mention: str = ""
+    field: str,
+    step: DraftStep,
+    choices: list[Candidate],
+    language: str,
+    mention: str = "",
+    *,
+    matched: bool = True,
 ) -> Clarification:
-    """Ask for one value in words, naming what was said and offering the choices."""
+    """Ask for one value in words, naming what was said and offering the choices.
+
+    ``matched`` is False when the words matched nothing and the choices are all there are,
+    so the question says nothing was found instead of "matches several".
+    """
     label = field_label(field, language)
+    several = matched and len(choices) > 1
     if language == "zh":
         question = (
             f"「{mention}」对应多个{label}, 是哪一个?"
-            if mention and len(choices) > 1
+            if mention and several
             else f"没找到叫「{mention}」的{label}, 是下面哪一个?"
             if mention and choices
             else f"没找到叫「{mention}」的{label}, 换个说法试试?"
@@ -47,7 +58,7 @@ def ask(
     else:
         question = (
             f'"{mention}" matches several; which {label}?'
-            if mention and len(choices) > 1
+            if mention and several
             else f'No {label} is called "{mention}"; is it one of these?'
             if mention and choices
             else f'No {label} is called "{mention}"; could you rephrase?'
@@ -119,6 +130,12 @@ BACK = re.compile(
     r"|^(?:it|them|that one|those|the same(?: one)?|him|her|that \w+)$",
     re.IGNORECASE,
 )
+# "这个数据集", "this project": the page's object, or the previous turn's when the page has none.
+THIS = re.compile(
+    r"^(?:这个|这|该|此)(?:项目|模型|任务|标签集|角色|技能|团队|数据集|账号|包|版本)?$"
+    r"|^this(?: (?:project|model|task|label set|role|skill|team|dataset|account|package))?$",
+    re.IGNORECASE,
+)
 
 
 def earlier_object(field: str, value: JsonValue, state: FillState) -> JsonValue:
@@ -126,7 +143,10 @@ def earlier_object(field: str, value: JsonValue, state: FillState) -> JsonValue:
     if isinstance(value, list) and len(value) == 1:
         value = value[0]
     kind = BACK_KINDS.get(field)
-    if kind is None or not isinstance(value, str) or not BACK.match(value.strip()):
+    if kind is None or not isinstance(value, str):
+        return None
+    this = THIS.match(value.strip()) and getattr(state.context, field, None) is None
+    if not (BACK.match(value.strip()) or this):
         return None
     keys = [field, *(key for key in state.focus if BACK_KINDS.get(key) == kind)]
     found = next((state.focus[key] for key in keys if key in state.focus), None)

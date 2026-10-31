@@ -15,7 +15,7 @@ from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.preconditions import NEEDS, PRECONDITIONS, REASONS
 from datakeel.intents.public_text import _FALLBACK, public, public_result
 from datakeel.storage.production_queries import get_project
-from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
+from tests.intents.fix3_support import NORTH, SOUTH, planned, steps, two_projects
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
@@ -80,11 +80,30 @@ UNMET = (
         "boss",
         ("已经切过包",),
     ),
+    (
+        "把南区车道第 3 条从小李手里收回来",
+        ("revoke_assignment", {"task_id": {"$tasks": {"project": SOUTH, "numbers": [3]}}}),
+        "boss",
+        ("已经提交", "不能收回", "重新打开"),
+    ),
+    (
+        "North Crossing 第一条帮我续一下领取时间",
+        ("heartbeat", {"task_id": {"$tasks": {"project": NORTH, "numbers": [1]}}}),
+        "wang",
+        ("小组档", "不限时"),
+    ),
+    (
+        "帮我在南区车道第 2 个包里领一条来做",
+        ("claim_task", {"project_id": SOUTH, "package_id": {"$nth": 2}}),
+        "wang",
+        ("没有可领的任务",),
+    ),
 )
 CASES = ["finalize", "accept-not-team", "accept-not-approved", "submit-unsaved", "submit-not-held"]
+LATER = ["split-again", "revoke-submitted", "heartbeat-group", "claim-nothing-free"]
 
 
-@pytest.mark.parametrize(("text", "step", "actor", "words"), UNMET, ids=[*CASES, "split-again"])
+@pytest.mark.parametrize(("text", "step", "actor", "words"), UNMET, ids=[*CASES, *LATER])
 def test_an_unmet_precondition_says_what_is_missing_and_what_first(
     db: Database, text: str, step: tuple[str, dict[str, object]], actor: str, words: tuple[str, ...]
 ) -> None:
@@ -110,6 +129,19 @@ def test_an_earlier_step_that_meets_the_need_lets_the_plan_through(db: Database)
         actor="li",
     )
     assert "不在你手上" not in result.text
+
+
+def test_a_package_with_a_free_task_can_be_claimed_from(db: Database) -> None:
+    """A package with a task nobody holds lets the claim through to a card."""
+    two_projects(db)
+    result = planned(
+        db,
+        "帮我在南区车道第 3 个包里领一条",
+        [steps(("claim_task", {"project_id": SOUTH, "package_id": {"$nth": 3}}))],
+        PageContext(),
+        actor="wang",
+    )
+    assert result.kind == "plan", result.text
 
 
 @pytest.mark.parametrize(
