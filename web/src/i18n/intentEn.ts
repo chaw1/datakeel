@@ -1,5 +1,8 @@
 export const intentEn = {
   intentPlan: "Plan from one sentence",
+  intentBeta: "Beta",
+  intentBetaHint:
+    "Beta: on new wording about eight in ten plans come out right first time. Nothing that changes data runs until you confirm it.",
   intentAnswer: "Answered by a read function",
   intentClarify: "One question first",
   intentRefuse: "Not allowed",

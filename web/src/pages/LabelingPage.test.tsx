@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import * as production from "../api/production";
@@ -106,8 +112,12 @@ it("shows the personal project's locked template version beside an upgrade", asy
 it("opens the one-sentence entry with the project the page shows", async () => {
   render(<LabelingPage params={new URLSearchParams()} />);
   const entry = await screen.findByRole("link", {
-    name: "Do it in one sentence",
+    name: "Do it in one sentence Beta",
   });
+  expect(within(entry).getByText("Beta")).toHaveAttribute(
+    "title",
+    expect.stringContaining("confirm"),
+  );
   const query = new URLSearchParams(
     entry.getAttribute("href")?.split("?")[1] ?? "",
   );

@@ -35,7 +35,10 @@ export function IntentCard({
     <div className={`intent-card intent-${intent.kind}`}>
       <span className="eyebrow">
         {t(kinds[intent.kind])}
-        {intent.parser === "model" && ` · ${t("intentByModel")}`}
+        {intent.parser === "model" && ` · ${t("intentByModel")}`}{" "}
+        <span className="badge" title={t("intentBetaHint")}>
+          {t("intentBeta")}
+        </span>
       </span>
       <p className="intent-text">{intent.text}</p>
       {intent.kind === "refuse" && !!intent.missing_scopes?.length && (

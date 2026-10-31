@@ -106,7 +106,10 @@ export function ModuleBar({
                 : {}),
             })}
           >
-            {t("wbAskAgent")}
+            {t("wbAskAgent")}{" "}
+            <span className="badge" title={t("intentBetaHint")}>
+              {t("intentBeta")}
+            </span>
           </a>
         </>
       )}

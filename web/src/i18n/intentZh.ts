@@ -1,5 +1,8 @@
 export const intentZh = {
   intentPlan: "一句话生成的计划",
+  intentBeta: "试用",
+  intentBetaHint:
+    "试用功能：没见过的说法大约八成能直接给出正确的计划。所有会改数据的动作都要你确认后才执行。",
   intentAnswer: "读函数直接回答",
   intentClarify: "先问一句",
   intentRefuse: "没有权限",

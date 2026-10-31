@@ -75,9 +75,9 @@ Deletion hard-deletes the entry and its archived source entries recursively. Aud
 
 ## One-sentence planning / 一句话做事
 
-Messages from the Web dialog carry page context and first go to the intent planner, which emits an `intent` event (plan, answer, clarify or refuse) instead of a free reply when it recognises a request. See [One sentence to plan](ONE_SENTENCE.md).
+Messages from the Web dialog carry page context and first go to the intent planner, which emits an `intent` event (plan, answer, clarify or refuse) instead of a free reply when it recognises a request. This is a beta feature: nothing that changes data runs before the person confirms. See [One sentence to plan](ONE_SENTENCE.md).
 
-Web 对话的消息带页面上下文，先交给一句话规划器；认出请求时输出一个 `intent` 事件（计划、回答、追问或拒绝），不再走自由对话。详见[一句话做事](ONE_SENTENCE.zh.md)。
+Web 对话的消息带页面上下文，先交给一句话规划器；认出请求时输出一个 `intent` 事件（计划、回答、追问或拒绝），不再走自由对话。这是试用功能，会改数据的动作都要人确认后才执行。详见[一句话做事](ONE_SENTENCE.zh.md)。
 
 ## HTTP and events / 接口与事件
 
