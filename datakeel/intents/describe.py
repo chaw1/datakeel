@@ -10,6 +10,7 @@ added and removed with the annotations that change.
 """
 
 import json
+from collections.abc import Callable
 
 from pydantic import BaseModel, JsonValue
 from pydantic import ValidationError as ModelValidationError
@@ -20,8 +21,9 @@ from datakeel.core.intent_models import ChainStep, StepDetail
 from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog
 from datakeel.intents.edits import label_diff
 from datakeel.intents.plain_words import enum_label
+from datakeel.intents.scope_words import scope_words
 from datakeel.intents.signatures import choice_fields
-from datakeel.intents.wording import FIELD_LABELS, field_label
+from datakeel.intents.wording import FIELD_LABELS, action_title, field_label
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import list_users
@@ -128,9 +130,27 @@ def _labels(value: list[JsonValue], language: str) -> str:
     return _listing(names, language)
 
 
+def _actions(value: list[JsonValue], language: str) -> str:
+    return _listing([action_title(str(item), language) for item in value], language)
+
+
+def _scopes(value: list[JsonValue], language: str) -> str:
+    return scope_words([str(item) for item in value], language)
+
+
+# Lists whose items are names of labels, actions or permission scopes, said in words.
+LIST_WORDS: dict[str, Callable[[list[JsonValue], str], str]] = {
+    "labels": _labels,
+    "add_labels": _labels,
+    "allowed_actions": _actions,
+    "scopes": _scopes,
+}
+
+
 def _plain(value: JsonValue, language: str, field: str = "") -> str:
-    if field in {"labels", "add_labels"} and isinstance(value, list):
-        return _labels(value, language)
+    words = LIST_WORDS.get(field)
+    if words is not None and isinstance(value, list):
+        return words(value, language)
     if isinstance(value, str) and field in choice_fields():
         return enum_label(value, language)
     if isinstance(value, str) and field in REVISIONS:
@@ -176,7 +196,7 @@ def _value(
         return _listing([_name(LIST_KINDS[field], item, catalog) for item in value], language)
     if field == "selection" and isinstance(value, dict):
         return _selection(db, value, language)
-    nested = isinstance(value, (dict, list)) and field not in {"labels", "add_labels"}
+    nested = isinstance(value, (dict, list)) and field not in LIST_WORDS
     return _shorten(_nested(value, catalog, language)) if nested else _plain(value, language, field)
 
 

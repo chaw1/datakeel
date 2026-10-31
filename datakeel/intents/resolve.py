@@ -21,7 +21,7 @@ from datakeel.core.intent_models import (
 from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
-from datakeel.intents.duplicates import duplicate_question, existing
+from datakeel.intents.duplicates import duplicate_question, taken
 from datakeel.intents.fill import FillState, fill_defaults, fill_steps, known_fields
 from datakeel.intents.fill_state import CONTAINER_KINDS, named_in_words
 from datakeel.intents.impossible import idle_reason, impossible
@@ -264,9 +264,9 @@ class Resolver:
                 missing_scopes=scopes,
             )
         for step in draft.steps:
-            taken = existing(step, self.catalog)
-            if taken is not None:
-                asked = duplicate_question(step, taken, draft.language)
+            found = taken(self.db, step, self.catalog)
+            if found is not None:
+                asked = duplicate_question(step, found, draft.language)
                 return self._clarify(draft, asked, text)
         return None
 

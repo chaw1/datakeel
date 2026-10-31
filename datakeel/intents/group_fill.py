@@ -11,7 +11,7 @@ from collections import Counter
 
 from pydantic import JsonValue
 
-from datakeel.core.intent_models import Clarification
+from datakeel.core.intent_models import Candidate, Clarification
 from datakeel.intents.catalog import SELF_WORDS, EntityCatalog, candidates
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.fill_state import (
@@ -25,19 +25,24 @@ from datakeel.intents.fill_state import (
 from datakeel.intents.selectors import file_selection, ordinal_question, pick
 from datakeel.intents.task_scope import (
     CONDITIONS,
+    SELECTOR_KEYS,
     is_nobody,
     place_number,
     select_tasks,
     task_number,
 )
 from datakeel.intents.verify import says_whole
-from datakeel.intents.wording import excluded_text, nothing_to_change, whole_tasks_question
+from datakeel.intents.wording import (
+    EXCLUSION_REASONS,
+    nothing_to_change,
+    whole_tasks_question,
+)
 from datakeel.storage.database import Database
 from datakeel.storage.intent_reads import held_projects, task_snapshots
 
 TASK_FIELDS = frozenset({"task_id", "task_ids"})
 # Conditions that count within one project's list, so they never span projects.
-ORDERED = ("numbers", "positions", "first", "package")
+ORDERED = ("numbers", "positions", "first", "last", "package")
 
 
 def _holder(
@@ -137,7 +142,10 @@ def _tasks(
             else _choose_project(where, current, state, catalog)
         )
     project, holder = where
-    described = any(key in spec for key in (*CONDITIONS, "numbers", "positions", "first"))
+    stage = current.params.get("stage")
+    stage = stage if isinstance(stage, str) and stage else "annotation"
+    # Assigning for review only takes tasks waiting for review, so the stage is the condition.
+    described = stage == "review" or any(key in spec for key in (*CONDITIONS, *ORDERED))
     if not described and not says_whole(state.text):
         # A bare "the tasks" is never widened to every task in the project.
         return Clarification(
@@ -148,14 +156,13 @@ def _tasks(
     package = nth_package(spec["package"], project, state, catalog) if "package" in spec else None
     if isinstance(package, Clarification):
         return package
-    stage = current.params.get("stage")
     scope = select_tasks(
         task_snapshots(db, project),
         spec,
         action=current.action,
         speaker=state.actor,
         found=(holder, package),
-        stage=stage if isinstance(stage, str) and stage else "annotation",
+        stage=stage,
     )
     if scope.missing:
         return ordinal_question("task", state.language)
@@ -212,10 +219,13 @@ def _across(
 def numbered(field: str, value: JsonValue) -> dict[str, JsonValue] | None:
     """Task numbers written as task ids ("#8", "第 8 个") become a numbers selector.
 
-    A selector the model wrapped in a list (``[{"$tasks": {...}}]``) is the selector itself.
+    A selector the model wrapped in a list (``[{"$tasks": {...}}]``) is the selector itself,
+    and a dict of only group conditions is a group whose ``$tasks`` wrapper was left out.
     """
     if field not in TASK_FIELDS:
         return None
+    if isinstance(value, dict) and value and set(value) <= SELECTOR_KEYS:
+        return {"$tasks": value}
     if isinstance(value, list) and len(value) == 1 and isinstance(value[0], dict):
         inner = value[0]
         return inner if "$tasks" in inner else None
@@ -225,6 +235,33 @@ def numbered(field: str, value: JsonValue) -> dict[str, JsonValue] | None:
         return None
     listed: list[JsonValue] = [number for number in found if number is not None]
     return {"$tasks": {"numbers": listed}}
+
+
+def _task_slot(
+    db: Database,
+    slot: tuple[str, dict[str, JsonValue]],
+    current: DraftStep,
+    state: FillState,
+    catalog: EntityCatalog,
+    excluded: Counter[str],
+) -> JsonValue | Clarification:
+    field, value = slot
+    raw = value["$tasks"]
+    spec = raw if isinstance(raw, dict) else {}
+    # A step that runs once per task may span projects; one list of tasks may not.
+    found = _tasks(db, spec, current, state, catalog, fan_out=not field.endswith("_ids"))
+    if isinstance(found, Clarification):
+        return found
+    ids, left_out = found
+    excluded.update(left_out)
+    if not ids:
+        holder = spec.get("holder")
+        named = "" if is_nobody(holder, {}) else str(holder or "")
+        if left_out:
+            return include_question(left_out, named, current.action, state.language)
+        return {"$empty": nothing_to_change("tasks", named, state.language)}
+    identifiers: list[JsonValue] = list(ids)
+    return identifiers if field.endswith("_ids") else {"$each": identifiers}
 
 
 def selector_value(
@@ -241,21 +278,7 @@ def selector_value(
     """
     field, value = slot
     if "$tasks" in value:
-        raw = value["$tasks"]
-        spec = raw if isinstance(raw, dict) else {}
-        # A step that runs once per task may span projects; one list of tasks may not.
-        found = _tasks(db, spec, current, state, catalog, fan_out=not field.endswith("_ids"))
-        if isinstance(found, Clarification):
-            return found
-        ids, left_out = found
-        excluded.update(left_out)
-        if not ids:
-            holder = raw.get("holder") if isinstance(raw, dict) else None
-            named = "" if is_nobody(holder, {}) else str(holder or "")
-            sentence = nothing_to_change("tasks", named, state.language)
-            return {"$empty": sentence + excluded_text(left_out, state.language)}
-        identifiers: list[JsonValue] = list(ids)
-        return identifiers if field.endswith("_ids") else {"$each": identifiers}
+        return _task_slot(db, slot, current, state, catalog, excluded)
     if "$nth" in value:
         return nth_package(value, _project({}, state, catalog), state, catalog)
     spec = value["$files"]
@@ -272,3 +295,28 @@ def selector_value(
     if selection is not None and selection.get("$empty"):
         return {"$empty": nothing_to_change("files", "", state.language)}
     return selection if selection is not None else ask(field, current, [], state.language)
+
+
+def include_question(
+    left_out: dict[str, int], holder: str, action: str, language: str
+) -> Clarification:
+    """Every task the words describe is protected: ask to include them, never answer "none"."""
+    total = sum(left_out.values())
+    zh = language == "zh"
+    parts = [f"{count} 条{EXCLUSION_REASONS[key][0]}" for key, count in left_out.items()]
+    reasons = [f"{count} {EXCLUSION_REASONS[key][1]}" for key, count in left_out.items()]
+    if zh:
+        question = (
+            f"{holder}符合的 {total} 条任务里 {', '.join(parts)}, 默认不动。要连这些也算上吗?"
+        )
+    else:
+        whose = f" of {holder}" if holder else ""
+        question = (
+            f"All {total} matching tasks{whose} are left out by default "
+            f"({'; '.join(reasons)}). Include them too?"
+        )
+    label = "要, 这些也算上" if zh else "Yes, include them"
+    include = Candidate(id=",".join(sorted(left_out)), label=label, kind="include")
+    return Clarification(
+        question=question, action=action, fields=["$tasks.include"], candidates=[include]
+    )

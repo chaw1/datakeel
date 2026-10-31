@@ -19,7 +19,7 @@ from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog, can
 from datakeel.intents.derived import derivable, derive, underivable
 from datakeel.intents.describe import describe_step
 from datakeel.intents.drafts import DraftStep
-from datakeel.intents.duplicates import duplicate_question, existing
+from datakeel.intents.duplicates import duplicate_question, model_question, taken
 from datakeel.intents.estimates import estimate_step
 from datakeel.intents.fill import FillState
 from datakeel.intents.fill_state import project_in_scope
@@ -330,10 +330,10 @@ def check_step(
     # task or project is asked for first.
     if not granted and (project_known or not missing):
         return StepCheck(missing_scopes=[POLICIES[step.action][0]])
-    taken = existing(step, catalog)
-    if taken is not None:
-        return StepCheck(clarification=duplicate_question(step, taken, language))
-    asked = _question(step, missing, invalid, state, catalog)
+    found = taken(db, step, catalog)
+    if found is not None:
+        return StepCheck(clarification=duplicate_question(step, found, language))
+    asked = _question(step, missing, invalid, state, catalog) or model_question(db, step, language)
     if asked is not None:
         return StepCheck(clarification=asked)
     return _card(db, step, state, catalog, previous)

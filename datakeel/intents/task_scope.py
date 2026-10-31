@@ -4,8 +4,9 @@
 """Query the tasks a sentence describes first, then plan exactly those.
 
 ``{"$tasks": {...}}`` describes a group the way people say it: whose tasks, untouched or
-not, reworked more than N rounds, in which package, the first N, or the numbers the task
-list shows ("#8", "第 8 个"). The group is read from the project before any plan is made.
+not, reworked more than N rounds, in which package, the first or last N, or the numbers the
+task list shows ("#8", "第 8 个"). The group is read from the project before any plan is made.
+A review-stage assignment only ever takes tasks that wait for review.
 
 Writes on a described group leave out, by default, tasks someone else holds and tasks with
 saved human annotation: the words must ask for them ("已经标了的也收", a named holder, a
@@ -29,6 +30,11 @@ PROTECTIONS = {
 }
 CONDITIONS = ("holder", "unassigned", "untouched", "min_rework", "min_round", "package", "state")
 OPEN_STATES = frozenset({"pending", "in_progress"})
+REVIEW_STATES = frozenset({"submitted", "in_review"})
+# Keys a task group may carry; a bare dict of only these is a group the model left unwrapped.
+SELECTOR_KEYS = frozenset(
+    {*CONDITIONS, "numbers", "positions", "first", "last", "project", "project_id", "include"}
+)
 NOBODY = frozenset(
     {"nobody", "none", "unassigned", "no one", "没人", "无人", "没有人", "未分配", "没人领"}
 )
@@ -107,7 +113,7 @@ def is_nobody(holder: JsonValue, spec: dict[str, JsonValue]) -> bool:
 def _applies(task: TaskSnapshot, action: str, speaker: str, stage: str) -> bool:
     """Tasks the action can act on at all; anything else is not part of the group."""
     if action == "assign_tasks":
-        return task.state in OPEN_STATES
+        return task.state in (REVIEW_STATES if stage == "review" else OPEN_STATES)
     if action in {"revoke_assignment", "release_task"}:
         held = task.holder is not None and task.stage == stage
         return held and (action != "release_task" or task.holder == speaker)
@@ -151,7 +157,10 @@ def _matches(
 def _unlocked(spec: dict[str, JsonValue], holder: str | None) -> set[str]:
     """Protections the words lift: a named holder, a rework count, or an explicit include."""
     raw = spec.get("include")
-    listed: list[JsonValue] = raw if isinstance(raw, list) else []
+    # A picked "include them too" answer arrives as one comma-joined string.
+    listed: list[JsonValue] = (
+        raw if isinstance(raw, list) else list(raw.split(",")) if isinstance(raw, str) else []
+    )
     unlocked: set[str] = {item for item in listed if isinstance(item, str)} & INCLUDES
     if holder is not None or _rounds(spec):
         unlocked.add("held")
@@ -160,22 +169,30 @@ def _unlocked(spec: dict[str, JsonValue], holder: str | None) -> set[str]:
     return unlocked
 
 
-def _protection(task: TaskSnapshot, guarded: set[str]) -> str | None:
-    if task.holder is not None and "held" in guarded:
+def _protection(task: TaskSnapshot, guarded: set[str], stage: str) -> str | None:
+    # For review only a reviewer's hold counts: the annotator of a submitted task is done.
+    held = task.holder is not None and stage in {"annotation", task.stage}
+    if held and "held" in guarded:
         return "held"
     if task.annotated and "annotated" in guarded:
         return "annotated"
     return None
 
 
-def _named(spec: dict[str, JsonValue]) -> list[int] | None:
-    """Numbers, or "the first N" said of the whole list, which names the list's first N."""
+def _count(spec: dict[str, JsonValue], key: str) -> int:
+    value = spec.get(key)
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 0
+
+
+def _named(spec: dict[str, JsonValue], total: int) -> list[int] | None:
+    """Numbers, or the first / last N said of the whole list, which name those places."""
     named = numbers(spec)
-    first = spec.get("first")
-    plain = not any(key in spec for key in CONDITIONS)
-    if named is None and plain and isinstance(first, int) and not isinstance(first, bool):
-        return list(range(1, first + 1)) if first > 0 else None
-    return named
+    if named is not None or any(key in spec for key in CONDITIONS):
+        return named
+    first, last = _count(spec, "first"), _count(spec, "last")
+    if first:
+        return list(range(1, first + 1))
+    return list(range(max(total - last, 0) + 1, total + 1)) if last else None
 
 
 def select_tasks(
@@ -191,7 +208,7 @@ def select_tasks(
 
     ``stage`` is the step's own: "his review tasks" are the ones he holds for review.
     """
-    named = _named(spec)
+    named = _named(spec, len(tasks))
     if named is not None:
         listed = {task.number: task for task in tasks}
         if any(number not in listed for number in named):
@@ -209,13 +226,11 @@ def select_tasks(
         guarded.discard("annotated")  # a task in review is annotated by definition
     kept: list[TaskSnapshot] = []
     for task in group:
-        reason = _protection(task, guarded)
+        reason = _protection(task, guarded, stage)
         if reason is None:
             kept.append(task)
         else:
             excluded[reason] += 1
-    group = kept
-    first = spec.get("first")
-    if isinstance(first, int) and not isinstance(first, bool) and first > 0:
-        group = group[:first]
+    first, last = _count(spec, "first"), _count(spec, "last")
+    group = kept[:first] if first else kept[-last:] if last else kept
     return TaskScope(ids=[task.id for task in group], excluded=dict(excluded))

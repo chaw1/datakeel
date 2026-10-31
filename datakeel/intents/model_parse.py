@@ -54,7 +54,9 @@ INSTRUCTIONS = (
     "For every identity value give the person's own words in the step's \"said\" map, "
     'copied exactly from the request, e.g. "said": {"dataset_id": "street scenes"}; the '
     "catalog may hold a Chinese name for an English mention or the reverse, so map by "
-    "meaning. 'I/me/my/我/我的' is the speaker (Speaker id below). A named object wins "
+    "meaning. 'I/me/my/我/我的' is the speaker (Speaker id below); a question about their "
+    "own work (还剩几个, 被退回几次) is a project read like annotator_workload or "
+    "rework_rate, not ask_data. A named object wins "
     "over the page context. Leave out values read from state: a review's revision_id, a "
     "label set version (最新版/latest too). "
     "Tasks are never listed by id. Describe the tasks the person means as "
@@ -63,7 +65,8 @@ INSTRUCTIONS = (
     "的), min_rework (at least N rework rounds; 返工超过 1 轮 = 2), project (its name, "
     "only if said), package (its name as said or "
     '{"$nth": 2}), numbers (the numbers the task list shows: "#8", "第 8 个", "task 8" -> '
-    '[8, ...]), first (only the first N of the group, 前 N 个), include ("held" and/or '
+    "[8, ...]), first/last (only the first or last N of the group, 前/最后 N 个), "
+    'include ("held" and/or '
     '"annotated" only when the person explicitly asks to also take tasks someone else '
     "holds or tasks already annotated, e.g. 已经标了的也收). A $tasks group also fills a "
     "single task_id: the step then runs once per task. The system reads the group "
@@ -71,8 +74,8 @@ INSTRUCTIONS = (
     "with saved annotation. The task on the page is task_id from the page context. Giving "
     "tasks someone holds to another person is revoke_assignment then assign_tasks with the "
     "same $tasks. A reviewer approving or sending back (打回/驳回) a task under review uses "
-    "review_task with decision approve|rework (revision_id may be left out: the latest is "
-    "used); reopen_task is a manager reopening a finished task. Annotators save, submit, "
+    "review_task with decision approve|rework; reopen_task is a manager reopening a "
+    "finished task. Annotators save, submit, "
     "claim or release (放回) their own tasks. The 2nd package of the page project is "
     '{"$nth": 2} as package_id. A subset of files is never the whole dataset: the '
     'selected files are {"$files": {"kind": "selected"}}, near-duplicate copies are '

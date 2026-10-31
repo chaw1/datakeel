@@ -142,7 +142,7 @@ def test_saved_annotation_is_protected_unless_the_words_include_it(db: Database)
     held = {"$tasks": {"holder": "小李"}}
     plain = step("revoke_assignment", {"task_id": held})
     kept, _ = planned(db, "把小李手上的任务收回来", [plain], page, actor="boss")
-    assert kept.kind == "answer"
+    assert kept.kind == "clarify"
     assert "已有人工标注" in kept.text
     included = {"$tasks": {"holder": "小李", "include": ["annotated"]}}
     taken, _ = planned(
