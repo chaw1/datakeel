@@ -12,6 +12,7 @@ from collections import Counter
 from pydantic import JsonValue
 
 from datakeel.core.intent_models import Clarification, PageContext
+from datakeel.intents import selectors
 from datakeel.intents.catalog import SELF_WORDS, EntityCatalog, candidates
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.exclusions import excluded_text, include_question
@@ -23,6 +24,7 @@ from datakeel.intents.fill_state import (
     named_in_words,
     project_in_scope,
 )
+from datakeel.intents.segments import later_segment, once
 from datakeel.intents.selectors import file_selection, named_files, ordinal_question, pick
 from datakeel.intents.singular import says_one, which_task
 from datakeel.intents.step_values import page_package
@@ -37,10 +39,7 @@ from datakeel.intents.task_scope import (
     task_number,
 )
 from datakeel.intents.verify import says_whole
-from datakeel.intents.wording import (
-    nothing_to_change,
-    whole_tasks_question,
-)
+from datakeel.intents.wording import nothing_to_change, whole_tasks_question
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import list_users
 from datakeel.storage.intent_reads import TaskSnapshot, held_projects, task_snapshots
@@ -181,6 +180,7 @@ def _tasks(
         else task
         for task in task_snapshots(db, project)
     ]
+    snapshots = later_segment(spec, snapshots, state)  # "接下来两条": after earlier steps'
     return _in_stages(snapshots, spec, current, state, (holder, package))
 
 
@@ -324,7 +324,8 @@ def _task_slot(
     raw = value["$tasks"]
     spec = raw if isinstance(raw, dict) else {}
     # A step that runs once per task may span projects; one list of tasks may not.
-    found = _tasks(db, spec, current, state, catalog, fan_out=not field.endswith("_ids"))
+    fan_out = not field.endswith("_ids")
+    found = once(spec, state, lambda: _tasks(db, spec, current, state, catalog, fan_out=fan_out))
     if isinstance(found, Clarification):
         return found
     ids, left_out = found
@@ -376,7 +377,8 @@ def selector_value(
         list(state.context.selected_ids) if paged else [],
     )
     if selection is not None and selection.get("$empty"):
-        return {"$empty": nothing_to_change("files", "", state.language)}
+        pending = selection.get("$pending") and selectors.still_computing(state.language)
+        return {"$empty": pending or nothing_to_change("files", "", state.language)}
     return selection if selection is not None else ask(field, current, [], state.language)
 
 

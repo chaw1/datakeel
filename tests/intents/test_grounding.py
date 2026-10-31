@@ -35,7 +35,7 @@ def test_unnamed_single_project_copied_by_the_model_is_asked(db: Database) -> No
 
 def test_project_from_the_page_or_the_words_is_accepted(db: Database) -> None:
     """The same plan is accepted when the page shows that project or the sentence names it."""
-    project, _ = team(db)
+    project, _ = team(db, split=False)  # FIX6: only a project not split yet can be split
     on_page = model_plan(
         db, "每包 20 张切包", _split(project.id), PageContext(project_id=project.id)
     )

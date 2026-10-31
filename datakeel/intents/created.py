@@ -8,11 +8,14 @@ It does not exist yet, so it is never looked up; its name stands for the id the 
 gives it, and the steps run in order.
 """
 
+from collections.abc import Iterable
+
 from pydantic import JsonValue
 
 from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.duplicates import CREATES
+from datakeel.intents.fill_state import BACK
 
 # kind -> every name and id said for an object created earlier in the plan -> its id
 type Created = dict[str, dict[str, str]]
@@ -20,14 +23,25 @@ type Created = dict[str, dict[str, str]]
 
 def remember(created: Created, step: DraftStep, field: str | None) -> None:
     """Record the object a filled step creates under its id and the names it was given."""
+    model = step.params.get("model")
+    if step.action == "register_model" and isinstance(model, dict):
+        # A model registered earlier in the plan: "注册 X 再用它预标注".
+        _known(created, "model", model.get("id"), (model.get("name"),))
+        return
     operation = step.params.get("operation")
     entry = CREATES.get((step.action, operation if isinstance(operation, str) else None))
     identity = step.params.get(field) if field else None
     if entry is None or not isinstance(identity, str):
         return
     kind, naming = entry
+    _known(created, kind, identity, (step.params.get(key) for key in (*naming, "display_name")))
+
+
+def _known(created: Created, kind: str, identity: JsonValue, names: Iterable[JsonValue]) -> None:
+    if not isinstance(identity, str):
+        return
     known = created.setdefault(kind, {})
-    for name in (identity, *(step.params.get(key) for key in (*naming, "display_name"))):
+    for name in (identity, *names):
         if isinstance(name, str) and name.strip():
             known[name.strip().casefold()] = identity
 
@@ -58,7 +72,12 @@ def freed(step: DraftStep) -> dict[str, str]:
 
 
 def _found(known: dict[str, str], item: JsonValue) -> str | None:
-    return known.get(item.strip().casefold()) if isinstance(item, str) else None
+    if not isinstance(item, str):
+        return None
+    made = set(known.values())
+    if BACK.match(item.strip()) and len(made) == 1:
+        return made.pop()  # "再用它预标注": the one object of that kind made earlier
+    return known.get(item.strip().casefold())
 
 
 def earlier(field: str, value: JsonValue, created: Created) -> tuple[JsonValue, JsonValue]:

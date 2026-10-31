@@ -17,7 +17,7 @@ from datakeel.core.agent_models import ModelRequest, ModelResponse
 from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import Clarification, IntentResult, PageContext, ParserKind
 from datakeel.core.models import BoundaryModel
-from datakeel.intents.catalog import EntityCatalog, build_catalog
+from datakeel.intents.catalog import FIELD_KINDS, EntityCatalog, build_catalog
 from datakeel.intents.derived import model_record
 from datakeel.intents.drafts import DraftStep, IntentDraft, language_of
 from datakeel.intents.explore import Lookups, explore_request, explored
@@ -31,6 +31,7 @@ from datakeel.intents.model_parse import (
 from datakeel.intents.outcomes import PlannerFailure, call_model, failed, no_fit
 from datakeel.intents.partial import with_skipped
 from datakeel.intents.public_text import public_result
+from datakeel.intents.readonly import read_only
 from datakeel.intents.recipes import match_recipe, recipe_covers
 from datakeel.intents.resolve import Resolver, page_state
 from datakeel.intents.rules import full_registry, is_question, rank
@@ -77,11 +78,15 @@ def conversation_focus(db: Database, conversation_id: str | None) -> dict[str, s
     focus: dict[str, str] = {}
     chains = list_chains(db, conversation_id) if conversation_id else []
     for step in chains[-1].steps if chains else []:
-        for source in (step.params, step.outputs):
-            for key in CONTAINER_OUTPUTS:
+        for source in (step.params, step.outputs, *step.items):
+            for key in {*CONTAINER_OUTPUTS, *FIELD_KINDS, "task_ids"}:
                 value = source.get(key)
-                if isinstance(value, str):
-                    focus[key] = value
+                listed = value if isinstance(value, list) else [value]
+                named = [item for item in listed if isinstance(item, str)]
+                if named:
+                    focus[key] = ",".join(named)
+    if "task_id" in focus:
+        focus.setdefault("task_ids", focus["task_id"])
     return focus
 
 
@@ -214,7 +219,7 @@ def _model_draft(
     draft, content = _parsed(complete, request, response, language)
     draft, content = _repaired(turn, draft, catalog, complete, (request, content))
     # A "none" naming the one registered action that does it is checked as that action.
-    draft = fitted(draft)
+    draft = read_only(fitted(draft, ranked), turn.text, ranked)  # "定稿了吗?" is a read
     state = page_state(turn.context, turn.focus, turn.actor, draft.language, words)
     problems = draft_problems(db, draft, state, catalog)
     if not problems:

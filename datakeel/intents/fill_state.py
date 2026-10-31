@@ -3,11 +3,13 @@
 
 """What every step is filled from (page, previous turn, speaker) and how a value is asked."""
 
-from pydantic import Field
+import re
+
+from pydantic import Field, JsonValue
 
 from datakeel.core.intent_models import Candidate, Clarification, PageContext
 from datakeel.core.models import BoundaryModel
-from datakeel.intents.catalog import EntityCatalog
+from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.wording import field_label
 
@@ -22,6 +24,9 @@ class FillState(BoundaryModel):
     text: str = ""
     # task id -> stage of the hold an earlier step of the same plan takes back
     freed: dict[str, str] = Field(default_factory=dict[str, str])
+    # task groups earlier steps resolved (by their words), and tasks they took by place
+    chosen: dict[str, list[str]] = Field(default_factory=dict[str, list[str]])
+    taken: list[str] = Field(default_factory=list[str])
 
 
 def ask(
@@ -104,3 +109,30 @@ def context_value(field: str, state: FillState, catalog: EntityCatalog) -> str |
         project = catalog.get("project", context.project_id)
         value = project.parent if project else None
     return value or state.focus.get(field)
+
+
+BACK_KINDS = {**FIELD_KINDS, **LIST_KINDS, "task_ids": "task"}
+# "刚才那个", "上一轮那几条", "it", "the same one": an object of the previous turn.
+BACK = re.compile(
+    r"^(?:刚才|刚刚|上一轮|上次|前面|上面)?(?:的)?(?:那个|那位|那条|那几条|那两条|那些|它|他|她|它们|他们)"
+    r"(?:人|项目|模型|任务|标签集|角色|技能|团队|数据集|账号|包)?$"
+    r"|^(?:it|them|that one|those|the same(?: one)?|him|her|that \w+)$",
+    re.IGNORECASE,
+)
+
+
+def earlier_object(field: str, value: JsonValue, state: FillState) -> JsonValue:
+    """The previous turn's object a back reference names; None when it names none."""
+    if isinstance(value, list) and len(value) == 1:
+        value = value[0]
+    kind = BACK_KINDS.get(field)
+    if kind is None or not isinstance(value, str) or not BACK.match(value.strip()):
+        return None
+    keys = [field, *(key for key in state.focus if BACK_KINDS.get(key) == kind)]
+    found = next((state.focus[key] for key in keys if key in state.focus), None)
+    listed: list[JsonValue] = [item for item in (found or "").split(",") if item]
+    if not listed:
+        return None
+    if field.endswith("_ids"):
+        return listed
+    return {"$each": listed} if len(listed) > 1 and field == "task_id" else listed[0]

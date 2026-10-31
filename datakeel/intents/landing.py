@@ -11,9 +11,15 @@ becomes a question with choices. Only when no registered action does it does the
 that the feature is missing, with close things the platform can do.
 """
 
+from collections.abc import Sequence
+
 from datakeel.intents.drafts import DraftStep, IntentDraft
-from datakeel.intents.rules import full_registry
+from datakeel.intents.rules import RankedEntry, full_registry
 from datakeel.ontology.functions import PARAMETER_MODELS
+
+# The rules' own reading of the words: a clear first place among registered actions.
+CLEAR_SCORE = 0.7
+CLEAR_MARGIN = 0.5
 
 
 def _registered() -> set[str]:
@@ -21,8 +27,22 @@ def _registered() -> set[str]:
     return {entry.id for entry in [*registry.actions, *registry.functions]}
 
 
-def fitting_action(draft: IntentDraft) -> str:
-    """The registered action the words fit, when the model said nothing fits; else ""."""
+def _ruled(draft: IntentDraft, ranked: Sequence[RankedEntry]) -> str:
+    """The rules' clear first choice, when the model also named it as close; else ""."""
+    if not ranked or ranked[0].score < CLEAR_SCORE:
+        return ""
+    second = ranked[1].score if len(ranked) > 1 else 0.0
+    top = ranked[0].name
+    return top if ranked[0].score - second >= CLEAR_MARGIN and top in draft.related else ""
+
+
+def fitting_action(draft: IntentDraft, ranked: Sequence[RankedEntry] = ()) -> str:
+    """The registered action the words fit, when the model said nothing fits; else "".
+
+    Not only the model decides: when the rules read the words as one registered action and
+    the model names it as close, the object being missing or unclear is a question, not a
+    missing feature.
+    """
     if draft.kind != "none" or draft.question:
         return ""
     names = _registered()
@@ -30,12 +50,14 @@ def fitting_action(draft: IntentDraft) -> str:
         return draft.fits
     chosen = [name for name in dict.fromkeys(draft.choose) if name in names]
     # One choice is no choice: the words fit that action.
-    return chosen[0] if len(chosen) == 1 else ""
+    if len(chosen) == 1:
+        return chosen[0]
+    return _ruled(draft, ranked) if not chosen else ""
 
 
-def fitted(draft: IntentDraft) -> IntentDraft:
+def fitted(draft: IntentDraft, ranked: Sequence[RankedEntry] = ()) -> IntentDraft:
     """The draft as a plan (or a read) of the action the words fit; unchanged otherwise."""
-    action = fitting_action(draft)
+    action = fitting_action(draft, ranked)
     if not action:
         return draft
     # Values the model gave for that action are kept; whatever is missing is asked.

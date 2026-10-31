@@ -15,7 +15,7 @@ from datakeel.actions.registry import POLICIES
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import Candidate, ChainStep, Clarification
 from datakeel.core.models import BoundaryModel
-from datakeel.intents.catalog import EntityCatalog
+from datakeel.intents.catalog import EntityCatalog, candidates
 from datakeel.intents.choices import field_kind, object_choices
 from datakeel.intents.derived import derivable, derive, underivable
 from datakeel.intents.describe import describe_step
@@ -27,10 +27,12 @@ from datakeel.intents.duplicates import (
 )
 from datakeel.intents.estimates import estimate_step
 from datakeel.intents.fill import FillState
-from datakeel.intents.fill_state import project_in_scope
+from datakeel.intents.fill_state import in_scope, project_in_scope
 from datakeel.intents.object_edits import operation_needs
 from datakeel.intents.plain_words import enum_label
+from datakeel.intents.preconditions import unmet
 from datakeel.intents.public_text import allowed_words, label_names, public_details
+from datakeel.intents.selectors import file_choices
 from datakeel.intents.signatures import choice_values
 from datakeel.intents.verify import says_whole
 from datakeel.intents.what_changes import edit_question, nothing_to_edit
@@ -64,6 +66,7 @@ class StepCheck(BoundaryModel):
     clarification: Clarification | None = None
     missing_scopes: list[str] = Field(default_factory=list[str])
     error: str | None = None
+    unmet: str | None = None  # what the state lacks, said before any value is asked
 
 
 def required_fields(action: str) -> set[str]:
@@ -265,6 +268,9 @@ def _missing(
             Candidate(id=value, label=enum_label(value, state.language), kind="value")
             for value in choice_values(step.action, field)
         ]
+    if field == "selection":  # "把那张图隔离": the dataset's files, or the datasets, to pick
+        dataset = in_scope("dataset_id", None, state, catalog)
+        choices = file_choices(db, dataset, candidates(catalog.of("dataset")))
     return Clarification(
         question=missing_question(step.action, missing, state.language),
         action=step.action,
@@ -302,7 +308,7 @@ def _question(
         return _missing(db, step, missing, state, catalog)
     changes = nothing_to_edit(step)
     if changes:
-        return edit_question(step, changes, state.language)
+        return edit_question(step, changes, state.language, (state.text, catalog))
     if wider_than_said(step, state.text):
         question = subset_question(state.language)
         return Clarification(question=question, action=step.action, fields=["selection"])
@@ -353,11 +359,14 @@ def check_step(
     found = taken(db, step, catalog)
     if found is not None:
         return StepCheck(clarification=duplicate_question(step, found, language))
-    asked = _question(db, step, missing, invalid, state, catalog) or unpublished_question(
-        db, step, [item.action for item in previous], language
-    )
-    if asked is not None:
-        return StepCheck(clarification=asked)
+    params, items = fanned_out(step.params)
+    acting = ChainStep(id=step.id, action=step.action, params=params, items=items)
+    reason = unmet(db, acting, actor, language, previous) if missing else None
+    asked = None if reason else _question(db, step, missing, invalid, state, catalog)
+    asked = asked or unpublished_question(db, step, [item.action for item in previous], language)
+    if reason is not None or asked is not None:
+        said = reason + ("。" if language == "zh" else ".") if reason else None
+        return StepCheck(unmet=said, clarification=None if reason else asked)
     return _card(db, step, state, catalog, previous)
 
 

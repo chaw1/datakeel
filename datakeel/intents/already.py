@@ -17,10 +17,12 @@ from pydantic import ValidationError as ModelValidationError
 from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import ChainStep
 from datakeel.intents.catalog import EntityCatalog
+from datakeel.intents.describe import describe_step
 from datakeel.intents.impossible import idle_reason
 from datakeel.intents.object_edits import current_model
 from datakeel.intents.plain_words import enum_label
 from datakeel.intents.verify import unchanged
+from datakeel.intents.wording import IDLE
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import list_users
@@ -135,6 +137,28 @@ def given_back(checked: list[ChainStep], idle: dict[str, str]) -> dict[str, str]
     return found
 
 
+# How the current state reads for an action whose state is shown through its own values.
+STATE_WORDS: dict[str, tuple[str, str]] = {
+    "publish_label_set": ("已经发布过了", "is already published"),
+    "reopen_task": ("还没做完, 本来就开着", "is still open, not finished yet"),
+    "upgrade_project": ("已经是这个档位", "already has that tier"),
+    "configure_project": ("已经是这些设置", "already has these settings"),
+    "create_label_set": ("标签已经就是这些", "already has exactly these labels"),
+}
+
+
+def stated(db: Database, step: ChainStep, catalog: EntityCatalog, language: str) -> str:
+    """The current state in the step's own words, for any action that would change nothing."""
+    zh = language == "zh"
+    lines = [line for line in describe_step(db, step, catalog, language) if line.value]
+    lines = [line for line in lines if line.tone != "default"][:4]
+    shown = ("、" if zh else ", ").join(f"{line.label} {line.value}" for line in lines)
+    words = STATE_WORDS.get(step.action, ("现在就是这样", "is already like that"))[0 if zh else 1]
+    if not shown:
+        return f"现在{words}" if zh else f"it {words}"
+    return f"{shown}: {words}"
+
+
 def already_state(
     db: Database, step: ChainStep, catalog: EntityCatalog, language: str
 ) -> str | None:
@@ -143,4 +167,7 @@ def already_state(
     found = check(db, step, catalog, language) if check and not step.items else None
     if found is not None:
         return found
-    return idle_reason(step.action, language) if unchanged(db, step) else None
+    if not unchanged(db, step):
+        return None
+    reason = idle_reason(step.action, language)
+    return reason if reason not in IDLE else stated(db, step, catalog, language)

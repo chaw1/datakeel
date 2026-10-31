@@ -20,6 +20,7 @@ from pydantic import JsonValue
 from datakeel.core.errors import NotFoundError
 from datakeel.core.production_models import ProductionTask
 from datakeel.intents.drafts import DraftStep
+from datakeel.intents.named_kinds import named_model
 from datakeel.intents.object_edits import current_model
 from datakeel.storage.database import Database
 from datakeel.storage.intent_reads import latest_label_set, newest_published_version
@@ -184,5 +185,6 @@ def model_record(step: DraftStep) -> DraftStep:
         record["version"] = str(version)
     record.setdefault("id", re.sub(r"\s+", "-", name.strip().casefold())[:100])
     record.setdefault("provider", "import")
+    named_model(record, name)
     params["model"] = record
     return step.model_copy(update={"params": params})

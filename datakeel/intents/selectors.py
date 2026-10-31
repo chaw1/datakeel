@@ -12,7 +12,7 @@ question; a selector never widens to the whole dataset or project.
 
 from pydantic import JsonValue
 
-from datakeel.core.intent_models import Clarification, PageContext
+from datakeel.core.intent_models import Candidate, Clarification, PageContext
 from datakeel.core.models import AssetRef
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
@@ -66,18 +66,54 @@ def named_files(
 
 
 def near_duplicates(db: Database, dataset_id: str, version_id: str | None) -> list[str]:
-    """Later copies of each near-duplicate pair; the first file of every group is kept."""
-    files = set(_dataset_files(db, dataset_id, version_id))
-    copies = {
-        item.object.asset_id
-        for item in list_assertions(db)
-        if item.predicate == "near_duplicate_of"
-        and isinstance(item.object, AssetRef)
-        and item.status in DUPLICATE_STATUSES
-        and item.subject.asset_id in files
-        and item.object.asset_id in files
-    }
-    return sorted(copies)
+    """Every file of a near-duplicate group but its first, in the file list's display order.
+
+    "每组留第一张" keeps the file the list shows first in each group, the same order
+    "前 N 张" counts in; the rest are listed in that order too.
+    """
+    shown = {asset: place for place, asset in enumerate(_dataset_files(db, dataset_id, version_id))}
+    group = {asset: asset for asset in shown}
+
+    def root(asset: str) -> str:
+        while group[asset] != asset:
+            asset = group[asset]
+        return asset
+
+    for item in list_assertions(db):
+        if (
+            item.predicate == "near_duplicate_of"
+            and isinstance(item.object, AssetRef)
+            and item.status in DUPLICATE_STATUSES
+            and item.subject.asset_id in shown
+            and item.object.asset_id in shown
+        ):
+            pair = [root(str(item.subject.asset_id)), root(str(item.object.asset_id))]
+            left, right = sorted(pair, key=shown.__getitem__)
+            group[right] = left  # the group's root is always its first file in display order
+    return sorted((asset for asset in shown if root(asset) != asset), key=shown.__getitem__)
+
+
+# The near-duplicate check marks every file it measured, even when it finds no pair.
+MEASURED = "near_duplicate_implementation"
+
+
+def near_duplicates_measured(db: Database, dataset_id: str, version_id: str | None) -> bool:
+    """Whether the background near-duplicate check has run on these files yet."""
+    versions = [version_id] if version_id else []
+    found = evaluate(
+        db, ObjectSet(dataset_id=dataset_id, version_ids=versions, limit=SELECTION_LIMIT)
+    )
+    return any(
+        isinstance(metadata := item.properties.get("metadata"), dict) and MEASURED in metadata
+        for item in found.objects
+    )
+
+
+def still_computing(language: str) -> str:
+    """A background result (near duplicates) not computed yet: never "none found"."""
+    if language == "zh":
+        return "近重复的结果还在计算, 还没算出来, 现在没法按近重复挑文件; 等算完再试。"
+    return "Near duplicates are still being computed; try again once they are done."
 
 
 REST = frozenset({"remaining", "rest", "others", "other", "unselected", "not_selected"})
@@ -122,7 +158,12 @@ def file_selection(
     if ids is None:
         return None
     if not ids:
-        return {"dataset_id": dataset_id, "filters": [], "limit": 0, "$empty": True}
+        # No pair because nothing was measured yet is not "no near duplicates".
+        waiting = spec.get("kind") == "near_duplicates" and not near_duplicates_measured(
+            db, dataset_id, version_id
+        )
+        empty: dict[str, JsonValue] = {"dataset_id": dataset_id, "filters": [], "limit": 0}
+        return {**empty, "$empty": True, **({"$pending": True} if waiting else {})}
     values: list[JsonValue] = list(ids)
     condition: dict[str, JsonValue] = {"field": "id", "operator": "in", "value": values}
     selection: dict[str, JsonValue] = {
@@ -163,3 +204,24 @@ def page_selection(params: dict[str, JsonValue], required: set[str], context: Pa
             "filters": [condition],
             "limit": SELECTION_LIMIT,
         }
+
+
+CHOICES = 5
+
+
+def file_choices(
+    db: Database, dataset_id: str | None, datasets: list[Candidate]
+) -> list[Candidate]:
+    """Choices for a missing file selection: the dataset's first files, or the datasets."""
+    if dataset_id is None:
+        return datasets[:CHOICES]
+    found = evaluate(db, ObjectSet(dataset_id=dataset_id, limit=CHOICES))
+    named = [
+        (item.asset_ref.asset_id, item.properties.get("filename") or item.properties.get("path"))
+        for item in found.objects
+    ]
+    return [
+        Candidate(id=asset, label=str(name).rsplit("/", 1)[-1], kind="file")
+        for asset, name in named
+        if isinstance(name, str) and name
+    ]

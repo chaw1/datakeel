@@ -149,11 +149,15 @@ def test_cards_show_choices_in_words_and_never_internal_names(db: Database) -> N
     result = planned(db, "按目录重新切包, 再把第 5、6 条派给小王", [chain], page)
     assert result.kind == "plan", result.text
     assert result.chain is not None
-    lines = [*shown(result).values(), *shown(result, 1).values(), *shown(result, 1)]
+    # FIX6 12.2-3: the project is split already, so splitting again is set aside and said.
+    assert "已经切过包" in result.text
+    catalog = build_catalog(db, south.id)
+    split = ChainStep(id="s1", action="split_packages", params=chain["steps"][0]["params"])
+    split_lines = [detail.value for detail in describe_step(db, split, catalog, "zh")]
+    lines = [*split_lines, *shown(result).values(), *shown(result)]
     assert "按目录" in lines
     assert "指定人" in lines
     assert any("标注 (默认)" in line for line in lines)
-    catalog = build_catalog(db, south.id)
     allowed = allowed_words(catalog, result.request)
     for line in lines:
         assert not leaks(line, "zh", allowed), line

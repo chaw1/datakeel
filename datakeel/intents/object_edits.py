@@ -18,6 +18,7 @@ from datakeel.actions.registry import POLICIES
 from datakeel.core.errors import NotFoundError
 from datakeel.core.production_catalog_models import ProductionModel
 from datakeel.core.production_reads import ProductionObjectQuery
+from datakeel.intents.named_kinds import named_skill_type
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import get_bindings, get_role, list_users
 from datakeel.storage.production_catalog import require_model
@@ -66,6 +67,8 @@ def new_object_field(action: str, params: dict[str, JsonValue]) -> str | None:
     if entry is None:
         return None
     field, naming = entry
+    if key == ("manage_skills", "create"):
+        named_skill_type(params)  # "夜间行人框选" is a box skill
     name = params.get(naming)
     if field not in params and isinstance(name, str) and name.strip():
         params[field] = _SPACES.sub("-", name.strip().casefold())[:100]

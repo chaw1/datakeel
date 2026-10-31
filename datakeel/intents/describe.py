@@ -174,6 +174,8 @@ def _plain(value: JsonValue, language: str, field: str = "") -> str:
 
 def _nested(value: JsonValue, catalog: EntityCatalog, language: str) -> str:
     """A structured value as "name: value" pairs; known identities read as their names."""
+    if isinstance(value, dict) and "$ref" in value:
+        return _reference(value, language)
     if isinstance(value, dict):
         pairs = [
             f"{field_label(key, language)}: {_nested(item, catalog, language)}"

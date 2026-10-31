@@ -78,9 +78,12 @@ def run_to_end(db: Database, chain: ActionChain, actor: str = "local") -> Action
     return current
 
 
-def team(db: Database) -> tuple[Project, tuple[ProductionTask, ...]]:
-    """A group project whose manager is boss and whose annotator wang holds two tasks."""
-    project, tasks = production_fixture(db, "group", count=3)
+def team(db: Database, *, split: bool = True) -> tuple[Project, tuple[ProductionTask, ...]]:
+    """A group project whose manager is boss and whose annotator wang holds two tasks.
+
+    ``split=False``: the project is not split into packages yet, so it has no tasks to hold.
+    """
+    project, tasks = production_fixture(db, "group", count=3, split=split)
     runner = ServiceRunner(db)
     runner("manage_users", {"operation": "create", "user_id": "boss", "display_name": "老板"})
     for user, name in PEOPLE:
@@ -97,7 +100,8 @@ def team(db: Database) -> tuple[Project, tuple[ProductionTask, ...]]:
             },
             "boss",
         )
-    runner("assign_tasks", {"task_ids": [tasks[0].id, tasks[1].id], "actor": "wang"}, "boss")
+    if tasks:
+        runner("assign_tasks", {"task_ids": [tasks[0].id, tasks[1].id], "actor": "wang"}, "boss")
     return project, tasks
 
 

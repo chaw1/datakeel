@@ -12,6 +12,7 @@ from datakeel.core.intent_models import ReadAnswer
 from datakeel.core.models import JsonDocument
 from datakeel.intents.object_answers import lineage_text, objects_text
 from datakeel.intents.plain_words import ENUM_LABELS, enum_label, key_label
+from datakeel.intents.selectors import near_duplicates_measured, still_computing
 from datakeel.intents.wording import action_title
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.ontology.tooling import invoke_tool
@@ -167,6 +168,18 @@ def run_read(
             return None, f"{title}这个查询没能完成, 什么都没改。请换个说法或稍后再试。"
         return None, f"The read ({title}) could not finish; nothing changed. Please try again."
     data = outcome.content.root.get("data")
-    return ReadAnswer(function=function, arguments=arguments, data=data), answer_text(
-        function, data, language
+    text = answer_text(function, data, language)
+    if _waiting(db, arguments, data):
+        text = still_computing(language)
+    return ReadAnswer(function=function, arguments=arguments, data=data), text
+
+
+def _waiting(db: Database, arguments: dict[str, JsonValue], data: JsonValue) -> bool:
+    """A read about near duplicates that found none before they were computed."""
+    dataset = arguments.get("dataset_id")
+    asked = arguments.get("has_near_duplicate_in") or "near_dup" in str(arguments)
+    found = data.get("objects", data.get("items")) if isinstance(data, dict) else data
+    empty = not found or (isinstance(data, dict) and data.get("total") == 0)
+    return bool(asked and empty and isinstance(dataset, str)) and not near_duplicates_measured(
+        db, str(dataset), None
     )

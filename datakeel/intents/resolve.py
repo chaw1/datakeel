@@ -139,7 +139,7 @@ class Resolver:
         missing = sorted(required - set(current.params))
         note = self._assumed(before, current, draft.language)
         if missing == ["project_id"]:
-            own = own_projects(self.db, self.state.actor, self.catalog)
+            own = own_projects(self.db, self.state.actor, self.catalog, self.state.text)
             if len(own) != 1:
                 return scope_question(current.action, missing, draft.language, own)
             params = {**current.params, "project_id": own[0].id}
@@ -226,6 +226,8 @@ class Resolver:
                 rest = [*checked_drafts(checked), current, *steps[position + 1 :]]
                 kept = draft.model_copy(update={"steps": rest})
                 return self._clarify(kept, result.clarification, text)
+            if result.unmet is not None:
+                return IntentResult(kind="answer", text=result.unmet, request=text)
             if result.missing_scopes:
                 return IntentResult(
                     kind="refuse",
@@ -293,7 +295,7 @@ class Resolver:
         refused: dict[str, str] = {}
         idle: dict[str, str] = {}
         for index, step in enumerate(checked):
-            reason = impossible(self.db, step, draft.language, checked[:index])
+            reason = impossible(self.db, step, draft.language, checked[:index], self.state.actor)
             if reason is not None:
                 refused[step.id] = reason
             elif (state := already_state(self.db, step, self.catalog, draft.language)) is not None:

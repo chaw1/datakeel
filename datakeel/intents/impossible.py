@@ -17,6 +17,7 @@ from pydantic import JsonValue
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import ChainStep
 from datakeel.intents.capability import model_mismatch
+from datakeel.intents.preconditions import unmet
 from datakeel.intents.wording import IDLE
 from datakeel.storage.database import Database
 from datakeel.storage.production_queries import (
@@ -125,19 +126,26 @@ def _upgraded(db: Database, step: ChainStep, earlier: Sequence[ChainStep]) -> bo
 
 
 def impossible(
-    db: Database, step: ChainStep, language: str, earlier: Sequence[ChainStep] = ()
+    db: Database,
+    step: ChainStep,
+    language: str,
+    earlier: Sequence[ChainStep] = (),
+    actor: str = "",
 ) -> str | None:
     """Why execution would refuse this step whatever is confirmed, or None.
 
-    ``earlier`` are the plan's steps before this one, which run first.
+    ``earlier`` are the plan's steps before this one, which run first; ``actor`` is the
+    person who would confirm and run it. Declared preconditions are checked last.
     """
     mismatch = model_mismatch(db, step, language)
     if mismatch is not None:
         return mismatch
     rule = RULES.get(step.action)
     found = rule(db, step) if rule is not None else None
-    if found is None or (found[0].startswith("personal") and _upgraded(db, step, earlier)):
+    if found is not None and found[0].startswith("personal") and _upgraded(db, step, earlier):
         return None
+    if found is None:
+        return unmet(db, step, actor, language, earlier)
     reason, count = found
     zh, en = REASONS[reason]
     return (zh if language == "zh" else en).format(count=count)

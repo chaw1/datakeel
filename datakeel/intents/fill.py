@@ -35,6 +35,7 @@ from datakeel.intents.fill_state import (
     FillState,
     ask,
     context_value,
+    earlier_object,
     in_scope,
     named_in_words,
     project_in_scope,
@@ -290,7 +291,10 @@ def _field_value(
     made, current.params[field] = earlier(field, current.params[field], created)
     if current.params[field] is None:
         return made
-    resolved = _fill_value(db, field, current, state, catalog, excluded)
+    back = earlier_object(field, current.params[field], state)  # "刚才那个": last turn's
+    resolved = (
+        back if back is not None else _fill_value(db, field, current, state, catalog, excluded)
+    )
     if isinstance(made, list) and made and isinstance(resolved, list):
         return [*resolved, *made]
     return resolved
@@ -311,7 +315,7 @@ def fill_steps(
     names: list[str] = []
     created: Created = {}
     left_out: dict[str, dict[str, int]] = {}
-    state = state.model_copy(update={"freed": {}})
+    state = state.model_copy(update={"freed": {}, "chosen": {}, "taken": []})
     for drafted in steps:
         step = model_record(drafted)
         params, unknown = known_fields(step, state, catalog)

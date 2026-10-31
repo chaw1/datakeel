@@ -82,7 +82,7 @@ def test_nothing_registered_fits_gets_a_plain_answer_listing_what_works(db: Data
 
 def test_the_speaker_s_own_words_ground_a_translated_name(db: Database) -> None:
     """Quoted words from the sentence ground a project whose stored name is in English."""
-    project, _ = team(db)
+    project, _ = team(db, split=False)  # FIX6: only a project not split yet can be split
     text = "把那个自动生成的项目每包 20 张切包"
     payload = _plan(
         "split_packages",
@@ -117,7 +117,7 @@ def test_me_is_the_speaker_and_positions_follow_the_task_list(db: Database) -> N
 
 def test_unknown_parameters_get_one_repair_round_then_a_question(db: Database) -> None:
     """A parameter the action does not take is never dropped silently."""
-    project, _ = team(db)
+    project, _ = team(db, split=False)  # FIX6: only a project not split yet can be split
     wrong = _plan("split_packages", {"project_id": project.id, "size_per_pack": 20})
     fixed = _plan("split_packages", {"project_id": project.id, "package_size": 20})
     context = PageContext(project_id=project.id)
@@ -228,12 +228,14 @@ def test_cards_show_names_and_marked_defaults_and_questions_offer_few_choices(
 ) -> None:
     """Ids never reach the card or the question; unset options show their default."""
     project, _ = team(db)
-    payload = _plan("split_packages", {"project_id": project.id})
-    result = model_plan(db, "切包", payload, PageContext(project_id=project.id))
+    # FIX6: only a project not split yet can be split.
+    fresh, _ = production_fixture(db, "group", count=3, split=False)
+    payload = _plan("split_packages", {"project_id": fresh.id})
+    result = model_plan(db, "切包", payload, PageContext(project_id=fresh.id))
     assert result.chain is not None
     details = result.chain.steps[0].details
-    assert any(detail.value == project.name for detail in details)
-    assert not any(project.id in detail.value for detail in details)
+    assert any(detail.value == fresh.name for detail in details)
+    assert not any(fresh.id in detail.value for detail in details)
     assert any(detail.tone == "default" and "100" in detail.value for detail in details)
     catalog = build_catalog(db)
     assert catalog.of("role")
@@ -398,7 +400,7 @@ def _raw(db: Database, text: str, answers: list[str], context: PageContext) -> I
 
 def test_a_bracket_slip_or_unreadable_answer_still_ends_in_a_plan(db: Database) -> None:
     """One misplaced closer is undone, said inside params is read; garbage is asked again."""
-    project, _ = team(db)
+    project, _ = team(db, split=False)  # FIX6: only a project not split yet can be split
     context = PageContext(project_id=project.id)
     slipped = (
         '{"kind":"plan","steps":[{"id":"s1","action":"split_packages","params":{"project_id":"'

@@ -13,6 +13,8 @@ number is counted in the read's project like everywhere else, however the model 
 the production objects instead.
 """
 
+import re
+
 from pydantic import JsonValue
 
 from datakeel.core.errors import NotFoundError
@@ -23,15 +25,27 @@ from datakeel.intents.group_fill import numbered
 from datakeel.intents.wording import field_label
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import get_bindings
+from datakeel.storage.intent_reads import held_projects
 from datakeel.storage.production_queries import get_task
 
 
-def own_projects(db: Database, actor: str, catalog: EntityCatalog) -> list[CatalogEntry]:
-    """Projects the speaker is bound to; with no binding, every project (an administrator)."""
+def own_projects(
+    db: Database, actor: str, catalog: EntityCatalog, text: str = ""
+) -> list[CatalogEntry]:
+    """Projects the speaker is bound to; with no binding, every project (an administrator).
+
+    Bound to several but asking about their own work ("我的任务进度怎么样") while holding work
+    in exactly one, that one is the speaker's project, said aloud.
+    """
     bound = {binding.project_id for binding in get_bindings(db, actor) if binding.project_id}
     projects = catalog.of("project")
     mine = [entry for entry in projects if entry.id in bound]
-    return mine or projects
+    working = [entry for entry in mine if entry.id in set(held_projects(db, actor))]
+    own = len(mine) > 1 and len(working) == 1 and SELF.search(text) is not None
+    return working if own else mine or projects
+
+
+SELF = re.compile(r"我|\b(?:my|mine|me|I)\b")
 
 
 def assumed_note(entry: CatalogEntry, language: str) -> str:

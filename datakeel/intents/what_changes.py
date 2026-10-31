@@ -8,8 +8,13 @@ changes nothing would only confuse. Each editing action lists the parameters tha
 a change; when none is given the reply asks which one, in words.
 """
 
-from datakeel.core.intent_models import Clarification
+import re
+
+from datakeel.core.intent_models import Candidate, Clarification
+from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog, candidates
 from datakeel.intents.drafts import DraftStep
+from datakeel.intents.plain_words import enum_label
+from datakeel.intents.signatures import choice_values
 from datakeel.intents.wording import field_label
 
 # (action, operation or "") -> the parameters that are a change.
@@ -25,6 +30,7 @@ CHANGES: dict[tuple[str, str], tuple[str, ...]] = {
         "clear",
     ),
 }
+CHOICES = 8
 # A change said in other words still counts: role_id for role_ids.
 ALSO = {"role_ids": ("role_id",)}
 
@@ -42,8 +48,61 @@ def nothing_to_edit(step: DraftStep) -> tuple[str, ...]:
     return () if given or not changes else changes
 
 
-def edit_question(step: DraftStep, changes: tuple[str, ...], language: str) -> Clarification:
-    """Ask which of the changeable things should change."""
+def _core(label: str) -> str:
+    """A label without its unit: "lease (minutes)" is said as "lease"."""
+    return re.sub(r"\s*\([^)]*\)", "", label).strip().casefold()
+
+
+def _named(step: DraftStep, changes: tuple[str, ...], text: str) -> str | None:
+    """The one changeable item the sentence names ("派单方式改一下"), if exactly one."""
+    words = text.casefold()
+    named = {
+        name
+        for name in changes
+        if name in step.params
+        or any(_core(field_label(name, language)) in words for language in ("zh", "en"))
+    }
+    return named.pop() if len(named) == 1 else None
+
+
+def value_question(
+    step: DraftStep, slot: tuple[str, tuple[str, ...]], language: str, catalog: EntityCatalog
+) -> Clarification:
+    """The item is named: ask only for its new value, offering the allowed ones."""
+    field, changes = slot
+    label = field_label(field, language)
+    kind = FIELD_KINDS.get(field) or LIST_KINDS.get(field)
+    choices = (
+        candidates(catalog.of(kind))[:CHOICES]
+        if kind
+        else [
+            Candidate(id=value, label=enum_label(value, language), kind="value")
+            for value in choice_values(step.action, field)
+        ]
+    )
+    separator = "、" if language == "zh" else ", "
+    shown = separator.join(choice.label for choice in choices)
+    others = separator.join(field_label(name, language) for name in changes if name != field)
+    if language == "zh":
+        offered = f"可以改成: {shown}" if choices else f"直接说新的{label}; 也可以改: {others}"
+        question = f"{label}要改成什么? {offered}。"
+    elif choices:
+        question = f"What should {label} become? You can change it to: {shown}."
+    else:
+        question = f"What should {label} become? Say the new value; you can also change: {others}."
+    return Clarification(question=question, action=step.action, fields=[field], candidates=choices)
+
+
+def edit_question(
+    step: DraftStep,
+    changes: tuple[str, ...],
+    language: str,
+    said: tuple[str, EntityCatalog] = ("", EntityCatalog()),
+) -> Clarification:
+    """Ask which of the changeable things should change; a named one is asked its value."""
+    named = _named(step, changes, said[0])
+    if named is not None:
+        return value_question(step, (named, changes), language, said[1])
     separator = "、" if language == "zh" else ", "
     labels = separator.join(field_label(name, language) for name in changes)
     question = (
