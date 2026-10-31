@@ -249,6 +249,9 @@ def _repaired(
         repaired = parse_response(response.content, draft.language)
     except UNREADABLE:
         return draft, first[1]
+    if repaired.kind == "none" and draft.kind == "answer" and draft.steps:
+        # A read the model first answered stays a read; the reply says what it cannot filter by.
+        return draft, first[1]
     if repaired.steps or repaired.kind == "none":
         return repaired, response.content
     return draft, first[1]

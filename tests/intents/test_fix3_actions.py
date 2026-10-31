@@ -157,3 +157,23 @@ def test_an_annotation_only_draft_says_its_examples_came_from_existing_annotatio
     overview = outcome.guidelines.overview_zh
     assert "引用已有标注的样本 1 条" in overview
     assert "抽样文件" not in overview
+
+
+def test_a_read_the_repair_gives_up_on_is_still_answered_without_that_filter(
+    db: Database,
+) -> None:
+    """A filter the read does not take never turns an answerable question into "no match"."""
+    _, south, _ = two_projects(db)
+    read = steps(("production_objects", {"kind": "task", "project": SOUTH, "holder": "小李"}))
+    gave_up = {"kind": "none", "reason": "no read filters by holder"}
+    result = planned(
+        db, f"{SOUTH}里小李还有哪些任务没做完", [{**read, "kind": "answer"}, gave_up], PageContext()
+    )
+    assert result.kind == "answer", result.text
+    assert result.answer is not None
+    assert result.answer.arguments.get("project_id") == south.id
+    assert "找到 6 个任务" in result.text
+    assert "不能按「小李」筛选" in result.text
+    write = steps(("assign_tasks", {"task_ids": ["#5"], "actor": "wang", "holder": "小李"}))
+    asked = planned(db, "把第 5 条派给小王", [write, gave_up], PageContext(project_id=south.id))
+    assert asked.kind != "plan", asked.text
