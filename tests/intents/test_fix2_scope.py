@@ -244,21 +244,37 @@ def test_failed_model_calls_are_reported_as_failures_with_the_reason(db: Databas
         assert said in result.text
 
 
-def test_nothing_fits_but_related_actions_are_offered_as_a_question(db: Database) -> None:
-    """kind=none with related registered actions asks; with none related it is unsupported."""
+def test_a_missing_feature_is_said_and_only_a_real_choice_is_asked(db: Database) -> None:
+    """kind=none says the platform lacks it, naming close actions; only "choose" asks (10.6)."""
     world(db)
     related: dict[str, object] = {
         "kind": "none",
         "reason": "email",
         "related": ["export_dataset", "made_up"],
     }
-    asked, _ = planned(db, "把街景图发邮件给客户", [related], PageContext())
-    assert asked.kind == "clarify"
-    assert asked.clarification is not None
-    assert [item.id for item in asked.clarification.candidates] == ["export_dataset"]
+    missing, _ = planned(db, "把街景图发邮件给客户", [related], PageContext())
+    assert missing.kind == "unsupported"
+    assert missing.clarification is None
+    assert "平台没有这个功能" in missing.text
+    assert "导出" in missing.text
+    english, _ = planned(db, "Email the street images to the client", [related], PageContext())
+    assert english.kind == "unsupported"
+    assert "no feature" in english.text
     unrelated: dict[str, object] = {"kind": "none", "reason": "travel", "related": []}
     travel, _ = planned(db, "帮我订一张去北京的高铁票", [unrelated], PageContext())
     assert travel.kind == "unsupported"
+    either: dict[str, object] = {
+        "kind": "none",
+        "reason": "two fit",
+        "choose": ["revoke_assignment", "release_task"],
+    }
+    asked, _ = planned(db, "把这条还回去", [either], PageContext())
+    assert asked.kind == "clarify"
+    assert asked.clarification is not None
+    assert [item.id for item in asked.clarification.candidates] == [
+        "revoke_assignment",
+        "release_task",
+    ]
 
 
 def test_rejected_values_are_named_without_the_raw_validator_text(db: Database) -> None:
