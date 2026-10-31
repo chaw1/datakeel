@@ -36,11 +36,10 @@ INSTRUCTIONS = (
     '"action": "<registered name>", "params": {...}, "said": {...}}], "notes": []}. '
     "kind=answer: exactly one read function that answers a question. kind=plan: one or more "
     "registered actions in execution order. kind=none: nothing registered does it, or "
-    'chit-chat or how-to; add "reason", "related": up to two registered names closest to it '
-    '(may be empty), and "choose": names, only when the words fit several registered '
-    "actions and you cannot tell which. A registered action that does what was asked is "
-    "never none for a missing value, an unclear object or the speaker's rights: plan it and "
-    'leave unknown values out (or name it in "fits"); the system asks or refuses. '
+    'chit-chat or how-to; add "reason", "related": up to two closest registered names '
+    '(may be empty), "choose": names only when the words fit several and you cannot tell '
+    "which. A missing value, an unclear object or no right is not none: plan that action "
+    '(or name it in "fits"). '
     "The registry below lists every action and read with its parameters (* = required, "
     "a|b = allowed values). Rules: use only registered names and their parameter names; "
     "omit request_id. Identity values (dataset_id, version_id, project_id, package_id, "
