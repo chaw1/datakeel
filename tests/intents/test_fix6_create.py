@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
+from datakeel.intents.catalog import build_catalog
 from datakeel.intents.named_kinds import named_kinds, named_version
 from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
 
@@ -172,3 +173,37 @@ def test_a_skill_requirement_said_in_words_is_the_registered_type(db: Database) 
         "annotation_type": "classification",
     }
     assert "最低等级" in result.text + str(result.model_dump()), result.text
+
+
+def test_a_version_named_by_its_shown_label_is_found(db: Database) -> None:
+    """The planner is shown "<dataset> · v1"; that label copied back finds the version."""
+    two_projects(db)
+    catalog = build_catalog(db)
+    versions = catalog.of("version")
+    assert versions
+    for entry in versions:
+        shown = entry.label.split(" (")[0]
+        assert catalog.match("version", shown, entry.parent) == [entry]
+
+
+def test_action_names_written_as_scopes_grant_those_actions(db: Database) -> None:
+    """Action names the model writes under scopes stand for those actions' scopes."""
+    two_projects(db)
+    result = planned(
+        db,
+        "Define a role called Night Checker that can review tasks and accept packages",
+        [
+            steps(
+                (
+                    "define_role",
+                    {"name": "Night Checker", "scopes": ["review_task", "accept_package"]},
+                )
+            )
+        ],
+        PageContext(),
+    )
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    scopes = result.chain.steps[0].params["scopes"]
+    assert isinstance(scopes, list)
+    assert {"production:accept", "production:review"} <= set(scopes)

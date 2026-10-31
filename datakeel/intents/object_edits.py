@@ -104,7 +104,11 @@ def _scopes(params: dict[str, JsonValue], held: tuple[str, ...]) -> list[JsonVal
     said = params.get("scopes")
     # A scope the model made up ("review") is no scope; the actions said carry the meaning.
     known = {policy[0] for policy in POLICIES.values()}
-    scopes = {str(item) for item in said} & known if isinstance(said, list) else set(held)
+    scopes = set(held)
+    if isinstance(said, list):
+        named = [str(item) for item in said]
+        # An action name written as a scope ("accept_package") stands for that action's scope.
+        scopes = (set(named) & known) | {POLICIES[name][0] for name in named if name in POLICIES}
     for key, adding in (("allowed_actions", True), ("denied_actions", False)):
         listed = params.get(key)
         names = [str(item) for item in listed] if isinstance(listed, list) else []

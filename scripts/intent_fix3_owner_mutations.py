@@ -146,14 +146,8 @@ OWNER_MUTATIONS = (
         "fix3-a-role-edit-keeps-its-permissions",
         "intents/object_edits.py",
         (
-            (
-                "    scopes = {str(item) for item in said} & known if isinstance(said, list) "
-                "else set(held)"
-            ),
-            (
-                "    scopes = {str(item) for item in said} & known if isinstance(said, list) "
-                "else set()"
-            ),
+            "    scopes = set(held)\n",
+            "    scopes = set()\n",
         ),
         _EDITS,
     ),

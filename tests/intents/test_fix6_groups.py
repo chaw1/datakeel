@@ -159,3 +159,32 @@ def test_a_later_step_of_the_same_group_keeps_what_only_it_can_take(db: Database
     )
     assert targets(result, 0) == tasks[0:2]
     assert set(targets(result, 1)) == {*tasks[0:2], *tasks[4:6]}
+
+
+def test_a_task_taken_back_earlier_is_back_in_the_queue_for_unheld_work(db: Database) -> None:
+    """Taken back first, a started task is unheld and waiting again for "没人领的"."""
+    _, _, tasks = two_projects(db)
+    first_package = {"project": SOUTH, "package": {"$nth": 1}}
+    result = planned(
+        db,
+        "南区车道第一包里小王的第一条收回来, 和包里没人领的一起交给小李",
+        [
+            steps(
+                (
+                    "revoke_assignment",
+                    {"task_id": {"$tasks": {"project": SOUTH, "holder": "小王", "numbers": [1]}}},
+                ),
+                (
+                    "assign_tasks",
+                    {
+                        "task_ids": {"$tasks": {**first_package, "holder": "nobody"}},
+                        "actor": "小李",
+                    },
+                ),
+            )
+        ],
+        PageContext(),
+    )
+    assert result.chain is not None, result.text
+    assert len(result.chain.steps) == 2, result.text
+    assert targets(result, 1) == tasks[0:1]

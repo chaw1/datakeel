@@ -199,6 +199,7 @@ def _versions(db: Database, dataset: str, name: str) -> list[CatalogEntry]:
             + (f" ({', '.join(tags[version.id])})" if version.id in tags else ""),
             names=(
                 version.id,
+                f"{name} · v{number}",  # the label the planner is shown, copied back
                 *(
                     said
                     for tag in tags.get(version.id, [])

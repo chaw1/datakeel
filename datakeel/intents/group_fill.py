@@ -24,7 +24,7 @@ from datakeel.intents.fill_state import (
     named_in_words,
     project_in_scope,
 )
-from datakeel.intents.segments import later_segment, once
+from datakeel.intents.segments import freed_snapshots, later_segment, once
 from datakeel.intents.selectors import file_selection, named_files, ordinal_question, pick
 from datakeel.intents.singular import says_one, which_task
 from datakeel.intents.step_values import page_package
@@ -173,13 +173,7 @@ def _tasks(
         said = spec.get("include")
         listed: list[JsonValue] = said if isinstance(said, list) else [str(said or "")]
         spec = {**spec, "include": [*listed, "annotated"]}
-    # A task an earlier step of the plan takes back is free by the time this step runs.
-    snapshots = [
-        task.model_copy(update={"holder": None, "stage": None})
-        if task.stage is not None and state.freed.get(task.id) == task.stage
-        else task
-        for task in task_snapshots(db, project)
-    ]
+    snapshots = freed_snapshots(task_snapshots(db, project), state)
     snapshots = later_segment(spec, snapshots, state, current.action)  # "接下来两条"
     return _in_stages(snapshots, spec, current, state, (holder, package))
 

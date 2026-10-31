@@ -128,11 +128,8 @@ REQUEST_MUTATIONS = (
         "fix3-made-up-scopes-are-dropped",
         "intents/object_edits.py",
         (
-            (
-                "    scopes = {str(item) for item in said} & known if isinstance(said, list) "
-                "else set(held)"
-            ),
-            "    scopes = {str(item) for item in said} if isinstance(said, list) else set(held)",
+            "        scopes = (set(named) & known) | {",
+            "        scopes = set(named) | {",
         ),
         _STATES,
     ),

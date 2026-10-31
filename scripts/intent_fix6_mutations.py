@@ -342,4 +342,34 @@ FIX6_MUTATIONS = (
         ("    several = matched and len(choices) > 1", "    several = len(choices) > 1"),
         "turns.py::test_a_name_that_matches_nothing_is_not_said_to_match_several",
     ),
+    _anchor(
+        "a-version-is-found-by-its-shown-label",
+        "intents/catalog.py",
+        (
+            (
+                '                f"{name} · v{number}",  '
+                "# the label the planner is shown, copied back\n"
+            ),
+            "",
+        ),
+        "create.py::test_a_version_named_by_its_shown_label_is_found",
+    ),
+    _anchor(
+        "a-task-taken-back-is-back-in-the-queue",
+        "intents/segments.py",
+        (
+            'update={"holder": None, "stage": None, "state": RETURN_STATE[task.stage]}',
+            'update={"holder": None, "stage": None}',
+        ),
+        "groups.py::test_a_task_taken_back_earlier_is_back_in_the_queue_for_unheld_work",
+    ),
+    _anchor(
+        "an-action-name-as-a-scope-grants-it",
+        "intents/object_edits.py",
+        (
+            "| {POLICIES[name][0] for name in named if name in POLICIES}",
+            "| set()",
+        ),
+        "create.py::test_action_names_written_as_scopes_grant_those_actions",
+    ),
 )

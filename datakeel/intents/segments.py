@@ -18,6 +18,7 @@ from pydantic import JsonValue
 from datakeel.core.intent_models import Clarification
 from datakeel.intents.fill_state import FillState
 from datakeel.storage.intent_reads import TaskSnapshot
+from datakeel.storage.production_leases import RETURN_STATE
 
 NEXT = re.compile(
     r"接下来|再往后|往后|后面的|之后的|再后面|随后的|下一批|下面的|然后的|另一|剩下的|"
@@ -41,6 +42,16 @@ def _segmented(spec: dict[str, JsonValue], state: FillState, action: str) -> boo
     if not counted or not state.taken:
         return False
     return NEXT.search(state.text) is not None or action in state.taken
+
+
+def freed_snapshots(snapshots: list[TaskSnapshot], state: FillState) -> list[TaskSnapshot]:
+    """A task an earlier step takes back is free, and back in the queue, when this step runs."""
+    return [
+        task.model_copy(update={"holder": None, "stage": None, "state": RETURN_STATE[task.stage]})
+        if task.stage is not None and state.freed.get(task.id) == task.stage
+        else task
+        for task in snapshots
+    ]
 
 
 def later_segment(
