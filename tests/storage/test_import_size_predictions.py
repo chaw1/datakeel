@@ -169,8 +169,13 @@ def _outcome(runner: ServiceRunner, project: str, fmt: str, files: list[dict[str
 
 
 def test_import_size_mutation_guard(db: Database, tmp_path: Path) -> None:
-    """One measured anchor: recorded sizes feed YOLO, unknown sizes refuse, unknown ids list."""
+    """One measured anchor: sizes are stored at import, unknown sizes refuse, unknown ids list."""
     project, ids, runner = _project(db, tmp_path)
+    # Reads backfill a missing size from the image header, so check the stored manifest itself.
+    with db.session() as session:
+        rows = session.query(VersionRow).all()
+        stored = {item["filename"]: item["metadata"] for row in rows for item in row.manifest}
+    assert stored["cam-2.png"].get("width") == SIZES["cam-2.png"][0]
     plain = [{"filename": "cam-2.txt", "content": "0 0.5 0.5 1 1"}]
     assert _outcome(runner, project, "yolo", plain) == "[]"
     unknown = [{"filename": "u.txt", "sample_id": ids["broken.png"], "content": "0 0.5 0.5 1 1"}]
