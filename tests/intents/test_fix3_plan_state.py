@@ -7,8 +7,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from datakeel.core.intent_models import PageContext
+from datakeel.actions.registry import POLICIES
+from datakeel.core.intent_models import ChainStep, PageContext
 from datakeel.intents.edits import latest_label_set
+from datakeel.intents.verify import unchanged
 from datakeel.storage.database import DatasetRow
 from datakeel.storage.production_queries import list_tasks
 from tests.intents.fix3_support import planned, steps, targets, two_projects
@@ -16,6 +18,8 @@ from tests.production_helpers import production_fixture
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
+    from pydantic import JsonValue
+
     from datakeel.core.production_models import Project
     from datakeel.storage.database import Database
 
@@ -132,3 +136,25 @@ def test_adding_a_label_that_is_there_already_changes_nothing(db: Database) -> N
     )
     assert result.kind == "answer", result.text
     assert "已经是这样" in result.text
+
+
+def test_the_same_labels_in_other_letters_change_nothing(db: Database) -> None:
+    """A planned list equal but for letter case, or a Chinese name repeating the name, is idle."""
+    _, south, _ = two_projects(db)
+    current = latest_label_set(db, south.label_set_id)
+    assert current is not None
+    known = current.labels[0]
+
+    def edit(label: dict[str, JsonValue]) -> ChainStep:
+        params: dict[str, JsonValue] = {
+            "operation": "create",
+            "label_set_id": south.label_set_id,
+            "labels": [label],
+            "previous_version": current.version,
+        }
+        scope = POLICIES["create_label_set"][0]
+        return ChainStep(id="s1", action="create_label_set", params=params, scope=scope)
+
+    assert unchanged(db, edit({"id": known.id, "name": known.name.upper()}))
+    assert unchanged(db, edit({"id": known.id, "name": known.name, "name_zh": known.name}))
+    assert not unchanged(db, edit({"id": known.id, "name": "Dog"}))
