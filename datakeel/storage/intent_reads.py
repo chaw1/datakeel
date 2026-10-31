@@ -3,14 +3,20 @@
 
 """Bounded reads behind one-sentence task selectors such as a holder's untouched tasks."""
 
+from pydantic import JsonValue
+from pydantic import ValidationError as ModelValidationError
 from sqlalchemy import func, select
 
+from datakeel.actions.production_catalog_parameters import RunPrelabelParams
+from datakeel.core.errors import DatakeelError
 from datakeel.core.models import BoundaryModel
+from datakeel.core.prelabel_models import PrelabelEstimate
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.core.production_models import AssignmentStage, Project
 from datakeel.storage.database import Database
 from datakeel.storage.display_order import ordered_task_rows
 from datakeel.storage.production_catalog_impact import migration_impact
+from datakeel.storage.production_catalog_plans import catalog_requires_approval, prelabel_estimate
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_dispatch_rules import active_loads
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
@@ -210,3 +216,21 @@ def newer_versions(db: Database, project: Project) -> bool:
         )
         labels = latest_label_set_version(session, project.label_set_id)
         return newer or (labels or 0) > project.label_set_version
+
+
+def cloud_prelabel(
+    db: Database, params: dict[str, JsonValue]
+) -> tuple[PrelabelEstimate, bool] | None:
+    """A cloud pre-label run's estimate and whether it is over budget, as preparation prices it.
+
+    None for an offline model or a step whose project or model is not settled yet.
+    """
+    try:
+        checked = RunPrelabelParams.model_validate({**params, "request_id": "plan"})
+        with db.session() as session:
+            estimate = prelabel_estimate(session, checked)
+            if estimate is None:
+                return None
+            return estimate, catalog_requires_approval(session, checked)
+    except (ModelValidationError, DatakeelError):
+        return None

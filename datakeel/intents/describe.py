@@ -28,6 +28,7 @@ from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_files
 from datakeel.storage.identity_store import list_users
+from datakeel.storage.intent_reads import cloud_prelabel
 from datakeel.storage.object_queries import evaluate
 from datakeel.storage.production_queries import get_task, list_tasks
 
@@ -337,8 +338,27 @@ def describe_step(
         details
         + _diff(db, step, language)
         + _holders(db, step, language)
+        + _cloud_spend(db, step, language)
         + _defaults(step, language)
     )
+
+
+def _cloud_spend(db: Database, step: ChainStep, language: str) -> list[StepDetail]:
+    """A cloud pre-label run says how many images go out and the estimate, in its currency."""
+    cloud = cloud_prelabel(db, step.params) if step.action == "run_prelabel" else None
+    if cloud is None:
+        return []
+    estimate, over = cloud
+    cost = f"{estimate.total:.4g} {estimate.currency}"
+    if language == "zh":
+        value = f"{estimate.images} 张图发给云端模型, 预计 {cost}" + (
+            "; 超过预算, 要签批" if over else ""
+        )
+        return [StepDetail(label="预计花费", value=value, tone="impact")]
+    value = f"{estimate.images} images go to a cloud model, about {cost}" + (
+        "; above the budget, so it needs a signature" if over else ""
+    )
+    return [StepDetail(label="Estimated spend", value=value, tone="impact")]
 
 
 def _holders(db: Database, step: ChainStep, language: str) -> list[StepDetail]:

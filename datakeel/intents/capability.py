@@ -3,8 +3,8 @@
 
 """An object that cannot do what the step asks: said as "cannot", never as a question.
 
-A pre-label run only runs offline models that draw boxes. With a model that does another
-annotation type the step would fail after confirmation, so the person hears that it cannot
+A pre-label run runs offline models that draw boxes and cloud vision models (v0.19.0). With
+another model the step would fail after confirmation, so the person hears that it cannot
 be done and why, with the models that can run named as an alternative. The plan is not
 rewritten into "use X instead?": choosing another model is the person's next sentence.
 """
@@ -19,8 +19,10 @@ from datakeel.storage.production_objects import production_objects
 
 
 def _runs_prelabel(properties: dict[str, JsonValue]) -> bool:
-    """What the pre-label run accepts today: an offline model that draws boxes."""
+    """What a pre-label run accepts: a cloud vision model or an offline model drawing boxes."""
     capabilities = properties.get("capabilities")
+    if properties.get("provider") == "cloud":
+        return True
     return (
         properties.get("provider") == "fake"
         and isinstance(capabilities, list)
@@ -45,7 +47,10 @@ def model_mismatch(db: Database, step: ChainStep, language: str) -> str | None:
     if language == "zh":
         does = f"做的是{'、'.join(kinds)}标注" if kinds else "不是框标注模型"
         other = f"能跑的有 {'、'.join(usable)}" if usable else "要先登记一个框标注模型"
-        return f"「{name}」{does}, 预标注现在只能用框标注模型, 所以做不了 ({other})"
+        return f"「{name}」{does}, 预标注现在只能用框标注模型或云端视觉模型, 所以做不了 ({other})"
     does = f"does {', '.join(kinds)}" if kinds else "is not a box model"
     other = f"models that can run: {', '.join(usable)}" if usable else "register a box model"
-    return f'"{name}" {does} and pre-labelling only runs box models, so it cannot be done ({other})'
+    return (
+        f'"{name}" {does} and pre-labelling only runs box models or cloud vision models, so it '
+        f"cannot be done ({other})"
+    )

@@ -49,4 +49,22 @@ INTENT_V020_MUTATIONS = (
         ),
         _T + "test_a_template_upgrade_needs_a_newer_version_to_move_to",
     ),
+    _anchor(
+        "a-cloud-model-can-pre-label",
+        "intents/capability.py",
+        ('    if properties.get("provider") == "cloud":\n        return True', "    pass"),
+        _T + "test_a_cloud_pre_label_card_says_it_sends_images_out_and_what_it_costs",
+    ),
+    _anchor(
+        "a-cloud-pre-label-is-external",
+        "intents/estimates.py",
+        ("        external=external or cloud is not None,", "        external=external,"),
+        _T + "test_a_cloud_pre_label_card_says_it_sends_images_out_and_what_it_costs",
+    ),
+    _anchor(
+        "a-cloud-pre-label-over-budget-is-signed",
+        "intents/estimates.py",
+        ("        or (cloud is not None and cloud[1]),", "        or False,"),
+        _T + "test_a_cloud_pre_label_card_says_it_sends_images_out_and_what_it_costs",
+    ),
 )

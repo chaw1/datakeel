@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""v0.19.0 work rules seen at planning: per-person limit, review separation, template lock."""
+"""v0.19.0 rules at planning: per-person limit, review separation, template lock, cloud runs."""
 
 from __future__ import annotations
 
@@ -11,10 +11,14 @@ from datakeel.core.intent_models import PageContext
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_queries import get_project, get_task
 from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
+from tests.prelabel_support import cloud_model, seed_cloud_project
 from tests.production_team_ops import review, save, submit
 from tests.production_team_support import ServiceRunner
+from tests.workbench_helpers import run_action
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from datakeel.core.intent_models import IntentResult
     from datakeel.storage.database import Database
 
@@ -88,3 +92,25 @@ def test_a_template_upgrade_needs_a_newer_version_to_move_to(db: Database) -> No
         session.commit()
     newer = planned(db, "把南区车道升级到最新的模板和标签集", [upgrade], PageContext())
     assert newer.kind == "plan", newer.text
+
+
+def test_a_cloud_pre_label_card_says_it_sends_images_out_and_what_it_costs(
+    db: Database, tmp_path: Path
+) -> None:
+    """The card marks a cloud run external, prices it like preparation and signs above budget."""
+    project, _ = seed_cloud_project(db, tmp_path / "images", count=4, tier="team")
+    run_action(db, "register_model", {"model": cloud_model()})
+    context = PageContext(project_id=project.id)
+    text = "用 fixture-vl 模型给这个项目跑一遍预标注"
+    for budget, signed in ((0.0, True), (100.0, False)):
+        values = {"project_id": project.id, "model_id": "vision", "budget": budget}
+        result = planned(db, text, [steps(("run_prelabel", values))], context, actor="local")
+        assert result.kind == "plan", result.text
+        assert result.chain is not None
+        step = result.chain.steps[0]
+        assert step.estimate.external, step.estimate
+        assert step.estimate.requires_approval is signed, step.estimate
+        spend = next(detail.value for detail in step.details if detail.label == "预计花费")
+        assert "4 张图" in spend, spend
+        assert "CNY" in spend, spend
+        assert ("要签批" in spend) is signed, spend

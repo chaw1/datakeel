@@ -11,6 +11,7 @@ from datakeel.core.intent_models import ChainStep, StepEstimate
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
+from datakeel.storage.intent_reads import cloud_prelabel
 from datakeel.storage.label_drafts import planned_draft_cost
 from datakeel.storage.object_queries import evaluate
 
@@ -92,9 +93,16 @@ def estimate_step(
     cost = 0.0
     if step.action == "draft_label_set":
         cost = planned_draft_cost(db, step.params)
+    # A cloud pre-label run sends images out and is signed above its budget, as prepared.
+    cloud = cloud_prelabel(db, step.params) if step.action == "run_prelabel" else None
+    if cloud is not None and cloud[0].currency == "USD":
+        cost = cloud[0].total
     return StepEstimate(
         object_count=_count(db, step, catalog, previous),
         cost_usd=cost,
-        requires_approval=not reversible or external or step.action in GOVERNANCE,
-        external=external,
+        requires_approval=not reversible
+        or external
+        or step.action in GOVERNANCE
+        or (cloud is not None and cloud[1]),
+        external=external or cloud is not None,
     )
