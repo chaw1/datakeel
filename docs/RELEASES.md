@@ -366,3 +366,42 @@ Integration changes in this version:
 - Whoever triggered a pass-through stays out of review after a manager hands its rework to someone else, on the server and in the workbench.
 - High-confidence pass-through only applies to tasks no one holds, in every tier. Assigned or claimed work, touched or not, and a rework round back with its annotator only get the draft; state and holder stay, the tier is recorded as `draft` with the note `held`, and the run's `held_drafts` and **Prelabel runs** give the count. Before, an import could pass a returned rework round through and record the trigger as its annotator.
 - The README states 101 MCP tools, 546 mutation anchors and what the v0.19.0 anchors protect, and the workbench pointer mentions template upgrades, AI prelabel and upright photos.
+
+## v0.20.0 release notes
+
+v0.20.0 adds **one sentence to plan**, released as a **beta**: type what you want and Datakeel plans a chain of existing controlled actions, shows what each step changes and costs, and runs nothing that changes data until you confirm. It also adds `draft_label_set`, which drafts a label set with written guidelines from data standards, existing annotations and sample files. MCP and agents can still only prepare plans; a chain is confirmed and run only by the person who asked, and every write still goes through controlled actions and the access guards. Tests and the demo never call a model over the network.
+
+| Track | What you can do now |
+|---|---|
+| One sentence to plan (beta) | In the Agent dialog, or with **Do it in one sentence** on the labeling page, type a request such as "take Xiao Wang's untouched tasks and give them to Xiao Li". The card lists each step in words with how many objects it changes, its cost, whether it needs a signature and whether data leaves the machine; missing values are asked with one-click candidates, and a request you may not perform is refused naming the missing permission. **Confirm and run** executes the steps through the same services as manual actions; signatures wait in the card or on the Approvals page; a failed step stops with its reason and **Resume** never repeats finished work. Read questions are answered directly. [One sentence to plan](ONE_SENTENCE.md). |
+| Drafting a label set and guidelines | "Draft a vehicle label set and guidelines from these images" plans one signed `draft_label_set` step. The draft is an unpublished version with Chinese and English names, attributes, an overview and per-label rules with positive and negative examples citing real samples, and it records its sources. Edit it in the card, **Save edits**, then **Publish…** through the ordinary signature. `offline` is the default and costs nothing; `cloud-text` and `cloud-vision` show their estimated cost first. [Drafting a label set and guidelines](ONE_SENTENCE.md#drafting-a-label-set-and-guidelines). |
+
+**What "beta" means here.** On wording it had not seen, about eight in ten requests got the right plan straight away; the rest got an extra question, a "cannot do this" or a wrong plan. Because every action that changes data runs only after you confirm the card, a wrong plan is simply cancelled and nothing changes. Planning uses DeepSeek Flash (`deepseek-flash`) with thinking on by default; the same sentence can be planned differently on another try. The entry and every card carry a **Beta** mark.
+
+**New conversations use the configured model.** With `DATAKEEL_OPENAI_API_KEY` or `DATAKEEL_ANTHROPIC_API_KEY` set, a new Web conversation uses that provider with `model: auto`, routed only to models the configured endpoint serves; with only DeepSeek configured, all three tiers use `deepseek-flash`. Without a usable model the offline demo is used and the page says why. The offline demo recognises only the fixed recipes.
+
+**Web messages go to the planner first.** Every message from the Web dialog carries page context, and a recognised request is answered with an `intent` event (plan, answer, question or refusal) instead of a free reply. The HTTP message API enters the planner only when the request carries `context`, so existing clients keep the free conversation. `datakeel intents plan`, `show` and `run` plan and confirm from the command line.
+
+**The provider timeout is longer.** `DATAKEEL_PROVIDER_TIMEOUT` defaults to 180 seconds (30 before) and accepts up to 600; OpenAI-compatible requests that ask for JSON are streamed, so a reasoning model is not cut off while it thinks.
+
+**HTTP signatures use the request's person.** Approving or executing a plan over HTTP records the request's person; the browser's placeholder `local` means that person, and naming anyone else is still refused.
+
+**Other changes.** Every action and read function registers Chinese and English wording, enforced by a gate test. `create_label_set` accepts optional guidelines and bilingual names. `contracts/model-prices.yaml` lists `deepseek-v4-pro`, `qwen3.8-max` and `qwen3.7-plus`, and the routing file can give tiers per endpoint host. MCP has 102 tools (37 read functions and 65 prepare-only actions): `draft_label_set` is new, and there is no tool to confirm or run a chain. OpenAPI grows from 168 to 171 paths, 181 to 184 operations and 404 to 418 schemas; nothing was removed and no existing request gained a required field. The database gains the table `action_chains`, created automatically when a database is opened. The mutation gate has 803 anchors (257 added), the golden suite 58 cases (six one-sentence cases added) and the operator catalog 42 operators.
+
+Known limits:
+
+- One sentence to plan is a beta. About two in ten new wordings still need an extra question or give a wrong plan, and the model's answer varies between tries. Check the card before confirming.
+- The task selector cannot say "everyone except X" or "take the first N, then filter"; "the first file of each group" only keeps the list's order.
+- A turn that only asked a question does not set the conversation's focus, so "it" in the next turn is asked about again.
+- Some conditions are found only when the step runs, not while planning: a label set version that does not exist and a few claim rules (a reviewer's own work in the review stage, the team-tier claim limit, projects that dispatch by assignment only). The step then fails with the reason and **Resume** continues after a fix.
+- `rework_rate` counts every review of the project; "this week" is not filtered, and the answer says so.
+- Only OpenAI-compatible JSON requests are streamed; the Anthropic path is unchanged.
+- Still open from earlier versions: a cloud prelabel run is synchronous for the caller; keychain credentials need macOS; confidence thresholds have no cockpit editor; tasks a person already saved are skipped by later prelabel runs; returned rework may put its holder above the load limit; the group tier has no reclaim button; review separation is enforced only in the team tier; a template with both box and polygon components shows two canvases stacked; attribute fields cannot depend on the label; a dispatch preview reserves nothing; MCP always acts as `local`; PostgreSQL makes about 50 database round trips per production action (see [Capacity](CAPACITY.md)).
+
+Integration changes in this version:
+
+- One-sentence planning knows this version's workbench rules before it shows a card. A named dispatch that would put someone over the per-person limit, or a single dispatch that would raise the project's limit, is answered with the reason; a review is never planned for anyone who annotated the task, including after its rework was handed over and after a pass-through made the trigger its annotator; a template upgrade needs a newer published version to move to.
+- A cloud prelabel model can be run from one sentence. The card marks the run as sending images out and shows the estimated images, cost and currency, and whether the budget needs a signature, the same numbers as preparing `run_prelabel`.
+- The new read function `assignees` and this version's parameters (review sampling, confidence thresholds and tiers, template version, rework handovers) have Chinese and English wording on the cards. Rework handovers are computed by the server and are never asked from the model.
+- The planning prompt stays within its token budget after the merge: the registry no longer repeats an English phrase that only spells out the action's name. No rule or safety text was removed.
+- The README states 102 MCP tools, 803 mutation anchors, 58 golden cases and the beta.
