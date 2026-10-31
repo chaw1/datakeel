@@ -74,6 +74,12 @@ FUNCTION_LANGUAGE: dict[str, tuple[str, str, str, str]] = {
         "哪些任务的租约快到期了",
         "Which task leases are about to expire?",
     ),
+    "assignees": (
+        "可派的人",
+        "assignees",
+        "这个项目的标注任务现在能派给谁",
+        "Who can I assign this project's annotation tasks to?",
+    ),
     "skill_workload": (
         "按技能看工作量",
         "skill workload",

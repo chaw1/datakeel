@@ -3,8 +3,12 @@
 
 """New actions and read functions are plannable only with Chinese and English wording."""
 
+from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.actions.registry import POLICIES, action_definitions
 from datakeel.core.models import JsonDocument
+from datakeel.intents.field_names import ENUM_LABELS
+from datakeel.intents.signatures import HIDDEN, choice_values
+from datakeel.intents.wording import field_label
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.language_check import missing_language
 from datakeel.ontology.models import ActionType
@@ -44,3 +48,30 @@ def test_each_entry_has_one_example_per_language_at_least() -> None:
             examples = item.examples[language]
             assert examples, item.id
             assert all(text.strip() != item.id for text in examples), item.id
+
+
+def test_every_registered_parameter_has_words_for_the_card() -> None:
+    """No card line shows a raw key: every action and read parameter has a Chinese and English name.
+
+    New parameters arrive with new releases (review sampling, tier thresholds, the template
+    lock, rework handovers), so the gate reads the registry instead of a fixed list.
+    """
+    unnamed = sorted(
+        f"{name}.{field}"
+        for name, model in [*PARAMETER_TYPES.items(), *PARAMETER_MODELS.items()]
+        for field in model.model_fields
+        if field not in HIDDEN
+        and field_label(field, "zh") == field
+        and field_label(field, "en") == field.replace("_", " ")
+    )
+    assert unnamed == []
+    assert field_label("review_sample_rate", "zh") == "审核抽检比例"
+    assert field_label("template_version", "en") == "template version"
+
+
+def test_tier_and_clear_choices_are_said_in_words() -> None:
+    """The confidence tiers and the settings a project can clear read as words, not values."""
+    for action, field in (("save_revision", "confidence_tier"), ("configure_project", "clear")):
+        values = choice_values(action, field)
+        assert values, (action, field)
+        assert [value for value in values if value not in ENUM_LABELS] == []

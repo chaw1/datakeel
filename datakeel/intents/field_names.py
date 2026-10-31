@@ -152,6 +152,14 @@ MORE_LABELS: dict[str, tuple[str, str]] = {
     "target": ("对象", "target"),
     "kind": ("类型", "kind"),
     "owner": ("负责人", "owner"),
+    # v0.19.0 parameters: review sampling, tier thresholds, template lock, rework handover.
+    "review_sample_rate": ("审核抽检比例", "review sampling rate"),
+    "confidence_high": ("高置信门槛", "high-confidence threshold"),
+    "confidence_low": ("低置信门槛", "low-confidence threshold"),
+    "template_version": ("模板版本", "template version"),
+    "transfers": ("返工改派", "rework handovers"),
+    "object_confidences": ("逐个对象的置信度", "per-object confidence"),
+    "confidence_tier": ("置信度分档", "confidence tier"),
 }
 
 # Fixed choices of parameters and read results, in words (see plain_words).
@@ -208,6 +216,10 @@ ENUM_LABELS: dict[str, tuple[str, str]] = {
     "max_active_tasks": ("同时在手上限", "active task limit"),
     "skill_requirement": ("技能要求", "skill requirement"),
     "min_level": ("最低等级", "minimum level"),
+    "confidence_thresholds": ("置信度门槛", "confidence thresholds"),
+    "high": ("高", "high"),
+    "medium": ("中", "medium"),
+    "low": ("低", "low"),
     # Keys read answers show (package acceptance, generic tool results).
     "inspections": ("抽检次数", "inspections"),
     "sampling": ("抽样方式", "sampling"),
