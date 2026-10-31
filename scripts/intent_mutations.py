@@ -251,7 +251,7 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-answers-read-without-ids",
         path="intents/answers.py",
-        before="    summary = readable(data)",
+        before="    summary = readable(data, language=language)",
         after="    summary = str(data)",
         case=_CHECKS + "test_answers_and_draft_cards_read_as_names_not_ids",
         runner="pytest",
@@ -283,16 +283,16 @@ INTENT_MUTATIONS = (
     Mutation(
         name="intent-card-shows-final-params",
         path="intents/validate.py",
-        before="    details = describe_step(db, chain_step, catalog, language)",
-        after="    details = []",
+        before="        details = describe_step(db, chain_step, catalog, state.language)",
+        after="        details = []",
         case=_CHECKS + "test_cards_show_names_and_marked_defaults_and_questions_offer_few_choices",
         runner="pytest",
     ),
     Mutation(
         name="intent-version-follows-earlier-step",
         path="intents/validate.py",
-        before="    step = paired_versions(step)",
-        after="    step = step.model_copy()",
+        before="    step = derive(db, paired_versions(step))",
+        after="    step = derive(db, step)",
         case=_CHECKS
         + "test_a_version_left_out_beside_an_earlier_step_s_id_is_taken_from_that_step",
         runner="pytest",

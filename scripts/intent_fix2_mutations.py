@@ -168,7 +168,7 @@ PLANNING_MUTATIONS = (
     Mutation(
         name="intent-empty-change-is-answered",
         path="intents/resolve.py",
-        before="        if all(unchanged(self.db, step) for step in checked):",
+        before="        if checked and len(idle) == len(checked):",
         after="        if False:",
         case=_SCOPE + "test_a_plan_that_changes_nothing_is_answered_instead_of_shown",
         runner="pytest",
@@ -183,12 +183,9 @@ PLANNING_MUTATIONS = (
     ),
     Mutation(
         name="intent-review-uses-the-latest-revision",
-        path="intents/fill.py",
-        before=(
-            '    if step.action != "review_task" or "revision_id" in step.params '
-            "or not isinstance(task, str):"
-        ),
-        after="    if True:",
+        path="intents/derived.py",
+        before='    "review_task": {"revision_id": _reviewed_revision},',
+        after='    "review_task": {},',
         case=_SCOPE + "test_a_reviewer_s_send_back_is_a_review_decision",
         runner="pytest",
     ),
@@ -296,8 +293,8 @@ PLANNING_MUTATIONS = (
     Mutation(
         name="intent-files-named-by-file-name",
         path="intents/selectors.py",
-        before='    elif kind == "named":',
-        after="    elif False:",
+        before='    if kind == "named":',
+        after="    if False:",
         case=_SCOPE + "test_files_named_by_file_name_resolve_to_exactly_those",
         runner="pytest",
     ),
@@ -326,12 +323,12 @@ PLANNING_MUTATIONS = (
         name="intent-answer-without-a-read-is-answered",
         path="intents/planner.py",
         before=(
-            "            # An answer naming no registered read still ends with an answer, "
+            "        # An answer naming no registered read still ends with an answer, "
             "never silence.\n"
-            "            return _no_plan("
+            "        return _no_plan("
             "draft, turn, asked=granted.allowed and complete is not None)"
         ),
-        after="            return None",
+        after="        return None",
         case=_SCOPE + "test_an_answer_naming_no_registered_read_still_gets_an_answer",
         runner="pytest",
     ),
