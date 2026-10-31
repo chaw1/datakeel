@@ -246,6 +246,9 @@ class PrelabelRun(BoundaryModel):
     stopped: PrelabelStop | None = None
     thresholds: ConfidenceThresholds | None = None
     tiers: tuple[TaskTier, ...] = ()
+    held_drafts: int = Field(
+        default=0, ge=0, description="Tasks someone held: only a draft was written, never routed."
+    )
     status: Literal["running", "completed", "failed", "abandoned"] = "completed"
     actor: str | None = None
     plan_id: str | None = None

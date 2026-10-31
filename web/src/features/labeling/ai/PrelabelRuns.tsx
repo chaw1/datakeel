@@ -74,6 +74,16 @@ export function PrelabelRuns({
                       <span className="badge amber">{t("wbRunStopped")}</span>
                     </>
                   )}
+                  {run.held_drafts > 0 && (
+                    <>
+                      {" "}
+                      <span className="badge">
+                        {t("wbRunHeldDrafts", {
+                          count: count.format(run.held_drafts),
+                        })}
+                      </span>
+                    </>
+                  )}
                 </td>
                 <td>{`${count.format(run.completed_images)}/${count.format(run.planned_images)}`}</td>
                 <td>{count.format(run.failed_images)}</td>

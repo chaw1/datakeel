@@ -130,9 +130,18 @@ PRELABEL_MUTATIONS = (
     Mutation(
         name="tier-personal-only-hints",
         path="storage/production_tiers.py",
-        before='if project.workflow_tier == "personal" or task.state != "pending":',
-        after='if task.state != "pending":',
+        before='if project.workflow_tier == "personal":',
+        after="if False:",
         case=_ROUTING + "test_personal_tiers_are_only_hints",
+        runner="pytest",
+    ),
+    Mutation(
+        name="tier-held-task-only-drafted",
+        path="storage/production_tiers.py",
+        before="    elif held:\n",
+        after="    elif False:\n",
+        case="tests/storage/test_prelabel_held_tasks.py::"
+        "test_a_rework_round_back_with_its_holder_is_not_passed_through_by_an_import[team]",
         runner="pytest",
     ),
     Mutation(

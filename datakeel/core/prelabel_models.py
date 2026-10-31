@@ -165,13 +165,17 @@ class ConfidenceThresholds(BoundaryModel):
 
 
 class TaskTier(BoundaryModel):
-    """Record the tier one task received when its model draft was written."""
+    """Record the tier one task received when its model draft was written.
+
+    ``held`` means someone held the task's annotation assignment: only the draft was written,
+    and its holder decides what happens next.
+    """
 
     task_id: str
     sample_id: str
     tier: ConfidenceTier
     routed: Literal["hint", "submitted", "draft", "scratch"]
-    note: Literal["", "insufficient_samples"] = ""
+    note: Literal["", "insufficient_samples", "held"] = ""
     revision_id: str | None = None
 
 
@@ -262,5 +266,8 @@ class PrelabelProgress(BoundaryModel):
     budget: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     currency: str | None = None
     stopped: bool = False
+    held_drafts: int = Field(
+        default=0, ge=0, description="Tasks someone held: only a draft was written, never routed."
+    )
     started_at: datetime
     updated_at: datetime | None = None

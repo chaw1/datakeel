@@ -13,6 +13,7 @@ from datakeel.core.prelabel_models import ConfidenceThresholds, TaskTier
 from datakeel.core.production_catalog_models import ParsedPrediction, ProductionModel
 from datakeel.core.production_models import AnnotationRevision, PassThrough, Project
 from datakeel.storage.production_ai_review import prereview
+from datakeel.storage.production_assignments import active_assignment
 from datakeel.storage.production_catalog import normalize_annotation, require_complete_attributes
 from datakeel.storage.production_revisions import append_revision
 from datakeel.storage.production_rows import ProductionRevisionRow, ProductionTaskRow
@@ -67,14 +68,16 @@ def write_model_draft(  # noqa: PLR0913  # The draft needs its task, model, acto
     request_id: str,
     thresholds: ConfidenceThresholds,
 ) -> tuple[str, TaskTier]:
-    """Append the draft, tier it, and route untouched group/team tasks by that tier.
+    """Append the draft, tier it, and route untouched, unheld group/team tasks by that tier.
 
     A pass-through submission is answered for by the person who triggered the run: they become
-    the task's annotator, so team separation keeps them from reviewing it.
+    the task's annotator, so team separation keeps them from reviewing it. A task someone holds
+    only gets the draft; its state and holder stay as they are.
     """
     confidences = prediction_confidences(prediction)
     tier = task_tier(confidences, thresholds.high, thresholds.low)
-    routing = route_tier(project, task, tier, pass_through=thresholds.pass_through)
+    held = active_assignment(session, task.id, "annotation") is not None
+    routing = route_tier(project, task, tier, pass_through=thresholds.pass_through, held=held)
     accountable = None
     if routing.routed == "submitted":
         accountable = _pass_through(session, project, prediction, model, actor, thresholds)

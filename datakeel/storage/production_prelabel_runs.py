@@ -23,6 +23,7 @@ from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.image_geometry import file_geometry
 from datakeel.storage.production_catalog_rows import ProductionPrelabelRunRow
 from datakeel.storage.production_rows import ProductionTaskRow
+from datakeel.storage.production_tiers import held_drafts
 
 
 def prediction_tasks(
@@ -107,6 +108,7 @@ def save_run(
             "confidences": tuple(confidences),
             "cost": cost,
             "elapsed_seconds": (utcnow() - run.created_at).total_seconds(),
+            "held_drafts": held_drafts(run.tiers),
         }
     )
     session.add(

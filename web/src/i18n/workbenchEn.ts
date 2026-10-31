@@ -154,6 +154,7 @@ export const workbenchEn = {
   wbRunFailed: "Failed",
   wbRunAbandoned: "Abandoned",
   wbRunStopped: "Stopped at budget",
+  wbRunHeldDrafts: "Held by someone, drafts only: {count}",
   wbRunNoBudget: "no cap",
   wbTooFewAnnotations:
     "Needs at least {minimum} {minimum, plural, one {annotation} other {annotations}} (now {count})",

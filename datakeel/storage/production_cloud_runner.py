@@ -48,6 +48,7 @@ from datakeel.storage.production_prelabel_writes import prelabeled_task_ids, wri
 from datakeel.storage.production_rows import ProductionTaskRow
 from datakeel.storage.production_task_images import sample_keys
 from datakeel.storage.production_tasks import require_mutable_project
+from datakeel.storage.production_tiers import held_drafts
 
 PARALLEL_IMAGES = 4
 CHANGED_MESSAGE = "The task was drafted or edited while the model ran; it was left as it is"
@@ -87,6 +88,7 @@ class Ledger:
                 "dropped": tuple(self.drops),
                 "stopped": stopped,
                 "tiers": tuple(self.tiers),
+                "held_drafts": held_drafts(self.tiers),
                 "completed_images": len(self.revision_ids),
                 "failed_images": len(self.failures),
                 "elapsed_seconds": (now - record.created_at).total_seconds(),

@@ -143,6 +143,7 @@ export const workbenchZh = {
   wbRunFailed: "失败",
   wbRunAbandoned: "已中断",
   wbRunStopped: "到预算上限已停",
+  wbRunHeldDrafts: "有人持有，只写了草稿 {count} 条",
   wbRunNoBudget: "不设上限",
   wbTooFewAnnotations: "至少需要 {minimum} 个标注（现在 {count} 个）",
   wbTooManyAnnotations: "最多只能有 {maximum} 个标注（现在 {count} 个）",

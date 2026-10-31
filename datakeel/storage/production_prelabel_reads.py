@@ -87,6 +87,7 @@ def prelabel_progress(
             budget=run.budget,
             currency=run.currency,
             stopped=run.stopped is not None,
+            held_drafts=run.held_drafts,
             started_at=run.created_at,
             updated_at=run.updated_at,
         )

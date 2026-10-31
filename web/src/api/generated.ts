@@ -10063,6 +10063,12 @@ export interface components {
             currency?: string | null;
             /** Failed Images */
             failed_images: number;
+            /**
+             * Held Drafts
+             * @description Tasks someone held: only a draft was written, never routed.
+             * @default 0
+             */
+            held_drafts: number;
             /** Model Id */
             model_id: string;
             /** Model Name */

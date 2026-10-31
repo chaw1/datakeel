@@ -8,7 +8,13 @@ draft is high goes straight to review submission (where AI pre-review and review
 decide what a person sees), medium keeps the draft for correction, and low keeps the draft
 for viewing while the workbench starts the person from an empty annotation. High drafts only
 pass through once thresholds are measured or configured; cold-start defaults hold them.
+
+A task someone holds (an active annotation assignment, assigned or claimed, touched or not,
+including a rework round returned to its holder) is never routed: the model only adds a draft,
+the state and the holder stay, and the holder decides what to do with it.
 """
+
+from collections.abc import Iterable
 
 from sqlalchemy.orm import Session
 
@@ -35,15 +41,24 @@ def revision_tier(revision: AnnotationRevision, thresholds: ConfidenceThresholds
 
 
 def route_tier(
-    project: Project, task: ProductionTaskRow, tier: ConfidenceTier, *, pass_through: bool
+    project: Project,
+    task: ProductionTaskRow,
+    tier: ConfidenceTier,
+    *,
+    pass_through: bool,
+    held: bool,
 ) -> TaskTier:
-    """Decide what the tier changes; only untouched group/team tasks change flow.
+    """Decide what the tier changes; only untouched, unheld group/team tasks change flow.
 
     While the thresholds are still the cold-start defaults a high draft is held like a medium
     one, with the reason recorded, because nothing measured yet says it is right 95% of the time.
     """
     note = ""
-    if project.workflow_tier == "personal" or task.state != "pending":
+    if project.workflow_tier == "personal":
+        routed = "hint"
+    elif held:
+        routed, note = "draft", "held"
+    elif task.state != "pending":
         routed = "hint"
     elif tier == "high" and pass_through:
         routed = "submitted"
@@ -53,3 +68,8 @@ def route_tier(
     else:
         routed = "scratch"
     return TaskTier(task_id=task.id, sample_id=task.sample_id, tier=tier, routed=routed, note=note)
+
+
+def held_drafts(tiers: Iterable[TaskTier]) -> int:
+    """Count the tasks a run only drafted because someone held them."""
+    return sum(1 for tier in tiers if tier.note == "held")

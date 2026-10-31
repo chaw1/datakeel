@@ -27,6 +27,7 @@ function run(overrides: Partial<Progress> = {}): Progress {
     budget: 0.5,
     currency: "CNY",
     stopped: false,
+    held_drafts: 0,
     started_at: "2026-10-31T07:59:00Z",
     updated_at: updated,
     ...overrides,
@@ -43,7 +44,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-it("lists each run with images, failures, spend against budget and when it last moved", () => {
+it("lists each run with images, failures, held drafts, spend against budget and when it last moved", () => {
   render(
     <PrelabelPanel
       data={withRuns([
@@ -55,6 +56,7 @@ it("lists each run with images, failures, spend against budget and when it last 
           failed_images: 0,
           spent: 0.5,
           stopped: true,
+          held_drafts: 3,
           budget: null,
           currency: null,
         }),
@@ -70,7 +72,7 @@ it("lists each run with images, failures, spend against budget and when it last 
   ).toBeVisible();
   expect(
     within(table).getByRole("row", {
-      name: `qwen-vl@2026-10 Completed Stopped at budget 40/40 0 0.5000 / no cap ${time}`,
+      name: `qwen-vl@2026-10 Completed Stopped at budget Held by someone, drafts only: 3 40/40 0 0.5000 / no cap ${time}`,
     }),
   ).toBeVisible();
 });
@@ -83,7 +85,7 @@ it("names run states in Chinese", () => {
       <PrelabelPanel
         data={withRuns([
           run({ status: "failed" }),
-          run({ run_id: "run-2", status: "abandoned" }),
+          run({ run_id: "run-2", status: "abandoned", held_drafts: 2 }),
         ])}
       />
     </I18nContext.Provider>,
@@ -91,6 +93,7 @@ it("names run states in Chinese", () => {
   const table = screen.getByRole("table", { name: "预标注运行进度" });
   expect(within(table).getByText("失败")).toBeVisible();
   expect(within(table).getByText("已中断")).toBeVisible();
+  expect(within(table).getByText("有人持有，只写了草稿 2 条")).toBeVisible();
 });
 
 it("refreshes every five seconds while a run is going and stops when none is", () => {
