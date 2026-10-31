@@ -24,6 +24,7 @@ from datakeel.core.production_models import (
     AssignmentStage,
     ProductionTask,
 )
+from datakeel.storage.display_order import task_key
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_rows import UserRow
 from datakeel.storage.production_dispatch_rules import (
@@ -46,6 +47,8 @@ from datakeel.storage.production_tasks import (
     task_view,
     transition_task,
 )
+
+_CLAIM_LOCK_ATTEMPTS = 3
 
 
 def active_assignment(
@@ -181,7 +184,13 @@ def rework_transfers(tasks: Iterable[ProductionTaskRow], actor: str) -> tuple[Re
 
 
 def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> ProductionTask:
-    """Lock and claim the next task; concurrent claimers skip locked rows in PostgreSQL."""
+    """Lock and claim the next task; concurrent claimers skip locked rows in PostgreSQL.
+
+    Candidates rank by priority and then the task list's display order, so a claim
+    returns the task the list shows as next instead of whichever row identity sorts
+    first. Rows are locked one candidate at a time with ``skip_locked`` so claimers
+    never block on each other's locks.
+    """
     project = require_mutable_project(session, params.project_id)
     if project.workflow_tier == "personal":
         message = "Personal projects use next_task directly without assignments"
@@ -190,7 +199,7 @@ def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> Product
     require_claim_strategy(session, project, actor, params.stage)
     _validate_package(session, params)
     expected = "pending" if params.stage == "annotation" else "submitted"
-    query = select(ProductionTaskRow).where(
+    base = select(ProductionTaskRow).where(
         ProductionTaskRow.project_id == params.project_id,
         ProductionTaskRow.state == expected,
         ~select(ProductionAssignmentRow.id)
@@ -202,24 +211,27 @@ def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> Product
         .exists(),
     )
     if params.stage == "annotation":
-        query = query.where(
+        base = base.where(
             or_(ProductionTaskRow.round == 0, ProductionTaskRow.annotator_id == actor)
         )
     elif project.workflow_tier == "team":
-        query = exclude_own_work(query, actor)
+        base = exclude_own_work(base, actor)
     if params.package_id is not None:
-        query = query.where(ProductionTaskRow.package_id == params.package_id)
-    task = session.scalar(
-        query.order_by(ProductionTaskRow.priority.desc(), ProductionTaskRow.id)
-        .limit(1)
-        .with_for_update(skip_locked=True)
-    )
-    if task is None:
-        message = "No available production task"
-        raise NotFoundError(message)
-    create_assignment(session, task, actor, params.stage, "claim")
-    session.flush()
-    return task_view(task)
+        base = base.where(ProductionTaskRow.package_id == params.package_id)
+    key = task_key(session, project.id)
+    for _ in range(_CLAIM_LOCK_ATTEMPTS):
+        candidates = sorted(session.scalars(base), key=lambda row: (-row.priority, key(row)))
+        for row in candidates:
+            locked = session.scalar(
+                base.where(ProductionTaskRow.id == row.id).with_for_update(skip_locked=True)
+            )
+            if locked is None:
+                continue
+            create_assignment(session, locked, actor, params.stage, "claim")
+            session.flush()
+            return task_view(locked)
+    message = "No available production task"
+    raise NotFoundError(message)
 
 
 def _validate_package(session: Session, params: ClaimTaskParams) -> None:

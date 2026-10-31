@@ -73,6 +73,21 @@ def test_losing_claimer_receives_another_available_task(db: Database) -> None:
     assert len(set(claimed)) == 2
 
 
+def test_claims_follow_the_task_list_display_order(db: Database) -> None:
+    """Sequential claims return the list's next task; random identities never decide the order."""
+    project, tasks = production_fixture(db, "group", count=2)
+    claimed: list[str] = []
+    for actor in ("annotator-a", "annotator-b"):
+        with db.session() as session:
+            db.lock_writes(session)
+            result = claim_task(
+                session, ClaimTaskParams(request_id=new_id(), project_id=project.id), actor
+            )
+            session.commit()
+            claimed.append(result.id)
+    assert claimed == [tasks[0].id, tasks[1].id]
+
+
 def test_release_keeps_revision_and_assignment_history(db: Database) -> None:
     """Release returns a task to pending and retains its assignment evidence."""
     project, _ = production_fixture(db, "group")

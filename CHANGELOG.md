@@ -26,6 +26,7 @@ All notable changes are documented here using the Keep a Changelog format.
 ### Fixed
 
 - One-sentence planning follows this version's workbench rules before it shows a card: a dispatch that would put someone over the per-person limit, or raise the project's limit, is answered first; a review is never planned for anyone who annotated the task, including after its rework was handed over or a pass-through made the trigger its annotator; a template upgrade needs a newer published version to move to; and a cloud prelabel model is accepted, with the card marking the run as sending images out and showing the estimated spend and whether it needs a signature.
+- Claiming follows the task list's display order. `claim_task` used to break ties by the random row identity, so under PostgreSQL the claimed task could differ from the list's next one; candidates now rank by priority and then the task list's display order, with rows locked one candidate at a time with `skip_locked` so concurrent claimers stay non-blocking.
 
 ## [0.19.0] - 2026-10-31
 

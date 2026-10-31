@@ -66,8 +66,8 @@ PRODUCTION_TEAM_MUTATIONS = (
     Mutation(
         name="production-team-review-queue-separation",
         path="storage/production_assignments.py",
-        before="query = exclude_own_work(query, actor)",
-        after="query = query",
+        before="base = exclude_own_work(base, actor)",
+        after="base = base",
         case=_SEPARATION + "test_role_change_does_not_lift_separation",
         runner="pytest",
     ),
