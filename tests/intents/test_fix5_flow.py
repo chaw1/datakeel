@@ -285,6 +285,20 @@ def test_a_model_change_is_compared_and_read_as_the_catalog_holds_it(db: Databas
     assert params["expected_revision"] == 1
 
 
+def test_model_fields_beside_the_model_are_not_sent_back_for_repair(db: Database) -> None:
+    """A version written next to "model" is moved in, never asked to be taken out (11.2-8)."""
+    two_projects(db)
+    _models(db)
+    beside = steps(("update_model", {"model": "Shaper 1.0", "version": "1.4"}))
+    dropped = steps(("update_model", {"model": "Shaper 1.0"}))
+    result = planned(db, "Shaper 1.4 is out, move ours up", [beside, dropped], PageContext())
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    model = result.chain.steps[0].params["model"]
+    assert isinstance(model, dict)
+    assert (model["id"], model["version"]) == ("shape-1", "1.4")
+
+
 def test_a_label_set_said_as_the_catalog_shows_it_keeps_its_name(db: Database) -> None:
     """The catalog's "name vN" given back as the name is no rename (11.2-4, 11.2-8)."""
     _, south, _ = two_projects(db)

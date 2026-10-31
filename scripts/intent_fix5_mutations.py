@@ -240,4 +240,12 @@ FLOW_MUTATIONS = (
         case=_FLOW + "test_taking_back_to_give_to_the_one_who_holds_them_is_already_so",
         runner="pytest",
     ),
+    Mutation(
+        name="fix5-model-fields-beside-the-model-are-known",
+        path="intents/planner.py",
+        before="        _, unknown = known_fields(model_record(step), state, catalog)",
+        after="        _, unknown = known_fields(step, state, catalog)",
+        case=_FLOW + "test_model_fields_beside_the_model_are_not_sent_back_for_repair",
+        runner="pytest",
+    ),
 )

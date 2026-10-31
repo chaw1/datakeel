@@ -18,6 +18,7 @@ from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import Clarification, IntentResult, PageContext, ParserKind
 from datakeel.core.models import BoundaryModel
 from datakeel.intents.catalog import EntityCatalog, build_catalog
+from datakeel.intents.derived import model_record
 from datakeel.intents.drafts import DraftStep, IntentDraft, language_of
 from datakeel.intents.explore import Lookups, explore_request, explored
 from datakeel.intents.fill import FillState, known_fields
@@ -237,7 +238,8 @@ def _unknown(turn: PlannerTurn, draft: IntentDraft, catalog: EntityCatalog) -> d
     state = FillState(context=turn.context, focus=turn.focus, actor=turn.actor)
     found: dict[str, list[str]] = {}
     for step in draft.steps:
-        _, unknown = known_fields(step, state, catalog)
+        # Judged as the fill sees it: model fields written beside "model" are moved in.
+        _, unknown = known_fields(model_record(step), state, catalog)
         if unknown:
             found[step.action] = list(unknown)
     return found
