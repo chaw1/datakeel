@@ -214,11 +214,19 @@ PLANNING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="intent-related-actions-are-asked",
+        name="intent-only-a-real-choice-is-asked",
         path="intents/outcomes.py",
-        before="    if not related:",
+        before="    if len(choose) < 2:  # noqa: PLR2004 - a choice needs two options",
         after="    if True:",
-        case=_SCOPE + "test_nothing_fits_but_related_actions_are_offered_as_a_question",
+        case=_SCOPE + "test_a_missing_feature_is_said_and_only_a_real_choice_is_asked",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix4-a-missing-feature-names-close-things",
+        path="intents/outcomes.py",
+        before="        close = [titles[name] for name in dict.fromkeys(related)][:2]",
+        after="        close = []",
+        case=_SCOPE + "test_a_missing_feature_is_said_and_only_a_real_choice_is_asked",
         runner="pytest",
     ),
     Mutation(
