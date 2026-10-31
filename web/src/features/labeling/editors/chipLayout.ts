@@ -1,5 +1,9 @@
 /** Screen-space size and placement of the label-name chip drawn at each shape. */
 
+import { labelStyle } from "./labelColors";
+
+import type { LabelStyle } from "./labelColors";
+
 export const CHIP_FONT_SIZE = 12;
 export const CHIP_PADDING = 3;
 export const CHIP_HEIGHT = CHIP_FONT_SIZE + CHIP_PADDING * 2;
@@ -91,6 +95,21 @@ export function polygonChipAnchor(
       y2: Math.max(...ys),
     },
   };
+}
+
+/** Every polygon's chip, in shape order, colored like its label. */
+export function polygonChips(
+  polygons: readonly {
+    category: string;
+    points: readonly { x: number; y: number }[];
+  }[],
+  labels: Parameters<typeof labelStyle>[0],
+  tokens: Parameters<typeof labelStyle>[2],
+): (ChipAnchor & { style: LabelStyle })[] {
+  return polygons.map((polygon) => ({
+    ...polygonChipAnchor(polygon.points),
+    style: labelStyle(labels, polygon.category, tokens),
+  }));
 }
 
 export interface ChipHit {

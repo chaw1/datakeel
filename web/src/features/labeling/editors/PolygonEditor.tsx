@@ -4,7 +4,7 @@ import { Circle, Line } from "react-konva";
 import { useI18n } from "../../../i18n/useI18n";
 
 import { attributeFields, withDefaults } from "./attributes";
-import { polygonChipAnchor } from "./chipLayout";
+import { polygonChips } from "./chipLayout";
 import { EditorDetails } from "./EditorDetails";
 import { arrowDelta, clamp, isTyping, keyStep, movePoints } from "./geometry";
 import { ImageCanvas } from "./ImageCanvas";
@@ -286,12 +286,7 @@ export function PolygonEditor(props: EditorProps) {
             />
           </>
         )}
-        <ShapeLabels
-          chips={polygons.map((polygon) => ({
-            ...polygonChipAnchor(polygon.points),
-            style: labelStyle(labels, polygon.category, tokens),
-          }))}
-        />
+        <ShapeLabels chips={polygonChips(polygons, labels, tokens)} />
       </ImageCanvas>
       <EditorDetails label={t("wbEditorPolygon")}>
         <p className="muted">{t("wbEditorPolygonHint")}</p>
