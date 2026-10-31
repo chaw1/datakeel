@@ -35,7 +35,10 @@ OWNER_MUTATIONS = (
         "fix3-in-review-a-task-is-also-its-annotator-s",
         "intents/task_scope.py",
         (
-            '    own = stage == "review" or (task.holder is None and task.state in OPEN_STATES)',
+            (
+                '    own = stage in {"review", "read"} or '
+                "(task.holder is None and task.state in OPEN_STATES)"
+            ),
             "    own = False",
         ),
         _WHOSE,
@@ -56,7 +59,7 @@ OWNER_MUTATIONS = (
         "fix3-giving-back-finds-a-hold-in-either-stage",
         "intents/group_fill.py",
         (
-            "    either = not explicit and current.action in ANY_STAGE",
+            '    either = not current.params.get("stage") and current.action in ANY_STAGE',
             "    either = False",
         ),
         _WHOSE,
@@ -146,8 +149,14 @@ OWNER_MUTATIONS = (
         "fix3-a-role-edit-keeps-its-permissions",
         "intents/object_edits.py",
         (
-            "    scopes = {str(item) for item in said} if isinstance(said, list) else set(held)",
-            "    scopes = {str(item) for item in said} if isinstance(said, list) else set()",
+            (
+                "    scopes = {str(item) for item in said} & known if isinstance(said, list) "
+                "else set(held)"
+            ),
+            (
+                "    scopes = {str(item) for item in said} & known if isinstance(said, list) "
+                "else set()"
+            ),
         ),
         _EDITS,
     ),
