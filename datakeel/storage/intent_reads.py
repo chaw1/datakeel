@@ -14,6 +14,7 @@ from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
 
 OPEN_STATES = ("pending", "in_progress")
+REVIEW_STATES = ("submitted", "in_review")
 
 
 class TaskSnapshot(BoundaryModel):
@@ -90,10 +91,11 @@ def held_tasks(
     project_id: str | None = None,
     untouched: bool = False,
     limit: int = 10000,
+    stage: str = "annotation",
 ) -> list[tuple[str, str]]:
-    """Return (project id, task id) for open annotation tasks the actor currently holds.
+    """Return (project id, task id) for open tasks the actor currently holds in one stage.
 
-    Untouched tasks have no saved revision yet.
+    Untouched tasks have no saved revision yet. In review, open means waiting for review.
     """
     statement = (
         select(ProductionTaskRow.project_id, ProductionTaskRow.id)
@@ -101,8 +103,8 @@ def held_tasks(
         .where(
             ProductionAssignmentRow.actor == actor,
             ProductionAssignmentRow.active.is_(True),
-            ProductionAssignmentRow.stage == "annotation",
-            ProductionTaskRow.state.in_(OPEN_STATES),
+            ProductionAssignmentRow.stage == stage,
+            ProductionTaskRow.state.in_(OPEN_STATES if stage == "annotation" else REVIEW_STATES),
         )
         .order_by(ProductionTaskRow.project_id, ProductionTaskRow.id)
         .limit(min(max(limit, 1), 10000))

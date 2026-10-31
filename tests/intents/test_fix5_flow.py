@@ -183,7 +183,7 @@ def test_a_release_tag_names_the_version_it_published(
 
     monkeypatch.setattr("datakeel.intents.catalog.list_releases", releases)
     create = {
-        "name": "复核三期",
+        "name": "「复核三期」",
         "dataset_id": south.dataset_id,
         "version_id": "Generated production v3.1.0",
         "label_set_id": south.label_set_id,
@@ -193,6 +193,8 @@ def test_a_release_tag_names_the_version_it_published(
     assert result.kind == "plan", result.text
     assert result.chain is not None
     assert result.chain.steps[0].params["version_id"] == south.version_id
+    # Quote marks around a new name are punctuation, not part of it.
+    assert result.chain.steps[0].params["name"] == "复核三期"
 
 
 def test_a_project_on_a_label_set_never_published_says_what_to_do_first(db: Database) -> None:
@@ -230,3 +232,55 @@ def test_the_persons_own_words_quoted_back_are_not_internal_names() -> None:
     assert public_result(result, "zh", EntityCatalog()).text == quoted
     other = IntentResult(kind="answer", text="另外「notify the team」没有做。", request="发布它")
     assert public_result(other, "zh", EntityCatalog()).text != other.text
+
+
+def test_choices_follow_the_words_and_a_missing_task_offers_the_speakers(db: Database) -> None:
+    """Objects the words name come first; a missing task offers the speaker's own (11.2-7)."""
+    _, south, tasks = two_projects(db)
+    step = {
+        "id": "s1",
+        "action": "accept_package",
+        "params": {},
+        "said": {"package_id": "Package 2"},
+    }
+    accept = {"kind": "plan", "steps": [step]}
+    asked = planned(db, "Package 2 可以验收了", [accept], PageContext())
+    assert asked.clarification is not None, asked.text
+    offered = [item.label for item in asked.clarification.candidates]
+    assert offered, asked.text
+    assert all(label.endswith("Package 2") for label in offered), offered
+    review = steps(("review_task", {"decision": "approve"}))
+    mine = planned(db, "那条我看完了, 没问题", [review], PageContext(), actor="zhao")
+    assert mine.kind == "clarify", mine.text
+    assert mine.clarification is not None
+    assert {item.id for item in mine.clarification.candidates} == set(tasks[2:4])
+    assert south.id
+
+
+def test_a_model_change_is_compared_and_read_as_the_catalog_holds_it(db: Database) -> None:
+    """Nothing new is already so; a catalog label is not a new name; model_id is the id."""
+    two_projects(db)
+    _models(db)
+    same = planned(
+        db, "Boxer 的设置保持现在这样", [steps(("update_model", {"model": "Boxer"}))], PageContext()
+    )
+    assert same.kind == "answer", same.text
+    assert "现在就是这些设置" in same.text
+    labelled = {"model": {"model_id": "box-1", "name": "Boxer 1.0", "version": "1.2"}}
+    bumped = planned(db, "Boxer 升到 1.2", [steps(("update_model", labelled))], PageContext())
+    assert bumped.kind == "plan", bumped.text
+    assert bumped.chain is not None
+    model = bumped.chain.steps[0].params["model"]
+    assert isinstance(model, dict)
+    assert (model["id"], model["name"], model["version"]) == ("box-1", "Boxer", "1.2")
+
+
+def test_a_person_named_for_an_annotator_filter_is_resolved(db: Database) -> None:
+    """A person's name in a filter is that person's identity (11.2-9)."""
+    _, south, _ = two_projects(db)
+    export = {"dataset_id": south.dataset_id, "format": "annotations_jsonl", "annotator_id": "小王"}
+    page = PageContext(dataset_id=south.dataset_id)
+    result = planned(db, "把这个数据集里小王标的导出来", [steps(("export_dataset", export))], page)
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    assert result.chain.steps[0].params["annotator_id"] == "wang"

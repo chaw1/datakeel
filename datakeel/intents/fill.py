@@ -296,6 +296,13 @@ def _field_value(
     return resolved
 
 
+def _unquoted(params: dict[str, JsonValue], new: set[str | None]) -> None:
+    """Quote marks around a new name (「叶片复检」) are punctuation, not part of the name."""
+    for field in [name for name in new if name in params]:
+        value = params[field]
+        params[field] = value.strip("「」『』“”\"'") if isinstance(value, str) else value
+
+
 def fill_steps(
     db: Database, steps: list[DraftStep], state: FillState, catalog: EntityCatalog
 ) -> FillResult:
@@ -320,6 +327,7 @@ def fill_steps(
         excluded: Counter[str] = Counter()
         # New names are never looked up: the object they name does not exist yet.
         new = {fresh, *new_name_fields(step.action, params)}
+        _unquoted(params, new)
         for field in [name for name in params if name not in new]:
             resolved = _field_value(db, (field, created), current, state, catalog, excluded)
             if isinstance(resolved, Clarification):

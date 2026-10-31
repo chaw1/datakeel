@@ -18,6 +18,7 @@ from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import ChainStep
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.impossible import idle_reason
+from datakeel.intents.object_edits import current_model
 from datakeel.intents.plain_words import enum_label
 from datakeel.intents.verify import unchanged
 from datakeel.ontology.models import ObjectSet
@@ -84,7 +85,20 @@ def _files(db: Database, step: ChainStep, catalog: EntityCatalog, language: str)
     return None
 
 
+def _model(db: Database, step: ChainStep, catalog: EntityCatalog, language: str) -> str | None:
+    """A model change that leaves every setting as the catalog holds it."""
+    del catalog
+    wanted = step.params.get("model")
+    current = current_model(db, wanted) if isinstance(wanted, dict) else None
+    if current is None or current.model_dump(mode="json", exclude={"revision"}) != wanted:
+        return None
+    if language == "zh":
+        return f"「{current.name}」现在就是这些设置"
+    return f'"{current.name}" already has exactly these settings'
+
+
 STATES: dict[str, State] = {
+    "update_model": _model,
     "manage_users": _account,
     "assign_tasks": _holder,
     "quarantine_files": _files,

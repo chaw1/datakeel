@@ -36,6 +36,7 @@ FIELD_KINDS: dict[str, str] = {
     "holder": "user",
     "leader_id": "user",
     "assignee": "user",
+    "annotator_id": "user",
     "task_id": "task",
     "role_id": "role",
     "skill_id": "skill",

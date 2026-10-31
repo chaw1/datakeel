@@ -136,6 +136,9 @@ def prepare_update(db: Database, action: str, params: dict[str, JsonValue]) -> N
     if current is None:
         return
     stored = current.model_dump(mode="json", exclude={"revision"})
+    if str(model.get("name", "")).casefold() == f"{current.name} {current.version}".casefold():
+        # The catalog shows "name version": that label is not a new name.
+        model = {key: value for key, value in model.items() if key != "name"}
     params["model"] = {**stored, **model, "id": current.id}
     params.setdefault("expected_revision", current.revision)
 

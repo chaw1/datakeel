@@ -166,6 +166,8 @@ def model_record(step: DraftStep) -> DraftStep:
     if isinstance(nested, str) and nested.strip():
         # A change to a model named by id or name: its stored record fills the rest.
         record["id"] = nested.strip()
+    if "model_id" in record:
+        record.setdefault("id", record.pop("model_id"))
     for field in MODEL_FIELDS:
         if field in params:
             record.setdefault(field, params.pop(field))

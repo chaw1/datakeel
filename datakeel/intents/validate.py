@@ -15,7 +15,8 @@ from datakeel.actions.registry import POLICIES
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import Candidate, ChainStep, Clarification
 from datakeel.core.models import BoundaryModel
-from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog, candidates
+from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog
+from datakeel.intents.choices import object_choices
 from datakeel.intents.derived import derivable, derive, underivable
 from datakeel.intents.describe import describe_step
 from datakeel.intents.drafts import DraftStep
@@ -235,7 +236,7 @@ FOLLOWS = {
 
 
 def _missing(
-    step: DraftStep, missing: list[str], state: FillState, catalog: EntityCatalog
+    db: Database, step: DraftStep, missing: list[str], state: FillState, catalog: EntityCatalog
 ) -> Clarification:
     """Ask in words for what is missing; one missing object comes with up to five choices.
 
@@ -257,7 +258,7 @@ def _missing(
     objects = [name for name in missing if FIELD_KINDS.get(name) or LIST_KINDS.get(name)]
     field = missing[0] if len(missing) == 1 else next(iter(objects), None)
     kind = FIELD_KINDS.get(field or "") or LIST_KINDS.get(field or "")
-    choices = candidates(catalog.of(kind)) if kind and kind != "task" else []
+    choices = object_choices(db, step, field or "", kind, state, catalog) if kind else []
     if field and not kind:
         # A short choice of values (approve or rework, a workflow tier) is offered as is.
         choices = [
@@ -290,6 +291,7 @@ def wider_than_said(step: DraftStep, text: str) -> bool:
 
 
 def _question(
+    db: Database,
     step: DraftStep,
     missing: list[str],
     invalid: str | None,
@@ -297,7 +299,7 @@ def _question(
     catalog: EntityCatalog,
 ) -> Clarification | None:
     if missing:
-        return _missing(step, missing, state, catalog)
+        return _missing(db, step, missing, state, catalog)
     changes = nothing_to_edit(step)
     if changes:
         return edit_question(step, changes, state.language)
@@ -351,7 +353,7 @@ def check_step(
     found = taken(db, step, catalog)
     if found is not None:
         return StepCheck(clarification=duplicate_question(step, found, language))
-    asked = _question(step, missing, invalid, state, catalog) or unpublished_question(
+    asked = _question(db, step, missing, invalid, state, catalog) or unpublished_question(
         db, step, [item.action for item in previous], language
     )
     if asked is not None:
