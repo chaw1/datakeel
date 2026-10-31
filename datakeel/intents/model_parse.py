@@ -17,7 +17,7 @@ from datakeel.core.intent_models import PageContext
 from datakeel.core.json_schema import compact_schema
 from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.intents.catalog import EntityCatalog
-from datakeel.intents.drafts import IntentDraft
+from datakeel.intents.drafts import IntentDraft, skipped_parts
 from datakeel.intents.recipes import RECIPE_GUIDE
 from datakeel.intents.rules import RankedEntry, full_registry
 from datakeel.intents.signatures import all_signatures
@@ -54,11 +54,14 @@ INSTRUCTIONS = (
     "For every identity value give the person's own words in the step's \"said\" map, "
     'copied exactly from the request, e.g. "said": {"dataset_id": "street scenes"}; the '
     "catalog may hold a Chinese name for an English mention or the reverse, so map by "
-    "meaning. 'I/me/my/我/我的' is the speaker (Speaker id below). "
+    "meaning. 'I/me/my/我/我的' is the speaker (Speaker id below). A named object wins "
+    "over the page context. Leave out values read from state: a review's revision_id, a "
+    "label set version (最新版/latest too). "
     "Tasks are never listed by id. Describe the tasks the person means as "
     '{"$tasks": {...}} with only the conditions they said: holder (a person, "me", or '
     '"nobody" for unassigned/没人领 tasks), untouched (true = no saved annotation yet, 没动'
-    "的), min_rework (at least N rework rounds; 返工超过 1 轮 = 2), package (its name or "
+    "的), min_rework (at least N rework rounds; 返工超过 1 轮 = 2), project (its name, "
+    "only if said), package (its name as said or "
     '{"$nth": 2}), numbers (the numbers the task list shows: "#8", "第 8 个", "task 8" -> '
     '[8, ...]), first (only the first N of the group, 前 N 个), include ("held" and/or '
     '"annotated" only when the person explicitly asks to also take tasks someone else '
@@ -74,7 +77,8 @@ INSTRUCTIONS = (
     '{"$nth": 2} as package_id. A subset of files is never the whole dataset: the '
     'selected files are {"$files": {"kind": "selected"}}, near-duplicate copies are '
     '{"$files": {"kind": "near_duplicates"}}, files named by file name are {"$files": '
-    '{"kind": "named", "names": ["a.png"]}} as selection. To change an existing label set '
+    '{"kind": "named", "names": ["a.png"]}}, the unselected rest is {"$files": {"kind": '
+    '"remaining"}} as selection. To change an existing label set '
     "give label_set_id with add_labels (new labels), remove_labels (names) and/or "
     'rename_labels ([{"from": "old name", "to": "new name"}]); never write migration, it '
     "is derived; never re-list the existing labels and never drop labels the person did "
@@ -87,7 +91,10 @@ INSTRUCTIONS = (
     "is named by name; its id is derived, so never look a new object up in the catalog. "
     "Leave optional parameters out unless the person gave them. Cloud model steps "
     "(draft_label_set with a cloud profile, run_prelabel) only when the person asks to "
-    "draft, pre-label or use a model. If the request asks for something that is already "
+    "draft, pre-label or use a model. Never add a write nobody asked for (e.g. publishing "
+    'a draft). One step per part asked; a part that cannot be planned goes in "skipped": '
+    '[{"said": "<words>", "reason": "<why>"}]. '
+    "If the request asks for something that is already "
     "so (a label that exists, a setting already at that value), still plan it: the "
     "system checks and says so. " + RECIPE_GUIDE
 )
@@ -337,6 +344,26 @@ def repaired_json(text: str) -> JsonValue:
     raise json.JSONDecodeError(message, text, 0)
 
 
+def _kept(document: dict[str, JsonValue]) -> dict[str, JsonValue]:
+    """The draft's own keys; related names and skipped parts are reduced to plain text."""
+    kept: dict[str, JsonValue] = {
+        key: document[key]
+        for key in ("kind", "steps", "notes", "reason", "related")
+        if key in document
+    }
+    if "skipped" in document:
+        kept["skipped"] = skipped_parts(document["skipped"])
+    if not isinstance(kept.get("reason", ""), str):
+        kept.pop("reason")
+    related = kept.get("related")
+    if related is not None:
+        names: list[JsonValue] = [
+            item for item in (related if isinstance(related, list) else []) if isinstance(item, str)
+        ]
+        kept["related"] = names[:10]
+    return kept
+
+
 def parse_response(content: str, language: str) -> IntentDraft:
     """Read the first JSON object, tolerating code fences around it."""
     match = re.search(r"\{.*\}", content, re.DOTALL)
@@ -354,20 +381,7 @@ def parse_response(content: str, language: str) -> IntentDraft:
     if not isinstance(payload, dict):
         message = "Planner returned a non-object"
         raise ValidationError(message)
-    document = JsonDocument.model_validate(payload).root
-    kept: dict[str, JsonValue] = {
-        key: document[key]
-        for key in ("kind", "steps", "notes", "reason", "related")
-        if key in document
-    }
-    if not isinstance(kept.get("reason", ""), str):
-        kept.pop("reason")
-    related = kept.get("related")
-    if related is not None:
-        names: list[JsonValue] = [
-            item for item in (related if isinstance(related, list) else []) if isinstance(item, str)
-        ]
-        kept["related"] = names[:10]
+    kept = _kept(JsonDocument.model_validate(payload).root)
     steps = kept.get("steps")
     for index, step in enumerate(steps if isinstance(steps, list) else []):
         if isinstance(step, dict):

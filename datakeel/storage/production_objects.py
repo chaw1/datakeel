@@ -30,6 +30,7 @@ from datakeel.core.production_reads import (
 )
 from datakeel.ontology.models import FrozenObject
 from datakeel.storage.database import Database
+from datakeel.storage.display_order import ordered_packages, task_key
 from datakeel.storage.identity_rows import RoleRow, SkillRow, TeamRow, UserRow
 from datakeel.storage.identity_store import role_templates
 from datakeel.storage.object_projection import content_digest
@@ -107,6 +108,27 @@ def _matches(session: Session, value: BoundaryModel, query: ProductionObjectQuer
     return project_id == query.project_id
 
 
+def _displayed(
+    session: Session, query: ProductionObjectQuery, values: list[BoundaryModel]
+) -> list[BoundaryModel]:
+    """Packages and one project's tasks come in the task list's display order."""
+    if query.kind == "task_package":
+        packages = [value for value in values if isinstance(value, TaskPackage)]
+        return list(ordered_packages(packages)) if len(packages) == len(values) else values
+    if query.kind == "production_task" and query.project_id is not None:
+        key = task_key(session, query.project_id)
+        rows = {
+            row.id: row
+            for row in session.scalars(
+                select(ProductionTaskRow).where(ProductionTaskRow.project_id == query.project_id)
+            )
+        }
+        ranked = [value for value in values if str(getattr(value, "id", "")) in rows]
+        if len(ranked) == len(values):
+            return sorted(values, key=lambda value: key(rows[str(getattr(value, "id", ""))]))
+    return values
+
+
 def production_objects(db: Database, query: ProductionObjectQuery) -> tuple[FrozenObject, ...]:
     """Return validated object projections; role templates appear before their first override."""
     with db.session() as session:
@@ -114,9 +136,16 @@ def production_objects(db: Database, query: ProductionObjectQuery) -> tuple[Froz
         if query.kind == "role":
             overrides = {getattr(value, "id", "") for value in values}
             values.extend(role for role in role_templates() if role.id not in overrides)
-        selected = sorted(
-            (value for value in values if _matches(session, value, query)),
-            key=lambda value: (str(getattr(value, "id", "")), str(getattr(value, "version", ""))),
+        selected = _displayed(
+            session,
+            query,
+            sorted(
+                (value for value in values if _matches(session, value, query)),
+                key=lambda value: (
+                    str(getattr(value, "id", "")),
+                    str(getattr(value, "version", "")),
+                ),
+            ),
         )[: query.limit]
         return tuple(_freeze(query.kind, value) for value in selected)
 
@@ -133,10 +162,15 @@ def _freeze(kind: str, value: BoundaryModel) -> FrozenObject:
 
 
 def label_set_difference(db: Database, query: LabelSetDiffParams) -> LabelSetDifference:
-    """Compute current annotation impact rather than estimating from aggregate label counts."""
+    """Compute current annotation impact rather than estimating from aggregate label counts.
+
+    Either version may still be a draft: comparing is how a draft is reviewed before it is
+    published, and reading one changes nothing.
+    """
     with db.session() as session:
-        before = require_label_set(session, query.label_set_id, query.before_version)
-        after = require_label_set(session, query.label_set_id, query.after_version)
+        identifier = query.label_set_id
+        before = require_label_set(session, identifier, query.before_version, published=False)
+        after = require_label_set(session, identifier, query.after_version, published=False)
         old = {label.id: label.name for label in before.labels}
         new = {label.id: label.name for label in after.labels}
         annotations, revisions = migration_impact(session, before, after)

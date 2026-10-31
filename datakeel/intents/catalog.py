@@ -7,6 +7,7 @@ from pydantic import Field
 
 from datakeel.core.intent_models import Candidate
 from datakeel.core.models import BoundaryModel
+from datakeel.core.production_models import Project
 from datakeel.core.production_reads import ProductionObjectQuery
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets, list_versions
@@ -153,18 +154,7 @@ def build_catalog(db: Database, project_id: str | None = None) -> EntityCatalog:
         )
         for project in projects
     ]
-    if project_id and any(project.id == project_id for project in projects):
-        entries += [
-            CatalogEntry(
-                kind="package",
-                id=package.id,
-                label=package.name,
-                names=(package.id, package.name),
-                parent=project_id,
-                size=package.task_count,
-            )
-            for package in list_packages(db, project_id)[:CATALOG_LIMIT]
-        ]
+    entries += _packages(db, projects, project_id)
     for dataset in list_datasets(db)[:CATALOG_LIMIT]:
         entries.append(
             CatalogEntry(
@@ -175,19 +165,43 @@ def build_catalog(db: Database, project_id: str | None = None) -> EntityCatalog:
                 size=dataset.file_count,
             )
         )
+        versions = list(enumerate(list_versions(db, dataset.id), start=1))
         entries += [
             CatalogEntry(
                 kind="version",
                 id=version.id,
-                label=f"{dataset.name} · {version.id[:8]}",
+                label=f"{dataset.name} · v{number}",
                 names=(version.id,),
                 parent=dataset.id,
                 size=version.file_count,
             )
-            for version in list_versions(db, dataset.id)[-5:]
+            for number, version in versions[-5:]
         ]
     entries += _label_sets(db) + _standards(db) + _people_catalog(db) + _models(db)
     return EntityCatalog(entries=entries)
+
+
+def _packages(
+    db: Database, projects: tuple[Project, ...], project_id: str | None
+) -> list[CatalogEntry]:
+    """Every project's packages: a sentence may name a package of a project it is not on.
+
+    The page's project comes first so its packages win a tie on the same name.
+    """
+    entries: list[CatalogEntry] = []
+    for project in sorted(projects, key=lambda project: project.id != project_id):
+        entries += [
+            CatalogEntry(
+                kind="package",
+                id=package.id,
+                label=f"{project.name} · {package.name}",
+                names=(package.id, package.name, f"{project.name} {package.name}"),
+                parent=project.id,
+                size=package.task_count,
+            )
+            for package in list_packages(db, project.id)[:CATALOG_LIMIT]
+        ]
+    return entries
 
 
 def _people_catalog(db: Database) -> list[CatalogEntry]:

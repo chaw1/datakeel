@@ -12,6 +12,8 @@ actions follow in the volatile part, and more can be requested by name.
 import typing
 from functools import lru_cache
 
+from pydantic import JsonValue
+
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.ontology.functions import PARAMETER_MODELS
 
@@ -65,3 +67,61 @@ def choice_values(name: str, field: str) -> list[str]:
     info = model.model_fields.get(field) if model is not None else None
     values = _literal(info.annotation) if info is not None else None
     return [str(value) for value in values] if values and len(values) <= ENUM_LIMIT else []
+
+
+@lru_cache(maxsize=1)
+def choice_fields() -> frozenset[str]:
+    """Every action parameter that takes one of a short fixed choice of values."""
+    return frozenset(
+        name
+        for model in PARAMETER_TYPES.values()
+        for name, info in model.model_fields.items()
+        if (values := _literal(info.annotation)) and len(values) <= ENUM_LIMIT
+    )
+
+
+def near_choice(name: str, field: str, value: JsonValue) -> JsonValue:
+    """A choice written loosely ("task" for production_task, "packages") as the one it means.
+
+    Only a value that fits exactly one allowed choice is replaced; anything else stays as
+    written and is checked (and asked about) as usual.
+    """
+    model = PARAMETER_TYPES.get(name) or PARAMETER_MODELS.get(name)
+    info = model.model_fields.get(field) if model is not None else None
+    allowed = [str(item) for item in (_literal(info.annotation) or [])] if info else []
+    if not isinstance(value, str) or not allowed or value in allowed:
+        return value
+    word = value.strip().casefold().replace(" ", "_").removesuffix("s")
+    if not word:
+        return value
+    # The closest kind of match wins: "task" is production_task before task_package.
+    tiers = (
+        [item for item in allowed if item == word],
+        [item for item in allowed if item.endswith(f"_{word}")],
+        [item for item in allowed if item.startswith(f"{word}_")],
+    )
+    empty: list[str] = []
+    found = next((tier for tier in tiers if tier), empty)
+    return found[0] if len(found) == 1 else value
+
+
+def _takes_list(annotation: object) -> bool:
+    origin = typing.get_origin(annotation)
+    if origin in {list, tuple, set, frozenset}:
+        return True
+    arguments = typing.get_args(annotation)
+    return bool(arguments) and str not in arguments and any(map(_takes_list, arguments))
+
+
+def near_value(name: str, field: str, value: JsonValue) -> JsonValue:
+    """A value as the parameter takes it: one item said where a list is taken becomes a list.
+
+    "the tank label is wrong" for ``issues`` is one issue, not a type error to ask about.
+    A loosely written choice is matched as in :func:`near_choice`.
+    """
+    model = PARAMETER_TYPES.get(name) or PARAMETER_MODELS.get(name)
+    info = model.model_fields.get(field) if model is not None else None
+    scalar = isinstance(value, str | int | float) and not isinstance(value, bool)
+    if info is not None and scalar and value != "" and _takes_list(info.annotation):
+        return [value]
+    return near_choice(name, field, value)

@@ -15,13 +15,19 @@ from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import Candidate, ChainStep, Clarification
 from datakeel.core.models import BoundaryModel
 from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog, candidates
+from datakeel.intents.derived import derivable, derive, underivable
 from datakeel.intents.describe import describe_step
 from datakeel.intents.drafts import DraftStep
+from datakeel.intents.duplicates import duplicate_question, existing
 from datakeel.intents.estimates import estimate_step
-from datakeel.intents.fill import FillState, context_value
+from datakeel.intents.fill import FillState
+from datakeel.intents.fill_state import project_in_scope
 from datakeel.intents.object_edits import operation_needs
+from datakeel.intents.plain_words import enum_label
+from datakeel.intents.public_text import allowed_words, label_names, public_details
 from datakeel.intents.signatures import choice_values
 from datakeel.intents.verify import says_whole
+from datakeel.intents.what_changes import edit_question, nothing_to_edit
 from datakeel.intents.wording import (
     invalid_question,
     missing_question,
@@ -202,12 +208,8 @@ def overreach(
         if step.action in PARAMETER_MODELS or step.action not in POLICIES:
             continue
         scope = POLICIES[step.action][0]
-        named = step.params.get("project_id")
-        project = (
-            named
-            if isinstance(named, str) and catalog.get("project", named)
-            else context_value("project_id", state, catalog)
-        )
+        # The project as written, named in the words, or the page's, as filling resolves it.
+        project = project_in_scope(step.params.get("project_id"), state, catalog)
         allowed = (
             _scope_anywhere(db, state.actor, scope, [project])
             if project
@@ -221,14 +223,23 @@ def overreach(
 def _missing(
     step: DraftStep, missing: list[str], state: FillState, catalog: EntityCatalog
 ) -> Clarification:
-    """Ask in words for what is missing; one missing object comes with up to five choices."""
+    """Ask in words for what is missing; one missing object comes with up to five choices.
+
+    A parameter the state answers is never asked: when the state has no answer either, the
+    reply says why instead.
+    """
+    asked = [name for name in missing if not derivable(step.action, name)]
+    if not asked:
+        question = underivable(missing[0], state.language)
+        return Clarification(question=question, action=step.action, fields=[])
+    missing = asked
     field = missing[0] if len(missing) == 1 else None
     kind = FIELD_KINDS.get(field or "") or LIST_KINDS.get(field or "")
     choices = candidates(catalog.of(kind)) if kind and kind != "task" else []
     if field and not kind:
         # A short choice of values (approve or rework, a workflow tier) is offered as is.
         choices = [
-            Candidate(id=value, label=value, kind="value")
+            Candidate(id=value, label=enum_label(value, state.language), kind="value")
             for value in choice_values(step.action, field)
         ]
     return Clarification(
@@ -265,6 +276,9 @@ def _question(
 ) -> Clarification | None:
     if missing:
         return _missing(step, missing, state, catalog)
+    changes = nothing_to_edit(step)
+    if changes:
+        return edit_question(step, changes, state.language)
     if wider_than_said(step, state.text):
         question = subset_question(state.language)
         return Clarification(question=question, action=step.action, fields=["selection"])
@@ -272,6 +286,23 @@ def _question(
         question = invalid_question(invalid, state.language)
         return Clarification(question=question, action=step.action, fields=[])
     return None
+
+
+def fanned_out(
+    values: dict[str, JsonValue],
+) -> tuple[dict[str, JsonValue], list[dict[str, JsonValue]]]:
+    """Split ``$each`` lists into one item per target; several lists pair up by position."""
+    params: dict[str, JsonValue] = {}
+    lists: dict[str, list[JsonValue]] = {}
+    for key, value in values.items():
+        each = value.get("$each") if isinstance(value, dict) else None
+        if isinstance(each, list):
+            lists[key] = each
+        else:
+            params[key] = value
+    count = min((len(each) for each in lists.values()), default=0)
+    items = [{key: each[index] for key, each in lists.items()} for index in range(count)]
+    return params, items
 
 
 def check_step(
@@ -285,7 +316,7 @@ def check_step(
     earlier, actor, language = {item.id for item in previous}, state.actor, state.language
     if step.action not in PARAMETER_TYPES or step.action not in POLICIES:
         return StepCheck(error=f"Unknown action: {step.action}")
-    step = paired_versions(step)
+    step = derive(db, paired_versions(step))
     problem = _references(step, earlier)
     if problem:
         return StepCheck(error=problem)
@@ -295,17 +326,17 @@ def check_step(
     # task or project is asked for first.
     if not granted and (project_known or not missing):
         return StepCheck(missing_scopes=[POLICIES[step.action][0]])
+    taken = existing(step, catalog)
+    if taken is not None:
+        return StepCheck(clarification=duplicate_question(step, taken, language))
     asked = _question(step, missing, invalid, state, catalog)
     if asked is not None:
         return StepCheck(clarification=asked)
     scope = POLICIES[step.action][0]
-    params = dict(step.params)
-    items: list[dict[str, JsonValue]] = []
-    for key, value in list(params.items()):
-        if isinstance(value, dict) and "$each" in value and isinstance(value["$each"], list):
-            items = [{key: item} for item in value["$each"]]
-            params.pop(key)
+    params, items = fanned_out(step.params)
     chain_step = ChainStep(id=step.id, action=step.action, params=params, items=items, scope=scope)
     estimate = estimate_step(db, chain_step, catalog, previous)
+    allowed = allowed_words(catalog, state.text, labels=label_names(params))
     details = describe_step(db, chain_step, catalog, language)
+    details = public_details(details, language, catalog, allowed)
     return StepCheck(step=chain_step.model_copy(update={"estimate": estimate, "details": details}))

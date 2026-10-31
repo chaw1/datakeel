@@ -88,11 +88,14 @@ def _complete_rule(
     labels: list[ProductionLabel],
     annotated: tuple[GuidelineExample, ...],
     found: Provenance,
+    labelled: frozenset[str] = frozenset(),
 ) -> LabelGuideline:
     kinds = {example.kind for example in rule.examples}
     extra = tuple(item for item in annotated if item.kind not in kinds)
-    found.judged += len(rule.examples)
-    found.annotated += len(extra)
+    # A cited sample that already carries annotations came from them, not from sampled files.
+    existing = sum(example.sample_id in labelled for example in rule.examples)
+    found.judged += len(rule.examples) - existing
+    found.annotated += len(extra) + existing
     text_zh, text_en = rule.text_zh, rule.text_en
     for kind in ("positive", "negative"):
         if kind in kinds or any(item.kind == kind for item in extra):
@@ -117,6 +120,7 @@ def completed_rules(
 ) -> tuple[LabelGuideline, ...]:
     """Every label gets a rule with a positive and a negative example, cited or described."""
     completed: list[LabelGuideline] = []
+    labelled = frozenset(sample.id for sample in inputs.samples if sample.labels)
     for label in labels:
         fallback = offline_rule(label, inputs)
         rule = written.get(label.id)
@@ -130,7 +134,7 @@ def completed_rules(
                 }
             )
         )
-        completed.append(_complete_rule(base, label, labels, fallback.examples, found))
+        completed.append(_complete_rule(base, label, labels, fallback.examples, found, labelled))
     return tuple(completed)
 
 

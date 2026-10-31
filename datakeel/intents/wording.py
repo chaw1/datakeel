@@ -3,11 +3,14 @@
 
 """Short Chinese and English wording for questions, refusals and plan summaries."""
 
+import re
+from collections.abc import Mapping
 from functools import lru_cache
 
 from datakeel.actions.parameters import PARAMETER_TYPES
-from datakeel.intents.field_names import MORE_LABELS
+from datakeel.intents.field_names import ENUM_LABELS, MORE_LABELS
 from datakeel.intents.rules import full_registry
+from datakeel.intents.scope_words import scope_words
 
 FIELD_LABELS: dict[str, tuple[str, str]] = {
     "dataset_id": ("数据集", "dataset"),
@@ -105,7 +108,8 @@ def action_title(action: str, language: str) -> str:
 
 def missing_question(action: str, fields: list[str], language: str) -> str:
     """Ask for every missing required value of one step at once."""
-    names = [field_label(field, language) for field in fields]
+    # Each value is asked for once, by its plain name.
+    names = list(dict.fromkeys(field_label(field, language) for field in fields))
     if language == "zh":
         return f"要{action_title(action, language)}, 还缺: {'、'.join(names)}。请补充。"
     return f"To {action_title(action, language)} I still need: {', '.join(names)}."
@@ -118,19 +122,33 @@ def settable(action: str, language: str, limit: int = 8) -> list[str]:
     return [field_label(name, language) for name in names][:limit]
 
 
-def unknown_question(action: str, unknown: list[str], language: str) -> str:
-    """Say which requested setting this action does not have, and which ones it does."""
-    keys = unknown
+def _spoken(key: str, value: object, language: str) -> str:
+    """A setting the action lacks, by its plain name, else by the value the person gave."""
+    label = field_label(key, language)
+    if label != key:
+        return label
+    if isinstance(value, str | int | float) and not isinstance(value, bool):
+        return str(value)
+    return "你说的某一项" if language == "zh" else "one of the values you gave"
+
+
+def unknown_question(action: str, unknown: Mapping[str, object], language: str) -> str:
+    """Say which requested setting this action does not have, and which ones it does.
+
+    A name the model made up is not repeated back: the setting is named by its plain name,
+    or by the value the person said (每包 20 张 reads as 「20」).
+    """
+    spoken = list(dict.fromkeys(_spoken(key, value, language) for key, value in unknown.items()))
     options = settable(action, language)
     if language == "zh":
-        spoken = "、".join(f"「{field_label(key, language)}」" for key in keys)
+        named = "、".join(f"「{item}」" for item in spoken)
         return (
-            f"{action_title(action, language)}没有 {spoken} 这项设置, 我不能悄悄忽略它。"
+            f"{action_title(action, language)}没有 {named} 对应的设置, 我不能悄悄忽略它。"
             f"能设置的有: {'、'.join(options)}。你想改的是哪一项?"
         )
-    spoken = ", ".join(f'"{field_label(key, language)}"' for key in keys)
+    named = ", ".join(f'"{item}"' for item in spoken)
     return (
-        f"{action_title(action, language)} has no setting {spoken}, and I will not drop it "
+        f"{action_title(action, language)} has no setting for {named}, and I will not drop it "
         f"silently. It can set: {', '.join(options)}. Which one did you mean?"
     )
 
@@ -168,17 +186,20 @@ def subset_question(language: str) -> str:
 
 
 def refusal(action: str, scopes: list[str], language: str) -> str:
-    """Name the action and the exact missing permission scopes."""
-    joined = ", ".join(scopes)
+    """Name the action and the missing permission scopes in words.
+
+    The exact scope ids travel in ``missing_scopes``; English text also names them.
+    """
+    joined = scope_words(scopes, language)
     if language == "zh":
         return (
-            f"你没有权限{action_title(action, language)} ({action}) : 需要权限范围 {joined}, "
-            f"你当前的角色里没有。手动操作同样会被拒绝; 请找管理员授予包含 {joined} 的角色。"
+            f"你没有权限{action_title(action, language)}: 缺少{joined}权限, "
+            f"你当前的角色里没有。手动操作同样会被拒绝; 请找管理员给你一个带{joined}权限的角色。"
         )
     return (
-        f"You cannot {action_title(action, language)} ({action}): it needs the scope "
+        f"You cannot {action_title(action, language)}: it needs the permission for "
         f"{joined}, which your roles do not grant. Doing it by hand is refused too; "
-        f"ask an administrator for a role with {joined}."
+        "ask an administrator for a role that has it."
     )
 
 
@@ -222,12 +243,24 @@ def nothing_to_change(kind: str, holder: str, language: str) -> str:
     )
 
 
+def _allowed(expected: str, language: str) -> str:
+    """The validator's "'approve' or 'rework'" as 「通过、打回」; number ranges stay."""
+    quoted = re.findall(r"'([^']*)'", expected)
+    if not quoted:
+        return expected
+    if any(item not in ENUM_LABELS for item in quoted):
+        return ""  # internal choice names are never listed to a person
+    words = [ENUM_LABELS.get(item, (item, item))[0 if language == "zh" else 1] for item in quoted]
+    return ("、" if language == "zh" else ", ").join(words)
+
+
 def invalid_question(problem: str, language: str) -> str:
     """Values the action rejects, named with what is allowed; never the raw error."""
     parts: list[str] = []
     for entry in dict.fromkeys(problem.split("|")):
-        field, _, expected = entry.partition(":")
+        field, _, allowed = entry.partition(":")
         label = field_label(field, language)
+        expected = _allowed(allowed, language)
         if language == "zh":
             parts.append(f"「{label}」的值不行" + (f"(可以是 {expected})" if expected else ""))
         else:

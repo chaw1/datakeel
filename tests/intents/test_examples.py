@@ -88,7 +88,7 @@ def test_annotator_is_refused_at_planning_with_the_missing_scope(db: Database) -
     result = plan(db, SETUP, dataset_context, actor="wang")
     assert result.kind == "refuse"
     assert result.missing_scopes == ["production:manage"]
-    assert "production:manage" in result.text
+    assert "缺少「项目管理」权限" in result.text
     assert result.chain is None
 
 

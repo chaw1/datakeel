@@ -69,12 +69,12 @@ def is_nobody(holder: JsonValue, spec: dict[str, JsonValue]) -> bool:
     return spec.get("unassigned") is True or word in NOBODY
 
 
-def _applies(task: TaskSnapshot, action: str, speaker: str) -> bool:
+def _applies(task: TaskSnapshot, action: str, speaker: str, stage: str) -> bool:
     """Tasks the action can act on at all; anything else is not part of the group."""
     if action == "assign_tasks":
         return task.state in OPEN_STATES
     if action in {"revoke_assignment", "release_task"}:
-        held = task.holder is not None and task.stage == "annotation"
+        held = task.holder is not None and task.stage == stage
         return held and (action != "release_task" or task.holder == speaker)
     return True
 
@@ -84,12 +84,23 @@ def _rounds(spec: dict[str, JsonValue]) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
+def _held_by(task: TaskSnapshot, stage: str) -> str | None:
+    """Who holds the task in this stage: an annotator while it is open, a reviewer in review."""
+    if task.stage != stage:
+        return None
+    return task.holder if stage != "annotation" or task.state in OPEN_STATES else None
+
+
 def _matches(
-    task: TaskSnapshot, spec: dict[str, JsonValue], holder: str | None, package: str | None
+    task: TaskSnapshot,
+    spec: dict[str, JsonValue],
+    found: tuple[str | None, str | None],
+    stage: str,
 ) -> bool:
+    holder, package = found
     if is_nobody(spec.get("holder"), spec) and (task.holder is not None or task.state != "pending"):
         return False
-    held_by = task.holder if task.stage == "annotation" and task.state in OPEN_STATES else None
+    held_by = _held_by(task, stage)
     if holder is not None and held_by != holder:
         return False
     state = spec.get("state")
@@ -139,22 +150,28 @@ def select_tasks(
     action: str,
     speaker: str,
     found: tuple[str | None, str | None] = (None, None),
+    stage: str = "annotation",
 ) -> TaskScope:
-    """Resolve one selector over the project's tasks; ``found`` is (holder, package) ids."""
+    """Resolve one selector over the project's tasks; ``found`` is (holder, package) ids.
+
+    ``stage`` is the step's own: "his review tasks" are the ones he holds for review.
+    """
     named = _named(spec)
     if named is not None:
         listed = {task.number: task for task in tasks}
         if any(number not in listed for number in named):
             return TaskScope(missing=True)
         return TaskScope(ids=list(dict.fromkeys(listed[number].id for number in named)))
-    holder, package = found
+    holder = found[0]
     group = [
         task
         for task in tasks
-        if _applies(task, action, speaker) and _matches(task, spec, holder, package)
+        if _applies(task, action, speaker, stage) and _matches(task, spec, found, stage)
     ]
     excluded: Counter[str] = Counter()
     guarded = set(PROTECTIONS.get(action, ())) - _unlocked(spec, holder)
+    if stage != "annotation":
+        guarded.discard("annotated")  # a task in review is annotated by definition
     kept: list[TaskSnapshot] = []
     for task in group:
         reason = _protection(task, guarded)

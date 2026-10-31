@@ -73,6 +73,34 @@ def near_duplicates(db: Database, dataset_id: str, version_id: str | None) -> li
     return sorted(copies)
 
 
+REST = frozenset({"remaining", "rest", "others", "other", "unselected", "not_selected"})
+
+
+def _file_ids(
+    db: Database,
+    spec: dict[str, JsonValue],
+    where: tuple[str, str | None],
+    selected: list[str],
+) -> list[str] | None:
+    """The files one ``$files`` kind names; None when the kind cannot be resolved here.
+
+    "The remaining files" are every file of the dataset except the ones selected on the page.
+    """
+    kind, (dataset_id, version_id) = spec.get("kind"), where
+    if kind == "selected":
+        return list(selected)
+    if kind == "near_duplicates":
+        return near_duplicates(db, dataset_id, version_id)
+    if kind == "named":
+        raw = spec.get("names")
+        listed = [item for item in raw if isinstance(item, str)] if isinstance(raw, list) else []
+        return named_files(db, dataset_id, version_id, listed)
+    if kind in REST and selected:
+        chosen = set(selected)
+        return [item for item in _dataset_files(db, dataset_id, version_id) if item not in chosen]
+    return None
+
+
 def file_selection(
     db: Database,
     spec: dict[str, JsonValue],
@@ -81,21 +109,10 @@ def file_selection(
     selected: list[str],
 ) -> dict[str, JsonValue] | None:
     """Turn {"$files": {...}} into an exact id selection, or None when it cannot resolve."""
-    kind = spec.get("kind")
     if dataset_id is None:
         return None
-    if kind == "selected":
-        ids = list(selected)
-    elif kind == "near_duplicates":
-        ids = near_duplicates(db, dataset_id, version_id)
-    elif kind == "named":
-        raw = spec.get("names")
-        listed = [item for item in raw if isinstance(item, str)] if isinstance(raw, list) else []
-        named = named_files(db, dataset_id, version_id, listed)
-        if named is None:
-            return None
-        ids = named
-    else:
+    ids = _file_ids(db, spec, (dataset_id, version_id), selected)
+    if ids is None:
         return None
     if not ids:
         return {"dataset_id": dataset_id, "filters": [], "limit": 0, "$empty": True}

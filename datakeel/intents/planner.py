@@ -27,6 +27,8 @@ from datakeel.intents.model_parse import (
     repair_request,
 )
 from datakeel.intents.outcomes import PlannerFailure, call_model, failed, no_fit
+from datakeel.intents.partial import with_skipped
+from datakeel.intents.public_text import public_result
 from datakeel.intents.recipes import match_recipe, recipe_covers
 from datakeel.intents.resolve import Resolver, page_state
 from datakeel.intents.rules import full_registry, is_question, rank
@@ -42,6 +44,7 @@ UNREADABLE = (DatakeelError, ModelValidationError, ValueError)
 READ_SCORE = 2.5
 READ_MARGIN = 1.5
 REPLY_LIMIT = 40
+READ_LIMIT = 3
 CONTAINER_OUTPUTS = ("dataset_id", "version_id", "project_id", "package_id", "label_set_id")
 
 
@@ -293,9 +296,25 @@ def plan_turn(
     complete: Complete | None = None,
     access: ModelAccess | None = None,
 ) -> IntentResult | None:
-    """Return a checked result, or None when the free conversation should answer instead."""
-    granted = access or ModelAccess()
+    """Return a checked result, or None when the free conversation should answer instead.
+
+    Every word of the result passes the outgoing check: no internal names reach a person.
+    """
     catalog = build_catalog(db, turn.context.project_id)
+    result = _planned(db, turn, catalog, complete, access or ModelAccess())
+    if result is None:
+        return None
+    language = result.chain.language if result.chain else language_of(turn.text)
+    return public_result(result, language, catalog)
+
+
+def _planned(
+    db: Database,
+    turn: PlannerTurn,
+    catalog: EntityCatalog,
+    complete: Complete | None,
+    granted: ModelAccess,
+) -> IntentResult | None:
     try:
         draft, parser, request = _draft(db, turn, catalog, complete, granted)
     except PlannerFailure as failure:
@@ -303,20 +322,34 @@ def plan_turn(
     if draft is None or draft.question or draft.kind == "none" or not draft.steps:
         return _no_plan(draft, turn, asked=granted.allowed and complete is not None)
     words = f"{request} {turn.text}" if request != turn.text else turn.text
-    state = page_state(turn.context, turn.focus, turn.actor, draft.language, words)
+    language = draft.language
+    state = page_state(turn.context, turn.focus, turn.actor, language, words)
     tool = ToolCallContext(actor=turn.actor, session_id=turn.conversation_id)
     resolver = Resolver(db, catalog, state, tool)
     reads = [step for step in draft.steps if step.action in PARAMETER_MODELS]
-    if draft.kind == "answer" or (len(draft.steps) == 1 and reads):
-        if not reads:
-            # An answer naming no registered read still ends with an answer, never silence.
-            return _no_plan(draft, turn, asked=granted.allowed and complete is not None)
-        result = resolver.answer(draft, reads[0], request)
+    writes = draft.model_copy(update={"steps": [s for s in draft.steps if s not in reads]})
+    if draft.kind == "answer" and not reads:
+        # An answer naming no registered read still ends with an answer, never silence.
+        return _no_plan(draft, turn, asked=granted.allowed and complete is not None)
+    if not writes.steps:
+        result = with_skipped(_answered(resolver, draft, reads, request), draft.skipped, language)
     else:
-        writes = draft.model_copy(update={"steps": [s for s in draft.steps if s not in reads]})
-        if not writes.steps:
-            # Several reads and no write: answer the first read rather than build a chain.
-            return resolver.answer(draft, reads[0], request).model_copy(update={"parser": parser})
         origin = (parser, granted.model if parser == "model" else None)
         result = resolver.plan(writes, request, turn.conversation_id, origin)
+        if reads and result.kind == "plan":
+            # A question asked beside the change is answered too, never dropped.
+            extra = _answered(resolver, draft, reads, request)
+            result = result.model_copy(update={"text": f"{result.text} {extra.text}"})
     return result.model_copy(update={"parser": parser})
+
+
+def _answered(
+    resolver: Resolver, draft: IntentDraft, reads: list[DraftStep], request: str
+) -> IntentResult:
+    """Every read the sentence asks (up to three), answered in turn."""
+    results = [resolver.answer(draft, step, request) for step in reads[:READ_LIMIT]]
+    first = next((item for item in results if item.kind == "answer"), results[0])
+    if len(results) == 1:
+        return first
+    text = " ".join(item.text for item in results)
+    return first.model_copy(update={"text": text})

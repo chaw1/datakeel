@@ -40,6 +40,9 @@ MODEL_WORDS = re.compile(
     r"|extract",
     re.IGNORECASE,
 )
+PUBLISH_WORDS = re.compile(
+    r"发布|上线|定版|定稿|定下来|生效|publish|release|go live", re.IGNORECASE
+)
 # Asking the platform to come up with labels or rules from sources is asking for a draft.
 DRAFT_WORDS = re.compile(
     r"参考|根据|依据|按照|整理|归纳|总结|推荐|建议|生成|想(?:几|一|些)|"
@@ -157,6 +160,20 @@ def _model_problem(step: DraftStep, text: str) -> Problem | None:
     )
 
 
+def _publish_problem(step: DraftStep, text: str) -> Problem | None:
+    """Publishing is a write of its own: never added to make another step work."""
+    if step.action != "publish_label_set" or PUBLISH_WORDS.search(text):
+        return None
+    return Problem(
+        code="unasked",
+        hint="The person did not ask to publish; leave publish_label_set out. A new project "
+        "uses the newest published version of a label set by itself.",
+        question_zh="这一步会发布标签集, 但你没说要发布。要发布吗?",
+        question_en="This step would publish the label set, but you did not ask to publish it. "
+        "Should it be published?",
+    )
+
+
 def _duplicate_problem(step: DraftStep, text: str, catalog: EntityCatalog) -> Problem | None:
     """Creating an object named like an existing one, when the words do not say new."""
     if step.action != "create_label_set" or "label_set_id" in step.params:
@@ -171,8 +188,9 @@ def _duplicate_problem(step: DraftStep, text: str, catalog: EntityCatalog) -> Pr
         code="reference",
         hint=f"The person refers to the existing label set {name}: change it with "
         "label_set_id and add_labels/remove_labels/rename_labels instead of creating one.",
-        question_zh=f"要改现有的「{label}」, 还是另建一个同名的新标签集?",
-        question_en=f'Change the existing "{label}", or create a new label set with that name?',
+        question_zh=f"已经有一个叫「{label}」的标签集了。要改现有的这个, 还是换个名字新建?",
+        question_en=f'There is already a label set called "{label}". Change the existing one, '
+        "or create it under another name?",
     )
 
 
@@ -230,6 +248,7 @@ def draft_problems(
         problem = (
             _verb_problem(db, step, state)
             or _model_problem(step, state.text)
+            or _publish_problem(step, state.text)
             or _duplicate_problem(step, state.text, catalog)
             or _dropped_problem(db, step, state.text)
             or _role_problem(step)
@@ -313,8 +332,18 @@ def _assigned_already(db: Database, params: dict[str, JsonValue]) -> bool:
     return all(holders.get(str(task)) == actor for task in tasks)
 
 
+def _nobody_holds(db: Database, step: ChainStep) -> bool:
+    """Taking back or giving up tasks nobody holds in that stage changes nothing."""
+    entries = step.items or [step.params]
+    tasks = [str(entry.get("task_id")) for entry in entries if entry.get("task_id")]
+    stage = str(step.params.get("stage") or "annotation")
+    return bool(tasks) and not task_holders(db, tasks, stage)
+
+
 def unchanged(db: Database, step: ChainStep) -> bool:
     """The step would leave everything exactly as it is."""
+    if step.action in {"revoke_assignment", "release_task"}:
+        return _nobody_holds(db, step)
     checks = {
         "create_label_set": _label_set_unchanged,
         "publish_label_set": _published,

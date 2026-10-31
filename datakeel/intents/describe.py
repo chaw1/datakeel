@@ -11,7 +11,7 @@ added and removed with the annotations that change.
 
 import json
 
-from pydantic import JsonValue
+from pydantic import BaseModel, JsonValue
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.actions.parameters import PARAMETER_TYPES
@@ -19,9 +19,12 @@ from datakeel.core.errors import NotFoundError
 from datakeel.core.intent_models import ChainStep, StepDetail
 from datakeel.intents.catalog import FIELD_KINDS, LIST_KINDS, EntityCatalog
 from datakeel.intents.edits import label_diff
+from datakeel.intents.plain_words import enum_label
+from datakeel.intents.signatures import choice_fields
 from datakeel.intents.wording import FIELD_LABELS, field_label
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
+from datakeel.storage.identity_store import list_users
 from datakeel.storage.object_queries import evaluate
 from datakeel.storage.production_queries import get_task, list_tasks
 
@@ -37,6 +40,7 @@ HIDDEN = frozenset(
         "migration",
     }
 )
+REVISIONS = frozenset({"revision_id", "previous_revision_id"})
 PREVIEW = 3
 TEXT_LIMIT = 120
 
@@ -61,9 +65,17 @@ def _name(kind: str, value: JsonValue, catalog: EntityCatalog) -> str:
     return entry.label if entry is not None else str(value)
 
 
+def _step_name(step: str, language: str) -> str:
+    """Step "s2" reads as 第 2 步 / step 2."""
+    number = step.removeprefix("s")
+    if not number.isdigit():
+        return "前一步" if language == "zh" else "an earlier step"
+    return f"第 {number} 步" if language == "zh" else f"step {number}"
+
+
 def _reference(value: dict[str, JsonValue], language: str) -> str:
     source = str(value["$ref"]).split(".", 1)
-    step, output = source[0], source[-1]
+    step, output = _step_name(source[0], language), source[-1]
     label = field_label(
         output.removesuffix("_version") + ("_id" if output.endswith("_version") else ""), language
     )
@@ -93,8 +105,8 @@ def _selection(db: Database, value: dict[str, JsonValue], language: str) -> str:
     return f"{count}: {_listing(names, language)}" if names else count
 
 
-def task_positions(db: Database, ids: list[JsonValue], language: str) -> list[str]:
-    """Tasks have no names: show their position in the project's task list, as people see it."""
+def task_positions(db: Database, ids: list[JsonValue]) -> list[str]:
+    """Tasks have no names: show their list number (#N), the one the task list shows."""
     order: dict[str, int] = {}
     names: list[str] = []
     for value in ids:
@@ -107,7 +119,7 @@ def task_positions(db: Database, ids: list[JsonValue], language: str) -> list[st
             listed = list_tasks(db, task.project_id)
             order.update({item.id: index for index, item in enumerate(listed, start=1)})
         position = order.get(task.id, 0)
-        names.append(f"第 {position} 个" if language == "zh" else f"#{position}")
+        names.append(f"#{position}")
     return names
 
 
@@ -119,6 +131,11 @@ def _labels(value: list[JsonValue], language: str) -> str:
 def _plain(value: JsonValue, language: str, field: str = "") -> str:
     if field in {"labels", "add_labels"} and isinstance(value, list):
         return _labels(value, language)
+    if isinstance(value, str) and field in choice_fields():
+        return enum_label(value, language)
+    if isinstance(value, str) and field in REVISIONS:
+        # A revision is read from the task's current state; its identity means nothing here.
+        return "最新保存的那一版" if language == "zh" else "the latest saved version"
     if isinstance(value, bool):
         return ("是" if value else "否") if language == "zh" else ("yes" if value else "no")
     if isinstance(value, (dict, list)):
@@ -139,7 +156,7 @@ def _nested(value: JsonValue, catalog: EntityCatalog, language: str) -> str:
         return _listing([_nested(item, catalog, language) for item in value], language)
     if isinstance(value, str):
         known = next((entry for entry in catalog.entries if entry.id == value), None)
-        return known.label if known is not None else value
+        return known.label if known is not None else enum_label(value, language)
     return _plain(value, language)
 
 
@@ -148,16 +165,17 @@ def _value(
 ) -> str:
     if isinstance(value, dict) and "$ref" in value:
         return _reference(value, language)
+    if field in {"task_id", "task_ids"}:
+        # Tasks are not in the catalog: they read as their places in the task list.
+        values: list[JsonValue] = value if isinstance(value, list) else [value]
+        count = f"{len(values)} 个任务" if language == "zh" else f"{len(values)} tasks"
+        return f"{count}: {_listing(task_positions(db, values), language)}"
     if field in FIELD_KINDS and isinstance(value, str):
         return _name(FIELD_KINDS[field], value, catalog)
     if field in LIST_KINDS and isinstance(value, list):
         return _listing([_name(LIST_KINDS[field], item, catalog) for item in value], language)
     if field == "selection" and isinstance(value, dict):
         return _selection(db, value, language)
-    if field in {"task_id", "task_ids"}:
-        values: list[JsonValue] = value if isinstance(value, list) else [value]
-        count = f"{len(values)} 个任务" if language == "zh" else f"{len(values)} tasks"
-        return f"{count}: {_listing(task_positions(db, values, language), language)}"
     nested = isinstance(value, (dict, list)) and field not in {"labels", "add_labels"}
     return _shorten(_nested(value, catalog, language)) if nested else _plain(value, language, field)
 
@@ -172,9 +190,13 @@ def _defaults(step: ChainStep, language: str) -> list[StepDetail]:
         if default in (None, (), [], {}, ""):
             continue
         marker = "默认" if language == "zh" else "default"
+        shown = _plain(default, language, name) if isinstance(default, str) else default
+        if isinstance(default, BaseModel):
+            limits = default.model_dump(mode="json").items()
+            shown = ", ".join(f"{field_label(key, language)} {item}" for key, item in limits)
         details.append(
             StepDetail(
-                label=field_label(name, language), value=f"{default} ({marker})", tone="default"
+                label=field_label(name, language), value=f"{shown} ({marker})", tone="default"
             )
         )
     return details
@@ -255,11 +277,29 @@ def describe_step(
         )
     ]
     if step.items:
-        key = next(iter(step.items[0]))
+        key = "task_id" if "task_id" in step.items[0] else next(iter(step.items[0]))
         values = [item[key] for item in step.items]
         details.append(
             StepDetail(
                 label=field_label(key, language), value=_items(db, key, values, catalog, language)
             )
         )
-    return details + _diff(db, step, language) + _defaults(step, language)
+    return (
+        details
+        + _diff(db, step, language)
+        + _holders(db, step, language)
+        + _defaults(step, language)
+    )
+
+
+def _holders(db: Database, step: ChainStep, language: str) -> list[StepDetail]:
+    """Changing or retiring a skill shows how many people hold it now."""
+    skill = step.params.get("skill_id")
+    if step.action != "manage_skills" or step.params.get("operation") == "create":
+        return []
+    if not isinstance(skill, str):
+        return []
+    count = sum(skill in user.skill_ids for user in list_users(db) if user.status != "deleted")
+    label = "目前持有的人" if language == "zh" else "Held by"
+    value = f"{count} 人" if language == "zh" else f"{count} people"
+    return [StepDetail(label=label, value=value, tone="impact")]

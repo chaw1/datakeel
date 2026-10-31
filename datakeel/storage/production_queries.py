@@ -6,7 +6,7 @@
 from collections.abc import Mapping
 
 from pydantic import JsonValue
-from sqlalchemy import case, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from datakeel.core.errors import NotFoundError, ValidationError
@@ -23,6 +23,7 @@ from datakeel.core.production_models import (
     TaskPackage,
 )
 from datakeel.storage.database import Database
+from datakeel.storage.display_order import TaskKey, ordered_packages, ordered_task_rows, task_key
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
     ProductionPackageRow,
@@ -92,32 +93,30 @@ def list_projects(db: Database) -> tuple[Project, ...]:
 
 
 def list_packages(db: Database, project_id: str) -> tuple[TaskPackage, ...]:
-    """Read partition metadata while leaving package state to bounded summary reads."""
+    """Read partition metadata in display order; package state stays in summary reads."""
     with db.session() as session:
         require_project(session, project_id)
         return tuple(
-            TaskPackage.model_validate(row.payload)
-            for row in session.scalars(
-                select(ProductionPackageRow)
-                .where(ProductionPackageRow.project_id == project_id)
-                .order_by(ProductionPackageRow.id)
+            ordered_packages(
+                TaskPackage.model_validate(row.payload)
+                for row in session.scalars(
+                    select(ProductionPackageRow).where(
+                        ProductionPackageRow.project_id == project_id
+                    )
+                )
             )
         )
 
 
 def list_tasks(db: Database, project_id: str, limit: int = 10000) -> tuple[ProductionTask, ...]:
-    """Return a bounded stable task listing for generated data and command-line workflows."""
+    """Return a bounded task listing in the task list's display order."""
     with db.session() as session:
         require_project(session, project_id)
-        return tuple(
-            task_view(row)
-            for row in session.scalars(
-                select(ProductionTaskRow)
-                .where(ProductionTaskRow.project_id == project_id)
-                .order_by(ProductionTaskRow.id)
-                .limit(min(max(limit, 1), 10000))
-            )
+        rows = session.scalars(
+            select(ProductionTaskRow).where(ProductionTaskRow.project_id == project_id)
         )
+        ordered = ordered_task_rows(session, project_id, rows)
+        return tuple(task_view(row) for row in ordered[: min(max(limit, 1), 10000)])
 
 
 def get_task(db: Database, task_id: str) -> ProductionTask:
@@ -232,15 +231,16 @@ def next_task(
             )
         if package_id is not None:
             query = query.where(ProductionTaskRow.package_id == package_id)
-        if project.workflow_tier != "personal":
-            query = query.order_by(
-                case(
-                    ((ProductionTaskRow.round > 0) & (ProductionTaskRow.annotator_id == actor), 0),
-                    (ProductionTaskRow.annotator_id == actor, 1),
-                    else_=2,
-                )
-            )
-        row = session.scalar(
-            query.order_by(ProductionTaskRow.priority.desc(), ProductionTaskRow.id).limit(1)
-        )
-        return task_view(row) if row else None
+        rows = list(session.scalars(query))
+        if not rows:
+            return None
+        key = task_key(session, project_id)
+        personal = project.workflow_tier == "personal"
+
+        def rank(row: ProductionTaskRow) -> tuple[int, int, TaskKey]:
+            # Own rework first, then own work, then open work; ties follow the task list.
+            mine = row.annotator_id == actor and not personal
+            own = 0 if mine and row.round > 0 else 1 if mine else 2
+            return own, -row.priority, key(row)
+
+        return task_view(min(rows, key=rank))

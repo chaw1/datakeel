@@ -21,15 +21,27 @@ from datakeel.core.intent_models import (
 from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
-from datakeel.intents.fill import FillState, fill_defaults, fill_steps, latest_revision
+from datakeel.intents.duplicates import duplicate_question, existing
+from datakeel.intents.fill import FillState, fill_defaults, fill_steps, known_fields
+from datakeel.intents.fill_state import CONTAINER_KINDS, named_in_words
+from datakeel.intents.impossible import idle_reason, impossible
 from datakeel.intents.outcomes import unsupported
-from datakeel.intents.validate import check_step, overreach, required_fields
+from datakeel.intents.partial import set_aside, skipped_lines, with_skipped, without
+from datakeel.intents.public_text import allowed_words, public_notes
+from datakeel.intents.read_scope import (
+    assumed_note,
+    missing_choices,
+    own_projects,
+    scope_question,
+    unfiltered_note,
+)
+from datakeel.intents.validate import bad_value, check_step, overreach, required_fields
 from datakeel.intents.verify import unchanged
 from datakeel.intents.wording import (
     already_so,
     broken_plan,
     excluded_text,
-    field_label,
+    invalid_question,
     plan_text,
     refusal,
 )
@@ -65,37 +77,76 @@ class Resolver:
         )
 
     def answer(self, draft: IntentDraft, step: DraftStep, text: str) -> IntentResult:
-        """Run a read function directly once its required inputs are known."""
+        """Run a read function directly once its required inputs are known.
+
+        A filter the read does not take is not asked about: the answer comes without it and
+        says so, rather than ending in a question about a setting.
+        """
         model = PARAMETER_MODELS[step.action]
         required = {
             str(name)
             for name in model.model_json_schema().get("required", [])
             if isinstance(name, str)
         }
-        filled = fill_steps(self.db, [step], self.state, self.catalog)
+        known, unknown = known_fields(step, self.state, self.catalog)
+        applied: set[str] = set()
+        for field, kind in CONTAINER_KINDS.items():
+            # A container the words name narrows the read even where it is optional.
+            named = named_in_words(field, self.state, self.catalog)
+            entry = self.catalog.get(kind, named) if named else None
+            if entry is not None and field in model.model_fields and field not in known:
+                known[field] = entry.id
+                applied.update({entry.label, *entry.names})
+        unfiltered = unfiltered_note(unknown, text, draft.language, frozenset(applied))
+        bounded = step.model_copy(update={"params": known})
+        filled = fill_steps(self.db, [bounded], self.state, self.catalog)
         if filled.clarification is not None:
             return self._clarify(draft, filled.clarification, text)
         current = fill_defaults(filled.steps[0], required, self.state, self.catalog)
-        missing = sorted(required - set(current.params))
-        if missing:
-            names = "、".join(field_label(item, draft.language) for item in missing)
-            question = (
-                f"要回答这个问题, 还缺: {names}。"
-                if draft.language == "zh"
-                else f"I need: {names}."
-            )
-            clarification = Clarification(question=question, action=step.action, fields=missing)
-            return self._clarify(draft, clarification, text)
+        scoped = self._scoped(draft, filled.steps[0], current, required)
+        if isinstance(scoped, Clarification):
+            return self._clarify(draft, scoped, text)
+        current, note = scoped
         try:
             model.model_validate(current.params)
         except ModelValidationError as error:
-            return self._clarify(
-                draft,
-                Clarification(question=str(error.errors()[0]["msg"]), action=step.action),
-                text,
-            )
+            problem = "|".join(bad_value(item, step.action) for item in error.errors())
+            question = invalid_question(problem, draft.language)
+            asked = Clarification(question=question, action=step.action)
+            return self._clarify(draft, asked, text)
         answer, sentence = run_read(self.db, step.action, current.params, self.tool, draft.language)
-        return IntentResult(kind="answer", text=sentence, request=text, answer=answer)
+        return IntentResult(
+            kind="answer", text=note + sentence + unfiltered, request=text, answer=answer
+        )
+
+    def _scoped(
+        self, draft: IntentDraft, before: DraftStep, current: DraftStep, required: set[str]
+    ) -> tuple[DraftStep, str] | Clarification:
+        """A read's missing project: the speaker's only one (said aloud), else a choice."""
+        missing = sorted(required - set(current.params))
+        note = self._assumed(before, current, draft.language)
+        if missing == ["project_id"]:
+            own = own_projects(self.db, self.state.actor, self.catalog)
+            if len(own) != 1:
+                return scope_question(current.action, missing, draft.language, own)
+            params = {**current.params, "project_id": own[0].id}
+            return current.model_copy(update={"params": params}), assumed_note(
+                own[0], draft.language
+            )
+        if missing:
+            choices = missing_choices(missing[0], self.catalog) if len(missing) == 1 else []
+            return scope_question(current.action, missing, draft.language, choices)
+        return current, note
+
+    def _assumed(self, before: DraftStep, after: DraftStep, language: str) -> str:
+        """The only project, filled although neither page nor words gave one, is said."""
+        project = after.params.get("project_id")
+        given = "project_id" in before.params or self.state.context.project_id
+        named = named_in_words("project_id", self.state, self.catalog)
+        entry = self.catalog.get("project", project) if isinstance(project, str) else None
+        if entry is None or given or named or self.state.focus.get("project_id"):
+            return ""
+        return assumed_note(entry, language)
 
     def _draft_sources(self, step: DraftStep, text: str) -> DraftStep:
         params: dict[str, JsonValue] = dict(step.params)
@@ -156,9 +207,7 @@ class Resolver:
         for position, step in enumerate(steps):
             current = self._draft_sources(step, text) if step.action == "draft_label_set" else step
             required = required_fields(current.action)
-            current = latest_revision(
-                self.db, fill_defaults(current, required, self.state, self.catalog)
-            )
+            current = fill_defaults(current, required, self.state, self.catalog)
             result = check_step(self.db, current, self.state, self.catalog, checked)
             if result.clarification is not None:
                 rest = [*checked_drafts(checked), current, *steps[position + 1 :]]
@@ -180,6 +229,10 @@ class Resolver:
             checked.append(_with_exclusions(result.step, left_out.get(step.id), draft.language))
         return checked
 
+    def _notes(self, draft: IntentDraft, text: str) -> list[str]:
+        allowed = allowed_words(self.catalog, text)
+        return public_notes(draft.notes, draft.language, self.catalog, allowed)
+
     def plan(
         self,
         draft: IntentDraft,
@@ -192,6 +245,15 @@ class Resolver:
         Permission comes first: a write the speaker may not perform is refused before any
         question about its parameters is asked.
         """
+        result: IntentResult | IntentDraft = set_aside(self.db, draft, self.state, self.catalog)
+        # A narrower draft comes back when a part was set aside; each round drops at least one.
+        while isinstance(result, IntentDraft):
+            draft = result
+            result = self._plan(draft, text, conversation_id, origin)
+        return with_skipped(result, draft.skipped, draft.language)
+
+    def _stopped(self, draft: IntentDraft, text: str) -> IntentResult | None:
+        """A refusal, or a new name that is taken: both come before any other question."""
         refused = overreach(self.db, draft.steps, self.state, self.catalog)
         if refused is not None:
             action, scopes = refused
@@ -201,16 +263,65 @@ class Resolver:
                 request=text,
                 missing_scopes=scopes,
             )
+        for step in draft.steps:
+            taken = existing(step, self.catalog)
+            if taken is not None:
+                asked = duplicate_question(step, taken, draft.language)
+                return self._clarify(draft, asked, text)
+        return None
+
+    def _settled(
+        self, draft: IntentDraft, checked: list[ChainStep], text: str
+    ) -> IntentResult | IntentDraft | None:
+        """Parts execution must refuse, or that change nothing, never reach a card.
+
+        With other parts standing they are set aside and said; alone they are answered.
+        """
+        refused: dict[str, str] = {}
+        idle: dict[str, str] = {}
+        for step in checked:
+            reason = impossible(self.db, step, draft.language)
+            if reason is not None:
+                refused[step.id] = reason
+            elif unchanged(self.db, step):
+                idle[step.id] = idle_reason(step.action, draft.language)
+        reasons = {**idle, **refused}
+        narrowed = without(draft, reasons) if 0 < len(reasons) < len(checked) else None
+        if narrowed is not None:
+            return narrowed
+        if refused:
+            ending = "。" if draft.language == "zh" else "."
+            sentence = next(iter(refused.values()))
+            spoken = sentence[:1].upper() + sentence[1:] + ending
+            return IntentResult(kind="answer", text=spoken, request=text)
+        if checked and len(idle) == len(checked):
+            return IntentResult(kind="answer", text=already_so(draft.language), request=text)
+        return None
+
+    def _plan(
+        self,
+        draft: IntentDraft,
+        text: str,
+        conversation_id: str | None,
+        origin: tuple[ParserKind, str | None],
+    ) -> IntentResult | IntentDraft:
+        stopped = self._stopped(draft, text)
+        if stopped is not None:
+            return stopped
         filled = fill_steps(self.db, draft.steps, self.state, self.catalog)
         if filled.clarification is not None:
             return self._clarify(draft, filled.clarification, text)
         if filled.empty_selection is not None:
-            return IntentResult(kind="answer", text=filled.empty_selection, request=text)
+            # The part that matched nothing is set aside when the rest stands alone.
+            reasons = {str(filled.empty_step): filled.empty_selection}
+            empty = IntentResult(kind="answer", text=filled.empty_selection, request=text)
+            return (without(draft, reasons) if len(draft.steps) > 1 else None) or empty
         checked = self._checked(draft, filled.steps, text, filled.excluded)
         if isinstance(checked, IntentResult):
             return checked
-        if all(unchanged(self.db, step) for step in checked):
-            return IntentResult(kind="answer", text=already_so(draft.language), request=text)
+        settled = self._settled(draft, checked, text)
+        if settled is not None:
+            return settled
         chain = save_chain(
             self.db,
             ActionChain(
@@ -221,7 +332,10 @@ class Resolver:
                 steps=checked,
                 # Only rule notes are kept: they are generated from the parameters. A model's
                 # own description could claim a change the parameters do not make.
-                notes=draft.notes if origin[0] == "rules" else [],
+                notes=[
+                    *(self._notes(draft, text) if origin[0] == "rules" else []),
+                    *skipped_lines(draft.skipped, text, draft.language),
+                ],
                 parser=origin[0],
                 model=origin[1],
             ),
@@ -249,9 +363,8 @@ def checked_drafts(steps: list[ChainStep]) -> list[DraftStep]:
     drafts: list[DraftStep] = []
     for step in steps:
         params = dict(step.params)
-        if step.items:
-            key = next(iter(step.items[0]))
-            params[key] = {"$each": [item[key] for item in step.items]}
+        for key in step.items[0] if step.items else {}:
+            params[key] = {"$each": [item.get(key) for item in step.items]}
         drafts.append(DraftStep(id=step.id, action=step.action, params=params))
     return drafts
 

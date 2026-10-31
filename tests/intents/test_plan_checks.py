@@ -107,7 +107,8 @@ def test_me_is_the_speaker_and_positions_follow_the_task_list(db: Database) -> N
     assert params["actor"] == "boss"
     assert params["task_ids"] == [tasks[0].id, tasks[1].id]
     shown = [detail.value for detail in result.chain.steps[0].details]
-    assert "2 个任务: 第 1 个、第 2 个" in shown
+    # FIX3 (P2): tasks show their list number, the same one the task list and reads use.
+    assert "2 个任务: #1、#2" in shown
     assert not any(task.id in value for task in tasks for value in shown)
     beyond = _plan("assign_tasks", {"task_ids": {"$tasks": {"positions": [9]}}, "actor": "li"})
     asked = model_plan(db, "把第9个任务分给小李", beyond, PageContext(project_id=project.id))
@@ -129,7 +130,9 @@ def test_unknown_parameters_get_one_repair_round_then_a_question(db: Database) -
     assert len(sent) == 2
     assert stuck.kind == "clarify"
     assert stuck.clarification is not None
-    assert "size_per_pack" in stuck.clarification.question
+    # FIX3 (P4): the made-up key is not shown; the setting is named by the value said.
+    assert "size_per_pack" not in stuck.clarification.question
+    assert "「20」" in stuck.clarification.question
 
 
 def test_a_write_the_speaker_may_not_do_is_refused_before_any_question(db: Database) -> None:
@@ -359,7 +362,9 @@ def test_answers_and_draft_cards_read_as_names_not_ids(db: Database, tmp_path: P
     }
     text = answer_text("project_progress", progress, "zh")
     assert "6d924f29" not in text
-    assert "pending 1, in_progress 2" in text
+    # FIX3 (P4): states read in words, never as pending / in_progress.
+    assert "未开始 1, 进行中 2" in text
+    assert "pending" not in text
     assert "{" not in text
     dataset = images(db, tmp_path / "images")
     whole = evaluate(db, ObjectSet(dataset_id=dataset.id, limit=100))

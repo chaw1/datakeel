@@ -16,7 +16,6 @@ from collections import Counter
 from pydantic import Field, JsonValue
 
 from datakeel.actions.parameters import PARAMETER_TYPES
-from datakeel.core.errors import NotFoundError
 from datakeel.core.intent_models import Clarification
 from datakeel.core.models import BoundaryModel, new_id
 from datakeel.intents.catalog import (
@@ -27,13 +26,22 @@ from datakeel.intents.catalog import (
     EntityCatalog,
     candidates,
 )
+from datakeel.intents.derived import model_record
 from datakeel.intents.drafts import DraftStep
+from datakeel.intents.duplicates import new_name_fields
 from datakeel.intents.edits import prepare_label_edit
-from datakeel.intents.fill_state import FillState, ask, context_value
+from datakeel.intents.fill_state import (
+    FillState,
+    ask,
+    context_value,
+    named_in_words,
+    project_in_scope,
+)
 from datakeel.intents.grounding import grounded
 from datakeel.intents.group_fill import numbered, selector_value
 from datakeel.intents.object_edits import LIST_EDITS, new_object_field, prepare_user_edit
 from datakeel.intents.selectors import page_selection
+from datakeel.intents.signatures import near_value
 from datakeel.intents.wording import (
     disabled_question,
     unknown_labels_question,
@@ -41,7 +49,6 @@ from datakeel.intents.wording import (
 )
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.storage.database import Database
-from datakeel.storage.production_queries import get_task
 
 CONTAINERS = ("dataset_id", "version_id", "project_id", "package_id", "label_set_id")
 SINGLE_DEFAULTS = frozenset({"dataset_id", "project_id"})
@@ -59,7 +66,6 @@ __all__ = [
     "context_value",
     "fill_defaults",
     "fill_steps",
-    "latest_revision",
 ]
 
 
@@ -69,6 +75,7 @@ class FillResult(BoundaryModel):
     steps: list[DraftStep] = Field(default_factory=list[DraftStep])
     clarification: Clarification | None = None
     empty_selection: str | None = None
+    empty_step: str | None = None
     excluded: dict[str, dict[str, int]] = Field(default_factory=dict[str, dict[str, int]])
 
 
@@ -80,7 +87,12 @@ def _default_container(
     *,
     single: bool,
 ) -> str | None:
-    value = context_value(field, state, catalog)
+    package = params.get("package_id")
+    owner = catalog.get("package", package) if isinstance(package, str) else None
+    if field == "project_id" and owner is not None and owner.parent:
+        return owner.parent  # a package belongs to exactly one project
+    # A container the words name wins over the page; the page is only the default.
+    value = named_in_words(field, state, catalog) or context_value(field, state, catalog)
     if value is not None:
         return value
     if field == "version_id":
@@ -110,8 +122,15 @@ def _resolve_identity(
     if kind == "version":
         dataset = step.params.get("dataset_id")
         parent = dataset if isinstance(dataset, str) else None
+    if kind == "package":
+        parent = project_in_scope(step.params.get("project_id"), state, catalog)
     page = context_value(field, state, catalog) if field in CONTAINERS else None
-    found = _page_first(catalog.match(kind, value, parent), page)
+    found = catalog.match(kind, value, parent) or (catalog.match(kind, value) if parent else [])
+    found = _page_first(found, page)
+    named = named_in_words(field, state, catalog) if field in CONTAINERS else None
+    if named is not None and len(found) == 1 and found[0].id == page and named != page:
+        # The model copied the page's object although the person named another one.
+        found = [entry for entry in catalog.of(kind) if entry.id == named]
     said = step.said.get(field)
     only = step.action in PARAMETER_MODELS and len(catalog.of(kind, parent)) == 1
     if len(found) == 1 and (only or grounded(field, found[0], state.text, page, said)):
@@ -234,21 +253,25 @@ def fill_steps(
     filled: list[DraftStep] = []
     names: list[str] = []
     left_out: dict[str, dict[str, int]] = {}
-    for step in steps:
+    for drafted in steps:
+        step = model_record(drafted)
         params, unknown = known_fields(step, state, catalog)
+        params = {key: near_value(step.action, key, value) for key, value in params.items()}
         if unknown:
-            question = unknown_question(step.action, list(unknown), state.language)
+            question = unknown_question(step.action, unknown, state.language)
             return FillResult(clarification=Clarification(question=question, action=step.action))
         _prepared(step, params, names, state.text)
         fresh = new_object_field(step.action, params)
         current = step.model_copy(update={"params": params})
         excluded: Counter[str] = Counter()
-        for field in [name for name in params if name != fresh]:
+        # New names are never looked up: the object they name does not exist yet.
+        new = {fresh, *new_name_fields(step.action, params)}
+        for field in [name for name in params if name not in new]:
             resolved = _fill_value(db, field, current, state, catalog, excluded)
             if isinstance(resolved, Clarification):
                 return FillResult(clarification=resolved)
             if isinstance(resolved, dict) and set(resolved) == {"$empty"}:
-                return FillResult(empty_selection=str(resolved["$empty"]))
+                return FillResult(empty_selection=str(resolved["$empty"]), empty_step=step.id)
             params[field] = resolved
         if step.action == "create_label_set":
             edit = prepare_label_edit(db, params)
@@ -282,17 +305,3 @@ def fill_defaults(
             params[field] = value
     page_selection(params, required, state.context)
     return step.model_copy(update={"params": params})
-
-
-def latest_revision(db: Database, step: DraftStep) -> DraftStep:
-    """A review decision is about the task's latest revision unless one is named."""
-    task = step.params.get("task_id")
-    if step.action != "review_task" or "revision_id" in step.params or not isinstance(task, str):
-        return step
-    try:
-        revision = get_task(db, task).latest_revision_id
-    except NotFoundError:
-        return step
-    if revision is None:
-        return step
-    return step.model_copy(update={"params": {**step.params, "revision_id": revision}})

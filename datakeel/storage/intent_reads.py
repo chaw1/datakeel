@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.storage.database import Database
+from datakeel.storage.display_order import ordered_task_rows
 from datakeel.storage.production_catalog_impact import migration_impact
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
@@ -32,12 +33,13 @@ def task_snapshots(db: Database, project_id: str, limit: int = 10000) -> list[Ta
     """Every task of one project in the task list's order, with its active assignment."""
     bounded = min(max(limit, 1), 10000)
     with db.session() as session:
-        rows = session.scalars(
-            select(ProductionTaskRow)
-            .where(ProductionTaskRow.project_id == project_id)
-            .order_by(ProductionTaskRow.id)
-            .limit(bounded)
-        ).all()
+        rows = ordered_task_rows(
+            session,
+            project_id,
+            session.scalars(
+                select(ProductionTaskRow).where(ProductionTaskRow.project_id == project_id)
+            ),
+        )[:bounded]
         held = session.execute(
             select(
                 ProductionAssignmentRow.task_id,
@@ -66,14 +68,14 @@ def task_snapshots(db: Database, project_id: str, limit: int = 10000) -> list[Ta
     ]
 
 
-def task_holders(db: Database, task_ids: list[str]) -> dict[str, str]:
-    """Who currently holds each of these tasks for annotation; unheld tasks are absent."""
+def task_holders(db: Database, task_ids: list[str], stage: str = "annotation") -> dict[str, str]:
+    """Who currently holds each of these tasks in this stage; unheld tasks are absent."""
     if not task_ids:
         return {}
     statement = select(ProductionAssignmentRow.task_id, ProductionAssignmentRow.actor).where(
         ProductionAssignmentRow.task_id.in_(task_ids[:10000]),
         ProductionAssignmentRow.active.is_(True),
-        ProductionAssignmentRow.stage == "annotation",
+        ProductionAssignmentRow.stage == stage,
     )
     with db.session() as session:
         return {str(task): str(actor) for task, actor in session.execute(statement).all()}
@@ -138,3 +140,30 @@ def label_change_impact(db: Database, before: LabelSet, after: LabelSet) -> tupl
     """Annotations and revisions a planned version would migrate, as label_set_diff counts."""
     with db.session() as session:
         return migration_impact(session, before, after)
+
+
+def newest_published_version(db: Database, label_set_id: str) -> int | None:
+    """The newest published version of one label set, the one a new project would use."""
+    with db.session() as session:
+        versions = [
+            LabelSet.model_validate(row.payload)
+            for row in session.scalars(
+                select(ProductionLabelSetRow).where(
+                    ProductionLabelSetRow.label_set_id == label_set_id
+                )
+            )
+        ]
+    published = [item.version for item in versions if item.published]
+    return max(published) if published else None
+
+
+def held_projects(db: Database, actor: str) -> list[str]:
+    """Projects in which the actor holds an open task now, at any stage."""
+    statement = (
+        select(ProductionTaskRow.project_id)
+        .join(ProductionAssignmentRow, ProductionAssignmentRow.task_id == ProductionTaskRow.id)
+        .where(ProductionAssignmentRow.actor == actor, ProductionAssignmentRow.active.is_(True))
+        .distinct()
+    )
+    with db.session() as session:
+        return sorted(str(project) for project in session.scalars(statement))
