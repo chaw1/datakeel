@@ -243,6 +243,9 @@ def test_team_pass_through_keeps_its_trigger_out_of_review(
     with db.session() as session:
         task = require_task(session, item.task_id)
         project = require_project(session, task.project_id)
+        # Recorded as the annotator itself, not only kept out through its pass-through
+        # revision: rework returns to this person and review rows name them.
+        assert task.annotator_id == "local"
         refused: AuthorizationError | None = None
         try:
             require_separation(session, project, task, "local")
