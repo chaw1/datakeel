@@ -15,6 +15,12 @@ _ONE = _REQUESTS + "test_one_task_meant_is_asked_and_only_saved_work_is_handed_i
 _PLACES = _REQUESTS + "test_numbers_in_a_described_group_and_this_package_from_the_page"
 _STATES = _REQUESTS + "test_states_the_request_cannot_change_are_said_before_planning"
 _FREED = _REQUESTS + "test_a_task_taken_back_earlier_in_the_plan_is_free_for_the_next_step"
+_STATE = "tests/intents/test_fix3_plan_state.py::"
+_FILE = _STATE + "test_a_task_named_by_its_file_is_that_task"
+_NARROW = _STATE + "test_numbers_that_are_not_places_narrow_the_described_group"
+_FOLLOWS = _STATE + "test_a_version_that_follows_its_label_set_is_not_asked"
+_EARLIER = _STATE + "test_an_earlier_step_changes_what_later_steps_may_do"
+_QUARANTINE = _STATE + "test_a_quarantine_change_that_changes_nothing_is_already_so"
 _OWNER = "tests/intents/test_fix3_ownership.py::"
 _LIMITS = "tests/intents/test_fix3_limits.py::"
 
@@ -156,5 +162,62 @@ REQUEST_MUTATIONS = (
         "intents/fill.py",
         ("        state.freed.update(freed(filled[-1]))\n", ""),
         _FREED,
+    ),
+    _anchor(
+        "fix3-a-task-named-by-its-file-is-that-task",
+        "intents/task_files.py",
+        (
+            '            if name and wanted in {name, name.rsplit(".", 1)[0]}:',
+            "            if False:",
+        ),
+        _FILE,
+    ),
+    _anchor(
+        "fix3-a-task-said-only-in-words-is-the-step-s",
+        "intents/fill.py",
+        ("        said_task(step, params)\n", ""),
+        _FILE,
+    ),
+    _anchor(
+        "fix3-numbers-that-are-not-places-narrow-the-group",
+        "intents/task_scope.py",
+        ("        if both and len(both) < len(said):", "        if False:"),
+        _NARROW,
+    ),
+    _anchor(
+        "fix3-a-version-that-follows-its-label-set-is-not-asked",
+        "intents/validate.py",
+        ("        and not any(name in FOLLOWS.get(other, ()) for other in missing)\n", ""),
+        _FOLLOWS,
+    ),
+    _anchor(
+        "fix3-an-earlier-upgrade-lifts-the-personal-rules",
+        "intents/impossible.py",
+        (
+            (
+                '    if found is None or (found[0].startswith("personal") '
+                "and _upgraded(db, step, earlier)):"
+            ),
+            "    if found is None:",
+        ),
+        _EARLIER,
+    ),
+    _anchor(
+        "fix3-a-downgrade-is-said",
+        "intents/impossible.py",
+        ('    "upgrade_project": _upgrade,\n', ""),
+        _EARLIER,
+    ),
+    _anchor(
+        "fix3-an-account-turned-back-on-takes-work",
+        "intents/fill.py",
+        ("        reopened(created, filled[-1], user.label if user is not None else None)\n", ""),
+        _EARLIER,
+    ),
+    _anchor(
+        "fix3-a-quarantine-change-that-changes-nothing-is-already-so",
+        "intents/verify.py",
+        ('        "unquarantine_files": not_quarantined,\n', ""),
+        _QUARANTINE,
     ),
 )

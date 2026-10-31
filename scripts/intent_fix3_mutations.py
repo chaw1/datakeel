@@ -87,8 +87,8 @@ STATE_AND_WORDS_MUTATIONS = (
     Mutation(
         name="fix3-p3-derivable-values-are-never-asked",
         path="intents/validate.py",
-        before="    asked = [name for name in missing if not derivable(step.action, name)]",
-        after="    asked = list(missing)",
+        before="        if not derivable(step.action, name)\n",
+        after="        if True\n",
         case=_WORDS + "test_a_review_with_nothing_saved_says_why_instead_of_asking",
         runner="pytest",
     ),
