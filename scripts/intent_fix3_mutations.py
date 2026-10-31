@@ -226,7 +226,7 @@ PARTS_MUTATIONS = (
         path="intents/verify.py",
         before="        key: value.casefold() if isinstance(value, str) else value",
         after="        key: value",
-        case=_PARTS + "test_places_names_and_choices_said_in_words_are_understood",
+        case="tests/intents/test_fix3_plan_state.py::test_the_same_labels_in_other_letters_change_nothing",
         runner="pytest",
     ),
     Mutation(
@@ -234,7 +234,7 @@ PARTS_MUTATIONS = (
         path="intents/verify.py",
         before='    if label.get("name_zh") == label.get("name"):',
         after="    if False:",
-        case=_PARTS + "test_places_names_and_choices_said_in_words_are_understood",
+        case="tests/intents/test_fix3_plan_state.py::test_the_same_labels_in_other_letters_change_nothing",
         runner="pytest",
     ),
     Mutation(
