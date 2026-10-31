@@ -193,10 +193,8 @@ def _apply(current: LabelSet, edit: SpokenEdit) -> Labels:
         adds.extend(name for name in targets if _find(labels, name) is None)
     taken = {str(item["id"]) for item in labels}
     for raw in adds:
-        existing = _existing(labels, raw)
-        if existing is not None and isinstance(raw, dict):
-            existing.update({key: value for key, value in raw.items() if key != "id"})
-        elif existing is None and (label := _label(raw, taken)) is not None:
+        # Adding a label that is already there changes nothing; its fields stay as they are.
+        if _existing(labels, raw) is None and (label := _label(raw, taken)) is not None:
             labels.append(label)
     return _without(labels, gone)
 
