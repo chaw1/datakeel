@@ -3,19 +3,18 @@
 
 """One definition of the pixels a task image shows in the workbench.
 
-The workbench canvas, its thumbnails and cloud prelabel requests all read task images through
-``workbench_image`` so model boxes land in the same coordinate system people annotate in.
-Today that is the stored pixel order with EXIF orientation ignored (``task_content`` strips
-the tag before serving); changing the orientation policy means changing only this function.
+Cloud prelabel requests and the AI pre-review's perceptual hashes read task images through
+``workbench_image``. Like the canvas and thumbnails served by ``image_geometry.upright_bytes``,
+it applies the EXIF Orientation to the pixels, so model boxes land in the same upright (display)
+frame people annotate in and the drafts they become are recorded as display-frame revisions.
 """
 
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 def workbench_image(path: Path) -> Image.Image:
-    """Decode the task image in the workbench's coordinate system, detached from the file."""
+    """Decode the task image upright, detached from the file."""
     with Image.open(path) as source:
-        source.load()
-        return source.copy()
+        return ImageOps.exif_transpose(source)

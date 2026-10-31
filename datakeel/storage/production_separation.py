@@ -1,9 +1,13 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Team-tier separation of duties: anyone who annotated a task, in any round, never reviews it."""
+"""Team-tier separation of duties: anyone who annotated a task, in any round, never reviews it.
 
-from sqlalchemy import Select, select
+Annotating includes triggering a model pass-through: that person answers for the submission,
+and stays excluded after a rework round is handed to someone else and the annotator changes.
+"""
+
+from sqlalchemy import Select, and_, or_, select
 from sqlalchemy.orm import Session
 
 from datakeel.core.errors import AuthorizationError
@@ -14,12 +18,19 @@ from datakeel.storage.production_rows import (
     ProductionTaskRow,
 )
 
+# A model revision submitted by pass-through names the person who triggered the run.
+_PASSED_THROUGH = and_(
+    ProductionRevisionRow.source == "model",
+    ProductionRevisionRow.payload["pass_through"].as_string().is_not(None),
+)
+
 
 def annotators(session: Session, task: ProductionTaskRow) -> frozenset[str]:
-    """Collect the current annotator, every human revision author and every annotation holder."""
+    """Collect the current annotator, human revision authors, pass-through triggers and holders."""
     authors = session.scalars(
         select(ProductionRevisionRow.actor).where(
-            ProductionRevisionRow.task_id == task.id, ProductionRevisionRow.source == "human"
+            ProductionRevisionRow.task_id == task.id,
+            or_(ProductionRevisionRow.source == "human", _PASSED_THROUGH),
         )
     )
     holders = session.scalars(
@@ -50,7 +61,7 @@ def exclude_own_work(query: Select[ProductionTaskRow], actor: str) -> Select[Pro
         .where(
             ProductionRevisionRow.task_id == ProductionTaskRow.id,
             ProductionRevisionRow.actor == actor,
-            ProductionRevisionRow.source == "human",
+            or_(ProductionRevisionRow.source == "human", _PASSED_THROUGH),
         )
         .exists()
     )

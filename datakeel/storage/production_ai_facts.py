@@ -21,9 +21,11 @@ from datakeel.core.production_catalog_models import ProductionTemplate
 from datakeel.core.production_models import AnnotationRevision, Project
 from datakeel.operators.evidence.contracts import read_near_duplicate
 from datakeel.storage.database import VersionRow
-from datakeel.storage.production_catalog import require_label_set, require_template
+from datakeel.storage.production_catalog import require_label_set
+from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.production_prelabel_refs import object_confidences
 from datakeel.storage.production_rows import ProductionRevisionRow, ProductionTaskRow
+from datakeel.storage.production_template_versions import locked_template
 
 if TYPE_CHECKING:
     from pydantic import JsonValue
@@ -104,7 +106,7 @@ def _revisions(
             ),
         )
     ):
-        revision = AnnotationRevision.model_validate(row.payload)
+        revision = revision_view(session, row)
         if heads.get(row.task_id) == row.id:
             found[row.task_id] = revision
         current = drafts.get(row.task_id)
@@ -149,9 +151,8 @@ def load_facts(session: Session, project: Project, task: ProductionTaskRow) -> P
 
 
 def _template(session: Session, project: Project) -> ProductionTemplate | None:
-    if project.template_id is None:
-        return None
+    """Read the template version the project is locked to; rules never use a newer one."""
     try:
-        return require_template(session, project.template_id)
+        return locked_template(session, project)
     except (NotFoundError, ValidationError):
         return None

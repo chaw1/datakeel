@@ -24,7 +24,7 @@ from datakeel.prelabel import (
     resolve_credential,
     run_estimate,
 )
-from datakeel.storage.production_catalog import require_label_set, require_template
+from datakeel.storage.production_catalog import require_label_set
 from datakeel.storage.production_catalog_rows import ProductionPrelabelRunRow
 from datakeel.storage.production_cloud_labeling import CloudRequest, cloud_request
 from datakeel.storage.production_prelabel_runs import (
@@ -36,6 +36,7 @@ from datakeel.storage.production_prelabel_runs import (
 )
 from datakeel.storage.production_prelabel_writes import human_head_task_ids, prelabeled_task_ids
 from datakeel.storage.production_rows import ProductionTaskRow
+from datakeel.storage.production_template_versions import locked_template
 from datakeel.storage.production_tiers import project_thresholds
 
 EDITABLE_STATES = frozenset({"pending", "in_progress"})
@@ -58,8 +59,8 @@ class CloudTargets(NamedTuple):
 def cloud_kinds(
     session: Session, project: Project, model: ProductionModel
 ) -> tuple[frozenset[str], bool]:
-    """Return the components both the template enables and the model can fill, and single-select."""
-    template = require_template(session, project.template_id) if project.template_id else None
+    """Return the components the locked template enables and the model fills, and single-select."""
+    template = locked_template(session, project)
     configured = template.component_config.get("components") if template else None
     if isinstance(configured, list):
         enabled = {value for value in configured if isinstance(value, str)}

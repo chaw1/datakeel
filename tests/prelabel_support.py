@@ -39,22 +39,30 @@ def image_width(index: int) -> int:
     return 96 + index * 8
 
 
-def seed_cloud_project(  # Tests vary count, tier, template kind and label mode.
+def seed_cloud_project(  # noqa: PLR0913  # Tests vary count, tier, template, labels, EXIF.
     db: Database,
     directory: Path,
     count: int = 4,
     tier: str = "personal",
     kind: str = "box",
     label_mode: str | None = None,
+    *,
+    orientation: int | None = None,
 ) -> tuple[Project, tuple[ProductionTask, ...]]:
-    """Create ``count`` images with one red rectangle each and a project over them."""
+    """Create ``count`` images with one red rectangle each and a project over them.
+
+    ``orientation`` writes that EXIF Orientation into every stored image.
+    """
     directory.mkdir(parents=True)
     paths: list[Path] = []
     for index in range(count):
         path = directory / f"rect-{index}.png"
+        exif = Image.Exif()
+        if orientation is not None:
+            exif[274] = orientation
         with Image.new("RGB", (image_width(index), 80), (20, 40, 60)) as image:
             image.paste((255, 0, 0), (8 + index, 10, 40 + index, 50))
-            image.save(path)
+            image.save(path, exif=exif)
         paths.append(path)
     dataset = import_paths(db, "Generated prelabel", paths)
     version = list_versions(db, dataset.id)[0]

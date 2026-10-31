@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.annotation_qa import compare_records, record_objects
 from datakeel.core.production_models import AnnotationRevision
+from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.production_rows import ProductionRevisionRow, ProductionTaskRow
 
 
@@ -34,9 +35,12 @@ def _preceding_model(
 def approved_references(
     session: Session, project_id: str
 ) -> list[tuple[AnnotationRevision, AnnotationRevision]]:
-    """Return (model draft, approved human head) pairs in task identity order."""
+    """Return (model draft, approved human head) pairs in task identity order.
+
+    Both sides are read upright: legacy stored-frame rows are converted on read.
+    """
     revisions = {
-        row.id: AnnotationRevision.model_validate(row.payload)
+        row.id: revision_view(session, row)
         for row in session.scalars(
             select(ProductionRevisionRow).where(ProductionRevisionRow.project_id == project_id)
         )

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { ApiError } from "../../api/client";
 import * as production from "../../api/production";
+import { draft } from "../../test/taskAiFixtures";
 import {
   advance,
   held,
@@ -130,6 +131,61 @@ it("never offers review controls on work this person annotated in a team project
   await advance(10);
   expect(screen.queryByRole("button", { name: "Approve revision" })).toBeNull();
   own.unmount();
+  view("rev");
+  await advance(10);
+  expect(
+    screen.getByRole("button", { name: "Approve revision" }),
+  ).toBeVisible();
+});
+
+it("keeps whoever triggered a pass-through out of review after its rework went to someone else", async () => {
+  const passThrough = {
+    ...draft,
+    actor: "pm",
+    pass_through: {
+      model_id: "vision",
+      confidence: 0.95,
+      high: 0.9,
+      low: 0.5,
+      threshold_source: "configured" as const,
+      reviewed_objects: 40,
+      triggered_by: "pm",
+    },
+  };
+  const handedOver = {
+    ...held,
+    task: { ...held.task, state: "submitted" as const, annotator_id: "ann-b" },
+    revisions: [passThrough],
+    assignments: [{ ...held.assignments[0], actor: "ann-b", active: false }],
+  };
+  vi.mocked(production.getTaskWorkbench).mockResolvedValue(handedOver);
+  vi.mocked(production.getTaskStatus).mockResolvedValue(
+    status({
+      task: handedOver.task,
+      assignments: handedOver.assignments,
+      leases: [],
+    }),
+  );
+  const view = (actor: string) =>
+    render(
+      <TaskSession
+        task={handedOver}
+        project={{
+          ...team,
+          effective_scopes: { actor, zero_users: false, scopes: ["*"] },
+        }}
+        actor={actor}
+        canSync
+        onNavigate={vi.fn()}
+        onChanged={vi.fn()}
+        onSnapshot={vi.fn()}
+        registerGuard={vi.fn()}
+      />,
+    );
+  const trigger = view("pm");
+  await advance(10);
+  expect(screen.queryByRole("button", { name: "Approve revision" })).toBeNull();
+  trigger.unmount();
   view("rev");
   await advance(10);
   expect(

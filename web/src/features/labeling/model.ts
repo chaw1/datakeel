@@ -130,12 +130,17 @@ export function taskEditable(
       ))
   );
 }
-/** Team tier: whoever annotated a task in any round never reviews it; the server refuses it too. */
+/**
+ * Team tier: whoever annotated a task in any round never reviews it; the server refuses it too.
+ * Triggering a model pass-through counts, even after the rework round went to someone else.
+ */
 export function annotatedBy(task: TaskWorkbench, actor: string) {
   return (
     task.task.annotator_id === actor ||
     task.revisions.some(
-      (revision) => revision.actor === actor && revision.source === "human",
+      (revision) =>
+        revision.actor === actor &&
+        (revision.source === "human" || revision.pass_through != null),
     ) ||
     task.assignments.some(
       (assignment) =>
