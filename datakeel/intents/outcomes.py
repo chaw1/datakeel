@@ -5,8 +5,9 @@
 
 * ``failed``: the model call failed (timeout, HTTP status, network) or its answer stayed
   unreadable after one more try; the person hears that and why, never "unsupported".
-* related actions exist: a question naming them, never "unsupported".
-* ``unsupported``: nothing in the registry is related to the request.
+* the words fit several registered actions equally well ("choose"): a question naming them.
+* ``unsupported``: the platform has no such feature; said plainly, with up to two close
+  things it can do ("related"), never as a question.
 * internal errors: a plain sentence, never the raw error text.
 """
 
@@ -22,6 +23,7 @@ from datakeel.intents.drafts import IntentDraft
 from datakeel.intents.rules import full_registry
 from datakeel.intents.wording import (
     internal_failure,
+    missing_feature,
     model_failed,
     related_question,
     unsupported_text,
@@ -88,14 +90,18 @@ def _titles(language: str) -> dict[str, str]:
 
 
 def no_fit(draft: IntentDraft | None, text: str, language: str) -> IntentResult:
-    """Nothing was planned: ask about related registered actions, else say unsupported."""
+    """Nothing was planned: ask only between actions the words fit, else say it is missing."""
     titles = _titles(language)
-    related = [name for name in (draft.related if draft else []) if name in titles]
-    related = list(dict.fromkeys(related))[:RELATED_LIMIT]
-    if not related:
-        return unsupported(text, language)
-    question = related_question([titles[name] for name in related], language)
-    choices = [Candidate(id=name, label=titles[name], kind="action") for name in related]
+    choose = [name for name in (draft.choose if draft else []) if name in titles]
+    choose = list(dict.fromkeys(choose))[:RELATED_LIMIT]
+    if len(choose) < 2:  # noqa: PLR2004 - a choice needs two options
+        related = [name for name in (draft.related if draft else []) if name in titles]
+        close = [titles[name] for name in dict.fromkeys(related)][:2]
+        if not close:
+            return unsupported(text, language)
+        return IntentResult(kind="unsupported", text=missing_feature(close, language), request=text)
+    question = related_question([titles[name] for name in choose], language)
+    choices = [Candidate(id=name, label=titles[name], kind="action") for name in choose]
     return IntentResult(
         kind="clarify",
         text=question,

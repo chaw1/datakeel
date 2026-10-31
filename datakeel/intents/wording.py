@@ -335,8 +335,18 @@ def internal_failure(language: str) -> str:
     )
 
 
+def missing_feature(close: list[str], language: str) -> str:
+    """The platform has no such feature: say so, and name close things it can do."""
+    if language == "zh":
+        return f"平台没有这个功能, 所以什么都没做。相近的能做的有: {'、'.join(close)}。"
+    return (
+        "The platform has no feature for this, so nothing was done. "
+        f"Close things it can do: {', '.join(close)}."
+    )
+
+
 def related_question(titles: list[str], language: str) -> str:
-    """The model found no fit, but the registry has related actions: ask which one."""
+    """The words fit several registered actions equally well: ask which one."""
     if language == "zh":
         return (
             f"我没能把这句话对上具体的操作。相关的有: {'、'.join(titles)}。"

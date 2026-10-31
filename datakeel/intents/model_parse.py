@@ -35,11 +35,10 @@ INSTRUCTIONS = (
     'Return one JSON object only: {"kind": "plan"|"answer"|"none", "steps": [{"id": "s1", '
     '"action": "<registered name>", "params": {...}, "said": {...}}], "notes": []}. '
     "kind=answer: exactly one read function that answers a question. kind=plan: one or more "
-    "registered actions in execution order. kind=none: nothing registered does it, or the "
-    'text is chit-chat or asks how the platform works; then add "reason" and "related": '
-    "the registered names that could do at least part of what was asked (empty when the "
-    "request needs something outside the platform, such as pay, travel, food, weather or "
-    "writing poems). "
+    "registered actions in execution order. kind=none: nothing registered does it, or "
+    'chit-chat or how-to; add "reason", "related": up to two registered names closest to it '
+    '(may be empty), and "choose": names, only when the words fit several registered '
+    "actions and you cannot tell which. "
     "The registry below lists every action and read with its parameters (* = required, "
     "a|b = allowed values). Rules: use only registered names and their parameter names; "
     "omit request_id. Identity values (dataset_id, version_id, project_id, package_id, "
@@ -351,19 +350,22 @@ def _kept(document: dict[str, JsonValue]) -> dict[str, JsonValue]:
     """The draft's own keys; related names and skipped parts are reduced to plain text."""
     kept: dict[str, JsonValue] = {
         key: document[key]
-        for key in ("kind", "steps", "notes", "reason", "related")
+        for key in ("kind", "steps", "notes", "reason", "related", "choose")
         if key in document
     }
     if "skipped" in document:
         kept["skipped"] = skipped_parts(document["skipped"])
     if not isinstance(kept.get("reason", ""), str):
         kept.pop("reason")
-    related = kept.get("related")
-    if related is not None:
-        names: list[JsonValue] = [
-            item for item in (related if isinstance(related, list) else []) if isinstance(item, str)
-        ]
-        kept["related"] = names[:10]
+    for key in ("related", "choose"):
+        listed = kept.get(key)
+        if listed is not None:
+            names: list[JsonValue] = [
+                item
+                for item in (listed if isinstance(listed, list) else [])
+                if isinstance(item, str)
+            ]
+            kept[key] = names[:10]
     return kept
 
 
