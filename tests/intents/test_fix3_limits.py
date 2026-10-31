@@ -104,22 +104,27 @@ def _reply(db: Database, asked: IntentResult, text: str, page: PageContext) -> I
 
 
 def test_a_group_that_protection_empties_is_asked_about_not_answered(db: Database) -> None:
-    """All of a person's tasks hold saved work: ask to include them; picking it plans them."""
+    """All of a person's tasks hold saved work: ask to include them; picking it plans them.
+
+    Saying all of them ("所有", "all of") already asks for them, saved work included.
+    """
     _, south, tasks = two_projects(db)
     for task in tasks[0:2]:
         save(db, task, "wang")
     page = PageContext(project_id=south.id)
     revoke = steps(("revoke_assignment", {"task_id": {"$tasks": {"holder": "小王"}}}))
-    asked = planned(db, "收回小王手上的所有任务", [revoke], page)
+    asked = planned(db, "收回小王手上的任务", [revoke], page)
     assert asked.kind == "clarify", asked.text
     assert "2 条已有人工标注" in asked.text
     assert asked.clarification is not None
     assert [item.id for item in asked.clarification.candidates] == ["annotated"]
     picked = _reply(db, asked, asked.clarification.candidates[0].label, page)
     assert targets(picked) == tasks[0:2]
-    english = planned(db, "Take back all of Wang's tasks", [revoke], page)
+    english = planned(db, "Take back Wang's tasks", [revoke], page)
     assert english.kind == "clarify"
     assert "Include them too?" in english.text
+    assert targets(planned(db, "收回小王手上的所有任务", [revoke], page)) == tasks[0:2]
+    assert targets(planned(db, "Take back all of Wang's tasks", [revoke], page)) == tasks[0:2]
 
 
 def test_a_review_of_a_task_not_waiting_for_review_says_why(db: Database) -> None:

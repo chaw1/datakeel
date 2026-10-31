@@ -41,8 +41,13 @@ def test_review_and_own_tasks_are_found_by_who_holds_or_handed_them_in(db: Datab
     english = planned(db, "Approve everything I hold for review", [review], page)
     assert english.text.startswith("You hold no matching tasks")
     back = steps(("release_task", {"stage": "review"}))
-    result = planned(db, "我手上那条审核先放回去", [back], PageContext(), actor="zhao")
+    result = planned(db, "我手上的审核先放回去", [back], PageContext(), actor="zhao")
     assert targets(result) == tasks[2:4]
+    one = planned(db, "我手上那条审核先放回去", [back], PageContext(), actor="zhao")
+    assert one.kind == "clarify", one.text
+    assert one.clarification is not None
+    assert [item.id for item in one.clarification.candidates] == tasks[2:4]
+    assert [item.label for item in one.clarification.candidates] == [f"{SOUTH} #3", f"{SOUTH} #4"]
     unsaid = planned(db, "Give my tasks back", [steps(("release_task", {}))], page, actor="zhao")
     assert targets(unsaid) == tasks[2:4]
     assert unsaid.chain is not None
@@ -55,22 +60,31 @@ def test_places_count_inside_a_named_package_and_from_the_end(db: Database) -> N
     """The 2nd task of package 2, package 1's last task as said, and 倒数第二 as one task."""
     _, south, tasks = two_projects(db)
     page = PageContext(project_id=south.id)
-    second = {"$tasks": {"package": {"$nth": 2}, "numbers": [2]}}
+    second = {"$tasks": {"package": {"$nth": 3}, "numbers": [2]}}
     result = planned(
         db,
-        "把第 2 个包的第 2 个任务派给小王",
+        "把第 3 个包的第 2 个任务派给小王",
         [steps(("assign_tasks", {"task_ids": second, "actor": "wang"}))],
         page,
     )
-    assert targets(result) == tasks[3:4]
-    listed = {"$tasks": {"package": {"$nth": 2}, "numbers": ["#4"]}}
+    assert targets(result) == tasks[5:6]
+    listed = {"$tasks": {"package": {"$nth": 3}, "numbers": ["#6"]}}
     result = planned(
         db,
-        "第 2 个包里的 #4 派给小王",
+        "第 3 个包里的 #6 派给小王",
         [steps(("assign_tasks", {"task_ids": listed, "actor": "wang"}))],
         page,
     )
-    assert targets(result) == tasks[3:4]
+    assert targets(result) == tasks[5:6]
+    closed = {"$tasks": {"package": {"$nth": 2}, "numbers": [2]}}
+    handed = planned(
+        db,
+        "把第 2 个包的第 2 个任务派给小王",
+        [steps(("assign_tasks", {"task_ids": closed, "actor": "wang"}))],
+        page,
+    )
+    assert handed.kind == "answer", handed.text
+    assert "已经交上去或审完" in handed.text
     last = {"$tasks": {"package": {"$nth": 1}, "last": 1}}
     revoke = steps(("revoke_assignment", {"task_id": last}))
     assert (
