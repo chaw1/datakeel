@@ -16,6 +16,7 @@ from datakeel.core.models import AssetRef, BoundaryModel, FileItem
 from datakeel.storage.database import VersionRow
 from datakeel.storage.evidence_rows import EvidenceCacheRow
 from datakeel.storage.evidence_store import read_assertions
+from datakeel.storage.image_geometry import file_geometry
 
 
 def identity(ref: AssetRef) -> str:
@@ -90,6 +91,10 @@ def observed_file(file: FileItem, version: str, snapshot: EvidenceSnapshot) -> F
     dimensions = facts.metadata.get("image_dimensions")
     if isinstance(dimensions, dict):
         metadata.update({name: dimensions[name] for name in ("width", "height")})
+    geometry = file_geometry(file)
+    if geometry is not None:
+        # v0.18.0 facts measured stored pixels; a sample's public size is the upright one.
+        metadata.update(width=geometry.width, height=geometry.height)
     if "annotation_boxes" in facts.metadata:
         metadata["annotations"] = facts.metadata["annotation_boxes"]
     return file.model_copy(update={"metadata": metadata})

@@ -119,6 +119,8 @@ def test_mixed_template_components_finalize_and_export_without_losing_properties
             },
         },
     )
+    # TAILS-4 R1: a template change reaches an existing project only through a signed upgrade.
+    run_action(db, "upgrade_project_template", {"project_id": project.id})
     expected: list[AnnotationRecord] = []
     for task in tasks:
         annotation = annotation_for("box", task.sample_id).model_copy(update={"labels": ("Cat",)})

@@ -17,7 +17,7 @@ from datakeel.storage.production_dispatch_rules import active_loads, require_cap
 from datakeel.storage.production_load_locks import LoadLockError
 from datakeel.storage.production_queries import get_project
 from tests.production_helpers import production_fixture
-from tests.production_team_ops import failure, team_project
+from tests.production_team_ops import claim, failure, save, submit, team_project
 from tests.production_team_support import ServiceRunner, grant_skills, register
 
 if TYPE_CHECKING:
@@ -102,6 +102,28 @@ def test_concurrent_claims_by_one_person_stop_exactly_at_the_limit(db: Database)
     assert len(outcomes.refused) == len(plans) - LIMIT
     assert all(isinstance(error, ConflictError) for error in outcomes.refused)
     assert "adding 1 would exceed the limit of 3" in str(outcomes.refused[0])
+    with db.session() as session:
+        assert active_loads(session, project.id, "annotation") == {"solo": LIMIT}
+
+
+def test_concurrent_claims_after_submissions_still_stop_exactly_at_the_limit(
+    db: Database,
+) -> None:
+    """Submitted work is not open; twelve claims fired at once then add exactly the limit."""
+    project, _tasks = team_project(db, count=20, max_active_tasks=LIMIT)
+    runner = ServiceRunner(db)
+    _warm_up(runner, project.id, "solo")
+    for _ in range(LIMIT):
+        task = claim(db, project.id, "solo")
+        save(db, task.id, "solo")
+        submit(db, task.id, "solo")
+    plans = [runner.plan("claim_task", {"project_id": project.id}, "solo") for _ in range(12)]
+    outcomes = _Outcomes(db)
+    _run_together(*(([plan], "solo", outcomes) for plan in plans))
+    assert outcomes.crashed == []
+    assert len(outcomes.succeeded) == LIMIT
+    assert len(outcomes.refused) == len(plans) - LIMIT
+    assert all(isinstance(error, ConflictError) for error in outcomes.refused)
     with db.session() as session:
         assert active_loads(session, project.id, "annotation") == {"solo": LIMIT}
 

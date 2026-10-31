@@ -17,6 +17,7 @@ from datakeel.core.production_models import (
     PrelabelAccuracy,
     ProductionWorkload,
 )
+from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.database import Database
 from datakeel.storage.production_rows import (
     ProductionReviewRow,
@@ -53,7 +54,7 @@ def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccur
     with db.session() as session:
         require_project(session, project_id)
         revisions = {
-            row.id: AnnotationRevision.model_validate(row.payload)
+            row.id: revision_view(session, row)
             for row in session.scalars(
                 select(ProductionRevisionRow).where(ProductionRevisionRow.project_id == project_id)
             )
@@ -153,7 +154,7 @@ def production_agreement(db: Database, project_id: str) -> AnnotationQAResult:
         require_project(session, project_id)
         revisions = sorted(
             (
-                AnnotationRevision.model_validate(row.payload)
+                revision_view(session, row)
                 for row in session.scalars(
                     select(ProductionRevisionRow).where(
                         ProductionRevisionRow.project_id == project_id

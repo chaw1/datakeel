@@ -242,3 +242,28 @@ it("opens text data governance from dataset tabs and retains the source version"
     }),
   );
 });
+
+it.each(["versions", "files", "quality", "report", "datasheets"] as const)(
+  "opens a metric linked with the dataset-only %s tab on its relations without dataset requests",
+  async (tab) => {
+    const fetch = mockObjects();
+    render(
+      <ObjectPage target={{ kind: "metric", id: metric.definition.id, tab }} />,
+    );
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: metric.definition.name,
+      }),
+    ).toBeVisible();
+    expect(screen.getByRole("region", { name: "Relations" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Relations" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    const requested = fetch.mock.calls.map(([input]) => input);
+    expect(requested.some((path) => path.includes("/api/datasets/"))).toBe(
+      false,
+    );
+  },
+);

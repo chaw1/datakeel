@@ -2403,7 +2403,7 @@ export interface paths {
         };
         /**
          * Project Task Samples
-         * @description Name up to 500 tasks of the project by the file name recorded at import.
+         * @description Name up to 500 tasks of the project by the relative path or file name recorded at import.
          */
         get: operations["project_task_samples_api_production_projects__project_id__task_samples_get"];
         put?: never;
@@ -2444,6 +2444,10 @@ export interface paths {
         /**
          * Task Content
          * @description View a version-pinned source or a small image preview under the same source grants.
+         *
+         *     Images are always shown upright: EXIF-oriented sources are re-encoded without the tag and
+         *     with the EXIF Orientation already applied to the pixels (JPEG stays JPEG, others PNG;
+         *     thumbnails are JPEG).
          */
         get: operations["task_content_api_production_tasks__task_id__content_get"];
         put?: never;
@@ -3481,7 +3485,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "upgrade_project_template" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
             /** Actor */
             actor: string;
             /** Agent Id */
@@ -3535,7 +3539,7 @@ export interface components {
              * Action Type
              * @enum {string}
              */
-            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
+            action_type: "manage_users" | "manage_skills" | "define_role" | "update_role" | "create_label_set" | "publish_label_set" | "register_model" | "update_model" | "import_predictions" | "run_prelabel" | "finalize_project" | "create_project" | "split_packages" | "assign_tasks" | "claim_task" | "release_task" | "save_revision" | "submit_task" | "review_task" | "reopen_task" | "upgrade_project" | "heartbeat" | "revoke_assignment" | "configure_project" | "accept_package" | "upgrade_project_template" | "create_data_asset" | "update_data_asset" | "publish_data_asset" | "withdraw_data_asset" | "decide_asset_application" | "revoke_asset_grant" | "quarantine_files" | "unquarantine_files" | "create_version_from_selection" | "run_pipeline" | "save_metadata" | "delete_files" | "export_dataset" | "decide_assertions" | "import_catalog" | "confirm_metric_draft" | "restore_catalog" | "update_metric" | "rollback_metric" | "update_term" | "rollback_term" | "run_kg_extraction" | "submit_custom_operator" | "publish_release" | "import_standards" | "update_standard" | "update_code_list" | "confirm_standard_mapping" | "rollback_standards" | "create_quality_rule" | "update_quality_rule" | "delete_quality_rule" | "run_quality_rule" | "change_quality_issue" | "annotation_acceptance" | "generate_datasheet" | "publish_datasheet" | "clean_training_data";
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -3936,6 +3940,9 @@ export interface components {
         /**
          * AnnotationRevision
          * @description Append one annotation and its precise human or model provenance forever.
+         *
+         *     ``coordinate_conversion`` is set only on reads of a revision saved in the stored pixel
+         *     frame (before v0.19) of an EXIF-oriented image, naming the transform applied on read.
          */
         AnnotationRevision: {
             /** Actor */
@@ -3943,6 +3950,7 @@ export interface components {
             annotation: components["schemas"]["AnnotationRecord"];
             /** Confidence */
             confidence?: number | null;
+            coordinate_conversion?: components["schemas"]["CoordinateConversion"] | null;
             /**
              * Created At
              * Format: date-time
@@ -4076,6 +4084,12 @@ export interface components {
              * @default
              */
             interpreted_question: string;
+            /**
+             * Interpreted Question En
+             * @description The same interpretation in English, for an English interface.
+             * @default
+             */
+            interpreted_question_en: string;
             knowledge?: components["schemas"]["KnowledgeAnswer"] | null;
             lineage?: components["schemas"]["LineageReference"] | null;
             /**
@@ -4090,6 +4104,8 @@ export interface components {
             query_frame?: components["schemas"]["AskQueryFrame"] | null;
             /** Question */
             question: string;
+            /** @description The coded reason behind a refusal or clarification, for wording in the interface language. Answers recorded before reasons had codes carry only `message`. */
+            reason?: components["schemas"]["AskReason"] | null;
             recognition?: components["schemas"]["KnowledgeRecognition"] | null;
             /**
              * Reference Instant
@@ -4214,6 +4230,29 @@ export interface components {
             /** Time Grain */
             time_grain?: ("day" | "month" | "quarter" | "year") | null;
             time_range?: components["schemas"]["TimeRange"] | null;
+        };
+        /**
+         * AskReason
+         * @description Why a numeric question was refused or sent back, as a code each interface words itself.
+         */
+        AskReason: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "ambiguous_metric" | "unresolved_metric" | "time_unparsed" | "generic_metric" | "no_metric" | "selected_metric_missing" | "selected_metric_unresolved" | "execution_failed" | "time_not_understood" | "unsupported_calculation" | "unclear_condition" | "share_needs_grouping" | "comparison_period_mismatch" | "year_over_year_needs_range" | "previous_period_needs_range" | "same_period_needs_range" | "followup_time_unparsed" | "followup_metric_unavailable" | "followup_dimensions_unclear" | "followup_comparison_unclear" | "followup_change_unclear";
+            /**
+             * Fragments
+             * @description Words of the question the reason names, in question order.
+             * @default []
+             */
+            fragments: string[];
+            /**
+             * Notes
+             * @description Parser findings or error types the reason names, in English.
+             * @default []
+             */
+            notes: string[];
         };
         /**
          * AskRequest
@@ -4530,6 +4569,9 @@ export interface components {
         /**
          * Assignment
          * @description Identify an actor's exclusive effective assignment for one task stage.
+         *
+         *     ``transferred_from`` names the original annotator when this assignment hands a rework
+         *     round over to someone else; it is None for every other assignment.
          */
         Assignment: {
             /**
@@ -4564,6 +4606,8 @@ export interface components {
             stage: "annotation" | "review";
             /** Task Id */
             task_id: string;
+            /** Transferred From */
+            transferred_from?: string | null;
         };
         /**
          * AttributeOption
@@ -5573,6 +5617,32 @@ export interface components {
             turns: number;
         };
         /**
+         * CoordinateConversion
+         * @description Trace a read-time conversion of a stored-frame annotation into the upright frame.
+         */
+        CoordinateConversion: {
+            /**
+             * From Frame
+             * @default stored
+             * @enum {string}
+             */
+            from_frame: "display" | "stored";
+            /** Orientation */
+            orientation: number;
+            /** Stored Height */
+            stored_height: number;
+            /** Stored Width */
+            stored_width: number;
+            /**
+             * To Frame
+             * @default display
+             * @enum {string}
+             */
+            to_frame: "display" | "stored";
+            /** Transform */
+            transform: string;
+        };
+        /**
          * CostSummary
          * @description Aggregate recorded calls by one stable reporting dimension.
          */
@@ -6277,12 +6347,17 @@ export interface components {
         /**
          * DispatchPick
          * @description Name the person a skill dispatch would give one task to.
+         *
+         *     ``transferred_from`` is the original annotator when the pick hands rework over to someone
+         *     else, which skill dispatch does only after that annotator has been deactivated.
          */
         DispatchPick: {
             /** Actor */
             actor: string;
             /** Task Id */
             task_id: string;
+            /** Transferred From */
+            transferred_from?: string | null;
         };
         /**
          * DispatchSkip
@@ -8288,6 +8363,11 @@ export interface components {
             dataset_id?: string | null;
             /** Dataset Name */
             dataset_name?: string | null;
+            /**
+             * English Name
+             * @description The registered English name of a catalog subject, when it has one.
+             */
+            english_name?: string | null;
             /** Entity Type */
             entity_type?: string | null;
             /**
@@ -10032,6 +10112,11 @@ export interface components {
             skill_requirement?: components["schemas"]["SkillRequirement"] | null;
             /** Template Id */
             template_id?: string | null;
+            /**
+             * Template Version
+             * @description Template revision this project is locked to; only a signed upgrade_project_template changes it. Null only before the template lock migration.
+             */
+            template_version?: number | null;
             /** Version Id */
             version_id: string;
             /**
@@ -11556,6 +11641,11 @@ export interface components {
             annotator_id: string;
             coco?: components["schemas"]["CocoDataset"] | null;
             /**
+             * Coordinate Frame
+             * @description Pixel frame of the coordinates: display (EXIF Orientation applied) or stored (raw pixel order). Omitted: YOLO is upright; COCO and JSONL records are inferred from their image width/height, and square images default to upright.
+             */
+            coordinate_frame?: ("display" | "stored") | null;
+            /**
              * Format
              * @enum {string}
              */
@@ -12353,6 +12443,13 @@ export interface components {
             confidence: components["schemas"]["ConfidenceDistribution"];
             effective_scopes: components["schemas"]["EffectiveScopes"];
             label_set: components["schemas"]["LabelSet"];
+            /**
+             * Latest Label Set Version
+             * @description Newest published version of the project's label set
+             */
+            latest_label_set_version?: number | null;
+            /** @description The template's current revision; newer than template when an upgrade exists */
+            latest_template?: components["schemas"]["ProductionTemplate"] | null;
             /** Next Cursor */
             next_cursor?: string | null;
             /** Packages */
@@ -12372,6 +12469,7 @@ export interface components {
             task_samples: components["schemas"]["WorkbenchSampleName"][];
             /** Tasks */
             tasks: components["schemas"]["ProductionTask"][];
+            /** @description The template version this project is locked to */
             template: components["schemas"]["ProductionTemplate"] | null;
             workload: components["schemas"]["ProductionWorkload"];
         };
@@ -12392,6 +12490,11 @@ export interface components {
             media_type: string;
             /** Name */
             name: string;
+            /**
+             * Path
+             * @description The path under the imported directory, such as `site-a/day-1/shelf.png`, or the file name when none was recorded. Never a server path or object key.
+             */
+            path: string;
             /** Text */
             text?: string | null;
             /** Thumbnail Url */
@@ -12399,7 +12502,9 @@ export interface components {
         };
         /**
          * WorkbenchSampleName
-         * @description Name a task's sample by the file name recorded at import, never a server path.
+         * @description Name a task's sample by the relative path or file name recorded at import.
+         *
+         *     Never a server path.
          */
         WorkbenchSampleName: {
             /**
@@ -16791,6 +16896,7 @@ export interface operations {
                 cursor?: string | null;
                 view?: "all" | "mine" | "review";
                 package_id?: string | null;
+                /** @description Keep tasks whose sample's relative path or file name contains this text, ignoring case. */
                 search?: string | null;
             };
             header?: never;

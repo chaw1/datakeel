@@ -200,6 +200,20 @@ export function SkillDispatch({
                   })}
                 </li>
               ))}
+            {preview.picks
+              .filter((pick) => pick.transferred_from)
+              .map((pick) => (
+                <li key={pick.task_id}>
+                  {t("wbReworkHandover", {
+                    name: name(pick.task_id),
+                    round:
+                      data.tasks.find((task) => task.id === pick.task_id)
+                        ?.round ?? 1,
+                    from: pick.transferred_from ?? "",
+                    to: pick.actor,
+                  })}
+                </li>
+              ))}
             <li>{t("wbDispatchLeft", { count: preview.unassigned.length })}</li>
           </ul>
         </PlanSigner>

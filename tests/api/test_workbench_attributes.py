@@ -64,7 +64,8 @@ FIELDS: list[JsonValue] = [
 ]
 
 
-def _configure(db: Database, fields: list[JsonValue]) -> ProductionTemplate:
+def _configure(db: Database, fields: list[JsonValue], project_id: str) -> ProductionTemplate:
+    """Save a new template version, then sign the project's upgrade onto it (TAILS-4 R1)."""
     with db.session() as session:
         current = require_template(session, "wb-template")
     run_action(
@@ -82,6 +83,7 @@ def _configure(db: Database, fields: list[JsonValue]) -> ProductionTemplate:
             },
         },
     )
+    run_action(db, "upgrade_project_template", {"project_id": project_id})
     with db.session() as session:
         return require_template(session, "wb-template")
 
@@ -119,8 +121,8 @@ def test_direct_saves_name_the_failing_attribute_with_http_422(
     db: Database, tmp_path: Path
 ) -> None:
     """Missing, out-of-range and record-level fields are rejected with their key; valid saves."""
-    _, tasks = seed_workbench(db, tmp_path / "attributes")
-    template = _configure(db, FIELDS)
+    project, tasks = seed_workbench(db, tmp_path / "attributes")
+    template = _configure(db, FIELDS, project.id)
     assert [field.key for field in template.attributes] == [
         "occluded",
         "kind",
@@ -163,12 +165,12 @@ def test_submission_rechecks_the_head_against_a_newer_required_field(
     db: Database, tmp_path: Path
 ) -> None:
     """A head saved before a field became required cannot be submitted until it is filled."""
-    _, tasks = seed_workbench(db, tmp_path / "submit")
+    project, tasks = seed_workbench(db, tmp_path / "submit")
     task = tasks[0]
     with TestClient(create_app(db)) as client:
         saved = _save(client, task.id, _annotation(task.sample_id, {"occluded": True}, {}), None)
         assert saved.status_code == 200, saved.text
-        _configure(db, FIELDS[:2])
+        _configure(db, FIELDS[:2], project.id)
         prepared = client.post(
             "/api/actions/submit_task/prepare", json={"request_id": new_id(), "task_id": task.id}
         )
@@ -196,8 +198,8 @@ def test_model_drafts_skip_required_fields_but_not_their_types(
     db: Database, tmp_path: Path
 ) -> None:
     """A prediction may leave a field for the annotator, but cannot store a wrong type."""
-    _, tasks = seed_workbench(db, tmp_path / "model")
-    _configure(db, FIELDS)
+    project, tasks = seed_workbench(db, tmp_path / "model")
+    _configure(db, FIELDS, project.id)
     task = tasks[0]
 
     def model_save(box: dict[str, JsonValue]) -> None:

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.production_models import AnnotationRevision, ProductionTask
 from datakeel.core.workbench_models import WorkbenchTaskRisk
+from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.database import Database
 from datakeel.storage.production_rows import ProductionRevisionRow
 
@@ -54,7 +55,7 @@ def task_risks(db: Database, tasks: Sequence[ProductionTask]) -> tuple[Workbench
                 ProductionRevisionRow.task_id.in_(tuple(task.id for task in tasks))
             )
         ):
-            revisions[row.task_id].append(AnnotationRevision.model_validate(row.payload))
+            revisions[row.task_id].append(revision_view(session, row))
     result: list[WorkbenchTaskRisk] = []
     for task in tasks:
         ordered = sorted(revisions[task.id], key=lambda item: (item.created_at, item.id))

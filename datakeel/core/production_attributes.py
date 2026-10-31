@@ -137,6 +137,23 @@ def _check(
             raise ValidationError(message)
 
 
+def attribute_problems(
+    fields: Iterable[TemplateAttribute], values: Mapping[str, JsonValue], place: str
+) -> tuple[str, ...]:
+    """List every submit-time attribute failure at one place instead of stopping at the first."""
+    problems: list[str] = []
+    for field in fields:
+        if _missing(field, values):
+            if field.required:
+                problems.append(f'Attribute "{field.key}" is required on {place}')
+            if values.get(field.key) is None:
+                continue
+        problem = value_problem(field, values[field.key])
+        if problem is not None:
+            problems.append(f'Attribute "{field.key}" on {place} {problem}')
+    return tuple(problems)
+
+
 def validate_attributes(
     fields: Iterable[TemplateAttribute], annotation: AnnotationRecord, *, complete: bool = True
 ) -> None:

@@ -9,17 +9,18 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.training_export_models import TrainingExport
 from datakeel.training.export_common import (
     class_directory,
-    copy_source,
     dimensions,
-    filename,
+    image_filename,
     json_text,
+    source_geometry,
     source_text,
     validate_image_extension,
+    write_image,
 )
 
 
 def write_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]:
-    """Write exactly one class directory per image, refusing missing or multilabel classes."""
+    """Write one class directory per upright image, refusing missing or multilabel classes."""
     paths: dict[str, str] = {}
     for item in export.items:
         labels = item.annotation.labels
@@ -27,9 +28,11 @@ def write_imagefolder(export: TrainingExport, directory: Path) -> dict[str, str]
             message = "ImageFolder requires exactly one classification label per image"
             raise ValidationError(message)
         validate_image_extension(item, "imagefolder")
-        dimensions(item)
-        relative = f"{item.split}/{class_directory(labels[0])}/{filename(item)}"
-        copy_source(item, directory / relative)
+        geometry = source_geometry(item)
+        dimensions(item, geometry)
+        # torchvision's default loader ignores EXIF Orientation, so the pixels must be upright.
+        relative = f"{item.split}/{class_directory(labels[0])}/{image_filename(item, geometry)}"
+        write_image(item, geometry, directory / relative)
         paths[item.file.id] = relative
     classes = {
         class_directory(label): label

@@ -24,6 +24,7 @@ from datakeel.core.production_catalog_models import (
 from datakeel.core.production_models import Project
 from datakeel.core.production_prediction_models import PredictionSample
 from datakeel.storage.annotation_store import require_annotation_version
+from datakeel.storage.image_geometry import file_geometry
 from datakeel.storage.production_catalog import require_label_set, require_model
 from datakeel.storage.production_catalog_rows import ProductionPrelabelRunRow
 from datakeel.storage.production_prediction_parsing import parse_coco, parse_yolo
@@ -54,17 +55,27 @@ def _dimension(metadata: dict[str, JsonValue], name: str) -> float | None:
 
 
 def prediction_samples(session: Session, project: Project) -> tuple[PredictionSample, ...]:
-    """Read dimensions from the project's pinned immutable manifest."""
+    """Read upright dimensions from the project's pinned immutable manifest."""
     version = require_annotation_version(session, project.dataset_id, project.version_id)
     files = [FileItem.model_validate(item) for item in version.manifest]
-    return tuple(
-        PredictionSample(
+    return tuple(_prediction_sample(item) for item in files)
+
+
+def _prediction_sample(item: FileItem) -> PredictionSample:
+    geometry = file_geometry(item)
+    if geometry is None:
+        return PredictionSample(
             id=item.id,
             filename=item.filename,
             width=_dimension(item.metadata, "width"),
             height=_dimension(item.metadata, "height"),
         )
-        for item in files
+    return PredictionSample(
+        id=item.id,
+        filename=item.filename,
+        width=geometry.width,
+        height=geometry.height,
+        geometry=geometry,
     )
 
 

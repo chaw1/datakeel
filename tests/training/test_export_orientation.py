@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Detection archives refuse EXIF frame changes and preserve identity-oriented source bytes."""
+"""Detection archives write EXIF-oriented images upright and keep upright sources byte for byte."""
 
 import hashlib
 import json
@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image
 
 from datakeel.core.annotation_models import AnnotationBox, AnnotationRecord
-from datakeel.core.errors import ValidationError
+from datakeel.core.image_orientation import ImageGeometry, display_record
 from datakeel.core.models import FileItem
 from datakeel.core.training_export_models import TrainingExport, TrainingExportItem, TrainingFormat
 from datakeel.training.export import write_training_export
@@ -39,20 +39,24 @@ def _export(source: Path, format_name: TrainingFormat, orientation: int | None) 
                     size=len(content),
                 ),
                 split="train",
-                annotation=AnnotationRecord(
-                    sample_id="image",
-                    annotator_id="reviewer",
-                    image_width=47,
-                    image_height=31,
-                    boxes=(AnnotationBox(category="cat", x1=2, y1=3, x2=40, y2=29),),
+                # Platform annotations are upright: the stored box seen through the EXIF frame.
+                annotation=display_record(
+                    AnnotationRecord(
+                        sample_id="image",
+                        annotator_id="reviewer",
+                        image_width=47,
+                        image_height=31,
+                        boxes=(AnnotationBox(category="cat", x1=2, y1=3, x2=40, y2=29),),
+                    ),
+                    ImageGeometry(orientation=orientation or 1, stored_width=47, stored_height=31),
                 ),
             ),
         ),
     )
 
 
-def test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames(tmp_path: Path) -> None:
-    """COCO and YOLO must refuse all seven nonidentity directions before producing an archive."""
+def test_detection_formats_write_every_rotated_or_mirrored_frame_upright(tmp_path: Path) -> None:
+    """COCO and YOLO write orientation-free upright pixels whose size matches the upright boxes."""
     for format_name in ("coco", "yolo"):
         for orientation in range(2, 9):
             source = tmp_path / f"source-{format_name}-{orientation}.jpg"
@@ -60,15 +64,20 @@ def test_detection_formats_refuse_all_rotated_or_mirrored_exif_frames(tmp_path: 
             original = source.read_bytes()
             directory = tmp_path / f"package-{format_name}-{orientation}"
             archive = tmp_path / f"export-{format_name}-{orientation}.tar"
-            caught: ValidationError | None = None
-            try:
-                write_training_export(export, directory, archive)
-            except ValidationError as error:
-                caught = error
-            assert caught is not None, "Detection pixels and frozen boxes must use the same frame"
-            assert "requires absent or identity EXIF orientation" in str(caught)
-            assert not archive.exists()
+            write_training_export(export, directory, archive)
+            assert archive.is_file()
             assert source.read_bytes() == original
+            (image_path,) = (directory / "images/train").glob("*")
+            assert image_path.suffix == ".png"
+            expected = (31, 47) if orientation >= 5 else (47, 31)
+            with Image.open(image_path) as image:
+                assert image.size == expected
+                assert image.getexif().get(274) is None
+            manifest = json.loads((directory / "MANIFEST.json").read_bytes())
+            (entry,) = manifest["files"]
+            assert entry["source_orientation"] == orientation
+            assert entry["source_sha256"] == hashlib.sha256(original).hexdigest()
+            assert entry["exported_sha256"] == hashlib.sha256(image_path.read_bytes()).hexdigest()
 
 
 def test_detection_formats_preserve_absent_or_identity_exif_and_source_geometry(

@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { Rect, Transformer } from "react-konva";
 
 import { clamp, moveBox } from "./geometry";
-import { ShapeLabel } from "./ShapeLabel";
 
 import type { LabelStyle } from "./labelColors";
 import type { AnnotationBox } from "./types";
@@ -81,7 +80,6 @@ export function BoxShape({
           onChange({ ...value, x1, y1, x2, y2 });
         }}
       />
-      <ShapeLabel x={value.x1} y={value.y1} bounds={value} style={style} />
       {selected && !readOnly && (
         <Transformer
           ref={transformer}

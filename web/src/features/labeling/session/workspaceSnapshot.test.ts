@@ -92,6 +92,7 @@ function workspace(actor = "person-1"): WorkspaceSnapshot {
       sample: {
         id: "sample-1",
         name: "Generated sample",
+        path: "Generated sample",
         media_type: "text/plain",
         text: "Sample text",
         content_url: "/api/media/sample-1",

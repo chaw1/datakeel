@@ -10,20 +10,22 @@ from datakeel.core.training_export_models import (
     TrainingExport,
 )
 from datakeel.training.export_common import (
-    copy_source,
     dimensions,
-    filename,
+    image_filename,
     json_text,
+    source_geometry,
     validate_image_extension,
-    validate_orientation,
+    write_image,
 )
 
 _README = """# Hugging Face imagefolder
 
 Each nonempty split contains images and one metadata.jsonl with a row per image.
-file_name is relative to its metadata file. Image bytes are unchanged.
-Only absent or identity (1) EXIF orientation is accepted. Normalize rotated or
-mirrored sources before importing; the HF decoder otherwise changes their frame.
+file_name is relative to its metadata file. Upright images (absent or identity
+EXIF orientation) are copied byte for byte. Rotated or mirrored sources are
+written upright as lossless PNG without an orientation tag, so every decoder
+sees the same pixels; width, height and boxes use that upright frame.
+MANIFEST.json records each original hash, its EXIF orientation and the transform.
 
 Load with datasets.load_dataset("imagefolder", data_dir="package"). The loader
 recognizes the val directory as the validation split. No datasets dependency is
@@ -48,11 +50,11 @@ def write_hf_imagefolder(export: TrainingExport, directory: Path) -> dict[str, s
         rows: list[str] = []
         for item in (item for item in export.items if item.split == split):
             validate_image_extension(item, "hf_imagefolder")
-            validate_orientation(item)
-            width, height = dimensions(item)
-            name = filename(item)
+            geometry = source_geometry(item)
+            width, height = dimensions(item, geometry)
+            name = image_filename(item, geometry)
             relative = f"{split}/{name}"
-            copy_source(item, directory / relative)
+            write_image(item, geometry, directory / relative)
             paths[item.file.id] = relative
             boxes = item.annotation.boxes
             row = HfImageMetadata(

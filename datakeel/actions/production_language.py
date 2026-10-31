@@ -100,6 +100,12 @@ PRODUCTION_LANGUAGE: dict[str, tuple[str, str, str, str]] = {
         "按 AQL 2.5 抽检这个任务包并验收",
         "Inspect this package at AQL 2.5 and accept it",
     ),
+    "upgrade_project_template": (
+        "升级项目模板版本",
+        "upgrade project template",
+        "把这个项目升级到模板和标签集的最新版",
+        "Upgrade this project to the newest template and label versions",
+    ),
     "register_model": (
         "登记预标注模型",
         "register prelabel model",

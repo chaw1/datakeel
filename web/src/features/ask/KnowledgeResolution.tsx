@@ -3,6 +3,7 @@ import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { objectHref } from "../object/navigation";
 
 import { knowledgeIntentLabels, knowledgeKindLabels } from "./knowledgeLabels";
+import { knowledgeReason } from "./reasonText";
 
 import type {
   AskAnswer,
@@ -19,7 +20,7 @@ export function KnowledgeResolution({
   onChooseSubject?: (subject: KnowledgeSubject) => void;
   onChooseIntent?: (intent: SelectedKnowledgeIntent) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isComposing = useCompositionGuard();
   const clarification = answer.status === "clarification";
   const noKnowledge =
@@ -99,7 +100,7 @@ export function KnowledgeResolution({
       {!clarification && (
         <details className="ask-detail">
           <summary>{t("askReasonDetail")}</summary>
-          <p>{answer.message}</p>
+          <p>{knowledgeReason(answer, t, locale)}</p>
         </details>
       )}
       {!noKnowledge && !intentClarification && (

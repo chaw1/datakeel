@@ -4,6 +4,7 @@ import { annotationEn } from "./annotationEn";
 import { approvalEn } from "./approvalEn";
 import { approvalsMetricEn } from "./approvalsMetricEn";
 import { askEn } from "./askEn";
+import { askReasonEn } from "./askReasonEn";
 import { assetEn } from "./assetEn";
 import { catalogEn } from "./catalogEn";
 import { commandEn } from "./commandEn";
@@ -26,6 +27,7 @@ import { trainingEn } from "./trainingEn";
 import { wbCockpitEn } from "./wbCockpitEn";
 import { wbEditorEn } from "./wbEditorEn";
 import { wbTeamEn } from "./wbTeamEn";
+import { wbTemplateEn } from "./wbTemplateEn";
 import { workbenchEn } from "./workbenchEn";
 import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
@@ -33,6 +35,7 @@ import { workspaceEn } from "./workspaceEn";
 export const en = {
   ...workbenchEn,
   ...wbTeamEn,
+  ...wbTemplateEn,
   ...wbCockpitEn,
   ...wbEditorEn,
   ...trainingEn,
@@ -64,6 +67,7 @@ export const en = {
   ...agentEn,
   ...advancedEn,
   ...askEn,
+  ...askReasonEn,
   ...evidenceEn,
   ...catalogEn,
   askNav: "Ask data",

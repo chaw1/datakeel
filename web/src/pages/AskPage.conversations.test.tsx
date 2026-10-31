@@ -29,7 +29,8 @@ it("sends the conversation on follow-ups, shows full interpretations, and clears
     ...first,
     id: "answer-2",
     question: "What about South China?",
-    interpreted_question: "Last quarter retail revenue for South China",
+    interpreted_question: "查询零售额,筛选零售区域为华南。",
+    interpreted_question_en: "Last quarter retail revenue for South China",
   };
   const fetch = vi
     .fn()
@@ -50,9 +51,15 @@ it("sends the conversation on follow-ups, shows full interpretations, and clears
   await user.type(question, next.question);
   await user.click(screen.getByRole("button", { name: "Ask data" }));
   expect(
-    (await screen.findAllByText(`Understood as: ${next.interpreted_question}`))
-      .length,
+    (
+      await screen.findAllByText(
+        `Understood as: ${next.interpreted_question_en}`,
+      )
+    ).length,
   ).toBeGreaterThan(0);
+  expect(
+    screen.queryByText(`Understood as: ${next.interpreted_question}`),
+  ).not.toBeInTheDocument();
   const followup = fetch.mock.calls[1]?.[1] as RequestInit;
   expect(JSON.parse(followup.body as string) as object).toMatchObject({
     conversation_id: "thread-1",

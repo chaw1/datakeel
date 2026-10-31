@@ -1,7 +1,7 @@
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
-import { metricName } from "./metricLabels";
+import { metricName, understoodQuestion } from "./metricLabels";
 
 import type { AskAnswer } from "../../api/ask";
 
@@ -44,7 +44,7 @@ export function AskHistory({
             </p>
             <p>
               {t("askUnderstood")}
-              {answer.interpreted_question || answer.question}
+              {understoodQuestion(answer, locale)}
             </p>
             <code title={answer.id}>{answer.id?.slice(0, 8)}</code>
           </div>

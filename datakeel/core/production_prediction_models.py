@@ -5,17 +5,23 @@
 
 from pydantic import Field
 
+from datakeel.core.image_orientation import ImageGeometry
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import ParsedPrediction, PredictionFailure
 
 
 class PredictionSample(BoundaryModel):
-    """Bind an immutable task sample to its original filename and image dimensions."""
+    """Bind an immutable task sample to its original filename and upright image dimensions.
+
+    ``width``/``height`` are upright (EXIF Orientation applied); ``geometry`` keeps the stored
+    size and orientation so stored-frame predictions can be converted.
+    """
 
     id: str
     filename: str
     width: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     height: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    geometry: ImageGeometry | None = None
 
 
 class PredictionParseResult(BoundaryModel):

@@ -37,6 +37,7 @@ from datakeel.storage.production_tasks import (
     require_mutable_project,
     transition_task,
 )
+from datakeel.storage.production_template_versions import record_template_version
 
 __all__ = [
     "configure_project",
@@ -56,13 +57,24 @@ def _validate_dispatch(project: Project) -> Project:
 
 
 def create_project(session: Session, params: CreateProjectParams, actor: str) -> Project:
-    """Create an approved project only against real input and published annotation rules."""
+    """Create an approved project only against real input and published annotation rules.
+
+    The project locks the template revision current at creation.
+    """
     require_annotation_version(session, params.dataset_id, params.version_id)
     require_label_set(session, params.label_set_id, params.label_set_version)
+    template_version = None
     if params.template_id is not None:
-        require_template(session, params.template_id)
+        template = require_template(session, params.template_id)
+        record_template_version(session, template)
+        template_version = template.revision
     project = _validate_dispatch(
-        Project(id=new_id(), created_at=utcnow(), **params.model_dump(exclude={"request_id"}))
+        Project(
+            id=new_id(),
+            created_at=utcnow(),
+            template_version=template_version,
+            **params.model_dump(exclude={"request_id"}),
+        )
     )
     session.add(
         ProductionProjectRow(

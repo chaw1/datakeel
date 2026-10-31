@@ -10,6 +10,7 @@ from datakeel.actions.production_parameters import SaveRevisionParams
 from datakeel.core.errors import AuthorizationError, ConflictError, ValidationError
 from datakeel.core.models import new_id, utcnow
 from datakeel.core.production_models import AnnotationRevision
+from datakeel.storage.annotation_frames import DISPLAY_FRAME, revision_view
 from datakeel.storage.production_catalog import normalize_annotation, validate_annotation
 from datakeel.storage.production_leases import raise_if_reclaimed, require_live_lease
 from datakeel.storage.production_rows import (
@@ -58,7 +59,7 @@ def current_revision(session: Session, task: ProductionTaskRow) -> AnnotationRev
         if task.latest_revision_id
         else None
     )
-    return AnnotationRevision.model_validate(row.payload) if row else None
+    return revision_view(session, row) if row else None
 
 
 def append_revision(
@@ -108,6 +109,7 @@ def append_revision(
             actor=actor,
             confidence=revision.confidence,
             payload=revision.model_dump(mode="json"),
+            coordinate_frame=DISPLAY_FRAME,
         )
     )
     if params.source == "human":

@@ -27,6 +27,7 @@ _MANAGER_ACTIONS = frozenset(
         "configure_project",
         "revoke_assignment",
         "accept_package",
+        "upgrade_project_template",
         # Finalized project versions feed controlled training splits and exports.
         "export_dataset",
     }

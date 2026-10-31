@@ -5,6 +5,7 @@ import { KGRelationDrawer } from "../kg/KGRelationDrawer";
 import { objectHref } from "../object/navigation";
 
 import { KnowledgeClaimCard } from "./KnowledgeClaimCard";
+import { subjectName } from "./metricLabels";
 
 import "../kg/kg.css";
 import "./knowledge.css";
@@ -24,7 +25,7 @@ export function KnowledgeAnswerView({
 }: {
   knowledge: KnowledgeAnswer;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [assertionId, setAssertionId] = useState("");
   const related = knowledge.intent === "related";
   const noSystem =
@@ -36,7 +37,11 @@ export function KnowledgeAnswerView({
       className="knowledge-answer"
       aria-label={t(related ? "knowledgeRelated" : "knowledgeAnswered")}
     >
-      <h2>{related ? t("knowledgeRelated") : knowledge.subject?.name}</h2>
+      <h2>
+        {related
+          ? t("knowledgeRelated")
+          : knowledge.subject && subjectName(knowledge.subject, locale)}
+      </h2>
       <div
         className={`knowledge-columns${related ? " knowledge-related" : ""}`}
       >

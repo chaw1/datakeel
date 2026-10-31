@@ -15,7 +15,7 @@ it.each([
   [
     "en",
     "Matched question text",
-    "Subject “出货额” matches Metric 出货额.",
+    "Subject “出货额” matches Metric Shipment revenue.",
     "Asked for “哪份数据” (table or view) → Upstream",
     "Direction: Upstream; evidence: “依赖”",
     "Recognition rule: K-03",
@@ -40,7 +40,15 @@ it.each([
             question: "出货额依赖哪份数据",
             knowledge: { ...ownerKnowledge, intent: "upstream" },
             recognition: {
-              subjects: [{ text: "出货额", subject: shipmentSubject }],
+              subjects: [
+                {
+                  text: "出货额",
+                  subject: {
+                    ...shipmentSubject,
+                    english_name: "Shipment revenue",
+                  },
+                },
+              ],
               focus: "table",
               focus_text: "哪份数据",
               direction: "upstream",
@@ -89,3 +97,34 @@ it("explains an unknown subject without claiming a type or direction was recogni
     screen.queryByText("No registered terms matched the question."),
   ).not.toBeInTheDocument();
 });
+
+it.each([
+  ["metric", "未登记英文名的指标", "Metric 未登记英文名的指标"],
+  ["kg_entity", "华东仓", "Graph entity 华东仓"],
+] as const)(
+  "keeps a %s subject's own name in English when it has no English name",
+  (kind, name, shown) => {
+    localStorage.setItem("datakeel.locale", "en");
+    render(
+      <I18nProvider>
+        <QuestionEvidence
+          question={name}
+          matches={[]}
+          recognition={{
+            rule_id: "K-01",
+            subjects: [
+              { text: name, subject: { ...shipmentSubject, kind, name } },
+            ],
+            focus: "unknown",
+            focus_text: "",
+            direction: null,
+            direction_text: [],
+          }}
+        />
+      </I18nProvider>,
+    );
+    expect(
+      screen.getByText(`Subject “${name}” matches ${shown}.`),
+    ).toBeVisible();
+  },
+);

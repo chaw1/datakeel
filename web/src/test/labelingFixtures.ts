@@ -124,6 +124,7 @@ export const labelingTask: TaskWorkbench = {
   sample: {
     id: "sample-1",
     name: "Generated image",
+    path: "Generated image",
     media_type: "image/png",
     image_width: 2000,
     image_height: 1500,

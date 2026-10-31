@@ -9,6 +9,7 @@ from datakeel.ask.followup_frames import inherit_frame
 from datakeel.ask.matching import metric_matches
 from datakeel.ask.models import DimensionParse
 from datakeel.ask.parser import parse_question
+from datakeel.ask.reasons import reason_fields, refusal
 from datakeel.ask.resolution import resolve_metric
 from datakeel.ask.time_atoms import shift_months
 from datakeel.core.ask_frame_models import AskQueryFrame, ComparisonMode, TimeGrain
@@ -67,7 +68,7 @@ def prepare_metric_turn(
             resolution=resolution.model_copy(
                 update={
                     "status": "clarification",
-                    "message": "新指标无法明确沿用上一轮维度,请明确筛选和分组。",
+                    **reason_fields("followup_dimensions_unclear"),
                 }
             ),
             follows=True,
@@ -105,7 +106,7 @@ def _apply_edits(
                     "resolution": turn.resolution.model_copy(
                         update={
                             "status": "clarification",
-                            "message": "请明确同期对应的有界时间区间。",
+                            **reason_fields("same_period_needs_range"),
                         }
                     ),
                     "follows": True,
@@ -166,7 +167,7 @@ def _turn_resolution(
         resolution = resolution.model_copy(
             update={
                 "status": "clarification",
-                "message": "请明确需要的对比方式和时间分组,不支持否定或相互冲突的修改。",
+                **reason_fields("followup_comparison_unclear"),
             }
         )
     return resolution
@@ -213,13 +214,10 @@ def _inherited_resolution(
     valid = bool(candidates) and candidates[0].status == "resolved" and not parsed.issues
     if valid:
         message = "已复用上一轮指标,并重新检查当前登记口径。"
-    elif parsed.issues:
-        message = "追问的时间条件不可用: " + "; ".join(parsed.issues)
-    else:
-        message = "上一轮指标在当前登记口径下不可用。"
-    return MetricResolution(
-        status="resolved" if valid else "clarification", candidates=candidates, message=message
-    )
+        return MetricResolution(status="resolved", candidates=candidates, message=message)
+    if parsed.issues:
+        return refusal("clarification", candidates, "followup_time_unparsed", notes=parsed.issues)
+    return refusal("clarification", candidates, "followup_metric_unavailable")
 
 
 def _resolved(
@@ -273,7 +271,7 @@ def _validate_followup(request: AskRequest, turn: MetricTurn) -> MetricTurn:
                 "resolution": turn.resolution.model_copy(
                     update={
                         "status": "clarification",
-                        "message": "无法确定追问的修改内容,请明确指标、时间、维度取值或分组。",
+                        **reason_fields("followup_change_unclear"),
                     }
                 )
             }

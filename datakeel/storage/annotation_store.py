@@ -17,6 +17,7 @@ from datakeel.core.annotation_sampling import (
 )
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import new_id, utcnow
+from datakeel.storage.annotation_frames import DISPLAY_FRAME, batch_view
 from datakeel.storage.annotation_rows import (
     AnnotationBatchRow,
     AnnotationInspectionRow,
@@ -83,7 +84,7 @@ def _compare(
     if previous.version_id != request.version_id:
         message = "Rework comparison requires the same dataset version"
         raise ValidationError(message)
-    before = AnnotationBatch.model_validate(previous.batch)
+    before = batch_view(session, previous)
     comparison = compare_rework(before, request.batch)
     defects = {
         check.sample_id
@@ -160,6 +161,7 @@ def import_annotations_in_session(
             batch=request.batch.model_dump(mode="json"),
             report=report.model_dump(mode="json"),
             created_at=report.created_at.timestamp(),
+            coordinate_frame=DISPLAY_FRAME,
         )
     )
     return report

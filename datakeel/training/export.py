@@ -4,12 +4,15 @@
 """Generate reproducible training archives with explicit source and annotation counts."""
 
 import hashlib
+import json
 from collections.abc import Callable
 from pathlib import Path
 
+from pydantic import JsonValue
+
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.training_export_models import TrainingExport, TrainingExportItem
-from datakeel.training.export_common import json_text, write_archive
+from datakeel.training.export_common import json_text, source_geometry, write_archive
 from datakeel.training.export_detection import (
     validate_detection_annotations,
     write_coco,
@@ -20,6 +23,7 @@ from datakeel.training.export_records import write_imagefolder, write_text_jsonl
 from datakeel.training.native import write_annotations_jsonl
 
 FORMAT_VERSION = "1.0"
+_UPRIGHT_FORMATS = frozenset({"coco", "yolo", "hf_imagefolder", "imagefolder"})
 _WRITERS: dict[str, Callable[[TrainingExport, Path], dict[str, str]]] = {
     "coco": write_coco,
     "yolo": write_yolo,
@@ -64,6 +68,21 @@ def _verify_sources(export: TrainingExport) -> None:
             raise ConflictError(message)
 
 
+def _orientation(item: TrainingExportItem, format_name: str, written: Path) -> dict[str, object]:
+    """Trace how an upright image export relates to its untouched original."""
+    if format_name not in _UPRIGHT_FORMATS:
+        return {}
+    geometry = source_geometry(item)
+    trace: dict[str, object] = {
+        "source_orientation": geometry.orientation,
+        "transform": geometry.transform,
+    }
+    if geometry.orientation != 1:
+        with written.open("rb") as stream:
+            trace["exported_sha256"] = hashlib.file_digest(stream, "sha256").hexdigest()
+    return trace
+
+
 def write_training_export(export: TrainingExport, directory: Path, archive: Path) -> None:
     """Write a format directory and byte-stable tar without destination or action timestamps."""
     validate_detection_annotations(export)
@@ -96,9 +115,29 @@ def write_training_export(export: TrainingExport, directory: Path, archive: Path
                 "source_bytes": item.file.size,
                 "annotator_id": item.annotation.annotator_id,
                 "annotation_count": _count(item, export.format),
+                **_orientation(item, export.format, directory / paths[item.file.id]),
             }
             for item in ordered.items
         ],
     }
     (directory / "MANIFEST.json").write_text(json_text(manifest), encoding="utf-8", newline="\n")
     write_archive(directory, archive)
+
+
+def upright_transforms(directory: Path) -> list[JsonValue]:
+    """List the files a written package re-encoded upright, for the export's lineage."""
+    manifest = json.loads((directory / "MANIFEST.json").read_text(encoding="utf-8"))
+    return [
+        {
+            key: entry[key]
+            for key in (
+                "sample_id",
+                "source_sha256",
+                "source_orientation",
+                "transform",
+                "exported_sha256",
+            )
+        }
+        for entry in manifest["files"]
+        if entry.get("source_orientation", 1) != 1
+    ]

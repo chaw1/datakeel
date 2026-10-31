@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from datakeel.core.evidence_inputs import sample_sidecars
 from datakeel.core.evidence_models import EvidenceValue, ImageRegion, Whole
@@ -89,3 +90,27 @@ def test_annotation_when_missing_keeps_unknown_without_failure(
     result = run_node("annotation_labels", altered, tmp_path)
     assert not result.metadata["annotation_available"]
     assert not result.metadata["evidence_failed"]
+
+
+def test_rotated_photo_with_stored_size_sidecar_lands_in_the_upright_frame(
+    sample: FileItem, tmp_path: Path
+) -> None:
+    """A phone photo tagged EXIF 6 keeps its 192x128 sidecar but is seen as 128x192."""
+    with Image.open(sample.path) as image:
+        stored = image.copy()
+    exif = Image.Exif()
+    exif[274] = 6
+    stored.save(sample.path, exif=exif)
+    image = run_node("image_phash", sample, tmp_path)
+    assert image.metadata["image_dimensions"] == {"width": 128, "height": 192}
+    result = run_node("annotation_labels", image, tmp_path)
+    assert not result.metadata["evidence_failed"], "the car box lies inside the upright 128x192"
+    regions = {
+        draft.object.concept: draft.anchors[0].selector
+        for draft in drafts(result)
+        if isinstance(draft.object, EvidenceValue) and draft.object.value == "present"
+    }
+    person = regions["person"]
+    assert isinstance(person, ImageRegion)
+    assert (person.width, person.height) == (128, 192)
+    assert person.bbox == (28, 24, 100, 72)

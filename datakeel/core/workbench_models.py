@@ -38,11 +38,22 @@ class WorkbenchProjectQuery(BoundaryModel):
     cursor: str | None = None
     view: WorkbenchView = "all"
     package_id: str | None = None
-    search: str | None = Field(default=None, min_length=1, max_length=200)
+    search: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+        description=(
+            "Keep tasks whose sample's relative path or file name contains this text, "
+            "ignoring case."
+        ),
+    )
 
 
 class WorkbenchSampleName(BoundaryModel):
-    """Name a task's sample by the file name recorded at import, never a server path."""
+    """Name a task's sample by the relative path or file name recorded at import.
+
+    Never a server path.
+    """
 
     task_id: str
     sample_id: str
@@ -91,7 +102,16 @@ class WorkbenchProject(BoundaryModel):
     project: Project
     packages: tuple[TaskPackage, ...]
     label_set: LabelSet
-    template: ProductionTemplate | None
+    template: ProductionTemplate | None = Field(
+        description="The template version this project is locked to"
+    )
+    latest_template: ProductionTemplate | None = Field(
+        default=None,
+        description="The template's current revision; newer than template when an upgrade exists",
+    )
+    latest_label_set_version: int | None = Field(
+        default=None, description="Newest published version of the project's label set"
+    )
     effective_scopes: EffectiveScopes
     progress: ProductionProgress
     workload: ProductionWorkload
@@ -109,6 +129,12 @@ class WorkbenchSample(BoundaryModel):
 
     id: str
     name: str
+    path: str = Field(
+        description=(
+            "The path under the imported directory, such as `site-a/day-1/shelf.png`, or the "
+            "file name when none was recorded. Never a server path or object key."
+        )
+    )
     media_type: str
     text: str | None = None
     image_width: int | None = None
@@ -159,10 +185,15 @@ class SkillDispatchPreviewRequest(BoundaryModel):
 
 
 class DispatchPick(BoundaryModel):
-    """Name the person a skill dispatch would give one task to."""
+    """Name the person a skill dispatch would give one task to.
+
+    ``transferred_from`` is the original annotator when the pick hands rework over to someone
+    else, which skill dispatch does only after that annotator has been deactivated.
+    """
 
     task_id: str
     actor: str
+    transferred_from: str | None = None
 
 
 class DispatchLoad(BoundaryModel):

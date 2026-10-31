@@ -173,10 +173,11 @@ def test_skill_workload_sums_active_and_completed_work_per_skill(db: Database) -
     workload = ProductionSkillWorkload.model_validate(result.data)
     rows = {item.skill_id: item for item in workload.skills}
     first = rows["classify-retail-ann-1"]
+    # The submitted task waits for review: completed, and no longer open work in the load.
     assert (first.level, first.users, first.active_assignments, first.completed_tasks) == (
         4,
         ("ann-1",),
-        2,
+        1,
         1,
     )
     second = rows["classify-retail-ann-2"]

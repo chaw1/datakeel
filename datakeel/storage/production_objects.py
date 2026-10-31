@@ -17,7 +17,6 @@ from datakeel.core.production_catalog_models import (
     ProductionTemplate,
 )
 from datakeel.core.production_models import (
-    AnnotationRevision,
     Assignment,
     Project,
     Review,
@@ -29,6 +28,7 @@ from datakeel.core.production_reads import (
     ProductionObjectQuery,
 )
 from datakeel.ontology.models import FrozenObject
+from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.database import Database
 from datakeel.storage.identity_rows import RoleRow, SkillRow, TeamRow, UserRow
 from datakeel.storage.identity_store import role_templates
@@ -67,8 +67,7 @@ _READERS: dict[str, Callable[[Session], list[BoundaryModel]]] = {
         Assignment.model_validate(r.payload) for r in s.scalars(select(ProductionAssignmentRow))
     ],
     "annotation_revision": lambda s: [
-        AnnotationRevision.model_validate(r.payload)
-        for r in s.scalars(select(ProductionRevisionRow))
+        revision_view(s, r) for r in s.scalars(select(ProductionRevisionRow))
     ],
     "review": lambda s: [
         Review.model_validate(r.payload) for r in s.scalars(select(ProductionReviewRow))

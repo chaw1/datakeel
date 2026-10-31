@@ -32,6 +32,7 @@ def catalog_subject(item: CatalogObject) -> KnowledgeSubject:
         if item.asset_ref.version is None
         else item.asset_ref,
         name=item.name,
+        english_name=item.english_name,
         kind="metric"
         if kind == "metric"
         else "owner"

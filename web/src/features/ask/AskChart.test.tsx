@@ -54,7 +54,7 @@ it("renders accessible SVG from exact rows and supports keyboard switching to th
   expect(
     screen.queryByRole("button", { name: "Horizontal bars" }),
   ).not.toBeInTheDocument();
-  expect(image).toHaveAccessibleName(/Revenue by region/);
+  expect(image).toHaveAccessibleName(/Retail revenue/);
   expect(image).toHaveAccessibleDescription();
   expect(image.querySelector("desc")).toHaveTextContent(
     "same result rows as the table",

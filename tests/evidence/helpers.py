@@ -3,6 +3,10 @@
 
 """Synthetic extraction fixtures with explicit versioned provenance."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from datakeel.core.evidence_cache import (
     EvidenceCacheEntry,
     EvidenceCacheKey,
@@ -10,7 +14,13 @@ from datakeel.core.evidence_cache import (
     KnowledgeBundle,
 )
 from datakeel.core.evidence_models import Assertion, EvidenceAnchor, EvidenceValue, ExtractorRef
-from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.core.models import AssetRef, FileItem, LineageEvent
+from datakeel.operators.evidence import annotation_labels, image_phash
+from datakeel.operators.evidence.facts import ImageDimensions
+
+if TYPE_CHECKING:
+    import pytest
+    from PIL import Image
 
 
 def extraction_event(
@@ -63,3 +73,17 @@ def extraction_event(
 def fixture_bundle(event: LineageEvent) -> KnowledgeBundle:
     """Read the caller fixture bundle before content-addressed publication."""
     return KnowledgeBundle.model_validate(event.params["knowledge_bundle"])
+
+
+def _no_geometry(_file: FileItem) -> None:
+    return None
+
+
+def _stored_size(image: Image.Image) -> ImageDimensions:
+    return ImageDimensions(width=image.width, height=image.height)
+
+
+def stored_frame_extractors(patch: pytest.MonkeyPatch) -> None:
+    """Make the image extractors measure as v0.18.0 did: stored size, stored-frame boxes."""
+    patch.setattr(annotation_labels, "_geometry", _no_geometry)
+    patch.setattr(image_phash, "_upright_size", _stored_size)

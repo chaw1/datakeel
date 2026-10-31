@@ -16,8 +16,9 @@ from datakeel.actions.production_catalog_parameters import (
     PublishLabelSetParams,
     RegisterModelParams,
     RunPrelabelParams,
+    UpgradeProjectTemplateParams,
 )
-from datakeel.core.models import AssetRef
+from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet
 from datakeel.storage.object_projection import content_digest
@@ -31,6 +32,7 @@ from datakeel.storage.production_catalog_rows import (
 )
 from datakeel.storage.production_rows import ProductionTaskRow
 from datakeel.storage.production_tasks import require_project, task_view
+from datakeel.storage.production_template_upgrade import upgrade_plan
 
 
 def _freeze(kind: str, identifier: str, value: dict[str, JsonValue]) -> FrozenObject:
@@ -52,15 +54,8 @@ def catalog_objects(session: Session, params: ProductionCatalogActionParams) -> 
         return [_freeze("template", row.id, row.payload)] if row else []
     if isinstance(params, CreateLabelSetParams | PublishLabelSetParams):
         return _label_objects(session, params)
-    if isinstance(params, AcceptPackageParams):
-        project, tasks, _ = require_inspectable(session, params)
-        return [
-            _freeze("project", project.id, project.model_dump(mode="json")),
-            *(
-                _freeze("production_task", task.id, task_view(task).model_dump(mode="json"))
-                for task in tasks
-            ),
-        ]
+    if isinstance(params, AcceptPackageParams | UpgradeProjectTemplateParams):
+        return _decision_objects(session, params)
     if isinstance(params, ImportPredictionsParams | RunPrelabelParams | FinalizeProjectParams):
         project = require_project(session, params.project_id)
         objects = [_freeze("project", project.id, project.model_dump(mode="json"))]
@@ -76,6 +71,41 @@ def catalog_objects(session: Session, params: ProductionCatalogActionParams) -> 
         )
         return objects
     return []
+
+
+def _decision_objects(
+    session: Session, params: AcceptPackageParams | UpgradeProjectTemplateParams
+) -> list[FrozenObject]:
+    """Freeze the project and every task head an acceptance or template upgrade depends on.
+
+    A template upgrade also shows its computed plan on the project object.
+    """
+    if isinstance(params, AcceptPackageParams):
+        project, tasks, _ = require_inspectable(session, params)
+        value: dict[str, JsonValue] = project.model_dump(mode="json")
+    else:
+        project = require_project(session, params.project_id)
+        plan = upgrade_plan(session, params)
+        tasks = list(
+            session.scalars(
+                select(ProductionTaskRow)
+                .where(ProductionTaskRow.project_id == project.id)
+                .order_by(ProductionTaskRow.id)
+            )
+        )
+        value = JsonDocument.model_validate(
+            {
+                "project": project.model_dump(mode="json"),
+                "template_upgrade": plan.model_dump(mode="json"),
+            }
+        ).root
+    return [
+        _freeze("project", project.id, value),
+        *(
+            _freeze("production_task", task.id, task_view(task).model_dump(mode="json"))
+            for task in tasks
+        ),
+    ]
 
 
 def _label_objects(

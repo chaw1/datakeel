@@ -8,7 +8,7 @@ import { AskChart } from "./AskChart";
 import { AskResolution } from "./AskResolution";
 import { KnowledgeAnswerView } from "./KnowledgeAnswerView";
 import { KnowledgeResolution } from "./KnowledgeResolution";
-import { metricName } from "./metricLabels";
+import { metricName, understoodQuestion } from "./metricLabels";
 import { ProfileAnswerView } from "./ProfileAnswerView";
 
 import type {
@@ -101,7 +101,7 @@ export function AskAnswerView({
       </header>
       <p className="ask-understood">
         {t("askUnderstood")}
-        {answer.interpreted_question || answer.question}
+        {understoodQuestion(answer, locale)}
       </p>
       {profileAnswer ? (
         <ProfileAnswerView

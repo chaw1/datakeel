@@ -20,6 +20,7 @@ from datakeel.core.training_models import (
     SplitSet,
     TrainingSample,
 )
+from datakeel.storage.annotation_frames import DISPLAY_FRAME
 from datakeel.storage.database import Database
 from datakeel.storage.events import append_event
 from datakeel.storage.training_inputs import authorize_training, read_training_samples
@@ -117,6 +118,7 @@ def create_split(
                 created_at=split.created_at.timestamp(),
                 payload=split.model_dump(mode="json"),
                 samples=[sample.model_dump(mode="json") for sample in samples],
+                coordinate_frame=DISPLAY_FRAME,
             )
         )
         append_event(

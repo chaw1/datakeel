@@ -106,7 +106,7 @@ export function ImageCanvas({
     const point = position(event);
     if (point) callback?.(point);
   }
-  /** Show a truncated chip's full name as the canvas tooltip while the pointer is over it. */
+  /** Show the full name of the chip on top under the pointer when it is cut short or overlapped. */
   function showChipTitle(stage: Konva.Stage | null) {
     if (!stage) return;
     const pointer = stage.getPointerPosition();

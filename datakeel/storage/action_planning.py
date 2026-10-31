@@ -59,6 +59,7 @@ from datakeel.storage.identity_authorization import authorize_identity_plan, req
 from datakeel.storage.kg_preparation import prepare_kg_params
 from datakeel.storage.llm_data_actions import prepare_training
 from datakeel.storage.production_catalog_plans import catalog_requires_approval
+from datakeel.storage.production_dispatch_plans import prepare_dispatch_params
 from datakeel.storage.production_idempotency import remember_prepared, replay_prepared
 from datakeel.storage.release_actions import publication_impact
 from datakeel.storage.training_export import prepare_training_export
@@ -118,6 +119,7 @@ def _prepare_params(session: Session, action_type: str, params: JsonDocument) ->
         parsed = prepare_submission(parsed)
     parsed = prepare_data_asset_params(session, parsed)
     parsed = prepare_identity_params(session, parsed)
+    parsed = prepare_dispatch_params(session, parsed)
     if isinstance(parsed, RunKGExtractionParams):
         parsed = prepare_kg_params(session, parsed)
     if isinstance(parsed, PipelineParams) and parsed.pipeline is None:

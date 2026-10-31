@@ -19,14 +19,17 @@ from datakeel.ask.followup import (
     prepare_metric_turn,
     previous_period,
 )
+from datakeel.ask.interpretation_en import interpreted_question_en
 from datakeel.ask.knowledge_parser import metric_recognition, parse_knowledge_question
 from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
 from datakeel.ask.models import DimensionParse, Leftovers, QueryContext
 from datakeel.ask.profile import parse_profile_question, profile_answer
+from datakeel.ask.reasons import refusal as coded_refusal
 from datakeel.core.ask_frame_models import AskComparison, AskQueryFrame
 from datakeel.core.ask_models import (
     AskAnswer,
     AskInterpretation,
+    AskReasonCode,
     AskRequest,
     LineageReference,
     MetricResolution,
@@ -72,6 +75,8 @@ def ask_data(
             "conversation_id": request.conversation_id,
             "interpreted_question": answer.interpreted_question
             or interpreted_question(answer.query_frame, answer.metric_card, request.question),
+            "interpreted_question_en": answer.interpreted_question_en
+            or interpreted_question_en(answer.query_frame, answer.metric_card, request.question),
         }
     )
     answer = answer_chart(answer)
@@ -160,10 +165,11 @@ def _answer(
     try:
         query, result, comparison = _execute_frame(db, context, frame, card, access)
     except (ExecutionError, NotFoundError, ValidationError, ModelValidationError) as exc:
-        refusal = MetricResolution(
-            status="unanswerable",
-            candidates=resolution.candidates,
-            message=f"已登记指标暂时无法执行 ({type(exc).__name__})。",
+        refusal = coded_refusal(
+            "unanswerable",
+            resolution.candidates,
+            "execution_failed",
+            notes=(type(exc).__name__,),
         )
         return _nonanswer(request, parsed, refusal).model_copy(
             update={"interpretation": interpretation, "query_frame": turn.previous_frame}
@@ -180,6 +186,9 @@ def _answer(
         comparison=comparison,
         query_frame=frame,
         interpreted_question=interpreted_question(frame, card, request.question, context.layer),
+        interpreted_question_en=interpreted_question_en(
+            frame, card, request.question, context.layer
+        ),
         time_range=frame.time_range,
         matches=parsed.matches,
         lineage=LineageReference(asset_id=card.definition.id),
@@ -191,26 +200,21 @@ def _frame_refusal(
     resolution: MetricResolution, frame: AskQueryFrame, question: str
 ) -> MetricResolution | None:
     if frame.share_of_result_rows and not (frame.group_by or frame.time_grain):
-        return resolution.model_copy(
-            update={"status": "clarification", "message": "结果行占比需要明确分组维度或时间粒度。"}
-        )
+        return coded_refusal("clarification", resolution.candidates, "share_needs_grouping")
     if comparison_unit_mismatch(question, frame):
-        return resolution.model_copy(
-            update={
-                "status": "clarification",
-                "message": "指定的对比周期与当前完整时间区间不一致。请明确月份或季度。",
-            }
-        )
+        return coded_refusal("clarification", resolution.candidates, "comparison_period_mismatch")
     if frame.comparison and previous_period(frame, frame.comparison) is None:
         return _comparison_refusal(resolution, frame)
     return None
 
 
 def _comparison_refusal(resolution: MetricResolution, frame: AskQueryFrame) -> MetricResolution:
-    label = "同比" if frame.comparison == "year_over_year" else "环比"
-    return resolution.model_copy(
-        update={"status": "clarification", "message": f"请明确{label}的时间范围。"}
+    code: AskReasonCode = (
+        "year_over_year_needs_range"
+        if frame.comparison == "year_over_year"
+        else "previous_period_needs_range"
     )
+    return coded_refusal("clarification", resolution.candidates, code)
 
 
 def _compile_frame(
@@ -271,25 +275,22 @@ def _condition_refusal(
 ) -> MetricResolution | None:
     """Never execute when a temporal, filter or grouping fragment was not understood."""
     if leftovers.times:
-        return MetricResolution(
-            status="unanswerable",
-            candidates=resolution.candidates,
-            message="无法可靠解析时间条件: 未理解「" + "」「".join(leftovers.times) + "」",
+        return coded_refusal(
+            "unanswerable", resolution.candidates, "time_not_understood", fragments=leftovers.times
         )
     rankings = () if dimensions.group_by else leftovers.rankings
     unsupported = [*leftovers.calculations, *rankings]
     if unsupported:
-        return MetricResolution(
-            status="unanswerable",
-            candidates=resolution.candidates,
-            message="登记指标不支持所问的计算: 「" + "」「".join(unsupported) + "」",
+        return coded_refusal(
+            "unanswerable", resolution.candidates, "unsupported_calculation", fragments=unsupported
         )
-    issues = [*dimensions.issues, *(f"未理解「{item}」" for item in leftovers.conditions)]
-    if issues:
-        return MetricResolution(
-            status="clarification",
-            candidates=resolution.candidates,
-            message="请明确维度条件: " + "; ".join(issues),
+    if dimensions.issues or leftovers.conditions:
+        return coded_refusal(
+            "clarification",
+            resolution.candidates,
+            "unclear_condition",
+            fragments=leftovers.conditions,
+            notes=dimensions.issues,
         )
     return None
 
@@ -323,6 +324,7 @@ def _nonanswer(
         question=request.question,
         status="clarification" if resolution.status == "clarification" else "unanswerable",
         message=resolution.message,
+        reason=resolution.reason,
         reference_instant=request.reference_instant,
         time_range=parsed.time_range,
         matches=parsed.matches,

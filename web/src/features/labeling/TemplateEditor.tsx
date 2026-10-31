@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { useI18n } from "../../i18n/useI18n";
 
-import { mutateProduction } from "./actions";
+import { actionDetails, mutateProduction } from "./actions";
 
 import type {
   ProjectWorkbench,
@@ -56,7 +56,9 @@ export function TemplateEditor({
   onChanged: () => void;
 }) {
   const { t } = useI18n();
-  const template = project.template;
+  // Edits build the template's next version from its newest revision; this project stays on
+  // its locked version until an upgrade is signed in the cockpit.
+  const template = project.latest_template ?? project.template;
   const [type, setType] = useState<ProductionTemplate["annotation_type"]>(
     template?.annotation_type ?? "box",
   );
@@ -82,15 +84,15 @@ export function TemplateEditor({
     JSON.stringify(template?.attributes ?? [], null, 2),
   );
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   async function apply() {
     if (!template || busy) return;
     setBusy(true);
     setError("");
-    setSaved(false);
+    setSaved(null);
     try {
-      await mutateProduction("create_label_set", {
+      const run = await mutateProduction("create_label_set", {
         target: "template",
         operation: "update",
         template: {
@@ -106,7 +108,15 @@ export function TemplateEditor({
           },
         },
       });
-      setSaved(true);
+      const details = actionDetails(run);
+      setSaved(
+        details &&
+          typeof details === "object" &&
+          "revision" in details &&
+          typeof details.revision === "number"
+          ? details.revision
+          : template.revision + 1,
+      );
       onChanged();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t("wbError"));
@@ -217,7 +227,9 @@ export function TemplateEditor({
           {error}
         </p>
       )}
-      {saved && <p role="status">{t("wbTemplateSaved")}</p>}
+      {saved !== null && (
+        <p role="status">{t("wbTemplateSavedVersion", { version: saved })}</p>
+      )}
     </details>
   );
 }

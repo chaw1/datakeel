@@ -25,7 +25,7 @@ from datakeel.storage.database import DatasetRow, data_dir
 from datakeel.storage.datasets import dataset_dict
 from datakeel.storage.events import all_events
 from datakeel.storage.training_export import training_export_inputs
-from datakeel.training.export import write_training_export
+from datakeel.training.export import upright_transforms, write_training_export
 
 
 def export_path(destination: str) -> Path:
@@ -91,6 +91,7 @@ def _training_action(
         directory = Path(temporary)
         archive = directory / target.name
         write_training_export(export, directory / "package", archive)
+        transforms = upright_transforms(directory / "package")
         os.link(archive, target)
         inode, size = target.stat().st_ino, target.stat().st_size
     return OperationResult(
@@ -111,6 +112,7 @@ def _training_action(
             "source_version": params.version_id,
             "split_set_id": params.split_set_id,
             "file_count": len(export.items),
+            "upright_transforms": transforms,
         },
     )
 

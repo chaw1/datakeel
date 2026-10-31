@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import Field
 
 from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.image_orientation import CoordinateConversion
 from datakeel.core.models import BoundaryModel
 
 WorkflowTier = Literal["personal", "group", "team"]
@@ -44,6 +45,14 @@ class Project(BoundaryModel):
     label_set_id: str
     label_set_version: int
     template_id: str | None = None
+    template_version: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Template revision this project is locked to; only a signed "
+            "upgrade_project_template changes it. Null only before the template lock migration."
+        ),
+    )
     workflow_tier: WorkflowTier = "personal"
     guidelines: str = ""
     created_at: datetime
@@ -83,7 +92,11 @@ class ProductionTask(BoundaryModel):
 
 
 class Assignment(BoundaryModel):
-    """Identify an actor's exclusive effective assignment for one task stage."""
+    """Identify an actor's exclusive effective assignment for one task stage.
+
+    ``transferred_from`` names the original annotator when this assignment hands a rework
+    round over to someone else; it is None for every other assignment.
+    """
 
     id: str
     task_id: str
@@ -95,10 +108,15 @@ class Assignment(BoundaryModel):
     dispatch: AssignmentSource | None = None
     ended_at: datetime | None = None
     end_reason: str | None = None
+    transferred_from: str | None = None
 
 
 class AnnotationRevision(BoundaryModel):
-    """Append one annotation and its precise human or model provenance forever."""
+    """Append one annotation and its precise human or model provenance forever.
+
+    ``coordinate_conversion`` is set only on reads of a revision saved in the stored pixel
+    frame (before v0.19) of an EXIF-oriented image, naming the transform applied on read.
+    """
 
     id: str
     task_id: str
@@ -110,6 +128,7 @@ class AnnotationRevision(BoundaryModel):
     model_version: str | None = None
     confidence: float | None = Field(default=None, ge=0, le=1)
     created_at: datetime
+    coordinate_conversion: CoordinateConversion | None = None
 
 
 class Review(BoundaryModel):

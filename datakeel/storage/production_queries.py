@@ -22,6 +22,7 @@ from datakeel.core.production_models import (
     StateCount,
     TaskPackage,
 )
+from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.database import Database
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
@@ -134,7 +135,7 @@ def list_revisions(db: Database, task_id: str) -> tuple[AnnotationRevision, ...]
     """Return the complete immutable revision history for one task."""
     with db.session() as session:
         return tuple(
-            AnnotationRevision.model_validate(row.payload)
+            revision_view(session, row)
             for row in session.scalars(
                 select(ProductionRevisionRow).where(ProductionRevisionRow.task_id == task_id)
             )

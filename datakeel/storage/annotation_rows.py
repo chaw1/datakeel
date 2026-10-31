@@ -23,6 +23,8 @@ class AnnotationBatchRow(Base):
     batch: Mapped[dict[str, JsonValue]] = mapped_column(JSON)
     report: Mapped[dict[str, JsonValue]] = mapped_column(JSON)
     created_at: Mapped[float] = mapped_column(Float, index=True)
+    # NULL marks batches imported before v0.19 in the stored pixel frame; new ones say "display".
+    coordinate_frame: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class AnnotationSamplingRow(Base):

@@ -104,6 +104,43 @@ class AskInterpretation(BoundaryModel):
     unconsumed: tuple[str, ...] = ()
 
 
+AskReasonCode = Literal[
+    "ambiguous_metric",
+    "unresolved_metric",
+    "time_unparsed",
+    "generic_metric",
+    "no_metric",
+    "selected_metric_missing",
+    "selected_metric_unresolved",
+    "execution_failed",
+    "time_not_understood",
+    "unsupported_calculation",
+    "unclear_condition",
+    "share_needs_grouping",
+    "comparison_period_mismatch",
+    "year_over_year_needs_range",
+    "previous_period_needs_range",
+    "same_period_needs_range",
+    "followup_time_unparsed",
+    "followup_metric_unavailable",
+    "followup_dimensions_unclear",
+    "followup_comparison_unclear",
+    "followup_change_unclear",
+]
+
+
+class AskReason(BoundaryModel):
+    """Why a numeric question was refused or sent back, as a code each interface words itself."""
+
+    code: AskReasonCode
+    fragments: tuple[str, ...] = Field(
+        default=(), description="Words of the question the reason names, in question order."
+    )
+    notes: tuple[str, ...] = Field(
+        default=(), description="Parser findings or error types the reason names, in English."
+    )
+
+
 class AskAnswer(BoundaryModel):
     """Persist one fully evidenced answer, refusal, or request for clarification."""
 
@@ -112,9 +149,22 @@ class AskAnswer(BoundaryModel):
     question: str
     status: Literal["answered", "unanswerable", "clarification"]
     message: str
+    reason: AskReason | None = Field(
+        default=None,
+        description=(
+            "The coded reason behind a refusal or clarification, for wording in the interface "
+            "language. Answers recorded before reasons had codes carry only `message`."
+        ),
+        exclude_if=lambda value: value is None,
+    )
     reference_instant: AwareDatetime
     conversation_id: str | None = None
     interpreted_question: str = ""
+    interpreted_question_en: str = Field(
+        default="",
+        description="The same interpretation in English, for an English interface.",
+        exclude_if=lambda value: not value,
+    )
     query_frame: AskQueryFrame | None = None
     comparison: AskComparison | None = None
     chart: ChartSpec | None = Field(default=None, exclude_if=lambda value: value is None)
@@ -260,6 +310,7 @@ class MetricResolution(BoundaryModel):
     status: Literal["resolved", "unanswerable", "clarification"]
     candidates: tuple[MetricCard, ...]
     message: str
+    reason: AskReason | None = None
 
 
 class CandidateOrder(BoundaryModel):

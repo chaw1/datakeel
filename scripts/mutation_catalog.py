@@ -35,6 +35,10 @@ from scripts.release_mutations import RELEASE_MUTATIONS
 from scripts.sandbox_mutations import SANDBOX_MUTATIONS
 from scripts.standard_mutations import LEXICAL_RULE_MUTATIONS, STANDARD_MUTATIONS
 from scripts.table_mutations import TABLE_MUTATIONS
+from scripts.tails4_orientation_mutations import ORIENTATION_MUTATIONS
+from scripts.tails4_tails_mutations import TAILS_MUTATIONS
+from scripts.tails4_template_mutations import TEMPLATE_LOCK_MUTATIONS
+from scripts.tails4_workload_mutations import WORKLOAD_MUTATIONS
 from scripts.text_dedup_mutations import TEXT_DEDUP_MUTATIONS
 from scripts.timeseries_mutations import TIMESERIES_MUTATIONS
 from scripts.training_hf_mutations import HF_TRAINING_MUTATIONS
@@ -52,7 +56,9 @@ FEATURE_MUTATIONS = (
     *PRODUCTION_MUTATIONS,
     *PRODUCTION_TOOL_MUTATIONS,
     *PRODUCTION_CATALOG_MUTATIONS,
+    *TEMPLATE_LOCK_MUTATIONS,
     *PRODUCTION_TEAM_MUTATIONS,
+    *WORKLOAD_MUTATIONS,
     *ADVANCED_MUTATIONS,
     *KG_MUTATIONS,
     *KNOWLEDGE_MUTATIONS,
@@ -88,4 +94,6 @@ FEATURE_MUTATIONS = (
     *LLM_DATA_GOVERNANCE_MUTATIONS,
     *SANDBOX_MUTATIONS,
     *TRAINING_IDENTITY_MUTATIONS,
+    *TAILS_MUTATIONS,
+    *ORIENTATION_MUTATIONS,
 )

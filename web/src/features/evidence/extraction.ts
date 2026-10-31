@@ -48,17 +48,24 @@ export function supportsEvidence(version: Version) {
   );
 }
 
+// Same values as each module's VERSION in datakeel/operators/evidence (a Python test
+// compares them). 1.1 marks the extractors whose v0.18.0 output used stored pixels, so
+// their cached results are re-extracted in the upright frame.
+export const EXTRACTOR_VERSIONS = {
+  image_phash: "1.1",
+  caption_mentions: "1.0",
+  annotation_labels: "1.1",
+  label_gap: "1.0",
+  near_duplicate: "1.0",
+} as const;
+
 export function extractionInput(
   datasetId: string,
   versionId: string,
 ): PipelineInput {
-  const extractors = [
-    "image_phash",
-    "caption_mentions",
-    "annotation_labels",
-    "label_gap",
-    "near_duplicate",
-  ];
+  const extractors = Object.keys(
+    EXTRACTOR_VERSIONS,
+  ) as (keyof typeof EXTRACTOR_VERSIONS)[];
   const nodes: components["schemas"]["Node"][] = [
     {
       id: "evidence_images",
@@ -74,7 +81,7 @@ export function extractionInput(
       kind: "operator",
       operator: `evidence.${id}`,
       inputs: { files: source },
-      params: { extractor_version: "1.0" },
+      params: { extractor_version: EXTRACTOR_VERSIONS[id] },
     });
     source = `${id}.files`;
   }

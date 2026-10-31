@@ -87,3 +87,18 @@ it("renders empty and failed reads without inventing project statistics", async 
   render(<LabelingPage params={new URLSearchParams()} />);
   expect(await screen.findByText(/No production projects yet/)).toBeVisible();
 });
+it("shows the personal project's locked template version beside an upgrade", async () => {
+  const template = labelingProject.template;
+  if (!template) throw new Error("fixture template");
+  vi.mocked(production.getProjectWorkbench).mockResolvedValue({
+    ...labelingProject,
+    latest_template: { ...template, revision: template.revision + 1 },
+  });
+  render(<LabelingPage params={new URLSearchParams()} />);
+  expect(
+    await screen.findByText(
+      `Current template v${String(template.revision)}, latest v${String(template.revision + 1)}`,
+    ),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "Prepare upgrade" })).toBeVisible();
+});

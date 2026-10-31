@@ -33,6 +33,17 @@ class ProductionTemplateRow(Base):
     payload: Mapped[dict[str, JsonValue]] = mapped_column(JSON)
 
 
+class ProductionTemplateVersionRow(Base):
+    """Keep every saved template revision so each project reads the exact version it locked."""
+
+    __tablename__ = "production_template_versions"
+    __table_args__ = (UniqueConstraint("template_id", "revision"),)
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    template_id: Mapped[str] = mapped_column(String, index=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    payload: Mapped[dict[str, JsonValue]] = mapped_column(JSON)
+
+
 class ProductionModelRow(Base):
     """Store approved model configurations independently of historic model provenance."""
 
@@ -52,7 +63,7 @@ class ProductionPrelabelRunRow(Base):
 
 
 def install_catalog_constraints(connection: Connection, *, sqlite: bool) -> None:
-    """Reject all updates and deletes after a label vocabulary has been published."""
+    """Reject updates and deletes of published vocabularies and saved template versions."""
     if sqlite:
         for operation in ("UPDATE", "DELETE"):
             connection.execute(
@@ -60,6 +71,13 @@ def install_catalog_constraints(connection: Connection, *, sqlite: bool) -> None
                     f"CREATE TRIGGER IF NOT EXISTS production_labels_no_{operation.lower()} "
                     f"BEFORE {operation} ON production_label_sets WHEN OLD.published = 1 BEGIN "
                     "SELECT RAISE(ABORT, 'published label sets are immutable'); END"
+                )
+            )
+            connection.execute(
+                text(
+                    f"CREATE TRIGGER IF NOT EXISTS production_template_versions_no_"
+                    f"{operation.lower()} BEFORE {operation} ON production_template_versions "
+                    "BEGIN SELECT RAISE(ABORT, 'template versions are immutable'); END"
                 )
             )
         return
@@ -78,4 +96,18 @@ def install_catalog_constraints(connection: Connection, *, sqlite: bool) -> None
         table="production_label_sets",
         event="UPDATE OR DELETE",
         function="datakeel_immutable_label_set",
+    )
+    connection.execute(
+        text("""
+        CREATE OR REPLACE FUNCTION datakeel_immutable_template_version() RETURNS trigger AS $$
+        BEGIN RAISE EXCEPTION 'template versions are immutable'; END;
+        $$ LANGUAGE plpgsql
+        """)
+    )
+    ensure_pg_trigger(
+        connection,
+        name="datakeel_template_version_immutable",
+        table="production_template_versions",
+        event="UPDATE OR DELETE",
+        function="datakeel_immutable_template_version",
     )

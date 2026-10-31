@@ -3,13 +3,11 @@
 
 """Read production facts; all mutations use the existing controlled action endpoints."""
 
-import io
 import mimetypes
 from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import FileResponse, Response
-from PIL import Image
 
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.api.identity_access import http_actor
@@ -37,6 +35,7 @@ from datakeel.core.workbench_models import (
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import FunctionResult
 from datakeel.ontology.production_functions import PRODUCTION_READ_MODELS
+from datakeel.storage.image_geometry import upright_bytes
 from datakeel.storage.workbench_assignees import assignees
 from datakeel.storage.workbench_reads import (
     task_source,
@@ -77,7 +76,7 @@ def project_task_samples(
     db: DatabaseDependency,
     request: Request,
 ) -> WorkbenchTaskSamples:
-    """Name up to 500 tasks of the project by the file name recorded at import."""
+    """Name up to 500 tasks of the project by the relative path or file name recorded at import."""
     return task_samples(db, project_id, _caller(request), query)
 
 
@@ -119,23 +118,25 @@ def task_workbench(task_id: str, db: DatabaseDependency, request: Request) -> Wo
 def task_content(
     task_id: str, db: DatabaseDependency, request: Request, *, thumbnail: bool = False
 ) -> FileResponse | Response:
-    """View a version-pinned source or a small image preview under the same source grants."""
+    """View a version-pinned source or a small image preview under the same source grants.
+
+    Images are always shown upright: EXIF-oriented sources are re-encoded without the tag and
+    with the EXIF Orientation already applied to the pixels (JPEG stays JPEG, others PNG;
+    thumbnails are JPEG).
+    """
     path, name = task_source(db, task_id, _caller(request))
-    if thumbnail:
-        with Image.open(path) as image:
-            preview = image.convert("RGB")
-            preview.thumbnail((1024, 1024))
-            output = io.BytesIO()
-            preview.save(output, "JPEG", quality=80)
-        return Response(output.getvalue(), media_type="image/jpeg")
     media_type = mimetypes.guess_type(name)[0]
-    if media_type is not None and media_type.startswith("image/"):
-        with Image.open(path) as image:
-            if image.getexif().get(274) not in (None, 1):
-                output = io.BytesIO()
-                image.save(output, "PNG", exif=b"")
-                return Response(output.getvalue(), media_type="image/png")
-    return FileResponse(path, media_type=mimetypes.guess_type(name)[0], filename=name)
+    if thumbnail or (media_type is not None and media_type.startswith("image/")):
+        # Revalidated on every view (grants are checked above), so a repeat costs one 304.
+        stat = path.stat()
+        tag = f'"upright-{int(thumbnail)}-{stat.st_mtime_ns:x}-{stat.st_size:x}"'
+        headers = {"ETag": tag, "Cache-Control": "private, no-cache"}
+        if request.headers.get("if-none-match") == tag:
+            return Response(status_code=304, headers=headers)
+        upright = upright_bytes(path, thumbnail=1024 if thumbnail else None)
+        if upright is not None:
+            return Response(upright.content, media_type=upright.media_type, headers=headers)
+    return FileResponse(path, media_type=media_type, filename=name)
 
 
 @router.post("/functions/{name}")

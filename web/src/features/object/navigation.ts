@@ -23,6 +23,24 @@ export const objectTabs = [
   "datasheets",
 ] as const;
 export type ObjectTab = (typeof objectTabs)[number];
+/** The tabs an object of this kind has; dataset-only tabs never load for other kinds. */
+export function objectTabsFor(kind: ObjectKind): ObjectTab[] {
+  const tabs: ObjectTab[] = ["facts", "relations", "evidence", "history"];
+  if (kind === "dataset")
+    tabs.push(
+      "files",
+      "versions",
+      "quality",
+      "annotation-quality",
+      "text-governance",
+      "report",
+      "datasheets",
+    );
+  if (kind === "version")
+    tabs.push("files", "annotation-quality", "text-governance");
+  if (kind === "file") tabs.push("quality");
+  return tabs;
+}
 export type ObjectTarget = {
   kind: ObjectKind;
   id: string;

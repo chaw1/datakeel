@@ -84,8 +84,9 @@ def test_local_work_is_revoked_and_assigned_by_name_then_finished(db: Database) 
     save(db, held[0], "ann")
     assert submit(db, held[0], "ann").annotator_id == "ann"
     listed = assignees(db, project_id, _caller("boss"), "annotation")
-    # The load matches what dispatch limits count: the stage assignment stays until review.
-    assert {person.actor: person.current for person in listed.people}["ann"] == len(held)
+    # The load matches what dispatch limits count: submitted work waits for review, so it no
+    # longer counts as open even though its annotation assignment stays until approval.
+    assert {person.actor: person.current for person in listed.people}["ann"] == len(held) - 1
 
 
 def test_assignees_route_reads_actor_header_and_rejects_outsiders(db: Database) -> None:

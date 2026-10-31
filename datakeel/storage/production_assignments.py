@@ -3,6 +3,7 @@
 
 """Exclusive human assignment and lock-safe task claiming for group production."""
 
+from collections.abc import Iterable
 from datetime import timedelta
 
 from sqlalchemy import or_, select
@@ -12,6 +13,7 @@ from datakeel.actions.production_parameters import (
     AssignTasksParams,
     ClaimTaskParams,
     ReleaseTaskParams,
+    ReworkTransfer,
 )
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from datakeel.core.identity_models import User
@@ -24,7 +26,11 @@ from datakeel.core.production_models import (
 )
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_rows import UserRow
-from datakeel.storage.production_dispatch_rules import require_capacity, require_claim_strategy
+from datakeel.storage.production_dispatch_rules import (
+    require_capacity,
+    require_claim_strategy,
+    rework_handover,
+)
 from datakeel.storage.production_leases import end_assignment
 from datakeel.storage.production_load_locks import lock_people
 from datakeel.storage.production_members import record_project_member
@@ -103,6 +109,10 @@ def _insert_assignment(
         raise ConflictError(message)
     if stage == "review":
         require_separation(session, project, task, actor)
+    handover = rework_handover(task, actor) if stage == "annotation" else None
+    if handover is not None and source not in {"assign", "skill"}:
+        message = "Rework returns to the original annotator"
+        raise ConflictError(message)
     now = utcnow()
     assignment = Assignment(
         id=new_id(),
@@ -112,6 +122,7 @@ def _insert_assignment(
         created_at=now,
         lease_expires_at=now + timedelta(minutes=project.lease_minutes),
         dispatch=source,
+        transferred_from=handover,
     )
     session.add(
         ProductionAssignmentRow(
@@ -127,9 +138,6 @@ def _insert_assignment(
         )
     )
     if stage == "annotation":
-        if task.round > 0 and task.annotator_id not in (None, actor):
-            message = "Rework returns to the original annotator"
-            raise ConflictError(message)
         task.annotator_id = actor
     transition_task(session, task, "in_progress" if stage == "annotation" else "in_review")
     record_project_member(session, task.project_id, actor)
@@ -153,9 +161,23 @@ def assign_tasks(session: Session, params: AssignTasksParams) -> tuple[Assignmen
         message = "Named assignment requires actor"
         raise ValidationError(message)
     project = require_mutable_project(session, tasks[0].project_id)
+    if params.stage == "annotation" and rework_transfers(tasks, params.actor) != params.transfers:
+        message = "The rework handover in this plan no longer matches the tasks; prepare it again"
+        raise ConflictError(message)
     lock_people(session, project.id, (params.actor,))
-    require_capacity(session, project, params.actor, params.stage, len(tasks))
+    require_capacity(
+        session, project, params.actor, params.stage, len(tasks), params.max_active_tasks
+    )
     return tuple(create_assignment(session, task, params.actor, params.stage) for task in tasks)
+
+
+def rework_transfers(tasks: Iterable[ProductionTaskRow], actor: str) -> tuple[ReworkTransfer, ...]:
+    """List, by task id, the rework rounds a named annotation assignment moves to ``actor``."""
+    return tuple(
+        ReworkTransfer(task_id=task.id, round=task.round, from_actor=source, to_actor=actor)
+        for task in sorted(tasks, key=lambda item: item.id)
+        if (source := rework_handover(task, actor)) is not None
+    )
 
 
 def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> ProductionTask:

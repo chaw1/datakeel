@@ -5,6 +5,7 @@ import {
   knowledgeIntentLabels,
   knowledgeKindLabels,
 } from "./knowledgeLabels";
+import { subjectName } from "./metricLabels";
 
 import type { KnowledgeIntent, KnowledgeRecognition } from "../../api/ask";
 
@@ -15,7 +16,7 @@ export function KnowledgeRecognitionEvidence({
   recognition: KnowledgeRecognition;
   intent?: KnowledgeIntent;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   return (
     <div className="knowledge-recognition">
       {recognition.subjects.length ? (
@@ -27,7 +28,7 @@ export function KnowledgeRecognitionEvidence({
                 kind: subject.entity_type
                   ? `${t(knowledgeKindLabels[subject.kind])} · ${subject.entity_type}`
                   : t(knowledgeKindLabels[subject.kind]),
-                name: subject.name,
+                name: subjectName(subject, locale),
               })}
             </li>
           ))}

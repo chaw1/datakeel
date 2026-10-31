@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 def test_catalog_when_constructed_has_only_read_tools_and_deferred_actions() -> None:
     """Never expose approve_plan or execute_plan through either discovery list."""
     assert len(resident_tools()) == 10
-    assert len(deferred_tools()) == 92
+    assert len(deferred_tools()) == 92 + 2  # TAILS-4: R1 template upgrade, T3 assignees
     assert {"training_distribution", "training_leakage"} <= {tool.name for tool in deferred_tools()}
     training = next(tool for tool in deferred_tools() if tool.name == "get_training_quality")
     assert "clean_training_data" in {tool.name for tool in deferred_tools()}

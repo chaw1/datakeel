@@ -40,6 +40,7 @@ DEFERRED_READ_FUNCTIONS = frozenset(
         "lease_status",
         "skill_workload",
         "package_acceptance",
+        "assignees",
     }
 )
 

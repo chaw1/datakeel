@@ -31,7 +31,9 @@ it("searches by file name after the typing pause", () => {
   const search = vi.fn();
   render(<TaskSearch value="" onSearch={search} />);
   fireEvent.change(
-    screen.getByRole("searchbox", { name: "Search file names" }),
+    screen.getByRole("searchbox", {
+      name: "Search by relative path or file name",
+    }),
     {
       target: { value: "harbor-00" },
     },

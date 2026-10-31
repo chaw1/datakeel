@@ -118,6 +118,23 @@ class AcceptPackageParams(ProductionCatalogActionParams, PackageSamplingParams):
         return self
 
 
+class UpgradeProjectTemplateParams(ProductionCatalogActionParams):
+    """Move one project to a newer template revision and/or published label-set version.
+
+    Projects stay on the versions they locked; this signed action is the only way to move them.
+    """
+
+    project_id: str = Field(min_length=1)
+    template_version: int | None = Field(
+        default=None, ge=1, description="Target template revision; omitted means the newest"
+    )
+    label_set_version: int | None = Field(
+        default=None,
+        ge=1,
+        description="Target published label-set version; omitted means the newest published",
+    )
+
+
 CATALOG_PARAMETER_TYPES: dict[str, type[ProductionCatalogActionParams]] = {
     "create_label_set": CreateLabelSetParams,
     "publish_label_set": PublishLabelSetParams,
@@ -127,6 +144,7 @@ CATALOG_PARAMETER_TYPES: dict[str, type[ProductionCatalogActionParams]] = {
     "run_prelabel": RunPrelabelParams,
     "finalize_project": FinalizeProjectParams,
     "accept_package": AcceptPackageParams,
+    "upgrade_project_template": UpgradeProjectTemplateParams,
 }
 
 CATALOG_POLICIES: dict[str, tuple[str, bool, str]] = {
@@ -138,4 +156,9 @@ CATALOG_POLICIES: dict[str, tuple[str, bool, str]] = {
     "run_prelabel": ("production:manage", True, "Run deterministic offline prelabel model"),
     "finalize_project": ("production:finalize", False, "Publish finalized production annotations"),
     "accept_package": ("production:accept", False, "Accept or return a package by sampling"),
+    "upgrade_project_template": (
+        "production:manage",
+        False,
+        "Move a project to newer template and label versions",
+    ),
 }

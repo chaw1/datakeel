@@ -1,24 +1,31 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Parse COCO subset labels and convert their boxes to source-pixel xyxy anchors."""
+"""Parse COCO subset labels and convert their boxes to upright source-pixel xyxy anchors."""
 
 import unicodedata
 from pathlib import Path
 
+from PIL import Image
 from pydantic import ConfigDict
 
 from datakeel.core.evidence_drafts import ObservationDraft
 from datakeel.core.evidence_inputs import sample_sidecars
 from datakeel.core.evidence_models import EvidenceValue, ExtractorRef, ImageRegion
+from datakeel.core.image_orientation import (
+    ORIENTATION_TAG,
+    ImageGeometry,
+    orientation_value,
+    to_display,
+)
 from datakeel.core.models import BoundaryModel, FileItem
 from datakeel.operators.base import Operator, OperatorResult, summarize
 from datakeel.operators.evidence.common import EvidenceParams, anchor, publish, subject
 from datakeel.operators.evidence.contracts import Lexicon, read_lexicon
 from datakeel.operators.evidence.facts import AnnotationBox, AnnotationFacts, ImageDimensions
-from datakeel.operators.image.helpers import open_image
 
-VERSION = "1.0"
+# 1.1: boxes moved to the upright (EXIF-applied) frame; 1.0 cache entries are stale.
+VERSION = "1.1"
 
 
 class CocoAnnotation(BoundaryModel):
@@ -38,18 +45,56 @@ class CocoDocument(BoundaryModel):
     height: int | None = None
 
 
-def _dimensions(file: FileItem, document: CocoDocument) -> ImageDimensions:
-    if file.metadata.get("image_dimensions"):
-        return ImageDimensions.model_validate(file.metadata["image_dimensions"])
+def _geometry(file: FileItem) -> ImageGeometry | None:
+    try:
+        with Image.open(file.path) as image:
+            orientation = orientation_value(image.getexif().get(ORIENTATION_TAG))
+            return ImageGeometry(
+                orientation=orientation, stored_width=image.width, stored_height=image.height
+            )
+    except (OSError, ValueError, Image.DecompressionBombError):
+        return None
+
+
+def _frame(file: FileItem, document: CocoDocument) -> tuple[ImageDimensions, ImageGeometry | None]:
+    """Use the upright frame; a sidecar sized only like the stored pixels is converted."""
+    geometry = _geometry(file)
+    declared = (document.width, document.height)
+    if geometry is None:
+        if file.metadata.get("image_dimensions"):
+            return ImageDimensions.model_validate(file.metadata["image_dimensions"]), None
+        if document.width is not None and document.height is not None:
+            return ImageDimensions(width=document.width, height=document.height), None
+        msg = f"Image header is unreadable: {file.filename}"
+        raise ValueError(msg)
+    upright = ImageDimensions(width=geometry.width, height=geometry.height)
+    if (
+        declared
+        == (geometry.stored_width, geometry.stored_height)
+        != (
+            geometry.width,
+            geometry.height,
+        )
+    ):
+        return upright, geometry
     if document.width is not None and document.height is not None:
-        return ImageDimensions(width=document.width, height=document.height)
-    with open_image(file) as image:
-        return ImageDimensions(width=image.width, height=image.height)
+        return ImageDimensions(width=document.width, height=document.height), None
+    return upright, None
+
+
+def _upright(
+    box: tuple[float, float, float, float], geometry: ImageGeometry | None
+) -> tuple[float, float, float, float]:
+    if geometry is None:
+        return box
+    corners = (to_display(geometry, box[0], box[1]), to_display(geometry, box[2], box[3]))
+    xs, ys = sorted(point[0] for point in corners), sorted(point[1] for point in corners)
+    return (xs[0], ys[0], xs[1], ys[1])
 
 
 def _boxes(file: FileItem, sidecar: FileItem, lexicon: Lexicon) -> list[AnnotationBox]:
     document = CocoDocument.model_validate_json(Path(sidecar.path).read_bytes())
-    dimensions = _dimensions(file, document)
+    dimensions, stored = _frame(file, document)
     categories = {
         unicodedata.normalize("NFC", name).casefold(): concept.id
         for concept in lexicon.concepts
@@ -60,7 +105,8 @@ def _boxes(file: FileItem, sidecar: FileItem, lexicon: Lexicon) -> list[Annotati
         concept = categories.get(unicodedata.normalize("NFC", annotation.category).casefold())
         if concept is not None:
             x, y, width, height = annotation.bbox
-            region = ImageRegion(bbox=(x, y, x + width, y + height), **dimensions.model_dump())
+            bbox = _upright((x, y, x + width, y + height), stored)
+            region = ImageRegion(bbox=bbox, **dimensions.model_dump())
             boxes.append(
                 AnnotationBox(concept=concept, bbox=region.bbox, **dimensions.model_dump())
             )

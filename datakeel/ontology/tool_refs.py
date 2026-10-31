@@ -23,6 +23,7 @@ _PRODUCTION_READS = frozenset(
         "lease_status",
         "skill_workload",
         "package_acceptance",
+        "assignees",
     }
 )
 
