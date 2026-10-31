@@ -1,3 +1,5 @@
+import { intentEn } from "./intentEn";
+
 export const agentEn = {
   conversationTokenLimit: "Conversation token limit",
   dailyTokenLimit: "Daily token limit",
@@ -97,4 +99,5 @@ export const agentEn = {
   pingPongStopped: "Alternating tool calls were detected.",
   failureStopped: "A tool failed repeatedly.",
   turnsStopped: "The maximum number of calls was reached.",
+  ...intentEn,
 };

@@ -13,7 +13,6 @@ import { datasheetEn } from "./datasheetEn";
 import { dqEn } from "./dqEn";
 import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
-import { intentEn } from "./intentEn";
 import { kgEn } from "./kgEn";
 import { knowledgeEn } from "./knowledgeEn";
 import { llmDataEn } from "./llmDataEn";
@@ -66,7 +65,6 @@ export const en = {
   themeLight: "Light",
   themeDark: "Dark",
   ...agentEn,
-  ...intentEn,
   ...advancedEn,
   ...askEn,
   ...askReasonEn,

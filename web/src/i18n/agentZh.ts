@@ -1,3 +1,5 @@
+import { intentZh } from "./intentZh";
+
 import type { agentEn } from "./agentEn";
 export const agentZh: Record<keyof typeof agentEn, string> = {
   conversationTokenLimit: "会话词元上限",
@@ -95,4 +97,5 @@ export const agentZh: Record<keyof typeof agentEn, string> = {
   pingPongStopped: "检测到工具交替打转。",
   failureStopped: "同一工具连续失败。",
   turnsStopped: "已达到最大调用轮次。",
+  ...intentZh,
 };
