@@ -3,6 +3,7 @@
 
 """Check filled steps against the registered parameter schemas, scopes and references."""
 
+import logging
 import re
 
 from pydantic import Field, JsonValue
@@ -31,12 +32,15 @@ from datakeel.intents.what_changes import edit_question, nothing_to_edit
 from datakeel.intents.wording import (
     invalid_question,
     missing_question,
+    not_found_question,
     subset_question,
 )
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.storage.database import Database
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.production_queries import project_for_params
+
+logger = logging.getLogger(__name__)
 
 FILE_CHANGES = frozenset({"quarantine_files", "unquarantine_files", "delete_files"})
 REFERENCE = re.compile(r"^(?P<step>s\d{1,2})\.(?P<output>[a-z_]+_(?:id|ids|version))$")
@@ -332,11 +336,31 @@ def check_step(
     asked = _question(step, missing, invalid, state, catalog)
     if asked is not None:
         return StepCheck(clarification=asked)
+    return _card(db, step, state, catalog, previous)
+
+
+def _card(
+    db: Database,
+    step: DraftStep,
+    state: FillState,
+    catalog: EntityCatalog,
+    previous: list[ChainStep],
+) -> StepCheck:
+    """The checked step with its estimate and plain card lines.
+
+    An object the step names that does not exist (a name where an identity belongs) is
+    asked about instead of failing the turn.
+    """
     scope = POLICIES[step.action][0]
     params, items = fanned_out(step.params)
     chain_step = ChainStep(id=step.id, action=step.action, params=params, items=items, scope=scope)
-    estimate = estimate_step(db, chain_step, catalog, previous)
+    try:
+        estimate = estimate_step(db, chain_step, catalog, previous)
+        details = describe_step(db, chain_step, catalog, state.language)
+    except NotFoundError:
+        logger.warning("Planned %s names an object that does not exist", step.action)
+        question = not_found_question(state.language)
+        return StepCheck(clarification=Clarification(question=question, action=step.action))
     allowed = allowed_words(catalog, state.text, labels=label_names(params))
-    details = describe_step(db, chain_step, catalog, language)
-    details = public_details(details, language, catalog, allowed)
+    details = public_details(details, state.language, catalog, allowed)
     return StepCheck(step=chain_step.model_copy(update={"estimate": estimate, "details": details}))

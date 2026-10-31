@@ -386,3 +386,10 @@ def whole_tasks_question(language: str) -> str:
         'Every task in this project? Say "all" if so; otherwise say which ones (whose, '
         "unassigned, or their numbers)."
     )
+
+
+def not_found_question(language: str) -> str:
+    """A step names something that does not exist: ask instead of failing."""
+    if language == "zh":
+        return "这一步提到的对象没找到 (可能名字不一样), 是哪一个?"
+    return "Something this step names was not found (perhaps under another name); which is it?"

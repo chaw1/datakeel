@@ -17,6 +17,7 @@ from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_queries import list_packages, list_tasks
 from tests.intents.fix3_support import planned, steps, two_projects
 from tests.production_helpers import production_fixture
+from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database
@@ -213,3 +214,35 @@ def test_a_publish_nobody_asked_for_is_never_added(db: Database) -> None:
     stubborn = planned(db, said, [slipped], page)
     assert stubborn.kind == "clarify"
     assert "没说要发布" in stubborn.text
+
+
+def test_places_names_and_choices_said_in_words_are_understood(db: Database) -> None:
+    """「第 3 个包」, a dataset by name, 「分类标注」 and a label's letter case all resolve."""
+    _, south, tasks = two_projects(db)
+    third = {"$tasks": {"project": "南区车道", "package": "第 3 个包", "holder": "nobody"}}
+    assign = steps(("assign_tasks", {"task_ids": third, "actor": "wang"}))
+    result = planned(db, "把南区车道第 3 个包里没人领的派给小王", [assign], PageContext())
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    assert result.chain.steps[0].params.get("task_ids") == tasks[4:6]
+    _renamed(db, south.dataset_id, PHOTOS)
+    wipe = steps(("delete_files", {"selection": {"dataset_id": PHOTOS}}))
+    result = planned(db, f"Delete every image in {PHOTOS}", [wipe], PageContext())
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    chosen = result.chain.steps[0].params.get("selection")
+    assert isinstance(chosen, dict)
+    assert chosen.get("dataset_id") == south.dataset_id
+    unknown = steps(("delete_files", {"selection": {"dataset_id": "不存在的照片"}}))
+    asked = planned(db, "Delete every image in 不存在的照片", [unknown], PageContext())
+    assert asked.kind == "clarify", asked.text
+    assert near_choice("manage_skills", "annotation_type", "分类标注") == "classification"
+    assert near_choice("manage_skills", "annotation_type", "框选") == "box"
+    assert near_choice("review_task", "decision", "不通过") == "不通过"
+    label = {"id": "rust", "name": "锈病", "name_en": "Rust"}
+    receipt = ServiceRunner(db)("create_label_set", {"name": "叶子", "labels": [label]}, "boss")
+    made = str(receipt.root.get("label_set_id") or receipt.root.get("id"))
+    same = {"label_set_id": made, "labels": [{**label, "name_en": "rust", "name_zh": "锈病"}]}
+    edit = steps(("create_label_set", same))
+    again = planned(db, "把叶子的标签改成锈病", [edit], PageContext(label_set_id=made))
+    assert again.kind == "answer", again.text

@@ -23,7 +23,13 @@ from datakeel.intents.fill_state import (
     project_in_scope,
 )
 from datakeel.intents.selectors import file_selection, ordinal_question, pick
-from datakeel.intents.task_scope import CONDITIONS, is_nobody, select_tasks, task_number
+from datakeel.intents.task_scope import (
+    CONDITIONS,
+    is_nobody,
+    place_number,
+    select_tasks,
+    task_number,
+)
 from datakeel.intents.verify import says_whole
 from datakeel.intents.wording import excluded_text, nothing_to_change, whole_tasks_question
 from datakeel.storage.database import Database
@@ -86,13 +92,15 @@ def nth_package(
     """A package by its place in the list (2 or {"$nth": 2}) or by its name."""
     packages = catalog.of("package", project) if project else []
     position = value.get("$nth") if isinstance(value, dict) else value
-    if isinstance(position, str) and task_number(position) is None:
-        found = catalog.match("package", position, project)
-        if len(found) == 1:
-            return found[0].id
+    named = isinstance(position, str) and task_number(position) is None
+    found = catalog.match("package", str(position), project) if named else []
+    if len(found) == 1:
+        return found[0].id
+    # Not one package's name: a place in words ("第 3 个包", "the third package").
+    number = place_number(position) if isinstance(position, (int, str)) else None
+    if named and number is None:
         step = DraftStep(id="selector", action="assign_tasks")
-        return ask("package_id", step, candidates(found or packages), state.language, position)
-    number = task_number(position) if isinstance(position, (int, str)) else None
+        return ask("package_id", step, candidates(found or packages), state.language, str(position))
     if project is None and number:
         # No project yet: the Nth package of every project that has one is a candidate.
         places = [catalog.of("package", entry.id) for entry in catalog.of("project")]

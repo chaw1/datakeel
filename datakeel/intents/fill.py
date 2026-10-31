@@ -243,7 +243,20 @@ def _fill_value(
         return _resolve_identity(field, value, current, state, catalog)
     if field in LIST_KINDS and isinstance(value, list):
         return _resolve_list(field, value, current, state, catalog)
-    return value
+    return _selection_dataset(value, current, state, catalog) if field == "selection" else value
+
+
+def _selection_dataset(
+    value: JsonValue, current: DraftStep, state: FillState, catalog: EntityCatalog
+) -> JsonValue | Clarification:
+    """A selection's dataset written as its name ("叶片样本") is that dataset's identity."""
+    dataset = value.get("dataset_id") if isinstance(value, dict) else None
+    if not isinstance(value, dict) or not isinstance(dataset, str):
+        return value
+    if catalog.get("dataset", dataset) is not None:
+        return value
+    resolved = _resolve_identity("dataset_id", dataset, current, state, catalog)
+    return resolved if isinstance(resolved, Clarification) else {**value, "dataset_id": resolved}
 
 
 def fill_steps(

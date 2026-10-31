@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
 from datakeel.core.production_reads import ProductionObjectQuery
+from datakeel.storage.dataset_service import list_files
 from datakeel.storage.display_order import ordered_task_rows
 from datakeel.storage.intent_reads import task_snapshots
 from datakeel.storage.production_objects import production_objects
@@ -54,6 +55,10 @@ def test_a_project_named_in_the_words_wins_over_the_page(db: Database) -> None:
     result = planned(db, "把南区车道的领取时限改成 45 分钟", [lease], page)
     assert result.kind == "plan", result.text
     assert result.chain is not None
+    assert result.chain.steps[0].params.get("project_id") == south.id
+    unsaid = steps(("configure_project", {"lease_minutes": 45}))
+    result = planned(db, "把南区车道的领取时限改成 45 分钟", [unsaid], page)
+    assert result.chain is not None, result.text
     assert result.chain.steps[0].params.get("project_id") == south.id
 
 
@@ -131,3 +136,5 @@ def test_lists_reads_and_the_planner_count_in_one_display_order(
     )
     assert targets(english) == tasks[4:6]
     assert [task.id for task in list_tasks(db, south.id)] == tasks
+    files = [item.id for item in list_files(db, south.dataset_id)]
+    assert [task.sample_id for task in list_tasks(db, south.id)] == files

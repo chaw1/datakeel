@@ -54,6 +54,41 @@ def task_number(value: JsonValue) -> int | None:
     return int(match.group(1)) if match else None
 
 
+PLACE_WORDS = re.compile(r"任务包|包|packages?|pkg|\bthe\b|个", re.IGNORECASE)
+ORDINAL_WORDS = {
+    **{word: index for index, word in enumerate("一二三四五六七八九十", start=1)},
+    "两": 2,
+    **{
+        word: index
+        for index, word in enumerate(
+            [
+                "first",
+                "second",
+                "third",
+                "fourth",
+                "fifth",
+                "sixth",
+                "seventh",
+                "eighth",
+                "ninth",
+                "tenth",
+            ],
+            start=1,
+        )
+    },
+}
+
+
+def place_number(value: JsonValue) -> int | None:
+    """A place said in words: "第 3 个包", "第三个包", "the third package", "package 3"."""
+    number = task_number(value)
+    if number is not None or not isinstance(value, str):
+        return number
+    text = PLACE_WORDS.sub(" ", value).strip()
+    number = task_number(text)
+    return number or ORDINAL_WORDS.get(text.removeprefix("第").strip().casefold())
+
+
 def numbers(spec: dict[str, JsonValue]) -> list[int] | None:
     """Numbers the person named; ``positions`` is the older spelling of the same thing."""
     raw = spec.get("numbers", spec.get("positions"))

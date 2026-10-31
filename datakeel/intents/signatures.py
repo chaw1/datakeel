@@ -15,6 +15,8 @@ from functools import lru_cache
 from pydantic import JsonValue
 
 from datakeel.actions.parameters import PARAMETER_TYPES
+from datakeel.core.production_catalog_models import ProductionTemplate
+from datakeel.intents.field_names import ENUM_LABELS
 from datakeel.ontology.functions import PARAMETER_MODELS
 
 HIDDEN = frozenset({"request_id", "expected_revision", "prepared"})
@@ -80,6 +82,23 @@ def choice_fields() -> frozenset[str]:
     )
 
 
+# Free-text parameters whose values still come from a fixed platform list.
+OPEN_CHOICES = {
+    "annotation_type": typing.get_args(
+        ProductionTemplate.model_fields["annotation_type"].annotation
+    ),
+}
+
+
+def _said_as(choice: str, value: str) -> bool:
+    """「分类标注」 is classification and "box labels" is box: the choice's words are said."""
+    zh, en = ENUM_LABELS.get(choice, ("", ""))
+    text = value.strip().casefold()
+    for ending in ("标注", "类型", "选"):
+        text = text.removesuffix(ending)
+    return bool(zh and zh == text) or bool(en and en.casefold() == text.removesuffix("es"))
+
+
 def near_choice(name: str, field: str, value: JsonValue) -> JsonValue:
     """A choice written loosely ("task" for production_task, "packages") as the one it means.
 
@@ -89,11 +108,15 @@ def near_choice(name: str, field: str, value: JsonValue) -> JsonValue:
     model = PARAMETER_TYPES.get(name) or PARAMETER_MODELS.get(name)
     info = model.model_fields.get(field) if model is not None else None
     allowed = [str(item) for item in (_literal(info.annotation) or [])] if info else []
+    allowed = allowed or list(OPEN_CHOICES.get(field, ()))
     if not isinstance(value, str) or not allowed or value in allowed:
         return value
     word = value.strip().casefold().replace(" ", "_").removesuffix("s")
     if not word:
         return value
+    said = [item for item in allowed if _said_as(item, value)]
+    if len(said) == 1:
+        return said[0]
     # The closest kind of match wins: "task" is production_task before task_package.
     tiers = (
         [item for item in allowed if item == word],

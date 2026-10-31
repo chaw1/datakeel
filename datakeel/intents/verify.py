@@ -161,8 +161,12 @@ def _model_problem(step: DraftStep, text: str) -> Problem | None:
 
 
 def _publish_problem(step: DraftStep, text: str) -> Problem | None:
-    """Publishing is a write of its own: never added to make another step work."""
-    if step.action != "publish_label_set" or PUBLISH_WORDS.search(text):
+    """Publishing an existing label set is a write of its own, never added unasked.
+
+    A label set made earlier in the same plan is published as part of setting it up.
+    """
+    made_here = isinstance(step.params.get("label_set_id"), dict)
+    if step.action != "publish_label_set" or made_here or PUBLISH_WORDS.search(text):
         return None
     return Problem(
         code="unasked",
@@ -258,12 +262,22 @@ def draft_problems(
     return found
 
 
+def _label(item: JsonValue) -> dict[str, JsonValue]:
+    """One label as compared: letter case ignored, a Chinese name equal to the name dropped."""
+    label = {
+        key: value.casefold() if isinstance(value, str) else value
+        for key, value in ProductionLabel.model_validate(item)
+        .model_dump(mode="json", exclude_none=True)
+        .items()
+    }
+    if label.get("name_zh") == label.get("name"):
+        label.pop("name_zh", None)
+    return label
+
+
 def _labels(values: JsonValue) -> list[dict[str, JsonValue]]:
-    items = values if isinstance(values, list) else []
-    return [
-        ProductionLabel.model_validate(item).model_dump(mode="json", exclude_none=True)
-        for item in items
-    ]
+    """Labels as compared for "already so": the same names said again change nothing."""
+    return [_label(item) for item in (values if isinstance(values, list) else [])]
 
 
 def _label_set_unchanged(db: Database, params: dict[str, JsonValue]) -> bool:
@@ -271,7 +285,7 @@ def _label_set_unchanged(db: Database, params: dict[str, JsonValue]) -> bool:
     current = latest_label_set(db, label_set) if isinstance(label_set, str) else None
     if current is None or params.get("migration") or params.get("operation") == "delete":
         return False
-    before = [label.model_dump(mode="json", exclude_none=True) for label in current.labels]
+    before = _labels([label.model_dump(mode="json", exclude_none=True) for label in current.labels])
     renamed = params.get("name") not in (None, current.name)
     return not renamed and "guidelines" not in params and _labels(params.get("labels")) == before
 
