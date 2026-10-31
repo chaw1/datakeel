@@ -123,7 +123,7 @@ PLANNING_MUTATIONS = (
     Mutation(
         name="intent-task-numbers-are-named-tasks",
         path="intents/task_scope.py",
-        before="    named = _named(spec)",
+        before="    named = _named(spec, len(tasks))",
         after="    named = None",
         case=_GROUP,
         runner="pytest",
@@ -301,9 +301,7 @@ PLANNING_MUTATIONS = (
     Mutation(
         name="intent-card-structured-values-read-as-names",
         path="intents/describe.py",
-        before=(
-            '    nested = isinstance(value, (dict, list)) and field not in {"labels", "add_labels"}'
-        ),
+        before="    nested = isinstance(value, (dict, list)) and field not in LIST_WORDS",
         after="    nested = False",
         case=_SCOPE + "test_structured_values_on_the_card_read_as_names_not_keys_or_ids",
         runner="pytest",

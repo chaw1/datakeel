@@ -56,7 +56,7 @@ INSTRUCTIONS = (
     "catalog may hold a Chinese name for an English mention or the reverse, so map by "
     "meaning. 'I/me/my/我/我的' is the speaker (Speaker id below); a question about their "
     "own work (还剩几个, 被退回几次) is a project read like annotator_workload or "
-    "rework_rate, not ask_data. A named object wins "
+    "rework_rate, not ask_data; dataset sizes: list_datasets. A named object wins "
     "over the page context. Leave out values read from state: a review's revision_id, a "
     "label set version (最新版/latest too). "
     "Tasks are never listed by id. Describe the tasks the person means as "

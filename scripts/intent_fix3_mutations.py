@@ -144,8 +144,8 @@ PARTS_MUTATIONS = (
     Mutation(
         name="fix3-p5-a-taken-new-name-is-asked",
         path="intents/resolve.py",
-        before="            taken = existing(step, self.catalog)",
-        after="            taken = None",
+        before="            found = taken(self.db, step, self.catalog)",
+        after="            found = None",
         case=_ACTIONS + "test_a_new_name_that_exists_is_said_and_never_planned_as_a_copy",
         runner="pytest",
     ),
@@ -168,8 +168,8 @@ PARTS_MUTATIONS = (
     Mutation(
         name="fix3-p7-personal-project-keeps-no-assignments",
         path="intents/impossible.py",
-        before='    if tier != "personal":',
-        after="    if True:",
+        before='    return ("personal", 0) if _tier(db, step) == "personal" else None',
+        after="    return None",
         case=_PARTS + "test_a_personal_project_says_it_keeps_no_assignments",
         runner="pytest",
     ),
@@ -254,8 +254,8 @@ PARTS_MUTATIONS = (
     Mutation(
         name="fix3-p7-review-tasks-are-held-for-review",
         path="intents/group_fill.py",
-        before='        stage=stage if isinstance(stage, str) and stage else "annotation",',
-        after='        stage="annotation",',
+        before='    stage = stage if isinstance(stage, str) and stage else "annotation"',
+        after='    stage = "annotation"',
         case=_PARTS + "test_review_tasks_and_remaining_files_are_the_ones_meant",
         runner="pytest",
     ),
