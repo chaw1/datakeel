@@ -254,7 +254,9 @@ def _missing(
         question = underivable(missing[0], state.language)
         return Clarification(question=question, action=step.action, fields=[])
     missing = asked
-    field = missing[0] if len(missing) == 1 else None
+    # Several values missing: the first object among them is asked with its choices.
+    objects = [name for name in missing if FIELD_KINDS.get(name) or LIST_KINDS.get(name)]
+    field = missing[0] if len(missing) == 1 else next(iter(objects), None)
     kind = FIELD_KINDS.get(field or "") or LIST_KINDS.get(field or "")
     choices = candidates(catalog.of(kind)) if kind and kind != "task" else []
     if field and not kind:
@@ -266,7 +268,7 @@ def _missing(
     return Clarification(
         question=missing_question(step.action, missing, state.language),
         action=step.action,
-        fields=missing,
+        fields=[field] if field and choices else missing,
         candidates=choices,
     )
 

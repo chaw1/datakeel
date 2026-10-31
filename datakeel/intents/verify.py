@@ -144,10 +144,12 @@ def _verb_problem(db: Database, step: DraftStep, state: FillState) -> Problem | 
     return None
 
 
-def _model_problem(step: DraftStep, text: str) -> Problem | None:
-    """A cloud model or spending step needs words that ask for drafting or a model."""
-    asked = MODEL_WORDS.search(text) or (
-        step.action == "draft_label_set" and DRAFT_WORDS.search(text)
+def _model_problem(step: DraftStep, text: str, catalog: EntityCatalog) -> Problem | None:
+    """A cloud model or spending step needs words asking for drafting or a model, or its name."""
+    asked = (
+        MODEL_WORDS.search(text)
+        or catalog.mentioned("model", text)
+        or (step.action == "draft_label_set" and DRAFT_WORDS.search(text))
     )
     if step.action not in MODEL_ACTIONS or asked:
         return None
@@ -253,7 +255,7 @@ def draft_problems(
     for step in draft.steps:
         problem = (
             _verb_problem(db, step, state)
-            or _model_problem(step, state.text)
+            or _model_problem(step, state.text, catalog)
             or _publish_problem(step, state.text)
             or _duplicate_problem(step, state.text, catalog)
             or _dropped_problem(db, step, state.text)

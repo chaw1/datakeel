@@ -16,9 +16,12 @@ from pydantic import JsonValue
 
 from datakeel.actions.registry import POLICIES
 from datakeel.core.errors import NotFoundError
+from datakeel.core.production_catalog_models import ProductionModel
+from datakeel.core.production_reads import ProductionObjectQuery
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import get_bindings, get_role, list_users
 from datakeel.storage.production_catalog import require_model
+from datakeel.storage.production_objects import production_objects
 
 # (action, operation) -> (the new object's id field, the field that names it)
 NEW_OBJECTS: dict[tuple[str, str | None], tuple[str, str]] = {
@@ -129,12 +132,11 @@ def prepare_update(db: Database, action: str, params: dict[str, JsonValue]) -> N
     model = params.get("model")
     if action != "update_model" or not isinstance(model, dict):
         return
-    try:
-        with db.session() as session:
-            current = require_model(session, str(model.get("id")))
-    except NotFoundError:
+    current = current_model(db, model)
+    if current is None:
         return
-    params["model"] = {**current.model_dump(mode="json", exclude={"revision"}), **model}
+    stored = current.model_dump(mode="json", exclude={"revision"})
+    params["model"] = {**stored, **model, "id": current.id}
     params.setdefault("expected_revision", current.revision)
 
 
@@ -148,3 +150,18 @@ def bound_projects(db: Database, params: dict[str, JsonValue]) -> list[str]:
     except NotFoundError:
         return []
     return sorted({item.project_id for item in bindings if item.project_id})
+
+
+def current_model(db: Database, model: dict[str, JsonValue]) -> ProductionModel | None:
+    """The stored model a change names, by its identity or by its name as said."""
+    wanted = str(model.get("id") or model.get("name") or "").strip().casefold()
+    query = ProductionObjectQuery(kind="model")
+    for item in production_objects(db, query):
+        name = str(item.properties.get("name", ""))
+        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold()}:
+            try:
+                with db.session() as session:
+                    return require_model(session, item.asset_ref.asset_id)
+            except NotFoundError:
+                return None
+    return None

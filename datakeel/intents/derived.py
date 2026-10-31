@@ -20,6 +20,7 @@ from pydantic import JsonValue
 from datakeel.core.errors import NotFoundError
 from datakeel.core.production_models import ProductionTask
 from datakeel.intents.drafts import DraftStep
+from datakeel.intents.object_edits import current_model
 from datakeel.storage.database import Database
 from datakeel.storage.intent_reads import latest_label_set, newest_published_version
 from datakeel.storage.production_queries import get_task, list_assignments
@@ -66,6 +67,13 @@ def _newest_version(db: Database, params: dict[str, JsonValue]) -> Found:
     return (found.version,) if found is not None else None
 
 
+def _model_revision(db: Database, params: dict[str, JsonValue]) -> Found:
+    """An update applies to the model's current revision, read from the catalog."""
+    model = params.get("model")
+    current = current_model(db, model) if isinstance(model, dict) else None
+    return (current.revision,) if current is not None else None
+
+
 def _newest_published(db: Database, params: dict[str, JsonValue]) -> Found:
     label_set = params.get("label_set_id")
     version = newest_published_version(db, label_set) if isinstance(label_set, str) else None
@@ -79,6 +87,7 @@ DERIVED: dict[str, dict[str, Resolver]] = {
     "release_task": {"stage": _held_stage},
     "publish_label_set": {"version": _newest_version},
     "create_project": {"label_set_version": _newest_published},
+    "update_model": {"expected_revision": _model_revision},
 }
 _UNKNOWN: dict[str, tuple[str, str]] = {
     "revision_id": (
@@ -87,6 +96,7 @@ _UNKNOWN: dict[str, tuple[str, str]] = {
     ),
     "previous_revision_id": ("没找到这个任务。", "I could not find this task."),
     "version": ("没找到这个标签集。", "I could not find this label set."),
+    "expected_revision": ("没找到这个模型。", "I could not find this model."),
     "label_set_version": (
         "这个标签集还没有发布过的版本, 先发布再用。",
         "This label set has no published version yet; publish it first.",
@@ -148,14 +158,23 @@ def model_record(step: DraftStep) -> DraftStep:
     name, the version is text, and a model the platform does not run itself provides
     imported predictions.
     """
-    if step.action != "register_model":
+    if step.action not in {"register_model", "update_model"}:
         return step
     params = dict(step.params)
     nested = params.get("model")
     record: dict[str, JsonValue] = dict(nested) if isinstance(nested, dict) else {}
+    if isinstance(nested, str) and nested.strip():
+        # A change to a model named by id or name: its stored record fills the rest.
+        record["id"] = nested.strip()
     for field in MODEL_FIELDS:
         if field in params:
             record.setdefault(field, params.pop(field))
+    if step.action == "update_model":
+        version = record.get("version")
+        if isinstance(version, int | float) and not isinstance(version, bool):
+            record["version"] = str(version)
+        params["model"] = record
+        return step.model_copy(update={"params": params})
     name, version = record.get("name"), record.get("version")
     if not isinstance(name, str) or not name.strip():
         return step

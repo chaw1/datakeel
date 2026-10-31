@@ -86,3 +86,49 @@ def test_a_change_that_is_already_so_names_the_current_state(db: Database) -> No
     free = planned(db, "1.png 解除隔离", [steps(("unquarantine_files", files))], data)
     assert free.kind == "answer", free.text
     assert "本来就没被隔离" in free.text
+
+
+def test_a_question_about_objects_always_offers_choices(db: Database) -> None:
+    """Two values missing, one an object: the object comes with its choices (11.2-7)."""
+    two_projects(db)
+    bare = planned(db, "把项目升个档位", [steps(("upgrade_project", {}))], PageContext())
+    assert bare.kind == "clarify", bare.text
+    assert bare.clarification is not None
+    offered = {item.label for item in bare.clarification.candidates}
+    assert {"North Crossing", "南区车道"} <= offered, bare.text
+    assert bare.clarification.fields == ["project_id"]
+
+
+def _models(db: Database) -> None:
+    run = ServiceRunner(db)
+    for model, name, kind in (("box-1", "Boxer", "box"), ("shape-1", "Shaper", "polygon")):
+        payload = {"id": model, "name": name, "version": "1.0", "provider": "fake"}
+        run("register_model", {"model": {**payload, "capabilities": [kind]}}, "boss")
+
+
+def test_a_model_named_in_the_words_is_asked_for(db: Database) -> None:
+    """Naming the model answers "should a model do it" (11.2-9)."""
+    _, south, _ = two_projects(db)
+    _models(db)
+    run = ("run_prelabel", {"project_id": south.id, "model_id": "Boxer"})
+    named = planned(db, "先让 Boxer 把南区车道过一遍", [steps(run)], PageContext())
+    assert named.kind == "plan", named.text
+    english = planned(db, "Have Boxer go over 南区车道 first", [steps(run)], PageContext())
+    assert english.kind == "plan", english.text
+
+
+def test_a_model_update_reads_its_revision_from_the_catalog(db: Database) -> None:
+    """The expected revision of a model change is derived, never asked (11.2-8)."""
+    two_projects(db)
+    _models(db)
+    bump = ("update_model", {"model": "Boxer", "version": "1.1"})
+    updated = planned(db, "Boxer 出了 1.1, 把我们这边的也换上", [steps(bump)], PageContext())
+    assert updated.kind == "plan", updated.text
+    assert updated.chain is not None
+    params = updated.chain.steps[0].params
+    assert params["expected_revision"] == 1
+    model = params["model"]
+    assert isinstance(model, dict)
+    assert model["id"] == "box-1"
+    assert model["version"] == "1.1"
+    assert model["capabilities"] == ["box"]
