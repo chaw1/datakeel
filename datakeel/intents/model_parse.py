@@ -6,20 +6,20 @@
 import json
 import re
 
-from pydantic import Field, JsonValue
+from pydantic import JsonValue
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.core.agent_models import ChatMessage, ContextSegment, ModelRequest
 from datakeel.core.context_tokens import estimate_tokens
 from datakeel.core.errors import ValidationError
-from datakeel.core.intent_models import PageContext
 from datakeel.core.json_schema import compact_schema
-from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.core.models import JsonDocument
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import IntentDraft, skipped_parts
 from datakeel.intents.recipes import RECIPE_GUIDE
 from datakeel.intents.rules import RankedEntry, full_registry
+from datakeel.intents.scene import PlannerScene, scene_text
 from datakeel.intents.signatures import all_signatures
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.models import OntologyRegistry
@@ -135,7 +135,8 @@ def _catalog_lines(registry: OntologyRegistry) -> str:
     return "\n".join(lines)
 
 
-def _schemas(ranked: list[RankedEntry], extra: frozenset[str]) -> str:
+def schemas_json(ranked: list[RankedEntry], extra: frozenset[str]) -> str:
+    """Compact schemas of the likeliest entries plus any always-shown ones."""
     names = [item.name for item in ranked[:SCHEMA_LIMIT]] + sorted(extra)
     schemas: dict[str, object] = {}
     for name in dict.fromkeys(names):
@@ -158,39 +159,6 @@ def _entities(catalog: EntityCatalog) -> str:
     )
 
 
-class PlannerScene(BoundaryModel):
-    """What the person is looking at, what the previous turn touched and any open question."""
-
-    context: PageContext = Field(default_factory=PageContext)
-    focus: dict[str, str] = Field(default_factory=dict[str, str])
-    open_request: str = ""
-    open_question: str = ""
-    speaker: str = ""
-    roles: list[str] = Field(default_factory=list[str])
-
-
-def _scene(scene: PlannerScene) -> str:
-    text = (
-        "\nSpeaker id: "
-        + scene.speaker
-        + ("\nSpeaker roles: " + ", ".join(scene.roles) if scene.roles else "")
-        + "\nPage context: "
-        + scene.context.model_dump_json(exclude_defaults=True)
-        + "\nPrevious turn objects: "
-        + json.dumps(scene.focus, ensure_ascii=False)
-    )
-    if scene.open_request:
-        text += (
-            "\nUnfinished earlier request: "
-            + scene.open_request
-            + "\nYou asked: "
-            + scene.open_question
-            + "\nIf the new message answers that question, return the complete plan for the "
-            "earlier request with the answer applied; otherwise plan the new message alone."
-        )
-    return text
-
-
 def planner_request(
     model: str,
     text: str,
@@ -202,10 +170,10 @@ def planner_request(
     stable = INSTRUCTIONS + "\nRegistry:\n" + _catalog_lines(full_registry())
     volatile = (
         "Likely schemas: "
-        + _schemas(ranked, ALWAYS_SCHEMAS)
+        + schemas_json(ranked, ALWAYS_SCHEMAS)
         + "\nCatalog:\n"
         + _entities(catalog)
-        + _scene(scene)
+        + scene_text(scene)
     )
     return ModelRequest(
         model=model,

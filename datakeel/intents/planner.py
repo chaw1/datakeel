@@ -19,9 +19,9 @@ from datakeel.core.intent_models import Clarification, IntentResult, PageContext
 from datakeel.core.models import BoundaryModel
 from datakeel.intents.catalog import EntityCatalog, build_catalog
 from datakeel.intents.drafts import DraftStep, IntentDraft, language_of
+from datakeel.intents.explore import Lookups, explore_request, explored
 from datakeel.intents.fill import FillState, known_fields
 from datakeel.intents.model_parse import (
-    PlannerScene,
     parse_response,
     planner_request,
     repair_request,
@@ -32,6 +32,7 @@ from datakeel.intents.public_text import public_result
 from datakeel.intents.recipes import match_recipe, recipe_covers
 from datakeel.intents.resolve import Resolver, page_state
 from datakeel.intents.rules import full_registry, is_question, rank
+from datakeel.intents.scene import PlannerScene
 from datakeel.intents.verify import draft_problems
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.tool_models import ToolCallContext
@@ -65,6 +66,8 @@ class ModelAccess(BoundaryModel):
     model: str = ""
     allowed: bool = False
     read_rules: bool = True
+    # Look things up first (explore.py) instead of one call with the whole registry.
+    explore: bool = False
 
 
 def conversation_focus(db: Database, conversation_id: str | None) -> dict[str, str]:
@@ -164,9 +167,10 @@ def _roles(db: Database, actor: str) -> list[str]:
     return sorted({binding.role_id for binding in get_bindings(db, actor)})
 
 
-def _parsed(complete: Complete, request: ModelRequest, language: str) -> tuple[IntentDraft, str]:
-    """Ask, and ask once more for an unreadable answer; a second failure is a failure."""
-    response = call_model(complete, request)
+def _parsed(
+    complete: Complete, request: ModelRequest, response: ModelResponse, language: str
+) -> tuple[IntentDraft, str]:
+    """Read the answer, and ask once more for an unreadable one; a second failure is a failure."""
     try:
         return parse_response(response.content, language), response.content
     except UNREADABLE:
@@ -196,9 +200,16 @@ def _model_draft(
         roles=_roles(db, turn.actor),
     )
     words = f"{pending.request} {turn.text}" if pending else turn.text
-    request = planner_request(access.model, turn.text, rank(words, full_registry()), catalog, scene)
+    ranked = rank(words, full_registry())
+    if access.explore:
+        tool = ToolCallContext(actor=turn.actor, session_id=turn.conversation_id)
+        first = explore_request(access.model, turn.text, ranked, scene)
+        request, response = explored(first, complete, Lookups(db, catalog, tool))
+    else:
+        request = planner_request(access.model, turn.text, ranked, catalog, scene)
+        response = call_model(complete, request)
     language = language_of(turn.text)
-    draft, content = _parsed(complete, request, language)
+    draft, content = _parsed(complete, request, response, language)
     draft, content = _repaired(turn, draft, catalog, complete, (request, content))
     state = page_state(turn.context, turn.focus, turn.actor, draft.language, words)
     problems = draft_problems(db, draft, state, catalog)
