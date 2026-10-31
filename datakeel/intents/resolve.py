@@ -31,8 +31,10 @@ from datakeel.intents.public_text import allowed_words, public_notes
 from datakeel.intents.read_scope import (
     assumed_note,
     missing_choices,
+    one_task,
     own_projects,
     scope_question,
+    task_argument,
     unfiltered_note,
 )
 from datakeel.intents.validate import bad_value, check_step, overreach, required_fields
@@ -88,7 +90,9 @@ class Resolver:
             for name in model.model_json_schema().get("required", [])
             if isinstance(name, str)
         }
-        known, unknown = known_fields(step, self.state, self.catalog)
+        known, unknown = task_argument(
+            *known_fields(step, self.state, self.catalog), set(model.model_fields)
+        )
         applied: set[str] = set()
         for field, kind in CONTAINER_KINDS.items():
             # A container the words name narrows the read even where it is optional.
@@ -102,8 +106,12 @@ class Resolver:
         filled = fill_steps(self.db, [bounded], self.state, self.catalog)
         if filled.clarification is not None:
             return self._clarify(draft, filled.clarification, text)
-        current = fill_defaults(filled.steps[0], required, self.state, self.catalog)
-        scoped = self._scoped(draft, filled.steps[0], current, required)
+        single = one_task(filled.steps[0].params, draft.language)
+        if isinstance(single, Clarification):
+            return self._clarify(draft, single.model_copy(update={"action": step.action}), text)
+        first = filled.steps[0].model_copy(update={"params": single})
+        current = fill_defaults(first, required, self.state, self.catalog)
+        scoped = self._scoped(draft, first, current, required)
         if isinstance(scoped, Clarification):
             return self._clarify(draft, scoped, text)
         current, note = scoped

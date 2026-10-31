@@ -210,3 +210,34 @@ def test_role_cards_name_actions_and_permissions_in_words(db: Database) -> None:
     catalog = build_catalog(db, None)
     assert leaks("accept_package", "zh", allowed_words(catalog, said)) == ["accept_package"]
     assert not leaks("frame_001.png", "zh", allowed_words(catalog, "看下 frame_001.png"))
+
+
+def test_a_read_about_a_numbered_task_reads_that_task(db: Database) -> None:
+    """A task said as #4, 第 4 个 or a numbers group, under task_id or a made-up key."""
+    _, south, tasks = two_projects(db)
+    page = PageContext(project_id=south.id)
+    said = "这个项目第 4 个任务现在在谁手上"
+    for params in (
+        {"kind": "task", "task_id": "#4"},
+        {"kind": "task", "tasks": {"$tasks": {"numbers": [4]}}},
+    ):
+        read = steps(("production_objects", params), kind="answer")
+        result = planned(db, said, [read], page)
+        assert result.kind == "answer", result.text
+        assert result.answer is not None
+        assert result.answer.arguments.get("task_id") == tasks[3]
+        assert result.text.startswith("找到 1 个任务")
+    named = {"kind": "task", "project": SOUTH, "task_id": "第 4 个"}
+    english = planned(
+        db,
+        f"Who has task 4 of {SOUTH} now?",
+        [steps(("production_objects", named), kind="answer")],
+        PageContext(),
+    )
+    assert english.answer is not None, english.text
+    assert english.answer.arguments.get("task_id") == tasks[3]
+    two = {"kind": "task", "task_id": {"$tasks": {"numbers": [3, 4]}}}
+    asked = planned(
+        db, "第 3、4 个任务在谁手上", [steps(("production_objects", two), kind="answer")], page
+    )
+    assert asked.kind == "clarify"

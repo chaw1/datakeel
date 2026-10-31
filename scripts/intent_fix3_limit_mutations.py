@@ -101,4 +101,20 @@ LIMITS_MUTATIONS = (
         case=_LIMITS + "test_role_cards_name_actions_and_permissions_in_words",
         runner="pytest",
     ),
+    Mutation(
+        name="fix3-p2-a-numbered-task-in-a-read-is-that-task",
+        path="intents/read_scope.py",
+        before="    key = next((name for name, item in unknown.items() if _task_said(item)), None)",
+        after="    key = None",
+        case=_LIMITS + "test_a_read_about_a_numbered_task_reads_that_task",
+        runner="pytest",
+    ),
+    Mutation(
+        name="fix3-a-read-of-one-task-takes-a-group-of-one",
+        path="intents/read_scope.py",
+        before="    if len(listed) == 1:",
+        after="    if False:",
+        case=_LIMITS + "test_a_read_about_a_numbered_task_reads_that_task",
+        runner="pytest",
+    ),
 )
