@@ -38,7 +38,9 @@ def test_status_questions_are_recognized(text: str) -> None:
     assert status_question(text)
 
 
-@pytest.mark.parametrize("text", TOLD)
+@pytest.mark.parametrize(
+    "text", TOLD, ids=["told", "can-you-zh", "else-do-it", "can-you", "is-it-possible"]
+)
 def test_requests_are_never_taken_for_questions(text: str) -> None:
     """Requests are never taken for questions."""
     assert not status_question(text)
@@ -72,6 +74,16 @@ def test_a_write_proposed_for_a_status_question_becomes_a_read(
     assert result.answer.function in read
 
 
+def test_a_write_proposed_for_status_finalize_becomes_a_read(db: Database) -> None:
+    """「定稿了吗?」 with a finalize proposed reads the project's progress."""
+    two_projects(db)
+    proposed = steps(("finalize_project", {"project_id": SOUTH}))
+    result = planned(db, "南区车道定稿了吗?", [proposed], PageContext())
+    assert result.chain is None
+    assert result.answer is not None, result.text
+    assert result.answer.function == "project_progress"
+
+
 def test_a_request_with_a_question_mark_still_plans(db: Database) -> None:
     """A request with a question mark still plans."""
     _, south, _ = two_projects(db)
@@ -84,3 +96,19 @@ def test_a_request_with_a_question_mark_still_plans(db: Database) -> None:
     # Asked as a request, it is checked as the change: the reason it cannot run, no read.
     assert result.answer is None
     assert "切过包" in result.text
+
+
+def test_a_change_asked_beside_a_question_still_plans(db: Database) -> None:
+    """「第 3 条通过; 另外还有没有等我审的」: the review is planned, the question read."""
+    _, _, tasks = two_projects(db)
+    review = ("review_task", {"task_id": tasks[2], "decision": "approve"})
+    waiting = ("production_objects", {"kind": "production_task", "project_id": SOUTH})
+    result = planned(
+        db,
+        "南区车道第 3 条通过; 另外还有没有等我审的?",
+        [steps(review, waiting)],
+        PageContext(),
+        "zhao",
+    )
+    assert result.chain is not None, result.text
+    assert [step.action for step in result.chain.steps] == ["review_task"]

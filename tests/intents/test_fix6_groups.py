@@ -58,23 +58,27 @@ def test_the_same_first_n_without_next_words_is_the_same_tasks(db: Database) -> 
 
 
 def test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both(db: Database) -> None:
-    """Revoke then reassign acts on one set and protection spares both."""
+    """Saved work is spared by both steps; "都收回再全派" moves the same tasks, saved ones too."""
     _, _, tasks = two_projects(db)
-    save(db, tasks[0], "wang")  # saved work: taking it back is protected
+    save(db, tasks[0], "wang")  # saved work: taking it back is protected unless said
     held = {"$tasks": {"project": SOUTH, "holder": "小王"}}
-    result = planned(
-        db,
-        "把南区车道小王手上的任务收回, 再派给小李",
-        [
-            steps(
-                ("revoke_assignment", {"task_id": held, "reason": "改派"}),
-                ("assign_tasks", {"task_ids": held, "actor": "小李"}),
-            )
-        ],
-        PageContext(),
-    )
-    assert targets(result, 0) == tasks[1:2]
-    assert targets(result, 1) == tasks[1:2]
+    for said, moved in (
+        ("把南区车道小王手上的任务收回, 再派给小李", tasks[1:2]),
+        ("把南区车道小王手上的都收回, 再全部派给小李", tasks[0:2]),
+    ):
+        result = planned(
+            db,
+            said,
+            [
+                steps(
+                    ("revoke_assignment", {"task_id": held, "reason": "改派"}),
+                    ("assign_tasks", {"task_ids": held, "actor": "小李"}),
+                )
+            ],
+            PageContext(),
+        )
+        assert targets(result, 0) == moved
+        assert targets(result, 1) == moved
 
 
 def test_each_groups_first_file_is_the_one_the_list_shows_first(
@@ -117,3 +121,41 @@ def test_a_project_named_once_scopes_every_step_of_the_chain(db: Database) -> No
     )
     assert targets(result, 0) == tasks[4:5]
     assert targets(result, 1) == tasks[5:6]
+
+
+def test_one_action_given_the_same_first_one_twice_takes_the_next(db: Database) -> None:
+    """Two people each given "the first unclaimed one" get two different tasks."""
+    _, _, tasks = two_projects(db)
+    first = {"$tasks": {"project": SOUTH, "holder": "nobody", "first": 1}}
+    result = planned(
+        db,
+        "把南区车道没人领的派一条给小李, 再派一条给小赵",
+        [
+            steps(
+                ("assign_tasks", {"task_ids": first, "actor": "小李"}),
+                ("assign_tasks", {"task_ids": first, "actor": "小赵"}),
+            )
+        ],
+        PageContext(),
+    )
+    assert targets(result, 0) == tasks[4:5]
+    assert targets(result, 1) == tasks[5:6]
+
+
+def test_a_later_step_of_the_same_group_keeps_what_only_it_can_take(db: Database) -> None:
+    """Take back the untouched ones that are held, then give every untouched one to 小李."""
+    _, _, tasks = two_projects(db)
+    untouched = {"$tasks": {"project": SOUTH, "untouched": True}}
+    result = planned(
+        db,
+        "Give 小李 every task in 南区车道 that has no annotation yet",
+        [
+            steps(
+                ("revoke_assignment", {"task_id": untouched, "reason": "reassign"}),
+                ("assign_tasks", {"task_ids": untouched, "actor": "小李"}),
+            )
+        ],
+        PageContext(),
+    )
+    assert targets(result, 0) == tasks[0:2]
+    assert set(targets(result, 1)) == {*tasks[0:2], *tasks[4:6]}

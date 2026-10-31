@@ -204,7 +204,13 @@ def _value(
     if field in FIELD_KINDS and isinstance(value, str):
         return _name(FIELD_KINDS[field], value, catalog)
     if field in LIST_KINDS and isinstance(value, list):
-        return _listing([_name(LIST_KINDS[field], item, catalog) for item in value], language)
+        named = [
+            _reference(item, language)
+            if isinstance(item, dict) and "$ref" in item
+            else _name(LIST_KINDS[field], item, catalog)
+            for item in value
+        ]
+        return _listing(named, language)
     if field in {"selection", "model"} and isinstance(value, dict):
         return (
             _selection(db, value, language)

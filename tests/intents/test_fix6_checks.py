@@ -16,6 +16,7 @@ from datakeel.intents.preconditions import NEEDS, PRECONDITIONS, REASONS
 from datakeel.intents.public_text import _FALLBACK, public, public_result
 from datakeel.storage.production_queries import get_project
 from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
+from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database
@@ -42,47 +43,48 @@ def _said(db: Database, text: str, step: tuple[str, dict[str, object]], actor: s
     return result.text
 
 
-@pytest.mark.parametrize(
-    ("text", "step", "actor", "words"),
-    [
-        (
-            "把南区车道定稿",
-            ("finalize_project", {"project_id": SOUTH}),
-            "boss",
-            ("没通过审核", "先"),
-        ),
-        (
-            "Accept the first package of North Crossing",
-            ("accept_package", {"package_id": {"$nth": 1}}),
-            "boss",
-            ("only team projects",),
-        ),
-        (
-            "南区车道第一包验收",
-            ("accept_package", {"package_id": {"$nth": 1}}),
-            "boss",
-            ("没通过审核", "先"),
-        ),
-        (
-            "提交南区车道第一条",
-            ("submit_task", {"task_id": {"$tasks": {"project": SOUTH, "numbers": [1]}}}),
-            "wang",
-            ("没有可提交的标注", "先标注并保存"),
-        ),
-        (
-            "Hand in task 5 of 南区车道",
-            ("submit_task", {"task_id": {"$tasks": {"project": SOUTH, "numbers": [5]}}}),
-            "li",
-            ("不在你手上", "先领取"),
-        ),
-        (
-            "把南区车道再切一次包",
-            ("split_packages", {"project_id": SOUTH}),
-            "boss",
-            ("已经切过包",),
-        ),
-    ],
+UNMET = (
+    (
+        "把南区车道定稿",
+        ("finalize_project", {"project_id": SOUTH}),
+        "boss",
+        ("没通过审核", "先"),
+    ),
+    (
+        "Accept the first package of North Crossing",
+        ("accept_package", {"package_id": {"$nth": 1}}),
+        "boss",
+        ("only team projects",),
+    ),
+    (
+        "南区车道第一包验收",
+        ("accept_package", {"package_id": {"$nth": 1}}),
+        "boss",
+        ("没通过审核", "先"),
+    ),
+    (
+        "提交南区车道第一条",
+        ("submit_task", {"task_id": {"$tasks": {"project": SOUTH, "numbers": [1]}}}),
+        "wang",
+        ("没有可提交的标注", "先标注并保存"),
+    ),
+    (
+        "Hand in task 5 of 南区车道",
+        ("submit_task", {"task_id": {"$tasks": {"project": SOUTH, "numbers": [5]}}}),
+        "li",
+        ("不在你手上", "先领取"),
+    ),
+    (
+        "把南区车道再切一次包",
+        ("split_packages", {"project_id": SOUTH}),
+        "boss",
+        ("已经切过包",),
+    ),
 )
+CASES = ["finalize", "accept-not-team", "accept-not-approved", "submit-unsaved", "submit-not-held"]
+
+
+@pytest.mark.parametrize(("text", "step", "actor", "words"), UNMET, ids=[*CASES, "split-again"])
 def test_an_unmet_precondition_says_what_is_missing_and_what_first(
     db: Database, text: str, step: tuple[str, dict[str, object]], actor: str, words: tuple[str, ...]
 ) -> None:
@@ -157,3 +159,13 @@ def test_a_change_to_what_is_already_so_states_the_current_state(db: Database) -
     still = planned(db, "把南区车道第一条重新打开", [steps(reopen)], PageContext())
     assert still.kind == "answer", still.text
     assert "还没做完" in still.text
+
+
+def test_an_account_already_in_that_state_says_so_by_name(db: Database) -> None:
+    """Disabling a disabled account names the person and the account state."""
+    two_projects(db)
+    disable = {"operation": "update", "user_id": "li", "status": "disabled"}
+    ServiceRunner(db)("manage_users", disable, "boss")
+    again = planned(db, "停用小李的账号", [steps(("manage_users", disable))], PageContext())
+    assert again.kind == "answer", again.text
+    assert "小李的账号已经是" in again.text

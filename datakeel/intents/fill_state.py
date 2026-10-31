@@ -26,7 +26,7 @@ class FillState(BoundaryModel):
     freed: dict[str, str] = Field(default_factory=dict[str, str])
     # task groups earlier steps resolved (by their words), and tasks they took by place
     chosen: dict[str, list[str]] = Field(default_factory=dict[str, list[str]])
-    taken: list[str] = Field(default_factory=list[str])
+    taken: dict[str, list[str]] = Field(default_factory=dict[str, list[str]])
 
 
 def ask(

@@ -55,17 +55,83 @@ FIX6_MUTATIONS = (
     _anchor(
         "the-next-n-come-after-the-ones-taken",
         "intents/segments.py",
-        ("    if not _segmented(spec, state):", "    if True:"),
+        ("    if not _segmented(spec, state, action):", "    if True:"),
         "groups.py::test_the_next_two_are_counted_after_the_first_two",
     ),
     _anchor(
         "one-group-for-two-steps-is-one-set",
         "intents/segments.py",
         (
-            "    same = None if _segmented(spec, state) else state.chosen.get(_key(spec))",
-            "    same = None",
+            (
+                "    same = [] if _segmented(spec, state, action) else "
+                "state.chosen.get(_key(spec), [])"
+            ),
+            "    same = []",
         ),
         "groups.py::test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both",
+    ),
+    _anchor(
+        "one-action-never-takes-the-same-place-twice",
+        "intents/segments.py",
+        (
+            "    return NEXT.search(state.text) is not None or action in state.taken",
+            "    return NEXT.search(state.text) is not None",
+        ),
+        "groups.py::test_one_action_given_the_same_first_one_twice_takes_the_next",
+    ),
+    _anchor(
+        "a-later-step-keeps-what-only-it-can-take",
+        "intents/segments.py",
+        (
+            "    merged = [*same, *(task for task in ids if task not in same)]",
+            "    merged = same or ids",
+        ),
+        "groups.py::test_a_later_step_of_the_same_group_keeps_what_only_it_can_take",
+    ),
+    _anchor(
+        "a-question-beside-a-change-keeps-the-change",
+        "intents/readonly.py",
+        (
+            (
+                '    if draft.kind != "plan" or len(writes) < len(draft.steps) or not '
+                "status_question(text):"
+            ),
+            '    if draft.kind != "plan" or not writes or not status_question(text):',
+        ),
+        "reads.py::test_a_change_asked_beside_a_question_still_plans",
+    ),
+    _anchor(
+        "the-persons-words-win-over-the-models-id",
+        "intents/fill.py",
+        ("    if len(spoken) == 1 and spoken[0] not in found:", "    if False:"),
+        "create.py::test_the_persons_words_win_over_the_models_identity",
+    ),
+    _anchor(
+        "template-roles-have-their-chinese-names",
+        "intents/catalog.py",
+        (
+            "            names=(role.id, role.name, *ROLE_WORDS.get(role.id, ())),",
+            "            names=(role.id, role.name),",
+        ),
+        "create.py::test_template_roles_are_found_by_their_chinese_names",
+    ),
+    _anchor(
+        "a-reference-in-a-list-is-a-reference",
+        "intents/model_parse.py",
+        (
+            (
+                "        params[key] = [_ref(item) for item in value] if isinstance(value, list) "
+                "else _ref(value)"
+            ),
+            "        params[key] = _ref(value)",
+        ),
+        "create.py::test_a_reference_inside_a_list_is_the_object_made_earlier",
+    ),
+    _anchor(
+        "a-listed-reference-is-the-object-made-earlier",
+        "intents/created.py",
+        ('    if isinstance(item, dict) and "$ref" in item and len(made) == 1:', "    if False:"),
+        "create.py::test_a_reference_inside_a_list_is_the_object_made_earlier",
     ),
     _anchor(
         "each-groups-first-file-follows-the-list",
@@ -83,7 +149,7 @@ FIX6_MUTATIONS = (
             '    "submit_task": ("finalized", "held", "saved_and_open"),',
             '    "submit_task": ("finalized",),',
         ),
-        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first",
+        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first[submit-unsaved]",
     ),
     _anchor(
         "every-action-on-work-declares-its-needs",
@@ -98,7 +164,7 @@ FIX6_MUTATIONS = (
             "    reason = unmet(db, acting, actor, language, previous) if missing else None",
             "    reason = None",
         ),
-        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first",
+        "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first[accept-not-team]",
     ),
     _anchor(
         "an-earlier-step-can-meet-a-need",
@@ -148,8 +214,14 @@ FIX6_MUTATIONS = (
     _anchor(
         "a-clear-rule-reading-is-checked-as-that-action",
         "intents/landing.py",
-        ("CLEAR_SCORE = 0.7", "CLEAR_SCORE = 0.9"),
+        ("CLEAR_SCORE = 0.9", "CLEAR_SCORE = 9.0"),
         "scope.py::test_a_none_that_names_the_one_action_that_does_it_is_checked_as_it",
+    ),
+    _anchor(
+        "a-none-weighing-several-actions-is-not-forced",
+        "intents/landing.py",
+        ("    named = draft.related == [top]", "    named = top in draft.related"),
+        "scope.py::test_a_none_weighing_several_actions_stays_missing",
     ),
     _anchor(
         "own-work-in-one-project-is-answered",
@@ -197,12 +269,12 @@ FIX6_MUTATIONS = (
             ),
             "    draft = fitted(draft, ranked)",
         ),
-        "reads.py::test_a_write_proposed_for_a_status_question_becomes_a_read",
+        "reads.py::test_a_write_proposed_for_status_finalize_becomes_a_read",
     ),
     _anchor(
         "a-request-is-never-a-status-question",
         "intents/readonly.py",
         ("    if REQUEST.search(text):", "    if False:"),
-        "reads.py::test_requests_are_never_taken_for_questions",
+        "reads.py::test_requests_are_never_taken_for_questions[is-it-possible]",
     ),
 )

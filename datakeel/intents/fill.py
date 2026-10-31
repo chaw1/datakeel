@@ -40,7 +40,7 @@ from datakeel.intents.fill_state import (
     named_in_words,
     project_in_scope,
 )
-from datakeel.intents.grounding import grounded
+from datakeel.intents.grounding import grounded, said_in
 from datakeel.intents.group_fill import numbered, own_task, selector_value
 from datakeel.intents.object_edits import (
     LIST_EDITS,
@@ -142,6 +142,9 @@ def _resolve_identity(
         # The model copied the page's object although the person named another one.
         found = [entry for entry in catalog.of(kind) if entry.id == named]
     said = step.said.get(field)
+    spoken = catalog.match(kind, said, parent) if said and said_in(said, state.text) else []
+    if len(spoken) == 1 and spoken[0] not in found:
+        found = spoken  # the person's own words name another object than the model's id
     only = step.action in PARAMETER_MODELS and len(catalog.of(kind, parent)) == 1
     if len(found) == 1 and (only or grounded(field, found[0], state.text, page, said)):
         if found[0].status != "active" and field in RECEIVERS:
@@ -315,7 +318,7 @@ def fill_steps(
     names: list[str] = []
     created: Created = {}
     left_out: dict[str, dict[str, int]] = {}
-    state = state.model_copy(update={"freed": {}, "chosen": {}, "taken": []})
+    state = state.model_copy(update={"freed": {}, "chosen": {}, "taken": {}})
     for drafted in steps:
         step = model_record(drafted)
         params, unknown = known_fields(step, state, catalog)

@@ -18,8 +18,8 @@ from datakeel.intents.rules import RankedEntry, full_registry
 from datakeel.ontology.functions import PARAMETER_MODELS
 
 # The rules' own reading of the words: a clear first place among registered actions.
-CLEAR_SCORE = 0.7
-CLEAR_MARGIN = 0.5
+CLEAR_SCORE = 0.9
+CLEAR_MARGIN = 0.3
 
 
 def _registered() -> set[str]:
@@ -33,7 +33,9 @@ def _ruled(draft: IntentDraft, ranked: Sequence[RankedEntry]) -> str:
         return ""
     second = ranked[1].score if len(ranked) > 1 else 0.0
     top = ranked[0].name
-    return top if ranked[0].score - second >= CLEAR_MARGIN and top in draft.related else ""
+    # Only when the model named that one action as close: with several named, it weighed them.
+    named = draft.related == [top]
+    return top if ranked[0].score - second >= CLEAR_MARGIN and named else ""
 
 
 def fitting_action(draft: IntentDraft, ranked: Sequence[RankedEntry] = ()) -> str:

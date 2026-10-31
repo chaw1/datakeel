@@ -72,9 +72,11 @@ def freed(step: DraftStep) -> dict[str, str]:
 
 
 def _found(known: dict[str, str], item: JsonValue) -> str | None:
+    made = set(known.values())
+    if isinstance(item, dict) and "$ref" in item and len(made) == 1:
+        return made.pop()  # {"$ref": "s1.skill_id"} in a list: the one object made earlier
     if not isinstance(item, str):
         return None
-    made = set(known.values())
     if BACK.match(item.strip()) and len(made) == 1:
         return made.pop()  # "再用它预标注": the one object of that kind made earlier
     return known.get(item.strip().casefold())

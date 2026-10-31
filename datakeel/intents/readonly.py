@@ -71,10 +71,9 @@ def _status_read(step: DraftStep, ranked: Sequence[RankedEntry]) -> DraftStep | 
 def read_only(draft: IntentDraft, text: str, ranked: Sequence[RankedEntry]) -> IntentDraft:
     """A write plan for a status question becomes the read of what it names."""
     writes = [step for step in draft.steps if step.action not in PARAMETER_MODELS]
-    if draft.kind != "plan" or not writes or not status_question(text):
+    # A read beside the writes already answers the question part ("第 4 条打回; 还有没有等我审
+    # 的"): the writes were asked for in words of their own and stay.
+    if draft.kind != "plan" or len(writes) < len(draft.steps) or not status_question(text):
         return draft
     reads = [read for step in writes if (read := _status_read(step, ranked)) is not None]
-    kept = [step for step in draft.steps if step.action in PARAMETER_MODELS]
-    if not reads and not kept:
-        return draft
-    return draft.model_copy(update={"kind": "answer", "steps": [*kept, *reads[:1]]})
+    return draft.model_copy(update={"kind": "answer", "steps": reads[:1]}) if reads else draft

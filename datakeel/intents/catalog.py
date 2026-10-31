@@ -24,6 +24,14 @@ MIN_NAME = 2
 # The speaker in either language; resolved to the person who typed the sentence.
 SELF_WORDS = frozenset({"我", "我自己", "本人", "自己", "me", "myself", "i", "my", "mine", "我的"})
 
+# The template roles as people call them ("标注员", "质检员").
+ROLE_WORDS: dict[str, tuple[str, ...]] = {
+    "administrator": ("管理员",),
+    "project_manager": ("项目经理", "项目负责人"),
+    "annotator": ("标注员",),
+    "reviewer": ("质检员", "审核员"),
+    "acceptance": ("验收观察员",),
+}
 # Parameter names whose values identify one existing object of the given kind.
 FIELD_KINDS: dict[str, str] = {
     "dataset_id": "dataset",
@@ -231,7 +239,12 @@ def _packages(
 def _people_catalog(db: Database) -> list[CatalogEntry]:
     """Roles, skills and teams a sentence can name ("as annotator", "the lidar skill")."""
     entries = [
-        CatalogEntry(kind="role", id=role.id, label=role.name, names=(role.id, role.name))
+        CatalogEntry(
+            kind="role",
+            id=role.id,
+            label=role.name,
+            names=(role.id, role.name, *ROLE_WORDS.get(role.id, ())),
+        )
         for role in list_roles(db)[:CATALOG_LIMIT]
         if role.status == "active"
     ]

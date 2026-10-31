@@ -264,9 +264,14 @@ def _tidy_step(step: dict[str, JsonValue], index: int) -> None:
     if isinstance(inner, dict) and all(isinstance(value, str) for value in inner.values()):
         step.setdefault("said", params.pop("said"))
     for key, value in list(params.items()):
-        # "$ref:s1.label_set_id" is the same reference written as a string.
-        if isinstance(value, str) and value.startswith("$ref:"):
-            params[key] = {"$ref": value.removeprefix("$ref:").strip()}
+        # "$ref:s1.label_set_id" is the same reference written as a string, also in a list.
+        params[key] = [_ref(item) for item in value] if isinstance(value, list) else _ref(value)
+
+
+def _ref(value: JsonValue) -> JsonValue:
+    if isinstance(value, str) and value.startswith("$ref:"):
+        return {"$ref": value.removeprefix("$ref:").strip()}
+    return value
 
 
 def _closed(text: str) -> str:

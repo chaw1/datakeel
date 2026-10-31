@@ -20,8 +20,8 @@ from datakeel.intents.fill_state import FillState
 from datakeel.storage.intent_reads import TaskSnapshot
 
 NEXT = re.compile(
-    r"接下来|再往后|往后|后面的|之后的|再后面|随后的|下一批|下面的|然后的|"
-    r"\bnext\b|\bfollowing\b|\bafter (?:those|that|them)\b",
+    r"接下来|再往后|往后|后面的|之后的|再后面|随后的|下一批|下面的|然后的|另一|剩下的|"
+    r"\bnext\b|\bfollowing\b|\bafter (?:those|that|them)\b|\bthe other\b|\banother\b",
     re.IGNORECASE,
 )
 
@@ -30,31 +30,43 @@ def _key(spec: dict[str, JsonValue]) -> str:
     return json.dumps(spec, sort_keys=True, ensure_ascii=False)
 
 
-def _segmented(spec: dict[str, JsonValue], state: FillState) -> bool:
+def _segmented(spec: dict[str, JsonValue], state: FillState, action: str) -> bool:
+    """The first N said again after an earlier step took some by place: the next N.
+
+    "接下来两条" says so; one action given the same first N twice ("the first to Lucy and the
+    other one to 赵敏") cannot mean the same tasks either.
+    """
     first = spec.get("first")
     counted = isinstance(first, int) and not isinstance(first, bool) and first > 0
-    return counted and bool(state.taken) and NEXT.search(state.text) is not None
+    if not counted or not state.taken:
+        return False
+    return NEXT.search(state.text) is not None or action in state.taken
 
 
 def later_segment(
-    spec: dict[str, JsonValue], snapshots: list[TaskSnapshot], state: FillState
+    spec: dict[str, JsonValue], snapshots: list[TaskSnapshot], state: FillState, action: str
 ) -> list[TaskSnapshot]:
     """For "接下来两条", the first N counted after the tasks earlier steps took by place."""
-    if not _segmented(spec, state):
+    if not _segmented(spec, state, action):
         return snapshots
-    taken = set(state.taken)
+    taken = {task for ids in state.taken.values() for task in ids}
     return [task for task in snapshots if task.id not in taken]
 
 
 Found = tuple[list[str], dict[str, int]] | Clarification
 
 
-def once(spec: dict[str, JsonValue], state: FillState, resolve: Callable[[], Found]) -> Found:
-    """One group named for two steps is the same tasks; otherwise resolve and remember it."""
-    same = None if _segmented(spec, state) else state.chosen.get(_key(spec))
-    found: Found = (list(same), {}) if same else resolve()
-    if not isinstance(found, Clarification):
-        state.chosen.setdefault(_key(spec), list(found[0]))
-        if "first" in spec:
-            state.taken.extend(found[0])
-    return found
+def once(
+    spec: dict[str, JsonValue], state: FillState, action: str, resolve: Callable[[], Found]
+) -> Found:
+    """One group named for two steps covers what the earlier step took ("收回再全派给 X")."""
+    found = resolve()
+    if isinstance(found, Clarification):
+        return found
+    ids, left_out = found
+    same = [] if _segmented(spec, state, action) else state.chosen.get(_key(spec), [])
+    merged = [*same, *(task for task in ids if task not in same)]
+    state.chosen.setdefault(_key(spec), list(merged))
+    if "first" in spec:
+        state.taken.setdefault(action, []).extend(merged)
+    return merged, left_out

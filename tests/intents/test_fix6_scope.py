@@ -83,6 +83,20 @@ def test_a_none_that_names_the_one_action_that_does_it_is_checked_as_it(db: Data
     """A none that names the one action that does it is checked as it."""
     two_projects(db)
     nothing = {"kind": "none", "reason": "unsupported", "related": ["finalize_project"]}
-    result = planned(db, "把南区车道定稿", [nothing], PageContext())
+    result = planned(db, "Finalize 南区车道", [nothing], PageContext())
     assert "平台没有" not in result.text
     assert "没通过审核" in result.text, result.text
+
+
+def test_a_none_weighing_several_actions_stays_missing(db: Database) -> None:
+    """The model named two close actions and why neither does it: the feature is missing."""
+    two_projects(db)
+    nothing = {
+        "kind": "none",
+        "reason": "no recurring schedule",
+        "related": ["assign_tasks", "configure_project"],
+    }
+    result = planned(
+        db, "Schedule 南区车道 to auto-assign every Monday at 9am", [nothing], PageContext()
+    )
+    assert result.kind == "unsupported", result.text

@@ -45,7 +45,7 @@ FLOW_MUTATIONS = (
         path="intents/already.py",
         before='    "manage_users": _account,',
         after="",
-        case=_FLOW + "test_a_change_that_is_already_so_names_the_current_state",
+        case="tests/intents/test_fix6_checks.py::test_an_account_already_in_that_state_says_so_by_name",
         runner="pytest",
     ),
     Mutation(

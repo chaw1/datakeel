@@ -180,7 +180,7 @@ def _tasks(
         else task
         for task in task_snapshots(db, project)
     ]
-    snapshots = later_segment(spec, snapshots, state)  # "接下来两条": after earlier steps'
+    snapshots = later_segment(spec, snapshots, state, current.action)  # "接下来两条"
     return _in_stages(snapshots, spec, current, state, (holder, package))
 
 
@@ -324,8 +324,10 @@ def _task_slot(
     raw = value["$tasks"]
     spec = raw if isinstance(raw, dict) else {}
     # A step that runs once per task may span projects; one list of tasks may not.
-    fan_out = not field.endswith("_ids")
-    found = once(spec, state, lambda: _tasks(db, spec, current, state, catalog, fan_out=fan_out))
+    wide = not field.endswith("_ids")
+    found = once(
+        spec, state, current.action, lambda: _tasks(db, spec, current, state, catalog, fan_out=wide)
+    )
     if isinstance(found, Clarification):
         return found
     ids, left_out = found
