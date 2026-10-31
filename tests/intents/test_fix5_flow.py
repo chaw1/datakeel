@@ -11,8 +11,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from datakeel.core.intent_models import PageContext
+from datakeel.core.intent_models import IntentResult, PageContext
 from datakeel.core.release_models import ReleaseView
+from datakeel.intents.catalog import EntityCatalog
+from datakeel.intents.public_text import public_result
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from tests.intents.fix3_support import planned, shown, steps, targets, two_projects
 from tests.production_team_ops import save
@@ -218,3 +220,13 @@ def test_a_project_on_a_label_set_never_published_says_what_to_do_first(db: Data
     assert asked.kind == "clarify", asked.text
     assert "还没有发布过" in asked.text
     assert "先发布" in asked.text
+
+
+def test_the_persons_own_words_quoted_back_are_not_internal_names() -> None:
+    """A verbatim quote of the request passes the outward check; other English does not."""
+    request = "Publish the cones draft and email the whole team about it"
+    quoted = "已发布。另外「email the whole team about it」没有做: 平台上没有能做这件事的操作。"
+    result = IntentResult(kind="answer", text=quoted, request=request)
+    assert public_result(result, "zh", EntityCatalog()).text == quoted
+    other = IntentResult(kind="answer", text="另外「notify the team」没有做。", request="发布它")
+    assert public_result(other, "zh", EntityCatalog()).text != other.text

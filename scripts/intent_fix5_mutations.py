@@ -136,4 +136,13 @@ FLOW_MUTATIONS = (
         case=_FLOW + "test_a_project_on_a_label_set_never_published_says_what_to_do_first",
         runner="pytest",
     ),
+    Mutation(
+        name="fix5-quoted-request-words-pass-the-outward-check",
+        path="intents/public_text.py",
+        before="    found.update(word for text in texts for word in "
+        're.findall(r"[A-Za-z][\\w.-]*", text))',
+        after="",
+        case=_FLOW + "test_the_persons_own_words_quoted_back_are_not_internal_names",
+        runner="pytest",
+    ),
 )
