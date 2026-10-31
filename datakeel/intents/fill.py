@@ -26,7 +26,7 @@ from datakeel.intents.catalog import (
     EntityCatalog,
     candidates,
 )
-from datakeel.intents.created import Created, earlier, freed, remember
+from datakeel.intents.created import Created, earlier, freed, remember, reopened
 from datakeel.intents.derived import model_record
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.duplicates import new_name_fields
@@ -50,6 +50,7 @@ from datakeel.intents.object_edits import (
 from datakeel.intents.selectors import page_selection
 from datakeel.intents.signatures import near_value
 from datakeel.intents.step_values import any_asset, role_project, sample_files
+from datakeel.intents.task_files import file_task, said_task
 from datakeel.intents.wording import (
     disabled_question,
     unknown_labels_question,
@@ -240,7 +241,10 @@ def _fill_value(
 ) -> JsonValue | Clarification:
     """Resolve one value: selectors, single identities and lists of identities."""
     value = current.params[field]
-    value = numbered(field, value) or value
+    named = file_task(db, field, value, catalog, current.action, state.language)
+    if isinstance(named, Clarification):
+        return named
+    value = numbered(field, value) or named or value
     if isinstance(value, dict) and (
         "$tasks" in value
         or "$files" in value
@@ -308,6 +312,7 @@ def fill_steps(
         if unknown:
             question = unknown_question(step.action, unknown, state.language)
             return FillResult(clarification=Clarification(question=question, action=step.action))
+        said_task(step, params)
         _prepared(step, params, names, state.text)
         own_task(step.action, params, state.context)
         fresh = new_object_field(step.action, params)
@@ -339,6 +344,8 @@ def fill_steps(
         filled.append(current.model_copy(update={"params": params}))
         remember(created, filled[-1], fresh)
         state.freed.update(freed(filled[-1]))
+        user = catalog.get("user", str(params.get("user_id")))
+        reopened(created, filled[-1], user.label if user is not None else None)
         if excluded:
             left_out[step.id] = dict(excluded)
     return FillResult(steps=filled, excluded=left_out)

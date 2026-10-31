@@ -292,8 +292,8 @@ class Resolver:
         """
         refused: dict[str, str] = {}
         idle: dict[str, str] = {}
-        for step in checked:
-            reason = impossible(self.db, step, draft.language)
+        for index, step in enumerate(checked):
+            reason = impossible(self.db, step, draft.language, checked[:index])
             if reason is not None:
                 refused[step.id] = reason
             elif unchanged(self.db, step):

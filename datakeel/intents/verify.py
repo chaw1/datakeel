@@ -21,6 +21,7 @@ from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import ProductionLabel
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
+from datakeel.intents.file_unchanged import not_quarantined, quarantined_already
 from datakeel.intents.fill_state import FillState
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import get_bindings, list_teams, list_users
@@ -389,6 +390,8 @@ def unchanged(db: Database, step: ChainStep) -> bool:
         "configure_project": _project_unchanged,
         "upgrade_project": _project_unchanged,
         "assign_tasks": _assigned_already,
+        "quarantine_files": quarantined_already,
+        "unquarantine_files": not_quarantined,
     }
     check = checks.get(step.action)
     return check is not None and not step.items and check(db, step.params)

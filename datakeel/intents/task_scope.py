@@ -264,6 +264,10 @@ def select_tasks(
         inside = {task.number for task in described}
         if not all(n in inside for n in said) and all(n <= len(described) for n in said):
             return TaskScope(ids=[described[n - 1].id for n in said])
+        # "#5 到 #8 里没人领的": numbers that are not places narrow the group to those numbers.
+        both = [task.id for task in described if task.number in said]
+        if both and len(both) < len(said):
+            return TaskScope(ids=both)
     named = _named(tasks, spec, found[1])
     if named is not None:
         listed = {task.number: task for task in tasks}

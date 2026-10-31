@@ -32,6 +32,19 @@ def remember(created: Created, step: DraftStep, field: str | None) -> None:
             known[name.strip().casefold()] = identity
 
 
+def reopened(created: Created, step: DraftStep, label: str | None) -> None:
+    """An account an earlier step turns back on takes work in the later steps."""
+    user, params = step.params.get("user_id"), step.params
+    if step.action != "manage_users" or params.get("operation") != "update":
+        return
+    if params.get("status") != "active" or not isinstance(user, str):
+        return
+    known = created.setdefault("user", {})
+    for name in (user, label):
+        if name:
+            known[name.strip().casefold()] = user
+
+
 def freed(step: DraftStep) -> dict[str, str]:
     """Holds a filled take-back step ends: "先把小王那条收回, 再派给 Mia" frees that task."""
     if step.action != "revoke_assignment":

@@ -229,6 +229,12 @@ def overreach(
     return None
 
 
+FOLLOWS = {
+    "label_set_id": ("version", "previous_version", "label_set_version"),
+    "task_id": ("revision_id", "previous_revision_id"),
+}
+
+
 def _missing(
     step: DraftStep, missing: list[str], state: FillState, catalog: EntityCatalog
 ) -> Clarification:
@@ -237,7 +243,13 @@ def _missing(
     A parameter the state answers is never asked: when the state has no answer either, the
     reply says why instead.
     """
-    asked = [name for name in missing if not derivable(step.action, name)]
+    # A version or revision follows from the object it belongs to: ask for the object only.
+    asked = [
+        name
+        for name in missing
+        if not derivable(step.action, name)
+        and not any(name in FOLLOWS.get(other, ()) for other in missing)
+    ]
     if not asked:
         question = underivable(missing[0], state.language)
         return Clarification(question=question, action=step.action, fields=[])
