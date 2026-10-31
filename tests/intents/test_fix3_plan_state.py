@@ -1,15 +1,15 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3: tasks named by file, numbers in a described group, and what earlier steps change."""
+"""FIX3: tasks named by file, numbers in a group, earlier steps, and labels already there."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
+from datakeel.intents.edits import latest_label_set
 from datakeel.storage.database import DatasetRow
-from datakeel.storage.dataset_service import list_files
 from datakeel.storage.production_queries import list_tasks
 from tests.intents.fix3_support import planned, steps, targets, two_projects
 from tests.production_helpers import production_fixture
@@ -118,13 +118,17 @@ def test_an_earlier_step_changes_what_later_steps_may_do(db: Database) -> None:
     assert "已停用" in disabled.text
 
 
-def test_a_quarantine_change_that_changes_nothing_is_already_so(db: Database) -> None:
-    """Lifting a quarantine a file does not have is answered, not planned."""
+def test_adding_a_label_that_is_there_already_changes_nothing(db: Database) -> None:
+    """加一个已有的标签, even with an English name the label lacks, is answered as already so."""
     _, south, _ = two_projects(db)
-    first = list_files(db, south.dataset_id)[0].id
-    chosen = {"field": "id", "operator": "in", "value": [first]}
-    selection = {"dataset_id": south.dataset_id, "filters": [chosen]}
-    lift = steps(("unquarantine_files", {"selection": selection}))
-    result = planned(db, "这张的隔离撤了吧", [lift], PageContext(dataset_id=south.dataset_id))
+    first = latest_label_set(db, south.label_set_id)
+    assert first is not None
+    known = first.labels[0]
+    added = {"id": known.id, "name": known.name, "name_en": f"{known.name} (en)"}
+    edit = {"operation": "update", "label_set_id": south.label_set_id, "labels": [added]}
+    page = PageContext(label_set_id=south.label_set_id)
+    result = planned(
+        db, f"给这个标签集加一个 {known.name} 标签", [steps(("create_label_set", edit))], page
+    )
     assert result.kind == "answer", result.text
     assert "已经是这样" in result.text
