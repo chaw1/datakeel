@@ -13,6 +13,7 @@ import { datasheetZh } from "./datasheetZh";
 import { dqZh } from "./dqZh";
 import { evidenceZh } from "./evidenceZh";
 import { graphZh } from "./graphZh";
+import { intentZh } from "./intentZh";
 import { kgZh } from "./kgZh";
 import { knowledgeZh } from "./knowledgeZh";
 import { llmDataZh } from "./llmDataZh";
@@ -66,6 +67,7 @@ export const zh: Record<MessageKey, string> = {
   themeLight: "浅色",
   themeDark: "深色",
   ...agentZh,
+  ...intentZh,
   ...advancedZh,
   ...askZh,
   ...askReasonZh,

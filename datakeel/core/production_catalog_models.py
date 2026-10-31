@@ -11,6 +11,7 @@ from pydantic import Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.image_orientation import CoordinateFrame
+from datakeel.core.label_guidelines import DraftSource, LabelGuidelines
 from datakeel.core.models import BoundaryModel
 from datakeel.core.prelabel_models import (
     CloudModelConfig,
@@ -33,6 +34,14 @@ class ProductionLabel(BoundaryModel):
     color: str | None = None
     shortcut: str | None = None
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
+    name_zh: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    name_en: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    # A factory keeps the property optional in generated client types for older payloads.
+    fields: tuple[TemplateAttribute, ...] = Field(
+        default_factory=tuple[TemplateAttribute, ...],
+        max_length=50,
+        exclude_if=lambda value: not value,
+    )
 
 
 class LabelMigration(BoundaryModel):
@@ -87,6 +96,8 @@ class LabelSet(BoundaryModel):
     affected_revisions: int = 0
     created_at: datetime
     published_at: datetime | None = None
+    guidelines: LabelGuidelines | None = Field(default=None, exclude_if=lambda value: value is None)
+    draft_source: DraftSource | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ProductionTemplate(BoundaryModel):

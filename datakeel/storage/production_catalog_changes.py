@@ -53,12 +53,30 @@ def create_label_set(session: Session, params: CreateLabelSetParams) -> LabelSet
             message = "Label set version already exists"
             raise ConflictError(message)
         row = ProductionLabelSetRow(id=new_id(), label_set_id=identifier, version=version)
-    value = _draft(session, params, identifier, version)
+    value = _with_guidelines(row, params, _draft(session, params, identifier, version))
     row.published = False
     row.payload = value.model_dump(mode="json")
     session.add(row)
     session.flush()
     return value
+
+
+def _with_guidelines(
+    row: ProductionLabelSetRow, params: CreateLabelSetParams, value: LabelSet
+) -> LabelSet:
+    """Keep drafting provenance on edits; omitted guidelines leave the current text."""
+    existing = LabelSet.model_validate(row.payload) if row.payload else None
+    guidelines = params.guidelines or (existing.guidelines if existing else None)
+    known = {label.id for label in value.labels}
+    if guidelines is not None and any(rule.label_id not in known for rule in guidelines.rules):
+        message = "Guideline rules must refer to labels of this version"
+        raise ValidationError(message)
+    return value.model_copy(
+        update={
+            "guidelines": guidelines,
+            "draft_source": existing.draft_source if existing else None,
+        }
+    )
 
 
 def _draft(

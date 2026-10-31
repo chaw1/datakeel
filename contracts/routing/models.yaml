@@ -23,3 +23,19 @@ providers:
       multi_step: claude-haiku-4-5-20251001
       high_risk: claude-haiku-4-5-20251001
     fallbacks: {}
+# OpenAI-compatible endpoints other than OpenAI, by host. When DATAKEEL_OPENAI_BASE_URL (or
+# the legacy URL) points at one of them, "auto" routes to these tiers instead of the openai
+# ones above, so a conversation never asks an endpoint for a model it does not serve.
+endpoints:
+  api.deepseek.com:
+    tiers:
+      simple: deepseek-flash
+      multi_step: deepseek-flash
+      high_risk: deepseek-flash
+    fallbacks: {}
+  dashscope.aliyuncs.com:
+    tiers:
+      simple: qwen3.5-flash
+      multi_step: qwen3.5-flash
+      high_risk: qwen3.5-flash
+    fallbacks: {}

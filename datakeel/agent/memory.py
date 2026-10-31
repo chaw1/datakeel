@@ -11,6 +11,7 @@ from datakeel.storage import conversation_store
 from datakeel.storage.action_store import get_plan, list_runs
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
+from datakeel.storage.intent_chains import get_chain
 
 
 def conversation_view(db: Database, conversation: Conversation) -> ConversationView:
@@ -29,6 +30,11 @@ def conversation_view(db: Database, conversation: Conversation) -> ConversationV
             )
             outcome = outcome.model_copy(update={"plan": plan, "run": run})
             event = event.model_copy(update={"outcome": outcome})
+        if event.intent is not None and event.intent.chain is not None:
+            chain = get_chain(db, event.intent.chain.id)
+            event = event.model_copy(
+                update={"intent": event.intent.model_copy(update={"chain": chain})}
+            )
         events.append(event)
     plans = {
         event.outcome.plan.id: event.outcome.plan

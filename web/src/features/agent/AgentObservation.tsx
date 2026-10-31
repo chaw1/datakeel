@@ -3,6 +3,7 @@ import { ActionReceipt } from "../actions/ActionReceipt";
 import { PlanCard } from "../actions/PlanCard";
 
 import { AgentRouting } from "./AgentRouting";
+import { IntentCard } from "./IntentCard";
 
 import type { AgentEvent } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
@@ -27,8 +28,10 @@ export function AgentObservation({
   onResolved,
   onOpenReceipt,
   receiptVisible = true,
+  onReply,
 }: {
   receiptVisible?: boolean;
+  onReply?: (content: string) => void;
   event: AgentEvent;
   dryRun: boolean;
   busy: boolean;
@@ -42,6 +45,16 @@ export function AgentObservation({
     (event.event === "done" && !!event.model_routes?.length)
   )
     return <AgentRouting event={event} />;
+  if (event.event === "intent" && event.intent)
+    return (
+      <IntentCard
+        intent={event.intent}
+        busy={busy}
+        onReply={onReply}
+        onResolved={onResolved}
+        onOpenReceipt={onOpenReceipt}
+      />
+    );
   if (event.event === "text" && event.text)
     return (
       <div className="assistant-text">

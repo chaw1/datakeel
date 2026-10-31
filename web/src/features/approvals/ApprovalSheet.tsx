@@ -212,7 +212,7 @@ export function ApprovalSheet(props: ApprovalProps) {
         <div className="approval-signer">
           <span>{t("approvalSigner")}</span>
           <span className="approval-signature-line">
-            {approval.requiresApproval ? "local" : "—"}
+            {approval.requiresApproval ? t("approvalSignerSelf") : "—"}
           </span>
         </div>
         {!readOnly && !approval.terminal && (

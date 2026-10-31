@@ -18,8 +18,10 @@ def production_fixture(
     tier: WorkflowTier = "personal",
     count: int = 3,
     package_size: int = 100,
+    *,
+    split: bool = True,
 ) -> tuple[Project, tuple[ProductionTask, ...]]:
-    """Create synthetic manifests and a published vocabulary without external files or services."""
+    """Synthetic manifests and a published vocabulary; ``split=False`` leaves no packages."""
     files = [
         FileItem(
             id=new_id(),
@@ -61,12 +63,13 @@ def production_fixture(
             ),
             "local",
         )
-        split_packages(
-            session,
-            SplitPackagesParams(
-                request_id=new_id(), project_id=project.id, package_size=package_size
-            ),
-        )
+        if split:
+            split_packages(
+                session,
+                SplitPackagesParams(
+                    request_id=new_id(), project_id=project.id, package_size=package_size
+                ),
+            )
         session.commit()
     return project, list_tasks(db, project.id)
 

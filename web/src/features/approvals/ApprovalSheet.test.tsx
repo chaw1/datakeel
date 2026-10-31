@@ -69,7 +69,9 @@ it("renders the frozen plan fields, source conversation, object context and irre
   expect(screen.getByText("None; data stays in this workspace")).toBeVisible();
   expect(screen.getByText("Irreversible")).toHaveClass("approval-irreversible");
   expect(screen.getByText("This action cannot be undone.")).toBeVisible();
-  expect(screen.getByText("Approver").parentElement).toHaveTextContent("local");
+  expect(screen.getByText("Approver").parentElement).toHaveTextContent(
+    "You (the signed-in person)",
+  );
   const file = screen.getByRole("link", { name: "text/note-0031.txt" });
   expect(file.getAttribute("href")).toContain("#/object/file/");
   expect(file.getAttribute("href")).toContain("dataset=dataset-1");

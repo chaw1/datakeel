@@ -209,6 +209,7 @@ export const workbenchEn = {
   wbUnavailable: "Not measured",
   wbRepeatedRework: "Tasks with at least three rework rounds",
   wbNoRepeatedRework: "No repeatedly reworked tasks.",
+  wbAskAgent: "Do it in one sentence",
   wbRefetch: "Refresh facts",
   wbPage: "Task page {page}",
   wbLoadMore: "Next task page",

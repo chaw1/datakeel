@@ -1,0 +1,19 @@
+id: 48-one-sentence-overreach
+description: After registration the unregistered Agent actor holds no scopes; the request
+  is refused while planning and names the missing scope.
+fixture_kind: team
+turns:
+- input: Set up a box annotation project for car with two people cross-checking
+  script:
+  - agent: intent_planner
+    content: '{"kind": "none"}'
+expect:
+  intent_kinds:
+  - refuse
+  chain_actions: []
+  run_count: 0
+  actions: []
+  answer_contains:
+  - production:manage
+  max_turns: 0
+  max_tokens: 1000

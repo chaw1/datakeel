@@ -34,10 +34,16 @@ def _http_actor(db: Database, request: Request) -> str:
         return "local" if effective_scopes(session, actor).zero_users else actor
 
 
-def _require_actor(db: Database, request: Request, actor: str) -> None:
-    if actor != _http_actor(db, request):
+def _signer(db: Database, request: Request, named: str) -> str:
+    """The request's person signs; a browser's placeholder "local" means exactly that person.
+
+    Naming anyone else is refused, so a decision can never be recorded for another person.
+    """
+    actor = _http_actor(db, request)
+    if named not in {actor, "local"}:
         msg = "HTTP action decisions must use the request's human identity"
         raise AuthorizationError(msg)
+    return actor
 
 
 @router.get("/actions/runs")
@@ -90,9 +96,9 @@ def prepare(
 def approve(
     plan_id: str, body: ApprovalDecision, db: DatabaseDependency, request: Request
 ) -> ActionPlan:
-    """Approve or reject one displayed plan digest as the local user."""
-    _require_actor(db, request, body.actor)
-    return service.approve_plan(db, plan_id, body)
+    """Approve or reject one displayed plan digest as the request's person."""
+    signed = body.model_copy(update={"actor": _signer(db, request, body.actor)})
+    return service.approve_plan(db, plan_id, signed)
 
 
 @router.post("/actions/{plan_id}/execute")
@@ -104,8 +110,8 @@ def execute(
     A first denied request retains its 403/409 error response. Read its durable run
     through GET /api/actions/runs, or replay its explicit operation_id for that run.
     """
-    _require_actor(db, request, body.actor)
-    return service.execute_plan(db, plan_id, body)
+    signed = body.model_copy(update={"actor": _signer(db, request, body.actor)})
+    return service.execute_plan(db, plan_id, signed)
 
 
 def _read_access(request: Request) -> AccessContext:

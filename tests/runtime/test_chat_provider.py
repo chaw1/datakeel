@@ -507,3 +507,93 @@ def test_provider_when_response_gzip_encoded_sdk_parses_decoded_body_once(
     ):
         result = provider.complete(model_request)
     assert result.content == "Done."
+
+
+def _sse(*events: dict[str, JsonValue]) -> bytes:
+    lines = [f"data: {json.dumps(event)}\n\n" for event in events]
+    return ("".join(lines) + "data: [DONE]\n\n").encode()
+
+
+def _chunk(delta: dict[str, JsonValue], finish: str | None = None) -> dict[str, JsonValue]:
+    return {
+        "id": "chunk",
+        "object": "chat.completion.chunk",
+        "created": 1,
+        "model": "fixture-model",
+        "choices": [{"index": 0, "delta": delta, "finish_reason": finish}],
+    }
+
+
+def _json_request() -> ModelRequest:
+    return ModelRequest(
+        model="fixture-model",
+        messages=[ChatMessage(role="user", content="Plan this.")],
+        tools=[],
+        segments=[ContextSegment(name="input", kind="volatile", text="Plan this.", tokens=4)],
+        max_output_tokens=16384,
+        temperature=0,
+        json_output=True,
+    )
+
+
+def test_openai_when_json_output_requested_streams_and_joins_the_answer() -> None:
+    """A planner request streams (reasoning keeps the line busy) and is joined with usage."""
+    bodies: list[dict[str, JsonValue]] = []
+    usage: dict[str, JsonValue] = {"prompt_tokens": 12, "completion_tokens": 7}
+    stream = _sse(
+        _chunk({"role": "assistant", "reasoning_content": "thinking first"}),
+        _chunk({"content": '{"kind": '}),
+        _chunk({"content": '"none"}'}, "stop"),
+        {**_chunk({}), "choices": [], "usage": usage},
+    )
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        bodies.append(body)
+        if body.get("stream") is not True:
+            message = {"role": "assistant", "content": '{"kind": "none"}'}
+            choice = {"message": message, "finish_reason": "stop"}
+            return httpx.Response(200, json={"choices": [choice], "usage": usage})
+        return httpx.Response(200, headers={"content-type": "text/event-stream"}, content=stream)
+
+    with (
+        httpx.Client(transport=httpx.MockTransport(respond), trust_env=False) as client,
+        model_provider(
+            ConversationCreate(provider="openai"),
+            Settings.model_validate(
+                {"openai_api_key": "fixture-key", "openai_base_url": "https://fixture.invalid/v1"}
+            ),
+            client,
+        ) as provider,
+    ):
+        result = provider.complete(_json_request())
+    (body,) = bodies
+    assert body.get("stream") is True
+    assert body.get("stream_options") == {"include_usage": True}
+    assert body["response_format"] == {"type": "json_object"}
+    assert body["max_completion_tokens"] == 16384
+    assert result.content == '{"kind": "none"}'
+    assert result.usage == TokenUsage(input_tokens=12, output_tokens=7)
+    assert result.usage_known
+
+
+def test_openai_when_json_stream_is_empty_rejects_provider_data() -> None:
+    """A stream that ends before any chunk is invalid provider data, not an empty answer."""
+
+    def respond(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, headers={"content-type": "text/event-stream"}, content=b"data: [DONE]\n\n"
+        )
+
+    with (
+        httpx.Client(transport=httpx.MockTransport(respond), trust_env=False) as client,
+        model_provider(
+            ConversationCreate(provider="openai"),
+            Settings.model_validate(
+                {"openai_api_key": "fixture-key", "openai_base_url": "https://fixture.invalid/v1"}
+            ),
+            client,
+        ) as provider,
+        pytest.raises(ValidationError),
+    ):
+        provider.complete(_json_request())

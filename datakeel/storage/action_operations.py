@@ -16,6 +16,7 @@ from datakeel.actions.datasheet_parameters import GenerateDatasheetParams, Publi
 from datakeel.actions.dq_parameters import QualityActionParams
 from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
+from datakeel.actions.label_draft_parameters import DraftLabelSetParams
 from datakeel.actions.llm_data_parameters import CleanTrainingParams
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.parameters import (
@@ -47,6 +48,7 @@ from datakeel.storage.dq_actions import execute_quality_action
 from datakeel.storage.evidence_actions import decide_action
 from datakeel.storage.identity_actions import execute_identity_action
 from datakeel.storage.kg_store import schedule_extraction
+from datakeel.storage.label_drafts import execute_label_draft
 from datakeel.storage.llm_data_actions import execute_training_clean
 from datakeel.storage.production_actions import execute_production_action
 from datakeel.storage.production_catalog_actions import (
@@ -166,5 +168,7 @@ def _additional_action(session: Session, plan: ActionPlan, params: object) -> Op
         return _pipeline(session, plan, params)
     if isinstance(params, RunKGExtractionParams):
         return schedule_extraction(session, plan, params)
+    if isinstance(params, DraftLabelSetParams):
+        return execute_label_draft(session, plan, params)
     msg = "No in-database handler for this action"
     raise NotFoundError(msg)

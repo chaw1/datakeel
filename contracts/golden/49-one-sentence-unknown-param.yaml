@@ -1,0 +1,21 @@
+id: 49-one-sentence-unknown-param
+description: A parameter the action does not take gets one repair call; still unknown, it
+  becomes a question instead of being dropped.
+turns:
+- input: Split the project into packages of 10
+  script:
+  - agent: intent_planner
+    content: '{"kind": "plan", "steps": [{"id": "s1", "action": "split_packages", "params":
+      {"size_per_pack": 10}}]}'
+  - agent: intent_planner
+    content: '{"kind": "plan", "steps": [{"id": "s1", "action": "split_packages", "params":
+      {"size_per_pack": 10}}]}'
+expect:
+  intent_kinds:
+  - clarify
+  chain_actions: []
+  run_count: 0
+  actions: []
+  answer_contains:
+  - size per pack
+  max_tokens: 40000

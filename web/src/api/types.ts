@@ -27,6 +27,8 @@ export type Conversation = components["schemas"]["ConversationView"];
 export type AgentEvent = components["schemas"]["AgentEvent"];
 export type ConversationCreate =
   components["schemas"]["ConversationCreate-Input"];
+export type ConversationDefaults =
+  components["schemas"]["ConversationDefaults"];
 export type MessageInput = components["schemas"]["MessageInput"];
 export type ModelCallTrace = components["schemas"]["ModelCallTrace"];
 export type CostSummary = components["schemas"]["CostSummary"];

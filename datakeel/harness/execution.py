@@ -98,8 +98,19 @@ def _measured_result(
         ],
         operations=[operation.status for operation in operations],
         final_answer=next(
-            (event.text for event in reversed(events) if event.event == "text" and event.text), ""
+            (
+                event.text
+                for event in reversed(events)
+                if event.event in {"text", "intent"} and event.text
+            ),
+            "",
         ),
+        intent_kinds=[event.intent.kind for event in events if event.intent is not None],
+        chain_actions=[
+            [step.action for step in event.intent.chain.steps]
+            for event in events
+            if event.intent is not None and event.intent.chain is not None
+        ],
         stop_reasons=[event.stop_reason for event in events if event.stop_reason],
         turns=sum(
             trace.call_type == "conversation"

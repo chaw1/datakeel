@@ -24,6 +24,7 @@ from datakeel.core.workbench_models import (
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import resolve_download
+from datakeel.storage.display_order import ordered_task_rows
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.image_geometry import read_geometry
 from datakeel.storage.production_catalog import require_label_set
@@ -108,7 +109,8 @@ def _tasks(
         tasks = tuple(
             task
             for task in (
-                task_view(row) for row in session.scalars(statement.order_by(ProductionTaskRow.id))
+                task_view(row)
+                for row in ordered_task_rows(session, project.id, session.scalars(statement))
             )
             if matches_search(task, names, query.search)
         )

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createConversation } from "../api/agent";
 import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import { contextFromQuery } from "../features/agent/agentLink";
 import { ConversationSidebar } from "../features/agent/ConversationSidebar";
 import { ConversationTranscript } from "../features/agent/ConversationTranscript";
 import { MessageComposer } from "../features/agent/MessageComposer";
@@ -11,7 +12,12 @@ import { money } from "../features/traces/format";
 import { useI18n } from "../i18n/useI18n";
 import { useResource } from "../lib/useResource";
 
-import type { Conversation, ConversationCreate, Dataset } from "../api/types";
+import type {
+  Conversation,
+  ConversationCreate,
+  ConversationDefaults,
+  Dataset,
+} from "../api/types";
 import type { LineageTarget } from "../app/navigation";
 
 export function AgentPage({
@@ -43,6 +49,7 @@ export function AgentPage({
   const session = useConversation(id);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [setup, setSetup] = useState<ConversationDefaults | null>(null);
   async function create(
     dataset: string,
     dryRun: boolean,
@@ -51,7 +58,12 @@ export function AgentPage({
     setCreating(true);
     setError("");
     try {
-      const value = await createConversation(dataset, dryRun, budget);
+      const { conversation: value, setup: used } = await createConversation(
+        dataset,
+        dryRun,
+        budget,
+      );
+      setSetup(used.problem ? used : null);
       setChosenConversation(value.id);
       onConversation(value.id);
       conversations.reload();
@@ -70,6 +82,22 @@ export function AgentPage({
   function resolved() {
     refresh();
     onDataChanged();
+  }
+  // The planner reads what the person is looking at: everything the entry link carried
+  // (project, task, package, selected rows), the conversation's dataset first, then the
+  // dataset the workspace has open.
+  const pageContext = {
+    ...contextFromQuery(params),
+    dataset_id:
+      session.value?.config.dataset_id ??
+      params.get("dataset") ??
+      (datasetId || null),
+  };
+  function say(content: string) {
+    void session.send(content, pageContext).then(() => {
+      conversations.reload();
+      onDataChanged();
+    });
   }
   return (
     <>
@@ -113,6 +141,20 @@ export function AgentPage({
           }}
         />
         <section className="card conversation-main">
+          {setup?.problem && (
+            <div className="warning-banner" role="status">
+              <div>
+                <strong>{t("modelSetupProblem")}</strong>
+                <p>
+                  {setup.problem === "no_model_key"
+                    ? t("modelSetupNoKey")
+                    : t("modelSetupUnrouted", {
+                        endpoint: setup.endpoint ?? "",
+                      })}
+                </p>
+              </div>
+            </div>
+          )}
           <ResourceState {...session} onRetry={session.reload} />
           {session.value ? (
             <>
@@ -164,6 +206,7 @@ export function AgentPage({
                 busy={session.live.running}
                 onResolved={resolved}
                 onOpenReceipt={onOpenReceipt}
+                onReply={say}
               />
               {session.live.error && (
                 <div className="error-banner" role="alert">
@@ -187,12 +230,7 @@ export function AgentPage({
             initialContent={initialContent}
             disabled={!session.value || session.loading || !!session.live.error}
             busy={session.live.running}
-            onSend={(content) => {
-              void session.send(content).then(() => {
-                conversations.reload();
-                onDataChanged();
-              });
-            }}
+            onSend={say}
           />
         </section>
       </div>

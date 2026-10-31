@@ -13,6 +13,7 @@ type Props = {
   visibleReceipts: Set<AgentEvent["id"]>;
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
+  onReply?: (content: string) => void;
 };
 export function AgentSteps({ events, path = "main", ...props }: Props) {
   const { t } = useI18n();
@@ -30,6 +31,7 @@ export function AgentSteps({ events, path = "main", ...props }: Props) {
               busy={props.busy}
               onResolved={props.onResolved}
               onOpenReceipt={props.onOpenReceipt}
+              onReply={props.onReply}
               receiptVisible={props.visibleReceipts.has(event.id)}
             />
           );

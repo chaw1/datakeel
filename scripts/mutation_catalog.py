@@ -14,6 +14,9 @@ from scripts.dq_mutations import DQ_MUTATIONS
 from scripts.guard_mutations import GUARD_MUTATIONS
 from scripts.identity_mutations import IDENTITY_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
+from scripts.intent_fix2_mutations import INTENT_FIX2_MUTATIONS
+from scripts.intent_fix3_mutations import INTENT_FIX3_MUTATIONS
+from scripts.intent_mutations import INTENT_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
 from scripts.llm_data_governance_mutations import LLM_DATA_GOVERNANCE_MUTATIONS
@@ -102,4 +105,7 @@ FEATURE_MUTATIONS = (
     *TRAINING_IDENTITY_MUTATIONS,
     *TAILS_MUTATIONS,
     *ORIENTATION_MUTATIONS,
+    *INTENT_MUTATIONS,
+    *INTENT_FIX2_MUTATIONS,
+    *INTENT_FIX3_MUTATIONS,
 )

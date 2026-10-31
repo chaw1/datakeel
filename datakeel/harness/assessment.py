@@ -96,6 +96,9 @@ def assess(expect: GoldenExpect, observed: CaseObservation) -> EvalCaseResult:
         (expect.quarantined_count, observed.quarantined_count, "Quarantined file count"),
         (expect.memory_count, observed.memory_count, "Active memory count"),
         (expect.memory_used, observed.memory_used, "Memory context present"),
+        (expect.intent_kinds, result.intent_kinds, "One-sentence outcomes"),
+        (expect.chain_actions, result.chain_actions, "Planned chain actions"),
+        (expect.run_count, len(observed.runs), "Executed runs"),
     ]
     for expected, actual, label in equalities:
         if expected is not None and expected != actual:

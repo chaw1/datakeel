@@ -194,6 +194,7 @@ export const workbenchZh = {
   wbUnavailable: "未测量",
   wbRepeatedRework: "返工至少三轮的任务",
   wbNoRepeatedRework: "暂无多轮返工任务。",
+  wbAskAgent: "一句话做事",
   wbRefetch: "刷新事实",
   wbPage: "第 {page} 页任务",
   wbLoadMore: "下一页任务",

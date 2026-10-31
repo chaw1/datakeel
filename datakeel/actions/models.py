@@ -79,6 +79,7 @@ ActionName = Literal[
     "generate_datasheet",
     "publish_datasheet",
     "clean_training_data",
+    "draft_label_set",
 ]
 PlanStatus = Literal["PREPARED", "APPROVED", "REJECTED", "EXECUTED", "FAILED"]
 RunStatus = Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED"]

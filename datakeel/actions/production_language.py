@@ -3,6 +3,8 @@
 
 """Bilingual vocabulary for discoverable production actions, without natural-language execution."""
 
+from datakeel.actions.action_language import ACTION_LANGUAGE
+
 PRODUCTION_LANGUAGE: dict[str, tuple[str, str, str, str]] = {
     "create_label_set": (
         "创建标签集",
@@ -137,8 +139,8 @@ PRODUCTION_LANGUAGE: dict[str, tuple[str, str, str, str]] = {
         "Finalize all approved revisions into a new dataset version",
     ),
     "manage_users": (
-        "管理用户和团队",
-        "manage users and teams",
+        "管理用户和团队、把人加进项目担任标注员等角色",
+        "manage users and teams, add a person to a project as annotator or reviewer",
         "登记标注员并绑定项目角色",
         "Register an annotator and bind a project role",
     ),
@@ -165,7 +167,7 @@ PRODUCTION_LANGUAGE: dict[str, tuple[str, str, str, str]] = {
 
 def action_language(name: str) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     """Return independently editable phrases and concrete examples for both languages."""
-    value = PRODUCTION_LANGUAGE.get(name)
+    value = PRODUCTION_LANGUAGE.get(name) or ACTION_LANGUAGE.get(name)
     if value is None:
         return {}, {}
     zh, en, example_zh, example_en = value

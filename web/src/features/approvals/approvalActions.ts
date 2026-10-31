@@ -9,6 +9,7 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   update_role: "productionUpdateRole",
   create_label_set: "productionCreateLabelSet",
   publish_label_set: "productionPublishLabelSet",
+  draft_label_set: "productionDraftLabelSet",
   register_model: "productionRegisterModel",
   update_model: "productionUpdateModel",
   import_predictions: "productionImportPredictions",

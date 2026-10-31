@@ -25,6 +25,11 @@ export const agentEn = {
   dryRun: "Dry run",
   dryRunExplanation: "Prepare plans without executing actions.",
   dryRunPlansOnly: "Dry run: this conversation only prepares plans.",
+  modelSetupProblem: "No model is available: this is a configuration problem",
+  modelSetupNoKey:
+    "The server has no model key (DATAKEEL_OPENAI_API_KEY or DATAKEEL_ANTHROPIC_API_KEY), so this conversation uses the offline demo model, which only knows fixed phrases.",
+  modelSetupUnrouted:
+    "The model endpoint {endpoint} has no model tiers in the routing file (endpoints), so it was not used; this conversation uses the offline demo model.",
   createConversationError: "The conversation could not be created.",
   messageInput: "Message",
   messagePlaceholder: "Ask about your data or describe a change…",

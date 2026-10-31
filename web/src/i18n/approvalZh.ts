@@ -24,6 +24,7 @@ export const approvalZh: Record<keyof typeof approvalEn, string> = {
   approvalNoObjects: "这份计划未选中任何对象。",
   approvalMoreObjects: "展开后续对象（还有 {count} 个）",
   approvalFrozenAt: "对象版本与参数冻结于 {date}。",
+  approvalSignerSelf: "本人（当前登录用户）",
   approvalSigner: "签批人",
   approvalReturn: "退回",
   approvalSignAction: "签批并{action}",

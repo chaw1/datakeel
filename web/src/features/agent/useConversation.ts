@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { streamMessage } from "../../api/agent";
 import { get } from "../../api/client";
 
+import type { PageContext } from "../../api/intents";
 import type { AgentEvent, Conversation } from "../../api/types";
 
 type LiveTurn = {
@@ -51,7 +52,7 @@ export function useConversation(id: string) {
     },
     [id],
   );
-  async function send(content: string) {
+  async function send(content: string, context?: PageContext) {
     if (
       !id ||
       (controller.current && !controller.current.signal.aborted && live.running)
@@ -65,7 +66,7 @@ export function useConversation(id: string) {
     try {
       await streamMessage(
         id,
-        { content, idempotency_key: crypto.randomUUID() },
+        { content, idempotency_key: crypto.randomUUID(), context },
         (event) => {
           if (!interrupted())
             setLive((current) => ({

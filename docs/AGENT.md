@@ -73,6 +73,12 @@ Deletion hard-deletes the entry and its archived source entries recursively. Aud
 
 删除会递归硬删条目及已归档来源，审计仅留 ID；之后的检索不会再注入该记忆。界面按 `done.used_memory_ids` 查当前内容，已删条目标为不可用。删除记忆不会改写原始历史用户消息或显式写入工具参数。
 
+## One-sentence planning / 一句话做事
+
+Messages from the Web dialog carry page context and first go to the intent planner, which emits an `intent` event (plan, answer, clarify or refuse) instead of a free reply when it recognises a request. See [One sentence to plan](ONE_SENTENCE.md).
+
+Web 对话的消息带页面上下文，先交给一句话规划器；认出请求时输出一个 `intent` 事件（计划、回答、追问或拒绝），不再走自由对话。详见[一句话做事](ONE_SENTENCE.zh.md)。
+
 ## HTTP and events / 接口与事件
 
 | Endpoint / 接口 | Purpose / 用途 |

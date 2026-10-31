@@ -21,6 +21,7 @@ from datakeel.ontology.catalog_parameters import ImpactParams, MetricListParams,
 from datakeel.ontology.data_asset_access import requested_refs
 from datakeel.ontology.dq_functions import QualityRulesParams, TableQualityParams, invoke_quality
 from datakeel.ontology.evidence_functions import invoke_evidence
+from datakeel.ontology.function_language import function_language
 from datakeel.ontology.kg_functions import invoke_kg
 from datakeel.ontology.llm_data_functions import invoke_llm_data
 from datakeel.ontology.models import FunctionResult, FunctionType, ObjectSet, PropertyFilter
@@ -85,6 +86,8 @@ def function_definitions() -> list[FunctionType]:
             output_schema=JsonDocument.model_validate(FunctionResult.model_json_schema()),
             read_scope=f"{name}:read",
             handler="datakeel.ontology.functions.invoke_function",
+            phrases=function_language(name)[0],
+            examples=function_language(name)[1],
         )
         for name, model in PARAMETER_MODELS.items()
     ]

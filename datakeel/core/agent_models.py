@@ -9,6 +9,7 @@ from typing import Literal, Protocol
 from pydantic import Field
 
 from datakeel.core.harness_models import BudgetLimits, TokenUsage
+from datakeel.core.intent_models import PageContext
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument, new_id, utcnow
 
 
@@ -57,6 +58,9 @@ class ModelRequest(BoundaryModel):
     max_output_tokens: int = Field(default=1024, ge=1)
     agent_name: str = "main"
     agent_path: str = "main"
+    # Planners that must return one JSON object ask for steady, JSON-only answers.
+    temperature: float | None = Field(default=None, ge=0, le=2)
+    json_output: bool = False
 
 
 class ModelResponse(BoundaryModel):
@@ -95,11 +99,23 @@ class ConversationCreate(BoundaryModel):
     max_output_tokens: int = Field(default=1024, ge=1, le=16384)
 
 
+class ConversationDefaults(BoundaryModel):
+    """The provider and model a new conversation uses unless the person picks another."""
+
+    provider: Literal["fake", "openai", "anthropic"]
+    model: str
+    # Set when no configured model can serve "auto": the offline demo is used and the page
+    # says it is a configuration problem instead of letting the demo pass as the model.
+    problem: Literal["no_model_key", "unrouted_endpoint"] | None = None
+    endpoint: str | None = None
+
+
 class MessageInput(BoundaryModel):
     """An idempotent user turn, independent of transport reconnects."""
 
     content: str = Field(min_length=1, max_length=80000)
     idempotency_key: str = Field(default_factory=new_id, min_length=1, max_length=200)
+    context: PageContext | None = None
 
 
 class ResumeInput(BoundaryModel):

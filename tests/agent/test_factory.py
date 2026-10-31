@@ -41,7 +41,7 @@ def test_provider_factory_when_configured_closes_injected_http_client(
     client = httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200)))
 
     def factory(*, timeout: float, trust_env: bool) -> httpx.Client:
-        assert timeout == 30
+        assert timeout == 180
         assert trust_env is False
         return client
 

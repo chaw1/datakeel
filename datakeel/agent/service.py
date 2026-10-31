@@ -11,15 +11,19 @@ from datakeel.agent.models import AgentEvent, ConversationView
 from datakeel.agent.providers import FakeProvider
 from datakeel.core.agent_models import (
     ConversationCreate,
+    ConversationDefaults,
     ConversationLease,
     MessageInput,
     Provider,
     ResumeInput,
 )
 from datakeel.core.errors import ValidationError
+from datakeel.core.intent_models import PageContext
 from datakeel.core.models import JsonDocument
+from datakeel.core.settings import get_settings
 from datakeel.delegation.loader import list_agents
-from datakeel.routing.config import load_config
+from datakeel.intents.turns import planner_events
+from datakeel.routing.config import load_config, openai_host, route_problem
 from datakeel.routing.service import model_decisions, route_message
 from datakeel.runtime.graph import AgentGraph
 from datakeel.storage import conversation_store as memory
@@ -80,7 +84,10 @@ def send_message(
         _recover_lease(db, conversation_id)
         lease = memory.begin(db, conversation_id, request)
         yield from _deliver(
-            db, conversation_id, lease, _response_events(db, conversation_id, lease.token, provider)
+            db,
+            conversation_id,
+            lease,
+            _response_events(db, conversation_id, lease.token, provider, context=request.context),
         )
 
 
@@ -144,6 +151,8 @@ def _response_events(
     token: str,
     provider: Provider | None,
     resume: ResumeInput | None = None,
+    *,
+    context: PageContext | None = None,
 ) -> Iterator[AgentEvent]:
     conversation = memory.get(db, conversation_id)
     config = conversation.config
@@ -164,7 +173,12 @@ def _response_events(
                 else None
             )
             graph.workflow_confirmation_required = route is not None and route.requires_confirmation
-            yield from events
+            planned = (
+                planner_events(db, conversation, selected, context, token)
+                if route is not None and route.workflow_id is None
+                else None
+            )
+            yield from events if planned is None else planned
             if route is not None and route.workflow_id is not None:
                 yield AgentEvent(event="route", route=route)
     except ValidationError as error:
@@ -175,3 +189,20 @@ def _response_events(
         model_routes=model_decisions(db, conversation_id, conversation.turns),
         used_memory_ids=graph.used_memories(),
     )
+
+
+def conversation_defaults() -> ConversationDefaults:
+    """The configured provider with routed models; the offline demo only with a reason.
+
+    "auto" is offered only when the routing knows which models the configured endpoint
+    serves; otherwise the demo is used and the reason names the configuration problem.
+    """
+    settings = get_settings()
+    problem = route_problem(settings)
+    if problem is not None:
+        endpoint = openai_host(settings) if problem == "unrouted_endpoint" else None
+        return ConversationDefaults(
+            provider="fake", model="fake-demo", problem=problem, endpoint=endpoint
+        )
+    provider = "openai" if settings.openai_api_key is not None else "anthropic"
+    return ConversationDefaults(provider=provider, model="auto")

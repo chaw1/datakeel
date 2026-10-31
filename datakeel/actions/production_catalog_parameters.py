@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from datakeel.core.annotation_sampling import InspectionCheck
+from datakeel.core.label_guidelines import LabelGuidelines
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import (
     LabelMigration,
@@ -37,6 +38,7 @@ class CreateLabelSetParams(ProductionCatalogActionParams):
     previous_version: int | None = Field(default=None, ge=1)
     migration: tuple[LabelMigration, ...] = ()
     template: ProductionTemplate | None = None
+    guidelines: LabelGuidelines | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def validate_target(self) -> "CreateLabelSetParams":
