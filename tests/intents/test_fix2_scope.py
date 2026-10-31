@@ -120,7 +120,7 @@ def test_a_described_group_is_read_first_and_protected_tasks_are_left_out(db: Da
     assert tasks_of(result) == tasks[4:6]
     assert result.chain is not None
     shown = {detail.label: detail.value for detail in result.chain.steps[0].details}
-    assert "3 条在别人手上" in shown["已排除"]
+    assert "3 条在别人手上" in shown.get("已排除", "")
     nobody = step("assign_tasks", {"task_ids": {"$tasks": {"holder": "nobody"}}, "actor": "li"})
     result, _ = planned(db, "把没人领的任务派给小李", [nobody], page)
     assert tasks_of(result) == tasks[4:6]
@@ -459,7 +459,7 @@ def test_structured_values_on_the_card_read_as_names_not_keys_or_ids(
     result, _ = planned(db, text, [step("save_metadata", values)], context)
     assert result.chain is not None, result.text
     shown = {detail.label: detail.value for detail in result.chain.steps[0].details}
-    assert shown["元数据"] == "采集城市: 杭州"
+    assert shown.get("元数据") == "采集城市: 杭州"
     target = {"asset_id": dataset.id}
     definition: dict[str, object] = {
         "definition": {"target": target, "name": "街景", "owner": "data-team"}
