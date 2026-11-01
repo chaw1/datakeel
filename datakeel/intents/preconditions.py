@@ -381,13 +381,7 @@ def unmet(
     target = _target(db, step, actor)
     if step.action == "claim_task" and target.project is not None:
         effects = claim_effects(db, target.project, actor, target.stage, target.package, earlier)
-        target = replace(
-            target,
-            project=effects.project,
-            load_delta=effects.load_delta,
-            prior_claims=effects.prior_claims,
-            reserved_tasks=effects.reserved_tasks,
-        )
+        target = replace(target, **vars(effects))
         changed -= {"configure_project", "upgrade_project"}
     for name in needs:
         rule = PRECONDITIONS[name]
