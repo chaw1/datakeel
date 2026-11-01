@@ -405,3 +405,15 @@ Integration changes in this version:
 - The new read function `assignees` and this version's parameters (review sampling, confidence thresholds and tiers, template version, rework handovers) have Chinese and English wording on the cards. Rework handovers are computed by the server and are never asked from the model.
 - The planning prompt stays within its token budget after the merge: the registry no longer repeats an English phrase that only spells out the action's name. No rule or safety text was removed.
 - The README states 102 MCP tools, 803 mutation anchors, 58 golden cases and the beta.
+
+## v0.20.1 release notes
+
+v0.20.1 tightens planning-time safety for one-sentence actions and makes the beta's multi-step boundary explicit. No endpoint, MCP tool, stored value or concurrency contract changed.
+
+**Claims and dispatches are checked against current state first.** Review claims exclude everyone who annotated the task in any round, including rework handovers and pass-through triggers. Team-tier claims count the actor's current open work plus the one task being claimed, and assignment-only projects do not offer self-claim. Dispatch also requires `pending` annotation work or `submitted` review work with no effective assignment in that stage, so a card cannot be confirmed only to fail with "task state does not permit assignment".
+
+**Dependent later steps are explicitly deferred.** When a later claim, dispatch, release, revoke, submission, review, upgrade or similar step depends on task holding, task state, workflow tier or dispatch strategy left by an earlier step, the planner does not guess that future state. The safe prefix remains executable; the dependent suffix says **deferred for replanning** in the result and chain notes and gets no execution card. After the prefix finishes, ask for the next step again so it is planned against the new state. This is not an execution failure, and independent steps in another project can still share a chain.
+
+**Nested enums have wording too.** The registry gate recursively covers visible enums in nested parameter models on plan and result cards, including metric aggregations and time grains, template attributes, evidence filters and quality rules. Chinese and English wording changes presentation only; unknown historical values still render unchanged. Internal rework identifiers were removed from public source, tests and scripts, and tests, mutation modules and anchors now use durable domain names.
+
+**Counts.** Package, API and frontend versions are 0.20.1. The mutation gate has **816 anchors** (803 before; 13 added on balance). The golden suite remains at **58 cases**, the operator catalog at **42**, MCP at **102 tools** (37 reads and 65 prepare-only actions), and OpenAPI at **171 paths, 184 operations and 418 schemas**, with no added or removed endpoints or new required fields. The measured pytest duration table covers **839 modules** (761 before; 78 added), including renamed and new test files.

@@ -4,6 +4,19 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-11-02
+
+### Changed
+
+- One-sentence planning checks self-claim and dispatch preconditions against current state before showing a card: review separation including earlier rounds and handovers, the team-tier open-task limit, assignment-only projects, and the task state and effective assignment required for a dispatch. Later steps that depend on task holding, task state, workflow tier or dispatch strategy left by an earlier step are explicitly marked **deferred for replanning** instead of being guessed or emitted as doomed cards. The safe prefix can run, and the next step is planned again against the new state.
+- Every visible enum in top-level and nested registered parameter models has Chinese and English wording on plan and result cards, including metric aggregations and time grains, template attributes, evidence filters and quality rules. Unknown historical values still render unchanged.
+- Package, API and frontend versions advance to 0.20.1. The mutation gate has 816 anchors (803 before; 13 added on balance for claim/dispatch planning, nested wording and deferred replanning). The golden suite remains at 58 cases, the operator catalog at 42, MCP at 102 tools (37 reads and 65 prepare-only actions), and OpenAPI at 171 paths, 184 operations and 418 schemas; no API, storage value or concurrency contract changed. The measured pytest duration table now covers 839 test modules (761 before; 78 added), including renamed and new tests.
+
+### Fixed
+
+- Planning no longer offers a dispatch for a task that is already in progress or in review, or already has an effective assignment in that stage. Deferred steps remain visible in the result and chain notes and are not execution failures; the CLI keeps their longer text valid as JSON.
+- Public source, tests and scripts no longer carry internal rework identifiers. Test files, mutation modules, anchor names and every test node reference use durable domain names, with the full mutation node inventory checked against real collection.
+
 ## [0.20.0] - 2026-10-31
 
 ### Added
