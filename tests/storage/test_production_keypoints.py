@@ -4,6 +4,7 @@
 """Production saves and locked-template upgrades enforce native skeleton semantics."""
 
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import select
@@ -29,9 +30,10 @@ from datakeel.core.annotation_models import (
     AnnotationSkeleton,
 )
 from datakeel.core.annotation_sampling import InspectionCheck
-from datakeel.core.errors import ValidationError
+from datakeel.core.errors import AuthorizationError, ConflictError, ValidationError
 from datakeel.core.keypoint_models import KeypointDefinition, SkeletonDefinition
 from datakeel.core.production_catalog_models import ProductionTemplate
+from datakeel.core.production_keypoints import normalize_keypoints
 from datakeel.core.production_models import (
     AnnotationRevision,
     ProductionTask,
@@ -46,8 +48,8 @@ from datakeel.storage.production_catalog_rows import ProductionTemplateRow
 from datakeel.storage.production_finalize import finalize_project
 from datakeel.storage.production_projects import create_project, split_packages
 from datakeel.storage.production_reviews import review_task, submit_task
-from datakeel.storage.production_revisions import append_revision
-from datakeel.storage.production_rows import ProductionTaskRow
+from datakeel.storage.production_revisions import append_revision, current_revision
+from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
 from datakeel.storage.production_tasks import require_task, task_view
 from datakeel.storage.production_template_upgrade import upgrade_plan, upgrade_project_template
 from tests.storage.production_catalog_fixtures import catalog_project
@@ -372,6 +374,14 @@ def test_group_review_revalidates_approve_but_allows_rework(db: Database) -> Non
             "qa",
         )
         assert review.decision == "rework"
+        returned = require_task(session, current.id)
+        head = current_revision(session, returned)
+        assert returned.round == 1
+        assert head is not None
+        assert (
+            head.annotation.keypoints
+            == normalize_keypoints(_template(), _annotation(tasks[0])).keypoints
+        )
 
 
 def test_team_package_acceptance_revalidates_every_approved_skeleton(db: Database) -> None:
@@ -384,6 +394,17 @@ def test_team_package_acceptance_revalidates_every_approved_skeleton(db: Databas
                 session, SubmitTaskParams(request_id=f"submit-{task.id}", task_id=task.id), "local"
             )
             current = require_task(session, task.id)
+            with pytest.raises(AuthorizationError):
+                review_task(
+                    session,
+                    ReviewTaskParams(
+                        request_id=f"self-review-{task.id}",
+                        task_id=task.id,
+                        revision_id=current.latest_revision_id or "",
+                        decision="approve",
+                    ),
+                    "local",
+                )
             review_task(
                 session,
                 ReviewTaskParams(
@@ -411,3 +432,23 @@ def test_team_package_acceptance_revalidates_every_approved_skeleton(db: Databas
             ),
             "new",
         )
+
+
+def test_team_expired_lease_rejects_keypoint_save_without_losing_draft(db: Database) -> None:
+    """An expired holder cannot append another skeleton revision; the prior head is retained."""
+    _, tasks = _project(db, "team")
+    with db.session() as session:
+        revision = _save(session, tasks[0], _annotation(tasks[0]))
+        assignment = session.scalar(
+            select(ProductionAssignmentRow).where(
+                ProductionAssignmentRow.task_id == tasks[0].id,
+                ProductionAssignmentRow.stage == "annotation",
+            )
+        )
+        assert assignment is not None
+        assignment.lease_expires_at = (datetime.now(UTC) - timedelta(seconds=1)).timestamp()
+        stale = tasks[0].model_copy(update={"latest_revision_id": revision.id})
+        with pytest.raises(ConflictError, match="lease"):
+            _save(session, stale, _annotation(tasks[0]))
+        current = require_task(session, tasks[0].id)
+        assert current.latest_revision_id == revision.id

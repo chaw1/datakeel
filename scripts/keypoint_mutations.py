@@ -85,6 +85,14 @@ KEYPOINT_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
+        name="keypoint-coco-bounds-disabled",
+        path="training/export_common.py",
+        before="            if not 0 <= point.x <= width or not 0 <= point.y <= height:",
+        after="            if False:",
+        case=_EXPORT + "test_coco_rejects_out_of_bounds_native_keypoints",
+        runner="pytest",
+    ),
+    Mutation(
         name="keypoint-coco-import-becomes-detection",
         path="training/importers.py",
         before=(

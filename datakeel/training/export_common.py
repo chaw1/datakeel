@@ -216,6 +216,16 @@ def dimensions(item: TrainingExportItem, geometry: ImageGeometry) -> tuple[int, 
         raise ValidationError(message)
     for box in annotation.boxes or ():
         validate_box(box, width, height)
+    for skeleton in annotation.keypoints or ():
+        for point in skeleton.points:
+            if point.state == "missing":
+                continue
+            if point.x is None or point.y is None:
+                message = "Positioned keypoints require both coordinates"
+                raise ValidationError(message)
+            if not 0 <= point.x <= width or not 0 <= point.y <= height:
+                message = "Keypoint coordinates must be inside upright image dimensions"
+                raise ValidationError(message)
     return width, height
 
 

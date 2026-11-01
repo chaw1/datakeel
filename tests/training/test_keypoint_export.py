@@ -210,6 +210,118 @@ def test_coco_keypoint_archives_are_byte_stable(tmp_path: Path) -> None:
     ).read_bytes()
 
 
+def _pose_schema(count: int) -> SkeletonDefinition:
+    return SkeletonDefinition(
+        points=tuple(
+            KeypointDefinition(id=f"p{index}", name=f"Point {index}", required=index == 1)
+            for index in range(1, count + 1)
+        ),
+        edges=tuple((f"p{index}", f"p{index + 1}") for index in range(1, count)),
+    )
+
+
+def _pose_points(count: int) -> tuple[AnnotationKeypoint, ...]:
+    return tuple(
+        AnnotationKeypoint(
+            id=f"p{index}",
+            x=None if index == count else float(index * 5),
+            y=None if index == count else float(index * 3),
+            state="missing" if index == count else "occluded" if index == 2 else "visible",
+        )
+        for index in range(1, count + 1)
+    )
+
+
+def test_coco_human_17_and_custom_5_point_order_multi_instance(tmp_path: Path) -> None:
+    """Independent 17/5-point oracles cover reversed input, occlusion and a single-point pose."""
+    for count in (17, 5):
+        export = _export(tmp_path)
+        item = export.items[0]
+        full = AnnotationSkeleton(category="person", points=tuple(reversed(_pose_points(count))))
+        single = AnnotationSkeleton(
+            category="person",
+            points=(
+                AnnotationKeypoint(id="p1", x=10, y=20, state="visible"),
+                *(
+                    AnnotationKeypoint(id=f"p{index}", state="missing")
+                    for index in range(2, count + 1)
+                ),
+            ),
+        )
+        annotation = item.annotation.model_copy(update={"boxes": (), "keypoints": (full, single)})
+        selected = export.model_copy(
+            update={
+                "keypoint_schema": _pose_schema(count),
+                "items": (item.model_copy(update={"annotation": annotation}),),
+            }
+        )
+        package = _write(selected, tmp_path / f"pose-{count}")
+        raw = json.loads((package / "annotations/instances_train.json").read_text())
+        [full_raw, single_raw] = raw["annotations"]
+        expected: list[float] = []
+        for index in range(1, count + 1):
+            if index == count:
+                expected.extend([0, 0, 0])
+            else:
+                expected.extend([index * 5, index * 3, 1 if index == 2 else 2])
+        assert full_raw["keypoints"] == expected
+        assert full_raw["num_keypoints"] == count - 1
+        assert single_raw["num_keypoints"] == 1
+        assert single_raw["bbox"] == [10, 20, 0, 0]
+        assert raw["categories"][0]["skeleton"] == [[i, i + 1] for i in range(1, count)]
+
+
+@pytest.mark.parametrize("orientation", [6, 8])
+def test_coco_exif_keeps_display_keypoints_and_upright_size(
+    tmp_path: Path, orientation: int
+) -> None:
+    """EXIF 6/8 reorients pixels while already-display keypoints are not transformed twice."""
+    export = _export(tmp_path)
+    item = export.items[0]
+    source = Path(item.file.path)
+    image = Image.new("RGB", (100, 80))
+    image.getexif()[274] = orientation
+    image.save(source, format="JPEG", exif=image.getexif())
+    content = source.read_bytes()
+    file = item.file.model_copy(
+        update={"sha256": hashlib.sha256(content).hexdigest(), "size": len(content)}
+    )
+    annotation = item.annotation.model_copy(update={"image_width": 80, "image_height": 100})
+    selected = export.model_copy(
+        update={"items": (item.model_copy(update={"file": file, "annotation": annotation}),)}
+    )
+    package = _write(selected, tmp_path / f"exif-{orientation}")
+    raw = json.loads((package / "annotations/instances_train.json").read_text())
+    assert (raw["images"][0]["width"], raw["images"][0]["height"]) == (80, 100)
+    assert raw["annotations"][-1]["keypoints"] == [10, 20, 2, 30, 40, 1, 0, 0, 0]
+
+
+def test_coco_rejects_out_of_bounds_native_keypoints(tmp_path: Path) -> None:
+    """Direct native exports cannot bypass upright bounds even without a production save."""
+    export = _export(tmp_path)
+    item = export.items[0]
+    skeletons = item.annotation.keypoints or ()
+    bad = skeletons[0].model_copy(
+        update={
+            "points": (
+                AnnotationKeypoint(id="nose", x=101, y=20, state="visible"),
+                AnnotationKeypoint(id="neck", state="missing"),
+                AnnotationKeypoint(id="wrist", state="missing"),
+            )
+        }
+    )
+    selected = export.model_copy(
+        update={
+            "items": (
+                item.model_copy(
+                    update={"annotation": item.annotation.model_copy(update={"keypoints": (bad,)})}
+                ),
+            )
+        }
+    )
+    _reject(lambda: _write(selected, tmp_path / "out-of-bounds"), "upright image dimensions")
+
+
 def test_prediction_coco_keypoints_fail_instead_of_becoming_boxes() -> None:
     """The production prediction importer applies the same explicit keypoint protection."""
     document = {
