@@ -148,6 +148,18 @@ def _releasable(db: Database, target: Target) -> Found:
     return ("not_releasable", {"count": str(len(late))}) if late else None
 
 
+def _assignable(db: Database, target: Target) -> Found:
+    """Dispatch needs pending annotation or submitted review work with no effective holder."""
+    try:
+        tasks = [get_task(db, task) for task in target.tasks]
+    except NotFoundError:
+        return None
+    expected = "pending" if target.stage == "annotation" else "submitted"
+    holders = task_holders(db, list(target.tasks), target.stage)
+    late = [task for task in tasks if task.state != expected or task.id in holders]
+    return ("not_assignable", {"count": str(len(late))}) if late else None
+
+
 def _not_split(db: Database, target: Target) -> Found:
     project = target.project
     if project is None or not list_packages(db, project.id):
@@ -280,6 +292,7 @@ PRECONDITIONS: dict[str, Precondition] = {
     "releasable": Precondition(_releasable, frozenset({"save_revision", "claim_task"})),
     "not_split": Precondition(_not_split),
     "revocable": Precondition(_revocable, frozenset({"reopen_task", "review_task"})),
+    "assignable": Precondition(_assignable),
     "leased": Precondition(_leased, frozenset({"upgrade_project"})),
     "free_task": Precondition(
         _free_task, frozenset({"revoke_assignment", "release_task", "reopen_task", "review_task"})
@@ -308,7 +321,7 @@ NEEDS: dict[str, tuple[str, ...]] = {
     "revoke_assignment": ("finalized", "revocable"),
     "heartbeat": ("finalized", "leased"),
     "claim_task": ("finalized", "claim_strategy", "capacity", "free_task"),
-    "assign_tasks": ("finalized", "capacity", "separate"),
+    "assign_tasks": ("finalized", "assignable", "capacity", "separate"),
     "upgrade_project_template": ("finalized", "upgradable"),
     **dict.fromkeys(
         (

@@ -78,7 +78,9 @@ def test_a_group_left_unwrapped_or_counted_from_the_end_is_that_group(db: Databa
     assert "没有人领" in result.text
     ServiceRunner(db)("assign_tasks", {"task_ids": tasks[5:6], "actor": "li"}, "boss")
     place = steps(("assign_tasks", {"task_ids": {"$tasks": {"last": 1}}, "actor": "wang"}))
-    assert targets(planned(db, "把最后一个任务派给小王", [place], page)) == tasks[5:6]
+    already_held = planned(db, "把最后一个任务派给小王", [place], page)
+    assert already_held.kind == "answer"
+    assert "不能派单" in already_held.text
     free = steps(
         ("assign_tasks", {"task_ids": {"$tasks": {"holder": "nobody", "last": 1}}, "actor": "wang"})
     )

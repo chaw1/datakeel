@@ -45,4 +45,15 @@ CLAIM_MUTATIONS = (
         ),
         "test_manager_assigned_projects_do_not_offer_self_claim",
     ),
+    Mutation(
+        name="assign-current-state-and-effective-holder",
+        path="intents/preconditions.py",
+        before='    "assign_tasks": ("finalized", "assignable", "capacity", "separate"),',
+        after='    "assign_tasks": ("finalized", "capacity", "separate"),',
+        case=(
+            "tests/intents/test_assign_rules.py::"
+            "test_claim_then_replan_assign_rejects_in_progress_work_but_pending_work_runs"
+        ),
+        runner="pytest",
+    ),
 )

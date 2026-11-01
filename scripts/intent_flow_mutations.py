@@ -226,10 +226,10 @@ FLOW_MUTATIONS = (
     ),
     Mutation(
         name="flow-a-take-back-given-right-back-is-idle",
-        path="intents/resolve.py",
-        before="        idle |= given_back(checked, idle)",
-        after="",
-        case=_FLOW + "test_taking_back_to_give_to_the_one_who_holds_them_is_already_so",
+        path="intents/already.py",
+        before="        if (state := next(back, None)) is not None:",
+        after="        if False:",
+        case=_FLOW + "test_a_take_back_given_right_back_is_idle",
         runner="pytest",
     ),
     Mutation(
@@ -237,7 +237,7 @@ FLOW_MUTATIONS = (
         path="intents/wording.py",
         before="    states = list(dict.fromkeys(state for state in states if state not in IDLE))",
         after="    states = [state for state in states if state not in IDLE]",
-        case=_FLOW + "test_taking_back_to_give_to_the_one_who_holds_them_is_already_so",
+        case=_FLOW + "test_the_same_state_is_said_once",
         runner="pytest",
     ),
     Mutation(

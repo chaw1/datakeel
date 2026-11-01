@@ -99,6 +99,8 @@ def test_the_speaker_s_own_words_ground_a_translated_name(db: Database) -> None:
 def test_me_is_the_speaker_and_positions_follow_the_task_list(db: Database) -> None:
     """我 resolves to whoever speaks; 前两个任务 are the first two the list shows."""
     project, tasks = team(db)
+    for task in tasks[:2]:
+        ServiceRunner(db)("release_task", {"task_id": task.id}, "wang")
     payload = _plan("assign_tasks", {"task_ids": {"$tasks": {"first": 2}}, "actor": "我"})
     result = model_plan(db, "把前两个任务分给我", payload, PageContext(project_id=project.id))
     assert result.kind == "plan", result.text
@@ -227,7 +229,7 @@ def test_cards_show_names_and_marked_defaults_and_questions_offer_few_choices(
     db: Database,
 ) -> None:
     """Ids never reach the card or the question; unset options show their default."""
-    project, _ = team(db)
+    project, tasks = team(db)
     # Only a project not split yet can be split.
     fresh, _ = production_fixture(db, "group", count=3, split=False)
     payload = _plan("split_packages", {"project_id": fresh.id})
@@ -240,7 +242,7 @@ def test_cards_show_names_and_marked_defaults_and_questions_offer_few_choices(
     catalog = build_catalog(db)
     assert catalog.of("role")
     assert len(candidates(catalog.of("user") * 3)) == CANDIDATE_LIMIT
-    nobody = _plan("assign_tasks", {"task_ids": {"$tasks": {"first": 1}}})
+    nobody = _plan("assign_tasks", {"task_ids": [tasks[2].id]})
     asked = model_plan(db, "把第一个任务分出去", nobody, PageContext(project_id=project.id))
     assert asked.kind == "clarify"
     assert asked.clarification is not None

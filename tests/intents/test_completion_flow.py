@@ -11,11 +11,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from datakeel.core.intent_models import IntentResult, PageContext
+from datakeel.core.intent_models import ChainStep, IntentResult, PageContext
 from datakeel.core.release_models import ReleaseView
+from datakeel.intents.already import given_back
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.edits import latest_label_set
 from datakeel.intents.public_text import public_result
+from datakeel.intents.wording import already_so
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from tests.intents.planning_support import planned, shown, steps, targets, two_projects
 from tests.production_team_ops import save
@@ -88,7 +90,7 @@ def test_a_change_that_is_already_so_names_the_current_state(db: Database) -> No
     page = PageContext(project_id=south.id)
     held = planned(db, "#3 让小赵来审", [steps(("assign_tasks", review))], page)
     assert held.kind == "answer", held.text
-    assert "小赵手上审核" in held.text
+    assert "不能派单" in held.text
     files = {"selection": {"$files": {"kind": "named", "names": ["1.png"]}}}
     data = PageContext(dataset_id=south.dataset_id)
     free = planned(db, "1.png 解除隔离", [steps(("unquarantine_files", files))], data)
@@ -350,6 +352,20 @@ def test_take_back_then_hand_over_defers_the_later_assignment(db: Database) -> N
     assert [step.action for step in moved.chain.steps] == ["revoke_assignment"]
     assert "上一步完成后再规划" in moved.text
     assert targets(moved) == tasks[0:2]
+
+
+def test_a_take_back_given_right_back_is_idle() -> None:
+    """A revoke before assigning to the current holder changes nothing the person wants."""
+    revoke = ChainStep(id="s1", action="revoke_assignment", params={"task_id": "t1"})
+    assign = ChainStep(id="s2", action="assign_tasks", params={"task_ids": ["t1"], "actor": "wang"})
+    state = "这些任务已经在小王手上"
+    assert given_back([revoke, assign], {"s2": state}) == {"s1": state}
+
+
+def test_the_same_state_is_said_once() -> None:
+    """Repeated current-state reasons are deduplicated in the plain answer."""
+    answer = already_so("zh", ["已经在小王手上", "已经在小王手上"])
+    assert answer.count("小王") == 1
 
 
 def test_a_person_named_for_an_annotator_filter_is_resolved(db: Database) -> None:

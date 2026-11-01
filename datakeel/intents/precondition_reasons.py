@@ -72,6 +72,13 @@ REASONS: dict[str, tuple[str, str]] = {
             "reopen them instead"
         ),
     ),
+    "not_assignable": (
+        "其中 {count} 条任务当前不能派单 (不在待派状态, 或已经有人持有); 可以先收回或重新打开",
+        (
+            "{count} of those tasks cannot be dispatched now (not waiting for dispatch, or "
+            "already held); take them back or reopen them first"
+        ),
+    ),
     "no_lease": (
         "「{name}」是小组档, 领到的任务不限时, 没有领取时限要续",
         '"{name}" is a group project; claimed tasks are not timed, so there is no lease to renew',

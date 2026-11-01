@@ -14,6 +14,7 @@ from datakeel.intents import selectors
 from tests.intents.planning_support import SOUTH, planned, steps, targets, two_projects
 from tests.intents.support import run_to_end
 from tests.production_team_ops import save
+from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
     import pytest
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 def test_the_next_two_are_counted_after_the_first_two(db: Database) -> None:
     """The next two are counted after the first two."""
     _, _, tasks = two_projects(db)
-    first = {"$tasks": {"project": SOUTH, "first": 1}}
+    first = {"$tasks": {"project": SOUTH, "holder": "nobody", "first": 1}}
     result = planned(
         db,
         "南区车道第一条派给小李, 接下来一条派给小赵",
@@ -36,11 +37,11 @@ def test_the_next_two_are_counted_after_the_first_two(db: Database) -> None:
         ],
         PageContext(),
     )
-    assert targets(result, 0) == tasks[0:1]
+    assert targets(result, 0) == tasks[4:5]
     assert "上一步完成后再规划" in result.text
-    second = steps(("assign_tasks", {"task_ids": [tasks[1]], "actor": "小赵"}))
-    later = planned(db, "南区车道第二条派给小赵", [second], PageContext())
-    assert targets(later) == tasks[1:2]
+    second = steps(("assign_tasks", {"task_ids": [tasks[5]], "actor": "小赵"}))
+    later = planned(db, "南区车道没人领的下一条派给小赵", [second], PageContext())
+    assert targets(later) == tasks[5:6]
 
 
 def test_the_same_first_n_without_next_words_is_the_same_tasks(db: Database) -> None:
@@ -76,9 +77,11 @@ def test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both(db: Dat
     _, _, tasks = two_projects(db)
     save(db, tasks[0], "wang")  # saved work: taking it back is protected unless said
     held = {"$tasks": {"project": SOUTH, "holder": "小王"}}
-    for said, moved in (
-        ("把南区车道小王手上的任务收回, 再派给小李", tasks[1:2]),
-        ("把南区车道小王手上的都收回, 再全部派给小李", tasks[0:2]),
+    for index, (said, moved) in enumerate(
+        (
+            ("把南区车道小王手上的任务收回, 再派给小李", tasks[1:2]),
+            ("把南区车道小王手上的都收回, 再全部派给小李", tasks[0:2]),
+        )
     ):
         result = planned(
             db,
@@ -93,6 +96,8 @@ def test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both(db: Dat
         )
         assert targets(result, 0) == moved
         assert "上一步完成后再规划" in result.text
+        assert result.chain is not None
+        assert run_to_end(db, result.chain, "boss").status == "succeeded"
         later = planned(
             db,
             "把收回的这些派给小李",
@@ -100,6 +105,8 @@ def test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both(db: Dat
             PageContext(),
         )
         assert targets(later) == moved
+        if index == 0:
+            ServiceRunner(db)("assign_tasks", {"task_ids": moved, "actor": "wang"}, "boss")
 
 
 def test_each_groups_first_file_is_the_one_the_list_shows_first(
