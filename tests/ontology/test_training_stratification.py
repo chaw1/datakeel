@@ -26,6 +26,7 @@ def test_mcp_training_schemas_offer_all_typed_annotation_sources() -> None:
             "classification",
             "detection",
             "spans",
+            "keypoints",
         ]
         assert (
             schema["$defs"]["SplitRequest"]["properties"]["stratification_source"]["default"]
@@ -37,7 +38,7 @@ def test_agent_and_mcp_handlers_forward_each_annotation_source() -> None:
     """The common function handler preserves caller policy for distribution and leakage previews."""
     database = cast("Database", MagicMock(spec=Database))
     access = AccessContext(actor="local-user", entry="agent", scope="query")
-    for source in ("all", "classification", "detection", "spans"):
+    for source in ("all", "classification", "detection", "spans", "keypoints"):
         request = SplitRequest(name="tools", stratification_source=source)
         split = SplitSet(
             id="split",

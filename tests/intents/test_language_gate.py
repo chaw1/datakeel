@@ -124,6 +124,9 @@ def test_every_registered_enum_value_has_zh_en_words() -> None:
     assert ("update_metric.definition.time.granularity", "day") in registered
     assert enum_label("coco", "zh") == "COCO 数据集"
     assert enum_label("yolo", "en") == "YOLO dataset"
+    assert enum_label("visible", "zh") == "可见"
+    assert enum_label("occluded", "zh") == "遮挡"
+    assert enum_label("missing", "zh") == "缺失"
 
 
 def test_an_unknown_historical_enum_value_is_shown_unchanged() -> None:

@@ -28,10 +28,24 @@ def test_workbench_index_is_frozen_and_rejects_unknown_fields() -> None:
         WorkbenchTaskRisk(task_id="task", prelabel_difference=1.1)
 
 
-@pytest.mark.parametrize("components", [[], ["box", "box"], ["keypoints"], ["unknown"], "box"])
+@pytest.mark.parametrize("components", [[], ["box", "box"], ["unknown"], "box"])
 def test_template_component_lists_are_explicit_supported_and_distinct(components: object) -> None:
     """Unsupported configurations fail before approval rather than bypassing content validation."""
     with pytest.raises(ValidationError, match="distinct supported"):
         ProductionTemplate.model_validate(
             {"id": "mixed", "name": "Mixed", "component_config": {"components": components}}
         )
+
+
+def test_keypoint_component_list_is_supported_with_typed_schema() -> None:
+    """The fifth component is accepted only with its ordered strongly typed skeleton."""
+    template = ProductionTemplate.model_validate(
+        {
+            "id": "pose",
+            "name": "Pose",
+            "component_config": {"components": ["keypoints"]},
+            "keypoint_schema": {"points": [{"id": "nose", "name": "Nose"}]},
+        }
+    )
+    assert template.keypoint_schema is not None
+    assert template.keypoint_schema.points[0].id == "nose"

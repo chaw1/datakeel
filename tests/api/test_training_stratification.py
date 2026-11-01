@@ -20,7 +20,7 @@ def test_http_preview_forwards_annotation_sources_and_rejects_unknown_values() -
     app.state.db = MagicMock(spec=Database)
     app.include_router(router)
     with TestClient(app) as client:
-        for source in ("all", "classification", "detection", "spans"):
+        for source in ("all", "classification", "detection", "spans", "keypoints"):
             request = SplitRequest(name="http", stratification_source=source)
             result = SplitSet(
                 id="split",
@@ -54,4 +54,5 @@ def test_http_preview_forwards_annotation_sources_and_rejects_unknown_values() -
         "classification",
         "detection",
         "spans",
+        "keypoints",
     ]
