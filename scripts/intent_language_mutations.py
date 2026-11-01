@@ -14,4 +14,20 @@ LANGUAGE_MUTATIONS = (
         case="tests/intents/test_language_gate.py::test_every_registered_enum_value_has_zh_en_words",
         runner="pytest",
     ),
+    Mutation(
+        name="nested-registered-enum-values-have-words",
+        path="intents/field_names.py",
+        before='    "avg": ("平均值", "average"),\n',
+        after="",
+        case="tests/intents/test_language_gate.py::test_every_registered_enum_value_has_zh_en_words",
+        runner="pytest",
+    ),
+    Mutation(
+        name="nested-enum-card-renders-words",
+        path="intents/field_names.py",
+        before='    "day": ("按天", "daily"),\n',
+        after="",
+        case="tests/intents/test_language_gate.py::test_nested_metric_choices_render_in_words_on_the_real_card",
+        runner="pytest",
+    ),
 )
