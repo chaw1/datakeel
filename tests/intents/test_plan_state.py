@@ -14,6 +14,7 @@ from datakeel.intents.verify import unchanged
 from datakeel.storage.database import DatasetRow
 from datakeel.storage.production_queries import list_tasks
 from tests.intents.planning_support import planned, steps, targets, two_projects
+from tests.intents.support import run_to_end
 from tests.production_helpers import production_fixture
 from tests.production_team_support import ServiceRunner
 
@@ -96,14 +97,17 @@ def test_an_earlier_step_changes_what_later_steps_may_do(db: Database) -> None:
     upgrade = ("upgrade_project", {"project_id": solo.id, "workflow_tier": "group"})
     give = ("assign_tasks", {"task_ids": work, "actor": "wang"})
     here = PageContext(project_id=solo.id)
-    both = planned(db, "先升成小组档, 再把两条都派给小王", [steps(upgrade, give)], here)
-    assert both.kind == "plan", both.text
-    assert both.chain is not None
-    assert [step.action for step in both.chain.steps] == ["upgrade_project", "assign_tasks"]
-    assert targets(both, 1) == work
     alone = planned(db, "把两条都派给小王", [steps(give)], here)
     assert alone.kind == "answer"
     assert "个人档" in alone.text
+    both = planned(db, "先升成小组档, 再把两条都派给小王", [steps(upgrade, give)], here)
+    assert both.kind == "plan", both.text
+    assert both.chain is not None
+    assert [step.action for step in both.chain.steps] == ["upgrade_project"]
+    assert "上一步完成后再规划" in both.text
+    assert run_to_end(db, both.chain, "boss").status == "succeeded"
+    upgraded = planned(db, "把两条都派给小王", [steps(give)], here)
+    assert targets(upgraded) == work
     down = steps(("upgrade_project", {"project_id": south.id, "workflow_tier": "group"}))
     lowered = planned(db, "把南区车道降回小组档", [down], PageContext())
     assert lowered.kind == "answer"

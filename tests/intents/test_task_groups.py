@@ -12,6 +12,7 @@ from datakeel.core.intent_models import PageContext
 from datakeel.core.models import AssetRef
 from datakeel.intents import selectors
 from tests.intents.planning_support import SOUTH, planned, steps, targets, two_projects
+from tests.intents.support import run_to_end
 from tests.production_team_ops import save
 
 if TYPE_CHECKING:
@@ -36,7 +37,10 @@ def test_the_next_two_are_counted_after_the_first_two(db: Database) -> None:
         PageContext(),
     )
     assert targets(result, 0) == tasks[0:1]
-    assert targets(result, 1) == tasks[1:2]
+    assert "上一步完成后再规划" in result.text
+    second = steps(("assign_tasks", {"task_ids": [tasks[1]], "actor": "小赵"}))
+    later = planned(db, "南区车道第二条派给小赵", [second], PageContext())
+    assert targets(later) == tasks[1:2]
 
 
 def test_the_same_first_n_without_next_words_is_the_same_tasks(db: Database) -> None:
@@ -54,7 +58,17 @@ def test_the_same_first_n_without_next_words_is_the_same_tasks(db: Database) -> 
         ],
         PageContext(),
     )
-    assert targets(result, 0) == targets(result, 1) == tasks[0:1]
+    assert targets(result, 0) == tasks[0:1]
+    assert "上一步完成后再规划" in result.text
+    assert result.chain is not None
+    assert run_to_end(db, result.chain, "boss").status == "succeeded"
+    later = planned(
+        db,
+        "Give the first task of 南区车道 to 小李",
+        [steps(("assign_tasks", {"task_ids": first, "actor": "小李"}))],
+        PageContext(),
+    )
+    assert targets(later) == tasks[0:1]
 
 
 def test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both(db: Database) -> None:
@@ -78,7 +92,14 @@ def test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both(db: Dat
             PageContext(),
         )
         assert targets(result, 0) == moved
-        assert targets(result, 1) == moved
+        assert "上一步完成后再规划" in result.text
+        later = planned(
+            db,
+            "把收回的这些派给小李",
+            [steps(("assign_tasks", {"task_ids": moved, "actor": "小李"}))],
+            PageContext(),
+        )
+        assert targets(later) == moved
 
 
 def test_each_groups_first_file_is_the_one_the_list_shows_first(
@@ -120,7 +141,12 @@ def test_a_project_named_once_scopes_every_step_of_the_chain(db: Database) -> No
         PageContext(),
     )
     assert targets(result, 0) == tasks[4:5]
-    assert targets(result, 1) == tasks[5:6]
+    assert "上一步完成后再规划" in result.text
+    assert result.chain is not None
+    assert run_to_end(db, result.chain, "boss").status == "succeeded"
+    second = steps(("assign_tasks", {"task_ids": {"$tasks": {"numbers": [6]}}, "actor": "小赵"}))
+    later = planned(db, "在南区车道里, 把第六条派给小赵", [second], PageContext())
+    assert targets(later) == tasks[5:6]
 
 
 def test_one_action_given_the_same_first_one_twice_takes_the_next(db: Database) -> None:
@@ -139,7 +165,16 @@ def test_one_action_given_the_same_first_one_twice_takes_the_next(db: Database) 
         PageContext(),
     )
     assert targets(result, 0) == tasks[4:5]
-    assert targets(result, 1) == tasks[5:6]
+    assert "上一步完成后再规划" in result.text
+    assert result.chain is not None
+    assert run_to_end(db, result.chain, "boss").status == "succeeded"
+    later = planned(
+        db,
+        "把南区车道没人领的派一条给小赵",
+        [steps(("assign_tasks", {"task_ids": first, "actor": "小赵"}))],
+        PageContext(),
+    )
+    assert targets(later) == tasks[5:6]
 
 
 def test_a_later_step_of_the_same_group_keeps_what_only_it_can_take(db: Database) -> None:
@@ -158,7 +193,16 @@ def test_a_later_step_of_the_same_group_keeps_what_only_it_can_take(db: Database
         PageContext(),
     )
     assert targets(result, 0) == tasks[0:2]
-    assert set(targets(result, 1)) == {*tasks[0:2], *tasks[4:6]}
+    assert "上一步完成后再规划" in result.text
+    assert result.chain is not None
+    assert run_to_end(db, result.chain, "boss").status == "succeeded"
+    later = planned(
+        db,
+        "Give 小李 every task in 南区车道 that has no annotation yet",
+        [steps(("assign_tasks", {"task_ids": untouched, "actor": "小李"}))],
+        PageContext(),
+    )
+    assert set(targets(later)) == {*tasks[0:2], *tasks[4:6]}
 
 
 def test_a_task_taken_back_earlier_is_back_in_the_queue_for_unheld_work(db: Database) -> None:
@@ -186,5 +230,23 @@ def test_a_task_taken_back_earlier_is_back_in_the_queue_for_unheld_work(db: Data
         PageContext(),
     )
     assert result.chain is not None, result.text
-    assert len(result.chain.steps) == 2, result.text
-    assert targets(result, 1) == tasks[0:1]
+    assert len(result.chain.steps) == 1, result.text
+    assert "上一步完成后再规划" in result.text
+    assert run_to_end(db, result.chain, "boss").status == "succeeded"
+    later = planned(
+        db,
+        "把南区车道第一包里没人领的交给小李",
+        [
+            steps(
+                (
+                    "assign_tasks",
+                    {
+                        "task_ids": {"$tasks": {**first_package, "holder": "nobody"}},
+                        "actor": "小李",
+                    },
+                )
+            )
+        ],
+        PageContext(),
+    )
+    assert targets(later) == tasks[0:1]

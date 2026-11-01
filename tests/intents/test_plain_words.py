@@ -62,7 +62,11 @@ def test_a_review_uses_the_latest_revision_in_every_entry(db: Database) -> None:
     )
     result = planned(db, "第 3 条通过, 第 4 条退回: 漏框", [chain], page, actor="zhao")
     assert result.chain is not None
-    assert [step.params.get("revision_id") for step in result.chain.steps] == latest
+    assert [step.params.get("revision_id") for step in result.chain.steps] == latest[:1]
+    assert "上一步完成后再规划" in result.text
+    second = steps(("review_task", {"task_id": tasks[3], "decision": "rework", "issues": ["漏框"]}))
+    later = planned(db, "第 4 条退回: 漏框", [second], page, actor="zhao")
+    assert _revisions(later) == latest[1:]
 
 
 def test_a_review_with_nothing_saved_says_why_instead_of_asking(db: Database) -> None:
@@ -147,14 +151,20 @@ def test_cards_show_choices_in_words_and_never_internal_names(db: Database) -> N
         ("assign_tasks", {"task_ids": tasks[4:6], "actor": "wang", "strategy": "assign"}),
     )
     result = planned(db, "按目录重新切包, 再把第 5、6 条派给小王", [chain], page)
-    assert result.kind == "plan", result.text
-    assert result.chain is not None
-    # The project is split already, so splitting again is set aside and said.
+    assert result.kind == "answer", result.text
+    # The already-split first step is answered; the dependent dispatch is deferred.
     assert "已经切过包" in result.text
+    assert "上一步完成后再规划" in result.text
+    assigned = planned(
+        db,
+        "把第 5、6 条派给小王",
+        [steps(("assign_tasks", {"task_ids": tasks[4:6], "actor": "wang", "strategy": "assign"}))],
+        page,
+    )
     catalog = build_catalog(db, south.id)
     split = ChainStep(id="s1", action="split_packages", params=chain["steps"][0]["params"])
     split_lines = [detail.value for detail in describe_step(db, split, catalog, "zh")]
-    lines = [*split_lines, *shown(result).values(), *shown(result)]
+    lines = [*split_lines, *shown(assigned).values(), *shown(assigned)]
     assert "按目录" in lines
     assert "指定人" in lines
     assert any("标注 (默认)" in line for line in lines)

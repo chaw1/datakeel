@@ -10,16 +10,14 @@ instead, with what is missing and what to do first. A check is skipped when an e
 of the same plan changes the state it reads ("先审完再定稿").
 """
 
-from collections.abc import Sequence
-from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, cast
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 from pydantic import JsonValue
 
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import ChainStep
-from datakeel.intents.claim_effects import ClaimQuery, claim_effects
-from datakeel.intents.precondition_models import Check, Found, Target
+from datakeel.core.production_models import Project
 from datakeel.intents.precondition_reasons import REASONS
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import list_users
@@ -38,11 +36,25 @@ from datakeel.storage.production_queries import (
     project_for_params,
 )
 
-if TYPE_CHECKING:
-    from datakeel.core.production_models import Project
-
 EDITABLE = frozenset({"pending", "in_progress"})
 RELEASABLE = {"annotation": "in_progress", "review": "in_review"}
+
+
+@dataclass(frozen=True)
+class Target:
+    """The objects one step acts on, read once."""
+
+    project: Project | None
+    tasks: tuple[str, ...]
+    package: str | None
+    actor: str
+    stage: str
+    assignee: str | None = None
+    limit: int | None = None
+
+
+Found = tuple[str, dict[str, str]] | None
+Check = Callable[[Database, Target], Found]
 
 
 def _finalized(db: Database, target: Target) -> Found:
@@ -172,23 +184,17 @@ def _free_task(db: Database, target: Target) -> Found:
     tasks = [
         task
         for task in list_tasks(db, project.id)
-        if (task.state == expected or task.id in target.released_tasks)
+        if task.state == expected
         and target.package in (None, task.package_id)
         and (target.stage != "annotation" or task.round == 0 or task.annotator_id == target.actor)
     ]
     holders = task_holders(db, [task.id for task in tasks], target.stage)
-    free = [
-        task
-        for task in tasks
-        if (task.id not in holders or task.id in target.released_tasks)
-        and task.id not in target.reserved_tasks
-    ]
+    free = [task for task in tasks if task.id not in holders]
     if project.workflow_tier == "team" and target.stage == "review":
         own = set(own_work(db, [task.id for task in free], target.actor))
         free = [task for task in free if task.id not in own]
         if not free and own:
             return "own_work", {"person": _name(db, target.actor), "count": str(len(own))}
-    free = free[target.prior_claims :]
     if free:
         return None
     return (
@@ -226,8 +232,7 @@ def _capacity(db: Database, target: Target) -> Found:
     if project.workflow_tier != "team" or limit is None:
         return None
     stage = "review" if target.stage == "review" else "annotation"
-    load = open_load(db, project.id, stage, person) + target.load_delta
-    adding = max(len(target.tasks), 1)
+    load, adding = open_load(db, project.id, stage, person), max(len(target.tasks), 1)
     if load + adding <= limit:
         return None
     values = {"load": str(load), "adding": str(adding), "limit": str(limit)}
@@ -366,21 +371,9 @@ def unmet(
         return None
     changed = {item.action for item in earlier}
     target = _target(db, step, actor)
-    projected = step.action in {"claim_task", "assign_tasks"} and target.project is not None
-    if projected:
-        person = target.assignee or actor
-        project = cast("Project", target.project)
-        query = ClaimQuery(project, actor, person, target.stage, target.package)
-        effects = claim_effects(db, query, earlier)
-        target = replace(target, **vars(effects))
-        if target.uncertain or (
-            step.action == "assign_tasks" and target.assignee is None and target.touched
-        ):
-            zh, en = REASONS["uncertain_state"]
-            return zh if language == "zh" else en
     for name in needs:
         rule = PRECONDITIONS[name]
-        if not projected and rule.changed_by & changed:
+        if rule.changed_by & changed:
             continue
         found = rule.check(db, target)
         if found is not None:

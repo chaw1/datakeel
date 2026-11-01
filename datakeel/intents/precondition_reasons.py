@@ -106,16 +106,6 @@ REASONS: dict[str, tuple[str, str]] = {
         "「{name}」只能由负责人派单, 不能自己领; 请负责人把任务派给你",
         '"{name}" uses manager assignment, not self-claim; ask a manager to assign a task to you',
     ),
-    "uncertain_state": (
-        (
-            "前面的步骤会改变可领任务或在制数量, 这个组合暂时不能安全排成一张计划; "
-            "请先执行前一步, 再另说一次领取或派单"
-        ),
-        (
-            "Earlier steps change the free queue or open load in a way this plan cannot project "
-            "safely; run that step first, then ask for the claim or dispatch separately"
-        ),
-    ),
     "own_work": (
         (
             "其中 {count} 条任务{person}标过 (包括返工前、改派前的标注和由他触发的直通), "

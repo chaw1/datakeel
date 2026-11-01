@@ -118,11 +118,11 @@ def test_redundant_page_project_is_ignored_and_task_plurals_renamed(db: Database
     result = model_plan(db, text, payload, PageContext(project_id=project.id))
     assert result.kind == "plan", result.text
     assert result.chain is not None
-    revoke_step, assign_step = result.chain.steps
+    (revoke_step,) = result.chain.steps
     assert sorted(str(item["task_id"]) for item in revoke_step.items) == sorted(
         [tasks[0].id, tasks[1].id]
     )
-    assert "project_id" not in assign_step.params
+    assert "上一步完成后再规划" in result.text
 
 
 def test_several_reads_without_a_write_answer_the_first(db: Database) -> None:

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from datakeel.core.intent_models import PageContext
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from tests.intents.planning_support import SOUTH, planned, steps, targets, two_projects
+from tests.intents.support import run_to_end
 from tests.production_team_ops import save
 from tests.production_team_support import ServiceRunner
 
@@ -123,14 +124,18 @@ def test_a_task_taken_back_earlier_in_the_plan_is_free_for_the_next_step(db: Dat
     _, south, tasks = two_projects(db)
     page = PageContext(project_id=south.id)
     untouched = {"$tasks": {"untouched": True}}
+    give = steps(("assign_tasks", {"task_ids": untouched, "actor": "li"}))
+    alone = planned(db, "把没动过的任务都派给小李", [give], page)
+    # Without the take-back, Wang's tasks stay his.
+    assert targets(alone) == tasks[4:6]
     chain = steps(
         ("revoke_assignment", {"task_id": {"$tasks": {"holder": "小王"}}, "reason": "换人"}),
         ("assign_tasks", {"task_ids": untouched, "actor": "li"}),
     )
     result = planned(db, "先把小王手上的收回, 再把没动过的任务都派给小李", [chain], page)
     assert targets(result) == tasks[0:2]
-    assert targets(result, 1) == [*tasks[0:2], *tasks[4:6]]
-    give = steps(("assign_tasks", {"task_ids": untouched, "actor": "li"}))
-    alone = planned(db, "把没动过的任务都派给小李", [give], page)
-    # Without the take-back, Wang's tasks stay his.
-    assert targets(alone) == tasks[4:6]
+    assert "上一步完成后再规划" in result.text
+    assert result.chain is not None
+    assert run_to_end(db, result.chain, "boss").status == "succeeded"
+    later = planned(db, "把没动过的任务都派给小李", [give], page)
+    assert targets(later) == [*tasks[0:2], *tasks[4:6]]

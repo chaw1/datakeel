@@ -212,7 +212,7 @@ def test_a_pre_label_model_that_cannot_draw_boxes_is_said_and_box_models_offered
     assert chained.kind == "plan", chained.text
     assert chained.chain is not None
     assert [step.action for step in chained.chain.steps] == ["configure_project"]
-    assert "多边形" in chained.text
+    assert "上一步完成后再规划" in chained.text
     boxed = ("run_prelabel", {"project_id": south.id, "model_id": "boxer"})
     assert planned(db, "用 Boxer 跑预标注", [steps(boxed)], page).kind == "plan"
 

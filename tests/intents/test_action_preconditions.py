@@ -113,8 +113,8 @@ def test_an_unmet_precondition_says_what_is_missing_and_what_first(
     assert all(word in said for word in words), said
 
 
-def test_an_earlier_step_that_meets_the_need_lets_the_plan_through(db: Database) -> None:
-    """Reviews earlier in the plan meet the package's need: only the inspection is asked."""
+def test_review_then_accept_is_deferred_for_replanning(db: Database) -> None:
+    """Review stays executable and acceptance is deferred instead of guessing the reviewed state."""
     two_projects(db)
     both = {"$tasks": {"project": SOUTH, "numbers": [3, 4]}}
     result = planned(
@@ -129,8 +129,9 @@ def test_an_earlier_step_that_meets_the_need_lets_the_plan_through(db: Database)
         PageContext(),
     )
     assert "没通过审核" not in result.text, result.text
-    assert result.clarification is not None, result.text
-    assert "抽检结果" in result.text, result.text
+    assert result.chain is not None
+    assert len(result.chain.steps) == 1
+    assert "上一步完成后再规划" in result.text, result.text
 
 
 def test_a_package_with_a_free_task_can_be_claimed_from(db: Database) -> None:

@@ -63,10 +63,10 @@ def test_a_part_that_changes_nothing_or_matches_nothing_is_set_aside(db: Databas
     revoke = ("revoke_assignment", {"task_id": tasks[4], "reason": "重新派"})
     assign = ("assign_tasks", {"task_ids": [tasks[4]], "actor": "wang"})
     result = planned(db, "把第 5 条收回来再派给小王", [steps(revoke, assign)], page)
-    assert result.kind == "plan", result.text
-    assert result.chain is not None
-    assert [step.action for step in result.chain.steps] == ["assign_tasks"]
+    assert result.kind == "answer", result.text
+    assert result.chain is None
     assert "没有人领着" in result.text
+    assert "上一步完成后再规划" in result.text
     alone = planned(db, "把第 5 条收回来", [steps(revoke)], page)
     assert alone.kind == "answer", alone.text
     lease = ("configure_project", {"project_id": south.id, "lease_minutes": 45})

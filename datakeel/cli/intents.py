@@ -32,7 +32,7 @@ def register_parser(commands: CommandGroup) -> None:
 
 def dispatch(db: Database, args: argparse.Namespace) -> None:
     """Print JSON; ``run`` confirms, continues after a signature or resumes after a failure."""
-    console = Console()
+    console = Console(soft_wrap=True)
     if args.intents_command == "plan":
         context = PageContext(
             dataset_id=args.dataset,

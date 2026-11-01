@@ -79,7 +79,12 @@ def test_a_named_project_wins_inside_a_chain_and_in_english(db: Database) -> Non
     assert result.kind == "plan", result.text
     assert result.chain is not None
     assert result.chain.steps[0].params.get("project_id") == south.id
-    assert targets(result, 1) == tasks[4:6]
+    assert "上一步完成后再规划" in result.text
+    assignment = steps(
+        ("assign_tasks", {"task_ids": {"$tasks": {"package": {"$nth": 3}}}, "actor": "wang"})
+    )
+    later = planned(db, f"Give the third package of {SOUTH} to Wang", [assignment], page)
+    assert targets(later) == tasks[4:6]
     read = steps(("project_progress", {"project_id": north.id}), kind="answer")
     answer = planned(db, f"How far along is {SOUTH}?", [read], page)
     assert answer.kind == "answer", answer.text

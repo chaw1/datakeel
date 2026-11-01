@@ -11,13 +11,40 @@ from datakeel.actions import service
 from datakeel.core.intent_models import PageContext
 from datakeel.intents.chains import advance_chain
 from datakeel.storage.intent_reads import held_tasks
-from tests.intents.support import REASSIGN, REWORK, SETUP, images, plan, run_to_end, team
+from tests.intents.support import (
+    REASSIGN,
+    REWORK,
+    SETUP,
+    images,
+    model_plan,
+    plan,
+    run_to_end,
+    team,
+)
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from datakeel.core.intent_models import ActionChain
     from datakeel.storage.database import Database
+
+
+def _assign_chain(db: Database, project_id: str, task_ids: list[str]) -> ActionChain:
+    payload = {
+        "kind": "plan",
+        "steps": [
+            {
+                "id": "s1",
+                "action": "assign_tasks",
+                "params": {"task_ids": task_ids, "actor": "li", "strategy": "assign"},
+            }
+        ],
+    }
+    result = model_plan(db, "把这两条分给小李", payload, PageContext(project_id=project_id))
+    assert result.kind == "plan", result.text
+    assert result.chain is not None
+    return result.chain
 
 
 def test_reassign_sentence_takes_back_untouched_tasks_and_assigns_them(db: Database) -> None:
@@ -26,17 +53,18 @@ def test_reassign_sentence_takes_back_untouched_tasks_and_assigns_them(db: Datab
     result = plan(db, REASSIGN, PageContext(project_id=project.id), actor="boss")
     assert result.kind == "plan", result.text
     assert result.chain is not None
-    revoke, assign = result.chain.steps
+    (revoke,) = result.chain.steps
     assert revoke.action == "revoke_assignment"
     assert sorted(str(item["task_id"]) for item in revoke.items) == sorted(
         [tasks[0].id, tasks[1].id]
     )
-    assert assign.params["actor"] == "li"
-    assert assign.params["strategy"] == "assign"
+    assert "上一步完成后再规划" in result.text
     assert held_tasks(db, "wang", project_id=project.id)
     finished = run_to_end(db, result.chain, "boss")
     assert finished.status == "succeeded"
     assert not held_tasks(db, "wang", project_id=project.id)
+    assigning = _assign_chain(db, project.id, [tasks[0].id, tasks[1].id])
+    assert run_to_end(db, assigning, "boss").status == "succeeded"
     assert {task for _, task in held_tasks(db, "li", project_id=project.id)} == {
         tasks[0].id,
         tasks[1].id,
@@ -66,7 +94,8 @@ def test_unknown_person_is_asked_with_candidates_and_the_reply_resumes(db: Datab
     reply = plan(db, "小赵", PageContext(project_id=project.id), "boss", pending=asked)
     assert reply.kind == "plan", reply.text
     assert reply.chain is not None
-    assert reply.chain.steps[-1].params["actor"] == "zhao"
+    assert reply.chain.steps[-1].action == "revoke_assignment"
+    assert "上一步完成后再规划" in reply.text
     assert reply.chain.text == "把小王手里没动的任务分给小周"
 
 
@@ -96,13 +125,15 @@ def test_failed_step_resumes_without_repeating_finished_targets(db: Database) ->
     """A disabled assignee fails the second step; after re-enabling, resume only assigns."""
     project, tasks = team(db)
     runner = ServiceRunner(db)
-    chain = plan(db, REASSIGN, PageContext(project_id=project.id), actor="boss").chain
-    assert chain is not None
+    initial = plan(db, REASSIGN, PageContext(project_id=project.id), actor="boss").chain
+    assert initial is not None
+    assert run_to_end(db, initial, "boss").status == "succeeded"
+    chain = _assign_chain(db, project.id, [tasks[0].id, tasks[1].id])
     runner("manage_users", {"operation": "update", "user_id": "li", "status": "disabled"}, "boss")
     failed = advance_chain(db, chain.id, "boss")
     assert failed.status == "failed"
-    assert [step.status for step in failed.steps] == ["succeeded", "failed"]
-    assert failed.steps[1].error
+    assert [step.status for step in failed.steps] == ["failed"]
+    assert failed.steps[0].error
     revokes = [run for run in service.list_runs(db) if run.action_type == "revoke_assignment"]
     assert len(revokes) == 2
     runner("manage_users", {"operation": "update", "user_id": "li", "status": "active"}, "boss")
@@ -131,6 +162,8 @@ def test_partly_finished_fan_out_resumes_only_the_failed_target(db: Database) ->
     runner("assign_tasks", {"task_ids": [second], "actor": "wang"}, "boss")
     resumed = advance_chain(db, chain.id, "boss")
     assert resumed.status == "succeeded", resumed.steps
+    assigning = _assign_chain(db, project.id, [tasks[0].id, tasks[1].id])
+    assert run_to_end(db, assigning, "boss").status == "succeeded"
     revokes = [
         run
         for run in service.list_runs(db)

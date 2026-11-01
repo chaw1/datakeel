@@ -329,8 +329,8 @@ def test_a_label_set_said_as_the_catalog_shows_it_keeps_its_name(db: Database) -
     assert added.chain.steps[0].params["name"] == current.name
 
 
-def test_taking_back_to_give_to_the_one_who_holds_them_is_already_so(db: Database) -> None:
-    """Take-back then hand-over to the person holding them now changes nothing (11.2-4)."""
+def test_take_back_then_hand_over_defers_the_later_assignment(db: Database) -> None:
+    """The take-back stays executable and either later hand-over is deferred for replanning."""
     _, south, tasks = two_projects(db)
     page = PageContext(project_id=south.id)
     pair = {"$tasks": {"numbers": [1, 2]}}
@@ -340,13 +340,15 @@ def test_taking_back_to_give_to_the_one_who_holds_them_is_already_so(db: Databas
         return [steps(revoke, ("assign_tasks", {"task_ids": pair, "actor": actor}))]
 
     same = planned(db, "南区车道 #1 #2 收回来整包交给小王", back_to("wang"), page)
-    assert same.kind == "answer", same.text
-    assert "已经在小王手上" in same.text
-    assert same.text.count("小王") == 1
+    assert same.kind == "plan", same.text
+    assert same.chain is not None
+    assert len(same.chain.steps) == 1
+    assert "上一步完成后再规划" in same.text
     moved = planned(db, "南区车道 #1 #2 收回来整包交给小李", back_to("li"), page)
     assert moved.kind == "plan", moved.text
     assert moved.chain is not None
-    assert [step.action for step in moved.chain.steps] == ["revoke_assignment", "assign_tasks"]
+    assert [step.action for step in moved.chain.steps] == ["revoke_assignment"]
+    assert "上一步完成后再规划" in moved.text
     assert targets(moved) == tasks[0:2]
 
 

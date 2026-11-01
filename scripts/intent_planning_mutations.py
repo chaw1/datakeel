@@ -194,12 +194,9 @@ PARTS_MUTATIONS = (
     ),
     Mutation(
         name="planning-request-parts-empty-part-is-set-aside",
-        path="intents/resolve.py",
-        before=(
-            "            return (without(draft, reasons) if len(draft.steps) > 1 else None) "
-            "or empty"
-        ),
-        after="            return empty",
+        path="intents/replanning.py",
+        before=("    return (without(draft, reasons) if len(draft.steps) > 1 else None) or empty"),
+        after="    return empty",
         case=_PARTS + "test_a_part_that_changes_nothing_or_matches_nothing_is_set_aside",
         runner="pytest",
     ),

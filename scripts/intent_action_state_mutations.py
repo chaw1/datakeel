@@ -172,10 +172,10 @@ ACTION_STATE_MUTATIONS = (
         "action_preconditions.py::test_an_unmet_precondition_says_what_is_missing_and_what_first[accept-not-team]",
     ),
     _anchor(
-        "an-earlier-step-can-meet-a-need",
-        "intents/preconditions.py",
-        ("        if not projected and rule.changed_by & changed:", "        if False:"),
-        "action_preconditions.py::test_an_earlier_step_that_meets_the_need_lets_the_plan_through",
+        "state-dependent-step-is-deferred",
+        "intents/replanning.py",
+        ("        if dependent:", "        if False:"),
+        "action_preconditions.py::test_review_then_accept_is_deferred_for_replanning",
     ),
     _anchor(
         "already-so-states-the-current-state",

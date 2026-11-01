@@ -40,6 +40,7 @@ from datakeel.intents.read_scope import (
     task_argument,
     unfiltered_note,
 )
+from datakeel.intents.replanning import ready_steps
 from datakeel.intents.validate import bad_value, check_step, overreach, required_fields
 from datakeel.intents.wording import (
     already_so,
@@ -325,15 +326,11 @@ class Resolver:
         stopped = self._stopped(draft, text)
         if stopped is not None:
             return stopped
-        filled = fill_steps(self.db, draft.steps, self.state, self.catalog)
-        if filled.clarification is not None:
-            return self._clarify(draft, filled.clarification, text)
-        if filled.empty_selection is not None:
-            # The part that matched nothing is set aside when the rest stands alone.
-            reasons = {str(filled.empty_step): filled.empty_selection}
-            empty = IntentResult(kind="answer", text=filled.empty_selection, request=text)
-            return (without(draft, reasons) if len(draft.steps) > 1 else None) or empty
-        checked = self._checked(draft, filled.steps, text, filled.excluded)
+        ready = ready_steps(self.db, draft, self.state, self.catalog, text, self._clarify)
+        if not isinstance(ready, tuple):
+            return ready
+        steps, excluded = ready
+        checked = self._checked(draft, steps, text, excluded)
         if isinstance(checked, IntentResult):
             return checked
         settled = self._settled(draft, checked, text)
