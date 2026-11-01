@@ -21,9 +21,7 @@
 转移和交换修正全部标签的配额与占比。内部计算对标签排序、去重；不可变切分仍保留原始
 标签及完整标注，各格式导出其支持的标注。
 
-「分层使用的标注类型」可选 `all`（默认）、`classification`、`detection` 或 `spans`。
-默认沿用全部标注类型标签的并集；其他选择分别只使用分类标签、检测框类别或文本片段
-类别参与分配。所选类型缺失或已审为空时不贡献标签；与原策略一样，纳入全部冻结标注员
+「分层使用的标注类型」可选 `all`（默认）、`classification`、`detection`、`spans` 或 `keypoints`。默认沿用全部标注类型标签的并集；其他选择分别只使用分类标签、检测框类别、文本片段类别或骨架实例类别参与分配。所选类型缺失或已审为空时不贡献标签；与原策略一样，纳入全部冻结标注员
 的审阅结果。所选类型的每个标签都参与计算，不退回只取首个标签。
 
 选择只改变算法的计算输入，不改成员原始标签、完整标注、组和重复隔离、界面全部标签
@@ -122,11 +120,14 @@ SHA-256 摘要，不保存归一原文；既有快照缺少这些摘要时沿用
 | `imagefolder` | `<split>/<class>/<image>`；每张图必须恰好一个分类标签                                                        |
 | `hf_imagefolder` | `<split>/<image>` 和 `metadata.jsonl`；无损标量元数据，详见下文 |
 | `text_jsonl`  | `<split>.jsonl`，包含原文、分类标签和半开字符偏移片段                                                        |
+| `annotations_jsonl` | `sources/<split>/` 和 `annotations.jsonl`；无损保存所有组件的原生记录，包括骨架 ID、顺序、三态、坐标和属性 |
 
 COCO 的 `images[].file_name` 相对解压后的包根目录，包含 `images/<split>/` 前缀。
 使用方应把图片根目录设为解压包根，而不是 `annotations/` 或 `images/<split>/`。
 保留现有目录约定，遵循 [pycocotools 将调用方根目录与 `file_name` 拼接的方式](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py)；
 标注 JSON 所在目录不是图片根目录。
+
+原生骨架由定稿标注批次和冻结切分只保存一份项目锁版 `keypoint_schema`，不复制进每条记录，也不靠点顺序猜测。COCO 类别取框和骨架的并集；骨架类别带 `keypoints` 和 1-based `skeleton` 连线。每个骨架按模板顺序写 `[x,y,v]` 三元组（可见 `v=2`、遮挡 `v=1`、缺失写 `0,0,0`），`num_keypoints` 只数 `v>0`，bbox/area 只由非缺失点计算，所以单点骨架允许合法的零面积 bbox。有非空关键点却没有锁版 schema 的 COCO 明确拒绝；YOLO、ImageFolder、HF imagefolder、text JSONL 遇非空关键点也拒绝，不静默丢点。COCO 关键点导入即使带 bbox 也明确拒绝，请用 `annotations_jsonl`。旧检测 COCO 不新增 null 字段，归档仍逐字节稳定。
 
 已审空框图片（`boxes=[]`）保留在 COCO images 中，YOLO 对应空 txt。未审框（`boxes=null`）
 拒绝导出检测格式，避免把未知当作负样本。YOLO 的所选数据须至少有一个明确的框类别；

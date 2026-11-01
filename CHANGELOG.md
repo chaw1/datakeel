@@ -4,6 +4,11 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- Native skeleton keypoint annotation is the workbench's fifth component. One locked template schema defines ordered bilingual points, required flags and edges; mixed templates support multiple labelled skeleton instances with `visible`, `occluded` and `missing` states, object attributes, mouse and complete keyboard editing, 500 ms autosave, offline drafts, conflicts, unlimited undo/redo, review, package acceptance and finalization. Point IDs survive template reordering and optional additions; destructive point deletion/rename is refused, while new required points block every downstream workflow until repaired. See [Annotation workbench](docs/ANNOTATION_WORKBENCH.md).
+- Native JSONL round-trips skeletons exactly. COCO export carries the finalized locked schema through the annotation batch and frozen split, writing template-ordered keypoint triples, visibility, counts, bbox/area and one-based edges; unsupported formats and COCO keypoint import fail explicitly instead of dropping or converting poses. Keypoint-only automatic accuracy/agreement is `null` and shown as unsupported. Existing detection archives and four-component records keep their previous shape.
+
 ## [0.20.1] - 2026-11-02
 
 ### Changed

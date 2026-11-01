@@ -26,9 +26,7 @@ assignments against all label quotas and class prevalence together. Labels are d
 and sorted for computation; saved members retain the original labels and complete annotations.
 Each export writes the annotations supported by its format.
 
-**Annotation labels to balance** selects `all` (the default), `classification`, `detection`
-or `spans`. The default keeps the existing union of all annotation kinds; the other choices
-use only classification labels, box categories or text-span categories for allocation.
+**Annotation labels to balance** selects `all` (the default), `classification`, `detection`, `spans` or `keypoints`. The default keeps the existing union of all annotation kinds; the other choices use only classification labels, box categories, text-span categories or skeleton-instance categories for allocation.
 Missing or reviewed-empty annotations of the selected kind contribute no labels. Reviews
 from all frozen annotators are included, as before. Every selected label participates;
 this choice does not reduce a multilabel sample to its first label.
@@ -150,12 +148,15 @@ source export permissions are rechecked on every download. Export receipts enter
 | `imagefolder` | `<split>/<class>/<image>`; requires exactly one classification label per image                                                  |
 | `hf_imagefolder` | `<split>/<image>` and `metadata.jsonl`; lossless scalar metadata, described below |
 | `text_jsonl`  | `<split>.jsonl`; exact text, labels and half-open character-offset spans                                                        |
+| `annotations_jsonl` | `sources/<split>/` and `annotations.jsonl`; lossless native records for every component, including skeleton IDs, order, tri-state points, coordinates and attributes |
 
 COCO `images[].file_name` is relative to the extracted archive root, including the
 `images/<split>/` prefix. Set the consumer's image root to that extracted root, not to
 `annotations/` or `images/<split>/`. This retains the existing layout and follows the
 [pycocotools convention of joining a caller-supplied root with `file_name`](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py).
 The annotation document's own directory is not the image root.
+
+For native skeletons, the finalized annotation batch and frozen split carry the project's single locked `keypoint_schema` once; it is not copied into every record or guessed from point order. COCO categories are the union of box and skeleton categories. Skeleton categories declare `keypoints` and one-based `skeleton` edges. Each skeleton annotation writes template-ordered `[x,y,v]` triples (`visible=2`, `occluded=1`, `missing=0,0,0`), counts `num_keypoints` only for `v>0`, and derives bbox/area from non-missing points. A single positioned point therefore has a legal zero-area keypoint bbox. COCO with nonempty keypoints but no schema is refused. YOLO, ImageFolder, HF imagefolder and text JSONL reject nonempty keypoints instead of dropping them. COCO keypoint import is explicitly refused, even with a bbox; use `annotations_jsonl`. Detection-only COCO has no added null fields and retains byte-stable archives.
 
 Reviewed-empty images (`boxes=[]`) have an empty YOLO label file and remain in COCO images.
 Missing box reviews (`boxes=null`) are refused for detection exports, rather than treated

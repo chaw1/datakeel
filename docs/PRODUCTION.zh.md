@@ -54,7 +54,7 @@
 - 模板和标签集从哪版升到哪版；
 - 标签新增、删除、改名（标识不变、名字变了）、其它改动；属性（`target:key`）新增、删除、修改、新变成必填；模板其它设置改了哪些；
 - `task_count`：项目里全部任务（全部切换版本）；
-- `annotated_task_count`：有已有标注的任务数，已有标注指任务的当前（最新）修订，没有修订的任务不算；`annotation_object_count`：这些修订里分类标签、框、多边形、文本片段的个数；
+- `annotated_task_count`：有已有标注的任务数，已有标注指任务的当前（最新）修订，没有修订的任务不算；`annotation_object_count`：这些修订里分类标签、框、多边形、骨架实例、文本片段的个数；
 - `invalid_task_count` 和 `invalid_tasks`：在目标版本下过不了提交检查的已有标注（规则和 `submit_task` 一样：目标标签集版本里的标签、模板组件和数量规则、必填和类型），逐条列出所有问题；`invalid_object_count`：自身标签或属性不合格的标注对象个数。
 
 计划冻结项目和每条任务的头修订，准备之后、签批之前有人保存、模板又出新版或锁定版本变了，计划作废，执行时会重算。签批只改这个项目的 `template_version` 和 `label_set_version`；修订、任务状态和其它项目都不动，不合格的标注走正常的保存和返工流程改。v0.18.0 及以前的库在启动时迁移：给每个模板的当前修订补一条版本记录，没锁定的项目锁到这一版，也就是它实际在用的那一版，所以行为不变；重复执行不会再写任何东西。
@@ -103,7 +103,7 @@ MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批
 
 图片导入时读图片头，把摆正后（按 EXIF Orientation 变换后）的宽高记在清单元数据的 `width`、`height` 里，旁边记 `stored_width`、`stored_height` 和 `orientation`；读不出来宽高记为 `null`（未知），读不出方向按 1。预测一律存成摆正后的坐标：YOLO 按摆正后的宽高解释归一化坐标（Ultralytics 训练和推理都先按 EXIF 摆正）。COCO 图片条目的 `width`/`height` 和摆正后的宽高一致就按摆正后的方向；只和存储方向的宽高一致（转了 90°）就按存储方向读，导入时换算过来；正方形图分不出来，默认按摆正后的方向。文件上的 `coordinate_frame: "display" | "stored"` 可以覆盖上面的推断。YOLO 没带 `image_width`、`image_height` 时用记下的宽高；这张图也没有记录时，整份导入返回 422，写明是哪张图、哪个预测文件。完整 COCO 文档可在 `images` 中逐图提供尺寸。多图 COCO results 数组可以整份导入：按 `image_id` 分组，`image_id` 要精确匹配项目样本 ID 或唯一文件名，不按项目顺序猜配导出序号；对不上任何图的组列为 `unknown_image` 并写明有几条结果没导入，对上了但没有宽高的图列为 `unknown_size`，不会静默丢掉。
 
-模板校验框、多边形、分类和文本片段，`component_config.components` 可配置启用组件集合，支持 `min_annotations`、`max_annotations`；`label_mode: "single"` 约束单选。关键点内容仍不支持。
+模板校验框、多边形、骨架关键点、分类和文本片段，`component_config.components` 可配置启用组件集合，支持 `min_annotations`、`max_annotations`，数量按骨架实例而不是单点计算；`label_mode: "single"` 约束单选。关键点模板必须有一套有序强类型 `keypoint_schema`，老的无 schema 占位只能读取，不能用于新保存或新项目。训练导入和预测导入遇到 COCO 关键点都明确拒绝，即使同时带 bbox，也不会转成检测框；原生骨架交换请用 `annotations_jsonl`。
 
 **属性字段。** 模板最多定义 50 个带类型的 `attributes`。每个字段有 `key`（标识符）、`name_zh`、`name_en`、`type`、`target`、`required` 和可选的 `default`：
 
@@ -115,7 +115,7 @@ MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批
 | `number` | 有限数字（布尔不算） | 可选 `minimum`、`maximum` |
 | `text` | 字符串 | `max_length`（默认 200，最多 2000） |
 
-`target: "object"`（默认）作用于每个框、多边形和文本片段；`target: "record"` 作用于整条标注记录，分类任务的属性就放这里。同一 target 下 key 不重复；选项和范围要符合类型；默认值本身必须合法。工作台按这些字段渲染表单；没有定义字段的老模板照旧使用自由的属性字典。
+`target: "object"`（默认）作用于每个框、多边形、骨架实例和文本片段；`target: "record"` 作用于整条标注记录，分类任务的属性就放这里。同一 target 下 key 不重复；选项和范围要符合类型；默认值本身必须合法。工作台按这些字段渲染表单；没有定义字段的老模板照旧使用自由的属性字典。
 
 人工 `save_revision` 每次按项目锁定的模板版本检查：类型不对或缺必填项返回 HTTP 422，并写明 key 和位置，例如 `Attribute "kind" is required on box 1`、`Attribute "count" on polygon 2 must be a number between 0 and 10`、`Attribute "quality" is required on the record`（位置从 1 数）。缺 key 或为 `null` 算缺失；必填时空的 `multi_enum` 列表和空白文本也算缺失。`submit_task` 对头修订再查一次，所以保存之后项目升级带来的新必填项会挡住提交，填好才行。模型修订（导入和预标注）只查类型，不会因为人还没填某个字段而导入失败。模板没定义的 key 原样保留。编辑和训练集无损往返见[工作台指南](ANNOTATION_WORKBENCH.zh.md)。
 
@@ -158,7 +158,7 @@ MCP 和 Agent 可调只读函数、可准备生产写计划，不能代人签批
 
 ### 预标注准确率
 
-`production_prelabel_accuracy` 把每个已通过或已定稿的人工修订和它最近的前序模型修订比较。除了原有的完全一致字段，还返回 `iou_50` 和 `iou_75`：模型对象数、人工对象数、命中数、精确率、召回率、F1，以及所有对象都命中的任务数和占比；另有 `attribute_agreement`，只统计已匹配对象的属性一致度。同一标签内一对一匹配，按 IoU 从高到低贪心，与 COCO 一致；IoU ≥ 0.5（或 0.75）算命中。框用框 IoU，多边形用精确面积 IoU，文本片段用字符区间 IoU，分类的标签集合完全相同才算命中。属性不同不影响几何命中。驾驶舱主数字是 IoU 0.5 的 F1；悬停显示规则、精确率、召回率和 0.75 的数字。
+`production_prelabel_accuracy` 把每个已通过或已定稿的人工修订和它最近的前序模型修订比较。除了原有的完全一致字段，还返回 `iou_50` 和 `iou_75`：模型对象数、人工对象数、命中数、精确率、召回率、F1，以及所有对象都命中的任务数和占比；另有 `attribute_agreement`，只统计已匹配对象的属性一致度。同一标签内一对一匹配，按 IoU 从高到低贪心，与 COCO 一致；IoU ≥ 0.5（或 0.75）算命中。框用框 IoU，多边形用精确面积 IoU，文本片段用字符区间 IoU，分类的标签集合完全相同才算命中。属性不同不影响几何命中。驾驶舱主数字是 IoU 0.5 的 F1；悬停显示规则、精确率、召回率和 0.75 的数字。本期不做 OKS 或关键点 IoU：纯关键点对比不参与，自动准确率/一致性明确为 `null`，驾驶舱显示「关键点自动指标：暂不支持」，不伪造 100% 或 0 对象。
 
 ### 置信度分档
 
