@@ -14,6 +14,7 @@ from scripts.dq_mutations import DQ_MUTATIONS
 from scripts.guard_mutations import GUARD_MUTATIONS
 from scripts.identity_mutations import IDENTITY_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
+from scripts.intent_claim_mutations import CLAIM_MUTATIONS
 from scripts.intent_fix2_mutations import INTENT_FIX2_MUTATIONS
 from scripts.intent_fix3_mutations import INTENT_FIX3_MUTATIONS
 from scripts.intent_mutations import INTENT_MUTATIONS
@@ -107,6 +108,7 @@ FEATURE_MUTATIONS = (
     *TAILS_MUTATIONS,
     *ORIENTATION_MUTATIONS,
     *INTENT_MUTATIONS,
+    *CLAIM_MUTATIONS,
     *INTENT_FIX2_MUTATIONS,
     *INTENT_FIX3_MUTATIONS,
     *INTENT_V020_MUTATIONS,

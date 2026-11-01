@@ -93,13 +93,18 @@ REASONS: dict[str, tuple[str, str]] = {
     ),
     "over_limit": (
         (
-            "{person}手上已经有 {load} 条在做, 这个项目每人同时最多 {limit} 条, 再派 {adding} 条"
-            "会超; 可以先收回一些, 或者派给别人"
+            "{person}手上已经有 {load} 条在做, 这个项目每人同时最多 {limit} 条, 再增加 {adding} 条"
+            "会超; 可以先收回或完成一些, 或者换一个人"
         ),
         (
             "{person} already holds {load} open tasks and this project allows {limit} per "
-            "person, so {adding} more would go over; take some back first or assign someone else"
+            "person, so {adding} more would go over; finish or take some back first, or use "
+            "someone else"
         ),
+    ),
+    "assign_only": (
+        "「{name}」只能由负责人派单, 不能自己领; 请负责人把任务派给你",
+        '"{name}" uses manager assignment, not self-claim; ask a manager to assign a task to you',
     ),
     "own_work": (
         (

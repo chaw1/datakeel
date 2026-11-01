@@ -189,11 +189,31 @@ def _free_task(db: Database, target: Target) -> Found:
         and (target.stage != "annotation" or task.round == 0 or task.annotator_id == target.actor)
     ]
     holders = task_holders(db, [task.id for task in tasks], target.stage)
-    if any(task.id not in holders for task in tasks):
+    free = [task for task in tasks if task.id not in holders]
+    if project.workflow_tier == "team" and target.stage == "review":
+        own = set(own_work(db, [task.id for task in free], target.actor))
+        free = [task for task in free if task.id not in own]
+        if not free and own:
+            return "own_work", {"person": _name(db, target.actor), "count": str(len(own))}
+    if free:
         return None
     return (
         ("nothing_free_package", {}) if target.package else ("nothing_free", {"name": project.name})
     )
+
+
+def _claim_strategy(db: Database, target: Target) -> Found:
+    """Manager-assigned team annotation is dispatched, never claimed by the annotator."""
+    del db
+    project = target.project
+    if (
+        project is None
+        or project.workflow_tier != "team"
+        or target.stage != "annotation"
+        or project.dispatch_strategy != "assign"
+    ):
+        return None
+    return "assign_only", {"name": project.name}
 
 
 def _name(db: Database, person: str) -> str:
@@ -264,6 +284,9 @@ PRECONDITIONS: dict[str, Precondition] = {
     "free_task": Precondition(
         _free_task, frozenset({"revoke_assignment", "release_task", "reopen_task", "review_task"})
     ),
+    "claim_strategy": Precondition(
+        _claim_strategy, frozenset({"configure_project", "upgrade_project"})
+    ),
     "capacity": Precondition(
         _capacity,
         frozenset({"configure_project", "upgrade_project", "revoke_assignment", "release_task"})
@@ -284,7 +307,7 @@ NEEDS: dict[str, tuple[str, ...]] = {
     "split_packages": ("finalized", "not_split"),
     "revoke_assignment": ("finalized", "revocable"),
     "heartbeat": ("finalized", "leased"),
-    "claim_task": ("finalized", "free_task"),
+    "claim_task": ("finalized", "claim_strategy", "capacity", "free_task"),
     "assign_tasks": ("finalized", "capacity", "separate"),
     "upgrade_project_template": ("finalized", "upgradable"),
     **dict.fromkeys(
@@ -326,6 +349,8 @@ def _target(db: Database, step: ChainStep, actor: str) -> Target:
     package = step.params.get("package_id")
     stage = step.params.get("stage")
     assignee, limit = step.params.get("actor"), step.params.get("max_active_tasks")
+    if step.action == "claim_task":
+        assignee = actor
     return Target(
         project=project,
         tasks=_tasks(step),

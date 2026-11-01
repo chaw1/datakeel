@@ -296,14 +296,17 @@ FIX6_MUTATIONS = (
     _anchor(
         "nothing-free-is-not-claimed",
         "intents/preconditions.py",
-        ('"claim_task": ("finalized", "free_task"),', '"claim_task": ("finalized",),'),
+        (
+            '"claim_task": ("finalized", "claim_strategy", "capacity", "free_task"),',
+            '"claim_task": ("finalized",),',
+        ),
         "checks.py::test_an_unmet_precondition_says_what_is_missing_and_what_first"
         "[claim-nothing-free]",
     ),
     _anchor(
         "a-free-task-can-be-claimed",
         "intents/preconditions.py",
-        ("    if any(task.id not in holders for task in tasks):", "    if not tasks:"),
+        ("    if free:", "    if not tasks:"),
         "checks.py::test_a_package_with_a_free_task_can_be_claimed_from",
     ),
     _anchor(
