@@ -72,6 +72,9 @@ export function ProjectCockpit({
       <section className="card">
         <h2>{t("wbQuality")}</h2>
         <p>{t("wbTaskCount", { count: data.agreement.sample_count })}</p>
+        {data.agreement.keypoint_agreement && (
+          <p className="muted">{t("wbKeypointMetricsUnsupported")}</p>
+        )}
         {data.agreement.boxes.length > 0 && (
           <>
             <h3>{t("wbBoxAgreement")}</h3>

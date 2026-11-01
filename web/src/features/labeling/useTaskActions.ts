@@ -6,6 +6,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { actionMessage, actionProblem } from "./actionErrors";
 import { mutateProduction } from "./actions";
 import { attributeFields, withDefaults } from "./editors/attributes";
+import { keypointSubmissionProblem } from "./editors/keypoints";
 import { defaultTemplate } from "./model";
 
 import type { useTaskSessionData } from "./useTaskSessionData";
@@ -68,7 +69,15 @@ export function useTaskActions({
       setError(t("wbReviewRequired"));
       return;
     }
-    const blocked = operation === "submit" ? blockingAttribute() : "";
+    const blocked =
+      operation === "submit"
+        ? blockingAttribute() ||
+          keypointSubmissionProblem(
+            session.annotation,
+            project.template ?? defaultTemplate,
+            t,
+          )
+        : "";
     if (blocked) {
       setError(t("wbSubmitBlocked", { reason: blocked }));
       return;

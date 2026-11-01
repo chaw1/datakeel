@@ -3,16 +3,25 @@ import { useState } from "react";
 import { useI18n } from "../../i18n/useI18n";
 
 import { actionDetails, mutateProduction } from "./actions";
+import { defaultSkeleton, skeletonProblem } from "./skeletonSchema";
+import { SkeletonSchemaEditor } from "./SkeletonSchemaEditor";
 
 import type {
   ProjectWorkbench,
   ProductionTemplate,
 } from "../../api/production";
 
-const components = ["box", "polygon", "classification", "text_span"] as const;
+const components = [
+  "box",
+  "polygon",
+  "keypoints",
+  "classification",
+  "text_span",
+] as const;
 const componentNames = {
   box: "wbEditorBox",
   polygon: "wbEditorPolygon",
+  keypoints: "wbEditorKeypoints",
   classification: "wbEditorClassification",
   text_span: "wbEditorSpan",
 } as const;
@@ -83,6 +92,9 @@ export function TemplateEditor({
   const [attributes, setAttributes] = useState(
     JSON.stringify(template?.attributes ?? [], null, 2),
   );
+  const [skeleton, setSkeleton] = useState(
+    template?.keypoint_schema ?? defaultSkeleton(),
+  );
   const [error, setError] = useState("");
   const [saved, setSaved] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -92,12 +104,15 @@ export function TemplateEditor({
     setError("");
     setSaved(null);
     try {
+      if (selected.includes("keypoints") && skeletonProblem(skeleton))
+        throw new Error(t("wbInvalidSkeleton"));
       const run = await mutateProduction("create_label_set", {
         target: "template",
         operation: "update",
         template: {
           ...template,
           annotation_type: type,
+          keypoint_schema: selected.includes("keypoints") ? skeleton : null,
           attributes: attributeList(attributes, t("wbInvalidAttributes")),
           component_config: {
             ...template.component_config,
@@ -177,6 +192,9 @@ export function TemplateEditor({
               </label>
             ))}
           </fieldset>
+          {selected.includes("keypoints") && (
+            <SkeletonSchemaEditor value={skeleton} onChange={setSkeleton} />
+          )}
           <label>
             {t("wbTemplateMode")}
             <select

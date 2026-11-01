@@ -57,6 +57,20 @@ const variants = {
       },
     ],
   }),
+  keypoints: (step: number): AnnotationRecord => ({
+    ...initial,
+    keypoints: [
+      {
+        category: "person",
+        points: [
+          { id: "nose", x: step, y: 10, state: "visible" },
+          { id: "neck", x: step + 1, y: 20, state: "occluded" },
+          { id: "wrist", state: "missing" },
+        ],
+        attributes: { step },
+      },
+    ],
+  }),
 };
 
 it.each(Object.entries(variants))(

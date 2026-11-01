@@ -3890,6 +3890,7 @@ export interface components {
              * @default 0.5
              */
             iou_threshold: number;
+            keypoint_schema?: components["schemas"]["SkeletonDefinition"] | null;
             /**
              * Label Mode
              * @default auto
@@ -3968,6 +3969,23 @@ export interface components {
             version_id: string;
         };
         /**
+         * AnnotationKeypoint
+         * @description Keep one template-identified point and its explicit annotation state.
+         */
+        AnnotationKeypoint: {
+            /** Id */
+            id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "visible" | "occluded" | "missing";
+            /** X */
+            x?: number | null;
+            /** Y */
+            y?: number | null;
+        };
+        /**
          * AnnotationPoint
          * @description Keep one finite source-image pixel coordinate in a polygon.
          */
@@ -4009,6 +4027,7 @@ export interface components {
              * @default []
              */
             findings: components["schemas"]["AnnotationFinding"][];
+            keypoint_agreement?: components["schemas"]["AgreementValue"] | null;
             /** Sample Count */
             sample_count: number;
             /**
@@ -4089,6 +4108,8 @@ export interface components {
             image_height?: number | null;
             /** Image Width */
             image_width?: number | null;
+            /** Keypoints */
+            keypoints?: components["schemas"]["AnnotationSkeleton"][] | null;
             /** Labels */
             labels?: string[] | null;
             /** Polygons */
@@ -4145,6 +4166,20 @@ export interface components {
             source: "human" | "model";
             /** Task Id */
             task_id: string;
+        };
+        /**
+         * AnnotationSkeleton
+         * @description Describe one labelled skeleton instance in template point order.
+         */
+        AnnotationSkeleton: {
+            /** Attributes */
+            attributes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Category */
+            category: string;
+            /** Points */
+            points: components["schemas"]["AnnotationKeypoint"][];
         };
         /**
          * AnnotationSpan
@@ -5504,6 +5539,10 @@ export interface components {
              * @enum {integer}
              */
             iscrowd: 0 | 1;
+            /** Keypoints */
+            keypoints?: number[] | null;
+            /** Num Keypoints */
+            num_keypoints?: number | null;
         };
         /**
          * CocoCategory
@@ -5512,8 +5551,15 @@ export interface components {
         CocoCategory: {
             /** Id */
             id: number;
+            /** Keypoints */
+            keypoints?: string[] | null;
             /** Name */
             name: string;
+            /** Skeleton */
+            skeleton?: [
+                number,
+                number
+            ][] | null;
             /**
              * Supercategory
              * @default
@@ -8718,6 +8764,25 @@ export interface components {
             image_count: number;
         };
         /**
+         * KeypointDefinition
+         * @description Define one stable, ordered skeleton point for annotation and COCO export.
+         */
+        KeypointDefinition: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Name En */
+            name_en?: string | null;
+            /** Name Zh */
+            name_zh?: string | null;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+        };
+        /**
          * KnowledgeAnswer
          * @description Keep system records and document claims in separate, auditable collections.
          */
@@ -10456,6 +10521,7 @@ export interface components {
             exact_match_tasks: number;
             iou_50: components["schemas"]["IoUAccuracy"];
             iou_75: components["schemas"]["IoUAccuracy"];
+            keypoint_accuracy?: components["schemas"]["AgreementValue"] | null;
             /** Project Id */
             project_id: string;
         };
@@ -10620,6 +10686,7 @@ export interface components {
             };
             /** Id */
             id: string;
+            keypoint_schema?: components["schemas"]["SkeletonDefinition"] | null;
             /** Name */
             name: string;
             /**
@@ -11474,6 +11541,22 @@ export interface components {
             state: string;
         };
         /**
+         * SkeletonDefinition
+         * @description Define the single ordered point set and undirected edges of a template.
+         */
+        SkeletonDefinition: {
+            /**
+             * Edges
+             * @default []
+             */
+            edges: [
+                string,
+                string
+            ][];
+            /** Points */
+            points: components["schemas"]["KeypointDefinition"][];
+        };
+        /**
          * SkillDispatchPreview
          * @description Preview a skill dispatch with the same rules as execution: picks, loads and skips.
          */
@@ -11718,6 +11801,7 @@ export interface components {
             distributions: components["schemas"]["SplitDistribution"][];
             /** Id */
             id: string;
+            keypoint_schema?: components["schemas"]["SkeletonDefinition"] | null;
             /** Members */
             members: components["schemas"]["SplitMember"][];
             request: components["schemas"]["SplitRequest"];
@@ -11984,7 +12068,7 @@ export interface components {
             requires_approval: boolean;
         };
         /** @enum {string} */
-        StratificationSource: "all" | "classification" | "detection" | "spans";
+        StratificationSource: "all" | "classification" | "detection" | "spans" | "keypoints";
         /**
          * TabularAssessment
          * @description Carry all profiled file evidence between scoring and report assembly.

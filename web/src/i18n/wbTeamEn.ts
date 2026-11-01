@@ -16,6 +16,7 @@ export const wbTeamEn = {
   wbProblemBox: "Box {index}",
   wbProblemPolygon: "Polygon {index}",
   wbProblemSpan: "Span {index}",
+  wbProblemSkeleton: "Skeleton {index}",
   wbAttributeMissing: "{where}: {field} is required",
   wbAttributeInvalid:
     "{where}: {field} has a value the template does not allow",

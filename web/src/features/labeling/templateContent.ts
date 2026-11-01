@@ -4,13 +4,14 @@ import type {
 } from "../../api/production";
 import type { Translate } from "../../i18n/context";
 
-type ContentKey = "boxes" | "polygons" | "labels" | "spans";
+type ContentKey = "boxes" | "polygons" | "labels" | "spans" | "keypoints";
 
 /** Where each editor component keeps its objects in the annotation record. */
 const contentKeys: Partial<Record<string, ContentKey>> = {
   box: "boxes",
   bbox: "boxes",
   polygon: "polygons",
+  keypoints: "keypoints",
   classification: "labels",
   text_span: "spans",
   span: "spans",

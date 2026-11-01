@@ -31,6 +31,9 @@ export function PrelabelPanel({
         ))}
       </dl>
       <AccuracyHeadline accuracy={data.prelabel_accuracy} />
+      {data.prelabel_accuracy.keypoint_accuracy && (
+        <p className="muted">{t("wbKeypointMetricsUnsupported")}</p>
+      )}
       <ThresholdBasis thresholds={data.confidence_thresholds} />
       <h3>{t("wbPrelabelSpend")}</h3>
       {data.prelabel_spend.length ? (

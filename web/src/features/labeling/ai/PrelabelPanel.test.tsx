@@ -183,3 +183,24 @@ it("lists spend per model and keeps empty facts readable", () => {
     "Not measured F1 at IoU 0.5",
   );
 });
+it("marks keypoint-only automatic metrics as unsupported instead of perfect", () => {
+  render(
+    <PrelabelPanel
+      data={{
+        ...measured,
+        prelabel_accuracy: {
+          ...measured.prelabel_accuracy,
+          assessed_tasks: 0,
+          exact_match_tasks: 0,
+          exact_match_rate: null,
+          keypoint_accuracy: {
+            value: null,
+            reason: "Keypoint accuracy is not supported",
+          },
+        },
+      }}
+    />,
+  );
+  expect(screen.getByText("Keypoint metrics: not supported yet")).toBeVisible();
+  expect(screen.queryByText("100%")).toBeNull();
+});

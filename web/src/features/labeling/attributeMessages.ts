@@ -7,6 +7,7 @@ const SHAPES = {
   box: "wbProblemBox",
   polygon: "wbProblemPolygon",
   span: "wbProblemSpan",
+  skeleton: "wbProblemSkeleton",
 } as const;
 
 /** Name the field and the annotation that needs it, e.g. "Box 2: Occluded is required". */

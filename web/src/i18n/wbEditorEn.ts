@@ -62,4 +62,21 @@ export const wbEditorEn = {
   wbEditorImageStatus: "{width} × {height} pixels · {zoom}%",
   wbEditorNoLabels: "Add labels to the project's label set before annotating.",
   wbEditorAnnotationName: "{label} · {index}",
+  wbEditorKeypoints: "Skeleton keypoints",
+  wbEditorKeypointHint:
+    "K adds a skeleton. Click or Space places the selected point and advances to the next missing point. [ and ] switch points; V switches visible/occluded; X marks missing. Arrows move 1 source pixel, Shift + arrows 10. Every point, label and attribute is also available through native controls.",
+  wbKeypointInstance: "Skeleton instance",
+  wbKeypointAdd: "Add skeleton (K)",
+  wbKeypointPoints: "Template points",
+  wbKeypointState: "Point state",
+  wbKeypointState_visible: "visible",
+  wbKeypointState_occluded: "occluded",
+  wbKeypointState_missing: "missing",
+  wbKeypointSchemaMissing:
+    "This keypoint template has no typed schema. Save a new template version with structured points and upgrade the project first.",
+  wbKeypointAllMissing:
+    "Skeleton {index} needs at least one visible or occluded point.",
+  wbKeypointRequiredMissing:
+    "Skeleton {index} is missing required points: {points}.",
+  wbKeypointUnknown: "Skeleton {index} contains a point outside its template.",
 } as const;

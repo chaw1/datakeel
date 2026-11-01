@@ -59,4 +59,19 @@ export const wbEditorZh = {
   wbEditorImageStatus: "{width} × {height} 像素 · {zoom}%",
   wbEditorNoLabels: "请先在项目标签集中添加标签。",
   wbEditorAnnotationName: "{label} · {index}",
+  wbEditorKeypoints: "骨架关键点",
+  wbEditorKeypointHint:
+    "K 新建骨架。点击或空格放置所选点，并自动跳到下一个缺失点。[ 和 ] 切换点；V 切换可见/遮挡；X 标为缺失。方向键移动 1 个原图像素，Shift + 方向键移动 10 个。所有点、标签和属性也能用 Tab 到原生控件完成。",
+  wbKeypointInstance: "骨架实例",
+  wbKeypointAdd: "新建骨架（K）",
+  wbKeypointPoints: "模板点列表",
+  wbKeypointState: "点的状态",
+  wbKeypointState_visible: "可见",
+  wbKeypointState_occluded: "遮挡",
+  wbKeypointState_missing: "缺失",
+  wbKeypointSchemaMissing:
+    "这个关键点模板还没有强类型骨架定义。请先用结构化点列表保存新模板版本，再升级项目。",
+  wbKeypointAllMissing: "第 {index} 个骨架至少需要一个可见或遮挡点。",
+  wbKeypointRequiredMissing: "第 {index} 个骨架还缺必填点：{points}。",
+  wbKeypointUnknown: "第 {index} 个骨架含有模板之外的点。",
 } as const;

@@ -366,6 +366,27 @@ main:has(> .wb-page[data-focus="true"]) {
   display: flex;
   align-items: center;
 }
+.wb-template .wb-skeleton-schema,
+.wb-skeleton-point,
+.wb-skeleton-edge {
+  display: grid;
+  gap: calc(var(--space) * 2);
+}
+.wb-skeleton-point {
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  align-items: end;
+  border-bottom: 1px solid var(--rule);
+  padding-block: calc(var(--space) * 2);
+}
+.wb-skeleton-point label,
+.wb-skeleton-edge label {
+  display: grid;
+  gap: var(--space);
+}
+.wb-skeleton-edge {
+  grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 1fr) auto;
+  align-items: end;
+}
 .wb-finalization {
   margin-top: calc(var(--space) * 3);
 }

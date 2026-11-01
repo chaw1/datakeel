@@ -8,7 +8,7 @@ export type AttributeTarget = AttributeField["target"];
 export interface AttributeProblem {
   field: AttributeField;
   kind: "required" | "invalid";
-  shape: "record" | "box" | "polygon" | "span";
+  shape: "record" | "box" | "polygon" | "span" | "skeleton";
   index: number;
 }
 
@@ -113,6 +113,9 @@ export function attributeProblems(
     ),
     ...(annotation.spans ?? []).flatMap((span, index) =>
       check(objects, span.attributes, "span", index + 1),
+    ),
+    ...(annotation.keypoints ?? []).flatMap((skeleton, index) =>
+      check(objects, skeleton.attributes, "skeleton", index + 1),
     ),
   ];
 }

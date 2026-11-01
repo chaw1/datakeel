@@ -4,6 +4,10 @@ export type AnnotationRecord = components["schemas"]["AnnotationRecord"];
 export type AnnotationBox = components["schemas"]["AnnotationBox"];
 export type AnnotationPolygon = components["schemas"]["AnnotationPolygon"];
 export type AnnotationSpan = components["schemas"]["AnnotationSpan"];
+export type AnnotationKeypoint = components["schemas"]["AnnotationKeypoint"];
+export type AnnotationSkeleton = components["schemas"]["AnnotationSkeleton"];
+export type KeypointDefinition = components["schemas"]["KeypointDefinition"];
+export type SkeletonDefinition = components["schemas"]["SkeletonDefinition"];
 export type ProductionLabel = components["schemas"]["ProductionLabel"];
 export type ProductionTemplate = components["schemas"]["ProductionTemplate"];
 /** Ask the editors to select one object; every request is a new object, even for the same target. */

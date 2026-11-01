@@ -18,6 +18,7 @@ export const wbTeamZh: Record<keyof typeof wbTeamEn, string> = {
   wbProblemBox: "第 {index} 个框",
   wbProblemPolygon: "第 {index} 个多边形",
   wbProblemSpan: "第 {index} 段文本",
+  wbProblemSkeleton: "第 {index} 个骨架",
   wbAttributeMissing: "{where}的「{field}」还没填",
   wbAttributeInvalid: "{where}的「{field}」填的值模板里没有",
   wbSubmitBlocked: "还不能提交：{reason}",
