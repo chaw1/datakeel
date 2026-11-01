@@ -82,6 +82,10 @@ def review_task(session: Session, params: ReviewTaskParams, actor: str) -> Revie
     if assignment is not None:
         require_live_lease(assignment, utcnow())
     require_separation(session, project, task, actor)
+    if params.decision == "approve":
+        head = current_revision(session, task)
+        if head is not None:
+            require_complete_attributes(session, project, head.annotation)
     if params.decision == "rework" and not params.issues:
         message = "Rework requires at least one issue"
         raise ValidationError(message)

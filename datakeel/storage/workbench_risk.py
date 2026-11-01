@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from sqlalchemy import select
 
-from datakeel.annotation_qa import compare_records
+from datakeel.annotation_qa import comparable_records, compare_records
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.production_models import AnnotationRevision, ProductionTask
 from datakeel.core.workbench_models import WorkbenchTaskRisk
@@ -46,12 +46,10 @@ def prelabel_difference(human: AnnotationRecord, model: AnnotationRecord) -> flo
     return 1 - sum((left & right).values()) / sum(union.values()) if union else 0.0
 
 
-def draft_difference(human: AnnotationRecord, model: AnnotationRecord) -> float:
-    """Share of objects left unmatched by the B1 rule: same label, one-to-one, IoU >= 0.5.
-
-    A box moved by a few pixels still matches, so it is not a difference; two empty results
-    agree. Attributes are compared by the AI pre-review, not here.
-    """
+def draft_difference(human: AnnotationRecord, model: AnnotationRecord) -> float | None:
+    """Share supported objects left unmatched, or None when only keypoints are shared."""
+    if not comparable_records(model, human):
+        return None
     comparison = compare_records(model, human)
     total = comparison.model_count + comparison.human_count
     return 1 - 2 * comparison.hits() / total if total else 0.0

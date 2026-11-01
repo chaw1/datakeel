@@ -22,6 +22,10 @@ from datakeel.storage.production_catalog_rows import (
     ProductionModelRow,
     ProductionTemplateRow,
 )
+from datakeel.storage.production_keypoint_upgrades import (
+    require_writable_template,
+    validate_point_removal,
+)
 from datakeel.storage.production_template_versions import record_template_version
 
 
@@ -164,6 +168,7 @@ def manage_template(session: Session, params: CreateLabelSetParams) -> Productio
     if template is None:
         message = "Template definition is required"
         raise ValidationError(message)
+    require_writable_template(template)
     row = session.get(
         ProductionTemplateRow,
         template.id,
@@ -181,6 +186,8 @@ def manage_template(session: Session, params: CreateLabelSetParams) -> Productio
         if row is None or row.revision != template.revision:
             message = "Template revision changed or was not found"
             raise ConflictError(message)
+        before = ProductionTemplate.model_validate(row.payload)
+        validate_point_removal(session, before, template)
         value = template.model_copy(
             update={
                 "revision": row.revision + 1,

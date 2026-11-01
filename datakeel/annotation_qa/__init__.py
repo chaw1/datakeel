@@ -5,7 +5,11 @@
 
 from datakeel.annotation_qa.confidence_tiers import calibrate, task_tier
 from datakeel.annotation_qa.prelabel_crosscheck import agreements, object_confidence
-from datakeel.annotation_qa.prelabel_match import compare_records, record_objects
+from datakeel.annotation_qa.prelabel_match import (
+    comparable_records,
+    compare_records,
+    record_objects,
+)
 from datakeel.annotation_qa.prelabel_metrics import prelabel_accuracy
 from datakeel.annotation_qa.review_rules import (
     Draft,
@@ -37,6 +41,7 @@ __all__ = [
     "agrees_with_draft",
     "calibrate",
     "changed_samples",
+    "comparable_records",
     "compare_records",
     "compare_rework",
     "disagreement_reason",

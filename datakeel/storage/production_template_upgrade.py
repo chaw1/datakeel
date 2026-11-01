@@ -25,6 +25,10 @@ from datakeel.core.production_upgrade_models import (
     UpgradeProblemTask,
 )
 from datakeel.storage.production_catalog import require_label_set, validate_template_content
+from datakeel.storage.production_keypoint_upgrades import (
+    require_writable_template,
+    validate_point_removal,
+)
 from datakeel.storage.production_rows import (
     ProductionProjectRow,
     ProductionRevisionRow,
@@ -38,7 +42,7 @@ from datakeel.storage.production_template_versions import (
     template_version,
 )
 
-_SETTINGS = ("name", "annotation_type", "validation_rules")
+_SETTINGS = ("name", "annotation_type", "validation_rules", "keypoint_schema")
 
 
 def _label_changes(before: LabelSet, after: LabelSet) -> LabelChanges:
@@ -111,6 +115,7 @@ def annotation_problems(
         ("box", annotation.boxes),
         ("polygon", annotation.polygons),
         ("span", annotation.spans),
+        ("skeleton", annotation.keypoints),
     ):
         for index, shape in enumerate(shapes or (), start=1):
             issues = list(attribute_problems(shaped, shape.attributes, f"{kind} {index}"))
@@ -126,7 +131,7 @@ def annotation_problems(
     problems.extend(attribute_problems(record, annotation.attributes, "the record"))
     if template is not None:
         try:
-            validate_template_content(template, annotation)
+            validate_template_content(template, annotation, complete=True)
         except ValidationError as error:
             problems.append(str(error))
     return tuple(problems), invalid
@@ -135,7 +140,13 @@ def annotation_problems(
 def _objects(annotation: AnnotationRecord) -> int:
     return sum(
         len(values or ())
-        for values in (annotation.labels, annotation.boxes, annotation.polygons, annotation.spans)
+        for values in (
+            annotation.labels,
+            annotation.boxes,
+            annotation.polygons,
+            annotation.spans,
+            annotation.keypoints,
+        )
     )
 
 
@@ -180,6 +191,9 @@ def upgrade_plan(session: Session, params: UpgradeProjectTemplateParams) -> Temp
     """Compute the exact, reviewable effect of upgrading one unfinalized project."""
     project = require_mutable_project(session, params.project_id)
     before, after, labels_before, labels_after = _targets(session, project, params)
+    if after is not None:
+        require_writable_template(after)
+        validate_point_removal(session, before, after, project_id=project.id)
     tasks = list(
         session.scalars(
             select(ProductionTaskRow)

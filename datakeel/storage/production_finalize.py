@@ -13,7 +13,7 @@ from datakeel.core.annotation_models import AnnotationBatch
 from datakeel.core.annotation_sampling import AnnotationImportRequest
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import AssetRef, FileItem, JsonDocument, new_id
-from datakeel.core.production_models import AnnotationRevision
+from datakeel.core.production_models import AnnotationRevision, Project
 from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.annotation_store import (
     import_annotations_in_session,
@@ -21,13 +21,14 @@ from datakeel.storage.annotation_store import (
 )
 from datakeel.storage.database import VersionRow
 from datakeel.storage.production_acceptance import require_packages_accepted
-from datakeel.storage.production_catalog import annotation_categories
+from datakeel.storage.production_catalog import annotation_categories, require_complete_attributes
 from datakeel.storage.production_rows import (
     ProductionProjectRow,
     ProductionRevisionRow,
     ProductionTaskRow,
 )
 from datakeel.storage.production_tasks import require_mutable_project, transition_task
+from datakeel.storage.production_template_versions import locked_template
 
 
 def finalize_project(session: Session, params: FinalizeProjectParams) -> OperationResult:
@@ -41,7 +42,7 @@ def finalize_project(session: Session, params: FinalizeProjectParams) -> Operati
     project = require_mutable_project(session, params.project_id)
     tasks = _final_tasks(session, project.id)
     require_packages_accepted(session, project)
-    revisions = _approved_revisions(session, tasks)
+    revisions = _approved_revisions(session, project, tasks)
     source = require_annotation_version(session, project.dataset_id, project.version_id)
     version = VersionRow(
         id=new_id(),
@@ -50,12 +51,16 @@ def finalize_project(session: Session, params: FinalizeProjectParams) -> Operati
     )
     session.add(version)
     session.flush()
+    template = locked_template(session, project)
     report = import_annotations_in_session(
         session,
         project.dataset_id,
         AnnotationImportRequest(
             version_id=version.id,
-            batch=AnnotationBatch(annotations=tuple(item.annotation for item in revisions)),
+            batch=AnnotationBatch(
+                annotations=tuple(item.annotation for item in revisions),
+                keypoint_schema=template.keypoint_schema if template is not None else None,
+            ),
             idempotency_key=f"production:{project.id}:{params.request_id}",
             name=params.name,
         ),
@@ -103,7 +108,7 @@ def _final_tasks(session: Session, project_id: str) -> list[ProductionTaskRow]:
 
 
 def _approved_revisions(
-    session: Session, tasks: list[ProductionTaskRow]
+    session: Session, project: Project, tasks: list[ProductionTaskRow]
 ) -> tuple[AnnotationRevision, ...]:
     revisions: list[AnnotationRevision] = []
     for task in tasks:
@@ -111,7 +116,9 @@ def _approved_revisions(
         if row is None or row.task_id != task.id:
             message = "Approved revision does not belong to its production task"
             raise ConflictError(message)
-        revisions.append(revision_view(session, row))
+        revision = revision_view(session, row)
+        require_complete_attributes(session, project, revision.annotation)
+        revisions.append(revision)
     return tuple(revisions)
 
 

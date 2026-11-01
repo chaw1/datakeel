@@ -29,6 +29,7 @@ from datakeel.annotation_qa.prelabel_match import (
     compare_records,
     object_iou,
     record_objects,
+    shared_records,
 )
 from datakeel.annotation_qa.review_messages import label_names, object_name, percent
 from datakeel.annotation_qa.risk_scoring import disagreement_reason
@@ -64,12 +65,7 @@ def shared_kinds(
     left: AnnotationRecord, right: AnnotationRecord
 ) -> tuple[AnnotationRecord, AnnotationRecord]:
     """Drop from both records every annotation kind that either side never recorded."""
-    unrecorded = {
-        field: None
-        for field in _FIELDS.values()
-        if getattr(left, field) is None or getattr(right, field) is None
-    }
-    return left.model_copy(update=unrecorded), right.model_copy(update=unrecorded)
+    return shared_records(left, right)
 
 
 def _comparable(draft: Draft, head: AnnotationRecord) -> tuple[Draft, AnnotationRecord]:

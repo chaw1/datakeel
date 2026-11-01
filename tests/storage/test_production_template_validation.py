@@ -79,16 +79,21 @@ def test_templates_validate_expected_content_and_cardinality(db: Database, kind:
             validate_annotation(session, project, empty)
 
 
-def test_future_template_types_are_objects_but_do_not_invent_core_content(db: Database) -> None:
-    """Keypoint templates can be managed before their core content models are introduced."""
+def test_keypoint_templates_require_schema_and_native_content(db: Database) -> None:
+    """Managed keypoint templates carry a schema and no longer accept empty core content."""
     fixture = catalog_project(db)
     with db.session() as session:
-        template = ProductionTemplate(id="future", name="Keypoints", annotation_type="keypoints")
+        template = ProductionTemplate(
+            id="future",
+            name="Keypoints",
+            annotation_type="keypoints",
+            keypoint_schema={"points": [{"id": "nose", "name": "Nose"}]},
+        )
         manage_template(
             session, CreateLabelSetParams(request_id="future", target="template", template=template)
         )
         project = fixture.project.model_copy(update={"template_id": template.id})
-        with pytest.raises(ValidationError, match="not supported"):
+        with pytest.raises(ValidationError, match="does not match"):
             validate_annotation(
                 session, project, AnnotationRecord(sample_id="sample-0", annotator_id="local")
             )

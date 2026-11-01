@@ -20,6 +20,7 @@ from datakeel.core.annotation_models import AnnotationRecord
 
 HIT_IOU = 0.5
 STRICT_IOU = 0.75
+_KIND_FIELDS = ("labels", "boxes", "polygons", "spans")
 
 
 class PrelabelObject(NamedTuple):
@@ -117,8 +118,29 @@ def object_iou(
     return span_iou((first_span.start, first_span.end), (second_span.start, second_span.end))
 
 
+def comparable_records(model: AnnotationRecord, human: AnnotationRecord) -> bool:
+    """Report whether at least one supported annotation kind was recorded on both sides."""
+    return any(
+        getattr(model, field) is not None and getattr(human, field) is not None
+        for field in _KIND_FIELDS
+    )
+
+
+def shared_records(
+    model: AnnotationRecord, human: AnnotationRecord
+) -> tuple[AnnotationRecord, AnnotationRecord]:
+    """Remove unsupported and one-sided kinds instead of treating them as reviewed empty."""
+    unrecorded = {
+        field: None
+        for field in _KIND_FIELDS
+        if getattr(model, field) is None or getattr(human, field) is None
+    }
+    return model.model_copy(update=unrecorded), human.model_copy(update=unrecorded)
+
+
 def compare_records(model: AnnotationRecord, human: AnnotationRecord) -> RecordComparison:
     """Greedily match same-label objects by descending IoU, keeping pairs at IoU >= 0.5."""
+    model, human = shared_records(model, human)
     left, right = record_objects(model), record_objects(human)
     candidates = sorted(
         (

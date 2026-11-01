@@ -13,7 +13,12 @@ from datakeel.annotation_qa.findings import (
 from datakeel.annotation_qa.geometry import box_agreement, span_agreement
 from datakeel.annotation_qa.labels import multiselect_findings, rare_category_findings
 from datakeel.annotation_qa.outliers import box_outliers, span_outliers
-from datakeel.core.annotation_models import AnnotationBatch, AnnotationFinding, AnnotationQAResult
+from datakeel.core.annotation_models import (
+    AgreementValue,
+    AnnotationBatch,
+    AnnotationFinding,
+    AnnotationQAResult,
+)
 
 
 def find_suspicions(batch: AnnotationBatch) -> tuple[AnnotationFinding, ...]:
@@ -46,4 +51,9 @@ def evaluate_annotations(batch: AnnotationBatch) -> AnnotationQAResult:
         findings=find_suspicions(batch),
         sample_count=len({item.sample_id for item in batch.annotations}),
         annotator_count=len({item.annotator_id for item in batch.annotations}),
+        keypoint_agreement=(
+            AgreementValue(value=None, reason="Keypoint agreement is not supported")
+            if any(item.keypoints is not None for item in batch.annotations)
+            else None
+        ),
     )

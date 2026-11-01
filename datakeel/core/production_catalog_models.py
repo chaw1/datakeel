@@ -11,6 +11,7 @@ from pydantic import Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.image_orientation import CoordinateFrame
+from datakeel.core.keypoint_models import SkeletonDefinition
 from datakeel.core.label_guidelines import DraftSource, LabelGuidelines
 from datakeel.core.models import BoundaryModel
 from datakeel.core.prelabel_models import (
@@ -109,6 +110,9 @@ class ProductionTemplate(BoundaryModel):
     component_config: dict[str, JsonValue] = Field(default_factory=dict)
     validation_rules: dict[str, JsonValue] = Field(default_factory=dict)
     attributes: tuple[TemplateAttribute, ...] = Field(default=(), max_length=50)
+    keypoint_schema: SkeletonDefinition | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     revision: int = Field(default=1, ge=1)
     archived: bool = False
 
@@ -125,7 +129,7 @@ class ProductionTemplate(BoundaryModel):
     def supported_validation_rules(self) -> "ProductionTemplate":
         """Reject unsupported rules so saving never silently bypasses a configured constraint."""
         components = self.component_config.get("components")
-        supported = {"box", "polygon", "classification", "text_span"}
+        supported = {"box", "polygon", "keypoints", "classification", "text_span"}
         if components is not None and (
             not isinstance(components, list)
             or not components

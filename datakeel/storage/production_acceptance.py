@@ -22,7 +22,9 @@ from datakeel.core.production_team_models import (
 )
 from datakeel.storage.annotation_sampling import sampling_selection
 from datakeel.storage.object_projection import content_digest
+from datakeel.storage.production_catalog import require_complete_attributes
 from datakeel.storage.production_reviews import return_for_rework
+from datakeel.storage.production_revisions import current_revision
 from datakeel.storage.production_rows import ProductionPackageRow, ProductionTaskRow
 from datakeel.storage.production_tasks import require_mutable_project, require_project
 from datakeel.storage.production_team_rows import ProductionPackageInspectionRow
@@ -87,6 +89,12 @@ def require_inspectable(
     if not tasks or any(task.state != "approved" for task in tasks):
         message = "Every package task must be approved before acceptance"
         raise ConflictError(message)
+    for task in tasks:
+        head = current_revision(session, task)
+        if head is None or head.id != task.approved_revision_id:
+            message = "Package acceptance requires the current approved revision"
+            raise ConflictError(message)
+        require_complete_attributes(session, project, head.annotation)
     sampling = package_sampling(tasks, params)
     if {check.sample_id for check in params.checks} != set(sampling.sample_ids):
         message = "Inspection must review every sampled unit exactly once"

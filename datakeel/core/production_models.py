@@ -8,7 +8,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.annotation_models import AgreementValue, AnnotationRecord
 from datakeel.core.image_orientation import CoordinateConversion
 from datakeel.core.models import BoundaryModel
 from datakeel.core.prelabel_models import AttributeAgreement, ConfidenceTier, IoUAccuracy
@@ -235,3 +235,6 @@ class PrelabelAccuracy(BoundaryModel):
     iou_50: IoUAccuracy
     iou_75: IoUAccuracy
     attribute_agreement: AttributeAgreement
+    keypoint_accuracy: AgreementValue | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )

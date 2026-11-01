@@ -15,6 +15,7 @@ from datakeel.annotation_qa.prelabel_match import (
     HIT_IOU,
     STRICT_IOU,
     RecordComparison,
+    comparable_records,
     compare_records,
 )
 from datakeel.core.annotation_models import AnnotationRecord
@@ -59,7 +60,11 @@ def prelabel_accuracy(
     references: Sequence[tuple[AnnotationRecord, AnnotationRecord]],
 ) -> tuple[IoUAccuracy, IoUAccuracy, AttributeAgreement]:
     """Compare (model draft, human reference) pairs at IoU 0.5 and 0.75."""
-    comparisons = [compare_records(model, human) for model, human in references]
+    comparisons = [
+        compare_records(model, human)
+        for model, human in references
+        if comparable_records(model, human)
+    ]
     return (
         iou_accuracy(comparisons, HIT_IOU),
         iou_accuracy(comparisons, STRICT_IOU),

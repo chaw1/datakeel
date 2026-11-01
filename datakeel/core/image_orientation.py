@@ -15,9 +15,11 @@ from pydantic import Field
 
 from datakeel.core.annotation_models import (
     AnnotationBox,
+    AnnotationKeypoint,
     AnnotationPoint,
     AnnotationPolygon,
     AnnotationRecord,
+    AnnotationSkeleton,
 )
 from datakeel.core.models import BoundaryModel
 
@@ -131,6 +133,20 @@ def _polygon(geometry: ImageGeometry, polygon: AnnotationPolygon) -> AnnotationP
     return polygon.model_copy(update={"points": points})
 
 
+def _skeleton(geometry: ImageGeometry, skeleton: AnnotationSkeleton) -> AnnotationSkeleton:
+    points: list[AnnotationKeypoint] = []
+    for point in skeleton.points:
+        if point.state == "missing":
+            points.append(point)
+            continue
+        if point.x is None or point.y is None:
+            message = "Positioned keypoints require coordinates"
+            raise ValueError(message)
+        x, y = to_display(geometry, point.x, point.y)
+        points.append(point.model_copy(update={"x": x, "y": y}))
+    return skeleton.model_copy(update={"points": tuple(points)})
+
+
 def display_record(record: AnnotationRecord, geometry: ImageGeometry) -> AnnotationRecord:
     """Re-express a stored-frame annotation in the upright frame; identity for orientation 1."""
     if geometry.orientation == 1:
@@ -142,6 +158,9 @@ def display_record(record: AnnotationRecord, geometry: ImageGeometry) -> Annotat
             else None,
             "polygons": tuple(_polygon(geometry, polygon) for polygon in record.polygons)
             if record.polygons is not None
+            else None,
+            "keypoints": tuple(_skeleton(geometry, skeleton) for skeleton in record.keypoints)
+            if record.keypoints is not None
             else None,
             "image_width": geometry.width if record.image_width is not None else None,
             "image_height": geometry.height if record.image_height is not None else None,

@@ -23,6 +23,7 @@ from datakeel.core.production_models import Project, TaskPackage, TaskState
 from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.production_assignments import preserve_personal_assignment
 from datakeel.storage.production_catalog import require_label_set, require_template
+from datakeel.storage.production_keypoint_upgrades import require_writable_template
 from datakeel.storage.production_leases import restart_leases
 from datakeel.storage.production_members import record_project_member
 from datakeel.storage.production_review_policy import require_ordered_thresholds
@@ -67,6 +68,7 @@ def create_project(session: Session, params: CreateProjectParams, actor: str) ->
     template_version = None
     if params.template_id is not None:
         template = require_template(session, params.template_id)
+        require_writable_template(template)
         record_template_version(session, template)
         template_version = template.revision
     project = _validate_dispatch(

@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import Field, JsonValue, model_validator
 
+from datakeel.core.keypoint_models import SkeletonDefinition
 from datakeel.core.models import BoundaryModel
 
 
@@ -45,6 +46,35 @@ class AnnotationPolygon(BoundaryModel):
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
 
 
+class AnnotationKeypoint(BoundaryModel):
+    """Keep one template-identified point and its explicit annotation state."""
+
+    id: str = Field(min_length=1)
+    x: float | None = Field(default=None, allow_inf_nan=False)
+    y: float | None = Field(default=None, allow_inf_nan=False)
+    state: Literal["visible", "occluded", "missing"]
+
+    @model_validator(mode="after")
+    def coordinates_match_state(self) -> "AnnotationKeypoint":
+        """Require estimated coordinates for occluded points and none for missing points."""
+        positioned = self.x is not None and self.y is not None
+        if self.state == "missing" and (self.x is not None or self.y is not None):
+            message = "Missing keypoints must not carry coordinates"
+            raise ValueError(message)
+        if self.state != "missing" and not positioned:
+            message = "Visible and occluded keypoints require both coordinates"
+            raise ValueError(message)
+        return self
+
+
+class AnnotationSkeleton(BoundaryModel):
+    """Describe one labelled skeleton instance in template point order."""
+
+    category: str
+    points: tuple[AnnotationKeypoint, ...]
+    attributes: dict[str, JsonValue] = Field(default_factory=dict)
+
+
 class AnnotationRecord(BoundaryModel):
     """Describe one annotator's work; None is missing and an empty tuple is reviewed empty."""
 
@@ -54,6 +84,9 @@ class AnnotationRecord(BoundaryModel):
     boxes: tuple[AnnotationBox, ...] | None = None
     spans: tuple[AnnotationSpan, ...] | None = None
     polygons: tuple[AnnotationPolygon, ...] | None = None
+    keypoints: tuple[AnnotationSkeleton, ...] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
     text_length: int | None = Field(default=None, ge=0)
     image_width: float | None = Field(default=None, gt=0, allow_inf_nan=False)
@@ -108,6 +141,9 @@ class AnnotationBatch(BoundaryModel):
     iou_threshold: float = Field(default=0.5, gt=0, le=1)
     label_mode: Literal["auto", "single", "multi"] = "auto"
     outlier_policy: OutlierPolicy = Field(default_factory=OutlierPolicy)
+    keypoint_schema: SkeletonDefinition | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def unique_annotations(self) -> "AnnotationBatch":
@@ -233,6 +269,9 @@ class AnnotationQAResult(BoundaryModel):
     findings: tuple[AnnotationFinding, ...] = ()
     sample_count: int
     annotator_count: int
+    keypoint_agreement: AgreementValue | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class ReworkComparison(BoundaryModel):

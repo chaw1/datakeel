@@ -12,6 +12,11 @@ from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.production_attributes import validate_attributes
 from datakeel.core.production_catalog_models import LabelSet, ProductionModel, ProductionTemplate
+from datakeel.core.production_keypoints import (
+    enabled_components,
+    normalize_keypoints,
+    validate_keypoints,
+)
 from datakeel.storage.production_catalog_rows import (
     ProductionLabelSetRow,
     ProductionModelRow,
@@ -85,6 +90,7 @@ def annotation_categories(annotation: AnnotationRecord) -> tuple[str, ...]:
         *(box.category for box in annotation.boxes or ()),
         *(polygon.category for polygon in annotation.polygons or ()),
         *(span.category for span in annotation.spans or ()),
+        *(skeleton.category for skeleton in annotation.keypoints or ()),
     )
 
 
@@ -96,7 +102,7 @@ def normalize_annotation(
     """Canonicalize current display names and stable identities to version-pinned label ids."""
     labels = require_label_set(session, project.label_set_id, project.label_set_version)
     identities = {value: label.id for label in labels.labels for value in (label.id, label.name)}
-    return annotation.model_copy(
+    normalized = annotation.model_copy(
         update={
             "labels": tuple(identities.get(value, value) for value in annotation.labels)
             if annotation.labels is not None
@@ -121,8 +127,18 @@ def normalize_annotation(
             )
             if annotation.polygons is not None
             else None,
+            "keypoints": tuple(
+                skeleton.model_copy(
+                    update={"category": identities.get(skeleton.category, skeleton.category)}
+                )
+                for skeleton in annotation.keypoints
+            )
+            if annotation.keypoints is not None
+            else None,
         }
     )
+    template = locked_template(session, project)
+    return normalize_keypoints(template, normalized) if template is not None else normalized
 
 
 def validate_annotation(
@@ -147,10 +163,11 @@ def validate_annotation(
 def require_complete_attributes(
     session: Session, project: "Project", annotation: AnnotationRecord
 ) -> None:
-    """Recheck a submitted head against the project's locked template attribute fields."""
+    """Revalidate a submitted head against all current locked-template submit rules."""
+    validate_annotation(session, project, annotation, complete=True)
     template = locked_template(session, project)
     if template is not None:
-        validate_attributes(template.attributes, annotation)
+        validate_template_content(template, annotation, complete=True)
 
 
 def _validate_geometry(annotation: AnnotationRecord) -> None:
@@ -191,28 +208,27 @@ def _validate_geometry(annotation: AnnotationRecord) -> None:
             raise ValidationError(message)
 
 
-def validate_template_content(template: ProductionTemplate, annotation: AnnotationRecord) -> None:
-    """Check enabled components, single-select labels and the annotation-count rules."""
+def validate_template_content(
+    template: ProductionTemplate, annotation: AnnotationRecord, *, complete: bool = False
+) -> None:
+    """Check enabled components, point identities and annotation-count/completeness rules."""
     content = {
         "box": annotation.boxes,
         "classification": annotation.labels,
         "text_span": annotation.spans,
         "polygon": annotation.polygons,
+        "keypoints": annotation.keypoints,
     }
     if template.annotation_type not in content:
         message = "This template's content type is not supported by the current core schema"
         raise ValidationError(message)
-    configured = template.component_config.get("components")
-    enabled = (
-        {value for value in configured if isinstance(value, str)}
-        if isinstance(configured, list)
-        else {template.annotation_type}
-    )
+    enabled = enabled_components(template)
     if not any(content[kind] is not None for kind in enabled) or any(
         value is not None for kind, value in content.items() if kind not in enabled
     ):
         message = "Annotation content does not match the project's template type"
         raise ValidationError(message)
+    validate_keypoints(template, annotation, complete=complete)
     count = sum(len(content[kind] or ()) for kind in enabled)
     if (
         "classification" in enabled

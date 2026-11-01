@@ -7,8 +7,8 @@ from collections import Counter
 
 from sqlalchemy import func, select
 
-from datakeel.annotation_qa import evaluate_annotations, prelabel_accuracy
-from datakeel.core.annotation_models import AnnotationBatch, AnnotationQAResult
+from datakeel.annotation_qa import comparable_records, evaluate_annotations, prelabel_accuracy
+from datakeel.core.annotation_models import AgreementValue, AnnotationBatch, AnnotationQAResult
 from datakeel.core.production_models import (
     AnnotatorWorkload,
     ConfidenceBucket,
@@ -39,9 +39,11 @@ def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccur
     """
     with db.session() as session:
         require_project(session, project_id)
+        pairs = list(approved_references(session, project_id))
         references = [
             (model.annotation, human.annotation)
-            for model, human in approved_references(session, project_id)
+            for model, human in pairs
+            if comparable_records(model.annotation, human.annotation)
         ]
     assessed = len(references)
     exact = sum(prelabel_difference(human, model) == 0 for model, human in references)
@@ -54,6 +56,14 @@ def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccur
         iou_50=iou_50,
         iou_75=iou_75,
         attribute_agreement=attributes,
+        keypoint_accuracy=(
+            AgreementValue(value=None, reason="Keypoint accuracy is not supported")
+            if any(
+                model.annotation.keypoints is not None or human.annotation.keypoints is not None
+                for model, human in pairs
+            )
+            else None
+        ),
     )
 
 
