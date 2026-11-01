@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX2 regression anchors for one-sentence planning, drafting and model routing.
+"""Regression anchors for one-sentence planning, drafting and model routing.
 
 They lock query-first task scopes, deterministic plan checks, honest failures, complete
 drafts and routing to configured models only.
@@ -97,7 +97,7 @@ DRAFT_ROUTING_MUTATIONS = (
     ),
 )
 
-_SCOPE = "tests/intents/test_fix2_scope.py::"
+_SCOPE = "tests/intents/test_query_first_scope.py::"
 _GROUP = _SCOPE + "test_a_described_group_is_read_first_and_protected_tasks_are_left_out"
 
 PLANNING_MUTATIONS = (
@@ -222,7 +222,7 @@ PLANNING_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix4-a-missing-feature-names-close-things",
+        name="explore-a-missing-feature-names-close-things",
         path="intents/outcomes.py",
         before="        close = [titles[name] for name in dict.fromkeys(related)][:2]",
         after="        close = []",
@@ -356,4 +356,4 @@ PLANNING_MUTATIONS = (
     ),
 )
 
-INTENT_FIX2_MUTATIONS = (*DRAFT_ROUTING_MUTATIONS, *PLANNING_MUTATIONS)
+QUERY_FIRST_MUTATIONS = (*DRAFT_ROUTING_MUTATIONS, *PLANNING_MUTATIONS)

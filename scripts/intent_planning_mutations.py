@@ -1,29 +1,29 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3 regression anchors for one-sentence planning, one per structural rule P1-P7.
+"""Regression anchors for one-sentence planning, one per structural rule P1-P7.
 
 They lock names over the page (P1), one display order (P2), values read from state (P3),
 plain outgoing words (P4), new versus existing names (P5), scope-less reads (P6), every
 part of a request planned or explained (P7) and the two drafting side fixes (9.4).
 """
 
-from scripts.intent_fix3_limit_mutations import LIMITS_MUTATIONS
-from scripts.intent_fix3_owner_mutations import OWNER_MUTATIONS
-from scripts.intent_fix3_request_mutations import REQUEST_MUTATIONS
-from scripts.intent_fix4_mutations import EXPLORE_MUTATIONS
-from scripts.intent_fix5_mutations import FLOW_MUTATIONS
-from scripts.intent_fix6_mutations import FIX6_MUTATIONS
+from scripts.intent_action_state_mutations import ACTION_STATE_MUTATIONS
+from scripts.intent_explore_mutations import EXPLORE_MUTATIONS
+from scripts.intent_flow_mutations import FLOW_MUTATIONS
+from scripts.intent_group_limit_mutations import LIMITS_MUTATIONS
+from scripts.intent_ownership_mutations import OWNER_MUTATIONS
+from scripts.intent_request_mutations import REQUEST_MUTATIONS
 from scripts.mutation_models import Mutation
 
-_SCOPE = "tests/intents/test_fix3_scope.py::"
-_WORDS = "tests/intents/test_fix3_words.py::"
-_ACTIONS = "tests/intents/test_fix3_actions.py::"
-_PARTS = "tests/intents/test_fix3_parts.py::"
+_SCOPE = "tests/intents/test_named_scope.py::"
+_WORDS = "tests/intents/test_plain_words.py::"
+_ACTIONS = "tests/intents/test_request_actions.py::"
+_PARTS = "tests/intents/test_request_parts.py::"
 
 NAMES_AND_ORDER_MUTATIONS = (
     Mutation(
-        name="fix3-p1-words-name-the-container-before-the-page",
+        name="planning-named-scope-words-name-the-container-before-the-page",
         path="intents/fill.py",
         before=(
             "    value = named_in_words(field, state, catalog) "
@@ -34,7 +34,7 @@ NAMES_AND_ORDER_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p1-a-package-fixes-its-project",
+        name="planning-named-scope-a-package-fixes-its-project",
         path="intents/fill.py",
         before='    if field == "project_id" and owner is not None and owner.parent:',
         after="    if False:",
@@ -42,7 +42,7 @@ NAMES_AND_ORDER_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p1-numbered-package-without-project-is-offered",
+        name="planning-named-scope-numbered-package-without-project-is-offered",
         path="intents/group_fill.py",
         before="    if project is None and number:",
         after="    if False:",
@@ -50,7 +50,7 @@ NAMES_AND_ORDER_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p1-read-narrowed-by-the-named-project",
+        name="planning-named-scope-read-narrowed-by-the-named-project",
         path="intents/resolve.py",
         before=(
             "            if entry is not None and field in model.model_fields "
@@ -61,7 +61,7 @@ NAMES_AND_ORDER_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p1-files-in-the-named-dataset",
+        name="planning-named-scope-files-in-the-named-dataset",
         path="intents/group_fill.py",
         before='    dataset = in_scope("dataset_id", value.get("dataset_id"), state, catalog)',
         after='    dataset = context_value("dataset_id", state, catalog)',
@@ -69,7 +69,7 @@ NAMES_AND_ORDER_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p2-tasks-follow-their-package-and-file",
+        name="planning-display-order-tasks-follow-their-package-and-file",
         path="storage/display_order.py",
         before="            positions.get(task.sample_id, len(positions)),\n",
         after="",
@@ -77,7 +77,7 @@ NAMES_AND_ORDER_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p2-packages-in-creation-order",
+        name="planning-display-order-packages-in-creation-order",
         path="storage/display_order.py",
         before="    return sorted(packages, key=package_key)",
         after="    return sorted(packages, key=lambda package: package.id)",
@@ -88,7 +88,7 @@ NAMES_AND_ORDER_MUTATIONS = (
 
 STATE_AND_WORDS_MUTATIONS = (
     Mutation(
-        name="fix3-p3-derivable-values-are-never-asked",
+        name="planning-state-values-derivable-values-are-never-asked",
         path="intents/validate.py",
         before="        if not derivable(step.action, name)\n",
         after="        if True\n",
@@ -96,7 +96,7 @@ STATE_AND_WORDS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p3-publishing-uses-the-newest-version",
+        name="planning-state-values-publishing-uses-the-newest-version",
         path="intents/derived.py",
         before='    "publish_label_set": {"version": _newest_version},',
         after='    "publish_label_set": {},',
@@ -104,7 +104,7 @@ STATE_AND_WORDS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p4-outgoing-check-finds-choice-words",
+        name="planning-plain-words-outgoing-check-finds-choice-words",
         path="intents/public_text.py",
         before=(
             "        found += [word for word in WORD.findall(rest) if word in ZH_WORDS or word in "
@@ -115,7 +115,7 @@ STATE_AND_WORDS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p4-refusal-names-the-scope-in-words",
+        name="planning-plain-words-refusal-names-the-scope-in-words",
         path="intents/wording.py",
         before="    joined = scope_words(scopes, language)",
         after='    joined = ", ".join(scopes)',
@@ -123,7 +123,7 @@ STATE_AND_WORDS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p4-object-lists-are-read-aloud",
+        name="planning-plain-words-object-lists-are-read-aloud",
         path="intents/answers.py",
         before='        "production_objects": objects_text,\n',
         after="",
@@ -131,7 +131,7 @@ STATE_AND_WORDS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p4-card-revision-in-words",
+        name="planning-plain-words-card-revision-in-words",
         path="intents/describe.py",
         before="    if isinstance(value, str) and field in REVISIONS:",
         after="    if False:",
@@ -139,7 +139,7 @@ STATE_AND_WORDS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p4-default-limits-in-words",
+        name="planning-plain-words-default-limits-in-words",
         path="intents/describe.py",
         before="        if isinstance(default, BaseModel):",
         after="        if False:",
@@ -150,7 +150,7 @@ STATE_AND_WORDS_MUTATIONS = (
 
 PARTS_MUTATIONS = (
     Mutation(
-        name="fix3-p5-a-taken-new-name-is-asked",
+        name="planning-new-existing-a-taken-new-name-is-asked",
         path="intents/resolve.py",
         before="            found = taken(self.db, step, self.catalog)",
         after="            found = None",
@@ -158,7 +158,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p6-the-only-project-is-assumed",
+        name="planning-scope-the-only-project-is-assumed",
         path="intents/resolve.py",
         before="            if len(own) != 1:",
         after="            if True:",
@@ -166,7 +166,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p7-refused-part-is-set-aside",
+        name="planning-request-parts-refused-part-is-set-aside",
         path="intents/partial.py",
         before="    if len(draft.steps) < 2:  # noqa: PLR2004",
         after="    if True:",
@@ -174,7 +174,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p7-personal-project-keeps-no-assignments",
+        name="planning-request-parts-personal-project-keeps-no-assignments",
         path="intents/impossible.py",
         before='    return ("personal", 0) if _tier(db, step) == "personal" else None',
         after="    return None",
@@ -182,7 +182,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p7-idle-part-is-set-aside",
+        name="planning-request-parts-idle-part-is-set-aside",
         path="intents/resolve.py",
         before=(
             "            elif (state := already_state(self.db, step, self.catalog, "
@@ -193,7 +193,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p7-empty-part-is-set-aside",
+        name="planning-request-parts-empty-part-is-set-aside",
         path="intents/resolve.py",
         before=(
             "            return (without(draft, reasons) if len(draft.steps) > 1 else None) "
@@ -204,7 +204,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p1-a-place-in-words-is-a-package-place",
+        name="planning-named-scope-a-place-in-words-is-a-package-place",
         path="intents/group_fill.py",
         before="    number = place_number(position) if isinstance(position, (int, str)) else None",
         after="    number = task_number(position) if isinstance(position, (int, str)) else None",
@@ -212,7 +212,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p1-a-selection-dataset-by-name",
+        name="planning-named-scope-a-selection-dataset-by-name",
         path="intents/fill.py",
         before=(
             "    return _selection_dataset(value, current, state, catalog) "
@@ -223,7 +223,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p4-choices-said-in-words",
+        name="planning-plain-words-choices-said-in-words",
         path="intents/signatures.py",
         before="    if len(said) == 1:\n        return said[0]\n",
         after="",
@@ -231,23 +231,23 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-already-so-ignores-letter-case",
+        name="planning-already-so-ignores-letter-case",
         path="intents/verify.py",
         before="        key: value.casefold() if isinstance(value, str) else value",
         after="        key: value",
-        case="tests/intents/test_fix3_plan_state.py::test_the_same_labels_in_other_letters_change_nothing",
+        case="tests/intents/test_plan_state.py::test_the_same_labels_in_other_letters_change_nothing",
         runner="pytest",
     ),
     Mutation(
-        name="fix3-already-so-ignores-a-repeated-chinese-name",
+        name="planning-already-so-ignores-a-repeated-chinese-name",
         path="intents/verify.py",
         before='    if label.get("name_zh") == label.get("name"):',
         after="    if False:",
-        case="tests/intents/test_fix3_plan_state.py::test_the_same_labels_in_other_letters_change_nothing",
+        case="tests/intents/test_plan_state.py::test_the_same_labels_in_other_letters_change_nothing",
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p5-no-publish-slipped-into-a-plan",
+        name="planning-new-existing-no-publish-slipped-into-a-plan",
         path="intents/verify.py",
         before="            or _publish_problem(step, state.text)\n",
         after="",
@@ -255,7 +255,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p7-an-edit-without-a-change-is-asked",
+        name="planning-request-parts-an-edit-without-a-change-is-asked",
         path="intents/validate.py",
         before="    changes = nothing_to_edit(step)",
         after="    changes = ()",
@@ -263,7 +263,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p7-review-tasks-are-held-for-review",
+        name="planning-request-parts-review-tasks-are-held-for-review",
         path="intents/group_fill.py",
         before='    stage = explicit if isinstance(explicit, str) and explicit else "annotation"',
         after='    stage = "annotation"',
@@ -271,7 +271,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p7-one-value-said-becomes-a-list",
+        name="planning-request-parts-one-value-said-becomes-a-list",
         path="intents/signatures.py",
         before="        return [value]",
         after="        return value",
@@ -279,7 +279,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-draft-versions-can-be-compared",
+        name="planning-draft-versions-can-be-compared",
         path="storage/production_objects.py",
         before=(
             "        after = require_label_set(session, identifier, query.after_version, "
@@ -290,7 +290,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-skill-card-counts-its-holders",
+        name="planning-skill-card-counts-its-holders",
         path="intents/describe.py",
         before="        + _holders(db, step, language)\n",
         after="",
@@ -298,7 +298,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-annotation-examples-are-existing-annotations",
+        name="planning-annotation-examples-are-existing-annotations",
         path="label_drafts/complete.py",
         before="    labelled = frozenset(sample.id for sample in inputs.samples if sample.labels)",
         after="    labelled: frozenset[str] = frozenset()",
@@ -307,7 +307,7 @@ PARTS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p7-read-survives-a-repair-that-gives-up",
+        name="planning-request-parts-read-survives-a-repair-that-gives-up",
         path="intents/planner.py",
         before='    if repaired.kind == "none" and draft.kind == "answer" and draft.steps:',
         after="    if False:",
@@ -316,7 +316,7 @@ PARTS_MUTATIONS = (
     ),
 )
 
-INTENT_FIX3_MUTATIONS = (
+PLANNING_MUTATIONS = (
     *NAMES_AND_ORDER_MUTATIONS,
     *STATE_AND_WORDS_MUTATIONS,
     *PARTS_MUTATIONS,
@@ -325,5 +325,5 @@ INTENT_FIX3_MUTATIONS = (
     *REQUEST_MUTATIONS,
     *EXPLORE_MUTATIONS,
     *FLOW_MUTATIONS,
-    *FIX6_MUTATIONS,
+    *ACTION_STATE_MUTATIONS,
 )

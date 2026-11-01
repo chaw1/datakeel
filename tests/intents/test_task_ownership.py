@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3: whose task, which place, names made earlier in the plan, and edits that keep the rest."""
+"""Whose task, which place, names made earlier in the plan, and edits that keep the rest."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from datakeel.core.intent_models import PageContext
 from datakeel.intents.answers import answer_text
 from datakeel.storage.dataset_service import list_files
 from datakeel.storage.identity_store import get_role
-from tests.intents.fix3_support import SOUTH, planned, shown, steps, targets, two_projects
+from tests.intents.planning_support import SOUTH, planned, shown, steps, targets, two_projects
 from tests.production_team_ops import save
 from tests.production_team_support import ServiceRunner
 

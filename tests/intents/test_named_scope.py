@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3 P1/P2: named objects win over the page, and every list counts in one order."""
+"""Named objects win over the page, and every list counts in one order."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from datakeel.storage.intent_reads import task_snapshots
 from datakeel.storage.production_objects import production_objects
 from datakeel.storage.production_queries import list_packages, list_tasks
 from datakeel.storage.production_rows import ProductionTaskRow
-from tests.intents.fix3_support import (
+from tests.intents.planning_support import (
     SOUTH,
     descending_ids,
     planned,

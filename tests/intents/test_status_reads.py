@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX6: a question about how things stand is answered, never planned as a change."""
+"""A question about how things stand is answered, never planned as a change."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 
 from datakeel.core.intent_models import PageContext
 from datakeel.intents.readonly import status_question
-from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
+from tests.intents.planning_support import SOUTH, planned, steps, two_projects
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database

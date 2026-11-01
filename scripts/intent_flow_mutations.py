@@ -1,15 +1,15 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX5 anchors: the flow checks what the model left open before a sentence ends."""
+"""Completion-flow anchors: the flow checks what the model left open before a sentence ends."""
 
 from scripts.mutation_models import Mutation
 
-_FLOW = "tests/intents/test_fix5_flow.py::"
+_FLOW = "tests/intents/test_completion_flow.py::"
 
 FLOW_MUTATIONS = (
     Mutation(
-        name="fix5-a-fitting-action-is-checked-not-called-missing",
+        name="flow-a-fitting-action-is-checked-not-called-missing",
         path="intents/planner.py",
         before="    draft = read_only(fitted(draft, ranked), turn.text, ranked)",
         after="    draft = read_only(draft, turn.text, ranked)",
@@ -17,7 +17,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-fitting-action-refuses-without-permission",
+        name="flow-a-fitting-action-refuses-without-permission",
         path="intents/planner.py",
         before="    draft = read_only(fitted(draft, ranked), turn.text, ranked)",
         after="    draft = read_only(draft, turn.text, ranked)",
@@ -25,7 +25,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-only-a-registered-action-fits",
+        name="flow-only-a-registered-action-fits",
         path="intents/landing.py",
         before="    if draft.fits in names:",
         after="    if draft.fits:",
@@ -33,7 +33,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-one-choice-is-no-choice",
+        name="flow-one-choice-is-no-choice",
         path="intents/landing.py",
         before="    if len(chosen) == 1:\n        return chosen[0]",
         after="    if False:\n        return chosen[0]",
@@ -41,15 +41,15 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-already-names-the-account-state",
+        name="flow-already-names-the-account-state",
         path="intents/already.py",
         before='    "manage_users": _account,',
         after="",
-        case="tests/intents/test_fix6_checks.py::test_an_account_already_in_that_state_says_so_by_name",
+        case="tests/intents/test_action_preconditions.py::test_an_account_already_in_that_state_says_so_by_name",
         runner="pytest",
     ),
     Mutation(
-        name="fix5-already-with-that-reviewer",
+        name="flow-already-with-that-reviewer",
         path="intents/already.py",
         before='    "assign_tasks": _holder,',
         after="",
@@ -57,7 +57,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-already-not-quarantined",
+        name="flow-already-not-quarantined",
         path="intents/already.py",
         before='    if step.action == "unquarantine_files" and not any(flags):',
         after="    if False:",
@@ -65,7 +65,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-several-missing-ask-the-object-with-choices",
+        name="flow-several-missing-ask-the-object-with-choices",
         path="intents/validate.py",
         before="    field = missing[0] if len(missing) == 1 else next(iter(objects), None)",
         after="    field = missing[0] if len(missing) == 1 else None",
@@ -73,7 +73,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-named-model-is-asked-for",
+        name="flow-a-named-model-is-asked-for",
         path="intents/verify.py",
         before='        or catalog.mentioned("model", text)',
         after="",
@@ -81,7 +81,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-model-named-for-a-change-is-read",
+        name="flow-a-model-named-for-a-change-is-read",
         path="intents/derived.py",
         before="    if isinstance(nested, str) and nested.strip():",
         after="    if False:",
@@ -89,7 +89,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-model-is-found-by-its-name",
+        name="flow-a-model-is-found-by-its-name",
         path="intents/object_edits.py",
         before=(
             "        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold(),"
@@ -100,7 +100,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-model-that-cannot-is-said-not-asked",
+        name="flow-a-model-that-cannot-is-said-not-asked",
         path="intents/capability.py",
         before="    if chosen is None or _runs_prelabel(chosen):",
         after="    if True:",
@@ -108,7 +108,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-place-is-located-before-protection",
+        name="flow-a-place-is-located-before-protection",
         path="intents/task_scope.py",
         before='    if any(_count(spec, key) for key in ("first", "last", "from_end")):',
         after="    if False:",
@@ -116,7 +116,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-kept-place-is-noted",
+        name="flow-a-kept-place-is-noted",
         path="intents/task_scope.py",
         before='    return scope.model_copy(update={"excluded": {**scope.excluded, **warned}})',
         after="    return scope",
@@ -124,7 +124,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-release-tag-names-its-version",
+        name="flow-a-release-tag-names-its-version",
         path="intents/catalog.py",
         before="            tags.setdefault(release.version_id, []).append(release.tag)",
         after="            del release",
@@ -132,7 +132,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-never-published-label-set-is-said-first",
+        name="flow-a-never-published-label-set-is-said-first",
         path="intents/duplicates.py",
         before="        return _never_published(db, step, label_set, language)",
         after="        return None",
@@ -140,7 +140,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-quoted-request-words-pass-the-outward-check",
+        name="flow-quoted-request-words-pass-the-outward-check",
         path="intents/public_text.py",
         before="    found.update(word for text in texts for word in "
         're.findall(r"[A-Za-z][\\w.-]*", text))',
@@ -149,7 +149,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-choices-follow-the-words",
+        name="flow-choices-follow-the-words",
         path="intents/choices.py",
         before="    named = catalog.match(kind, said) if said else []",
         after="    named = []",
@@ -157,7 +157,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-missing-task-offers-the-speakers",
+        name="flow-a-missing-task-offers-the-speakers",
         path="intents/choices.py",
         before='    if kind == "task":',
         after="    if False:",
@@ -165,7 +165,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-model-change-to-nothing-is-already-so",
+        name="flow-a-model-change-to-nothing-is-already-so",
         path="intents/already.py",
         before='    "update_model": _model,',
         after="",
@@ -173,7 +173,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-catalog-label-is-not-a-new-name",
+        name="flow-a-catalog-label-is-not-a-new-name",
         path="intents/object_edits.py",
         before='    if str(model.get("name", "")).casefold() == '
         'f"{current.name} {current.version}".casefold():',
@@ -182,7 +182,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-model-id-in-a-record-is-the-id",
+        name="flow-model-id-in-a-record-is-the-id",
         path="intents/derived.py",
         before='    if "model_id" in record:',
         after="    if False:",
@@ -190,7 +190,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-quotes-around-a-new-name-are-dropped",
+        name="flow-quotes-around-a-new-name-are-dropped",
         path="intents/fill.py",
         before="        _unquoted(params, new)",
         after="",
@@ -198,7 +198,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-an-annotator-is-a-person",
+        name="flow-an-annotator-is-a-person",
         path="intents/catalog.py",
         before='    "annotator_id": "user",',
         after="",
@@ -206,7 +206,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-model-is-found-by-its-catalog-label",
+        name="flow-a-model-is-found-by-its-catalog-label",
         path="intents/object_edits.py",
         before=(
             "        if wanted in {item.asset_ref.asset_id.casefold(), name.casefold(),"
@@ -217,7 +217,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-label-set-catalog-label-is-not-a-new-name",
+        name="flow-a-label-set-catalog-label-is-not-a-new-name",
         path="intents/edits.py",
         before='    if _shown_label(params.get("name"), current):',
         after="    if False:",
@@ -225,7 +225,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-take-back-given-right-back-is-idle",
+        name="flow-a-take-back-given-right-back-is-idle",
         path="intents/resolve.py",
         before="        idle |= given_back(checked, idle)",
         after="",
@@ -233,7 +233,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-the-same-state-is-said-once",
+        name="flow-the-same-state-is-said-once",
         path="intents/wording.py",
         before="    states = list(dict.fromkeys(state for state in states if state not in IDLE))",
         after="    states = [state for state in states if state not in IDLE]",
@@ -241,7 +241,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-model-fields-beside-the-model-are-known",
+        name="flow-model-fields-beside-the-model-are-known",
         path="intents/planner.py",
         before="        _, unknown = known_fields(model_record(step), state, catalog)",
         after="        _, unknown = known_fields(step, state, catalog)",
@@ -249,7 +249,7 @@ FLOW_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix5-a-model-record-is-an-object-question",
+        name="flow-a-model-record-is-an-object-question",
         path="intents/choices.py",
         before='RECORD_KINDS = {("update_model", "model"): "model"}',
         after="RECORD_KINDS: dict[tuple[str, str], str] = {}",

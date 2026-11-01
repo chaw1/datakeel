@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3: groups said any way, protected groups asked, and what execution refuses said first."""
+"""Groups said any way, protected groups asked, and what execution refuses said first."""
 
 from __future__ import annotations
 
@@ -13,7 +13,15 @@ from datakeel.intents.catalog import build_catalog
 from datakeel.intents.planner import ModelAccess, PlannerTurn, plan_turn
 from datakeel.intents.public_text import allowed_words, leaks
 from datakeel.intents.wording import action_title
-from tests.intents.fix3_support import NORTH, SOUTH, planned, shown, steps, targets, two_projects
+from tests.intents.planning_support import (
+    NORTH,
+    SOUTH,
+    planned,
+    shown,
+    steps,
+    targets,
+    two_projects,
+)
 from tests.production_team_ops import save, submit
 from tests.production_team_support import ServiceRunner
 
@@ -180,7 +188,7 @@ def test_a_pre_label_model_that_cannot_draw_boxes_is_said_and_box_models_offered
 ) -> None:
     """A polygon model: what it does, and the models that can run, alone and in a chain.
 
-    FIX5 (11.2-5): said as "cannot" with the alternative, never rewritten as a question.
+    Said as "cannot" with the alternative, never rewritten as a question.
     """
     _, south, _ = two_projects(db)
     run = ServiceRunner(db)

@@ -151,7 +151,7 @@ def test_messages_without_page_context_keep_the_free_conversation(
 def test_model_cannot_invent_identities_or_actions(db: Database, tmp_path: Path) -> None:
     """An invented dataset becomes a question; an unregistered action is not supported.
 
-    FIX2: refusals are kept for missing permissions; an action the registry does not have
+    Refusals are kept for missing permissions; an action the registry does not have
     ends as unsupported, and nothing runs either way.
     """
     images(db, tmp_path / "images")

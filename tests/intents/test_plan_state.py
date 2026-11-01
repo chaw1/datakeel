@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3: tasks named by file, numbers in a group, earlier steps, and labels already there."""
+"""Tasks named by file, numbers in a group, earlier steps, and labels already there."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from datakeel.intents.edits import latest_label_set
 from datakeel.intents.verify import unchanged
 from datakeel.storage.database import DatasetRow
 from datakeel.storage.production_queries import list_tasks
-from tests.intents.fix3_support import planned, steps, targets, two_projects
+from tests.intents.planning_support import planned, steps, targets, two_projects
 from tests.production_helpers import production_fixture
 from tests.production_team_support import ServiceRunner
 

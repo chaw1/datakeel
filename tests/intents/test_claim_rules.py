@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import IntentResult, PageContext
 from datakeel.storage.production_queries import get_task
-from tests.intents.fix3_support import planned, steps, two_projects
+from tests.intents.planning_support import planned, steps, two_projects
 from tests.production_team_ops import review, save, submit
 from tests.production_team_support import ServiceRunner
 

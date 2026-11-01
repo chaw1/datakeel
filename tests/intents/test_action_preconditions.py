@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX6: preconditions and current states for every state-changing action, and the exit."""
+"""Preconditions and current states for every state-changing action, and the exit."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.preconditions import NEEDS, PRECONDITIONS, REASONS
 from datakeel.intents.public_text import _FALLBACK, public, public_result
 from datakeel.storage.production_queries import get_project
-from tests.intents.fix3_support import NORTH, SOUTH, planned, steps, two_projects
+from tests.intents.planning_support import NORTH, SOUTH, planned, steps, two_projects
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:

@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX6: what a step registers is created, not looked up, and its name is not asked again."""
+"""What a step registers is created, not looked up, and its name is not asked again."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from datakeel.core.intent_models import PageContext
 from datakeel.intents.catalog import build_catalog
 from datakeel.intents.edits import latest_label_set
 from datakeel.intents.named_kinds import named_kinds, named_version, said_version
-from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
+from tests.intents.planning_support import SOUTH, planned, steps, two_projects
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:

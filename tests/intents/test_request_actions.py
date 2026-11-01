@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3 P5-P7: new or existing, scope-less reads, and every part of a request accounted for."""
+"""New or existing, scope-less reads, and every part of a request accounted for."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import httpx
 from datakeel.core.intent_models import PageContext
 from datakeel.label_drafts.model import model_draft
 from datakeel.label_drafts.models import CategorySource, DraftInputs, SampleSource
-from tests.intents.fix3_support import SOUTH, planned, shown, steps, targets, two_projects
+from tests.intents.planning_support import SOUTH, planned, shown, steps, targets, two_projects
 from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:

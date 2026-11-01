@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX4: the look-up-first planner reads before it proposes, and only reads."""
+"""The look-up-first planner reads before it proposes, and only reads."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from datakeel.intents.model_parse import INSTRUCTIONS
 from datakeel.intents.planner import ModelAccess, PlannerTurn, plan_turn
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.storage.production_queries import get_task
-from tests.intents.fix3_support import SOUTH, steps, targets, two_projects
+from tests.intents.planning_support import SOUTH, steps, targets, two_projects
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

@@ -1,9 +1,9 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX5: the flow checks what the model left open before a sentence ends.
+"""The flow checks what the model left open before a sentence ends.
 
-Every sentence here is written for the FIX3 development world (North Crossing, 南区车道);
+Every sentence here is written for the shared planning world (North Crossing, 南区车道);
 none comes from a regression or blind set.
 """
 
@@ -17,7 +17,7 @@ from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.edits import latest_label_set
 from datakeel.intents.public_text import public_result
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
-from tests.intents.fix3_support import planned, shown, steps, targets, two_projects
+from tests.intents.planning_support import planned, shown, steps, targets, two_projects
 from tests.production_team_ops import save
 from tests.production_team_support import ServiceRunner
 

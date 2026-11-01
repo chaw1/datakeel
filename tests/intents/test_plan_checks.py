@@ -82,7 +82,7 @@ def test_nothing_registered_fits_gets_a_plain_answer_listing_what_works(db: Data
 
 def test_the_speaker_s_own_words_ground_a_translated_name(db: Database) -> None:
     """Quoted words from the sentence ground a project whose stored name is in English."""
-    project, _ = team(db, split=False)  # FIX6: only a project not split yet can be split
+    project, _ = team(db, split=False)  # Only a project not split yet can be split
     text = "把那个自动生成的项目每包 20 张切包"
     payload = _plan(
         "split_packages",
@@ -107,7 +107,7 @@ def test_me_is_the_speaker_and_positions_follow_the_task_list(db: Database) -> N
     assert params["actor"] == "boss"
     assert params["task_ids"] == [tasks[0].id, tasks[1].id]
     shown = [detail.value for detail in result.chain.steps[0].details]
-    # FIX3 (P2): tasks show their list number, the same one the task list and reads use.
+    # Tasks show their list number, the same one the task list and reads use.
     assert "2 个任务: #1、#2" in shown
     assert not any(task.id in value for task in tasks for value in shown)
     beyond = _plan("assign_tasks", {"task_ids": {"$tasks": {"positions": [9]}}, "actor": "li"})
@@ -117,7 +117,7 @@ def test_me_is_the_speaker_and_positions_follow_the_task_list(db: Database) -> N
 
 def test_unknown_parameters_get_one_repair_round_then_a_question(db: Database) -> None:
     """A parameter the action does not take is never dropped silently."""
-    project, _ = team(db, split=False)  # FIX6: only a project not split yet can be split
+    project, _ = team(db, split=False)  # Only a project not split yet can be split
     wrong = _plan("split_packages", {"project_id": project.id, "size_per_pack": 20})
     fixed = _plan("split_packages", {"project_id": project.id, "package_size": 20})
     context = PageContext(project_id=project.id)
@@ -130,7 +130,7 @@ def test_unknown_parameters_get_one_repair_round_then_a_question(db: Database) -
     assert len(sent) == 2
     assert stuck.kind == "clarify"
     assert stuck.clarification is not None
-    # FIX3 (P4): the made-up key is not shown; the setting is named by the value said.
+    # The made-up key is not shown; the setting is named by the value said.
     assert "size_per_pack" not in stuck.clarification.question
     assert "「20」" in stuck.clarification.question
 
@@ -228,7 +228,7 @@ def test_cards_show_names_and_marked_defaults_and_questions_offer_few_choices(
 ) -> None:
     """Ids never reach the card or the question; unset options show their default."""
     project, _ = team(db)
-    # FIX6: only a project not split yet can be split.
+    # Only a project not split yet can be split.
     fresh, _ = production_fixture(db, "group", count=3, split=False)
     payload = _plan("split_packages", {"project_id": fresh.id})
     result = model_plan(db, "切包", payload, PageContext(project_id=fresh.id))
@@ -364,7 +364,7 @@ def test_answers_and_draft_cards_read_as_names_not_ids(db: Database, tmp_path: P
     }
     text = answer_text("project_progress", progress, "zh")
     assert "6d924f29" not in text
-    # FIX3 (P4): states read in words, never as pending / in_progress.
+    # States read in words, never as pending / in_progress.
     assert "未开始 1, 进行中 2" in text
     assert "pending" not in text
     assert "{" not in text
@@ -400,7 +400,7 @@ def _raw(db: Database, text: str, answers: list[str], context: PageContext) -> I
 
 def test_a_bracket_slip_or_unreadable_answer_still_ends_in_a_plan(db: Database) -> None:
     """One misplaced closer is undone, said inside params is read; garbage is asked again."""
-    project, _ = team(db, split=False)  # FIX6: only a project not split yet can be split
+    project, _ = team(db, split=False)  # Only a project not split yet can be split
     context = PageContext(project_id=project.id)
     slipped = (
         '{"kind":"plan","steps":[{"id":"s1","action":"split_packages","params":{"project_id":"'
@@ -415,6 +415,6 @@ def test_a_bracket_slip_or_unreadable_answer_still_ends_in_a_plan(db: Database) 
     retried = _raw(db, "Split this project into packages of 20", ["no json here", valid], context)
     assert retried.kind == "plan", retried.text
     stuck = _raw(db, "Split this project into packages of 20", ["no json", "still none"], context)
-    # FIX2: an answer that stays unreadable is a failed model call, said as such.
+    # An answer that stays unreadable is a failed model call, said as such.
     assert stuck.kind == "failed"
     assert "could not be read" in stuck.text

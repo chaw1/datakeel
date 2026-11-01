@@ -15,10 +15,10 @@ from scripts.guard_mutations import GUARD_MUTATIONS
 from scripts.identity_mutations import IDENTITY_MUTATIONS
 from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.intent_claim_mutations import CLAIM_MUTATIONS
-from scripts.intent_fix2_mutations import INTENT_FIX2_MUTATIONS
-from scripts.intent_fix3_mutations import INTENT_FIX3_MUTATIONS
 from scripts.intent_language_mutations import LANGUAGE_MUTATIONS
 from scripts.intent_mutations import INTENT_MUTATIONS
+from scripts.intent_planning_mutations import PLANNING_MUTATIONS
+from scripts.intent_query_first_mutations import QUERY_FIRST_MUTATIONS
 from scripts.intent_v020_mutations import INTENT_V020_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
@@ -111,7 +111,7 @@ FEATURE_MUTATIONS = (
     *INTENT_MUTATIONS,
     *LANGUAGE_MUTATIONS,
     *CLAIM_MUTATIONS,
-    *INTENT_FIX2_MUTATIONS,
-    *INTENT_FIX3_MUTATIONS,
+    *QUERY_FIRST_MUTATIONS,
+    *PLANNING_MUTATIONS,
     *INTENT_V020_MUTATIONS,
 )

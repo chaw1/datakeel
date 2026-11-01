@@ -8,7 +8,7 @@ the card). These only name a field on the card, so no line shows a raw parameter
 """
 
 MORE_LABELS: dict[str, tuple[str, str]] = {
-    # FIX6 (12.2-7): every registered parameter has words; none is shown by its key.
+    # Every registered parameter has words; none is shown by its key.
     "after_version": ("之后的版本", "later version"),
     "assertion_filters": ("断言筛选", "assertion filters"),
     "assertion_id": ("断言", "assertion"),

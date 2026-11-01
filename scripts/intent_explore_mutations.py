@@ -1,16 +1,16 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX4 anchors: the look-up-first planner reads only and stops; planner requests stream."""
+"""Read-first anchors: the look-up-first planner reads only and stops; planner requests stream."""
 
 from scripts.mutation_models import Mutation
 
-_EXPLORE = "tests/intents/test_fix4_explore.py::"
+_EXPLORE = "tests/intents/test_read_first_explore.py::"
 _CHAT = "tests/runtime/test_chat_provider.py::"
 
 EXPLORE_MUTATIONS = (
     Mutation(
-        name="fix4-explore-path-is-taken",
+        name="explore-explore-path-is-taken",
         path="intents/planner.py",
         before="    if access.explore:",
         after="    if False:",
@@ -18,7 +18,7 @@ EXPLORE_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix4-explore-results-reach-the-model",
+        name="explore-explore-results-reach-the-model",
         path="intents/explore.py",
         before="        request, used = _followed(request, response, used, lookups)",
         after="        used += 1",
@@ -26,7 +26,7 @@ EXPLORE_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix4-explore-runs-reads-only",
+        name="explore-explore-runs-reads-only",
         path="intents/explore.py",
         before="        if name not in PARAMETER_MODELS:",
         after="        if False:",
@@ -34,7 +34,7 @@ EXPLORE_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix4-explore-stops-at-the-limit",
+        name="explore-explore-stops-at-the-limit",
         path="intents/explore.py",
         before="    while response.tool_calls and used < EXPLORE_LIMIT:",
         after="    while response.tool_calls and used < EXPLORE_LIMIT + 2:",
@@ -42,7 +42,7 @@ EXPLORE_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix4-explore-calls-past-the-limit-are-not-run",
+        name="explore-explore-calls-past-the-limit-are-not-run",
         path="intents/explore.py",
         before=(
             '        found = lookups.found(look) if used <= EXPLORE_LIMIT else "No more look-ups."'
@@ -52,7 +52,7 @@ EXPLORE_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix4-planner-json-requests-stream",
+        name="explore-planner-json-requests-stream",
         path="runtime/chat.py",
         before=(
             "        if request.json_output and isinstance(model, ChatOpenAI):\n"

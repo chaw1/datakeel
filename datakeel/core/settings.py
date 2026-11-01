@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     anthropic_base_url: str | None = None
     openai_url: str = "https://api.openai.com/v1/chat/completions"
     anthropic_url: str = "https://api.anthropic.com/v1/messages"
-    # Planning with a thinking model can take minutes; 180 s is the planner's floor (FIX4).
+    # Planning with a thinking model can take minutes; 180 s is the planner's floor.
     provider_timeout: float = Field(default=180, gt=0, le=600)
     dq_webhook_url: str | None = None
     dq_webhook_secret: SecretStr | None = None

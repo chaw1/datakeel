@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""P31a FIX1/FIX2 anchors for prelabel runs, pass-through and the review rules.
+"""Anchors for prelabel runs, pass-through and the review rules.
 
 Runs outside transactions, accountable and signed pass-through, the calibration curve, human
 heads left alone, and near-duplicates compared on the annotation kinds both sides recorded.

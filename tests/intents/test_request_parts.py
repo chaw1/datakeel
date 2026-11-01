@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3 P1/P6/P7: parts that cannot or need not be done, and values said loosely."""
+"""Parts that cannot or need not be done, and values said loosely."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from datakeel.storage.database import DatasetRow
 from datakeel.storage.dataset_service import list_files
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_queries import list_packages, list_tasks
-from tests.intents.fix3_support import planned, steps, two_projects
+from tests.intents.planning_support import planned, steps, two_projects
 from tests.production_helpers import production_fixture
 from tests.production_team_support import ServiceRunner
 

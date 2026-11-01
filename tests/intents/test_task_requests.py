@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3: one task meant, places in a group, teams as holders, states said first, take-backs."""
+"""One task meant, places in a group, teams as holders, states said first, take-backs."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
-from tests.intents.fix3_support import SOUTH, planned, steps, targets, two_projects
+from tests.intents.planning_support import SOUTH, planned, steps, targets, two_projects
 from tests.production_team_ops import save
 from tests.production_team_support import ServiceRunner
 

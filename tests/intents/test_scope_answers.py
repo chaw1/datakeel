@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX6: one reasonable scope answered, named settings asked by value, evidence not ready."""
+"""One reasonable scope answered, named settings asked by value, evidence not ready."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
 from datakeel.storage.production_queries import list_projects
-from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
+from tests.intents.planning_support import SOUTH, planned, steps, two_projects
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database

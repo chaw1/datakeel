@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3 anchors for groups said any way and for what execution would refuse.
+"""Anchors for groups said any way and for what execution would refuse.
 
 They lock unwrapped and last-N task groups, review-stage assignment, the question when
 protection empties a group, reviews of tasks not waiting for review, release tags that are
@@ -10,10 +10,10 @@ taken, pre-label models that cannot draw boxes, and role cards in words.
 
 from scripts.mutation_models import Mutation
 
-_LIMITS = "tests/intents/test_fix3_limits.py::"
+_LIMITS = "tests/intents/test_group_limits.py::"
 LIMITS_MUTATIONS = (
     Mutation(
-        name="fix3-unwrapped-conditions-are-a-task-group",
+        name="planning-unwrapped-conditions-are-a-task-group",
         path="intents/group_fill.py",
         before="    if isinstance(value, dict) and value and set(value) <= SELECTOR_KEYS:",
         after="    if False:",
@@ -21,7 +21,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-the-last-n-tasks-are-counted-from-the-end",
+        name="planning-the-last-n-tasks-are-counted-from-the-end",
         path="intents/task_scope.py",
         before="    return listed[:first] if first else listed[-last:] if last else None",
         after="    return listed[:first] if first else None",
@@ -29,7 +29,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-review-assignment-takes-tasks-waiting-for-review",
+        name="planning-review-assignment-takes-tasks-waiting-for-review",
         path="intents/task_scope.py",
         before='        return task.state in (REVIEW_STATES if stage == "review" else OPEN_STATES)',
         after="        return task.state in OPEN_STATES",
@@ -37,7 +37,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-review-stage-only-counts-review-holds",
+        name="planning-review-stage-only-counts-review-holds",
         path="intents/task_scope.py",
         before='    held = task.holder is not None and stage in {"annotation", task.stage}',
         after="    held = task.holder is not None",
@@ -45,7 +45,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-a-protected-group-is-asked-about",
+        name="planning-a-protected-group-is-asked-about",
         path="intents/group_fill.py",
         before="        if left_out:\n            return include_question(",
         after="        if False:\n            return include_question(",
@@ -53,7 +53,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-a-picked-include-unlocks-the-group",
+        name="planning-a-picked-include-unlocks-the-group",
         path="intents/task_scope.py",
         before='list(raw.split(",")) if isinstance(raw, str) else []',
         after="[]",
@@ -61,7 +61,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-review-needs-a-task-waiting-for-review",
+        name="planning-review-needs-a-task-waiting-for-review",
         path="intents/impossible.py",
         before='    "review_task": _review,\n',
         after="",
@@ -69,7 +69,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p5-a-published-release-tag-is-taken",
+        name="planning-new-existing-a-published-release-tag-is-taken",
         path="intents/duplicates.py",
         before='    if found is not None or step.action != "publish_release":',
         after="    if True:",
@@ -77,7 +77,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p5-a-model-that-cannot-pre-label-is-said",
+        name="planning-new-existing-a-model-that-cannot-pre-label-is-said",
         path="intents/impossible.py",
         before="    mismatch = model_mismatch(db, step, language)",
         after="    mismatch = None",
@@ -86,7 +86,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p4-said-words-never-hide-internal-names",
+        name="planning-plain-words-said-words-never-hide-internal-names",
         path="intents/public_text.py",
         before='rest = re.sub(whole, " ", rest) if name.isascii() else rest.replace(name, " ")',
         after='rest = rest.replace(name, " ")',
@@ -94,7 +94,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p4-role-scopes-in-words",
+        name="planning-plain-words-role-scopes-in-words",
         path="intents/describe.py",
         before='    "scopes": _scopes,\n',
         after="",
@@ -102,7 +102,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-p2-a-numbered-task-in-a-read-is-that-task",
+        name="planning-display-order-a-numbered-task-in-a-read-is-that-task",
         path="intents/read_scope.py",
         before="    key = next((name for name, item in unknown.items() if _task_said(item)), None)",
         after="    key = None",
@@ -110,7 +110,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-a-read-of-one-task-takes-a-group-of-one",
+        name="planning-a-read-of-one-task-takes-a-group-of-one",
         path="intents/read_scope.py",
         before="    if len(listed) == 1:",
         after="    if False:",
@@ -118,7 +118,7 @@ LIMITS_MUTATIONS = (
         runner="pytest",
     ),
     Mutation(
-        name="fix3-a-production-task-is-not-read-as-a-job",
+        name="planning-a-production-task-is-not-read-as-a-job",
         path="intents/resolve.py",
         before="        step = production_read(self.db, step)\n",
         after="",

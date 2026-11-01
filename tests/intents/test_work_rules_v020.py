@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from datakeel.core.intent_models import PageContext
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_queries import get_project, get_task
-from tests.intents.fix3_support import SOUTH, planned, steps, two_projects
+from tests.intents.planning_support import SOUTH, planned, steps, two_projects
 from tests.prelabel_support import cloud_model, seed_cloud_project
 from tests.production_team_ops import review, save, submit
 from tests.production_team_support import ServiceRunner

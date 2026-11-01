@@ -307,9 +307,7 @@ def test_count_noun_phrases_retain_their_head_object() -> None:
         ("包含 7 个 image 文件。", "manifest.modalities", {"audio": 7, "text": 5}, True),
     ],
 )
-def test_fix1_required_numeric_cases(
-    text: str, field: str, value: JsonValue, *, drop: bool
-) -> None:
+def test_required_numeric_cases(text: str, field: str, value: JsonValue, *, drop: bool) -> None:
     """All twelve review examples retain their original wording and direct numeric verdict."""
     assert bool(numeric_issues(text, (_fact(field, value),))) is drop
 

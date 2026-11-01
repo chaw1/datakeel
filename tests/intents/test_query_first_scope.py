@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX2: described groups are read before planning and every plan passes fixed checks."""
+"""Described groups are read before planning and every plan passes fixed checks."""
 
 from __future__ import annotations
 
@@ -370,7 +370,7 @@ def test_unassigned_means_nobody_holds_it_and_it_is_still_open() -> None:
     found = select_tasks(snapshots, {"holder": "nobody"}, action="reopen_task", speaker="boss")
     assert found.ids == ["c"]
     numbered = select_tasks(snapshots, {"numbers": [2]}, action="assign_tasks", speaker="boss")
-    # FIX3: a named task already handed in cannot be assigned; it is left out and said.
+    # A named task already handed in cannot be assigned; it is left out and said.
     assert numbered.ids == []
     assert numbered.excluded == {"closed": 1}
     named = select_tasks(snapshots, {"numbers": [2]}, action="reopen_task", speaker="boss")

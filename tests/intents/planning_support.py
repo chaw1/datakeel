@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3 world: two named projects whose identities do not follow the list order."""
+"""Planning world: two named projects whose identities do not follow the list order."""
 
 from __future__ import annotations
 

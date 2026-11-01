@@ -115,7 +115,7 @@ def test_model_risk_survives_human_save_and_review_pagination(db: Database, tmp_
     first = workbench_project(db, project.id, caller, WorkbenchProjectQuery(limit=1, view="review"))
     # P31a D2: the AI pre-review risk leads the review order; emptying a confident draft is risky.
     assert first.tasks[0].id == tasks[1].id
-    # FIX1: the queue's difference uses B1 matching, so emptying a one-box draft is 100%.
+    # The queue's difference uses B1 matching, so emptying a one-box draft is 100%.
     assert first.task_risks[0].prelabel_difference == 1
     assert first.task_risks[0].ai_risk is not None
     assert first.task_risks[0].ai_risk > 0

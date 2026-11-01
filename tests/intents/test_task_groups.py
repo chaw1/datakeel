@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX6: one task group across the steps of a plan, and the next segment of a list."""
+"""One task group across the steps of a plan, and the next segment of a list."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from datakeel.core.intent_models import PageContext
 from datakeel.core.models import AssetRef
 from datakeel.intents import selectors
-from tests.intents.fix3_support import SOUTH, planned, steps, targets, two_projects
+from tests.intents.planning_support import SOUTH, planned, steps, targets, two_projects
 from tests.production_team_ops import save
 
 if TYPE_CHECKING:

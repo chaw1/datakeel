@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX6: a later turn's "刚才那个" is the previous turn's object, of any kind."""
+"""A later turn's "刚才那个" is the previous turn's object, of any kind."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import pytest
 from datakeel.core.agent_models import ModelResponse
 from datakeel.core.intent_models import IntentResult, PageContext
 from datakeel.intents.planner import ModelAccess, PlannerTurn, conversation_focus, plan_turn
-from tests.intents.fix3_support import steps, targets, two_projects
+from tests.intents.planning_support import steps, targets, two_projects
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database

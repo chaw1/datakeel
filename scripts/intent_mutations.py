@@ -20,7 +20,7 @@ INTENT_MUTATIONS = (
         path="intents/validate.py",
         before="    if not granted and (project_known or not missing):",
         after="    if False:",
-        # FIX1: permission is refused earlier (resolve.overreach); this check still guards a
+        # Permission is refused earlier (resolve.overreach); this check still guards a
         # project that only becomes known while filling.
         case=_CHECKS + "test_step_check_still_refuses_a_project_the_speaker_does_not_manage",
         runner="pytest",
@@ -161,7 +161,7 @@ INTENT_MUTATIONS = (
         case=_DEFAULTS + "test_read_prefix_copied_from_the_registry_is_dropped",
         runner="pytest",
     ),
-    # FIX1: the mutant drops unknown parameters silently; the planner must report them.
+    # The mutant drops unknown parameters silently; the planner must report them.
     Mutation(
         name="intent-unknown-model-params-dropped",
         path="intents/fill.py",

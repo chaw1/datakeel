@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""FIX3 P3/P4: values the state answers are never asked; no internal name reaches a person."""
+"""Values the state answers are never asked; no internal name reaches a person."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from datakeel.intents.wording import field_label, invalid_question, missing_ques
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_queries import get_task
-from tests.intents.fix3_support import SOUTH, planned, shown, steps, two_projects
+from tests.intents.planning_support import SOUTH, planned, shown, steps, two_projects
 
 if TYPE_CHECKING:
     import pytest
@@ -149,7 +149,7 @@ def test_cards_show_choices_in_words_and_never_internal_names(db: Database) -> N
     result = planned(db, "按目录重新切包, 再把第 5、6 条派给小王", [chain], page)
     assert result.kind == "plan", result.text
     assert result.chain is not None
-    # FIX6 12.2-3: the project is split already, so splitting again is set aside and said.
+    # The project is split already, so splitting again is set aside and said.
     assert "已经切过包" in result.text
     catalog = build_catalog(db, south.id)
     split = ChainStep(id="s1", action="split_packages", params=chain["steps"][0]["params"])
