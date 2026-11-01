@@ -19,6 +19,7 @@ from datakeel.training.export_detection import (
     write_yolo,
 )
 from datakeel.training.export_hf import write_hf_imagefolder
+from datakeel.training.export_keypoints import require_no_keypoints
 from datakeel.training.export_records import write_imagefolder, write_text_jsonl
 from datakeel.training.native import write_annotations_jsonl
 
@@ -43,10 +44,11 @@ def _count(item: TrainingExportItem, format_name: str) -> int:
                 item.annotation.boxes,
                 item.annotation.polygons,
                 item.annotation.spans,
+                item.annotation.keypoints,
             )
         )
     if format_name in {"coco", "yolo"}:
-        return len(item.annotation.boxes or ())
+        return len(item.annotation.boxes or ()) + len(item.annotation.keypoints or ())
     if format_name == "imagefolder":
         return len(item.annotation.labels or ())
     if format_name == "hf_imagefolder":
@@ -86,6 +88,8 @@ def _orientation(item: TrainingExportItem, format_name: str, written: Path) -> d
 def write_training_export(export: TrainingExport, directory: Path, archive: Path) -> None:
     """Write a format directory and byte-stable tar without destination or action timestamps."""
     validate_detection_annotations(export)
+    if export.format not in {"coco", "annotations_jsonl"}:
+        require_no_keypoints(export, export.format)
     _verify_sources(export)
     ordered = export.model_copy(
         update={"items": tuple(sorted(export.items, key=lambda i: i.file.id))}

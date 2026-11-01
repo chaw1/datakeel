@@ -10,7 +10,11 @@ orientation) means stored coordinates, converted here. A square image cannot tel
 apart and defaults to upright. ``coordinate_frame`` from the caller overrides the inference.
 """
 
-from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.annotation_models import (
+    AnnotationKeypoint,
+    AnnotationRecord,
+    AnnotationSkeleton,
+)
 from datakeel.core.image_orientation import CoordinateFrame, ImageGeometry, display_record
 from datakeel.core.production_prediction_models import PredictionSample
 
@@ -71,10 +75,31 @@ def _rescaled(record: AnnotationRecord, width: float, height: float) -> Annotati
             )
             if record.boxes is not None
             else None,
+            "keypoints": tuple(
+                _rescaled_skeleton(skeleton, x_scale, y_scale)
+                for skeleton in record.keypoints or ()
+            )
+            if record.keypoints is not None
+            else None,
             "image_width": width,
             "image_height": height,
         }
     )
+
+
+def _rescaled_skeleton(
+    skeleton: AnnotationSkeleton, x_scale: float, y_scale: float
+) -> AnnotationSkeleton:
+    points: list[AnnotationKeypoint] = []
+    for point in skeleton.points:
+        if point.state == "missing":
+            points.append(point)
+            continue
+        if point.x is None or point.y is None:
+            message = "Positioned keypoints require coordinates"
+            raise ValueError(message)
+        points.append(point.model_copy(update={"x": point.x * x_scale, "y": point.y * y_scale}))
+    return skeleton.model_copy(update={"points": tuple(points)})
 
 
 def upright_import(

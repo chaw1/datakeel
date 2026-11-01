@@ -158,6 +158,7 @@ def _sample(
                     *(box.category for box in record.boxes or ()),
                     *(polygon.category for polygon in record.polygons or ()),
                     *(span.category for span in record.spans or ()),
+                    *(skeleton.category for skeleton in record.keypoints or ()),
                 )
             }
         )

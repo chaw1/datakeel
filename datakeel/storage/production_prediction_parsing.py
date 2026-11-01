@@ -183,6 +183,14 @@ def parse_coco(
         return _failure(file.filename, "malformed", str(exc))
     predictions: list[ParsedPrediction] = []
     failures = list(document.parse_failures)
+    if any("keypoints" in item or "num_keypoints" in item for item in document.annotations) or any(
+        "keypoints" in item or "skeleton" in item for item in document.categories
+    ):
+        return _failure(
+            file.filename,
+            "unsupported_keypoints",
+            "COCO keypoint import is unsupported; use annotations_jsonl instead",
+        )
     if not document.images:
         if document.parse_failures:
             return PredictionParseResult(failures=document.parse_failures)

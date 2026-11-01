@@ -43,6 +43,15 @@ def import_coco(
     An explicit filename-to-source-identity map takes precedence over the optional
     Datakeel extension. External COCO can instead use filenames as sample identities.
     """
+    if any(
+        category.keypoints is not None or category.skeleton is not None
+        for category in document.categories
+    ) or any(
+        annotation.keypoints is not None or annotation.num_keypoints is not None
+        for annotation in document.annotations
+    ):
+        message = "COCO keypoint import is unsupported; use annotations_jsonl instead"
+        raise ValidationError(message)
     _unique([image.id for image in document.images], "COCO image")
     _unique([category.id for category in document.categories], "COCO category")
     _unique([box.id for box in document.annotations], "COCO annotation")

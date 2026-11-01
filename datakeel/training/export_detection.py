@@ -24,20 +24,39 @@ from datakeel.training.export_common import (
     validate_image_extension,
     write_image,
 )
+from datakeel.training.export_keypoints import (
+    coco_edges,
+    coco_skeleton,
+    export_schema,
+    require_no_keypoints,
+    skeleton_category_names,
+)
 
 
 def detection_categories(items: tuple[TrainingExportItem, ...]) -> tuple[str, ...]:
     """Assign stable category identities from sorted explicit detection names."""
-    return tuple(sorted({box.category for item in items for box in item.annotation.boxes or ()}))
+    return tuple(
+        sorted(
+            {box.category for item in items for box in item.annotation.boxes or ()}
+            | {skeleton.category for item in items for skeleton in item.annotation.keypoints or ()}
+        )
+    )
 
 
 def validate_detection_annotations(export: TrainingExport) -> None:
     """Require reviewed detections and at least one explicit category for YOLO training."""
     if export.format not in {"coco", "yolo"}:
         return
-    if any(item.annotation.boxes is None for item in export.items):
-        message = "Detection exports require reviewed boxes; missing annotations are not negatives"
+    if export.format == "yolo":
+        require_no_keypoints(export, "YOLO")
+    if any(
+        item.annotation.boxes is None and item.annotation.keypoints is None for item in export.items
+    ):
+        message = (
+            "Detection exports require reviewed annotations; missing annotations are not negatives"
+        )
         raise ValidationError(message)
+    export_schema(export)
     categories = detection_categories(export.items)
     if export.format == "yolo" and not categories:
         message = "YOLO exports require at least one explicit detection category"
@@ -47,6 +66,7 @@ def validate_detection_annotations(export: TrainingExport) -> None:
 def write_coco(export: TrainingExport, directory: Path) -> dict[str, str]:
     """Write per-split COCO documents with absolute xywh boxes and integer identities."""
     categories = detection_categories(export.items)
+    schema = export_schema(export)
     paths: dict[str, str] = {}
     for split in sorted({item.split for item in export.items}):
         selected = tuple(item for item in export.items if item.split == split)
@@ -80,10 +100,20 @@ def write_coco(export: TrainingExport, directory: Path) -> dict[str, str]:
                         attributes=box.attributes,
                     )
                 )
+            for skeleton in item.annotation.keypoints or ():
+                annotations.append(
+                    coco_skeleton(
+                        skeleton,
+                        annotation_id=len(annotations) + 1,
+                        image_id=ordinal,
+                        category_id=categories.index(skeleton.category) + 1,
+                        schema=schema,
+                    )
+                )
         document = CocoDataset(
             images=tuple(images),
             annotations=tuple(annotations),
-            categories=tuple(CocoCategory(id=i, name=name) for i, name in enumerate(categories, 1)),
+            categories=_coco_categories(export, categories),
         )
         target = directory / "annotations" / f"instances_{split}.json"
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -91,6 +121,28 @@ def write_coco(export: TrainingExport, directory: Path) -> dict[str, str]:
             json_text(document.model_dump(mode="json")), encoding="utf-8", newline="\n"
         )
     return paths
+
+
+def _coco_categories(
+    export: TrainingExport, categories: tuple[str, ...]
+) -> tuple[CocoCategory, ...]:
+    schema = export.keypoint_schema
+    skeleton_categories = skeleton_category_names(export)
+    return tuple(
+        CocoCategory(
+            id=index,
+            name=name,
+            keypoints=(
+                tuple(point.name for point in schema.points)
+                if schema is not None and name in skeleton_categories
+                else None
+            ),
+            skeleton=(
+                coco_edges(schema) if schema is not None and name in skeleton_categories else None
+            ),
+        )
+        for index, name in enumerate(categories, 1)
+    )
 
 
 def write_yolo(export: TrainingExport, directory: Path) -> dict[str, str]:

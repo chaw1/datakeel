@@ -10,8 +10,10 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.annotation_models import AnnotationBatch
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
+from datakeel.core.keypoint_models import SkeletonDefinition
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
 from datakeel.core.training_models import (
     LeakageReport,
@@ -21,6 +23,7 @@ from datakeel.core.training_models import (
     TrainingSample,
 )
 from datakeel.storage.annotation_frames import DISPLAY_FRAME
+from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.database import Database
 from datakeel.storage.events import append_event
 from datakeel.storage.training_inputs import authorize_training, read_training_samples
@@ -33,20 +36,27 @@ SPLIT_ALGORITHM_VERSION = "1.3-iterative-text"
 
 
 def _build(
-    dataset_id: str, version_id: str, request: SplitRequest, samples: tuple[TrainingSample, ...]
+    dataset_id: str,
+    version_id: str,
+    request: SplitRequest,
+    samples: tuple[TrainingSample, ...],
+    keypoint_schema: SkeletonDefinition | None = None,
 ) -> SplitSet:
     members = split_samples(samples, request)
     policy = request.model_dump(mode="json")
     if request.stratification_source == "all":
         policy.pop("stratification_source")
+    identity_content: list[object] = [
+        dataset_id,
+        version_id,
+        SPLIT_ALGORITHM_VERSION,
+        policy,
+        [member.model_dump(mode="json") for member in members],
+    ]
+    if keypoint_schema is not None:
+        identity_content.append(keypoint_schema.model_dump(mode="json"))
     identity = json.dumps(
-        [
-            dataset_id,
-            version_id,
-            SPLIT_ALGORITHM_VERSION,
-            policy,
-            [member.model_dump(mode="json") for member in members],
-        ],
+        identity_content,
         sort_keys=True,
         ensure_ascii=False,
         separators=(",", ":"),
@@ -60,7 +70,26 @@ def _build(
         distributions=distributions(members),
         created_at=datetime(1970, 1, 1, tzinfo=UTC),
         algorithm_version=SPLIT_ALGORITHM_VERSION,
+        keypoint_schema=keypoint_schema,
     )
+
+
+def _version_keypoint_schema(session: Session, version_id: str) -> SkeletonDefinition | None:
+    schemas: dict[str, SkeletonDefinition] = {
+        batch.keypoint_schema.model_dump_json(): batch.keypoint_schema
+        for batch in (
+            AnnotationBatch.model_validate(row.batch)
+            for row in session.scalars(
+                select(AnnotationBatchRow).where(AnnotationBatchRow.version_id == version_id)
+            )
+        )
+        if batch.keypoint_schema is not None
+        and any(record.keypoints for record in batch.annotations)
+    }
+    if len(schemas) > 1:
+        message = "Training keypoint exports require one locked skeleton schema per version"
+        raise ValidationError(message)
+    return next(iter(schemas.values()), None)
 
 
 def preview_split(
@@ -76,7 +105,13 @@ def preview_split(
         samples = read_training_samples(
             session, dataset_id, version_id, request.group_field, access=access
         )
-        return _build(dataset_id, version_id, request, samples)
+        return _build(
+            dataset_id,
+            version_id,
+            request,
+            samples,
+            _version_keypoint_schema(session, version_id),
+        )
 
 
 def create_split(
@@ -106,7 +141,8 @@ def create_split(
         samples = read_training_samples(
             session, dataset_id, version_id, request.group_field, access=access
         )
-        split = _build(dataset_id, version_id, request, samples).model_copy(
+        schema = _version_keypoint_schema(session, version_id)
+        split = _build(dataset_id, version_id, request, samples, schema).model_copy(
             update={"created_at": utcnow()}
         )
         session.add(

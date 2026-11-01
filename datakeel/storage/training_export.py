@@ -24,7 +24,7 @@ from datakeel.storage.object_projection import content_digest
 from datakeel.storage.release_service import iter_release_entries, require_release
 from datakeel.storage.training_rows import TrainingSplitRow
 from datakeel.storage.version_stream import require_version, stream_manifest
-from datakeel.training.export_detection import validate_detection_annotations
+from datakeel.training.export_detection import require_no_keypoints, validate_detection_annotations
 
 
 def _split(session: Session, params: ExportParams) -> SplitSet:
@@ -145,8 +145,11 @@ def training_export_inputs(
         seed=split.request.seed,
         format=cast("TrainingFormat", params.format),
         items=tuple(items),
+        keypoint_schema=split.keypoint_schema,
     )
     validate_detection_annotations(export)
+    if export.format not in {"coco", "annotations_jsonl"}:
+        require_no_keypoints(export, export.format)
     return export
 
 

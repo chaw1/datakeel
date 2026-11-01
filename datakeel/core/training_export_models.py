@@ -9,6 +9,7 @@ from pydantic import ConfigDict, Field, JsonValue, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.image_orientation import CoordinateFrame
+from datakeel.core.keypoint_models import SkeletonDefinition
 from datakeel.core.models import BoundaryModel, FileItem
 
 TrainingFormat = Literal[
@@ -38,6 +39,9 @@ class TrainingExport(BoundaryModel):
     seed: int
     format: TrainingFormat
     items: tuple[TrainingExportItem, ...]
+    keypoint_schema: SkeletonDefinition | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class HfImageMetadata(BoundaryModel):
@@ -63,6 +67,10 @@ class CocoCategory(BoundaryModel):
     id: int
     name: str = Field(min_length=1)
     supercategory: str = ""
+    keypoints: tuple[str, ...] | None = Field(default=None, exclude_if=lambda value: value is None)
+    skeleton: tuple[tuple[int, int], ...] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class CocoImage(BoundaryModel):
@@ -87,6 +95,10 @@ class CocoBox(BoundaryModel):
     area: float | None = None
     iscrowd: Literal[0, 1] = 0
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
+    keypoints: tuple[float, ...] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    num_keypoints: int | None = Field(default=None, ge=0, exclude_if=lambda value: value is None)
 
 
 class CocoDataset(BoundaryModel):

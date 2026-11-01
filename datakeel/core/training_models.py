@@ -9,11 +9,12 @@ from typing import Literal, Self
 from pydantic import AwareDatetime, Field, model_validator
 
 from datakeel.core.annotation_models import AnnotationRecord
+from datakeel.core.keypoint_models import SkeletonDefinition
 from datakeel.core.models import BoundaryModel, FileItem
 
 type SplitName = Literal["train", "val", "test"]
 type LeakageKind = Literal["exact", "image", "text", "group"]
-type StratificationSource = Literal["all", "classification", "detection", "spans"]
+type StratificationSource = Literal["all", "classification", "detection", "spans", "keypoints"]
 
 
 class SplitRatios(BoundaryModel):
@@ -118,6 +119,9 @@ class SplitSet(BoundaryModel):
     distributions: tuple[SplitDistribution, ...]
     created_at: AwareDatetime
     algorithm_version: str = "1.0"
+    keypoint_schema: SkeletonDefinition | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class LeakagePair(BoundaryModel):

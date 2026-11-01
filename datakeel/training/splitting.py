@@ -159,7 +159,11 @@ def _stratification_labels(sample: TrainingSample, source: StratificationSource)
             else (
                 tuple(box.category for box in record.boxes or ())
                 if source == "detection"
-                else tuple(span.category for span in record.spans or ())
+                else (
+                    tuple(skeleton.category for skeleton in record.keypoints or ())
+                    if source == "keypoints"
+                    else tuple(span.category for span in record.spans or ())
+                )
             )
         )
     }
