@@ -10,15 +10,16 @@ instead, with what is missing and what to do first. A check is skipped when an e
 of the same plan changes the state it reads ("先审完再定稿").
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
+from typing import TYPE_CHECKING, cast
 
 from pydantic import JsonValue
 
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.intent_models import ChainStep
-from datakeel.core.production_models import Project
-from datakeel.intents.claim_effects import claim_effects
+from datakeel.intents.claim_effects import ClaimQuery, claim_effects
+from datakeel.intents.precondition_models import Check, Found, Target
 from datakeel.intents.precondition_reasons import REASONS
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import list_users
@@ -37,28 +38,11 @@ from datakeel.storage.production_queries import (
     project_for_params,
 )
 
+if TYPE_CHECKING:
+    from datakeel.core.production_models import Project
+
 EDITABLE = frozenset({"pending", "in_progress"})
 RELEASABLE = {"annotation": "in_progress", "review": "in_review"}
-
-
-@dataclass(frozen=True)
-class Target:
-    """The objects one step acts on, read once."""
-
-    project: Project | None
-    tasks: tuple[str, ...]
-    package: str | None
-    actor: str
-    stage: str
-    assignee: str | None = None
-    limit: int | None = None
-    load_delta: int = 0
-    prior_claims: int = 0
-    reserved_tasks: frozenset[str] = frozenset()
-
-
-Found = tuple[str, dict[str, str]] | None
-Check = Callable[[Database, Target], Found]
 
 
 def _finalized(db: Database, target: Target) -> Found:
@@ -188,13 +172,16 @@ def _free_task(db: Database, target: Target) -> Found:
     tasks = [
         task
         for task in list_tasks(db, project.id)
-        if task.state == expected
+        if (task.state == expected or task.id in target.released_tasks)
         and target.package in (None, task.package_id)
         and (target.stage != "annotation" or task.round == 0 or task.annotator_id == target.actor)
     ]
     holders = task_holders(db, [task.id for task in tasks], target.stage)
     free = [
-        task for task in tasks if task.id not in holders and task.id not in target.reserved_tasks
+        task
+        for task in tasks
+        if (task.id not in holders or task.id in target.released_tasks)
+        and task.id not in target.reserved_tasks
     ]
     if project.workflow_tier == "team" and target.stage == "review":
         own = set(own_work(db, [task.id for task in free], target.actor))
@@ -379,13 +366,21 @@ def unmet(
         return None
     changed = {item.action for item in earlier}
     target = _target(db, step, actor)
-    if step.action == "claim_task" and target.project is not None:
-        effects = claim_effects(db, target.project, actor, target.stage, target.package, earlier)
+    projected = step.action in {"claim_task", "assign_tasks"} and target.project is not None
+    if projected:
+        person = target.assignee or actor
+        project = cast("Project", target.project)
+        query = ClaimQuery(project, actor, person, target.stage, target.package)
+        effects = claim_effects(db, query, earlier)
         target = replace(target, **vars(effects))
-        changed -= {"configure_project", "upgrade_project"}
+        if target.uncertain or (
+            step.action == "assign_tasks" and target.assignee is None and target.touched
+        ):
+            zh, en = REASONS["uncertain_state"]
+            return zh if language == "zh" else en
     for name in needs:
         rule = PRECONDITIONS[name]
-        if rule.changed_by & changed:
+        if not projected and rule.changed_by & changed:
             continue
         found = rule.check(db, target)
         if found is not None:

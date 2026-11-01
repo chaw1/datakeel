@@ -174,7 +174,7 @@ ACTION_STATE_MUTATIONS = (
     _anchor(
         "an-earlier-step-can-meet-a-need",
         "intents/preconditions.py",
-        ("        if rule.changed_by & changed:", "        if False:"),
+        ("        if not projected and rule.changed_by & changed:", "        if False:"),
         "action_preconditions.py::test_an_earlier_step_that_meets_the_need_lets_the_plan_through",
     ),
     _anchor(

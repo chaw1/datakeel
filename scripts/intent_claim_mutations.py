@@ -6,6 +6,7 @@
 from scripts.mutation_models import Mutation
 
 _T = "tests/intents/test_claim_rules.py::"
+_M = "tests/intents/test_claim_chain_matrix.py::test_claim_dispatch_chain_matrix"
 
 
 def _anchor(name: str, change: tuple[str, str], case: str) -> Mutation:
@@ -61,9 +62,39 @@ CLAIM_MUTATIONS = (
     Mutation(
         name="claim-upgrade-preserves-effective-strategy",
         path="intents/claim_effects.py",
-        before="            effective = _configure(effective, step)",
-        after="            effective = effective",
+        before="            self.project = _configure(self.project, step)",
+        after="            self.project = self.project",
         case=_T + "test_upgrade_preserves_assign_only_strategy_and_a_legal_upgrade_executes",
+        runner="pytest",
+    ),
+    Mutation(
+        name="assign-uses-the-same-effective-load",
+        path="intents/preconditions.py",
+        before=(
+            '    projected = step.action in {"claim_task", "assign_tasks"} '
+            "and target.project is not None"
+        ),
+        after='    projected = step.action == "claim_task" and target.project is not None',
+        case=_M + "[claim-assign-over]",
+        runner="pytest",
+    ),
+    Mutation(
+        name="release-restores-one-load-slot",
+        path="intents/claim_effects.py",
+        before=(
+            "            elif holders.get(task) == person and task not in self.released:\n"
+            "                self.load_delta -= 1"
+        ),
+        after=("            elif False:\n                self.load_delta -= 1"),
+        case=_M + "[release-claim-claim-over]",
+        runner="pytest",
+    ),
+    Mutation(
+        name="release-returns-the-task-to-the-free-queue",
+        path="intents/claim_effects.py",
+        before="        self.released.update(tasks)",
+        after="        self.released.clear()",
+        case=_M + "[release-only-free]",
         runner="pytest",
     ),
 )
