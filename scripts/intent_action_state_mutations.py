@@ -59,38 +59,26 @@ ACTION_STATE_MUTATIONS = (
     ),
     _anchor(
         "the-next-n-come-after-the-ones-taken",
-        "intents/segments.py",
-        ("    if not _segmented(spec, state, action):", "    if True:"),
+        "intents/replanning.py",
+        ("        if dependent:", "        if False:"),
         "task_groups.py::test_the_next_two_are_counted_after_the_first_two",
     ),
     _anchor(
         "one-group-for-two-steps-is-one-set",
-        "intents/segments.py",
-        (
-            (
-                "    same = [] if _segmented(spec, state, action) else "
-                "state.chosen.get(_key(spec), [])"
-            ),
-            "    same = []",
-        ),
+        "intents/replanning.py",
+        ("        if dependent:", "        if False:"),
         "task_groups.py::test_revoke_then_reassign_acts_on_one_set_and_protection_spares_both",
     ),
     _anchor(
         "one-action-never-takes-the-same-place-twice",
-        "intents/segments.py",
-        (
-            "    return NEXT.search(state.text) is not None or action in state.taken",
-            "    return NEXT.search(state.text) is not None",
-        ),
+        "intents/replanning.py",
+        ("        if dependent:", "        if False:"),
         "task_groups.py::test_one_action_given_the_same_first_one_twice_takes_the_next",
     ),
     _anchor(
         "a-later-step-keeps-what-only-it-can-take",
-        "intents/segments.py",
-        (
-            "    merged = [*same, *(task for task in ids if task not in same)]",
-            "    merged = same or ids",
-        ),
+        "intents/replanning.py",
+        ("        if dependent:", "        if False:"),
         "task_groups.py::test_a_later_step_of_the_same_group_keeps_what_only_it_can_take",
     ),
     _anchor(

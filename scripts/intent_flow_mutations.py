@@ -50,9 +50,9 @@ FLOW_MUTATIONS = (
     ),
     Mutation(
         name="flow-already-with-that-reviewer",
-        path="intents/already.py",
-        before='    "assign_tasks": _holder,',
-        after="",
+        path="intents/preconditions.py",
+        before='    "assign_tasks": ("finalized", "assignable", "capacity", "separate"),',
+        after='    "assign_tasks": ("finalized", "capacity", "separate"),',
         case=_FLOW + "test_a_change_that_is_already_so_names_the_current_state",
         runner="pytest",
     ),

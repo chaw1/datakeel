@@ -156,8 +156,8 @@ REQUEST_MUTATIONS = (
     ),
     _anchor(
         "planning-a-task-taken-back-earlier-is-free",
-        "intents/fill.py",
-        ("        state.freed.update(freed(filled[-1]))\n", ""),
+        "intents/replanning.py",
+        ("        if dependent:", "        if False:"),
         _FREED,
     ),
     _anchor(
@@ -189,14 +189,8 @@ REQUEST_MUTATIONS = (
     ),
     _anchor(
         "planning-an-earlier-upgrade-lifts-the-personal-rules",
-        "intents/impossible.py",
-        (
-            (
-                '    if found is not None and found[0].startswith("personal") '
-                "and _upgraded(db, step, earlier):"
-            ),
-            "    if False:",
-        ),
+        "intents/replanning.py",
+        ("        if dependent:", "        if False:"),
         _EARLIER,
     ),
     _anchor(
