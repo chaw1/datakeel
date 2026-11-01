@@ -25,6 +25,7 @@ from datakeel.actions.production_parameters import (
     SubmitTaskParams,
 )
 from datakeel.core.annotation_models import (
+    AnnotationBox,
     AnnotationKeypoint,
     AnnotationRecord,
     AnnotationSkeleton,
@@ -50,8 +51,10 @@ from datakeel.storage.production_projects import create_project, split_packages
 from datakeel.storage.production_reviews import review_task, submit_task
 from datakeel.storage.production_revisions import append_revision, current_revision
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow
+from datakeel.storage.production_statistics import production_prelabel_accuracy
 from datakeel.storage.production_tasks import require_task, task_view
 from datakeel.storage.production_template_upgrade import upgrade_plan, upgrade_project_template
+from datakeel.storage.workbench_risk import draft_difference
 from tests.storage.production_catalog_fixtures import catalog_project
 
 
@@ -452,3 +455,86 @@ def test_team_expired_lease_rejects_keypoint_save_without_losing_draft(db: Datab
             _save(session, stale, _annotation(tasks[0]))
         current = require_task(session, tasks[0].id)
         assert current.latest_revision_id == revision.id
+
+
+def _moved(annotation: AnnotationRecord) -> AnnotationRecord:
+    skeletons = annotation.keypoints or ()
+    moved = skeletons[0].model_copy(
+        update={
+            "points": tuple(
+                point.model_copy(update={"x": 90, "y": 70}) if point.id == "nose" else point
+                for point in skeletons[0].points
+            )
+        }
+    )
+    return annotation.model_copy(update={"keypoints": (moved,)})
+
+
+def _model_revision(
+    session: Session, task: ProductionTask, annotation: AnnotationRecord
+) -> AnnotationRevision:
+    return append_revision(
+        session,
+        require_task(session, task.id),
+        SaveRevisionParams(
+            request_id=f"model-{task.id}",
+            task_id=task.id,
+            previous_revision_id=None,
+            annotation=annotation,
+            source="model",
+            model_name="fake",
+            model_version="1",
+        ),
+        "local",
+    )
+
+
+def test_mixed_empty_boxes_and_moved_skeletons_are_not_assessed(db: Database) -> None:
+    """Production exact/IoU and review difference reject fake 100% for keypoint-only records."""
+    project, tasks = _project(db)
+    with db.session() as session:
+        original = _annotation(tasks[0])
+        assert original.boxes == ()
+        _model_revision(session, tasks[0], original)
+        head = tasks[0].model_copy(
+            update={"latest_revision_id": require_task(session, tasks[0].id).latest_revision_id}
+        )
+        human = _moved(original)
+        _save(session, head, human)
+        submit_task(
+            session, SubmitTaskParams(request_id="submit-mixed", task_id=tasks[0].id), "local"
+        )
+        session.commit()
+        score = production_prelabel_accuracy(db, project.id)
+        assert score.assessed_tasks == 0
+        assert score.exact_match_rate is None
+        assert score.iou_50.all_hit_rate is None
+        assert score.iou_75.all_hit_rate is None
+        assert score.iou_50.model_objects == 0
+        assert draft_difference(human, original) is None
+
+
+def test_mixed_real_boxes_keep_original_metrics_without_keypoint_hits(db: Database) -> None:
+    """Supported objects still count normally while moved keypoints add no exact or IoU hit."""
+    project, tasks = _project(db)
+    with db.session() as session:
+        box = AnnotationBox(category="a", x1=1, y1=2, x2=11, y2=22)
+        original = _annotation(tasks[0]).model_copy(update={"boxes": (box,)})
+        _model_revision(session, tasks[0], original)
+        head = tasks[0].model_copy(
+            update={"latest_revision_id": require_task(session, tasks[0].id).latest_revision_id}
+        )
+        human = _moved(original)
+        _save(session, head, human)
+        submit_task(
+            session, SubmitTaskParams(request_id="submit-box", task_id=tasks[0].id), "local"
+        )
+        session.commit()
+        score = production_prelabel_accuracy(db, project.id)
+        assert score.assessed_tasks == 1
+        assert score.exact_match_rate == 1
+        assert score.iou_50.model_objects == 1
+        assert score.iou_50.human_objects == 1
+        assert score.iou_50.all_hit_rate == 1
+        assert score.iou_75.all_hit_rate == 1
+        assert draft_difference(human, original) == 0

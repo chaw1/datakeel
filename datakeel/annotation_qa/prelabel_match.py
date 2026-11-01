@@ -119,11 +119,12 @@ def object_iou(
 
 
 def comparable_records(model: AnnotationRecord, human: AnnotationRecord) -> bool:
-    """Report whether at least one supported annotation kind was recorded on both sides."""
-    return any(
-        getattr(model, field) is not None and getattr(human, field) is not None
-        for field in _KIND_FIELDS
-    )
+    """Require shared supported content, not a keypoint-only pair with shared empty arrays."""
+    model, human = shared_records(model, human)
+    if not any(getattr(model, field) is not None for field in _KIND_FIELDS):
+        return False
+    supported = bool(record_objects(model) or record_objects(human))
+    return supported or not (model.keypoints or human.keypoints)
 
 
 def shared_records(

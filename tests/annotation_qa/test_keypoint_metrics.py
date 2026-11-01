@@ -7,6 +7,7 @@ from datakeel.annotation_qa import evaluate_annotations, prelabel_accuracy
 from datakeel.annotation_qa.prelabel_match import comparable_records, compare_records
 from datakeel.core.annotation_models import (
     AnnotationBatch,
+    AnnotationBox,
     AnnotationKeypoint,
     AnnotationRecord,
     AnnotationSkeleton,
@@ -56,3 +57,44 @@ def test_batches_without_keypoints_keep_the_old_result_shape() -> None:
         AnnotationBatch(annotations=(AnnotationRecord(sample_id="s", annotator_id="a", labels=()),))
     )
     assert "keypoint_agreement" not in result.model_dump(mode="json")
+
+
+def test_shared_empty_boxes_with_actual_skeletons_are_not_assessed() -> None:
+    """Mixed-template empty detection arrays cannot turn a moved skeleton into a perfect score."""
+    model = _record(keypoints=True).model_copy(update={"boxes": ()})
+    skeleton = model.keypoints[0] if model.keypoints is not None else None
+    assert skeleton is not None
+    moved = skeleton.model_copy(
+        update={"points": (AnnotationKeypoint(id="nose", x=900, y=700, state="visible"),)}
+    )
+    human = model.model_copy(update={"keypoints": (moved,)})
+    assert not comparable_records(model, human)
+    iou_50, iou_75, _ = prelabel_accuracy([(model, human)])
+    assert iou_50.all_hit_rate is None
+    assert iou_75.all_hit_rate is None
+
+
+def test_reviewed_empty_boxes_without_skeletons_keep_the_old_all_hit_behavior() -> None:
+    """Pure detection negatives remain assessed and exactly equal, as before P32a."""
+    model = AnnotationRecord(sample_id="s", annotator_id="a", boxes=())
+    human = model.model_copy()
+    assert comparable_records(model, human)
+    comparison = compare_records(model, human)
+    assert comparison.all_hit()
+    iou_50, _, _ = prelabel_accuracy([(model, human)])
+    assert iou_50.all_hit_rate == 1
+
+
+def test_supported_box_hits_ignore_but_do_not_hide_skeleton_changes() -> None:
+    """A real box keeps its original metric while the keypoint part contributes no hit."""
+    box = AnnotationBox(category="person", x1=1, y1=2, x2=11, y2=22)
+    model = _record(keypoints=True).model_copy(update={"boxes": (box,)})
+    skeleton = model.keypoints[0] if model.keypoints is not None else None
+    assert skeleton is not None
+    moved = skeleton.model_copy(
+        update={"points": (AnnotationKeypoint(id="nose", x=900, y=700, state="visible"),)}
+    )
+    human = model.model_copy(update={"keypoints": (moved,)})
+    assert comparable_records(model, human)
+    comparison = compare_records(model, human)
+    assert (comparison.model_count, comparison.human_count, comparison.hits()) == (1, 1, 1)

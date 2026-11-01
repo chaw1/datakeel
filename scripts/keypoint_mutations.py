@@ -112,14 +112,21 @@ KEYPOINT_MUTATIONS = (
         name="keypoint-only-metrics-perfect-score",
         path="annotation_qa/prelabel_match.py",
         before=(
-            "    return any(\n"
-            "        getattr(model, field) is not None and getattr(human, field) is not None"
+            "    if not any(getattr(model, field) is not None for field in _KIND_FIELDS):\n"
+            "        return False\n"
+            "    supported = bool(record_objects(model) or record_objects(human))\n"
+            "    return supported or not (model.keypoints or human.keypoints)"
         ),
-        after=(
-            "    return True or any(\n"
-            "        getattr(model, field) is not None and getattr(human, field) is not None"
-        ),
+        after="    return True",
         case=_METRICS + "test_keypoint_only_comparison_does_not_participate_in_iou_accuracy",
+        runner="pytest",
+    ),
+    Mutation(
+        name="keypoint-mixed-empty-boxes-perfect-score",
+        path="annotation_qa/prelabel_match.py",
+        before="    supported = bool(record_objects(model) or record_objects(human))",
+        after="    supported = True",
+        case=_STORAGE + "test_mixed_empty_boxes_and_moved_skeletons_are_not_assessed",
         runner="pytest",
     ),
     Mutation(
