@@ -406,6 +406,18 @@ Integration changes in this version:
 - The planning prompt stays within its token budget after the merge: the registry no longer repeats an English phrase that only spells out the action's name. No rule or safety text was removed.
 - The README states 102 MCP tools, 803 mutation anchors, 58 golden cases and the beta.
 
+## v0.21.0 release notes
+
+v0.21.0 makes skeleton keypoints the workbench's fifth native annotation component. It adds no runtime dependency, action, API route or MCP tool.
+
+**Strongly typed templates and multi-instance editing.** A locked `keypoint_schema` defines ordered stable point IDs, Chinese/English names, required flags and edges through structured controls rather than unchecked JSON. Mixed templates support multiple labelled skeleton instances, skeleton attributes and `visible`, `occluded` and `missing` states. Mouse and complete keyboard paths share one canvas and `AnnotationSession`: K creates, Space places and advances, V changes visibility, X marks missing, and brackets/arrows select and move points with constant-screen hit targets. Partial drafts save; required-missing and all-missing instances cannot submit. Reordering and optional additions preserve old points by ID; deleting a used point is refused, and new required points are rechecked at save, submission, review, team acceptance and finalization.
+
+**Portable annotations and explicit boundaries.** Native `annotations_jsonl` round-trips IDs, order, states, coordinates and attributes exactly. Finalization and frozen splits carry one locked schema into COCO: category unions, template-ordered triples, `v=2/1/0`, `num_keypoints`, non-missing bbox/area and one-based skeleton edges. Single-point zero-area boxes are valid. Schema-less COCO, unsupported output formats and COCO keypoint imports fail explicitly instead of dropping points or converting them to boxes. Detection-only records and archives remain compatible. Keypoint-only automatic accuracy/agreement is `null` and labelled unsupported rather than a synthetic score.
+
+**Integration fixes.** Mixed templates with shared empty detection arrays and only moved skeletons no longer report `assessed_tasks=1` or 100% exact/all-hit accuracy; unsupported-only comparisons are excluded consistently, while pure empty detections and real supported objects retain their previous behavior. The fifth component is also aligned with legacy component-list checks, bilingual wording for all three states, and HTTP/MCP `keypoints` stratification choices.
+
+**Counts.** Package, API and frontend versions are 0.21.0. The mutation gate has **832 anchors** (816 before; 16 added). The golden suite remains at **58 cases**, the operator catalog at **42**, and MCP at **102 tools** (37 reads and 65 prepare-only actions). OpenAPI remains at **171 paths, 184 operations** and grows from 418 to **422 schemas** through additive models and optional fields/enums. The measured pytest duration table covers **845 modules** (839 before; 6 added).
+
 ## v0.20.1 release notes
 
 v0.20.1 tightens planning-time safety for one-sentence actions and makes the beta's multi-step boundary explicit. No endpoint, MCP tool, stored value or concurrency contract changed.

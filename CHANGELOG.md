@@ -4,10 +4,21 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-02
+
 ### Added
 
 - Native skeleton keypoint annotation is the workbench's fifth component. One locked template schema defines ordered bilingual points, required flags and edges; mixed templates support multiple labelled skeleton instances with `visible`, `occluded` and `missing` states, object attributes, mouse and complete keyboard editing, 500 ms autosave, offline drafts, conflicts, unlimited undo/redo, review, package acceptance and finalization. Point IDs survive template reordering and optional additions; destructive point deletion/rename is refused, while new required points block every downstream workflow until repaired. See [Annotation workbench](docs/ANNOTATION_WORKBENCH.md).
 - Native JSONL round-trips skeletons exactly. COCO export carries the finalized locked schema through the annotation batch and frozen split, writing template-ordered keypoint triples, visibility, counts, bbox/area and one-based edges; unsupported formats and COCO keypoint import fail explicitly instead of dropping or converting poses. Keypoint-only automatic accuracy/agreement is `null` and shown as unsupported. Existing detection archives and four-component records keep their previous shape.
+
+### Changed
+
+- Package, API and frontend versions advance to 0.21.0. The mutation gate has **832 anchors** (816 before; 16 added for native keypoints and mixed-metric protection), the golden suite remains at **58 cases**, the operator catalog at **42**, and MCP at **102 tools** (37 reads and 65 prepare-only actions). OpenAPI remains at **171 paths, 184 operations** and grows from 418 to **422 schemas** through additive keypoint models and optional fields/enums. The measured pytest duration table covers **845 modules** (839 before; 6 added).
+
+### Fixed
+
+- Keypoint-only records in mixed templates with shared empty detection arrays no longer produce fake 100% prelabel accuracy: unsupported-only comparisons have `assessed_tasks=0` and null exact/all-hit rates, while real supported objects keep their previous metrics.
+- CI integration aligns the fifth component with legacy component-list tests, bilingual enum wording, and HTTP/MCP stratification choices; all three keypoint states have Chinese and English labels and `keypoints` is a typed split source everywhere.
 
 ## [0.20.1] - 2026-11-02
 
