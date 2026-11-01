@@ -64,12 +64,18 @@ def all_signatures() -> dict[str, str]:
     return {name: signature(name) for name in [*PARAMETER_TYPES, *PARAMETER_MODELS]}
 
 
-def choice_values(name: str, field: str) -> list[str]:
-    """The allowed values of one parameter with a short fixed choice; empty otherwise."""
+def parameter_choices(name: str, field: str) -> list[str]:
+    """Every fixed value of one action or read parameter, however long the choice list is."""
     model = PARAMETER_TYPES.get(name) or PARAMETER_MODELS.get(name)
     info = model.model_fields.get(field) if model is not None else None
     values = _literal(info.annotation) if info is not None else None
-    return [str(value) for value in values] if values and len(values) <= ENUM_LIMIT else []
+    return [str(value) for value in values] if values else []
+
+
+def choice_values(name: str, field: str) -> list[str]:
+    """The allowed values of one parameter with a short fixed choice; empty otherwise."""
+    values = parameter_choices(name, field)
+    return values if values and len(values) <= ENUM_LIMIT else []
 
 
 @lru_cache(maxsize=1)

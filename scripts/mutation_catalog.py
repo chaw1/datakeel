@@ -17,6 +17,7 @@ from scripts.image_kg_mutations import IMAGE_KG_MUTATIONS
 from scripts.intent_claim_mutations import CLAIM_MUTATIONS
 from scripts.intent_fix2_mutations import INTENT_FIX2_MUTATIONS
 from scripts.intent_fix3_mutations import INTENT_FIX3_MUTATIONS
+from scripts.intent_language_mutations import LANGUAGE_MUTATIONS
 from scripts.intent_mutations import INTENT_MUTATIONS
 from scripts.intent_v020_mutations import INTENT_V020_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
@@ -108,6 +109,7 @@ FEATURE_MUTATIONS = (
     *TAILS_MUTATIONS,
     *ORIENTATION_MUTATIONS,
     *INTENT_MUTATIONS,
+    *LANGUAGE_MUTATIONS,
     *CLAIM_MUTATIONS,
     *INTENT_FIX2_MUTATIONS,
     *INTENT_FIX3_MUTATIONS,

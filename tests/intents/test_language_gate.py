@@ -7,7 +7,8 @@ from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.actions.registry import POLICIES, action_definitions
 from datakeel.core.models import JsonDocument
 from datakeel.intents.field_names import ENUM_LABELS
-from datakeel.intents.signatures import HIDDEN, choice_values
+from datakeel.intents.plain_words import enum_label
+from datakeel.intents.signatures import HIDDEN, OPEN_CHOICES, parameter_choices
 from datakeel.intents.wording import field_label
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.language_check import missing_language
@@ -69,9 +70,28 @@ def test_every_registered_parameter_has_words_for_the_card() -> None:
     assert field_label("template_version", "en") == "template version"
 
 
-def test_tier_and_clear_choices_are_said_in_words() -> None:
-    """The confidence tiers and the settings a project can clear read as words, not values."""
-    for action, field in (("save_revision", "confidence_tier"), ("configure_project", "clear")):
-        values = choice_values(action, field)
-        assert values, (action, field)
-        assert [value for value in values if value not in ENUM_LABELS] == []
+def test_every_registered_enum_value_has_zh_en_words() -> None:
+    """Every literal in an action or read parameter, and every open platform choice, is named."""
+    registered = [
+        (name, field, str(value))
+        for name, model in [*PARAMETER_TYPES.items(), *PARAMETER_MODELS.items()]
+        for field in model.model_fields
+        for value in parameter_choices(name, field)
+    ]
+    registered += [
+        (field, field, str(value)) for field, values in OPEN_CHOICES.items() for value in values
+    ]
+    unnamed = sorted(
+        f"{name}.{field}={value}"
+        for name, field, value in registered
+        if value not in ENUM_LABELS or not all(ENUM_LABELS[value])
+    )
+    assert unnamed == []
+    assert enum_label("coco", "zh") == "COCO 数据集"
+    assert enum_label("yolo", "en") == "YOLO dataset"
+
+
+def test_an_unknown_historical_enum_value_is_shown_unchanged() -> None:
+    """A value from an older or newer registry remains readable without a wording entry."""
+    assert enum_label("historical_value", "zh") == "historical_value"
+    assert enum_label("historical_value", "en") == "historical_value"
