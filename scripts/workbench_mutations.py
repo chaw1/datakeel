@@ -35,7 +35,7 @@ WORKBENCH_MUTATIONS = (
     ),
     Mutation(
         name="workbench-enabled-template-components",
-        path="storage/production_catalog.py",
+        path="core/production_keypoints.py",
         before="if isinstance(configured, list)",
         after="if False",
         case="tests/api/test_workbench.py::test_workbench_mixed_template_accepts_its_configured_components",
@@ -207,7 +207,10 @@ WORKBENCH_MUTATIONS = (
     Mutation(
         name="workbench-attribute-submit-recheck",
         path="storage/production_reviews.py",
-        before="require_complete_attributes(session, project, head.annotation)",
+        before=(
+            "if head is not None:\n"
+            "        require_complete_attributes(session, project, head.annotation)"
+        ),
         after="pass",
         case=_ATTRIBUTES + "test_submission_rechecks_the_head_against_a_newer_required_field",
         runner="pytest",

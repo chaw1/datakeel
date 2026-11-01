@@ -5,6 +5,8 @@
 
 import hashlib
 import json
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -19,15 +21,30 @@ from datakeel.core.annotation_models import (
 from datakeel.core.errors import ValidationError
 from datakeel.core.keypoint_models import KeypointDefinition, SkeletonDefinition
 from datakeel.core.models import FileItem
+from datakeel.core.production_catalog_models import LabelSet, PredictionFile, ProductionLabel
+from datakeel.core.production_prediction_models import PredictionSample
 from datakeel.core.training_export_models import (
     CocoDataset,
     TrainingExport,
     TrainingExportItem,
     TrainingFormat,
 )
+from datakeel.storage.production_prediction_parsing import parse_coco
 from datakeel.training.export import write_training_export
 from datakeel.training.importers import import_coco
 from datakeel.training.native import import_annotations_jsonl
+
+
+def _reject(call: Callable[[], object], match: str) -> None:
+    message = None
+    try:
+        call()
+    except ValidationError as error:
+        message = str(error)
+    if message is None:
+        text = "Expected keypoint format protection to reject the operation"
+        raise AssertionError(text)
+    assert match in message
 
 
 def _schema() -> SkeletonDefinition:
@@ -168,8 +185,10 @@ def test_unsupported_formats_reject_instead_of_dropping_keypoints(
     tmp_path: Path, format_name: TrainingFormat
 ) -> None:
     """Every non-keypoint format rejects nonempty skeleton content."""
-    with pytest.raises(ValidationError, match="does not support keypoints"):
-        _write(_export(tmp_path, format_name), tmp_path / format_name)
+    _reject(
+        lambda: _write(_export(tmp_path, format_name), tmp_path / format_name),
+        "does not support keypoints",
+    )
 
 
 def test_coco_keypoint_import_is_explicitly_rejected_even_with_bbox(tmp_path: Path) -> None:
@@ -178,8 +197,7 @@ def test_coco_keypoint_import_is_explicitly_rejected_even_with_bbox(tmp_path: Pa
     document = CocoDataset.model_validate_json(
         (package / "annotations/instances_train.json").read_bytes()
     )
-    with pytest.raises(ValidationError, match="annotations_jsonl"):
-        import_coco(document, "ann")
+    _reject(lambda: import_coco(document, "ann"), "annotations_jsonl")
 
 
 def test_coco_keypoint_archives_are_byte_stable(tmp_path: Path) -> None:
@@ -190,3 +208,36 @@ def test_coco_keypoint_archives_are_byte_stable(tmp_path: Path) -> None:
     assert (tmp_path / "first/export.tar").read_bytes() == (
         tmp_path / "second/export.tar"
     ).read_bytes()
+
+
+def test_prediction_coco_keypoints_fail_instead_of_becoming_boxes() -> None:
+    """The production prediction importer applies the same explicit keypoint protection."""
+    document = {
+        "images": [{"id": 1, "file_name": "image.png", "width": 100, "height": 80}],
+        "categories": [{"id": 1, "name": "person", "keypoints": ["Nose"]}],
+        "annotations": [
+            {
+                "image_id": 1,
+                "category_id": 1,
+                "bbox": [1, 2, 30, 40],
+                "keypoints": [10, 20, 2],
+                "num_keypoints": 1,
+            }
+        ],
+    }
+    labels = LabelSet(
+        id="labels",
+        version=1,
+        name="Labels",
+        labels=(ProductionLabel(id="person", name="person"),),
+        published=True,
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    result = parse_coco(
+        PredictionFile(filename="pose.json", content=json.dumps(document)),
+        labels,
+        {},
+        (PredictionSample(id="image", filename="image.png", width=100, height=80),),
+    )
+    assert not result.predictions
+    assert [failure.code for failure in result.failures] == ["unsupported_keypoints"]

@@ -46,7 +46,7 @@ export const workbenchEn = {
   wbCommonKeys:
     "Ctrl/⌘+S save · Ctrl/⌘+Enter submit · Ctrl/⌘+Z undo · Ctrl/⌘+Shift+Z redo · {alt}+N next · {alt}+P previous · ? help",
   wbEditorKeys:
-    "Box: B add, arrows move 1 px, Shift+arrows 10 px, R switches to adjusting the right/bottom then left/top edges, Ctrl/⌘+D copy, Delete remove. Polygon: P start, arrows move the cursor 1 px (Shift: 10 px), Space add point, R switches between moving the polygon and its selected point, Enter close, Escape cancel, Backspace delete the selected point. Classification: label number or configured shortcut. Text: Shift+arrows select characters, Enter label them, number keys pick the label, Escape return to a new selection. Tab reaches every field.",
+    "Box: B add, arrows move 1 px, Shift+arrows 10 px, R switches to adjusting the right/bottom then left/top edges, Ctrl/⌘+D copy, Delete remove. Polygon: P start, arrows move the cursor 1 px (Shift: 10 px), Space add point, R switches between moving the polygon and its selected point, Enter close, Escape cancel, Backspace delete the selected point. Keypoints: K add skeleton, Space place and advance, [ / ] switch point, V visible/occluded, X missing, arrows move the positioned point. Classification: label number or configured shortcut. Text: Shift+arrows select characters, Enter label them, number keys pick the label, Escape return to a new selection. Tab reaches every field.",
   wbDrawer: "Annotation details",
   wbProperties: "Properties",
   wbHistory: "Revision history",

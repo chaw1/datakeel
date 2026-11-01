@@ -135,8 +135,8 @@ PRELABEL_RUN_MUTATIONS = (
     ),
     Mutation(
         name="review-compares-only-shared-kinds",
-        path="annotation_qa/review_rules.py",
-        before="if getattr(left, field) is None or getattr(right, field) is None",
+        path="annotation_qa/prelabel_match.py",
+        before="if getattr(model, field) is None or getattr(human, field) is None",
         after="if False",
         case=_RULES + "test_a_box_only_draft_says_nothing_about_the_chosen_classification",
         runner="pytest",

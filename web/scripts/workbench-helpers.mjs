@@ -132,6 +132,7 @@ export function createHarness(context, page, base, output, manifest, report) {
       );
       await page
         .getByRole("application", { name: "Annotation canvas", exact: true })
+        .first()
         .waitFor();
     }
   }

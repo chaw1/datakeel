@@ -195,6 +195,7 @@ it("marks keypoint-only automatic metrics as unsupported instead of perfect", ()
           exact_match_rate: null,
           keypoint_accuracy: {
             value: null,
+            sample_count: 0,
             reason: "Keypoint accuracy is not supported",
           },
         },

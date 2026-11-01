@@ -21,6 +21,7 @@ from scripts.intent_planning_mutations import PLANNING_MUTATIONS
 from scripts.intent_query_first_mutations import QUERY_FIRST_MUTATIONS
 from scripts.intent_replanning_mutations import REPLANNING_MUTATIONS
 from scripts.intent_v020_mutations import INTENT_V020_MUTATIONS
+from scripts.keypoint_mutations import KEYPOINT_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
 from scripts.knowledge_mutations import KNOWLEDGE_MUTATIONS
 from scripts.llm_data_governance_mutations import LLM_DATA_GOVERNANCE_MUTATIONS
@@ -60,6 +61,7 @@ from scripts.training_text_mutations import TRAINING_TEXT_MUTATIONS
 from scripts.workbench_mutations import WORKBENCH_MUTATIONS
 
 FEATURE_MUTATIONS = (
+    *KEYPOINT_MUTATIONS,
     *WORKBENCH_MUTATIONS,
     *MCP_PAGINATION_MUTATIONS,
     *IDENTITY_MUTATIONS,

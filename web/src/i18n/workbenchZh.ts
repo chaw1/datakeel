@@ -44,7 +44,7 @@ export const workbenchZh = {
   wbCommonKeys:
     "Ctrl/⌘+S 保存 · Ctrl/⌘+Enter 提交 · Ctrl/⌘+Z 撤销 · Ctrl/⌘+Shift+Z 重做 · {alt}+N 下一条 · {alt}+P 上一条 · ? 帮助",
   wbEditorKeys:
-    "框：B 添加，方向键移动 1 像素，Shift+方向键 10 像素，R 切到调右下边、再调左上边，Ctrl/⌘+D 复制，Delete 删除。多边形：P 开始，方向键移动光标 1 像素（Shift 10 像素），空格加点，R 在移动整个多边形和移动选中的点之间切换，Enter 闭合，Esc 取消，Backspace 删除选中的点。分类：标签序号或自定义快捷键。文本：Shift+方向键选字，Enter 标注，数字键选标签，Esc 回到新选区。Tab 可到达所有字段。",
+    "框：B 添加，方向键移动 1 像素，Shift+方向键 10 像素，R 切到调右下边、再调左上边，Ctrl/⌘+D 复制，Delete 删除。多边形：P 开始，方向键移动光标 1 像素（Shift 10 像素），空格加点，R 在移动整个多边形和移动选中的点之间切换，Enter 闭合，Esc 取消，Backspace 删除选中的点。骨架：K 新建，空格放点并前进，[ / ] 切点，V 切可见/遮挡，X 标缺失，方向键移动有坐标的点。分类：标签序号或自定义快捷键。文本：Shift+方向键选字，Enter 标注，数字键选标签，Esc 回到新选区。Tab 可到达所有字段。",
   wbDrawer: "标注详情",
   wbProperties: "属性",
   wbHistory: "修订历史",

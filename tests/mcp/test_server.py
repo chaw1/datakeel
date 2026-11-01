@@ -56,6 +56,10 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
         assert training.annotations.idempotent_hint is True
         assert training.input_schema["required"] == ["dataset_id"]
         assert "version_id" in training.input_schema["properties"]
+        save = next(tool for tool in listed if tool.name == "save_revision")
+        schema_text = str(save.input_schema)
+        assert "keypoints" in schema_text
+        assert "AnnotationSkeleton" in schema_text
         assert {
             "query_kg",
             "explain_relation",

@@ -10,6 +10,7 @@ import {
 const regions = {
   box: "Bounding boxes",
   polygon: "Polygons",
+  keypoints: "Skeleton keypoints",
   classification: "Classification",
   text_span: "Text spans",
 };
@@ -17,7 +18,7 @@ const regions = {
 export async function addWithKeyboard(h, kind) {
   const { page } = h;
   const region = page.getByRole("region", { name: regions[kind], exact: true });
-  if (["box", "polygon"].includes(kind)) {
+  if (["box", "polygon", "keypoints"].includes(kind)) {
     await tabTo(
       page,
       region.getByRole("application", {
@@ -26,7 +27,10 @@ export async function addWithKeyboard(h, kind) {
       }),
     );
     if (kind === "box") await page.keyboard.press("b");
-    else
+    else if (kind === "keypoints") {
+      for (const key of ["k", "Space", "Space", "v"])
+        await page.keyboard.press(key);
+    } else
       for (const key of [
         "p",
         "Space",
@@ -97,6 +101,7 @@ export async function keyboardWorkflow(h) {
     const field = {
       box: "boxes",
       polygon: "polygons",
+      keypoints: "keypoints",
       classification: "labels",
       text_span: "spans",
     }[kind];
@@ -136,6 +141,10 @@ async function historyEditor(h, kind, annotation) {
   const { page } = h;
   if (["box", "polygon"].includes(kind))
     await selectedAnnotation(page).selectOption("0");
+  if (kind === "keypoints")
+    await page
+      .getByRole("combobox", { name: "Skeleton instance", exact: true })
+      .selectOption("0");
   if (kind === "text_span")
     await page
       .getByRole("list", { name: "Text annotations", exact: true })
@@ -163,7 +172,9 @@ async function historyEditor(h, kind, annotation) {
       ? ["Left (x1)", annotation.boxes[0].x1]
       : kind === "polygon"
         ? ["Point x", annotation.polygons[0].points[0].x]
-        : ["End character (exclusive)", annotation.spans[0].end];
+        : kind === "keypoints"
+          ? ["Point x", annotation.keypoints[0].points[0].x]
+          : ["End character (exclusive)", annotation.spans[0].end];
   const field = page.getByRole("spinbutton", { name, exact: true });
   return {
     edit: (step) => field.fill(String(baseline + (step % 2 ? 0 : 1))),

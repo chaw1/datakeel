@@ -152,3 +152,70 @@ export async function durableEditing(h) {
     expectedHead: submittedHeads.at(-1),
   };
 }
+export async function durableKeypoints(h) {
+  const taskId = await h.editableTask("keypoints", 2);
+  await h.open("keypoints", taskId);
+  await addWithKeyboard(h, "keypoints");
+  await h.page.locator('[data-save-state="saved"]').waitFor();
+  const before = await h.latest(taskId);
+  const projectId = h.manifest.projects.keypoints.project_id;
+  const key = `datakeel.annotation-draft:${h.manifest.actor ?? "local"}:${projectId}:${taskId}`;
+  h.report.expectedFailurePhase = "W3-keypoints-offline";
+  await h.context.setOffline(true);
+  await addWithKeyboard(h, "keypoints");
+  await h.page.locator('[data-save-state="offline"]').waitFor();
+  const offline = await localDraft(h.page, key);
+  assert.equal(
+    offline.annotation.keypoints.length,
+    before.annotation.keypoints.length + 1,
+  );
+  const outage = (route) => route.abort("internetdisconnected");
+  await h.context.route("**/api/**", outage);
+  await h.context.setOffline(false);
+  await h.page.reload();
+  await h.waitTask(taskId, false);
+  assert.deepEqual(
+    (await localDraft(h.page, key)).annotation,
+    offline.annotation,
+  );
+  assert.equal(
+    await h.page
+      .getByRole("combobox", { name: "Skeleton instance", exact: true })
+      .locator("option")
+      .count(),
+    offline.annotation.keypoints.length,
+  );
+  await h.context.unroute("**/api/**", outage);
+  await h.context.setOffline(true);
+  await h.context.setOffline(false);
+  await h.page.locator('[data-save-state="saved"]').waitFor();
+  const recovered = await poll(
+    () => h.latest(taskId),
+    (revision) =>
+      revision.annotation.keypoints.length ===
+      offline.annotation.keypoints.length,
+    "keypoint automatic recovery save",
+  );
+  h.report.expectedFailurePhase = "W3-keypoints-conflict";
+  const remote = await remoteEdit(h, taskId, "keypoints-overwrite");
+  await addWithKeyboard(h, "keypoints");
+  await h.page.keyboard.press("Control+s");
+  await h.page.locator('[data-save-state="conflict"]').waitFor();
+  const local = await localDraft(h.page, key);
+  await h.button("Overwrite with my edits").click();
+  await h.page.locator('[data-save-state="saved"]').waitFor();
+  const overwritten = await h.latest(taskId);
+  assert.notEqual(overwritten.id, remote.id);
+  assert.deepEqual(
+    overwritten.annotation.keypoints,
+    local.annotation.keypoints,
+  );
+  h.report.expectedFailurePhase = null;
+  return {
+    taskId,
+    offlineRevision: recovered.id,
+    conflictRemote: remote.id,
+    overwriteRevision: overwritten.id,
+    fullSkeletonRoundtrip: true,
+  };
+}

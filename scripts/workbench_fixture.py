@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import DBAPIConnection
     from sqlalchemy.pool import ConnectionPoolEntry
 
-ComponentKind = Literal["box", "polygon", "classification", "text_span"]
+ComponentKind = Literal["box", "polygon", "keypoints", "classification", "text_span"]
 
 
 class FixtureProject(BoundaryModel):
@@ -78,6 +78,48 @@ def _source(directory: Path, kind: ComponentKind, size: tuple[int, int], count: 
     return result
 
 
+def _keypoint_schema(size: tuple[int, int]) -> dict[str, object]:
+    count = 17 if size == (3840, 2160) else 2
+    return {
+        "points": [
+            {"id": f"p{index}", "name": f"Point {index}", "required": index == 1}
+            for index in range(1, count + 1)
+        ],
+        "edges": [[f"p{index}", f"p{index + 1}"] for index in range(1, count)],
+    }
+
+
+def _keypoint_content(size: tuple[int, int]) -> dict[str, object]:
+    count = 17 if size == (3840, 2160) else 2
+    definitions = [
+        {"id": f"p{index}", "name": f"Point {index}", "required": index == 1}
+        for index in range(1, count + 1)
+    ]
+    skeletons: list[dict[str, object]] = []
+    many = size == (3840, 2160)
+    for instance in range(50 if many else 2):
+        x = 100 + (instance % 10) * 350
+        y = 100 + (instance // 10) * 380
+        points = [
+            {
+                "id": definition["id"],
+                "x": x + (index % 5) * 25,
+                "y": y + (index // 5) * 35,
+                "state": "occluded" if index == len(definitions) - 1 else "visible",
+            }
+            for index, definition in enumerate(definitions)
+            if instance == 0 or index == 0 or many
+        ]
+        skeletons.append(
+            {
+                "category": "cat" if instance % 2 == 0 else "dog",
+                "points": points,
+                "attributes": {"instance": instance},
+            }
+        )
+    return {"keypoints": skeletons, "boxes": [], "labels": []}
+
+
 def _annotation(kind: ComponentKind, sample_id: str, size: tuple[int, int]) -> AnnotationRecord:
     content: dict[ComponentKind, dict[str, object]] = {
         "box": {
@@ -102,6 +144,7 @@ def _annotation(kind: ComponentKind, sample_id: str, size: tuple[int, int]) -> A
             ]
         },
         "classification": {"labels": ["cat"]},
+        "keypoints": _keypoint_content(size),
         "text_span": {
             "spans": [
                 {"category": "cat", "start": 0, "end": 9},
@@ -120,6 +163,25 @@ def _annotation(kind: ComponentKind, sample_id: str, size: tuple[int, int]) -> A
     )
 
 
+def _template(
+    identifier: str, name: str, kind: ComponentKind, size: tuple[int, int]
+) -> dict[str, object]:
+    return {
+        "id": identifier,
+        "name": name,
+        "annotation_type": kind,
+        "component_config": {
+            "label_mode": "multi",
+            **(
+                {"components": ["keypoints", "box", "classification"]}
+                if kind == "keypoints"
+                else {}
+            ),
+        },
+        **({"keypoint_schema": _keypoint_schema(size)} if kind == "keypoints" else {}),
+    }
+
+
 def _project(
     db: Database,
     directory: Path,
@@ -135,12 +197,7 @@ def _project(
         "create_label_set",
         {
             "target": "template",
-            "template": {
-                "id": template_id,
-                "name": name,
-                "annotation_type": kind,
-                "component_config": {"label_mode": "multi"},
-            },
+            "template": _template(template_id, name, kind, size),
         },
     )
     project = Project.model_validate(
@@ -196,9 +253,11 @@ def generate(db: Database, directory: Path) -> JsonDocument:
     definitions: tuple[tuple[str, ComponentKind, tuple[int, int], int], ...] = (
         ("box", "box", (2000, 1500), 24),
         ("polygon", "polygon", (2000, 1500), 4),
+        ("keypoints", "keypoints", (2000, 1500), 24),
         ("classification", "classification", (2000, 1500), 4),
         ("text_span", "text_span", (0, 0), 4),
         ("large4k", "box", (3840, 2160), 1),
+        ("large4k-keypoints", "keypoints", (3840, 2160), 1),
         ("large8k", "box", (8000, 6000), 1),
     )
     projects = {

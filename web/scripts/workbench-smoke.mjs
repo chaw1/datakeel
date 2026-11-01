@@ -9,7 +9,7 @@ import { chromium } from "playwright";
 import { createHarness, workbenchBase } from "./workbench-helpers.mjs";
 import { keyboardWorkflow, unlimitedHistory } from "./workbench-keyboard.mjs";
 import { largeImages, nextTaskLatency } from "./workbench-performance.mjs";
-import { durableEditing } from "./workbench-reliability.mjs";
+import { durableEditing, durableKeypoints } from "./workbench-reliability.mjs";
 
 const base = workbenchBase(process.argv[2] ?? "http://127.0.0.1:8840");
 assert.ok(
@@ -24,9 +24,11 @@ assert.equal(manifest.actor, "local", "Use generated local personal fixtures");
 for (const kind of [
   "box",
   "polygon",
+  "keypoints",
   "classification",
   "text_span",
   "large4k",
+  "large4k-keypoints",
   "large8k",
 ]) {
   assert.match(manifest.projects[kind].project_id, /^[a-zA-Z0-9-]+$/);
@@ -101,9 +103,21 @@ try {
   });
   const h = createHarness(context, page, base, output, manifest, report);
   for (const [name, run] of [
-    ["W1", nextTaskLatency],
+    [
+      "W1",
+      async (h) => ({
+        box: await nextTaskLatency(h),
+        keypoints: await nextTaskLatency(h, "keypoints"),
+      }),
+    ],
     ["W2", keyboardWorkflow],
-    ["W3", durableEditing],
+    [
+      "W3",
+      async (h) => ({
+        box: await durableEditing(h),
+        keypoints: await durableKeypoints(h),
+      }),
+    ],
     ["W4", unlimitedHistory],
     ["W5", largeImages],
   ]) {

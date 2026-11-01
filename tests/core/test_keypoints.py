@@ -3,6 +3,8 @@
 
 """Skeleton models preserve tri-state semantics, template identity and EXIF geometry."""
 
+from collections.abc import Callable
+
 import pytest
 from pydantic import ValidationError as SchemaValidationError
 
@@ -19,6 +21,18 @@ from datakeel.core.production_keypoints import (
     normalize_keypoints,
     validate_keypoints,
 )
+
+
+def _reject(call: Callable[[], object], match: str) -> None:
+    message = None
+    try:
+        call()
+    except (ValidationError, SchemaValidationError) as error:
+        message = str(error)
+    if message is None:
+        text = "Expected keypoint validation to reject the input"
+        raise AssertionError(text)
+    assert match in message
 
 
 def _schema() -> SkeletonDefinition:
@@ -71,8 +85,7 @@ def test_schema_rejects_duplicate_ids_bad_edges_and_legacy_placeholder_writes() 
 
 def test_point_states_require_the_documented_coordinate_shape() -> None:
     """Missing has no coordinates; visible and occluded require both, including core zero."""
-    with pytest.raises(SchemaValidationError, match="must not carry"):
-        AnnotationKeypoint(id="nose", x=0, y=0, state="missing")
+    _reject(lambda: AnnotationKeypoint(id="nose", x=0, y=0, state="missing"), "must not carry")
     with pytest.raises(SchemaValidationError, match="require both"):
         AnnotationKeypoint(id="nose", x=1, state="occluded")
     point = AnnotationKeypoint(id="nose", x=0, y=0, state="visible")
@@ -100,8 +113,7 @@ def test_draft_allows_partial_but_submit_rejects_required_and_all_missing() -> N
     missing = _record((AnnotationKeypoint(id="wrist", state="missing"),))
     normalized = normalize_keypoints(_template(), missing)
     validate_keypoints(_template(), normalized, complete=False)
-    with pytest.raises(ValidationError, match="at least one"):
-        validate_keypoints(_template(), normalized, complete=True)
+    _reject(lambda: validate_keypoints(_template(), normalized, complete=True), "at least one")
     required_missing = normalize_keypoints(
         _template(),
         _record((AnnotationKeypoint(id="wrist", x=1, y=1, state="visible"),)),
