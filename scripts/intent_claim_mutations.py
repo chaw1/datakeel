@@ -45,4 +45,25 @@ CLAIM_MUTATIONS = (
         ),
         "test_manager_assigned_projects_do_not_offer_self_claim",
     ),
+    _anchor(
+        "earlier-claims-consume-capacity",
+        (
+            "    load = open_load(db, project.id, stage, person) + target.load_delta",
+            "    load = open_load(db, project.id, stage, person)",
+        ),
+        "test_two_claims_at_limit_one_are_refused_before_the_second_card",
+    ),
+    _anchor(
+        "earlier-claims-consume-free-tasks",
+        ("    free = free[target.prior_claims :]", "    free = free"),
+        "test_an_earlier_claim_consumes_the_last_free_task",
+    ),
+    Mutation(
+        name="claim-upgrade-preserves-effective-strategy",
+        path="intents/claim_effects.py",
+        before="            effective = _configure(effective, step)",
+        after="            effective = effective",
+        case=_T + "test_upgrade_preserves_assign_only_strategy_and_a_legal_upgrade_executes",
+        runner="pytest",
+    ),
 )
