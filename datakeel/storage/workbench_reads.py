@@ -5,13 +5,14 @@
 
 import mimetypes
 from pathlib import Path
+from typing import cast
 from urllib.parse import quote
 
 from sqlalchemy import select
 
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
-from datakeel.core.models import AssetRef
+from datakeel.core.models import AssetRef, FileItem
 from datakeel.core.production_models import ProductionTask, Project
 from datakeel.core.workbench_models import (
     WorkbenchIndex,
@@ -21,6 +22,7 @@ from datakeel.core.workbench_models import (
     WorkbenchTask,
     WorkbenchTaskRisk,
 )
+from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import resolve_download
@@ -190,7 +192,13 @@ def task_source(db: Database, task_id: str, caller: AccessContext) -> tuple[Path
 
 
 def _sample(
-    path: Path, name: str, task: ProductionTask, *, relative: str, text_sample: bool = False
+    path: Path,
+    name: str,
+    task: ProductionTask,
+    *,
+    relative: str,
+    text_sample: bool = False,
+    duration_ms: int | None = None,
 ) -> WorkbenchSample:
     media_type = mimetypes.guess_type(name)[0] or "application/octet-stream"
     if text_sample and not media_type.startswith("image/"):
@@ -217,8 +225,24 @@ def _sample(
         text=text,
         image_width=width,
         image_height=height,
+        duration_ms=duration_ms,
         content_url=url,
         thumbnail_url=thumbnail,
+    )
+
+
+def _source_duration(sample_id: str, manifest: list[dict[str, object]]) -> int | None:
+    raw = next((item for item in manifest if item.get("id") == sample_id), None)
+    if raw is None:
+        return None
+    probe = FileItem.model_validate(raw).metadata.get("media_probe")
+    if not isinstance(probe, dict):
+        return None
+    duration = cast("dict[str, object]", probe).get("duration_ms")
+    return (
+        duration
+        if isinstance(duration, int) and not isinstance(duration, bool) and duration > 0
+        else None
     )
 
 
@@ -230,6 +254,8 @@ def workbench_task(db: Database, task_id: str, caller: AccessContext) -> Workben
     with db.session() as session:
         template = locked_template(session, project)
         _, relative = sample_names(session, project).get(task.sample_id, (name, name))
+        version = require_annotation_version(session, project.dataset_id, project.version_id)
+        duration_ms = _source_duration(task.sample_id, version.manifest)
     configured = template.component_config.get("components") if template else None
     text_sample = template is not None and (
         template.annotation_type == "text_span"
@@ -243,6 +269,7 @@ def workbench_task(db: Database, task_id: str, caller: AccessContext) -> Workben
             task,
             relative=relative,
             text_sample=text_sample,
+            duration_ms=duration_ms,
         ),
         revisions=tuple(
             sorted(list_revisions(db, task_id), key=lambda item: (item.created_at, item.id))

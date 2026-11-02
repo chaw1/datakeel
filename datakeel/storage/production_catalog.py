@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.errors import NotFoundError, ValidationError
+from datakeel.core.models import FileItem
 from datakeel.core.production_attributes import validate_attributes
 from datakeel.core.production_catalog_models import LabelSet, ProductionModel, ProductionTemplate
 from datakeel.core.production_keypoints import (
@@ -17,6 +18,8 @@ from datakeel.core.production_keypoints import (
     normalize_keypoints,
     validate_keypoints,
 )
+from datakeel.core.production_segments import validate_segment_media
+from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.production_catalog_rows import (
     ProductionLabelSetRow,
     ProductionModelRow,
@@ -91,6 +94,7 @@ def annotation_categories(annotation: AnnotationRecord) -> tuple[str, ...]:
         *(polygon.category for polygon in annotation.polygons or ()),
         *(span.category for span in annotation.spans or ()),
         *(skeleton.category for skeleton in annotation.keypoints or ()),
+        *(segment.category for segment in annotation.segments or ()),
     )
 
 
@@ -135,6 +139,14 @@ def normalize_annotation(
             )
             if annotation.keypoints is not None
             else None,
+            "segments": tuple(
+                segment.model_copy(
+                    update={"category": identities.get(segment.category, segment.category)}
+                )
+                for segment in annotation.segments
+            )
+            if annotation.segments is not None
+            else None,
         }
     )
     template = locked_template(session, project)
@@ -158,6 +170,17 @@ def validate_annotation(
     if template is not None:
         validate_template_content(template, annotation)
         validate_attributes(template.attributes, annotation, complete=complete)
+    if annotation.segments is not None:
+        validate_segment_media(_source_file(session, project, annotation.sample_id), annotation)
+
+
+def _source_file(session: Session, project: "Project", sample_id: str) -> FileItem:
+    version = require_annotation_version(session, project.dataset_id, project.version_id)
+    raw = next((item for item in version.manifest if item.get("id") == sample_id), None)
+    if raw is None:
+        message = "Annotation sample does not belong to the project's locked source version"
+        raise ValidationError(message)
+    return FileItem.model_validate(raw)
 
 
 def require_complete_attributes(
@@ -218,6 +241,7 @@ def validate_template_content(
         "text_span": annotation.spans,
         "polygon": annotation.polygons,
         "keypoints": annotation.keypoints,
+        "segment": annotation.segments,
     }
     if template.annotation_type not in content:
         message = "This template's content type is not supported by the current core schema"

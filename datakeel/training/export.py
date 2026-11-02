@@ -21,6 +21,7 @@ from datakeel.training.export_detection import (
 from datakeel.training.export_hf import write_hf_imagefolder
 from datakeel.training.export_keypoints import require_no_keypoints
 from datakeel.training.export_records import write_imagefolder, write_text_jsonl
+from datakeel.training.export_segments import require_no_segments, write_webvtt
 from datakeel.training.native import write_annotations_jsonl
 
 FORMAT_VERSION = "1.0"
@@ -32,11 +33,12 @@ _WRITERS: dict[str, Callable[[TrainingExport, Path], dict[str, str]]] = {
     "hf_imagefolder": write_hf_imagefolder,
     "text_jsonl": write_text_jsonl,
     "annotations_jsonl": write_annotations_jsonl,
+    "webvtt": write_webvtt,
 }
 
 
 def _count(item: TrainingExportItem, format_name: str) -> int:
-    if format_name == "annotations_jsonl":
+    if format_name in {"annotations_jsonl", "webvtt"}:
         return sum(
             len(value or ())
             for value in (
@@ -45,6 +47,7 @@ def _count(item: TrainingExportItem, format_name: str) -> int:
                 item.annotation.polygons,
                 item.annotation.spans,
                 item.annotation.keypoints,
+                item.annotation.segments,
             )
         )
     if format_name in {"coco", "yolo"}:
@@ -87,6 +90,8 @@ def _orientation(item: TrainingExportItem, format_name: str, written: Path) -> d
 
 def write_training_export(export: TrainingExport, directory: Path, archive: Path) -> None:
     """Write a format directory and byte-stable tar without destination or action timestamps."""
+    if export.format not in {"annotations_jsonl", "webvtt"}:
+        require_no_segments((item.annotation for item in export.items), export.format)
     validate_detection_annotations(export)
     if export.format not in {"coco", "annotations_jsonl"}:
         require_no_keypoints(export, export.format)

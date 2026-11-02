@@ -119,7 +119,9 @@ def object_iou(
 
 
 def comparable_records(model: AnnotationRecord, human: AnnotationRecord) -> bool:
-    """Require shared supported content, not a keypoint-only pair with shared empty arrays."""
+    """Exclude unsupported segment content instead of claiming agreement on other fields."""
+    if model.segments is not None or human.segments is not None:
+        return False
     model, human = shared_records(model, human)
     if not any(getattr(model, field) is not None for field in _KIND_FIELDS):
         return False

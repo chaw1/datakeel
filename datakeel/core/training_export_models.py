@@ -13,10 +13,18 @@ from datakeel.core.keypoint_models import SkeletonDefinition
 from datakeel.core.models import BoundaryModel, FileItem
 
 TrainingFormat = Literal[
-    "coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl", "annotations_jsonl"
+    "coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl", "annotations_jsonl", "webvtt"
 ]
 TRAINING_FORMATS = frozenset(
-    {"coco", "yolo", "imagefolder", "hf_imagefolder", "text_jsonl", "annotations_jsonl"}
+    {
+        "coco",
+        "yolo",
+        "imagefolder",
+        "hf_imagefolder",
+        "text_jsonl",
+        "annotations_jsonl",
+        "webvtt",
+    }
 )
 TRAINING_ARCHIVE_SUFFIXES = (".tar", ".tar.gz", ".tgz")
 

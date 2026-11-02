@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from datakeel.actions.production_catalog_parameters import UpgradeProjectTemplateParams
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.errors import ValidationError
+from datakeel.core.models import FileItem
 from datakeel.core.production_attributes import attribute_problems
 from datakeel.core.production_catalog_models import LabelSet, ProductionTemplate
 from datakeel.core.production_models import AnnotationRevision, Project
@@ -24,6 +25,9 @@ from datakeel.core.production_upgrade_models import (
     TemplateUpgradePlan,
     UpgradeProblemTask,
 )
+from datakeel.core.production_keypoints import enabled_components
+from datakeel.core.production_segments import require_segment_sources
+from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.production_catalog import require_label_set, validate_template_content
 from datakeel.storage.production_keypoint_upgrades import (
     require_writable_template,
@@ -116,6 +120,7 @@ def annotation_problems(
         ("polygon", annotation.polygons),
         ("span", annotation.spans),
         ("skeleton", annotation.keypoints),
+        ("segment", annotation.segments),
     ):
         for index, shape in enumerate(shapes or (), start=1):
             issues = list(attribute_problems(shaped, shape.attributes, f"{kind} {index}"))
@@ -146,6 +151,7 @@ def _objects(annotation: AnnotationRecord) -> int:
             annotation.polygons,
             annotation.spans,
             annotation.keypoints,
+            annotation.segments,
         )
     )
 
@@ -194,6 +200,11 @@ def upgrade_plan(session: Session, params: UpgradeProjectTemplateParams) -> Temp
     if after is not None:
         require_writable_template(after)
         validate_point_removal(session, before, after, project_id=project.id)
+        if "segment" in enabled_components(after):
+            version = require_annotation_version(session, project.dataset_id, project.version_id)
+            require_segment_sources(
+                tuple(FileItem.model_validate(item) for item in version.manifest)
+            )
     tasks = list(
         session.scalars(
             select(ProductionTaskRow)

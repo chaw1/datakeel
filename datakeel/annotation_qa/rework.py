@@ -26,6 +26,7 @@ def _retained(before: AnnotationRecord, after: AnnotationRecord | None) -> bool:
             (before.labels, after.labels),
             (before.boxes, after.boxes),
             (before.spans, after.spans),
+            (before.segments, after.segments),
         )
     )
 

@@ -56,4 +56,9 @@ def evaluate_annotations(batch: AnnotationBatch) -> AnnotationQAResult:
             if any(item.keypoints is not None for item in batch.annotations)
             else None
         ),
+        segment_agreement=(
+            AgreementValue(value=None, reason="Segment agreement is not supported")
+            if any(item.segments is not None for item in batch.annotations)
+            else None
+        ),
     )

@@ -25,6 +25,7 @@ from datakeel.storage.release_service import iter_release_entries, require_relea
 from datakeel.storage.training_rows import TrainingSplitRow
 from datakeel.storage.version_stream import require_version, stream_manifest
 from datakeel.training.export_detection import require_no_keypoints, validate_detection_annotations
+from datakeel.training.export_segments import require_no_segments
 
 
 def _split(session: Session, params: ExportParams) -> SplitSet:
@@ -120,13 +121,22 @@ def training_export_inputs(
         message = "Training source membership differs from the frozen split"
         raise ConflictError(message)
     modality = "text" if params.format == "text_jsonl" else "image"
+    if params.format not in {"annotations_jsonl", "webvtt"}:
+        require_no_segments(
+            (record for member in split.members for record in member.annotations), params.format
+        )
     items: list[TrainingExportItem] = []
     for member in split.members:
         file = files[member.sample_id]
         if file.sha256 != member.sha256:
             message = "Training source hash differs from the frozen split"
             raise ConflictError(message)
-        if params.format == "annotations_jsonl" or file.modality == modality:
+        matches = (
+            params.format == "annotations_jsonl"
+            or (params.format == "webvtt" and file.modality in {"audio", "video"})
+            or (params.format != "webvtt" and file.modality == modality)
+        )
+        if matches:
             items.append(
                 TrainingExportItem(
                     file=file,

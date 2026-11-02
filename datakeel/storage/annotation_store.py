@@ -16,7 +16,8 @@ from datakeel.core.annotation_sampling import (
     SamplingPlan,
 )
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
-from datakeel.core.models import new_id, utcnow
+from datakeel.core.models import FileItem, new_id, utcnow
+from datakeel.core.production_segments import validate_segment_media
 from datakeel.storage.annotation_frames import DISPLAY_FRAME, batch_view
 from datakeel.storage.annotation_rows import (
     AnnotationBatchRow,
@@ -73,6 +74,13 @@ def _validate_membership(version: VersionRow, batch: AnnotationBatch) -> None:
     ):
         message = "Near-duplicate endpoints must belong to this annotation batch"
         raise ValidationError(message)
+
+
+def _validate_segments(version: VersionRow, batch: AnnotationBatch) -> None:
+    files = {str(item["id"]): FileItem.model_validate(item) for item in version.manifest}
+    for record in batch.annotations:
+        if record.segments is not None:
+            validate_segment_media(files[record.sample_id], record)
 
 
 def _compare(
@@ -139,6 +147,7 @@ def import_annotations_in_session(
     request_digest = content_digest(request.model_dump(mode="json"))
     version = require_annotation_version(session, dataset_id, request.version_id)
     _validate_membership(version, request.batch)
+    _validate_segments(version, request.batch)
     previous = session.scalar(
         select(AnnotationBatchRow).where(
             AnnotationBatchRow.dataset_id == dataset_id,

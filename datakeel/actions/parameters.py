@@ -109,6 +109,7 @@ class ExportParams(BoundaryModel):
         "hf_imagefolder",
         "text_jsonl",
         "annotations_jsonl",
+        "webvtt",
     ] = "croissant"
     destination: str | None = None
     version_id: str | None = None

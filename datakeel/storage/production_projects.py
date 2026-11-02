@@ -20,6 +20,8 @@ from datakeel.actions.production_parameters import (
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import FileItem, new_id, utcnow
 from datakeel.core.production_models import Project, TaskPackage, TaskState
+from datakeel.core.production_keypoints import enabled_components
+from datakeel.core.production_segments import require_segment_sources
 from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.production_assignments import preserve_personal_assignment
 from datakeel.storage.production_catalog import require_label_set, require_template
@@ -63,12 +65,16 @@ def create_project(session: Session, params: CreateProjectParams, actor: str) ->
 
     The project locks the template revision current at creation.
     """
-    require_annotation_version(session, params.dataset_id, params.version_id)
+    version = require_annotation_version(session, params.dataset_id, params.version_id)
     require_label_set(session, params.label_set_id, params.label_set_version)
     template_version = None
     if params.template_id is not None:
         template = require_template(session, params.template_id)
         require_writable_template(template)
+        if "segment" in enabled_components(template):
+            require_segment_sources(
+                tuple(FileItem.model_validate(item) for item in version.manifest)
+            )
         record_template_version(session, template)
         template_version = template.revision
     project = _validate_dispatch(

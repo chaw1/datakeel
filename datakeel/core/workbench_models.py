@@ -155,6 +155,7 @@ class WorkbenchSample(BoundaryModel):
     text: str | None = None
     image_width: int | None = None
     image_height: int | None = None
+    duration_ms: int | None = Field(default=None, gt=0, exclude_if=lambda value: value is None)
     content_url: str
     thumbnail_url: str | None = None
 

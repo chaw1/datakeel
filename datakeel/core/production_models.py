@@ -238,3 +238,8 @@ class PrelabelAccuracy(BoundaryModel):
     keypoint_accuracy: AgreementValue | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    segment_accuracy: AgreementValue | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Automatic segment accuracy is unsupported; present with a null value.",
+    )

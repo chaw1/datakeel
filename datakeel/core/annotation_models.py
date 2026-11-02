@@ -5,7 +5,7 @@
 
 from typing import Literal
 
-from pydantic import Field, JsonValue, model_validator
+from pydantic import Field, JsonValue, StrictInt, model_validator
 
 from datakeel.core.keypoint_models import SkeletonDefinition
 from datakeel.core.models import BoundaryModel
@@ -75,6 +75,23 @@ class AnnotationSkeleton(BoundaryModel):
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
 
 
+class AnnotationSegment(BoundaryModel):
+    """Preserve one ordered, half-open millisecond interval on the local media timeline."""
+
+    category: str
+    start_ms: StrictInt = Field(ge=0)
+    end_ms: StrictInt = Field(gt=0)
+    attributes: dict[str, JsonValue] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def ordered_range(self) -> "AnnotationSegment":
+        """Reject zero-length and reversed ranges while allowing 1ms and duplicate segments."""
+        if self.end_ms <= self.start_ms:
+            message = "Segment end_ms must be greater than start_ms"
+            raise ValueError(message)
+        return self
+
+
 class AnnotationRecord(BoundaryModel):
     """Describe one annotator's work; None is missing and an empty tuple is reviewed empty."""
 
@@ -87,10 +104,24 @@ class AnnotationRecord(BoundaryModel):
     keypoints: tuple[AnnotationSkeleton, ...] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    segments: tuple[AnnotationSegment, ...] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    media_duration_ms: StrictInt | None = Field(
+        default=None, gt=0, exclude_if=lambda value: value is None
+    )
     attributes: dict[str, JsonValue] = Field(default_factory=dict)
     text_length: int | None = Field(default=None, ge=0)
     image_width: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     image_height: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def segment_duration_present(self) -> "AnnotationRecord":
+        """Bind reviewed or unreviewed segment arrays to their authoritative source duration."""
+        if self.segments is not None and self.media_duration_ms is None:
+            message = "media_duration_ms is required when segments are present"
+            raise ValueError(message)
+        return self
 
 
 class NearDuplicatePair(BoundaryModel):
@@ -271,6 +302,11 @@ class AnnotationQAResult(BoundaryModel):
     annotator_count: int
     keypoint_agreement: AgreementValue | None = Field(
         default=None, exclude_if=lambda value: value is None
+    )
+    segment_agreement: AgreementValue | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Automatic segment agreement is unsupported; present with a null value.",
     )
 
 

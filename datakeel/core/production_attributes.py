@@ -172,6 +172,7 @@ def validate_attributes(
         ("box", annotation.boxes),
         ("polygon", annotation.polygons),
         ("span", annotation.spans),
+        ("segment", annotation.segments),
     ):
         for index, shape in enumerate(shapes or (), start=1):
             _check(shaped, shape.attributes, f"{kind} {index}", complete=complete)

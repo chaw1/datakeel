@@ -23,7 +23,7 @@ def _atoms(annotation: AnnotationRecord) -> Counter[str]:
     payload = annotation.model_dump(mode="json")
     atoms = Counter(
         json.dumps((kind, value), sort_keys=True, ensure_ascii=False)
-        for kind in ("labels", "boxes", "polygons", "spans")
+        for kind in ("labels", "boxes", "polygons", "spans", "segments")
         for value in payload.get(kind) or ()
     )
     for kind in ("labels", "boxes", "polygons", "spans"):

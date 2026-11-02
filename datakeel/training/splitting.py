@@ -150,23 +150,19 @@ def _directory(samples: tuple[TrainingSample, ...]) -> dict[int, SplitName]:
 def _stratification_labels(sample: TrainingSample, source: StratificationSource) -> tuple[str, ...]:
     if source == "all":
         return tuple(sorted(set(sample.labels)))
-    labels = {
-        label
-        for record in sample.annotations
-        for label in (
-            record.labels or ()
-            if source == "classification"
-            else (
-                tuple(box.category for box in record.boxes or ())
-                if source == "detection"
-                else (
-                    tuple(skeleton.category for skeleton in record.keypoints or ())
-                    if source == "keypoints"
-                    else tuple(span.category for span in record.spans or ())
-                )
-            )
-        )
-    }
+    labels: set[str] = set()
+    for record in sample.annotations:
+        if source == "classification":
+            values = record.labels or ()
+        elif source == "detection":
+            values = tuple(box.category for box in record.boxes or ())
+        elif source == "keypoints":
+            values = tuple(skeleton.category for skeleton in record.keypoints or ())
+        elif source == "segments":
+            values = tuple(segment.category for segment in record.segments or ())
+        else:
+            values = tuple(span.category for span in record.spans or ())
+        labels.update(values)
     return tuple(sorted(labels))
 
 

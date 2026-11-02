@@ -106,7 +106,9 @@ class ProductionTemplate(BoundaryModel):
 
     id: str
     name: str
-    annotation_type: Literal["box", "polygon", "keypoints", "classification", "text_span"] = "box"
+    annotation_type: Literal[
+        "box", "polygon", "keypoints", "classification", "text_span", "segment"
+    ] = "box"
     component_config: dict[str, JsonValue] = Field(default_factory=dict)
     validation_rules: dict[str, JsonValue] = Field(default_factory=dict)
     attributes: tuple[TemplateAttribute, ...] = Field(default=(), max_length=50)
@@ -129,7 +131,7 @@ class ProductionTemplate(BoundaryModel):
     def supported_validation_rules(self) -> "ProductionTemplate":
         """Reject unsupported rules so saving never silently bypasses a configured constraint."""
         components = self.component_config.get("components")
-        supported = {"box", "polygon", "keypoints", "classification", "text_span"}
+        supported = {"box", "polygon", "keypoints", "classification", "text_span", "segment"}
         if components is not None and (
             not isinstance(components, list)
             or not components
@@ -137,6 +139,17 @@ class ProductionTemplate(BoundaryModel):
             or len({str(value) for value in components}) != len(components)
         ):
             message = "Template components must be distinct supported annotation types"
+            raise ValueError(message)
+        if (
+            isinstance(components, list)
+            and "segment" in components
+            and set(components)
+            - {
+                "segment",
+                "classification",
+            }
+        ):
+            message = "Segment templates support only segment alone or segment with classification"
             raise ValueError(message)
         if set(self.validation_rules) - {"min_annotations", "max_annotations"}:
             message = "Supported template rules are min_annotations and max_annotations"

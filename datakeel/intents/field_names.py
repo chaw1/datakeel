@@ -228,6 +228,8 @@ ENUM_LABELS: dict[str, tuple[str, str]] = {
     "accepted": ("已接受", "accepted"),
     "annotation_revision": ("标注修订", "annotation revision"),
     "annotations_jsonl": ("标注 JSONL", "annotation JSONL"),
+    "segment": ("音视频时间段", "media segment"),
+    "webvtt": ("WebVTT 字幕", "WebVTT captions"),
     "anthropic": ("Anthropic", "Anthropic"),
     "aql": ("AQL 抽检", "AQL sampling"),
     "asset": ("数据资产", "asset"),

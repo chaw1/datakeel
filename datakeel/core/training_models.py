@@ -14,7 +14,9 @@ from datakeel.core.models import BoundaryModel, FileItem
 
 type SplitName = Literal["train", "val", "test"]
 type LeakageKind = Literal["exact", "image", "text", "group"]
-type StratificationSource = Literal["all", "classification", "detection", "spans", "keypoints"]
+type StratificationSource = Literal[
+    "all", "classification", "detection", "spans", "keypoints", "segments"
+]
 
 
 class SplitRatios(BoundaryModel):

@@ -64,6 +64,14 @@ def production_prelabel_accuracy(db: Database, project_id: str) -> PrelabelAccur
             )
             else None
         ),
+        segment_accuracy=(
+            AgreementValue(value=None, reason="Segment accuracy is not supported")
+            if any(
+                model.annotation.segments is not None or human.annotation.segments is not None
+                for model, human in pairs
+            )
+            else None
+        ),
     )
 
 
