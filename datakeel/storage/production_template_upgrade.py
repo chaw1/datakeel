@@ -17,7 +17,9 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
 from datakeel.core.production_attributes import attribute_problems
 from datakeel.core.production_catalog_models import LabelSet, ProductionTemplate
+from datakeel.core.production_keypoints import enabled_components
 from datakeel.core.production_models import AnnotationRevision, Project
+from datakeel.core.production_segments import require_segment_sources
 from datakeel.core.production_upgrade_models import (
     AttributeChanges,
     LabelChanges,
@@ -25,8 +27,6 @@ from datakeel.core.production_upgrade_models import (
     TemplateUpgradePlan,
     UpgradeProblemTask,
 )
-from datakeel.core.production_keypoints import enabled_components
-from datakeel.core.production_segments import require_segment_sources
 from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.production_catalog import require_label_set, validate_template_content
 from datakeel.storage.production_keypoint_upgrades import (

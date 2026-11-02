@@ -121,6 +121,12 @@ class AnnotationRecord(BoundaryModel):
         if self.segments is not None and self.media_duration_ms is None:
             message = "media_duration_ms is required when segments are present"
             raise ValueError(message)
+        if self.segments is not None and any(
+            getattr(self, field) is not None
+            for field in ("boxes", "polygons", "keypoints", "spans")
+        ):
+            message = "Segments cannot be combined with spatial or text-span annotations"
+            raise ValueError(message)
         return self
 
 

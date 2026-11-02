@@ -11,6 +11,7 @@ from pathlib import Path
 from pydantic import JsonValue
 
 from datakeel.core.errors import ConflictError, ValidationError
+from datakeel.core.production_segments import require_no_segments
 from datakeel.core.training_export_models import TrainingExport, TrainingExportItem
 from datakeel.training.export_common import json_text, source_geometry, write_archive
 from datakeel.training.export_detection import (
@@ -21,7 +22,7 @@ from datakeel.training.export_detection import (
 from datakeel.training.export_hf import write_hf_imagefolder
 from datakeel.training.export_keypoints import require_no_keypoints
 from datakeel.training.export_records import write_imagefolder, write_text_jsonl
-from datakeel.training.export_segments import require_no_segments, write_webvtt
+from datakeel.training.export_segments import write_webvtt
 from datakeel.training.native import write_annotations_jsonl
 
 FORMAT_VERSION = "1.0"

@@ -3,9 +3,8 @@
 
 """Frozen split export preparation rejects segments before modality filtering."""
 
+from collections.abc import Callable
 from datetime import UTC, datetime
-
-import pytest
 
 from datakeel.actions.parameters import ExportParams
 from datakeel.core.annotation_models import AnnotationRecord, AnnotationSegment
@@ -16,6 +15,16 @@ from datakeel.storage.database import Database, VersionRow
 from datakeel.storage.training_export import training_export_inputs
 from datakeel.storage.training_rows import TrainingSplitRow
 from tests.storage.production_catalog_fixtures import catalog_project
+
+
+def _reject(call: Callable[[], object], match: str) -> None:
+    message = None
+    try:
+        call()
+    except ValidationError as error:
+        message = str(error)
+    assert message is not None, "Expected segment export preparation to reject the operation"
+    assert match in message
 
 
 def _split(db: Database) -> SplitSet:
@@ -75,19 +84,19 @@ def _split(db: Database) -> SplitSet:
 def test_prepare_rejects_all_frozen_segment_records_before_audio_filter(db: Database) -> None:
     """COCO cannot drop audio first and then report a successful empty/image-only export."""
     split = _split(db)
-    with (
-        db.session() as session,
-        pytest.raises(ValidationError, match="webvtt or annotations_jsonl"),
-    ):
-        training_export_inputs(
-            session,
-            ExportParams(
-                dataset_id="catalog-data",
-                version_id="catalog-source",
-                split_set_id=split.id,
-                format="coco",
+    with db.session() as session:
+        _reject(
+            lambda: training_export_inputs(
+                session,
+                ExportParams(
+                    dataset_id="catalog-data",
+                    version_id="catalog-source",
+                    split_set_id=split.id,
+                    format="coco",
+                ),
+                materialize=False,
             ),
-            materialize=False,
+            "webvtt or annotations_jsonl",
         )
 
 

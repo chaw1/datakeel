@@ -3,6 +3,8 @@
 
 """Strict integer segment boundaries and authoritative source-media validation."""
 
+from collections.abc import Callable
+
 import pytest
 from pydantic import ValidationError as ModelValidationError
 
@@ -10,6 +12,17 @@ from datakeel.core.annotation_models import AnnotationRecord, AnnotationSegment
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import FileItem
 from datakeel.core.production_segments import media_probe, validate_segment_media
+
+
+def _reject(call: Callable[[], object], match: str, *, model: bool = False) -> None:
+    error_type = ModelValidationError if model else ValidationError
+    message = None
+    try:
+        call()
+    except error_type as error:
+        message = str(error)
+    assert message is not None, "Expected segment validation to reject the operation"
+    assert match in message
 
 
 def _record(segments: tuple[AnnotationSegment, ...] | None) -> AnnotationRecord:
@@ -49,8 +62,11 @@ def test_half_open_segments_allow_boundaries_overlap_adjacency_and_duplicates() 
 @pytest.mark.parametrize("value", [True, False, 1.0, 1.5, "1", None])
 def test_segment_milliseconds_require_real_integers(value: object) -> None:
     """Booleans, floats, strings and null cannot coerce into millisecond fields."""
-    with pytest.raises(ModelValidationError):
-        AnnotationSegment.model_validate({"category": "a", "start_ms": value, "end_ms": 2})
+    _reject(
+        lambda: AnnotationSegment.model_validate({"category": "a", "start_ms": value, "end_ms": 2}),
+        "start_ms",
+        model=True,
+    )
 
 
 @pytest.mark.parametrize(("start", "end"), [(-1, 2), (0, 0), (2, 0), (2, 2), (0, 3251)])
@@ -82,12 +98,40 @@ def test_segments_require_duration_at_the_model_boundary() -> None:
         AnnotationRecord(sample_id="audio", annotator_id="ann", segments=(), media_duration_ms=None)
 
 
+def test_native_record_rejects_spatial_and_text_component_combinations() -> None:
+    """Native JSONL cannot bypass the template's undefined component-combination guard."""
+    for field in ("boxes", "spans", "polygons", "keypoints"):
+        with pytest.raises(ModelValidationError, match="cannot be combined"):
+            AnnotationRecord.model_validate(
+                {
+                    "sample_id": "audio",
+                    "annotator_id": "ann",
+                    "segments": [],
+                    "media_duration_ms": 3250,
+                    field: [],
+                }
+            )
+
+
+def test_derived_clip_uses_local_duration_without_source_offset() -> None:
+    """A clip's source_start metadata never shifts its local 0..duration timeline."""
+    file = _file(
+        metadata={
+            "source_start_ms": 50_000,
+            "media_probe": {"duration_ms": 3250, "codec": "pcm_s16le"},
+        }
+    )
+    validate_segment_media(
+        file,
+        _record((AnnotationSegment(category="a", start_ms=3249, end_ms=3250),)),
+    )
+
+
 @pytest.mark.parametrize("duration", [0, 3249, 3251])
 def test_source_duration_must_match_exactly(duration: int) -> None:
     """Zero, stale and future durations cannot authorize a reviewed empty record."""
     file = _file(metadata={"media_probe": {"duration_ms": duration, "codec": "pcm_s16le"}})
-    with pytest.raises(ValidationError, match=r"duration|readable"):
-        validate_segment_media(file, _record(()))
+    _reject(lambda: validate_segment_media(file, _record(())), "duration")
 
 
 def test_missing_probe_non_media_and_unsupported_codec_fail_clearly() -> None:
@@ -103,6 +147,16 @@ def test_missing_probe_non_media_and_unsupported_codec_fail_clearly() -> None:
                 metadata={"media_probe": {"duration_ms": 3250, "codec": "mpeg4"}},
             )
         )
+
+
+@pytest.mark.parametrize(("codec", "format_name"), [("h264", "mov,mp4"), ("vp9", "matroska,webm")])
+def test_browser_decodable_video_probe_is_accepted(codec: str, format_name: str) -> None:
+    """MP4/H.264 and WebM/VP9 probes satisfy the native player prerequisite."""
+    file = _file(
+        modality="video",
+        metadata={"media_probe": {"duration_ms": 3250, "codec": codec, "format": format_name}},
+    )
+    validate_segment_media(file, _record(()))
 
 
 def test_truncated_probe_uses_readable_not_declared_duration() -> None:

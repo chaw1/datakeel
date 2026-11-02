@@ -1,25 +1,14 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""WebVTT-only projection and eager rejection for lossy training formats."""
+"""Deterministic WebVTT projection for reviewed native media segments."""
 
-from collections.abc import Iterable
 from pathlib import Path
 
-from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.errors import ValidationError
 from datakeel.core.production_segments import validate_segment_media
 from datakeel.core.training_export_models import TrainingExport, TrainingExportItem
 from datakeel.training.export_common import copy_source, filename
-
-
-def require_no_segments(records: Iterable[AnnotationRecord], format_name: str) -> None:
-    """Reject nonempty segments before any modality filter or partial archive write."""
-    if any(record.segments for record in records):
-        message = (
-            f"{format_name} does not support audio/video segments; use webvtt or annotations_jsonl"
-        )
-        raise ValidationError(message)
 
 
 def _timestamp(milliseconds: int) -> str:
@@ -64,7 +53,8 @@ def write_webvtt(export: TrainingExport, directory: Path) -> dict[str, str]:
     for item in export.items:
         media_name = filename(item)
         media_relative = f"media/{item.split}/{media_name}"
-        cue_relative = f"annotations/{item.split}/{Path(media_name).with_suffix('.vtt')}"
+        cue_name = Path(media_name).with_suffix(".vtt").as_posix()
+        cue_relative = f"annotations/{item.split}/{cue_name}"
         copy_source(item, directory / media_relative)
         cue_path = directory / cue_relative
         cue_path.parent.mkdir(parents=True, exist_ok=True)

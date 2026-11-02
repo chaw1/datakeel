@@ -11,6 +11,7 @@ from datakeel.actions.parameters import ExportParams
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import FileItem
+from datakeel.core.production_segments import require_no_segments
 from datakeel.core.training_export_models import (
     TRAINING_FORMATS,
     TrainingExport,
@@ -25,7 +26,6 @@ from datakeel.storage.release_service import iter_release_entries, require_relea
 from datakeel.storage.training_rows import TrainingSplitRow
 from datakeel.storage.version_stream import require_version, stream_manifest
 from datakeel.training.export_detection import require_no_keypoints, validate_detection_annotations
-from datakeel.training.export_segments import require_no_segments
 
 
 def _split(session: Session, params: ExportParams) -> SplitSet:

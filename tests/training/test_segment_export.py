@@ -5,6 +5,7 @@
 
 import hashlib
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,16 @@ from datakeel.core.training_export_models import (
 from datakeel.training.export import write_training_export
 from datakeel.training.export_segments import webvtt_text
 from datakeel.training.native import import_annotations_jsonl
+
+
+def _reject(call: Callable[[], object], match: str) -> None:
+    message = None
+    try:
+        call()
+    except ValidationError as error:
+        message = str(error)
+    assert message is not None, "Expected segment export validation to reject the operation"
+    assert match in message
 
 
 def _item(tmp_path: Path, *, empty: bool = False) -> TrainingExportItem:
@@ -139,8 +150,7 @@ def test_webvtt_rejects_unreviewed_instead_of_emitting_negative(tmp_path: Path) 
     """An unreviewed record never becomes a legal but misleading empty caption file."""
     item = _item(tmp_path)
     annotation = item.annotation.model_copy(update={"segments": None})
-    with pytest.raises(ValidationError, match="unreviewed"):
-        webvtt_text(item.model_copy(update={"annotation": annotation}))
+    _reject(lambda: webvtt_text(item.model_copy(update={"annotation": annotation})), "unreviewed")
 
 
 @pytest.mark.parametrize(

@@ -44,6 +44,7 @@ from scripts.production_team_mutations import PRODUCTION_TEAM_MUTATIONS
 from scripts.production_tool_mutations import PRODUCTION_TOOL_MUTATIONS
 from scripts.release_mutations import RELEASE_MUTATIONS
 from scripts.sandbox_mutations import SANDBOX_MUTATIONS
+from scripts.segment_mutations import SEGMENT_MUTATIONS
 from scripts.standard_mutations import LEXICAL_RULE_MUTATIONS, STANDARD_MUTATIONS
 from scripts.table_mutations import TABLE_MUTATIONS
 from scripts.tails4_orientation_mutations import ORIENTATION_MUTATIONS
@@ -62,6 +63,7 @@ from scripts.workbench_mutations import WORKBENCH_MUTATIONS
 
 FEATURE_MUTATIONS = (
     *KEYPOINT_MUTATIONS,
+    *SEGMENT_MUTATIONS,
     *WORKBENCH_MUTATIONS,
     *MCP_PAGINATION_MUTATIONS,
     *IDENTITY_MUTATIONS,

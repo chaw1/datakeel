@@ -3,6 +3,8 @@
 
 """Authoritative local-media checks for half-open millisecond annotation segments."""
 
+from collections.abc import Iterable
+
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.errors import ValidationError
 from datakeel.core.media_models import MediaProbe
@@ -29,6 +31,15 @@ _AUDIO_CODECS = frozenset(
 _VIDEO_CODECS = frozenset({"av1", "h264", "vp8", "vp9"})
 _AUDIO_FORMATS = frozenset({"flac", "mp3", "ogg", "wav"})
 _VIDEO_FORMATS = frozenset({"matroska", "mov", "mp4", "webm", "m4a", "3gp", "3g2", "mj2"})
+
+
+def require_no_segments(records: Iterable[AnnotationRecord], format_name: str) -> None:
+    """Reject nonempty segments before any modality filter or partial archive write."""
+    if any(record.segments for record in records):
+        message = (
+            f"{format_name} does not support audio/video segments; use webvtt or annotations_jsonl"
+        )
+        raise ValidationError(message)
 
 
 def media_probe(file: FileItem) -> MediaProbe:

@@ -3,6 +3,8 @@
 
 """Segment production saves, locked-source revalidation, upgrades and finalization."""
 
+from collections.abc import Callable
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -39,6 +41,16 @@ from datakeel.storage.production_rows import ProductionTaskRow
 from datakeel.storage.production_tasks import require_task, task_view
 from datakeel.storage.production_template_upgrade import upgrade_plan
 from tests.storage.production_catalog_fixtures import catalog_project
+
+
+def _reject(call: Callable[[], object], match: str) -> None:
+    message = None
+    try:
+        call()
+    except ValidationError as error:
+        message = str(error)
+    assert message is not None, "Expected segment workflow validation to reject the operation"
+    assert match in message
 
 
 def _source(db: Database, *, probe: bool = True, duration: int = 3250) -> None:
@@ -202,8 +214,7 @@ def test_every_save_revalidates_probe_duration_and_required_segment_attributes(
 def test_project_creation_checks_every_source_even_without_revisions(db: Database) -> None:
     """A segment project cannot be created until every source has a positive probe."""
     _source(db, probe=False)
-    with pytest.raises(ValidationError, match="run the media probe"):
-        _project(db)
+    _reject(lambda: _project(db), "run the media probe")
 
 
 def test_template_upgrade_checks_unprobed_sources_before_impact_plan(db: Database) -> None:
@@ -225,10 +236,12 @@ def test_template_upgrade_checks_unprobed_sources_before_impact_plan(db: Databas
                 ),
             ),
         )
-        with pytest.raises(ValidationError, match="run the media probe"):
-            upgrade_plan(
+        _reject(
+            lambda: upgrade_plan(
                 session, UpgradeProjectTemplateParams(request_id="upgrade", project_id=project.id)
-            )
+            ),
+            "run the media probe",
+        )
 
 
 def test_review_rechecks_locked_media_after_probe_drift(db: Database) -> None:
@@ -272,9 +285,29 @@ def test_native_import_rejects_bad_media_before_batch_insert(db: Database) -> No
         idempotency_key="bad-segments",
     )
     with db.session() as session:
-        with pytest.raises(ValidationError, match="media_duration_ms"):
-            import_annotations_in_session(session, "catalog-data", request)
+        _reject(
+            lambda: import_annotations_in_session(session, "catalog-data", request),
+            "media_duration_ms",
+        )
         assert session.scalar(select(AnnotationBatchRow)) is None
+
+
+def test_template_min_max_counts_segments(db: Database) -> None:
+    """The locked min/max rule counts media segments, including reviewed empty and duplicates."""
+    _source(db)
+    _, tasks = _project(db)
+    empty = _annotation(tasks[0]).model_copy(update={"segments": ()})
+    with db.session() as session:
+        _reject(lambda: _save(session, tasks[0], empty), "count")
+        too_many = _annotation(tasks[0]).model_copy(
+            update={
+                "segments": tuple(
+                    AnnotationSegment(category="a", start_ms=0, end_ms=1, attributes={"note": "x"})
+                    for _ in range(6)
+                )
+            }
+        )
+        _reject(lambda: _save(session, tasks[0], too_many), "count")
 
 
 def test_segment_rejects_undefined_spatial_and_text_combinations() -> None:
