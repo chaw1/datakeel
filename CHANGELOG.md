@@ -4,6 +4,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-02
+
 ### Added
 
 - Native audio/video segment annotation is the workbench's sixth component. Integer-millisecond half-open ranges are checked against every locked source's readable `media_probe.duration_ms`, with browser-codec checks, overlap/nesting/adjacency/duplicates, object and record attributes, native playback and visible-window swim lanes, complete mouse and keyboard editing, offline drafts, conflicts, 200-step undo/redo, review, package acceptance and finalization. Project creation and template upgrades require probes on every source, including tasks without revisions. Automatic segment agreement/accuracy is explicitly unsupported (`null`), never a false perfect score. See [Annotation workbench](docs/ANNOTATION_WORKBENCH.md).
@@ -11,7 +13,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
-- The mutation gate has **842 anchors** (832 before; 10 added for native segments and FIX1 count boundaries), the golden suite remains at **58 cases**, the operator catalog at **42**, and MCP at **102 tools** (37 reads and 65 prepare-only actions). OpenAPI remains at **171 paths, 184 operations** and grows from 422 to **423 schemas** through one additive segment model and optional fields/enums. The measured pytest duration table covers **851 modules** (845 before; 6 added). Segment min/max counts only media segments, never classification labels; other component templates retain their previous count rule.
+- Package, API and frontend versions advance to 0.22.0. The mutation gate has **842 anchors** (832 before; 10 added for native segments and FIX1 count boundaries), the golden suite remains at **58 cases**, the operator catalog at **42**, and MCP at **102 tools** (37 reads and 65 prepare-only actions). OpenAPI remains at **171 paths, 184 operations** and grows from 422 to **423 schemas** through one additive segment model and optional fields/enums. The measured pytest duration table covers **851 modules** (845 before; 6 added). Segment min/max counts only media segments, never classification labels; other component templates retain their previous count rule.
 
 ## [0.21.0] - 2026-11-02
 

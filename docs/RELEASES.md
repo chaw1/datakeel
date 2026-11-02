@@ -406,9 +406,21 @@ Integration changes in this version:
 - The planning prompt stays within its token budget after the merge: the registry no longer repeats an English phrase that only spells out the action's name. No rule or safety text was removed.
 - The README states 102 MCP tools, 803 mutation anchors, 58 golden cases and the beta.
 
-## v0.21.0 release notes
+## v0.22.0 release notes
 
-Unreleased adds native audio/video segments as the sixth workbench component, with authoritative media-probe validation, native Range playback, mouse and keyboard timelines, native JSONL round trips and export-only WebVTT. Unsupported formats reject nonempty segments before modality filtering. It adds no runtime dependency, action, media route or MCP tool.
+v0.22.0 makes native audio/video segments the workbench's sixth annotation component. It adds no runtime dependency, action, media API route or MCP tool.
+
+**Integer-millisecond model and authoritative media.** `AnnotationSegment` uses half-open `[start_ms,end_ms)` ranges inside the locked file's readable `media_probe.duration_ms`. Zero starts, exact duration endpoints, 1ms, overlaps, nesting, adjacency and duplicates are retained in record order; zero, reversed, out-of-bounds and coerced values are refused. Project creation and template upgrades require supported codecs and positive probes on every audio/video source, including tasks without revisions. Derived clips use their local duration without a source offset. Save, submission, review, package acceptance, finalization and native JSONL import revalidate the same locked media facts. Segment min/max counts only segments, never classification labels.
+
+**Native player and complete keyboard editing.** The native audio/video player uses `preload=metadata` and the existing authorized `/content` Range response. Visible-window swim lanes support pointer creation, movement, resizing, selection and deletion without changing record order. A native segment list, labels, integer-millisecond inputs and attribute forms provide every operation without pointer hit-testing. Playback, seek, playhead, zoom and selection stay out of revisions; reviewers use the same read-only timeline. AnnotationSession supplies 500ms autosave, offline drafts, conflicts, 200-step undo/redo, team heartbeats and lease-loss protection.
+
+**Portable exports and honest metrics.** Native `annotations_jsonl` preserves labels, attributes, milliseconds, source duration, `null`/reviewed-empty and segment order exactly. Export-only `webvtt` copies original media and writes stable cues plus sample/duration notes, including valid reviewed-empty files; unreviewed media is refused. COCO, YOLO, ImageFolder, HF and text JSONL reject nonempty segments across all frozen records before modality filtering at prepare and write time. Automatic segment agreement/accuracy is `null` and labelled unsupported rather than claiming a perfect score.
+
+**Range and measured performance.** Real Chromium checks returned 206 with correct `Content-Range` for initial and middle ranges, 416 for unsatisfiable ranges and 400 for malformed/reversed ranges. The first PR CI passed. Local final-build measurements were: 33.1ms p95 for 23 prefetched task transitions, 86.1ms to first MP4 playback, 8.6ms p95 for loaded seeks, and 16.7ms p95 over 300 frames while dragging in a two-hour video with 500 segments (only 7 visible-window segments rendered). One hundred-segment team saves measured 10.400ms p95 on SQLite, all below their documented limits.
+
+**Counts.** Package, API and frontend versions are 0.22.0. The mutation gate has **842 anchors** (832 before; 10 added). The golden suite remains at **58 cases**, the operator catalog at **42**, and MCP at **102 tools** (37 reads and 65 prepare-only actions). OpenAPI remains at **171 paths, 184 operations** and grows from 422 to **423 schemas** through additive models and optional fields/enums. The CI-measured pytest duration table covers **851 modules** (845 before; 6 added).
+
+## v0.21.0 release notes
 
 v0.21.0 makes skeleton keypoints the workbench's fifth native annotation component. It adds no runtime dependency, action, API route or MCP tool.
 
