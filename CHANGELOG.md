@@ -4,6 +4,15 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- Native audio/video segment annotation is the workbench's sixth component. Integer-millisecond half-open ranges are checked against every locked source's readable `media_probe.duration_ms`, with browser-codec checks, overlap/nesting/adjacency/duplicates, object and record attributes, native playback and visible-window swim lanes, complete mouse and keyboard editing, offline drafts, conflicts, 200-step undo/redo, review, package acceptance and finalization. Project creation and template upgrades require probes on every source, including tasks without revisions. Automatic segment agreement/accuracy is explicitly unsupported (`null`), never a false perfect score. See [Annotation workbench](docs/ANNOTATION_WORKBENCH.md).
+- Native JSONL round-trips segment labels, attributes, boundaries, source duration, `null`/reviewed-empty and array order exactly. Export-only WebVTT copies original media bytes and emits stable cues and sample/duration notes, including valid reviewed-empty files; unreviewed media is refused. COCO, YOLO, ImageFolder, HF and text JSONL reject nonempty segments before modality filtering at prepare and write time. Segment stratification is available alongside the existing five sources.
+
+### Changed
+
+- The mutation gate has **840 anchors** (832 before; 8 added for native segments), the golden suite remains at **58 cases**, the operator catalog at **42**, and MCP at **102 tools** (37 reads and 65 prepare-only actions). OpenAPI remains at **171 paths, 184 operations** and grows from 422 to **423 schemas** through one additive segment model and optional fields/enums. The measured pytest duration table covers **850 modules** (845 before; 5 added).
+
 ## [0.21.0] - 2026-11-02
 
 ### Added

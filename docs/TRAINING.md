@@ -26,7 +26,7 @@ assignments against all label quotas and class prevalence together. Labels are d
 and sorted for computation; saved members retain the original labels and complete annotations.
 Each export writes the annotations supported by its format.
 
-**Annotation labels to balance** selects `all` (the default), `classification`, `detection`, `spans` or `keypoints`. The default keeps the existing union of all annotation kinds; the other choices use only classification labels, box categories, text-span categories or skeleton-instance categories for allocation.
+**Annotation labels to balance** selects `all` (the default), `classification`, `detection`, `spans`, `keypoints` or `segments`. The default keeps the existing union of all annotation kinds; the other choices use only classification labels, box categories, text-span categories, skeleton-instance categories or media-segment categories for allocation.
 Missing or reviewed-empty annotations of the selected kind contribute no labels. Reviews
 from all frozen annotators are included, as before. Every selected label participates;
 this choice does not reduce a multilabel sample to its first label.
@@ -148,7 +148,8 @@ source export permissions are rechecked on every download. Export receipts enter
 | `imagefolder` | `<split>/<class>/<image>`; requires exactly one classification label per image                                                  |
 | `hf_imagefolder` | `<split>/<image>` and `metadata.jsonl`; lossless scalar metadata, described below |
 | `text_jsonl`  | `<split>.jsonl`; exact text, labels and half-open character-offset spans                                                        |
-| `annotations_jsonl` | `sources/<split>/` and `annotations.jsonl`; lossless native records for every component, including skeleton IDs, order, tri-state points, coordinates and attributes |
+| `annotations_jsonl` | `sources/<split>/` and `annotations.jsonl`; lossless native records for every component, including segment boundaries, source duration, order, `null`/empty and attributes |
+| `webvtt` | `media/<split>/` original bytes and same-named `annotations/<split>/*.vtt`; one cue per reviewed segment, stable `(start,end,original index)` order, sample/duration NOTE |
 
 COCO `images[].file_name` is relative to the extracted archive root, including the
 `images/<split>/` prefix. Set the consumer's image root to that extracted root, not to
@@ -157,6 +158,8 @@ COCO `images[].file_name` is relative to the extracted archive root, including t
 The annotation document's own directory is not the image root.
 
 For native skeletons, the finalized annotation batch and frozen split carry the project's single locked `keypoint_schema` once; it is not copied into every record or guessed from point order. COCO categories are the union of box and skeleton categories. Skeleton categories declare `keypoints` and one-based `skeleton` edges. Each skeleton annotation writes template-ordered `[x,y,v]` triples (`visible=2`, `occluded=1`, `missing=0,0,0`), counts `num_keypoints` only for `v>0`, and derives bbox/area from non-missing points. A single positioned point therefore has a legal zero-area keypoint bbox. COCO with nonempty keypoints but no schema is refused. YOLO, ImageFolder, HF imagefolder and text JSONL reject nonempty keypoints instead of dropping them. COCO keypoint import is explicitly refused, even with a bbox; use `annotations_jsonl`. Detection-only COCO has no added null fields and retains byte-stable archives.
+
+Media segments use strict integer milliseconds and half-open `[start_ms,end_ms)` ranges against the locked file's readable `media_probe.duration_ms`. Native JSONL retains labels, segment and record attributes, source duration, array order and `null` versus reviewed-empty exactly. `webvtt` is export-only and does not preserve attributes or record-array order. Every segment becomes one cue whose text is the stable category ID; cues are stably sorted by `(start,end,original index)`, duplicates and overlaps remain, and reviewed-empty media gets a valid WEBVTT header. `segments=null` is refused instead of becoming empty captions. COCO, YOLO, ImageFolder, HF and text JSONL reject nonempty segments across all frozen records before filtering audio/video by modality, at both prepare and write time.
 
 Reviewed-empty images (`boxes=[]`) have an empty YOLO label file and remain in COCO images.
 Missing box reviews (`boxes=null`) are refused for detection exports, rather than treated

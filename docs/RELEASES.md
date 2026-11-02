@@ -408,6 +408,8 @@ Integration changes in this version:
 
 ## v0.21.0 release notes
 
+Unreleased adds native audio/video segments as the sixth workbench component, with authoritative media-probe validation, native Range playback, mouse and keyboard timelines, native JSONL round trips and export-only WebVTT. Unsupported formats reject nonempty segments before modality filtering. It adds no runtime dependency, action, media route or MCP tool.
+
 v0.21.0 makes skeleton keypoints the workbench's fifth native annotation component. It adds no runtime dependency, action, API route or MCP tool.
 
 **Strongly typed templates and multi-instance editing.** A locked `keypoint_schema` defines ordered stable point IDs, Chinese/English names, required flags and edges through structured controls rather than unchecked JSON. Mixed templates support multiple labelled skeleton instances, skeleton attributes and `visible`, `occluded` and `missing` states. Mouse and complete keyboard paths share one canvas and `AnnotationSession`: K creates, Space places and advances, V changes visibility, X marks missing, and brackets/arrows select and move points with constant-screen hit targets. Partial drafts save; required-missing and all-missing instances cannot submit. Reordering and optional additions preserve old points by ID; deleting a used point is refused, and new required points are rechecked at save, submission, review, team acceptance and finalization.

@@ -10,6 +10,10 @@ import { createHarness, workbenchBase } from "./workbench-helpers.mjs";
 import { keyboardWorkflow, unlimitedHistory } from "./workbench-keyboard.mjs";
 import { largeImages, nextTaskLatency } from "./workbench-performance.mjs";
 import { durableEditing, durableKeypoints } from "./workbench-reliability.mjs";
+import {
+  segmentAcceptance,
+  segmentPerformance,
+} from "./workbench-segments.mjs";
 
 const base = workbenchBase(process.argv[2] ?? "http://127.0.0.1:8840");
 assert.ok(
@@ -27,6 +31,9 @@ for (const kind of [
   "keypoints",
   "classification",
   "text_span",
+  "segment",
+  "segment-video",
+  "segment-long",
   "large4k",
   "large4k-keypoints",
   "large8k",
@@ -38,9 +45,9 @@ for (const kind of [
 }
 const selected = (
   process.argv.find((item) => item.startsWith("--only="))?.slice(7) ??
-  "W1,W2,W3,W4,W5"
+  "W1,W2,W3,W4,W5,W6"
 ).split(",");
-assert.ok(selected.every((name) => /^W[1-5]$/.test(name)));
+assert.ok(selected.every((name) => /^W[1-6]$/.test(name)));
 await mkdir(output, { recursive: true });
 const report = {
   startedAt: new Date().toISOString(),
@@ -120,6 +127,13 @@ try {
     ],
     ["W4", unlimitedHistory],
     ["W5", largeImages],
+    [
+      "W6",
+      async (h) => ({
+        acceptance: await segmentAcceptance(h),
+        performance: await segmentPerformance(h),
+      }),
+    ],
   ]) {
     if (!selected.includes(name)) continue;
     report.phase = name;

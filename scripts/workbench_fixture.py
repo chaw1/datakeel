@@ -25,6 +25,7 @@ from datakeel.core.settings import get_settings
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_queries import list_tasks
+from scripts.segment_media_fixtures import probe_sources, segment_annotation, segment_sources
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import DBAPIConnection
     from sqlalchemy.pool import ConnectionPoolEntry
 
-ComponentKind = Literal["box", "polygon", "keypoints", "classification", "text_span"]
+ComponentKind = Literal["box", "polygon", "keypoints", "classification", "text_span", "segment"]
 
 
 class FixtureProject(BoundaryModel):
@@ -42,6 +43,7 @@ class FixtureProject(BoundaryModel):
     task_ids: tuple[str, ...]
     image_width: int | None = None
     image_height: int | None = None
+    duration_ms: int | None = None
 
 
 def _run(db: Database, action: str, values: Mapping[str, object]) -> JsonDocument:
@@ -57,6 +59,8 @@ def _run(db: Database, action: str, values: Mapping[str, object]) -> JsonDocumen
 
 
 def _source(directory: Path, kind: ComponentKind, size: tuple[int, int], count: int) -> list[Path]:
+    if kind == "segment":
+        return segment_sources(directory, size[0], count)
     directory.mkdir(parents=True, exist_ok=True)
     result: list[Path] = []
     for index in range(count):
@@ -121,6 +125,8 @@ def _keypoint_content(size: tuple[int, int]) -> dict[str, object]:
 
 
 def _annotation(kind: ComponentKind, sample_id: str, size: tuple[int, int]) -> AnnotationRecord:
+    if kind == "segment":
+        return segment_annotation(sample_id, size[0])
     content: dict[ComponentKind, dict[str, object]] = {
         "box": {
             "boxes": [
@@ -144,6 +150,7 @@ def _annotation(kind: ComponentKind, sample_id: str, size: tuple[int, int]) -> A
             ]
         },
         "classification": {"labels": ["cat"]},
+        "segment": {},
         "keypoints": _keypoint_content(size),
         "text_span": {
             "spans": [
@@ -157,7 +164,11 @@ def _annotation(kind: ComponentKind, sample_id: str, size: tuple[int, int]) -> A
         {
             "sample_id": sample_id,
             "annotator_id": "local",
-            **({"image_width": size[0], "image_height": size[1]} if kind != "text_span" else {}),
+            **(
+                {"image_width": size[0], "image_height": size[1]}
+                if kind not in {"text_span", "segment"}
+                else {}
+            ),
             **content[kind],
         }
     )
@@ -179,6 +190,22 @@ def _template(
             ),
         },
         **({"keypoint_schema": _keypoint_schema(size)} if kind == "keypoints" else {}),
+        **(
+            {
+                "attributes": [
+                    {
+                        "key": "note",
+                        "name_zh": "说明",
+                        "name_en": "Side",
+                        "type": "text",
+                        "target": "object",
+                        "required": True,
+                    }
+                ]
+            }
+            if kind == "segment"
+            else {}
+        ),
     }
 
 
@@ -191,6 +218,7 @@ def _project(
     name, kind, size, count = definition
     dataset = import_paths(db, f"Workbench {name}", _source(directory / name, kind, size, count))
     version = list_versions(db, dataset.id)[0]
+    durations = probe_sources(db, version.id) if kind == "segment" else {}
     template_id = new_id()
     _run(
         db,
@@ -223,14 +251,17 @@ def _project(
             {
                 "task_id": task.id,
                 "previous_revision_id": None,
-                "annotation": _annotation(kind, task.sample_id, size).model_dump(mode="json"),
+                "annotation": _annotation(
+                    kind, task.sample_id, (durations.get(task.sample_id, size[0]), size[1])
+                ).model_dump(mode="json"),
             },
         )
     return FixtureProject(
         project_id=project.id,
         task_ids=tuple(task.id for task in tasks),
-        image_width=size[0] if kind != "text_span" else None,
-        image_height=size[1] if kind != "text_span" else None,
+        image_width=size[0] if kind not in {"text_span", "segment"} else None,
+        image_height=size[1] if kind not in {"text_span", "segment"} else None,
+        duration_ms=next(iter(durations.values()), None),
     )
 
 
@@ -256,6 +287,9 @@ def generate(db: Database, directory: Path) -> JsonDocument:
         ("keypoints", "keypoints", (2000, 1500), 24),
         ("classification", "classification", (2000, 1500), 4),
         ("text_span", "text_span", (0, 0), 4),
+        ("segment", "segment", (3250, 0), 24),
+        ("segment-video", "segment", (12345, 0), 1),
+        ("segment-long", "segment", (7_200_000, 0), 1),
         ("large4k", "box", (3840, 2160), 1),
         ("large4k-keypoints", "keypoints", (3840, 2160), 1),
         ("large8k", "box", (8000, 6000), 1),
