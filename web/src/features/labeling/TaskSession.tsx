@@ -224,6 +224,8 @@ export function TaskSession({
               labels={project.label_set.labels}
               template={template}
               mediaUrl={task.sample.content_url}
+              mediaType={task.sample.media_type}
+              durationMs={task.sample.duration_ms ?? undefined}
               thumbnailUrl={
                 (task.sample.image_width ?? 0) > 3000 ||
                 (task.sample.image_height ?? 0) > 2000

@@ -71,6 +71,18 @@ const variants = {
       },
     ],
   }),
+  segments: (step: number): AnnotationRecord => ({
+    ...initial,
+    media_duration_ms: 10_000,
+    segments: [
+      {
+        category: "speech",
+        start_ms: step,
+        end_ms: step + 1000,
+        attributes: { step },
+      },
+    ],
+  }),
 };
 
 it.each(Object.entries(variants))(

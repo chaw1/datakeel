@@ -94,6 +94,7 @@ export function initialAnnotation(
       text_length: task.sample.text
         ? Array.from(task.sample.text).length
         : null,
+      media_duration_ms: task.sample.duration_ms,
       ...emptyContent(template),
     }),
     annotator_id: actor,
@@ -102,6 +103,8 @@ export function initialAnnotation(
     text_length:
       latest?.annotation.text_length ??
       (task.sample.text == null ? null : Array.from(task.sample.text).length),
+    media_duration_ms:
+      latest?.annotation.media_duration_ms ?? task.sample.duration_ms,
   };
 }
 export const defaultTemplate: ProductionTemplate = {

@@ -8,6 +8,7 @@ import { ClassificationEditor } from "./ClassificationEditor";
 import { EditorDetails } from "./EditorDetails";
 import { KeypointEditor } from "./KeypointEditor";
 import { PolygonEditor } from "./PolygonEditor";
+import { SegmentEditor } from "./SegmentEditor";
 import { SpanEditor } from "./SpanEditor";
 import "./editors.css";
 
@@ -17,7 +18,7 @@ export function AnnotationEditor(props: EditorProps) {
   const { t } = useI18n();
   const components = templateComponents(props.template);
   const onImage = components.some((item) =>
-    ["box", "bbox", "polygon", "keypoints"].includes(item),
+    ["box", "bbox", "polygon", "keypoints", "segment"].includes(item),
   );
   const recordFields = attributeFields(props.template, "record");
   // Raw record JSON stays where it was before forms existed: beside classification.
@@ -50,6 +51,13 @@ export function AnnotationEditor(props: EditorProps) {
           return <PolygonEditor key={component} {...editorProps} />;
         if (component === "keypoints")
           return <KeypointEditor key={component} {...editorProps} />;
+        if (component === "segment")
+          return (
+            <SegmentEditor
+              key={`${component}:${props.value.sample_id}:${props.mediaUrl ?? ""}`}
+              {...editorProps}
+            />
+          );
         if (component === "text_span" || component === "span")
           return <SpanEditor key={component} {...editorProps} />;
         return null;

@@ -179,6 +179,77 @@
 .wb-keypoint-list button[aria-pressed="true"] {
   outline: 2px solid var(--pencil);
 }
+.wb-segment-player {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  min-width: 0;
+}
+.wb-segment-video {
+  width: 100%;
+  max-height: 480px;
+  background: var(--ink);
+}
+.wb-segment-ruler {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space);
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+}
+.wb-segment-lanes {
+  position: relative;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  touch-action: none;
+}
+.wb-segment-track {
+  position: relative;
+  min-width: 100%;
+}
+.wb-segment-block {
+  position: absolute;
+  display: flex;
+  height: 30px;
+  min-width: 8px;
+  z-index: 1;
+}
+.wb-segment-block[data-selected="true"] {
+  outline: 2px solid var(--pencil);
+  z-index: 2;
+}
+.wb-segment-body,
+.wb-segment-resize {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: var(--font-xs);
+}
+.wb-segment-body {
+  flex: 1;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--pencil-wash);
+  border-block: 1px solid var(--pencil);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-segment-resize {
+  width: 8px;
+  flex: 0 0 8px;
+  background: var(--pencil);
+  cursor: ew-resize;
+}
+.wb-segment-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--red);
+  pointer-events: none;
+  z-index: 3;
+}
 @media (max-width: 700px) {
   .wb-image-editor {
     grid-template-columns: minmax(0, 1fr);

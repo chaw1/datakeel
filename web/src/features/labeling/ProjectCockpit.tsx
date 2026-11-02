@@ -75,6 +75,9 @@ export function ProjectCockpit({
         {data.agreement.keypoint_agreement && (
           <p className="muted">{t("wbKeypointMetricsUnsupported")}</p>
         )}
+        {data.agreement.segment_agreement && (
+          <p className="muted">{t("wbSegmentMetricsUnsupported")}</p>
+        )}
         {data.agreement.boxes.length > 0 && (
           <>
             <h3>{t("wbBoxAgreement")}</h3>

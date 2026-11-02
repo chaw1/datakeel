@@ -4030,6 +4030,8 @@ export interface components {
             keypoint_agreement?: components["schemas"]["AgreementValue"] | null;
             /** Sample Count */
             sample_count: number;
+            /** @description Automatic segment agreement is unsupported; present with a null value. */
+            segment_agreement?: components["schemas"]["AgreementValue"] | null;
             /**
              * Spans
              * @default []
@@ -4112,10 +4114,14 @@ export interface components {
             keypoints?: components["schemas"]["AnnotationSkeleton"][] | null;
             /** Labels */
             labels?: string[] | null;
+            /** Media Duration Ms */
+            media_duration_ms?: number | null;
             /** Polygons */
             polygons?: components["schemas"]["AnnotationPolygon"][] | null;
             /** Sample Id */
             sample_id: string;
+            /** Segments */
+            segments?: components["schemas"]["AnnotationSegment"][] | null;
             /** Spans */
             spans?: components["schemas"]["AnnotationSpan"][] | null;
             /** Text Length */
@@ -4166,6 +4172,22 @@ export interface components {
             source: "human" | "model";
             /** Task Id */
             task_id: string;
+        };
+        /**
+         * AnnotationSegment
+         * @description Preserve one ordered, half-open millisecond interval on the local media timeline.
+         */
+        AnnotationSegment: {
+            /** Attributes */
+            attributes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Category */
+            category: string;
+            /** End Ms */
+            end_ms: number;
+            /** Start Ms */
+            start_ms: number;
         };
         /**
          * AnnotationSkeleton
@@ -10524,6 +10546,8 @@ export interface components {
             keypoint_accuracy?: components["schemas"]["AgreementValue"] | null;
             /** Project Id */
             project_id: string;
+            /** @description Automatic segment accuracy is unsupported; present with a null value. */
+            segment_accuracy?: components["schemas"]["AgreementValue"] | null;
         };
         /**
          * PrelabelProgress
@@ -10669,7 +10693,7 @@ export interface components {
              * @default box
              * @enum {string}
              */
-            annotation_type: "box" | "polygon" | "keypoints" | "classification" | "text_span";
+            annotation_type: "box" | "polygon" | "keypoints" | "classification" | "text_span" | "segment";
             /**
              * Archived
              * @default false
@@ -12068,7 +12092,7 @@ export interface components {
             requires_approval: boolean;
         };
         /** @enum {string} */
-        StratificationSource: "all" | "classification" | "detection" | "spans" | "keypoints";
+        StratificationSource: "all" | "classification" | "detection" | "spans" | "keypoints" | "segments";
         /**
          * TabularAssessment
          * @description Carry all profiled file evidence between scoring and report assembly.
@@ -13374,6 +13398,8 @@ export interface components {
         WorkbenchSample: {
             /** Content Url */
             content_url: string;
+            /** Duration Ms */
+            duration_ms?: number | null;
             /** Id */
             id: string;
             /** Image Height */

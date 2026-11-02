@@ -79,4 +79,27 @@ export const wbEditorEn = {
   wbKeypointRequiredMissing:
     "Skeleton {index} is missing required points: {points}.",
   wbKeypointUnknown: "Skeleton {index} contains a point outside its template.",
+  wbEditorSegment: "Audio/video segments",
+  wbSegmentProbeMissing:
+    "This media needs a positive server media probe before segment annotation.",
+  wbSegmentMetricsUnsupported: "Segment metrics: not supported yet",
+  wbSegmentMediaError:
+    "The browser cannot decode this media. Check its codec and source file.",
+  wbSegmentFit: "Fit timeline (0)",
+  wbSegmentPlayhead: "Playhead (milliseconds)",
+  wbSegmentPan: "Visible timeline start (milliseconds)",
+  wbSegmentTimeline:
+    "Segment timeline: drag to create, drag bodies to move, drag edges to resize",
+  wbSegmentResizeStart: "Resize segment {index} start",
+  wbSegmentResizeEnd: "Resize segment {index} end",
+  wbSegmentList: "Keyboard-accessible segment list",
+  wbSegmentStart: "Start (milliseconds, inclusive)",
+  wbSegmentEnd: "End (milliseconds, exclusive)",
+  wbSegmentAdd: "Add 1000ms segment (T)",
+  wbSegmentEditMode: "Arrow keys: {mode} (R switches)",
+  wbSegmentMode_move: "move whole segment",
+  wbSegmentMode_start: "resize start",
+  wbSegmentMode_end: "resize end",
+  wbSegmentHint:
+    "Space plays; , and . seek 10ms (Shift: 100ms); T adds; R selects move/start/end; arrows adjust 1ms (Shift: 10ms); I/O seek to edges; [ and ] select; Delete removes. All editing also has native controls.",
 } as const;

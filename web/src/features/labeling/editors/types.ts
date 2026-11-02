@@ -4,6 +4,7 @@ export type AnnotationRecord = components["schemas"]["AnnotationRecord"];
 export type AnnotationBox = components["schemas"]["AnnotationBox"];
 export type AnnotationPolygon = components["schemas"]["AnnotationPolygon"];
 export type AnnotationSpan = components["schemas"]["AnnotationSpan"];
+export type AnnotationSegment = components["schemas"]["AnnotationSegment"];
 export type AnnotationKeypoint = components["schemas"]["AnnotationKeypoint"];
 export type AnnotationSkeleton = components["schemas"]["AnnotationSkeleton"];
 export type KeypointDefinition = components["schemas"]["KeypointDefinition"];
@@ -23,6 +24,8 @@ export interface EditorProps {
   labels: readonly ProductionLabel[];
   template: ProductionTemplate;
   mediaUrl?: string;
+  mediaType?: string;
+  durationMs?: number;
   thumbnailUrl?: string;
   text?: string;
   readOnly?: boolean;

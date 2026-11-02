@@ -15,6 +15,7 @@ const components = [
   "box",
   "polygon",
   "keypoints",
+  "segment",
   "classification",
   "text_span",
 ] as const;
@@ -22,6 +23,7 @@ const componentNames = {
   box: "wbEditorBox",
   polygon: "wbEditorPolygon",
   keypoints: "wbEditorKeypoints",
+  segment: "wbEditorSegment",
   classification: "wbEditorClassification",
   text_span: "wbEditorSpan",
 } as const;
@@ -161,9 +163,17 @@ export function TemplateEditor({
               value={type}
               onBlur={() => undefined}
               onChange={(event) => {
-                setType(
-                  event.target.value as ProductionTemplate["annotation_type"],
-                );
+                const next = event.target
+                  .value as ProductionTemplate["annotation_type"];
+                setType(next);
+                if (next === "segment")
+                  setSelected([
+                    "segment",
+                    ...(selected.includes("classification")
+                      ? (["classification"] as const)
+                      : []),
+                  ]);
+                else if (selected.includes("segment")) setSelected([next]);
               }}
             >
               {components.map((item) => (
@@ -180,7 +190,21 @@ export function TemplateEditor({
                 <input
                   type="checkbox"
                   checked={selected.includes(item)}
+                  disabled={
+                    selected.includes("segment") &&
+                    item !== "segment" &&
+                    item !== "classification"
+                  }
                   onChange={(event) => {
+                    if (item === "segment" && event.target.checked) {
+                      setSelected([
+                        "segment",
+                        ...(selected.includes("classification")
+                          ? (["classification"] as const)
+                          : []),
+                      ]);
+                      return;
+                    }
                     setSelected(
                       event.target.checked
                         ? [...selected, item]

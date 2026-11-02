@@ -71,6 +71,9 @@ export function AccuracyHeadline({ accuracy }: { accuracy: Accuracy }) {
           assessed: accuracy.assessed_tasks,
         })}
       </p>
+      {accuracy.segment_accuracy && (
+        <p className="muted">{t("wbSegmentMetricsUnsupported")}</p>
+      )}
     </>
   );
 }
