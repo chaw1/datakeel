@@ -60,10 +60,12 @@ export function countProblem(
   template: ProductionTemplate,
   t: Translate,
 ) {
-  const count = enabledKeys(template).reduce(
-    (total, key) => total + (annotation[key]?.length ?? 0),
-    0,
-  );
+  const count = templateComponents(template).includes("segment")
+    ? (annotation.segments?.length ?? 0)
+    : enabledKeys(template).reduce(
+        (total, key) => total + (annotation[key]?.length ?? 0),
+        0,
+      );
   const minimum = bound(template, "min_annotations");
   if (minimum != null && count < minimum)
     return t("wbTooFewAnnotations", { minimum, count });

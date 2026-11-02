@@ -6,6 +6,7 @@
 from collections.abc import Callable
 
 import pytest
+from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -22,7 +23,12 @@ from datakeel.actions.production_parameters import (
     SplitPackagesParams,
     SubmitTaskParams,
 )
-from datakeel.core.annotation_models import AnnotationBatch, AnnotationRecord, AnnotationSegment
+from datakeel.core.annotation_models import (
+    AnnotationBatch,
+    AnnotationBox,
+    AnnotationRecord,
+    AnnotationSegment,
+)
 from datakeel.core.annotation_sampling import AnnotationImportRequest
 from datakeel.core.errors import ValidationError
 from datakeel.core.production_attributes import TemplateAttribute
@@ -32,6 +38,7 @@ from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.annotation_store import import_annotations_in_session
 from datakeel.storage.database import Database, VersionRow
 from datakeel.storage.production_assignments import assign_tasks
+from datakeel.storage.production_catalog import validate_template_content
 from datakeel.storage.production_catalog_changes import manage_template
 from datakeel.storage.production_finalize import finalize_project
 from datakeel.storage.production_projects import create_project, split_packages
@@ -53,12 +60,13 @@ def _reject(call: Callable[[], object], match: str) -> None:
     assert match in message
 
 
-def _source(db: Database, *, probe: bool = True, duration: int = 3250) -> None:
+def segment_source(db: Database, *, probe: bool = True, duration: int = 3250) -> None:
+    """Create two locked audio sources with optional real-looking probe metadata."""
     catalog_project(db)
     with db.session() as session:
         version = session.get(VersionRow, "catalog-source")
         assert version is not None
-        manifest = []
+        manifest: list[dict[str, JsonValue]] = []
         for raw in version.manifest:
             metadata = dict(raw.get("metadata", {}))
             if probe:
@@ -80,13 +88,15 @@ def _source(db: Database, *, probe: bool = True, duration: int = 3250) -> None:
         session.commit()
 
 
-def _template(kind: str = "segment", revision: int = 1) -> ProductionTemplate:
+def _template(
+    kind: str = "segment", revision: int = 1, rules: dict[str, JsonValue] | None = None
+) -> ProductionTemplate:
     return ProductionTemplate(
         id=kind,
         name=kind,
         annotation_type="segment" if kind == "segment" else "box",
         component_config={"components": [kind, "classification"]},
-        validation_rules={"min_annotations": 1, "max_annotations": 5},
+        validation_rules=rules or {"min_annotations": 1, "max_annotations": 5},
         attributes=(
             TemplateAttribute(
                 key="note", name_zh="说明", name_en="Note", type="text", required=True
@@ -98,14 +108,21 @@ def _template(kind: str = "segment", revision: int = 1) -> ProductionTemplate:
     )
 
 
-def _project(
-    db: Database, tier: WorkflowTier = "personal", *, kind: str = "segment"
+def segment_project(
+    db: Database,
+    tier: WorkflowTier = "personal",
+    *,
+    kind: str = "segment",
+    rules: dict[str, JsonValue] | None = None,
 ) -> tuple[Project, tuple[ProductionTask, ...]]:
+    """Create a segment project and its two generated tasks."""
     with db.session() as session:
         manage_template(
             session,
             CreateLabelSetParams(
-                request_id=f"template-{kind}", target="template", template=_template(kind)
+                request_id=f"template-{kind}",
+                target="template",
+                template=_template(kind, rules=rules),
             ),
         )
         project = create_project(
@@ -143,7 +160,8 @@ def _project(
         return project, tuple(task_view(row) for row in rows)
 
 
-def _annotation(task: ProductionTask, *, duration: int = 3250) -> AnnotationRecord:
+def segment_annotation(task: ProductionTask, *, duration: int = 3250) -> AnnotationRecord:
+    """Build two overlapping, fully attributed segments on one task."""
     return AnnotationRecord(
         sample_id=task.sample_id,
         annotator_id="local",
@@ -174,11 +192,11 @@ def _save(session: Session, task: ProductionTask, annotation: AnnotationRecord) 
 
 def test_segment_personal_save_submit_and_finalize_roundtrip(db: Database) -> None:
     """Personal finalization retains exact segments through the native annotation importer."""
-    _source(db)
-    project, tasks = _project(db)
+    segment_source(db)
+    project, tasks = segment_project(db)
     with db.session() as session:
         for task in tasks:
-            _save(session, task, _annotation(task))
+            _save(session, task, segment_annotation(task))
             submit_task(
                 session, SubmitTaskParams(request_id=f"submit-{task.id}", task_id=task.id), "local"
             )
@@ -190,19 +208,21 @@ def test_segment_personal_save_submit_and_finalize_roundtrip(db: Database) -> No
             select(AnnotationBatchRow).where(AnnotationBatchRow.version_id == version_id)
         )
         assert batch is not None
-        assert batch.batch["annotations"][0]["segments"][0]["start_ms"] == 0
+        stored = AnnotationBatch.model_validate(batch.batch)
+        assert stored.annotations[0].segments is not None
+        assert stored.annotations[0].segments[0].start_ms == 0
 
 
 def test_every_save_revalidates_probe_duration_and_required_segment_attributes(
     db: Database,
 ) -> None:
     """Every human save checks source duration and required per-segment fields."""
-    _source(db)
-    _, tasks = _project(db)
+    segment_source(db)
+    _, tasks = segment_project(db)
     with db.session() as session:
         with pytest.raises(ValidationError, match="media_duration_ms"):
-            _save(session, tasks[0], _annotation(tasks[0], duration=3249))
-        broken = _annotation(tasks[0]).model_copy(
+            _save(session, tasks[0], segment_annotation(tasks[0], duration=3249))
+        broken = segment_annotation(tasks[0]).model_copy(
             update={
                 "segments": (AnnotationSegment(category="a", start_ms=0, end_ms=1, attributes={}),)
             }
@@ -213,14 +233,14 @@ def test_every_save_revalidates_probe_duration_and_required_segment_attributes(
 
 def test_project_creation_checks_every_source_even_without_revisions(db: Database) -> None:
     """A segment project cannot be created until every source has a positive probe."""
-    _source(db, probe=False)
-    _reject(lambda: _project(db), "run the media probe")
+    segment_source(db, probe=False)
+    _reject(lambda: segment_project(db), "run the media probe")
 
 
 def test_template_upgrade_checks_unprobed_sources_before_impact_plan(db: Database) -> None:
     """Upgrading to segments checks sources independently of existing revision history."""
-    _source(db, probe=False)
-    project, _ = _project(db, kind="box")
+    segment_source(db, probe=False)
+    project, _ = segment_project(db, kind="box")
     with db.session() as session:
         manage_template(
             session,
@@ -246,10 +266,10 @@ def test_template_upgrade_checks_unprobed_sources_before_impact_plan(db: Databas
 
 def test_review_rechecks_locked_media_after_probe_drift(db: Database) -> None:
     """Approval cannot reuse a stale duration after the locked source probe changes."""
-    _source(db)
-    _, tasks = _project(db, "group")
+    segment_source(db)
+    _, tasks = segment_project(db, "group")
     with db.session() as session:
-        _save(session, tasks[0], _annotation(tasks[0]))
+        _save(session, tasks[0], segment_annotation(tasks[0]))
         submit_task(session, SubmitTaskParams(request_id="submit", task_id=tasks[0].id), "local")
         version = session.get(VersionRow, "catalog-source")
         assert version is not None
@@ -275,8 +295,8 @@ def test_review_rechecks_locked_media_after_probe_drift(db: Database) -> None:
 
 def test_native_import_rejects_bad_media_before_batch_insert(db: Database) -> None:
     """Native JSONL batch validation uses source probes before writing any annotation facts."""
-    _source(db)
-    record = _annotation(
+    segment_source(db)
+    record = segment_annotation(
         ProductionTask(id="t", project_id="p", package_id="pk", sample_id="sample-0"), duration=4000
     )
     request = AnnotationImportRequest(
@@ -294,12 +314,12 @@ def test_native_import_rejects_bad_media_before_batch_insert(db: Database) -> No
 
 def test_template_min_max_counts_segments(db: Database) -> None:
     """The locked min/max rule counts media segments, including reviewed empty and duplicates."""
-    _source(db)
-    _, tasks = _project(db)
-    empty = _annotation(tasks[0]).model_copy(update={"segments": ()})
+    segment_source(db)
+    _, tasks = segment_project(db)
+    empty = segment_annotation(tasks[0]).model_copy(update={"segments": ()})
     with db.session() as session:
         _reject(lambda: _save(session, tasks[0], empty), "count")
-        too_many = _annotation(tasks[0]).model_copy(
+        too_many = segment_annotation(tasks[0]).model_copy(
             update={
                 "segments": tuple(
                     AnnotationSegment(category="a", start_ms=0, end_ms=1, attributes={"note": "x"})
@@ -308,6 +328,79 @@ def test_template_min_max_counts_segments(db: Database) -> None:
             }
         )
         _reject(lambda: _save(session, tasks[0], too_many), "count")
+
+
+def test_max_one_allows_one_segment_with_classification(db: Database) -> None:
+    """FIX1 repro: one segment plus one label is legal when max_annotations is one."""
+    segment_source(db)
+    _, tasks = segment_project(db, rules={"min_annotations": 1, "max_annotations": 1})
+    annotation = segment_annotation(tasks[0]).model_copy(
+        update={"labels": ("a",), "segments": (segment_annotation(tasks[0]).segments or ())[:1]}
+    )
+    with db.session() as session:
+        try:
+            _save(session, tasks[0], annotation)
+            result = submit_task(
+                session, SubmitTaskParams(request_id="submit-max-one", task_id=tasks[0].id), "local"
+            )
+        except ValidationError as error:
+            message = "FIX1 max-one record must save and submit"
+            raise AssertionError(message) from error
+        assert result.state == "approved"
+
+
+def test_min_two_rejects_one_segment_with_classification(db: Database) -> None:
+    """FIX1 repro: a classification label cannot fill the second required segment."""
+    segment_source(db)
+    _, tasks = segment_project(db, rules={"min_annotations": 2, "max_annotations": 5})
+    annotation = segment_annotation(tasks[0]).model_copy(
+        update={"labels": ("a",), "segments": (segment_annotation(tasks[0]).segments or ())[:1]}
+    )
+    with db.session() as session:
+        _reject(lambda: _save(session, tasks[0], annotation), "count")
+
+
+def test_segment_boundaries_ignore_zero_or_multiple_classification_labels(db: Database) -> None:
+    """Zero, two and three segments are counted exactly, even with three labels."""
+    segment_source(db)
+    _, tasks = segment_project(db, rules={"min_annotations": 1, "max_annotations": 2})
+    base = segment_annotation(tasks[0]).model_copy(update={"labels": ("a", "b", "c")})
+    with db.session() as session:
+        _reject(lambda: _save(session, tasks[0], base.model_copy(update={"segments": ()})), "count")
+        too_many = base.model_copy(
+            update={
+                "segments": (
+                    *(base.segments or ()),
+                    AnnotationSegment(
+                        category="a", start_ms=2000, end_ms=3000, attributes={"note": "多段"}
+                    ),
+                )
+            }
+        )
+        _reject(lambda: _save(session, tasks[0], too_many), "count")
+        _save(session, tasks[0], base)
+        result = submit_task(
+            session, SubmitTaskParams(request_id="submit-two", task_id=tasks[0].id), "local"
+        )
+        assert result.state == "approved"
+
+
+def test_non_segment_mixed_template_still_counts_all_enabled_components() -> None:
+    """Legacy box+classification keeps the previous sum rule and rejects one of each at max one."""
+    template = ProductionTemplate(
+        id="legacy",
+        name="legacy",
+        annotation_type="box",
+        component_config={"components": ["box", "classification"]},
+        validation_rules={"max_annotations": 1},
+    )
+    annotation = AnnotationRecord(
+        sample_id="image",
+        annotator_id="ann",
+        labels=("a",),
+        boxes=(AnnotationBox(category="a", x1=0, y1=0, x2=1, y2=1),),
+    )
+    _reject(lambda: validate_template_content(template, annotation), "count")
 
 
 def test_segment_rejects_undefined_spatial_and_text_combinations() -> None:

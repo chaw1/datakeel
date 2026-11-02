@@ -37,6 +37,7 @@
  "tests/actions/test_receipt_identities.py": 0.71,
  "tests/actions/test_release_budget_policy.py": 0.05,
  "tests/actions/test_selection_scale.py": 1.08,
+ "tests/actions/test_segment_counts.py": 0.04,
  "tests/actions/test_service.py": 6.36,
  "tests/actions/test_source_versions.py": 1.66,
  "tests/actions/test_standard_actions.py": 9.36,

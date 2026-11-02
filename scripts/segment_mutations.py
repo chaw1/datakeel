@@ -91,4 +91,32 @@ SEGMENT_MUTATIONS = (
         case=_METRICS + "test_mixed_classification_cannot_hide_segments_behind_perfect_agreement",
         runner="pytest",
     ),
+    Mutation(
+        name="segment-classification-inflates-max-count",
+        path="storage/production_catalog.py",
+        before=(
+            "    count = (\n"
+            "        len(annotation.segments or ())\n"
+            '        if "segment" in enabled\n'
+            "        else sum(len(content[kind] or ()) for kind in enabled)\n"
+            "    )"
+        ),
+        after="    count = sum(len(content[kind] or ()) for kind in enabled)",
+        case=_STORAGE + "test_max_one_allows_one_segment_with_classification",
+        runner="pytest",
+    ),
+    Mutation(
+        name="segment-classification-fills-min-count",
+        path="storage/production_catalog.py",
+        before=(
+            "    count = (\n"
+            "        len(annotation.segments or ())\n"
+            '        if "segment" in enabled\n'
+            "        else sum(len(content[kind] or ()) for kind in enabled)\n"
+            "    )"
+        ),
+        after="    count = sum(len(content[kind] or ()) for kind in enabled)",
+        case=_STORAGE + "test_min_two_rejects_one_segment_with_classification",
+        runner="pytest",
+    ),
 )

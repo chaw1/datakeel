@@ -253,7 +253,11 @@ def validate_template_content(
         message = "Annotation content does not match the project's template type"
         raise ValidationError(message)
     validate_keypoints(template, annotation, complete=complete)
-    count = sum(len(content[kind] or ()) for kind in enabled)
+    count = (
+        len(annotation.segments or ())
+        if "segment" in enabled
+        else sum(len(content[kind] or ()) for kind in enabled)
+    )
     if (
         "classification" in enabled
         and template.component_config.get("label_mode") == "single"

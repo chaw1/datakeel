@@ -11,7 +11,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
-- The mutation gate has **840 anchors** (832 before; 8 added for native segments), the golden suite remains at **58 cases**, the operator catalog at **42**, and MCP at **102 tools** (37 reads and 65 prepare-only actions). OpenAPI remains at **171 paths, 184 operations** and grows from 422 to **423 schemas** through one additive segment model and optional fields/enums. The measured pytest duration table covers **850 modules** (845 before; 5 added).
+- The mutation gate has **842 anchors** (832 before; 10 added for native segments and FIX1 count boundaries), the golden suite remains at **58 cases**, the operator catalog at **42**, and MCP at **102 tools** (37 reads and 65 prepare-only actions). OpenAPI remains at **171 paths, 184 operations** and grows from 422 to **423 schemas** through one additive segment model and optional fields/enums. The measured pytest duration table covers **851 modules** (845 before; 6 added). Segment min/max counts only media segments, never classification labels; other component templates retain their previous count rule.
 
 ## [0.21.0] - 2026-11-02
 
