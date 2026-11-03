@@ -5,23 +5,30 @@
 
 from __future__ import annotations
 
+import sqlite3
+import subprocess
+import sys
 import threading
+from contextlib import closing
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import TYPE_CHECKING
 
 import pytest
-from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceResponse
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
+    ExportTraceServiceRequest,
+    ExportTraceServiceResponse,
+)
 
 from datakeel.core.errors import ExecutionError
 from datakeel.core.harness_models import BudgetRequest, TokenSegment, TokenUsage, TraceInput
 from datakeel.harness.otel import export_traces
 from datakeel.harness.service import reserve, settle
+from datakeel.storage.database import Database
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-
-    from datakeel.storage.database import Database
+    from pathlib import Path
 
 
 @dataclass
@@ -40,6 +47,7 @@ class Capture:
         """Script a finite sequence, repeating the last response if necessary."""
         self.responses = responses
         self.paths: list[str] = []
+        self.bodies: list[bytes] = []
         self.content_types: list[str | None] = []
         self.authorizations: list[str | None] = []
 
@@ -58,7 +66,7 @@ def server() -> Iterator[type[Capture]]:
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self) -> None:  # stdlib handler API
                 length = int(self.headers.get("Content-Length", "0"))
-                self.rfile.read(length)
+                capture.bodies.append(self.rfile.read(length))
                 capture.paths.append(self.path)
                 capture.content_types.append(self.headers.get("Content-Type"))
                 capture.authorizations.append(self.headers.get("Authorization"))
@@ -87,19 +95,22 @@ def server() -> Iterator[type[Capture]]:
         httpd.server_close()
 
 
-def seed_trace(db: Database) -> None:
+def seed_trace(db: Database, conversation: str = "fixture") -> None:
     """Persist one measured conversation call through the normal metering path."""
     reservation = reserve(
         db,
         BudgetRequest(
-            conversation_id="fixture", model="fake-script", input_tokens=100, max_output_tokens=20
+            conversation_id=conversation,
+            model="fake-script",
+            input_tokens=100,
+            max_output_tokens=20,
         ),
     )
     settle(
         db,
         reservation.id,
         TraceInput(
-            conversation_id="fixture",
+            conversation_id=conversation,
             turn=1,
             model="fake-script",
             provider="fake",
@@ -215,3 +226,98 @@ def test_http_when_no_traces_sends_no_request(
     configure(monkeypatch, endpoint)
     assert export_traces(db) == 0
     assert capture.paths == []
+
+
+def run_cli(*args: str) -> subprocess.CompletedProcess[str]:
+    """Run the installed module entry point without calling the exporter in process."""
+    return subprocess.run(  # noqa: S603  # Fixed local interpreter and command arguments.
+        [sys.executable, "-m", "datakeel.cli", "export-traces", *args],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+
+def sqlite_facts(path: Path) -> tuple[str, ...]:
+    """Capture durable traces, budgets, and schema through an independent read-only connection."""
+    queries = (
+        "SELECT * FROM model_call_trace ORDER BY id",
+        "SELECT * FROM budget_accounts ORDER BY key",
+        "SELECT * FROM budget_reservations ORDER BY id",
+        "SELECT type, name, tbl_name, sql FROM sqlite_master ORDER BY type, name",
+    )
+    with closing(sqlite3.connect(f"file:{path}?mode=ro", uri=True)) as connection:
+        return tuple(str(connection.execute(query).fetchall()) for query in queries)
+
+
+def test_cli_when_sqlite_is_read_only_exports_filtered_spans_without_side_effects(
+    tmp_path: Path, server: type[Capture], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The real CLI reads existing settled facts and leaves their SQLite storage untouched."""
+    home = tmp_path / "cli-home"
+    home.mkdir()
+    path = home / "datakeel.db"
+    database = Database(f"sqlite:///{path}")
+    database.migrate()
+    seed_trace(database)
+    seed_trace(database, conversation="other")
+    database.engine.dispose()
+    facts_before = sqlite_facts(path)
+    files_before = sorted(entry.name for entry in home.iterdir())
+    capture, endpoint = server.start([Response()])
+    configure(monkeypatch, endpoint)
+    monkeypatch.setenv("DATAKEEL_HOME", str(home))
+
+    completed = run_cli("--conversation-id", "fixture")
+
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout == "2 spans\n"
+    assert capture.paths == ["/v1/traces"]
+    request = ExportTraceServiceRequest.FromString(capture.bodies[0])
+    exported = [
+        span
+        for resource in request.resource_spans
+        for scope in resource.scope_spans
+        for span in scope.spans
+    ]
+    assert len(exported) == 2
+    by_name = {span.name: span for span in exported}
+    root = by_name["datakeel.accounting_group"]
+    child = by_name["chat fake-script"]
+    assert root.parent_span_id == b""
+    assert child.parent_span_id == root.span_id
+    assert child.trace_id == root.trace_id
+    assert (
+        next(
+            attribute.value.string_value
+            for attribute in child.attributes
+            if attribute.key == "gen_ai.conversation.id"
+        )
+        == "fixture"
+    )
+    assert sqlite_facts(path) == facts_before
+    assert sorted(entry.name for entry in home.iterdir()) == files_before
+
+
+@pytest.mark.parametrize("empty_file", [False, True], ids=["missing-file", "missing-schema"])
+def test_cli_when_sqlite_is_missing_or_unmigrated_fails_without_creating_schema(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, empty_file: bool
+) -> None:
+    """The real CLI reports missing storage and never creates a database or schema."""
+    home = tmp_path / "missing-home"
+    path = home / "datakeel.db"
+    if empty_file:
+        home.mkdir()
+        path.touch()
+    monkeypatch.setenv("DATAKEEL_HOME", str(home))
+
+    completed = run_cli()
+
+    assert completed.returncode != 0
+    assert "run datakeel migrate first" in completed.stderr
+    if empty_file:
+        assert path.read_bytes() == b""
+        assert sorted(entry.name for entry in home.iterdir()) == ["datakeel.db"]
+    else:
+        assert not home.exists()

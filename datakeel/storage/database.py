@@ -292,7 +292,9 @@ def _read_only_sqlite_url(url: str) -> str:
     if not database or database == ":memory:" or not Path(database).is_file():
         msg = "Trace database does not exist; run datakeel migrate first"
         raise NotFoundError(msg)
-    return str(parsed.set(query={**parsed.query, "mode": "ro", "uri": "true"}))
+    return str(
+        parsed.set(database=f"file:{database}", query={**parsed.query, "mode": "ro", "uri": "true"})
+    )
 
 
 class Database:
