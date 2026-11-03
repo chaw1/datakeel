@@ -31,6 +31,14 @@ if TYPE_CHECKING:
 
 _LEGACY_EVIDENCE = (
     LicenseFileEvidence(
+        name="protobuf",
+        version="7.36.2",
+        declared="3-Clause BSD License",
+        filename="LICENSE",
+        sha256="6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+        license="BSD-3-Clause",
+    ),
+    LicenseFileEvidence(
         name="python-dateutil",
         version="2.9.0.post0",
         declared="Dual License",

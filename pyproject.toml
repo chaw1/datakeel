@@ -29,6 +29,8 @@ dependencies = [
   "langchain-openai>=1.7.2,<2",
   # Transport injection relies on the adapter's private _client and _client_params contract.
   "langchain-anthropic==1.7.6",
+  "opentelemetry-sdk==1.45.1",
+  "opentelemetry-exporter-otlp-proto-http==1.45.1",
 ]
 
 [project.scripts]

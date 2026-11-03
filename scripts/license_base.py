@@ -12,12 +12,18 @@ from scripts.license_models import LicensePackage
 
 def validate_base_inventory(root: Path, packages: tuple[LicensePackage, ...]) -> BaseImageInventory:
     """Bind the inventory to the Dockerfile pin and existing audited Python package versions."""
-    dockerfile = (root / "sandbox/Dockerfile").read_text()
-    references = re.findall(r"^FROM (.+)$", dockerfile, re.MULTILINE)
+    dockerfiles = [root / "sandbox/Dockerfile"]
+    if (root / "Dockerfile").is_file():
+        dockerfiles.append(root / "Dockerfile")
+    references = [
+        reference
+        for dockerfile in dockerfiles
+        for reference in re.findall(r"^FROM (.+)$", dockerfile.read_text(), re.MULTILINE)
+    ]
     inventory = BaseImageInventory.model_validate_json(
         (root / "sandbox/BASE_IMAGE_INVENTORY.json").read_text()
     )
-    if references != [inventory.base_reference]:
+    if references != [inventory.base_reference] * len(dockerfiles):
         msg = "Base license inventory must be regenerated when the Dockerfile base changes"
         raise ValueError(msg)
     installed = {package.name.lower(): package for package in inventory.python_packages}

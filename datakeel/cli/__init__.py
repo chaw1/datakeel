@@ -93,6 +93,8 @@ def parser() -> argparse.ArgumentParser:
     worker.add_argument("--once", action="store_true", help="Drain pending work and exit")
     worker.add_argument("--queue", choices=["cpu", "io", "gpu"], default="cpu")
     commands.add_parser("migrate")
+    export_traces = commands.add_parser("export-traces")
+    export_traces.add_argument("--conversation-id")
     evidence_rebuild = commands.add_parser("rebuild-evidence")
     evidence_rebuild.add_argument("--expected-hash")
     catalog_rebuild = commands.add_parser("rebuild-catalog")
@@ -172,6 +174,16 @@ def main() -> None:
         delivery.offline_command(args)
         return
     configure_logging()
+    if args.command == "export-traces":
+        from datakeel.harness.otel import export_traces  # noqa: PLC0415
+
+        db = Database(read_only=True)
+        try:
+            count = export_traces(db, args.conversation_id)
+        finally:
+            db.engine.dispose()
+        Console().print(f"{count} spans")
+        return
     if args.command in {"routing", "eval-route"}:
         routing.dispatch(args)
         return

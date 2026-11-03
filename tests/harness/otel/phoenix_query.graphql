@@ -1,0 +1,25 @@
+query K9TraceAudit {
+  projects(last: 1) {
+    edges {
+      node {
+        id
+        name
+        spans(first: 100) {
+          edges {
+            node {
+              id
+              name
+              spanKind
+              parentId
+              attributes
+              startTime
+              endTime
+              tokenCountPrompt
+              tokenCountCompletion
+            }
+          }
+        }
+      }
+    }
+  }
+}

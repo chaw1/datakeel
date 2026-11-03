@@ -68,6 +68,7 @@ Debian license declarations are retained separately from the Python allowlist.
 | python | fastapi | 0.159.1 | MIT | installed METADATA License-Expression |
 | python | fastmcp | 4.1.3 | Apache-2.0 | installed METADATA License-Expression |
 | python | fastmcp-slim | 4.1.3 | Apache-2.0 | installed METADATA License-Expression |
+| python | googleapis-common-protos | 1.76.0 | Apache-2.0 | installed METADATA License-Expression |
 | python | griffelib | 2.4.1 | ISC | installed METADATA License-Expression |
 | python | h11 | 0.16.0 | MIT | installed METADATA License |
 | python | httpcore | 1.0.9 | BSD-3-Clause | installed METADATA License-Expression |
@@ -107,6 +108,13 @@ Debian license declarations are retained separately from the Python allowlist.
 | python | openai | 3.37.0 | Apache-2.0 | installed METADATA License-Expression |
 | python | openapi-pydantic | 0.6.0 | MIT | installed METADATA License |
 | python | opentelemetry-api | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
+| python | opentelemetry-exporter-http-transport | 0.66b1 | Apache-2.0 | installed METADATA License-Expression |
+| python | opentelemetry-exporter-otlp-common | 0.66b1 | Apache-2.0 | installed METADATA License-Expression |
+| python | opentelemetry-exporter-otlp-proto-common | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
+| python | opentelemetry-exporter-otlp-proto-http | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
+| python | opentelemetry-proto | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
+| python | opentelemetry-sdk | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
+| python | opentelemetry-semantic-conventions | 0.66b1 | Apache-2.0 | installed METADATA License-Expression |
 | python | orjson | 3.13.0 | MPL-2.0 AND (Apache-2.0 OR MIT) | installed METADATA License-Expression |
 | python | ormsgpack | 1.13.0 | Apache-2.0 OR MIT | installed METADATA License-Expression |
 | python | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause | installed METADATA License-Expression |
@@ -114,6 +122,7 @@ Debian license declarations are retained separately from the Python allowlist.
 | python | pg8000 | 1.31.5 | BSD-3-Clause | installed METADATA License |
 | python | pillow | 13.0.0 | MIT-CMU | installed METADATA License-Expression |
 | python | platformdirs | 4.13.5 | MIT | installed METADATA License-Expression |
+| python | protobuf | 7.36.2 | BSD-3-Clause | reviewed LICENSE SHA-256 6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d |
 | python | py-key-value-aio | 0.4.6 | Apache-2.0 | installed METADATA License-Expression |
 | python | pycparser | 3.11 | BSD-3-Clause | installed METADATA License-Expression |
 | python | pydantic | 2.14.1 | MIT | installed METADATA License-Expression |
