@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_hash": "634df26664b21a5cdb1451e90c296a8d10789626647b323a885fc919a3776ed1",
+  "source_hash": "e1d4a4f41e7c543c0366d9bac1c9228f56fb8302742dc844eb5902ce2b811d2c",
   "packages": [
     "node_modules/@fontsource/source-code-pro",
     "node_modules/@fontsource/source-serif-4",

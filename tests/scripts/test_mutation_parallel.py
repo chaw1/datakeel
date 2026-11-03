@@ -72,8 +72,10 @@ def test_concurrent_mutants_use_separate_cleaned_source_copies(
 ) -> None:
     """Mutating the same source path concurrently cannot leak into another run or checkout."""
     source = tmp_path / "source"
-    for relative in ("datakeel", "contracts", "docs/p9", "tests"):
+    for relative in ("datakeel", "contracts", "docs/p9", "scripts", "tests"):
         (source / relative).mkdir(parents=True)
+    for name in ("Dockerfile", ".dockerignore", "Makefile", "pyproject.toml"):
+        (source / name).write_text("", encoding="utf-8")
     original = source / "datakeel/guard.py"
     original.write_text("guard", encoding="utf-8")
     monkeypatch.setattr(mutate, "ROOT", source)

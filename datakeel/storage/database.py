@@ -303,12 +303,8 @@ class Database:
     def __init__(self, url: str | None = None, *, read_only: bool = False) -> None:
         """Connect to the selected local or explicitly configured database."""
         if url is None:
-            home = get_settings().home.resolve()
-            url = (
-                f"sqlite:///{home / 'datakeel.db'}"
-                if read_only
-                else f"sqlite:///{data_dir() / 'datakeel.db'}"
-            )
+            settings = get_settings()
+            url = settings.database_url or f"sqlite:///{settings.home.resolve() / 'datakeel.db'}"
         if url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+pg8000://", 1)
         if read_only and url.startswith("sqlite"):
