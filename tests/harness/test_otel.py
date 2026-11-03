@@ -160,7 +160,7 @@ def test_mapping_when_run_or_plan_has_no_fake_official_session(
     """Run and plan IDs remain Datakeel attributes, never fabricated sessions."""
     child, _ = spans(export([trace(call_type=call_type, agent_path=path)]))
     assert child.attributes is not None
-    assert child.attributes[identity_key] == "conversation-1"
+    assert child.attributes.get(identity_key) == "conversation-1"
     assert "gen_ai.conversation.id" not in child.attributes
     assert "session.id" not in child.attributes
 
