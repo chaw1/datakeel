@@ -1,4 +1,4 @@
-.PHONY: check fix check-public check-python check-python-static check-pytest check-coverage check-web check-licenses check-rust install-accel check-scale collect-tests check-test-shards combine-coverage
+.PHONY: check fix check-public check-python check-python-static check-pytest check-coverage check-web check-licenses check-rust install-accel check-scale collect-tests check-test-shards combine-coverage build-wheel build-image
 
 # CI runs one whole-module pytest shard per job (PYTEST_SHARD=K/N) and merges their coverage
 # with combine-coverage; locally PYTEST_SHARD stays empty and the whole suite runs at once.
@@ -71,6 +71,12 @@ check-web:
 
 check-licenses: check-web
 	uv run python scripts/license_audit.py
+
+build-wheel:
+	uv run python scripts/build_wheel.py
+
+build-image: build-wheel
+	uv run python scripts/build_image.py
 
 fix:
 	uv run ruff format .

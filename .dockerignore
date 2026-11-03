@@ -1,4 +1,8 @@
 **
+!Dockerfile
+!dist/
+!dist/datakeel-*.whl
+!dist/requirements.txt
 !sandbox/
 !sandbox/Dockerfile
 !datakeel/
