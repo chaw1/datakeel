@@ -4,6 +4,16 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- `datakeel export-traces [--conversation-id ID]` sends persisted model-call traces once to any OTLP/HTTP protobuf endpoint (an OpenTelemetry Collector, Langfuse or Phoenix) using the standard `OTEL_EXPORTER_OTLP_*` variables. Each accounting group becomes one trace with a neutral root span and one child span per recorded call, carrying both OpenTelemetry GenAI (`gen_ai.*`) and OpenInference (`openinference.span.kind=LLM`, `llm.*`) attributes; official session/conversation attributes appear only for real conversations. Unknown billing never becomes an observed zero-token usage. Span times are reconstructed from stored records and are approximate. The export opens the database read-only, never migrates, never sends prompt, completion, tool payload or header content, and succeeds only when every span is accepted (HTTP 200 with no rejected spans); 204/302, partial success, retries exhausted or any failed batch exit non-zero. Re-running the command can duplicate spans in a dashboard; it is not exactly-once.
+- `make build-wheel` builds one pure-Python wheel that includes the built frontend, contracts, prices and the complete `THIRD_PARTY_NOTICES.md`, plus hash-locked runtime requirements. `make build-image` builds the local, non-root `datakeel:local` image from that same wheel and lock (data in `/data`). Neither target publishes anything; there is no PyPI package or registry image.
+- README architecture overview is now a self-contained SVG of the current architecture.
+
+### Changed
+
+- Two runtime dependencies are added, `opentelemetry-sdk` and `opentelemetry-exporter-otlp-proto-http` (1.45.1, matching the existing `opentelemetry-api`), with nine reviewed locked packages; protobuf's legacy `3-Clause BSD License` declaration is pinned by exact evidence. The mutation runner can target repository-level build files and run named anchors (`--name`); the gate grows by 14 anchors to 856.
+
 ## [0.22.0] - 2026-11-02
 
 ### Added
