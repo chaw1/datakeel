@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" role="img" aria-labelledby="architecture-title architecture-desc">
+  <title id="architecture-title">Datakeel 当前架构总览</title>
+  <desc id="architecture-desc">Datakeel 的协议入口、两个主要进程、应用与领域层、核心合同和事实底座</desc>
+  <defs><marker id="arrow-overview" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#182230"/></marker></defs>
+  <g fill="#5b6b7a" font-size="12" font-family="IBM Plex Mono, SFMono-Regular, Menlo, monospace">
+    <text x="45" y="28">协议与调用方</text><text x="420" y="28">应用进程与模型适配</text><text x="45" y="264">领域服务与动作边界</text><text x="45" y="634">事实与可重建制品</text>
+  </g>
+  <g stroke="#d9e0e6" stroke-width="1.4" fill="#ffffff">
+    <rect x="45" y="48" rx="7" width="250" height="82"/><rect x="335" y="48" rx="7" width="220" height="82"/><rect x="595" y="48" rx="7" width="250" height="82"/><rect x="925" y="48" rx="7" width="230" height="82"/>
+    <rect x="45" y="162" rx="7" width="250" height="82"/><rect x="335" y="162" rx="7" width="220" height="82"/><rect x="595" y="162" rx="7" width="250" height="82"/><rect x="925" y="162" rx="7" width="230" height="82"/>
+    <rect x="45" y="286" rx="7" width="1110" height="102" fill="#dff1f2" stroke="#0e6b74"/>
+    <rect x="45" y="420" rx="7" width="1110" height="102"/>
+    <rect x="45" y="554" rx="7" width="1110" height="58"/>
+    <rect x="45" y="656" rx="7" width="350" height="142" fill="#e1f3e8" stroke="#1f7a4d"/><rect x="425" y="656" rx="7" width="350" height="142" fill="#e1f3e8" stroke="#1f7a4d"/><rect x="805" y="656" rx="7" width="350" height="142"/>
+  </g>
+  <g fill="#182230" font-size="14" font-family="IBM Plex Sans, PingFang SC, Hiragino Sans GB, Microsoft YaHei, system-ui, sans-serif">
+    <text x="65" y="76" font-weight="600">Browser · React SPA</text><text x="65" y="99">HTTP / OpenAPI / 标注工作台</text><text x="65" y="119" fill="#5b6b7a">Vite 构建进 web_dist</text>
+    <text x="355" y="76" font-weight="600">CLI · datakeel</text><text x="355" y="99">demo / api / worker / 领域命令</text><text x="355" y="119" fill="#5b6b7a">直接复用存储与动作服务</text>
+    <text x="615" y="76" font-weight="600">MCP client</text><text x="615" y="99">stdio 或 SSE</text><text x="615" y="119" fill="#5b6b7a">37 读 + 65 prepare-only</text>
+    <text x="945" y="76" font-weight="600">外部模型 / OCR / 视觉</text><text x="945" y="99">按配置、预算和签批调用</text><text x="945" y="119" fill="#5b6b7a">离线 fake / replay 可替代</text>
+
+    <text x="65" y="190" font-weight="600">FastAPI · api 进程</text><text x="65" y="213">路由、身份范围、异常映射</text><text x="65" y="233" fill="#5b6b7a">最后挂载静态 SPA，可放多副本</text>
+    <text x="355" y="190" font-weight="600">worker 进程</text><text x="355" y="213">DB 队列 / DAG / reaper / relay</text><text x="355" y="233" fill="#5b6b7a">行锁领取，可加 CPU/IO/GPU 副本</text>
+    <text x="615" y="190" font-weight="600">FastMCP · 可选入口</text><text x="615" y="213">同一工具 schema 与审计</text><text x="615" y="233" fill="#5b6b7a">审批和执行工具对 MCP 拒绝</text>
+    <text x="945" y="190" font-weight="600">runtime / extraction_runtime</text><text x="945" y="213">LangGraph、模型 SDK、checkpoint</text><text x="945" y="233" fill="#5b6b7a">框架只能在这两个适配包出现</text>
+
+    <text x="65" y="313" font-weight="600">应用服务层</text>
+    <text x="65" y="338">api · worker · agent · runtime · intents · mcp · harness · kg_eval</text>
+    <text x="65" y="363" fill="#5b6b7a">编排请求、恢复、规划、模型计量与协议；不直接替代领域事务</text>
+    <text x="65" y="447" font-weight="600">领域与同层服务</text>
+    <text x="65" y="472">storage · actions · ontology · training · annotation_qa · pipeline · evidence · quality</text>
+    <text x="65" y="497" fill="#5b6b7a">kg · transcription · llm_data · datasheets · delivery · workflows · routing · memory</text>
+    <text x="65" y="581" font-weight="600">core：冻结 pydantic 合同、AssetRef、AnnotationRecord、ID、错误与领域类型</text>
+
+    <text x="65" y="684" font-weight="600">数据库 · SQLite / PostgreSQL</text>
+    <text x="65" y="709">版本、血缘、动作、审计、队列、修订、训练</text><text x="65" y="733">JSON 事实 + 状态投影 + 约束 / 触发器</text><text x="65" y="766" fill="#5b6b7a">开发 SQLite；生产 PostgreSQL 唯一事实源</text>
+    <text x="445" y="684" font-weight="600">对象存储 · 本地目录 / S3</text>
+    <text x="445" y="709">SHA-256 内容寻址、原始文件与证据制品</text><text x="445" y="733">runs / exports 是制品区，不替代回执</text><text x="445" y="766" fill="#5b6b7a">S3 条件写；object-cache 只是缓存</text>
+    <text x="825" y="684" font-weight="600">可重建加速与投影</text>
+    <text x="825" y="709">图 / 搜索 / evidence cache / KG block cache</text><text x="825" y="733">可选 Rust PyO3：hash 与文本指纹</text><text x="825" y="766" fill="#5b6b7a">没有必需的 Redis / MQ / 向量服务</text>
+  </g>
+  <g stroke="#182230" stroke-width="1.5" fill="none" marker-end="url(#arrow-overview)">
+    <path d="M170 130 V162"/><path d="M445 130 V162"/><path d="M720 130 V162"/>
+    <path d="M170 244 V286"/><path d="M445 244 V286"/><path d="M720 244 V286"/><path d="M1040 130 V162"/>
+    <path d="M600 388 V420"/><path d="M600 522 V554"/>
+    <path d="M330 612 V656"/><path d="M600 612 V656"/><path d="M870 612 V656"/>
+    <path d="M1040 244 V420 H920"/>
+  </g>
+  <g fill="#5b6b7a" font-size="11" font-family="IBM Plex Sans, PingFang SC, Hiragino Sans GB, Microsoft YaHei, system-ui, sans-serif">
+    <text x="178" y="149">HTTP + 静态页</text><text x="453" y="149">启动 / 排干任务</text><text x="728" y="149">工具调用</text><text x="1048" y="149">受控请求</text>
+    <text x="178" y="272">路由调用</text><text x="453" y="272">执行与回写</text><text x="728" y="272">只读 / prepare</text>
+    <text x="608" y="409">类型化调用</text><text x="608" y="543">仅消费冻结合同</text>
+  </g>
+</svg>

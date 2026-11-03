@@ -71,6 +71,28 @@ The demo also publishes six [data assets](docs/DATA_ASSETS.en.md) across public,
 
 Reads that include protected resources require grants. In the default demo, an all-lineage export and an unfiltered MCP metric list skip protected entries such as Customer count and report the skipped count, entry IDs and reason; the return-rate question's protected nearby candidates are refused with an application hint. Naming a protected resource directly is refused until you apply for it. A metric list filtered to `retail` and the Retail revenue question remain available. Follow the [asset tour](docs/DEMO.en.md#data-assets-discover-apply-use-and-audit) for the complete approval flow.
 
+## Build local installation artifacts
+
+From a source checkout, `make build-wheel` refreshes the locked license notices, installs the locked frontend audit inputs with `npm ci`, builds one pure-Python wheel, and exports hashed runtime requirements. Python 3.12, uv, Node and the Rust audit toolchain are build prerequisites; Node is not needed to run the resulting wheel. Install it into a new environment rather than using the source tree:
+
+```bash
+make build-wheel
+python3.12 -m venv .venv-wheel
+. .venv-wheel/bin/activate
+python -m pip install dist/datakeel-*.whl
+datakeel demo
+```
+
+With Docker installed, `make build-image` builds the same wheel and installs it over the locked requirements in a non-root local image. The command has no publish or remote-tag option:
+
+```bash
+make build-image
+docker run --rm -p 127.0.0.1:8765:8765 -v datakeel-data:/data datakeel:local
+# Open http://127.0.0.1:8765; stop the container with Ctrl+C
+```
+
+Neither command uploads a wheel or image. No PyPI or Docker Hub publication is implied.
+
 ## Explore the enterprise catalog and ask data
 
 The same demo also creates **Fictional Kitchen Co.**, a generated kitchen-appliance business with four SQLite sources: ERP, CRM, ecommerce and service. Its 20 tables and four views appear as **24 table objects, 128 fields, 13 metrics, 12 dimensions and 32 terms**. The generator writes 51,992 rows and independent answers in `gold.json`; repeated runs preserve the SQLite `.dump` text and gold bytes. SQLite metadata reflection supplies containment and foreign-key references. Field derivation comes only from parsed view definitions or supplied SQL, using `sqlglot` 30.24.0 (MIT). Engineering metadata can also be imported from dbt artifacts, the Airflow REST API v1 (live or offline exports), and OpenLineage events as described below.
@@ -204,32 +226,30 @@ The **Memory** page supports explicit creation, dataset filtering and confirmed 
 
 The runtime supports OpenAI chat-completions and Anthropic messages. Configuration is optional: the offline demo and tests never call those services. Store `DATAKEEL_OPENAI_API_KEY` or `DATAKEEL_ANTHROPIC_API_KEY` outside the repository as environment secrets, then explicitly set `provider` and `model` in `POST /api/agent/conversations` (`openai` / `gpt-4.1-mini`, or `anthropic` / `claude-haiku-4-5-20251001`). These models are listed in `contracts/model-prices.yaml`. With a key set, a new Web conversation uses that provider with `model: auto`, routed to models the configured endpoint serves; without one it uses the offline demo and says so. Use `DATAKEEL_OPENAI_BASE_URL` (normally ending in `/v1`) or `DATAKEEL_ANTHROPIC_BASE_URL` (the server root) for endpoint overrides. An OpenAI-compatible base URL can point to another compatible provider; its model must have a price entry before use. `DATAKEEL_PROVIDER_TIMEOUT` defaults to 180 seconds; one-sentence planning requests ask for JSON and are streamed, so a reasoning model's long answer is not cut off while it thinks. The deprecated complete-endpoint settings `DATAKEEL_OPENAI_URL` and `DATAKEEL_ANTHROPIC_URL` remain compatible for one release only when they end in `/chat/completions` and `/v1/messages`, respectively; explicit base URLs take precedence. Selecting a real provider and sending a message would make a billable external request. These adapters use LangChain chat models and are verified with local HTTP fixtures only. Automatic model retries are disabled. LangSmith tracing is forcibly disabled even when `LANGSMITH_TRACING` or `LANGCHAIN_TRACING_V2` is set; this release has no tracing opt-in. The older `DATAKEEL_LLM_URL` controls report enrichment independently.
 
+### Export model traces with OpenTelemetry
+
+`datakeel export-traces [--conversation-id ID]` reads the existing trace store without migrating or writing it, then synchronously exports OTLP/HTTP protobuf spans. It uses the [OpenTelemetry GenAI client-inference conventions](https://github.com/open-telemetry/semantic-conventions-genai/blob/16f3130892e2e02fa3f0eef72c0e6b554ff08e5c/docs/gen-ai/client-inference.md) (currently **Development**) and OpenInference attributes on the same spans. Prompts, completions, tool payloads, transcripts, model-route JSON and exporter credentials are not exported. Run, plan and accounting IDs are not presented as official conversation sessions. Span times are approximate values reconstructed from persisted settlement time and latency, not exact provider timestamps.
+
+The command uses the standard `OTEL_EXPORTER_OTLP_*` settings. A signal-specific endpoint includes `/v1/traces`; a generic endpoint lets the SDK append that path. Only HTTP 200 responses with `rejected_spans=0` count as accepted. Every span must be accepted before the command prints a count and returns success; failures and partial exports return nonzero. There is no background queue or export cursor, so repeating the command can create duplicate dashboard spans.
+
+```bash
+# Local OTLP collector
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:4318/v1/traces \
+  uv run datakeel export-traces --conversation-id <id>
+
+# Local Phoenix (OpenInference attributes are included)
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:6006/v1/traces \
+  uv run datakeel export-traces --conversation-id <id>
+
+# Langfuse: generic base endpoint and credentials supplied outside the repository
+export OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel
+export OTEL_EXPORTER_OTLP_HEADERS='Authorization=Basic <base64-public-key-secret-key>,x-langfuse-ingestion-version=4'
+uv run datakeel export-traces --conversation-id <id>
+```
+
 ## How it fits together
 
-```mermaid
-flowchart LR
-  CLI[CLI / React] --> API[FastAPI]
-  API --> Agent[Agent / context / tool discovery]
-  Agent --> Runtime[LangGraph / chat models]
-  Runtime -->|checkpoints| DB
-  Agent --> Actions[Ontology / controlled actions]
-  MCP[MCP stdio / SSE] --> Actions
-  Actions --> DB
-  Agent --> Harness[Trace / budgets / golden evaluation]
-  Harness --> DB
-  API --> DB[(SQLite / PostgreSQL)]
-  DB --> Worker[Worker: shard leases]
-  Worker --> DAG[Typed DAG: condition / modality route]
-  DAG --> Ops[11 file / image / text + 5 evidence operators]
-  Ops --> Objects[(Local directory / S3)]
-  Ops --> Events[Append-only lineage + quality facets]
-  Events --> DB
-  API --> Ask[Ask: resolve / compile / read-only execute]
-  Ask --> Catalog[Catalog / metrics / source databases]
-  Catalog --> DB
-  DB --> Views[Catalog / ask / evidence / graph / quality / governance / report]
-  Views --> Export[OpenLineage / Croissant 1.1]
-```
+![Current Datakeel architecture: protocol entry points, application and domain layers, core contracts, and fact stores](docs/images/architecture-overview.svg)
 
 The database is the fact store. A version is an immutable file manifest with SHA-256 hashes; the networkx graph is rebuilt from events. PostgreSQL workers claim one shard using `FOR UPDATE SKIP LOCKED`; SQLite claims serialize with `BEGIN IMMEDIATE`. Heartbeats, bounded retries, lease fencing, and a transactional terminal-event outbox protect task completion.
 

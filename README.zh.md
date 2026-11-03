@@ -71,6 +71,28 @@ npm --prefix web run smoke:ui -- http://127.0.0.1:8773
 
 读取涉及受保护资源时需要授权。默认演示中的全库血缘导出和未筛选的 MCP 指标列表会跳过「客户数」等受保护条目，并写明跳过数量、条目 ID 和原因；退货率问句披露的受保护相近指标会拒绝并提示申请。直接点名受保护资源时同样拒绝，申请后才能读取；按 `retail` 筛选指标、查询零售额仍可直接执行。完整审批流程见[资产导览](docs/DEMO.md#数据资产发现申请使用与审计)。
 
+## 构建本地安装产物
+
+在源码 checkout 中，`make build-wheel` 会按 lock 刷新许可声明、用 `npm ci` 安装前端审计输入、构建一个纯 Python wheel，并导出带 hash 的运行时依赖。构建需要 Python 3.12、uv、Node 和 Rust 审计工具链；运行生成的 wheel 不需要 Node。请安装到新的环境，不要借用源码目录：
+
+```bash
+make build-wheel
+python3.12 -m venv .venv-wheel
+. .venv-wheel/bin/activate
+python -m pip install dist/datakeel-*.whl
+datakeel demo
+```
+
+安装 Docker 后，`make build-image` 会构建同一个 wheel，并在非 root 本地镜像中按锁定依赖安装。该命令没有发布或远程 tag 参数：
+
+```bash
+make build-image
+docker run --rm -p 127.0.0.1:8765:8765 -v datakeel-data:/data datakeel:local
+# 打开 http://127.0.0.1:8765；按 Ctrl+C 停止容器
+```
+
+两个命令都不会上传 wheel 或镜像，也不表示已经发布到 PyPI 或 Docker Hub。
+
 ## 企业目录与可追溯问数
 
 同一个 demo 还生成虚构厨电公司 **Fictional Kitchen Co.**，包含 ERP、CRM、电商、售后四个 SQLite 数据源：20 张表和 4 个视图在目录里对应 **24 个表对象、128 个字段、13 个指标、12 个维度、32 条术语**。生成器写入 51,992 行，并独立计算 `gold.json`；重跑得到相同的 SQLite `.dump` 文本与 gold 字节。SQLite 反射产生包含关系和外键引用；字段派生关系仅来自视图或用户 SQL 的解析，使用 `sqlglot` 30.24.0（MIT）。工程元数据还可从 dbt 产物、Airflow REST API v1（实时拉取或离线导出）及 OpenLineage 事件导入，详见下文。
@@ -201,32 +223,30 @@ Agent 使用 LangGraph，在同一 SQLite 或 PostgreSQL 数据库中同步保�
 
 运行时支持 OpenAI chat-completions 和 Anthropic messages。离线演示与测试不调用真实服务。将 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY` 作为仓库外环境密钥配置，再通过 `POST /api/agent/conversations` 显式设置 `provider` / `model`：`openai` / `gpt-4.1-mini`，或 `anthropic` / `claude-haiku-4-5-20251001`。这些模型列在 `contracts/model-prices.yaml`。设了密钥时，Web 新建会话用该厂商和 `model: auto`，只路由到所配接口提供的模型；没设密钥才用离线演示模型，并在页面上说明。使用 `DATAKEEL_OPENAI_BASE_URL`（通常以 `/v1` 结尾）或 `DATAKEEL_ANTHROPIC_BASE_URL`（服务根地址）覆盖地址；OpenAI 兼容地址可指向其它兼容服务，模型使用前须有价目条目。`DATAKEEL_PROVIDER_TIMEOUT` 默认 180 秒；一句话规划请求要 JSON 并走流式，推理模型想得久也不会中途超时。旧完整端点配置 `DATAKEEL_OPENAI_URL` / `DATAKEEL_ANTHROPIC_URL` 已弃用，仅再兼容一个版本，分别要求以 `/chat/completions` / `/v1/messages` 结尾；显式 BASE_URL 优先。选择真实 provider 并发送消息会发出计费请求；适配通过 LangChain chat model，仅用本机 HTTP fixture 验证协议；模型自动重试关闭。LangSmith 追踪强制关闭，即使设置 `LANGSMITH_TRACING` 或 `LANGCHAIN_TRACING_V2` 也不会启用，本版不提供追踪开关。旧的 `DATAKEEL_LLM_URL` 独立控制报告正文增强。
 
+### 用 OpenTelemetry 导出模型 trace
+
+`datakeel export-traces [--conversation-id ID]` 只读现有 trace 数据库，不 migrate、不写入，然后同步导出 OTLP/HTTP protobuf span。span 同时携带 [OpenTelemetry GenAI client-inference 语义约定](https://github.com/open-telemetry/semantic-conventions-genai/blob/16f3130892e2e02fa3f0eef72c0e6b554ff08e5c/docs/gen-ai/client-inference.md)（目前为 **Development**）和 OpenInference 属性。提示词、补全、工具 payload、对话正文、模型路由 JSON 和 exporter 凭证均不导出。run、plan 和 accounting ID 不会冒充官方会话。span 时间由持久化结算时间和 latency 重建，是近似值，不是 provider 的精确起止时间。
+
+命令使用标准 `OTEL_EXPORTER_OTLP_*` 配置。signal-specific endpoint 要包含 `/v1/traces`；通用 endpoint 由 SDK 追加该路径。只有 HTTP 200 且 `rejected_spans=0` 才算接受。所有 span 均被接受后才打印数量并成功返回；失败或部分导出返回非零。没有后台队列或导出 cursor，重复执行可能在看板中产生重复 span。
+
+```bash
+# 本地 OTLP Collector
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:4318/v1/traces \
+  uv run datakeel export-traces --conversation-id <id>
+
+# 本地 Phoenix（span 同时带 OpenInference 属性）
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:6006/v1/traces \
+  uv run datakeel export-traces --conversation-id <id>
+
+# Langfuse：通用 base endpoint，凭证只放在仓库外环境变量中
+export OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel
+export OTEL_EXPORTER_OTLP_HEADERS='Authorization=Basic <base64-public-key-secret-key>,x-langfuse-ingestion-version=4'
+uv run datakeel export-traces --conversation-id <id>
+```
+
 ## 架构
 
-```mermaid
-flowchart LR
-  UI[CLI / React] --> API[FastAPI]
-  API --> Agent[Agent / 上下文 / 工具发现]
-  Agent --> Runtime[LangGraph / chat model]
-  Runtime -->|checkpoint| DB
-  Agent --> Actions[本体 / 受控动作]
-  MCP[MCP stdio / SSE] --> Actions
-  Actions --> DB
-  Agent --> Harness[Trace / 预算 / golden]
-  Harness --> DB
-  API --> DB[(SQLite / PostgreSQL)]
-  DB --> Worker[分片租约 worker]
-  Worker --> DAG[类型化 DAG / 条件 / 模态路由]
-  DAG --> Ops[11 个文件、图像、文本算子 + 5 个证据算子]
-  Ops --> Objects[(本地目录 / S3)]
-  Ops --> Events[不可修改事件 / 质量 facet]
-  Events --> DB
-  API --> Ask[问数: 解析 / 编译 / 只读执行]
-  Ask --> Catalog[目录 / 指标 / 源数据库]
-  Catalog --> DB
-  DB --> Views[目录 / 问数 / 证据 / 血缘 / 质量 / 治理 / 报告]
-  Views --> Export[OpenLineage / Croissant 1.1]
-```
+![Datakeel 当前架构：协议入口、应用与领域层、核心合同和事实底座](docs/images/architecture-overview.svg)
 
 数据库是事实源。版本是含 SHA-256 的文件清单快照，networkx 图由事件重建。Postgres 每次用 `FOR UPDATE SKIP LOCKED` 领取一个分片，SQLite 使用 `BEGIN IMMEDIATE` 串行领取；心跳、有限重试、租约校验和事务 outbox 防止重复终态。
 
