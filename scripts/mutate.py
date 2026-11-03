@@ -48,6 +48,11 @@ def _copy_source(target: Path) -> None:
         target / "datakeel",
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "web_dist", "_contracts"),
     )
+    shutil.copytree(
+        ROOT / "scripts", target / "scripts", ignore=shutil.ignore_patterns("__pycache__", "*.pyc")
+    )
+    for name in ("Dockerfile", ".dockerignore", "Makefile", "pyproject.toml"):
+        shutil.copy2(ROOT / name, target / name)
     shutil.copytree(ROOT / "contracts", target / "contracts")
     shutil.copytree(ROOT / "docs" / "p9", target / "docs" / "p9")
     shutil.copytree(
@@ -221,7 +226,8 @@ def run_mutation(mutation: Mutation) -> MutationResult:
     with TemporaryDirectory(prefix="datakeel-mutation-") as temporary:
         directory = Path(temporary)
         _copy_source(directory)
-        path = directory / "datakeel" / mutation.path
+        root = directory if mutation.source_root == "repository" else directory / "datakeel"
+        path = root / mutation.path
         original = path.read_text(encoding="utf-8")
         if original.count(mutation.before) != 1:
             msg = f"Mutation anchor must occur once: {mutation.name}"
@@ -298,13 +304,27 @@ def _measure_image_baselines(
     )
 
 
+def _requested_mutations(
+    parser: argparse.ArgumentParser, args: argparse.Namespace
+) -> tuple[Mutation, ...]:
+    """Select one catalog shard or exact named anchors, never both."""
+    if args.name and args.shard:
+        parser.error("--name and --shard are mutually exclusive")
+    mutations = MUTATIONS if args.shard is None else select_mutations(MUTATIONS, args.shard)
+    if args.name:
+        selected = set(args.name)
+        mutations = tuple(item for item in mutations if item.name in selected)
+    return mutations
+
+
 def main() -> None:
     """Require green baselines and observed assertion failures with durable evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--shard", type=parse_shard, help="Run only catalog shard K of N (K/N).")
+    parser.add_argument("--name", action="append", choices=[item.name for item in MUTATIONS])
     args = parser.parse_args()
-    mutations = MUTATIONS if args.shard is None else select_mutations(MUTATIONS, args.shard)
+    mutations = _requested_mutations(parser, args)
     workers = test_worker_count()
     report: dict[str, object] = {} if args.shard is None else {"shard": str(args.shard)}
     golden = retry_on_timeout(evaluate_golden_baseline, "golden baseline")

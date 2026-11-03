@@ -22,7 +22,8 @@ def test_every_anchor_occurs_exactly_once_and_names_an_existing_case() -> None:
         f"duplicate name {name}" for name in sorted(set(names)) if names.count(name) > 1
     )
     for mutation in MUTATIONS:
-        source = ROOT / "datakeel" / mutation.path
+        root = ROOT if mutation.source_root == "repository" else ROOT / "datakeel"
+        source = root / mutation.path
         if not source.is_file():
             problems.append(f"{mutation.name}: missing {mutation.path}")
             continue

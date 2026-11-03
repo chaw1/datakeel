@@ -20,6 +20,7 @@ class Mutation(BoundaryModel):
     after: str
     case: str
     runner: Literal["golden", "pytest"] = "golden"
+    source_root: Literal["datakeel", "repository"] = "datakeel"
 
 
 class MutationResult(BoundaryModel):
