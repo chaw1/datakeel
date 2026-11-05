@@ -11,6 +11,7 @@ import pytest
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import DBAPIError
 
+from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_models import Assertion, TextSpan, VerificationDetail, VerificationIssue
 from datakeel.persistence import migrate
 from datakeel.storage.evidence_projection import rebuild_evidence
@@ -55,10 +56,10 @@ def test_verification_is_projected_and_survives_rebuild(db: Database) -> None:
     assert list_assertions(db)[0].verification_detail == detail
 
 
-def test_legacy_assertion_migration_adds_nullable_columns_and_index(
+def test_partial_assertion_schema_is_rejected_without_adding_columns(
     unmigrated_db: Database,
 ) -> None:
-    """Old stores gain indexed verification without assigning invented check results."""
+    """A partial assertion fixture cannot bypass the full schema registry."""
     with unmigrated_db.engine.begin() as connection:
         connection.execute(
             text(
@@ -68,15 +69,11 @@ def test_legacy_assertion_migration_adds_nullable_columns_and_index(
                 "decided_at VARCHAR, active BOOLEAN NOT NULL)"
             )
         )
-    migrate(unmigrated_db)
-    migrate(unmigrated_db)
-    inspector = inspect(unmigrated_db.engine)
-    columns = {column["name"]: column for column in inspector.get_columns("assertions")}
-    assert columns["verification"]["nullable"]
-    assert columns["verification_detail"]["nullable"]
-    assert any(
-        index["column_names"] == ["verification"] for index in inspector.get_indexes("assertions")
-    )
+    with pytest.raises(ValidationError):
+        migrate(unmigrated_db)
+    columns = {column["name"] for column in inspect(unmigrated_db.engine).get_columns("assertions")}
+    assert "verification" not in columns
+    assert "verification_detail" not in columns
 
 
 @pytest.mark.parametrize(

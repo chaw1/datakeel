@@ -1,97 +1,76 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Upgrade legacy tables with the same SQLite/PostgreSQL fixture used by CI."""
+"""Strict product recognition is separate from the low-level nullable-column helper."""
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy import inspect, text
+from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, inspect
 
 from datakeel.core.errors import ValidationError
 from datakeel.persistence import migrate
-from datakeel.storage.task_queries import list_tasks
+from datakeel.storage import migrations
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database
 
 
-def _legacy_tasks(db: Database, *, omit_state: bool = False) -> None:
-    state_column = "" if omit_state else "state VARCHAR NOT NULL,"
-    with db.engine.begin() as connection:
-        connection.execute(
-            text(
-                "CREATE TABLE tasks (id VARCHAR PRIMARY KEY, dataset_id VARCHAR NOT NULL, "
-                f"idempotency_key VARCHAR NOT NULL UNIQUE, {state_column}"
-                "queue VARCHAR NOT NULL, pipeline JSON, created_at FLOAT NOT NULL, "
-                "total_shards INTEGER NOT NULL, error VARCHAR)"
-            )
-        )
-        if not omit_state:
-            connection.execute(
-                text(
-                    "INSERT INTO tasks "
-                    "(id, dataset_id, idempotency_key, state, queue, created_at, total_shards) "
-                    "VALUES ('legacy-task', 'legacy-dataset', 'legacy-key', "
-                    "'COMPLETED', 'cpu', 1700000000, 1)"
-                )
-            )
-
-
-def test_migrate_old_task_schema_preserves_data_and_is_idempotent(
-    unmigrated_db: Database,
+@pytest.mark.parametrize("extra", [False, True])
+def test_partial_tasks_baseline_rejected_without_creating_latest_tables(
+    unmigrated_db: Database, *, extra: bool
 ) -> None:
-    """Old tasks keep their original values and unknown finish times after repeated upgrades."""
-    _legacy_tasks(unmigrated_db)
-    before = inspect(unmigrated_db.engine).get_columns("tasks")
-    assert "finished_at" not in {column["name"] for column in before}
-    migrate(unmigrated_db)
-    migrate(unmigrated_db)
-    tasks = list_tasks(unmigrated_db)
-    assert [(task.id, task.state, task.created_at, task.finished_at) for task in tasks] == [
-        ("legacy-task", "COMPLETED", 1700000000, None)
-    ]
-    columns = {
-        column["name"]: column for column in inspect(unmigrated_db.engine).get_columns("tasks")
-    }
-    assert columns["finished_at"]["nullable"]
-    assert columns["input_version_id"]["nullable"]
-
-
-def test_concurrent_old_schema_migrations_share_the_lock(unmigrated_db: Database) -> None:
-    """Concurrent startup callers cannot both try to add the same legacy column."""
-    _legacy_tasks(unmigrated_db)
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        list(pool.map(lambda _: migrate(unmigrated_db), range(4)))
-    assert len(list_tasks(unmigrated_db)) == 1
-
-
-def test_migrate_missing_required_column_fails_without_guessing_values(
-    unmigrated_db: Database,
-) -> None:
-    """An incompatible old table is rejected with a concrete table and column reason."""
-    _legacy_tasks(unmigrated_db, omit_state=True)
-    with pytest.raises(ValidationError, match=r"non-nullable column tasks.state.*existing rows"):
-        migrate(unmigrated_db)
-    columns = {column["name"] for column in inspect(unmigrated_db.engine).get_columns("tasks")}
-    assert "finished_at" not in columns
-    assert "state" not in columns
-
-
-def test_migrate_keeps_unknown_columns_and_existing_column_types(unmigrated_db: Database) -> None:
-    """Additive upgrades leave extra legacy facts and type declarations untouched."""
-    _legacy_tasks(unmigrated_db)
+    """A partial former additive fixture can no longer bypass complete baseline recognition."""
     with unmigrated_db.engine.begin() as connection:
-        connection.execute(text("ALTER TABLE tasks ADD COLUMN legacy_note VARCHAR(40)"))
-        connection.execute(text("UPDATE tasks SET legacy_note = 'preserved'"))
-    before = inspect(unmigrated_db.engine).get_columns("tasks")
-    migrate(unmigrated_db)
-    after = inspect(unmigrated_db.engine).get_columns("tasks")
-    assert {column["name"]: str(column["type"]) for column in before}.items() <= {
-        column["name"]: str(column["type"]) for column in after
-    }.items()
-    with unmigrated_db.engine.connect() as connection:
-        assert connection.scalar(text("SELECT legacy_note FROM tasks")) == "preserved"
+        connection.exec_driver_sql("CREATE TABLE tasks (id VARCHAR PRIMARY KEY)")
+        if extra:
+            connection.exec_driver_sql("ALTER TABLE tasks ADD COLUMN legacy_note VARCHAR(40)")
+    with pytest.raises(ValidationError):
+        migrate(unmigrated_db)
+    assert inspect(unmigrated_db.engine).get_table_names() == ["tasks"]
+
+
+def test_nullable_helper_preserves_extra_columns_types_and_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The helper's narrow additive behavior remains testable without a production bypass."""
+    metadata = MetaData()
+    Table("sample", metadata, Column("id", Integer, primary_key=True), Column("note", String))
+    monkeypatch.setattr(migrations.Base, "metadata", metadata)
+    engine = create_engine("sqlite://")
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            "CREATE TABLE sample (id INTEGER PRIMARY KEY, extra VARCHAR(40))"
+        )
+        connection.exec_driver_sql("INSERT INTO sample VALUES (1, 'preserved')")
+        migrations.add_nullable_columns(connection)
+        migrations.add_nullable_columns(connection)
+        assert connection.exec_driver_sql("SELECT * FROM sample").fetchall() == [
+            (1, "preserved", None)
+        ]
+        columns = inspect(connection).get_columns("sample")
+        assert str(columns[1]["type"]) == "VARCHAR(40)"
+        assert columns[2]["nullable"]
+    engine.dispose()
+
+
+def test_nullable_helper_refuses_to_infer_required_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Missing mandatory values fail before any nullable column is added."""
+    metadata = MetaData()
+    Table(
+        "sample",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("note", String),
+        Column("state", String, nullable=False),
+    )
+    monkeypatch.setattr(migrations.Base, "metadata", metadata)
+    engine = create_engine("sqlite://")
+    with engine.begin() as connection:
+        connection.exec_driver_sql("CREATE TABLE sample (id INTEGER PRIMARY KEY)")
+        with pytest.raises(ValidationError, match=r"non-nullable column sample.state"):
+            migrations.add_nullable_columns(connection)
+        assert len(inspect(connection).get_columns("sample")) == 1
+    engine.dispose()

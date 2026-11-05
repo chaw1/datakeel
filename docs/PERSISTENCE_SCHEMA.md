@@ -1,25 +1,21 @@
 # Persistence schema composition
 
-`datakeel.persistence.migrate(database)` is the single application initialization entry point.
-API, CLI, evaluation and test-template setup use it. Offline trace export still constructs a
-read-only `storage.database.Database` and never migrates.
+`datakeel.persistence.migrate(database)` is an explicit demo/generated-fixture initializer.
+For SQLite it delegates to `versioning`: only missing/empty stores initialize; current stores
+validate and return, while known unversioned stores require `datakeel db upgrade`. API, worker,
+ordinary database CLI and MCP perform admission only. The old API migration keyword cannot
+bypass admission. Offline trace export retains its existing read-only path and never migrates.
 
-`create_app(database)` migrates by default. Callers that have already initialized the database
-can explicitly use `create_app(database, run_migrations=False)`; they remain responsible for
-providing the complete application schema. The scale ASGI workload uses this option after
-fixture setup adds its benchmark fact table. Normal initialization still rejects unexpected
-tables against the unchanged 99-table canonical inventory.
+`versioning` sits below the persistence composition root and above domain/storage adapters.
+It owns frozen version targets, baseline/data validation, the system ledger, maintenance exclusion,
+SQLite recovery packages and forward campaigns. It never calls latest metadata/installers on an
+existing database. See [maintenance and recovery](DATABASE_MAINTENANCE.md).
 
-`storage.database` owns engines, sessions and the serialized migration transaction. It accepts
-frozen `SchemaContribution` values and a separate `CanonicalSchema`; it imports no domain rows
-or installers. The neutral contracts and mapping base are in `core.schema`; `storage.base.Base`
-remains the same base object for legacy adapters.
-
-Each contribution names one owner, an explicit order, a tuple of Row types and a tuple of typed
-installers. The engine checks owners, orders, duplicate tables, table ownership and required
-installers before opening the migration transaction. It then preserves the original lock,
-`create_all`, nullable-column additions and installer sequence. A live table-set check runs
-inside that same transaction after installation. Existing extra columns remain untouched.
+`storage.database` owns engines/sessions and the legacy explicit empty-schema fixture transaction.
+Its typed contribution initializer refuses nonempty databases. The neutral schema contracts and
+mapping base remain in `core.schema`; `storage.base.Base` is the same base for legacy adapters.
+Contributions assemble a specified schema; version definitions own production upgrades. Frozen
+v1 SQL is independent of later model imports. The nullable helper has separate low-level tests.
 
 `dataset_store` owns the dataset, version, lineage-event and metadata-change mappings.
 `worker_store` owns task, shard and outbox mappings. Their modules contain schema only.
@@ -54,6 +50,6 @@ frozen before/after exports on each database stack. A successful SQLite comparis
 in for PostgreSQL execution. Exporter normalization must pass repeated-baseline checks before
 its snapshots can establish equality.
 
-The `persistence`, `dataset_store` and `worker_store` coverage owners each require 90%, alongside
+The `persistence`, `versioning`, `dataset_store` and `worker_store` coverage owners each require 90%, alongside
 the existing overall and critical-package coverage gates. Local targeted coverage reports do
 not replace the complete two-stack CI gate.

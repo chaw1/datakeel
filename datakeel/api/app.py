@@ -44,18 +44,18 @@ from datakeel.api.routes import (
     workflow_runs,
 )
 from datakeel.core.logging import warn_unsafe_subprocess
-from datakeel.persistence import migrate
 from datakeel.routing.config import load_config
 from datakeel.runtime.workflow_service import recover_runs
 from datakeel.storage.database import Database
+from datakeel.versioning import require_current
 
 
 def create_app(db: Database | None = None, *, run_migrations: bool = True) -> FastAPI:
-    """Create an application, optionally reusing a database initialized by the caller."""
+    """Admit a current database before wiring recovery and application routes."""
     database = db or Database()
+    del run_migrations  # Retained call compatibility; startup never upgrades.
     warn_unsafe_subprocess()
-    if run_migrations:
-        migrate(database)
+    require_current(database)
     load_config()
     recover_runs(database)
     app = FastAPI(

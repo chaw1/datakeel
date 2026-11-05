@@ -15,6 +15,7 @@ from rich.console import Console
 from datakeel.cli import (
     custom_operators,
     data_assets,
+    database,
     delivery,
     intents,
     kg_evaluation,
@@ -46,12 +47,12 @@ from datakeel.core.kg_image_request import ImageEvaluationRequest
 from datakeel.core.logging import configure_logging
 from datakeel.core.models import AssetRef
 from datakeel.core.settings import get_settings
-from datakeel.persistence import migrate
 from datakeel.routing.config import load_config
 from datakeel.storage.data_asset_access import skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets
 from datakeel.storage.lineage_service import export_dataset, export_readable_events
+from datakeel.versioning import require_current
 from datakeel.worker.runner import run_worker
 
 __all__ = ["main", "seed_demo"]
@@ -79,7 +80,7 @@ _PARSER_MODULES = (
 
 def parser() -> argparse.ArgumentParser:
     """Build the stable public command grammar."""
-    result = argparse.ArgumentParser(prog="datakeel")
+    result = database.CommandParser(prog="datakeel")
     commands = result.add_subparsers(dest="command", required=True)
     for command in ("demo", "api"):
         sub = commands.add_parser(command)
@@ -93,7 +94,7 @@ def parser() -> argparse.ArgumentParser:
     worker = commands.add_parser("worker")
     worker.add_argument("--once", action="store_true", help="Drain pending work and exit")
     worker.add_argument("--queue", choices=["cpu", "io", "gpu"], default="cpu")
-    commands.add_parser("migrate")
+    database.register(commands)
     export_traces = commands.add_parser("export-traces")
     export_traces.add_argument("--conversation-id")
     evidence_rebuild = commands.add_parser("rebuild-evidence")
@@ -171,6 +172,8 @@ def _export(db: Database, args: argparse.Namespace) -> None:
 def main() -> None:
     """Dispatch a validated local command and configure structured diagnostics."""
     args = parser().parse_args()
+    if args.command in {"db", "migrate"}:
+        database.dispatch(args)
     if args.command == "reconcile":
         delivery.offline_command(args)
         return
@@ -202,7 +205,7 @@ def main() -> None:
         uvicorn.run(create_app(), host=args.host, port=args.port)
         return
     db = Database()
-    migrate(db)
+    require_current(db)
     _database_command(db, args)
 
 

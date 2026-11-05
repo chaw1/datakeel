@@ -11,12 +11,12 @@ from typing import Literal
 from datakeel.core.errors import ExecutionError
 from datakeel.core.evidence_eval import EvidenceEvalReport
 from datakeel.harness.evidence_evaluation import evaluate_evidence_dataset
-from datakeel.persistence import migrate
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence import generate_samples
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.evidence_import import import_evidence_samples
 from datakeel.storage.task_queue import DatabaseQueue
+from datakeel.versioning import initialize
 from datakeel.worker.runner import execute
 
 
@@ -52,7 +52,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=["prefix", "exact"])
     args = parser.parse_args()
     db = Database()
-    migrate(db)
+    initialize(db)
     try:
         result = run_benchmark(db, data_dir() / "samples", args.questions, mode=args.mode)
         args.output.write_text(result.model_dump_json(indent=2) + "\n", encoding="utf-8")

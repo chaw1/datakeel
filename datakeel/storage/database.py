@@ -8,16 +8,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from sqlalchemy import (
-    create_engine,
-    event,
-    inspect,
-    text,
-)
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
-from datakeel.core.errors import NotFoundError
+from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.schema import (
     Base,
     CanonicalSchema,
@@ -26,7 +21,6 @@ from datakeel.core.schema import (
     validate_tables,
 )
 from datakeel.core.settings import get_settings
-from datakeel.storage.migrations import add_nullable_columns
 
 if TYPE_CHECKING:
     import sqlite3
@@ -101,7 +95,7 @@ class Database:
     def migrate(
         self, contributions: tuple[SchemaContribution, ...], *, canonical: CanonicalSchema
     ) -> None:
-        """Validate explicit schema inputs, then migrate under the existing write lock."""
+        """Initialize explicit schema inputs only in a serialized empty fixture database."""
         validate_contributions(contributions, canonical)
         with self.engine.begin() as connection:
             if self.sqlite:
@@ -113,8 +107,10 @@ class Database:
                         "hashtext('datakeel:migrate:' || current_schema()))"
                     )
                 )
+            if inspect(connection).get_table_names() or inspect(connection).get_view_names():
+                msg = "Explicit schema initializer requires an empty database"
+                raise ValidationError(msg)
             Base.metadata.create_all(connection)
-            add_nullable_columns(connection)
             installers = sorted(
                 (item for contribution in contributions for item in contribution.installers),
                 key=lambda item: item.order,

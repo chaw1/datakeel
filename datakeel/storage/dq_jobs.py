@@ -14,6 +14,7 @@ from datakeel.core.dq_models import DqRule
 from datakeel.core.dq_monitor import DqRuleHistory, DqRun
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import new_id, utcnow
+from datakeel.core.recovery import require_active_home
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.database import Database
 from datakeel.storage.dq_reads import get_run
@@ -164,6 +165,7 @@ def _pending_slots(session: Session, current: datetime) -> tuple[_SlotKey, ...]:
 
 def schedule_due(db: Database, now: datetime | None = None) -> tuple[DqRun, ...]:
     """Enqueue each rule's newest due UTC minute once; older misses coalesce into it."""
+    require_active_home(db.engine.url.database)
     instant = now or utcnow()
     if instant.tzinfo is None:
         msg = "Quality scheduling requires an aware clock"

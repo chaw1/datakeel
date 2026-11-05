@@ -48,8 +48,10 @@ def test_migrate_command_when_run_announces_current_schema(
     invoke: Invoke, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Verify migrate command when run announces current schema."""
-    invoke("migrate")
-    assert "Database schema is current." in capsys.readouterr().out
+    with pytest.raises(SystemExit) as result:
+        invoke("migrate")
+    assert result.value.code == 0
+    assert json.loads(capsys.readouterr().out)["state"] == "current"
 
 
 def test_worker_command_when_no_tasks_exist_exits_after_drain(

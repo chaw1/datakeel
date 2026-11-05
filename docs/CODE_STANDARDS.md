@@ -57,7 +57,7 @@ cli
 ## 4. 测试
 
 - `tests/` 目录结构镜像 `datakeel/`；每个公共模块至少一个测试文件。
-- 覆盖率总体 ≥ 85%（`--cov-fail-under`）；`core`、`lineage`、`actions`、`worker`、`harness`、`agent`、`runtime`、`workflows`、`routing`、`delegation`、`memory`、`kg`、`kg_eval`、`transcription`、`extraction_runtime`、`ontology`、`evidence`、`operators/evidence`、`catalog`、`metrics`、`ask` 与 `cli/evidence_benchmark.py`、`persistence`、`dataset_store` 与 `worker_store` 各 ≥ 90%，由 `scripts/check_coverage.py` 读 coverage.xml 判定并列入 `make check`。领域在 storage 层的事务实现同时计入相应模块，`checkpoint_*.py` 归入 runtime，`workflow_*.py` 归入 workflows，`memory_*.py` 归入 memory，`conversation_children.py` 归入 delegation，`kg_*.py` 归入 kg，`kg_eval*.py` 同时归入 kg_eval；报告缺失目标模块也判为失败。
+- 覆盖率总体 ≥ 85%（`--cov-fail-under`）；`core`、`lineage`、`actions`、`worker`、`harness`、`agent`、`runtime`、`workflows`、`routing`、`delegation`、`memory`、`kg`、`kg_eval`、`transcription`、`extraction_runtime`、`ontology`、`evidence`、`operators/evidence`、`catalog`、`metrics`、`ask` 与 `cli/evidence_benchmark.py`、`persistence`、`versioning`、`dataset_store` 与 `worker_store` 各 ≥ 90%，由 `scripts/check_coverage.py` 读 coverage.xml 判定并列入 `make check`。领域在 storage 层的事务实现同时计入相应模块，`checkpoint_*.py` 归入 runtime，`workflow_*.py` 归入 workflows，`memory_*.py` 归入 memory，`conversation_children.py` 归入 delegation，`kg_*.py` 归入 kg，`kg_eval*.py` 同时归入 kg_eval；报告缺失目标模块也判为失败。
 - 不用真实网络、真实 LLM、真实对象存储；全部走本机 fixture。真实服务集成测试单独标记 `@pytest.mark.integration`，默认不跑。
 - 每个 bug 修复附回归测试；每个 golden 用例过变异测试（故意改坏实现必须变红）。
 

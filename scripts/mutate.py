@@ -81,6 +81,15 @@ def local_environment(directory: Path) -> dict[str, str]:
 
 
 def _evaluate(directory: Path) -> tuple[int, EvalReport]:
+    subprocess.run(  # Explicit initialization of an owned empty fixture.
+        [sys.executable, "-m", "datakeel.cli", "db", "upgrade"],
+        cwd=directory,
+        env=local_environment(directory),
+        capture_output=True,
+        text=True,
+        timeout=EVAL_TIMEOUT_SECONDS,
+        check=True,
+    )
     process = subprocess.run(  # Fixed interpreter/module; no shell or external input.
         [sys.executable, "-m", "datakeel.cli", "eval", "--provider", "fake", "--json"],
         cwd=directory,

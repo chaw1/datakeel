@@ -1,0 +1,124 @@
+{
+  "additionalProperties": false,
+  "description": "Stable CLI JSON document; unavailable facts are explicitly null.",
+  "properties": {
+    "applied": {
+      "default": [],
+      "items": {
+        "type": "integer"
+      },
+      "title": "Applied",
+      "type": "array"
+    },
+    "backup_manifest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Backup Manifest"
+    },
+    "baseline": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Baseline"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "exit_code": {
+      "default": 0,
+      "enum": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "title": "Exit Code",
+      "type": "integer"
+    },
+    "format_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Format Version",
+      "type": "integer"
+    },
+    "ledger_healthy": {
+      "default": false,
+      "title": "Ledger Healthy",
+      "type": "boolean"
+    },
+    "minimum_reader": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Minimum Reader"
+    },
+    "pending": {
+      "default": [],
+      "items": {
+        "type": "integer"
+      },
+      "title": "Pending",
+      "type": "array"
+    },
+    "release_source": {
+      "const": "unknown",
+      "default": "unknown",
+      "title": "Release Source",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "missing",
+        "empty",
+        "unversioned",
+        "current",
+        "pending",
+        "ahead",
+        "invalid",
+        "isolated"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "version": {
+      "default": 0,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "title": "DatabaseStatus",
+  "type": "object"
+}

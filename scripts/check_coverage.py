@@ -12,6 +12,7 @@ from rich.console import Console
 CRITICAL_PACKAGES = (
     "core",
     "persistence",
+    "versioning",
     "dataset_store",
     "worker_store",
     "lineage",

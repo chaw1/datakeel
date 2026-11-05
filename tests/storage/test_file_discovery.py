@@ -22,6 +22,7 @@ from datakeel.storage.file_discovery import (
     FileDiscoveryCheckpointRow,
     FileDiscoveryRow,
     begin_file_read,
+    install_file_discovery,
     rebuild_file_discovery,
     requires_python_files,
 )
@@ -107,10 +108,13 @@ def test_legacy_upgrade_backfills_once_and_rebuild_is_explicit(unmigrated_db: Da
     with database.engine.begin() as connection:
         DatasetRow.__table__.create(connection)
         VersionRow.__table__.create(connection)
+        FileDiscoveryRow.__table__.create(connection)
+        FileDiscoveryCheckpointRow.__table__.create(connection)
     _dataset(database)
     _version(database, "later", 20, [_file(name="later.txt")])
     _version(database, "earlier", 10, [_file(name="earlier.txt")])
-    migrate(database)
+    with database.engine.begin() as connection:
+        install_file_discovery(connection, sqlite=database.sqlite)
     expected = [("file", "earlier", "earlier.txt", 10), ("file", "later", "later.txt", 20)]
     assert _entries(database) == expected
     statements: list[str] = []
@@ -120,7 +124,8 @@ def test_legacy_upgrade_backfills_once_and_rebuild_is_explicit(unmigrated_db: Da
 
     event.listen(database.engine, "before_cursor_execute", record)
     try:
-        migrate(database)
+        with database.engine.begin() as connection:
+            install_file_discovery(connection, sqlite=database.sqlite)
     finally:
         event.remove(database.engine, "before_cursor_execute", record)
     assert not any(
@@ -542,7 +547,8 @@ def test_v1_upgrade_scans_both_legacy_json_sources_and_installs_marker_hooks(
     else:
         _version(db, "legacy", 10, [raw])
     assert not _needs_python(db)
-    migrate(db)
+    with db.engine.begin() as connection:
+        install_file_discovery(connection, sqlite=db.sqlite)
     assert _needs_python(db)
     with db.engine.begin() as connection:
         connection.execute(text("UPDATE datasets SET files = '[]'"))

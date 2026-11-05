@@ -6,16 +6,33 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- SQLite versioned migration registry, full semantic baseline recognition and immutable thin ledger,
+  with campaign maintenance exclusion, transactional forward steps and resumable committed prefixes.
+  `datakeel db status/upgrade` and the `migrate` alias emit stable JSON/exit classifications.
+  Complete hash-verified local recovery packages include database/WAL facts, referenced objects and
+  non-secret configuration; restores stay isolated from services and outbound relays. See
+  [SQLite maintenance](docs/DATABASE_MAINTENANCE.md). PostgreSQL/S3 and historical release
+  qualification remain outside this slice.
+
 - Offline W-E E1 development provenance reconstruction, per-original license ledger and hash-bound public manifests. Wiki-40B card license silence is retained separately from underlying Wikipedia CC BY-SA duties; the rejected Commons candidate is replaced with a locally verified CC0 image, with the original retained as rejected history. The changed development set requires a fresh independent image and intersection audit. Independent custody and E2 approval remain blocked.
 
 ### Fixed
 
+- SQLite migration checksums bind the complete frozen inspection/campaign/helper closure and
+  explicit fact-preservation policy. Helper drift rejects existing ledgers before pending upgrades;
+  adding future registrations leaves the first version checksum unchanged.
+
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
 - The scale ASGI workload reuses its initialized database without rerunning migrations after
-  benchmark fixture creation. Application construction still migrates by default and validates
-  the canonical tables; prepared callers can explicitly disable migration.
+  benchmark fixture creation. SQLite benchmark source facts now live in a separate source database;
+  application construction always validates the current authoritative schema without migrating.
 
 ### Changed
+
+- API, worker, ordinary database CLI and MCP startup refuse non-current SQLite stores. Demo and
+  generated fixtures initialize only missing/empty stores; the old API migration keyword cannot
+  bypass validation. The nullable-column helper remains a separate low-level contract. The new
+  versioning coverage owner requires 90%; named migration guard mutations join the existing gate.
 
 - Persistence initialization uses explicit typed schema contributions and independent ownership
   validation for the existing 99 tables. Dataset and worker mappings have private schema owners;

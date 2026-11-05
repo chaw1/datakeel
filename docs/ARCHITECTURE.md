@@ -124,7 +124,7 @@ Before every conversational model call, loaded controlled actions or a plan in t
 
 ## 9. Canary and untrusted data / Canary 与不可信数据
 
-Each conversation has a private `dkc_` sentinel with 24 random hexadecimal characters in a separate nullable storage column. Legacy rows acquire a sentinel once after additive migration. It is never part of public conversation models, transcript, graph state, runnable config or checkpoint metadata. The model sees a short volatile `canary` segment after the stable instructions and core tool schemas. Scripted request objects remain on ephemeral model instances rather than framework metadata.
+Each conversation has a private `dkc_` sentinel with 24 random hexadecimal characters in a separate nullable storage column. Recognized current rows with no sentinel acquire it once; partial legacy schemas require an explicit supported version upgrade. It is never part of public conversation models, transcript, graph state, runnable config or checkpoint metadata. The model sees a short volatile `canary` segment after the stable instructions and core tool schemas. Scripted request objects remain on ephemeral model instances rather than framework metadata.
 
 模型节点在计费完成后、追加 assistant 消息前检测泄漏：忽略大小写与空白，完整值或随机部分连续 16 位均触发 `stopped` / `canary_leak`。该回复不产生 text 或工具执行，审计只记 `CANARY_LEAK` 和原因，不存秘密。计费记录仍保留真实用量。
 
@@ -136,7 +136,7 @@ Tool discovery keeps complete schemas in the transcript for recovery and audit. 
 
 ## 10. Delegation / 委派
 
-`delegation/` owns frozen YAML definitions, scope/depth/batch policy, tool-call replay and call-tree projections. `runtime/delegation_graph.py` only wires serial independent graph instances. Children have separate conversation IDs, histories, response leases, canaries and checkpoint threads; parent/root IDs and parent tool-call IDs retain ancestry. Storage migrations add nullable/defaulted columns to existing databases. Root session lists hide children.
+`delegation/` owns frozen YAML definitions, scope/depth/batch policy, tool-call replay and call-tree projections. `runtime/delegation_graph.py` only wires serial independent graph instances. Children have separate conversation IDs, histories, response leases, canaries and checkpoint threads; parent/root IDs and parent tool-call IDs retain ancestry. Versioned upgrades own changes to existing databases; startup never adds nullable/defaulted columns. Root session lists hide children.
 
 `delegation/` 管定义、权限、深度与数量限制、幂等结果和调用树；runtime 只接图。子会话具备独立历史和 checkpoint，预算预留与结算统一归根会话；trace 保留实际子会话及父工具调用 ID。子调用不增加主轮数；已完成委派重放不增 trace 或预算。越权调用留审计，嵌套权限只能收窄；不可逆动作在定义加载时拒绝，主会话继续遵循签批边界。
 
@@ -251,3 +251,15 @@ Schema assembly is explicit in `persistence`, above the existing adapters. Datas
 schema packages sit below legacy adapters and depend on the neutral `core.schema` mapping base.
 They contain only mappings and installers; business migration is a separate slice. See
 [the schema contract and ratchets](PERSISTENCE_SCHEMA.md).
+
+
+SQLite versioning lives in `versioning`, below the persistence composition root and above adapters.
+It recognizes frozen semantic baseline classes without inferring release provenance, maintains an
+immutable system ledger separate from the 99 business tables, and holds process-released maintenance
+exclusion across backup and all transactional versions. API/worker/CLI/MCP admission requires a
+current compatible store; explicit demo/fixture initialization is limited to missing/empty stores.
+A complete local recovery point binds the database, referenced objects and non-secret configuration;
+restored homes carry persistent service/outbound isolation. No automatic service restart or downgrade
+is provided. S2 is SQLite-only; PostgreSQL/S3 and real historical-release qualification are later work.
+See [maintenance](DATABASE_MAINTENANCE.md). The W3 composition/ownership ratchets remain unchanged;
+new versioning infrastructure has its own package and 90% coverage owner.

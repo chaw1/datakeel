@@ -8,10 +8,14 @@ from __future__ import annotations
 from datakeel.persistence.canonical import canonical_schema
 from datakeel.persistence.legacy import schema_contributions
 from datakeel.storage.database import Database
+from datakeel.versioning import initialize
 
 __all__ = ["Database", "migrate"]
 
 
 def migrate(database: Database) -> None:
-    """Pass the complete explicit schema and independent canonical oracle to the engine."""
-    database.migrate(schema_contributions(), canonical=canonical_schema())
+    """Initialize empty demo/fixture stores; validate current SQLite restarts."""
+    if database.sqlite:
+        initialize(database)
+    else:
+        database.migrate(schema_contributions(), canonical=canonical_schema())

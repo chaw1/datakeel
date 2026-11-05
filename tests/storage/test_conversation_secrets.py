@@ -7,12 +7,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
 from sqlalchemy import text
 
 from datakeel.core.agent_models import ConversationCreate
+from datakeel.core.errors import ValidationError
 from datakeel.persistence import migrate
 from datakeel.storage import conversation_store
 from datakeel.storage.conversation_secrets import get_canary
+from datakeel.storage.migrations import add_nullable_columns
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database
@@ -25,7 +28,10 @@ def test_old_table_gains_nullable_secret_and_assigns_it_once(unmigrated_db: Data
     first = conversation_store.create(db, ConversationCreate())
     with db.engine.begin() as connection:
         connection.execute(text("ALTER TABLE conversations DROP COLUMN canary"))
-    migrate(db)
+    with pytest.raises(ValidationError):
+        migrate(db)
+    with db.engine.begin() as connection:
+        add_nullable_columns(connection)  # Isolated helper contract, never production admission.
     canary = get_canary(db, first.id)
     assert get_canary(db, first.id) == canary
     assert canary.startswith("dkc_")

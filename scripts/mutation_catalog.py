@@ -60,9 +60,11 @@ from scripts.training_multilabel_mutations import TRAINING_MULTILABEL_MUTATIONS
 from scripts.training_mutations import TRAINING_MUTATIONS
 from scripts.training_source_mutations import TRAINING_SOURCE_MUTATIONS
 from scripts.training_text_mutations import TRAINING_TEXT_MUTATIONS
+from scripts.versioning_mutations import VERSIONING_MUTATIONS
 from scripts.workbench_mutations import WORKBENCH_MUTATIONS
 
 FEATURE_MUTATIONS = (
+    *VERSIONING_MUTATIONS,
     *KEYPOINT_MUTATIONS,
     *SEGMENT_MUTATIONS,
     *WORKBENCH_MUTATIONS,
