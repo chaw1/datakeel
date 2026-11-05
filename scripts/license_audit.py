@@ -118,6 +118,8 @@ def _notices_header(python_target: str) -> list[str]:
         "Rust has no package exceptions; unknown and missing licenses fail.",
         "",
         "Licenses are read from installed metadata and checked against exact locked versions.",
+        "Python MPL evidence verifies actual locked wheel SHA-256 bytes and installed file layout;",
+        "installed RECORD is auxiliary. Unverifiable source builds fail closed.",
         "Ambiguous legacy metadata is accepted only with a reviewed license-file SHA-256 match.",
         "For python-dateutil, the verified BSD terms explicitly apply to all its code.",
         "",

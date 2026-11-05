@@ -111,6 +111,7 @@ class MplEvidence(BoundaryModel):
     source_url: str
     integrity: str
     notices: tuple[str, ...]
+    failure: str | None = None
 
 
 class LicensePackage(BoundaryModel):

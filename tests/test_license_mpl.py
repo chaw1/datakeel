@@ -10,6 +10,7 @@ import hashlib
 import io
 import json
 import tarfile
+import zipfile
 from importlib.metadata import PathDistribution
 from typing import TYPE_CHECKING
 
@@ -28,17 +29,10 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def write_python(root: Path) -> PathDistribution:
+def write_python(root: Path, monkeypatch: pytest.MonkeyPatch) -> PathDistribution:
     """Generate a registry lock and installed wheel RECORD with no downloaded source."""
     (root / "pyproject.toml").write_text(
         '[project]\nname="application"\ndependencies=["generated==1.0"]\n'
-    )
-    (root / "uv.lock").write_text(
-        '[[package]]\nname="application"\nversion="1"\n'
-        'dependencies=[{name="generated"}]\n'
-        '[[package]]\nname="generated"\nversion="1.0"\n'
-        'source={registry="https://example.org/simple"}\n'
-        'wheels=[{url="https://example.org/generated-1.0.whl",hash="sha256:' + "0" * 64 + '"}]\n'
     )
     site = root / "site"
     directory = site / "generated-1.0.dist-info"
@@ -49,7 +43,26 @@ def write_python(root: Path) -> PathDistribution:
     )
     (directory / "LICENSE").write_text("Generated MPL license fixture\n")
     (site / "generated.py").write_text('"""Generated upstream module."""\n')
+    (directory / "WHEEL").write_text(
+        "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n"
+    )
     write_record(site)
+    store = root / "wheels"
+    store.mkdir()
+    monkeypatch.setenv("DATAKEEL_LICENSE_WHEEL_DIR", str(store))
+    archive = store / "generated-1.0-py3-none-any.whl"
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as wheel:
+        for path in sorted(site.rglob("*")):
+            if path.is_file():
+                wheel.write(path, path.relative_to(site).as_posix())
+    pin = hashlib.sha256(archive.read_bytes()).hexdigest()
+    (root / "uv.lock").write_text(
+        '[[package]]\nname="application"\nversion="1"\n'
+        'dependencies=[{name="generated"}]\n'
+        '[[package]]\nname="generated"\nversion="1.0"\n'
+        'source={registry="https://example.org/simple"}\n'
+        'wheels=[{url="https://example.org/' + archive.name + '",hash="sha256:' + pin + '"}]\n'
+    )
     return PathDistribution(directory)
 
 
@@ -87,7 +100,7 @@ def test_python_mpl_notices_include_locked_identity_source_and_retained_licenses
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The real collector publishes required provenance fields for an unchanged generated wheel."""
-    write_python(tmp_path)
+    write_python(tmp_path, monkeypatch)
     report = python_inventory(tmp_path, monkeypatch)
     assert not report.findings
     notices = render_notices(report)
@@ -104,7 +117,7 @@ def test_python_mpl_rejects_missing_provenance_or_modified_source(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
 ) -> None:
     """Version and license metadata alone cannot authorize modified or unpinned MPL code."""
-    distribution = write_python(tmp_path)
+    distribution = write_python(tmp_path, monkeypatch)
     site = tmp_path / "site"
     metadata = site / "generated-1.0.dist-info/METADATA"
     lock = tmp_path / "uv.lock"
@@ -143,8 +156,18 @@ def test_python_mpl_rejects_missing_provenance_or_modified_source(
         return distribution
 
     monkeypatch.setattr(license_python.metadata, "distribution", installed_distribution)
-    with pytest.raises(ValidationError, match="MPL provenance"):
-        license_python.python_packages(tmp_path)
+    assert python_inventory(tmp_path, monkeypatch).findings
+
+
+def test_python_mpl_rejects_modified_source_with_rewritten_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Rewriting installed RECORD cannot authorize source that differs from the locked wheel."""
+    write_python(tmp_path, monkeypatch)
+    assert not python_inventory(tmp_path, monkeypatch).findings
+    (tmp_path / "site/generated.py").write_text("modified = True\n")
+    write_record(tmp_path / "site")
+    assert python_inventory(tmp_path, monkeypatch).findings
 
 
 def write_npm(root: Path, monkeypatch: pytest.MonkeyPatch, *, source: bool = True) -> Path:
@@ -265,7 +288,7 @@ def test_sandbox_projection_preserves_mpl_evidence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The sandbox collector carries the same checked provenance instead of waiving it."""
-    write_python(tmp_path)
+    write_python(tmp_path, monkeypatch)
     package = python_inventory(tmp_path, monkeypatch).packages[0]
     directory = tmp_path / "sandbox"
     directory.mkdir()

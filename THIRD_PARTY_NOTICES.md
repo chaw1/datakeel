@@ -15,6 +15,8 @@ exception grants additional permissions for compiled artifacts. Other WITH terms
 Rust has no package exceptions; unknown and missing licenses fail.
 
 Licenses are read from installed metadata and checked against exact locked versions.
+Python MPL evidence verifies actual locked wheel SHA-256 bytes and installed file layout;
+installed RECORD is auxiliary. Unverifiable source builds fail closed.
 Ambiguous legacy metadata is accepted only with a reviewed license-file SHA-256 match.
 For python-dateutil, the verified BSD terms explicitly apply to all its code.
 
@@ -60,7 +62,7 @@ Debian license declarations are retained separately from the Python allowlist.
 | python | botocore | 1.43.117 | Apache-2.0 | installed METADATA License | — |
 | python | cachetools | 7.2.4 | MIT | installed METADATA License-Expression | — |
 | python | caio | 0.12.9 | Apache-2.0 | installed METADATA License-Expression | — |
-| python | certifi | 2026.10.19 | MPL-2.0 | installed METADATA License; uv.lock upstream SHA-256 pins; installed RECORD SHA-256 verified; LICENSE SHA-256 e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7 | https://github.com/certifi/python-certifi |
+| python | certifi | 2026.10.19 | MPL-2.0 | installed METADATA License; certifi-2026.10.19-py3-none-any.whl sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b; upstream wheel bytes and installation layout verified; auxiliary installed RECORD SHA-256 verified; LICENSE SHA-256 e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7 | https://github.com/certifi/python-certifi |
 | python | cffi | 2.1.1 | MIT-0 | installed METADATA License-Expression | — |
 | python | charset-normalizer | 3.5.2 | MIT | installed METADATA License | — |
 | python | click | 8.5.0 | BSD-3-Clause | installed METADATA License-Expression | — |
@@ -121,7 +123,7 @@ Debian license declarations are retained separately from the Python allowlist.
 | python | opentelemetry-proto | 1.45.1 | Apache-2.0 | installed METADATA License-Expression | — |
 | python | opentelemetry-sdk | 1.45.1 | Apache-2.0 | installed METADATA License-Expression | — |
 | python | opentelemetry-semantic-conventions | 0.66b1 | Apache-2.0 | installed METADATA License-Expression | — |
-| python | orjson | 3.13.0 | MPL-2.0 AND (Apache-2.0 OR MIT) | installed METADATA License-Expression; uv.lock upstream SHA-256 pins; installed RECORD SHA-256 verified; LICENSE-APACHE SHA-256 a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2; LICENSE-MIT SHA-256 23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3; LICENSE-MPL-2.0 SHA-256 66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172 | https://github.com/ijl/orjson |
+| python | orjson | 3.13.0 | MPL-2.0 AND (Apache-2.0 OR MIT) | installed METADATA License-Expression; orjson-3.13.0-cp312-cp312-macosx_15_0_arm64.whl sha256:6ff2a2c67f35202f7d823753d38ad371a9b7fc297567cdfff4420e763cb9f6f8; upstream wheel bytes and installation layout verified; auxiliary installed RECORD SHA-256 verified; LICENSE-APACHE SHA-256 a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2; LICENSE-MIT SHA-256 23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3; LICENSE-MPL-2.0 SHA-256 66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172 | https://github.com/ijl/orjson |
 | python | ormsgpack | 1.13.0 | Apache-2.0 OR MIT | installed METADATA License-Expression | — |
 | python | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause | installed METADATA License-Expression | — |
 | python | pathable | 0.6.0 | Apache-2.0 | installed METADATA License | — |

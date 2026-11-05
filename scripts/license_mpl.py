@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 from datakeel.core.errors import ValidationError
 from scripts.license_models import LicenseFinding, MplEvidence
+from scripts.license_python_wheel import verify_installed_wheel
 
 if TYPE_CHECKING:
     from importlib.metadata import Distribution, PackagePath
@@ -48,7 +49,13 @@ def uses_mpl(expression: str) -> bool:
 def mpl_findings(package: LicensePackage) -> tuple[LicenseFinding, ...]:
     """Fail closed when an MPL runtime row has no checked provenance and source evidence."""
     evidence = package.mpl
-    if evidence and https_source(evidence.source_url) and evidence.integrity and evidence.notices:
+    if (
+        evidence
+        and not evidence.failure
+        and https_source(evidence.source_url)
+        and evidence.integrity
+        and evidence.notices
+    ):
         return ()
     return (
         LicenseFinding(
@@ -56,7 +63,11 @@ def mpl_findings(package: LicensePackage) -> tuple[LicenseFinding, ...]:
             name=package.name,
             version=package.version,
             license=package.license,
-            reason="MPL requires locked upstream integrity, retained notices and HTTPS source URL",
+            reason=(
+                evidence.failure
+                if evidence and evidence.failure
+                else "MPL requires locked upstream integrity, retained notices and HTTPS source URL"
+            ),
         ),
     )
 
@@ -111,7 +122,14 @@ def _extra_python_files(root: Path, files: list[PackagePath], recorded: set[Path
 
 
 def python_mpl_evidence(package: LockedPackage, distribution: Distribution) -> MplEvidence:
-    """Bind a registry installation to locked artifacts, RECORD hashes and source metadata."""
+    """Return checked evidence or a finding reason for unverified installation data."""
+    try:
+        return _verified_python_evidence(package, distribution)
+    except ValidationError as error:
+        return MplEvidence(source_url="", integrity="", notices=(), failure=str(error))
+
+
+def _verified_python_evidence(package: LockedPackage, distribution: Distribution) -> MplEvidence:
     if set(package.source) != {"registry"} or not https_source(package.source["registry"]):
         _fail("uv.lock must select an HTTPS upstream registry")
     artifacts = (*package.wheels, *((package.sdist,) if package.sdist else ()))
@@ -120,6 +138,7 @@ def python_mpl_evidence(package: LockedPackage, distribution: Distribution) -> M
         for item in artifacts
     ):
         _fail("uv.lock must retain HTTPS distribution URLs and SHA-256 pins")
+    integrity = verify_installed_wheel(package, distribution)
     sources = (
         value.split(",", 1)[1].strip()
         for value in distribution.metadata.get_all("Project-URL", ())
@@ -129,7 +148,7 @@ def python_mpl_evidence(package: LockedPackage, distribution: Distribution) -> M
     source = next((value for value in sources if https_source(value)), "")
     return MplEvidence(
         source_url=source,
-        integrity="uv.lock upstream SHA-256 pins; installed RECORD SHA-256 verified",
+        integrity=integrity + "; auxiliary installed RECORD SHA-256 verified",
         notices=_python_files(distribution),
     )
 
