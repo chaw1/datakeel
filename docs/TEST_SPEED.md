@@ -254,6 +254,16 @@ tagged commit was already verified. A newer commit on the same pull request canc
 run. Both stacks (SQLite and the PostgreSQL service) run the same jobs with `fail-fast: false`,
 so a failure on one stack never cancels the other:
 
+Only `gates` enables the shared setup action's `license-wheels` input. After `uv sync --locked`,
+the CI-only supplier fetches the compatible certifi/orjson archives from their exact
+`files.pythonhosted.org` URLs in `uv.lock` into a dedicated `$RUNNER_TEMP` directory. It rejects
+all redirects and verifies filename, length, SHA-256 and wheel structure before exporting
+`DATAKEEL_LICENSE_WHEEL_DIR` through `$GITHUB_ENV`. Failure stops setup before audit; the audit
+itself stays offline. The pytest, mutation and report jobs do not enable these extra downloads.
+
+仅两栈 gates 启用原始 wheel 证据供给；全部验证通过后才导出目录，许可审计始终离线。
+pytest 分片超时仍独立失败，不通过许可供给、超时调整或检查豁免掩盖。
+
 | Job / job | Commands / 命令 |
 | --- | --- |
 | `gates (<stack>)` | sandbox security tests; `npm run check:source`; `make check-public`; `make check-rust`; `make collect-tests`; `make check-python-static`; `make check-scale`; `make check-web check-licenses`; `npm run check:source`; `scripts/check_readme.py` |

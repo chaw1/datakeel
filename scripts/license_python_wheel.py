@@ -19,7 +19,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, NoReturn
 from urllib.parse import unquote, urlsplit
 
-from packaging.tags import sys_tags
+from packaging.tags import parse_tag, sys_tags
 from packaging.utils import InvalidWheelFilename, canonicalize_name, parse_wheel_filename
 
 from datakeel.core.errors import ValidationError
@@ -275,6 +275,22 @@ def _installed_extras(
             _fail("installed wheel contains a file absent from the upstream archive")
     installers = {f"{info}/{name}" for name in _INSTALLER_FILES}
     _site_entries(root, set(expected) | others | installers | set(bootstrap), sources)
+
+
+def validate_wheel_archive(payload: bytes, package: LockedPackage) -> None:
+    """Reject non-wheel bytes, unsafe members and mismatched distribution metadata offline."""
+    files, info = _installed_layout(_wheel_files(payload, package))
+    wheel = BytesParser().parsebytes(files[f"{info}/WHEEL"])
+    tags = wheel.get_all("Tag", [])
+    if (
+        not re.fullmatch(r"1\.[0-9]+", wheel.get("Wheel-Version", ""))
+        or wheel.get("Root-Is-Purelib") not in {"true", "false"}
+        or not tags
+        or not files[f"{info}/RECORD"]
+    ):
+        _fail("wheel has invalid WHEEL or RECORD metadata")
+    for tag in tags:
+        parse_tag(tag)
 
 
 def verify_installed_wheel(package: LockedPackage, distribution: Distribution) -> str:
