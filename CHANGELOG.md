@@ -12,6 +12,12 @@ All notable changes are documented here using the Keep a Changelog format.
 
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
 
+## [0.24.1] - 2026-11-06
+
+### Fixed
+
+- Synchronize the Python package, frontend manifest, npm lockfile, API and lineage producer to v0.24.1, closing the release-version consistency regression left by v0.24.0.
+
 ## [0.24.0] - 2026-11-06
 
 ### Fixed
