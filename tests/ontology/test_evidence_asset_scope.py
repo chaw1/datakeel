@@ -11,6 +11,7 @@ from datakeel.core.data_asset_models import AssetUsageQuery
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.evidence_models import EvidenceAnchor
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.evidence.query_models import EvidenceQueryResult, EvidenceSample
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import FunctionResult
@@ -18,7 +19,6 @@ from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.data_asset_access import list_usage
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.evidence_rows import AssertionRow
 from tests.assets.entry_helpers import grant, publish

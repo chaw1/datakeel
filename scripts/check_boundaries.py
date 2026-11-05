@@ -13,7 +13,7 @@ def violations() -> list[str]:
     """Find row classes leaking into application or domain modules."""
     problems: list[str] = []
     for path in Path("datakeel").rglob("*.py"):
-        if path.parts[1] == "storage" or str(path) in {
+        if path.parts[1] in {"storage", "dataset_store"} or str(path) in {
             "datakeel/dataset_store/rows.py",
             "datakeel/dataset_store/schema.py",
             "datakeel/worker_store/rows.py",

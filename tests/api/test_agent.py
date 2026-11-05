@@ -13,7 +13,7 @@ from datakeel.agent.models import AgentEvent
 from datakeel.agent.providers import FakeProvider
 from datakeel.api.app import create_app
 from datakeel.core.agent_models import ModelResponse, ToolCall
-from datakeel.storage.dataset_service import import_paths
+from datakeel.dataset_store.dataset_service import import_paths
 from tests.asgi_client import TestClient
 
 if TYPE_CHECKING:

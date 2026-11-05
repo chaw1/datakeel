@@ -52,10 +52,10 @@ PRODUCTION_CATALOG_MUTATIONS = (
     ),
     Mutation(
         name="import-records-image-size",
-        path="storage/datasets.py",
+        path="dataset_store/datasets.py",
         before="metadata.update(image_dimensions(path))",
         after="pass",
-        case="tests/storage/test_import_size_predictions.py::test_import_size_mutation_guard",
+        case="tests/dataset_store/test_import_size_predictions.py::test_import_size_mutation_guard",
         runner="pytest",
     ),
     Mutation(
@@ -63,7 +63,7 @@ PRODUCTION_CATALOG_MUTATIONS = (
         path="storage/production_prediction_parsing.py",
         before="    if width is None or height is None:\n        message = (",
         after="    if False:\n        message = (",
-        case="tests/storage/test_import_size_predictions.py::test_import_size_mutation_guard",
+        case="tests/dataset_store/test_import_size_predictions.py::test_import_size_mutation_guard",
         runner="pytest",
     ),
     Mutation(
@@ -71,7 +71,7 @@ PRODUCTION_CATALOG_MUTATIONS = (
         path="storage/production_prediction_parsing.py",
         before="if document.parse_failures:",
         after="if False:",
-        case="tests/storage/test_import_size_predictions.py::test_import_size_mutation_guard",
+        case="tests/dataset_store/test_import_size_predictions.py::test_import_size_mutation_guard",
         runner="pytest",
     ),
 )

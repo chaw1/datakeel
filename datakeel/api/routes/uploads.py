@@ -9,8 +9,8 @@ from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.errors import ValidationError
 from datakeel.core.settings import get_settings
 from datakeel.core.uploads import UploadInput, UploadView
-from datakeel.storage import upload_service as service
-from datakeel.storage.upload_files import upload_slot
+from datakeel.dataset_store import upload_service as service
+from datakeel.dataset_store.upload_files import upload_slot
 
 router = APIRouter(prefix="/api/uploads", tags=["uploads"])
 

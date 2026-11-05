@@ -26,10 +26,10 @@ from datakeel.core.training_export_models import (
     YoloImage,
 )
 from datakeel.core.training_models import SplitRequest
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage import training_export
 from datakeel.storage.annotation_store import import_annotations
 from datakeel.storage.database import data_dir
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.training_import import import_training_annotations
 from datakeel.storage.training_store import create_split
 from tests.actions.test_service import approve, execute

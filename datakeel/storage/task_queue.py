@@ -15,6 +15,7 @@ from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_execution import PendingExtraction
 from datakeel.core.kg_execution import KGCompletion
 from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
+from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.pipeline import Pipeline, validate_pipeline
 from datakeel.pipeline.sharding import validate_shards
@@ -22,7 +23,6 @@ from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.database import Database
 from datakeel.storage.datasheet_jobs import publish_completion as publish_datasheet
 from datakeel.storage.dq_results import publish_completion as publish_dq_completion
-from datakeel.storage.events import append_event
 from datakeel.storage.evidence_store import record_extraction_in_session
 from datakeel.storage.kg_publication import publish_completion
 from datakeel.storage.task_terminal import cancel_task, complete_task

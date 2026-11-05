@@ -9,15 +9,15 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datakeel.storage.dataset_service import import_paths
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.worker.runner import run_worker
 from datakeel.workflows.execution import WorkflowHooks
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 class ManualClock:

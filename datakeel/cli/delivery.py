@@ -14,10 +14,10 @@ from rich.console import Console
 from datakeel.cli.parsers import CommandGroup
 from datakeel.core.delivery_models import ReconcileReport
 from datakeel.core.errors import DatakeelError
+from datakeel.dataset_store.version_diff import compare_versions
 from datakeel.delivery.reconcile import reconcile, report_json
 from datakeel.storage.database import Database
 from datakeel.storage.delivery_service import export_release, reconcile_release
-from datakeel.storage.version_diff import compare_versions
 
 _LABELS = {
     "file_count": "文件数 / File count",

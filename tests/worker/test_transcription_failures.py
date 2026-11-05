@@ -25,7 +25,7 @@ from datakeel.core.transcription_models import (
     TranscriptionRecord,
     TranscriptionRecording,
 )
-from datakeel.storage.dataset_service import import_paths
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_queries import explain_relation, query_kg

@@ -16,13 +16,13 @@ from datakeel.agent.providers import FakeProvider
 from datakeel.agent.service import get_conversation, resume_conversation
 from datakeel.core.agent_models import ModelResponse, ResumeInput
 from datakeel.core.errors import AuthorizationError, ConflictError
-from datakeel.storage.dataset_service import list_files
+from datakeel.dataset_store.dataset_service import list_files
 from datakeel.storage.tool_invocations import list_invocations
 from tests.agent.test_resume import pause_deletion
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 def test_resume_when_legacy_execution_was_denied_performs_the_later_approved_action(

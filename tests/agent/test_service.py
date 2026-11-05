@@ -21,12 +21,12 @@ from datakeel.agent.service import (
 from datakeel.core.agent_models import ConversationCreate, MessageInput, ModelResponse, ToolCall
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import JsonDocument
-from datakeel.storage.dataset_service import list_files
+from datakeel.dataset_store.dataset_service import list_files
 from datakeel.storage.tool_invocations import list_invocations
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 def action_script(dataset_id: str, action: str = "quarantine_files") -> list[ModelResponse]:

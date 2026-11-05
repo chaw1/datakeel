@@ -20,6 +20,7 @@ from datakeel.core.data_asset_models import (
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.evidence_models import Assertion, EvidenceAnchor, ExtractorRef
 from datakeel.core.models import AssetRef, FileItem, JsonDocument, LineageEvent, new_id
+from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.catalog_store import publish_snapshot_in_session
 from datakeel.storage.data_asset_access import list_usage
@@ -27,7 +28,6 @@ from datakeel.storage.data_asset_grants import decide_application_in_session, su
 from datakeel.storage.data_asset_store import create_asset_in_session, set_status_in_session
 from datakeel.storage.data_asset_targets import resolve_access_targets
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.worker_store.rows import TaskRow
 

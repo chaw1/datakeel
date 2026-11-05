@@ -19,7 +19,7 @@ METADATA_MUTATIONS = (
     ),
     Mutation(
         name="metadata-source-tombstone",
-        path="storage/metadata_store.py",
+        path="dataset_store/metadata_store.py",
         before="tuple(_tombstone(item) for item in removed)",
         after="removed",
         case=(

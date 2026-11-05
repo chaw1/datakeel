@@ -9,8 +9,8 @@ import pytest
 
 from datakeel.core.dq_models import DqResult, DqRule
 from datakeel.core.dq_monitor import DqCompletion
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.dq_jobs import schedule_rule
 from datakeel.storage.dq_store import upsert_rule
 from datakeel.storage.dq_views import read_report, read_rule_views, read_summary

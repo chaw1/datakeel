@@ -16,11 +16,11 @@ from datakeel.core.custom_operators import (
 from datakeel.core.custom_review import prepare_submission
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
+from datakeel.dataset_store.events import append_event
 from datakeel.storage.action_rows import ActionPlanRow, ApprovalRow
 from datakeel.storage.action_store import locked_plan
 from datakeel.storage.custom_rows import CustomOperatorRow, CustomRunRow
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 
 
 def approve_custom_operator(

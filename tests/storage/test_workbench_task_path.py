@@ -8,10 +8,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from datakeel.core.data_asset_models import AccessContext
-from datakeel.storage.dataset_service import import_paths, list_versions
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage.workbench_reads import workbench_project, workbench_task
+from tests.dataset_store.test_import_layout import LAYOUT, build_tree, nested_project
 from tests.production_team_support import ServiceRunner
-from tests.storage.test_import_layout import LAYOUT, build_tree, nested_project
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -10,10 +10,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from datakeel.api.app import create_app
+from datakeel.dataset_store.upload_service import start_upload
 from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.database import Database
-from datakeel.storage.upload_service import start_upload
-from tests.storage.test_uploads import declaration
+from tests.dataset_store.test_uploads import declaration
 
 
 def test_http_chunk_upload_resume_and_download(db: Database) -> None:

@@ -15,12 +15,12 @@ from datakeel.core.kg_execution import KGCompletion, KGJob
 from datakeel.core.kg_product import KGEntity, ProductExtraction
 from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.models import AssetRef, LineageEvent, new_id
+from datakeel.dataset_store.events import all_events
 from datakeel.kg.aliases import refresh_reviewed_aliases, same_as_drafts
 from datakeel.kg.cache import extraction_identity
 from datakeel.kg.identity import assertion_identity, merge_drafts
 from datakeel.kg.retention import preserve_unselected
 from datakeel.storage.catalog_locks import lock_catalog
-from datakeel.storage.events import all_events
 from datakeel.storage.evidence_decisions import append_decision, assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.evidence_store import record_extraction_in_session

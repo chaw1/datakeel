@@ -19,11 +19,11 @@ from datakeel.core.catalog_models import CatalogSnapshot, SourceProperties, Tabl
 from datakeel.core.dq_models import DqRule
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
+from datakeel.dataset_store.dataset_service import require_dataset
 from datakeel.quality.dq_source import validate_assertion
 from datakeel.quality.dq_types import check_column_types
 from datakeel.storage.catalog_action_state import catalog_state
 from datakeel.storage.catalog_store import read_snapshot
-from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.dq_issues import change_issue, get_issue
 from datakeel.storage.dq_store import delete_rule, get_rule, rule_revision, upsert_rule
 

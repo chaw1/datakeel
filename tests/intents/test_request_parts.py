@@ -8,11 +8,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
+from datakeel.dataset_store.dataset_service import list_files
 from datakeel.dataset_store.rows import DatasetRow
 from datakeel.intents.answers import answer_text, run_read
 from datakeel.intents.signatures import near_choice
 from datakeel.ontology.tool_models import ToolCallContext
-from datakeel.storage.dataset_service import list_files
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_queries import list_packages, list_tasks
 from tests.intents.planning_support import planned, steps, two_projects

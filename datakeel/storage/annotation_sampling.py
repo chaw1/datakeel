@@ -19,10 +19,10 @@ from datakeel.core.annotation_sampling import (
 )
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import utcnow
+from datakeel.dataset_store.object_projection import content_digest
 from datakeel.storage.annotation_rows import AnnotationSamplingRow
 from datakeel.storage.annotation_store import require_batch
 from datakeel.storage.database import Database
-from datakeel.storage.object_projection import content_digest
 
 
 def select_sample(sample_ids: tuple[str, ...], count: int, seed: int) -> tuple[str, ...]:

@@ -18,13 +18,13 @@ from datakeel.core.agent_models import (
 )
 from datakeel.core.harness_models import TokenUsage
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.delegation.service import delegate
 from datakeel.delegation.tree import call_tree
 from datakeel.harness.service import list_accounts, list_traces
 from datakeel.storage import conversation_store as memory
 from datakeel.storage.checkpoint_store import CheckpointQuery, list_checkpoints
 from datakeel.storage.conversation_authorization import list_audit
-from datakeel.storage.dataset_service import import_paths
 
 if TYPE_CHECKING:
     from pathlib import Path

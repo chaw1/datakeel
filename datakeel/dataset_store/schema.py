@@ -7,7 +7,8 @@ from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
 from datakeel.core.schema import SchemaContribution, SchemaInstaller
-from datakeel.dataset_store.rows import DatasetRow, EventRow, MetadataChangeRow, VersionRow
+from datakeel.dataset_store import rows
+from datakeel.dataset_store.file_discovery import install_file_discovery
 
 
 def install_lineage(connection: Connection, *, sqlite: bool) -> None:
@@ -43,7 +44,19 @@ def install_lineage(connection: Connection, *, sqlite: bool) -> None:
 
 SCHEMA = SchemaContribution(
     owner="dataset_store",
-    order=0,
-    rows=(DatasetRow, VersionRow, EventRow, MetadataChangeRow),
-    installers=(SchemaInstaller(key="lineage", order=7, install=install_lineage),),
+    order=6,
+    rows=(
+        rows.DatasetRow,
+        rows.VersionRow,
+        rows.EventRow,
+        rows.MetadataChangeRow,
+        rows.FileDiscoveryRow,
+        rows.FileDiscoveryCheckpointRow,
+        rows.FileStateRow,
+        rows.UploadRow,
+    ),
+    installers=(
+        SchemaInstaller(key="file_discovery", order=0, install=install_file_discovery),
+        SchemaInstaller(key="lineage", order=7, install=install_lineage),
+    ),
 )

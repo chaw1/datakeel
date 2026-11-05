@@ -27,8 +27,8 @@ from tests.workflows.recovery_process import ProcessRequest
 from tests.workflows.test_authorization import pause_cleanup
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 def _request(db: Database, dataset_id: str, directory: Path) -> ProcessRequest:

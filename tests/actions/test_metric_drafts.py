@@ -20,8 +20,8 @@ from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundErro
 from datakeel.core.metadata_imports import DbtImportRequest, MetadataImportBatch, MetricDraft
 from datakeel.core.metric_models import Measure, MetricDefinition, MetricTime
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.dataset_store.metadata_store import publish_metadata
 from datakeel.storage.catalog_queries import get_object
-from datakeel.storage.metadata_store import publish_metadata
 from datakeel.storage.metric_store import list_metrics
 
 if TYPE_CHECKING:

@@ -9,12 +9,12 @@ from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import SelectionParams
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import BoundaryModel
+from datakeel.dataset_store.object_projection import content_digest
+from datakeel.dataset_store.object_queries import evaluate_in_session
 from datakeel.ontology.models import FrozenManifest, ObjectSet, PropertyFilter
 from datakeel.storage.action_selection import dataset_id_for
 from datakeel.storage.evidence_actions import action_manifest
 from datakeel.storage.evidence_snapshot import read_snapshot
-from datakeel.storage.object_projection import content_digest
-from datakeel.storage.object_queries import evaluate_in_session
 
 
 def _frozen_evidence_manifest(session: Session, manifest: FrozenManifest) -> FrozenManifest:

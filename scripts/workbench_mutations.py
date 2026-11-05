@@ -105,7 +105,7 @@ WORKBENCH_MUTATIONS = (
     ),
     Mutation(
         name="workbench-thumbnail-downsample",
-        path="storage/image_geometry.py",
+        path="dataset_store/image_geometry.py",
         before="            preview.thumbnail((thumbnail, thumbnail))",
         after="            pass",
         case="tests/api/test_workbench.py::test_workbench_large_image_preview_is_downsampled_before_high_resolution_source",
@@ -233,18 +233,18 @@ WORKBENCH_MUTATIONS = (
     ),
     Mutation(
         name="import-records-relative-path",
-        path="storage/datasets.py",
+        path="dataset_store/datasets.py",
         before='metadata["relative_path"] = relative',
         after="pass",
-        case="tests/storage/test_import_layout.py::test_relative_path_mutation_guard",
+        case="tests/dataset_store/test_import_layout.py::test_relative_path_mutation_guard",
         runner="pytest",
     ),
     Mutation(
         name="import-skips-hidden-entries",
-        path="storage/import_sources.py",
+        path="dataset_store/import_sources.py",
         before='or any(part.startswith(".") for part in relative.parts)',
         after="",
-        case="tests/storage/test_import_layout.py::test_relative_path_mutation_guard",
+        case="tests/dataset_store/test_import_layout.py::test_relative_path_mutation_guard",
         runner="pytest",
     ),
     Mutation(
@@ -252,7 +252,7 @@ WORKBENCH_MUTATIONS = (
         path="storage/workbench_samples.py",
         before='path = (_relative_path(item) or filename).replace("\\\\", "/")',
         after='path = filename.replace("\\\\", "/")',
-        case="tests/storage/test_import_layout.py::test_relative_path_mutation_guard",
+        case="tests/dataset_store/test_import_layout.py::test_relative_path_mutation_guard",
         runner="pytest",
     ),
 )

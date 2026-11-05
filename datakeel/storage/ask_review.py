@@ -10,8 +10,8 @@ from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.evidence_models import Assertion
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.question_models import QuestionProperties
+from datakeel.dataset_store.object_projection import content_digest
 from datakeel.storage.ask_rows import AskAnswerRow
-from datakeel.storage.object_projection import content_digest
 
 
 def question_references(assertion: Assertion) -> list[AssetRef]:

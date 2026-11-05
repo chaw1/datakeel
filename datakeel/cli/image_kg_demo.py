@@ -9,9 +9,9 @@ from datakeel.actions.service import execute_plan, prepare_action
 from datakeel.cli.kg_demo import KGDemoSeed
 from datakeel.core.errors import ExecutionError
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths, list_datasets
 from datakeel.sample_image_kg import generate_image_kg_samples
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.dataset_service import import_paths, list_datasets
 from datakeel.storage.evidence_import import source_manifest
 
 IMAGE_KG_DEMO_NAME = "Images and diagrams · knowledge graph demo"

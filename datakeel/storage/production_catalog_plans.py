@@ -23,8 +23,8 @@ from datakeel.actions.production_catalog_parameters import (
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.prelabel_models import PrelabelEstimate
 from datakeel.core.production_catalog_models import LabelSet
+from datakeel.dataset_store.object_projection import content_digest
 from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet
-from datakeel.storage.object_projection import content_digest
 from datakeel.storage.production_acceptance import require_inspectable
 from datakeel.storage.production_catalog import require_label_set, require_model
 from datakeel.storage.production_catalog_impact import migration_impact

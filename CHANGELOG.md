@@ -10,6 +10,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Dataset Row import checks now resolve module aliases, version summaries retain internal
+  row compatibility, and publication reuses prepared file models without reparsing manifests.
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
 - The scale ASGI workload reuses its initialized database without rerunning migrations after
   benchmark fixture creation. Application construction still migrates by default and validates
@@ -17,6 +19,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Dataset, version, lineage, upload and object-query adapters now live in `dataset_store`,
+  with frozen dataset contracts in `datasets`. Schema, public payloads, object identities and
+  transaction/cleanup ordering remain unchanged. Focused rollback tests cover publication
+  failures after the second write and a successful retry on both CI database stacks.
 - Persistence initialization uses explicit typed schema contributions and independent ownership
   validation for the existing 99 tables. Dataset and worker mappings have private schema owners;
   business adapters, stored payloads and migration transaction ordering retain their behavior.

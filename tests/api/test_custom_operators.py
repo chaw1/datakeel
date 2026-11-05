@@ -9,8 +9,8 @@ import pytest
 
 from datakeel.api.app import create_app
 from datakeel.core.settings import get_settings
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from tests.asgi_client import TestClient
 
 CODE = """PARAMETER_SCHEMA = {"type": "object", "properties": {}, "additionalProperties": False}

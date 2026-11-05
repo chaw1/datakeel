@@ -18,6 +18,7 @@ from datakeel.agent.service import create_conversation, get_conversation, send_m
 from datakeel.core.agent_models import MessageInput
 from datakeel.core.errors import DatakeelError
 from datakeel.core.harness_eval import EvalCaseResult, GoldenCase, ObservedToolResult
+from datakeel.dataset_store.dataset_service import list_files, list_versions
 from datakeel.harness.assessment import CaseObservation, assess
 from datakeel.harness.cases import bind_case, seed_case
 from datakeel.harness.operations import OperationObservation, apply_operation
@@ -25,7 +26,6 @@ from datakeel.harness.service import list_traces
 from datakeel.memory.service import delete_memory, list_memories
 from datakeel.persistence import migrate
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_files, list_versions
 from datakeel.worker.runner import run_worker
 
 

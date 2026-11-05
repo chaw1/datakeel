@@ -18,8 +18,9 @@ from datakeel.core.production_models import (
     Project,
     WorkflowTier,
 )
+from datakeel.dataset_store.dataset_service import import_paths, list_versions, require_dataset
+from datakeel.dataset_store.version_diff import version_summary
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_versions, require_dataset
 from datakeel.storage.datasheet_store import get_document
 from datakeel.storage.production_queries import (
     get_task,
@@ -28,7 +29,6 @@ from datakeel.storage.production_queries import (
     list_revisions,
     list_tasks,
 )
-from datakeel.storage.version_diff import version_summary
 
 
 class FlowRunner(Protocol):

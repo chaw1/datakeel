@@ -12,7 +12,6 @@ import networkx as nx
 from datakeel.core.catalog_projection import CATALOG_OPERATORS
 from datakeel.core.models import AssetRef
 from datakeel.lineage.models import GraphEdge, GraphNode, GraphOverlay, GraphView
-from datakeel.storage.events import all_events, append_event
 
 if TYPE_CHECKING:
     from datakeel.core.catalog_models import CatalogObject, CatalogSnapshot
@@ -229,4 +228,4 @@ def _neighbors(
     return selected, False
 
 
-__all__ = ["all_events", "append_event", "graph"]
+__all__ = ["graph"]

@@ -12,8 +12,8 @@ from datakeel.actions.service import prepare_action
 from datakeel.core.models import JsonDocument, new_id
 from datakeel.core.production_models import ProductionTask, Project
 from datakeel.core.production_upgrade_models import TemplateUpgradePlan
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_catalog import require_template
 from datakeel.storage.production_queries import list_tasks
 from tests.production_flow_support import action_payload

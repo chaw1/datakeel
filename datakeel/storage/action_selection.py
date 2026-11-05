@@ -8,9 +8,8 @@ from sqlalchemy.orm import Session
 from datakeel.actions.models import ActionPlan
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.models import FileItem
-from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, FileStateRow, VersionRow
 from datakeel.ontology.models import FrozenManifest, FrozenObject
-from datakeel.storage.file_state import FileStateRow
 
 type _FileIndex = dict[str, dict[str, object]]
 

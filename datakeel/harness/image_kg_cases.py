@@ -12,9 +12,9 @@ from datakeel.core.errors import ExecutionError
 from datakeel.core.harness_eval import CaseFixture
 from datakeel.core.kg_queries import KGQuery
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.kg.loader import contracts_path
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.kg_queries import query_kg
 from datakeel.worker.runner import run_worker

@@ -12,7 +12,7 @@ import pytest
 
 from datakeel import cli
 from datakeel.core.errors import NotFoundError
-from datakeel.storage.dataset_service import import_paths
+from datakeel.dataset_store.dataset_service import import_paths
 
 if TYPE_CHECKING:
     from pathlib import Path

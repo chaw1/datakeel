@@ -12,9 +12,9 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.metadata_imports import AirflowImportRequest, ExternalMetadata
 from datakeel.core.models import JsonDocument
 from datakeel.core.orchestration import OpenLineageNamespace
+from datakeel.dataset_store.metadata_store import publish_metadata
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.metadata_store import publish_metadata
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "metadata" / "airflow-v1.json"
 # The fixture's analytics database is the catalog source "warehouse".

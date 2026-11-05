@@ -10,6 +10,23 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from datakeel.core.models import new_id, utcnow
 from datakeel.core.schema import Base
+from datakeel.dataset_store.file_rows import (
+    FileDiscoveryCheckpointRow,
+    FileDiscoveryRow,
+    FileStateRow,
+    UploadRow,
+)
+
+__all__ = [
+    "DatasetRow",
+    "EventRow",
+    "FileDiscoveryCheckpointRow",
+    "FileDiscoveryRow",
+    "FileStateRow",
+    "MetadataChangeRow",
+    "UploadRow",
+    "VersionRow",
+]
 
 
 class DatasetRow(Base):

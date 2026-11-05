@@ -19,10 +19,10 @@ from datakeel.core.data_asset_models import (
 )
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import AssetRef, LineageEvent, new_id
+from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import DatasetRow
 from datakeel.storage.data_asset_store import create_asset_in_session, set_status_in_session
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 
 
 def test_fixed_ranking_contract_ignores_legacy_environment_override(

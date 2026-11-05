@@ -16,6 +16,7 @@ from datakeel.core.agent_models import ChatMessage, Conversation, ConversationCr
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.memory_models import MemoryCreate
 from datakeel.core.models import AssetRef, JsonDocument, new_id
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.memory.service import create_memory, select_memories
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.ontology.tooling import invoke_tool
@@ -26,7 +27,6 @@ from datakeel.storage.data_asset_context import (
     require_agent_history,
 )
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.identity_sessions import bind_session_actor
 from tests.asgi_client import TestClient
 from tests.assets.entry_helpers import grant, publish

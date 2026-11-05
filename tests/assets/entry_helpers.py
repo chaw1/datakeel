@@ -16,6 +16,7 @@ from datakeel.core.data_asset_models import (
     DataAssetDefinition,
 )
 from datakeel.core.models import AssetRef, BoundaryModel, new_id, utcnow
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.storage.data_asset_grants import (
     decide_application_in_session,
     revoke_grant_in_session,
@@ -23,7 +24,6 @@ from datakeel.storage.data_asset_grants import (
 )
 from datakeel.storage.data_asset_store import create_asset_in_session, set_status_in_session
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_files
 from tests.enterprise_support import enterprise_fixture
 
 type GrantState = Literal["none", "expired", "revoked", "wrong_scope", "valid"]

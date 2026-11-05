@@ -12,10 +12,10 @@ from datakeel.core.catalog_models import (
     CatalogSnapshot,
 )
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.lineage_service import get_graph
 from datakeel.lineage.models import GraphQuery
 from datakeel.storage.catalog_queries import get_object, read_objects
 from datakeel.storage.catalog_store import publish_snapshot
-from datakeel.storage.lineage_service import get_graph
 from scripts.scale_bench.common import check_resources, elapsed, fingerprint, measure
 from scripts.scale_bench.models import Context, ScenarioResult
 

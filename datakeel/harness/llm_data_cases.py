@@ -6,8 +6,8 @@
 from pathlib import Path
 
 from datakeel.core.harness_eval import CaseFixture
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 
 
 def seed_llm_data_case(db: Database, directory: Path) -> CaseFixture:

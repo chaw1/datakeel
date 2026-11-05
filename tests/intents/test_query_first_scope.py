@@ -19,6 +19,7 @@ from datakeel.core.agent_models import (
 )
 from datakeel.core.errors import ProviderError, ValidationError
 from datakeel.core.intent_models import ActionChain, ChainStep, IntentResult, PageContext
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.intents import turns
 from datakeel.intents.chains import resolve_refs
 from datakeel.intents.model_parse import AGENT_NAME
@@ -27,7 +28,6 @@ from datakeel.intents.recipes import match_recipe
 from datakeel.intents.task_scope import select_tasks
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.intent_reads import TaskSnapshot
-from datakeel.storage.object_queries import evaluate
 from datakeel.storage.production_queries import get_task, list_tasks
 from tests.intents.support import images
 from tests.production_helpers import production_fixture

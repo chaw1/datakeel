@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.evidence_models import AssertionDecisionRequest
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.events import all_events
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.catalog_store import publish_snapshot
-from datakeel.storage.events import all_events
 from datakeel.storage.evidence_decisions import decide_assertions, list_decisions
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.link_queries import entity_links, list_links, read_link_context

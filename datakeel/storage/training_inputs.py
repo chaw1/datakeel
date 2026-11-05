@@ -18,6 +18,8 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import AssetRef, FileItem, JsonDocument
 from datakeel.core.training_models import TrainingSample
+from datakeel.dataset_store.datasets import materialize_files
+from datakeel.dataset_store.version_stream import require_version, stream_manifest
 from datakeel.operators.evidence.image_phash import dhash
 from datakeel.operators.image.helpers import open_image
 from datakeel.storage.annotation_frames import batch_view
@@ -25,9 +27,7 @@ from datakeel.storage.annotation_legacy import annotation_from_file
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.data_asset_access import require_access_in_session
 from datakeel.storage.database import Database
-from datakeel.storage.datasets import materialize_files
 from datakeel.storage.objects import digest
-from datakeel.storage.version_stream import require_version, stream_manifest
 from datakeel.training.text_hashes import short_template_hashes, simhash
 
 if TYPE_CHECKING:

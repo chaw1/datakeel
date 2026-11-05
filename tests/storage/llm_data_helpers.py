@@ -10,8 +10,8 @@ from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.service import approve_plan, execute_plan, prepare_action
 from datakeel.core.llm_data_governance import TrainingAnalysisRequest, TrainingGovernanceRun
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.llm_data_store import analyze_training
 
 

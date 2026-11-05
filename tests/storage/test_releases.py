@@ -17,9 +17,9 @@ from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundErro
 from datakeel.core.models import JsonDocument
 from datakeel.core.portable_metadata import portable_metadata
 from datakeel.core.release_models import annotation_statistics
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.objects import object_store
 from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
 from datakeel.storage.release_service import (

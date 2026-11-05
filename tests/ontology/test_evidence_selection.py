@@ -7,9 +7,9 @@ import json
 
 import pytest
 
+from datakeel.dataset_store.object_projection import content_digest
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.ontology.models import AssertionFilter, FrozenManifest, ObjectSet
-from datakeel.storage.object_projection import content_digest
 
 
 def test_object_set_when_legacy_schema_round_trips_preserves_exact_digest() -> None:

@@ -14,8 +14,8 @@ from datakeel.agent.service import create_conversation, send_message
 from datakeel.core.agent_models import ConversationCreate, MessageInput
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 def test_demo_when_quarantine_and_new_version_requested_executes_both_actions(

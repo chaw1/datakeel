@@ -8,11 +8,11 @@ from pathlib import Path
 from datakeel.catalog.service import import_catalog
 from datakeel.core.catalog_models import CatalogImportRequest
 from datakeel.core.harness_eval import CaseFixture
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.harness.resources import contract_path
 from datakeel.metrics.loader import load_layer
 from datakeel.sample_enterprise import generate_enterprise
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_files
 from datakeel.storage.metric_store import install_layer
 
 

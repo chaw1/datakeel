@@ -15,17 +15,17 @@ from datakeel.core.errors import ConflictError
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument, new_id, utcnow
 from datakeel.core.portable_metadata import portable_metadata
 from datakeel.core.release_models import VersionSummary
-from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet
-from datakeel.storage.object_projection import content_digest
-from datakeel.storage.objects import digest, fresh_object, object_store
-from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
-from datakeel.storage.version_diff import version_summary
-from datakeel.storage.version_stream import (
+from datakeel.dataset_store.object_projection import content_digest
+from datakeel.dataset_store.version_diff import version_summary
+from datakeel.dataset_store.version_stream import (
     dataset_settings,
     portable_file,
     require_version,
     stream_manifest,
 )
+from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet
+from datakeel.storage.objects import digest, fresh_object, object_store
+from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
 
 BATCH_SIZE = 100
 

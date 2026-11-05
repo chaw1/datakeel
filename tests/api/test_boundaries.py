@@ -20,7 +20,7 @@ from starlette.requests import Request
 from datakeel.api.app import create_app
 from datakeel.api.errors import domain_error
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
-from datakeel.storage.dataset_service import DatasetInput
+from datakeel.dataset_store.dataset_service import DatasetInput
 from tests.api.test_workflows import dataset
 from tests.asgi_client import TestClient
 

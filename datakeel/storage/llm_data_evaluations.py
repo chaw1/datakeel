@@ -10,8 +10,8 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError
 from datakeel.core.llm_data_governance import TrainingEvaluation, TrainingEvaluationRequest
 from datakeel.core.models import AssetRef, FileItem, new_id, utcnow
+from datakeel.dataset_store.dataset_service import require_dataset
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.llm_data_access import authorize_training, training_refs
 from datakeel.storage.llm_data_rows import TrainingEvaluationRow
 from datakeel.storage.llm_data_sources import source_files, source_version

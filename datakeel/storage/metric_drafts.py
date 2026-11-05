@@ -12,13 +12,13 @@ from datakeel.core.catalog_projection import snapshot_events
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.metadata_imports import MetricDraft
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.dataset_store.events import all_events
 from datakeel.metrics.projection import build_snapshot, metric_cards, semantic_layer
 from datakeel.storage.catalog_store import (
     lock_catalog,
     publish_snapshot_in_session,
     read_snapshot,
 )
-from datakeel.storage.events import all_events
 from datakeel.storage.metric_audit import record_metric_audit
 from datakeel.storage.metric_store import update_metric_in_session, validate_metric_update
 

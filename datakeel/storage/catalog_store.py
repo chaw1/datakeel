@@ -15,11 +15,11 @@ from datakeel.core.catalog_models import (
 from datakeel.core.catalog_projection import snapshot_events
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import LineageEvent, new_id
+from datakeel.dataset_store.events import all_events, append_event
 from datakeel.storage.catalog_locks import lock_catalog
 from datakeel.storage.catalog_projection import project_snapshot
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events, append_event
 from datakeel.storage.link_store import relink_in_session
 
 

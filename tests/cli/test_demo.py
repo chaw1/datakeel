@@ -15,7 +15,7 @@ import pytest
 from rich.console import Console
 
 from datakeel.core.errors import ExecutionError
-from datakeel.storage.dataset_service import list_datasets
+from datakeel.dataset_store.dataset_service import list_datasets
 from datakeel.storage.task_queries import query_task
 from datakeel.worker_store.rows import TaskRow
 

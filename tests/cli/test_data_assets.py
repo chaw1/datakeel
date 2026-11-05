@@ -11,9 +11,9 @@ import pytest
 from datakeel.actions.models import ActionPlan
 from datakeel.core.data_asset_models import AssetApplication, AssetGrant, DataAssetCard
 from datakeel.core.models import JsonDocument, utcnow
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.data_asset_store import list_assets
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from tests.cli.conftest import Invoke
 
 

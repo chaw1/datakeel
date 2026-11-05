@@ -14,6 +14,7 @@ from datakeel.core.datasheet_models import DatasheetDocument
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.harness_pricing import nanos_to_usd, reservation_cost
 from datakeel.core.models import AssetRef, BoundaryModel
+from datakeel.dataset_store.object_projection import content_digest
 from datakeel.datasheets.destination import is_external_destination, model_destination
 from datakeel.datasheets.prompt import build_model_prompt
 from datakeel.datasheets.templates import build_template
@@ -22,7 +23,6 @@ from datakeel.storage.datasheet_facts import extract_facts
 from datakeel.storage.datasheet_jobs import schedule_job
 from datakeel.storage.datasheet_rows import DatasheetRow
 from datakeel.storage.datasheet_store import publish_in_session, save_in_session
-from datakeel.storage.object_projection import content_digest
 
 
 def prepare_datasheet(session: Session, params: BoundaryModel) -> BoundaryModel:

@@ -19,12 +19,12 @@ from datakeel.core.training_export_models import (
     TrainingFormat,
 )
 from datakeel.core.training_models import SplitMember, SplitSet
+from datakeel.dataset_store.datasets import materialize_files
+from datakeel.dataset_store.object_projection import content_digest
+from datakeel.dataset_store.version_stream import require_version, stream_manifest
 from datakeel.storage.annotation_frames import DISPLAY_FRAME, legacy_record
-from datakeel.storage.datasets import materialize_files
-from datakeel.storage.object_projection import content_digest
 from datakeel.storage.release_service import iter_release_entries, require_release
 from datakeel.storage.training_rows import TrainingSplitRow
-from datakeel.storage.version_stream import require_version, stream_manifest
 from datakeel.training.export_detection import require_no_keypoints, validate_detection_annotations
 
 

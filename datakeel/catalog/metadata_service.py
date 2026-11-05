@@ -17,9 +17,9 @@ from datakeel.core.metadata_imports import (
 )
 from datakeel.core.orchestration_sources import SourceNamespace, known_sources
 from datakeel.core.settings import get_settings
+from datakeel.dataset_store.metadata_store import publish_metadata, publish_metadata_from_prior
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.metadata_store import publish_metadata, publish_metadata_from_prior
 
 
 def import_dbt(

@@ -18,6 +18,7 @@ from datakeel.core.llm_data_governance import (
 )
 from datakeel.core.llm_data_models import TrainingReport
 from datakeel.core.models import FileItem, new_id, utcnow
+from datakeel.datasets.views import DownloadView
 from datakeel.llm_data import analyze_sources
 from datakeel.storage.database import Database
 from datakeel.storage.llm_data_access import (
@@ -29,7 +30,6 @@ from datakeel.storage.llm_data_evaluations import evaluation_files
 from datakeel.storage.llm_data_rows import TrainingCleanRow, TrainingRunRow
 from datakeel.storage.llm_data_sources import fresh_sources, source_files, source_version
 from datakeel.storage.objects import digest, object_store
-from datakeel.storage.views import DownloadView
 
 
 def require_training_run(session: Session, identifier: str) -> TrainingRunRow:

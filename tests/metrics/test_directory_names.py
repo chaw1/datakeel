@@ -13,6 +13,7 @@ from datakeel.core.catalog_models import CatalogSnapshot
 from datakeel.core.errors import ValidationError
 from datakeel.core.metric_models import OwnerDefinition, SemanticLayer
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.events import all_events
 from datakeel.metrics.loader import load_layer
 from datakeel.metrics.projection import (
     build_snapshot,
@@ -23,7 +24,6 @@ from datakeel.metrics.projection import (
 from datakeel.storage.catalog_projection import projection_hash, rebuild_catalog
 from datakeel.storage.catalog_store import publish_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 from datakeel.storage.metric_store import get_metric, install_layer, metric_history, read_layer
 
 

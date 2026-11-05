@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 
 from datakeel.core.kg_queries import KGQuery
-from datakeel.storage.dataset_service import import_paths
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.kg_queries import query_kg

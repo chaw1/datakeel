@@ -28,9 +28,9 @@ from datakeel.core.annotation_models import (
 from datakeel.core.keypoint_models import KeypointDefinition, SkeletonDefinition
 from datakeel.core.production_catalog_models import ProductionTemplate
 from datakeel.core.training_models import SplitRequest
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_catalog_changes import manage_template
 from datakeel.storage.production_finalize import finalize_project
 from datakeel.storage.production_projects import create_project, split_packages

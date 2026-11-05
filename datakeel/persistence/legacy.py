@@ -68,21 +68,7 @@ SCHEMA_CONTRIBUTIONS = (
             rows.ConversationRow,
         ),
     ),
-    _schema(
-        "dataset_store",
-        6,
-        (
-            *DATASET_SCHEMA.rows,
-            rows.FileDiscoveryRow,
-            rows.FileDiscoveryCheckpointRow,
-            rows.FileStateRow,
-            rows.UploadRow,
-        ),
-        (
-            SchemaInstaller(key="file_discovery", order=0, install=rows.install_file_discovery),
-            *DATASET_SCHEMA.installers,
-        ),
-    ),
+    DATASET_SCHEMA,
     _schema("datasheet_store", 7, (rows.DatasheetJobRow, rows.DatasheetRow)),
     _schema(
         "delivery_store",

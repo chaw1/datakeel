@@ -1,0 +1,344 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+
+"""Dataset transactions and validated projections for application callers."""
+
+import base64
+import binascii
+import tempfile
+from pathlib import Path
+
+from pydantic import JsonValue
+from sqlalchemy import func, select, text
+from sqlalchemy.orm import Session, defer
+
+from datakeel.core.data_asset_models import AccessContext
+from datakeel.core.errors import NotFoundError, ValidationError
+from datakeel.core.file_queries import FileQuery
+from datakeel.core.models import AssetRef, FileItem
+from datakeel.dataset_store.datasets import dataset_dict, import_dataset
+from datakeel.dataset_store.file_discovery import begin_file_read, requires_python_files
+from datakeel.dataset_store.file_pages import read_file_page
+from datakeel.dataset_store.file_state import get_file_state, overlay_files
+from datakeel.dataset_store.image_geometry import legacy_geometry
+from datakeel.dataset_store.media_artifacts import PreviewArtifact
+from datakeel.dataset_store.rows import DatasetRow, FileStateRow, VersionRow
+from datakeel.dataset_store.version_stream import dataset_settings
+from datakeel.datasets.records import DatasetSettings
+from datakeel.datasets.views import (
+    DatasetInput,
+    DatasetView,
+    DownloadView,
+    FileView,
+    UploadFile,
+    VersionView,
+)
+from datakeel.storage.data_asset_access import require_access_in_session
+from datakeel.storage.data_asset_reads import authorize_query
+from datakeel.storage.database import Database
+from datakeel.storage.objects import object_store
+
+
+def require_dataset(session: Session, identifier: str, *, lock: bool = False) -> DatasetRow:
+    """Resolve a dataset inside an existing storage transaction."""
+    statement = select(DatasetRow).where(DatasetRow.id == identifier)
+    row = session.scalar(statement.with_for_update() if lock else statement)
+    if row is None:
+        message = "Dataset not found"
+        raise NotFoundError(message)
+    return row
+
+
+def _public_record(item: dict[str, JsonValue]) -> dict[str, JsonValue]:
+    record = {key: value for key, value in item.items() if key != "path"}
+    added = (
+        legacy_geometry(FileItem.model_validate(item)) if item.get("modality") == "image" else None
+    )
+    if added is not None:
+        metadata = item.get("metadata")
+        record["metadata"] = {**(metadata if isinstance(metadata, dict) else {}), **added}
+    return record
+
+
+def public_files(values: list[dict[str, JsonValue]]) -> list[FileView]:
+    """Validate manifest records after excluding private paths; older images read upright."""
+    return [FileView.model_validate(_public_record(item)) for item in values]
+
+
+def _file_count(session: Session, row: DatasetRow | DatasetSettings) -> int:
+    if requires_python_files(session):
+        deleted_ids = set(
+            session.scalars(
+                select(FileStateRow.file_id).where(
+                    FileStateRow.dataset_id == row.id, FileStateRow.deleted.is_(True)
+                )
+            )
+        )
+        return sum(
+            str(item["id"]) not in deleted_ids for item in require_dataset(session, row.id).files
+        )
+    count = (
+        session.scalar(
+            select(func.json_array_length(DatasetRow.files)).where(DatasetRow.id == row.id)
+        )
+        or 0
+    )
+    deleted = session.scalar(
+        select(FileStateRow.file_id)
+        .where(FileStateRow.dataset_id == row.id, FileStateRow.deleted.is_(True))
+        .limit(1)
+    )
+    if deleted is not None:
+        expand = (
+            "json_each(d.files) AS j"
+            if session.get_bind().dialect.name == "sqlite"
+            else "json_array_elements(d.files) AS j(value)"
+        )
+        identity = (
+            "json_extract(j.value, '$.id')"
+            if session.get_bind().dialect.name == "sqlite"
+            else "j.value->>'id'"
+        )
+        statement = (
+            f"SELECT count(*) FROM datasets AS d CROSS JOIN {expand} "  # noqa: S608  # Fixed SQL fragments.
+            f"JOIN file_states AS s ON s.file_id = {identity} "
+            "AND s.dataset_id = d.id WHERE d.id = :id AND s.deleted = true"
+        )
+        count -= session.scalar(text(statement), {"id": row.id}) or 0
+    return count
+
+
+def _dataset_view(session: Session, row: DatasetRow | DatasetSettings) -> DatasetView:
+    return DatasetView(
+        id=row.id,
+        name=row.name,
+        created_at=row.created_at,
+        file_count=_file_count(session, row),
+        metadata=row.metadata_values,
+        quality_config=row.quality_config,
+        template=row.template,
+        compliance=row.compliance,
+    )
+
+
+def list_datasets(db: Database) -> list[DatasetView]:
+    """List dataset summaries in creation order."""
+    with db.session() as session:
+        begin_file_read(session)
+        return [
+            _dataset_view(session, row)
+            for row in session.scalars(
+                select(DatasetRow).options(defer(DatasetRow.files)).order_by(DatasetRow.created_at)
+            )
+            if not row.metadata_values.get("internal_quality_monitor")
+        ]
+
+
+def get_dataset(db: Database, identifier: str) -> DatasetView:
+    """Return a dataset summary or a domain missing-resource error."""
+    with db.session() as session:
+        begin_file_read(session)
+        return _dataset_view(session, dataset_settings(session, identifier))
+
+
+def _write_upload(item: UploadFile, directory: Path) -> Path:
+    if Path(item.filename).name != item.filename or not item.filename or "\\" in item.filename:
+        message = "Filename must be a plain basename"
+        raise ValidationError(message)
+    directory.mkdir()
+    path = directory / item.filename
+    try:
+        path.write_bytes(base64.b64decode(item.content_base64, validate=True))
+    except binascii.Error as exc:
+        message = "Invalid base64 content"
+        raise ValidationError(message) from exc
+    return path
+
+
+def create_dataset(db: Database, body: DatasetInput) -> DatasetView:
+    """Persist uploaded objects and atomically publish the first manifest."""
+    with tempfile.TemporaryDirectory(prefix="datakeel-import-") as temporary:
+        paths = [
+            _write_upload(item, Path(temporary) / str(index))
+            for index, item in enumerate(body.files)
+        ]
+        with db.session() as session:
+            row = import_dataset(session, body.name, paths, body.metadata)
+            result = DatasetView.model_validate(dataset_dict(row))
+            session.commit()
+            return result
+
+
+def list_files(
+    db: Database,
+    identifier: str,
+    version: str | None = None,
+    *,
+    access: AccessContext | None = None,
+    query: FileQuery | None = None,
+) -> list[FileView]:
+    """List original files or a selected immutable version."""
+    with db.session() as session:
+        if query is not None:
+            visible = read_file_page(session, identifier, version, query)
+        else:
+            values = require_dataset(session, identifier).files
+            if version:
+                record = session.get(VersionRow, version)
+                if record is None or record.dataset_id != identifier:
+                    message = "Version not found"
+                    raise NotFoundError(message)
+                values = record.manifest
+            visible = overlay_files(
+                session, identifier, [FileItem.model_validate(item) for item in values]
+            )
+        result = public_files([item.model_dump(mode="json") for item in visible])
+    refs = [AssetRef(asset_id=identifier, version=version)]
+    refs.extend(AssetRef(asset_type="file", asset_id=item.id, version=version) for item in result)
+    if version:
+        refs.append(AssetRef(asset_type="version", asset_id=version, version=version))
+    authorize_query(db, tuple(refs), access)
+    return result
+
+
+def list_versions(
+    db: Database, identifier: str, *, access: AccessContext | None = None
+) -> list[VersionView]:
+    """List all immutable snapshots belonging to a dataset."""
+    with db.session() as session:
+        require_dataset(session, identifier)
+        result = [
+            VersionView(
+                id=row.id,
+                created_at=row.created_at,
+                file_count=len(row.manifest),
+                manifest=public_files(row.manifest),
+            )
+            for row in session.scalars(
+                select(VersionRow)
+                .where(VersionRow.dataset_id == identifier)
+                .order_by(VersionRow.created_at)
+            )
+        ]
+    refs = tuple(
+        ref
+        for item in result
+        for ref in (
+            AssetRef(asset_id=identifier, version=item.id),
+            AssetRef(asset_type="version", asset_id=item.id, version=item.id),
+        )
+    )
+    authorize_query(db, refs or (AssetRef(asset_id=identifier),), access)
+    return result
+
+
+def resolve_download(
+    db: Database,
+    identifier: str,
+    file_id: str,
+    version: str | None = None,
+    *,
+    access: AccessContext | None = None,
+) -> DownloadView:
+    """Resolve a public file, preserving exact version ownership when explicitly pinned."""
+    value = _download_file(db, identifier, file_id, version, access)
+    key = value.metadata.get("object_key")
+    if not isinstance(key, str):
+        message = "File object not found"
+        raise NotFoundError(message)
+    return DownloadView(path=object_store().materialize(key), filename=value.filename)
+
+
+def resolve_pointcloud_preview(
+    db: Database,
+    identifier: str,
+    file_id: str,
+    version: str | None = None,
+    *,
+    access: AccessContext | None = None,
+) -> DownloadView:
+    """Read only a persisted preview bound to an owned, visible immutable file record."""
+    value = _download_file(db, identifier, file_id, version, access)
+    raw = value.metadata.get("pointcloud_preview")
+    if raw is None:
+        message = "Point-cloud preview not found; run pointcloud.preview first"
+        raise NotFoundError(message)
+    preview = PreviewArtifact.model_validate(raw)
+    if preview.object_key is None:
+        message = "Point-cloud preview object not found"
+        raise NotFoundError(message)
+    return DownloadView(
+        path=object_store().materialize(preview.object_key), filename=preview.filename
+    )
+
+
+def _download_file(
+    db: Database,
+    identifier: str,
+    file_id: str,
+    version: str | None,
+    access: AccessContext | None,
+) -> FileView:
+    """Locate a visible file record and authorize the download scope before any read."""
+    with db.session() as session:
+        dataset = require_dataset(session, identifier)
+        if version is not None:
+            manifest = session.get(VersionRow, version)
+            if manifest is None or manifest.dataset_id != identifier:
+                message = "Version not found"
+                raise NotFoundError(message)
+            candidates = manifest.manifest
+        else:
+            candidates = dataset.files + [
+                item
+                for stored in session.scalars(
+                    select(VersionRow).where(VersionRow.dataset_id == identifier)
+                )
+                for item in stored.manifest
+            ]
+        record = next((item for item in candidates if item["id"] == file_id), None)
+        if record is None or get_file_state(session, identifier, file_id).deleted:
+            message = "File not found"
+            raise NotFoundError(message)
+        value = FileView.model_validate({k: v for k, v in record.items() if k != "path"})
+        require_access_in_session(
+            session,
+            (
+                AssetRef(asset_id=identifier, version=version),
+                AssetRef(asset_type="file", asset_id=file_id, version=version),
+            ),
+            (
+                access or AccessContext(actor="local-user", entry="download", scope="download")
+            ).model_copy(update={"entry": "download", "scope": "download"}),
+        )
+        session.commit()
+        return value
+
+
+def task_artifacts(
+    db: Database, identifier: str, *, access: AccessContext | None = None
+) -> list[FileView]:
+    """Return published artifacts of a completed task under the output version's policy."""
+    with db.session() as session:
+        row = session.scalar(select(VersionRow).where(VersionRow.task_id == identifier))
+        if row is None:
+            message = "Completed artifacts not found"
+            raise NotFoundError(message)
+        result = public_files(row.manifest)
+        refs = (
+            AssetRef(asset_id=row.dataset_id, version=row.id),
+            AssetRef(asset_type="task", asset_id=identifier),
+        )
+    authorize_query(db, refs, access)
+    return result
+
+
+def import_paths(
+    db: Database, name: str, paths: list[Path], metadata: dict[str, JsonValue] | None = None
+) -> DatasetView:
+    """Import local paths and return a validated summary after atomic publication."""
+    with db.session() as session:
+        row = import_dataset(session, name, paths, metadata)
+        result = DatasetView.model_validate(dataset_dict(row))
+        session.commit()
+        return result

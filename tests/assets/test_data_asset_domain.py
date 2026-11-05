@@ -22,6 +22,7 @@ from datakeel.core.data_asset_models import (
 )
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import AssetRef, FileItem, LineageEvent, new_id
+from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.data_asset_access import list_usage
 from datakeel.storage.data_asset_grants import (
@@ -48,7 +49,6 @@ from datakeel.storage.data_asset_store import (
     update_asset_in_session,
 )
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 
 if TYPE_CHECKING:
     from sqlalchemy import Table

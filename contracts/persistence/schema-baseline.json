@@ -20,7 +20,8 @@
     "datakeel/storage/action_selection.py": {
       "datakeel.dataset_store.rows": [
         "DatasetRow",
-        "VersionRow"
+        "VersionRow",
+        "FileStateRow"
       ]
     },
     "datakeel/storage/action_store.py": {

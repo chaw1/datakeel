@@ -13,8 +13,8 @@ from datakeel.core.evidence_cache import EvidenceCacheEntry, EvidenceCacheKey, E
 from datakeel.core.evidence_inputs import SampleSidecars, sample_sidecars
 from datakeel.core.evidence_models import ExtractorRef
 from datakeel.core.models import AssetRef, BoundaryModel, FileItem, JsonDocument
+from datakeel.dataset_store.datasets import materialize_files
 from datakeel.operators.evidence.contracts import contract_hashes
-from datakeel.storage.datasets import materialize_files
 from datakeel.storage.objects import digest
 
 

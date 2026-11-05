@@ -6,7 +6,7 @@
 from sqlalchemy.orm import Session
 
 from datakeel.core.models import LineageEvent
-from datakeel.storage.events import all_events
+from datakeel.dataset_store.events import all_events
 
 _METADATA_ACTIONS = frozenset(
     {

@@ -18,8 +18,8 @@ from datakeel.core.data_asset_models import (
     DataAssetCard,
 )
 from datakeel.core.models import JsonDocument, utcnow
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 
 
 def _action(client: TestClient, name: str, body: JsonDocument) -> None:
