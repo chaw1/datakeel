@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.models import FileItem
 from datakeel.core.production_models import Project
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.operators.evidence.image_phash import dhash
-from datakeel.storage.database import VersionRow
 from datakeel.storage.objects import object_store
 from datakeel.storage.workbench_pixels import workbench_image
 

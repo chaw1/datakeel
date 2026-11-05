@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datakeel.core.errors import NotFoundError
-from datakeel.storage.database import DatasetRow, MetadataChangeRow
+from datakeel.dataset_store.rows import DatasetRow, MetadataChangeRow
 from datakeel.storage.datasheet_facts import extract_facts
 from datakeel.storage.file_state import FileStateRow
 from tests.storage.datasheet_helpers import dataset_versions

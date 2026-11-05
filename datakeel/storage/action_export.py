@@ -17,11 +17,12 @@ from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import AssetRef
 from datakeel.core.settings import get_settings
 from datakeel.core.training_export_models import TRAINING_FORMATS
+from datakeel.dataset_store.rows import DatasetRow
 from datakeel.lineage.exports import export_croissant, export_openlineage
 from datakeel.lineage.service import graph
 from datakeel.storage.action_selection import selected_files
 from datakeel.storage.data_asset_access import require_access_in_session
-from datakeel.storage.database import DatasetRow, data_dir
+from datakeel.storage.database import data_dir
 from datakeel.storage.datasets import dataset_dict
 from datakeel.storage.events import all_events
 from datakeel.storage.training_export import training_export_inputs

@@ -243,3 +243,11 @@ People and production objects extend the existing ontology with the same AssetRe
 零用户模式保留原有本机范围；登记后按全平台和实际项目角色求并集，调用方只能收窄。旧 HTTP 写入口也经过统一范围检查；运行会话归属单独绑定到服务端 actor，避免借用默认本机身份。角色定义与修改在签批执行前不生效，签批和执行都复核权限授予上限。生产资产解析回输入数据集版本，沿用已有访问申请和授权边界。
 
 Personal submissions skip assignments and review records, while recording system approval in audit. Group work uses the same six states with explicit assignments and exact-revision reviews. Finalization imports approved revisions through the existing annotation importer and creates a regular dataset version with native annotation metadata. Label versions are sealed after publication; migration impact is measured over current revisions without rewriting historical evidence. Offline fake/import prediction providers add no runtime dependencies. See [production](PRODUCTION.md), [中文](PRODUCTION.zh.md) and the [HTTP identity matrix](IDENTITY_ACCESS.md).
+
+
+## Persistence schema ownership
+
+Schema assembly is explicit in `persistence`, above the existing adapters. Dataset and worker
+schema packages sit below legacy adapters and depend on the neutral `core.schema` mapping base.
+They contain only mappings and installers; business migration is a separate slice. See
+[the schema contract and ratchets](PERSISTENCE_SCHEMA.md).

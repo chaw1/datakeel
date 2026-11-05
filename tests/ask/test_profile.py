@@ -11,8 +11,9 @@ from datakeel.ask.profile import parse_profile_question
 from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskAnswer, AskRequest
 from datakeel.core.errors import NotFoundError, ValidationError
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.ask_store import get_answer, store_answer
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import resolve_download
 from datakeel.storage.events import all_events
 from datakeel.storage.file_state import FileStateRow

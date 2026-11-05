@@ -9,11 +9,13 @@ from datakeel.actions.models import WorkerDecision
 from datakeel.actions.receipts import receipt
 from datakeel.core.errors import DatakeelError
 from datakeel.core.models import AssetRef, utcnow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.action_locks import lock_action_targets
 from datakeel.storage.action_planning import verify_target_state
 from datakeel.storage.action_rows import ActionRunRow
 from datakeel.storage.action_store import audit, locked_plan, publish
-from datakeel.storage.database import Database, TaskRow, VersionRow
+from datakeel.storage.database import Database
+from datakeel.worker_store.rows import TaskRow
 
 
 def start_task_run(db: Database, task_id: str) -> WorkerDecision:

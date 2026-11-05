@@ -17,9 +17,11 @@ from rich.console import Console
 from sqlalchemy import select
 
 from datakeel.http import Client
-from datakeel.storage.database import Database, ShardRow, TaskRow, data_dir
+from datakeel.persistence import migrate
+from datakeel.storage.database import Database, data_dir
 from datakeel.storage.datasets import import_dataset
 from datakeel.worker.queue import DatabaseQueue
+from datakeel.worker_store.rows import ShardRow, TaskRow
 
 EXPECTED_DEMO_FILES = 400
 MINIMUM_VERSIONS = 2
@@ -148,7 +150,7 @@ def verify_workers() -> dict[str, Any]:
         "Use a new local PostgreSQL instance",
         condition=bool(db.engine.url.host in ("localhost", "127.0.0.1")),
     )
-    db.migrate()
+    migrate(db)
     directory = data_dir() / "parallel-inputs"
     directory.mkdir(parents=True, exist_ok=True)
     paths = []

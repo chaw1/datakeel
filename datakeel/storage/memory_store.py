@@ -21,11 +21,12 @@ from datakeel.core.memory_models import (
     MemoryUseScope,
 )
 from datakeel.core.models import new_id
+from datakeel.dataset_store.rows import DatasetRow
 from datakeel.memory.consolidation import consolidate
 from datakeel.memory.retrieval import refreshed, reinforced, select_entries
 from datakeel.storage.conversation_rows import ConversationRow
 from datakeel.storage.data_asset_context import visible_memories
-from datakeel.storage.database import Database, DatasetRow
+from datakeel.storage.database import Database
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.memory_rows import MemoryAuditRow, MemoryRow, MemoryUseRow, MemoryWriteRow
 

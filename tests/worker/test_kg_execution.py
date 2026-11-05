@@ -17,8 +17,8 @@ from datakeel.core.kg_execution import KGCompletion, KGLeaseFence
 from datakeel.core.kg_models import TextBlock
 from datakeel.core.kg_product import ProductExtraction
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.kg.cache import build_cache_key, extraction_identity
-from datakeel.storage.database import VersionRow
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_store import cache_block, cached_block, get_job, list_runs, start_run

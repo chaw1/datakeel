@@ -12,8 +12,8 @@ from sqlalchemy import select
 
 from datakeel.core.evidence_inputs import SampleSidecars
 from datakeel.core.models import AssetRef, FileItem, LineageEvent
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.lineage.models import GraphNode, GraphView
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.events import all_events, append_event
 from datakeel.storage.lineage_service import get_graph, name_graph
 

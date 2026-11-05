@@ -12,6 +12,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.exc import DBAPIError
 
 from datakeel.core.evidence_models import Assertion, TextSpan, VerificationDetail, VerificationIssue
+from datakeel.persistence import migrate
 from datakeel.storage.evidence_projection import rebuild_evidence
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.evidence_store import list_assertions, record_extraction
@@ -67,8 +68,8 @@ def test_legacy_assertion_migration_adds_nullable_columns_and_index(
                 "decided_at VARCHAR, active BOOLEAN NOT NULL)"
             )
         )
-    unmigrated_db.migrate()
-    unmigrated_db.migrate()
+    migrate(unmigrated_db)
+    migrate(unmigrated_db)
     inspector = inspect(unmigrated_db.engine)
     columns = {column["name"]: column for column in inspector.get_columns("assertions")}
     assert columns["verification"]["nullable"]
@@ -88,7 +89,7 @@ def test_legacy_assertion_migration_adds_nullable_columns_and_index(
 def test_database_guards_immutable_verification_projections(db: Database, statement: str) -> None:
     """Both SQL dialects reject direct edits even though status remains independently mutable."""
     record_extraction(db, extraction_event())
-    db.migrate()
+    migrate(db)
     with pytest.raises(DBAPIError, match="immutable"), db.engine.begin() as connection:
         connection.execute(text(statement))
     with db.session() as session:

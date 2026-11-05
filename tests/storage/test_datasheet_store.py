@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
-from datakeel.storage.database import DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.datasheet_rows import DatasheetRow
 from datakeel.storage.datasheet_store import (
     compare_documents,

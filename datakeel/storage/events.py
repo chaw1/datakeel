@@ -9,7 +9,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
 from datakeel.core.models import LineageEvent
-from datakeel.storage.database import EventRow
+from datakeel.dataset_store.rows import EventRow
 
 
 def append_event(session: Session, event: LineageEvent) -> bool:

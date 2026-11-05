@@ -19,7 +19,8 @@ from datakeel.core.kg_execution import (
 from datakeel.core.kg_images import KGImageInput
 from datakeel.core.models import FileItem
 from datakeel.core.transcription_auto import require_current_auto_policy
-from datakeel.storage.database import Database, VersionRow
+from datakeel.dataset_store.rows import VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.kg_preparation import read_documents, read_recording
 from datakeel.storage.kg_rows import KGRunRow

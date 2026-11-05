@@ -46,6 +46,7 @@ from datakeel.core.kg_image_request import ImageEvaluationRequest
 from datakeel.core.logging import configure_logging
 from datakeel.core.models import AssetRef
 from datakeel.core.settings import get_settings
+from datakeel.persistence import migrate
 from datakeel.routing.config import load_config
 from datakeel.storage.data_asset_access import skip_protected
 from datakeel.storage.database import Database
@@ -201,7 +202,7 @@ def main() -> None:
         uvicorn.run(create_app(), host=args.host, port=args.port)
         return
     db = Database()
-    db.migrate()
+    migrate(db)
     _database_command(db, args)
 
 

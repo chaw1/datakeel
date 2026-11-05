@@ -21,7 +21,7 @@ from datakeel.core.image_orientation import (
 )
 from datakeel.core.models import FileItem
 from datakeel.core.production_models import AnnotationRevision, Project
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.image_geometry import file_geometry
 from datakeel.storage.production_rows import ProductionProjectRow
 

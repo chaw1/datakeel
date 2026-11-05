@@ -7,7 +7,8 @@ from datakeel.actions.production_parameters import CreateProjectParams, SplitPac
 from datakeel.core.models import FileItem, new_id, utcnow
 from datakeel.core.production_catalog_models import LabelSet, ProductionLabel
 from datakeel.core.production_models import ProductionTask, Project, WorkflowTier
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_projects import create_project, split_packages
 from datakeel.storage.production_queries import list_tasks

@@ -18,13 +18,14 @@ from datakeel.core.annotation_sampling import (
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import FileItem, new_id, utcnow
 from datakeel.core.production_segments import validate_segment_media
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.annotation_frames import DISPLAY_FRAME, batch_view
 from datakeel.storage.annotation_rows import (
     AnnotationBatchRow,
     AnnotationInspectionRow,
     AnnotationSamplingRow,
 )
-from datakeel.storage.database import Database, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.object_projection import content_digest
 

@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.data_asset_models import QualityPoint
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.quality.scoring import score_quality
 from datakeel.storage.data_asset_targets import resolve_access_targets
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.datasets import latest_files
 
 

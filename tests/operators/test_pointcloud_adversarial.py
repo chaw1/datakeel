@@ -11,13 +11,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
+from datakeel.dataset_store.rows import DatasetRow
 from datakeel.operators import REGISTRY
 from datakeel.operators.pointcloud.io import dump_cloud, load_cloud
 from datakeel.operators.pointcloud.models import StatisticalParams
 from datakeel.operators.pointcloud.statistics import outlier_mask
 from datakeel.quality import score_quality
 from datakeel.quality.image_pointcloud import assess_file
-from datakeel.storage.database import DatasetRow
 from datakeel.storage.object_projection import file_quality
 
 if TYPE_CHECKING:

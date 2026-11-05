@@ -7,8 +7,9 @@ from sqlalchemy import event
 from sqlalchemy.engine import Connection
 
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.data_asset_native import native_targets
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 
 FILES = 40
 VERSIONS = 3

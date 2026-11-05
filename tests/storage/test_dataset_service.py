@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 import pytest
 
 from datakeel.core.errors import NotFoundError
-from datakeel.storage.database import DatasetRow
+from datakeel.dataset_store.rows import DatasetRow
 from datakeel.storage.dataset_service import (
     import_paths,
     list_files,

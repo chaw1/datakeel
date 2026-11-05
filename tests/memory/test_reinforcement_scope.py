@@ -21,6 +21,7 @@ from datakeel.memory.service import (
     list_memories,
     reinforce_memories,
 )
+from datakeel.persistence import migrate
 from datakeel.storage.conversation_store import create
 from datakeel.storage.memory_rows import MemoryRow
 from tests.memory.helpers import NOW, entry
@@ -147,8 +148,8 @@ def test_reinforcement_when_old_memory_table_migrated_preserves_facts_and_adds_s
     with db.session() as session:
         session.add(MemoryRow(id=original.id, payload=original.model_dump(mode="json")))
         session.commit()
-    db.migrate()
-    db.migrate()
+    migrate(db)
+    migrate(db)
     scope = _scope(db)
     assert get_memory(db, original.id, clock=lambda: NOW) == original
     for _ in range(2):

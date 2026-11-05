@@ -15,9 +15,10 @@ from datakeel.core.data_asset_models import (
 )
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import AssetRef, new_id, utcnow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.data_asset_rows import DataAssetHistoryRow, DataAssetRow
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 
 
 def asset_in_session(session: Session, asset_id: str) -> DataAsset:

@@ -12,7 +12,7 @@ import pytest
 from sqlalchemy import event, select
 
 from datakeel.core.errors import NotFoundError
-from datakeel.storage.database import DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.worker.queue import DatabaseQueue
 from tests.worker.test_queue import seed
 

@@ -1,0 +1,621 @@
+{
+  "canonical_sha256": "a061f721831bb54f6e2c9a9cdbdeba1560df1c5e0323a77633af02abc4443e1c",
+  "legacy_row_imports": {
+    "datakeel/storage/action_export.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow"
+      ]
+    },
+    "datakeel/storage/action_operations.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "MetadataChangeRow",
+        "VersionRow"
+      ],
+      "datakeel.worker_store.rows": [
+        "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/action_selection.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/action_store.py": {
+      "datakeel.worker_store.rows": [
+        "OutboxRow"
+      ]
+    },
+    "datakeel/storage/action_worker.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ],
+      "datakeel.worker_store.rows": [
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/annotation_frames.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/annotation_store.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/catalog_graph.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ]
+    },
+    "datakeel/storage/data_asset_cards.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/data_asset_native.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ],
+      "datakeel.worker_store.rows": [
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/data_asset_quality.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/data_asset_store.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/data_asset_targets.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow"
+      ]
+    },
+    "datakeel/storage/dataset_service.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/datasets.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/datasheet_facts.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "MetadataChangeRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/datasheet_jobs.py": {
+      "datakeel.worker_store.rows": [
+        "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/datasheet_sources.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/datasheet_store.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/display_order.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/dq_jobs.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ],
+      "datakeel.worker_store.rows": [
+        "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/dq_reads.py": {
+      "datakeel.worker_store.rows": [
+        "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/events.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ]
+    },
+    "datakeel/storage/evidence_decisions.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ]
+    },
+    "datakeel/storage/evidence_import.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/evidence_runs.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ]
+    },
+    "datakeel/storage/evidence_snapshot.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/evidence_store.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ]
+    },
+    "datakeel/storage/governance_service.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "MetadataChangeRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/kg_inputs.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/kg_preparation.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/kg_provenance.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ]
+    },
+    "datakeel/storage/kg_store.py": {
+      "datakeel.worker_store.rows": [
+        "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/lineage_service.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/link_context.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/link_queries.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow"
+      ]
+    },
+    "datakeel/storage/llm_data_actions.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/llm_data_sources.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/media_observations.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/memory_store.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow"
+      ]
+    },
+    "datakeel/storage/object_projection.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ],
+      "datakeel.worker_store.rows": [
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/object_queries.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow"
+      ]
+    },
+    "datakeel/storage/production_ai_facts.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/production_finalize.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/production_task_images.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/profile_queries.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/search_sources.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/task_queries.py": {
+      "datakeel.worker_store.rows": [
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/task_queue.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ],
+      "datakeel.worker_store.rows": [
+        "OutboxRow",
+        "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/task_terminal.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ],
+      "datakeel.worker_store.rows": [
+        "OutboxRow",
+        "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/task_views.py": {
+      "datakeel.worker_store.rows": [
+        "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/version_diff.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow"
+      ]
+    },
+    "datakeel/storage/version_stream.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/workbench_samples.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    }
+  },
+  "measurements": {
+    "import_exceptions": 496,
+    "storage_exceptions": 385,
+    "storage_files": 282,
+    "storage_lines": 33592
+  },
+  "revision": "62cb1035f8e34878804c39d2c7f1b9ccc94308f4",
+  "schema_line_budget": 980,
+  "storage_paths": [
+    "datakeel/storage/__init__.py",
+    "datakeel/storage/action_access.py",
+    "datakeel/storage/action_approvals.py",
+    "datakeel/storage/action_deferred.py",
+    "datakeel/storage/action_execution.py",
+    "datakeel/storage/action_export.py",
+    "datakeel/storage/action_locks.py",
+    "datakeel/storage/action_operations.py",
+    "datakeel/storage/action_planning.py",
+    "datakeel/storage/action_reads.py",
+    "datakeel/storage/action_requests.py",
+    "datakeel/storage/action_rows.py",
+    "datakeel/storage/action_selection.py",
+    "datakeel/storage/action_snapshot.py",
+    "datakeel/storage/action_store.py",
+    "datakeel/storage/action_targets.py",
+    "datakeel/storage/action_worker.py",
+    "datakeel/storage/annotation_actions.py",
+    "datakeel/storage/annotation_frames.py",
+    "datakeel/storage/annotation_legacy.py",
+    "datakeel/storage/annotation_rework.py",
+    "datakeel/storage/annotation_rows.py",
+    "datakeel/storage/annotation_sampling.py",
+    "datakeel/storage/annotation_store.py",
+    "datakeel/storage/approval_evidence.py",
+    "datakeel/storage/ask_conversation_rows.py",
+    "datakeel/storage/ask_conversations.py",
+    "datakeel/storage/ask_evaluations.py",
+    "datakeel/storage/ask_evidence.py",
+    "datakeel/storage/ask_review.py",
+    "datakeel/storage/ask_rows.py",
+    "datakeel/storage/ask_store.py",
+    "datakeel/storage/base.py",
+    "datakeel/storage/budget_accounts.py",
+    "datakeel/storage/budget_rows.py",
+    "datakeel/storage/budget_service.py",
+    "datakeel/storage/catalog_action_state.py",
+    "datakeel/storage/catalog_actions.py",
+    "datakeel/storage/catalog_details.py",
+    "datakeel/storage/catalog_fields.py",
+    "datakeel/storage/catalog_graph.py",
+    "datakeel/storage/catalog_locks.py",
+    "datakeel/storage/catalog_pages.py",
+    "datakeel/storage/catalog_projection.py",
+    "datakeel/storage/catalog_queries.py",
+    "datakeel/storage/catalog_reads.py",
+    "datakeel/storage/catalog_rows.py",
+    "datakeel/storage/catalog_store.py",
+    "datakeel/storage/checkpoint_store.py",
+    "datakeel/storage/conversation_asset_refs.py",
+    "datakeel/storage/conversation_authorization.py",
+    "datakeel/storage/conversation_lock.py",
+    "datakeel/storage/conversation_memory_sources.py",
+    "datakeel/storage/conversation_resume.py",
+    "datakeel/storage/conversation_rows.py",
+    "datakeel/storage/conversation_secrets.py",
+    "datakeel/storage/conversation_store.py",
+    "datakeel/storage/custom_rows.py",
+    "datakeel/storage/custom_store.py",
+    "datakeel/storage/custom_validation.py",
+    "datakeel/storage/data_asset_access.py",
+    "datakeel/storage/data_asset_action_state.py",
+    "datakeel/storage/data_asset_actions.py",
+    "datakeel/storage/data_asset_cards.py",
+    "datakeel/storage/data_asset_context.py",
+    "datakeel/storage/data_asset_events.py",
+    "datakeel/storage/data_asset_grants.py",
+    "datakeel/storage/data_asset_native.py",
+    "datakeel/storage/data_asset_quality.py",
+    "datakeel/storage/data_asset_reads.py",
+    "datakeel/storage/data_asset_review.py",
+    "datakeel/storage/data_asset_rows.py",
+    "datakeel/storage/data_asset_store.py",
+    "datakeel/storage/data_asset_targets.py",
+    "datakeel/storage/database.py",
+    "datakeel/storage/dataset_service.py",
+    "datakeel/storage/datasets.py",
+    "datakeel/storage/datasheet_actions.py",
+    "datakeel/storage/datasheet_facts.py",
+    "datakeel/storage/datasheet_job_rows.py",
+    "datakeel/storage/datasheet_jobs.py",
+    "datakeel/storage/datasheet_rows.py",
+    "datakeel/storage/datasheet_sources.py",
+    "datakeel/storage/datasheet_store.py",
+    "datakeel/storage/datasheet_values.py",
+    "datakeel/storage/delivery_rows.py",
+    "datakeel/storage/delivery_service.py",
+    "datakeel/storage/display_order.py",
+    "datakeel/storage/dq_actions.py",
+    "datakeel/storage/dq_issues.py",
+    "datakeel/storage/dq_jobs.py",
+    "datakeel/storage/dq_reads.py",
+    "datakeel/storage/dq_results.py",
+    "datakeel/storage/dq_rows.py",
+    "datakeel/storage/dq_store.py",
+    "datakeel/storage/dq_views.py",
+    "datakeel/storage/dq_webhooks.py",
+    "datakeel/storage/draft_metering.py",
+    "datakeel/storage/events.py",
+    "datakeel/storage/evidence_actions.py",
+    "datakeel/storage/evidence_artifacts.py",
+    "datakeel/storage/evidence_cache.py",
+    "datakeel/storage/evidence_constraints.py",
+    "datakeel/storage/evidence_decisions.py",
+    "datakeel/storage/evidence_evaluations.py",
+    "datakeel/storage/evidence_filters.py",
+    "datakeel/storage/evidence_import.py",
+    "datakeel/storage/evidence_projection.py",
+    "datakeel/storage/evidence_queries.py",
+    "datakeel/storage/evidence_rows.py",
+    "datakeel/storage/evidence_runs.py",
+    "datakeel/storage/evidence_snapshot.py",
+    "datakeel/storage/evidence_store.py",
+    "datakeel/storage/file_discovery.py",
+    "datakeel/storage/file_pages.py",
+    "datakeel/storage/file_state.py",
+    "datakeel/storage/governance_service.py",
+    "datakeel/storage/harness_evaluations.py",
+    "datakeel/storage/harness_rows.py",
+    "datakeel/storage/harness_service.py",
+    "datakeel/storage/identity_actions.py",
+    "datakeel/storage/identity_authorization.py",
+    "datakeel/storage/identity_mutations.py",
+    "datakeel/storage/identity_rows.py",
+    "datakeel/storage/identity_sessions.py",
+    "datakeel/storage/identity_store.py",
+    "datakeel/storage/image_geometry.py",
+    "datakeel/storage/import_sources.py",
+    "datakeel/storage/intent_chains.py",
+    "datakeel/storage/intent_reads.py",
+    "datakeel/storage/intent_rows.py",
+    "datakeel/storage/kg_context.py",
+    "datakeel/storage/kg_eval_rows.py",
+    "datakeel/storage/kg_evaluations.py",
+    "datakeel/storage/kg_graph.py",
+    "datakeel/storage/kg_image_attribution.py",
+    "datakeel/storage/kg_image_eval_store.py",
+    "datakeel/storage/kg_image_preparation.py",
+    "datakeel/storage/kg_image_sources.py",
+    "datakeel/storage/kg_inputs.py",
+    "datakeel/storage/kg_preparation.py",
+    "datakeel/storage/kg_pricing.py",
+    "datakeel/storage/kg_progress.py",
+    "datakeel/storage/kg_provenance.py",
+    "datakeel/storage/kg_publication.py",
+    "datakeel/storage/kg_queries.py",
+    "datakeel/storage/kg_reviews.py",
+    "datakeel/storage/kg_rows.py",
+    "datakeel/storage/kg_run_reads.py",
+    "datakeel/storage/kg_source_documents.py",
+    "datakeel/storage/kg_store.py",
+    "datakeel/storage/kg_transcription_selection.py",
+    "datakeel/storage/label_drafts.py",
+    "datakeel/storage/lineage_service.py",
+    "datakeel/storage/link_context.py",
+    "datakeel/storage/link_drafts.py",
+    "datakeel/storage/link_queries.py",
+    "datakeel/storage/link_reviews.py",
+    "datakeel/storage/link_store.py",
+    "datakeel/storage/llm_data_access.py",
+    "datakeel/storage/llm_data_actions.py",
+    "datakeel/storage/llm_data_constraints.py",
+    "datakeel/storage/llm_data_evaluations.py",
+    "datakeel/storage/llm_data_facts.py",
+    "datakeel/storage/llm_data_reads.py",
+    "datakeel/storage/llm_data_rows.py",
+    "datakeel/storage/llm_data_selection.py",
+    "datakeel/storage/llm_data_sources.py",
+    "datakeel/storage/llm_data_store.py",
+    "datakeel/storage/media_artifacts.py",
+    "datakeel/storage/media_observations.py",
+    "datakeel/storage/memory_rows.py",
+    "datakeel/storage/memory_store.py",
+    "datakeel/storage/metadata_store.py",
+    "datakeel/storage/metric_audit.py",
+    "datakeel/storage/metric_drafts.py",
+    "datakeel/storage/metric_store.py",
+    "datakeel/storage/migrations.py",
+    "datakeel/storage/object_projection.py",
+    "datakeel/storage/object_queries.py",
+    "datakeel/storage/objects.py",
+    "datakeel/storage/openlineage_projection.py",
+    "datakeel/storage/openlineage_store.py",
+    "datakeel/storage/pg_triggers.py",
+    "datakeel/storage/prediction_frames.py",
+    "datakeel/storage/production_acceptance.py",
+    "datakeel/storage/production_action_state.py",
+    "datakeel/storage/production_actions.py",
+    "datakeel/storage/production_ai_audit.py",
+    "datakeel/storage/production_ai_facts.py",
+    "datakeel/storage/production_ai_review.py",
+    "datakeel/storage/production_ai_rows.py",
+    "datakeel/storage/production_ai_rules.py",
+    "datakeel/storage/production_assignments.py",
+    "datakeel/storage/production_catalog.py",
+    "datakeel/storage/production_catalog_actions.py",
+    "datakeel/storage/production_catalog_changes.py",
+    "datakeel/storage/production_catalog_impact.py",
+    "datakeel/storage/production_catalog_plans.py",
+    "datakeel/storage/production_catalog_rows.py",
+    "datakeel/storage/production_cloud_labeling.py",
+    "datakeel/storage/production_cloud_prelabel.py",
+    "datakeel/storage/production_cloud_runner.py",
+    "datakeel/storage/production_counters.py",
+    "datakeel/storage/production_dispatch.py",
+    "datakeel/storage/production_dispatch_plans.py",
+    "datakeel/storage/production_dispatch_rules.py",
+    "datakeel/storage/production_finalize.py",
+    "datakeel/storage/production_human.py",
+    "datakeel/storage/production_idempotency.py",
+    "datakeel/storage/production_keypoint_upgrades.py",
+    "datakeel/storage/production_leases.py",
+    "datakeel/storage/production_load_locks.py",
+    "datakeel/storage/production_members.py",
+    "datakeel/storage/production_native.py",
+    "datakeel/storage/production_objects.py",
+    "datakeel/storage/production_prediction_parsing.py",
+    "datakeel/storage/production_predictions.py",
+    "datakeel/storage/production_prelabel_reads.py",
+    "datakeel/storage/production_prelabel_refs.py",
+    "datakeel/storage/production_prelabel_runs.py",
+    "datakeel/storage/production_prelabel_writes.py",
+    "datakeel/storage/production_projects.py",
+    "datakeel/storage/production_queries.py",
+    "datakeel/storage/production_reaper.py",
+    "datakeel/storage/production_review_policy.py",
+    "datakeel/storage/production_reviews.py",
+    "datakeel/storage/production_revisions.py",
+    "datakeel/storage/production_rows.py",
+    "datakeel/storage/production_schema.py",
+    "datakeel/storage/production_separation.py",
+    "datakeel/storage/production_statistics.py",
+    "datakeel/storage/production_task_images.py",
+    "datakeel/storage/production_tasks.py",
+    "datakeel/storage/production_team_reads.py",
+    "datakeel/storage/production_team_rows.py",
+    "datakeel/storage/production_template_upgrade.py",
+    "datakeel/storage/production_template_versions.py",
+    "datakeel/storage/production_tiers.py",
+    "datakeel/storage/profile_queries.py",
+    "datakeel/storage/release_actions.py",
+    "datakeel/storage/release_constraints.py",
+    "datakeel/storage/release_rows.py",
+    "datakeel/storage/release_service.py",
+    "datakeel/storage/search.py",
+    "datakeel/storage/search_sources.py",
+    "datakeel/storage/standard_changes.py",
+    "datakeel/storage/standard_observations.py",
+    "datakeel/storage/standard_profiles.py",
+    "datakeel/storage/standard_queries.py",
+    "datakeel/storage/standard_store.py",
+    "datakeel/storage/task_models.py",
+    "datakeel/storage/task_queries.py",
+    "datakeel/storage/task_queue.py",
+    "datakeel/storage/task_terminal.py",
+    "datakeel/storage/task_views.py",
+    "datakeel/storage/term_changes.py",
+    "datakeel/storage/tool_invocations.py",
+    "datakeel/storage/tool_rows.py",
+    "datakeel/storage/training_download.py",
+    "datakeel/storage/training_export.py",
+    "datakeel/storage/training_import.py",
+    "datakeel/storage/training_inputs.py",
+    "datakeel/storage/training_rows.py",
+    "datakeel/storage/training_store.py",
+    "datakeel/storage/transcription_pricing.py",
+    "datakeel/storage/transcription_rows.py",
+    "datakeel/storage/transcription_store.py",
+    "datakeel/storage/upload_files.py",
+    "datakeel/storage/upload_rows.py",
+    "datakeel/storage/upload_service.py",
+    "datakeel/storage/version_diff.py",
+    "datakeel/storage/version_stream.py",
+    "datakeel/storage/views.py",
+    "datakeel/storage/workbench_assignees.py",
+    "datakeel/storage/workbench_pixels.py",
+    "datakeel/storage/workbench_reads.py",
+    "datakeel/storage/workbench_risk.py",
+    "datakeel/storage/workbench_samples.py",
+    "datakeel/storage/workflow_recovery.py",
+    "datakeel/storage/workflow_rows.py",
+    "datakeel/storage/workflow_store.py"
+  ]
+}

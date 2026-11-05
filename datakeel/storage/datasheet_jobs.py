@@ -17,9 +17,10 @@ from datakeel.core.datasheet_execution import (
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.models import AssetRef, new_id
 from datakeel.datasheets.validation import validate_sections
-from datakeel.storage.database import Database, ShardRow, TaskRow
+from datakeel.storage.database import Database
 from datakeel.storage.datasheet_job_rows import DatasheetJobRow
 from datakeel.storage.datasheet_store import save_in_session
+from datakeel.worker_store.rows import ShardRow, TaskRow
 
 
 def _job_view(row: DatasheetJobRow) -> DatasheetJob:

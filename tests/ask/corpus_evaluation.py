@@ -13,6 +13,7 @@ import pytest
 
 from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskRequest
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 from tests.ask.corpus_fixture import build_corpus_fixture, patch_corpus_sources
 from tests.ask.corpus_models import (
@@ -85,7 +86,7 @@ def main() -> None:
     ):
         db = Database(f"sqlite:///{Path(directory) / 'corpus.db'}")
         try:
-            db.migrate()
+            migrate(db)
             patch_corpus_sources(db, patch, fixture)
             report = evaluate_corpus(db, fixture, load_corpus(split))
         finally:

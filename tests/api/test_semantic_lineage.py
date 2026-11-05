@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from datakeel.api.app import create_app
 from datakeel.core.evidence_models import AssertionDecisionRequest
-from datakeel.storage.database import EventRow
+from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.evidence_decisions import decide_assertions
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.evidence_store import record_extraction

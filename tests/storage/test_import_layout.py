@@ -12,7 +12,7 @@ from PIL import Image
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import FileItem
 from datakeel.core.workbench_models import WorkbenchProjectQuery
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.workbench_reads import workbench_project
 from tests.production_team_support import ServiceRunner

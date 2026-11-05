@@ -9,6 +9,7 @@ from pathlib import Path
 from rich.console import Console
 
 from datakeel.harness.annotation_cases import seed_annotation_qa_demo
+from datakeel.persistence import migrate
 from datakeel.sample_annotation_qa import generate_annotation_qa_samples
 from datakeel.storage.database import Database
 
@@ -29,7 +30,7 @@ def main() -> None:
     args.database.parent.mkdir(parents=True, exist_ok=True)
     db = Database(f"sqlite:///{args.database.resolve()}")
     try:
-        db.migrate()
+        migrate(db)
         summary = seed_annotation_qa_demo(db, args.output)
         Console().print(summary.model_dump_json(indent=2), markup=False)
     finally:

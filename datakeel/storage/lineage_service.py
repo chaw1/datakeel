@@ -15,6 +15,7 @@ from datakeel.core.data_asset_models import AccessContext, SkippedEntries
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_inputs import sample_sidecars
 from datakeel.core.models import AssetRef, FileItem, JsonDocument, LineageEvent
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.lineage.collapse import collapse_graph
 from datakeel.lineage.exports import export_croissant, export_openlineage
 from datakeel.lineage.models import GraphNode, GraphOverlay, GraphQuery, GraphView
@@ -25,7 +26,7 @@ from datakeel.storage.data_asset_access import (
     skip_protected_in_session,
 )
 from datakeel.storage.data_asset_reads import authorize_query
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.datasets import dataset_dict
 from datakeel.storage.evidence_decisions import assertion_view

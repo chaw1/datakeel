@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 
 from datakeel.cli.image_kg_demo import seed_image_kg_demo
 from datakeel.core.evidence_models import AssertionDecision, AssertionDecisionRequest
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.datasheets.templates import build_template
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence import generate_samples
-from datakeel.storage.database import VersionRow
 from datakeel.storage.datasheet_facts import extract_facts
 from datakeel.storage.evidence_decisions import append_decision, decide_assertions
 from datakeel.storage.evidence_import import import_evidence_samples, source_manifest

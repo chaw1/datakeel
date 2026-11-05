@@ -2,6 +2,16 @@
 
 All notable changes are documented here using the Keep a Changelog format.
 
+## [Unreleased]
+
+### Changed
+
+- Persistence initialization uses explicit typed schema contributions and independent ownership
+  validation for the existing 99 tables. Dataset and worker mappings have private schema owners;
+  business adapters, stored payloads and migration transaction ordering retain their behavior.
+  Schema snapshots and infrastructure ratchets support independent verification; see
+  [persistence schema composition](docs/PERSISTENCE_SCHEMA.md).
+
 ## [0.23.0] - 2026-11-03
 
 ### Added

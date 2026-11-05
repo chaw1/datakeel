@@ -14,9 +14,10 @@ from sqlalchemy import func, select
 
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.uploads import UploadInput
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage import datasets, upload_service
 from datakeel.storage.conversation_lock import response_lock
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_files
 from datakeel.storage.objects import LocalStore, S3Store, digest
 from datakeel.storage.upload_files import upload_directory, upload_slot, verify_stored_object

@@ -11,10 +11,11 @@ from sqlalchemy.orm import Session
 from datakeel.actions.models import ExecuteRequest
 from datakeel.actions.service import execute_plan, prepare_action
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.ontology.models import ObjectSet, PropertyFilter
 from datakeel.storage import object_queries
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.evidence_queries import query_evidence
 from datakeel.storage.evidence_snapshot import EvidenceSnapshot

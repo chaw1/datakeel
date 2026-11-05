@@ -14,8 +14,8 @@ import pytest
 from datakeel.core.file_queries import FileQuery
 from datakeel.core.models import FileItem
 from datakeel.core.search_models import SearchQuery
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage import search_sources
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.dataset_service import list_files
 from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.search import search_objects

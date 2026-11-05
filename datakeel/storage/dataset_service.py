@@ -16,9 +16,10 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.file_queries import FileQuery
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.data_asset_access import require_access_in_session
 from datakeel.storage.data_asset_reads import authorize_query
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.datasets import dataset_dict, import_dataset
 from datakeel.storage.file_discovery import begin_file_read, requires_python_files
 from datakeel.storage.file_pages import read_file_page

@@ -1,0 +1,695 @@
+[
+  {
+    "batch": "W2",
+    "owner": "action_store",
+    "row_class": "ActionAuditRow",
+    "source_module": "datakeel.storage.action_rows",
+    "table": "action_audit"
+  },
+  {
+    "batch": "M6",
+    "owner": "intent_store",
+    "row_class": "ActionChainRow",
+    "source_module": "datakeel.storage.intent_rows",
+    "table": "action_chains"
+  },
+  {
+    "batch": "W2",
+    "owner": "action_store",
+    "row_class": "ActionOperationRow",
+    "source_module": "datakeel.storage.action_rows",
+    "table": "action_operations"
+  },
+  {
+    "batch": "W2",
+    "owner": "action_store",
+    "row_class": "ActionPlanRow",
+    "source_module": "datakeel.storage.action_rows",
+    "table": "action_plans"
+  },
+  {
+    "batch": "W2",
+    "owner": "action_store",
+    "row_class": "ActionRunRow",
+    "source_module": "datakeel.storage.action_rows",
+    "table": "action_runs"
+  },
+  {
+    "batch": "M6",
+    "owner": "annotation_store",
+    "row_class": "AnnotationBatchRow",
+    "source_module": "datakeel.storage.annotation_rows",
+    "table": "annotation_batches"
+  },
+  {
+    "batch": "M6",
+    "owner": "annotation_store",
+    "row_class": "AnnotationInspectionRow",
+    "source_module": "datakeel.storage.annotation_rows",
+    "table": "annotation_inspections"
+  },
+  {
+    "batch": "M6",
+    "owner": "annotation_store",
+    "row_class": "AnnotationSamplingRow",
+    "source_module": "datakeel.storage.annotation_rows",
+    "table": "annotation_sampling_plans"
+  },
+  {
+    "batch": "W2",
+    "owner": "action_store",
+    "row_class": "ApprovalRow",
+    "source_module": "datakeel.storage.action_rows",
+    "table": "approvals"
+  },
+  {
+    "batch": "M3",
+    "owner": "ask_store",
+    "row_class": "AskAnswerRow",
+    "source_module": "datakeel.storage.ask_rows",
+    "table": "ask_answers"
+  },
+  {
+    "batch": "M3",
+    "owner": "ask_store",
+    "row_class": "AskConversationRow",
+    "source_module": "datakeel.storage.ask_conversation_rows",
+    "table": "ask_conversations"
+  },
+  {
+    "batch": "M3",
+    "owner": "ask_store",
+    "row_class": "AskSessionRow",
+    "source_module": "datakeel.storage.ask_rows",
+    "table": "ask_sessions"
+  },
+  {
+    "batch": "M1",
+    "owner": "evidence_store",
+    "row_class": "AssertionDecisionRow",
+    "source_module": "datakeel.storage.evidence_rows",
+    "table": "assertion_decisions"
+  },
+  {
+    "batch": "M1",
+    "owner": "evidence_store",
+    "row_class": "AssertionRow",
+    "source_module": "datakeel.storage.evidence_rows",
+    "table": "assertions"
+  },
+  {
+    "batch": "M1",
+    "owner": "asset_store",
+    "row_class": "AssetApplicationRow",
+    "source_module": "datakeel.storage.data_asset_rows",
+    "table": "asset_applications"
+  },
+  {
+    "batch": "M1",
+    "owner": "asset_store",
+    "row_class": "AssetControlRow",
+    "source_module": "datakeel.storage.data_asset_rows",
+    "table": "asset_control_events"
+  },
+  {
+    "batch": "M1",
+    "owner": "asset_store",
+    "row_class": "AssetGrantRow",
+    "source_module": "datakeel.storage.data_asset_rows",
+    "table": "asset_grants"
+  },
+  {
+    "batch": "M1",
+    "owner": "asset_store",
+    "row_class": "AssetUsageRow",
+    "source_module": "datakeel.storage.data_asset_rows",
+    "table": "asset_usage"
+  },
+  {
+    "batch": "M1",
+    "owner": "harness_store",
+    "row_class": "BudgetAccountRow",
+    "source_module": "datakeel.storage.budget_rows",
+    "table": "budget_accounts"
+  },
+  {
+    "batch": "M1",
+    "owner": "harness_store",
+    "row_class": "BudgetReservationRow",
+    "source_module": "datakeel.storage.budget_rows",
+    "table": "budget_reservations"
+  },
+  {
+    "batch": "M3",
+    "owner": "catalog_store",
+    "row_class": "CatalogEdgeRow",
+    "source_module": "datakeel.storage.catalog_rows",
+    "table": "catalog_edges"
+  },
+  {
+    "batch": "M3",
+    "owner": "catalog_store",
+    "row_class": "CatalogObjectRow",
+    "source_module": "datakeel.storage.catalog_rows",
+    "table": "catalog_objects"
+  },
+  {
+    "batch": "M1",
+    "owner": "runtime_store",
+    "row_class": "CheckpointWriteRow",
+    "source_module": "datakeel.storage.checkpoint_store",
+    "table": "checkpoint_writes"
+  },
+  {
+    "batch": "M1",
+    "owner": "runtime_store",
+    "row_class": "CheckpointRow",
+    "source_module": "datakeel.storage.checkpoint_store",
+    "table": "checkpoints"
+  },
+  {
+    "batch": "M1",
+    "owner": "conversation_store",
+    "row_class": "ConversationAuditRow",
+    "source_module": "datakeel.storage.conversation_rows",
+    "table": "conversation_audit"
+  },
+  {
+    "batch": "M1",
+    "owner": "conversation_store",
+    "row_class": "ConversationRequestRow",
+    "source_module": "datakeel.storage.conversation_rows",
+    "table": "conversation_requests"
+  },
+  {
+    "batch": "M1",
+    "owner": "conversation_store",
+    "row_class": "ConversationResumeRow",
+    "source_module": "datakeel.storage.conversation_rows",
+    "table": "conversation_resumes"
+  },
+  {
+    "batch": "M1",
+    "owner": "conversation_store",
+    "row_class": "ConversationRow",
+    "source_module": "datakeel.storage.conversation_rows",
+    "table": "conversations"
+  },
+  {
+    "batch": "M4",
+    "owner": "operator_store",
+    "row_class": "CustomRunRow",
+    "source_module": "datakeel.storage.custom_rows",
+    "table": "custom_operator_runs"
+  },
+  {
+    "batch": "M4",
+    "owner": "operator_store",
+    "row_class": "CustomOperatorRow",
+    "source_module": "datakeel.storage.custom_rows",
+    "table": "custom_operator_versions"
+  },
+  {
+    "batch": "M1",
+    "owner": "asset_store",
+    "row_class": "DataAssetHistoryRow",
+    "source_module": "datakeel.storage.data_asset_rows",
+    "table": "data_asset_history"
+  },
+  {
+    "batch": "M1",
+    "owner": "asset_store",
+    "row_class": "DataAssetRow",
+    "source_module": "datakeel.storage.data_asset_rows",
+    "table": "data_assets"
+  },
+  {
+    "batch": "W3",
+    "owner": "dataset_store",
+    "row_class": "DatasetRow",
+    "source_module": "datakeel.storage.database",
+    "table": "datasets"
+  },
+  {
+    "batch": "M4",
+    "owner": "datasheet_store",
+    "row_class": "DatasheetJobRow",
+    "source_module": "datakeel.storage.datasheet_job_rows",
+    "table": "datasheet_jobs"
+  },
+  {
+    "batch": "M4",
+    "owner": "datasheet_store",
+    "row_class": "DatasheetRow",
+    "source_module": "datakeel.storage.datasheet_rows",
+    "table": "datasheets"
+  },
+  {
+    "batch": "M4",
+    "owner": "quality_store",
+    "row_class": "DqHistoryRow",
+    "source_module": "datakeel.storage.dq_rows",
+    "table": "dq_history"
+  },
+  {
+    "batch": "M4",
+    "owner": "quality_store",
+    "row_class": "DqIssueAuditRow",
+    "source_module": "datakeel.storage.dq_rows",
+    "table": "dq_issue_audits"
+  },
+  {
+    "batch": "M4",
+    "owner": "quality_store",
+    "row_class": "DqIssueRow",
+    "source_module": "datakeel.storage.dq_rows",
+    "table": "dq_issues"
+  },
+  {
+    "batch": "M4",
+    "owner": "quality_store",
+    "row_class": "DqResultRow",
+    "source_module": "datakeel.storage.dq_rows",
+    "table": "dq_results"
+  },
+  {
+    "batch": "M4",
+    "owner": "quality_store",
+    "row_class": "DqRuleRow",
+    "source_module": "datakeel.storage.dq_rows",
+    "table": "dq_rules"
+  },
+  {
+    "batch": "M4",
+    "owner": "quality_store",
+    "row_class": "DqRunRow",
+    "source_module": "datakeel.storage.dq_rows",
+    "table": "dq_runs"
+  },
+  {
+    "batch": "M4",
+    "owner": "quality_store",
+    "row_class": "DqWebhookRow",
+    "source_module": "datakeel.storage.dq_rows",
+    "table": "dq_webhook_outbox"
+  },
+  {
+    "batch": "M1",
+    "owner": "harness_store",
+    "row_class": "EvalRunRow",
+    "source_module": "datakeel.storage.harness_rows",
+    "table": "eval_runs"
+  },
+  {
+    "batch": "M1",
+    "owner": "evidence_store",
+    "row_class": "EvidenceCacheRow",
+    "source_module": "datakeel.storage.evidence_rows",
+    "table": "evidence_cache"
+  },
+  {
+    "batch": "W3",
+    "owner": "dataset_store",
+    "row_class": "FileDiscoveryRow",
+    "source_module": "datakeel.storage.file_discovery",
+    "table": "file_discovery"
+  },
+  {
+    "batch": "W3",
+    "owner": "dataset_store",
+    "row_class": "FileDiscoveryCheckpointRow",
+    "source_module": "datakeel.storage.file_discovery",
+    "table": "file_discovery_checkpoints"
+  },
+  {
+    "batch": "W3",
+    "owner": "dataset_store",
+    "row_class": "FileStateRow",
+    "source_module": "datakeel.storage.file_state",
+    "table": "file_states"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "RoleBindingRow",
+    "source_module": "datakeel.storage.identity_rows",
+    "table": "identity_role_bindings"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "RoleRow",
+    "source_module": "datakeel.storage.identity_rows",
+    "table": "identity_roles"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "IdentitySessionRow",
+    "source_module": "datakeel.storage.identity_sessions",
+    "table": "identity_sessions"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "SkillRow",
+    "source_module": "datakeel.storage.identity_rows",
+    "table": "identity_skills"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "TeamRow",
+    "source_module": "datakeel.storage.identity_rows",
+    "table": "identity_teams"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "UserRow",
+    "source_module": "datakeel.storage.identity_rows",
+    "table": "identity_users"
+  },
+  {
+    "batch": "M5",
+    "owner": "transcription_store",
+    "row_class": "TranscriptionRow",
+    "source_module": "datakeel.storage.transcription_rows",
+    "table": "image_transcripts"
+  },
+  {
+    "batch": "M5",
+    "owner": "kg_store",
+    "row_class": "KGCacheRow",
+    "source_module": "datakeel.storage.kg_rows",
+    "table": "kg_block_cache"
+  },
+  {
+    "batch": "M5",
+    "owner": "kg_eval_store",
+    "row_class": "KGEvalRunRow",
+    "source_module": "datakeel.storage.kg_eval_rows",
+    "table": "kg_eval_runs"
+  },
+  {
+    "batch": "M5",
+    "owner": "kg_store",
+    "row_class": "KGRunRow",
+    "source_module": "datakeel.storage.kg_rows",
+    "table": "kg_runs"
+  },
+  {
+    "batch": "W3",
+    "owner": "dataset_store",
+    "row_class": "EventRow",
+    "source_module": "datakeel.storage.database",
+    "table": "lineage_events"
+  },
+  {
+    "batch": "M1",
+    "owner": "memory_store",
+    "row_class": "MemoryRow",
+    "source_module": "datakeel.storage.memory_rows",
+    "table": "memories"
+  },
+  {
+    "batch": "M1",
+    "owner": "memory_store",
+    "row_class": "MemoryAuditRow",
+    "source_module": "datakeel.storage.memory_rows",
+    "table": "memory_audit"
+  },
+  {
+    "batch": "M1",
+    "owner": "memory_store",
+    "row_class": "MemoryUseRow",
+    "source_module": "datakeel.storage.memory_rows",
+    "table": "memory_uses"
+  },
+  {
+    "batch": "M1",
+    "owner": "memory_store",
+    "row_class": "MemoryWriteRow",
+    "source_module": "datakeel.storage.memory_rows",
+    "table": "memory_writes"
+  },
+  {
+    "batch": "W3",
+    "owner": "dataset_store",
+    "row_class": "MetadataChangeRow",
+    "source_module": "datakeel.storage.database",
+    "table": "metadata_changes"
+  },
+  {
+    "batch": "M3",
+    "owner": "metric_store",
+    "row_class": "MetricAuditRow",
+    "source_module": "datakeel.storage.metric_audit",
+    "table": "metric_audit"
+  },
+  {
+    "batch": "M1",
+    "owner": "harness_store",
+    "row_class": "ModelCallTraceRow",
+    "source_module": "datakeel.storage.harness_rows",
+    "table": "model_call_trace"
+  },
+  {
+    "batch": "W3",
+    "owner": "worker_store",
+    "row_class": "OutboxRow",
+    "source_module": "datakeel.storage.database",
+    "table": "outbox"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionAIReviewRow",
+    "source_module": "datakeel.storage.production_ai_rows",
+    "table": "production_ai_reviews"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionAssignmentRow",
+    "source_module": "datakeel.storage.production_rows",
+    "table": "production_assignments"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionLabelSetRow",
+    "source_module": "datakeel.storage.production_catalog_rows",
+    "table": "production_label_sets"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionLeaseReleaseRow",
+    "source_module": "datakeel.storage.production_team_rows",
+    "table": "production_lease_releases"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionMemberRow",
+    "source_module": "datakeel.storage.production_rows",
+    "table": "production_members"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionModelRow",
+    "source_module": "datakeel.storage.production_catalog_rows",
+    "table": "production_models"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionPackageInspectionRow",
+    "source_module": "datakeel.storage.production_team_rows",
+    "table": "production_package_inspections"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionPackageRow",
+    "source_module": "datakeel.storage.production_rows",
+    "table": "production_packages"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionPrelabelRunRow",
+    "source_module": "datakeel.storage.production_catalog_rows",
+    "table": "production_prelabel_runs"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionPreparationRow",
+    "source_module": "datakeel.storage.production_idempotency",
+    "table": "production_preparations"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionProjectRow",
+    "source_module": "datakeel.storage.production_rows",
+    "table": "production_projects"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionReviewRow",
+    "source_module": "datakeel.storage.production_rows",
+    "table": "production_reviews"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionRevisionRow",
+    "source_module": "datakeel.storage.production_rows",
+    "table": "production_revisions"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionSummaryRow",
+    "source_module": "datakeel.storage.production_rows",
+    "table": "production_summaries"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionTaskRow",
+    "source_module": "datakeel.storage.production_rows",
+    "table": "production_tasks"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionTemplateVersionRow",
+    "source_module": "datakeel.storage.production_catalog_rows",
+    "table": "production_template_versions"
+  },
+  {
+    "batch": "M6",
+    "owner": "production_store",
+    "row_class": "ProductionTemplateRow",
+    "source_module": "datakeel.storage.production_catalog_rows",
+    "table": "production_templates"
+  },
+  {
+    "batch": "M2",
+    "owner": "delivery_store",
+    "row_class": "ReleaseEntryRow",
+    "source_module": "datakeel.storage.release_rows",
+    "table": "release_entries"
+  },
+  {
+    "batch": "M2",
+    "owner": "delivery_store",
+    "row_class": "ReconciliationRow",
+    "source_module": "datakeel.storage.delivery_rows",
+    "table": "release_reconciliations"
+  },
+  {
+    "batch": "M2",
+    "owner": "delivery_store",
+    "row_class": "ReleaseRow",
+    "source_module": "datakeel.storage.release_rows",
+    "table": "releases"
+  },
+  {
+    "batch": "W3",
+    "owner": "worker_store",
+    "row_class": "ShardRow",
+    "source_module": "datakeel.storage.database",
+    "table": "task_shards"
+  },
+  {
+    "batch": "W3",
+    "owner": "worker_store",
+    "row_class": "TaskRow",
+    "source_module": "datakeel.storage.database",
+    "table": "tasks"
+  },
+  {
+    "batch": "M1",
+    "owner": "harness_store",
+    "row_class": "ToolInvocationRow",
+    "source_module": "datakeel.storage.tool_rows",
+    "table": "tool_invocation"
+  },
+  {
+    "batch": "M2",
+    "owner": "llm_data_store",
+    "row_class": "TrainingCleanRow",
+    "source_module": "datakeel.storage.llm_data_rows",
+    "table": "training_clean_versions"
+  },
+  {
+    "batch": "M2",
+    "owner": "llm_data_store",
+    "row_class": "TrainingEvaluationRow",
+    "source_module": "datakeel.storage.llm_data_rows",
+    "table": "training_evaluations"
+  },
+  {
+    "batch": "M2",
+    "owner": "llm_data_store",
+    "row_class": "TrainingRunRow",
+    "source_module": "datakeel.storage.llm_data_rows",
+    "table": "training_governance_runs"
+  },
+  {
+    "batch": "M2",
+    "owner": "training_store",
+    "row_class": "TrainingSplitRow",
+    "source_module": "datakeel.storage.training_rows",
+    "table": "training_splits"
+  },
+  {
+    "batch": "W3",
+    "owner": "dataset_store",
+    "row_class": "UploadRow",
+    "source_module": "datakeel.storage.upload_rows",
+    "table": "uploads"
+  },
+  {
+    "batch": "W3",
+    "owner": "dataset_store",
+    "row_class": "VersionRow",
+    "source_module": "datakeel.storage.database",
+    "table": "versions"
+  },
+  {
+    "batch": "M1",
+    "owner": "workflow_store",
+    "row_class": "WorkflowAuditRow",
+    "source_module": "datakeel.storage.workflow_rows",
+    "table": "workflow_audit"
+  },
+  {
+    "batch": "M1",
+    "owner": "workflow_store",
+    "row_class": "WorkflowResumeRow",
+    "source_module": "datakeel.storage.workflow_rows",
+    "table": "workflow_resumes"
+  },
+  {
+    "batch": "M1",
+    "owner": "workflow_store",
+    "row_class": "WorkflowRunRow",
+    "source_module": "datakeel.storage.workflow_rows",
+    "table": "workflow_runs"
+  },
+  {
+    "batch": "M1",
+    "owner": "workflow_store",
+    "row_class": "WorkflowStepRow",
+    "source_module": "datakeel.storage.workflow_rows",
+    "table": "workflow_steps"
+  }
+]

@@ -6,7 +6,8 @@
 from sqlalchemy import select
 
 from datakeel.core.evidence_execution import EvidenceRunReport, OperatorExtractionReport
-from datakeel.storage.database import Database, EventRow
+from datakeel.dataset_store.rows import EventRow
+from datakeel.storage.database import Database
 
 
 def extraction_report(db: Database, task_id: str) -> EvidenceRunReport:

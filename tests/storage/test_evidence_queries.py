@@ -10,9 +10,10 @@ from sqlalchemy import delete
 
 from datakeel.core.errors import NotFoundError
 from datakeel.core.evidence_models import AssertionDecisionRequest
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.ontology.models import AssertionFilter
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.evidence_decisions import decide_assertions
 from datakeel.storage.evidence_import import source_manifest

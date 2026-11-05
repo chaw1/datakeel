@@ -23,6 +23,7 @@ from datakeel.harness.cases import bind_case, seed_case
 from datakeel.harness.operations import OperationObservation, apply_operation
 from datakeel.harness.service import list_traces
 from datakeel.memory.service import delete_memory, list_memories
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_files, list_versions
 from datakeel.worker.runner import run_worker
@@ -184,7 +185,7 @@ def run_case(case: GoldenCase, provider: Literal["fake", "openai", "anthropic"])
     with TemporaryDirectory(prefix="datakeel-golden-") as temporary:
         directory = Path(temporary)
         db = Database(f"sqlite:///{directory / 'case.db'}")
-        db.migrate()
+        migrate(db)
         try:
             try:
                 case = bind_case(

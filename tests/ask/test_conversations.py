@@ -13,6 +13,7 @@ from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskRequest
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError
 from datakeel.core.models import AssetRef, utcnow
+from datakeel.persistence import migrate
 from datakeel.sample_enterprise import EnterpriseSample
 from datakeel.storage.ask_conversation_rows import AskConversationRow
 from datakeel.storage.ask_conversations import (
@@ -39,7 +40,7 @@ def test_threads_restore_after_engine_restart_and_do_not_cross(
     assert first.conversation_id
     assert second.conversation_id
     db.engine.dispose()
-    db.migrate()
+    migrate(db)
     restored = get_conversation(db, first.conversation_id)
     assert restored.turns == (first,)
     assert restored.current_frame == first.query_frame

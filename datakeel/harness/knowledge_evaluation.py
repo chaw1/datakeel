@@ -25,6 +25,7 @@ from datakeel.harness.enterprise_reviews import review_enterprise_kg
 from datakeel.harness.knowledge_checks import knowledge_failures
 from datakeel.harness.resources import contract_path
 from datakeel.kg.loader import load_contract
+from datakeel.persistence import migrate
 from datakeel.sample_enterprise import EnterpriseGold
 from datakeel.storage.database import Database
 
@@ -85,7 +86,7 @@ def run_knowledge_evaluation() -> KnowledgeEvaluation:
     with TemporaryDirectory(prefix="datakeel-knowledge-eval-") as temporary:
         directory = Path(temporary)
         db = Database(f"sqlite:///{directory / 'knowledge.sqlite'}")
-        db.migrate()
+        migrate(db)
         try:
             fixture = seed_enterprise_kg(db, directory)
             gold = EnterpriseGold.model_validate_json(

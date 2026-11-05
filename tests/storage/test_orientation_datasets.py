@@ -25,8 +25,8 @@ from datakeel.core.training_export_models import (
     YoloImage,
 )
 from datakeel.core.training_models import SplitRequest
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.annotation_rows import AnnotationBatchRow
-from datakeel.storage.database import VersionRow
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.training_export import training_export_inputs
 from datakeel.storage.training_import import import_training_annotations

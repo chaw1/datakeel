@@ -13,8 +13,9 @@ import pytest
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
+from datakeel.dataset_store.rows import DatasetRow, EventRow
 from datakeel.storage.base import Base
-from datakeel.storage.database import Database, DatasetRow, EventRow
+from datakeel.storage.database import Database
 from tests import db_templates
 from tests.db_templates import DatabaseTemplate
 

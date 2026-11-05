@@ -13,10 +13,11 @@ from datakeel.actions.models import ExecuteRequest
 from datakeel.actions.service import execute_plan, prepare_action
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import FileItem, JsonDocument
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.ontology.models import ObjectSet, PropertyFilter
 from datakeel.storage.action_rows import ActionPlanRow
 from datakeel.storage.action_selection import selected_files
-from datakeel.storage.database import Database, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.datasets import materialize_files, persist_file
 from datakeel.storage.object_queries import evaluate
 from tests.actions.conftest import DatasetFixture

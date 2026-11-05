@@ -14,9 +14,9 @@ from datakeel.actions.parameters import parse_params
 from datakeel.actions.service import execute_plan, prepare_action
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.ontology.models import AssertionFilter, ObjectSet, PropertyFilter
 from datakeel.storage.action_snapshot import current_snapshot_digest
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.evidence_queries import get_evidence
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.object_queries import evaluate

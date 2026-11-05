@@ -14,11 +14,11 @@ from sqlalchemy import select
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_execution import EvidenceExecutionContext
 from datakeel.core.evidence_models import EvidenceValue, ImageRegion
+from datakeel.dataset_store.rows import EventRow
 from datakeel.evidence.execution import EvidenceExecution
 from datakeel.pipeline import run_pipeline
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence.generator import generate_samples
-from datakeel.storage.database import EventRow, ShardRow, TaskRow
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_decisions import list_decisions
 from datakeel.storage.evidence_import import import_evidence_samples, source_manifest
@@ -27,6 +27,7 @@ from datakeel.storage.evidence_runs import extraction_report
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.worker.runner import execute
+from datakeel.worker_store.rows import ShardRow, TaskRow
 from tests.evidence.helpers import stored_frame_extractors
 
 if TYPE_CHECKING:

@@ -12,13 +12,15 @@ import pytest
 from sqlalchemy import select
 
 from datakeel.core.errors import ExecutionError
-from datakeel.storage.database import Database, TaskRow
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import _pulse, execute, run_worker
+from datakeel.worker_store.rows import TaskRow
 from tests.worker.test_queue import seed
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from datakeel.storage.database import Database
 
 
 def fail_pipeline(*_args: object, **_kwargs: object) -> Never:

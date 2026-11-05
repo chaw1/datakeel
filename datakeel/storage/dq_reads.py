@@ -9,10 +9,11 @@ from sqlalchemy.orm import Session
 from datakeel.core.dq_models import DqResult, DqRule
 from datakeel.core.dq_monitor import DqIssue, DqRuleHistory, DqRun
 from datakeel.core.errors import NotFoundError
-from datakeel.storage.database import Database, ShardRow, TaskRow
+from datakeel.storage.database import Database
 from datakeel.storage.dq_issues import list_issues
 from datakeel.storage.dq_rows import DqResultRow, DqRunRow
 from datakeel.storage.dq_store import list_rules, rule_history
+from datakeel.worker_store.rows import ShardRow, TaskRow
 
 
 def read_rules(db: Database, source_id: str | None = None) -> tuple[DqRule, ...]:

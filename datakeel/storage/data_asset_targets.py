@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.catalog_models import CatalogSnapshot
 from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.dataset_store.rows import DatasetRow
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.data_asset_events import data_dependency_events
 from datakeel.storage.data_asset_native import native_targets
-from datakeel.storage.database import DatasetRow
 
 
 def ref_key(ref: AssetRef) -> tuple[str, str, str, str | None]:

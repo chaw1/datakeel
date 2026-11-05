@@ -12,14 +12,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.models import AssetRef, FileItem, JsonDocument
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.ontology.models import FrozenObject, ObjectSet
 from datakeel.quality import score_quality
 from datakeel.quality.image_pointcloud import assess_file
-from datakeel.storage.database import DatasetRow, TaskRow, VersionRow
 from datakeel.storage.datasets import dataset_dict
 from datakeel.storage.evidence_snapshot import EvidenceSnapshot, observed_file, read_snapshot
 from datakeel.storage.file_state import FileStateRow, FileStateView
 from datakeel.storage.media_observations import MediaObservations, read_media_observations
+from datakeel.worker_store.rows import TaskRow
 
 
 def content_digest(value: JsonValue) -> str:

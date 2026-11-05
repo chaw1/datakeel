@@ -16,8 +16,9 @@ from datakeel.core.evidence_models import (
     Whole,
 )
 from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.catalog_store import publish_snapshot
-from datakeel.storage.database import Database, EventRow
+from datakeel.storage.database import Database
 from datakeel.storage.events import append_event
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.link_queries import read_link_context

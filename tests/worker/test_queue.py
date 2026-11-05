@@ -12,12 +12,16 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 
 from datakeel.core.models import FileItem
-from datakeel.storage.database import Database, EventRow, OutboxRow, ShardRow, TaskRow, VersionRow
+from datakeel.dataset_store.rows import EventRow, VersionRow
+from datakeel.persistence import migrate
 from datakeel.storage.datasets import import_dataset
 from datakeel.worker.queue import DatabaseQueue
+from datakeel.worker_store.rows import OutboxRow, ShardRow, TaskRow
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from datakeel.storage.database import Database
 
 
 def seed(db: Database, tmp_path: Path) -> str:
@@ -110,7 +114,7 @@ def test_explicit_input_version_freezes_selected_manifest(db: Database, tmp_path
 def test_concurrent_migrations_are_idempotent(db: Database) -> None:
     """Verify concurrent migrations are idempotent."""
     with ThreadPoolExecutor(max_workers=2) as pool:
-        list(pool.map(lambda _: db.migrate(), range(4)))
+        list(pool.map(lambda _: migrate(db), range(4)))
 
 
 def test_existing_pipeline_without_default_fields_retains_idempotent_identity(

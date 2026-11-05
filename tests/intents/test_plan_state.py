@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING
 
 from datakeel.actions.registry import POLICIES
 from datakeel.core.intent_models import ChainStep, PageContext
+from datakeel.dataset_store.rows import DatasetRow
 from datakeel.intents.edits import latest_label_set
 from datakeel.intents.verify import unchanged
-from datakeel.storage.database import DatasetRow
 from datakeel.storage.production_queries import list_tasks
 from tests.intents.planning_support import planned, steps, targets, two_projects
 from tests.intents.support import run_to_end

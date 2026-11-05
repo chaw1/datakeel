@@ -19,10 +19,11 @@ from datakeel.core.evidence_models import (
 from datakeel.core.knowledge_models import KnowledgeAnswer, KnowledgeSubject
 from datakeel.core.models import AssetRef
 from datakeel.core.question_models import QuestionProperties, question_revision
+from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.ask_evidence import publish_answer_evidence
 from datakeel.storage.ask_rows import AskAnswerRow, AskSessionRow
 from datakeel.storage.ask_store import get_answer, store_answer
-from datakeel.storage.database import Database, EventRow
+from datakeel.storage.database import Database
 from datakeel.storage.evidence_decisions import decide_assertions
 from datakeel.storage.evidence_projection import projection_hash, rebuild_evidence
 from datakeel.storage.evidence_rows import AssertionRow

@@ -25,6 +25,7 @@ from datakeel.core.llm_data_models import TrainingConfig
 from datakeel.core.models import JsonDocument
 from datakeel.datasheets.templates import build_template
 from datakeel.ontology.functions import invoke_function
+from datakeel.persistence import migrate
 from datakeel.storage.dataset_service import (
     import_paths,
     list_files,
@@ -165,7 +166,7 @@ def test_startup_rebinds_governance_guards_left_on_the_split_function(
                     "EXECUTE FUNCTION datakeel_immutable_training()"
                 )
             )
-    db.migrate()
+    migrate(db)
     with db.session() as session, pytest.raises(DBAPIError, match="governance facts"):
         session.execute(delete(TrainingRunRow).where(TrainingRunRow.id == run.id))
 

@@ -21,6 +21,7 @@ from datakeel.delegation.service import delegate
 from datakeel.delegation.tree import call_tree
 from datakeel.harness.enterprise_cases import seed_enterprise_case
 from datakeel.memory.service import create_memory
+from datakeel.persistence import migrate
 from datakeel.storage import conversation_store as memory
 from datakeel.storage.metric_store import get_metric
 from tests.asgi_client import TestClient
@@ -165,8 +166,8 @@ def test_old_trace_table_receives_nullable_parent_columns(unmigrated_db: Databas
                 "('old','reservation','root','fake-script','2026-01-01',0,'{}',0)"
             )
         )
-    unmigrated_db.migrate()
-    unmigrated_db.migrate()
+    migrate(unmigrated_db)
+    migrate(unmigrated_db)
     columns = {
         column["name"]: column
         for column in inspect(unmigrated_db.engine).get_columns("model_call_trace")
