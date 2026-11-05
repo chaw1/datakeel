@@ -18,6 +18,94 @@ import pytest
 from tests.test_license_mpl import python_inventory, write_python, write_record
 
 
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "loose_module.py",
+        "new_package/__init__.py",
+        "empty_package",
+        "unclaimed.pth",
+        "_virtualenv.py",
+        "_virtualenv.pth",
+        "__pycache__/unclaimed.cpython-312.pyc",
+    ],
+)
+def test_unrecorded_site_entries_fail_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, relative: str
+) -> None:
+    """New installation roots cannot hide outside the MPL wheel's expected roots."""
+    write_python(tmp_path, monkeypatch)
+    assert not python_inventory(tmp_path, monkeypatch).findings
+    path = tmp_path / "site" / relative
+    if relative == "empty_package":
+        path.mkdir()
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("VALUE = 'unrecorded'\n")
+    assert python_inventory(tmp_path, monkeypatch).findings
+
+
+@pytest.mark.parametrize("shared", [False, True])
+def test_other_distribution_record_owns_its_files_and_bytecode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, shared: bool
+) -> None:
+    """A separate generated distribution is legitimate without joining the MPL RECORD."""
+    write_python(tmp_path, monkeypatch)
+    site = tmp_path / "site"
+    if shared:
+        contents = wheel_contents(tmp_path)
+        contents["shared/generated.py"] = contents.pop("generated.py")
+        repack_wheel(tmp_path, contents)
+        (site / "shared").mkdir()
+        (site / "generated.py").rename(site / "shared/generated.py")
+        write_record(site)
+    info = site / "neighbor-2.0.dist-info"
+    info.mkdir()
+    (info / "METADATA").write_text("Name: neighbor\nVersion: 2.0\nLicense-Expression: MIT\n")
+    source = site / ("shared/neighbor.py" if shared else "neighbor.py")
+    source.parent.mkdir(exist_ok=True)
+    source.write_text("NEIGHBOR = True\n")
+    rows: list[str] = []
+    for path in (source, info / "METADATA"):
+        payload = path.read_bytes()
+        digest = base64.urlsafe_b64encode(hashlib.sha256(payload).digest()).rstrip(b"=")
+        rows.append(f"{path.relative_to(site)},sha256={digest.decode()},{len(payload)}")
+    (info / "RECORD").write_text("\n".join([*rows, "neighbor-2.0.dist-info/RECORD,,"]) + "\n")
+    py_compile.compile(str(source), doraise=True)
+    assert not python_inventory(tmp_path, monkeypatch).findings
+    bytecode = Path(importlib.util.cache_from_source(str(source)))
+    original = bytecode.read_bytes()
+    bytecode.write_bytes(original[:16] + b"not compiled source")
+    assert python_inventory(tmp_path, monkeypatch).findings
+    bytecode.write_bytes(original)
+    assert not python_inventory(tmp_path, monkeypatch).findings
+    (site / "unowned_package").mkdir()
+    assert python_inventory(tmp_path, monkeypatch).findings
+
+
+@pytest.mark.parametrize("entry", ["missing_descendant", "directory_record", "metadata_only"])
+def test_other_record_requires_concrete_file_ownership(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, entry: str
+) -> None:
+    """Missing files, directory rows and metadata alone cannot own an empty new root."""
+    write_python(tmp_path, monkeypatch)
+    site = tmp_path / "site"
+    info = site / "neighbor-2.0.dist-info"
+    info.mkdir()
+    (info / "METADATA").write_text("Name: neighbor\nVersion: 2.0\n")
+    record = info / "RECORD"
+    record.write_text("neighbor-2.0.dist-info/METADATA,,\nneighbor-2.0.dist-info/RECORD,,\n")
+    assert not python_inventory(tmp_path, monkeypatch).findings
+    (site / "unowned_root").mkdir()
+    if entry == "missing_descendant":
+        record.write_text(record.read_text() + "unowned_root/missing.py,,\n")
+    elif entry == "directory_record":
+        record.write_text(record.read_text() + "unowned_root,,\n")
+    else:
+        record.unlink()
+    assert python_inventory(tmp_path, monkeypatch).findings
+
+
 def wheel_path(root: Path) -> Path:
     """Locate the independently generated fixture archive, never an upstream source copy."""
     return root / "wheels/generated-1.0-py3-none-any.whl"

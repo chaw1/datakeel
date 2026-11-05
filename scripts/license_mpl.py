@@ -99,26 +99,15 @@ def _python_files(distribution: Distribution) -> tuple[str, ...]:
         _fail("installed distribution has no RECORD")
     notices: list[str] = []
     root = Path(str(distribution.locate_file(""))).resolve()
-    recorded: set[Path] = set()
     for file in files:
         path = Path(str(distribution.locate_file(file)))
         if not path.resolve().is_relative_to(root) or path.is_symlink():
             _fail("installed file escapes the upstream distribution")
-        recorded.add(path.resolve())
         if notice := _record_file(file, path):
             notices.append(notice)
-    _extra_python_files(root, files, recorded)
     if not notices:
         _fail("upstream license notices are missing")
     return tuple(sorted(notices))
-
-
-def _extra_python_files(root: Path, files: list[PackagePath], recorded: set[Path]) -> None:
-    for top in {root / file.parts[0] for file in files}:
-        if top.is_dir() and not top.name.endswith(".dist-info"):
-            for path in top.rglob("*"):
-                if path.is_file() and path.suffix != ".pyc" and path.resolve() not in recorded:
-                    _fail("installed package contains an unrecorded file")
 
 
 def python_mpl_evidence(package: LockedPackage, distribution: Distribution) -> MplEvidence:

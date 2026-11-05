@@ -14,6 +14,7 @@ import re
 import stat
 import zipfile
 from email.parser import BytesParser
+from importlib.metadata import PathDistribution
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, NoReturn
 from urllib.parse import unquote, urlsplit
@@ -30,6 +31,12 @@ if TYPE_CHECKING:
 
 _WHEEL_DATA_PARTS = 3
 _INSTALLER_FILES = frozenset({"INSTALLER", "REQUESTED", "RECORD", "uv_cache.json", "uv_build.json"})
+# uv's venv bootstrap is not a distribution. Only this exact source/.pth pair is allowed;
+# an installer-looking filename or a pyvenv.cfg marker alone cannot authorize source.
+_VENV_BOOTSTRAP = {
+    "_virtualenv.py": "cfb3db86aaa53bb62b5ff764970bec2d71c9228590a0ebec57f6ec926cc0bf1a",
+    "_virtualenv.pth": "69ac3d8f27e679c81b94ab30b3b56e9cd138219b1ba94a1fa3606d5a76a1433d",
+}
 
 
 def _fail(message: str) -> NoReturn:
@@ -132,7 +139,7 @@ def _bytecode(path: Path, root: Path, expected: dict[str, bytes]) -> bool:
         stream = io.BytesIO(payload[16:])
         cached: object = marshal.load(stream)  # noqa: S302  # Compared only; never executed.
         return cached == code and not stream.read()
-    except (OSError, ValueError, EOFError, TypeError):
+    except (OSError, ValueError, EOFError, TypeError, SyntaxError):
         return False
 
 
@@ -140,6 +147,86 @@ def _generated_file(relative: str, root: Path, expected: dict[str, bytes], info:
     if relative in {f"{info}/{name}" for name in _INSTALLER_FILES}:
         return True
     return _bytecode(root / relative, root, expected)
+
+
+def _other_record_files(root: Path, info: str) -> set[str]:
+    owned: set[str] = set()
+    for directory in root.glob("*.dist-info"):
+        if directory.name == info or directory.is_symlink():
+            continue
+        distribution = PathDistribution(directory)
+        if (
+            distribution.read_text("RECORD") is None
+            or not distribution.metadata.get("Name")
+            or not distribution.metadata.get("Version")
+        ):
+            continue
+        for file in distribution.files or ():
+            # Wheel installers also record scripts outside site-packages. Those paths
+            # cannot confer ownership inside this installation root.
+            if (
+                not file.is_absolute()
+                and not {".", ".."}.intersection(file.parts)
+                and (root / file).is_file()
+                and not (root / file).is_symlink()
+            ):
+                owned.add(file.as_posix())
+    return owned
+
+
+def _venv_bootstrap(root: Path) -> dict[str, bytes]:
+    files: dict[str, bytes] = {}
+    for name, digest in _VENV_BOOTSTRAP.items():
+        path = root / name
+        if not path.is_file() or path.is_symlink():
+            return {}
+        contents = path.read_bytes()
+        if hashlib.sha256(contents).hexdigest() != digest:
+            return {}
+        files[name] = contents
+    return files
+
+
+def _site_bytecode(path: Path, root: Path, sources: dict[str, bytes], owned: set[str]) -> bool:
+    if path.suffix != ".pyc" or path.parent.name != "__pycache__":
+        return False
+    try:
+        source = Path(importlib.util.source_from_cache(str(path)))
+        name = source.relative_to(root).as_posix()
+        if name not in sources and name in owned and source.is_file():
+            sources[name] = source.read_bytes()
+        return _bytecode(path, root, sources)
+    except (OSError, ValueError):
+        return False
+
+
+def _site_entries(root: Path, owned: set[str], sources: dict[str, bytes]) -> None:
+    # Check every top-level entry, independently of the MPL RECORD/wheel root set.
+    # Other distributions own their roots through concrete RECORD descendants;
+    # this is an ownership check, not a wheel integrity audit of every non-MPL package.
+    directories = {name.split("/")[0] for name in owned if "/" in name}
+    for path in root.iterdir():
+        if path.is_symlink():
+            _fail("installation contains an escaping path or symbolic link")
+        if path.name == "__pycache__" and path.is_dir():
+            _site_cache(path, root, sources, owned)
+        elif path.is_dir() and path.name in directories:
+            continue
+        elif not path.is_file() or path.name not in owned:
+            _fail("installation contains a top-level entry without a verified owner")
+
+
+def _site_cache(cache: Path, root: Path, sources: dict[str, bytes], owned: set[str]) -> None:
+    entries = tuple(cache.iterdir())
+    if not entries:
+        _fail("installation contains an unowned bytecode directory")
+    for path in entries:
+        if (
+            path.is_symlink()
+            or not path.is_file()
+            or not _site_bytecode(path, root, sources, owned)
+        ):
+            _fail("installation contains bytecode without verifiable owned source")
 
 
 def _compare_installation(distribution: Distribution, files: dict[str, bytes]) -> None:
@@ -159,6 +246,9 @@ def _compare_installation(distribution: Distribution, files: dict[str, bytes]) -
 def _installed_extras(
     root: Path, distribution: Distribution, expected: dict[str, bytes], info: str
 ) -> None:
+    others = _other_record_files(root, info)
+    bootstrap = _venv_bootstrap(root)
+    sources = expected | bootstrap
     actual = {str(file) for file in distribution.files or ()}
     for first in {name.split("/")[0] for name in expected}:
         top = root / first
@@ -178,9 +268,13 @@ def _installed_extras(
         if (
             path.is_file()
             and name not in expected
+            and name not in others
             and not _generated_file(name, root, expected, info)
+            and not _site_bytecode(path, root, sources, others)
         ):
             _fail("installed wheel contains a file absent from the upstream archive")
+    installers = {f"{info}/{name}" for name in _INSTALLER_FILES}
+    _site_entries(root, set(expected) | others | installers | set(bootstrap), sources)
 
 
 def verify_installed_wheel(package: LockedPackage, distribution: Distribution) -> str:
