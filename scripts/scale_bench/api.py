@@ -116,7 +116,9 @@ async def _load(
 ) -> tuple[dict[str, Histogram], float, Counter[str]]:
     histograms = {key: Histogram() for key in (*_ROUTES, "all")}
     errors: Counter[str] = Counter()
-    transport = httpx.ASGITransport(app=create_app(context.db), raise_app_exceptions=False)
+    transport = httpx.ASGITransport(
+        app=create_app(context.db, run_migrations=False), raise_app_exceptions=False
+    )
     async with httpx.AsyncClient(transport=transport, base_url="http://benchmark.test") as client:
         started = perf_counter()
         deadline = started + context.scale.duration_seconds

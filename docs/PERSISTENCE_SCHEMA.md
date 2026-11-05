@@ -4,6 +4,12 @@
 API, CLI, evaluation and test-template setup use it. Offline trace export still constructs a
 read-only `storage.database.Database` and never migrates.
 
+`create_app(database)` migrates by default. Callers that have already initialized the database
+can explicitly use `create_app(database, run_migrations=False)`; they remain responsible for
+providing the complete application schema. The scale ASGI workload uses this option after
+fixture setup adds its benchmark fact table. Normal initialization still rejects unexpected
+tables against the unchanged 99-table canonical inventory.
+
 `storage.database` owns engines, sessions and the serialized migration transaction. It accepts
 frozen `SchemaContribution` values and a separate `CanonicalSchema`; it imports no domain rows
 or installers. The neutral contracts and mapping base are in `core.schema`; `storage.base.Base`

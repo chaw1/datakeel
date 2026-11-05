@@ -4,6 +4,12 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Fixed
+
+- The scale ASGI workload reuses its initialized database without rerunning migrations after
+  benchmark fixture creation. Application construction still migrates by default and validates
+  the canonical tables; prepared callers can explicitly disable migration.
+
 ### Changed
 
 - Persistence initialization uses explicit typed schema contributions and independent ownership

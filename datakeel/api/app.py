@@ -50,11 +50,12 @@ from datakeel.runtime.workflow_service import recover_runs
 from datakeel.storage.database import Database
 
 
-def create_app(db: Database | None = None) -> FastAPI:
-    """Create an isolated application with explicit infrastructure dependencies."""
+def create_app(db: Database | None = None, *, run_migrations: bool = True) -> FastAPI:
+    """Create an application, optionally reusing a database initialized by the caller."""
     database = db or Database()
     warn_unsafe_subprocess()
-    migrate(database)
+    if run_migrations:
+        migrate(database)
     load_config()
     recover_runs(database)
     app = FastAPI(
