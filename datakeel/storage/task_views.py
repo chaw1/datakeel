@@ -8,7 +8,9 @@ from typing import Any
 from sqlalchemy import select
 
 from datakeel.core.media_metadata import media_failure
-from datakeel.storage.database import Database, ShardRow, TaskRow
+from datakeel.storage.database import Database
+from datakeel.storage.vector_reports import vector_task_report
+from datakeel.worker_store.rows import ShardRow, TaskRow
 
 
 def task_dict(db: Database, task: TaskRow) -> dict[str, Any]:
@@ -32,7 +34,9 @@ def task_dict(db: Database, task: TaskRow) -> dict[str, Any]:
         )
         is not None
     ]
+    vector = vector_task_report(db, task.id)
     return {
+        "vector": vector.model_dump(mode="json") if vector else None,
         "id": task.id,
         "dataset_id": task.dataset_id,
         "input_version_id": task.input_version_id,
@@ -48,5 +52,6 @@ def task_dict(db: Database, task: TaskRow) -> dict[str, Any]:
             for s in shards
         ],
         "failed_files": failures,
-        "partial": state == "COMPLETED" and bool(failures),
+        "partial": state == "COMPLETED"
+        and (bool(failures) or (vector is not None and vector.status == "partial_success")),
     }

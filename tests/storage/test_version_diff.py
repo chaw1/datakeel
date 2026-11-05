@@ -12,7 +12,8 @@ from sqlalchemy import select
 
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import FileItem
-from datakeel.storage.database import Database, DatasetRow, EventRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, EventRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.version_diff import compare_versions

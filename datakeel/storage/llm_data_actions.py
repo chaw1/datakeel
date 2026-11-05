@@ -21,8 +21,8 @@ from datakeel.core.models import (
     new_id,
     utcnow,
 )
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.llm_data import analyze_sources, cleaned_filename
-from datakeel.storage.database import VersionRow
 from datakeel.storage.datasets import persist_file
 from datakeel.storage.events import append_event
 from datakeel.storage.file_state import get_file_state

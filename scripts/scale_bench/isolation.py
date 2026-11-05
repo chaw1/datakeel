@@ -14,6 +14,7 @@ from uuid import uuid4
 
 from sqlalchemy import event, text
 
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 from scripts.scale_bench.common import check_space
 from scripts.scale_bench.models import SCALES, Config, Context
@@ -89,7 +90,7 @@ def isolated(config: Config) -> Generator[Context]:
                 connection.execute(text(f'CREATE SCHEMA "{schema}"'))
             bind_schema(db, schema)
         try:
-            db.migrate()
+            migrate(db)
             yield Context(
                 config=config, scale=SCALES[config.size], db=db, root=root, schema_name=schema
             )

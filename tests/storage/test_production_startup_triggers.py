@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import text
 
+from datakeel.persistence import migrate
+
 if TYPE_CHECKING:
     from datakeel.storage.database import Database
 
@@ -41,7 +43,7 @@ def test_restart_with_current_production_guards_needs_no_writer_blocking_ddl(
 ) -> None:
     """Row writers hold their table locks while a second startup completes unchanged."""
     if db.sqlite:
-        db.migrate()
+        migrate(db)
         return
     expected = {table: function for table, (_, function) in _GUARDS.items()}
     assert _bound_functions(db) == expected
@@ -50,7 +52,7 @@ def test_restart_with_current_production_guards_needs_no_writer_blocking_ddl(
         try:
             for table in _GUARDS:
                 writer.execute(text(f"LOCK TABLE {table} IN ROW EXCLUSIVE MODE"))
-            pool.submit(db.migrate).result(timeout=15)
+            pool.submit(migrate, db).result(timeout=15)
         finally:
             transaction.rollback()
     assert _bound_functions(db) == expected
@@ -69,5 +71,5 @@ def test_restart_rebinds_production_guards_left_on_another_function(db: Database
                     "FOR EACH ROW EXECUTE FUNCTION datakeel_immutable_event()"
                 )
             )
-    db.migrate()
+    migrate(db)
     assert _bound_functions(db) == {table: function for table, (_, function) in _GUARDS.items()}

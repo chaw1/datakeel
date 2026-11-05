@@ -18,7 +18,8 @@ from PIL import Image
 from datakeel.actions.production_parameters import SaveRevisionParams
 from datakeel.core.annotation_models import AnnotationBox, AnnotationRecord
 from datakeel.core.production_models import ProductionTask, Project
-from datakeel.storage.database import Database, VersionRow
+from datakeel.dataset_store.rows import VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_queries import list_tasks
 from datakeel.storage.production_revisions import append_revision

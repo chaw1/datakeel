@@ -11,7 +11,7 @@ from sqlalchemy import String, cast, or_, select
 from sqlalchemy.orm import Session
 
 from datakeel.core.models import BoundaryModel, FileItem, JsonDocument
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 
 
 def _identity(file: FileItem) -> str:

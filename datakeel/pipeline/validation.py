@@ -5,8 +5,11 @@
 
 from typing import Any
 
+from pydantic import ValidationError as ModelValidationError
+
 from datakeel.core.custom_operators import custom_reference
 from datakeel.core.errors import ValidationError
+from datakeel.core.vector_models import VECTOR_OPERATORS, VectorError
 from datakeel.operators import REGISTRY
 from datakeel.pipeline.models import ConditionParams, Node, Pipeline
 
@@ -29,7 +32,7 @@ def _slots(node: Node) -> tuple[dict[str, str], dict[str, str]]:
             msg = f"Unknown operator: {node.operator}"
             raise ValidationError(msg)
         operator = REGISTRY[node.operator]
-        operator.params_type.model_validate(node.params)
+        _validate_operator_params(node)
         return dict(operator.manifest.inputs), dict(operator.manifest.outputs)
     if node.operator is not None:
         msg = "Control nodes cannot specify an operator"
@@ -49,6 +52,16 @@ def _slots(node: Node) -> tuple[dict[str, str], dict[str, str]]:
         "pointcloud": "files.point-cloud",
         "other": "files.any",
     }
+
+
+def _validate_operator_params(node: Node) -> None:
+    try:
+        REGISTRY[str(node.operator)].params_type.model_validate(node.params)
+    except ModelValidationError:
+        if node.operator not in VECTOR_OPERATORS:
+            raise
+        msg = "vector_invalid_configuration"
+        raise VectorError(msg) from None
 
 
 def _layers(nodes: dict[str, Node]) -> list[list[Node]]:

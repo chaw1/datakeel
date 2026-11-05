@@ -17,7 +17,8 @@ from datakeel.actions.production_parameters import CreateProjectParams, SplitPac
 from datakeel.core.models import FileItem
 from datakeel.core.production_catalog_models import ProductionLabel, ProductionModel
 from datakeel.core.production_models import ProductionTask, Project
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.production_catalog_changes import (
     create_label_set,
     publish_label_set,

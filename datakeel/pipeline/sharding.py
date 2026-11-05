@@ -14,7 +14,14 @@ def validate_shards(pipeline: Pipeline | None, shards: int) -> None:
         and shards != 1
         and any(
             node.operator
-            in {"evidence.near_duplicate", "media.align", "audio.dedup", "video.dedup"}
+            in {
+                "evidence.near_duplicate",
+                "evidence.vector_embed",
+                "evidence.semantic_duplicate",
+                "media.align",
+                "audio.dedup",
+                "video.dedup",
+            }
             for node in pipeline.nodes
         )
     ):

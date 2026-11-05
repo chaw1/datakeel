@@ -88,6 +88,15 @@ _PREDICATES = {
             description="A knowledge question requires clarification or cannot be answered",
             subject_asset_type="question",
         ),
+        Predicate(
+            id="semantic_duplicate_of",
+            description="Direct cosine candidate pair",
+            object_kind="asset",
+            object_asset_types=("file",),
+            subject_asset_type="file",
+            existence=False,
+            symmetric=True,
+        ),
     )
 }
 

@@ -12,6 +12,7 @@ from typing import Any
 from datakeel.core.errors import ExecutionError
 from datakeel.core.media_metadata import FAILURE_KEY
 from datakeel.core.models import FileItem, JsonDocument
+from datakeel.core.vector_models import VectorError
 from datakeel.operators import REGISTRY, OperatorResult
 from datakeel.pipeline.defaults import default_pipeline
 from datakeel.pipeline.models import ConditionParams, Node, Pipeline, PipelineObservation
@@ -67,6 +68,9 @@ def _observation(
         quality = {
             "issues": [{"code": "execution_failed", "severity": "critical", "message": str(error)}]
         }
+    if isinstance(error, VectorError) and error.counts is not None:
+        quality["vector_failure_counts"] = error.counts.model_dump(mode="json")
+        quality["vector_failure_reason"] = error.reason
     failed = error is None and _every_recording_failed(output, quality)
     if failed:
         reasons = sorted({str(file.metadata[FAILURE_KEY].get("reason", "")) for file in output})

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from datakeel.core.file_queries import FileQuery
 from datakeel.core.models import FileItem
 from datakeel.core.search_models import SearchQuery
-from datakeel.storage.database import DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.dataset_service import get_dataset, import_paths, list_files
 from datakeel.storage.search import search_objects
 from datakeel.storage.version_diff import compare_versions

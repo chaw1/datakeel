@@ -9,10 +9,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
-from datakeel.storage.database import OutboxRow, ShardRow, TaskRow, VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.datasheet_jobs import finish_failed as fail_datasheet
 from datakeel.storage.dq_results import finish_failed as finish_dq_failed
 from datakeel.storage.kg_store import finish_failed
+from datakeel.worker_store.rows import OutboxRow, ShardRow, TaskRow
 
 
 def complete_task(session: Session, task: TaskRow, error: str | None) -> None:

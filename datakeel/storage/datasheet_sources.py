@@ -12,7 +12,7 @@ from datakeel.core.datasheet_models import DatasheetFact
 from datakeel.core.evidence_models import AssertionDecision
 from datakeel.core.kg_product import KGEntity
 from datakeel.core.models import LineageEvent
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.datasheet_values import make_fact
 from datakeel.storage.events import all_events
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow

@@ -6,14 +6,20 @@
 from sqlalchemy import select
 
 from datakeel.actions.models import WorkerDecision
+from datakeel.actions.parameters import PipelineParams
 from datakeel.actions.receipts import receipt
 from datakeel.core.errors import DatakeelError
 from datakeel.core.models import AssetRef, utcnow
+from datakeel.core.vector_models import VectorError
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.action_locks import lock_action_targets
 from datakeel.storage.action_planning import verify_target_state
 from datakeel.storage.action_rows import ActionRunRow
 from datakeel.storage.action_store import audit, locked_plan, publish
-from datakeel.storage.database import Database, TaskRow, VersionRow
+from datakeel.storage.database import Database
+from datakeel.storage.vector_authorization import vector_task_matches
+from datakeel.storage.vector_reports import vector_task_report
+from datakeel.worker_store.rows import TaskRow
 
 
 def start_task_run(db: Database, task_id: str) -> WorkerDecision:
@@ -28,6 +34,12 @@ def start_task_run(db: Database, task_id: str) -> WorkerDecision:
         _plan_row, plan = locked_plan(session, row.plan_id)
         try:
             verify_target_state(session, plan)
+            if plan.action_type == "run_pipeline":
+                params = PipelineParams.model_validate(plan.canonical_params)
+                task = session.get(TaskRow, task_id)
+                if params.vector_prepared is not None and not vector_task_matches(task, params):
+                    msg = "vector_queued_dag_changed"
+                    raise VectorError(msg)
         except DatakeelError as error:
             audit(session, plan, "WORKER_AUTHORIZE", "FAILED", str(error))
             session.commit()
@@ -74,6 +86,11 @@ def reconcile_runs(db: Database) -> int:
                     AssetRef(asset_type="version", asset_id=version.id, version=version.id)
                 )
             event = receipt(plan, row.id, outputs, error=error)
+            vector = vector_task_report(db, task.id)
+            if vector is not None:
+                event = event.model_copy(
+                    update={"quality": {**event.quality, "vector": vector.model_dump(mode="json")}}
+                )
             row.status = "FAILED" if error else "SUCCEEDED"
             row.error, row.receipt = error, event.model_dump(mode="json")
             row.completed_at = utcnow().timestamp()

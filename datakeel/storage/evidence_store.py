@@ -14,13 +14,16 @@ from datakeel.core.evidence_models import Assertion
 from datakeel.core.kg_contracts import KGSchema
 from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.models import AssetRef, LineageEvent
-from datakeel.storage.database import Database, EventRow
+from datakeel.dataset_store.rows import EventRow
+from datakeel.storage.database import Database
 from datakeel.storage.events import append_event
 from datakeel.storage.evidence_artifacts import load_bundle, publish_bundle
 from datakeel.storage.evidence_cache import cache_predecessors, invalidations_for, project_cache
 from datakeel.storage.evidence_decisions import append_decision, assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_provenance import kg_predecessors
+from datakeel.storage.vector_cache import project_vectors, vector_predecessors
+from datakeel.storage.vector_integrity import validate_vector_bundle
 
 
 def _identity(ref: AssetRef) -> tuple[str, str, str, str | None]:
@@ -84,6 +87,7 @@ def validated_bundle(event: LineageEvent, bundle: KnowledgeBundle | None = None)
     ):
         msg = "Bundle invalidations must belong to their producing extraction event"
         raise ValidationError(msg)
+    validate_vector_bundle(event, bundle)
     return bundle
 
 
@@ -128,6 +132,7 @@ def project_bundle(session: Session, event: LineageEvent, bundle: KnowledgeBundl
     for decision in bundle.invalidations:
         append_decision(session, decision, f"invalidation:{decision.id}")
     project_cache(session, bundle, event.event_id)
+    project_vectors(session, bundle.vector_products, event.event_id)
 
 
 def record_extraction(
@@ -167,7 +172,11 @@ def record_extraction_in_session(
             raise ConflictError(msg)
         return result
     predecessors = tuple(
-        sorted(set(cache_predecessors(session, bundle)) | set(kg_predecessors(session, event)))
+        sorted(
+            set(cache_predecessors(session, bundle))
+            | set(kg_predecessors(session, event))
+            | set(vector_predecessors(session, bundle.vector_products))
+        )
     )
     bundle = bundle.model_copy(
         update={

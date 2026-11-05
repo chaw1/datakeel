@@ -19,9 +19,9 @@ from datakeel.annotation_qa import Draft
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.production_catalog_models import ProductionTemplate
 from datakeel.core.production_models import AnnotationRevision, Project
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.operators.evidence.contracts import read_near_duplicate
 from datakeel.storage.annotation_frames import revision_view
-from datakeel.storage.database import VersionRow
 from datakeel.storage.production_catalog import require_label_set
 from datakeel.storage.production_prelabel_refs import object_confidences
 from datakeel.storage.production_rows import ProductionRevisionRow, ProductionTaskRow

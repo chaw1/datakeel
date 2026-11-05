@@ -1,0 +1,104 @@
+{
+  "vector_canonical_sha256": "b5b734799576ffc3faf61f90a2462fdb81a9dfdeb24032a0cd9f5c900b8059b7",
+  "storage_additions": {
+    "datakeel/storage/action_approvals.py": 2,
+    "datakeel/storage/action_execution.py": 2,
+    "datakeel/storage/action_planning.py": 3,
+    "datakeel/storage/action_store.py": 1,
+    "datakeel/storage/action_worker.py": 15,
+    "datakeel/storage/evidence_projection.py": 20,
+    "datakeel/storage/evidence_store.py": 8,
+    "datakeel/storage/task_models.py": 2,
+    "datakeel/storage/task_queue.py": 13,
+    "datakeel/storage/task_submission.py": 39,
+    "datakeel/storage/task_views.py": 4,
+    "datakeel/storage/vector_authorization.py": 126,
+    "datakeel/storage/vector_budget.py": 194,
+    "datakeel/storage/vector_cache.py": 68,
+    "datakeel/storage/vector_completion.py": 97,
+    "datakeel/storage/vector_integrity.py": 55,
+    "datakeel/storage/vector_planning.py": 72,
+    "datakeel/storage/vector_reports.py": 60,
+    "datakeel/storage/vector_rows.py": 49
+  },
+  "storage_paths": [
+    "datakeel/storage/task_submission.py",
+    "datakeel/storage/vector_authorization.py",
+    "datakeel/storage/vector_budget.py",
+    "datakeel/storage/vector_cache.py",
+    "datakeel/storage/vector_completion.py",
+    "datakeel/storage/vector_integrity.py",
+    "datakeel/storage/vector_planning.py",
+    "datakeel/storage/vector_reports.py",
+    "datakeel/storage/vector_rows.py"
+  ],
+  "schema_additions": {
+    "datakeel/persistence/vector.py": 13,
+    "datakeel/persistence/legacy.py": 2,
+    "datakeel/persistence/canonical.py": 6,
+    "datakeel/worker_store/rows.py": 1
+  },
+  "import_exceptions": [
+    "datakeel.evidence.vector_execution -> datakeel.operators.base",
+    "datakeel.evidence.vector_execution -> datakeel.pipeline.models",
+    "datakeel.evidence.vector_execution -> datakeel.storage.database",
+    "datakeel.evidence.vector_execution -> datakeel.storage.vector_authorization",
+    "datakeel.evidence.vector_execution -> datakeel.storage.vector_budget",
+    "datakeel.evidence.vector_execution -> datakeel.storage.vector_cache",
+    "datakeel.evidence.vector_plan -> datakeel.pipeline.models",
+    "datakeel.evidence.vector_plan -> datakeel.pipeline.validation",
+    "datakeel.evidence.vector_publication -> datakeel.pipeline.models",
+    "datakeel.evidence.vector_transport -> datakeel.storage.database",
+    "datakeel.evidence.vector_transport -> datakeel.storage.vector_authorization",
+    "datakeel.evidence.vector_transport -> datakeel.storage.vector_budget",
+    "datakeel.storage.action_worker -> datakeel.actions.parameters",
+    "datakeel.storage.task_queue -> datakeel.evidence.vector_plan",
+    "datakeel.storage.task_submission -> datakeel.evidence.vector_plan",
+    "datakeel.storage.task_submission -> datakeel.pipeline",
+    "datakeel.storage.task_submission -> datakeel.pipeline.sharding",
+    "datakeel.storage.vector_authorization -> datakeel.actions.models",
+    "datakeel.storage.vector_authorization -> datakeel.actions.parameters",
+    "datakeel.storage.vector_authorization -> datakeel.actions.policy",
+    "datakeel.storage.vector_authorization -> datakeel.pipeline.models",
+    "datakeel.storage.vector_completion -> datakeel.actions.models",
+    "datakeel.storage.vector_completion -> datakeel.actions.parameters",
+    "datakeel.storage.vector_completion -> datakeel.evidence.vector_plan",
+    "datakeel.storage.vector_completion -> datakeel.pipeline.models",
+    "datakeel.storage.vector_integrity -> datakeel.evidence.vector_duplicate",
+    "datakeel.storage.vector_planning -> datakeel.actions.models",
+    "datakeel.storage.vector_planning -> datakeel.actions.parameters",
+    "datakeel.storage.vector_planning -> datakeel.evidence.vector_plan"
+  ],
+  "legacy_row_imports": {
+    "datakeel/storage/vector_planning.py": {
+      "datakeel.dataset_store.rows": [
+        "DatasetRow",
+        "VersionRow"
+      ]
+    },
+    "datakeel/storage/vector_completion.py": {
+      "datakeel.worker_store.rows": [
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/evidence_projection.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ]
+    },
+    "datakeel/storage/vector_reports.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ],
+      "datakeel.worker_store.rows": [
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/vector_authorization.py": {
+      "datakeel.worker_store.rows": [
+        "ShardRow",
+        "TaskRow"
+      ]
+    }
+  }
+}

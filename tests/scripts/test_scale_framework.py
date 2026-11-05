@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 from sqlalchemy import select
 
-from datakeel.storage.database import DatasetRow
+from datakeel.dataset_store.rows import DatasetRow
 from scripts.scale_bench import __main__ as cli
 from scripts.scale_bench import common
 from scripts.scale_bench.datasets import seed_dataset

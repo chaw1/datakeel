@@ -11,6 +11,7 @@ from sqlalchemy.exc import DatabaseError
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.production_catalog_models import ProductionTemplate
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 from datakeel.storage.production_catalog_rows import (
     ProductionTemplateRow,
@@ -72,12 +73,12 @@ def test_legacy_projects_lock_to_the_revision_they_used_and_rerun_changes_nothin
     """Migration locks every project at the template's current revision exactly once."""
     (first, tasks), (second, _) = seed_two_projects(db, tmp_path / "src")
     _make_legacy(db)
-    db.migrate()
+    migrate(db)
     assert get_project(db, first.id).template_version == 2
     assert get_project(db, second.id).template_version == 2
     migrated = _snapshot(db)
     assert migrated[0] == 1
-    db.migrate()
+    migrate(db)
     assert _snapshot(db) == migrated
     with pytest.raises(ValidationError, match="colour"):
         save(db, tasks[0], [box("cat")])

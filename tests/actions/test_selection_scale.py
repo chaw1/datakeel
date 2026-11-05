@@ -14,9 +14,9 @@ from sqlalchemy import event
 from datakeel.actions.models import ActionContext, ActionImpact, ActionPlan
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.models import AssetRef, FileItem, utcnow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet
 from datakeel.storage.action_selection import selected_files
-from datakeel.storage.database import DatasetRow, VersionRow
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

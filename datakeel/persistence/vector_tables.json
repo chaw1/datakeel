@@ -1,0 +1,23 @@
+[
+  {
+    "table": "vector_cache",
+    "owner": "vector_store",
+    "row_class": "VectorCacheRow",
+    "source_module": "datakeel.storage.vector_rows",
+    "batch": "W-E-E2"
+  },
+  {
+    "table": "vector_fake_accounts",
+    "owner": "vector_store",
+    "row_class": "VectorAccountRow",
+    "source_module": "datakeel.storage.vector_rows",
+    "batch": "W-E-E2"
+  },
+  {
+    "table": "vector_fake_attempts",
+    "owner": "vector_store",
+    "row_class": "VectorAttemptRow",
+    "source_module": "datakeel.storage.vector_rows",
+    "batch": "W-E-E2"
+  }
+]

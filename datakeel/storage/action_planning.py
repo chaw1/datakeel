@@ -68,6 +68,7 @@ from datakeel.storage.production_review_policy import (
 )
 from datakeel.storage.release_actions import publication_impact
 from datakeel.storage.training_export import prepare_training_export
+from datakeel.storage.vector_planning import prepare_vector_params, verify_vector_params
 
 
 def _impact_count(session: Session, params: BoundaryModel, manifest: FrozenManifest) -> int:
@@ -109,6 +110,7 @@ def verify_target_state(session: Session, plan: ActionPlan) -> None:
         msg = "Accepted action plan_digest was modified"
         raise ConflictError(msg)
     params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
+    verify_vector_params(session, plan, params)
     current = current_manifest(session, plan, params)
     if snapshot_digest(session, params, current) != plan.state_digest or current.truncated:
         msg = "Action target state changed after preparation"
@@ -141,7 +143,7 @@ def _prepare_params(session: Session, action_type: str, params: JsonDocument) ->
             msg = "Export destination must be a filename under the exports directory"
             raise ValidationError(msg)
         parsed = parsed.model_copy(update={"destination": destination})
-    return parsed
+    return prepare_vector_params(session, parsed)
 
 
 def _reversible(session: Session, params: BoundaryModel, *, declared: bool) -> bool:
@@ -161,6 +163,7 @@ def _external(action_type: str, parsed: object) -> bool:
     kg = parsed.prepared if isinstance(parsed, RunKGExtractionParams) else None
     return (
         action_type == "export_dataset"
+        or (isinstance(parsed, PipelineParams) and parsed.vector_prepared is not None)
         or bool(kg and kg.external)
         or (
             isinstance(parsed, GenerateDatasheetParams)

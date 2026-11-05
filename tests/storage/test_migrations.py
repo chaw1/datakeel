@@ -12,6 +12,7 @@ import pytest
 from sqlalchemy import inspect, text
 
 from datakeel.core.errors import ValidationError
+from datakeel.persistence import migrate
 from datakeel.storage.task_queries import list_tasks
 
 if TYPE_CHECKING:
@@ -47,8 +48,8 @@ def test_migrate_old_task_schema_preserves_data_and_is_idempotent(
     _legacy_tasks(unmigrated_db)
     before = inspect(unmigrated_db.engine).get_columns("tasks")
     assert "finished_at" not in {column["name"] for column in before}
-    unmigrated_db.migrate()
-    unmigrated_db.migrate()
+    migrate(unmigrated_db)
+    migrate(unmigrated_db)
     tasks = list_tasks(unmigrated_db)
     assert [(task.id, task.state, task.created_at, task.finished_at) for task in tasks] == [
         ("legacy-task", "COMPLETED", 1700000000, None)
@@ -64,7 +65,7 @@ def test_concurrent_old_schema_migrations_share_the_lock(unmigrated_db: Database
     """Concurrent startup callers cannot both try to add the same legacy column."""
     _legacy_tasks(unmigrated_db)
     with ThreadPoolExecutor(max_workers=2) as pool:
-        list(pool.map(lambda _: unmigrated_db.migrate(), range(4)))
+        list(pool.map(lambda _: migrate(unmigrated_db), range(4)))
     assert len(list_tasks(unmigrated_db)) == 1
 
 
@@ -74,7 +75,7 @@ def test_migrate_missing_required_column_fails_without_guessing_values(
     """An incompatible old table is rejected with a concrete table and column reason."""
     _legacy_tasks(unmigrated_db, omit_state=True)
     with pytest.raises(ValidationError, match=r"non-nullable column tasks.state.*existing rows"):
-        unmigrated_db.migrate()
+        migrate(unmigrated_db)
     columns = {column["name"] for column in inspect(unmigrated_db.engine).get_columns("tasks")}
     assert "finished_at" not in columns
     assert "state" not in columns
@@ -87,7 +88,7 @@ def test_migrate_keeps_unknown_columns_and_existing_column_types(unmigrated_db: 
         connection.execute(text("ALTER TABLE tasks ADD COLUMN legacy_note VARCHAR(40)"))
         connection.execute(text("UPDATE tasks SET legacy_note = 'preserved'"))
     before = inspect(unmigrated_db.engine).get_columns("tasks")
-    unmigrated_db.migrate()
+    migrate(unmigrated_db)
     after = inspect(unmigrated_db.engine).get_columns("tasks")
     assert {column["name"]: str(column["type"]) for column in before}.items() <= {
         column["name"]: str(column["type"]) for column in after

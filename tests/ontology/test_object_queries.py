@@ -19,8 +19,8 @@ import pytest
 from sqlalchemy import select
 
 from datakeel.core.errors import NotFoundError
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.ontology.models import ObjectSet
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.object_queries import evaluate, evaluate_in_session
 from datakeel.storage.task_queue import DatabaseQueue

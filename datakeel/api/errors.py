@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from datakeel.core.errors import AuthorizationError, ConflictError, DatakeelError, NotFoundError
+from datakeel.core.vector_models import VectorError
 from datakeel.storage.production_revisions import RevisionConflictError
 
 
@@ -28,6 +29,10 @@ async def domain_error(_request: Request, exc: Exception) -> JSONResponse:
                 if exc.latest_revision
                 else None,
             },
+        )
+    if isinstance(exc, VectorError):
+        return JSONResponse(
+            status_code=status, content={"detail": str(exc), "reason": exc.reason, "mode": "fake"}
         )
     return JSONResponse(status_code=status, content={"detail": str(exc)})
 

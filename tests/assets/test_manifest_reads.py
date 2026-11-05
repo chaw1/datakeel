@@ -13,8 +13,9 @@ from datakeel.api.app import create_app
 from datakeel.core.data_asset_models import AssetClassification, AssetUsageQuery
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.data_asset_access import list_usage
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_files, list_versions
 from tests.assets.entry_helpers import grant, publish, revoke
 

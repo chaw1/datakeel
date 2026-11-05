@@ -17,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.production_models import Project, TaskPackage
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.production_rows import (
     ProductionPackageRow,
     ProductionProjectRow,

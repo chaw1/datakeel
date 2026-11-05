@@ -9,9 +9,10 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.operators.media.command import run_tool
 from datakeel.operators.media.tools import probe_file
-from datakeel.storage.database import Database, VersionRow
+from datakeel.storage.database import Database
 
 if TYPE_CHECKING:
     from pydantic import JsonValue

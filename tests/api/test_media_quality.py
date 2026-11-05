@@ -13,12 +13,12 @@ from PIL import Image
 
 from datakeel.api.app import create_app
 from datakeel.pipeline.image_pointcloud import image_pointcloud_pipeline
-from datakeel.storage.database import TaskRow
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.governance_service import get_report
 from datakeel.storage.lineage_service import get_graph
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
+from datakeel.worker_store.rows import TaskRow
 
 if TYPE_CHECKING:
     from pathlib import Path

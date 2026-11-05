@@ -10,6 +10,7 @@ from datakeel.operators.evidence.caption_mentions import OPERATOR as CAPTION_MEN
 from datakeel.operators.evidence.image_phash import OPERATOR as IMAGE_PHASH
 from datakeel.operators.evidence.label_gap import OPERATOR as LABEL_GAP
 from datakeel.operators.evidence.near_duplicate import OPERATOR as NEAR_DUPLICATE
+from datakeel.operators.evidence.vector import DUPLICATE, EMBED
 from datakeel.operators.file.corrupt_check import OPERATOR as CORRUPT_CHECK
 from datakeel.operators.file.dedup import OPERATOR as FILE_DEDUP
 from datakeel.operators.file.empty_check import OPERATOR as EMPTY_CHECK
@@ -67,6 +68,8 @@ REGISTRY: dict[str, Operator] = {
         ANNOTATION_LABELS,
         LABEL_GAP,
         NEAR_DUPLICATE,
+        EMBED,
+        DUPLICATE,
         TABLE_PROFILE,
         SERIES_TIMESTAMP,
         SERIES_ORDER,

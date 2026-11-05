@@ -93,6 +93,7 @@ def test_assertion_three_states_and_predicate_registry_are_explicit() -> None:
         "ask.cites_asset",
         "ask.cites_assertion",
         "ask.knowledge_unresolved",
+        "semantic_duplicate_of",
     )
     assert predicate("near_duplicate_of").symmetric
     assert not predicate("near_duplicate_of").transitive

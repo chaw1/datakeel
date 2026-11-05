@@ -7,6 +7,7 @@ from urllib.parse import quote
 
 from datakeel.core.evidence_models import Assertion, EvidenceValue, ImageRegion, TextSpan
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.core.vector_results import VectorInputStatus
 from datakeel.evidence.query_models import (
     EvidenceBox,
     EvidenceExplanation,
@@ -84,6 +85,9 @@ def present_sample(value: FrozenObject, assertions: list[Assertion]) -> Evidence
         asset_ref=value.asset_ref,
         dataset_id=dataset_id,
         source_version=value.asset_ref.version or "",
+        vector=VectorInputStatus.model_validate(metadata["vector_input"])
+        if "vector_input" in metadata
+        else None,
         filename=str(properties["filename"]),
         split=split if split in ("train", "val") else None,
         thumbnail_url=None

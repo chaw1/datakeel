@@ -13,7 +13,7 @@ from datakeel.core.errors import ConflictError, ExecutionError, NotFoundError
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.portable_metadata import portable_metadata
 from datakeel.core.release_models import ReleaseFile, annotation_statistics
-from datakeel.storage.database import DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 
 
 def require_version(

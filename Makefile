@@ -41,6 +41,7 @@ check-python-static:
 	uv run lint-imports
 	uv run python scripts/check_size.py
 	uv run python scripts/check_boundaries.py
+	uv run python -m scripts.check_schema
 	uv run python scripts/check_web_tests.py
 
 check-pytest:

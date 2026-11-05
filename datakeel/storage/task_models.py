@@ -7,6 +7,7 @@ from pydantic import Field
 
 from datakeel.core.media_models import MediaFailure
 from datakeel.core.models import Record
+from datakeel.core.vector_results import VectorTaskReport
 
 
 class ShardView(Record):
@@ -38,3 +39,4 @@ class TaskView(Record):
     shards: list[ShardView]
     failed_files: list[MediaFailure] = Field(default_factory=list[MediaFailure])
     partial: bool = False
+    vector: VectorTaskReport | None = Field(default=None, exclude_if=lambda value: value is None)

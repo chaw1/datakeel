@@ -14,6 +14,7 @@ from datakeel.actions.models import ActionContext, ApprovalDecision, ExecuteRequ
 from datakeel.actions.service import approve_plan, execute_plan, prepare_action
 from datakeel.core.models import JsonDocument, new_id
 from datakeel.core.production_models import Project
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_queries import list_tasks
@@ -92,7 +93,7 @@ def main() -> None:
     args = parser.parse_args()
     db = Database(f"sqlite:///{data_dir() / 'datakeel.db'}")
     try:
-        db.migrate()
+        migrate(db)
         task_id, sample_id, duration = _setup(db, args.output.parent / "benchmark-media")
         previous = None
         samples: list[float] = []

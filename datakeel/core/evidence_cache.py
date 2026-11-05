@@ -19,6 +19,7 @@ from datakeel.core.evidence_models import (
     require_version,
 )
 from datakeel.core.models import AssetRef, BoundaryModel
+from datakeel.core.vector_results import VectorCacheProduct, VectorPair, VectorSample
 
 
 class EvidenceInput(BoundaryModel):
@@ -84,6 +85,11 @@ class KnowledgeBundle(BoundaryModel):
     schema_version: Literal["1.0"] = "1.0"
     run_id: str = Field(min_length=1)
     assertions: tuple[Assertion, ...]
+    vector_products: tuple[VectorCacheProduct, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
+    vector_samples: tuple[VectorSample, ...] = Field(default=(), exclude_if=lambda value: not value)
+    vector_pairs: tuple[VectorPair, ...] = Field(default=(), exclude_if=lambda value: not value)
     cache_entries: tuple[EvidenceCacheEntry, ...] = ()
     invalidations: tuple[AssertionDecision, ...] = ()
     prior_cache_event_ids: tuple[str, ...] = ()

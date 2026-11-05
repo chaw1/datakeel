@@ -10,6 +10,7 @@ from pydantic import Field, model_validator
 
 from datakeel.core.models import AssetRef, BoundaryModel, new_id, utcnow
 from datakeel.core.predicate_registry import Predicate, PredicateId, predicate
+from datakeel.core.vector_results import VectorMeasurement
 
 Presence = Literal["present", "absent", "unknown"]
 AssertionStatus = Literal["candidate", "accepted", "rejected"]
@@ -142,6 +143,9 @@ class Assertion(BoundaryModel):
     created_at: datetime = Field(default_factory=utcnow)
     decided_by: str | None = None
     decided_at: datetime | None = None
+    measurement: VectorMeasurement | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     distance: int | None = Field(default=None, ge=0)
     reason: str | None = None
     verification: Verification | None = Field(default=None, exclude_if=lambda value: value is None)
@@ -160,6 +164,8 @@ class Assertion(BoundaryModel):
         ):
             msg = "Evidence timestamps must include a UTC offset"
             raise ValueError(msg)
+        if self.predicate == "semantic_duplicate_of":
+            self._validate_semantic_pair()
         if self.predicate == "near_duplicate_of":
             self._validate_duplicate()
         elif definition.object_kind == "asset":
@@ -181,6 +187,19 @@ class Assertion(BoundaryModel):
             msg = "Unanswerable questions require an unknown metric EvidenceValue"
             raise ValueError(msg)
         return self
+
+    def _validate_semantic_pair(self) -> None:
+        if (
+            not isinstance(self.object, AssetRef)
+            or self.subject.asset_id >= self.object.asset_id
+            or self.measurement is None
+            or self.measurement.similarity < self.measurement.threshold
+            or len(self.anchors) != len((self.subject, self.object))
+            or tuple(anchor.asset_ref for anchor in self.anchors) != (self.subject, self.object)
+            or any(not isinstance(anchor.selector, Whole) for anchor in self.anchors)
+        ):
+            msg = "Semantic duplicates require an ordered pair, cosine and two Whole anchors"
+            raise ValueError(msg)
 
     def _validate_subject(self, definition: Predicate) -> None:
         if (

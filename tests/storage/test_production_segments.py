@@ -34,9 +34,10 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.production_attributes import TemplateAttribute
 from datakeel.core.production_catalog_models import ProductionTemplate
 from datakeel.core.production_models import ProductionTask, Project, WorkflowTier
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.annotation_store import import_annotations_in_session
-from datakeel.storage.database import Database, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.production_assignments import assign_tasks
 from datakeel.storage.production_catalog import validate_template_content
 from datakeel.storage.production_catalog_changes import manage_template

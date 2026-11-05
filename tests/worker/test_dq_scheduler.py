@@ -17,13 +17,15 @@ from datakeel.core.dq_cron import cron_matches, latest_match, validate_cron
 from datakeel.core.dq_models import DqResult, DqRule
 from datakeel.core.dq_monitor import DqCompletion, DqRun
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
-from datakeel.storage.database import Database, ShardRow, TaskRow, VersionRow
+from datakeel.dataset_store.rows import VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dq_jobs import schedule_due, schedule_rule
 from datakeel.storage.dq_reads import get_run, read_issues, read_results
 from datakeel.storage.dq_rows import DqRunRow, DqWebhookRow
 from datakeel.storage.dq_store import delete_rule, upsert_rule
 from datakeel.storage.dq_views import read_summary
 from datakeel.worker.queue import DatabaseQueue, Lease
+from datakeel.worker_store.rows import ShardRow, TaskRow
 from tests.storage.test_dq_store import definition
 
 

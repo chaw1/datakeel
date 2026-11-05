@@ -10,7 +10,8 @@ from sqlalchemy import select
 
 from datakeel.api.app import create_app
 from datakeel.core.models import AssetRef
-from datakeel.storage.database import Database, TaskRow
+from datakeel.storage.database import Database
+from datakeel.worker_store.rows import TaskRow
 from tests.assets.entry_helpers import grant, publish
 from tests.evidence.interface_fixtures import seed_query_evidence
 

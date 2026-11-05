@@ -15,6 +15,7 @@ from datakeel.core.evidence_models import (
     TextSpan,
 )
 from datakeel.core.models import AssetRef, BoundaryModel
+from datakeel.core.vector_results import VectorInputStatus
 from datakeel.ontology.models import ObjectKind, ObjectSet, PropertyFilter
 
 
@@ -72,6 +73,7 @@ class EvidenceSample(BoundaryModel):
     asset_ref: AssetRef
     dataset_id: str
     source_version: str
+    vector: VectorInputStatus | None = Field(default=None, exclude_if=lambda value: value is None)
     filename: str
     split: Literal["train", "val", "test"] | None
     thumbnail_url: str | None

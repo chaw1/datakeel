@@ -16,12 +16,15 @@ from datakeel.core.media_models import MediaFailure
 from datakeel.core.models import FileItem
 from datakeel.core.settings import get_settings
 from datakeel.evidence.execution import EvidenceExecution
+from datakeel.evidence.vector_execution import VectorExecution
+from datakeel.evidence.vector_plan import has_vectors
 from datakeel.pipeline import Pipeline, default_pipeline, run_pipeline
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.datasets import materialize_files, persist_files
 from datakeel.storage.dq_jobs import schedule_due
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.production_reaper import reap_expired_leases
+from datakeel.storage.vector_authorization import vector_permit
 from datakeel.worker.custom_runner import CustomExecution
 from datakeel.worker.datasheet_runner import execute_datasheet
 from datakeel.worker.dq_runner import execute_dq
@@ -38,6 +41,11 @@ _ERROR_LIMIT = 4000
 
 def execute(queue: DatabaseQueue, lease: Lease) -> bool:
     """Run one attempt and persist either a fenced result or a durable failure."""
+    decision = start_task_run(queue.db, lease.task_id)
+    if not decision.allowed:
+        return queue.finish(
+            lease, [], [], error=decision.error or "Action target validation failed"
+        )
     if lease.dq_run_id is not None:
         return execute_dq(queue, lease)
     if lease.kg_run_id is not None:
@@ -49,17 +57,14 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
         lease.pipeline if lease.pipeline is not None else default_pipeline()
     )
     observations = Observations(lease, definition)
-    evidence = EvidenceExecution(
-        queue.db,
-        EvidenceExecutionContext(
-            task_id=lease.task_id,
-            shard_id=lease.shard_id,
-            version_id=lease.input_version_id or source_manifest(queue.db, lease.dataset_id)[0],
-        ),
-    )
+    evidence = _evidence_execution(queue, lease)
     heartbeat = threading.Thread(target=_pulse, args=(queue, lease, stop), daemon=True)
     heartbeat.start()
+    vector: VectorExecution | None = None
     try:
+        if has_vectors(definition):
+            permit = vector_permit(queue.db, lease.task_id, lease.shard_id, lease.owner)
+            vector = VectorExecution(queue.db, evidence.context, permit)
         output_dir = data_dir() / "runs" / lease.task_id / lease.shard_id / lease.owner
         output_dir.mkdir(parents=True, exist_ok=True)
         outputs = run_pipeline(
@@ -67,7 +72,7 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
             output_dir,
             lease.pipeline,
             observations.observe,
-            operator_executor=CustomExecution(queue.db, lease, evidence).execute_node,
+            operator_executor=CustomExecution(queue.db, lease, evidence, vector).execute_node,
         )
         _require_processed_recording(outputs)
         persisted = persist_files(outputs)
@@ -75,7 +80,7 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
             lease,
             persisted,
             published_media_events(observations.events, persisted),
-            evidence=tuple(evidence.pending),
+            evidence=tuple(evidence.pending) + (tuple(vector.pending) if vector else ()),
         )
     except Exception as exc:
         logger.exception("Shard execution failed", extra={"shard_id": lease.shard_id})
@@ -84,7 +89,7 @@ def execute(queue: DatabaseQueue, lease: Lease) -> bool:
             [],
             published_media_events(observations.events, []),
             error=f"{type(exc).__name__}: {exc}",
-            evidence=tuple(evidence.pending),
+            evidence=() if has_vectors(definition) else tuple(evidence.pending),
         )
         if not accepted:
             msg = "Cannot persist shard failure after its lease was lost"
@@ -127,14 +132,7 @@ def run_worker(
         reconcile_runs(db)
         lease = queue.claim(queue_name)
         if lease:
-            decision = start_task_run(db, lease.task_id)
-            accepted = (
-                execute(queue, lease)
-                if decision.allowed
-                else queue.finish(
-                    lease, [], [], error=decision.error or "Action target validation failed"
-                )
-            )
+            accepted = execute(queue, lease)
             logger.info(
                 "Shard attempt completed",
                 extra={"shard_id": lease.shard_id, "committed": accepted},
@@ -145,3 +143,14 @@ def run_worker(
             return
         else:
             time.sleep(poll)
+
+
+def _evidence_execution(queue: DatabaseQueue, lease: Lease) -> EvidenceExecution:
+    return EvidenceExecution(
+        queue.db,
+        EvidenceExecutionContext(
+            task_id=lease.task_id,
+            shard_id=lease.shard_id,
+            version_id=lease.input_version_id or source_manifest(queue.db, lease.dataset_id)[0],
+        ),
+    )

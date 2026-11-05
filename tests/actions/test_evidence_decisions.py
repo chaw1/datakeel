@@ -36,7 +36,7 @@ from datakeel.core.evidence_models import (
     ExtractorRef,
 )
 from datakeel.core.models import AssetRef, JsonDocument, LineageEvent, new_id
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.evidence_decisions import decide_assertions, list_decisions
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.evidence_store import list_assertions, record_extraction

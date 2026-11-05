@@ -39,13 +39,13 @@ from datakeel.ontology.registry import registry
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.data_asset_store import create_asset_in_session, set_status_in_session
-from datakeel.storage.database import TaskRow
 from datakeel.storage.identity_rows import RoleRow, SkillRow, TeamRow, UserRow
 from datakeel.storage.production_assignments import assign_tasks
 from datakeel.storage.production_catalog_rows import ProductionModelRow, ProductionTemplateRow
 from datakeel.storage.production_predictions import run_prelabel
 from datakeel.storage.production_queries import list_packages
 from datakeel.storage.production_reviews import review_task, submit_task
+from datakeel.worker_store.rows import TaskRow
 from tests.production_helpers import production_fixture
 from tests.storage.test_production_workflow import save
 

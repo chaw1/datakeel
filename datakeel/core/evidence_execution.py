@@ -9,6 +9,7 @@ from pydantic import Field
 
 from datakeel.core.evidence_cache import KnowledgeBundle
 from datakeel.core.models import BoundaryModel, LineageEvent
+from datakeel.core.vector_results import VectorNodeReport
 
 
 class EvidenceExecutionContext(BoundaryModel):
@@ -34,6 +35,7 @@ class ExtractionCounts(BoundaryModel):
     extracted: int = Field(default=0, ge=0)
     failed: int = Field(default=0, ge=0)
     elapsed_seconds: float = Field(default=0, ge=0)
+    vector: VectorNodeReport | None = Field(default=None, exclude_if=lambda value: value is None)
     implementation: Literal["python", "rust"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )

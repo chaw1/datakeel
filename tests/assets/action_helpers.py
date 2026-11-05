@@ -5,7 +5,8 @@
 
 from datakeel.core.data_asset_models import DataAsset
 from datakeel.core.models import AssetRef, BoundaryModel, FileItem, JsonDocument
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from tests.assets.entry_helpers import publish
 
 

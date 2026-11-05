@@ -3728,6 +3728,7 @@ export interface components {
             status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "DENIED";
             /** Task Id */
             task_id?: string | null;
+            vector?: components["schemas"]["VectorTaskReport"] | null;
         };
         /**
          * ActionType
@@ -4535,6 +4536,8 @@ export interface components {
             extractor: components["schemas"]["ExtractorRef"];
             /** Id */
             id?: string;
+            /** Measurement */
+            measurement?: components["schemas"]["CosineMeasurement"] | null;
             /** Object */
             object: components["schemas"]["AssetRef"] | components["schemas"]["EvidenceValue"];
             /** Predicate */
@@ -6055,6 +6058,21 @@ export interface components {
             transform: string;
         };
         /**
+         * CosineMeasurement
+         * @description Record direct cosine similarity and the independent candidate threshold.
+         */
+        CosineMeasurement: {
+            /** Similarity */
+            similarity: number;
+            /** Threshold */
+            threshold: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "cosine_duplicate";
+        };
+        /**
          * CostSummary
          * @description Aggregate recorded calls by one stable reporting dimension.
          */
@@ -7466,6 +7484,7 @@ export interface components {
             split: ("train" | "val" | "test") | null;
             /** Thumbnail Url */
             thumbnail_url: string | null;
+            vector?: components["schemas"]["VectorInputStatus"] | null;
         };
         /**
          * EvidenceValue
@@ -12273,6 +12292,7 @@ export interface components {
             state: string;
             /** Total Shards */
             total_shards: number;
+            vector?: components["schemas"]["VectorTaskReport"] | null;
         };
         /**
          * TemplateAttribute
@@ -13123,6 +13143,155 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VectorAttempt
+         * @description Expose durable accounting without leaking storage rows or raw payloads.
+         */
+        VectorAttempt: {
+            /** Id */
+            id: string;
+            /** Reason */
+            reason?: string | null;
+            /** Reserved Nanos */
+            reserved_nanos: number;
+            /** Response Id */
+            response_id?: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "RESERVED" | "SENDING" | "UNKNOWN" | "SETTLED" | "REFUNDED";
+            /** Token Bound */
+            token_bound: number;
+            /** Usage */
+            usage?: number | null;
+        };
+        /**
+         * VectorCounts
+         * @description Account for all inputs identically during cold, hot and recovery runs.
+         */
+        VectorCounts: {
+            /** Eligible */
+            eligible: number;
+            /** Failed */
+            failed: number;
+            /** Input */
+            input: number;
+            /**
+             * Truncated
+             * @default 0
+             * @constant
+             */
+            truncated: 0;
+        };
+        /**
+         * VectorInputStatus
+         * @description Expose a source's typed failure and synthetic provenance without substituting a vector.
+         */
+        VectorInputStatus: {
+            /**
+             * Fake Version
+             * @default we-e2-fake-v1
+             * @constant
+             */
+            fake_version: "we-e2-fake-v1";
+            /**
+             * Mode
+             * @default fake
+             * @constant
+             */
+            mode: "fake";
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "eligible" | "input_failed";
+        };
+        /**
+         * VectorNodeReport
+         * @description Distinguish invented fake usage and contract status from real quality or latency.
+         */
+        VectorNodeReport: {
+            /**
+             * Cache Hits
+             * @default 0
+             */
+            cache_hits: number;
+            /** Canonical Hash */
+            canonical_hash?: string | null;
+            counts: components["schemas"]["VectorCounts"];
+            /**
+             * Fake Cost Nanos
+             * @default 0
+             */
+            fake_cost_nanos: number;
+            /**
+             * Fake Requests
+             * @default 0
+             */
+            fake_requests: number;
+            /**
+             * Fake Usage
+             * @default 0
+             */
+            fake_usage: number;
+            /**
+             * Fake Version
+             * @default we-e2-fake-v1
+             * @constant
+             */
+            fake_version: "we-e2-fake-v1";
+            /**
+             * Mode
+             * @default fake
+             * @constant
+             */
+            mode: "fake";
+            /**
+             * Real Quality
+             * @default not_tested
+             * @constant
+             */
+            real_quality: "not_tested";
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "success" | "partial_success" | "failed";
+        };
+        /**
+         * VectorTaskReport
+         * @description Expose terminal or pending status without representing a failed run as an empty success.
+         */
+        VectorTaskReport: {
+            /**
+             * Attempts
+             * @default []
+             */
+            attempts: components["schemas"]["VectorAttempt"][];
+            /**
+             * Mode
+             * @default fake
+             * @constant
+             */
+            mode: "fake";
+            /**
+             * Nodes
+             * @default []
+             */
+            nodes: components["schemas"]["VectorNodeReport"][];
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "success" | "partial_success" | "failed" | "cancelled";
         };
         /**
          * VerificationDetail

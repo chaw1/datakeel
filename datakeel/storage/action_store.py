@@ -13,8 +13,9 @@ from datakeel.actions.models import ActionPlan, ActionRun, PlanStatus
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import LineageEvent
 from datakeel.storage.action_rows import ActionAuditRow, ActionPlanRow, ActionRunRow
-from datakeel.storage.database import Database, OutboxRow
+from datakeel.storage.database import Database
 from datakeel.storage.events import append_event
+from datakeel.worker_store.rows import OutboxRow
 
 
 def locked_plan(session: Session, plan_id: str) -> tuple[ActionPlanRow, ActionPlan]:
@@ -42,6 +43,7 @@ def run_view(row: ActionRunRow) -> ActionRun:
             "task_id": row.task_id,
             "receipt": row.receipt,
             "error": row.error,
+            "vector": row.receipt.get("quality", {}).get("vector") if row.receipt else None,
             "reason": row.error if row.status == "DENIED" else None,
         }
     )

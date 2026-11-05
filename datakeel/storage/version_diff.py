@@ -19,7 +19,8 @@ from datakeel.core.release_models import (
     VersionSummary,
     annotation_statistics,
 )
-from datakeel.storage.database import Database, DatasetRow
+from datakeel.dataset_store.rows import DatasetRow
+from datakeel.storage.database import Database
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.object_projection import content_digest, file_quality
 from datakeel.storage.version_stream import (

@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from datakeel.catalog.service import import_catalog
 from datakeel.core.catalog_models import CatalogImportRequest
 from datakeel.core.dq_models import DqParameters
-from datakeel.storage.database import Database, ShardRow, VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.dq_jobs import schedule_rule
 from datakeel.storage.dq_reads import get_run, read_issues, read_results
 from datakeel.storage.dq_rows import DqRunRow
@@ -21,10 +21,13 @@ from datakeel.storage.dq_store import upsert_rule
 from datakeel.worker.dq_runner import execute_dq
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
+from datakeel.worker_store.rows import ShardRow
 from tests.storage.test_dq_store import definition
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from datakeel.storage.database import Database
 
 
 def _source(db: Database, tmp_path: Path, source_id: str = "sample") -> Path:

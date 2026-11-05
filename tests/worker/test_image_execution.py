@@ -21,7 +21,7 @@ from datakeel.core.kg_models import ExtractionResult, RawExtraction
 from datakeel.core.kg_queries import KGQuery
 from datakeel.core.models import JsonDocument
 from datakeel.core.transcription_models import TranscriptionProfile
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.evidence_decisions import list_decisions
 from datakeel.storage.evidence_projection import rebuild_evidence
 from datakeel.storage.evidence_store import list_assertions

@@ -16,7 +16,7 @@ from sqlalchemy import func, select
 from datakeel.core.errors import ConflictError
 from datakeel.core.evidence_cache import KnowledgeBundle
 from datakeel.core.evidence_models import AssertionDecisionRequest
-from datakeel.storage.database import EventRow
+from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.evidence_cache import cached_entries, invalidations_for
 from datakeel.storage.evidence_decisions import decide_assertions, list_decisions
 from datakeel.storage.evidence_projection import rebuild_evidence

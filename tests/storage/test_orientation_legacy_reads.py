@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING
 
 from PIL import Image
 
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence.generator import generate_samples
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.dataset_service import import_paths, list_files, list_versions
 from datakeel.storage.evidence_import import import_evidence_samples, source_manifest
 from datakeel.storage.evidence_queries import get_evidence

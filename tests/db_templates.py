@@ -13,6 +13,7 @@ from uuid import uuid4
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import make_url
 
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 
 if TYPE_CHECKING:
@@ -99,7 +100,7 @@ class DatabaseTemplate:
                 initial.engine.dispose()
             database = schema_database(url, self._schema)
         try:
-            database.migrate()
+            migrate(database)
         finally:
             database.engine.dispose()
 

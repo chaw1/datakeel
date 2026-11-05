@@ -8,8 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.errors import NotFoundError
+from datakeel.dataset_store.rows import DatasetRow
 from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet, PropertyFilter
-from datakeel.storage.database import Database, DatasetRow
+from datakeel.storage.database import Database
 from datakeel.storage.evidence_filters import select_evidence
 from datakeel.storage.evidence_snapshot import EvidenceSnapshot, read_snapshot
 from datakeel.storage.object_projection import content_digest, has_evidence_sources, project_objects

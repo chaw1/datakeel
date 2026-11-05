@@ -32,6 +32,7 @@ from datakeel.harness.enterprise_kg import (
 )
 from datakeel.harness.standard_cases import seed_standard_demo
 from datakeel.http import Client
+from datakeel.persistence import migrate
 from datakeel.sample import generate_samples
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.dataset_service import import_paths, list_datasets
@@ -187,7 +188,7 @@ def demo(args: argparse.Namespace) -> None:
     """Run the complete local demonstration without external services."""
     started = time.monotonic()
     db = Database()
-    db.migrate()
+    migrate(db)
     dataset_id, task_id = seed_demo(db)
     evidence = None if getattr(args, "legacy_only", False) else seed_evidence_demo(db)
     enterprise = None if getattr(args, "legacy_only", False) else seed_enterprise_demo(db)

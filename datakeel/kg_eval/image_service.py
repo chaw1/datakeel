@@ -19,6 +19,7 @@ from datakeel.kg_eval.image_loader import image_path, load_image_cases
 from datakeel.kg_eval.image_metrics import image_scores
 from datakeel.kg_eval.loader import load_recording
 from datakeel.kg_eval.scoring import score_views
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 from datakeel.transcription.alignment import match_box
 
@@ -72,7 +73,7 @@ def evaluate_image(
     suite, digest, directory = load_image_cases(schema, cases_path)
     db = Database("sqlite://")
     try:
-        db.migrate()
+        migrate(db)
         runner = ImageCaseRunner(db, schema, profile, transcription, extractor, transcriber)
         executions = tuple(
             runner.execute(case, image_path(directory, case.image)) for case in suite.cases

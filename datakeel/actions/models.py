@@ -12,6 +12,7 @@ from pydantic import Field, JsonValue
 from datakeel.core.kg_execution import KGEstimate
 from datakeel.core.kg_images import TranscriptionEstimate
 from datakeel.core.models import AssetRef, BoundaryModel, LineageEvent
+from datakeel.core.vector_results import VectorTaskReport
 from datakeel.ontology.models import FrozenManifest
 
 ActionName = Literal[
@@ -179,6 +180,7 @@ class ActionRun(BoundaryModel):
     task_id: str | None = None
     receipt: LineageEvent | None = None
     error: str | None = None
+    vector: VectorTaskReport | None = Field(default=None, exclude_if=lambda value: value is None)
     reason: str | None = Field(
         default=None,
         description=(

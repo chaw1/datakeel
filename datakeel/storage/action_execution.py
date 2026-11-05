@@ -38,6 +38,7 @@ from datakeel.storage.database import Database
 from datakeel.storage.draft_metering import record_draft_calls
 from datakeel.storage.identity_authorization import require_server_scope
 from datakeel.storage.production_human import require_production_human
+from datakeel.storage.vector_authorization import require_vector_human
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,7 @@ def _production_request(
     plan: ActionPlan, request: ExecuteRequest, access: AccessContext | None
 ) -> ExecuteRequest:
     require_production_human(plan, access)
+    require_vector_human(plan, access)
     if "request_id" in plan.canonical_params and request.operation_id is None:
         return request.model_copy(update={"operation_id": plan.operation_id})
     return request

@@ -17,6 +17,7 @@ from sqlalchemy import event, text
 
 from datakeel.core import models
 from datakeel.core.models import JsonDocument
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 
 if TYPE_CHECKING:
@@ -87,7 +88,7 @@ def fresh_database(template: Database, directory: Path) -> Generator[Database]:
             connection.commit()
             cursor.close()
 
-    database.migrate()
+    migrate(database)
     try:
         yield database
     finally:

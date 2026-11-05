@@ -10,8 +10,9 @@ from datakeel.actions.parameters import ExportParams
 from datakeel.core.annotation_models import AnnotationRecord, AnnotationSegment
 from datakeel.core.errors import ValidationError
 from datakeel.core.training_models import SplitMember, SplitRequest, SplitSet
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.annotation_frames import DISPLAY_FRAME
-from datakeel.storage.database import Database, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.training_export import training_export_inputs
 from datakeel.storage.training_rows import TrainingSplitRow
 from tests.storage.production_catalog_fixtures import catalog_project

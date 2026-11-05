@@ -15,16 +15,28 @@ from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_execution import PendingExtraction
 from datakeel.core.kg_execution import KGCompletion
 from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
-from datakeel.pipeline import Pipeline, validate_pipeline
-from datakeel.pipeline.sharding import validate_shards
-from datakeel.storage.custom_validation import validate_custom_pipeline
-from datakeel.storage.database import Database, DatasetRow, OutboxRow, ShardRow, TaskRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.evidence.vector_plan import has_vectors
+from datakeel.pipeline import Pipeline
+from datakeel.storage.database import Database
 from datakeel.storage.datasheet_jobs import publish_completion as publish_datasheet
 from datakeel.storage.dq_results import publish_completion as publish_dq_completion
 from datakeel.storage.events import append_event
 from datakeel.storage.evidence_store import record_extraction_in_session
 from datakeel.storage.kg_publication import publish_completion
+from datakeel.storage.task_submission import (
+    canonical_pipeline,
+    submission_pipeline,
+    validate_registered_pipeline,
+)
 from datakeel.storage.task_terminal import cancel_task, complete_task
+from datakeel.storage.vector_budget import recover_vectors
+from datakeel.storage.vector_completion import (
+    Completion,
+    has_vector_work,
+    validate_vector_completion,
+)
+from datakeel.worker_store.rows import OutboxRow, ShardRow, TaskRow
 
 MAX_SHARDS = 128
 
@@ -78,7 +90,7 @@ class DatabaseQueue:
         version_id: str | None = None,
     ) -> str:
         """Persist a frozen input manifest, or return its idempotent task."""
-        pipeline = _submission_pipeline(pipeline, shards)
+        pipeline = submission_pipeline(pipeline, shards)
         if shards < 1 or shards > MAX_SHARDS or queue not in ("cpu", "io", "gpu"):
             msg = "Invalid shard count or queue"
             raise ValidationError(msg)
@@ -94,7 +106,7 @@ class DatabaseQueue:
             if existing:
                 if (
                     existing.dataset_id != dataset_id
-                    or _canonical_pipeline(existing.pipeline) != pipeline
+                    or canonical_pipeline(existing.pipeline) != pipeline
                     or existing.queue != queue
                     or existing.total_shards != shards
                     or existing.input_version_id != version_id
@@ -102,7 +114,7 @@ class DatabaseQueue:
                     msg = "Idempotency key already used with different parameters"
                     raise ConflictError(msg)
                 return existing.id
-            _validate_registered_pipeline(session, pipeline)
+            validate_registered_pipeline(session, pipeline)
             source_files = dataset.files
             if version_id:
                 version = session.get(VersionRow, version_id)
@@ -155,6 +167,7 @@ class DatabaseQueue:
                 owner,
                 utcnow().timestamp(),
             )
+            shard.lease_expires_at = (shard.heartbeat_at or 0) + self.lease_seconds
             shard.attempts += 1
             lease = Lease(
                 shard_id=shard.id,
@@ -186,6 +199,7 @@ class DatabaseQueue:
             if not shard or shard.state != "RUNNING" or shard.lease_owner != lease.owner:
                 return False
             shard.heartbeat_at = utcnow().timestamp()
+            shard.lease_expires_at = (shard.heartbeat_at or 0) + self.lease_seconds
             session.commit()
             return True
 
@@ -232,21 +246,20 @@ class DatabaseQueue:
             ):
                 msg = "Successful datasheet tasks require their exact checked completion"
                 raise ConflictError(msg)
+            evidence = validate_vector_completion(session, lease, evidence, error)
+            if error and has_vectors(
+                Pipeline.model_validate(task.pipeline) if task.pipeline else None
+            ):
+                outputs = []
             shard.state, shard.lease_owner = "FAILED" if error else "COMPLETED", None
             shard.outputs = [item.model_dump(mode="json") for item in outputs]
             for event in events:
                 append_event(session, event)
-            if isinstance(evidence, DqCompletion):
-                publish_dq_completion(session, evidence, task.id)
-            elif isinstance(evidence, KGCompletion):
-                publish_completion(session, evidence, task.id)
-            elif isinstance(evidence, DatasheetCompletion):
-                publish_datasheet(session, evidence, task.id)
-            else:
-                for pending in evidence:
-                    record_extraction_in_session(session, pending.event, pending.bundle)
+            _publish_evidence(session, evidence, task.id)
             session.flush()
             complete_task(session, task, error)
+            if error:
+                recover_vectors(session, task.id)
             session.commit()
             return True
 
@@ -261,6 +274,7 @@ class DatabaseQueue:
             if task.state in ("COMPLETED", "FAILED", "CANCELLED"):
                 return False
             cancel_task(session, task)
+            recover_vectors(session, task.id)
             session.commit()
             return True
 
@@ -282,7 +296,9 @@ class DatabaseQueue:
                 )
             )
             for shard in shards:
-                if shard.attempts >= self.max_attempts:
+                task = session.get(TaskRow, shard.task_id)
+                vector = has_vector_work(session, shard.task_id, task)
+                if vector or shard.attempts >= self.max_attempts:
                     task = session.get(TaskRow, shard.task_id)
                     if task is None:
                         msg = "Task not found"
@@ -294,7 +310,9 @@ class DatabaseQueue:
                             dataset_id=task.dataset_id,
                             owner=shard.lease_owner or "",
                             inputs=[],
-                            pipeline=None,
+                            pipeline=Pipeline.model_validate(task.pipeline)
+                            if task.pipeline
+                            else None,
                         )
                     )
                 else:
@@ -306,7 +324,11 @@ class DatabaseQueue:
                 lease,
                 [],
                 [],
-                error="Worker lease expired after maximum retries",
+                error=(
+                    "vector_lease_expired_outcome_unknown"
+                    if has_vectors(lease.pipeline)
+                    else "Worker lease expired after maximum retries"
+                ),
                 expired_before=cutoff,
             )
         return requeued
@@ -329,21 +351,6 @@ class DatabaseQueue:
             return len(rows)
 
 
-def _canonical_pipeline(value: dict[str, Any] | None) -> dict[str, Any] | None:
-    return Pipeline.model_validate(value).model_dump(mode="json") if value is not None else None
-
-
-def _submission_pipeline(
-    value: Pipeline | dict[str, Any] | None, shards: int
-) -> dict[str, Any] | None:
-    if value is None:
-        return None
-    validate_pipeline(value)
-    definition = Pipeline.model_validate(value)
-    validate_shards(definition, shards)
-    return definition.model_dump(mode="json")
-
-
 def _source_version(session: Session, task: TaskRow) -> str:
     if task.input_version_id is not None:
         return task.input_version_id
@@ -359,5 +366,13 @@ def _source_version(session: Session, task: TaskRow) -> str:
     return version
 
 
-def _validate_registered_pipeline(session: Session, value: dict[str, Any] | None) -> None:
-    validate_custom_pipeline(session, Pipeline.model_validate(value) if value else None)
+def _publish_evidence(session: Session, evidence: Completion, task_id: str) -> None:
+    if isinstance(evidence, DqCompletion):
+        publish_dq_completion(session, evidence, task_id)
+    elif isinstance(evidence, KGCompletion):
+        publish_completion(session, evidence, task_id)
+    elif isinstance(evidence, DatasheetCompletion):
+        publish_datasheet(session, evidence, task_id)
+    else:
+        for pending in evidence:
+            record_extraction_in_session(session, pending.event, pending.bundle)

@@ -46,6 +46,7 @@ from datakeel.core.evidence_models import AssertionStatus
 from datakeel.core.models import BoundaryModel, JsonDocument
 from datakeel.core.training_export_models import TRAINING_ARCHIVE_SUFFIXES, TRAINING_FORMATS
 from datakeel.core.transcription_auto import require_current_auto_policy
+from datakeel.core.vector_models import VectorPrepared
 from datakeel.ontology.models import ObjectSet, PropertyFilter
 from datakeel.pipeline import Pipeline, validate_pipeline
 
@@ -83,6 +84,9 @@ class PipelineParams(BoundaryModel):
 
     dataset_id: str
     pipeline: Pipeline | None = None
+    vector_prepared: VectorPrepared | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     version_id: str | None = None
     shards: int = Field(default=1, ge=1, le=128)
     queue: Literal["cpu", "io", "gpu"] = "cpu"

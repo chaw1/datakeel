@@ -8,7 +8,9 @@ type = layers
 layers =
     datakeel.cli
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp | datakeel.intents
+    datakeel.persistence
     datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.quality | datakeel.lineage | datakeel.governance | datakeel.standards | datakeel.semantic | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.prelabel | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory | datakeel.label_drafts
+    datakeel.dataset_store | datakeel.worker_store
     datakeel.core
 # Delivery services verify portable frozen release facts without importing API code.
 ignore_imports =
@@ -302,7 +304,7 @@ ignore_imports =
     datakeel.evidence.runtime_inputs -> datakeel.storage.objects
     datakeel.evidence.runtime_publication -> datakeel.pipeline.models
 # Global-pair extraction requires one complete input shard at both submission boundaries.
-    datakeel.storage.task_queue -> datakeel.pipeline.sharding
+    datakeel.storage.task_submission -> datakeel.pipeline.sharding
     datakeel.storage.action_planning -> datakeel.pipeline.sharding
     datakeel.storage.action_operations -> datakeel.pipeline.sharding
 # The evidence preset binds each manifest to its independently versioned deterministic extractor.
@@ -391,7 +393,7 @@ ignore_imports =
     datakeel.ask.evaluation -> datakeel.catalog.service
     datakeel.ask.evaluation -> datakeel.metrics.loader
     datakeel.ask.evaluation -> datakeel.sample_enterprise
-    datakeel.ask.evaluation -> datakeel.storage.database
+    datakeel.ask.evaluation -> datakeel.persistence
     datakeel.ask.evaluation -> datakeel.storage.metric_store
     datakeel.ask.evaluation_checks -> datakeel.metrics.sql_safety
 
@@ -599,6 +601,38 @@ ignore_imports =
     datakeel.storage.label_drafts -> datakeel.label_drafts.models
     datakeel.storage.label_drafts -> datakeel.label_drafts.offline
     datakeel.storage.label_drafts -> datakeel.label_drafts.standards
+
+    datakeel.storage.vector_authorization -> datakeel.pipeline.models
+    datakeel.storage.vector_completion -> datakeel.actions.models
+    datakeel.storage.vector_completion -> datakeel.actions.parameters
+
+    datakeel.storage.vector_integrity -> datakeel.evidence.vector_duplicate
+
+# Signed fake vector DAGs reuse typed pipeline validation and transactional budget/cache services.
+    datakeel.storage.action_worker -> datakeel.actions.parameters
+    datakeel.storage.vector_completion -> datakeel.pipeline.models
+    datakeel.storage.vector_completion -> datakeel.evidence.vector_plan
+    datakeel.storage.task_submission -> datakeel.pipeline
+    datakeel.storage.task_submission -> datakeel.evidence.vector_plan
+    datakeel.storage.vector_planning -> datakeel.actions.parameters
+    datakeel.storage.vector_planning -> datakeel.actions.models
+    datakeel.storage.vector_planning -> datakeel.evidence.vector_plan
+    datakeel.storage.vector_authorization -> datakeel.actions.policy
+    datakeel.storage.vector_authorization -> datakeel.actions.parameters
+    datakeel.storage.vector_authorization -> datakeel.actions.models
+    datakeel.storage.task_queue -> datakeel.evidence.vector_plan
+    datakeel.evidence.vector_transport -> datakeel.storage.vector_budget
+    datakeel.evidence.vector_transport -> datakeel.storage.vector_authorization
+    datakeel.evidence.vector_transport -> datakeel.storage.database
+    datakeel.evidence.vector_execution -> datakeel.storage.vector_budget
+    datakeel.evidence.vector_execution -> datakeel.storage.vector_authorization
+    datakeel.evidence.vector_execution -> datakeel.storage.database
+    datakeel.evidence.vector_execution -> datakeel.storage.vector_cache
+    datakeel.evidence.vector_execution -> datakeel.operators.base
+    datakeel.evidence.vector_execution -> datakeel.pipeline.models
+    datakeel.evidence.vector_publication -> datakeel.pipeline.models
+    datakeel.evidence.vector_plan -> datakeel.pipeline.models
+    datakeel.evidence.vector_plan -> datakeel.pipeline.validation
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

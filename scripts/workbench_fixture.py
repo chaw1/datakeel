@@ -22,6 +22,7 @@ from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel, JsonDocument, new_id
 from datakeel.core.production_models import Project
 from datakeel.core.settings import get_settings
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_queries import list_tasks
@@ -347,7 +348,7 @@ def main() -> None:
     args = parser.parse_args()
     db = _database(args.schema, use_test_database=args.test_database)
     try:
-        db.migrate()
+        migrate(db)
         if args.serve:
             uvicorn.run(create_app(db), host="127.0.0.1", port=8840)
         elif args.output and args.source_dir:

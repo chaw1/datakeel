@@ -13,10 +13,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy import select
 
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.quality.scoring import score_quality
-from datakeel.storage.database import ShardRow, TaskRow, VersionRow
 from datakeel.storage.datasets import import_dataset
 from datakeel.worker.queue import DatabaseQueue
+from datakeel.worker_store.rows import ShardRow, TaskRow
 from scripts.scale_bench.common import check_resources, check_space, fingerprint
 from scripts.scale_bench.models import Context, ScenarioResult
 from scripts.scale_bench.worker import drain, text_pipeline

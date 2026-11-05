@@ -20,6 +20,7 @@ from datakeel.storage.data_asset_review import (
 from datakeel.storage.database import Database
 from datakeel.storage.identity_authorization import require_role_grant, require_server_scope
 from datakeel.storage.production_human import require_production_human
+from datakeel.storage.vector_authorization import require_vector_human
 
 
 def approve_plan(
@@ -34,6 +35,7 @@ def approve_plan(
         db.lock_writes(session)
         row, plan = locked_plan(session, plan_id)
         require_production_human(plan, access)
+        require_vector_human(plan, access)
         refuse_tool_decision(plan.action_type, access)
         role_action = plan.action_type in {"define_role", "update_role"}
         verify_plan(

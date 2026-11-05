@@ -22,9 +22,9 @@ from datakeel.core.data_asset_models import DataAsset, DataAssetDefinition
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import AssetRef, FileItem, utcnow
 from datakeel.core.training_models import SplitRequest
+from datakeel.dataset_store.rows import DatasetRow, EventRow, VersionRow
 from datakeel.storage.annotation_store import import_annotations
 from datakeel.storage.data_asset_rows import DataAssetRow
-from datakeel.storage.database import DatasetRow, EventRow, VersionRow
 from datakeel.storage.objects import digest
 from datakeel.storage.training_inputs import load_training_samples
 from datakeel.storage.training_rows import TrainingSplitRow

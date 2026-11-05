@@ -6,11 +6,25 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Fake-only vector DAG nodes (`evidence.vector_embed` and direct `evidence.semantic_duplicate`) reuse controlled pipeline approval and fenced workers. Complete branches, final payload hashes, HTTPS fixture destinations and invented CNY bounds are frozen before execution. Durable attempts retain unknown occupancy across restart; separate embedding/global caches publish atomically with replayable evidence. Task, action and source queries expose optional typed fake status and cosine measurement. Real egress and budget remain disabled; real quality and latency are unmeasured. See [the fake kernel guide](docs/VECTOR_FAKE.md).
 - Offline W-E E1 development provenance reconstruction, per-original license ledger and hash-bound public manifests. Wiki-40B card license silence is retained separately from underlying Wikipedia CC BY-SA duties; the rejected Commons candidate is replaced with a locally verified CC0 image, with the original retained as rejected history. The changed development set requires a fresh independent image and intersection audit. Independent custody and E2 approval remain blocked.
 
 ### Fixed
 
+- Fake vector pair budgets exclude failed inputs at preparation and execution, preserving partial success at the exact eligible-pair limit. Over-limit runs still fail atomically. Vector tables use an explicit schema owner; the nullable worker lease supports additive upgrades.
+
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
+- The scale ASGI workload reuses its initialized database without rerunning migrations after
+  benchmark fixture creation. Application construction still migrates by default and validates
+  the canonical tables; prepared callers can explicitly disable migration.
+
+### Changed
+
+- Persistence initialization uses explicit typed schema contributions and independent ownership
+  validation for the existing 99 tables. Dataset and worker mappings have private schema owners;
+  business adapters, stored payloads and migration transaction ordering retain their behavior.
+  Schema snapshots and infrastructure ratchets support independent verification; see
+  [persistence schema composition](docs/PERSISTENCE_SCHEMA.md).
 
 ## [0.24.1] - 2026-11-06
 

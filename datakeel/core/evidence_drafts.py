@@ -14,6 +14,7 @@ from datakeel.core.evidence_models import (
     VerificationDetail,
 )
 from datakeel.core.models import AssetRef, BoundaryModel
+from datakeel.core.vector_results import VectorMeasurement
 
 
 class ObservationDraft(BoundaryModel):
@@ -25,6 +26,9 @@ class ObservationDraft(BoundaryModel):
     anchors: tuple[EvidenceAnchor, ...] = Field(min_length=1)
     extractor: ExtractorRef
     confidence: float | None = Field(default=None, ge=0, le=1)
+    measurement: VectorMeasurement | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     distance: int | None = Field(default=None, ge=0)
     reason: str | None = None
     verification: Verification | None = Field(default=None, exclude_if=lambda value: value is None)

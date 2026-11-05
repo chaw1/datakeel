@@ -7,10 +7,10 @@ from sqlalchemy import CompoundSelect, Select, String, cast, func, select, union
 from sqlalchemy.orm import Session
 
 from datakeel.core.catalog_models import CatalogLink, CatalogObject, CatalogSnapshot
+from datakeel.dataset_store.rows import EventRow
 from datakeel.lineage.models import GraphQuery
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.catalog_rows import CatalogEdgeRow, CatalogObjectRow
-from datakeel.storage.database import EventRow
 
 
 def _adjacent(

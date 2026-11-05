@@ -11,7 +11,9 @@ from datakeel.core.custom_operators import CustomOperatorRun
 from datakeel.core.custom_sandbox import SandboxInput, SandboxLimits, SandboxRequest, SandboxResult
 from datakeel.core.errors import ExecutionError, ValidationError
 from datakeel.core.models import FileItem, JsonDocument, new_id, utcnow
+from datakeel.core.vector_models import VECTOR_OPERATORS, VectorError
 from datakeel.evidence.execution import EvidenceExecution
+from datakeel.evidence.vector_execution import VectorExecution
 from datakeel.operators import OperatorResult
 from datakeel.operators.custom_sandbox import run_sandbox
 from datakeel.pipeline.models import Node
@@ -65,16 +67,31 @@ def _outputs(result: SandboxResult, directory: Path, modality: str) -> list[File
 class CustomExecution:
     """Dispatch custom nodes through the sandbox while preserving existing evidence execution."""
 
-    def __init__(self, db: Database, lease: Lease, evidence: EvidenceExecution) -> None:
+    def __init__(
+        self,
+        db: Database,
+        lease: Lease,
+        evidence: EvidenceExecution,
+        vector: VectorExecution | None = None,
+    ) -> None:
         """Bind audit identities to one fenced worker attempt."""
         self.db, self.lease, self.evidence = db, lease, evidence
+        self.vector = vector
 
     def execute_node(self, node: Node, files: list[FileItem], directory: Path) -> OperatorResult:
         """Load approved content, execute it in isolation, and publish only validated bytes."""
+        if node.operator in VECTOR_OPERATORS:
+            if self.vector is None:
+                msg = "vector_requires_consumed_human_approval"
+                raise VectorError(msg)
+            return self.vector.execute_node(node, files, directory)
         if node.operator is None or not node.operator.startswith("custom."):
             return self.evidence.execute_node(node, files, directory)
+        return self._custom_node(node, files, directory)
+
+    def _custom_node(self, node: Node, files: list[FileItem], directory: Path) -> OperatorResult:
         with self.db.session() as session:
-            version = approved_in_session(session, node.operator)
+            version = approved_in_session(session, str(node.operator))
             validate_custom_pipeline(session, self.lease.pipeline)
         if version.modality != "any" and any(file.modality != version.modality for file in files):
             msg = "Custom operator input modality does not match its approved declaration"

@@ -16,8 +16,9 @@ from sqlalchemy.orm import Session
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.uploads import UploadInput, UploadView
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage import upload_service
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.upload_files import upload_directory
 from datakeel.storage.upload_rows import UploadRow
 

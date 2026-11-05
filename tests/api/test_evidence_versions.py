@@ -11,10 +11,10 @@ from PIL import Image
 
 from datakeel.api.app import create_app
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.evidence.query_models import EvidenceQueryResult, EvidenceSample
 from datakeel.ontology.functions import invoke_function
 from datakeel.pipeline.evidence import evidence_pipeline
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.dataset_service import resolve_download
 from datakeel.storage.datasets import persist_file
 from datakeel.storage.evidence_import import source_manifest

@@ -11,9 +11,9 @@ import pytest
 from sqlalchemy import select
 
 from datakeel.core.errors import NotFoundError
-from datakeel.storage.database import ShardRow
 from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
+from datakeel.worker_store.rows import ShardRow
 from tests.worker.test_queue import seed
 
 if TYPE_CHECKING:
