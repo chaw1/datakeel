@@ -13,12 +13,19 @@ def violations() -> list[str]:
     """Find row classes leaking into application or domain modules."""
     problems: list[str] = []
     for path in Path("datakeel").rglob("*.py"):
-        if "storage" in path.parts:
+        if path.parts[1] == "storage" or str(path) in {
+            "datakeel/dataset_store/rows.py",
+            "datakeel/dataset_store/schema.py",
+            "datakeel/worker_store/rows.py",
+            "datakeel/worker_store/schema.py",
+            "datakeel/persistence/legacy.py",
+            "datakeel/persistence/legacy_rows.py",
+        }:
             continue
         for node in ast.walk(ast.parse(path.read_text())):
             names: list[str] = []
             if isinstance(node, ast.ImportFrom) and (node.module or "").startswith(
-                "datakeel.storage"
+                ("datakeel.storage", "datakeel.dataset_store", "datakeel.worker_store")
             ):
                 names = [alias.name for alias in node.names]
             elif isinstance(node, ast.Attribute):

@@ -24,6 +24,7 @@ from datakeel.core.errors import ExecutionError
 from datakeel.core.harness_models import BudgetRequest, TokenSegment, TokenUsage, TraceInput
 from datakeel.harness.otel import export_traces
 from datakeel.harness.service import reserve, settle
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 
 if TYPE_CHECKING:
@@ -259,7 +260,7 @@ def test_cli_when_sqlite_is_read_only_exports_filtered_spans_without_side_effect
     home.mkdir()
     path = home / "datakeel.db"
     database = Database(f"sqlite:///{path}")
-    database.migrate()
+    migrate(database)
     seed_trace(database)
     seed_trace(database, conversation="other")
     database.engine.dispose()

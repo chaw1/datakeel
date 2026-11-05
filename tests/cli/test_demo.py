@@ -15,12 +15,14 @@ import pytest
 from rich.console import Console
 
 from datakeel.core.errors import ExecutionError
-from datakeel.storage.database import Database, TaskRow
 from datakeel.storage.dataset_service import list_datasets
 from datakeel.storage.task_queries import query_task
+from datakeel.worker_store.rows import TaskRow
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from datakeel.storage.database import Database
 
 module = importlib.import_module("datakeel.cli.demo")
 

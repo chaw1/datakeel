@@ -11,8 +11,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.models import AssetRef, FileItem, JsonDocument, LineageEvent
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.semantic import classify
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.events import append_event
 from datakeel.storage.file_state import overlay_files
 from datakeel.storage.import_sources import image_dimensions, import_sources

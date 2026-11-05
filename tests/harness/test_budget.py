@@ -30,6 +30,7 @@ from datakeel.harness.service import (
     settle,
     summarize_costs,
 )
+from datakeel.persistence import migrate
 from datakeel.storage.budget_rows import BudgetReservationRow
 from datakeel.storage.database import Database
 
@@ -127,7 +128,7 @@ def test_restart_preserves_reservations_and_limits_cannot_be_raised(tmp_path: Pa
     """A new process connection cannot evade a previously configured ceiling."""
     url = f"sqlite:///{tmp_path / 'restart.db'}"
     first = Database(url)
-    first.migrate()
+    migrate(first)
     held = reserve(first, request(conversation_tokens=120))
     first.engine.dispose()
     second = Database(url)

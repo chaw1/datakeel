@@ -19,7 +19,8 @@ from datakeel.core.image_orientation import ImageGeometry, to_display
 from datakeel.core.models import FileItem, utcnow
 from datakeel.core.production_models import AnnotationRevision
 from datakeel.core.workbench_models import WorkbenchTask
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
+from datakeel.persistence import migrate
 from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.image_geometry import file_geometry
 from datakeel.storage.production_queries import list_tasks
@@ -281,7 +282,7 @@ def test_legacy_stored_frame_heads_are_read_upright_on_the_same_object(
     with TestClient(create_app(db)) as client:
         reads: list[WorkbenchTask] = []
         for _ in range(2):
-            db.migrate()
+            migrate(db)
             response = client.get(f"/api/production/tasks/{task_id}/workbench")
             assert response.status_code == 200, response.text
             reads.append(WorkbenchTask.model_validate(response.json()))

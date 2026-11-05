@@ -20,11 +20,11 @@ from datakeel.core.kg_execution import KGDocument, KGDocumentFingerprint, KGEsti
 from datakeel.core.kg_models import Recording
 from datakeel.core.models import AssetRef, FileItem
 from datakeel.core.transcription_models import TranscriptionProfile
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.kg.loader import contracts_path, get_profile, get_schema
 from datakeel.kg.policy import is_external, target_host
 from datakeel.kg.prompt import document_profile, extraction_prompt
 from datakeel.kg.text import chunk_text, decode_text
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_import import IMAGE_SUFFIXES
 from datakeel.storage.kg_image_preparation import image_document, prepare_images

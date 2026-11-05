@@ -19,9 +19,10 @@ from datakeel.actions.production_parameters import SaveRevisionParams, SubmitTas
 from datakeel.core.errors import ConflictError
 from datakeel.core.production_catalog_models import PredictionFile
 from datakeel.core.production_models import AnnotationRevision
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.annotation_store import get_annotation_quality
-from datakeel.storage.database import Database, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.production_catalog_plans import (
     catalog_manifest,

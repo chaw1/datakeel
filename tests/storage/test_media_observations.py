@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.ontology.models import ObjectSet
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.media_observations import read_media_observations
 from datakeel.storage.object_queries import evaluate
 

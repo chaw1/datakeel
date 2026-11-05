@@ -13,7 +13,9 @@ from sqlalchemy.exc import DBAPIError
 
 from datakeel.core.errors import ConflictError, ExecutionError
 from datakeel.core.models import FileItem
-from datakeel.storage.database import Database, VersionRow
+from datakeel.dataset_store.rows import VersionRow
+from datakeel.persistence import migrate
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.version_diff import compare_versions
 from datakeel.storage.version_stream import ordered_identities
@@ -96,7 +98,7 @@ def icu_db(db: Database) -> Iterator[Database]:
             pytest.skip(f"This PostgreSQL server cannot create an ICU database: {error.orig}")
     database = Database(db.engine.url.set(database=name).render_as_string(hide_password=False))
     try:
-        database.migrate()
+        migrate(database)
         yield database
     finally:
         database.engine.dispose()

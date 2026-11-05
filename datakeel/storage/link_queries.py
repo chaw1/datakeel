@@ -15,8 +15,9 @@ from datakeel.core.link_models import (
     LinkMetadata,
 )
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.rows import DatasetRow
 from datakeel.storage.catalog_reads import read_snapshot
-from datakeel.storage.database import Database, DatasetRow
+from datakeel.storage.database import Database
 from datakeel.storage.evidence_decisions import assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.link_context import read_link_graphs

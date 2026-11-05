@@ -15,8 +15,9 @@ from datakeel.assets.access import require_access
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import AssetRef, FileItem, JsonDocument
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.data_asset_targets import resolve_access_targets
-from datakeel.storage.database import Database, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths, resolve_download
 from datakeel.storage.datasets import persist_file
 from tests.assets.entry_helpers import grant, publish

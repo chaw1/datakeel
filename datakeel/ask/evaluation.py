@@ -25,8 +25,8 @@ from datakeel.core.ask_models import AskRequest
 from datakeel.core.catalog_models import CatalogImportRequest
 from datakeel.core.errors import DatakeelError, ValidationError
 from datakeel.metrics.loader import load_layer
+from datakeel.persistence import Database, migrate
 from datakeel.sample_enterprise import EnterpriseGold, generate_enterprise
-from datakeel.storage.database import Database
 from datakeel.storage.metric_store import install_layer
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -144,7 +144,7 @@ def run_evaluation(questions: Path | None = None) -> AskEvalReport:
     with TemporaryDirectory(prefix="datakeel-ask-eval-") as temporary:
         directory = Path(temporary)
         db = Database(f"sqlite:///{directory / 'benchmark.sqlite'}")
-        db.migrate()
+        migrate(db)
         try:
             gold = _seed(db, directory)
             results = tuple(_question(db, item, suite, gold) for item in suite.questions)

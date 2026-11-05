@@ -17,8 +17,8 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 
 from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.dataset_store.rows import EventRow, VersionRow
 from datakeel.lineage.service import all_events, append_event, graph
-from datakeel.storage.database import EventRow, VersionRow
 from datakeel.storage.datasets import import_dataset, materialize_files
 from datakeel.storage.objects import LocalStore, S3Store
 from tests.storage.s3_fixture import ConditionalS3

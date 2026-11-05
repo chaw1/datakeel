@@ -12,7 +12,7 @@ from datakeel.actions.models import ExecuteRequest
 from datakeel.actions.service import execute_plan, prepare_action
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from scripts.scale_bench.models import BenchModel, Context
 
 MAX_SELECTION = 10_000

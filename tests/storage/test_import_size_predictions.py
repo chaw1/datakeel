@@ -13,7 +13,7 @@ from PIL import Image
 from datakeel.api.app import create_app
 from datakeel.core.errors import DatakeelError
 from datakeel.core.models import FileItem
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.dataset_service import import_paths, list_versions
 from tests.asgi_client import TestClient
 from tests.production_team_support import ServiceRunner

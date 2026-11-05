@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 
 from datakeel.core.models import AssetRef, LineageEvent
-from datakeel.storage.database import EventRow
+from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.events import all_events, append_event
 
 if TYPE_CHECKING:

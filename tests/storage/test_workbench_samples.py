@@ -22,7 +22,7 @@ from datakeel.core.workbench_models import (
     WorkbenchTaskSamples,
     WorkbenchTaskStatus,
 )
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.production_projects import upgrade_project
 from datakeel.storage.production_queries import get_project, list_assignments
 from datakeel.storage.production_rows import ProductionAssignmentRow

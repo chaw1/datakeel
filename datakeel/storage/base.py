@@ -1,10 +1,8 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""One metadata registry for all authoritative persistence models."""
+"""Retain the existing private mapping base for legacy storage adapters."""
 
-from sqlalchemy.orm import DeclarativeBase
+from datakeel.core.schema import Base
 
-
-class Base(DeclarativeBase):
-    """Share one declarative metadata collection without engine dependencies."""
+__all__ = ["Base"]

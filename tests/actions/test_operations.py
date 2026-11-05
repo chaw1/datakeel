@@ -16,8 +16,9 @@ from datakeel.actions.service import execute_plan, list_runs, prepare_action
 from datakeel.actions.worker import reconcile_runs
 from datakeel.core.errors import AuthorizationError, ConflictError, ValidationError
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.rows import DatasetRow, MetadataChangeRow, VersionRow
 from datakeel.storage.action_rows import ApprovalRow
-from datakeel.storage.database import Database, DatasetRow, MetadataChangeRow, VersionRow, data_dir
+from datakeel.storage.database import Database, data_dir
 from datakeel.storage.governance_service import save_template
 from datakeel.worker.runner import run_worker
 from tests.actions.test_service import approve, execute, prepare

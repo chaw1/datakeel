@@ -11,7 +11,8 @@ from datakeel.core.evidence_models import Assertion, AssertionDecision, Assertio
 from datakeel.core.kg_contracts import KGSchema
 from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.predicate_registry import registered_predicates
-from datakeel.storage.database import Database, EventRow
+from datakeel.dataset_store.rows import EventRow
+from datakeel.storage.database import Database
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow
 
 

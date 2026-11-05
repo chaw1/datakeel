@@ -12,13 +12,14 @@ from sqlalchemy.orm import Session
 from datakeel.core.catalog_models import CatalogSnapshot
 from datakeel.core.data_asset_models import DataAsset, DataAssetCard
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.data_asset_events import data_dependency_events
 from datakeel.storage.data_asset_quality import asset_quality
 from datakeel.storage.data_asset_rows import AssetUsageRow
 from datakeel.storage.data_asset_store import asset_in_session, assets_in_session
 from datakeel.storage.data_asset_targets import ref_key, resolve_access_targets, same_resource
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 
 type EdgeIndex = dict[str, list[tuple[AssetRef, AssetRef]]]
 

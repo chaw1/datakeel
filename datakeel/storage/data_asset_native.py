@@ -8,11 +8,12 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.evidence_models import Assertion
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.ask_rows import AskAnswerRow
-from datakeel.storage.database import DatasetRow, TaskRow, VersionRow
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_rows import KGRunRow
 from datakeel.storage.production_native import production_targets
+from datakeel.worker_store.rows import TaskRow
 
 _MANIFEST_IDS = "datakeel.asset_manifest_ids"
 

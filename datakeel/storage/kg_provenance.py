@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.evidence_models import Assertion
 from datakeel.core.models import AssetRef, LineageEvent
-from datakeel.storage.database import EventRow
+from datakeel.dataset_store.rows import EventRow
 
 
 def prior_bundle_inputs(session: Session, assertions: tuple[Assertion, ...]) -> list[AssetRef]:

@@ -8,7 +8,8 @@ from typing import Any
 from sqlalchemy import select
 
 from datakeel.core.media_metadata import media_failure
-from datakeel.storage.database import Database, ShardRow, TaskRow
+from datakeel.storage.database import Database
+from datakeel.worker_store.rows import ShardRow, TaskRow
 
 
 def task_dict(db: Database, task: TaskRow) -> dict[str, Any]:

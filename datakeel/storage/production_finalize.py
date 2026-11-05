@@ -14,12 +14,12 @@ from datakeel.core.annotation_sampling import AnnotationImportRequest
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import AssetRef, FileItem, JsonDocument, new_id
 from datakeel.core.production_models import AnnotationRevision, Project
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.annotation_store import (
     import_annotations_in_session,
     require_annotation_version,
 )
-from datakeel.storage.database import VersionRow
 from datakeel.storage.production_acceptance import require_packages_accepted
 from datakeel.storage.production_catalog import annotation_categories, require_complete_attributes
 from datakeel.storage.production_rows import (

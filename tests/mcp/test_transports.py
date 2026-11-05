@@ -20,6 +20,7 @@ from datakeel.actions.service import approve_plan, execute_plan
 from datakeel.core.models import JsonDocument
 from datakeel.mcp import create_server
 from datakeel.ontology.tool_models import ToolOutcome
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.tool_invocations import list_invocations
@@ -128,7 +129,7 @@ def test_stdio_when_cli_subprocess_connects_controls_and_audits_real_calls(
     monkeypatch.setenv("DATAKEEL_HOME", str(home))
     database_url = f"sqlite:///{tmp_path / 'stdio.db'}"
     db = Database(database_url)
-    db.migrate()
+    migrate(db)
     empty = tmp_path / "empty.txt"
     empty.write_text("")
     dataset = import_paths(db, "stdio-fixture", [empty])

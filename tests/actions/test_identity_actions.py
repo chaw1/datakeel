@@ -23,7 +23,8 @@ from datakeel.agent.recovery import execute_approved
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import JsonDocument, new_id, utcnow
 from datakeel.core.production_models import Project
-from datakeel.storage.database import Database, DatasetRow
+from datakeel.dataset_store.rows import DatasetRow
+from datakeel.storage.database import Database
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_store import (
     get_bindings,

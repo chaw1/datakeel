@@ -13,8 +13,8 @@ import pytest
 from sqlalchemy import event
 
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.ontology.models import ObjectSet
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.evidence_snapshot import EvidenceSnapshot
 from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.object_projection import project_objects

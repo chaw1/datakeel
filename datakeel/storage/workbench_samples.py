@@ -25,8 +25,9 @@ from datakeel.core.workbench_models import (
     WorkbenchTaskSamples,
     WorkbenchTaskStatus,
 )
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.data_asset_access import require_access
-from datakeel.storage.database import Database, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.production_dispatch import preview_skill_dispatch
 from datakeel.storage.production_leases import LEASED_STATES, enforced_deadline
 from datakeel.storage.production_rows import ProductionAssignmentRow, ProductionTaskRow

@@ -13,7 +13,7 @@ from datakeel.core.kg_product import KGEntity
 from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.link_models import LinkGraph
 from datakeel.core.models import LineageEvent
-from datakeel.storage.database import EventRow, VersionRow
+from datakeel.dataset_store.rows import EventRow, VersionRow
 from datakeel.storage.evidence_decisions import assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_rows import KGRunRow

@@ -11,6 +11,17 @@ All notable changes are documented here using the Keep a Changelog format.
 ### Fixed
 
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
+- The scale ASGI workload reuses its initialized database without rerunning migrations after
+  benchmark fixture creation. Application construction still migrates by default and validates
+  the canonical tables; prepared callers can explicitly disable migration.
+
+### Changed
+
+- Persistence initialization uses explicit typed schema contributions and independent ownership
+  validation for the existing 99 tables. Dataset and worker mappings have private schema owners;
+  business adapters, stored payloads and migration transaction ordering retain their behavior.
+  Schema snapshots and infrastructure ratchets support independent verification; see
+  [persistence schema composition](docs/PERSISTENCE_SCHEMA.md).
 
 ## [0.24.1] - 2026-11-06
 

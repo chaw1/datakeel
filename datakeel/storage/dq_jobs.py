@@ -14,10 +14,12 @@ from datakeel.core.dq_models import DqRule
 from datakeel.core.dq_monitor import DqRuleHistory, DqRun
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import new_id, utcnow
-from datakeel.storage.database import Database, DatasetRow, ShardRow, TaskRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.dq_reads import get_run
 from datakeel.storage.dq_rows import DqHistoryRow, DqRuleRow, DqRunRow
 from datakeel.storage.dq_store import get_rule
+from datakeel.worker_store.rows import ShardRow, TaskRow
 
 # Missed minutes older than this are skipped; newer ones coalesce into one run.
 CATCH_UP_WINDOW = timedelta(hours=24)

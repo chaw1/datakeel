@@ -5,8 +5,9 @@
 
 from datakeel.core.datasheet_models import DatasheetDocument
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.datasheets.templates import build_template
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.datasheet_facts import extract_facts
 
 

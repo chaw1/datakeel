@@ -15,11 +15,11 @@ import pytest
 from datakeel.api.app import create_app
 from datakeel.lineage.service import all_events
 from datakeel.storage import objects
-from datakeel.storage.database import ShardRow, TaskRow
 from datakeel.storage.datasets import import_dataset
 from datakeel.storage.objects import LocalStore
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import execute
+from datakeel.worker_store.rows import ShardRow, TaskRow
 from tests.asgi_client import TestClient
 
 if TYPE_CHECKING:

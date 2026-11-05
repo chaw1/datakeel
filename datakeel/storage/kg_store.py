@@ -14,9 +14,10 @@ from datakeel.core.kg_execution import KGJob, KGLeaseFence, KGReport, KGRun
 from datakeel.core.kg_models import ExtractionResult
 from datakeel.core.models import new_id, utcnow
 from datakeel.storage.action_selection import selected_files
-from datakeel.storage.database import Database, ShardRow, TaskRow
+from datakeel.storage.database import Database
 from datakeel.storage.kg_progress import failed_report
 from datakeel.storage.kg_rows import KGCacheRow, KGRunRow
+from datakeel.worker_store.rows import ShardRow, TaskRow
 
 MAX_RUNS = 1000
 

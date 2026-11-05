@@ -15,7 +15,7 @@ from datakeel.api.app import create_app
 from datakeel.core.errors import NotFoundError
 from datakeel.core.file_queries import FileQuery
 from datakeel.core.models import FileItem
-from datakeel.storage.database import DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.dataset_service import get_dataset, list_datasets, list_files
 from datakeel.storage.file_pages import read_file_page
 from datakeel.storage.file_state import FileStateRow, overlay_files

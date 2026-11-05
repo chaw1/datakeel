@@ -11,10 +11,10 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.models import FileItem
 from datakeel.core.search_models import SearchKind, SearchQuery, SearchResult
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.action_rows import ActionRunRow
 from datakeel.storage.catalog_fields import read_fields
 from datakeel.storage.catalog_rows import CatalogObjectRow
-from datakeel.storage.database import DatasetRow, VersionRow
 from datakeel.storage.file_discovery import requires_python_files
 from datakeel.storage.file_state import FileStateRow
 

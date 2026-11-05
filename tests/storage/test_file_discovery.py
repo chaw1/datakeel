@@ -16,7 +16,8 @@ from sqlalchemy import event, inspect, select, text
 
 from datakeel.core.models import FileItem
 from datakeel.core.search_models import SearchQuery
-from datakeel.storage.database import DatasetRow, VersionRow
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.persistence import migrate
 from datakeel.storage.file_discovery import (
     FileDiscoveryCheckpointRow,
     FileDiscoveryRow,
@@ -109,7 +110,7 @@ def test_legacy_upgrade_backfills_once_and_rebuild_is_explicit(unmigrated_db: Da
     _dataset(database)
     _version(database, "later", 20, [_file(name="later.txt")])
     _version(database, "earlier", 10, [_file(name="earlier.txt")])
-    database.migrate()
+    migrate(database)
     expected = [("file", "earlier", "earlier.txt", 10), ("file", "later", "later.txt", 20)]
     assert _entries(database) == expected
     statements: list[str] = []
@@ -119,7 +120,7 @@ def test_legacy_upgrade_backfills_once_and_rebuild_is_explicit(unmigrated_db: Da
 
     event.listen(database.engine, "before_cursor_execute", record)
     try:
-        database.migrate()
+        migrate(database)
     finally:
         event.remove(database.engine, "before_cursor_execute", record)
     assert not any(
@@ -389,7 +390,7 @@ def test_repeated_startup_cannot_block_controlled_and_worker_version_writers(db:
             assert started.wait(timeout=5)
             if not db.sqlite:
                 _wait_for_owned_backend_lock(db, process_ids[0])
-            migration = pool.submit(db.migrate)
+            migration = pool.submit(migrate, db)
             if not db.sqlite:
                 migration.result(timeout=5)
             session.add(
@@ -541,7 +542,7 @@ def test_v1_upgrade_scans_both_legacy_json_sources_and_installs_marker_hooks(
     else:
         _version(db, "legacy", 10, [raw])
     assert not _needs_python(db)
-    db.migrate()
+    migrate(db)
     assert _needs_python(db)
     with db.engine.begin() as connection:
         connection.execute(text("UPDATE datasets SET files = '[]'"))

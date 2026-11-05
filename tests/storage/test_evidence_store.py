@@ -15,7 +15,7 @@ from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_cache import KnowledgeBundle
 from datakeel.core.evidence_models import AssertionDecisionRequest
 from datakeel.core.models import AssetRef
-from datakeel.storage.database import EventRow
+from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.evidence_decisions import decide_assertions, list_decisions
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow
 from datakeel.storage.evidence_store import list_assertions, record_extraction, validated_bundle

@@ -16,6 +16,7 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument, new_id
 from datakeel.core.settings import get_settings
 from datakeel.core.workflow_models import WorkflowRun, WorkflowStart
+from datakeel.persistence import migrate
 from datakeel.runtime.workflow_service import recover_runs, resume_workflow, start_workflow
 from datakeel.storage.database import Database
 from datakeel.workflows.loader import list_workflows, validate_workflow
@@ -76,7 +77,7 @@ def _report(run: WorkflowRun, console: Console) -> None:
 
 def _run(args: argparse.Namespace, console: Console) -> None:
     db = Database()
-    db.migrate()
+    migrate(db)
     recover_runs(db)
     key = args.idempotency_key or new_id()
     stream = (

@@ -10,9 +10,10 @@ from sqlalchemy import select
 
 from datakeel.core.models import FileItem
 from datakeel.core.profile_models import ProfileDataset, ProfileGapEvidence, PublishedProfile
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.operators.table.models import TableProfile
 from datakeel.operators.timeseries.models import GapsSummary
-from datakeel.storage.database import Database, DatasetRow, VersionRow
+from datakeel.storage.database import Database
 from datakeel.storage.file_state import get_file_state, overlay_files
 
 if TYPE_CHECKING:

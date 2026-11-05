@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from datakeel.core.evidence_cache import EvidenceCacheEntry
 from datakeel.core.evidence_models import Assertion
 from datakeel.core.models import AssetRef, BoundaryModel, FileItem
-from datakeel.storage.database import VersionRow
+from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.evidence_rows import EvidenceCacheRow
 from datakeel.storage.evidence_store import read_assertions
 from datakeel.storage.image_geometry import file_geometry
