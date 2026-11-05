@@ -2,6 +2,12 @@
 
 All notable changes are documented here using the Keep a Changelog format.
 
+## [Unreleased]
+
+### Changed
+
+- After W-L is merged, the Python, frontend and sandbox-python license policy permits the exact PostgreSQL SPDX identifier and unchanged, integrity-pinned upstream MPL-2.0 distributions with retained license notices and HTTPS upstream source links. The former certifi exception joins the general MPL rule; exact Python orjson/regex exceptions remain scoped and cannot authorize extra forbidden terms or waive MPL evidence. GPL, LGPL, AGPL, BSL, SSPL, unknown, missing and malformed licenses still fail closed. Rust policy is unchanged; no dependencies are added or upgraded.
+
 ## [0.23.0] - 2026-11-03
 
 ### Added

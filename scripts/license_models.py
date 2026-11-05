@@ -25,6 +25,13 @@ class LockedDependency(ManifestModel):
     marker: str | None = None
 
 
+class LockedArtifact(ManifestModel):
+    """Retain upstream distribution locations and integrity pins from uv.lock."""
+
+    url: str
+    hash: str
+
+
 class LockedPackage(ManifestModel):
     """Retain runtime edges separately from unselected optional and development dependencies."""
 
@@ -34,6 +41,9 @@ class LockedPackage(ManifestModel):
     optional_dependencies: dict[str, tuple[LockedDependency, ...]] = Field(
         default_factory=dict, alias="optional-dependencies"
     )
+    source: dict[str, str] = Field(default_factory=dict)
+    sdist: LockedArtifact | None = None
+    wheels: tuple[LockedArtifact, ...] = ()
     resolution_markers: tuple[str, ...] = Field(default=(), alias="resolution-markers")
 
 
@@ -80,6 +90,9 @@ class FrontendPackage(ManifestModel):
         default_factory=dict, alias="optionalDependencies"
     )
     peer_dependencies: dict[str, str] = Field(default_factory=dict, alias="peerDependencies")
+    resolved: str = ""
+    integrity: str = ""
+    repository: str | dict[str, str] | None = None
     peer_metadata: dict[str, PeerMetadata] = Field(
         default_factory=dict, alias="peerDependenciesMeta"
     )
@@ -92,6 +105,14 @@ class FrontendLock(ManifestModel):
     packages: dict[str, FrontendPackage]
 
 
+class MplEvidence(BoundaryModel):
+    """Record checked upstream source, distribution pins, and retained license file hashes."""
+
+    source_url: str
+    integrity: str
+    notices: tuple[str, ...]
+
+
 class LicensePackage(BoundaryModel):
     """Describe one shipped dependency and the metadata supporting its SPDX identity."""
 
@@ -100,6 +121,7 @@ class LicensePackage(BoundaryModel):
     version: str
     license: str
     evidence: str
+    mpl: MplEvidence | None = None
 
 
 class LicenseFinding(BoundaryModel):

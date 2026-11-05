@@ -18,14 +18,20 @@ Licenses are read from installed metadata and checked against exact locked versi
 Ambiguous legacy metadata is accepted only with a reviewed license-file SHA-256 match.
 For python-dateutil, the verified BSD terms explicitly apply to all its code.
 
-Allowed SPDX identifiers: 0BSD, Apache-2.0, BSD-2-Clause, BSD-3-Clause, CC0-1.0, ISC, MIT, MIT-0, MIT-CMU, OFL-1.1, PSF-2.0, Python-2.0, Unlicense, Zlib.
+Allowed SPDX identifiers: 0BSD, Apache-2.0, BSD-2-Clause, BSD-3-Clause, CC0-1.0, ISC, MIT, MIT-0, MIT-CMU, MPL-2.0, OFL-1.1, PSF-2.0, PostgreSQL, Python-2.0, Unlicense, Zlib.
 Every term in a compound expression must be permitted; unknown or missing licenses fail.
 
-Approved exception: Python `certifi` uses `MPL-2.0` for root-certificate data only.
+W-L policy takes effect only after merge; it does not expand Rust policy.
+PostgreSQL is allowed for Python, frontend and sandbox-python. MPL-2.0 requires
+unchanged locked upstream distributions with integrity metadata, retained license
+notices and an HTTPS upstream source URL for every runtime package. The former certifi
+exception is covered by this general conditional rule. No upstream source is copied
+into Datakeel. GPL, LGPL, AGPL, BSL, SSPL and unknown terms remain forbidden.
 Approved exception: Python `orjson` uses `MPL-2.0 AND (Apache-2.0 OR MIT)`.
 It is required by langsmith and langgraph-sdk; upstream source is distributed unchanged.
 Approved exception: Python `regex` uses `Apache-2.0 AND CNRI-Python`; CNRI-Python is
-permissive. These exact package exceptions do not permit other MPL or CNRI dependencies.
+permissive. Exact Python package exceptions do not authorize extra terms or waive MPL
+evidence; the CNRI exception does not extend to other packages or ecosystems.
 Upstream license texts remain in
 installed distributions; frontend texts are in `web/public/THIRD-PARTY-LICENSES.txt`.
 Rust license texts and notices are retained in the extension wheel.
@@ -39,175 +45,175 @@ versioned copyright-file evidence in
 [the base inventory](sandbox/BASE_IMAGE_INVENTORY.json).
 Debian license declarations are retained separately from the Python allowlist.
 
-| Ecosystem | Package | Version | SPDX license | Evidence |
-| --- | --- | --- | --- | --- |
-| python | aiofile | 3.12.3 | Apache-2.0 | installed METADATA License-Expression |
-| python | annotated-doc | 0.0.5 | MIT | installed METADATA License-Expression |
-| python | annotated-types | 0.8.0 | MIT | installed METADATA License-Expression |
-| python | anthropic | 1.17.0 | MIT | installed METADATA License |
-| python | anyio | 4.15.1 | MIT | installed METADATA License-Expression |
-| python | asn1crypto | 1.5.1 | MIT | installed METADATA License |
-| python | attrs | 26.1.0 | MIT | installed METADATA License-Expression |
-| python | authlib | 1.9.1 | BSD-3-Clause | installed METADATA License |
-| python | beartype | 0.23.1 | MIT | installed METADATA License-Expression |
-| python | boto3 | 1.43.117 | Apache-2.0 | installed METADATA License |
-| python | botocore | 1.43.117 | Apache-2.0 | installed METADATA License |
-| python | cachetools | 7.2.4 | MIT | installed METADATA License-Expression |
-| python | caio | 0.12.9 | Apache-2.0 | installed METADATA License-Expression |
-| python | certifi | 2026.10.19 | MPL-2.0 | installed METADATA License |
-| python | cffi | 2.1.1 | MIT-0 | installed METADATA License-Expression |
-| python | charset-normalizer | 3.5.2 | MIT | installed METADATA License |
-| python | click | 8.5.0 | BSD-3-Clause | installed METADATA License-Expression |
-| python | cryptography | 50.0.2 | Apache-2.0 OR BSD-3-Clause | installed METADATA License-Expression |
-| python | cyclopts | 5.2.0 | Apache-2.0 | installed METADATA License-Expression |
-| python | distro | 1.9.0 | Apache-2.0 | reviewed LICENSE SHA-256 cb5e8e7e5f4a3988e1063c142c60dc2df75605f4c46515e776e3aca6df976e14 |
-| python | dnspython | 2.9.0 | ISC | installed METADATA License-Expression |
-| python | docstring-parser | 0.18.0 | MIT | installed METADATA License |
-| python | email-validator | 2.3.0 | Unlicense | installed METADATA License |
-| python | exceptiongroup | 1.3.1 | MIT | installed METADATA license classifier |
-| python | fastapi | 0.159.1 | MIT | installed METADATA License-Expression |
-| python | fastmcp | 4.1.3 | Apache-2.0 | installed METADATA License-Expression |
-| python | fastmcp-slim | 4.1.3 | Apache-2.0 | installed METADATA License-Expression |
-| python | googleapis-common-protos | 1.76.0 | Apache-2.0 | installed METADATA License-Expression |
-| python | griffelib | 2.4.1 | ISC | installed METADATA License-Expression |
-| python | h11 | 0.16.0 | MIT | installed METADATA License |
-| python | httpcore | 1.0.9 | BSD-3-Clause | installed METADATA License-Expression |
-| python | httpcore2 | 2.16.0 | BSD-3-Clause | installed METADATA License-Expression |
-| python | httpx | 0.28.1 | BSD-3-Clause | installed METADATA License |
-| python | httpx2 | 2.16.0 | BSD-3-Clause | installed METADATA License-Expression |
-| python | idna | 3.20 | BSD-3-Clause | installed METADATA License-Expression |
-| python | jaraco-classes | 3.4.0 | MIT | installed METADATA license classifier |
-| python | jaraco-context | 6.1.2 | MIT | installed METADATA License-Expression |
-| python | jaraco-functools | 4.6.0 | MIT | installed METADATA License-Expression |
-| python | jiter | 0.18.0 | MIT | installed METADATA License-Expression |
-| python | jmespath | 1.1.0 | MIT | installed METADATA License |
-| python | joserfc | 1.7.7 | BSD-3-Clause | installed METADATA License |
-| python | jsonpatch | 1.36 | BSD-3-Clause | installed METADATA License-Expression |
-| python | jsonpointer | 3.4 | BSD-3-Clause | reviewed LICENSE.txt SHA-256 d8b24f15d472885f788a2d6e985850f264627b86012a17bb242c83f310d907e5 |
-| python | jsonref | 1.1.0 | MIT | installed METADATA License |
-| python | jsonschema | 4.26.0 | MIT | installed METADATA License-Expression |
-| python | jsonschema-path | 0.5.0 | Apache-2.0 | installed METADATA License |
-| python | jsonschema-specifications | 2025.9.1 | MIT | installed METADATA License-Expression |
-| python | keyring | 25.7.0 | MIT | installed METADATA License-Expression |
-| python | langchain-anthropic | 1.7.6 | MIT | installed METADATA License |
-| python | langchain-core | 1.7.0 | MIT | installed METADATA License |
-| python | langchain-openai | 1.7.2 | MIT | installed METADATA License |
-| python | langchain-protocol | 0.0.20 | MIT | installed METADATA License |
-| python | langgraph | 1.2.16 | MIT | installed METADATA License-Expression |
-| python | langgraph-checkpoint | 4.3.0 | MIT | installed METADATA License-Expression |
-| python | langgraph-prebuilt | 1.1.1 | MIT | installed METADATA License-Expression |
-| python | langgraph-sdk | 0.4.9 | MIT | installed METADATA License-Expression |
-| python | langsmith | 0.14.12 | MIT | installed METADATA License |
-| python | markdown-it-py | 4.2.0 | MIT | installed METADATA license classifier |
-| python | mcp | 2.3.0 | MIT | installed METADATA License |
-| python | mcp-types | 2.3.0 | MIT | installed METADATA License |
-| python | mdurl | 0.1.2 | MIT | installed METADATA license classifier |
-| python | more-itertools | 11.2.1 | MIT | installed METADATA License-Expression |
-| python | networkx | 3.7 | BSD-3-Clause | installed METADATA License-Expression |
-| python | numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | installed METADATA License-Expression |
-| python | openai | 3.37.0 | Apache-2.0 | installed METADATA License-Expression |
-| python | openapi-pydantic | 0.6.0 | MIT | installed METADATA License |
-| python | opentelemetry-api | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
-| python | opentelemetry-exporter-http-transport | 0.66b1 | Apache-2.0 | installed METADATA License-Expression |
-| python | opentelemetry-exporter-otlp-common | 0.66b1 | Apache-2.0 | installed METADATA License-Expression |
-| python | opentelemetry-exporter-otlp-proto-common | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
-| python | opentelemetry-exporter-otlp-proto-http | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
-| python | opentelemetry-proto | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
-| python | opentelemetry-sdk | 1.45.1 | Apache-2.0 | installed METADATA License-Expression |
-| python | opentelemetry-semantic-conventions | 0.66b1 | Apache-2.0 | installed METADATA License-Expression |
-| python | orjson | 3.13.0 | MPL-2.0 AND (Apache-2.0 OR MIT) | installed METADATA License-Expression |
-| python | ormsgpack | 1.13.0 | Apache-2.0 OR MIT | installed METADATA License-Expression |
-| python | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause | installed METADATA License-Expression |
-| python | pathable | 0.6.0 | Apache-2.0 | installed METADATA License |
-| python | pg8000 | 1.31.5 | BSD-3-Clause | installed METADATA License |
-| python | pillow | 13.0.0 | MIT-CMU | installed METADATA License-Expression |
-| python | platformdirs | 4.13.5 | MIT | installed METADATA License-Expression |
-| python | protobuf | 7.36.2 | BSD-3-Clause | reviewed LICENSE SHA-256 6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d |
-| python | py-key-value-aio | 0.4.6 | Apache-2.0 | installed METADATA License-Expression |
-| python | pycparser | 3.11 | BSD-3-Clause | installed METADATA License-Expression |
-| python | pydantic | 2.14.1 | MIT | installed METADATA License-Expression |
-| python | pydantic-core | 2.50.1 | MIT | installed METADATA License-Expression |
-| python | pydantic-settings | 2.16.1 | MIT | installed METADATA License-Expression |
-| python | pygments | 2.21.0 | BSD-2-Clause | installed METADATA License-Expression |
-| python | pyjwt | 2.15.1 | MIT | installed METADATA License-Expression |
-| python | pyperclip | 1.11.0 | BSD-3-Clause | reviewed LICENSE.txt SHA-256 a72b0acc9389e4c17ced890ef1b03455e04978d39e25636099b93efb76b74ead |
-| python | python-dateutil | 2.9.0.post0 | BSD-3-Clause | reviewed LICENSE SHA-256 ba00f51a0d92823b5a1cde27d8b5b9d2321e67ed8da9bc163eff96d5e17e577e |
-| python | python-dotenv | 1.2.4 | BSD-3-Clause | installed METADATA License |
-| python | python-multipart | 0.0.32 | Apache-2.0 | installed METADATA License-Expression |
-| python | pyyaml | 6.0.3 | MIT | installed METADATA License |
-| python | referencing | 0.37.0 | MIT | installed METADATA License-Expression |
-| python | regex | 2026.9.29 | Apache-2.0 AND CNRI-Python | installed METADATA License-Expression |
-| python | requests | 2.34.2 | Apache-2.0 | installed METADATA License |
-| python | requests-toolbelt | 1.0.0 | Apache-2.0 | reviewed LICENSE SHA-256 1f8cf8bdacd98ed6d36d0fec0c07f7765acebd6e81205962ab5146023b3c858d |
-| python | rich | 15.0.0 | MIT | installed METADATA License |
-| python | rich-rst | 2.2.0 | MIT | installed METADATA License-Expression |
-| python | rpds-py | 2026.9.1 | MIT | installed METADATA License-Expression |
-| python | s3transfer | 0.19.3 | Apache-2.0 | installed METADATA License |
-| python | scramp | 1.4.17 | MIT-0 | installed METADATA License |
-| python | six | 1.17.0 | MIT | installed METADATA License |
-| python | sniffio | 1.3.1 | MIT OR Apache-2.0 | installed METADATA License |
-| python | sqlalchemy | 2.1.6 | MIT | installed METADATA License-Expression |
-| python | sqlglot | 30.24.0 | MIT | installed METADATA License-Expression |
-| python | sse-starlette | 3.5.0 | BSD-3-Clause | installed METADATA License-Expression |
-| python | starlette | 1.9.0 | BSD-3-Clause | installed METADATA License-Expression |
-| python | tenacity | 9.2.1 | Apache-2.0 | installed METADATA License-Expression |
-| python | tiktoken | 0.14.0 | MIT | reviewed LICENSE SHA-256 418cb499b436128d653d79941333a5437b7be2ea9213dcc2f04d15d5d2c51d86 |
-| python | truststore | 0.10.5 | MIT | installed METADATA License-Expression |
-| python | typing-extensions | 4.16.0 | PSF-2.0 | installed METADATA License-Expression |
-| python | typing-inspection | 0.4.4 | MIT | installed METADATA License-Expression |
-| python | uncalled-for | 0.4.1 | MIT | installed METADATA License-Expression |
-| python | urllib3 | 2.8.0 | MIT | installed METADATA License-Expression |
-| python | uuid-utils | 0.18.0 | BSD-3-Clause | installed METADATA License-Expression |
-| python | uvicorn | 0.54.0 | BSD-3-Clause | installed METADATA License-Expression |
-| python | watchfiles | 1.3.0 | MIT | installed METADATA License |
-| python | websockets | 17.3 | BSD-3-Clause | installed METADATA License-Expression |
-| python | xxhash | 4.0.2 | BSD-2-Clause | installed METADATA License |
-| python | zstandard | 0.25.0 | BSD-3-Clause | installed METADATA License-Expression |
-| frontend | @fontsource/source-code-pro | 5.3.1 | OFL-1.1 | package-lock.json and node_modules/@fontsource/source-code-pro/package.json |
-| frontend | @fontsource/source-serif-4 | 5.3.1 | OFL-1.1 | package-lock.json and node_modules/@fontsource/source-serif-4/package.json |
-| frontend | @types/react | 19.3.0 | MIT | package-lock.json and node_modules/@types/react/package.json |
-| frontend | @types/react-reconciler | 0.34.0 | MIT | package-lock.json and node_modules/@types/react-reconciler/package.json |
-| frontend | csstype | 3.2.3 | MIT | package-lock.json and node_modules/csstype/package.json |
-| frontend | its-fine | 2.1.1 | MIT | package-lock.json and node_modules/its-fine/package.json |
-| frontend | @types/react-reconciler | 0.28.9 | MIT | package-lock.json and node_modules/its-fine/node_modules/@types/react-reconciler/package.json |
-| frontend | konva | 10.9.0 | MIT | package-lock.json and node_modules/konva/package.json |
-| frontend | react | 19.3.1 | MIT | package-lock.json and node_modules/react/package.json |
-| frontend | react-dom | 19.3.1 | MIT | package-lock.json and node_modules/react-dom/package.json |
-| frontend | react-konva | 19.3.2 | MIT | package-lock.json and node_modules/react-konva/package.json |
-| frontend | react-reconciler | 0.34.0 | MIT | package-lock.json and node_modules/react-reconciler/package.json |
-| frontend | scheduler | 0.28.0 | MIT | package-lock.json and node_modules/scheduler/package.json |
-| frontend | vite | 7.3.7 | MIT | package-lock.json and node_modules/vite/package.json |
-| rust | blake2 | 0.11.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | block-buffer | 0.12.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | cmov | 0.5.4 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | crossbeam-deque | 0.8.8 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | crossbeam-epoch | 0.9.21 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | crossbeam-utils | 0.8.23 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | crypto-common | 0.2.2 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | ctutils | 0.4.2 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | digest | 0.11.3 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | either | 1.19.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | heck | 0.5.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | hybrid-array | 0.4.15 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | libc | 0.2.191 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | once_cell | 1.21.4 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | portable-atomic | 1.15.0 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | proc-macro2 | 1.0.107 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | pyo3 | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | pyo3-build-config | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | pyo3-ffi | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | pyo3-macros | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | pyo3-macros-backend | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | quote | 1.0.47 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | rayon | 1.11.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | rayon-core | 1.13.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | syn | 3.0.9 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | target-lexicon | 0.13.5 | Apache-2.0 WITH LLVM-exception | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | typenum | 1.20.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| rust | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) |
-| sandbox-python | cpython | 3.12.15 | PSF-2.0 | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/LICENSE.txt |
-| sandbox-python | numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/numpy-2.5.4.dist-info/licenses/LICENSE.txt |
-| sandbox-python | pillow | 13.0.0 | MIT-CMU | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/pillow-13.0.0.dist-info/licenses/LICENSE |
-| sandbox-python | pip | 25.0.1 | MIT | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/pip-25.0.1.dist-info/LICENSE.txt |
+| Ecosystem | Package | Version | SPDX license | Evidence | Upstream source |
+| --- | --- | --- | --- | --- | --- |
+| python | aiofile | 3.12.3 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | annotated-doc | 0.0.5 | MIT | installed METADATA License-Expression | — |
+| python | annotated-types | 0.8.0 | MIT | installed METADATA License-Expression | — |
+| python | anthropic | 1.17.0 | MIT | installed METADATA License | — |
+| python | anyio | 4.15.1 | MIT | installed METADATA License-Expression | — |
+| python | asn1crypto | 1.5.1 | MIT | installed METADATA License | — |
+| python | attrs | 26.1.0 | MIT | installed METADATA License-Expression | — |
+| python | authlib | 1.9.1 | BSD-3-Clause | installed METADATA License | — |
+| python | beartype | 0.23.1 | MIT | installed METADATA License-Expression | — |
+| python | boto3 | 1.43.117 | Apache-2.0 | installed METADATA License | — |
+| python | botocore | 1.43.117 | Apache-2.0 | installed METADATA License | — |
+| python | cachetools | 7.2.4 | MIT | installed METADATA License-Expression | — |
+| python | caio | 0.12.9 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | certifi | 2026.10.19 | MPL-2.0 | installed METADATA License; uv.lock upstream SHA-256 pins; installed RECORD SHA-256 verified; LICENSE SHA-256 e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7 | https://github.com/certifi/python-certifi |
+| python | cffi | 2.1.1 | MIT-0 | installed METADATA License-Expression | — |
+| python | charset-normalizer | 3.5.2 | MIT | installed METADATA License | — |
+| python | click | 8.5.0 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | cryptography | 50.0.2 | Apache-2.0 OR BSD-3-Clause | installed METADATA License-Expression | — |
+| python | cyclopts | 5.2.0 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | distro | 1.9.0 | Apache-2.0 | reviewed LICENSE SHA-256 cb5e8e7e5f4a3988e1063c142c60dc2df75605f4c46515e776e3aca6df976e14 | — |
+| python | dnspython | 2.9.0 | ISC | installed METADATA License-Expression | — |
+| python | docstring-parser | 0.18.0 | MIT | installed METADATA License | — |
+| python | email-validator | 2.3.0 | Unlicense | installed METADATA License | — |
+| python | exceptiongroup | 1.3.1 | MIT | installed METADATA license classifier | — |
+| python | fastapi | 0.159.1 | MIT | installed METADATA License-Expression | — |
+| python | fastmcp | 4.1.3 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | fastmcp-slim | 4.1.3 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | googleapis-common-protos | 1.76.0 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | griffelib | 2.4.1 | ISC | installed METADATA License-Expression | — |
+| python | h11 | 0.16.0 | MIT | installed METADATA License | — |
+| python | httpcore | 1.0.9 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | httpcore2 | 2.16.0 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | httpx | 0.28.1 | BSD-3-Clause | installed METADATA License | — |
+| python | httpx2 | 2.16.0 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | idna | 3.20 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | jaraco-classes | 3.4.0 | MIT | installed METADATA license classifier | — |
+| python | jaraco-context | 6.1.2 | MIT | installed METADATA License-Expression | — |
+| python | jaraco-functools | 4.6.0 | MIT | installed METADATA License-Expression | — |
+| python | jiter | 0.18.0 | MIT | installed METADATA License-Expression | — |
+| python | jmespath | 1.1.0 | MIT | installed METADATA License | — |
+| python | joserfc | 1.7.7 | BSD-3-Clause | installed METADATA License | — |
+| python | jsonpatch | 1.36 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | jsonpointer | 3.4 | BSD-3-Clause | reviewed LICENSE.txt SHA-256 d8b24f15d472885f788a2d6e985850f264627b86012a17bb242c83f310d907e5 | — |
+| python | jsonref | 1.1.0 | MIT | installed METADATA License | — |
+| python | jsonschema | 4.26.0 | MIT | installed METADATA License-Expression | — |
+| python | jsonschema-path | 0.5.0 | Apache-2.0 | installed METADATA License | — |
+| python | jsonschema-specifications | 2025.9.1 | MIT | installed METADATA License-Expression | — |
+| python | keyring | 25.7.0 | MIT | installed METADATA License-Expression | — |
+| python | langchain-anthropic | 1.7.6 | MIT | installed METADATA License | — |
+| python | langchain-core | 1.7.0 | MIT | installed METADATA License | — |
+| python | langchain-openai | 1.7.2 | MIT | installed METADATA License | — |
+| python | langchain-protocol | 0.0.20 | MIT | installed METADATA License | — |
+| python | langgraph | 1.2.16 | MIT | installed METADATA License-Expression | — |
+| python | langgraph-checkpoint | 4.3.0 | MIT | installed METADATA License-Expression | — |
+| python | langgraph-prebuilt | 1.1.1 | MIT | installed METADATA License-Expression | — |
+| python | langgraph-sdk | 0.4.9 | MIT | installed METADATA License-Expression | — |
+| python | langsmith | 0.14.12 | MIT | installed METADATA License | — |
+| python | markdown-it-py | 4.2.0 | MIT | installed METADATA license classifier | — |
+| python | mcp | 2.3.0 | MIT | installed METADATA License | — |
+| python | mcp-types | 2.3.0 | MIT | installed METADATA License | — |
+| python | mdurl | 0.1.2 | MIT | installed METADATA license classifier | — |
+| python | more-itertools | 11.2.1 | MIT | installed METADATA License-Expression | — |
+| python | networkx | 3.7 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | installed METADATA License-Expression | — |
+| python | openai | 3.37.0 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | openapi-pydantic | 0.6.0 | MIT | installed METADATA License | — |
+| python | opentelemetry-api | 1.45.1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | opentelemetry-exporter-http-transport | 0.66b1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | opentelemetry-exporter-otlp-common | 0.66b1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | opentelemetry-exporter-otlp-proto-common | 1.45.1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | opentelemetry-exporter-otlp-proto-http | 1.45.1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | opentelemetry-proto | 1.45.1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | opentelemetry-sdk | 1.45.1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | opentelemetry-semantic-conventions | 0.66b1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | orjson | 3.13.0 | MPL-2.0 AND (Apache-2.0 OR MIT) | installed METADATA License-Expression; uv.lock upstream SHA-256 pins; installed RECORD SHA-256 verified; LICENSE-APACHE SHA-256 a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2; LICENSE-MIT SHA-256 23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3; LICENSE-MPL-2.0 SHA-256 66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172 | https://github.com/ijl/orjson |
+| python | ormsgpack | 1.13.0 | Apache-2.0 OR MIT | installed METADATA License-Expression | — |
+| python | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause | installed METADATA License-Expression | — |
+| python | pathable | 0.6.0 | Apache-2.0 | installed METADATA License | — |
+| python | pg8000 | 1.31.5 | BSD-3-Clause | installed METADATA License | — |
+| python | pillow | 13.0.0 | MIT-CMU | installed METADATA License-Expression | — |
+| python | platformdirs | 4.13.5 | MIT | installed METADATA License-Expression | — |
+| python | protobuf | 7.36.2 | BSD-3-Clause | reviewed LICENSE SHA-256 6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d | — |
+| python | py-key-value-aio | 0.4.6 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | pycparser | 3.11 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | pydantic | 2.14.1 | MIT | installed METADATA License-Expression | — |
+| python | pydantic-core | 2.50.1 | MIT | installed METADATA License-Expression | — |
+| python | pydantic-settings | 2.16.1 | MIT | installed METADATA License-Expression | — |
+| python | pygments | 2.21.0 | BSD-2-Clause | installed METADATA License-Expression | — |
+| python | pyjwt | 2.15.1 | MIT | installed METADATA License-Expression | — |
+| python | pyperclip | 1.11.0 | BSD-3-Clause | reviewed LICENSE.txt SHA-256 a72b0acc9389e4c17ced890ef1b03455e04978d39e25636099b93efb76b74ead | — |
+| python | python-dateutil | 2.9.0.post0 | BSD-3-Clause | reviewed LICENSE SHA-256 ba00f51a0d92823b5a1cde27d8b5b9d2321e67ed8da9bc163eff96d5e17e577e | — |
+| python | python-dotenv | 1.2.4 | BSD-3-Clause | installed METADATA License | — |
+| python | python-multipart | 0.0.32 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | pyyaml | 6.0.3 | MIT | installed METADATA License | — |
+| python | referencing | 0.37.0 | MIT | installed METADATA License-Expression | — |
+| python | regex | 2026.9.29 | Apache-2.0 AND CNRI-Python | installed METADATA License-Expression | — |
+| python | requests | 2.34.2 | Apache-2.0 | installed METADATA License | — |
+| python | requests-toolbelt | 1.0.0 | Apache-2.0 | reviewed LICENSE SHA-256 1f8cf8bdacd98ed6d36d0fec0c07f7765acebd6e81205962ab5146023b3c858d | — |
+| python | rich | 15.0.0 | MIT | installed METADATA License | — |
+| python | rich-rst | 2.2.0 | MIT | installed METADATA License-Expression | — |
+| python | rpds-py | 2026.9.1 | MIT | installed METADATA License-Expression | — |
+| python | s3transfer | 0.19.3 | Apache-2.0 | installed METADATA License | — |
+| python | scramp | 1.4.17 | MIT-0 | installed METADATA License | — |
+| python | six | 1.17.0 | MIT | installed METADATA License | — |
+| python | sniffio | 1.3.1 | MIT OR Apache-2.0 | installed METADATA License | — |
+| python | sqlalchemy | 2.1.6 | MIT | installed METADATA License-Expression | — |
+| python | sqlglot | 30.24.0 | MIT | installed METADATA License-Expression | — |
+| python | sse-starlette | 3.5.0 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | starlette | 1.9.0 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | tenacity | 9.2.1 | Apache-2.0 | installed METADATA License-Expression | — |
+| python | tiktoken | 0.14.0 | MIT | reviewed LICENSE SHA-256 418cb499b436128d653d79941333a5437b7be2ea9213dcc2f04d15d5d2c51d86 | — |
+| python | truststore | 0.10.5 | MIT | installed METADATA License-Expression | — |
+| python | typing-extensions | 4.16.0 | PSF-2.0 | installed METADATA License-Expression | — |
+| python | typing-inspection | 0.4.4 | MIT | installed METADATA License-Expression | — |
+| python | uncalled-for | 0.4.1 | MIT | installed METADATA License-Expression | — |
+| python | urllib3 | 2.8.0 | MIT | installed METADATA License-Expression | — |
+| python | uuid-utils | 0.18.0 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | uvicorn | 0.54.0 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | watchfiles | 1.3.0 | MIT | installed METADATA License | — |
+| python | websockets | 17.3 | BSD-3-Clause | installed METADATA License-Expression | — |
+| python | xxhash | 4.0.2 | BSD-2-Clause | installed METADATA License | — |
+| python | zstandard | 0.25.0 | BSD-3-Clause | installed METADATA License-Expression | — |
+| frontend | @fontsource/source-code-pro | 5.3.1 | OFL-1.1 | package-lock.json and node_modules/@fontsource/source-code-pro/package.json | — |
+| frontend | @fontsource/source-serif-4 | 5.3.1 | OFL-1.1 | package-lock.json and node_modules/@fontsource/source-serif-4/package.json | — |
+| frontend | @types/react | 19.3.0 | MIT | package-lock.json and node_modules/@types/react/package.json | — |
+| frontend | @types/react-reconciler | 0.34.0 | MIT | package-lock.json and node_modules/@types/react-reconciler/package.json | — |
+| frontend | csstype | 3.2.3 | MIT | package-lock.json and node_modules/csstype/package.json | — |
+| frontend | its-fine | 2.1.1 | MIT | package-lock.json and node_modules/its-fine/package.json | — |
+| frontend | @types/react-reconciler | 0.28.9 | MIT | package-lock.json and node_modules/its-fine/node_modules/@types/react-reconciler/package.json | — |
+| frontend | konva | 10.9.0 | MIT | package-lock.json and node_modules/konva/package.json | — |
+| frontend | react | 19.3.1 | MIT | package-lock.json and node_modules/react/package.json | — |
+| frontend | react-dom | 19.3.1 | MIT | package-lock.json and node_modules/react-dom/package.json | — |
+| frontend | react-konva | 19.3.2 | MIT | package-lock.json and node_modules/react-konva/package.json | — |
+| frontend | react-reconciler | 0.34.0 | MIT | package-lock.json and node_modules/react-reconciler/package.json | — |
+| frontend | scheduler | 0.28.0 | MIT | package-lock.json and node_modules/scheduler/package.json | — |
+| frontend | vite | 7.3.7 | MIT | package-lock.json and node_modules/vite/package.json | — |
+| rust | blake2 | 0.11.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | block-buffer | 0.12.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | cmov | 0.5.4 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | crossbeam-deque | 0.8.8 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | crossbeam-epoch | 0.9.21 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | crossbeam-utils | 0.8.23 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | crypto-common | 0.2.2 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | ctutils | 0.4.2 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | digest | 0.11.3 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | either | 1.19.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | heck | 0.5.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | hybrid-array | 0.4.15 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | libc | 0.2.191 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | once_cell | 1.21.4 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | portable-atomic | 1.15.0 | Apache-2.0 OR MIT | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | proc-macro2 | 1.0.107 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | pyo3 | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | pyo3-build-config | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | pyo3-ffi | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | pyo3-macros | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | pyo3-macros-backend | 0.30.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | quote | 1.0.47 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | rayon | 1.11.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | rayon-core | 1.13.0 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | syn | 3.0.9 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | target-lexicon | 0.13.5 | Apache-2.0 WITH LLVM-exception | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | typenum | 1.20.1 | MIT OR Apache-2.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| rust | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 | Cargo.lock identity / cargo metadata --locked SPDX declaration (all targets) | — |
+| sandbox-python | cpython | 3.12.15 | PSF-2.0 | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/LICENSE.txt | — |
+| sandbox-python | numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/numpy-2.5.4.dist-info/licenses/LICENSE.txt | — |
+| sandbox-python | pillow | 13.0.0 | MIT-CMU | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/pillow-13.0.0.dist-info/licenses/LICENSE | — |
+| sandbox-python | pip | 25.0.1 | MIT | sandbox/BASE_IMAGE_INVENTORY.json; /usr/local/lib/python3.12/site-packages/pip-25.0.1.dist-info/LICENSE.txt | — |
 
 Policy findings: 0.

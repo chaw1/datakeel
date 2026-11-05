@@ -79,10 +79,11 @@ cli
 
 ## 7. 许可例外（已批准）
 - `scripts/license_audit.py` 按锁文件遍历当前 Python 目标环境的运行时传递依赖（含递归 extras），以及前端 production/optional/peer 依赖闭包与实际构建模块/资源的并集。版本、安装包身份及运行时依赖关系必须与锁定元数据一致。审计在前端构建后执行，读取绑定源码哈希的 `.runtime-dependencies.json`，生成 `THIRD_PARTY_NOTICES.md`，并纳入 `make check`。
-- 许可白名单为 Apache-2.0、MIT、MIT-0、CC0-1.0、MIT-CMU、BSD-2-Clause、BSD-3-Clause、ISC、PSF-2.0、Zlib、OFL-1.1、0BSD、Python-2.0、Unlicense。新增的 MIT-0、CC0-1.0、MIT-CMU 适用于所有依赖，不按包单独开例外。GPL、AGPL、LGPL、SSPL、未知或缺失许可一律失败；无证据的模糊许可名称与其余白名单外条款同样失败，复合表达式逐项检查，不以 MIT 等子串代替完整许可。
-- `certifi`（MPL-2.0，仅根证书数据，httpx/fastmcp 传递引入）：允许。MPL 是文件级弱 copyleft，不改其源码即无义务；其它 MPL 代码包仍需逐个申请。
+- 许可白名单为 Apache-2.0、MIT、MIT-0、CC0-1.0、MIT-CMU、BSD-2-Clause、BSD-3-Clause、ISC、PSF-2.0、Zlib、OFL-1.1、0BSD、Python-2.0、Unlicense、PostgreSQL。新增的 MIT-0、CC0-1.0、MIT-CMU 适用于所有依赖，不按包单独开例外。GPL、AGPL、LGPL、BSL（含 BUSL-1.1）、SSPL、未知或缺失许可一律失败；无证据的模糊许可名称与其余白名单外条款同样失败，复合表达式逐项检查，不以 MIT 等子串代替完整许可。
+- **W-L 合并后才生效**：PostgreSQL 与以下 MPL-2.0 通用规则适用于 Python、前端及 sandbox-python，不扩展第 10 节的 Rust 独立政策，也不新增或升级依赖。MPL-2.0（包括复合表达式中的该项）仅在原样使用锁定上游分发包、保留上游许可 notices 并逐包提供可检查的 HTTPS 上游源码地址时允许；原 `certifi` 根证书特例并入此通用规则。不得把 MPL 上游源码复制入 Datakeel 仓库，或修改后仍按上游包通过。
+- MPL 审计要求 Python 注册表分发 URL 与 SHA-256 锁定元数据、安装 RECORD 文件哈希及许可文件；拒绝 local/editable/direct-URL 安装及文件漂移。前端要求 HTTPS 分发 URL、锁定完整性元数据，并离线核对 npm 缓存归档与安装文件，保留许可文件；缓存缺失时失败，不联网补证据。生成 notices 逐包列出锁定版本、SPDX 许可、源码地址及完整性/许可文件证据。sandbox-python 沿用相同条件，缺失源码或其它证据失败。
 - `orjson` 仅接受精确表达式 `MPL-2.0 AND (Apache-2.0 OR MIT)`：它是 langsmith 和 langgraph-sdk 的传递硬依赖，分发保持上游源码不变，并保留上游许可文件。
-- `regex` 仅接受精确表达式 `Apache-2.0 AND CNRI-Python`：CNRI-Python 为宽松许可。上述两条仅适用于对应 Python 包，不扩展到其它包、前端或额外条款。
+- `regex` 仅接受精确表达式 `Apache-2.0 AND CNRI-Python`：CNRI-Python 为宽松许可。上述精确例外仍仅适用于对应 Python 包，不授权额外禁止条款，也不豁免 MPL 通用证据要求；其它包与生态只能按通用白名单和 MPL 条件判定。
 - `jsonpointer`、`distro`、`requests-toolbelt`、`tiktoken` 的模糊声明按锁定版本、声明原文（长文本使用 SHA-256）及许可文件 SHA-256 三者共同确认；任一变化必须重新核验。GPL、AGPL、LGPL、SSPL 和未知许可仍然失败。
 
 ## 8. 约定（人审，不进门禁）
