@@ -6,6 +6,9 @@ inputs:
   toolchains:
     description: Also install Node, Rust and ffmpeg and the locked frontend dependencies.
     default: 'true'
+  license-wheels:
+    description: Supply verified original certifi/orjson wheels for the offline license audit.
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -34,6 +37,13 @@ runs:
       run: sudo apt-get update && sudo apt-get install -y ffmpeg
     - shell: bash
       run: uv sync --locked
+    - if: inputs.license-wheels == 'true'
+      name: Supply locked license wheel evidence
+      shell: bash
+      run: |
+        wheel_dir=$(mktemp -d "$RUNNER_TEMP/datakeel-license-wheels.XXXXXX")
+        uv run --locked --no-sync python -m scripts.ci_license_wheels \
+          --wheel-dir "$wheel_dir" --github-env "$GITHUB_ENV"
     - if: inputs.toolchains == 'true'
       shell: bash
       working-directory: web

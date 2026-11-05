@@ -45,6 +45,18 @@ make check
 
 `make check` 包含公开内容扫描、格式、lint、严格类型、分层、规模、运行时许可审计、测试覆盖率及前端测试和构建。Python 总覆盖率至少 85%，规范列出的模块至少 90%。不得通过降低门禁来交付。`make fix` 可执行格式化与自动修复，执行后检查差异。
 
+The Python MPL audit needs the original compatible certifi/orjson wheels in
+`DATAKEEL_LICENSE_WHEEL_DIR` (or `UV_CACHE_DIR/license-wheels`). Retain the exact archives
+listed in `uv.lock`; unpacked install caches are insufficient. The audit never fetches missing
+evidence. CI's two gate stacks opt into `license-wheels: 'true'` on the shared setup action:
+the separate supplier downloads only these locked wheel URLs into a runner temporary directory,
+rejects every redirect and verifies filename, byte length, SHA-256 and wheel metadata before
+exporting the directory. Existing evidence is revalidated; invalid files fail without replacement.
+Do not commit wheel files. See [license evidence rules](docs/CODE_STANDARDS.md#7-许可例外已批准).
+
+Python MPL 审计需要原始兼容 wheel，不能用解包缓存替代。将目录设置为
+`DATAKEEL_LICENSE_WHEEL_DIR`；CI 由独立供给步骤下载并验证，审计本身保持离线。原始归档不入仓。
+
 For the same extended checks used in CI, run:
 
 复现 CI 的扩展门禁：

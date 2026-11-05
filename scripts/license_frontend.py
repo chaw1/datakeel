@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from datakeel.core.errors import ValidationError
 from scripts.license_bundle import bundle_packages
 from scripts.license_models import FrontendLock, FrontendPackage, LicensePackage
+from scripts.license_mpl import frontend_mpl_evidence, uses_mpl
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -118,6 +119,11 @@ def frontend_packages(root: Path) -> tuple[LicensePackage, ...]:
                 version=installed.version,
                 license=installed.license or "UNKNOWN",
                 evidence=f"package-lock.json and {location}/package.json",
+                mpl=(
+                    frontend_mpl_evidence(package, installed, path.parent)
+                    if uses_mpl(installed.license or "")
+                    else None
+                ),
             )
         )
     return tuple(result)
