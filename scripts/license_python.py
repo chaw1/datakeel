@@ -24,6 +24,7 @@ from scripts.license_models import (
     PythonLock,
     SelectedPythonPackage,
 )
+from scripts.license_mpl import python_mpl_evidence, uses_mpl
 from scripts.license_python_metadata import validate_requirements
 
 if TYPE_CHECKING:
@@ -225,6 +226,7 @@ def python_packages(root: Path) -> tuple[LicensePackage, ...]:
                 version=package.version,
                 license=license_id,
                 evidence=evidence,
+                mpl=python_mpl_evidence(package, installed) if uses_mpl(license_id) else None,
             )
         )
     return tuple(packages)

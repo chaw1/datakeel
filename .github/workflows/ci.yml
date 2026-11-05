@@ -48,6 +48,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+        with:
+          license-wheels: 'true'
       - name: Real container sandbox security tests (runtime required)
         env:
           DATAKEEL_TEST_DATABASE_URL: ''

@@ -12,6 +12,16 @@ All notable changes are documented here using the Keep a Changelog format.
 
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
 
+## [0.24.0] - 2026-11-06
+
+### Fixed
+
+- Both CI gate stacks now supply the original certifi/orjson wheels required by the offline license audit. The setup action downloads only compatible wheel URLs pinned in `uv.lock` into a runner temporary directory, rejects redirects and invalid archives, and exports the evidence directory only after filename, byte length and SHA-256 verification. Existing wheel evidence is revalidated; no dependencies or license rules change.
+
+### Changed
+
+- After W-L is merged, the Python, frontend and sandbox-python license policy permits the exact PostgreSQL SPDX identifier and unchanged, integrity-pinned upstream MPL-2.0 distributions with retained license notices and HTTPS upstream source links. The former certifi exception joins the general MPL rule; exact Python orjson/regex exceptions remain scoped and cannot authorize extra forbidden terms or waive MPL evidence. GPL, LGPL, AGPL, BSL, SSPL, unknown, missing and malformed licenses still fail closed. Rust policy is unchanged; no dependencies are added or upgraded.
+
 ## [0.23.0] - 2026-11-03
 
 ### Added

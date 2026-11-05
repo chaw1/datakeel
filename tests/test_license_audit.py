@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from scripts import license_audit
-from scripts.license_models import LicensePackage, LicenseReport
+from scripts.license_models import LicensePackage, LicenseReport, MplEvidence
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,6 +25,11 @@ def package(license_id: str, name: str = "generated-package") -> LicensePackage:
         version="1.0",
         license=license_id,
         evidence="generated METADATA",
+        mpl=MplEvidence(
+            source_url="https://example.org/generated/source",
+            integrity="generated locked upstream SHA-256 evidence",
+            notices=("LICENSE SHA-256 generated fixture",),
+        ),
     )
 
 
@@ -59,7 +64,10 @@ def test_new_permissive_licenses_apply_to_all_packages_and_ecosystems(
         "LGPL-3.0-only",
         "LGPL-3.0-or-later",
         "SSPL-1.0",
-        "MPL-2.0",
+        "BUSL-1.1",
+        "BSL-1.0",
+        "PostgreSQL-like",
+        "PostgreSQL-1.0",
         "UNKNOWN",
         "",
         "LicenseRef-PrivateTerms",
@@ -89,39 +97,61 @@ def test_all_terms_in_valid_compound_expression_are_checked() -> None:
     assert license_audit.license_findings(package(blocked))[0].reason.endswith("LGPL-3.0-only")
 
 
-def test_certifi_exception_cannot_cover_other_packages_ecosystems_or_extra_terms() -> None:
-    """The existing root-certificate exception permits only certifi's exact MPL expression."""
-    approved = package("MPL-2.0", "certifi")
-    assert license_audit.license_findings(approved) == ()
-    for changed in (
-        approved.model_copy(update={"name": "different-package"}),
-        approved.model_copy(update={"ecosystem": "frontend"}),
-        approved.model_copy(update={"license": "MPL-2.0 AND GPL-3.0-only"}),
-    ):
-        assert license_audit.license_findings(changed)
-
-
+@pytest.mark.parametrize("ecosystem", ["python", "frontend", "sandbox-python"])
 @pytest.mark.parametrize(
-    ("name", "expression"),
-    [
-        ("orjson", "MPL-2.0 AND (Apache-2.0 OR MIT)"),
-        ("regex", "Apache-2.0 AND CNRI-Python"),
-    ],
+    "expression", ["PostgreSQL", "PostgreSQL AND MIT", "MPL-2.0", "MPL-2.0 AND (Apache-2.0 OR MIT)"]
 )
-def test_runtime_exceptions_remain_bound_to_exact_package_and_terms(
-    name: str, expression: str
+def test_general_policy_applies_to_all_runtime_ecosystems(ecosystem: str, expression: str) -> None:
+    """General allowances include sandbox Python while MPL retains mandatory evidence."""
+    generated = package(expression).model_copy(update={"ecosystem": ecosystem})
+    assert license_audit.license_findings(generated) == ()
+
+
+@pytest.mark.parametrize("ecosystem", ["python", "frontend", "sandbox-python"])
+@pytest.mark.parametrize(
+    "term", ["GPL-3.0-only", "LGPL-3.0-only", "AGPL-3.0-only", "BUSL-1.1", "SSPL-1.0", "UNKNOWN"]
+)
+def test_mpl_compound_cannot_hide_forbidden_terms(ecosystem: str, term: str) -> None:
+    """An allowed MPL term cannot authorize another forbidden term in either operator branch."""
+    for operator in ("AND", "OR"):
+        generated = package(f"MPL-2.0 {operator} {term}").model_copy(
+            update={"ecosystem": ecosystem}
+        )
+        assert license_audit.license_findings(generated)
+
+
+@pytest.mark.parametrize("name", ["certifi", "orjson", "generated-package"])
+@pytest.mark.parametrize("ecosystem", ["python", "frontend", "sandbox-python"])
+def test_mpl_requires_evidence_even_for_previous_package_exceptions(
+    name: str, ecosystem: str
 ) -> None:
-    """Approved runtime exceptions never admit copied names, other ecosystems or extra terms."""
-    approved = package(expression, name)
-    assert license_audit.license_findings(approved) == ()
+    """Neither former certifi nor exact orjson exceptions waive the general evidence rule."""
+    expression = license_audit.PACKAGE_EXCEPTIONS["orjson"] if name == "orjson" else "MPL-2.0"
+    generated = package(expression, name).model_copy(update={"ecosystem": ecosystem, "mpl": None})
+    assert license_audit.license_findings(generated)
+
+
+@pytest.mark.parametrize("ecosystem", ["python", "frontend", "sandbox-python", "rust"])
+def test_regex_exception_stays_exact_and_python_only(ecosystem: str) -> None:
+    """CNRI remains restricted to the exact reviewed Python regex expression."""
+    expression = license_audit.PACKAGE_EXCEPTIONS["regex"]
+    approved = package(expression, "regex").model_copy(update={"ecosystem": ecosystem})
+    assert bool(license_audit.license_findings(approved)) == (ecosystem != "python")
     for changed in (
         approved.model_copy(update={"name": "different-package"}),
-        approved.model_copy(update={"ecosystem": "frontend"}),
         approved.model_copy(update={"license": expression + " AND GPL-3.0-only"}),
-        approved.model_copy(update={"license": "MPL-2.0"}),
         approved.model_copy(update={"license": "CNRI-Python"}),
     ):
         assert license_audit.license_findings(changed)
+
+
+@pytest.mark.parametrize("name", ["orjson", "regex"])
+def test_exact_python_exceptions_cannot_add_terms(name: str) -> None:
+    """An exact package exception cannot excuse any added non-allowlisted term."""
+    expression = license_audit.PACKAGE_EXCEPTIONS[name]
+    assert license_audit.license_findings(package(expression, name)) == ()
+    for term in ("GPL-3.0-only", "CNRI-Python", "LicenseRef-Unknown"):
+        assert license_audit.license_findings(package(expression + " AND " + term, name))
 
 
 @pytest.mark.parametrize(
@@ -204,7 +234,8 @@ def test_rust_license_policy_accepts_only_declared_permissive_terms(license_id: 
 
 
 @pytest.mark.parametrize(
-    "license_id", ["MPL-2.0", "MIT-0", "ISC", "Zlib", "UNKNOWN", "", "MIT OR GPL-3.0-only"]
+    "license_id",
+    ["PostgreSQL", "MPL-2.0", "MIT-0", "ISC", "Zlib", "UNKNOWN", "", "MIT OR GPL-3.0-only"],
 )
 def test_rust_license_policy_rejects_unknown_or_broadened_terms(license_id: str) -> None:
     """Neither main-package allowances nor package exceptions admit Rust dependencies."""
