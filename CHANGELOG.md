@@ -18,6 +18,12 @@ All notable changes are documented here using the Keep a Changelog format.
   Schema snapshots and infrastructure ratchets support independent verification; see
   [persistence schema composition](docs/PERSISTENCE_SCHEMA.md).
 
+## [0.24.1] - 2026-11-06
+
+### Fixed
+
+- Synchronize the Python package, frontend manifest, npm lockfile, API and lineage producer to v0.24.1, closing the release-version consistency regression left by v0.24.0.
+
 ## [0.24.0] - 2026-11-06
 
 ### Fixed
