@@ -1,0 +1,317 @@
+{
+  "$defs": {
+    "Embedding": {
+      "additionalProperties": false,
+      "description": "Bind one finite nonzero embedding to a local batch index.",
+      "properties": {
+        "embedding": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1,
+          "title": "Embedding",
+          "type": "array"
+        },
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "object": {
+          "const": "embedding",
+          "title": "Object",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object",
+        "index",
+        "embedding"
+      ],
+      "title": "Embedding",
+      "type": "object"
+    },
+    "ImageInput": {
+      "additionalProperties": false,
+      "description": "An internal experimental shape, with no asserted provider compatibility.",
+      "properties": {
+        "image": {
+          "pattern": "^data:image/png;base64,",
+          "title": "Image",
+          "type": "string"
+        }
+      },
+      "required": [
+        "image"
+      ],
+      "title": "ImageInput",
+      "type": "object"
+    },
+    "ImageRequest": {
+      "additionalProperties": false,
+      "description": "Separate the image experiment from the official-compatible text subset.",
+      "properties": {
+        "input": {
+          "items": {
+            "$ref": "#/$defs/ImageInput"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Input",
+          "type": "array"
+        },
+        "model": {
+          "const": "multimodal-embedding-v1",
+          "title": "Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "input"
+      ],
+      "title": "ImageRequest",
+      "type": "object"
+    },
+    "Prepared": {
+      "additionalProperties": false,
+      "description": "Bind exact post-preprocessing bytes to their immutable version and digest.",
+      "properties": {
+        "data_uri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Uri"
+        },
+        "payload_base64": {
+          "title": "Payload Base64",
+          "type": "string"
+        },
+        "payload_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Payload Sha256",
+          "type": "string"
+        },
+        "prefix_only": {
+          "const": false,
+          "default": false,
+          "title": "Prefix Only",
+          "type": "boolean"
+        },
+        "version": {
+          "enum": [
+            "text-utf8-v1",
+            "image-exif-rgb-png512-v1"
+          ],
+          "title": "Version",
+          "type": "string"
+        },
+        "warning": {
+          "default": null,
+          "title": "Warning",
+          "type": "null"
+        }
+      },
+      "required": [
+        "version",
+        "payload_base64",
+        "payload_sha256"
+      ],
+      "title": "Prepared",
+      "type": "object"
+    },
+    "Response": {
+      "additionalProperties": false,
+      "description": "Require id, model, indexed embeddings and usage without invented fields.",
+      "properties": {
+        "data": {
+          "items": {
+            "$ref": "#/$defs/Embedding"
+          },
+          "title": "Data",
+          "type": "array"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "model": {
+          "enum": [
+            "text-embedding-v4",
+            "multimodal-embedding-v1"
+          ],
+          "title": "Model",
+          "type": "string"
+        },
+        "object": {
+          "const": "list",
+          "title": "Object",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        }
+      },
+      "required": [
+        "id",
+        "object",
+        "model",
+        "data",
+        "usage"
+      ],
+      "title": "Response",
+      "type": "object"
+    },
+    "TextRequest": {
+      "additionalProperties": false,
+      "description": "Freeze the text compatibility subset described by W-E, for fake use only.",
+      "properties": {
+        "dimensions": {
+          "enum": [
+            64,
+            128,
+            256,
+            512,
+            768,
+            1024,
+            1536,
+            2048
+          ],
+          "title": "Dimensions",
+          "type": "integer"
+        },
+        "encoding_format": {
+          "const": "float",
+          "title": "Encoding Format",
+          "type": "string"
+        },
+        "input": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Input",
+          "type": "array"
+        },
+        "model": {
+          "const": "text-embedding-v4",
+          "title": "Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "input",
+        "dimensions",
+        "encoding_format"
+      ],
+      "title": "TextRequest",
+      "type": "object"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "description": "Only total_tokens is assumed at the response boundary.",
+      "properties": {
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total_tokens"
+      ],
+      "title": "Usage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Freeze a complete fake envelope with real egress independently disabled.",
+  "properties": {
+    "fake_implementation_version": {
+      "const": "we-e1-fake-v1",
+      "title": "Fake Implementation Version",
+      "type": "string"
+    },
+    "image_compatibility": {
+      "const": "experimental_internal_fake_only",
+      "title": "Image Compatibility",
+      "type": "string"
+    },
+    "image_prepared": {
+      "$ref": "#/$defs/Prepared"
+    },
+    "image_request": {
+      "$ref": "#/$defs/ImageRequest"
+    },
+    "image_response": {
+      "$ref": "#/$defs/Response"
+    },
+    "method": {
+      "const": "POST",
+      "title": "Method",
+      "type": "string"
+    },
+    "mode": {
+      "const": "fake",
+      "title": "Mode",
+      "type": "string"
+    },
+    "real_budget_cny": {
+      "const": 0,
+      "title": "Real Budget Cny",
+      "type": "integer"
+    },
+    "real_egress_enabled": {
+      "const": false,
+      "title": "Real Egress Enabled",
+      "type": "boolean"
+    },
+    "text_prepared": {
+      "$ref": "#/$defs/Prepared"
+    },
+    "text_request": {
+      "$ref": "#/$defs/TextRequest"
+    },
+    "text_response": {
+      "$ref": "#/$defs/Response"
+    },
+    "token_bound": {
+      "const": "fake-codepoint-v1_not_provider_compatible",
+      "title": "Token Bound",
+      "type": "string"
+    },
+    "url": {
+      "const": "https://embedding.example.invalid/v1/embeddings",
+      "title": "Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mode",
+    "fake_implementation_version",
+    "url",
+    "method",
+    "real_egress_enabled",
+    "real_budget_cny",
+    "text_request",
+    "text_prepared",
+    "text_response",
+    "image_request",
+    "image_prepared",
+    "image_response",
+    "image_compatibility",
+    "token_bound"
+  ],
+  "title": "WireExample",
+  "type": "object"
+}

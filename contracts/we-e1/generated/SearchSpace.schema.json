@@ -1,0 +1,86 @@
+{
+  "additionalProperties": false,
+  "description": "Freeze a finite development-only grid, without selecting tuned parameters.",
+  "properties": {
+    "contract_version": {
+      "const": "we-e1-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "dbscan_eps": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Dbscan Eps",
+      "type": "array"
+    },
+    "duplicate_threshold": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Duplicate Threshold",
+      "type": "array"
+    },
+    "gap_threshold": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Gap Threshold",
+      "type": "array"
+    },
+    "max_candidate_pairs": {
+      "const": 250000,
+      "title": "Max Candidate Pairs",
+      "type": "integer"
+    },
+    "max_reference_comparisons": {
+      "const": 250000,
+      "title": "Max Reference Comparisons",
+      "type": "integer"
+    },
+    "max_samples": {
+      "const": 5000,
+      "title": "Max Samples",
+      "type": "integer"
+    },
+    "min_samples": {
+      "items": {
+        "minimum": 2,
+        "type": "integer"
+      },
+      "title": "Min Samples",
+      "type": "array"
+    },
+    "selected_parameters": {
+      "title": "Selected Parameters",
+      "type": "null"
+    },
+    "selection_rule": {
+      "const": "development_only_freeze_before_single_independent_campaign",
+      "title": "Selection Rule",
+      "type": "string"
+    },
+    "text_dimensions": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Text Dimensions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "contract_version",
+    "duplicate_threshold",
+    "dbscan_eps",
+    "min_samples",
+    "gap_threshold",
+    "text_dimensions",
+    "max_samples",
+    "max_candidate_pairs",
+    "max_reference_comparisons",
+    "selected_parameters",
+    "selection_rule"
+  ],
+  "title": "SearchSpace",
+  "type": "object"
+}

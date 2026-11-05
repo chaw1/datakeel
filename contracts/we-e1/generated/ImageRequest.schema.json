@@ -1,0 +1,44 @@
+{
+  "$defs": {
+    "ImageInput": {
+      "additionalProperties": false,
+      "description": "An internal experimental shape, with no asserted provider compatibility.",
+      "properties": {
+        "image": {
+          "pattern": "^data:image/png;base64,",
+          "title": "Image",
+          "type": "string"
+        }
+      },
+      "required": [
+        "image"
+      ],
+      "title": "ImageInput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Separate the image experiment from the official-compatible text subset.",
+  "properties": {
+    "input": {
+      "items": {
+        "$ref": "#/$defs/ImageInput"
+      },
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "Input",
+      "type": "array"
+    },
+    "model": {
+      "const": "multimodal-embedding-v1",
+      "title": "Model",
+      "type": "string"
+    }
+  },
+  "required": [
+    "model",
+    "input"
+  ],
+  "title": "ImageRequest",
+  "type": "object"
+}

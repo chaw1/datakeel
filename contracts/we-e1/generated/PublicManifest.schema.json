@@ -1,0 +1,181 @@
+{
+  "$defs": {
+    "EvidenceFile": {
+      "additionalProperties": false,
+      "description": "Identify locally retained upstream evidence, never an invented assertion.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "EvidenceFile",
+      "type": "object"
+    },
+    "PublicAsset": {
+      "additionalProperties": false,
+      "description": "Reference retained bytes without putting large originals in the public tree.",
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "content": {
+          "$ref": "#/$defs/EvidenceFile"
+        },
+        "content_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Content Sha256",
+          "type": "string"
+        },
+        "license_eligible": {
+          "title": "License Eligible",
+          "type": "boolean"
+        },
+        "modality": {
+          "enum": [
+            "text",
+            "image"
+          ],
+          "title": "Modality",
+          "type": "string"
+        },
+        "near_duplicate_cluster": {
+          "title": "Near Duplicate Cluster",
+          "type": "string"
+        },
+        "original_group": {
+          "title": "Original Group",
+          "type": "string"
+        },
+        "original_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Original Sha256",
+          "type": "string"
+        },
+        "source_kind": {
+          "const": "real_public_development",
+          "default": "real_public_development",
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "split": {
+          "default": "dev_tune",
+          "enum": [
+            "dev_tune",
+            "dev_validation"
+          ],
+          "title": "Split",
+          "type": "string"
+        },
+        "stable_source_id": {
+          "title": "Stable Source Id",
+          "type": "string"
+        },
+        "transformation_family": {
+          "title": "Transformation Family",
+          "type": "string"
+        },
+        "variant": {
+          "title": "Variant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id",
+        "modality",
+        "stable_source_id",
+        "original_group",
+        "near_duplicate_cluster",
+        "transformation_family",
+        "variant",
+        "original_sha256",
+        "content_sha256",
+        "content",
+        "license_eligible"
+      ],
+      "title": "PublicAsset",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Freeze real development transformations separately from synthetic wire fixtures.",
+  "properties": {
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/PublicAsset"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
+    "contract_version": {
+      "const": "we-e1-v1",
+      "default": "we-e1-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "designation": {
+      "const": "W4NT3D-style_nonofficial_development_derivative",
+      "default": "W4NT3D-style_nonofficial_development_derivative",
+      "title": "Designation",
+      "type": "string"
+    },
+    "generator_version": {
+      "const": "we-e1-public-generator-v1",
+      "default": "we-e1-public-generator-v1",
+      "title": "Generator Version",
+      "type": "string"
+    },
+    "license_ledger_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "License Ledger Sha256",
+      "type": "string"
+    },
+    "pillow_version": {
+      "title": "Pillow Version",
+      "type": "string"
+    },
+    "purpose": {
+      "const": "development_only_no_semantic_gold",
+      "default": "development_only_no_semantic_gold",
+      "title": "Purpose",
+      "type": "string"
+    },
+    "raw_inputs": {
+      "items": {
+        "$ref": "#/$defs/EvidenceFile"
+      },
+      "title": "Raw Inputs",
+      "type": "array"
+    },
+    "seed": {
+      "const": "we-e1-development-v1",
+      "default": "we-e1-development-v1",
+      "title": "Seed",
+      "type": "string"
+    },
+    "sources_registry_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Sources Registry Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "pillow_version",
+    "sources_registry_sha256",
+    "license_ledger_sha256",
+    "raw_inputs",
+    "assets"
+  ],
+  "title": "PublicManifest",
+  "type": "object"
+}

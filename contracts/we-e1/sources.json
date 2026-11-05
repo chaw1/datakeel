@@ -1,0 +1,215 @@
+{
+  "contract_version": "we-e1-v1",
+  "network_performed": true,
+  "sources": [
+    {
+      "blockers": [],
+      "license_evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "planned_url": "https://huggingface.co/datasets/google/wiki40b",
+      "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+      "rows": [
+        {
+          "attribution": "Wikipedia contributors, Ági Szalóki; https://en.wikipedia.org/wiki/%C3%81gi%20Szal%C3%B3ki; history: https://en.wikipedia.org/w/index.php?title=%C3%81gi%20Szal%C3%B3ki&action=history. Via Google Wiki-40B en/train row 0, wikidata Q1294448, opaque version_id 3294382012979529334. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+          "license_id": "CC-BY-SA-4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "metadata": {
+            "path": "derived/wiki40b-en-0.metadata.json",
+            "sha256": "c398e9f516cc72d1057859360cb3a801fcd851cac5bcd253c749363ab66d76f3"
+          },
+          "near_duplicate_cluster": "wikidata:Q1294448",
+          "original_file": {
+            "path": "derived/wiki40b-en-0.txt",
+            "sha256": "e86cd7f75d79755c39e9603b97b031dd2311a7d14f20736593e0ab2a46c97a6f"
+          },
+          "original_sha256": "e86cd7f75d79755c39e9603b97b031dd2311a7d14f20736593e0ab2a46c97a6f",
+          "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+          "semantic_group": "wikidata:Q1294448",
+          "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/en/train/0",
+          "transformation_family": "original-descendants:wikidata:Q1294448"
+        },
+        {
+          "attribution": "Wikipedia contributors, Émile Dubonnet; https://en.wikipedia.org/wiki/%C3%89mile%20Dubonnet; history: https://en.wikipedia.org/w/index.php?title=%C3%89mile%20Dubonnet&action=history. Via Google Wiki-40B en/train row 1, wikidata Q3588472, opaque version_id 1342534654625266913. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+          "license_id": "CC-BY-SA-4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "metadata": {
+            "path": "derived/wiki40b-en-1.metadata.json",
+            "sha256": "9565d0937859911320d9ff6a75ceb291fe21f45c4f9b203b65f262d7e460f216"
+          },
+          "near_duplicate_cluster": "wikidata:Q3588472",
+          "original_file": {
+            "path": "derived/wiki40b-en-1.txt",
+            "sha256": "d945efac648bdb31432b4bb32be1e1f22cea99d95051d3d04f6c3046b12b07b6"
+          },
+          "original_sha256": "d945efac648bdb31432b4bb32be1e1f22cea99d95051d3d04f6c3046b12b07b6",
+          "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+          "semantic_group": "wikidata:Q3588472",
+          "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/en/train/1",
+          "transformation_family": "original-descendants:wikidata:Q3588472"
+        },
+        {
+          "attribution": "Wikipedia contributors, Émile Gilliéron; https://en.wikipedia.org/wiki/%C3%89mile%20Gilli%C3%A9ron; history: https://en.wikipedia.org/w/index.php?title=%C3%89mile%20Gilli%C3%A9ron&action=history. Via Google Wiki-40B en/train row 2, wikidata Q15446670, opaque version_id 9787665229468908181. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+          "license_id": "CC-BY-SA-4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "metadata": {
+            "path": "derived/wiki40b-en-2.metadata.json",
+            "sha256": "3e477e50e9886dabde680d900abdda5f5b2cf52e3a3df51d8639c8757d838964"
+          },
+          "near_duplicate_cluster": "wikidata:Q15446670",
+          "original_file": {
+            "path": "derived/wiki40b-en-2.txt",
+            "sha256": "887713b4ad54cdfa511269c87c0b8d55eb92e2c388daf895178142e4bc65eb8e"
+          },
+          "original_sha256": "887713b4ad54cdfa511269c87c0b8d55eb92e2c388daf895178142e4bc65eb8e",
+          "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+          "semantic_group": "wikidata:Q15446670",
+          "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/en/train/2",
+          "transformation_family": "original-descendants:wikidata:Q15446670"
+        },
+        {
+          "attribution": "Wikipedia contributors, Épinay-sur-Seine; https://en.wikipedia.org/wiki/%C3%89pinay-sur-Seine; history: https://en.wikipedia.org/w/index.php?title=%C3%89pinay-sur-Seine&action=history. Via Google Wiki-40B en/train row 3, wikidata Q206961, opaque version_id 16757089349915748185. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+          "license_id": "CC-BY-SA-4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "metadata": {
+            "path": "derived/wiki40b-en-3.metadata.json",
+            "sha256": "45dc5e54e91fee78f929f487eaf5382bb681ebef46b69482ebeb023af2a738a0"
+          },
+          "near_duplicate_cluster": "wikidata:Q206961",
+          "original_file": {
+            "path": "derived/wiki40b-en-3.txt",
+            "sha256": "7e83c1a2a1cfcd25efad66854d50c3acbee572be697cc20951a21ef3cc5981c7"
+          },
+          "original_sha256": "7e83c1a2a1cfcd25efad66854d50c3acbee572be697cc20951a21ef3cc5981c7",
+          "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+          "semantic_group": "wikidata:Q206961",
+          "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/en/train/3",
+          "transformation_family": "original-descendants:wikidata:Q206961"
+        },
+        {
+          "attribution": "Wikipedia contributors, 高寅生; https://zh.wikipedia.org/wiki/%E9%AB%98%E5%AF%85%E7%94%9F; history: https://zh.wikipedia.org/w/index.php?title=%E9%AB%98%E5%AF%85%E7%94%9F&action=history. Via Google Wiki-40B zh-cn/train row 0, wikidata Q16922510, opaque version_id 6836255164985556716. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+          "license_id": "CC-BY-SA-4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "metadata": {
+            "path": "derived/wiki40b-zh-cn-0.metadata.json",
+            "sha256": "9847e86d29ab0792f3fffedc8831dfe3850318e4b3748c6309ba1ecc755f9dff"
+          },
+          "near_duplicate_cluster": "wikidata:Q16922510",
+          "original_file": {
+            "path": "derived/wiki40b-zh-cn-0.txt",
+            "sha256": "fc44edcf6cb9c49b4491222e08ee7077195319209438be3e651c9fab9ee3cbbf"
+          },
+          "original_sha256": "fc44edcf6cb9c49b4491222e08ee7077195319209438be3e651c9fab9ee3cbbf",
+          "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+          "semantic_group": "wikidata:Q16922510",
+          "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/zh-cn/train/0",
+          "transformation_family": "original-descendants:wikidata:Q16922510"
+        },
+        {
+          "attribution": "Wikipedia contributors, 小行星9139; https://zh.wikipedia.org/wiki/%E5%B0%8F%E8%A1%8C%E6%98%9F9139; history: https://zh.wikipedia.org/w/index.php?title=%E5%B0%8F%E8%A1%8C%E6%98%9F9139&action=history. Via Google Wiki-40B zh-cn/train row 1, wikidata Q1192502, opaque version_id 4438116277657211254. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+          "license_id": "CC-BY-SA-4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "metadata": {
+            "path": "derived/wiki40b-zh-cn-1.metadata.json",
+            "sha256": "4334008ff176c788a0ddd1564c99c06b8cf72bb9a0dea5dec507b2fd5d094785"
+          },
+          "near_duplicate_cluster": "wikidata:Q1192502",
+          "original_file": {
+            "path": "derived/wiki40b-zh-cn-1.txt",
+            "sha256": "533a9f705dd308fb4c9914b719b2db589e77998b92329cfa7563e9e5df2eb46d"
+          },
+          "original_sha256": "533a9f705dd308fb4c9914b719b2db589e77998b92329cfa7563e9e5df2eb46d",
+          "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+          "semantic_group": "wikidata:Q1192502",
+          "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/zh-cn/train/1",
+          "transformation_family": "original-descendants:wikidata:Q1192502"
+        },
+        {
+          "attribution": "Wikipedia contributors, 陳敘; https://zh.wikipedia.org/wiki/%E9%99%B3%E6%95%98; history: https://zh.wikipedia.org/w/index.php?title=%E9%99%B3%E6%95%98&action=history. Via Google Wiki-40B zh-cn/train row 2, wikidata Q48908240, opaque version_id 13284891349467121167. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+          "license_id": "CC-BY-SA-4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "metadata": {
+            "path": "derived/wiki40b-zh-cn-2.metadata.json",
+            "sha256": "c398af1159a49b244d2ed294fd4ddad0d16f6c2bf4f1fc79a284fff46fd43d3a"
+          },
+          "near_duplicate_cluster": "wikidata:Q48908240",
+          "original_file": {
+            "path": "derived/wiki40b-zh-cn-2.txt",
+            "sha256": "848d62f72cc5e6ae23b1c9584d094676e88431738b47677c6593d5e41d4b5277"
+          },
+          "original_sha256": "848d62f72cc5e6ae23b1c9584d094676e88431738b47677c6593d5e41d4b5277",
+          "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+          "semantic_group": "wikidata:Q48908240",
+          "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/zh-cn/train/2",
+          "transformation_family": "original-descendants:wikidata:Q48908240"
+        },
+        {
+          "attribution": "Wikipedia contributors, 方剛; https://zh.wikipedia.org/wiki/%E6%96%B9%E5%89%9B; history: https://zh.wikipedia.org/w/index.php?title=%E6%96%B9%E5%89%9B&action=history. Via Google Wiki-40B zh-cn/train row 3, wikidata Q7931787, opaque version_id 2587888914397689718. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+          "license_id": "CC-BY-SA-4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "metadata": {
+            "path": "derived/wiki40b-zh-cn-3.metadata.json",
+            "sha256": "a6d6e02065630a5f2b457578ca35ce0dea7e5af71a830eb2e511607874484db4"
+          },
+          "near_duplicate_cluster": "wikidata:Q7931787",
+          "original_file": {
+            "path": "derived/wiki40b-zh-cn-3.txt",
+            "sha256": "352ced5de879c37c969276eb6af84dfbd1a210fbcd7859910ab82bb2ea0892d4"
+          },
+          "original_sha256": "352ced5de879c37c969276eb6af84dfbd1a210fbcd7859910ab82bb2ea0892d4",
+          "revision": "06bfe584d8193cf58f79c6354ecc2a2b94a7deea",
+          "semantic_group": "wikidata:Q7931787",
+          "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/zh-cn/train/3",
+          "transformation_family": "original-descendants:wikidata:Q7931787"
+        }
+      ],
+      "source_id": "wiki40b-style",
+      "status": "frozen"
+    },
+    {
+      "blockers": [],
+      "license_evidence": [
+        {
+          "path": "cc0-original/file-metadata.json",
+          "sha256": "386bc6c4ac2e821324a77771d39d800a930c649c3ead81d9d5b3a979b6ae52f4"
+        }
+      ],
+      "planned_url": "https://commons.wikimedia.org/",
+      "revision": "1199020912",
+      "rows": [
+        {
+          "attribution": "Accusedtoppat, ! Bright Lights Ceiling !, own work (2024-09-20). https://commons.wikimedia.org/w/index.php?oldid=1199020912. CC0 1.0 Public Domain Dedication; local changes in license ledger.",
+          "license_id": "CC0-1.0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "metadata": {
+            "path": "derived/commons-152924098.metadata.json",
+            "sha256": "c0d2c6de0398c6bc75c298404a22803ec4312d7f1c8198bad930bd444fe49add"
+          },
+          "near_duplicate_cluster": "scene:interior-lighting",
+          "original_file": {
+            "path": "cc0-original/Bright_Lights_Ceiling.jpg",
+            "sha256": "3d827f1b6f588ec1d897d2a52ee5b2f8ea848d0f35736a9377ad0a9760dd5436"
+          },
+          "original_sha256": "3d827f1b6f588ec1d897d2a52ee5b2f8ea848d0f35736a9377ad0a9760dd5436",
+          "revision": "1199020912",
+          "semantic_group": "scene:interior-lighting",
+          "stable_id": "commons:pageid:152924098:revid:1199020912",
+          "transformation_family": "original-descendants:scene:interior-lighting"
+        }
+      ],
+      "source_id": "wikimedia-commons",
+      "status": "frozen"
+    }
+  ]
+}

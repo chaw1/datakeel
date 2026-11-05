@@ -1,0 +1,109 @@
+{
+  "additionalProperties": false,
+  "description": "Allow only aggregate independent results; never accept held-out rows or paths.",
+  "properties": {
+    "auditor_session": {
+      "title": "Auditor Session",
+      "type": "string"
+    },
+    "checked_dimensions": {
+      "items": {
+        "enum": [
+          "stable_source",
+          "original_content",
+          "transformation_family",
+          "semantic_group",
+          "near_duplicate_cluster"
+        ],
+        "type": "string"
+      },
+      "title": "Checked Dimensions",
+      "type": "array"
+    },
+    "command_audit_complete": {
+      "title": "Command Audit Complete",
+      "type": "boolean"
+    },
+    "contract_version": {
+      "const": "we-e1-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "development_evidence_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Development Evidence Sha256",
+      "type": "string"
+    },
+    "development_manifest_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Development Manifest Sha256",
+      "type": "string"
+    },
+    "development_public_rows": {
+      "exclusiveMinimum": 0,
+      "title": "Development Public Rows",
+      "type": "integer"
+    },
+    "holdout_access_by_implementer": {
+      "title": "Holdout Access By Implementer",
+      "type": "boolean"
+    },
+    "holdout_rows": {
+      "exclusiveMinimum": 0,
+      "title": "Holdout Rows",
+      "type": "integer"
+    },
+    "overlap_counts": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "integer"
+        }
+      ],
+      "title": "Overlap Counts",
+      "type": "array"
+    },
+    "result": {
+      "enum": [
+        "pass",
+        "fail"
+      ],
+      "title": "Result",
+      "type": "string"
+    },
+    "spec_bundle_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Spec Bundle Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_version",
+    "development_evidence_sha256",
+    "development_manifest_sha256",
+    "spec_bundle_sha256",
+    "auditor_session",
+    "checked_dimensions",
+    "development_public_rows",
+    "holdout_rows",
+    "overlap_counts",
+    "command_audit_complete",
+    "holdout_access_by_implementer",
+    "result"
+  ],
+  "title": "IndependentSummary",
+  "type": "object"
+}

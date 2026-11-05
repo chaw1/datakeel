@@ -1,0 +1,92 @@
+{
+  "$defs": {
+    "Embedding": {
+      "additionalProperties": false,
+      "description": "Bind one finite nonzero embedding to a local batch index.",
+      "properties": {
+        "embedding": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1,
+          "title": "Embedding",
+          "type": "array"
+        },
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "object": {
+          "const": "embedding",
+          "title": "Object",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object",
+        "index",
+        "embedding"
+      ],
+      "title": "Embedding",
+      "type": "object"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "description": "Only total_tokens is assumed at the response boundary.",
+      "properties": {
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total_tokens"
+      ],
+      "title": "Usage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Require id, model, indexed embeddings and usage without invented fields.",
+  "properties": {
+    "data": {
+      "items": {
+        "$ref": "#/$defs/Embedding"
+      },
+      "title": "Data",
+      "type": "array"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "model": {
+      "enum": [
+        "text-embedding-v4",
+        "multimodal-embedding-v1"
+      ],
+      "title": "Model",
+      "type": "string"
+    },
+    "object": {
+      "const": "list",
+      "title": "Object",
+      "type": "string"
+    },
+    "usage": {
+      "$ref": "#/$defs/Usage"
+    }
+  },
+  "required": [
+    "id",
+    "object",
+    "model",
+    "data",
+    "usage"
+  ],
+  "title": "Response",
+  "type": "object"
+}

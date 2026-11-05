@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "description": "Bind exact post-preprocessing bytes to their immutable version and digest.",
+  "properties": {
+    "data_uri": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data Uri"
+    },
+    "payload_base64": {
+      "title": "Payload Base64",
+      "type": "string"
+    },
+    "payload_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Payload Sha256",
+      "type": "string"
+    },
+    "prefix_only": {
+      "const": false,
+      "default": false,
+      "title": "Prefix Only",
+      "type": "boolean"
+    },
+    "version": {
+      "enum": [
+        "text-utf8-v1",
+        "image-exif-rgb-png512-v1"
+      ],
+      "title": "Version",
+      "type": "string"
+    },
+    "warning": {
+      "default": null,
+      "title": "Warning",
+      "type": "null"
+    }
+  },
+  "required": [
+    "version",
+    "payload_base64",
+    "payload_sha256"
+  ],
+  "title": "Prepared",
+  "type": "object"
+}

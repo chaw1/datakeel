@@ -1,0 +1,145 @@
+{
+  "$defs": {
+    "EvidenceFile": {
+      "additionalProperties": false,
+      "description": "Identify locally retained upstream evidence, never an invented assertion.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "EvidenceFile",
+      "type": "object"
+    },
+    "LicenseRecord": {
+      "additionalProperties": false,
+      "description": "Separate a dataset card's silence from underlying content licensing.",
+      "properties": {
+        "attribution": {
+          "title": "Attribution",
+          "type": "string"
+        },
+        "basis": {
+          "title": "Basis",
+          "type": "string"
+        },
+        "dataset_card_license": {
+          "anyOf": [
+            {
+              "const": "not_declared_More_Information_Needed",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dataset Card License"
+        },
+        "eligible": {
+          "title": "Eligible",
+          "type": "boolean"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceFile"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "independent_license_review": {
+          "const": "pending",
+          "default": "pending",
+          "title": "Independent License Review",
+          "type": "string"
+        },
+        "license_id": {
+          "title": "License Id",
+          "type": "string"
+        },
+        "license_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "License Url"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "modifications": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Modifications",
+          "type": "array"
+        },
+        "obligations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Obligations",
+          "type": "array"
+        },
+        "stable_id": {
+          "title": "Stable Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stable_id",
+        "license_id",
+        "license_url",
+        "dataset_card_license",
+        "basis",
+        "attribution",
+        "obligations",
+        "modifications",
+        "evidence",
+        "eligible",
+        "limitations"
+      ],
+      "title": "LicenseRecord",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Bind per-original license decisions to retained raw evidence.",
+  "properties": {
+    "contract_version": {
+      "const": "we-e1-v1",
+      "default": "we-e1-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "records": {
+      "items": {
+        "$ref": "#/$defs/LicenseRecord"
+      },
+      "title": "Records",
+      "type": "array"
+    }
+  },
+  "required": [
+    "records"
+  ],
+  "title": "LicenseLedger",
+  "type": "object"
+}

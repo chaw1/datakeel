@@ -1,0 +1,337 @@
+{
+  "contract_version": "we-e1-v1",
+  "records": [
+    {
+      "attribution": "Wikipedia contributors, Ági Szalóki; https://en.wikipedia.org/wiki/%C3%81gi%20Szal%C3%B3ki; history: https://en.wikipedia.org/w/index.php?title=%C3%81gi%20Szal%C3%B3ki&action=history. Via Google Wiki-40B en/train row 0, wikidata Q1294448, opaque version_id 3294382012979529334. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+      "basis": "Underlying Wikipedia text CC BY-SA 4.0; NOT a license grant by the Wiki-40B card.",
+      "dataset_card_license": "not_declared_More_Information_Needed",
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "limitations": [
+        "Mainline supplied selected rows; response has no embedded repository revision. Snapshot is locally hash-bound to API revision; independent source review pending.",
+        "version_id is opaque Wiki-40B data, NOT a verified Wikipedia oldid.",
+        "Article title/history links are derived from row text, not fetched article revisions."
+      ],
+      "modifications": [
+        "Upstream Wiki-40B extraction/cleaning and structural markers retained verbatim.",
+        "original: exact row.text UTF-8; spacing-v1: append two ASCII spaces."
+      ],
+      "obligations": [
+        "Attribute Wikipedia contributors with article/history links and retain notices.",
+        "Link CC BY-SA 4.0 and indicate upstream extraction and every local modification.",
+        "Share adapted text under CC BY-SA 4.0; impose no additional restrictions."
+      ],
+      "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/en/train/0"
+    },
+    {
+      "attribution": "Wikipedia contributors, Émile Dubonnet; https://en.wikipedia.org/wiki/%C3%89mile%20Dubonnet; history: https://en.wikipedia.org/w/index.php?title=%C3%89mile%20Dubonnet&action=history. Via Google Wiki-40B en/train row 1, wikidata Q3588472, opaque version_id 1342534654625266913. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+      "basis": "Underlying Wikipedia text CC BY-SA 4.0; NOT a license grant by the Wiki-40B card.",
+      "dataset_card_license": "not_declared_More_Information_Needed",
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "limitations": [
+        "Mainline supplied selected rows; response has no embedded repository revision. Snapshot is locally hash-bound to API revision; independent source review pending.",
+        "version_id is opaque Wiki-40B data, NOT a verified Wikipedia oldid.",
+        "Article title/history links are derived from row text, not fetched article revisions."
+      ],
+      "modifications": [
+        "Upstream Wiki-40B extraction/cleaning and structural markers retained verbatim.",
+        "original: exact row.text UTF-8; spacing-v1: append two ASCII spaces."
+      ],
+      "obligations": [
+        "Attribute Wikipedia contributors with article/history links and retain notices.",
+        "Link CC BY-SA 4.0 and indicate upstream extraction and every local modification.",
+        "Share adapted text under CC BY-SA 4.0; impose no additional restrictions."
+      ],
+      "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/en/train/1"
+    },
+    {
+      "attribution": "Wikipedia contributors, Émile Gilliéron; https://en.wikipedia.org/wiki/%C3%89mile%20Gilli%C3%A9ron; history: https://en.wikipedia.org/w/index.php?title=%C3%89mile%20Gilli%C3%A9ron&action=history. Via Google Wiki-40B en/train row 2, wikidata Q15446670, opaque version_id 9787665229468908181. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+      "basis": "Underlying Wikipedia text CC BY-SA 4.0; NOT a license grant by the Wiki-40B card.",
+      "dataset_card_license": "not_declared_More_Information_Needed",
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "limitations": [
+        "Mainline supplied selected rows; response has no embedded repository revision. Snapshot is locally hash-bound to API revision; independent source review pending.",
+        "version_id is opaque Wiki-40B data, NOT a verified Wikipedia oldid.",
+        "Article title/history links are derived from row text, not fetched article revisions."
+      ],
+      "modifications": [
+        "Upstream Wiki-40B extraction/cleaning and structural markers retained verbatim.",
+        "original: exact row.text UTF-8; spacing-v1: append two ASCII spaces."
+      ],
+      "obligations": [
+        "Attribute Wikipedia contributors with article/history links and retain notices.",
+        "Link CC BY-SA 4.0 and indicate upstream extraction and every local modification.",
+        "Share adapted text under CC BY-SA 4.0; impose no additional restrictions."
+      ],
+      "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/en/train/2"
+    },
+    {
+      "attribution": "Wikipedia contributors, Épinay-sur-Seine; https://en.wikipedia.org/wiki/%C3%89pinay-sur-Seine; history: https://en.wikipedia.org/w/index.php?title=%C3%89pinay-sur-Seine&action=history. Via Google Wiki-40B en/train row 3, wikidata Q206961, opaque version_id 16757089349915748185. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+      "basis": "Underlying Wikipedia text CC BY-SA 4.0; NOT a license grant by the Wiki-40B card.",
+      "dataset_card_license": "not_declared_More_Information_Needed",
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "limitations": [
+        "Mainline supplied selected rows; response has no embedded repository revision. Snapshot is locally hash-bound to API revision; independent source review pending.",
+        "version_id is opaque Wiki-40B data, NOT a verified Wikipedia oldid.",
+        "Article title/history links are derived from row text, not fetched article revisions."
+      ],
+      "modifications": [
+        "Upstream Wiki-40B extraction/cleaning and structural markers retained verbatim.",
+        "original: exact row.text UTF-8; spacing-v1: append two ASCII spaces."
+      ],
+      "obligations": [
+        "Attribute Wikipedia contributors with article/history links and retain notices.",
+        "Link CC BY-SA 4.0 and indicate upstream extraction and every local modification.",
+        "Share adapted text under CC BY-SA 4.0; impose no additional restrictions."
+      ],
+      "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/en/train/3"
+    },
+    {
+      "attribution": "Wikipedia contributors, 高寅生; https://zh.wikipedia.org/wiki/%E9%AB%98%E5%AF%85%E7%94%9F; history: https://zh.wikipedia.org/w/index.php?title=%E9%AB%98%E5%AF%85%E7%94%9F&action=history. Via Google Wiki-40B zh-cn/train row 0, wikidata Q16922510, opaque version_id 6836255164985556716. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+      "basis": "Underlying Wikipedia text CC BY-SA 4.0; NOT a license grant by the Wiki-40B card.",
+      "dataset_card_license": "not_declared_More_Information_Needed",
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "limitations": [
+        "Mainline supplied selected rows; response has no embedded repository revision. Snapshot is locally hash-bound to API revision; independent source review pending.",
+        "version_id is opaque Wiki-40B data, NOT a verified Wikipedia oldid.",
+        "Article title/history links are derived from row text, not fetched article revisions."
+      ],
+      "modifications": [
+        "Upstream Wiki-40B extraction/cleaning and structural markers retained verbatim.",
+        "original: exact row.text UTF-8; spacing-v1: append two ASCII spaces."
+      ],
+      "obligations": [
+        "Attribute Wikipedia contributors with article/history links and retain notices.",
+        "Link CC BY-SA 4.0 and indicate upstream extraction and every local modification.",
+        "Share adapted text under CC BY-SA 4.0; impose no additional restrictions."
+      ],
+      "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/zh-cn/train/0"
+    },
+    {
+      "attribution": "Wikipedia contributors, 小行星9139; https://zh.wikipedia.org/wiki/%E5%B0%8F%E8%A1%8C%E6%98%9F9139; history: https://zh.wikipedia.org/w/index.php?title=%E5%B0%8F%E8%A1%8C%E6%98%9F9139&action=history. Via Google Wiki-40B zh-cn/train row 1, wikidata Q1192502, opaque version_id 4438116277657211254. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+      "basis": "Underlying Wikipedia text CC BY-SA 4.0; NOT a license grant by the Wiki-40B card.",
+      "dataset_card_license": "not_declared_More_Information_Needed",
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "limitations": [
+        "Mainline supplied selected rows; response has no embedded repository revision. Snapshot is locally hash-bound to API revision; independent source review pending.",
+        "version_id is opaque Wiki-40B data, NOT a verified Wikipedia oldid.",
+        "Article title/history links are derived from row text, not fetched article revisions."
+      ],
+      "modifications": [
+        "Upstream Wiki-40B extraction/cleaning and structural markers retained verbatim.",
+        "original: exact row.text UTF-8; spacing-v1: append two ASCII spaces."
+      ],
+      "obligations": [
+        "Attribute Wikipedia contributors with article/history links and retain notices.",
+        "Link CC BY-SA 4.0 and indicate upstream extraction and every local modification.",
+        "Share adapted text under CC BY-SA 4.0; impose no additional restrictions."
+      ],
+      "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/zh-cn/train/1"
+    },
+    {
+      "attribution": "Wikipedia contributors, 陳敘; https://zh.wikipedia.org/wiki/%E9%99%B3%E6%95%98; history: https://zh.wikipedia.org/w/index.php?title=%E9%99%B3%E6%95%98&action=history. Via Google Wiki-40B zh-cn/train row 2, wikidata Q48908240, opaque version_id 13284891349467121167. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+      "basis": "Underlying Wikipedia text CC BY-SA 4.0; NOT a license grant by the Wiki-40B card.",
+      "dataset_card_license": "not_declared_More_Information_Needed",
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "limitations": [
+        "Mainline supplied selected rows; response has no embedded repository revision. Snapshot is locally hash-bound to API revision; independent source review pending.",
+        "version_id is opaque Wiki-40B data, NOT a verified Wikipedia oldid.",
+        "Article title/history links are derived from row text, not fetched article revisions."
+      ],
+      "modifications": [
+        "Upstream Wiki-40B extraction/cleaning and structural markers retained verbatim.",
+        "original: exact row.text UTF-8; spacing-v1: append two ASCII spaces."
+      ],
+      "obligations": [
+        "Attribute Wikipedia contributors with article/history links and retain notices.",
+        "Link CC BY-SA 4.0 and indicate upstream extraction and every local modification.",
+        "Share adapted text under CC BY-SA 4.0; impose no additional restrictions."
+      ],
+      "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/zh-cn/train/2"
+    },
+    {
+      "attribution": "Wikipedia contributors, 方剛; https://zh.wikipedia.org/wiki/%E6%96%B9%E5%89%9B; history: https://zh.wikipedia.org/w/index.php?title=%E6%96%B9%E5%89%9B&action=history. Via Google Wiki-40B zh-cn/train row 3, wikidata Q7931787, opaque version_id 2587888914397689718. CC BY-SA 4.0; upstream extracted/cleaned text; local changes in license ledger.",
+      "basis": "Underlying Wikipedia text CC BY-SA 4.0; NOT a license grant by the Wiki-40B card.",
+      "dataset_card_license": "not_declared_More_Information_Needed",
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "proxy-hf/wiki40b-card.md",
+          "sha256": "7138fd12301aed869038f7466a840a0b38b8bd46fb51abd642e216e0418d08dd"
+        },
+        {
+          "path": "proxy-hf/wikipedia-copyrights.html",
+          "sha256": "28d23edde05426a6e9c82aeed229da72ef4bb05a017890fe8739e04d85f92de9"
+        },
+        {
+          "path": "proxy-hf/cc-by-sa-4.0.html",
+          "sha256": "b462fb0a649a8ec875bba7590abad7dc1e72c0456ddec070cf3a28183689dceb"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "limitations": [
+        "Mainline supplied selected rows; response has no embedded repository revision. Snapshot is locally hash-bound to API revision; independent source review pending.",
+        "version_id is opaque Wiki-40B data, NOT a verified Wikipedia oldid.",
+        "Article title/history links are derived from row text, not fetched article revisions."
+      ],
+      "modifications": [
+        "Upstream Wiki-40B extraction/cleaning and structural markers retained verbatim.",
+        "original: exact row.text UTF-8; spacing-v1: append two ASCII spaces."
+      ],
+      "obligations": [
+        "Attribute Wikipedia contributors with article/history links and retain notices.",
+        "Link CC BY-SA 4.0 and indicate upstream extraction and every local modification.",
+        "Share adapted text under CC BY-SA 4.0; impose no additional restrictions."
+      ],
+      "stable_id": "hf:google/wiki40b@06bfe584d8193cf58f79c6354ecc2a2b94a7deea/zh-cn/train/3"
+    },
+    {
+      "attribution": "Accusedtoppat, ! Bright Lights Ceiling !, own work (2024-09-20). https://commons.wikimedia.org/w/index.php?oldid=1199020912. CC0 1.0 Public Domain Dedication; local changes in license ledger.",
+      "basis": "Per-file CC0 declaration, explicit LicenseUrl, CC-Zero category; no restrictions.",
+      "dataset_card_license": null,
+      "eligible": true,
+      "evidence": [
+        {
+          "path": "cc0-original/file-metadata.json",
+          "sha256": "386bc6c4ac2e821324a77771d39d800a930c649c3ead81d9d5b3a979b6ae52f4"
+        }
+      ],
+      "independent_license_review": "pending",
+      "license_id": "CC0-1.0",
+      "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "limitations": [
+        "Copyrighted=True is preserved alongside the explicit CC0 dedication, not rewritten.",
+        "Local checks do not replace independent per-file source/license review."
+      ],
+      "modifications": [
+        "original: exact downloaded JPG bytes, no rewrite.",
+        "prepared-png-v1: EXIF transpose, RGB, max side 512, metadata stripped.",
+        "mirror-png-v1: horizontal mirror of prepared image; no semantic gold asserted."
+      ],
+      "obligations": [
+        "CC0 requires no attribution; retain creator, source and modification provenance."
+      ],
+      "stable_id": "commons:pageid:152924098:revid:1199020912"
+    }
+  ]
+}

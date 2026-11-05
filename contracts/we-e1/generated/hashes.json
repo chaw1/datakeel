@@ -1,0 +1,16 @@
+{
+  "ImageRequest.schema.json": "2bfa752fb99eae0f41500802e374e38f86bed02697e6f45f4ce19dfd47e10861",
+  "IndependentSummary.schema.json": "b1dc8498766a51c37b41b7d16c04655cb87c246fb6c8f7499898179cc4e5b0b2",
+  "LicenseLedger.schema.json": "632ffe95c518c2375949b7322863ce0564ece99f6deb98a1060ed2e4aa918cfc",
+  "Manifest.schema.json": "75d794a413393e8ccd6c511003ef6e66b73231a8d9e6d35a0bce7925ec868bba",
+  "Prepared.schema.json": "8843638b9624c47817a9afd4dd148b2b1361870f07ee6652152e84bc37418f39",
+  "PublicManifest.schema.json": "5dc4887320b4c5295b61ab3accb14e434856307bdfac538f82953b4bd815c20f",
+  "Response.schema.json": "b91c45a33e1259c6623d9f906a5a1c6d8cf70ea3fce42494818e21f3b4675f9e",
+  "RowMetadata.schema.json": "b58f0b91242c0775c6a878d2cb3043363f5b70b1abb08736427e20b30339ea8b",
+  "SearchSpace.schema.json": "2e865ab88826aa73324f1fd9c7fd534c0b6c7e8426f8c943b5338aeb87c22fc8",
+  "SourceRegistry.schema.json": "8dfcfaab840f3cc69a74c8778df729d756e4d6ffff18666cbfd1126ab81c00a3",
+  "TextRequest.schema.json": "25a3fa4d84fb627a467ba18d5ed34cf95e3e8313bc4c45921f5a54b9eb4ddf67",
+  "WireExample.schema.json": "c3427097d1d7c217de924fcbf1664112312a36d363d1d0fda4241672f8e4974e",
+  "fake-wire.json": "099e27a26c8ab65a2ebf1964c3a7a1fba4b73e32c41fdaef9bde7bf641fca418",
+  "manifest.json": "b52bb0ba587ee87512a856c5903789d4920f4728275fe51941d465bca9027478"
+}

@@ -1,0 +1,192 @@
+{
+  "$defs": {
+    "EvidenceFile": {
+      "additionalProperties": false,
+      "description": "Identify locally retained upstream evidence, never an invented assertion.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "EvidenceFile",
+      "type": "object"
+    },
+    "PublicRow": {
+      "additionalProperties": false,
+      "description": "Pin a selected original row or Commons file and its grouping identities.",
+      "properties": {
+        "attribution": {
+          "title": "Attribution",
+          "type": "string"
+        },
+        "license_id": {
+          "title": "License Id",
+          "type": "string"
+        },
+        "license_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "License Url"
+        },
+        "metadata": {
+          "$ref": "#/$defs/EvidenceFile"
+        },
+        "near_duplicate_cluster": {
+          "title": "Near Duplicate Cluster",
+          "type": "string"
+        },
+        "original_file": {
+          "$ref": "#/$defs/EvidenceFile"
+        },
+        "original_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Original Sha256",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "string"
+        },
+        "semantic_group": {
+          "title": "Semantic Group",
+          "type": "string"
+        },
+        "stable_id": {
+          "title": "Stable Id",
+          "type": "string"
+        },
+        "transformation_family": {
+          "title": "Transformation Family",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stable_id",
+        "revision",
+        "original_sha256",
+        "original_file",
+        "semantic_group",
+        "near_duplicate_cluster",
+        "transformation_family",
+        "attribution",
+        "license_id",
+        "license_url",
+        "metadata"
+      ],
+      "title": "PublicRow",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "description": "Keep absent public provenance blocked rather than replacing it with fake data.",
+      "properties": {
+        "blockers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Blockers",
+          "type": "array"
+        },
+        "license_evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenceFile"
+          },
+          "title": "License Evidence",
+          "type": "array"
+        },
+        "planned_url": {
+          "title": "Planned Url",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        },
+        "rows": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PublicRow"
+          },
+          "title": "Rows",
+          "type": "array"
+        },
+        "source_id": {
+          "enum": [
+            "wiki40b-style",
+            "wikimedia-commons"
+          ],
+          "title": "Source Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "blocked",
+            "frozen"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "planned_url",
+        "status"
+      ],
+      "title": "Source",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Describe public development candidates, with no holdout identifiers.",
+  "properties": {
+    "contract_version": {
+      "const": "we-e1-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "network_performed": {
+      "title": "Network Performed",
+      "type": "boolean"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/Source"
+      },
+      "title": "Sources",
+      "type": "array"
+    }
+  },
+  "required": [
+    "contract_version",
+    "network_performed",
+    "sources"
+  ],
+  "title": "SourceRegistry",
+  "type": "object"
+}

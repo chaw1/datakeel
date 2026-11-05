@@ -1,0 +1,215 @@
+{
+  "$defs": {
+    "EvidenceFile": {
+      "additionalProperties": false,
+      "description": "Identify locally retained upstream evidence, never an invented assertion.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "EvidenceFile",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "description": "Normalize upstream metadata while retaining the hash-bound original response.",
+  "properties": {
+    "attribution": {
+      "title": "Attribution",
+      "type": "string"
+    },
+    "author": {
+      "title": "Author",
+      "type": "string"
+    },
+    "config": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Config"
+    },
+    "dataset_revision": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dataset Revision"
+    },
+    "extmetadata": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Extmetadata",
+      "type": "object"
+    },
+    "imageinfo": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Imageinfo",
+      "type": "array"
+    },
+    "license_id": {
+      "title": "License Id",
+      "type": "string"
+    },
+    "license_short_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "License Short Name"
+    },
+    "license_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "License Url"
+    },
+    "original_url": {
+      "title": "Original Url",
+      "type": "string"
+    },
+    "pageid": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pageid"
+    },
+    "raw_upstream": {
+      "$ref": "#/$defs/EvidenceFile"
+    },
+    "revid": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Revid"
+    },
+    "revision": {
+      "title": "Revision",
+      "type": "string"
+    },
+    "row_index": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Row Index"
+    },
+    "split": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Split"
+    },
+    "stable_id": {
+      "title": "Stable Id",
+      "type": "string"
+    },
+    "upstream_license_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Upstream License Url"
+    },
+    "version_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Version Id"
+    },
+    "wikidata_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Wikidata Id"
+    }
+  },
+  "required": [
+    "stable_id",
+    "revision",
+    "license_id",
+    "license_url",
+    "attribution",
+    "author",
+    "original_url",
+    "raw_upstream"
+  ],
+  "title": "RowMetadata",
+  "type": "object"
+}

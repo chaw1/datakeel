@@ -1,0 +1,48 @@
+{
+  "additionalProperties": false,
+  "description": "Freeze the text compatibility subset described by W-E, for fake use only.",
+  "properties": {
+    "dimensions": {
+      "enum": [
+        64,
+        128,
+        256,
+        512,
+        768,
+        1024,
+        1536,
+        2048
+      ],
+      "title": "Dimensions",
+      "type": "integer"
+    },
+    "encoding_format": {
+      "const": "float",
+      "title": "Encoding Format",
+      "type": "string"
+    },
+    "input": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "Input",
+      "type": "array"
+    },
+    "model": {
+      "const": "text-embedding-v4",
+      "title": "Model",
+      "type": "string"
+    }
+  },
+  "required": [
+    "model",
+    "input",
+    "dimensions",
+    "encoding_format"
+  ],
+  "title": "TextRequest",
+  "type": "object"
+}

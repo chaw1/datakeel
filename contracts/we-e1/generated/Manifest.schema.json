@@ -1,0 +1,136 @@
+{
+  "$defs": {
+    "Asset": {
+      "additionalProperties": false,
+      "description": "Describe a small, generated contract fixture with explicit fake provenance.",
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "content_base64": {
+          "title": "Content Base64",
+          "type": "string"
+        },
+        "content_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Content Sha256",
+          "type": "string"
+        },
+        "modality": {
+          "enum": [
+            "text",
+            "image"
+          ],
+          "title": "Modality",
+          "type": "string"
+        },
+        "near_duplicate_cluster": {
+          "title": "Near Duplicate Cluster",
+          "type": "string"
+        },
+        "original_group": {
+          "title": "Original Group",
+          "type": "string"
+        },
+        "original_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Original Sha256",
+          "type": "string"
+        },
+        "source_kind": {
+          "const": "synthetic_contract_only",
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "split": {
+          "enum": [
+            "dev_tune",
+            "dev_validation"
+          ],
+          "title": "Split",
+          "type": "string"
+        },
+        "stable_source_id": {
+          "title": "Stable Source Id",
+          "type": "string"
+        },
+        "transformation_family": {
+          "title": "Transformation Family",
+          "type": "string"
+        },
+        "variant": {
+          "title": "Variant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id",
+        "modality",
+        "source_kind",
+        "stable_source_id",
+        "original_group",
+        "near_duplicate_cluster",
+        "transformation_family",
+        "variant",
+        "original_sha256",
+        "content_sha256",
+        "content_base64",
+        "split"
+      ],
+      "title": "Asset",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Freeze fake development fixtures separately from unavailable public baselines.",
+  "properties": {
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/Asset"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
+    "contract_version": {
+      "const": "we-e1-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "generator_version": {
+      "const": "we-e1-generator-v1",
+      "title": "Generator Version",
+      "type": "string"
+    },
+    "pillow_version": {
+      "title": "Pillow Version",
+      "type": "string"
+    },
+    "public_baseline_frozen": {
+      "const": false,
+      "title": "Public Baseline Frozen",
+      "type": "boolean"
+    },
+    "purpose": {
+      "const": "contracts_only_not_encoder_quality",
+      "title": "Purpose",
+      "type": "string"
+    },
+    "seed": {
+      "const": "we-e1-development-v1",
+      "title": "Seed",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_version",
+    "generator_version",
+    "seed",
+    "purpose",
+    "public_baseline_frozen",
+    "pillow_version",
+    "assets"
+  ],
+  "title": "Manifest",
+  "type": "object"
+}

@@ -1,0 +1,13 @@
+{
+  "contract_version": "we-e1-v1",
+  "duplicate_threshold": [0.8, 0.9, 0.95],
+  "dbscan_eps": [0.05, 0.1, 0.2],
+  "min_samples": [2, 3, 5],
+  "gap_threshold": [0.5, 0.7, 0.9],
+  "text_dimensions": [64, 128, 256, 512, 768, 1024, 1536, 2048],
+  "max_samples": 5000,
+  "max_candidate_pairs": 250000,
+  "max_reference_comparisons": 250000,
+  "selected_parameters": null,
+  "selection_rule": "development_only_freeze_before_single_independent_campaign"
+}
