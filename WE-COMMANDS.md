@@ -30,6 +30,11 @@ source/license evidence but never grants independent acceptance. Without the exp
 development root, normal verification checks only public schemas/fake wire and emits a
 blocked export; it cannot claim real provenance validation.
 
+Commons reconstruction requires the frozen `Copyrighted=True` value; missing or changed
+declarations fail closed before ledger output. Standalone fake image inputs strictly decode
+nonempty base64 payloads. The authored CLI regression also checks the actual `--public-gate`
+exit 2 after reconstructing nine valid synthetic public rows.
+
 Also reconstruct `public_generate` in separate processes with `PYTHONHASHSEED=1/97`, writing
 the four small public files to separate ignored `--out` directories; recursively diff them.
 The derived internal files must remain identical too (hash before/after, or use `--check`).
@@ -44,8 +49,10 @@ do not replace them with targeted results or begin E2.
 
 Expected reports: `artifacts/we/W-E-A1.json`, `W-E-A9.json`, `E1-exit.json`, and
 `development-public-evidence.json`, copied into the internal handoff. The last contains nine
-public rows (eight text originals and one locally CC0-eligible image), with no restricted candidate, with real manifest/ledger hashes. The prior independent aggregate is unusable after image
-replacement; the original custodian must bind its new audit to these hashes.
+public rows (eight text originals and one locally CC0-eligible image), with no restricted
+candidate, with real manifest/ledger hashes. The original custodian must issue the strict
+aggregate against `generated/IndependentSummary.schema.json` and the current frozen hashes.
+Detailed independent reports remain companion evidence and cannot replace that envelope.
 No independent summary is created or consumed by this CLI. Source/license integrity,
 independent review, five intersections, audit, CI and E1 permission are separate facts.
 

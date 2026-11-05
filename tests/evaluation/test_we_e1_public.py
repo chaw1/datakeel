@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import socket
+import subprocess
+import sys
 from typing import TYPE_CHECKING
 
 import pytest
@@ -167,6 +170,8 @@ def test_cc0_eligibility_keeps_original_url_and_independent_review_pending(upstr
         ("Restrictions", "Unresolved regional restriction"),
         ("UsageTerms", "All rights reserved"),
         ("AttributionRequired", "true"),
+        ("Copyrighted", None),
+        ("Copyrighted", "False"),
     ],
 )
 def test_cc0_missing_or_conflicting_license_fields_fail_closed(
@@ -312,6 +317,49 @@ def test_nonempty_evidence_never_awards_independent_acceptance(upstream: Path) -
     assert json.loads(canonical(result["E1-exit.json"]))["e2_may_start"] is False
     assert json.loads(canonical(result["W-E-A9.json"]))["independent_intersection"] == "not_tested"
     assert LicenseLedger.model_validate_json(build.public_files["license-ledger.json"])
+
+
+@pytest.mark.parametrize("public_gate", [False, True])
+def test_cli_nonempty_public_evidence_keeps_public_gate_blocked(
+    upstream: Path, *, public_gate: bool
+) -> None:
+    """Run the real CLI with authored evidence; public-gate must exit 2 with reports."""
+    out = upstream / "public"
+    write_public(build_public(upstream), upstream, out, check=False)
+    shutil.copytree(ROOT / "generated", out / "generated")
+    shutil.copyfile(ROOT / "search-space.json", out / "search-space.json")
+    report_dir = upstream / "reports"
+    # Relocate only the frozen contract root; all validation and CLI logic runs unchanged.
+    bootstrap = (
+        "import sys; from pathlib import Path; sys.path.insert(0, sys.argv.pop(1)); "
+        "from scripts.we_e1 import verify; verify.ROOT = Path(sys.argv.pop(1)); verify.main()"
+    )
+    command = [
+        sys.executable,
+        "-I",
+        "-B",
+        "-c",
+        bootstrap,
+        str(ROOT.parents[1]),
+        str(out),
+        "--development-root",
+        str(upstream),
+        "--report-dir",
+        str(report_dir),
+    ]
+    if public_gate:
+        command.append("--public-gate")
+    result = subprocess.run(  # noqa: S603  # Fixed interpreter, local authored evidence only.
+        command, capture_output=True, text=True, check=False, timeout=30
+    )
+    assert result.returncode == (2 if public_gate else 0), result.stdout + result.stderr
+    evidence = json.loads((report_dir / "development-public-evidence.json").read_bytes())
+    assert len(evidence["public_rows"]) == 9
+    assert evidence["source_license_validation"] == "checked"
+    exit_report = json.loads((report_dir / "E1-exit.json").read_bytes())
+    assert exit_report["status"] == "blocked"
+    assert exit_report["e2_may_start"] is False
+    assert exit_report["real_quality"] == "not_tested"
 
 
 @pytest.mark.parametrize("name", ["../outside", "/outside"])

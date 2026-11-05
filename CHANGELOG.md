@@ -8,6 +8,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 - Offline W-E E1 development provenance reconstruction, per-original license ledger and hash-bound public manifests. Wiki-40B card license silence is retained separately from underlying Wikipedia CC BY-SA duties; the rejected Commons candidate is replaced with a locally verified CC0 image, with the original retained as rejected history. The changed development set requires a fresh independent image and intersection audit. Independent custody and E2 approval remain blocked.
 
+### Fixed
+
+- W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
+
 ## [0.23.0] - 2026-11-03
 
 ### Added

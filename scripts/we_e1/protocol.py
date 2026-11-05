@@ -5,11 +5,12 @@
 
 from __future__ import annotations
 
+import base64
 import math
 import struct
 from typing import Annotated, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from scripts.we_e1.models import Boundary, Digest
 from scripts.we_e1.preprocess import BATCH_LIMIT, ContractError, Prepared, sha256
@@ -31,6 +32,16 @@ class ImageInput(Boundary):
     """An internal experimental shape, with no asserted provider compatibility."""
 
     image: Annotated[str, Field(pattern=r"^data:image/png;base64,")]
+
+    @field_validator("image")
+    @classmethod
+    def nonempty_base64(cls, value: str) -> str:
+        """Decode the declared payload strictly at the standalone input boundary."""
+        payload = base64.b64decode(value.partition(",")[2], validate=True)
+        if not payload:
+            msg = "empty_image_payload"
+            raise ValueError(msg)
+        return value
 
 
 class ImageRequest(Boundary):

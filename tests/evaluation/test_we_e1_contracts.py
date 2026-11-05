@@ -20,7 +20,15 @@ from scripts.we_e1.generate import ROOT, build, canonical, image_fixture
 from scripts.we_e1.isolation import IndependentSummary, split_assets, split_overlap
 from scripts.we_e1.models import EvidenceFile, Manifest, SearchSpace, Source, SourceRegistry
 from scripts.we_e1.preprocess import ContractError, Prepared, prepare_image, prepare_text, sha256
-from scripts.we_e1.protocol import Embedding, Response, TextRequest, WireExample, validate_response
+from scripts.we_e1.protocol import (
+    Embedding,
+    ImageInput,
+    ImageRequest,
+    Response,
+    TextRequest,
+    WireExample,
+    validate_response,
+)
 from scripts.we_e1.verify import evidence_bytes, reports, source_blockers, verify_local
 
 if TYPE_CHECKING:
@@ -108,6 +116,24 @@ def test_image_rejects_over_limit_postprocessed_bytes(monkeypatch: pytest.Monkey
     monkeypatch.setattr("scripts.we_e1.preprocess.MAX_IMAGE_BYTES", 1)
     with pytest.raises(ContractError, match="image_payload_too_large"):
         prepare_image(image_fixture(0))
+
+
+@pytest.mark.parametrize("payload", ["!!!", "", "a", "YQ", "YQ==\n", "YQ==!", "数据"])
+def test_image_input_and_request_reject_invalid_or_empty_base64(payload: str) -> None:
+    """The standalone boundary rejects bad payloads without prepared-wire validation."""
+    image = "data:image/png;base64," + payload
+    with pytest.raises(ValidationError):
+        ImageInput(image=image)
+    with pytest.raises(ValidationError):
+        ImageRequest.model_validate_json(
+            canonical({"model": "multimodal-embedding-v1", "input": [{"image": image}]})
+        )
+
+
+def test_image_input_accepts_valid_prepared_base64(wire: WireExample) -> None:
+    """Strict decoding retains a valid Data URI byte for byte."""
+    image = wire.image_request.input[0].image
+    assert ImageInput(image=image).image == image
 
 
 def test_response_mapping_is_local_index_and_f32_little_endian(wire: WireExample) -> None:

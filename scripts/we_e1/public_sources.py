@@ -146,6 +146,7 @@ def _commons_metadata(root: Path) -> RowMetadata:
         "LicenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
         "UsageTerms": "Creative Commons Zero, Public Domain Dedication",
         "AttributionRequired": "false",
+        "Copyrighted": "True",
         "Restrictions": "",
         "Categories": "CC-Zero|Self-published work|Interior lighting",
     }
