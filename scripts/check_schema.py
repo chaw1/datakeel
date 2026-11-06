@@ -49,6 +49,34 @@ def measurements() -> dict[str, int]:
     }
 
 
+def _schema_paths() -> list[Path]:
+    """Keep the original schema budget separate from moved dataset Rows."""
+    return [
+        Path("datakeel/core/schema.py"),
+        *(
+            Path("datakeel/storage") / name
+            for name in ("base.py", "database.py", "migrations.py", "pg_triggers.py")
+        ),
+        *(
+            p
+            for package in ("persistence", "dataset_store", "worker_store")
+            for p in Path(f"datakeel/{package}").glob("*.py")
+            if package == "persistence"
+            or p.name in {"__init__.py", "schema.py"}
+            or (package == "worker_store" and p.name == "rows.py")
+        ),
+    ]
+
+
+def _dataset_slice_paths() -> list[Path]:
+    """Count moved dataset Rows once, in the dataset slice's frozen budget."""
+    return [
+        p
+        for package in ("datasets", "dataset_store")
+        for p in Path(f"datakeel/{package}").glob("*.py")
+    ]
+
+
 def violations() -> list[str]:
     """Reject drift from the pre-implementation baseline, not from current imports."""
     baseline = json.loads(BASELINE.read_text())
@@ -65,19 +93,7 @@ def violations() -> list[str]:
         set(baseline["storage_paths"]) | set(increment.storage_paths)
     )
     problems.extend(f"New storage infrastructure file: {path}" for path in sorted(new))
-    schema_paths = [
-        Path("datakeel/core/schema.py"),
-        *(
-            Path("datakeel/storage") / name
-            for name in ("base.py", "database.py", "migrations.py", "pg_triggers.py")
-        ),
-        *(
-            p
-            for package in ("persistence", "dataset_store", "worker_store")
-            for p in Path(f"datakeel/{package}").glob("*.py")
-            if package == "persistence" or p.name in {"__init__.py", "rows.py", "schema.py"}
-        ),
-    ]
+    schema_paths = _schema_paths()
     if sum(len(path.read_text().splitlines()) for path in schema_paths) > baseline[
         "schema_line_budget"
     ] + sum(increment.schema_additions.values()):
@@ -93,12 +109,7 @@ def violations() -> list[str]:
 
 
 def _dataset_budget_violations() -> list[str]:
-    slice_paths = [
-        p
-        for package in ("datasets", "dataset_store")
-        for p in Path(f"datakeel/{package}").glob("*.py")
-        if p.name not in {"rows.py", "schema.py"}
-    ]
+    slice_paths = _dataset_slice_paths()
     if sum(len(p.read_text().splitlines()) for p in slice_paths) > DATASET_SLICE_BUDGET:
         return ["Dataset slice source exceeds its frozen 4022-line budget"]
     return []
