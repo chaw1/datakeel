@@ -17,22 +17,22 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from datakeel.dataset_store.rows import DatasetRow, EventRow
 from datakeel.persistence.canonical import canonical_schema
-from datakeel.persistence.legacy import schema_contributions
 from datakeel.storage.base import Base
-from datakeel.storage.database import Database
 from tests import db_templates
 from tests.db_templates import DatabaseTemplate, restart_database
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import URL
 
-    from datakeel.core.schema import CanonicalSchema, SchemaContribution
+    from datakeel.storage.database import Database
 
 
 def test_copied_database_keeps_every_table_foreign_key_and_trigger(db: Database) -> None:
     """A copied schema retains real database constraints and immutable fact guards."""
     inspector = inspect(db.engine)
-    assert set(inspector.get_table_names()) == set(Base.metadata.tables)
+    assert set(inspector.get_table_names()) - {"datakeel_schema_versions"} == set(
+        Base.metadata.tables
+    )
     foreign_keys = inspector.get_foreign_keys("versions")
     assert any(
         key["constrained_columns"] == ["dataset_id"]
@@ -79,7 +79,16 @@ def test_copied_databases_never_share_data_or_schema(
 
 def test_upgrade_fixture_still_starts_without_application_tables(unmigrated_db: Database) -> None:
     """Migration regression tests still exercise a genuinely uninitialized schema."""
+    if not unmigrated_db.sqlite:
+        with unmigrated_db.engine.connect() as connection:
+            schema = connection.scalar(text("SELECT current_schema()"))
+            assert isinstance(schema, str)
+            assert schema.startswith("test_")
     assert inspect(unmigrated_db.engine).get_table_names() == []
+    with unmigrated_db.engine.begin() as connection:
+        connection.execute(text("CREATE TABLE fixture_probe(value INTEGER)"))
+    unmigrated_db.engine.dispose()
+    assert inspect(unmigrated_db.engine).get_table_names() == ["fixture_probe"]
 
 
 def test_restarted_engine_keeps_private_schema_on_every_concurrent_connection(db: Database) -> None:
@@ -139,31 +148,24 @@ def test_failed_template_migration_removes_only_its_owned_source(
 ) -> None:
     """An initializer failure leaves no half-migrated template database behind."""
     attempted: list[URL] = []
-    original = Database.migrate
+    original = db_templates.migrate
 
-    def fail(
-        database: Database,
-        contributions: tuple[SchemaContribution, ...],
-        *,
-        canonical: CanonicalSchema,
-    ) -> None:
+    def fail(database: Database) -> None:
         attempted.append(database.engine.url)
-        assert contributions == schema_contributions()
-        assert canonical == canonical_schema()
-        original(database, contributions, canonical=canonical)
-        assert set(inspect(database.engine).get_table_names()) == {
-            item.table for item in canonical.tables
+        original(database)
+        assert set(inspect(database.engine).get_table_names()) - {"datakeel_schema_versions"} == {
+            item.table for item in canonical_schema().tables
         }
         message = "Generated migration failure"
         raise RuntimeError(message)
 
-    monkeypatch.setattr(Database, "migrate", fail)
+    monkeypatch.setattr(db_templates, "migrate", fail)
     with pytest.raises(RuntimeError, match="Generated migration failure"):
         DatabaseTemplate(os.environ.get("DATAKEEL_TEST_DATABASE_URL"), tmp_path)
     assert len(attempted) == 1
     _assert_removed(attempted[0], database_template)
     with database_template.fresh(tmp_path / "surviving-copy.db") as database:
-        assert set(inspect(database.engine).get_table_names()) == {
+        assert set(inspect(database.engine).get_table_names()) - {"datakeel_schema_versions"} == {
             item.table for item in canonical_schema().tables
         }
 
@@ -185,7 +187,9 @@ def test_failed_test_disposes_the_copy_without_mutating_the_template(
     assert len(copied) == 1
     _assert_removed(copied[0], database_template)
     with database_template.fresh(tmp_path / "after.db") as database:
-        assert set(inspect(database.engine).get_table_names()) == set(Base.metadata.tables)
+        assert set(inspect(database.engine).get_table_names()) - {
+            "datakeel_schema_versions"
+        } == set(Base.metadata.tables)
 
 
 def test_failed_copy_initialization_removes_its_owned_database(

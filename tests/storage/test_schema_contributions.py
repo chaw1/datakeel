@@ -34,8 +34,9 @@ def test_empty_database_when_migrated_has_exactly_102_owned_tables(unmigrated_db
     migrate(unmigrated_db)
     migrate(unmigrated_db)
     actual = set(inspect(unmigrated_db.engine).get_table_names())
-    assert actual == {item.table for item in canonical_schema().tables}
-    assert len(actual) == 102
+    system = {"datakeel_schema_versions"} if unmigrated_db.sqlite else set()
+    assert actual - system == {item.table for item in canonical_schema().tables}
+    assert len(actual - system) == 102
 
 
 def _broken(kind: str) -> tuple[SchemaContribution, ...]:
@@ -126,8 +127,11 @@ def test_actual_database_with_unexpected_table_is_rejected(unmigrated_db: Databa
     """Postflight compares the live set rather than trusting the proposed set."""
     with unmigrated_db.engine.begin() as connection:
         connection.execute(text("CREATE TABLE unexpected_table (id INTEGER PRIMARY KEY)"))
-    with pytest.raises(ValidationError, match=r"Canonical tables mismatch.*unexpected_table"):
+    with pytest.raises(
+        ValidationError, match=r"Database invalid|empty database|Canonical tables mismatch"
+    ):
         migrate(unmigrated_db)
+    assert inspect(unmigrated_db.engine).get_table_names() == ["unexpected_table"]
 
 
 def test_contributions_and_installers_are_frozen_and_forbid_extras() -> None:

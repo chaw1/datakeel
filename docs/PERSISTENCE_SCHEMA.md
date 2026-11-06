@@ -1,25 +1,35 @@
 # Persistence schema composition
 
-`datakeel.persistence.migrate(database)` is the single application initialization entry point.
-API, CLI, evaluation and test-template setup use it. Offline trace export still constructs a
-read-only `storage.database.Database` and never migrates.
+`datakeel.persistence.migrate(database)` is an explicit demo/generated-fixture initializer.
+For SQLite it delegates to `versioning`: only missing/empty stores initialize; current stores
+validate and return, while known unversioned stores require `datakeel db upgrade`. API, worker,
+ordinary database CLI and MCP perform SQLite admission only. `create_app` defaults to checking
+SQLite and running the existing W3 PostgreSQL initializer. `run_migrations=False` skips both
+migration and admission for a caller-initialized store, including scale fixtures. Offline trace
+export retains its existing read-only path and never migrates.
 
-`create_app(database)` migrates by default. Callers that have already initialized the database
-can explicitly use `create_app(database, run_migrations=False)`; they remain responsible for
-providing the complete application schema. The scale ASGI workload uses this option after
-fixture setup adds its benchmark fact table. Normal initialization still rejects unexpected
+Ordinary CLI and evidence benchmark PostgreSQL entries use the same W3 typed contributions and
+canonical schema as the API. SQLite benchmarks use versioned initialization; ordinary SQLite CLI
+commands retain strict admission. The early `migrate` maintenance alias remains SQLite-only and
+emits the same JSON rejection and exit code 3 on PostgreSQL. Normal initialization rejects unexpected
 tables against the unchanged 99-table inventory plus the explicit three-table vector increment.
 
-`storage.database` owns engines, sessions and the serialized migration transaction. It accepts
-frozen `SchemaContribution` values and a separate `CanonicalSchema`; it imports no domain rows
-or installers. The neutral contracts and mapping base are in `core.schema`; `storage.base.Base`
-remains the same base object for legacy adapters.
+`versioning` sits below the persistence composition root and above domain/storage adapters.
+It owns frozen version targets, baseline/data validation, the system ledger, maintenance exclusion,
+SQLite recovery packages and forward campaigns. It never calls latest metadata/installers on an
+existing database. See [maintenance and recovery](DATABASE_MAINTENANCE.md).
 
-Each contribution names one owner, an explicit order, a tuple of Row types and a tuple of typed
-installers. The engine checks owners, orders, duplicate tables, table ownership and required
-installers before opening the migration transaction. It then preserves the original lock,
-`create_all`, nullable-column additions and installer sequence. A live table-set check runs
-inside that same transaction after installation. Existing extra columns remain untouched.
+`storage.database` owns engines/sessions and serialized typed contribution initialization.
+SQLite initialization refuses nonempty databases. PostgreSQL retains W3 initialization and
+idempotent installers for complete canonical stores, including additive nullable columns;
+partial tables, unknown tables and views are refused before DDL. The neutral schema contracts and
+mapping base remain in `core.schema`; `storage.base.Base` is the same base for legacy adapters.
+Contributions assemble a specified schema; version definitions own production upgrades. Frozen
+v1/v2 SQL is independent of later model imports. V2 freezes the full real SQLite typed result
+(102 tables), plus the exact ALTER lease-column layout. Production v2 upgrades only add the three
+vector tables/indexes and nullable lease; existing v2 baselines receive an atomic ledger-only stamp.
+Both file and memory empty initialization apply every version. The nullable helper has separate
+low-level tests and remains the PostgreSQL W3 additive path.
 
 `dataset_store` owns dataset, version, lineage-event, metadata-change, file-state,
 file-discovery/checkpoint and upload mappings and their existing SQL adapters. `datasets`
@@ -73,7 +83,7 @@ frozen before/after exports on each database stack. A successful SQLite comparis
 in for PostgreSQL execution. Exporter normalization must pass repeated-baseline checks before
 its snapshots can establish equality.
 
-The `persistence`, `datasets`, `dataset_store` and `worker_store` coverage owners each require 90%, alongside
+The `persistence`, `versioning`, `datasets`, `dataset_store` and `worker_store` coverage owners each require 90%, alongside
 the existing overall and critical-package coverage gates. Local targeted coverage reports do
 not replace the complete two-stack CI gate.
 

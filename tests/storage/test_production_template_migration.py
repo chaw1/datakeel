@@ -19,6 +19,7 @@ from datakeel.storage.production_catalog_rows import (
 )
 from datakeel.storage.production_queries import get_project
 from datakeel.storage.production_rows import ProductionProjectRow
+from datakeel.storage.production_schema import install_production_schema
 from tests.storage.template_lock_support import (
     REQUIRED_COLOUR,
     TEMPLATE,
@@ -73,7 +74,12 @@ def test_legacy_projects_lock_to_the_revision_they_used_and_rerun_changes_nothin
     """Migration locks every project at the template's current revision exactly once."""
     (first, tasks), (second, _) = seed_two_projects(db, tmp_path / "src")
     _make_legacy(db)
-    migrate(db)
+    with pytest.raises(ValidationError):
+        migrate(db)
+    # Preserve the old installer contract only as a low-level test; product recognition refuses it.
+    with db.engine.begin() as connection:
+        ProductionTemplateVersionRow.__table__.create(connection)
+        install_production_schema(connection, sqlite=db.sqlite)
     assert get_project(db, first.id).template_version == 2
     assert get_project(db, second.id).template_version == 2
     migrated = _snapshot(db)

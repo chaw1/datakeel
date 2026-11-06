@@ -12,6 +12,7 @@ from http import HTTPStatus
 import httpx
 
 from datakeel.core.models import utcnow
+from datakeel.core.recovery import require_active_home
 from datakeel.core.settings import Settings
 from datakeel.storage.database import Database
 from datakeel.storage.dq_webhooks import claim_delivery, finish_delivery
@@ -32,6 +33,7 @@ def relay_webhooks(
     clock: Callable[[], datetime] = utcnow,
 ) -> int:
     """Attempt one durable alert, retaining failures for later worker ticks."""
+    require_active_home(db.engine.url.database)
     if not settings.dq_webhook_url or settings.dq_webhook_secret is None:
         return 0
     now = now or clock()

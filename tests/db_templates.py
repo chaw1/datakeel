@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from contextlib import closing, contextmanager
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 from uuid import uuid4
 
 from sqlalchemy import create_engine, event, text
@@ -114,7 +116,8 @@ class DatabaseTemplate:
                 initial.engine.dispose()
             database = schema_database(url, self._schema)
         try:
-            migrate(database)
+            with patch.dict(os.environ, {"DATAKEEL_HOME": str(self._path.parent / "home")}):
+                migrate(database)
         finally:
             database.engine.dispose()
 

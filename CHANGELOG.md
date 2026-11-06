@@ -6,18 +6,46 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- SQLite versioned migration registry, full semantic baseline recognition and immutable thin ledger,
+  with campaign maintenance exclusion, transactional forward steps and resumable committed prefixes.
+  `datakeel db status/upgrade` and the `migrate` alias emit stable JSON/exit classifications.
+  Complete hash-verified local recovery packages include database/WAL facts, referenced objects and
+  non-secret configuration; restores stay isolated from services and outbound relays. See
+  [SQLite maintenance](docs/DATABASE_MAINTENANCE.md). PostgreSQL/S3 and historical release
+  qualification remain outside this slice.
+
 - Fake-only vector DAG nodes (`evidence.vector_embed` and direct `evidence.semantic_duplicate`) reuse controlled pipeline approval and fenced workers. Complete branches, final payload hashes, HTTPS fixture destinations and invented CNY bounds are frozen before execution. Durable attempts retain unknown occupancy across restart; separate embedding/global caches publish atomically with replayable evidence. Task, action and source queries expose optional typed fake status and cosine measurement. Real egress and budget remain disabled; real quality and latency are unmeasured. See [the fake kernel guide](docs/VECTOR_FAKE.md).
 - Offline W-E E1 development provenance reconstruction, per-original license ledger and hash-bound public manifests. Wiki-40B card license silence is retained separately from underlying Wikipedia CC BY-SA duties; the rejected Commons candidate is replaced with a locally verified CC0 image, with the original retained as rejected history. The changed development set requires a fresh independent image and intersection audit. Independent custody and E2 approval remain blocked.
 
 ### Fixed
+
+- SQLite v2 freezes the complete 102-table vector/lease schema independently of v1. Empty
+  file/memory stores apply both versions; explicit upgrades preserve existing 99-table facts and
+  stamp complete unversioned 102-table stores without replaying DDL. Pending service startup stays
+  blocked; failed postconditions or ledger writes roll back with schema and data. V1's checksum
+  closure, public protocols, recovery isolation and PostgreSQL W3 initialization remain unchanged.
 
 - Worker-store completion keeps fake vector authorization, whole-DAG publication, terminal
   recovery and nonretryable expiry in typed persistence adapters. Recovery follows terminal
   outbox writes in the same transaction; task query/list responses retain optional vector
   reports and partial-success flags after the storage split.
 
+- Legacy trace compatibility tests use complete schema baselines, and production schema mutation
+  anchors now target the frozen SQLite DDL used by generated fixtures.
 - Dataset Row import checks now resolve module aliases, version summaries retain internal
   row compatibility, and publication reuses prepared file models without reparsing manifests.
+- Restore PostgreSQL W3 application initialization and repeat startup without SQLite-only
+  admission. `create_app(..., run_migrations=False)` again reuses caller-initialized stores without
+  migration or baseline checks, including scale fixtures; default SQLite admission stays strict.
+  PostgreSQL/S3 versioned maintenance remains unsupported.
+
+- Restore W3 PostgreSQL initialization for ordinary CLI and evidence benchmark entries.
+  Benchmark engines are disposed even when initialization fails. SQLite benchmark initialization
+  remains versioned; database maintenance commands retain their JSON and exit classifications.
+
+- SQLite migration checksums bind the complete frozen inspection/campaign/helper closure and
+  explicit fact-preservation policy. Helper drift rejects existing ledgers before pending upgrades;
+  adding future registrations leaves the first version checksum unchanged.
 - Vector operator parameters and fixed choices have Chinese and English wording. Restart
   regressions preserve the private PostgreSQL search path across independent engines and
   racing budget/reaper connections. Offline test guards allow loopback infrastructure while
@@ -25,8 +53,8 @@ All notable changes are documented here using the Keep a Changelog format.
 - Fake vector pair budgets exclude failed inputs at preparation and execution, preserving partial success at the exact eligible-pair limit. Over-limit runs still fail atomically. Vector tables use an explicit schema owner; the nullable worker lease supports additive upgrades.
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
 - The scale ASGI workload reuses its initialized database without rerunning migrations after
-  benchmark fixture creation. Application construction still migrates by default and validates
-  the canonical tables; prepared callers can explicitly disable migration.
+  benchmark fixture creation. SQLite benchmark source facts now live in a separate source database;
+  default SQLite application construction validates the current authoritative schema.
 
 ### Changed
 
@@ -38,6 +66,11 @@ All notable changes are documented here using the Keep a Changelog format.
   with frozen dataset contracts in `datasets`. Schema, public payloads, object identities and
   transaction/cleanup ordering remain unchanged. Focused rollback tests cover publication
   failures after the second write and a successful retry on both CI database stacks.
+- API, worker, ordinary database CLI and MCP startup refuse non-current SQLite stores. Demo and
+  generated SQLite fixtures initialize only missing/empty stores. Explicit caller reuse through
+  the API migration keyword skips admission. The nullable-column helper remains a separate
+  low-level contract. The new
+  versioning coverage owner requires 90%; named migration guard mutations join the existing gate.
 - Persistence initialization uses explicit typed schema contributions and independent ownership
   validation for the existing 99 tables. Dataset and worker mappings have private schema owners;
   business adapters, stored payloads and migration transaction ordering retain their behavior.

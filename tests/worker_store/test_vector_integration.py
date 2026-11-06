@@ -163,11 +163,11 @@ def test_vector_recovery_is_post_outbox_atomic_and_never_resends(
 def test_vector_products_roll_back_after_outbox_then_publish_and_receipt_once(
     db: Database, tmp_path: Path
 ) -> None:
-    """Vector caches/evidence and all 102 table facts roll back together on a late SQL fault."""
+    """Vector caches/evidence, business tables and ledger roll back together on a late SQL fault."""
     lease, outputs, payload = pending_vectors(db, tmp_path)
     queue = DatabaseQueue(db)
     before = facts(db)
-    assert len(before) == 102
+    assert len(before) == (103 if db.sqlite else 102)
     inserts: list[str] = []
 
     def fail_after_outbox(

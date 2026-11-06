@@ -296,6 +296,9 @@ uv run datakeel worker
 uv run datakeel demo --once
 ```
 
+SQLite 的 `db status` 只读检查，`db upgrade` 显式升级，`migrate` 为兼容入口；服务不再暗中升级已有库。完整恢复包和隔离恢复见 [数据库维护](docs/DATABASE_MAINTENANCE.md)。
+
+
 `DATAKEEL_HOME` 默认 `.datakeel`，保存数据库、对象、样例和隔离运行目录。`DATAKEEL_DATABASE_URL=postgresql://user@127.0.0.1:5432/datakeel` 切换 Postgres。`DATAKEEL_S3_BUCKET` 启用 S3，`DATAKEEL_S3_ENDPOINT` 指定兼容端点；访问配置通过标准 AWS 环境变量/profile 提供，留在仓库外。API 与 worker 必须使用同一对象后端。
 
 新建本机 Postgres 的完整 Docker 命令见 [英文 Quick start](README.md#run-the-roles-separately)。默认演示只监听 loopback；多用户认证和生产部署不在本期范围内，当前身份固定为 `local`。

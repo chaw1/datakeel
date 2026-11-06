@@ -6,7 +6,7 @@
 from typing import Protocol, cast, runtime_checkable
 
 from pydantic import ConfigDict, Field
-from sqlalchemy import Table
+from sqlalchemy import Table, inspect
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import DeclarativeBase
 
@@ -69,6 +69,7 @@ class CanonicalSchema(BoundaryModel):
     tables: tuple[TableOwner, ...]
     installers: tuple[InstallerRequirement, ...]
     owners: tuple[str, ...]
+    additive_tables: tuple[str, ...] = ()
 
 
 def _reject(*, condition: bool, message: str) -> None:
@@ -83,6 +84,21 @@ def validate_tables(actual: frozenset[str], canonical: CanonicalSchema) -> None:
         condition=actual != expected,
         message=f"Canonical tables mismatch: {sorted(actual ^ expected)}",
     )
+
+
+def validate_migration_source(
+    connection: Connection, *, sqlite: bool, canonical: CanonicalSchema
+) -> None:
+    """Reject nonempty SQLite and partial or unexpected PostgreSQL schema before DDL."""
+    tables = frozenset(inspect(connection).get_table_names())
+    if inspect(connection).get_view_names() or (sqlite and tables):
+        msg = "Explicit schema initializer requires an empty database"
+        raise ValidationError(msg)
+    if tables:
+        expected = frozenset(item.table for item in canonical.tables)
+        actual = frozenset(tables)
+        if actual - expected or expected - actual != frozenset(canonical.additive_tables):
+            validate_tables(tables, canonical)
 
 
 def validate_contributions(

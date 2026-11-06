@@ -45,11 +45,18 @@ def test_parser_when_queue_unknown_rejects_command() -> None:
 
 
 def test_migrate_command_when_run_announces_current_schema(
-    invoke: Invoke, capsys: pytest.CaptureFixture[str]
+    db: Database, invoke: Invoke, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Verify migrate command when run announces current schema."""
-    invoke("migrate")
-    assert "Database schema is current." in capsys.readouterr().out
+    """The alias emits SQLite success or the existing PG maintenance rejection as JSON."""
+    with pytest.raises(SystemExit) as result:
+        invoke("migrate")
+    output = capsys.readouterr()
+    report = json.loads(output.out)
+    assert result.value.code == report["exit_code"] == (0 if db.sqlite else 3)
+    assert report["state"] == ("current" if db.sqlite else "invalid")
+    if not db.sqlite:
+        assert "local SQLite file" in report["error"]
+    assert output.err == ""
 
 
 def test_worker_command_when_no_tasks_exist_exits_after_drain(

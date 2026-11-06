@@ -7,6 +7,7 @@ import json
 import sys
 
 from datakeel.api.app import create_app
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 
 
@@ -14,6 +15,7 @@ def main() -> None:
     """Write machine-readable OpenAPI for the generated frontend client."""
     db = Database("sqlite://")
     try:
+        migrate(db)  # Explicit generated in-memory fixture, never an existing user store.
         schema = create_app(db).openapi()
         sys.stdout.write(json.dumps(schema, ensure_ascii=False, sort_keys=True) + "\n")
     finally:

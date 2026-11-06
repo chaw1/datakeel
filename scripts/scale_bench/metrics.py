@@ -11,7 +11,7 @@ from pathlib import Path
 from threading import Barrier
 from time import perf_counter
 
-from sqlalchemy import BigInteger, Column, MetaData, Table, Text, insert, text
+from sqlalchemy import BigInteger, Column, MetaData, Table, Text, create_engine, insert, text
 from sqlalchemy.engine import Connection
 
 from datakeel.ask.service import ask_data
@@ -64,14 +64,23 @@ def prepare(context: Context) -> MetricFixture:
         Column("day", Text),
         schema=schema,
     )
-    with context.db.engine.begin() as connection:
-        table.create(connection)
-        _populate(
-            connection, table, rows, context.config.seed, context.root, sqlite=context.db.sqlite
-        )
+    source_engine = (
+        create_engine(f"sqlite:///{context.root / 'metric-source.sqlite'}")
+        if context.db.sqlite
+        else context.db.engine
+    )
+    try:
+        with source_engine.begin() as connection:
+            table.create(connection)
+            _populate(
+                connection, table, rows, context.config.seed, context.root, sqlite=context.db.sqlite
+            )
+    finally:
+        if context.db.sqlite:
+            source_engine.dispose()
     check_resources(context)
     identity = f"scale/{schema}/scale_facts"
-    _register(context, identity)
+    _register(context, identity, source_engine.url.render_as_string(hide_password=False))
     period = [_row(index, context.config.seed)[0] for index in range(_PERIOD)]
     full, remaining = divmod(rows, _PERIOD)
     total = full * sum(period) + sum(period[:remaining])
@@ -110,8 +119,7 @@ def _populate(
     connection.execute(text(f"ANALYZE {table}"))
 
 
-def _register(context: Context, identity: str) -> None:
-    url = context.db.engine.url.render_as_string(hide_password=False)
+def _register(context: Context, identity: str, url: str) -> None:
     source = SourceProperties(connection_url=url, dialect=context.db.engine.dialect.name)
     source_object = CatalogObject(
         asset_ref=AssetRef(asset_type="source", asset_id="scale"),

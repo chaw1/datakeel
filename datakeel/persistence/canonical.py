@@ -59,6 +59,7 @@ def canonical_schema() -> CanonicalSchema:
             "workflow_store",
             "vector_store",
         ),
+        additive_tables=tuple(item.table for item in vector_entries),
         installers=(
             InstallerRequirement(key="file_discovery", owner="dataset_store", order=0),
             InstallerRequirement(key="evidence", owner="evidence_store", order=1),

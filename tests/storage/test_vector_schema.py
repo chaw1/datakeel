@@ -57,8 +57,12 @@ def test_nullable_lease_upgrade_preserves_existing_shard_and_is_idempotent(
     dialect = unmigrated_db.engine.dialect.name
     baseline = json.loads(ORACLE.read_text())["baseline"][dialect]
     with unmigrated_db.engine.begin() as connection:
+        if dialect == "sqlite":
+            from datakeel.versioning.v1 import initial  # noqa: PLC0415
+
+            initial(connection)
         for table in Base.metadata.sorted_tables:
-            if table.name not in baseline:
+            if dialect == "sqlite" or table.name not in baseline:
                 continue
             ddl = baseline[table.name]
             connection.exec_driver_sql(ddl["table"])
@@ -79,13 +83,26 @@ def test_nullable_lease_upgrade_preserves_existing_shard_and_is_idempotent(
                 "VALUES ('s', 't', 0, 'QUEUED', '[]', '[]', 0)"
             )
         )
+    if dialect == "sqlite":
+        from pathlib import Path  # noqa: PLC0415
+
+        from datakeel.core.settings import get_settings  # noqa: PLC0415
+        from datakeel.versioning.campaign_v2 import upgrade  # noqa: PLC0415
+        from datakeel.versioning.registry import registry  # noqa: PLC0415
+
+        assert (
+            upgrade(
+                Path(str(unmigrated_db.engine.url.database)), get_settings(), registry()
+            ).exit_code
+            == 0
+        )
     migrate(unmigrated_db)
     migrate(unmigrated_db)
     with unmigrated_db.engine.connect() as connection:
         assert connection.execute(
             text("SELECT id, task_id, lease_expires_at FROM task_shards")
         ).one() == ("s", "t", None)
-        assert len(inspect(connection).get_table_names()) == 102
+        assert len(inspect(connection).get_table_names()) == (103 if dialect == "sqlite" else 102)
 
 
 @pytest.mark.parametrize("defect", ["omitted", "wrong-owner"])

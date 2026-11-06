@@ -17,6 +17,8 @@ from datakeel.core.errors import ExecutionError
 from datakeel.core.evidence_eval import EvidenceEvalReport
 from datakeel.core.models import new_id
 from datakeel.harness.evidence_questions import load_evidence_questions
+from datakeel.persistence.canonical import canonical_schema
+from datakeel.persistence.legacy import schema_contributions
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_evaluations import list_evidence_evaluations
 from tests.cli.conftest import Invoke
@@ -148,6 +150,70 @@ def test_benchmark_main_on_extraction_failure_disposes_without_writing_report(
         evidence_benchmark.main()
     assert not output.exists()
     assert disposed == [True]
+
+
+def test_benchmark_main_on_initialization_failure_disposes_without_writing_report(
+    db: Database, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Schema failures propagate before extraction and still release the child engine."""
+    output = tmp_path / "report.json"
+    disposed: list[bool] = []
+    monkeypatch.setattr(sys, "argv", ["benchmark", "--output", str(output)])
+    monkeypatch.setattr(evidence_benchmark, "Database", lambda: db)
+    monkeypatch.setattr(db.engine, "dispose", lambda: disposed.append(True))
+
+    def fail(*_args: object, **_options: object) -> None:
+        message = "Synthetic initialization failure"
+        raise ExecutionError(message)
+
+    if db.sqlite:
+        monkeypatch.setattr(evidence_benchmark, "initialize", fail)
+    else:
+        monkeypatch.setattr(db, "migrate", fail)
+
+    def unexpected(*_args: object, **_options: object) -> EvidenceEvalReport:
+        pytest.fail("Extraction must not run after initialization fails")
+
+    monkeypatch.setattr(evidence_benchmark, "run_benchmark", unexpected)
+    with pytest.raises(ExecutionError, match="Synthetic initialization failure"):
+        evidence_benchmark.main()
+    assert not output.exists()
+    assert disposed == [True]
+
+
+@pytest.mark.parametrize("failure", ["migration", "extraction"])
+def test_benchmark_postgres_initialization_and_failure_cleanup_without_sockets(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, failure: str
+) -> None:
+    """The PG branch passes complete W3 contracts and disposes on either error path."""
+    database = Database("postgresql+pg8000://localhost/unused")
+    output = tmp_path / "report.json"
+    calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+    disposed: list[bool] = []
+    monkeypatch.setattr(sys, "argv", ["benchmark", "--output", str(output)])
+    monkeypatch.setattr(evidence_benchmark, "Database", lambda: database)
+    monkeypatch.setattr(database.engine, "dispose", lambda: disposed.append(True))
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("PG initialization must not use SQLite initialization or open sockets")
+
+    def migrate(*args: object, **kwargs: object) -> None:
+        calls.append((args, kwargs))
+        if failure == "migration":
+            raise ExecutionError(failure)
+
+    def extract(*_args: object, **_kwargs: object) -> EvidenceEvalReport:
+        raise ExecutionError(failure)
+
+    monkeypatch.setattr(evidence_benchmark, "initialize", forbidden)
+    monkeypatch.setattr(database.engine, "connect", forbidden)
+    monkeypatch.setattr(database, "migrate", migrate)
+    monkeypatch.setattr(evidence_benchmark, "run_benchmark", extract)
+    with pytest.raises(ExecutionError, match=failure):
+        evidence_benchmark.main()
+    assert calls == [((schema_contributions(),), {"canonical": canonical_schema()})]
+    assert disposed == [True]
+    assert not output.exists()
 
 
 def test_benchmark_when_worker_does_not_finish_rejects_partial_observations(

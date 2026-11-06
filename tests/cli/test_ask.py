@@ -12,6 +12,7 @@ import pytest
 from datakeel.cli import main, parser
 from datakeel.cli.ask import ask
 from datakeel.core.ask_models import AskAnswer
+from datakeel.persistence import migrate
 from datakeel.storage.database import Database
 from tests.enterprise_support import enterprise_fixture
 
@@ -27,6 +28,7 @@ def test_question_cli_persists_explicit_time_and_safe_refusal(
         "argv",
         ["datakeel", "ask", "客户满意度", "--reference-instant", "2026-10-01T00:00:00Z"],
     )
+    migrate(Database())  # Explicit empty fixture initialization before ordinary CLI use.
     main()
     value = json.loads(capsys.readouterr().out)
     assert value["status"] == "unanswerable"

@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, load_only
 
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
+from datakeel.core.recovery import require_active_home
 from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.pipeline import Pipeline, validate_pipeline
@@ -70,6 +71,7 @@ class DatabaseQueue:
         validate_registered: Callable[[Session, Pipeline | None], None],
     ) -> None:
         """Bind the queue to its storage and retry policy."""
+        require_active_home(db.engine.url.database)
         self._completion_factory = completion_factory
         self._registered = validate_registered
         self.db = db
@@ -324,6 +326,7 @@ class DatabaseQueue:
 
     def relay(self) -> int:
         """Deliver append-only terminal events exactly once through idempotency."""
+        require_active_home(self.db.engine.url.database)
         with self.db.session() as session:
             self.db.lock_writes(session)
             rows = list(

@@ -27,6 +27,7 @@ class Invoke(Protocol):
 @pytest.fixture
 def invoke(db: Database, monkeypatch: pytest.MonkeyPatch) -> Invoke:
     """Provide the invoke test fixture."""
+    monkeypatch.setenv("DATAKEEL_DATABASE_URL", str(db.engine.url))
     monkeypatch.setattr(cli, "Database", lambda: db)
     monkeypatch.setattr(cli, "configure_logging", lambda: None)
 

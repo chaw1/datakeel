@@ -8,12 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from sqlalchemy import (
-    create_engine,
-    event,
-    inspect,
-    text,
-)
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -23,6 +18,7 @@ from datakeel.core.schema import (
     CanonicalSchema,
     SchemaContribution,
     validate_contributions,
+    validate_migration_source,
     validate_tables,
 )
 from datakeel.core.settings import get_settings
@@ -101,7 +97,7 @@ class Database:
     def migrate(
         self, contributions: tuple[SchemaContribution, ...], *, canonical: CanonicalSchema
     ) -> None:
-        """Validate explicit schema inputs, then migrate under the existing write lock."""
+        """Initialize empty SQLite fixtures or retain serialized W3 PostgreSQL migration."""
         validate_contributions(contributions, canonical)
         with self.engine.begin() as connection:
             if self.sqlite:
@@ -113,8 +109,10 @@ class Database:
                         "hashtext('datakeel:migrate:' || current_schema()))"
                     )
                 )
+            validate_migration_source(connection, sqlite=self.sqlite, canonical=canonical)
             Base.metadata.create_all(connection)
-            add_nullable_columns(connection)
+            if not self.sqlite:
+                add_nullable_columns(connection)
             installers = sorted(
                 (item for contribution in contributions for item in contribution.installers),
                 key=lambda item: item.order,

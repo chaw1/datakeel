@@ -1,0 +1,6 @@
+{
+  "kind": "table",
+  "name": "task_shards",
+  "table": "task_shards",
+  "sql": "CREATE TABLE task_shards (\n\tid VARCHAR NOT NULL, \n\ttask_id VARCHAR NOT NULL, \n\tordinal INTEGER NOT NULL, \n\tstate VARCHAR NOT NULL, \n\tinputs JSON NOT NULL, \n\toutputs JSON NOT NULL, \n\tlease_owner VARCHAR, \n\theartbeat_at FLOAT, \n\tattempts INTEGER NOT NULL, lease_expires_at FLOAT, \n\tPRIMARY KEY (id), \n\tUNIQUE (task_id, ordinal), \n\tFOREIGN KEY(task_id) REFERENCES tasks (id)\n)"
+}

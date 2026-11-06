@@ -302,6 +302,9 @@ uv run datakeel worker
 uv run datakeel demo --once
 ```
 
+For SQLite, `db status` inspects without writes, `db upgrade` explicitly upgrades, and `migrate` is its compatibility alias. Services require a current store. See [database maintenance and isolated recovery](docs/DATABASE_MAINTENANCE.md).
+
+
 `DATAKEEL_HOME` defaults to `.datakeel` and holds the database, objects, generated samples, and isolated execution attempts. `DATAKEEL_DATABASE_URL=postgresql://user@127.0.0.1:5432/datakeel` selects PostgreSQL. `DATAKEEL_S3_BUCKET` selects S3 and `DATAKEEL_S3_ENDPOINT` optionally selects a compatible endpoint; normal AWS environment/profile discovery supplies access settings outside the repository. API and worker processes must share the same object store.
 
 For a new local PostgreSQL instance (Docker required):

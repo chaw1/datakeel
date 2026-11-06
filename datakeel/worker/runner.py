@@ -25,6 +25,7 @@ from datakeel.storage.dq_jobs import schedule_due
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.production_reaper import reap_expired_leases
 from datakeel.storage.vector_authorization import vector_permit
+from datakeel.versioning import require_current
 from datakeel.worker.custom_runner import CustomExecution
 from datakeel.worker.datasheet_runner import execute_datasheet
 from datakeel.worker.dq_runner import execute_dq
@@ -121,6 +122,8 @@ def run_worker(
     db: Database, *, once: bool = False, queue_name: str = "cpu", poll: float = 0.25
 ) -> None:
     """Drain or continuously poll one durable queue, relaying terminal events."""
+    if db.sqlite:
+        require_current(db)
     warn_unsafe_subprocess()
     queue = DatabaseQueue(db)
     while True:
