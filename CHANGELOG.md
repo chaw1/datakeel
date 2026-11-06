@@ -6,6 +6,12 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Fake-only semantic cluster, DBSCAN noise and relative coverage-gap candidates in signed vector
+  pipelines. Complete target/reference snapshots, all-reference authorization, finite typed
+  measurements and exact capacity checks share atomic publication and offline evidence replay.
+  Cluster references remain derived endpoints; real model quality, vector query API and UI are
+  outside this slice. See [the fake kernel guide](docs/VECTOR_FAKE.md).
+
 - SQLite versioned migration registry, full semantic baseline recognition and immutable thin ledger,
   with campaign maintenance exclusion, transactional forward steps and resumable committed prefixes.
   `datakeel db status/upgrade` and the `migrate` alias emit stable JSON/exit classifications.

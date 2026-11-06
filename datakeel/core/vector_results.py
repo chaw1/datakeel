@@ -6,23 +6,19 @@
 import hashlib
 import math
 import struct
-from typing import Annotated, Literal, Self
+from typing import Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
 from datakeel.core.models import AssetRef, BoundaryModel
-from datakeel.core.vector_models import Digest, VectorAttempt, VectorCounts, vector_hash
-
-
-class CosineMeasurement(BoundaryModel):
-    """Record direct cosine similarity and the independent candidate threshold."""
-
-    type: Literal["cosine_duplicate"] = "cosine_duplicate"
-    similarity: float = Field(ge=-1, le=1, allow_inf_nan=False)
-    threshold: float = Field(ge=-1, le=1, allow_inf_nan=False)
-
-
-VectorMeasurement = Annotated[CosineMeasurement, Field(discriminator="type")]
+from datakeel.core.vector_measurements import CosineMeasurement, VectorMeasurement
+from datakeel.core.vector_models import (
+    Digest,
+    VectorAttempt,
+    VectorCounts,
+    VectorScope,
+    vector_hash,
+)
 
 
 class VectorNodeReport(BoundaryModel):
@@ -31,7 +27,7 @@ class VectorNodeReport(BoundaryModel):
     mode: Literal["fake"] = "fake"
     fake_version: Literal["we-e2-fake-v1"] = "we-e2-fake-v1"
     real_quality: Literal["not_tested"] = "not_tested"
-    status: Literal["success", "partial_success", "failed"]
+    status: Literal["success", "partial_success", "failed", "insufficient"]
     reason: str | None = None
     counts: VectorCounts
     canonical_hash: Digest | None = None
@@ -47,7 +43,7 @@ class VectorTaskReport(BoundaryModel):
     """Expose terminal or pending status without representing a failed run as an empty success."""
 
     mode: Literal["fake"] = "fake"
-    status: Literal["pending", "success", "partial_success", "failed", "cancelled"]
+    status: Literal["pending", "success", "partial_success", "failed", "cancelled", "insufficient"]
     reason: str | None = None
     nodes: tuple[VectorNodeReport, ...] = ()
     attempts: tuple[VectorAttempt, ...] = ()
@@ -131,6 +127,21 @@ class VectorPair(BoundaryModel):
     measurement: CosineMeasurement
 
 
+class VectorFinding(BoundaryModel):
+    """Retain deterministic set evidence without assertion UUIDs or timestamps."""
+
+    subject: str
+    object: AssetRef | None = None
+    measurement: VectorMeasurement
+
+
+class VectorSetOutput(BoundaryModel):
+    """Record findings and scope independently from disposable cache eligibility."""
+
+    findings: tuple[VectorFinding, ...] = ()
+    scope: VectorScope | None = None
+
+
 class VectorCacheProduct(BoundaryModel):
     """Separate cache namespaces and retain immutable recorded outputs for rebuild."""
 
@@ -141,12 +152,15 @@ class VectorCacheProduct(BoundaryModel):
     kind: Literal["embedding", "global"]
     samples: tuple[VectorSample, ...]
     pairs: tuple[VectorPair, ...] = ()
+    findings: tuple[VectorFinding, ...] = Field(default=(), exclude_if=lambda value: not value)
+    scope: VectorScope | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def cacheable(self) -> Self:
         """Never cache temporary failures or create peer-dependent embedding entries."""
         if any(sample.temporary for sample in self.samples) or (
-            self.kind == "embedding" and (len(self.samples) != 1 or self.pairs)
+            self.kind == "embedding"
+            and (len(self.samples) != 1 or self.pairs or self.findings or self.scope)
         ):
             msg = "uncacheable_vector_product"
             raise ValueError(msg)

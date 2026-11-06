@@ -58,6 +58,22 @@ ignore_imports =
     datakeel.storage.evidence_actions -> datakeel.actions.release_parameters
     datakeel.storage.action_planning -> datakeel.actions.release_parameters
     datakeel.storage.action_operations -> datakeel.actions.release_parameters
+# E3 set planning composes typed ObjectSet selection, pure computation and existing vector projections.
+    datakeel.evidence.vector_parameters -> datakeel.ontology.models
+    datakeel.evidence.vector_set_execution -> datakeel.pipeline.models
+    datakeel.evidence.vector_plan_sets -> datakeel.pipeline.models
+    datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_set_publication
+    datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_parameters
+    datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_duplicate
+    datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_sets
+    datakeel.storage.vector_references -> datakeel.evidence.vector_payload
+    datakeel.storage.vector_references -> datakeel.evidence.vector_parameters
+    datakeel.evidence.vector_set_execution -> datakeel.storage.database
+    datakeel.evidence.vector_set_execution -> datakeel.storage.vector_cache
+    datakeel.evidence.vector_execution -> datakeel.storage.vector_references
+    datakeel.operators.evidence.vector -> datakeel.evidence.vector_parameters
+    datakeel.storage.vector_current -> datakeel.pipeline.models
+    datakeel.storage.vector_references -> datakeel.pipeline.models
 # Every same-layer dependency is explicit; new edges require a reviewed reason.
 # Sensor inspection composes typed operators; scoring consumes their frozen measurements.
     datakeel.pipeline.tabular -> datakeel.operators.base

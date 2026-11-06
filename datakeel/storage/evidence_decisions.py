@@ -14,6 +14,8 @@ from datakeel.core.predicate_registry import registered_predicates
 from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow
+from datakeel.storage.vector_cache import lock_evidence
+from datakeel.storage.vector_current import vector_assertion_current
 
 
 def assertion_view(row: AssertionRow) -> Assertion:
@@ -76,6 +78,7 @@ def apply_decision(session: Session, decision: AssertionDecision) -> None:
 
 def decide_in_session(session: Session, request: AssertionDecisionRequest) -> list[Assertion]:
     """Apply a complete decision batch inside a caller-owned action transaction."""
+    lock_evidence(session)
     result: list[Assertion] = []
     for identifier in sorted(set(request.assertion_ids)):
         row = session.scalar(
@@ -84,7 +87,7 @@ def decide_in_session(session: Session, request: AssertionDecisionRequest) -> li
         if row is None:
             msg = "Assertion not found"
             raise NotFoundError(msg)
-        if not row.active:
+        if not row.active or not vector_assertion_current(session, assertion_view(row)):
             msg = "Invalidated assertions are read-only audit history"
             raise ConflictError(msg)
         key = f"{request.idempotency_key}:{identifier}"

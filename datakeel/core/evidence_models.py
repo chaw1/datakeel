@@ -10,7 +10,8 @@ from pydantic import Field, model_validator
 
 from datakeel.core.models import AssetRef, BoundaryModel, new_id, utcnow
 from datakeel.core.predicate_registry import Predicate, PredicateId, predicate
-from datakeel.core.vector_results import VectorMeasurement
+from datakeel.core.vector_assertion_rules import validate_set_assertion
+from datakeel.core.vector_measurements import CosineMeasurement, VectorMeasurement
 
 Presence = Literal["present", "absent", "unknown"]
 AssertionStatus = Literal["candidate", "accepted", "rejected"]
@@ -159,6 +160,7 @@ class Assertion(BoundaryModel):
         require_version(self.subject)
         definition = predicate(self.predicate)
         self._validate_subject(definition)
+        validate_set_assertion(self)
         if self.created_at.tzinfo is None or (
             self.decided_at is not None and self.decided_at.tzinfo is None
         ):
@@ -192,7 +194,7 @@ class Assertion(BoundaryModel):
         if (
             not isinstance(self.object, AssetRef)
             or self.subject.asset_id >= self.object.asset_id
-            or self.measurement is None
+            or not isinstance(self.measurement, CosineMeasurement)
             or self.measurement.similarity < self.measurement.threshold
             or len(self.anchors) != len((self.subject, self.object))
             or tuple(anchor.asset_ref for anchor in self.anchors) != (self.subject, self.object)

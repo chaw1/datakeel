@@ -7,6 +7,7 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.evidence_models import AssertionStatus, EvidenceValue
 from datakeel.core.models import AssetRef
+from datakeel.core.vector_assertion_rules import assertion_references
 from datakeel.dataset_store.object_queries import evaluate_in_session, matching_objects_in_session
 from datakeel.evidence.presentation import explain, present_sample
 from datakeel.evidence.query_models import (
@@ -167,5 +168,5 @@ def sample_refs(sample: EvidenceSample) -> tuple[AssetRef, ...]:
     return (
         sample.asset_ref,
         *(neighbor.asset_ref for neighbor in sample.near_duplicates),
-        *(anchor.asset_ref for assertion in sample.assertions for anchor in assertion.anchors),
+        *(ref for assertion in sample.assertions for ref in assertion_references(assertion)),
     )

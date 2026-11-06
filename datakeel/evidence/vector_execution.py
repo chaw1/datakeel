@@ -29,6 +29,7 @@ from datakeel.core.vector_results import (
 from datakeel.evidence.vector_duplicate import direct_pairs, global_key, vector_counts
 from datakeel.evidence.vector_payload import PreparedWire, prepare_wire
 from datakeel.evidence.vector_publication import vector_publication
+from datakeel.evidence.vector_set_execution import compute_set
 from datakeel.evidence.vector_transport import FakeVectorTransport
 from datakeel.operators.base import OperatorResult
 from datakeel.pipeline.models import Node
@@ -36,6 +37,7 @@ from datakeel.storage.database import Database
 from datakeel.storage.vector_authorization import authorize_vector_node
 from datakeel.storage.vector_budget import reserve_vector, settle_vector, unknown_vector
 from datakeel.storage.vector_cache import vector_cached
+from datakeel.storage.vector_references import reference_file
 
 
 class VectorExecution:
@@ -68,7 +70,16 @@ class VectorExecution:
             if frozen is None:
                 msg = "vector_hidden_node_refused"
                 raise VectorError(msg)
-            return self._embed(node, frozen, files)
+            with self.db.session() as session:
+                extra = [
+                    reference_file(session, item.subject)
+                    for item in frozen.inputs
+                    if item.subject and item.asset_id not in {f.id for f in files}
+                ]
+            result = self._embed(node, frozen, files + extra)
+            return result.model_copy(
+                update={"files": [f for f in result.files if f.id in {v.id for v in files}]}
+            )
         selection = next((item for item in prepared.selections if item.node_id == node.id), None)
         if (
             selection is None
@@ -79,8 +90,28 @@ class VectorExecution:
         with self.lock:
             available = self.samples.get(selection.embedding_node, ())
         samples = tuple(
-            sample for sample in available if sample.subject.asset_id in selection.actual_asset_ids
+            sample
+            for sample in available
+            if sample.subject.asset_id in selection.actual_asset_ids
+            or (
+                selection.scope
+                and sample.subject.asset_id
+                in {m.subject.asset_id for m in selection.scope.references}
+            )
         )
+        if node.operator != "evidence.semantic_duplicate":
+            computed = compute_set(self.db, samples, node, selection.scope)
+            pending = vector_publication(
+                self.context, node, computed.products, samples, computed.report, computed.output
+            )
+            with self.lock:
+                self.pending.append(pending)
+            return OperatorResult(files=files, quality=pending.event.quality)
+        return self._duplicate(node, files, samples)
+
+    def _duplicate(
+        self, node: Node, files: list[FileItem], samples: tuple[VectorSample, ...]
+    ) -> OperatorResult:
         if len(samples) != len(files):
             msg = "vector_duplicate_inputs_changed"
             raise VectorError(msg)
@@ -116,6 +147,17 @@ class VectorExecution:
             msg = "vector_branch_inputs_changed"
             raise VectorError(msg)
         wires = [prepare_wire(file, frozen.params) for file in sorted(files, key=lambda f: f.id)]
+        expected = {item.asset_id: item for item in frozen.inputs}
+        wires = [
+            wire.model_copy(
+                update={
+                    "frozen": wire.frozen.model_copy(
+                        update={"subject": expected[wire.frozen.asset_id].subject}
+                    )
+                }
+            )
+            for wire in wires
+        ]
         if any(wire.frozen not in frozen.inputs for wire in wires):
             msg = "vector_frozen_payload_changed"
             raise VectorError(msg)
@@ -158,7 +200,7 @@ class VectorExecution:
 
     def _sample(self, node: FrozenVectorNode, wire: PreparedWire) -> tuple[VectorSample, bool, int]:
         frozen = wire.frozen
-        subject = AssetRef(
+        subject = frozen.subject or AssetRef(
             asset_type="file", asset_id=frozen.asset_id, version=self.context.version_id
         )
         cached = vector_cached(self.db, frozen.cache_key, "embedding")

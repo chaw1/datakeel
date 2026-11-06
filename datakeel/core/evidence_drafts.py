@@ -14,7 +14,7 @@ from datakeel.core.evidence_models import (
     VerificationDetail,
 )
 from datakeel.core.models import AssetRef, BoundaryModel
-from datakeel.core.vector_results import VectorMeasurement
+from datakeel.core.vector_measurements import VectorMeasurement
 
 
 class ObservationDraft(BoundaryModel):

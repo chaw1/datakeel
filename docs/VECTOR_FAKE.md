@@ -1,11 +1,12 @@
 # Fake vector kernel
 
-The explicit DAG is `evidence.vector_embed` → `evidence.semantic_duplicate`, executed by the
+The explicit DAG is `evidence.vector_embed` → `evidence.semantic_duplicate`,
+`evidence.semantic_cluster`, `evidence.semantic_outlier` or `evidence.coverage_gap`, executed by the
 existing `run_pipeline` controlled action and worker. The five-node evidence preset is unchanged.
 This kernel exercises contracts with synthetic vectors. It supplies no encoder quality,
 provider usage, real price or cloud latency measurements. Real egress is independently disabled
 and the real budget is zero. There is no real/recording transport, credential loader or network client.
-Clustering, outliers, coverage gaps, vector search UI and evaluation campaigns are outside this batch.
+Vector query API, pagination, UI and encoder quality evaluation campaigns remain outside this batch.
 
 Use generated local text or images and local object storage. A configured S3 bucket is refused
 before object materialization. Text requires `modality="text"` and a reviewed discrete dimension
@@ -45,7 +46,7 @@ All resolved vector pipelines are external for approval, including inactive bran
 fake price. A person signs the exact plan digest and explicitly executes it. MCP and Agent entry
 points cannot approve or execute it. Direct task submission and direct registered-operator calls
 are rejected. Unknown byte-changing ancestors, altered nodes/payloads, redirects, unsigned runs,
-changed membership and split shards are rejected. Both vector nodes require one complete shard.
+changed membership and split shards are rejected. Every vector node requires one complete shard.
 
 `EmbedParams.policy` freezes invented CNY nano-units, token bounds and maximum requests/cost.
 Its default price is a fake unit per code point, or 100 fake image tokens; these are test values.
@@ -94,3 +95,43 @@ anchors (`vector-human-entry`, `vector-persistent-request-count`, `vector-no-red
 `vector-direct-pair`, `vector-failed-publication`), plus eligible-pair prepare/runtime and
 explicit schema owner/lease anchors. Full repository coverage, PostgreSQL and
 independent fresh-session acceptance remain separate validation steps.
+
+## Set evidence
+
+`semantic_cluster` and `semantic_outlier` accept `eps` (cosine distance, default 0.1) and
+`min_samples` (including self, default 5), plus `max_samples` and `max_candidate_pairs`.
+The exact precomputed F64 DBSCAN visits sorted asset IDs, includes distances equal to `eps`,
+and assigns a shared border to the first cluster. Cluster IDs bind the smallest member and
+configuration hash. A cluster endpoint is a versioned reference only; it does not create a
+public object. Outliers are DBSCAN noise candidates, never corruption. Fewer eligible vectors
+than `min_samples` produce an `insufficient` report and no outlier assertion.
+
+`coverage_gap` accepts `reference` as a file ObjectSet, an independent cosine `threshold`,
+`max_samples` and `max_reference_comparisons`. Preparation resolves every matching reference,
+ignoring the ObjectSet display limit, and freezes T/R identities, revisions, original-content
+hashes and separate summaries. The embedding node consumes the union T∪R once; scoring considers
+T−R and exactly |T−R|×|R| comparisons. Equal nearest similarities choose the smallest reference
+asset ID. Multiple versions of the same asset in R are ambiguous and rejected. All references
+retain their exact immutable versions; transformed upstream payloads remain refused.
+
+A gap assertion has a subject Whole anchor, its nearest reference Whole anchor and the complete
+frozen R closure in its typed measurement. Plan reads, worker authorization, evidence reads,
+assertion-source resolution and human review include every R member. Membership, revision,
+content or state changes invalidate old relative candidates. Empty or partially failed R fails
+the whole pending vector subgraph with a typed reason. Gap candidates describe similarity relative
+to this frozen R; they do not establish absolute coverage or trigger labeling, selection or merging.
+
+The default limits are 5000 samples and 250000 complete candidate/reference comparisons; callers
+may lower them. Exceeding a bound rejects the complete result, with no top-k truncation. Per-file
+T failures can retain other candidates, while global or late-node failure discards every new pending
+vector product. Existing facts and settled/unknown accounting remain available.
+
+Measurements now discriminate cosine duplicate, cluster configuration, outlier configuration and
+relative coverage, replacing the earlier cosine-only boundary. All numeric measurements reject
+NaN and infinity. Evidence projector 1.3 declares immutable COMPLETE bundles and append-only review
+decisions as separate fact sources with a composite watermark. Compute identity binds recorded F32
+vectors and full closures; fact identity additionally binds immutable outputs and decision history.
+Duplicate projection diffs are no-ops; missing predecessors or stale ordering are refused. Rebuild
+uses the recorded bundles, checks integrity and switches projections in one transaction. Configured
+remote object storage is rejected before vector replay; no embedding transport or credential loader
+is constructed. SQLite behavior is covered locally; PostgreSQL execution remains a separate check.

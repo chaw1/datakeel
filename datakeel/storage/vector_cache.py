@@ -3,7 +3,7 @@
 
 """Read and project mode-separated vector products only inside unified publications."""
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from datakeel.core.vector_results import VectorCacheProduct
@@ -66,3 +66,14 @@ def vector_predecessors(
             )
         )
     )
+
+
+def lock_evidence(session: Session) -> None:
+    """Serialize PG publication, review and rebuild; SQLite callers already hold a write lock."""
+    if session.get_bind().dialect.name == "postgresql":
+        session.execute(
+            text(
+                "SELECT pg_advisory_xact_lock(hashtext(current_schema()), "
+                "hashtext('evidence_projection'))"
+            )
+        )

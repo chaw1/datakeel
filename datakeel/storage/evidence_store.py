@@ -14,6 +14,7 @@ from datakeel.core.evidence_models import Assertion
 from datakeel.core.kg_contracts import KGSchema
 from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.core.vector_models import VECTOR_OPERATORS
 from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.database import Database
@@ -22,7 +23,8 @@ from datakeel.storage.evidence_cache import cache_predecessors, invalidations_fo
 from datakeel.storage.evidence_decisions import append_decision, assertion_view
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_provenance import kg_predecessors
-from datakeel.storage.vector_cache import project_vectors, vector_predecessors
+from datakeel.storage.vector_cache import lock_evidence, project_vectors, vector_predecessors
+from datakeel.storage.vector_current import vector_assertion_current
 from datakeel.storage.vector_integrity import validate_vector_bundle
 
 
@@ -35,6 +37,8 @@ def _references_bound(event: LineageEvent, assertion: Assertion) -> bool:
     if any(_identity(anchor.asset_ref) not in inputs for anchor in assertion.anchors):
         return False
     allowed = inputs
+    if assertion.predicate == "semantic_cluster_member" and isinstance(assertion.object, AssetRef):
+        allowed = inputs | {_identity(assertion.object)}
     if event.operator == "evidence.kg" and assertion.predicate.startswith("kg."):
         allowed = inputs | {
             _identity(ref) for ref in event.outputs if ref.asset_type == "kg_entity"
@@ -93,6 +97,11 @@ def validated_bundle(event: LineageEvent, bundle: KnowledgeBundle | None = None)
 
 def project_bundle(session: Session, event: LineageEvent, bundle: KnowledgeBundle) -> None:
     """Project validated event content without overwriting immutable observations."""
+    lock_evidence(session)
+    if event.operator in VECTOR_OPERATORS:
+        validated_bundle(event, bundle)
+        if _vector_diff_applied(session, event, bundle):
+            return
     payloads = {
         identifier: payload
         for identifiers in batched((assertion.id for assertion in bundle.assertions), 500)
@@ -150,6 +159,7 @@ def record_extraction_in_session(
     session: Session, event: LineageEvent, bundle: KnowledgeBundle | None = None
 ) -> LineageEvent:
     """Publish extraction inside the caller's fenced worker completion transaction."""
+    lock_evidence(session)
     if bundle is None:
         value = event.params.get("knowledge_bundle")
         if isinstance(value, dict) and "object_key" in value:
@@ -206,7 +216,11 @@ def _replay_artifact(session: Session, event: LineageEvent) -> LineageEvent:
 
 
 def read_assertions(
-    session: Session, asset_id: str | None = None, *, include_invalidated: bool = False
+    session: Session,
+    asset_id: str | None = None,
+    *,
+    include_invalidated: bool = False,
+    validate_vectors: bool = True,
 ) -> list[Assertion]:
     """Read immutable content with reviewed status inside an existing transaction."""
     statement = select(AssertionRow).order_by(AssertionRow.id)
@@ -214,7 +228,12 @@ def read_assertions(
         statement = statement.where(AssertionRow.subject_id == asset_id)
     if not include_invalidated:
         statement = statement.where(AssertionRow.active.is_(True))
-    return [assertion_view(row) for row in session.scalars(statement)]
+    values = [assertion_view(row) for row in session.scalars(statement)]
+    return [
+        value
+        for value in values
+        if include_invalidated or not validate_vectors or vector_assertion_current(session, value)
+    ]
 
 
 def list_assertions(
@@ -223,3 +242,32 @@ def list_assertions(
     """Return typed observations without leaking persistence rows across boundaries."""
     with db.session() as session:
         return read_assertions(session, asset_id, include_invalidated=include_invalidated)
+
+
+def _vector_diff_applied(session: Session, event: LineageEvent, bundle: KnowledgeBundle) -> bool:
+    current = set(cache_predecessors(session, bundle)) | set(
+        vector_predecessors(session, bundle.vector_products)
+    )
+    if current and all(_vector_descends(session, producer, event.event_id) for producer in current):
+        return True
+    if current != set(bundle.prior_cache_event_ids):
+        msg = "Vector projection diff predecessor missing or out of order"
+        raise ValidationError(msg)
+    return False
+
+
+def _vector_descends(session: Session, producer: str, ancestor: str) -> bool:
+    pending = [producer]
+    visited: set[str] = set()
+    while pending:
+        current = pending.pop()
+        if current == ancestor:
+            return True
+        if current in visited:
+            continue
+        visited.add(current)
+        row = session.get(EventRow, current)
+        if row is None:
+            continue
+        pending.extend(load_bundle(LineageEvent.model_validate(row.payload)).prior_cache_event_ids)
+    return False

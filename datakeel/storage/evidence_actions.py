@@ -23,6 +23,7 @@ from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_models import Assertion, AssertionDecisionRequest
 from datakeel.core.models import AssetRef, BoundaryModel
+from datakeel.core.vector_assertion_rules import assertion_references
 from datakeel.dataset_store.object_projection import content_digest
 from datakeel.dataset_store.object_queries import evaluate_in_session
 from datakeel.ontology.models import FrozenManifest, ObjectSet, PropertyFilter
@@ -37,9 +38,12 @@ from datakeel.storage.production_catalog_plans import (
     catalog_manifest as production_catalog_manifest,
 )
 from datakeel.storage.release_actions import publication_manifest
+from datakeel.storage.vector_cache import lock_evidence
+from datakeel.storage.vector_current import vector_assertion_current
 
 
 def _assertions(session: Session, params: DecideAssertionsParams) -> list[Assertion]:
+    lock_evidence(session)
     rows = list(
         session.scalars(
             select(AssertionRow)
@@ -51,7 +55,9 @@ def _assertions(session: Session, params: DecideAssertionsParams) -> list[Assert
     if len(rows) != len(params.assertion_ids):
         msg = "An assertion decision target does not exist"
         raise NotFoundError(msg)
-    if any(not row.active for row in rows):
+    if any(
+        not row.active or not vector_assertion_current(session, assertion_view(row)) for row in rows
+    ):
         msg = "Invalidated assertions are read-only audit history"
         raise ConflictError(msg)
     return [assertion_view(row) for row in rows]
@@ -64,10 +70,30 @@ def _references(session: Session, assertions: list[Assertion]) -> list[AssetRef]
             for ref in question_references(assertion):
                 refs[(ref.asset_type, ref.asset_id, ref.version or "")] = ref
             continue
-        targets = [assertion.subject]
+        targets = (
+            list(assertion_references(assertion))
+            if assertion.predicate
+            in {
+                "semantic_duplicate_of",
+                "semantic_cluster_member",
+                "semantic_outlier",
+                "coverage_gap",
+            }
+            else [assertion.subject]
+        )
         if assertion.subject.asset_type == "kg_entity":
             targets = image_review_references(session, assertion)
-        if isinstance(assertion.object, AssetRef) and assertion.subject.asset_type != "kg_entity":
+        if (
+            assertion.subject.asset_type != "kg_entity"
+            and assertion.predicate
+            not in {
+                "semantic_duplicate_of",
+                "semantic_cluster_member",
+                "semantic_outlier",
+                "coverage_gap",
+            }
+            and isinstance(assertion.object, AssetRef)
+        ):
             targets.append(assertion.object)
         for ref in targets:
             if ref.asset_type != "file" or ref.namespace != "default" or not ref.version:

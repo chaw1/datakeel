@@ -1,29 +1,41 @@
 {
   "vector_canonical_sha256": "b5b734799576ffc3faf61f90a2462fdb81a9dfdeb24032a0cd9f5c900b8059b7",
   "storage_additions": {
+    "datakeel/storage/action_access.py": 9,
     "datakeel/storage/action_approvals.py": 2,
     "datakeel/storage/action_execution.py": 2,
     "datakeel/storage/action_planning.py": 3,
     "datakeel/storage/action_store.py": 1,
     "datakeel/storage/action_worker.py": 15,
-    "datakeel/storage/evidence_projection.py": 20,
-    "datakeel/storage/evidence_store.py": 8,
-    "datakeel/storage/vector_authorization.py": 136,
+    "datakeel/storage/data_asset_native.py": -2,
+    "datakeel/storage/evidence_actions.py": 26,
+    "datakeel/storage/evidence_decisions.py": 3,
+    "datakeel/storage/evidence_projection.py": 110,
+    "datakeel/storage/evidence_queries.py": 1,
+    "datakeel/storage/evidence_snapshot.py": 2,
+    "datakeel/storage/evidence_store.py": 56,
+    "datakeel/storage/vector_authorization.py": 154,
     "datakeel/storage/vector_budget.py": 194,
-    "datakeel/storage/vector_cache.py": 68,
-    "datakeel/storage/vector_integrity.py": 55,
-    "datakeel/storage/vector_planning.py": 72,
-    "datakeel/storage/vector_reports.py": 76,
-    "datakeel/storage/vector_rows.py": 49
+    "datakeel/storage/vector_cache.py": 79,
+    "datakeel/storage/vector_current.py": 37,
+    "datakeel/storage/vector_integrity.py": 65,
+    "datakeel/storage/vector_planning.py": 86,
+    "datakeel/storage/vector_references.py": 63,
+    "datakeel/storage/vector_reports.py": 82,
+    "datakeel/storage/vector_rows.py": 49,
+    "datakeel/storage/vector_set_integrity.py": 69
   },
   "storage_paths": [
     "datakeel/storage/vector_authorization.py",
     "datakeel/storage/vector_budget.py",
     "datakeel/storage/vector_cache.py",
+    "datakeel/storage/vector_current.py",
     "datakeel/storage/vector_integrity.py",
     "datakeel/storage/vector_planning.py",
+    "datakeel/storage/vector_references.py",
     "datakeel/storage/vector_reports.py",
-    "datakeel/storage/vector_rows.py"
+    "datakeel/storage/vector_rows.py",
+    "datakeel/storage/vector_set_integrity.py"
   ],
   "schema_additions": {
     "datakeel/persistence/vector.py": 13,
@@ -57,9 +69,34 @@
     "datakeel.storage.vector_reports -> datakeel.pipeline.models",
     "datakeel.worker_store.completion -> datakeel.pipeline.models",
     "datakeel.ontology.functions -> datakeel.persistence.task_queries",
-    "datakeel.workflows.execution -> datakeel.persistence.task_queries"
+    "datakeel.workflows.execution -> datakeel.persistence.task_queries",
+    "datakeel.evidence.vector_execution -> datakeel.storage.vector_references",
+    "datakeel.evidence.vector_parameters -> datakeel.ontology.models",
+    "datakeel.evidence.vector_plan_sets -> datakeel.pipeline.models",
+    "datakeel.evidence.vector_set_execution -> datakeel.pipeline.models",
+    "datakeel.evidence.vector_set_execution -> datakeel.storage.database",
+    "datakeel.evidence.vector_set_execution -> datakeel.storage.vector_cache",
+    "datakeel.operators.evidence.vector -> datakeel.evidence.vector_parameters",
+    "datakeel.storage.vector_current -> datakeel.pipeline.models",
+    "datakeel.storage.vector_references -> datakeel.evidence.vector_parameters",
+    "datakeel.storage.vector_references -> datakeel.evidence.vector_payload",
+    "datakeel.storage.vector_references -> datakeel.pipeline.models",
+    "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_duplicate",
+    "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_parameters",
+    "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_set_publication",
+    "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_sets"
   ],
   "legacy_row_imports": {
+    "datakeel/storage/vector_current.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow"
+      ]
+    },
+    "datakeel/storage/vector_references.py": {
+      "datakeel.dataset_store.rows": [
+        "VersionRow"
+      ]
+    },
     "datakeel/storage/vector_planning.py": {
       "datakeel.dataset_store.rows": [
         "DatasetRow",

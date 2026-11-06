@@ -97,6 +97,28 @@ _PREDICATES = {
             existence=False,
             symmetric=True,
         ),
+        Predicate(
+            id="semantic_cluster_member",
+            description="DBSCAN candidate member",
+            object_kind="asset",
+            object_asset_types=("semantic_cluster",),
+            subject_asset_type="file",
+            existence=False,
+        ),
+        Predicate(
+            id="semantic_outlier",
+            description="DBSCAN noise candidate, not corruption",
+            subject_asset_type="file",
+            existence=False,
+        ),
+        Predicate(
+            id="coverage_gap",
+            description="Candidate relative to frozen references",
+            object_kind="asset",
+            object_asset_types=("file",),
+            subject_asset_type="file",
+            existence=False,
+        ),
     )
 }
 

@@ -14,7 +14,9 @@ from datakeel.core.models import utcnow
 from datakeel.core.vector_models import VectorError, VectorPermit, VectorPrepared, vector_hash
 from datakeel.pipeline.models import Node, Pipeline
 from datakeel.storage.action_rows import ActionPlanRow, ActionRunRow, ApprovalRow
+from datakeel.storage.data_asset_access import require_access_in_session
 from datakeel.storage.database import Database
+from datakeel.storage.vector_planning import verify_vector_params
 from datakeel.worker_store.rows import ShardRow, TaskRow
 
 
@@ -88,6 +90,8 @@ def authorize_vector(session: Session, permit: VectorPermit) -> VectorPrepared:
     if params.vector_prepared.dag_hash != vector_hash(task.pipeline):
         msg = "vector_dag_changed"
         raise VectorError(msg)
+    _authorize_sources(session, plan, params.vector_prepared)
+    verify_vector_params(session, plan, params)
     return params.vector_prepared
 
 
@@ -134,3 +138,17 @@ def vector_completion_plan(session: Session, task_id: str) -> tuple[str, ActionP
         msg = "vector_requires_consumed_human_approval"
         raise VectorError(msg)
     return run.id, ActionPlan.model_validate({**plan.payload, "status": plan.status})
+
+
+def _authorize_sources(session: Session, plan: ActionPlan, prepared: VectorPrepared) -> None:
+    require_access_in_session(
+        session,
+        tuple(
+            m.subject
+            for selection in prepared.selections
+            if selection.scope
+            for m in (*selection.scope.targets, *selection.scope.references)
+        ),
+        AccessContext(actor=plan.actor, entry="ask", scope="query"),
+        record=False,
+    )

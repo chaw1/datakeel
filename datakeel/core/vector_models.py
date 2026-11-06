@@ -11,11 +11,19 @@ from urllib.parse import urlsplit
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from datakeel.core.errors import ExecutionError
-from datakeel.core.models import BoundaryModel
+from datakeel.core.models import AssetRef, BoundaryModel, FileItem
 from datakeel.core.settings import get_settings
 
 Digest = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
-VECTOR_OPERATORS = frozenset({"evidence.vector_embed", "evidence.semantic_duplicate"})
+VECTOR_OPERATORS = frozenset(
+    {
+        "evidence.vector_embed",
+        "evidence.semantic_duplicate",
+        "evidence.semantic_cluster",
+        "evidence.semantic_outlier",
+        "evidence.coverage_gap",
+    }
+)
 
 
 def vector_hash(value: object) -> str:
@@ -117,6 +125,63 @@ class DuplicateParams(BoundaryModel):
     max_candidate_pairs: int = Field(default=250000, ge=0, le=250000)
 
 
+class ClusterParams(DuplicateParams):
+    """Bound exact precomputed cosine-distance DBSCAN, including self in density."""
+
+    eps: float = Field(default=0.1, ge=0, le=2)
+    min_samples: int = Field(default=5, ge=1, le=5000, strict=True)
+
+
+class VectorMember(BoundaryModel):
+    """Freeze versioned identity, source revision, state and original byte hash."""
+
+    subject: AssetRef
+    revision: str
+    state_revision: int = 0
+    content_revision: Digest
+
+
+class VectorScope(BoundaryModel):
+    """Keep complete target and reference closures independently of a query limit."""
+
+    targets: tuple[VectorMember, ...]
+    references: tuple[VectorMember, ...]
+    target_digest: Digest | None = None
+    reference_digest: Digest | None = None
+
+    @model_validator(mode="after")
+    def summaries(self) -> Self:
+        """Derive immutable summaries once and reject tampered or unordered closures."""
+        for name, members in (
+            ("target_digest", self.targets),
+            ("reference_digest", self.references),
+        ):
+            ids = tuple(m.subject.asset_id for m in members)
+            if ids != tuple(sorted(set(ids))) or any(
+                m.subject.asset_type != "file" or not m.subject.version for m in members
+            ):
+                msg = "vector_scope_requires_sorted_versioned_files"
+                raise ValueError(msg)
+            digest = vector_hash([m.model_dump(mode="json") for m in members])
+            if getattr(self, name) not in (None, digest):
+                msg = "vector_scope_summary_mismatch"
+                raise ValueError(msg)
+            object.__setattr__(self, name, digest)
+        return self
+
+    def digest(self) -> str:
+        """Bind all memberships and revisions, including references never chosen as nearest."""
+        return vector_hash(self.model_dump(mode="json"))
+
+
+class VectorReferenceSet(BoundaryModel):
+    """Pass resolved reference files and frozen source facts through a typed internal port."""
+
+    node_id: str
+    files: tuple[FileItem, ...]
+    members: tuple[VectorMember, ...]
+
+
 class FrozenPayload(BoundaryModel):
     """Bind one possible branch input to original bytes and final request bytes."""
 
@@ -128,6 +193,7 @@ class FrozenPayload(BoundaryModel):
     token_bound: int = Field(ge=0)
     failure: str | None = None
     cache_key: Digest
+    subject: AssetRef | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class FrozenVectorNode(BoundaryModel):
@@ -145,6 +211,7 @@ class FrozenVectorSelection(BoundaryModel):
     node_id: str
     embedding_node: str
     actual_asset_ids: tuple[str, ...]
+    scope: VectorScope | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class VectorPrepared(BoundaryModel):

@@ -4,8 +4,10 @@
 """Named fake vector safety and semantic anchors, run only in disposable copies."""
 
 from scripts.mutation_models import Mutation
+from scripts.vector_set_mutations import VECTOR_SET_MUTATIONS
 
 VECTOR_MUTATIONS = (
+    *VECTOR_SET_MUTATIONS,
     Mutation(
         name="vector-parameter-wording",
         path="intents/field_names.py",
@@ -33,9 +35,9 @@ VECTOR_MUTATIONS = (
     ),
     Mutation(
         name="vector-prepare-eligible-pairs",
-        path="evidence/vector_plan.py",
-        before="sum(prepare_wire(file, embed).frozen.failure is None for file in files)",
-        after="len(files)",
+        path="evidence/vector_plan_sets.py",
+        before="sum(prepare_wire(file, embed).frozen.failure is None for file in selected)",
+        after="len(selected)",
         case="tests/evidence/test_vector_capacity.py::test_prepare_and_worker_invalid_input_at_exact_pair_limit_are_partial[invalid-utf8]",
         runner="pytest",
     ),

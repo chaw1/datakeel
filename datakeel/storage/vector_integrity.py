@@ -8,14 +8,24 @@ from datakeel.core.models import AssetRef, LineageEvent
 from datakeel.core.vector_models import VECTOR_OPERATORS, DuplicateParams, VectorError, vector_hash
 from datakeel.core.vector_results import VectorNodeReport
 from datakeel.evidence.vector_duplicate import global_key, vector_counts
+from datakeel.storage.vector_set_integrity import validate_set_bundle
 
 
 def validate_vector_bundle(event: LineageEvent, bundle: KnowledgeBundle) -> None:
     """Verify mode, full sample status and measurement hashes before publication or replay."""
     if event.operator not in VECTOR_OPERATORS:
-        if bundle.vector_products or bundle.vector_samples or bundle.vector_pairs:
+        if (
+            bundle.vector_products
+            or bundle.vector_samples
+            or bundle.vector_pairs
+            or bundle.vector_findings
+            or bundle.vector_scope
+        ):
             msg = "vector_bundle_wrong_operator"
             raise VectorError(msg)
+        return
+    if event.operator not in {"evidence.vector_embed", "evidence.semantic_duplicate"}:
+        validate_set_bundle(event, bundle)
         return
     samples = bundle.vector_samples
     report = VectorNodeReport.model_validate(event.quality.get("vector"))

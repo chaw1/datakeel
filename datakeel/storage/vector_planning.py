@@ -13,6 +13,7 @@ from datakeel.core.vector_models import VectorError, require_local_vector_object
 from datakeel.dataset_store.datasets import materialize_files
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.evidence.vector_plan import freeze_vectors, has_vectors
+from datakeel.storage.vector_references import resolve_references
 
 
 def _files(session: Session, params: PipelineParams) -> list[FileItem]:
@@ -44,7 +45,12 @@ def prepare_vector_params(session: Session, parsed: BoundaryModel) -> BoundaryMo
     if resolved.pipeline is None:
         msg = "vector_pipeline_missing"
         raise VectorError(msg)
-    prepared = freeze_vectors(resolved.pipeline, _files(session, resolved))
+    prepared = freeze_vectors(
+        resolved.pipeline,
+        _files(session, resolved),
+        resolve_references(session, resolved.pipeline),
+        version_id,
+    )
     if not prepared.nodes:
         msg = "vector_embedding_node_missing"
         raise VectorError(msg)
@@ -67,6 +73,14 @@ def verify_vector_params(session: Session, plan: ActionPlan, params: BoundaryMod
         if params.pipeline is None or params.vector_prepared is None or not plan.external:
             msg = "vector_prepared_plan_required"
             raise VectorError(msg)
-        if freeze_vectors(params.pipeline, _files(session, params)) != params.vector_prepared:
+        if (
+            freeze_vectors(
+                params.pipeline,
+                _files(session, params),
+                resolve_references(session, params.pipeline),
+                params.version_id or "",
+            )
+            != params.vector_prepared
+        ):
             msg = "vector_frozen_plan_changed"
             raise VectorError(msg)

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from datakeel.actions.parameters import parse_params
+from datakeel.actions.parameters import PipelineParams, parse_params
 from datakeel.actions.production_catalog_parameters import CATALOG_PARAMETER_TYPES
 from datakeel.actions.production_parameters import PRODUCTION_PARAMETER_TYPES
 from datakeel.actions.production_references import production_parameter_refs
@@ -32,6 +32,15 @@ def _source_refs(plan: ActionPlan) -> list[AssetRef]:
     ):
         params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
         refs.extend(production_parameter_refs(params))
+    if plan.action_type == "run_pipeline":
+        params = PipelineParams.model_validate(plan.canonical_params)
+        if params.vector_prepared:
+            refs.extend(
+                member.subject
+                for selection in params.vector_prepared.selections
+                if selection.scope
+                for member in selection.scope.references
+            )
     return refs
 
 

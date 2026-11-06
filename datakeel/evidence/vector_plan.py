@@ -6,15 +6,17 @@
 from datakeel.core.models import FileItem
 from datakeel.core.vector_models import (
     VECTOR_OPERATORS,
-    DuplicateParams,
     EmbedParams,
+    FrozenPayload,
     FrozenVectorNode,
     FrozenVectorSelection,
     VectorError,
     VectorPrepared,
+    VectorReferenceSet,
     vector_hash,
 )
 from datakeel.evidence.vector_payload import prepare_wire
+from datakeel.evidence.vector_plan_sets import freeze_selection
 from datakeel.pipeline.models import ConditionParams, Node, Pipeline
 from datakeel.pipeline.validation import reference, validate_pipeline
 
@@ -55,13 +57,18 @@ def _source(value: str, nodes: dict[str, Node]) -> str:
     node = nodes[source]
     if node.operator == "evidence.vector_embed":
         return source
-    if node.kind != "operator" or node.operator == "evidence.semantic_duplicate":
+    if node.kind != "operator" or node.operator in VECTOR_OPERATORS:
         return _source(node.inputs["files"], nodes)
     msg = "duplicate_requires_vector_input"
     raise VectorError(msg)
 
 
-def freeze_vectors(pipeline: Pipeline, files: list[FileItem]) -> VectorPrepared:
+def freeze_vectors(
+    pipeline: Pipeline,
+    files: list[FileItem],
+    references: tuple[VectorReferenceSet, ...] = (),
+    version_id: str = "",
+) -> VectorPrepared:
     """Freeze conditional alternatives and exact execution membership; reject transformed input."""
     validate_pipeline(pipeline)
     nodes = {node.id: node for node in pipeline.nodes}
@@ -78,24 +85,17 @@ def freeze_vectors(pipeline: Pipeline, files: list[FileItem]) -> VectorPrepared:
         identities = tuple(sorted(file.id for file in actual))
         if node.operator == "evidence.vector_embed":
             params = EmbedParams.model_validate(node.params)
-            inputs = tuple(
-                prepare_wire(file, params).frozen for file in sorted(selected, key=lambda f: f.id)
-            )
+            inputs = _embedding_inputs(node.id, nodes, selected, params, references)
+            identities = tuple(sorted(set(identities) | {i.asset_id for i in inputs if i.subject}))
             frozen.append(
                 FrozenVectorNode(
                     node_id=node.id, params=params, inputs=inputs, actual_asset_ids=identities
                 )
             )
         else:
-            limits = DuplicateParams.model_validate(node.params)
             source = nodes[_source(node.inputs["files"], nodes)]
-            _capacity(selected, EmbedParams.model_validate(source.params), limits)
             selections.append(
-                FrozenVectorSelection(
-                    node_id=node.id,
-                    embedding_node=_source(node.inputs["files"], nodes),
-                    actual_asset_ids=identities,
-                )
+                freeze_selection(node, source, selected, actual, references, version_id)
             )
     requests = sum(item.failure is None for node in frozen for item in node.inputs)
     cost = sum(
@@ -112,11 +112,22 @@ def freeze_vectors(pipeline: Pipeline, files: list[FileItem]) -> VectorPrepared:
     )
 
 
-def _capacity(files: list[FileItem], embed: EmbedParams, params: DuplicateParams) -> None:
-    eligible = sum(prepare_wire(file, embed).frozen.failure is None for file in files)
-    if (
-        len(files) > params.max_samples
-        or eligible * (eligible - 1) // 2 > params.max_candidate_pairs
-    ):
-        msg = "vector_capacity_exceeded"
-        raise VectorError(msg)
+def _embedding_inputs(
+    node_id: str,
+    nodes: dict[str, Node],
+    selected: list[FileItem],
+    params: EmbedParams,
+    references: tuple[VectorReferenceSet, ...],
+) -> tuple[FrozenPayload, ...]:
+    inputs = {f.id: prepare_wire(f, params).frozen for f in selected}
+    for group in references:
+        if _source(nodes[group.node_id].inputs["files"], nodes) != node_id:
+            continue
+        for file, member in zip(group.files, group.members, strict=True):
+            frozen = prepare_wire(file, params).frozen
+            prior = inputs.get(file.id)
+            if prior and prior.subject and prior.subject != member.subject:
+                msg = "vector_reference_ambiguous_version"
+                raise VectorError(msg)
+            inputs[file.id] = frozen.model_copy(update={"subject": member.subject})
+    return tuple(inputs[key] for key in sorted(inputs))

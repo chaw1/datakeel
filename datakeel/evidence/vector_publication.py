@@ -22,8 +22,10 @@ from datakeel.core.vector_results import (
     VectorNodeReport,
     VectorPair,
     VectorSample,
+    VectorSetOutput,
 )
 from datakeel.evidence.vector_duplicate import pair_drafts
+from datakeel.evidence.vector_set_publication import set_drafts
 from datakeel.pipeline.models import Node
 
 
@@ -33,26 +35,24 @@ def vector_publication(
     products: tuple[VectorCacheProduct, ...],
     samples: tuple[VectorSample, ...],
     report: VectorNodeReport,
-    pairs: tuple[VectorPair, ...] = (),
+    pairs: tuple[VectorPair, ...] | VectorSetOutput = (),
 ) -> PendingExtraction:
     """Record canonical compute identity separately from assertion projection identity."""
     event_id = new_id()
-    drafts = pair_drafts(samples, pairs)
+    findings = pairs.findings if isinstance(pairs, VectorSetOutput) else ()
+    scope = pairs.scope if isinstance(pairs, VectorSetOutput) else None
+    pairs = () if isinstance(pairs, VectorSetOutput) else pairs
+    drafts = (
+        pair_drafts(samples, pairs)
+        if node.operator == "evidence.semantic_duplicate"
+        else set_drafts(samples, findings, str(node.operator))
+    )
     assertions = tuple(
         Assertion(**draft.model_dump(), producer_event_id=event_id, run_id=context.task_id)
         for draft in drafts
     )
-    entries = (
-        _entries(samples, assertions, report.canonical_hash or vector_hash(None))
-        if node.operator == "evidence.semantic_duplicate"
-        else ()
-    )
-    quality = ExtractionCounts(
-        inputs=report.counts.input,
-        extracted=report.counts.eligible - report.eligible_cache_hits,
-        failed=report.counts.failed,
-        skipped_cached=report.eligible_cache_hits,
-        vector=report,
+    entries = _entries(
+        samples, assertions, report.canonical_hash or vector_hash(None), str(node.operator)
     )
     event = LineageEvent(
         event_id=event_id,
@@ -71,7 +71,7 @@ def vector_publication(
             "contract": "we-e1-v1",
             "parameters": node.params,
         },
-        quality=quality.model_dump(mode="json"),
+        quality=_quality(report).model_dump(mode="json"),
     )
     return PendingExtraction(
         event=event,
@@ -82,14 +82,24 @@ def vector_publication(
             vector_products=products,
             vector_samples=samples,
             vector_pairs=pairs,
+            vector_findings=findings,
+            vector_scope=scope,
         ),
     )
 
 
 def _entries(
-    samples: tuple[VectorSample, ...], assertions: tuple[Assertion, ...], canonical_hash: str
+    samples: tuple[VectorSample, ...],
+    assertions: tuple[Assertion, ...],
+    canonical_hash: str,
+    operator: str,
 ) -> tuple[EvidenceCacheEntry, ...]:
-    extractor = ExtractorRef(id="evidence.semantic_duplicate", version="we-e2-fake-v1")
+    if operator == "evidence.vector_embed":
+        return ()
+    extractor = ExtractorRef(
+        id=operator,
+        version="we-e2-fake-v1" if operator == "evidence.semantic_duplicate" else "we-e3-sets-v1",
+    )
     inputs = tuple(
         EvidenceInput(role=sample.subject.asset_id, content_revision=sample.content_revision)
         for sample in samples
@@ -113,4 +123,14 @@ def _entries(
         )
         if inputs
         else ()
+    )
+
+
+def _quality(report: VectorNodeReport) -> ExtractionCounts:
+    return ExtractionCounts(
+        inputs=report.counts.input,
+        extracted=report.counts.eligible - report.eligible_cache_hits,
+        failed=report.counts.failed,
+        skipped_cached=report.eligible_cache_hits,
+        vector=report,
     )

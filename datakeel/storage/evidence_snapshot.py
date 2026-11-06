@@ -57,11 +57,13 @@ def _peer_splits(session: Session, keys: set[str]) -> dict[str, str]:
     return result
 
 
-def read_snapshot(session: Session, *, include_peer_splits: bool = False) -> EvidenceSnapshot:
+def read_snapshot(
+    session: Session, *, include_peer_splits: bool = False, validate_vectors: bool = True
+) -> EvidenceSnapshot:
     """Read active assertion statuses and cached facts once for a complete object query."""
     assertions: dict[str, list[Assertion]] = defaultdict(list)
     metadata: dict[str, dict[str, JsonValue]] = defaultdict(dict)
-    for assertion in read_assertions(session):
+    for assertion in read_assertions(session, validate_vectors=validate_vectors):
         assertions[identity(assertion.subject)].append(assertion)
         if assertion.predicate == "near_duplicate_of" and isinstance(assertion.object, AssetRef):
             assertions[identity(assertion.object)].append(assertion)

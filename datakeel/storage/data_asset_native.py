@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from datakeel.core.evidence_models import Assertion
 from datakeel.core.models import AssetRef, FileItem
+from datakeel.core.vector_assertion_rules import assertion_references
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.storage.ask_rows import AskAnswerRow
 from datakeel.storage.evidence_rows import AssertionRow
@@ -108,8 +109,5 @@ def _evidence_targets(session: Session, ref: AssetRef) -> tuple[AssetRef, ...]:
         assertion = session.get(AssertionRow, ref.asset_id)
         if assertion:
             fact = Assertion.model_validate(assertion.payload)
-            result.append(fact.subject)
-            if isinstance(fact.object, AssetRef):
-                result.append(fact.object)
-            result.extend(anchor.asset_ref for anchor in fact.anchors)
+            result.extend(assertion_references(fact))
     return tuple(result)

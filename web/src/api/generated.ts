@@ -4537,7 +4537,7 @@ export interface components {
             /** Id */
             id?: string;
             /** Measurement */
-            measurement?: components["schemas"]["CosineMeasurement"] | null;
+            measurement?: (components["schemas"]["CosineMeasurement"] | components["schemas"]["ClusterMeasurement"] | components["schemas"]["OutlierMeasurement"] | components["schemas"]["CoverageMeasurement"]) | null;
             /** Object */
             object: components["schemas"]["AssetRef"] | components["schemas"]["EvidenceValue"];
             /** Predicate */
@@ -5535,6 +5535,30 @@ export interface components {
             matrix: number[][];
         };
         /**
+         * ClusterMeasurement
+         * @description Describe membership in a stable reference-only DBSCAN cluster.
+         */
+        ClusterMeasurement: {
+            /** Config Hash */
+            config_hash: string;
+            /** Eps */
+            eps: number;
+            /** Members */
+            members: components["schemas"]["AssetRef"][];
+            /** Min Samples */
+            min_samples: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "core" | "border";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "cluster_config";
+        };
+        /**
          * CocoBox
          * @description Store standard absolute xywh coordinates with explicit image/category identities.
          */
@@ -6124,6 +6148,26 @@ export interface components {
             mapped_columns: number;
             /** Total Columns */
             total_columns: number;
+        };
+        /**
+         * CoverageMeasurement
+         * @description Measure a candidate only relative to the complete frozen reference closure.
+         */
+        CoverageMeasurement: {
+            nearest: components["schemas"]["AssetRef"];
+            /** Reference Digest */
+            reference_digest: string;
+            /** References */
+            references: components["schemas"]["VectorMember"][];
+            /** Similarity */
+            similarity: number;
+            /** Threshold */
+            threshold: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "coverage";
         };
         /**
          * CustomOperatorConfiguration
@@ -10404,6 +10448,23 @@ export interface components {
             schemaURL: string;
         };
         /**
+         * OutlierMeasurement
+         * @description Record DBSCAN noise without treating it as corruption.
+         */
+        OutlierMeasurement: {
+            /** Config Hash */
+            config_hash: string;
+            /** Eps */
+            eps: number;
+            /** Min Samples */
+            min_samples: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "outlier_config";
+        };
+        /**
          * OutlierPolicy
          * @description Tune the robust size, aspect-ratio and span-length outlier rules of one batch.
          *
@@ -13211,6 +13272,22 @@ export interface components {
             status: "eligible" | "input_failed";
         };
         /**
+         * VectorMember
+         * @description Freeze versioned identity, source revision, state and original byte hash.
+         */
+        VectorMember: {
+            /** Content Revision */
+            content_revision: string;
+            /** Revision */
+            revision: string;
+            /**
+             * State Revision
+             * @default 0
+             */
+            state_revision: number;
+            subject: components["schemas"]["AssetRef"];
+        };
+        /**
          * VectorNodeReport
          * @description Distinguish invented fake usage and contract status from real quality or latency.
          */
@@ -13262,7 +13339,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "success" | "partial_success" | "failed";
+            status: "success" | "partial_success" | "failed" | "insufficient";
         };
         /**
          * VectorTaskReport
@@ -13291,7 +13368,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "success" | "partial_success" | "failed" | "cancelled";
+            status: "pending" | "success" | "partial_success" | "failed" | "cancelled" | "insufficient";
         };
         /**
          * VerificationDetail

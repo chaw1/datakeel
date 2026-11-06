@@ -53,13 +53,19 @@ def vector_task_report(db: Database, task_id: str) -> VectorTaskReport | None:
             if task.state == "CANCELLED"
             else "partial_success"
             if any(node.status == "partial_success" for node in nodes)
+            else "insufficient"
+            if task.state == "COMPLETED" and any(node.status == "insufficient" for node in nodes)
             else "success"
             if task.state == "COMPLETED"
             else "pending"
         )
         return VectorTaskReport(
             status=status,
-            reason=task.error.removeprefix("VectorError: ") if task.error else None,
+            reason=task.error.removeprefix("VectorError: ")
+            if task.error
+            else "vector_insufficient_samples"
+            if status == "insufficient"
+            else None,
             nodes=nodes,
             attempts=list_vector_attempts(db, task_id),
         )
