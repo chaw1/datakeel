@@ -18,7 +18,7 @@ from datakeel.pipeline.models import Node
 from datakeel.storage.custom_store import approved_in_session, record_custom_run
 from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.database import Database
-from datakeel.storage.task_queue import Lease
+from datakeel.worker_store.task_queue import Lease
 
 
 def _inputs(files: list[FileItem], limits: SandboxLimits) -> tuple[SandboxInput, ...]:

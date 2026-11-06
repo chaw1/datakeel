@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
 BASELINE = Path("contracts/persistence/schema-baseline.json")
 DATASET_SLICE_BUDGET = 4022
+WORKER_SLICE_BUDGET = 1096
 CANONICAL = Path("datakeel/persistence/canonical_tables.json")
 
 
@@ -72,7 +73,8 @@ def violations() -> list[str]:
             p
             for package in ("persistence", "dataset_store", "worker_store")
             for p in Path(f"datakeel/{package}").glob("*.py")
-            if package == "persistence" or p.name in {"__init__.py", "rows.py", "schema.py"}
+            if (package == "persistence" and p.name not in {"task_completion.py", "task_queue.py"})
+            or p.name in {"__init__.py", "rows.py", "schema.py"}
         ),
     ]
     if (
@@ -81,6 +83,17 @@ def violations() -> list[str]:
     ):
         problems.append("Schema slice source exceeds the frozen 980-line budget")
     problems.extend(_dataset_budget_violations())
+    worker_paths = [
+        *(
+            p
+            for p in Path("datakeel/worker_store").glob("*.py")
+            if p.name not in {"__init__.py", "rows.py", "schema.py"}
+        ),
+        Path("datakeel/persistence/task_completion.py"),
+        Path("datakeel/persistence/task_queue.py"),
+    ]
+    if sum(len(p.read_text().splitlines()) for p in worker_paths) > WORKER_SLICE_BUDGET:
+        problems.append("Worker slice source exceeds its frozen 1096-line budget")
     problems.extend(_row_import_violations(baseline["legacy_row_imports"]))
     problems.extend(_database_violations())
     return problems

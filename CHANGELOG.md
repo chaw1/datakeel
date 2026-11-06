@@ -19,6 +19,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Task leases, queries and terminal transitions now live in `worker_store`. Explicit persistence
+  wiring routes frozen completion requests to pipeline/evidence, KG, DQ and datasheet adapters
+  in the existing queue transaction. Ambiguous associations and mismatched products fail closed;
+  lease fencing, terminal/outbox bytes and subsequent action receipts retain their ordering.
 - Dataset, version, lineage, upload and object-query adapters now live in `dataset_store`,
   with frozen dataset contracts in `datasets`. Schema, public payloads, object identities and
   transaction/cleanup ordering remain unchanged. Focused rollback tests cover publication

@@ -16,9 +16,9 @@ from datakeel.dataset_store.datasets import persist_file
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.evidence.query_models import EvidenceQueryResult, EvidenceSample
 from datakeel.ontology.functions import invoke_function
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.storage.evidence_import import source_manifest
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.worker.runner import execute
 from tests.asgi_client import TestClient
 from tests.evidence.interface_fixtures import seed_query_evidence

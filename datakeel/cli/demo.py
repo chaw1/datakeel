@@ -37,9 +37,9 @@ from datakeel.persistence import migrate
 from datakeel.sample import generate_samples
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.evidence_runs import extraction_report
-from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
+from datakeel.worker_store.task_queries import query_task
 
 STARTUP_TIMEOUT = 60
 DEMO_NAME = "Field notes · generated demo"

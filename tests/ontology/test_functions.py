@@ -20,7 +20,7 @@ from datakeel.dataset_store.object_queries import evaluate
 from datakeel.dataset_store.rows import FileStateRow
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import ObjectSet
-from datakeel.storage.task_queue import DatabaseQueue
+from datakeel.persistence.task_queue import DatabaseQueue
 
 
 def test_list_datasets_when_called_returns_dataset_asset_refs(

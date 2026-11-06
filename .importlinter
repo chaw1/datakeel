@@ -10,7 +10,8 @@ layers =
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp | datakeel.intents
     datakeel.persistence
     datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.standards | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.prelabel | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory | datakeel.label_drafts
-    datakeel.dataset_store | datakeel.worker_store
+    datakeel.worker_store
+    datakeel.dataset_store
     datakeel.datasets | datakeel.lineage
     datakeel.governance
     datakeel.quality
@@ -159,7 +160,6 @@ ignore_imports =
     datakeel.workflows.execution -> datakeel.ontology.tool_models
     datakeel.workflows.execution -> datakeel.ontology.tooling
     datakeel.workflows.execution -> datakeel.storage.database
-    datakeel.workflows.execution -> datakeel.storage.task_queries
 # Recovery projects signed records into pure shared policy, independent of conversations.
     datakeel.storage.workflow_recovery -> datakeel.actions.recovery
     datakeel.storage.workflow_recovery -> datakeel.actions.models
@@ -218,14 +218,13 @@ ignore_imports =
 # Read-only ontology functions use typed storage projections; object schemas reuse public views.
     datakeel.ontology.functions -> datakeel.storage.database
     datakeel.ontology.functions -> datakeel.storage.governance_service
-    datakeel.ontology.functions -> datakeel.storage.task_queries
     datakeel.ontology.tool_models -> datakeel.actions.models
 # P1 persistence composes typed governance/quality/lineage projections; DAG validation uses operators.
     datakeel.pipeline.execution -> datakeel.operators
     datakeel.pipeline.models -> datakeel.operators.base
     datakeel.pipeline.validation -> datakeel.operators
 # Indexed catalog adjacency consumes the same frozen graph query as lineage reads.
-    datakeel.storage.task_queue -> datakeel.pipeline
+    datakeel.worker_store.task_queue -> datakeel.pipeline
 # Persistence implements action transactions with pure policy/receipt helpers and ontology projections.
     datakeel.storage.action_approvals -> datakeel.actions.models
     datakeel.storage.action_execution -> datakeel.actions.models
@@ -272,7 +271,7 @@ ignore_imports =
     datakeel.evidence.runtime_inputs -> datakeel.storage.objects
     datakeel.evidence.runtime_publication -> datakeel.pipeline.models
 # Global-pair extraction requires one complete input shard at both submission boundaries.
-    datakeel.storage.task_queue -> datakeel.pipeline.sharding
+    datakeel.worker_store.task_queue -> datakeel.pipeline.sharding
     datakeel.storage.action_planning -> datakeel.pipeline.sharding
     datakeel.storage.action_operations -> datakeel.pipeline.sharding
 # The evidence preset binds each manifest to its independently versioned deterministic extractor.
@@ -604,6 +603,28 @@ ignore_imports =
     datakeel.dataset_store.upload_service -> datakeel.storage.objects
     datakeel.dataset_store.version_diff -> datakeel.storage.database
     datakeel.dataset_store.version_diff -> datakeel.storage.evidence_rows
+
+# S3 queue/read adapters retain the neutral engine until its infrastructure slice.
+    datakeel.worker_store.task_queue -> datakeel.storage.database
+    datakeel.worker_store.task_queries -> datakeel.storage.database
+
+[importlinter:contract:worker-store-app-boundary]
+name = Worker persistence never depends on application or completion handlers
+type = forbidden
+source_modules =
+    datakeel.worker_store
+forbidden_modules =
+    datakeel.api
+    datakeel.worker
+    datakeel.cli
+    datakeel.mcp
+    datakeel.persistence
+    datakeel.storage.kg_publication
+    datakeel.storage.kg_store
+    datakeel.storage.dq_results
+    datakeel.storage.datasheet_jobs
+    datakeel.storage.evidence_store
+allow_indirect_imports = True
 
 [importlinter:contract:runtime-framework-isolation]
 name = Only runtime imports graph and chat-model frameworks

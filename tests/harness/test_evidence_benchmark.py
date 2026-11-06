@@ -18,6 +18,7 @@ from datakeel.core.models import AssetRef, new_id, utcnow
 from datakeel.harness import evidence_evaluation
 from datakeel.harness.evidence_evaluation import evaluate_evidence_dataset
 from datakeel.harness.evidence_questions import load_evidence_questions
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_evaluations import (
@@ -26,7 +27,6 @@ from datakeel.storage.evidence_evaluations import (
 )
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.harness_evaluations import list_evaluations, save_evaluation
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.worker.runner import execute
 
 

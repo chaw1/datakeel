@@ -19,6 +19,7 @@ from datakeel.dataset_store.datasets import materialize_files
 from datakeel.dataset_store.rows import EventRow
 from datakeel.evidence.execution import EvidenceExecution
 from datakeel.operators.evidence import near_duplicate_hashes
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline import run_pipeline
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence import generate_samples
@@ -27,7 +28,6 @@ from datakeel.storage.evidence_import import import_evidence_samples, source_man
 from datakeel.storage.evidence_projection import rebuild_evidence
 from datakeel.storage.evidence_runs import extraction_report
 from datakeel.storage.evidence_store import list_assertions
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.worker.runner import execute
 
 

@@ -61,6 +61,7 @@ from scripts.training_mutations import TRAINING_MUTATIONS
 from scripts.training_source_mutations import TRAINING_SOURCE_MUTATIONS
 from scripts.training_text_mutations import TRAINING_TEXT_MUTATIONS
 from scripts.workbench_mutations import WORKBENCH_MUTATIONS
+from scripts.worker_completion_mutations import WORKER_COMPLETION_MUTATIONS
 
 FEATURE_MUTATIONS = (
     *KEYPOINT_MUTATIONS,
@@ -122,4 +123,5 @@ FEATURE_MUTATIONS = (
     *PLANNING_MUTATIONS,
     *INTENT_V020_MUTATIONS,
     *K9_MUTATIONS,
+    *WORKER_COMPLETION_MUTATIONS,
 )

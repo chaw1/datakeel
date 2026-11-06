@@ -22,7 +22,7 @@ from datakeel.core.errors import NotFoundError
 from datakeel.dataset_store.object_queries import evaluate, evaluate_in_session
 from datakeel.dataset_store.rows import DatasetRow, FileStateRow, VersionRow
 from datakeel.ontology.models import ObjectSet
-from datakeel.storage.task_queue import DatabaseQueue
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
 
 

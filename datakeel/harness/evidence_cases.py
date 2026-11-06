@@ -7,13 +7,13 @@ from pathlib import Path
 
 from datakeel.core.errors import ExecutionError
 from datakeel.core.harness_eval import CaseFixture
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence.generator import generate_samples
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_import import import_evidence_samples, source_manifest
-from datakeel.storage.task_queries import query_task
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.worker.runner import execute
+from datakeel.worker_store.task_queries import query_task
 
 
 def seed_evidence_case(db: Database, directory: Path) -> CaseFixture:
