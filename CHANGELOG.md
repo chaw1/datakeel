@@ -18,6 +18,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Legacy trace compatibility tests use complete schema baselines, and production schema mutation
+  anchors now target the frozen SQLite DDL used by generated fixtures.
 - Dataset Row import checks now resolve module aliases, version summaries retain internal
   row compatibility, and publication reuses prepared file models without reparsing manifests.
 - Restore PostgreSQL W3 application initialization and repeat startup without SQLite-only

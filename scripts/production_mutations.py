@@ -8,9 +8,15 @@ from scripts.mutation_models import Mutation
 PRODUCTION_MUTATIONS = (
     Mutation(
         name="production-revision-append-only",
-        path="storage/production_rows.py",
-        before='for table in ("production_revisions", "production_reviews"):',
-        after='for table in ("production_reviews",):',
+        path="versioning/sqlite_b1.json",
+        before=(
+            "CREATE TRIGGER production_revisions_no_update BEFORE UPDATE "
+            "ON production_revisions BEGIN"
+        ),
+        after=(
+            "CREATE TRIGGER production_revisions_no_update BEFORE UPDATE "
+            "ON production_revisions WHEN 0 BEGIN"
+        ),
         case=(
             "tests/storage/test_production_workflow.py::"
             "test_revision_database_rejects_update_and_delete[UPDATE]"
@@ -19,9 +25,9 @@ PRODUCTION_MUTATIONS = (
     ),
     Mutation(
         name="production-exclusive-assignment",
-        path="storage/production_rows.py",
-        before='"stage",\n            unique=True,',
-        after='"stage",\n            unique=False,',
+        path="versioning/sqlite_b1.json",
+        before="CREATE UNIQUE INDEX production_unique_active_assignment ON",
+        after="CREATE INDEX production_unique_active_assignment ON",
         case=(
             "tests/storage/test_production_workflow.py::"
             "test_database_enforces_one_active_assignment_per_task_stage"
