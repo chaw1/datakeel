@@ -50,14 +50,14 @@ cli
         └── core                                 （模型、错误、ID、时间，无任何向上依赖）
 ```
 
-`.importlinter` 定义 layers 合同；同层之间的依赖必须列明为显式例外并写理由。
+`.importlinter` 定义 layers 合同；同层之间的依赖必须列明为显式例外并写理由。S2 的 datasets、lineage、governance、quality 纯规则层位于适配器之下，semantic 位于领域之下；纯规则不得导入存储，dataset_store 不得导入 API/worker/CLI/MCP。
 
 `datakeel/runtime/` 和 `datakeel/extraction_runtime/` 是允许直接导入模型框架与 SDK 的两个适配目录；后者只负责抽取传输，不使用会话图。forbidden 合同扫描 `langgraph`、`langgraph_sdk`、`langchain_core`、`langchain_openai`、`langchain_anthropic`、`langsmith`、`openai`、`anthropic` 和 `tiktoken` 的外部导入，使其它模块只能经 Datakeel 的类型化接口使用它们。`kg` 领域包不导入这些框架或 runtime。checkpoint 数据库模型与 bytes 读写函数仍在 `storage/checkpoint_store.py`，不得导入框架。
 
 ## 4. 测试
 
 - `tests/` 目录结构镜像 `datakeel/`；每个公共模块至少一个测试文件。
-- 覆盖率总体 ≥ 85%（`--cov-fail-under`）；`core`、`lineage`、`actions`、`worker`、`harness`、`agent`、`runtime`、`workflows`、`routing`、`delegation`、`memory`、`kg`、`kg_eval`、`transcription`、`extraction_runtime`、`ontology`、`evidence`、`operators/evidence`、`catalog`、`metrics`、`ask` 与 `cli/evidence_benchmark.py`、`persistence`、`versioning`、`dataset_store` 与 `worker_store` 各 ≥ 90%，由 `scripts/check_coverage.py` 读 coverage.xml 判定并列入 `make check`。领域在 storage 层的事务实现同时计入相应模块，`checkpoint_*.py` 归入 runtime，`workflow_*.py` 归入 workflows，`memory_*.py` 归入 memory，`conversation_children.py` 归入 delegation，`kg_*.py` 归入 kg，`kg_eval*.py` 同时归入 kg_eval；报告缺失目标模块也判为失败。
+- 覆盖率总体 ≥ 85%（`--cov-fail-under`）；`core`、`lineage`、`actions`、`worker`、`harness`、`agent`、`runtime`、`workflows`、`routing`、`delegation`、`memory`、`kg`、`kg_eval`、`transcription`、`extraction_runtime`、`ontology`、`evidence`、`operators/evidence`、`catalog`、`metrics`、`ask` 与 `cli/evidence_benchmark.py`、`persistence`、`versioning`、`datasets`、`dataset_store` 与 `worker_store` 各 ≥ 90%，由 `scripts/check_coverage.py` 读 coverage.xml 判定并列入 `make check`。领域在 storage 层的事务实现同时计入相应模块，`checkpoint_*.py` 归入 runtime，`workflow_*.py` 归入 workflows，`memory_*.py` 归入 memory，`conversation_children.py` 归入 delegation，`kg_*.py` 归入 kg，`kg_eval*.py` 同时归入 kg_eval；报告缺失目标模块也判为失败。S2 迁出的 `dataset_store/events.py`、`lineage_service.py` 仍计入 lineage，`file_state.py` 仍计入 actions，`object_*.py` 仍计入 ontology；迁移不解除既有覆盖率责任。
 - 不用真实网络、真实 LLM、真实对象存储；全部走本机 fixture。真实服务集成测试单独标记 `@pytest.mark.integration`，默认不跑。
 - 每个 bug 修复附回归测试；每个 golden 用例过变异测试（故意改坏实现必须变红）。
 

@@ -13,13 +13,13 @@ import pytest
 from datakeel.core.annotation_models import AnnotationBatch, AnnotationRecord, OutlierPolicy
 from datakeel.core.annotation_sampling import AnnotationImportRequest, SamplingRequest
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage.annotation_sampling import (
     create_sampling_plan,
     ratio_sample_size,
     select_sample,
 )
 from datakeel.storage.annotation_store import get_annotation_quality, import_annotations
-from datakeel.storage.dataset_service import import_paths, list_versions
 
 if TYPE_CHECKING:
     from pathlib import Path

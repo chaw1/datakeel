@@ -12,12 +12,12 @@ from sqlalchemy import select
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_inputs import SampleSidecars
 from datakeel.core.models import AssetRef, FileItem, LineageEvent
+from datakeel.dataset_store.datasets import dataset_dict, persist_file
+from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.datasets.views import DatasetView
 from datakeel.storage.database import Database
-from datakeel.storage.datasets import dataset_dict, persist_file
-from datakeel.storage.events import append_event
 from datakeel.storage.objects import ObjectStore, object_store
-from datakeel.storage.views import DatasetView
 
 IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp"})
 

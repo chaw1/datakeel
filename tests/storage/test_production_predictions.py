@@ -19,11 +19,12 @@ from datakeel.actions.production_parameters import SaveRevisionParams, SubmitTas
 from datakeel.core.errors import ConflictError
 from datakeel.core.production_catalog_models import PredictionFile
 from datakeel.core.production_models import AnnotationRevision
+from datakeel.dataset_store.dataset_service import require_dataset
 from datakeel.dataset_store.rows import VersionRow
+from datakeel.dataset_store.version_diff import version_summary
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.annotation_store import get_annotation_quality
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.production_catalog_plans import (
     catalog_manifest,
     catalog_requires_approval,
@@ -39,7 +40,6 @@ from datakeel.storage.production_rows import (
     ProductionRevisionRow,
 )
 from datakeel.storage.production_tasks import require_project, require_task
-from datakeel.storage.version_diff import version_summary
 from tests.storage.production_catalog_fixtures import catalog_project
 
 

@@ -9,9 +9,9 @@ import pytest
 from sqlalchemy import select
 
 from datakeel.api.app import create_app
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from tests.api.release_budget_helpers import FILES, GIB, large_version
 from tests.asgi_client import TestClient
 

@@ -9,9 +9,9 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.dataset_store.dataset_service import import_paths
+from datakeel.dataset_store.lineage_service import export_events, record_event
 from datakeel.lineage.exports import export_croissant
-from datakeel.storage.dataset_service import import_paths
-from datakeel.storage.lineage_service import export_events, record_event
 
 if TYPE_CHECKING:
     from pathlib import Path

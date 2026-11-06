@@ -6,13 +6,13 @@
 from scripts.mutation_models import Mutation
 
 _CORE = "tests/core/test_image_orientation.py::"
-_RECORDS = "tests/storage/test_orientation_records.py::"
-_DATASETS = "tests/storage/test_orientation_datasets.py::"
+_RECORDS = "tests/dataset_store/test_orientation_records.py::"
+_DATASETS = "tests/dataset_store/test_orientation_datasets.py::"
 _EXPORT = "tests/training/test_export_upright.py::"
 _EVERY = _EXPORT + "test_every_exif_orientation_exports_pixels_and_boxes_in_one_upright_frame"
 _UNROTATED = "geometry.model_copy(update={'orientation': 1})"
 _IMAGEFOLDER = _EXPORT + "test_classification_imagefolder_is_upright_for_a_loader_that_ignores_exif"
-_LEGACY = "tests/storage/test_orientation_legacy_reads.py::"
+_LEGACY = "tests/dataset_store/test_orientation_legacy_reads.py::"
 _UPGRADE = (
     "tests/evidence/test_execution.py::"
     "test_upgrade_re_extracts_stored_frame_boxes_instead_of_reusing_v0_18_cache"
@@ -53,7 +53,7 @@ ORIENTATION_MUTATIONS = (
     ),
     Mutation(
         name="orientation-import-records-upright-size",
-        path="storage/image_geometry.py",
+        path="dataset_store/image_geometry.py",
         before='        "width": geometry.width,\n',
         after='        "width": geometry.stored_width,\n',
         case=_RECORDS + "test_import_records_upright_size_stored_size_and_orientation",
@@ -61,7 +61,7 @@ ORIENTATION_MUTATIONS = (
     ),
     Mutation(
         name="orientation-older-imports-backfill-from-header",
-        path="storage/image_geometry.py",
+        path="dataset_store/image_geometry.py",
         before="        return _object_geometry(key)\n",
         after="        return None\n",
         case=_RECORDS + "test_older_imports_backfill_geometry_from_the_header",
@@ -69,7 +69,7 @@ ORIENTATION_MUTATIONS = (
     ),
     Mutation(
         name="orientation-served-pixels-transposed",
-        path="storage/image_geometry.py",
+        path="dataset_store/image_geometry.py",
         before="        upright = ImageOps.exif_transpose(image)\n",
         after="        upright = image.copy()\n",
         case=_RECORDS + "test_served_canvas_and_thumbnail_match_what_a_browser_shows",
@@ -175,7 +175,7 @@ ORIENTATION_MUTATIONS = (
     ),
     Mutation(
         name="orientation-served-jpeg-stays-jpeg",
-        path="storage/image_geometry.py",
+        path="dataset_store/image_geometry.py",
         before='        if source_format == "JPEG" and upright.mode in _JPEG_MODES:\n',
         after="        if False:\n",
         case=_RECORDS + "test_rotated_jpeg_is_served_as_upright_jpeg_and_revalidated",
@@ -223,7 +223,7 @@ ORIENTATION_MUTATIONS = (
     ),
     Mutation(
         name="orientation-v0-18-file-list-reads-upright",
-        path="storage/dataset_service.py",
+        path="dataset_store/dataset_service.py",
         before="    if added is not None:\n",
         after="    if False:\n",
         case=_LEGACY + "test_v0_18_file_list_reads_upright_size_stored_size_and_orientation",

@@ -12,8 +12,8 @@ import pytest
 
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.core.errors import NotFoundError, ValidationError
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.kg.loader import get_profile
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.kg_store import list_runs
 from datakeel.storage.objects import object_store

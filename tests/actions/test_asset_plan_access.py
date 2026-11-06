@@ -17,13 +17,13 @@ from datakeel.api.app import create_app
 from datakeel.core.data_asset_models import AccessContext, AssetUsageQuery
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.mcp import create_server
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.action_rows import ActionPlanRow, ApprovalRow
 from datakeel.storage.data_asset_access import list_usage
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from tests.assets.action_helpers import ActionSource, seed_action_source, source_params
 from tests.assets.entry_helpers import GrantState, grant, publish, revoke
 

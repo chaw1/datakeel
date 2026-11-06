@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.agent_models import ModelRequest, ModelResponse
 from datakeel.core.intent_models import IntentResult, PageContext
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.intents import selectors
 from datakeel.intents.answers import answer_text
 from datakeel.intents.catalog import CANDIDATE_LIMIT, build_catalog, candidates
@@ -19,7 +20,6 @@ from datakeel.intents.planner import ModelAccess, PlannerTurn, plan_turn
 from datakeel.intents.recipes import recipe_covers
 from datakeel.intents.validate import check_step
 from datakeel.ontology.models import ObjectSet
-from datakeel.storage.object_queries import evaluate
 from tests.intents.support import SETUP, images, model_plan, run_to_end, team
 from tests.production_helpers import production_fixture
 from tests.production_team_support import ServiceRunner

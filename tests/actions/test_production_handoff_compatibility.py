@@ -14,11 +14,11 @@ from datakeel.actions.models import ActionContext, ApprovalDecision, ExecuteRequ
 from datakeel.core.annotation_models import AnnotationBatch
 from datakeel.core.models import BoundaryModel, JsonDocument, LineageEvent
 from datakeel.core.production_models import AnnotationRevision, Project
+from datakeel.dataset_store.events import all_events
 from datakeel.delivery.reconcile import reconcile
 from datakeel.storage.action_rows import ActionAuditRow
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.delivery_service import export_release, reconcile_release
-from datakeel.storage.events import all_events
 from datakeel.storage.production_queries import list_revisions, list_tasks
 from datakeel.storage.release_service import get_release
 from tests.production_flow_support import action_payload, personal_flow

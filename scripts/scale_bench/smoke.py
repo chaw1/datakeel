@@ -12,7 +12,7 @@ from time import perf_counter
 from rich.console import Console
 
 from datakeel.core.models import FileItem
-from datakeel.storage import version_diff
+from datakeel.dataset_store import version_diff
 from scripts.scale_bench.common import fingerprint
 from scripts.scale_bench.datasets import run as dataset_run
 from scripts.scale_bench.isolation import isolated

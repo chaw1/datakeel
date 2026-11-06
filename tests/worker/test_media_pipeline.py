@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 
 from datakeel.cli.media_demo import run_demo
 from datakeel.core.media_models import MediaSummary
+from datakeel.dataset_store.dataset_service import import_paths, list_versions, task_artifacts
+from datakeel.dataset_store.lineage_service import get_graph
 from datakeel.pipeline import Node, Pipeline, run_pipeline
 from datakeel.pipeline.media import media_pipeline
-from datakeel.storage.dataset_service import import_paths, list_versions, task_artifacts
-from datakeel.storage.lineage_service import get_graph
 from datakeel.storage.task_queries import query_task
 from datakeel.worker.observations import Observations
 from datakeel.worker.queue import DatabaseQueue
@@ -140,9 +140,9 @@ def test_single_recording_uses_media_pipeline_without_alignment(
 
 def test_duplicate_audio_keeps_source_duration_in_report(db: Database, tmp_path: Path) -> None:
     """Retain both measured originals while publishing only one cleaned audio copy."""
+    from datakeel.dataset_store.datasets import materialize_files  # noqa: PLC0415  # Typed stored files.
     from datakeel.operators.media.tools import run_tool  # noqa: PLC0415  # Local generated fixture.
     from datakeel.quality import score_quality  # noqa: PLC0415  # Direct report assertion.
-    from datakeel.storage.datasets import materialize_files  # noqa: PLC0415  # Typed stored files.
 
     first, second = tmp_path / "first.wav", tmp_path / "second.wav"
     run_tool(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=d=1", str(first)])

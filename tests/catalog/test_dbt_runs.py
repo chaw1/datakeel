@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from datakeel.catalog.metadata_service import import_dbt
 from datakeel.core.metadata_imports import DbtImportRequest
 from datakeel.core.models import JsonDocument
-from datakeel.storage.events import all_events
+from datakeel.dataset_store.events import all_events
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database

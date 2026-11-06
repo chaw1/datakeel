@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pydantic import JsonValue
 
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 from datetime import UTC, datetime, timedelta
 
@@ -19,10 +19,9 @@ import pytest
 from sqlalchemy import select
 
 from datakeel.core.errors import NotFoundError
-from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.dataset_store.object_queries import evaluate, evaluate_in_session
+from datakeel.dataset_store.rows import DatasetRow, FileStateRow, VersionRow
 from datakeel.ontology.models import ObjectSet
-from datakeel.storage.file_state import FileStateRow
-from datakeel.storage.object_queries import evaluate, evaluate_in_session
 from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
 

@@ -16,11 +16,11 @@ from datakeel.core.catalog_models import SourceProperties
 from datakeel.core.catalog_projection import snapshot_events
 from datakeel.core.errors import ExecutionError
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.events import all_events
 from datakeel.sample_enterprise import EnterpriseGold, EnterpriseSample
 from datakeel.storage.ask_store import get_answer
 from datakeel.storage.catalog_store import publish_snapshot, read_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 from datakeel.storage.metric_store import (
     get_metric,
     rollback_metric_in_session,

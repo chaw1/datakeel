@@ -18,15 +18,15 @@ from rich.console import Console
 from datakeel.core.errors import ExecutionError, ValidationError
 from datakeel.core.models import BoundaryModel
 from datakeel.core.settings import get_settings
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
+from datakeel.dataset_store.lineage_service import get_graph
 from datakeel.lineage.models import GraphQuery
 from datakeel.operators.pointcloud.io import dump_cloud
 from datakeel.operators.pointcloud.models import CloudField, PointCloud
 from datakeel.persistence import migrate
 from datakeel.pipeline.image_pointcloud import image_pointcloud_pipeline
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.governance_service import get_quality, get_report
-from datakeel.storage.lineage_service import get_graph
 from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker

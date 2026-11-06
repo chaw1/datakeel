@@ -21,15 +21,15 @@ from datakeel.agent.service import (
 from datakeel.core.agent_models import ConversationCreate, MessageInput, ModelResponse, ResumeInput
 from datakeel.core.errors import AuthorizationError, ValidationError
 from datakeel.core.settings import Settings
+from datakeel.dataset_store.dataset_service import list_files
 from datakeel.runtime.graph import AgentGraph
 from datakeel.storage.conversation_authorization import list_audit
-from datakeel.storage.dataset_service import list_files
 from tests.agent.test_service import action_script
 
 if TYPE_CHECKING:
     from datakeel.agent.models import AgentEvent
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 def pause(db: Database, dataset_id: str) -> tuple[str, MessageInput, ActionPlan, list[AgentEvent]]:

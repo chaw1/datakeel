@@ -14,11 +14,11 @@ from datakeel.agent.tools import deferred_tools, resident_tools
 from datakeel.core.agent_models import ConversationCreate, MessageInput, ModelRequest
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.harness.annotation_cases import seed_annotation_qa_demo
 from datakeel.ontology.annotation_demo import respond_annotation_quality
 from datakeel.ontology.functions import invoke_function
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 
 
 def test_annotation_read_is_deferred_version_scoped_and_has_no_business_writes(

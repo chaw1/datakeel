@@ -19,10 +19,10 @@ from datakeel.core.agent_models import ConversationCreate, ModelResponse, ToolCa
 from datakeel.core.data_asset_models import AssetUsageQuery
 from datakeel.core.memory_models import MemoryCreate
 from datakeel.core.models import AssetRef, JsonDocument, utcnow
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.memory.service import create_memory, delete_memory
 from datakeel.storage.conversation_store import get
 from datakeel.storage.data_asset_access import list_usage
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.memory_rows import MemoryRow
 from tests.assets.entry_helpers import grant, publish, revoke
 

@@ -8,9 +8,9 @@ from pathlib import Path
 from datakeel.actions.models import ActionPlan
 from datakeel.api.app import create_app
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.dataset_service import DatasetInput, create_dataset
 from datakeel.harness.training_cases import seed_training_case
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import DatasetInput, create_dataset
 from tests.asgi_client import TestClient
 from tests.assets.entry_helpers import grant, publish, revoke
 

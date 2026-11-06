@@ -12,11 +12,11 @@ from datakeel.agent.tools import ToolCatalog
 from datakeel.core.agent_models import ConversationCreate, ToolCall
 from datakeel.core.llm_data_governance import TrainingAnalysisRequest, TrainingEvaluationRequest
 from datakeel.core.models import AssetRef, JsonDocument, new_id, utcnow
+from datakeel.dataset_store.dataset_service import import_paths, list_files, list_versions
 from datakeel.dataset_store.rows import VersionRow
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.conversation_store import get
-from datakeel.storage.dataset_service import import_paths, list_files, list_versions
 from datakeel.storage.governance_service import read_governance
 from datakeel.storage.llm_data_evaluations import register_evaluation
 from datakeel.storage.llm_data_reads import read_training_result

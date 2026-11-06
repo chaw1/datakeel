@@ -19,10 +19,10 @@ from datakeel.core.models import JsonDocument, new_id, utcnow
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.core.production_reads import ProductionObjectQuery
 from datakeel.core.standard_models import CodeEntry, CodeList, FieldStandard, StandardsContract
+from datakeel.dataset_store.dataset_service import list_files, list_versions
 from datakeel.label_drafts.model import model_draft
 from datakeel.label_drafts.models import CategorySource, DraftInputs, SampleSource
 from datakeel.storage.annotation_rows import AnnotationBatchRow
-from datakeel.storage.dataset_service import list_files, list_versions
 from datakeel.storage.production_objects import production_objects
 from tests.intents.support import images, plan, run_to_end
 from tests.production_team_support import ServiceRunner

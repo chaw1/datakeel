@@ -13,10 +13,10 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
 from datakeel.core.training_models import SplitRatios, SplitRequest
+from datakeel.dataset_store.dataset_service import list_versions
 from datakeel.ontology.training_functions import invoke_training
 from datakeel.ontology.training_parameters import TrainingDistributionParams, TrainingLeakageParams
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_versions
 from datakeel.storage.training_store import compare_splits, create_split, get_split, list_splits
 
 

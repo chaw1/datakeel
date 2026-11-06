@@ -10,6 +10,7 @@ from datakeel.core.catalog_projection import snapshot_events
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.metric_history_models import MetricHistory
 from datakeel.core.metric_models import MetricCard, MetricDefinition, MetricMutation, SemanticLayer
+from datakeel.dataset_store.events import all_events
 from datakeel.metrics.projection import (
     SEMANTIC_SCOPE,
     build_snapshot,
@@ -23,7 +24,6 @@ from datakeel.storage.catalog_store import (
     read_snapshot,
 )
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 from datakeel.storage.metric_audit import audit_in_session
 
 

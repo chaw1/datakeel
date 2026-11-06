@@ -20,8 +20,8 @@ from datakeel.core.agent_models import (
 )
 from datakeel.core.memory_models import MemoryCreate
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.memory.service import create_memory, get_memory
-from datakeel.storage.dataset_service import import_paths
 from tests.agent.test_resume import pause_deletion
 from tests.delegation.test_execution import search
 from tests.memory.helpers import freeze_memory_clock

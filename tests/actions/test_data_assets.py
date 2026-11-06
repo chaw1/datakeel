@@ -19,6 +19,7 @@ from datakeel.actions.service import approve_plan, execute_plan, prepare_action
 from datakeel.core.data_asset_models import AssetApplicationInput, DataAsset, DataAssetDefinition
 from datakeel.core.errors import AuthorizationError, ConflictError
 from datakeel.core.models import AssetRef, JsonDocument, utcnow
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.data_asset_grants import (
     control_history,
     get_application,
@@ -28,7 +29,6 @@ from datakeel.storage.data_asset_grants import (
 )
 from datakeel.storage.data_asset_store import asset_history, get_asset, list_assets
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 
 
 def _execute(db: Database, plan: ActionPlan, *, approve: bool = False) -> None:

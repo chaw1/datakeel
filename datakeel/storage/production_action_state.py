@@ -19,7 +19,7 @@ from datakeel.actions.production_parameters import (
     UpgradeProjectParams,
 )
 from datakeel.core.models import JsonDocument
-from datakeel.storage.object_projection import content_digest
+from datakeel.dataset_store.object_projection import content_digest
 from datakeel.storage.production_rows import (
     ProductionAssignmentRow,
     ProductionPackageRow,

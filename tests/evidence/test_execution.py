@@ -14,12 +14,12 @@ from sqlalchemy import select
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_execution import EvidenceExecutionContext
 from datakeel.core.evidence_models import EvidenceValue, ImageRegion
+from datakeel.dataset_store.datasets import materialize_files
 from datakeel.dataset_store.rows import EventRow
 from datakeel.evidence.execution import EvidenceExecution
 from datakeel.pipeline import run_pipeline
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence.generator import generate_samples
-from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_decisions import list_decisions
 from datakeel.storage.evidence_import import import_evidence_samples, source_manifest
 from datakeel.storage.evidence_projection import rebuild_evidence

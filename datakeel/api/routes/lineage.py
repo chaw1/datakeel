@@ -10,9 +10,9 @@ from fastapi import APIRouter, Query, Request, Response
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import JsonDocument, LineageEvent
+from datakeel.dataset_store import lineage_service as service
+from datakeel.datasets.views import View
 from datakeel.lineage.models import GraphQuery, GraphView
-from datakeel.storage import lineage_service as service
-from datakeel.storage.views import View
 
 router = APIRouter(prefix="/api", tags=["lineage"])
 

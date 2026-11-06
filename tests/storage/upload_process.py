@@ -14,9 +14,9 @@ from pydantic import Field
 from sqlalchemy import event
 
 from datakeel.core.models import BoundaryModel
+from datakeel.dataset_store.upload_files import upload_directory
 from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.database import Database
-from datakeel.storage.upload_files import upload_directory
 
 if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import DBAPIConnection

@@ -9,10 +9,10 @@ from datakeel.actions.registry import action_definitions
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.ontology.models import FrozenManifest, ObjectSet, OntologyRegistry
 from datakeel.ontology.registry import registry
 from datakeel.storage.data_asset_reads import authorize_query
-from datakeel.storage.object_queries import evaluate
 
 router = APIRouter(prefix="/api/ontology", tags=["ontology"])
 

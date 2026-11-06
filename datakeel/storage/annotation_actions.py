@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.core.annotation_sampling import AnnotationAcceptanceParams, SamplingInspection
 from datakeel.core.models import AssetRef, new_id, utcnow
+from datakeel.dataset_store.object_queries import evaluate_in_session
 from datakeel.ontology.models import FrozenManifest, ObjectSet, PropertyFilter
 from datakeel.storage.annotation_rows import AnnotationInspectionRow
 from datakeel.storage.annotation_sampling import require_inspection_plan
-from datakeel.storage.object_queries import evaluate_in_session
 
 
 def inspection_manifest(session: Session, params: AnnotationAcceptanceParams) -> FrozenManifest:

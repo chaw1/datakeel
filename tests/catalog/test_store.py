@@ -20,13 +20,13 @@ from datakeel.core.catalog_models import (
 from datakeel.core.catalog_projection import project_catalog
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.models import AssetRef, JsonDocument, LineageEvent
+from datakeel.dataset_store.events import all_events
+from datakeel.dataset_store.lineage_service import get_graph
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.lineage.models import GraphQuery
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.catalog_queries import get_object, impact, neighbors, read_objects
 from datakeel.storage.catalog_store import publish_snapshot, read_snapshot
-from datakeel.storage.events import all_events
-from datakeel.storage.lineage_service import get_graph
-from datakeel.storage.object_queries import evaluate
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database

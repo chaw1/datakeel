@@ -23,18 +23,18 @@ from datakeel.core.llm_data_governance import (
 )
 from datakeel.core.llm_data_models import TrainingConfig
 from datakeel.core.models import JsonDocument
-from datakeel.datasheets.templates import build_template
-from datakeel.ontology.functions import invoke_function
-from datakeel.persistence import migrate
-from datakeel.storage.dataset_service import (
+from datakeel.dataset_store.dataset_service import (
     import_paths,
     list_files,
     list_versions,
     resolve_download,
 )
+from datakeel.dataset_store.events import all_events
+from datakeel.dataset_store.rows import FileStateRow
+from datakeel.datasheets.templates import build_template
+from datakeel.ontology.functions import invoke_function
+from datakeel.persistence import migrate
 from datakeel.storage.datasheet_facts import extract_facts
-from datakeel.storage.events import all_events
-from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.governance_service import get_quality
 from datakeel.storage.llm_data_evaluations import list_evaluations, register_evaluation
 from datakeel.storage.llm_data_reads import read_training_quality

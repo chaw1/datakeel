@@ -9,8 +9,8 @@ from datakeel.core.kg_product import KGEntity
 from datakeel.core.kg_queries import KGQuery
 from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.models import BoundaryModel, LineageEvent
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 from datakeel.storage.evidence_store import read_assertions
 
 

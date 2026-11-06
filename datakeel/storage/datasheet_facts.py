@@ -12,10 +12,10 @@ from sqlalchemy.orm import Session
 from datakeel.core.datasheet_models import DatasheetChapter, DatasheetFact
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.dataset_service import require_dataset
 from datakeel.dataset_store.rows import DatasetRow, MetadataChangeRow, VersionRow
 from datakeel.governance import compliance_score
 from datakeel.quality import score_quality
-from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.datasheet_sources import source_facts
 from datakeel.storage.datasheet_values import make_fact
 from datakeel.storage.llm_data_facts import training_facts

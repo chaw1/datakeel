@@ -16,10 +16,10 @@ import jsonschema
 from rich.console import Console
 from sqlalchemy import select
 
+from datakeel.dataset_store.datasets import import_dataset
 from datakeel.http import Client
 from datakeel.persistence import migrate
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.datasets import import_dataset
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker_store.rows import ShardRow, TaskRow
 

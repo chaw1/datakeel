@@ -21,13 +21,13 @@ from datakeel.core.harness_eval import CaseFixture
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.standard_history_models import StandardsReport
 from datakeel.core.standard_models import StandardsContract
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.harness.resources import contract_path
 from datakeel.sample_standards import DEMO_MAPPINGS, generate_standards_source
 from datakeel.standards.loader import load_contract
 from datakeel.storage.catalog_queries import read_objects
 from datakeel.storage.catalog_store import publish_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_files
 from datakeel.storage.standard_queries import standards_report
 from datakeel.storage.standard_store import get_contract, list_mappings
 

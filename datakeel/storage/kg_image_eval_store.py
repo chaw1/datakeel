@@ -8,9 +8,9 @@ from datakeel.core.evidence_models import Assertion
 from datakeel.core.kg_contracts import KGSchema
 from datakeel.core.kg_product import ProductExtraction
 from datakeel.core.models import AssetRef, LineageEvent, new_id
+from datakeel.dataset_store.events import append_event
 from datakeel.kg.identity import assertion_identity, merge_drafts
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 from datakeel.storage.evidence_store import project_bundle, read_assertions, validated_bundle
 
 

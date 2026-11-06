@@ -24,15 +24,15 @@ from datakeel.agent.service import (
 from datakeel.core.agent_models import ConversationCreate, MessageInput, ModelResponse, ResumeInput
 from datakeel.core.errors import AuthorizationError, ConflictError, DatakeelError
 from datakeel.core.models import JsonDocument, utcnow
+from datakeel.dataset_store.dataset_service import list_files
 from datakeel.storage.action_rows import ActionPlanRow, ApprovalRow
 from datakeel.storage.conversation_authorization import list_audit
-from datakeel.storage.dataset_service import list_files
 from datakeel.storage.tool_invocations import list_invocations
 from tests.agent.test_service import action_script
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 ForgedCase = Literal["no_approval", "digest_mismatch", "expired", "actor_mismatch", "foreign_plan"]
 

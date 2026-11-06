@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datakeel.core.models import FileItem
-from datakeel.storage.dataset_service import import_paths, list_files
-from datakeel.storage.views import DatasetView
+from datakeel.dataset_store.dataset_service import import_paths, list_files
+from datakeel.datasets.views import DatasetView
 
 if TYPE_CHECKING:
     from pathlib import Path

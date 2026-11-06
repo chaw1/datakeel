@@ -16,9 +16,9 @@ from datakeel.core.agent_models import ResumeInput
 from datakeel.core.errors import ConflictError
 from datakeel.core.models import JsonDocument
 from datakeel.core.workflow_models import WorkflowStart
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.harness.enterprise_cases import seed_enterprise_case
 from datakeel.runtime.workflow_service import recover_runs, resume_workflow, start_workflow
-from datakeel.storage.dataset_service import import_paths, list_files
 from datakeel.storage.tool_invocations import list_invocations
 from datakeel.storage.workflow_recovery import list_audit
 from datakeel.storage.workflow_store import get_run, set_status
@@ -32,8 +32,8 @@ if TYPE_CHECKING:
     from pydantic import JsonValue
 
     from datakeel.core.workflow_models import WorkflowRun
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 def step_output(run: WorkflowRun, identity: str) -> JsonValue:

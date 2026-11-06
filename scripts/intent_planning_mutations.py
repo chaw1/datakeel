@@ -70,7 +70,7 @@ NAMES_AND_ORDER_MUTATIONS = (
     ),
     Mutation(
         name="planning-display-order-tasks-follow-their-package-and-file",
-        path="storage/display_order.py",
+        path="dataset_store/display_order.py",
         before="            positions.get(task.sample_id, len(positions)),\n",
         after="",
         case=_SCOPE + "test_lists_reads_and_the_planner_count_in_one_display_order",
@@ -78,7 +78,7 @@ NAMES_AND_ORDER_MUTATIONS = (
     ),
     Mutation(
         name="planning-display-order-packages-in-creation-order",
-        path="storage/display_order.py",
+        path="dataset_store/display_order.py",
         before="    return sorted(packages, key=package_key)",
         after="    return sorted(packages, key=lambda package: package.id)",
         case=_SCOPE + "test_lists_reads_and_the_planner_count_in_one_display_order",

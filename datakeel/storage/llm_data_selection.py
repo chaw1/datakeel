@@ -8,12 +8,12 @@ from sqlalchemy.orm import Session
 from datakeel.actions.llm_data_parameters import CleanTrainingParams
 from datakeel.core.errors import NotFoundError
 from datakeel.core.llm_data_governance import TrainingEvaluation
+from datakeel.dataset_store.object_projection import content_digest
+from datakeel.dataset_store.object_queries import evaluate_in_session
 from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet, PropertyFilter
 from datakeel.storage.llm_data_rows import TrainingEvaluationRow
 from datakeel.storage.llm_data_sources import source_version
 from datakeel.storage.llm_data_store import require_training_run
-from datakeel.storage.object_projection import content_digest
-from datakeel.storage.object_queries import evaluate_in_session
 
 
 def training_manifest(session: Session, params: CleanTrainingParams) -> FrozenManifest:

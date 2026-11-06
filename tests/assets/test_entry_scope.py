@@ -13,10 +13,10 @@ from datakeel.core.ask_models import AskRequest
 from datakeel.core.data_asset_models import AccessContext, AssetUsageQuery
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.dataset_service import resolve_download
+from datakeel.dataset_store.lineage_service import export_dataset, export_events
 from datakeel.storage.data_asset_access import list_usage
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import resolve_download
-from datakeel.storage.lineage_service import export_dataset, export_events
 from tests.assets.entry_helpers import EntryResources, grant, publish, seed_resources
 
 

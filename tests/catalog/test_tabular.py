@@ -15,12 +15,12 @@ from datakeel.catalog.service import prepare_import
 from datakeel.core.catalog_models import CatalogImportRequest, ColumnProperties, TableProperties
 from datakeel.core.errors import AuthorizationError, ConflictError, ValidationError
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.events import all_events
 from datakeel.operators.table.models import ColumnProfile
 from datakeel.storage.action_rows import ActionAuditRow
 from datakeel.storage.catalog_projection import rebuild_catalog
 from datakeel.storage.catalog_queries import get_object, read_objects
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 
 
 @pytest.fixture

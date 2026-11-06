@@ -15,8 +15,8 @@ from datakeel.api.app import create_app
 from datakeel.core.annotation_models import AnnotationBatch, AnnotationBox, AnnotationRecord
 from datakeel.core.annotation_sampling import AnnotationImportRequest
 from datakeel.core.models import JsonDocument, new_id
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage.annotation_store import import_annotations
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.identity_store import role_templates
 from tests.asgi_client import TestClient
 from tests.storage.llm_data_helpers import seed_training

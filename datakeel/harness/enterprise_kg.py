@@ -11,10 +11,10 @@ from datakeel.core.errors import ExecutionError
 from datakeel.core.harness_eval import CaseFixture
 from datakeel.core.kg_eval_models import KGCaseSuite
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths, list_datasets
 from datakeel.harness.enterprise_cases import seed_enterprise_case
 from datakeel.kg.loader import contracts_path, load_contract
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_datasets
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.kg_store import list_runs
 from datakeel.worker.runner import run_worker

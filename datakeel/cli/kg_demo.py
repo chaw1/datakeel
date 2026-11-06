@@ -9,9 +9,9 @@ from datakeel.actions.service import execute_plan, prepare_action
 from datakeel.core.errors import ExecutionError
 from datakeel.core.kg_execution import KGRun
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths, list_datasets
 from datakeel.sample_kg import generate_kg_samples
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.dataset_service import import_paths, list_datasets
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.kg_store import list_runs
 

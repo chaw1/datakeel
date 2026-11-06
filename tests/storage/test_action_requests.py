@@ -17,9 +17,9 @@ from datakeel.actions.policy import digest, plan_digest
 from datakeel.actions.service import approve_plan, execute_plan, list_runs, prepare_action
 from datakeel.core.errors import AuthorizationError, ConflictError
 from datakeel.core.models import JsonDocument, utcnow
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.action_rows import ActionAuditRow, ActionOperationRow, ActionPlanRow
-from datakeel.storage.dataset_service import import_paths, list_files
 from datakeel.worker.runner import run_worker
 
 if TYPE_CHECKING:

@@ -16,11 +16,11 @@ from pydantic import SecretStr
 from sqlalchemy import event, func, select
 
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.datasets import import_dataset
 from datakeel.dataset_store.rows import EventRow, VersionRow
 from datakeel.pipeline import Pipeline
 from datakeel.quality.scoring import score_quality
 from datakeel.storage.database import Database
-from datakeel.storage.datasets import import_dataset
 from datakeel.worker.queue import DatabaseQueue, Lease
 from datakeel.worker.runner import execute
 from datakeel.worker_store.rows import OutboxRow, ShardRow, TaskRow

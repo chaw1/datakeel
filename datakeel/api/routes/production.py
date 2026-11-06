@@ -32,10 +32,10 @@ from datakeel.core.workbench_models import (
     WorkbenchTaskSamples,
     WorkbenchTaskStatus,
 )
+from datakeel.dataset_store.image_geometry import upright_bytes
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import FunctionResult
 from datakeel.ontology.production_functions import PRODUCTION_READ_MODELS
-from datakeel.storage.image_geometry import upright_bytes
 from datakeel.storage.workbench_assignees import assignees
 from datakeel.storage.workbench_reads import (
     task_source,

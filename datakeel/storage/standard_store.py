@@ -20,9 +20,9 @@ from datakeel.core.standard_models import (
     StandardsContract,
     StandardStatus,
 )
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.catalog_locks import lock_catalog
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 
 
 def revisions_in_session(session: Session) -> tuple[StandardsRevision, ...]:

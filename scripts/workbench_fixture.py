@@ -22,9 +22,9 @@ from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import BoundaryModel, JsonDocument, new_id
 from datakeel.core.production_models import Project
 from datakeel.core.settings import get_settings
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.persistence import migrate
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_queries import list_tasks
 from scripts.segment_media_fixtures import probe_sources, segment_annotation, segment_sources
 

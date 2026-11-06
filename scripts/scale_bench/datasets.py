@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 from datakeel.core.file_queries import FileQuery
 from datakeel.core.models import FileItem
 from datakeel.core.search_models import SearchQuery
+from datakeel.dataset_store.dataset_service import get_dataset, import_paths, list_files
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
-from datakeel.storage.dataset_service import get_dataset, import_paths, list_files
-from datakeel.storage.search import search_objects
-from datakeel.storage.version_diff import compare_versions
+from datakeel.dataset_store.search import search_objects
+from datakeel.dataset_store.version_diff import compare_versions
 from scripts.scale_bench.common import check_resources, check_space, fingerprint, measure
 from scripts.scale_bench.models import Context, Latency, ScenarioResult
 from scripts.scale_bench.versions import generate

@@ -14,6 +14,7 @@ from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.service import approve_plan, execute_plan, prepare_action
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.pipeline import Node, Pipeline
 from datakeel.storage.custom_rows import CustomOperatorRow
 from datakeel.storage.custom_store import (
@@ -22,7 +23,6 @@ from datakeel.storage.custom_store import (
     list_custom_runs,
     list_custom_submissions,
 )
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.task_queue import DatabaseQueue
 from tests.core.test_custom_review import CODE
 

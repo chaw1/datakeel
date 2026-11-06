@@ -18,8 +18,8 @@ from datakeel.storage.conversation_store import get
 from tests.agent.test_service import action_script
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 def test_memory_when_human_rejects_plan_removes_pending_card_and_keeps_decision(

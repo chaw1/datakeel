@@ -14,9 +14,9 @@ from datakeel.core.annotation_sampling import AnnotationImportRequest
 from datakeel.core.errors import ValidationError
 from datakeel.core.training_export_models import TrainingExport, TrainingFormat
 from datakeel.core.training_models import SplitRequest
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage.annotation_store import import_annotations
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.training_export import training_export_inputs
 from datakeel.storage.training_store import create_split
 from datakeel.training.export import write_training_export

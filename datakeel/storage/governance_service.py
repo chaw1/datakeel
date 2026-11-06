@@ -14,20 +14,11 @@ from datakeel.core.errors import AuthorizationError
 from datakeel.core.llm_data_governance import TrainingProjection
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.core.settings import get_settings
+from datakeel.dataset_store.dataset_service import list_datasets, require_dataset
+from datakeel.dataset_store.datasets import dataset_dict, latest_files
+from datakeel.dataset_store.file_state import overlay_files
 from datakeel.dataset_store.rows import DatasetRow, MetadataChangeRow, VersionRow
-from datakeel.governance import compliance_score, validate_metadata
-from datakeel.governance.models import ComplianceView
-from datakeel.quality import build_report, score_quality
-from datakeel.quality.annotation import apply_annotation_quality
-from datakeel.quality.models import GovernanceRead, QualityView, ReportView
-from datakeel.storage.annotation_store import read_annotation_quality
-from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_datasets, require_dataset
-from datakeel.storage.datasets import dataset_dict, latest_files
-from datakeel.storage.dq_views import attach_rule_quality
-from datakeel.storage.file_state import overlay_files
-from datakeel.storage.llm_data_store import training_overlay, training_projection
-from datakeel.storage.views import (
+from datakeel.datasets.views import (
     DatasetQualityView,
     MetadataChangeView,
     MetadataSavedView,
@@ -35,6 +26,15 @@ from datakeel.storage.views import (
     TemplateView,
     View,
 )
+from datakeel.governance import compliance_score, validate_metadata
+from datakeel.governance.models import ComplianceView
+from datakeel.quality import build_report, score_quality
+from datakeel.quality.annotation import apply_annotation_quality
+from datakeel.quality.models import GovernanceRead, QualityView, ReportView
+from datakeel.storage.annotation_store import read_annotation_quality
+from datakeel.storage.database import Database
+from datakeel.storage.dq_views import attach_rule_quality
+from datakeel.storage.llm_data_store import training_overlay, training_projection
 
 
 class MetadataInput(View):

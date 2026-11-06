@@ -15,9 +15,9 @@ from datakeel.core.kg_contracts import ExtractedEntity, ExtractedRelation
 from datakeel.core.kg_execution import KGRun
 from datakeel.core.kg_models import ExtractionResult, RawExtraction
 from datakeel.core.models import BoundaryModel, FileItem, JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.kg.extractors import FakeExtractor
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.kg_store import list_runs
 from datakeel.worker.runner import run_worker

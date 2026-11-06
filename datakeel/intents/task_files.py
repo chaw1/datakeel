@@ -14,12 +14,12 @@ from pydantic import JsonValue
 from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.core.errors import NotFoundError
 from datakeel.core.intent_models import Clarification
+from datakeel.dataset_store.dataset_service import list_files
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep
 from datakeel.intents.singular import which_task
 from datakeel.intents.task_scope import task_number
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_files
 from datakeel.storage.production_queries import get_project, list_tasks
 
 FILE_NAME = re.compile(r"^(?=[\w.-]*[A-Za-z])(?=[\w.-]*\d)[\w.-]{2,120}$")

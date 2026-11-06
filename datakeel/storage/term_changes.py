@@ -9,9 +9,9 @@ from datakeel.core.catalog_models import CatalogObject
 from datakeel.core.catalog_projection import snapshot_events
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.metric_models import TermDefinition
+from datakeel.dataset_store.events import all_events
 from datakeel.metrics.projection import build_snapshot, semantic_layer
 from datakeel.storage.catalog_store import publish_snapshot_in_session, read_snapshot
-from datakeel.storage.events import all_events
 
 
 def current_term(session: Session, term: str) -> CatalogObject:

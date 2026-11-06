@@ -14,10 +14,10 @@ from pydantic import JsonValue
 
 from datakeel.core.intent_models import Candidate, Clarification, PageContext
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_store import list_assertions
-from datakeel.storage.object_queries import evaluate
 
 SELECTION_LIMIT = 10000
 DUPLICATE_STATUSES = frozenset({"candidate", "accepted"})

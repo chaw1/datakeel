@@ -24,8 +24,8 @@ from datakeel.core.standard_models import (
     FieldStandard,
     StandardsContract,
 )
+from datakeel.dataset_store.events import append_event
 from datakeel.storage.catalog_store import lock_catalog, read_snapshot
-from datakeel.storage.events import append_event
 from datakeel.storage.standard_store import revisions_in_session, state_in_session
 
 

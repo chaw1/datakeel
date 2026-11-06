@@ -17,12 +17,12 @@ from datakeel.api.app import create_app
 from datakeel.core.data_asset_models import AccessEntry, AssetApplicationInput
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import AssetRef, JsonDocument, utcnow
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.mcp import create_server
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.data_asset_grants import application_in_session, submit_application
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from tests.assets.entry_helpers import publish
 
 PERSON_ONLY = "approved or rejected by a person in the Web UI or CLI"

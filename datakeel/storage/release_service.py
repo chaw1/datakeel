@@ -16,9 +16,9 @@ from datakeel.core.release_models import (
     StoredReleaseFile,
     VersionSummary,
 )
+from datakeel.dataset_store.version_stream import dataset_settings
 from datakeel.storage.database import Database
 from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
-from datakeel.storage.version_stream import dataset_settings
 
 MAX_PAGE = 1000
 

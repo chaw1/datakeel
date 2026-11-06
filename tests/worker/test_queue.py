@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.datasets import import_dataset
 from datakeel.dataset_store.rows import EventRow, VersionRow
 from datakeel.persistence import migrate
-from datakeel.storage.datasets import import_dataset
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker_store.rows import OutboxRow, ShardRow, TaskRow
 

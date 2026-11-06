@@ -9,8 +9,8 @@ from fastapi.testclient import TestClient
 
 from datakeel.api.app import create_app
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths, list_datasets
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_datasets
 from datakeel.storage.governance_service import get_quality, get_report
 from datakeel.worker.runner import run_worker
 from tests.dq_support import execute_action, generated_rule, save_rule

@@ -16,12 +16,12 @@ from datakeel.cli.parsers import CommandGroup
 from datakeel.core.catalog_models import CatalogImportRequest
 from datakeel.core.errors import ExecutionError
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.operators.timeseries.models import ColumnRange, UnitDeclaration
 from datakeel.pipeline.tabular import timeseries_pipeline
 from datakeel.quality import build_report
 from datakeel.sample_timeseries import generate_sensor_samples
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.governance_service import get_quality
 from datakeel.storage.task_queries import query_task
 from datakeel.worker.runner import run_worker

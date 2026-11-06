@@ -15,9 +15,9 @@ from datakeel.core.datasheet_models import (
     DatasheetFactChange,
 )
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
+from datakeel.dataset_store.dataset_service import require_dataset
 from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import require_dataset
 from datakeel.storage.datasheet_facts import require_version
 from datakeel.storage.datasheet_rows import DatasheetRow
 

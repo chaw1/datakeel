@@ -14,8 +14,8 @@ from datakeel.core.dq_models import DqRule, DqTarget
 from datakeel.core.errors import ExecutionError
 from datakeel.core.harness_eval import CaseFixture
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_files
 from datakeel.storage.dq_reads import read_results
 from datakeel.worker.runner import run_worker
 

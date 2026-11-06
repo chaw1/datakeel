@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from datakeel.api.app import create_app
-from datakeel.storage.dataset_service import import_paths, list_versions
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from tests.asgi_client import TestClient
 
 if TYPE_CHECKING:

@@ -8,8 +8,8 @@ from sqlalchemy import func, select
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import LabelSet
 from datakeel.core.production_models import AssignmentStage, Project
+from datakeel.dataset_store.display_order import ordered_task_rows
 from datakeel.storage.database import Database
-from datakeel.storage.display_order import ordered_task_rows
 from datakeel.storage.production_catalog_impact import migration_impact
 from datakeel.storage.production_catalog_rows import ProductionLabelSetRow
 from datakeel.storage.production_dispatch_rules import active_loads

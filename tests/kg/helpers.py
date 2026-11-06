@@ -20,12 +20,12 @@ from datakeel.core.kg_execution import (
 from datakeel.core.kg_models import RawExtraction
 from datakeel.core.kg_product import KGSource, ProductExtraction
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
+from datakeel.dataset_store.events import append_event
 from datakeel.kg.assembly import assemble_extraction
 from datakeel.kg.identity import assertion_identity
 from datakeel.kg.loader import get_profile, get_schema
 from datakeel.kg.text import chunk_text
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_rows import KGRunRow
 

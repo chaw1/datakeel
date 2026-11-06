@@ -10,9 +10,9 @@ from threading import Barrier
 from typing import TYPE_CHECKING
 
 from datakeel.catalog.service import prepare_import
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.catalog_projection import projection_hash, rebuild_catalog
 from datakeel.storage.catalog_store import lock_catalog, publish_snapshot
-from datakeel.storage.events import all_events
 
 if TYPE_CHECKING:
     from datakeel.core.catalog_models import CatalogImportRequest, ImportReport

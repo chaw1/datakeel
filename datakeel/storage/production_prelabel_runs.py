@@ -18,9 +18,9 @@ from datakeel.core.production_catalog_models import (
 )
 from datakeel.core.production_models import Project
 from datakeel.core.production_prediction_models import PredictionSample
+from datakeel.dataset_store.image_geometry import file_geometry
 from datakeel.storage.action_rows import ActionRunRow
 from datakeel.storage.annotation_store import require_annotation_version
-from datakeel.storage.image_geometry import file_geometry
 from datakeel.storage.production_catalog_rows import ProductionPrelabelRunRow
 from datakeel.storage.production_rows import ProductionTaskRow
 from datakeel.storage.production_tiers import held_drafts

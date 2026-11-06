@@ -40,6 +40,7 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import ExecutionError, NotFoundError, ValidationError
 from datakeel.core.metric_models import CompiledQuery, CompileRequest, MetricCard, QueryResult
 from datakeel.core.models import new_id
+from datakeel.dataset_store.profile_queries import read_profiles
 from datakeel.metrics.compiler import compile_metric
 from datakeel.metrics.execution import execute_query
 from datakeel.metrics.projection import resolved_metric_cards, semantic_layer
@@ -48,7 +49,6 @@ from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
 from datakeel.storage.link_queries import read_link_context
-from datakeel.storage.profile_queries import read_profiles
 
 
 def ask_data(

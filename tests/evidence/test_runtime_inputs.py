@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING
 from datakeel.core.evidence_inputs import sample_sidecars
 from datakeel.core.evidence_models import ExtractorRef
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.datasets import materialize_files
 from datakeel.evidence import runtime_inputs
 from datakeel.evidence.runtime_inputs import cache_requests, prepare_inputs, prepare_node_inputs
-from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_import import source_manifest
 from tests.evidence.test_execution import seed_evidence
 

@@ -8,18 +8,18 @@ from fastapi import APIRouter, Request
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.datasets.views import (
+    MetadataChangeView,
+    MetadataSavedView,
+    MetadataView,
+    TemplateView,
+)
 from datakeel.governance.models import ComplianceView
 from datakeel.quality.models import QualityView, ReportView
 from datakeel.storage import governance_service as service
 from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database
 from datakeel.storage.governance_service import MetadataInput, QualityInput
-from datakeel.storage.views import (
-    MetadataChangeView,
-    MetadataSavedView,
-    MetadataView,
-    TemplateView,
-)
 
 router = APIRouter(prefix="/api/datasets/{identifier}", tags=["governance"])
 

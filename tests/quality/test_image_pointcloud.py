@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.object_projection import file_quality
 from datakeel.dataset_store.rows import DatasetRow
 from datakeel.operators.pointcloud.models import ProbeParams
 from datakeel.quality import build_report, score_quality
 from datakeel.quality.image_pointcloud import DEFAULT_MAX_OUTLIER_RATIO, assess_file
-from datakeel.storage.object_projection import file_quality
 
 if TYPE_CHECKING:
     from pydantic import JsonValue
