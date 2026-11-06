@@ -6,14 +6,19 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
 from scripts import check_boundaries, check_schema
 
-if TYPE_CHECKING:
-    from pathlib import Path
+
+def test_dataset_rows_count_once_in_the_dataset_slice_budget() -> None:
+    """Moved dataset Rows cannot consume the original schema composition budget too."""
+    rows = Path("datakeel/dataset_store/rows.py")
+    assert rows in check_schema._dataset_slice_paths()  # noqa: SLF001
+    assert rows not in check_schema._schema_paths()  # noqa: SLF001
+    assert Path("datakeel/dataset_store/schema.py") in check_schema._schema_paths()  # noqa: SLF001
 
 
 def test_new_store_rows_cannot_enter_pure_or_public_modules(
