@@ -3,12 +3,34 @@
 
 """Read and project mode-separated vector products only inside unified publications."""
 
-from sqlalchemy import select, text
-from sqlalchemy.orm import Session
+from typing import cast
+
+from sqlalchemy import event, select, text
+from sqlalchemy.orm import Session, SessionTransaction
 
 from datakeel.core.vector_results import VectorCacheProduct
 from datakeel.storage.database import Database
 from datakeel.storage.vector_rows import VectorCacheRow
+
+_LOCK_TRANSACTIONS = "datakeel.evidence_projection.lock_transactions"
+
+
+@event.listens_for(Session, "after_commit")
+def _promote_evidence_lock(session: Session) -> None:
+    """A released savepoint transfers its locks to the parent transaction."""
+    held = cast("set[SessionTransaction]", session.info.get(_LOCK_TRANSACTIONS, set()))
+    nested = session.get_nested_transaction()
+    if nested is not None and nested in held and nested.parent is not None:
+        held.add(nested.parent)
+
+
+@event.listens_for(Session, "after_transaction_end")
+def _forget_evidence_lock(session: Session, transaction: SessionTransaction) -> None:
+    """Discard ended identities, including rolled-back savepoints and Session.close()."""
+    held = cast("set[SessionTransaction]", session.info.get(_LOCK_TRANSACTIONS, set()))
+    held.discard(transaction)
+    if not held:
+        session.info.pop(_LOCK_TRANSACTIONS, None)
 
 
 def vector_cached(db: Database, key: str, kind: str) -> VectorCacheProduct | None:
@@ -69,12 +91,20 @@ def vector_predecessors(
 
 
 def lock_evidence(session: Session) -> None:
-    """Acquire the publication/rebuild lock once per writer session."""
-    if not session.info.get("lock") and session.get_bind().dialect.name == "postgresql":
-        session.execute(
-            text(
-                "SELECT pg_advisory_xact_lock(hashtext(current_schema()), "
-                "hashtext('evidence_projection'))"
-            )
+    """Deduplicate PostgreSQL lock SQL only while its acquiring transaction survives."""
+    if session.get_bind().dialect.name != "postgresql":
+        return
+    transaction = session.get_nested_transaction() or session.get_transaction() or session.begin()
+    held = cast("set[SessionTransaction]", session.info.get(_LOCK_TRANSACTIONS, set()))
+    ancestor: SessionTransaction | None = transaction
+    while ancestor is not None:
+        if ancestor in held:
+            return
+        ancestor = ancestor.parent
+    session.execute(
+        text(
+            "SELECT pg_advisory_xact_lock(hashtext(current_schema()), "
+            "hashtext('evidence_projection'))"
         )
-        session.info["lock"] = True
+    )
+    session.info.setdefault(_LOCK_TRANSACTIONS, set()).add(transaction)

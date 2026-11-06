@@ -4,9 +4,11 @@
 """Named fake vector safety and semantic anchors, run only in disposable copies."""
 
 from scripts.mutation_models import Mutation
+from scripts.vector_lock_mutations import VECTOR_LOCK_MUTATIONS
 from scripts.vector_set_mutations import VECTOR_SET_MUTATIONS
 
 VECTOR_MUTATIONS = (
+    *VECTOR_LOCK_MUTATIONS,
     *VECTOR_SET_MUTATIONS,
     Mutation(
         name="vector-parameter-wording",

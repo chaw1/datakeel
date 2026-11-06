@@ -25,6 +25,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Vector publication takes the shared projection lock before reading predecessors or
+  invalidations. PostgreSQL lock deduplication follows transaction/savepoint lifetime,
+  including Session reuse; ordinary evidence publication keeps its existing query budget.
+
 - SQLite v2 freezes the complete 102-table vector/lease schema independently of v1. Empty
   file/memory stores apply both versions; explicit upgrades preserve existing 99-table facts and
   stamp complete unversioned 102-table stores without replaying DDL. Pending service startup stays

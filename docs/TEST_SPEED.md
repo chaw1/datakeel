@@ -368,3 +368,44 @@ coverage from a selected subset cannot establish whole-suite coverage.
 后续实现须始终运行全仓静态检查，执行目标源码文件被改动的变异锚，影响无法确定时全跑。
 验收须选取三个历史修复提交，分别撤掉源码修复并证明快速门禁报红。子集测试覆盖率不能
 证明完整覆盖率，因此仍须保留独立的全量覆盖率门禁。
+
+
+## PostgreSQL advisory lock evidence / PG 锁实证
+
+`tests/storage/test_evidence_locks_pg.py` and
+`tests/evidence/test_vector_publication_pg.py` belong to the ordinary pytest collection,
+without the optional `integration` marker. SQLite explicitly skips them. The PostgreSQL CI
+stack executes them through the existing whole-file shards and completeness gate; no extra
+opt-in or lock substitution is used.
+
+上述用例在 SQLite 明确 skip，在 PG CI 的常规分片中必须执行。它们只用隔离本地 PG
+fixture，以独立连接的 PID、限定数据库/schema/key 的 `pg_locks`、`pg_blocking_pids`
+与线程完成标志证明阻塞；deadline 只限制失败耗时，不以等待时长推断锁状态。
+
+After an isolated local PG container has been explicitly authorized and provisioned by the
+maintainer, retain JUnit properties for the actual SQL and completion order:
+
+维护者明确授权并准备好隔离本地 PG 容器后，保留 JUnit 属性中的实际 SQL 和完成顺序：
+
+```sh
+: "${DATAKEEL_TEST_DATABASE_URL:?Set the authorized local PG fixture URL}"
+: "${PG_EVIDENCE_DIR:?Set an evidence output directory}"
+.venv/bin/python -m pytest \
+  tests/storage/test_evidence_locks_pg.py \
+  tests/evidence/test_vector_publication_pg.py \
+  tests/storage/test_evidence_batching.py \
+  -q -o junit_family=legacy --junitxml="$PG_EVIDENCE_DIR/pg-lock.xml"
+```
+
+`pg_lock_trace` contains ordered SQL dispatch/completion, transaction markers and server
+observations; `pg_lock_stack`, `pg_lock_pids` and `pg_lock_observer_sql` identify the stack,
+connections and observation query. `pg_lock_sources` binds the actual source SHA-256 values
+to each runtime trace. Ordinary batching cases emit `pg_batch_sql`,
+`pg_batch_selects` and `pg_batch_inserts`. Keep the worktree source hashes with the report;
+a SQLite skip report is collection evidence only and does not validate PostgreSQL behavior.
+
+发布交错仅在 A 的首条真实 advisory SQL 发送前用 Event 调度 B/C 的真实提交；随后真实
+持锁者使 A 在 PG 上等待，A 获锁后的查询、predecessor 和最终 producer 都须通过断言。
+重建用例只把本地 fixture 的 Session 工厂接到工作线程独占的真实 PG Session，生产锁、
+查询、diff 和 rebuild 实现均原样执行。提交返回标志可能晚于等待者收到锁授予；顺序断言
+以提交调用、服务端锁等待和锁 SQL 完成为证据，不假定两个线程的返回先后。

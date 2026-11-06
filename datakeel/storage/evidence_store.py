@@ -168,6 +168,8 @@ def record_extraction_in_session(
     if bundle.invalidations or bundle.prior_cache_event_ids:
         msg = "Invalidations and cache predecessors are derived by storage"
         raise ValidationError(msg)
+    if event.operator in VECTOR_OPERATORS:
+        lock_evidence(session)
     prior = session.scalar(
         select(EventRow).where(EventRow.idempotency_key == event.idempotency_key)
     )

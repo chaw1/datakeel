@@ -86,6 +86,15 @@ run/time identities; the fact projection hash includes measurement and human dec
 Replay validates bundle hashes and cache predecessor order and reads recorded outputs only.
 It never constructs transport or reconstructs missing embeddings by making another call.
 
+New vector publications acquire the common projection lock before reading cache producers,
+predecessors or invalidations. Direct vector projection/replay, human review and rebuild use
+the same lock. PostgreSQL advisory lock SQL runs once per surviving acquiring transaction:
+savepoint release transfers ownership to its parent, savepoint rollback discards only its own
+marker, and commit/rollback/close permits a reused Session to acquire again. The two Session
+event handlers are registered once at module import, never per lock call or per Session.
+SQLite uses its existing writer serialization and executes no advisory lock SQL. Ordinary
+non-vector publication does not acquire this projection lock or add a lock query.
+
 Existing task/action/source responses gain optional fake status. Complete runs report node counts,
 cache hits and invented usage; failed runs expose their reason and durable attempts. Known all-input failures retain their
 counts in failure audit events; global uncertainty does not invent counts for unpublished products. No new vector HTTP endpoint or interactive UI is added.
