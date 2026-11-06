@@ -13,9 +13,9 @@ from datakeel.agent.providers import FakeProvider
 from datakeel.agent.service import resume_conversation
 from datakeel.api.app import create_app
 from datakeel.core.agent_models import ModelResponse, ResumeInput
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.harness.service import list_traces
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from tests.agent.test_resume import pause_deletion
 from tests.api.test_agent import events
 from tests.asgi_client import TestClient

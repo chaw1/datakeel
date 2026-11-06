@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session
 from datakeel.actions.models import ActionPlan, ActionRun, PlanStatus
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import LineageEvent
+from datakeel.dataset_store.events import append_event
 from datakeel.storage.action_rows import ActionAuditRow, ActionPlanRow, ActionRunRow
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 from datakeel.worker_store.rows import OutboxRow
 
 

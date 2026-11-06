@@ -6,13 +6,13 @@
 from datakeel.core.catalog_models import CatalogObject, CatalogQuery, CatalogSnapshot
 from datakeel.core.models import AssetRef
 from datakeel.core.search_models import SearchQuery
+from datakeel.dataset_store.lineage_service import get_graph
+from datakeel.dataset_store.search import search_objects
 from datakeel.lineage.models import GraphQuery
 from datakeel.storage.catalog_projection import rebuild_catalog
 from datakeel.storage.catalog_queries import get_object, read_objects
 from datakeel.storage.catalog_store import publish_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.lineage_service import get_graph
-from datakeel.storage.search import search_objects
 
 
 def test_english_name_when_published_survives_search_graph_and_rebuild(db: Database) -> None:

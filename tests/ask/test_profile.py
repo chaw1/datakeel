@@ -11,13 +11,12 @@ from datakeel.ask.profile import parse_profile_question
 from datakeel.ask.service import ask_data
 from datakeel.core.ask_models import AskAnswer, AskRequest
 from datakeel.core.errors import NotFoundError, ValidationError
-from datakeel.dataset_store.rows import DatasetRow, VersionRow
+from datakeel.dataset_store.dataset_service import resolve_download
+from datakeel.dataset_store.events import all_events
+from datakeel.dataset_store.profile_queries import read_profiles
+from datakeel.dataset_store.rows import DatasetRow, FileStateRow, VersionRow
 from datakeel.storage.ask_store import get_answer, store_answer
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import resolve_download
-from datakeel.storage.events import all_events
-from datakeel.storage.file_state import FileStateRow
-from datakeel.storage.profile_queries import read_profiles
 from tests.ask.profile_helpers import SENSOR_QUESTION, publish_sensors
 
 
@@ -36,7 +35,7 @@ def test_profile_answer_when_published_ranks_devices_with_exact_immutable_source
         isolated.setattr(Path, "read_text", forbidden)
         isolated.setattr(Path, "read_bytes", forbidden)
         isolated.setattr("datakeel.operators.table.io.read_table", forbidden)
-        isolated.setattr("datakeel.storage.datasets.materialize_files", forbidden)
+        isolated.setattr("datakeel.dataset_store.datasets.materialize_files", forbidden)
         answer = ask_data(db, AskRequest(question=SENSOR_QUESTION))
     assert answer.status == "answered"
     assert answer.answer_kind == "profile"

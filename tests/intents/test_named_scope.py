@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 from datakeel.core.intent_models import PageContext
 from datakeel.core.production_reads import ProductionObjectQuery
-from datakeel.storage.dataset_service import list_files
-from datakeel.storage.display_order import ordered_task_rows
+from datakeel.dataset_store.dataset_service import list_files
+from datakeel.dataset_store.display_order import ordered_task_rows
 from datakeel.storage.intent_reads import task_snapshots
 from datakeel.storage.production_objects import production_objects
 from datakeel.storage.production_queries import list_packages, list_tasks

@@ -6,8 +6,8 @@
 from pathlib import Path
 
 from datakeel.core.kg_queries import KGTranscriptionSelection
+from datakeel.dataset_store.dataset_service import list_files
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_files
 from datakeel.storage.evidence_import import IMAGE_SUFFIXES
 from datakeel.transcription.loader import get_profile, read_recording
 

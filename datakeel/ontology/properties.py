@@ -6,7 +6,7 @@
 from pydantic import Field, JsonValue
 
 from datakeel.core.models import BoundaryModel
-from datakeel.storage.views import DatasetView
+from datakeel.datasets.views import DatasetView
 
 
 class DatasetProperties(DatasetView):

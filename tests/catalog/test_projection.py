@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy import delete, select
 
 from datakeel.catalog.service import import_catalog
+from datakeel.dataset_store.events import all_events
+from datakeel.dataset_store.lineage_service import get_graph
 from datakeel.lineage.models import GraphQuery
 from datakeel.storage.catalog_projection import projection_hash, rebuild_catalog
 from datakeel.storage.catalog_rows import CatalogEdgeRow, CatalogObjectRow
-from datakeel.storage.events import all_events
-from datakeel.storage.lineage_service import get_graph
 
 if TYPE_CHECKING:
     from datakeel.core.catalog_models import CatalogImportRequest

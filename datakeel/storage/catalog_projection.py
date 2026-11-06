@@ -12,12 +12,12 @@ from datakeel.core.catalog_canonical import canonical_content, document_hash
 from datakeel.core.catalog_models import CatalogRebuildResult, CatalogSnapshot
 from datakeel.core.catalog_projection import project_catalog, snapshot_events
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.base import Base
 from datakeel.storage.catalog_locks import lock_catalog
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.catalog_rows import CatalogEdgeRow, CatalogObjectRow
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 
 PROJECTOR_VERSION = "1.0"
 

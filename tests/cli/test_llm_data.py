@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from datakeel.cli import parser
 from datakeel.cli.llm_data import dispatch
-from datakeel.storage.dataset_service import list_versions
+from datakeel.dataset_store.dataset_service import list_versions
 from tests.storage.llm_data_helpers import seed_training
 
 if TYPE_CHECKING:

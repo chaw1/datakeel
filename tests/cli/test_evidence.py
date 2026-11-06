@@ -16,8 +16,8 @@ import pytest
 from rich.console import Console
 
 from datakeel.core.errors import ExecutionError
+from datakeel.dataset_store.dataset_service import list_datasets
 from datakeel.sample_evidence import generate_samples
-from datakeel.storage.dataset_service import list_datasets
 from datakeel.storage.evidence_projection import projection_hash
 from datakeel.storage.evidence_store import record_extraction
 from tests.evidence.helpers import extraction_event

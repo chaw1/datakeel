@@ -14,9 +14,9 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_cache import EvidenceRebuildResult, KnowledgeBundle
 from datakeel.core.evidence_models import AssertionDecision
 from datakeel.core.models import LineageEvent
+from datakeel.dataset_store.events import all_events
 from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 from datakeel.storage.evidence_decisions import apply_decision, assertion_view
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
 from datakeel.storage.evidence_store import project_bundle, validated_bundle

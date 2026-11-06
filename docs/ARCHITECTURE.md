@@ -247,7 +247,9 @@ Personal submissions skip assignments and review records, while recording system
 
 ## Persistence schema ownership
 
-Schema assembly is explicit in `persistence`, above the existing adapters. Dataset and worker
-schema packages sit below legacy adapters and depend on the neutral `core.schema` mapping base.
-They contain only mappings and installers; business migration is a separate slice. See
+Schema assembly is explicit in `persistence`, above the existing adapters. `dataset_store`
+owns dataset/version/lineage/object adapters and private mappings; `datasets` owns pure contracts
+and projections. Worker schema remains in `worker_store`; completion migration is separate.
+Pure datasets, lineage, governance, quality and shared semantic rules sit below adapters and
+cannot import persistence. Mapping bases remain in neutral `core.schema`. See
 [the schema contract and ratchets](PERSISTENCE_SCHEMA.md).

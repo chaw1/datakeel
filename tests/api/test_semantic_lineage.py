@@ -12,11 +12,11 @@ from sqlalchemy import select
 
 from datakeel.api.app import create_app
 from datakeel.core.evidence_models import AssertionDecisionRequest
+from datakeel.dataset_store.lineage_service import export_events
 from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.evidence_decisions import decide_assertions
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.evidence_store import record_extraction
-from datakeel.storage.lineage_service import export_events
 from tests.asgi_client import TestClient
 from tests.lineage.evidence_fixtures import extraction, pair
 

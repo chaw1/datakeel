@@ -18,6 +18,7 @@ from datakeel.core.intent_models import (
     ParserKind,
     StepDetail,
 )
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.intents.already import already_state, given_back
 from datakeel.intents.answers import run_read
 from datakeel.intents.catalog import EntityCatalog
@@ -56,7 +57,6 @@ from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.storage.database import Database
 from datakeel.storage.intent_chains import save_chain
 from datakeel.storage.label_drafts import planned_draft_cost
-from datakeel.storage.object_queries import evaluate
 
 DRAFT_SAMPLES = 8
 ANNOTATION_WORDS = ("已有标注", "现有标注", "标注过", "existing annotation", "annotated")

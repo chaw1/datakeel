@@ -27,13 +27,13 @@ from datakeel.core.production_reads import (
     LabelSetDiffParams,
     ProductionObjectQuery,
 )
+from datakeel.dataset_store.display_order import ordered_packages, task_key
+from datakeel.dataset_store.object_projection import content_digest
 from datakeel.ontology.models import FrozenObject
 from datakeel.storage.annotation_frames import revision_view
 from datakeel.storage.database import Database
-from datakeel.storage.display_order import ordered_packages, task_key
 from datakeel.storage.identity_rows import RoleRow, SkillRow, TeamRow, UserRow
 from datakeel.storage.identity_store import role_templates
-from datakeel.storage.object_projection import content_digest
 from datakeel.storage.production_catalog import require_label_set
 from datakeel.storage.production_catalog_impact import migration_impact
 from datakeel.storage.production_catalog_rows import (

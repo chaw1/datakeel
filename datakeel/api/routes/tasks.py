@@ -11,12 +11,12 @@ from pydantic import Field
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import new_id
+from datakeel.dataset_store.dataset_service import task_artifacts
+from datakeel.datasets.views import FileView, View
 from datakeel.pipeline import Pipeline
-from datakeel.storage.dataset_service import task_artifacts
 from datakeel.storage.task_models import TaskView
 from datakeel.storage.task_queries import list_tasks, query_task
 from datakeel.storage.task_queue import DatabaseQueue
-from datakeel.storage.views import FileView, View
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 

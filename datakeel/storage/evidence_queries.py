@@ -7,6 +7,7 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.core.evidence_models import AssertionStatus, EvidenceValue
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.object_queries import evaluate_in_session, matching_objects_in_session
 from datakeel.evidence.presentation import explain, present_sample
 from datakeel.evidence.query_models import (
     EvidenceExplanation,
@@ -18,7 +19,6 @@ from datakeel.ontology.models import FrozenObject, ObjectSet, PropertyFilter
 from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_snapshot import EvidenceSnapshot, read_snapshot
-from datakeel.storage.object_queries import evaluate_in_session, matching_objects_in_session
 
 
 def _version_order(value: FrozenObject) -> tuple[float, str]:

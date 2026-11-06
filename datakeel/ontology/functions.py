@@ -12,6 +12,9 @@ from datakeel.core.kg_queries import KGExplainQuery, KGQuery
 from datakeel.core.llm_data_governance import TrainingQualityQuery
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.standard_reporting_models import StandardCoverageParams, StandardUsageParams
+from datakeel.dataset_store.dataset_service import list_datasets
+from datakeel.dataset_store.lineage_service import get_graph
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.evidence.query_models import EvidenceQuery
 from datakeel.lineage.models import GraphNode, GraphView
 from datakeel.ontology.annotation_functions import invoke_annotation_quality
@@ -43,10 +46,7 @@ from datakeel.ontology.training_parameters import (
 )
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_datasets
 from datakeel.storage.governance_service import read_governance
-from datakeel.storage.lineage_service import get_graph
-from datakeel.storage.object_queries import evaluate
 from datakeel.storage.task_queries import query_task
 
 PARAMETER_MODELS: dict[str, type[BaseModel]] = {

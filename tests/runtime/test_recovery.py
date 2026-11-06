@@ -21,9 +21,9 @@ from datakeel.agent.models import AgentEvent
 from datakeel.agent.providers import FakeProvider
 from datakeel.agent.service import create_conversation, get_conversation, send_message
 from datakeel.core.agent_models import ConversationCreate, MessageInput
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.harness.service import list_accounts, list_traces
 from datakeel.runtime.saver import SQLAlchemySaver
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.tool_invocations import list_invocations
 from tests.runtime.recovery_process import ProcessRequest, action_script
 

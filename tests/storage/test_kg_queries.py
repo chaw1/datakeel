@@ -14,7 +14,7 @@ from datakeel.core.errors import NotFoundError
 from datakeel.core.evidence_models import VerificationDetail, VerificationIssue
 from datakeel.core.kg_queries import KGQuery
 from datakeel.core.models import new_id, utcnow
-from datakeel.storage.events import append_event
+from datakeel.dataset_store.events import append_event
 from datakeel.storage.evidence_rows import AssertionRow
 from datakeel.storage.kg_context import graph_events
 from datakeel.storage.kg_queries import explain_relation, get_source_text, graph_kg, query_kg

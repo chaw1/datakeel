@@ -16,8 +16,8 @@ from datakeel.core.kg_execution import KGJob
 from datakeel.core.kg_images import KGImageSource
 from datakeel.core.kg_queries import KGSourceText
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.dataset_service import resolve_download
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import resolve_download
 from datakeel.storage.kg_rows import KGRunRow
 from datakeel.transcription.images import normalize_image
 

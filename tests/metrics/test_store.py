@@ -11,10 +11,10 @@ import pytest
 from datakeel.core.catalog_models import CatalogQuery, CatalogSnapshot
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.metric_models import SemanticLayer
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.catalog_queries import get_object, read_objects
 from datakeel.storage.catalog_store import publish_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 from datakeel.storage.metric_store import (
     get_metric,
     install_layer,

@@ -13,9 +13,9 @@ from datakeel.agent.service import create_conversation, get_conversation, send_m
 from datakeel.core.agent_models import ConversationCreate, MessageInput, ModelResponse, ToolCall
 from datakeel.core.models import JsonDocument
 from datakeel.core.workflow_models import WorkflowStart
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.runtime.workflow_service import start_workflow
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.task_queries import list_tasks
 from datakeel.storage.tool_invocations import list_invocations
 from datakeel.storage.workflow_store import list_runs as list_workflow_runs

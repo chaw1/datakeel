@@ -13,7 +13,7 @@ from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.orchestration import OpenLineageReceipt, OpenLineageRunEvent
 from datakeel.core.settings import Settings, get_settings
-from datakeel.storage.openlineage_store import ingest_openlineage
+from datakeel.dataset_store.openlineage_store import ingest_openlineage
 
 router = APIRouter(prefix="/api/openlineage", tags=["openlineage"])
 _bearer = HTTPBearer(auto_error=False)

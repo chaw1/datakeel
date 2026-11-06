@@ -9,7 +9,7 @@ import json
 from typing import TYPE_CHECKING
 
 from datakeel.core.models import AssetRef
-from datakeel.storage.dataset_service import import_paths
+from datakeel.dataset_store.dataset_service import import_paths
 from tests.assets.entry_helpers import publish
 
 if TYPE_CHECKING:

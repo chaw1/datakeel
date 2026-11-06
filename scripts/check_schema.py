@@ -11,6 +11,7 @@ import hashlib
 import json
 from configparser import ConfigParser
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from rich.console import Console
 
@@ -19,7 +20,11 @@ from datakeel.persistence.canonical import canonical_schema
 from datakeel.persistence.legacy import schema_contributions
 from scripts.schema_extensions import allowances, canonical_violations, extension
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
 BASELINE = Path("contracts/persistence/schema-baseline.json")
+DATASET_SLICE_BUDGET = 4022
 CANONICAL = Path("datakeel/persistence/canonical_tables.json")
 
 
@@ -70,12 +75,14 @@ def violations() -> list[str]:
             p
             for package in ("persistence", "dataset_store", "worker_store")
             for p in Path(f"datakeel/{package}").glob("*.py")
+            if package == "persistence" or p.name in {"__init__.py", "rows.py", "schema.py"}
         ),
     ]
     if sum(len(path.read_text().splitlines()) for path in schema_paths) > baseline[
         "schema_line_budget"
     ] + sum(increment.schema_additions.values()):
         problems.append("Schema slice source exceeds the frozen 980-line budget")
+    problems.extend(_dataset_budget_violations())
     allowed = baseline["legacy_row_imports"]
     for path, modules in increment.legacy_row_imports.items():
         for module, rows in modules.items():
@@ -85,23 +92,63 @@ def violations() -> list[str]:
     return problems
 
 
+def _dataset_budget_violations() -> list[str]:
+    slice_paths = [
+        p
+        for package in ("datasets", "dataset_store")
+        for p in Path(f"datakeel/{package}").glob("*.py")
+        if p.name not in {"rows.py", "schema.py"}
+    ]
+    if sum(len(p.read_text().splitlines()) for p in slice_paths) > DATASET_SLICE_BUDGET:
+        return ["Dataset slice source exceeds its frozen 4022-line budget"]
+    return []
+
+
 def _row_import_violations(allowed: dict[str, dict[str, list[str]]]) -> list[str]:
     problems: list[str] = []
     for path in Path("datakeel").rglob("*.py"):
         if path.parts[1] in {"persistence", "dataset_store", "worker_store"}:
             continue
-        for node in ast.walk(ast.parse(path.read_text())):
-            if not isinstance(node, ast.ImportFrom):
-                continue
-            rows = {alias.name for alias in node.names if alias.name.endswith("Row")}
-            module = node.module or ""
-            if module == "datakeel.storage.database" and rows:
-                problems.append(f"{path}:{node.lineno}: database Row re-export consumer")
-            if module in {"datakeel.dataset_store.rows", "datakeel.worker_store.rows"}:
+        for module, name, line in _row_references(ast.parse(path.read_text())):
+            if module == "datakeel.storage.database":
+                problems.append(f"{path}:{line}: database Row re-export consumer")
+            if module.startswith(("datakeel.dataset_store", "datakeel.worker_store")):
                 permitted = set(allowed.get(str(path), {}).get(module, []))
-                if rows - permitted:
-                    problems.append(f"{path}:{node.lineno}: unlisted transitional Row import")
+                if name not in permitted:
+                    problems.append(f"{path}:{line}: unlisted transitional Row import")
     return problems
+
+
+def _row_references(tree: ast.AST) -> Iterator[tuple[str, str, int]]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                local = alias.asname or alias.name.split(".")[0]
+                aliases[local] = alias.name if alias.asname else local
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{module}.{alias.name}"
+                if alias.name.endswith("Row"):
+                    yield module, alias.name, node.lineno
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr.endswith("Row"):
+            qualified = _qualified_attribute(node, aliases)
+            if qualified is not None:
+                module, _, name = qualified.rpartition(".")
+                yield module, name, node.lineno
+
+
+def _qualified_attribute(node: ast.Attribute, aliases: dict[str, str]) -> str | None:
+    parts = [node.attr]
+    value = node.value
+    while isinstance(value, ast.Attribute):
+        parts.append(value.attr)
+        value = value.value
+    if isinstance(value, ast.Name) and value.id in aliases:
+        return ".".join((aliases[value.id], *reversed(parts)))
+    return None
 
 
 def _database_violations() -> list[str]:

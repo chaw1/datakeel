@@ -22,13 +22,13 @@ from datakeel.core.training_models import (
     SplitSet,
     TrainingSample,
 )
+from datakeel.dataset_store.events import append_event
+from datakeel.dataset_store.version_stream import require_version
 from datakeel.storage.annotation_frames import DISPLAY_FRAME
 from datakeel.storage.annotation_rows import AnnotationBatchRow
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 from datakeel.storage.training_inputs import authorize_training, read_training_samples
 from datakeel.storage.training_rows import TrainingSplitRow
-from datakeel.storage.version_stream import require_version
 from datakeel.training.leakage import leakage_report
 from datakeel.training.splitting import distributions, split_samples
 

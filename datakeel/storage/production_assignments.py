@@ -24,7 +24,7 @@ from datakeel.core.production_models import (
     AssignmentStage,
     ProductionTask,
 )
-from datakeel.storage.display_order import task_key
+from datakeel.dataset_store.display_order import task_key
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_rows import UserRow
 from datakeel.storage.production_dispatch_rules import (

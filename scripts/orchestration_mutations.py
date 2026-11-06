@@ -21,44 +21,44 @@ ORCHESTRATION_MUTATIONS = (
     ),
     Mutation(
         name="openlineage-observation-idempotency",
-        path="storage/openlineage_store.py",
+        path="dataset_store/openlineage_store.py",
         before="inserted = previous is None",
         after="inserted = True",
         case=(
-            "tests/storage/test_openlineage.py::"
+            "tests/dataset_store/test_openlineage.py::"
             "test_openlineage_duplicate_replay_adds_no_facts_or_projection_events"
         ),
         runner="pytest",
     ),
     Mutation(
         name="openlineage-terminal-state-monotonicity",
-        path="storage/openlineage_projection.py",
+        path="datasets/openlineage_projection.py",
         before="terminal or progress or values,",
         after="values,",
         case=(
-            "tests/storage/test_openlineage.py::"
+            "tests/dataset_store/test_openlineage.py::"
             "test_openlineage_delayed_start_cannot_downgrade_terminal_state[COMPLETE]"
         ),
         runner="pytest",
     ),
     Mutation(
         name="openlineage-dataset-facet-ordering",
-        path="storage/openlineage_projection.py",
+        path="datasets/openlineage_projection.py",
         before="if previous_time is None or event.eventTime >= previous_time:",
         after="if True:",
         case=(
-            "tests/storage/test_openlineage.py::"
+            "tests/dataset_store/test_openlineage.py::"
             "test_openlineage_late_old_schema_does_not_replace_newer_complete_schema"
         ),
         runner="pytest",
     ),
     Mutation(
         name="openlineage-other-metadata-only",
-        path="storage/openlineage_projection.py",
+        path="datasets/openlineage_projection.py",
         before="terminal or progress or values,",
         after="terminal or values,",
         case=(
-            "tests/storage/test_openlineage_states.py::"
+            "tests/dataset_store/test_openlineage_states.py::"
             "test_openlineage_other_never_changes_observed_state[START]"
         ),
         runner="pytest",

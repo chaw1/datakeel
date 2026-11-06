@@ -13,6 +13,7 @@ import pytest
 from datakeel.core.agent_models import ConversationCreate
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.memory_models import MemoryCreate, MemoryPolicy
+from datakeel.dataset_store.dataset_service import DatasetInput, create_dataset
 from datakeel.memory.service import (
     create_memory,
     delete_memory,
@@ -24,7 +25,6 @@ from datakeel.memory.service import (
     select_memories,
 )
 from datakeel.storage.conversation_store import create
-from datakeel.storage.dataset_service import DatasetInput, create_dataset
 from tests.core.pii_samples import card, identity
 from tests.memory.helpers import NOW
 

@@ -17,9 +17,9 @@ from datakeel.core.agent_models import ResumeInput
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import JsonDocument
 from datakeel.core.workflow_models import WorkflowStart
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.pipeline.image_pointcloud import image_pointcloud_pipeline
 from datakeel.runtime.workflow_service import resume_workflow, start_workflow
-from datakeel.storage.dataset_service import import_paths, list_files
 from datakeel.worker.runner import run_worker
 
 if TYPE_CHECKING:

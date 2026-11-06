@@ -14,8 +14,8 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.llm_data_governance import TrainingEvaluationRequest
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.ontology.functions import invoke_function
-from datakeel.storage.dataset_service import import_paths, list_files
 from datakeel.storage.llm_data_evaluations import register_evaluation
 from tests.asgi_client import TestClient
 from tests.assets.entry_helpers import grant, publish, revoke

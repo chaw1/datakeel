@@ -9,10 +9,10 @@ from sqlalchemy import insert
 
 from datakeel.core.catalog_models import CatalogLink, CatalogObject
 from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.dataset_store.events import append_event
+from datakeel.dataset_store.lineage_service import get_graph
 from datakeel.lineage.models import GraphQuery
 from datakeel.storage.catalog_rows import CatalogEdgeRow, CatalogObjectRow
-from datakeel.storage.events import append_event
-from datakeel.storage.lineage_service import get_graph
 from scripts.scale_bench.common import check_resources, elapsed, fingerprint, measure
 from scripts.scale_bench.models import Context, ScenarioResult
 

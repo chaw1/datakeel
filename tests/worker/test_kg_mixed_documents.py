@@ -13,8 +13,8 @@ from sqlalchemy import select
 
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.core.kg_cache import KGCacheKey
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.kg.extractors import FakeExtractor
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.kg_rows import KGCacheRow

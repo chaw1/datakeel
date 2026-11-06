@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 from datakeel.api.app import create_app
 from datakeel.core.models import utcnow
 from datakeel.core.settings import get_settings
-from datakeel.storage.dataset_service import import_paths
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.worker.runner import run_worker
 from tests.asgi_client import TestClient
 

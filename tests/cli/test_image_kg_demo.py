@@ -8,8 +8,8 @@ import pytest
 from datakeel.cli.image_kg_demo import seed_image_kg_demo
 from datakeel.cli.kg_demo import check_demo, demo_reports
 from datakeel.core.kg_queries import KGQuery
+from datakeel.dataset_store.dataset_service import list_datasets, list_files
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_datasets, list_files
 from datakeel.storage.kg_queries import explain_relation, query_kg
 from datakeel.worker.runner import run_worker
 from tests.offline_network import guard_external_network

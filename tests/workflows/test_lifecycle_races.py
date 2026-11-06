@@ -24,8 +24,8 @@ from tests.workflows.test_authorization import pause_cleanup
 
 if TYPE_CHECKING:
     from datakeel.core.workflow_models import WorkflowCreation, WorkflowRun
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 def test_closing_after_done_preserves_completed_resume_key(

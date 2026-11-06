@@ -6,11 +6,11 @@
 from sqlalchemy import select
 
 from datakeel.core.evidence_eval import EvidenceEvalReport
+from datakeel.dataset_store.object_queries import evaluate_in_session
 from datakeel.ontology.models import FrozenManifest, ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_snapshot import read_snapshot
 from datakeel.storage.harness_rows import EvalRunRow
-from datakeel.storage.object_queries import evaluate_in_session
 
 
 def benchmark_selections(

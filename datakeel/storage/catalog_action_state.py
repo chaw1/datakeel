@@ -19,9 +19,9 @@ from datakeel.core.catalog_models import CatalogSnapshot
 from datakeel.core.catalog_projection import snapshot_events
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.dataset_store.events import all_events
 from datakeel.ontology.models import FrozenManifest, ObjectSet
 from datakeel.storage.catalog_store import lock_catalog, read_snapshot
-from datakeel.storage.events import all_events
 from datakeel.storage.metric_drafts import prepare_confirmation
 from datakeel.storage.metric_store import validate_metric_update
 from datakeel.storage.standard_changes import next_state, standard_impact

@@ -26,8 +26,8 @@ from tests.agent.test_resume import forge_approval
 if TYPE_CHECKING:
     from datakeel.actions.models import ActionPlan
     from datakeel.core.workflow_models import WorkflowRun
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
     from tests.agent.test_resume import ForgedCase
 
 

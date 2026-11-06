@@ -6,10 +6,10 @@
 from rich.console import Console
 
 from datakeel.core.models import new_id
+from datakeel.dataset_store.dataset_service import list_datasets
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence import generate_samples
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.dataset_service import list_datasets
 from datakeel.storage.evidence_import import import_evidence_samples
 from datakeel.storage.evidence_projection import rebuild_evidence
 from datakeel.worker.queue import DatabaseQueue

@@ -47,7 +47,7 @@ PRIORITY_NODEIDS = (
         "test_eval_ask_custom_suite_reports_threshold_miss_without_failed_exit"
     ),
     "tests/routing/test_paraphrase_routing.py::test_no_workflow_question_passes_verification",
-    "tests/storage/test_version_diff.py::test_diff_ten_thousand_files_page_has_bounded_python_memory",
+    "tests/dataset_store/test_version_diff.py::test_diff_ten_thousand_files_page_has_bounded_python_memory",
     (
         "tests/cli/test_evidence.py::"
         "test_demo_with_evidence_reuses_sources_and_reports_complete_second_run_cache"

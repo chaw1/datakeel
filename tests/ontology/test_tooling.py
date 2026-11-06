@@ -7,14 +7,14 @@ import pytest
 
 from datakeel.actions.models import ActionContext
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.object_queries import evaluate
+from datakeel.datasets.views import DatasetView
 from datakeel.ontology import tooling
 from datakeel.ontology.models import ObjectSet
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.database import Database
-from datakeel.storage.object_queries import evaluate
 from datakeel.storage.tool_invocations import list_invocations
-from datakeel.storage.views import DatasetView
 
 
 def test_read_tool_when_called_persists_summary_and_asset_refs(

@@ -26,10 +26,10 @@ from datakeel.core.metric_models import (
     TermTarget,
 )
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.catalog_queries import read_objects
 from datakeel.storage.catalog_store import read_snapshot
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 from datakeel.storage.metric_store import get_metric, install_layer, metric_history_detail
 from datakeel.storage.term_changes import current_term
 

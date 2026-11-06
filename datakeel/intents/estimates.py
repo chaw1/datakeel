@@ -8,12 +8,12 @@ from pydantic import ValidationError as ModelValidationError
 
 from datakeel.actions.registry import POLICIES
 from datakeel.core.intent_models import ChainStep, StepEstimate
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.intents.capability import cloud_prelabel
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.label_drafts import planned_draft_cost
-from datakeel.storage.object_queries import evaluate
 
 GOVERNANCE = frozenset(
     {

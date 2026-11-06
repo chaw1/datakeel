@@ -46,12 +46,12 @@ from datakeel.core.kg_image_request import ImageEvaluationRequest
 from datakeel.core.logging import configure_logging
 from datakeel.core.models import AssetRef
 from datakeel.core.settings import get_settings
+from datakeel.dataset_store.dataset_service import list_datasets
+from datakeel.dataset_store.lineage_service import export_dataset, export_readable_events
 from datakeel.persistence import migrate
 from datakeel.routing.config import load_config
 from datakeel.storage.data_asset_access import skip_protected
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_datasets
-from datakeel.storage.lineage_service import export_dataset, export_readable_events
 from datakeel.worker.runner import run_worker
 
 __all__ = ["main", "seed_demo"]

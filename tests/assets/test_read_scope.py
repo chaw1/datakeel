@@ -10,10 +10,10 @@ import pytest
 from datakeel.core.data_asset_models import AccessContext, AssetUsageQuery
 from datakeel.core.errors import AuthorizationError
 from datakeel.core.models import AssetRef
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.data_asset_access import list_usage
 from datakeel.storage.data_asset_reads import authorize_query
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from tests.assets.entry_helpers import grant, publish
 
 

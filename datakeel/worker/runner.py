@@ -15,12 +15,12 @@ from datakeel.core.media_metadata import media_failure
 from datakeel.core.media_models import MediaFailure
 from datakeel.core.models import FileItem
 from datakeel.core.settings import get_settings
+from datakeel.dataset_store.datasets import materialize_files, persist_files
 from datakeel.evidence.execution import EvidenceExecution
 from datakeel.evidence.vector_execution import VectorExecution
 from datakeel.evidence.vector_plan import has_vectors
 from datakeel.pipeline import Pipeline, default_pipeline, run_pipeline
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.datasets import materialize_files, persist_files
 from datakeel.storage.dq_jobs import schedule_due
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.production_reaper import reap_expired_leases

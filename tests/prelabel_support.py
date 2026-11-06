@@ -21,8 +21,8 @@ import httpx
 from PIL import Image
 
 from datakeel.core.production_models import ProductionTask, Project
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_queries import list_tasks
 from tests.workbench_helpers import run_action
 

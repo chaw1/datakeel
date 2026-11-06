@@ -14,7 +14,7 @@ from datakeel.actions.models import ActionRun, ExecuteRequest
 from datakeel.cli import enterprise
 from datakeel.core.errors import ExecutionError
 from datakeel.core.models import JsonDocument, utcnow
-from datakeel.storage.events import all_events
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.metric_store import get_metric
 
 if TYPE_CHECKING:

@@ -16,11 +16,11 @@ from datakeel.core.catalog_projection import project_catalog
 from datakeel.core.errors import ValidationError
 from datakeel.core.metadata_imports import ExternalMetadata, MetadataImportBatch, PhysicalRelation
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.dataset_store.events import all_events
+from datakeel.dataset_store.metadata_store import publish_metadata
 from datakeel.storage.catalog_projection import rebuild_catalog
 from datakeel.storage.catalog_queries import get_object
 from datakeel.storage.catalog_store import read_snapshot
-from datakeel.storage.events import all_events
-from datakeel.storage.metadata_store import publish_metadata
 
 if TYPE_CHECKING:
     from datakeel.core.catalog_models import CatalogImportRequest

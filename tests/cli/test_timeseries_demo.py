@@ -20,13 +20,13 @@ from datakeel.cli.timeseries_demo import run_timeseries_demo
 from datakeel.core.ask_models import AskRequest
 from datakeel.core.catalog_models import CatalogQuery
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.dataset_service import list_versions, task_artifacts
 from datakeel.operators.timeseries.models import ColumnRange, UnitDeclaration
 from datakeel.pipeline import run_pipeline
 from datakeel.pipeline.tabular import timeseries_pipeline
 from datakeel.quality import score_quality
 from datakeel.sample_timeseries import WEEK_SAMPLES, generate_sensor_samples
 from datakeel.storage.catalog_queries import read_objects
-from datakeel.storage.dataset_service import list_versions, task_artifacts
 from datakeel.storage.governance_service import get_quality, get_report
 
 if TYPE_CHECKING:

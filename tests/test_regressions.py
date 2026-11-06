@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datakeel.api.app import create_app
-from datakeel.lineage.service import all_events
+from datakeel.dataset_store.datasets import import_dataset
+from datakeel.dataset_store.events import all_events
 from datakeel.storage import objects
-from datakeel.storage.datasets import import_dataset
 from datakeel.storage.objects import LocalStore
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import execute

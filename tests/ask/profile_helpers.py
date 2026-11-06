@@ -6,10 +6,10 @@
 from pathlib import Path
 
 from datakeel.core.profile_models import ProfileDataset
+from datakeel.dataset_store.dataset_service import import_paths
+from datakeel.dataset_store.profile_queries import read_profiles
 from datakeel.pipeline.tabular import timeseries_pipeline
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
-from datakeel.storage.profile_queries import read_profiles
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
 

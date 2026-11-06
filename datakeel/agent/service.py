@@ -21,6 +21,7 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.intent_models import PageContext
 from datakeel.core.models import JsonDocument
 from datakeel.core.settings import get_settings
+from datakeel.dataset_store.dataset_service import get_dataset
 from datakeel.delegation.loader import list_agents
 from datakeel.intents.turns import planner_events
 from datakeel.routing.config import load_config, openai_host, route_problem
@@ -31,7 +32,6 @@ from datakeel.storage.conversation_lock import response_lock
 from datakeel.storage.conversation_resume import abandoned_token, begin_resume
 from datakeel.storage.data_asset_context import read_agent_histories, require_agent_history
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import get_dataset
 from datakeel.storage.identity_sessions import (
     bind_session_actor,
     require_session_actor,

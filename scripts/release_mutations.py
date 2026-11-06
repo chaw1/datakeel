@@ -8,7 +8,7 @@ from scripts.mutation_models import Mutation
 RELEASE_MUTATIONS = (
     Mutation(
         name="upload-busy-message",
-        path="storage/upload_files.py",
+        path="dataset_store/upload_files.py",
         before="with response_lock(db, identity, busy_message=message):",
         after="with response_lock(db, identity):",
         case="tests/api/test_uploads.py::test_http_concurrent_chunk_conflict_names_upload",
@@ -16,11 +16,11 @@ RELEASE_MUTATIONS = (
     ),
     Mutation(
         name="version-content-category",
-        path="storage/version_diff.py",
+        path="dataset_store/version_diff.py",
         before="if before.sha256 != after.sha256:",
         after="if False:",
         case=(
-            "tests/storage/test_version_diff.py::"
+            "tests/dataset_store/test_version_diff.py::"
             "test_diff_five_categories_and_annotation_quality_evidence_changes"
         ),
         runner="pytest",
@@ -65,7 +65,7 @@ RELEASE_MUTATIONS = (
     ),
     Mutation(
         name="upload-final-chunk-size",
-        path="storage/upload_service.py",
+        path="dataset_store/upload_service.py",
         before="if len(content) != expected_bytes(body, ordinal):",
         after="if False:",
         case="tests/api/test_uploads.py::test_http_chunk_upload_resume_and_download",
@@ -73,10 +73,10 @@ RELEASE_MUTATIONS = (
     ),
     Mutation(
         name="upload-source-hash",
-        path="storage/upload_files.py",
+        path="dataset_store/upload_files.py",
         before="target.stat().st_size != body.total_bytes or digest(target) != body.sha256",
         after="target.stat().st_size != body.total_bytes",
-        case="tests/storage/test_uploads.py::test_missing_chunk_and_hash_failure_never_publish",
+        case="tests/dataset_store/test_uploads.py::test_missing_chunk_and_hash_failure_never_publish",
         runner="pytest",
     ),
     Mutation(

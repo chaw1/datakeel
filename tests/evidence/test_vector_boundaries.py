@@ -14,10 +14,10 @@ from datakeel.actions.service import approve_plan
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.evidence_execution import EvidenceExecutionContext
 from datakeel.core.vector_models import VectorError
+from datakeel.dataset_store.datasets import materialize_files
 from datakeel.evidence.vector_execution import VectorExecution
 from datakeel.evidence.vector_transport import FakeVectorTransport
 from datakeel.pipeline import run_pipeline
-from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.storage.vector_budget import reserve_vector

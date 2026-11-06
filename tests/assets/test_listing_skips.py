@@ -16,15 +16,15 @@ from datakeel.api.app import create_app
 from datakeel.core.data_asset_models import AccessEntry, DataAsset, SkippedEntries
 from datakeel.core.metric_models import MetricCard
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument, LineageEvent
+from datakeel.dataset_store.dataset_service import import_paths
+from datakeel.dataset_store.lineage_service import record_event
+from datakeel.datasets.views import DatasetView
 from datakeel.lineage.models import GraphView
 from datakeel.mcp import create_server
 from datakeel.ontology.models import FunctionResult
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
-from datakeel.storage.lineage_service import record_event
-from datakeel.storage.views import DatasetView
 from tests.assets.entry_helpers import EntryResources, grant, publish, seed_resources
 
 PROTECTED_NAME = "Generated controlled asset"

@@ -14,9 +14,9 @@ from datakeel.core.evidence_models import Assertion
 from datakeel.core.kg_contracts import KGSchema
 from datakeel.core.kg_registry import register_kg_schema
 from datakeel.core.models import AssetRef, LineageEvent
+from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import EventRow
 from datakeel.storage.database import Database
-from datakeel.storage.events import append_event
 from datakeel.storage.evidence_artifacts import load_bundle, publish_bundle
 from datakeel.storage.evidence_cache import cache_predecessors, invalidations_for, project_cache
 from datakeel.storage.evidence_decisions import append_decision, assertion_view

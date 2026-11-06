@@ -11,11 +11,11 @@ import pytest
 
 from datakeel.cli.media_demo import run_demo
 from datakeel.core.errors import ExecutionError, NotFoundError
+from datakeel.dataset_store.dataset_service import import_paths, list_versions, task_artifacts
+from datakeel.dataset_store.lineage_service import get_graph
 from datakeel.operators import REGISTRY
 from datakeel.operators.media.tools import run_tool
 from datakeel.pipeline import Node, Pipeline
-from datakeel.storage.dataset_service import import_paths, list_versions, task_artifacts
-from datakeel.storage.lineage_service import get_graph
 from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker

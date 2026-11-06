@@ -6,7 +6,7 @@
 import pytest
 
 from datakeel.core.models import FileItem
-from datakeel.storage import version_diff
+from datakeel.dataset_store import version_diff
 from scripts.scale_bench.smoke import Mutation
 
 

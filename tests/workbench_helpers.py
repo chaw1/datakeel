@@ -14,8 +14,8 @@ from datakeel.actions.service import approve_plan, execute_plan, prepare_action
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import JsonDocument
 from datakeel.core.production_models import ProductionTask, Project
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_versions
 from datakeel.storage.production_queries import list_tasks
 from tests.production_flow_support import action_payload
 

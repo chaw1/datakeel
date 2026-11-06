@@ -17,12 +17,12 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.intent_models import PageContext
 from datakeel.core.models import JsonDocument, new_id, utcnow
 from datakeel.core.standard_models import CodeEntry, CodeList, FieldStandard, StandardsContract
+from datakeel.dataset_store.dataset_service import list_files, list_versions
 from datakeel.label_drafts import model as draft_model
 from datakeel.label_drafts.models import CategorySource, DraftInputs
 from datakeel.label_drafts.standards import classify_standards
 from datakeel.storage import label_drafts as draft_store
 from datakeel.storage.annotation_rows import AnnotationBatchRow
-from datakeel.storage.dataset_service import list_files, list_versions
 from tests.intents.support import images, plan, run_to_end
 from tests.intents.test_label_drafts import RECORDED, label_sets
 from tests.production_team_support import ServiceRunner
@@ -32,8 +32,8 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
 
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 KINDS = ("圆形灯", "箭头灯", "行人灯", "非机动车灯", "倒计时灯")
 

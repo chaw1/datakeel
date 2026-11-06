@@ -12,11 +12,11 @@ import httpx
 import pytest
 
 from datakeel.core.models import new_id, utcnow
+from datakeel.dataset_store.dataset_service import list_files, list_versions
 from datakeel.label_drafts.complete import offline_draft
 from datakeel.label_drafts.model import model_draft
 from datakeel.label_drafts.models import CategorySource, DraftInputs, SampleSource
 from datakeel.storage.annotation_rows import AnnotationBatchRow
-from datakeel.storage.dataset_service import list_files, list_versions
 from tests.intents.support import images
 from tests.intents.test_label_drafts import label_sets, vehicle_standards
 from tests.production_team_support import ServiceRunner
@@ -26,8 +26,8 @@ if TYPE_CHECKING:
 
     from datakeel.core.label_guidelines import LabelGuideline
     from datakeel.core.production_catalog_models import LabelSet
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 @pytest.fixture(autouse=True)

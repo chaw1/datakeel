@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 from datakeel.api.app import create_app
 from datakeel.core import predicate_registry
+from datakeel.dataset_store.dataset_service import import_paths, list_versions
 from datakeel.kg.loader import contracts_path
-from datakeel.storage.dataset_service import import_paths, list_versions
 from tests.asgi_client import TestClient
 from tests.kg.helpers import graph_product, seed_graph
 from tests.worker.image_helpers import image_dataset

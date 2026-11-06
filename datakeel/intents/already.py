@@ -16,6 +16,7 @@ from pydantic import ValidationError as ModelValidationError
 
 from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import ChainStep
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.describe import describe_step
 from datakeel.intents.impossible import idle_reason
@@ -27,7 +28,6 @@ from datakeel.ontology.models import ObjectSet
 from datakeel.storage.database import Database
 from datakeel.storage.identity_store import list_users
 from datakeel.storage.intent_reads import task_holders
-from datakeel.storage.object_queries import evaluate
 
 # A status change and nothing else; any other change is compared by the shared checks.
 ACCOUNT_KEYS = frozenset({"operation", "user_id", "status", "request_id"})

@@ -8,18 +8,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 import pytest
 from pydantic import ValidationError
 
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.object_queries import evaluate
+from datakeel.dataset_store.rows import FileStateRow
 from datakeel.ontology.functions import invoke_function
 from datakeel.ontology.models import ObjectSet
-from datakeel.storage.file_state import FileStateRow
-from datakeel.storage.object_queries import evaluate
 from datakeel.storage.task_queue import DatabaseQueue
 
 

@@ -8,15 +8,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 from jsonschema import Draft202012Validator
 
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.object_queries import evaluate
 from datakeel.ontology.models import ActionType, ObjectSet
 from datakeel.ontology.registry import registry
-from datakeel.storage.object_queries import evaluate
 
 
 def test_registry_when_built_exposes_all_declared_asset_and_read_function_types() -> None:

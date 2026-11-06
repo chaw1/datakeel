@@ -50,12 +50,6 @@ from datakeel.storage.dq_rows import (
 )
 from datakeel.storage.evidence_constraints import install_evidence_constraints
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow, EvidenceCacheRow
-from datakeel.storage.file_discovery import (
-    FileDiscoveryCheckpointRow,
-    FileDiscoveryRow,
-    install_file_discovery,
-)
-from datakeel.storage.file_state import FileStateRow
 from datakeel.storage.harness_rows import EvalRunRow, ModelCallTraceRow
 from datakeel.storage.intent_rows import ActionChainRow
 from datakeel.storage.kg_eval_rows import KGEvalRunRow
@@ -73,7 +67,6 @@ from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
 from datakeel.storage.tool_rows import ToolInvocationRow
 from datakeel.storage.training_rows import TrainingSplitRow, install_training_constraints
 from datakeel.storage.transcription_rows import TranscriptionRow
-from datakeel.storage.upload_rows import UploadRow
 from datakeel.storage.workflow_rows import (
     WorkflowAuditRow,
     WorkflowResumeRow,
@@ -114,9 +107,6 @@ _REGISTERED_MODELS = (
     DqIssueRow,
     DqIssueAuditRow,
     DqWebhookRow,
-    FileStateRow,
-    FileDiscoveryRow,
-    FileDiscoveryCheckpointRow,
     DatasheetJobRow,
     BudgetAccountRow,
     BudgetReservationRow,
@@ -135,7 +125,6 @@ _REGISTERED_MODELS = (
     MemoryAuditRow,
     ToolInvocationRow,
     TranscriptionRow,
-    UploadRow,
     AssertionRow,
     AssertionDecisionRow,
     EvidenceCacheRow,
@@ -157,7 +146,6 @@ _REGISTERED_MODELS = (
 __all__ = [
     "install_asset_constraints",
     "install_evidence_constraints",
-    "install_file_discovery",
     "install_llm_data_constraints",
     "install_production_schema",
     "install_release_constraints",

@@ -119,7 +119,7 @@ DATA_ASSET_MUTATIONS = (
     ),
     Mutation(
         name="asset-lineage-content",
-        path="storage/lineage_service.py",
+        path="dataset_store/lineage_service.py",
         before="authorize_query(db, refs, access)",
         after="None",
         case=(
@@ -190,7 +190,7 @@ DATA_ASSET_MUTATIONS = (
     ),
     Mutation(
         name="asset-skip-export",
-        path="storage/lineage_service.py",
+        path="dataset_store/lineage_service.py",
         before="        events = [event for event in events if event.event_id not in hidden]\n",
         after="        pass\n",
         case=(

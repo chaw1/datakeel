@@ -23,6 +23,8 @@ from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.evidence_models import Assertion, AssertionDecisionRequest
 from datakeel.core.models import AssetRef, BoundaryModel
+from datakeel.dataset_store.object_projection import content_digest
+from datakeel.dataset_store.object_queries import evaluate_in_session
 from datakeel.ontology.models import FrozenManifest, ObjectSet, PropertyFilter
 from datakeel.storage.annotation_actions import inspection_manifest
 from datakeel.storage.ask_review import question_references, question_review_digest
@@ -31,8 +33,6 @@ from datakeel.storage.evidence_decisions import assertion_view, decide_in_sessio
 from datakeel.storage.evidence_rows import AssertionDecisionRow, AssertionRow
 from datakeel.storage.kg_image_sources import image_review_references
 from datakeel.storage.llm_data_selection import training_manifest
-from datakeel.storage.object_projection import content_digest
-from datakeel.storage.object_queries import evaluate_in_session
 from datakeel.storage.production_catalog_plans import (
     catalog_manifest as production_catalog_manifest,
 )

@@ -11,6 +11,7 @@ from PIL import Image
 
 from datakeel.core.errors import ValidationError
 from datakeel.core.harness_eval import CaseFixture, GoldenCase
+from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.harness.annotation_cases import seed_annotation_case
 from datakeel.harness.asset_cases import seed_asset_case
 from datakeel.harness.dq_cases import seed_quality_case
@@ -27,7 +28,6 @@ from datakeel.harness.standard_cases import seed_standard_case
 from datakeel.harness.team_cases import register_team
 from datakeel.harness.training_cases import seed_training_case
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths, list_files
 
 GOLDEN_PATH = contract_path("golden")
 

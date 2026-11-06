@@ -14,7 +14,7 @@ from pydantic import ValidationError as ModelValidationError
 from datakeel.core.errors import ValidationError
 from datakeel.core.evidence_inputs import sample_sidecars
 from datakeel.core.models import FileItem
-from datakeel.storage.datasets import materialize_files
+from datakeel.dataset_store.datasets import materialize_files
 from datakeel.storage.evidence_import import import_evidence_samples, source_manifest
 
 if TYPE_CHECKING:

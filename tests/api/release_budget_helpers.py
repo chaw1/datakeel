@@ -8,9 +8,9 @@ from pathlib import Path
 from sqlalchemy import select
 
 from datakeel.core.models import FileItem
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.dataset_store.rows import VersionRow
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 
 FILES = 10_005
 GIB = 1024**3

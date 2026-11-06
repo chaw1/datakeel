@@ -16,7 +16,7 @@ from pydantic import TypeAdapter, ValidationError
 from datakeel.api.app import create_app
 from datakeel.core.ask_models import AskAnswer
 from datakeel.core.search_models import SearchResult
-from datakeel.storage.views import DatasetView, FileView
+from datakeel.datasets.views import DatasetView, FileView
 from scripts.scale_bench.common import check_resources, fingerprint
 from scripts.scale_bench.datasets import seed_dataset
 from scripts.scale_bench.metrics import MetricFixture, prepare, request, valid_answer

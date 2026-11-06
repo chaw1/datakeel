@@ -15,9 +15,14 @@ from datakeel.api.app import create_app
 from datakeel.core.catalog_models import CatalogObject, CatalogSnapshot
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.search_models import SEARCH_KINDS, SearchResult
+from datakeel.dataset_store.dataset_service import (
+    DatasetInput,
+    UploadFile,
+    create_dataset,
+    list_files,
+)
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.catalog_store import publish_snapshot
-from datakeel.storage.dataset_service import DatasetInput, UploadFile, create_dataset, list_files
-from datakeel.storage.events import all_events
 from tests.asgi_client import TestClient
 
 if TYPE_CHECKING:

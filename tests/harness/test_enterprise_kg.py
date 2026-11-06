@@ -10,6 +10,7 @@ import pytest
 from datakeel.core.errors import ExecutionError
 from datakeel.core.kg_eval_models import KGCaseSuite
 from datakeel.core.kg_queries import KGQuery
+from datakeel.dataset_store.dataset_service import list_files
 from datakeel.harness.enterprise_kg import (
     check_enterprise_extraction,
     enterprise_document_path,
@@ -19,7 +20,6 @@ from datakeel.harness.enterprise_kg import (
 )
 from datakeel.kg.loader import load_contract
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import list_files
 from datakeel.storage.harness_service import list_traces
 from datakeel.storage.kg_queries import query_kg
 from datakeel.storage.kg_store import list_runs

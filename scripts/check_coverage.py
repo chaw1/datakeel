@@ -13,6 +13,7 @@ CRITICAL_PACKAGES = (
     "core",
     "persistence",
     "dataset_store",
+    "datasets",
     "worker_store",
     "lineage",
     "actions",
@@ -38,8 +39,8 @@ CRITICAL_PACKAGES = (
 )
 MINIMUM_COVERAGE = 90
 STORAGE_IMPLEMENTATIONS = {
-    "lineage": ("events.py", "lineage_service.py"),
-    "actions": ("action_*.py", "file_state.py", "approval_evidence.py"),
+    "lineage": (),
+    "actions": ("action_*.py", "approval_evidence.py"),
     "worker": ("task_queue.py", "task_queries.py", "task_models.py", "task_terminal.py"),
     "harness": ("harness_*.py", "budget_*.py"),
     "agent": ("conversation_*.py",),
@@ -63,6 +64,14 @@ def belongs_to_package(name: str, package: str) -> bool:
     return (
         name == f"datakeel/{package}"
         or name.startswith(f"datakeel/{package}/")
+        or any(
+            fnmatch(name, f"datakeel/dataset_store/{pattern}")
+            for pattern in {
+                "lineage": ("events.py", "lineage_service.py"),
+                "actions": ("file_state.py",),
+                "ontology": ("object_*.py",),
+            }.get(package, ())
+        )
         or any(
             fnmatch(name, f"datakeel/storage/{pattern}")
             for pattern in STORAGE_IMPLEMENTATIONS.get(package, ())

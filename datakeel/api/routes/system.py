@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 
-from datakeel.storage.views import View
+from datakeel.datasets.views import View
 
 router = APIRouter(tags=["system"])
 STATIC_DIRECTORY = Path(__file__).resolve().parents[2] / "web_dist"

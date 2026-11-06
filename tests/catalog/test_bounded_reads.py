@@ -17,6 +17,9 @@ from datakeel.core.catalog_models import (
 )
 from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.core.search_models import SearchQuery
+from datakeel.dataset_store.events import all_events
+from datakeel.dataset_store.lineage_service import get_graph
+from datakeel.dataset_store.search import search_objects
 from datakeel.lineage.models import GraphOverlay, GraphQuery
 from datakeel.lineage.service import graph
 from datakeel.storage.catalog_pages import read_page
@@ -24,9 +27,6 @@ from datakeel.storage.catalog_queries import get_object, read_objects
 from datakeel.storage.catalog_reads import read_snapshot
 from datakeel.storage.catalog_rows import CatalogObjectRow
 from datakeel.storage.catalog_store import publish_snapshot
-from datakeel.storage.events import all_events
-from datakeel.storage.lineage_service import get_graph
-from datakeel.storage.search import search_objects
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database

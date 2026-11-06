@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
+from datakeel.dataset_store.dataset_service import import_paths
+from datakeel.datasets.views import DatasetView
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
-from datakeel.storage.views import DatasetView
 
 
 @pytest.fixture

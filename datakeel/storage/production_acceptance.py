@@ -20,8 +20,8 @@ from datakeel.core.production_team_models import (
     PackageSampling,
     PackageSamplingParams,
 )
+from datakeel.dataset_store.object_projection import content_digest
 from datakeel.storage.annotation_sampling import sampling_selection
-from datakeel.storage.object_projection import content_digest
 from datakeel.storage.production_catalog import require_complete_attributes
 from datakeel.storage.production_reviews import return_for_rework
 from datakeel.storage.production_revisions import current_revision

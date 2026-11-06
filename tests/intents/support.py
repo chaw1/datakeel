@@ -14,9 +14,9 @@ from datakeel.actions import service
 from datakeel.actions.models import ApprovalDecision
 from datakeel.core.agent_models import ModelRequest, ModelResponse
 from datakeel.core.intent_models import ActionChain, IntentResult, PageContext
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.intents.chains import advance_chain
 from datakeel.intents.planner import ModelAccess, PlannerTurn, plan_turn
-from datakeel.storage.dataset_service import import_paths
 from tests.production_helpers import production_fixture
 from tests.production_team_support import ServiceRunner
 
@@ -24,8 +24,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from datakeel.core.production_models import ProductionTask, Project
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 SETUP = "给这 5000 张路口图建红绿灯框标注\uff0c两人交叉、抄 10%"
 REASSIGN = "把小王手里没动的任务分给小李"

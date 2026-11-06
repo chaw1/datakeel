@@ -22,8 +22,8 @@ from datakeel.storage.tool_invocations import list_invocations
 from tests.agent.test_service import action_script
 
 if TYPE_CHECKING:
+    from datakeel.datasets.views import DatasetView
     from datakeel.storage.database import Database
-    from datakeel.storage.views import DatasetView
 
 
 @pytest.mark.parametrize(

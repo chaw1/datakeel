@@ -9,11 +9,11 @@ from datakeel.actions.models import ActionPlan, ApprovalDecision, ExecuteRequest
 from datakeel.actions.service import approve_plan, execute_plan, prepare_action
 from datakeel.core.models import JsonDocument
 from datakeel.core.vector_models import FrozenVectorNode, VectorPermit
+from datakeel.dataset_store.dataset_service import import_paths
+from datakeel.dataset_store.datasets import materialize_files
 from datakeel.evidence.vector_payload import PreparedWire, prepare_wire
 from datakeel.pipeline.models import Node, Pipeline
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
-from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.task_models import TaskView
 from datakeel.storage.task_queries import query_task

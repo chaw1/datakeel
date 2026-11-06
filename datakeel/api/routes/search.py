@@ -9,7 +9,7 @@ from fastapi import APIRouter, Query
 
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.search_models import SearchQuery, SearchResult
-from datakeel.storage.search import search_objects
+from datakeel.dataset_store.search import search_objects
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 

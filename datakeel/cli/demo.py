@@ -24,6 +24,7 @@ from datakeel.cli.kg_demo import check_demo, demo_reports, seed_kg_demo
 from datakeel.core.errors import ExecutionError
 from datakeel.core.harness_eval import CaseFixture
 from datakeel.core.standard_history_models import StandardsReport
+from datakeel.dataset_store.dataset_service import import_paths, list_datasets
 from datakeel.harness.annotation_cases import AnnotationDemoSummary, seed_annotation_qa_demo
 from datakeel.harness.enterprise_kg import (
     check_enterprise_extraction,
@@ -35,7 +36,6 @@ from datakeel.http import Client
 from datakeel.persistence import migrate
 from datakeel.sample import generate_samples
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.dataset_service import import_paths, list_datasets
 from datakeel.storage.evidence_runs import extraction_report
 from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue

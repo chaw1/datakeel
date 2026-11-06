@@ -18,13 +18,13 @@ from mcp_types import Implementation, Tool
 from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.service import approve_plan, execute_plan
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.dataset_service import import_paths
+from datakeel.datasets.views import DatasetView
 from datakeel.mcp import create_server
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.persistence import migrate
 from datakeel.storage.database import Database
-from datakeel.storage.dataset_service import import_paths
 from datakeel.storage.tool_invocations import list_invocations
-from datakeel.storage.views import DatasetView
 
 
 async def _call(client: Client, name: str, arguments: JsonDocument) -> ToolOutcome:

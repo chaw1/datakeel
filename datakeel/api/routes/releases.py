@@ -11,8 +11,8 @@ from pydantic import Field
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.models import BoundaryModel
 from datakeel.core.release_models import DiffCategory, ReleaseFiles, ReleaseView, VersionDiff
+from datakeel.dataset_store.version_diff import compare_versions
 from datakeel.storage.release_service import get_release, list_release_files, list_releases
-from datakeel.storage.version_diff import compare_versions
 
 router = APIRouter(prefix="/api", tags=["releases"])
 

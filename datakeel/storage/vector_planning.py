@@ -10,9 +10,9 @@ from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import PipelineParams
 from datakeel.core.models import BoundaryModel, FileItem
 from datakeel.core.vector_models import VectorError, require_local_vector_objects
+from datakeel.dataset_store.datasets import materialize_files
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.evidence.vector_plan import freeze_vectors, has_vectors
-from datakeel.storage.datasets import materialize_files
 
 
 def _files(session: Session, params: PipelineParams) -> list[FileItem]:

@@ -13,7 +13,7 @@ from PIL import Image
 from datakeel.actions.service import prepare_action
 from datakeel.core.models import JsonDocument
 from datakeel.core.transcription_models import OCRLine, TranscriptionProfile, TranscriptionResult
-from datakeel.storage.dataset_service import import_paths
+from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.transcription.adapters import FakeTranscriber
 from tests.kg.integration_helpers import TextDataset

@@ -12,9 +12,9 @@ import pytest
 from sqlalchemy import func, select
 
 from datakeel.core.vector_models import VectorError
+from datakeel.dataset_store.datasets import persist_files
 from datakeel.dataset_store.rows import EventRow, VersionRow
 from datakeel.evidence.vector_transport import FakeReply, FakeVectorTransport
-from datakeel.storage.datasets import persist_files
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.evidence_projection import projection_hash, rebuild_evidence
 from datakeel.storage.evidence_runs import extraction_report

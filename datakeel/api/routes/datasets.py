@@ -11,10 +11,15 @@ from fastapi.responses import FileResponse
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.file_queries import FileQuery
-from datakeel.storage import dataset_service as service
-from datakeel.storage.dataset_service import DatasetInput
+from datakeel.dataset_store import dataset_service as service
+from datakeel.datasets.views import (
+    DatasetInput,
+    DatasetQualityView,
+    DatasetView,
+    FileView,
+    VersionView,
+)
 from datakeel.storage.governance_service import dataset_quality_summaries
-from datakeel.storage.views import DatasetQualityView, DatasetView, FileView, VersionView
 
 router = APIRouter(prefix="/api/datasets", tags=["datasets"])
 

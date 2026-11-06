@@ -12,8 +12,8 @@ from fastapi.testclient import TestClient
 from datakeel.api.errors import register_errors
 from datakeel.api.routes.openlineage import router
 from datakeel.core.models import JsonDocument
+from datakeel.dataset_store.events import all_events
 from datakeel.storage.database import Database
-from datakeel.storage.events import all_events
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "metadata" / "openlineage.json"
 

@@ -19,9 +19,9 @@ from datakeel.core.errors import AuthorizationError, ValidationError
 from datakeel.core.evidence_execution import EvidenceExecutionContext
 from datakeel.core.models import JsonDocument
 from datakeel.core.vector_models import EmbedParams, VectorError
+from datakeel.dataset_store.datasets import materialize_files
 from datakeel.evidence.vector_execution import VectorExecution
 from datakeel.pipeline import Node, Pipeline, run_pipeline
-from datakeel.storage.datasets import materialize_files
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.storage.vector_budget import list_vector_attempts

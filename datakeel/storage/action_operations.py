@@ -33,6 +33,7 @@ from datakeel.core.annotation_sampling import AnnotationAcceptanceParams
 from datakeel.core.custom_operators import SubmitCustomOperatorParams
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.dataset_store.datasets import latest_files
 from datakeel.dataset_store.rows import DatasetRow, MetadataChangeRow, VersionRow
 from datakeel.governance import compliance_score, validate_metadata
 from datakeel.pipeline.sharding import validate_shards
@@ -42,7 +43,6 @@ from datakeel.storage.catalog_actions import execute_catalog_action
 from datakeel.storage.custom_store import approve_custom_operator
 from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.data_asset_actions import execute_data_asset_action
-from datakeel.storage.datasets import latest_files
 from datakeel.storage.datasheet_actions import execute_datasheet
 from datakeel.storage.dq_actions import execute_quality_action
 from datakeel.storage.evidence_actions import decide_action
