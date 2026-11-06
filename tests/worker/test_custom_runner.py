@@ -21,9 +21,9 @@ from datakeel.core.models import FileItem
 from datakeel.dataset_store.dataset_service import import_paths, list_files
 from datakeel.dataset_store.lineage_service import get_graph
 from datakeel.dataset_store.rows import EventRow, VersionRow
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline import run_pipeline
 from datakeel.storage.custom_store import list_custom_runs
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.worker.runner import execute
 from datakeel.worker_store.rows import TaskRow
 from tests.storage.test_custom_store import definition, publish

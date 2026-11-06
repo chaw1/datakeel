@@ -24,13 +24,13 @@ from datakeel.harness.evidence_metrics import (
 )
 from datakeel.harness.evidence_questions import EvidenceQuestionSuite, load_evidence_questions
 from datakeel.ontology.models import FrozenManifest
+from datakeel.persistence.task_queries import query_task
 from datakeel.sample_evidence.models import SampleGold
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_evaluations import benchmark_selections
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.evidence_runs import extraction_report
 from datakeel.storage.evidence_store import list_assertions
-from datakeel.storage.task_queries import query_task
 
 
 def _questions(

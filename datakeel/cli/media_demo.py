@@ -13,11 +13,11 @@ from datakeel.cli.parsers import CommandGroup
 from datakeel.core.errors import ExecutionError
 from datakeel.core.models import FileItem, JsonDocument
 from datakeel.dataset_store.dataset_service import import_paths, list_files, list_versions
+from datakeel.persistence.task_queries import query_task
 from datakeel.pipeline.media import media_pipeline
 from datakeel.quality import build_report, score_quality
 from datakeel.sample_media import generate_media
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
 

@@ -15,11 +15,11 @@ from datakeel.core.vector_models import VectorError
 from datakeel.dataset_store.datasets import persist_files
 from datakeel.dataset_store.rows import EventRow, VersionRow
 from datakeel.evidence.vector_transport import FakeReply, FakeVectorTransport
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.evidence_projection import projection_hash, rebuild_evidence
 from datakeel.storage.evidence_runs import extraction_report
 from datakeel.storage.evidence_store import list_assertions
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.storage.vector_budget import list_vector_attempts
 from datakeel.storage.vector_cache import vector_cached
 from datakeel.storage.vector_rows import VectorCacheRow

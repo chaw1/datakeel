@@ -44,10 +44,10 @@ from datakeel.ontology.training_parameters import (
     TrainingDistributionParams,
     TrainingLeakageParams,
 )
+from datakeel.persistence.task_queries import query_task
 from datakeel.storage.data_asset_access import require_access, skip_protected
 from datakeel.storage.database import Database
 from datakeel.storage.governance_service import read_governance
-from datakeel.storage.task_queries import query_task
 
 PARAMETER_MODELS: dict[str, type[BaseModel]] = {
     **PRODUCTION_READ_MODELS,

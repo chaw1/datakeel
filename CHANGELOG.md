@@ -11,6 +11,11 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Worker-store completion keeps fake vector authorization, whole-DAG publication, terminal
+  recovery and nonretryable expiry in typed persistence adapters. Recovery follows terminal
+  outbox writes in the same transaction; task query/list responses retain optional vector
+  reports and partial-success flags after the storage split.
+
 - Dataset Row import checks now resolve module aliases, version summaries retain internal
   row compatibility, and publication reuses prepared file models without reparsing manifests.
 - Vector operator parameters and fixed choices have Chinese and English wording. Restart
@@ -25,6 +30,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Task leases, queries and terminal transitions now live in `worker_store`. Explicit persistence
+  wiring routes frozen completion requests to pipeline/evidence, KG, DQ and datasheet adapters
+  in the existing queue transaction. Ambiguous associations and mismatched products fail closed;
+  lease fencing, terminal/outbox bytes and subsequent action receipts retain their ordering.
 - Dataset, version, lineage, upload and object-query adapters now live in `dataset_store`,
   with frozen dataset contracts in `datasets`. Schema, public payloads, object identities and
   transaction/cleanup ordering remain unchanged. Focused rollback tests cover publication

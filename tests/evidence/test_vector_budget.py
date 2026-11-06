@@ -15,9 +15,9 @@ from sqlalchemy import func, select
 from datakeel.core.models import utcnow
 from datakeel.core.vector_models import VectorError
 from datakeel.evidence.vector_transport import FakeReply, FakeVectorTransport
+from datakeel.persistence.task_queries import query_task
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.storage.evidence_store import list_assertions
-from datakeel.storage.task_queries import query_task
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.storage.vector_budget import list_vector_attempts, reserve_vector
 from datakeel.storage.vector_rows import VectorAccountRow, VectorCacheRow
 from datakeel.worker_store.rows import ShardRow

@@ -278,38 +278,6 @@
         "VersionRow"
       ]
     },
-    "datakeel/storage/task_queries.py": {
-      "datakeel.worker_store.rows": [
-        "TaskRow"
-      ]
-    },
-    "datakeel/storage/task_queue.py": {
-      "datakeel.dataset_store.rows": [
-        "DatasetRow",
-        "VersionRow"
-      ],
-      "datakeel.worker_store.rows": [
-        "OutboxRow",
-        "ShardRow",
-        "TaskRow"
-      ]
-    },
-    "datakeel/storage/task_terminal.py": {
-      "datakeel.dataset_store.rows": [
-        "VersionRow"
-      ],
-      "datakeel.worker_store.rows": [
-        "OutboxRow",
-        "ShardRow",
-        "TaskRow"
-      ]
-    },
-    "datakeel/storage/task_views.py": {
-      "datakeel.worker_store.rows": [
-        "ShardRow",
-        "TaskRow"
-      ]
-    },
     "datakeel/storage/version_diff.py": {
       "datakeel.dataset_store.rows": [
         "DatasetRow"
@@ -328,10 +296,10 @@
     }
   },
   "measurements": {
-    "import_exceptions": 496,
-    "storage_exceptions": 385,
-    "storage_files": 282,
-    "storage_lines": 33592
+    "import_exceptions": 493,
+    "storage_exceptions": 377,
+    "storage_files": 251,
+    "storage_lines": 29233
   },
   "revision": "62cb1035f8e34878804c39d2c7f1b9ccc94308f4",
   "schema_line_budget": 980,
@@ -587,11 +555,6 @@
     "datakeel/storage/standard_profiles.py",
     "datakeel/storage/standard_queries.py",
     "datakeel/storage/standard_store.py",
-    "datakeel/storage/task_models.py",
-    "datakeel/storage/task_queries.py",
-    "datakeel/storage/task_queue.py",
-    "datakeel/storage/task_terminal.py",
-    "datakeel/storage/task_views.py",
     "datakeel/storage/term_changes.py",
     "datakeel/storage/tool_invocations.py",
     "datakeel/storage/tool_rows.py",

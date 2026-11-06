@@ -13,10 +13,10 @@ from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import new_id
 from datakeel.dataset_store.dataset_service import task_artifacts
 from datakeel.datasets.views import FileView, View
+from datakeel.persistence.task_queries import list_tasks, query_task
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline import Pipeline
-from datakeel.storage.task_models import TaskView
-from datakeel.storage.task_queries import list_tasks, query_task
-from datakeel.storage.task_queue import DatabaseQueue
+from datakeel.worker_store.task_models import TaskView
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 

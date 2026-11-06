@@ -3,21 +3,24 @@
 
 """Publish immutable task terminal times and events in the owning transaction."""
 
-from datetime import UTC, datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.core.models import AssetRef, LineageEvent, utcnow
 from datakeel.dataset_store.rows import VersionRow
-from datakeel.storage.datasheet_jobs import finish_failed as fail_datasheet
-from datakeel.storage.dq_results import finish_failed as finish_dq_failed
-from datakeel.storage.kg_store import finish_failed
+from datakeel.worker_store.completion import CompletionRequest, CompletionResult, TaskCompletionPort
 from datakeel.worker_store.rows import OutboxRow, ShardRow, TaskRow
 
 
-def complete_task(session: Session, task: TaskRow, error: str | None) -> None:
+def complete_task(
+    session: Session,
+    task: TaskRow,
+    request: CompletionRequest,
+    port: TaskCompletionPort,
+    result: CompletionResult,
+) -> None:
     """Finalize a failed task or the last completed shard while its parent is locked."""
+    error = request.error
     if error:
         siblings = list(session.scalars(select(ShardRow).where(ShardRow.task_id == task.id)))
         task.state, task.error = "FAILED", error
@@ -40,20 +43,28 @@ def complete_task(session: Session, task: TaskRow, error: str | None) -> None:
             )
             for item in outputs
         ]
-        if task.kg_run_id is None and task.dq_run_id is None and task.datasheet_job_id is None:
+        if result.publish_version:
             session.add(VersionRow(dataset_id=task.dataset_id, task_id=task.id, manifest=manifest))
     if task.state in ("COMPLETED", "FAILED"):
-        _publish_terminal(session, task)
+        _publish_terminal(
+            session, task, port.complete(request.model_copy(update={"phase": task.state}))
+        )
 
 
-def cancel_task(session: Session, task: TaskRow) -> None:
+def cancel_task(
+    session: Session, task: TaskRow, request: CompletionRequest, port: TaskCompletionPort
+) -> None:
     """Cancel the locked task and its remaining shards in the same transaction."""
     siblings = list(
         session.scalars(select(ShardRow).where(ShardRow.task_id == task.id).with_for_update())
     )
     task.state = "CANCELLED"
     _cancel_shards(siblings)
-    _publish_terminal(session, task)
+    _publish_terminal(
+        session,
+        task,
+        port.complete(request.model_copy(update={"phase": "CANCELLED", "error": task.error})),
+    )
 
 
 def _cancel_shards(siblings: list[ShardRow]) -> None:
@@ -62,37 +73,12 @@ def _cancel_shards(siblings: list[ShardRow]) -> None:
             sibling.state, sibling.lease_owner = "CANCELLED", None
 
 
-def _publish_terminal(session: Session, task: TaskRow) -> None:
-    if task.datasheet_job_id and task.state in {"FAILED", "CANCELLED"}:
-        fail_datasheet(
-            session,
-            task.datasheet_job_id,
-            task.error or "Datasheet task cancelled",
-            cancelled=task.state == "CANCELLED",
-        )
-    if task.kg_run_id and task.state in {"FAILED", "CANCELLED"}:
-        finish_failed(session, task.kg_run_id, task.error or "Graph task cancelled")
-    if task.dq_run_id and task.state in {"FAILED", "CANCELLED"}:
-        finish_dq_failed(
-            session,
-            task.dq_run_id,
-            task.error or "Quality task cancelled",
-            cancelled=task.state == "CANCELLED",
-            started_at=datetime.fromtimestamp(task.created_at, UTC),
-        )
+def _publish_terminal(session: Session, task: TaskRow, result: CompletionResult) -> None:
     task.finished_at = utcnow().timestamp()
     terminal = LineageEvent(
         idempotency_key=f"task:{task.id}:terminal",
         event_type="TASK_TERMINAL",
-        operator=(
-            "dq.complete"
-            if task.dq_run_id
-            else "datasheet.complete"
-            if task.datasheet_job_id
-            else "kg.complete"
-            if task.kg_run_id
-            else "pipeline.complete"
-        ),
+        operator=result.operator,
         run_state=task.state,
         source_module="worker",
         source_ref=task.id,
@@ -101,7 +87,7 @@ def _publish_terminal(session: Session, task: TaskRow) -> None:
             AssetRef(
                 asset_type="task",
                 asset_id=task.id,
-                display_name="Datasheet generation" if task.datasheet_job_id else "Pipeline run",
+                display_name=result.display_name,
             )
         ],
         quality={"shards": task.total_shards},

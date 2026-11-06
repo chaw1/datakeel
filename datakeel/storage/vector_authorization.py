@@ -124,3 +124,13 @@ def authorize_vector_node(session: Session, permit: VectorPermit, node: Node) ->
         msg = "vector_hidden_or_changed_node"
         raise VectorError(msg)
     return prepared
+
+
+def vector_completion_plan(session: Session, task_id: str) -> tuple[str, ActionPlan]:
+    """Return the immutable action plan for completion inside its owner's session."""
+    run = session.scalar(select(ActionRunRow).where(ActionRunRow.task_id == task_id))
+    plan = session.get(ActionPlanRow, run.plan_id) if run else None
+    if run is None or plan is None:
+        msg = "vector_requires_consumed_human_approval"
+        raise VectorError(msg)
+    return run.id, ActionPlan.model_validate({**plan.payload, "status": plan.status})

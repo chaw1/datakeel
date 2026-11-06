@@ -249,7 +249,15 @@ Personal submissions skip assignments and review records, while recording system
 
 Schema assembly is explicit in `persistence`, above the existing adapters. `dataset_store`
 owns dataset/version/lineage/object adapters and private mappings; `datasets` owns pure contracts
-and projections. Worker schema remains in `worker_store`; completion migration is separate.
+and projections. Worker schema, queue leases and terminal transitions live in `worker_store`.
+`persistence.task_queue` binds its typed completion port to the existing pipeline/evidence,
+KG, DQ and datasheet adapters in one queue-owned transaction; later action receipts retain
+their separate reconciliation transaction.
 Pure datasets, lineage, governance, quality and shared semantic rules sit below adapters and
 cannot import persistence. Mapping bases remain in neutral `core.schema`. See
 [the schema contract and ratchets](PERSISTENCE_SCHEMA.md).
+
+Fake vector completion policy is composed in `persistence.task_vector` and
+`persistence.task_completion`; worker persistence only sees frozen completion/expiration
+contracts. Recovery runs after the queue flushes terminal/outbox facts. Public task reads use
+`persistence.task_queries` to add vector reports above pure worker-store progress projections.

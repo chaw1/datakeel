@@ -97,7 +97,7 @@ VECTOR_MUTATIONS = (
     ),
     Mutation(
         name="vector-failed-publication",
-        path="storage/vector_completion.py",
+        path="persistence/task_vector.py",
         before="if error:\n        return ()",
         after="if error:\n        return evidence",
         case="tests/evidence/test_vector_boundaries.py::test_error_finish_discards_all_pending_vectors",

@@ -12,14 +12,15 @@ from datakeel.core.vector_models import FrozenVectorNode, VectorPermit
 from datakeel.dataset_store.dataset_service import import_paths
 from datakeel.dataset_store.datasets import materialize_files
 from datakeel.evidence.vector_payload import PreparedWire, prepare_wire
+from datakeel.persistence.task_queries import query_task
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline.models import Node, Pipeline
 from datakeel.storage.database import Database
 from datakeel.storage.evidence_import import source_manifest
-from datakeel.storage.task_models import TaskView
-from datakeel.storage.task_queries import query_task
-from datakeel.storage.task_queue import DatabaseQueue, Lease
 from datakeel.storage.vector_authorization import authorize_vector, vector_permit
 from datakeel.worker.runner import run_worker
+from datakeel.worker_store.task_models import TaskView
+from datakeel.worker_store.task_queue import Lease
 
 
 def vector_pipeline() -> Pipeline:

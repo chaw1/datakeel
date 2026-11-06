@@ -11,9 +11,9 @@ from datakeel.cli.media_demo import run_demo
 from datakeel.core.media_models import MediaSummary
 from datakeel.dataset_store.dataset_service import import_paths, list_versions, task_artifacts
 from datakeel.dataset_store.lineage_service import get_graph
+from datakeel.persistence.task_queries import query_task
 from datakeel.pipeline import Node, Pipeline, run_pipeline
 from datakeel.pipeline.media import media_pipeline
-from datakeel.storage.task_queries import query_task
 from datakeel.worker.observations import Observations
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker

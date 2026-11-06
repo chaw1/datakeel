@@ -10,8 +10,8 @@ import threading
 from datakeel.core.models import AssetRef, LineageEvent
 from datakeel.operators import REGISTRY
 from datakeel.pipeline import Node, Pipeline, PipelineObservation
-from datakeel.storage.task_queue import Lease
 from datakeel.worker.media_observations import media_events
+from datakeel.worker_store.task_queue import Lease
 
 
 class Observations:

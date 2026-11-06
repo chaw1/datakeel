@@ -3,40 +3,27 @@
 
 """Durable shard leases, fenced completion, and a transactional outbox."""
 
+from collections.abc import Callable
 from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
 
-from datakeel.core.datasheet_execution import DatasheetCompletion
-from datakeel.core.dq_monitor import DqCompletion
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
-from datakeel.core.evidence_execution import PendingExtraction
-from datakeel.core.kg_execution import KGCompletion
 from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
 from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
-from datakeel.evidence.vector_plan import has_vectors
-from datakeel.pipeline import Pipeline
+from datakeel.pipeline import Pipeline, validate_pipeline
+from datakeel.pipeline.sharding import validate_shards
 from datakeel.storage.database import Database
-from datakeel.storage.datasheet_jobs import publish_completion as publish_datasheet
-from datakeel.storage.dq_results import publish_completion as publish_dq_completion
-from datakeel.storage.evidence_store import record_extraction_in_session
-from datakeel.storage.kg_publication import publish_completion
-from datakeel.storage.task_submission import (
-    canonical_pipeline,
-    submission_pipeline,
-    validate_registered_pipeline,
-)
-from datakeel.storage.task_terminal import cancel_task, complete_task
-from datakeel.storage.vector_budget import recover_vectors
-from datakeel.storage.vector_completion import (
-    Completion,
-    has_vector_work,
-    validate_vector_completion,
+from datakeel.worker_store.completion import (
+    CompletionPayload,
+    CompletionRequest,
+    TaskCompletionPort,
 )
 from datakeel.worker_store.rows import OutboxRow, ShardRow, TaskRow
+from datakeel.worker_store.task_terminal import cancel_task, complete_task
 
 MAX_SHARDS = 128
 
@@ -73,8 +60,18 @@ class TaskSource(Protocol):
 class DatabaseQueue:
     """Coordinate idempotent task submission and fenced terminal transitions."""
 
-    def __init__(self, db: Database, lease_seconds: float = 30, max_attempts: int = 3) -> None:
+    def __init__(
+        self,
+        db: Database,
+        lease_seconds: float = 30,
+        max_attempts: int = 3,
+        *,
+        completion_factory: Callable[[Session], TaskCompletionPort],
+        validate_registered: Callable[[Session, Pipeline | None], None],
+    ) -> None:
         """Bind the queue to its storage and retry policy."""
+        self._completion_factory = completion_factory
+        self._registered = validate_registered
         self.db = db
         self.lease_seconds = lease_seconds
         self.max_attempts = max_attempts
@@ -90,7 +87,8 @@ class DatabaseQueue:
         version_id: str | None = None,
     ) -> str:
         """Persist a frozen input manifest, or return its idempotent task."""
-        pipeline = submission_pipeline(pipeline, shards)
+        pipeline = _submission_pipeline(pipeline, shards)
+        self.validate_submission(Pipeline.model_validate(pipeline) if pipeline else None)
         if shards < 1 or shards > MAX_SHARDS or queue not in ("cpu", "io", "gpu"):
             msg = "Invalid shard count or queue"
             raise ValidationError(msg)
@@ -106,7 +104,7 @@ class DatabaseQueue:
             if existing:
                 if (
                     existing.dataset_id != dataset_id
-                    or canonical_pipeline(existing.pipeline) != pipeline
+                    or _canonical_pipeline(existing.pipeline) != pipeline
                     or existing.queue != queue
                     or existing.total_shards != shards
                     or existing.input_version_id != version_id
@@ -114,7 +112,7 @@ class DatabaseQueue:
                     msg = "Idempotency key already used with different parameters"
                     raise ConflictError(msg)
                 return existing.id
-            validate_registered_pipeline(session, pipeline)
+            self._registered(session, Pipeline.model_validate(pipeline) if pipeline else None)
             source_files = dataset.files
             if version_id:
                 version = session.get(VersionRow, version_id)
@@ -138,6 +136,9 @@ class DatabaseQueue:
                 )
             session.commit()
             return task.id
+
+    def validate_submission(self, pipeline: Pipeline | None) -> None:
+        """Apply the application policy before entering a submission transaction."""
 
     def claim(self, queue: str = "cpu") -> Lease | None:
         """Lock and claim one shard using a new fencing token."""
@@ -211,10 +212,7 @@ class DatabaseQueue:
         error: str | None = None,
         expired_before: float | None = None,
         *,
-        evidence: tuple[PendingExtraction, ...]
-        | KGCompletion
-        | DqCompletion
-        | DatasheetCompletion = (),
+        evidence: CompletionPayload = (),
     ) -> bool:
         """Publish outputs and the terminal outbox atomically if the lease is owned."""
         with self.db.session() as session:
@@ -236,30 +234,22 @@ class DatabaseQueue:
             if task is None:
                 msg = "Task not found"
                 raise NotFoundError(msg)
-            if (
-                task.datasheet_job_id
-                and not error
-                and (
-                    not isinstance(evidence, DatasheetCompletion)
-                    or evidence.job_id != task.datasheet_job_id
-                )
-            ):
-                msg = "Successful datasheet tasks require their exact checked completion"
-                raise ConflictError(msg)
-            evidence = validate_vector_completion(session, lease, evidence, error)
-            if error and has_vectors(
-                Pipeline.model_validate(task.pipeline) if task.pipeline else None
-            ):
-                outputs = []
+            port = self._completion_factory(session)
+            request = _completion_request(task, evidence, error).model_copy(
+                update={"shard_id": lease.shard_id, "owner": lease.owner}
+            )
+            result = port.complete(request)
             shard.state, shard.lease_owner = "FAILED" if error else "COMPLETED", None
-            shard.outputs = [item.model_dump(mode="json") for item in outputs]
+            shard.outputs = [
+                item.model_dump(mode="json") for item in outputs if not result.discard_outputs
+            ]
             for event in events:
                 append_event(session, event)
-            _publish_evidence(session, evidence, task.id)
             session.flush()
-            complete_task(session, task, error)
-            if error:
-                recover_vectors(session, task.id)
+            complete_task(session, task, request, port, result)
+            session.flush()
+            if task.state in {"COMPLETED", "FAILED"}:
+                port.recover(request.model_copy(update={"phase": task.state}))
             session.commit()
             return True
 
@@ -273,14 +263,17 @@ class DatabaseQueue:
                 raise NotFoundError(msg)
             if task.state in ("COMPLETED", "FAILED", "CANCELLED"):
                 return False
-            cancel_task(session, task)
-            recover_vectors(session, task.id)
+            port = self._completion_factory(session)
+            request = _completion_request(task)
+            cancel_task(session, task, request, port)
+            session.flush()
+            port.recover(request.model_copy(update={"phase": "CANCELLED"}))
             session.commit()
             return True
 
     def reap(self) -> int:
         """Requeue expired attempts or persist terminal failure after exhaustion."""
-        expired: list[Lease] = []
+        expired: list[tuple[Lease, str]] = []
         requeued = 0
         cutoff = utcnow().timestamp() - self.lease_seconds
         with self.db.session() as session:
@@ -297,38 +290,34 @@ class DatabaseQueue:
             )
             for shard in shards:
                 task = session.get(TaskRow, shard.task_id)
-                vector = has_vector_work(session, shard.task_id, task)
-                if vector or shard.attempts >= self.max_attempts:
-                    task = session.get(TaskRow, shard.task_id)
-                    if task is None:
-                        msg = "Task not found"
-                        raise NotFoundError(msg)
+                if task is None:
+                    msg = "Task not found"
+                    raise NotFoundError(msg)
+                policy = self._completion_factory(session).expiration(_completion_request(task))
+                if policy.error is not None or shard.attempts >= self.max_attempts:
                     expired.append(
-                        Lease(
-                            shard_id=shard.id,
-                            task_id=task.id,
-                            dataset_id=task.dataset_id,
-                            owner=shard.lease_owner or "",
-                            inputs=[],
-                            pipeline=Pipeline.model_validate(task.pipeline)
-                            if task.pipeline
-                            else None,
+                        (
+                            Lease(
+                                shard_id=shard.id,
+                                task_id=task.id,
+                                dataset_id=task.dataset_id,
+                                owner=shard.lease_owner or "",
+                                inputs=[],
+                                pipeline=None,
+                            ),
+                            policy.error or "Worker lease expired after maximum retries",
                         )
                     )
                 else:
                     shard.state, shard.lease_owner = "QUEUED", None
                     requeued += 1
             session.commit()
-        for lease in expired:
+        for lease, error in expired:
             requeued += self.finish(
                 lease,
                 [],
                 [],
-                error=(
-                    "vector_lease_expired_outcome_unknown"
-                    if has_vectors(lease.pipeline)
-                    else "Worker lease expired after maximum retries"
-                ),
+                error=error,
                 expired_before=cutoff,
             )
         return requeued
@@ -351,6 +340,21 @@ class DatabaseQueue:
             return len(rows)
 
 
+def _canonical_pipeline(value: dict[str, Any] | None) -> dict[str, Any] | None:
+    return Pipeline.model_validate(value).model_dump(mode="json") if value is not None else None
+
+
+def _submission_pipeline(
+    value: Pipeline | dict[str, Any] | None, shards: int
+) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    validate_pipeline(value)
+    definition = Pipeline.model_validate(value)
+    validate_shards(definition, shards)
+    return definition.model_dump(mode="json")
+
+
 def _source_version(session: Session, task: TaskRow) -> str:
     if task.input_version_id is not None:
         return task.input_version_id
@@ -366,13 +370,17 @@ def _source_version(session: Session, task: TaskRow) -> str:
     return version
 
 
-def _publish_evidence(session: Session, evidence: Completion, task_id: str) -> None:
-    if isinstance(evidence, DqCompletion):
-        publish_dq_completion(session, evidence, task_id)
-    elif isinstance(evidence, KGCompletion):
-        publish_completion(session, evidence, task_id)
-    elif isinstance(evidence, DatasheetCompletion):
-        publish_datasheet(session, evidence, task_id)
-    else:
-        for pending in evidence:
-            record_extraction_in_session(session, pending.event, pending.bundle)
+def _completion_request(
+    task: TaskRow, payload: CompletionPayload = (), error: str | None = None
+) -> CompletionRequest:
+    return CompletionRequest(
+        task_id=task.id,
+        dataset_id=task.dataset_id,
+        created_at=task.created_at,
+        kg_run_id=task.kg_run_id,
+        dq_run_id=task.dq_run_id,
+        datasheet_job_id=task.datasheet_job_id,
+        payload=payload,
+        error=error,
+        pipeline=Pipeline.model_validate(task.pipeline) if task.pipeline else None,
+    )

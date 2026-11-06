@@ -17,9 +17,9 @@ from datakeel.core.vector_models import VectorError
 from datakeel.dataset_store.datasets import materialize_files
 from datakeel.evidence.vector_execution import VectorExecution
 from datakeel.evidence.vector_transport import FakeVectorTransport
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline import run_pipeline
 from datakeel.storage.evidence_store import list_assertions
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.storage.vector_budget import reserve_vector
 from datakeel.storage.vector_rows import VectorCacheRow
 from tests.evidence.vector_helpers import leased_vector, vector_dataset, vector_prepare

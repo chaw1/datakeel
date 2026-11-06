@@ -13,7 +13,7 @@ from sqlalchemy import inspect, text
 
 from datakeel.core.errors import ValidationError
 from datakeel.persistence import migrate
-from datakeel.storage.task_queries import list_tasks
+from datakeel.persistence.task_queries import list_tasks
 
 if TYPE_CHECKING:
     from datakeel.storage.database import Database

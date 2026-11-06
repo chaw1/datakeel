@@ -34,10 +34,10 @@ from datakeel.harness.enterprise_kg import (
 from datakeel.harness.standard_cases import seed_standard_demo
 from datakeel.http import Client
 from datakeel.persistence import migrate
+from datakeel.persistence.task_queries import query_task
 from datakeel.sample import generate_samples
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.evidence_runs import extraction_report
-from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
 
