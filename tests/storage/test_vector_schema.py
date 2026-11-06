@@ -1,7 +1,7 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Independent two-dialect DDL oracle and non-destructive SQLite lease upgrades."""
+"""Independent two-dialect DDL oracle and non-destructive lease upgrades."""
 
 from __future__ import annotations
 
@@ -53,12 +53,14 @@ def test_ddl_preserves_every_main_table_except_explicit_vector_and_lease_additio
 def test_nullable_lease_upgrade_preserves_existing_shard_and_is_idempotent(
     unmigrated_db: Database,
 ) -> None:
-    """An actual pre-E2 SQLite database gains three tables and a null lease without data loss."""
-    if not unmigrated_db.sqlite:
-        pytest.skip("SQLite baseline DDL; the PG oracle above compiles without a connection")
-    baseline = json.loads(ORACLE.read_text())["baseline"]["sqlite"]
+    """An actual pre-E2 database gains three tables and a null lease without data loss."""
+    dialect = unmigrated_db.engine.dialect.name
+    baseline = json.loads(ORACLE.read_text())["baseline"][dialect]
     with unmigrated_db.engine.begin() as connection:
-        for ddl in baseline.values():
+        for table in Base.metadata.sorted_tables:
+            if table.name not in baseline:
+                continue
+            ddl = baseline[table.name]
             connection.exec_driver_sql(ddl["table"])
             for index in ddl["indexes"]:
                 connection.exec_driver_sql(index)

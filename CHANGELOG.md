@@ -11,6 +11,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Vector operator parameters and fixed choices have Chinese and English wording. Restart
+  regressions preserve the private PostgreSQL search path across independent engines and
+  racing budget/reaper connections. Offline test guards allow loopback infrastructure while
+  rejecting external DNS and sockets; lease upgrade coverage runs on both database dialects.
 - Fake vector pair budgets exclude failed inputs at preparation and execution, preserving partial success at the exact eligible-pair limit. Over-limit runs still fail atomically. Vector tables use an explicit schema owner; the nullable worker lease supports additive upgrades.
 
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.

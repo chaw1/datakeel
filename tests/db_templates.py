@@ -41,6 +41,20 @@ def _open_pooled_connection(database: Database) -> None:
 
 def schema_database(url: URL, schema: str) -> Database:
     """Retain the original fixture's engine initialization and per-connection schema."""
+    return _scoped_database(url, '"' + schema.replace('"', '""') + '"')
+
+
+def restart_database(database: Database) -> Database:
+    """Open an independent engine with the same URL and exact PostgreSQL search path."""
+    if database.sqlite:
+        return Database(database.engine.url.render_as_string(hide_password=False))
+    with database.engine.connect() as connection:
+        search_path = connection.scalar(text("SHOW search_path"))
+    assert isinstance(search_path, str)
+    return _scoped_database(database.engine.url, search_path)
+
+
+def _scoped_database(url: URL, search_path: str) -> Database:
     database = Database(url.render_as_string(hide_password=False))
     try:
         # Initialize the dialect in public before installing the fixture schema hook.
@@ -51,7 +65,7 @@ def schema_database(url: URL, schema: str) -> Database:
         @event.listens_for(database.engine, "connect")
         def set_schema(connection: DBAPIConnection, _record: ConnectionPoolEntry) -> None:
             cursor = connection.cursor()
-            cursor.execute(f'SET search_path TO "{schema}"')
+            cursor.execute("SELECT set_config('search_path', %s, false)", (search_path,))
             connection.commit()
             cursor.close()
 

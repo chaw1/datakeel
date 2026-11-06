@@ -1727,6 +1727,183 @@
     "queue": "cpu"
   },
   {
+    "id": "evidence.vector_embed",
+    "version": "1.0.0",
+    "modality": "any",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "$defs": {
+        "VectorPolicy": {
+          "additionalProperties": false,
+          "description": "Freeze invented CNY accounting units, never provider prices or real consent.",
+          "properties": {
+            "currency": {
+              "const": "CNY",
+              "default": "CNY",
+              "title": "Currency",
+              "type": "string"
+            },
+            "price_version": {
+              "const": "fake-price-v1",
+              "default": "fake-price-v1",
+              "title": "Price Version",
+              "type": "string"
+            },
+            "nanos_per_token": {
+              "default": 1,
+              "minimum": 0,
+              "title": "Nanos Per Token",
+              "type": "integer"
+            },
+            "image_tokens": {
+              "default": 100,
+              "exclusiveMinimum": 0,
+              "title": "Image Tokens",
+              "type": "integer"
+            },
+            "max_requests": {
+              "default": 5000,
+              "minimum": 0,
+              "title": "Max Requests",
+              "type": "integer"
+            },
+            "max_cost_nanos": {
+              "default": 100000000,
+              "minimum": 0,
+              "title": "Max Cost Nanos",
+              "type": "integer"
+            },
+            "real_budget_cny": {
+              "const": 0,
+              "default": 0,
+              "title": "Real Budget Cny",
+              "type": "integer"
+            },
+            "real_egress_enabled": {
+              "const": false,
+              "default": false,
+              "title": "Real Egress Enabled",
+              "type": "boolean"
+            }
+          },
+          "title": "VectorPolicy",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Expose the fake embedding schema through the existing operator registry.",
+      "properties": {
+        "mode": {
+          "const": "fake",
+          "default": "fake",
+          "title": "Mode",
+          "type": "string"
+        },
+        "fake_version": {
+          "const": "we-e2-fake-v1",
+          "default": "we-e2-fake-v1",
+          "title": "Fake Version",
+          "type": "string"
+        },
+        "contract": {
+          "const": "we-e1-v1",
+          "default": "we-e1-v1",
+          "title": "Contract",
+          "type": "string"
+        },
+        "endpoint": {
+          "default": "https://embedding.example.invalid/v1/embeddings",
+          "title": "Endpoint",
+          "type": "string"
+        },
+        "modality": {
+          "default": "text",
+          "enum": [
+            "text",
+            "image"
+          ],
+          "title": "Modality",
+          "type": "string"
+        },
+        "dimensions": {
+          "default": 64,
+          "enum": [
+            64,
+            128,
+            256,
+            512,
+            768,
+            1024,
+            1536,
+            2048
+          ],
+          "title": "Dimensions",
+          "type": "integer"
+        },
+        "tokenizer": {
+          "const": "fake-codepoint-v1",
+          "default": "fake-codepoint-v1",
+          "title": "Tokenizer",
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/$defs/VectorPolicy"
+        }
+      },
+      "title": "VectorEmbedParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "evidence.semantic_duplicate",
+    "version": "1.0.0",
+    "modality": "any",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Expose bounded direct-pair parameters through the existing registry.",
+      "properties": {
+        "threshold": {
+          "default": 0.9,
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "max_samples": {
+          "default": 5000,
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "Max Samples",
+          "type": "integer"
+        },
+        "max_candidate_pairs": {
+          "default": 250000,
+          "maximum": 250000,
+          "minimum": 0,
+          "title": "Max Candidate Pairs",
+          "type": "integer"
+        }
+      },
+      "title": "SemanticDuplicateParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
     "id": "table.profile",
     "version": "1.0.0",
     "modality": "table",

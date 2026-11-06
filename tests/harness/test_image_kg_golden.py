@@ -3,7 +3,6 @@
 
 """Image goldens exercise actual explanations, replay batches and external approval boundaries."""
 
-import socket
 from pathlib import Path
 
 import pytest
@@ -21,7 +20,7 @@ from datakeel.storage.database import Database
     "identifier", ["41-image-kg-explain", "42-image-kg-replay", "43-image-kg-external"]
 )
 def test_image_goldens_use_offline_sources_and_actual_policy(
-    identifier: str, monkeypatch: pytest.MonkeyPatch
+    identifier: str, monkeypatch: pytest.MonkeyPatch, offline_network: None
 ) -> None:
     """No replay or preparation step may initialize a real model client."""
 
@@ -29,7 +28,6 @@ def test_image_goldens_use_offline_sources_and_actual_policy(
         del args, kwargs
         pytest.fail("Image golden attempted network or credential access")
 
-    monkeypatch.setattr(socket.socket, "connect", forbidden)
     monkeypatch.setattr("datakeel.extraction_runtime.factory.get_settings", forbidden)
     monkeypatch.setattr("datakeel.transcription.factory.get_settings", forbidden)
     case = next(item for item in load_cases() if item.id == identifier)

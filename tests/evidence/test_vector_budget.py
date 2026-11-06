@@ -15,13 +15,13 @@ from sqlalchemy import func, select
 from datakeel.core.models import utcnow
 from datakeel.core.vector_models import VectorError
 from datakeel.evidence.vector_transport import FakeReply, FakeVectorTransport
-from datakeel.storage.database import Database
 from datakeel.storage.evidence_store import list_assertions
 from datakeel.storage.task_queries import query_task
 from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.storage.vector_budget import list_vector_attempts, reserve_vector
 from datakeel.storage.vector_rows import VectorAccountRow, VectorCacheRow
 from datakeel.worker_store.rows import ShardRow
+from tests.db_templates import restart_database
 from tests.evidence.vector_helpers import leased_vector, vector_dataset, vector_run
 
 if TYPE_CHECKING:
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
     from datakeel.core.vector_models import FrozenVectorNode
     from datakeel.evidence.vector_payload import PreparedWire
+    from datakeel.storage.database import Database
 
 
 def test_concurrent_duplicate_reservation_is_atomic_and_durable(
@@ -36,19 +37,19 @@ def test_concurrent_duplicate_reservation_is_atomic_and_durable(
 ) -> None:
     """Four racing workers can occupy only one attempt for the same approved request."""
     lease, permit, node, wire = leased_vector(db, tmp_path / "inputs")
+    restarted = restart_database(db)
 
-    def reserve(_: int) -> bool:
+    def reserve(index: int) -> bool:
         try:
-            reserve_vector(db, permit, node.node_id, wire.frozen)
+            reserve_vector(db if index % 2 == 0 else restarted, permit, node.node_id, wire.frozen)
         except VectorError:
             return False
         return True
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        results = list(pool.map(reserve, range(4)))
-    assert sum(results) == 1
-    restarted = Database(str(db.engine.url))
     try:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(reserve, range(4)))
+        assert sum(results) == 1
         assert len(list_vector_attempts(restarted, lease.task_id)) == 1
         with restarted.session() as session:
             account = session.get(VectorAccountRow, permit.plan_id)
@@ -74,10 +75,14 @@ def test_restart_reaper_never_resends_and_refunds_only_proven_unsent(
         shard.heartbeat_at = utcnow().timestamp() - 100
         shard.lease_expires_at = shard.heartbeat_at
         session.commit()
-    restarted = Database(str(db.engine.url))
+    restarted = restart_database(db)
     try:
         queue = DatabaseQueue(restarted)
-        assert queue.reap() == 1
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            reaped = list(
+                pool.map(lambda database: DatabaseQueue(database).reap(), (db, restarted))
+            )
+        assert sum(reaped) == 1
         assert queue.reap() == 0
         assert queue.claim() is None
         saved = list_vector_attempts(restarted, lease.task_id)

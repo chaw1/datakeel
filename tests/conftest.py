@@ -14,6 +14,7 @@ from sqlalchemy import event, text
 
 from datakeel.storage.database import Database
 from tests.db_templates import DatabaseTemplate
+from tests.offline_network import guard_external_network
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -21,6 +22,12 @@ if TYPE_CHECKING:
 
     from sqlalchemy.engine.interfaces import DBAPIConnection
     from sqlalchemy.pool import ConnectionPoolEntry
+
+
+@pytest.fixture
+def offline_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Allow local test infrastructure while rejecting external DNS and connections."""
+    guard_external_network(monkeypatch)
 
 
 @pytest.fixture

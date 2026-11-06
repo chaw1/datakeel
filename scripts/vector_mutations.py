@@ -7,6 +7,31 @@ from scripts.mutation_models import Mutation
 
 VECTOR_MUTATIONS = (
     Mutation(
+        name="vector-parameter-wording",
+        path="intents/field_names.py",
+        before='"max_candidate_pairs": (',
+        after='"unregistered_candidate_pairs": (',
+        case="tests/intents/test_language_gate.py::test_vector_operator_parameters_and_nested_policy_have_bilingual_words",
+        runner="pytest",
+    ),
+    Mutation(
+        name="vector-enum-wording",
+        path="intents/field_names.py",
+        before='"we-e2-fake-v1": (',
+        after='"unregistered-fake-version": (',
+        case="tests/intents/test_language_gate.py::test_vector_operator_parameters_and_nested_policy_have_bilingual_words",
+        runner="pytest",
+    ),
+    Mutation(
+        name="vector-offline-external-block",
+        path="tests/offline_network.py",
+        before="return address.is_loopback",
+        after="return True",
+        case="tests/test_offline_network.py::test_external_dns_and_connections_fail_before_original_functions[192.0.2.1]",
+        runner="pytest",
+        source_root="repository",
+    ),
+    Mutation(
         name="vector-prepare-eligible-pairs",
         path="evidence/vector_plan.py",
         before="sum(prepare_wire(file, embed).frozen.failure is None for file in files)",

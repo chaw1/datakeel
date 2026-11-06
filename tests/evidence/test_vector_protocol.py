@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import socket
 from typing import TYPE_CHECKING
 
 import pytest
@@ -96,15 +95,13 @@ def test_equal_preprocessed_images_still_bind_distinct_original_revisions(tmp_pa
 
 
 def test_prepare_constructs_no_transport_and_fake_execution_opens_no_network(
-    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, offline_network: None
 ) -> None:
-    """Neither preparation nor execution needs DNS, sockets, credentials or a provider backend."""
+    """Preparation and fake execution need no external network or provider backend."""
 
     def forbidden(*args: object, **kwargs: object) -> None:
         pytest.fail("unexpected transport construction or network access")
 
-    monkeypatch.setattr(socket, "getaddrinfo", forbidden)
-    monkeypatch.setattr(socket.socket, "connect", forbidden)
     dataset = vector_dataset(db, tmp_path / "inputs")
     with monkeypatch.context() as scoped:
         scoped.setattr(FakeVectorTransport, "__init__", forbidden)

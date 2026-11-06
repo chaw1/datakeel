@@ -3,8 +3,6 @@
 
 """The graph demo retains recorded, scripted and failed extraction evidence together."""
 
-import socket
-
 import pytest
 
 from datakeel.cli.kg_demo import check_demo, demo_reports, seed_kg_demo
@@ -17,7 +15,7 @@ from datakeel.worker.runner import run_worker
 
 
 def test_recorded_and_scripted_demo_share_one_visible_graph_without_network(
-    db: Database, monkeypatch: pytest.MonkeyPatch
+    db: Database, monkeypatch: pytest.MonkeyPatch, offline_network: None
 ) -> None:
     """A partial replay does not hide successful graph data or the independent long documents."""
 
@@ -25,7 +23,6 @@ def test_recorded_and_scripted_demo_share_one_visible_graph_without_network(
         del args, kwargs
         pytest.fail("Offline graph demonstration attempted network or credential access")
 
-    monkeypatch.setattr(socket.socket, "connect", forbidden)
     monkeypatch.setattr("datakeel.extraction_runtime.factory.get_settings", forbidden)
     seed = seed_kg_demo(db)
     assert len(list_files(db, seed.dataset_id)) == 28

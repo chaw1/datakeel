@@ -8,6 +8,23 @@ the card). These only name a field on the card, so no line shows a raw parameter
 """
 
 MORE_LABELS: dict[str, tuple[str, str]] = {
+    "vector_prepared": ("已冻结的向量计划", "frozen vector plan"),
+    "currency": ("计费币种", "accounting currency"),
+    "dimensions": ("向量维数", "vector dimensions"),
+    "endpoint": ("请求地址", "request endpoint"),
+    "fake_version": ("模拟协议版本", "fake protocol version"),
+    "image_tokens": ("每张图片的模拟 token 数", "fake tokens per image"),
+    "max_candidate_pairs": ("直接比较对数上限", "direct comparison pair limit"),
+    "max_cost_nanos": ("模拟费用上限(纳元)", "fake cost limit (nano CNY)"),
+    "max_requests": ("请求次数上限", "request count limit"),
+    "max_samples": ("输入样本上限", "input sample limit"),
+    "nanos_per_token": ("每 token 模拟纳元数", "fake nano CNY per token"),
+    "policy": ("向量预算规则", "vector budget policy"),
+    "price_version": ("模拟价格版本", "fake price version"),
+    "real_budget_cny": ("真实预算(人民币)", "real budget (CNY)"),
+    "real_egress_enabled": ("是否允许真实外发", "real egress enabled"),
+    "threshold": ("相似度阈值", "similarity threshold"),
+    "tokenizer": ("分词方式", "tokenizer"),
     # Every registered parameter has words; none is shown by its key.
     "after_version": ("之后的版本", "later version"),
     "assertion_filters": ("断言筛选", "assertion filters"),
@@ -164,6 +181,22 @@ MORE_LABELS: dict[str, tuple[str, str]] = {
 
 # Fixed choices of parameters and read results, in words (see plain_words).
 ENUM_LABELS: dict[str, tuple[str, str]] = {
+    "0": ("零", "zero"),
+    "False": ("关闭", "disabled"),
+    "64": ("64 维", "64 dimensions"),
+    "128": ("128 维", "128 dimensions"),
+    "256": ("256 维", "256 dimensions"),
+    "512": ("512 维", "512 dimensions"),
+    "768": ("768 维", "768 dimensions"),
+    "1024": ("1024 维", "1024 dimensions"),
+    "1536": ("1536 维", "1536 dimensions"),
+    "2048": ("2048 维", "2048 dimensions"),
+    "CNY": ("人民币", "Chinese yuan"),
+    "fake-codepoint-v1": ("模拟字符计数第一版", "fake codepoint counter v1"),
+    "fake-price-v1": ("模拟价格第一版", "fake price v1"),
+    "we-e1-v1": ("向量字节协议第一版", "vector byte contract v1"),
+    "we-e2-fake-v1": ("模拟向量协议第一版", "fake vector protocol v1"),
+    "we-e2-plan-v1": ("冻结向量计划第一版", "frozen vector plan v1"),
     "personal": ("个人", "personal"),
     "group": ("小组", "group"),
     "team": ("团队", "team"),

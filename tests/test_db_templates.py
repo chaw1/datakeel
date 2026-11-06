@@ -6,7 +6,9 @@
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier
 from typing import TYPE_CHECKING
 
 import pytest
@@ -19,7 +21,7 @@ from datakeel.persistence.legacy import schema_contributions
 from datakeel.storage.base import Base
 from datakeel.storage.database import Database
 from tests import db_templates
-from tests.db_templates import DatabaseTemplate
+from tests.db_templates import DatabaseTemplate, restart_database
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import URL
@@ -78,6 +80,37 @@ def test_copied_databases_never_share_data_or_schema(
 def test_upgrade_fixture_still_starts_without_application_tables(unmigrated_db: Database) -> None:
     """Migration regression tests still exercise a genuinely uninitialized schema."""
     assert inspect(unmigrated_db.engine).get_table_names() == []
+
+
+def test_restarted_engine_keeps_private_schema_on_every_concurrent_connection(db: Database) -> None:
+    """A restart and pool disposal retain the exact path, tables and private rows."""
+    with db.session() as session:
+        session.add(DatasetRow(id="restart-private", name="Generated restart fixture"))
+        session.commit()
+    restarted = restart_database(db)
+    barrier = Barrier(3)
+
+    def read_copy(_: int) -> str | None:
+        with restarted.engine.connect() as connection:
+            barrier.wait(timeout=10)
+            if not db.sqlite:
+                with db.engine.connect() as original:
+                    expected = original.scalar(text("SHOW search_path"))
+                assert connection.scalar(text("SHOW search_path")) == expected
+                assert connection.scalar(text("SELECT current_schema()")) != "public"
+                assert (
+                    connection.scalar(text("SELECT to_regclass('public.vector_fake_attempts')"))
+                    is None
+                )
+            assert "vector_fake_attempts" in inspect(connection).get_table_names()
+            return connection.scalar(text("SELECT id FROM datasets"))
+
+    try:
+        restarted.engine.dispose()
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            assert list(pool.map(read_copy, range(3))) == ["restart-private"] * 3
+    finally:
+        restarted.engine.dispose()
 
 
 def _assert_removed(url: URL, template: DatabaseTemplate) -> None:

@@ -22,6 +22,7 @@ from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.language_check import missing_language
 from datakeel.ontology.models import ActionType
 from datakeel.ontology.registry import registry
+from datakeel.operators import REGISTRY
 from datakeel.storage.database import Database
 
 
@@ -133,6 +134,20 @@ def test_an_unknown_historical_enum_value_is_shown_unchanged() -> None:
     """A value from an older or newer registry remains readable without a wording entry."""
     assert enum_label("historical_value", "zh") == "historical_value"
     assert enum_label("historical_value", "en") == "historical_value"
+
+
+def test_vector_operator_parameters_and_nested_policy_have_bilingual_words() -> None:
+    """Cover the registered operator schema, including every nested field and literal."""
+    for name in ("evidence.vector_embed", "evidence.semantic_duplicate"):
+        model = REGISTRY[name].params_type
+        schema = model.model_json_schema()
+        for definition in [schema, *schema.get("$defs", {}).values()]:
+            for field in definition.get("properties", {}):
+                assert field_label(field, "zh") != field, f"{name}.{field}"
+                assert field_label(field, "en").strip(), f"{name}.{field}"
+        for path, value in _visible_literals(model, name):
+            assert value in ENUM_LABELS, f"{path}={value}"
+            assert all(ENUM_LABELS[value]), f"{path}={value}"
 
 
 def test_nested_metric_choices_render_in_words_on_the_real_card(db: Database) -> None:
