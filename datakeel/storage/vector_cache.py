@@ -69,11 +69,12 @@ def vector_predecessors(
 
 
 def lock_evidence(session: Session) -> None:
-    """Serialize PG publication, review and rebuild; SQLite callers already hold a write lock."""
-    if session.get_bind().dialect.name == "postgresql":
+    """Acquire the publication/rebuild lock once per writer session."""
+    if not session.info.get("lock") and session.get_bind().dialect.name == "postgresql":
         session.execute(
             text(
                 "SELECT pg_advisory_xact_lock(hashtext(current_schema()), "
                 "hashtext('evidence_projection'))"
             )
         )
+        session.info["lock"] = True

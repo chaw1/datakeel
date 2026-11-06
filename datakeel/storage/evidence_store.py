@@ -97,8 +97,8 @@ def validated_bundle(event: LineageEvent, bundle: KnowledgeBundle | None = None)
 
 def project_bundle(session: Session, event: LineageEvent, bundle: KnowledgeBundle) -> None:
     """Project validated event content without overwriting immutable observations."""
-    lock_evidence(session)
     if event.operator in VECTOR_OPERATORS:
+        lock_evidence(session)
         validated_bundle(event, bundle)
         if _vector_diff_applied(session, event, bundle):
             return
@@ -159,7 +159,6 @@ def record_extraction_in_session(
     session: Session, event: LineageEvent, bundle: KnowledgeBundle | None = None
 ) -> LineageEvent:
     """Publish extraction inside the caller's fenced worker completion transaction."""
-    lock_evidence(session)
     if bundle is None:
         value = event.params.get("knowledge_bundle")
         if isinstance(value, dict) and "object_key" in value:
