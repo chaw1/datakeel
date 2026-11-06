@@ -23,8 +23,8 @@ from datakeel.quality import build_report
 from datakeel.sample_timeseries import generate_sensor_samples
 from datakeel.storage.database import Database, data_dir
 from datakeel.storage.governance_service import get_quality
-from datakeel.storage.task_queries import query_task
 from datakeel.worker.runner import run_worker
+from datakeel.worker_store.task_queries import query_task
 
 
 class TimeseriesDemoResult(BoundaryModel):

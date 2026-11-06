@@ -3,31 +3,28 @@
 
 """Durable shard leases, fenced completion, and a transactional outbox."""
 
+from collections.abc import Callable
 from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
 
-from datakeel.core.datasheet_execution import DatasheetCompletion
-from datakeel.core.dq_monitor import DqCompletion
 from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
-from datakeel.core.evidence_execution import PendingExtraction
-from datakeel.core.kg_execution import KGCompletion
 from datakeel.core.models import FileItem, LineageEvent, new_id, utcnow
 from datakeel.core.recovery import require_active_home
 from datakeel.dataset_store.events import append_event
 from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.pipeline import Pipeline, validate_pipeline
 from datakeel.pipeline.sharding import validate_shards
-from datakeel.storage.custom_validation import validate_custom_pipeline
 from datakeel.storage.database import Database
-from datakeel.storage.datasheet_jobs import publish_completion as publish_datasheet
-from datakeel.storage.dq_results import publish_completion as publish_dq_completion
-from datakeel.storage.evidence_store import record_extraction_in_session
-from datakeel.storage.kg_publication import publish_completion
-from datakeel.storage.task_terminal import cancel_task, complete_task
+from datakeel.worker_store.completion import (
+    CompletionPayload,
+    CompletionRequest,
+    TaskCompletionPort,
+)
 from datakeel.worker_store.rows import OutboxRow, ShardRow, TaskRow
+from datakeel.worker_store.task_terminal import cancel_task, complete_task
 
 MAX_SHARDS = 128
 
@@ -64,9 +61,19 @@ class TaskSource(Protocol):
 class DatabaseQueue:
     """Coordinate idempotent task submission and fenced terminal transitions."""
 
-    def __init__(self, db: Database, lease_seconds: float = 30, max_attempts: int = 3) -> None:
+    def __init__(
+        self,
+        db: Database,
+        lease_seconds: float = 30,
+        max_attempts: int = 3,
+        *,
+        completion_factory: Callable[[Session], TaskCompletionPort],
+        validate_registered: Callable[[Session, Pipeline | None], None],
+    ) -> None:
         """Bind the queue to its storage and retry policy."""
         require_active_home(db.engine.url.database)
+        self._completion_factory = completion_factory
+        self._registered = validate_registered
         self.db = db
         self.lease_seconds = lease_seconds
         self.max_attempts = max_attempts
@@ -106,7 +113,7 @@ class DatabaseQueue:
                     msg = "Idempotency key already used with different parameters"
                     raise ConflictError(msg)
                 return existing.id
-            _validate_registered_pipeline(session, pipeline)
+            self._registered(session, Pipeline.model_validate(pipeline) if pipeline else None)
             source_files = dataset.files
             if version_id:
                 version = session.get(VersionRow, version_id)
@@ -201,10 +208,7 @@ class DatabaseQueue:
         error: str | None = None,
         expired_before: float | None = None,
         *,
-        evidence: tuple[PendingExtraction, ...]
-        | KGCompletion
-        | DqCompletion
-        | DatasheetCompletion = (),
+        evidence: CompletionPayload = (),
     ) -> bool:
         """Publish outputs and the terminal outbox atomically if the lease is owned."""
         with self.db.session() as session:
@@ -226,31 +230,15 @@ class DatabaseQueue:
             if task is None:
                 msg = "Task not found"
                 raise NotFoundError(msg)
-            if (
-                task.datasheet_job_id
-                and not error
-                and (
-                    not isinstance(evidence, DatasheetCompletion)
-                    or evidence.job_id != task.datasheet_job_id
-                )
-            ):
-                msg = "Successful datasheet tasks require their exact checked completion"
-                raise ConflictError(msg)
+            port = self._completion_factory(session)
+            request = _completion_request(task, evidence, error)
             shard.state, shard.lease_owner = "FAILED" if error else "COMPLETED", None
             shard.outputs = [item.model_dump(mode="json") for item in outputs]
             for event in events:
                 append_event(session, event)
-            if isinstance(evidence, DqCompletion):
-                publish_dq_completion(session, evidence, task.id)
-            elif isinstance(evidence, KGCompletion):
-                publish_completion(session, evidence, task.id)
-            elif isinstance(evidence, DatasheetCompletion):
-                publish_datasheet(session, evidence, task.id)
-            else:
-                for pending in evidence:
-                    record_extraction_in_session(session, pending.event, pending.bundle)
+            result = port.complete(request)
             session.flush()
-            complete_task(session, task, error)
+            complete_task(session, task, request, port, result)
             session.commit()
             return True
 
@@ -264,7 +252,7 @@ class DatabaseQueue:
                 raise NotFoundError(msg)
             if task.state in ("COMPLETED", "FAILED", "CANCELLED"):
                 return False
-            cancel_task(session, task)
+            cancel_task(session, task, _completion_request(task), self._completion_factory(session))
             session.commit()
             return True
 
@@ -364,5 +352,16 @@ def _source_version(session: Session, task: TaskRow) -> str:
     return version
 
 
-def _validate_registered_pipeline(session: Session, value: dict[str, Any] | None) -> None:
-    validate_custom_pipeline(session, Pipeline.model_validate(value) if value else None)
+def _completion_request(
+    task: TaskRow, payload: CompletionPayload = (), error: str | None = None
+) -> CompletionRequest:
+    return CompletionRequest(
+        task_id=task.id,
+        dataset_id=task.dataset_id,
+        created_at=task.created_at,
+        kg_run_id=task.kg_run_id,
+        dq_run_id=task.dq_run_id,
+        datasheet_job_id=task.datasheet_job_id,
+        payload=payload,
+        error=error,
+    )

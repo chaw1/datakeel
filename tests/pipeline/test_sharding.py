@@ -12,10 +12,10 @@ import pytest
 from datakeel.actions.service import prepare_action
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.pipeline.sharding import validate_shards
 from datakeel.storage.action_operations import execute_business
-from datakeel.storage.task_queue import DatabaseQueue
 from tests.evidence.test_execution import seed_evidence
 
 if TYPE_CHECKING:

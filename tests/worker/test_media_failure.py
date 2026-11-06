@@ -16,9 +16,9 @@ from datakeel.dataset_store.lineage_service import get_graph
 from datakeel.operators import REGISTRY
 from datakeel.operators.media.tools import run_tool
 from datakeel.pipeline import Node, Pipeline
-from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
+from datakeel.worker_store.task_queries import query_task
 
 if TYPE_CHECKING:
     from pathlib import Path

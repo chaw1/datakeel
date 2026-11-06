@@ -27,9 +27,9 @@ from datakeel.persistence import migrate
 from datakeel.pipeline.image_pointcloud import image_pointcloud_pipeline
 from datakeel.storage.database import Database
 from datakeel.storage.governance_service import get_quality, get_report
-from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
+from datakeel.worker_store.task_queries import query_task
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

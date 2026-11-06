@@ -30,7 +30,7 @@ from datakeel.storage.evidence_evaluations import benchmark_selections
 from datakeel.storage.evidence_import import source_manifest
 from datakeel.storage.evidence_runs import extraction_report
 from datakeel.storage.evidence_store import list_assertions
-from datakeel.storage.task_queries import query_task
+from datakeel.worker_store.task_queries import query_task
 
 
 def _questions(

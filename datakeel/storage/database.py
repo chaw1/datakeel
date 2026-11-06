@@ -12,12 +12,13 @@ from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
-from datakeel.core.errors import NotFoundError, ValidationError
+from datakeel.core.errors import NotFoundError
 from datakeel.core.schema import (
     Base,
     CanonicalSchema,
     SchemaContribution,
     validate_contributions,
+    validate_migration_source,
     validate_tables,
 )
 from datakeel.core.settings import get_settings
@@ -108,12 +109,7 @@ class Database:
                         "hashtext('datakeel:migrate:' || current_schema()))"
                     )
                 )
-            tables = frozenset(inspect(connection).get_table_names())
-            if inspect(connection).get_view_names() or (self.sqlite and tables):
-                msg = "Explicit schema initializer requires an empty database"
-                raise ValidationError(msg)
-            if tables:
-                validate_tables(tables, canonical)
+            validate_migration_source(connection, sqlite=self.sqlite, canonical=canonical)
             Base.metadata.create_all(connection)
             if not self.sqlite:
                 add_nullable_columns(connection)

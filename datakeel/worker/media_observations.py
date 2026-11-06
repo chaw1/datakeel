@@ -6,7 +6,7 @@
 from datakeel.core.media_models import MediaArtifactRecord
 from datakeel.core.models import AssetRef, FileItem, LineageEvent
 from datakeel.pipeline.models import PipelineObservation
-from datakeel.storage.task_queue import Lease
+from datakeel.worker_store.task_queue import Lease
 
 
 def media_events(lease: Lease, value: PipelineObservation, node: AssetRef) -> list[LineageEvent]:

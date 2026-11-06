@@ -17,9 +17,9 @@ from datakeel.pipeline.media import media_pipeline
 from datakeel.quality import build_report, score_quality
 from datakeel.sample_media import generate_media
 from datakeel.storage.database import Database, data_dir
-from datakeel.storage.task_queries import query_task
 from datakeel.worker.queue import DatabaseQueue
 from datakeel.worker.runner import run_worker
+from datakeel.worker_store.task_queries import query_task
 
 if TYPE_CHECKING:
     from pydantic import JsonValue

@@ -42,7 +42,7 @@ MINIMUM_COVERAGE = 90
 STORAGE_IMPLEMENTATIONS = {
     "lineage": (),
     "actions": ("action_*.py", "approval_evidence.py"),
-    "worker": ("task_queue.py", "task_queries.py", "task_models.py", "task_terminal.py"),
+    "worker": (),
     "harness": ("harness_*.py", "budget_*.py"),
     "agent": ("conversation_*.py",),
     "runtime": ("checkpoint_*.py",),
@@ -65,6 +65,15 @@ def belongs_to_package(name: str, package: str) -> bool:
     return (
         name == f"datakeel/{package}"
         or name.startswith(f"datakeel/{package}/")
+        or (package == "worker" and name.startswith("datakeel/worker_store/"))
+        or (
+            package in {"worker", "worker_store"}
+            and name
+            in {
+                "datakeel/persistence/task_queue.py",
+                "datakeel/persistence/task_completion.py",
+            }
+        )
         or any(
             fnmatch(name, f"datakeel/dataset_store/{pattern}")
             for pattern in {

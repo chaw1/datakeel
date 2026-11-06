@@ -7,9 +7,9 @@ from sqlalchemy import select
 
 from datakeel.core.errors import NotFoundError
 from datakeel.storage.database import Database
-from datakeel.storage.task_models import TaskView
-from datakeel.storage.task_views import task_dict
 from datakeel.worker_store.rows import TaskRow
+from datakeel.worker_store.task_models import TaskView
+from datakeel.worker_store.task_views import task_view
 
 
 def query_task(db: Database, task_id: str) -> TaskView:
@@ -19,11 +19,11 @@ def query_task(db: Database, task_id: str) -> TaskView:
         if task is None:
             msg = "Task not found"
             raise NotFoundError(msg)
-        return TaskView.model_validate(task_dict(db, task))
+        return task_view(session, task)
 
 
 def list_tasks(db: Database) -> list[TaskView]:
     """List tasks in descending creation order."""
     with db.session() as session:
         tasks = session.scalars(select(TaskRow).order_by(TaskRow.created_at.desc()))
-        return [TaskView.model_validate(task_dict(db, task)) for task in tasks]
+        return [task_view(session, task) for task in tasks]

@@ -15,7 +15,7 @@ from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.database import Database
 from datakeel.storage.identity_sessions import session_actor
-from datakeel.storage.task_queries import query_task
+from datakeel.worker_store.task_queries import query_task
 from datakeel.workflows.models import ApprovalStep, BranchStep, OutputStep, ToolStep, WaitStep
 from datakeel.workflows.resolver import compare, resolve
 

@@ -5,8 +5,8 @@
 
 from datakeel.core.models import FileItem
 from datakeel.pipeline import Node, Pipeline, PipelineObservation
-from datakeel.storage.task_queue import Lease
 from datakeel.worker.observations import Observations
+from datakeel.worker_store.task_queue import Lease
 
 
 def test_control_node_ancestry_resolves_to_original_source() -> None:

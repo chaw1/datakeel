@@ -15,8 +15,8 @@ from sqlalchemy import create_engine
 from datakeel.core.errors import ValidationError
 from datakeel.core.recovery import ISOLATION_MARKER
 from datakeel.core.settings import Settings
+from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.storage.dq_jobs import schedule_due
-from datakeel.storage.task_queue import DatabaseQueue
 from datakeel.versioning import initialize
 from datakeel.versioning.campaign import upgrade
 from datakeel.versioning.recovery import restore_package, verify_package

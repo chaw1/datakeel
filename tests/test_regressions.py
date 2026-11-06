@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
     from datakeel.core.models import FileItem, LineageEvent
     from datakeel.storage.database import Database
-    from datakeel.storage.task_models import Lease
+    from datakeel.worker_store.task_queue import Lease
 
 
 def import_text(db: Database, tmp_path: Path, metadata: dict[str, JsonValue] | None = None) -> str:
