@@ -1904,6 +1904,458 @@
     "queue": "cpu"
   },
   {
+    "id": "evidence.semantic_cluster",
+    "version": "1.0.0",
+    "modality": "any",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Expose exact DBSCAN parameters through the signed pipeline registry.",
+      "properties": {
+        "threshold": {
+          "default": 0.9,
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "max_samples": {
+          "default": 5000,
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "Max Samples",
+          "type": "integer"
+        },
+        "max_candidate_pairs": {
+          "default": 250000,
+          "maximum": 250000,
+          "minimum": 0,
+          "title": "Max Candidate Pairs",
+          "type": "integer"
+        },
+        "eps": {
+          "default": 0.1,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Eps",
+          "type": "number"
+        },
+        "min_samples": {
+          "default": 5,
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "Min Samples",
+          "type": "integer"
+        }
+      },
+      "title": "SemanticClusterParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "evidence.semantic_outlier",
+    "version": "1.0.0",
+    "modality": "any",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Expose exact DBSCAN parameters through the signed pipeline registry.",
+      "properties": {
+        "threshold": {
+          "default": 0.9,
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "max_samples": {
+          "default": 5000,
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "Max Samples",
+          "type": "integer"
+        },
+        "max_candidate_pairs": {
+          "default": 250000,
+          "maximum": 250000,
+          "minimum": 0,
+          "title": "Max Candidate Pairs",
+          "type": "integer"
+        },
+        "eps": {
+          "default": 0.1,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Eps",
+          "type": "number"
+        },
+        "min_samples": {
+          "default": 5,
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "Min Samples",
+          "type": "integer"
+        }
+      },
+      "title": "SemanticClusterParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
+    "id": "evidence.coverage_gap",
+    "version": "1.0.0",
+    "modality": "any",
+    "category": "evidence",
+    "inputs": {
+      "files": "files.any"
+    },
+    "outputs": {
+      "files": "files.any"
+    },
+    "parameters": {
+      "$defs": {
+        "AssertionFilter": {
+          "additionalProperties": false,
+          "description": "Match reviewed concept observations or explicit nonexistence of such observations.",
+          "properties": {
+            "predicate": {
+              "title": "Predicate",
+              "type": "string"
+            },
+            "concept": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Concept"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "present",
+                    "absent",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Value"
+            },
+            "status": {
+              "items": {
+                "enum": [
+                  "candidate",
+                  "accepted",
+                  "rejected"
+                ],
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "title": "Status",
+              "type": "array"
+            },
+            "min_confidence": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Min Confidence"
+            },
+            "operator": {
+              "default": "exists",
+              "enum": [
+                "exists",
+                "not_exists"
+              ],
+              "title": "Operator",
+              "type": "string"
+            }
+          },
+          "required": [
+            "predicate"
+          ],
+          "title": "AssertionFilter",
+          "type": "object"
+        },
+        "JsonValue": {},
+        "ObjectSet": {
+          "additionalProperties": false,
+          "description": "Select assets by type, public properties, quality, and version interval.",
+          "properties": {
+            "schema_version": {
+              "default": "1.1",
+              "enum": [
+                "1.0",
+                "1.1"
+              ],
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "object_type": {
+              "default": "file",
+              "title": "Object Type",
+              "type": "string"
+            },
+            "namespace": {
+              "const": "default",
+              "default": "default",
+              "title": "Namespace",
+              "type": "string"
+            },
+            "dataset_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Dataset Id"
+            },
+            "filters": {
+              "items": {
+                "$ref": "#/$defs/PropertyFilter"
+              },
+              "maxItems": 32,
+              "title": "Filters",
+              "type": "array"
+            },
+            "quality_min": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Quality Min"
+            },
+            "quality_max": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Quality Max"
+            },
+            "version_ids": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Version Ids",
+              "type": "array"
+            },
+            "created_after": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Created After"
+            },
+            "created_before": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Created Before"
+            },
+            "include_deleted": {
+              "default": false,
+              "title": "Include Deleted",
+              "type": "boolean"
+            },
+            "limit": {
+              "default": 1000,
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            },
+            "assertion_filters": {
+              "items": {
+                "$ref": "#/$defs/AssertionFilter"
+              },
+              "maxItems": 32,
+              "title": "Assertion Filters",
+              "type": "array"
+            },
+            "split": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "train",
+                    "val",
+                    "test"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Split"
+            },
+            "has_near_duplicate_in": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "train",
+                    "val",
+                    "test"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Has Near Duplicate In"
+            }
+          },
+          "title": "ObjectSet",
+          "type": "object"
+        },
+        "PropertyFilter": {
+          "additionalProperties": false,
+          "description": "Constrain one public property using an explicit bounded operator.",
+          "properties": {
+            "field": {
+              "minLength": 1,
+              "pattern": "^[a-zA-Z_][a-zA-Z0-9_.]*$",
+              "title": "Field",
+              "type": "string"
+            },
+            "operator": {
+              "default": "eq",
+              "enum": [
+                "eq",
+                "ne",
+                "lt",
+                "lte",
+                "gt",
+                "gte",
+                "contains",
+                "in"
+              ],
+              "title": "Operator",
+              "type": "string"
+            },
+            "value": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "field",
+            "value"
+          ],
+          "title": "PropertyFilter",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Expose frozen relative reference selection without an automatic action.",
+      "properties": {
+        "threshold": {
+          "default": 0.9,
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "max_samples": {
+          "default": 5000,
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "Max Samples",
+          "type": "integer"
+        },
+        "max_candidate_pairs": {
+          "default": 250000,
+          "maximum": 250000,
+          "minimum": 0,
+          "title": "Max Candidate Pairs",
+          "type": "integer"
+        },
+        "reference": {
+          "$ref": "#/$defs/ObjectSet"
+        },
+        "max_reference_comparisons": {
+          "default": 250000,
+          "maximum": 250000,
+          "minimum": 0,
+          "title": "Max Reference Comparisons",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "title": "CoverageGapParams",
+      "type": "object"
+    },
+    "queue": "cpu"
+  },
+  {
     "id": "table.profile",
     "version": "1.0.0",
     "modality": "table",
