@@ -1,0 +1,44 @@
+.vector-evidence {
+  padding: calc(var(--space) * 4);
+  margin-bottom: calc(var(--space) * 4);
+  overflow-wrap: anywhere;
+}
+.vector-evidence > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.vector-evidence form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: calc(var(--space) * 3);
+  margin-block: calc(var(--space) * 4);
+}
+.vector-evidence label {
+  display: grid;
+  gap: calc(var(--space) * 1);
+}
+.vector-evidence article {
+  border-top: 1px solid var(--rule);
+  padding-block: calc(var(--space) * 4);
+}
+.vector-evidence dl {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(0, 3fr);
+  gap: calc(var(--space) * 2);
+}
+.vector-evidence dd {
+  margin: 0;
+}
+.vector-evidence dd p {
+  margin-block: 0 calc(var(--space) * 2);
+}
+.vector-evidence article .button,
+.vector-evidence nav .button {
+  margin-inline-end: calc(var(--space) * 2);
+}
+@media (max-width: 600px) {
+  .vector-evidence dl {
+    grid-template-columns: 1fr;
+  }
+}

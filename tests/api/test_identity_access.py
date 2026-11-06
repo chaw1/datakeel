@@ -20,6 +20,7 @@ from datakeel.storage.database import Database
 from datakeel.storage.identity_sessions import session_actor
 from datakeel.storage.tool_invocations import list_invocations
 from tests.asgi_client import TestClient
+from tests.evidence.vector_helpers import vector_dataset, vector_run
 
 
 def _register(db: Database) -> None:
@@ -84,6 +85,20 @@ def test_zero_user_http_behavior_and_registered_read_post_remain_available(db: D
             "/api/ontology/object-sets/evaluate", json={}, headers={"X-Datakeel-Actor": "unknown"}
         )
         assert response.status_code == 200, response.text
+
+
+def test_registered_actor_can_use_vector_read_post(db: Database, tmp_path: Path) -> None:
+    """The read-only vector query remains available after the first user is registered."""
+    task = vector_run(db, vector_dataset(db, tmp_path, (b"same",) * 2))
+    _register(db)
+    with TestClient(create_app(db)) as client:
+        response = client.post(
+            "/api/evidence/vector/query",
+            json={"run_id": task.id, "kind": "duplicate"},
+            headers={"X-Datakeel-Actor": "local"},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == 1
 
 
 def test_legacy_datasheet_preparation_uses_real_registered_actor(

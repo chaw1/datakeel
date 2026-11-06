@@ -42,3 +42,6 @@ export type DecideAssertionsParams =
 export type MemoryEntry = components["schemas"]["MemoryEntry"];
 export type MemoryCreate = components["schemas"]["MemoryCreate"];
 export type MemoryDeletion = components["schemas"]["MemoryDeletion"];
+
+export type VectorQuery = components["schemas"]["VectorQuery"];
+export type VectorQueryResult = components["schemas"]["VectorQueryResult"];

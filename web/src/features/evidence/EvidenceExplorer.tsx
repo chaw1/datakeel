@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { executePlan } from "../../api/actions";
 import { post } from "../../api/client";
+import { getEvidence } from "../../api/evidence";
 import { ResourceState } from "../../components/ResourceState";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
@@ -14,6 +15,7 @@ import { EvidenceFilters } from "./EvidenceFilters";
 import { EvidenceResults } from "./EvidenceResults";
 import { exactSelection, initialFilters } from "./query";
 import { useEvidenceQuery } from "./useEvidenceQuery";
+import { VectorEvidence } from "./VectorEvidence";
 import "./evidence-compact.css";
 
 import type { EvidenceFilters as Filters } from "./query";
@@ -105,6 +107,35 @@ export function EvidenceExplorer({
   }
   return (
     <div className="evidence-explorer">
+      <VectorEvidence
+        datasetId={datasetId}
+        onReviewed={refresh}
+        onAdd={async (assertion) => {
+          const sample = await getEvidence(
+            assertion.subject.asset_id,
+            assertion.subject.version ?? "",
+          );
+          if (
+            sample.dataset_id !== datasetId ||
+            !sample.assertions.some(
+              (item) =>
+                item.id === assertion.id &&
+                item.status === assertion.status &&
+                item.decided_at === assertion.decided_at,
+            )
+          )
+            throw new Error(t("vecRestart"));
+          setSelected((items) =>
+            items.some(
+              (item) =>
+                item.asset_ref.asset_id === sample.asset_ref.asset_id &&
+                item.source_version === sample.source_version,
+            )
+              ? items
+              : [...items, sample],
+          );
+        }}
+      />
       <EvidenceFilters value={filters} onChange={filter} />
       <section className="card evidence-results-card">
         <div className="evidence-results-heading">

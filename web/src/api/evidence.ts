@@ -6,6 +6,8 @@ import type {
   EvidenceQuery,
   EvidenceQueryResult,
   EvidenceSample,
+  VectorQuery,
+  VectorQueryResult,
 } from "./types";
 
 export function queryEvidence(query: EvidenceQuery) {
@@ -27,4 +29,8 @@ export function decideAssertion(
     status,
     reason,
   } satisfies DecideAssertionsParams);
+}
+
+export function queryVectors(query: VectorQuery) {
+  return post<VectorQueryResult>("/api/evidence/vector/query", query);
 }

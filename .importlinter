@@ -58,6 +58,8 @@ ignore_imports =
     datakeel.storage.evidence_actions -> datakeel.actions.release_parameters
     datakeel.storage.action_planning -> datakeel.actions.release_parameters
     datakeel.storage.action_operations -> datakeel.actions.release_parameters
+# E4 snapshot reads validate frozen R using the existing typed pipeline resolver.
+    datakeel.storage.vector_query_snapshot -> datakeel.pipeline.models
 # E3 set planning composes typed ObjectSet selection, pure computation and existing vector projections.
     datakeel.evidence.vector_parameters -> datakeel.ontology.models
     datakeel.evidence.vector_set_execution -> datakeel.pipeline.models

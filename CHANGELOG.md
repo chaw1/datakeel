@@ -6,11 +6,16 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Read-only vector evidence queries for explicit runs, with signed snapshot cursors, complete source
+  and reference authorization, typed failure reports and bounded filtering. The bilingual Evidence
+  view shows measurements, DBSCAN clusters/noise, source contracts, counts and fake usage/cost;
+  reviewed gaps can be added manually to the existing ObjectSet selection without executing actions.
+  OpenAPI types and bundled web assets are synchronized. See [the query guide](docs/VECTOR_FAKE.md#read-only-vector-queries--只读向量查询).
+
 - Fake-only semantic cluster, DBSCAN noise and relative coverage-gap candidates in signed vector
   pipelines. Complete target/reference snapshots, all-reference authorization, finite typed
   measurements and exact capacity checks share atomic publication and offline evidence replay.
-  Cluster references remain derived endpoints; real model quality, vector query API and UI are
-  outside this slice. See [the fake kernel guide](docs/VECTOR_FAKE.md).
+  Cluster references remain derived endpoints; real model quality is unmeasured. See [the fake kernel guide](docs/VECTOR_FAKE.md).
 
 - SQLite versioned migration registry, full semantic baseline recognition and immutable thin ledger,
   with campaign maintenance exclusion, transactional forward steps and resumable committed prefixes.

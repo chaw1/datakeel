@@ -66,6 +66,7 @@ READ_OR_CONTROLLED_ROUTES = frozenset(
         ("POST", "/api/production/functions/{name}"),
         ("POST", "/api/production/projects/{project_id}/dispatch-preview"),
         ("POST", "/api/evidence/query"),
+        ("POST", "/api/evidence/vector/query"),
         ("POST", "/api/datasets/{identifier}/versions/{version_id}/training/preview"),
         ("POST", "/api/datasets/{identifier}/versions/{version_id}/training/leakage"),
         ("POST", "/api/ontology/object-sets/evaluate"),

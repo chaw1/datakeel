@@ -14,8 +14,9 @@ from datakeel.api.dependencies import DatabaseDependency
 from datakeel.api.identity_access import http_action_context
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import JsonDocument
+from datakeel.core.vector_query import VectorQuery, VectorQueryResult
 from datakeel.evidence.query_models import EvidenceQuery, EvidenceQueryResult, EvidenceSample
-from datakeel.storage import evidence_queries
+from datakeel.storage import evidence_queries, vector_queries
 
 router = APIRouter(prefix="/api/evidence", tags=["evidence"])
 
@@ -24,6 +25,12 @@ router = APIRouter(prefix="/api/evidence", tags=["evidence"])
 def query(body: EvidenceQuery, db: DatabaseDependency, request: Request) -> EvidenceQueryResult:
     """Select versioned samples with bounded, asset-ordered evidence pagination."""
     return evidence_queries.query_evidence(db, body, access=_access(request))
+
+
+@router.post("/vector/query")
+def vector_query(body: VectorQuery, db: DatabaseDependency, request: Request) -> VectorQueryResult:
+    """Read authorized vector candidates from one explicit, immutable run snapshot."""
+    return vector_queries.query_vectors(db, body, _access(request))
 
 
 @router.get("/assets/{asset_id}")

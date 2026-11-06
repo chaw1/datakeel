@@ -1814,6 +1814,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/evidence/vector/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vector Query
+         * @description Read authorized vector candidates from one explicit, immutable run snapshot.
+         */
+        post: operations["vector_query_api_evidence_vector_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/export": {
         parameters: {
             query?: never;
@@ -13342,6 +13362,97 @@ export interface components {
             status: "success" | "partial_success" | "failed" | "insufficient";
         };
         /**
+         * VectorQuery
+         * @description Bind every page to an explicit task run and exact typed filters.
+         */
+        VectorQuery: {
+            /** Cluster Id */
+            cluster_id?: string | null;
+            /** Cursor */
+            cursor?: string | null;
+            /** Dataset Id */
+            dataset_id?: string | null;
+            /**
+             * Kind
+             * @default duplicate
+             * @enum {string}
+             */
+            kind: "duplicate" | "cluster" | "outlier" | "coverage";
+            /**
+             * Page Size
+             * @default 20
+             */
+            page_size: number;
+            /** Reference Id */
+            reference_id?: string | null;
+            /** Run Id */
+            run_id: string;
+            /**
+             * Statuses
+             * @default [
+             *       "candidate",
+             *       "accepted"
+             *     ]
+             */
+            statuses: ("candidate" | "accepted" | "rejected")[];
+            /**
+             * Subject Ids
+             * @default []
+             */
+            subject_ids: string[];
+        };
+        /**
+         * VectorQueryEvent
+         * @description Expose source closure and contract provenance without raw execution parameters.
+         */
+        VectorQueryEvent: {
+            /** Contract */
+            contract: string;
+            /** Event Id */
+            event_id: string;
+            /** Implementation */
+            implementation: string;
+            /** Inputs */
+            inputs: components["schemas"]["AssetRef"][];
+            /** Mode */
+            mode: string;
+            /** Operator */
+            operator: string;
+        };
+        /**
+         * VectorQueryResult
+         * @description Distinguish stale or unpublished evidence from a successful empty result.
+         */
+        VectorQueryResult: {
+            /** Events */
+            events: components["schemas"]["VectorQueryEvent"][];
+            /** Items */
+            items: components["schemas"]["Assertion"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "duplicate" | "cluster" | "outlier" | "coverage";
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Reference Digest */
+            reference_digest: string;
+            report: components["schemas"]["VectorTaskReport"];
+            /** Run Id */
+            run_id: string;
+            /** Snapshot */
+            snapshot: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "current" | "stale" | "unpublished";
+            /** Total */
+            total: number;
+        };
+        /**
          * VectorTaskReport
          * @description Expose terminal or pending status without representing a failed run as an empty success.
          */
@@ -17141,6 +17252,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvidenceQueryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    vector_query_api_evidence_vector_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VectorQuery"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VectorQueryResult"];
                 };
             };
             /** @description Validation Error */

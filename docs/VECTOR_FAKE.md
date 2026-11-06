@@ -6,7 +6,7 @@ existing `run_pipeline` controlled action and worker. The five-node evidence pre
 This kernel exercises contracts with synthetic vectors. It supplies no encoder quality,
 provider usage, real price or cloud latency measurements. Real egress is independently disabled
 and the real budget is zero. There is no real/recording transport, credential loader or network client.
-Vector query API, pagination, UI and encoder quality evaluation campaigns remain outside this batch.
+Read-only vector API and UI are described below. Encoder quality evaluation campaigns remain outside this batch.
 
 Use generated local text or images and local object storage. A configured S3 bucket is refused
 before object materialization. Text requires `modality="text"` and a reviewed discrete dimension
@@ -97,7 +97,7 @@ non-vector publication does not acquire this projection lock or add a lock query
 
 Existing task/action/source responses gain optional fake status. Complete runs report node counts,
 cache hits and invented usage; failed runs expose their reason and durable attempts. Known all-input failures retain their
-counts in failure audit events; global uncertainty does not invent counts for unpublished products. No new vector HTTP endpoint or interactive UI is added.
+counts in failure audit events; global uncertainty does not invent counts for unpublished products. The read-only endpoint and interactive evidence view below consume these existing facts.
 
 Local validation uses the repository's unchanged static gates, SQLite tests and named mutation
 anchors (`vector-human-entry`, `vector-persistent-request-count`, `vector-no-redispatch`,
@@ -144,3 +144,55 @@ Duplicate projection diffs are no-ops; missing predecessors or stale ordering ar
 uses the recorded bundles, checks integrity and switches projections in one transaction. Configured
 remote object storage is rejected before vector replay; no embedding transport or credential loader
 is constructed. SQLite behavior is covered locally; PostgreSQL execution remains a separate check.
+
+## Read-only vector queries / 只读向量查询
+
+`POST /api/evidence/vector/query` reads one explicit task `run_id`. Select `kind` from
+`duplicate`, `cluster`, `outlier`, or `coverage`. Optional `dataset_id` checks the run's dataset;
+`subject_ids`, `statuses`, `cluster_id` and `reference_id` filter candidates. Reference filtering
+matches any member of frozen R, not only the nearest member. `page_size` is 1–200 (default 20).
+The stable assertion-ID order is scoped to that run. The returned `total` counts matching current
+facts, including the requested review statuses.
+
+新增接口只读取明确的任务 run。支持四类结果、来源 ID、人审状态、聚类 ID 和完整 R 成员筛选。
+单页 1–200 条，默认 20 条；按该 run 的 assertion ID 稳定排序，`total` 为筛选后的当前事实数。
+
+Send the returned `next_cursor` with exactly the same query. Signed cursors bind the run,
+result/decision snapshot, complete frozen R digest, filters, page size, actor and database.
+They expire after 30 minutes and are process-local: service restart or another API worker requires
+pagination to restart. A rerun, review decision, R change, altered query or forged/expired cursor
+returns 422 rather than mixing pages. All frozen sources, duplicate neighbors, cluster members
+and R members are authorized before filtering or pagination; denial/revocation returns 403,
+including requests whose filters would otherwise return no facts. Reads append no usage or
+other records. SQLite uses an explicit read snapshot; PostgreSQL uses repeatable read.
+
+后续页必须沿用完整原查询。cursor 绑定 run、事实与人审快照、完整 R 摘要、筛选、页大小、
+调用身份和数据库，30 分钟过期，重启或切换 API worker 后须从首页重新查询。重跑、人审、R
+变化及伪造/过期 cursor 均拒绝跨快照分页。授权在筛选前覆盖完整来源闭包；撤权直接返回 403，
+不会伪装成空结果。查询不追加 usage 或其他记录。
+
+The response distinguishes `current`, `stale`, and `unpublished` evidence from the task's typed
+`success`, `partial_success`, `failed`, `cancelled`, `pending`, or `insufficient` report. An absent
+operator publication is `unpublished`; empty R and failed R retain failure, never full coverage.
+Complete frozen R is checked even when a successful run produced zero candidates. Superseding
+publications invalidate empty historical results too. Events expose source identities, mode,
+implementation and contract without raw execution parameters. Reports retain input/eligible/
+failed/truncated denominators, fake usage, fake cost, and uncertain attempt reservations.
+
+响应区分当前、失效、未发布证据，以及成功、部分成功、失败、取消、等待和样本不足状态。
+零候选仍检查完整 R；空 R、参考失败和未发布结果不表示全覆盖。来源、合同、fake usage、
+费用及未知 attempt 的最坏预留均可追溯，不提供真实模型质量或云端性能结论。
+
+In Evidence, open **Vector evidence**, enter an existing task run ID, choose a kind and query.
+Native form controls, review buttons and page navigation support keyboard operation. Each card
+shows cosine similarity/threshold, stable cluster ID/members or DBSCAN noise, complete R/nearest
+reference, anchors and producer. Human review uses the existing append-only assertion decision
+action; it restarts pagination and performs no data operation. **Add gap to current selection**
+rechecks the exact live assertion and adds its versioned source to the existing ObjectSet selection.
+It never prepares or executes an action. A later dataset action remains a separate human choice.
+All controls and explanations are available in English and Chinese.
+
+在 Evidence 展开「向量证据」，输入已有任务 run ID，选择结果类别后查询。控件可通过键盘操作，
+展示阈值、稳定聚类、噪声、R/最近参考、anchors 和 producer。人审沿用既有 append-only decide
+流程并从首页重新分页，不执行数据操作。「将缺口加入当前选择」先复核该 assertion 仍有效，
+再加入现有 ObjectSet；不会自动准备或执行动作，不补标、隔离或合并。

@@ -23,7 +23,10 @@
     "datakeel/storage/vector_references.py": 63,
     "datakeel/storage/vector_reports.py": 82,
     "datakeel/storage/vector_rows.py": 49,
-    "datakeel/storage/vector_set_integrity.py": 69
+    "datakeel/storage/vector_set_integrity.py": 69,
+    "datakeel/storage/vector_cursor.py": 68,
+    "datakeel/storage/vector_queries.py": 196,
+    "datakeel/storage/vector_query_snapshot.py": 191
   },
   "storage_paths": [
     "datakeel/storage/vector_authorization.py",
@@ -35,7 +38,10 @@
     "datakeel/storage/vector_references.py",
     "datakeel/storage/vector_reports.py",
     "datakeel/storage/vector_rows.py",
-    "datakeel/storage/vector_set_integrity.py"
+    "datakeel/storage/vector_set_integrity.py",
+    "datakeel/storage/vector_cursor.py",
+    "datakeel/storage/vector_queries.py",
+    "datakeel/storage/vector_query_snapshot.py"
   ],
   "schema_additions": {
     "datakeel/persistence/vector.py": 13,
@@ -84,7 +90,8 @@
     "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_duplicate",
     "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_parameters",
     "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_set_publication",
-    "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_sets"
+    "datakeel.storage.vector_set_integrity -> datakeel.evidence.vector_sets",
+    "datakeel.storage.vector_query_snapshot -> datakeel.pipeline.models"
   ],
   "legacy_row_imports": {
     "datakeel/storage/vector_current.py": {
@@ -119,6 +126,15 @@
     "datakeel/storage/vector_authorization.py": {
       "datakeel.worker_store.rows": [
         "ShardRow",
+        "TaskRow"
+      ]
+    },
+    "datakeel/storage/vector_query_snapshot.py": {
+      "datakeel.dataset_store.rows": [
+        "EventRow",
+        "VersionRow"
+      ],
+      "datakeel.worker_store.rows": [
         "TaskRow"
       ]
     }
