@@ -127,8 +127,11 @@ def test_actual_database_with_unexpected_table_is_rejected(unmigrated_db: Databa
     """Postflight compares the live set rather than trusting the proposed set."""
     with unmigrated_db.engine.begin() as connection:
         connection.execute(text("CREATE TABLE unexpected_table (id INTEGER PRIMARY KEY)"))
-    with pytest.raises(ValidationError, match=r"Database invalid|empty database"):
+    with pytest.raises(
+        ValidationError, match=r"Database invalid|empty database|Canonical tables mismatch"
+    ):
         migrate(unmigrated_db)
+    assert inspect(unmigrated_db.engine).get_table_names() == ["unexpected_table"]
 
 
 def test_contributions_and_installers_are_frozen_and_forbid_extras() -> None:

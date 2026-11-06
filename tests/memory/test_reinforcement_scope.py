@@ -10,10 +10,11 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import inspect
 
 from datakeel.core.agent_models import ConversationCreate
 from datakeel.core.memory_models import MemoryCreate, MemoryPolicy, MemoryUseScope
+from datakeel.core.settings import get_settings
 from datakeel.memory.service import (
     create_memory,
     delete_memory,
@@ -22,8 +23,13 @@ from datakeel.memory.service import (
     reinforce_memories,
 )
 from datakeel.persistence import migrate
+from datakeel.persistence.canonical import canonical_schema
+from datakeel.persistence.legacy import schema_contributions
 from datakeel.storage.conversation_store import create
 from datakeel.storage.memory_rows import MemoryRow
+from datakeel.versioning import database_path
+from datakeel.versioning.campaign import status, upgrade
+from datakeel.versioning.registry import registry
 from tests.memory.helpers import NOW, entry
 
 if TYPE_CHECKING:
@@ -138,16 +144,20 @@ def test_reinforcement_when_memory_archived_does_not_restore_or_touch_it(db: Dat
 def test_reinforcement_when_old_memory_table_migrated_preserves_facts_and_adds_scope(
     unmigrated_db: Database,
 ) -> None:
-    """An existing fact survives additive migration and gains durable question deduplication."""
+    """A fact in the complete unversioned baseline survives upgrade and repeated initialization."""
     db = unmigrated_db
-    with db.engine.begin() as connection:
-        connection.execute(
-            text("CREATE TABLE memories (id VARCHAR PRIMARY KEY, payload JSON NOT NULL)")
-        )
+    db.migrate(schema_contributions(), canonical=canonical_schema())
+    assert len(inspect(db.engine).get_table_names()) == 99
+    assert "datakeel_schema_versions" not in inspect(db.engine).get_table_names()
     original = entry("generated-memory")
     with db.session() as session:
         session.add(MemoryRow(id=original.id, payload=original.model_dump(mode="json")))
         session.commit()
+    if db.sqlite:
+        path, settings = database_path(db), get_settings()
+        assert status(path, settings.home, registry()).state == "unversioned"
+        result = upgrade(path, settings, registry())
+        assert (result.exit_code, result.state, result.applied) == (0, "current", (1,))
     migrate(db)
     migrate(db)
     scope = _scope(db)

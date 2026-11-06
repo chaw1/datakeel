@@ -13,15 +13,18 @@ datakeel migrate                    # exact compatibility alias of db upgrade
 ```
 
 S2 supports file SQLite and LocalStore only. PostgreSQL versioning, S3 export, historical release
-fixtures and six-cell upgrade/restore qualification belong to the later slice. PostgreSQL service
-admission is refused by this slice; the existing explicit empty PostgreSQL fixture initializer is
-retained, without claiming versioned PostgreSQL support. There are no new dependencies.
+fixtures and six-cell upgrade/restore qualification belong to the later slice. Versioned PostgreSQL
+maintenance commands are refused; existing PostgreSQL applications retain W3 initialization and
+idempotent startup. Ordinary CLI and evidence benchmark PostgreSQL entries run the W3 typed
+initializer; worker and MCP entries reuse caller-initialized schemas. None runs SQLite admission
+on PostgreSQL. This does not claim versioned PostgreSQL support. There are no new dependencies.
 
 `status` parses only maintenance location settings, opens existing databases with `mode=ro`, and
 never initializes the home, database or maintenance lock. General worker/model configuration cannot
 prevent inspection. API, worker, MCP and ordinary database CLI commands require a verified current
-store. The retained `create_app(..., run_migrations=...)` keyword never authorizes migration or
-skips admission. Trace export retains its existing read-only path and never migrates. Demo and
+SQLite store by default. `create_app(..., run_migrations=False)` skips migration and admission when
+the caller already initialized its database; recovery and routes still need usable application
+tables. Trace export retains its existing read-only path and never migrates. Demo and
 generated fixtures explicitly initialize missing/empty stores; they refuse known unversioned stores.
 
 Every maintenance command emits exactly one JSON document, including argument errors. `--json`

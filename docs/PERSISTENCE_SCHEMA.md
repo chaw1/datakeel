@@ -3,16 +3,25 @@
 `datakeel.persistence.migrate(database)` is an explicit demo/generated-fixture initializer.
 For SQLite it delegates to `versioning`: only missing/empty stores initialize; current stores
 validate and return, while known unversioned stores require `datakeel db upgrade`. API, worker,
-ordinary database CLI and MCP perform admission only. The old API migration keyword cannot
-bypass admission. Offline trace export retains its existing read-only path and never migrates.
+ordinary database CLI and MCP perform SQLite admission only. `create_app` defaults to checking
+SQLite and running the existing W3 PostgreSQL initializer. `run_migrations=False` skips both
+migration and admission for a caller-initialized store, including scale fixtures. Offline trace
+export retains its existing read-only path and never migrates.
+
+Ordinary CLI and evidence benchmark PostgreSQL entries use the same W3 typed contributions and
+canonical schema as the API. SQLite benchmarks use versioned initialization; ordinary SQLite CLI
+commands retain strict admission. The early `migrate` maintenance alias remains SQLite-only and
+emits the same JSON rejection and exit code 3 on PostgreSQL.
 
 `versioning` sits below the persistence composition root and above domain/storage adapters.
 It owns frozen version targets, baseline/data validation, the system ledger, maintenance exclusion,
 SQLite recovery packages and forward campaigns. It never calls latest metadata/installers on an
 existing database. See [maintenance and recovery](DATABASE_MAINTENANCE.md).
 
-`storage.database` owns engines/sessions and the legacy explicit empty-schema fixture transaction.
-Its typed contribution initializer refuses nonempty databases. The neutral schema contracts and
+`storage.database` owns engines/sessions and serialized typed contribution initialization.
+SQLite initialization refuses nonempty databases. PostgreSQL retains W3 initialization and
+idempotent installers for complete canonical stores, including additive nullable columns;
+partial tables, unknown tables and views are refused before DDL. The neutral schema contracts and
 mapping base remain in `core.schema`; `storage.base.Base` is the same base for legacy adapters.
 Contributions assemble a specified schema; version definitions own production upgrades. Frozen
 v1 SQL is independent of later model imports. The nullable helper has separate low-level tests.

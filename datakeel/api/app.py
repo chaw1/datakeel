@@ -44,6 +44,8 @@ from datakeel.api.routes import (
     workflow_runs,
 )
 from datakeel.core.logging import warn_unsafe_subprocess
+from datakeel.persistence.canonical import canonical_schema
+from datakeel.persistence.legacy import schema_contributions
 from datakeel.routing.config import load_config
 from datakeel.runtime.workflow_service import recover_runs
 from datakeel.storage.database import Database
@@ -51,11 +53,14 @@ from datakeel.versioning import require_current
 
 
 def create_app(db: Database | None = None, *, run_migrations: bool = True) -> FastAPI:
-    """Admit a current database before wiring recovery and application routes."""
+    """Check SQLite or initialize PostgreSQL unless the caller explicitly reuses a store."""
     database = db or Database()
-    del run_migrations  # Retained call compatibility; startup never upgrades.
     warn_unsafe_subprocess()
-    require_current(database)
+    if run_migrations:
+        if database.sqlite:
+            require_current(database)
+        else:
+            database.migrate(schema_contributions(), canonical=canonical_schema())
     load_config()
     recover_runs(database)
     app = FastAPI(

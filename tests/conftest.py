@@ -36,6 +36,7 @@ def unmigrated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[D
         )
         with database.engine.begin() as connection:
             connection.execute(text(f'CREATE SCHEMA "{schema}"'))
+        # Discard the public connection before registering the per-connection hook.
         database.engine.dispose()
 
         @event.listens_for(database.engine, "connect")

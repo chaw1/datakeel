@@ -11,6 +11,8 @@ from typing import Literal
 from datakeel.core.errors import ExecutionError
 from datakeel.core.evidence_eval import EvidenceEvalReport
 from datakeel.harness.evidence_evaluation import evaluate_evidence_dataset
+from datakeel.persistence.canonical import canonical_schema
+from datakeel.persistence.legacy import schema_contributions
 from datakeel.pipeline.evidence import evidence_pipeline
 from datakeel.sample_evidence import generate_samples
 from datakeel.storage.database import Database, data_dir
@@ -52,8 +54,11 @@ def main() -> None:
     parser.add_argument("--mode", choices=["prefix", "exact"])
     args = parser.parse_args()
     db = Database()
-    initialize(db)
     try:
+        if db.sqlite:
+            initialize(db)
+        else:
+            db.migrate(schema_contributions(), canonical=canonical_schema())
         result = run_benchmark(db, data_dir() / "samples", args.questions, mode=args.mode)
         args.output.write_text(result.model_dump_json(indent=2) + "\n", encoding="utf-8")
     finally:

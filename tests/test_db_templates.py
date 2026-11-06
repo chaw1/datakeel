@@ -77,7 +77,16 @@ def test_copied_databases_never_share_data_or_schema(
 
 def test_upgrade_fixture_still_starts_without_application_tables(unmigrated_db: Database) -> None:
     """Migration regression tests still exercise a genuinely uninitialized schema."""
+    if not unmigrated_db.sqlite:
+        with unmigrated_db.engine.connect() as connection:
+            schema = connection.scalar(text("SELECT current_schema()"))
+            assert isinstance(schema, str)
+            assert schema.startswith("test_")
     assert inspect(unmigrated_db.engine).get_table_names() == []
+    with unmigrated_db.engine.begin() as connection:
+        connection.execute(text("CREATE TABLE fixture_probe(value INTEGER)"))
+    unmigrated_db.engine.dispose()
+    assert inspect(unmigrated_db.engine).get_table_names() == ["fixture_probe"]
 
 
 def _assert_removed(url: URL, template: DatabaseTemplate) -> None:

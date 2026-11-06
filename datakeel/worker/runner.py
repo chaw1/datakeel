@@ -117,7 +117,8 @@ def run_worker(
     db: Database, *, once: bool = False, queue_name: str = "cpu", poll: float = 0.25
 ) -> None:
     """Drain or continuously poll one durable queue, relaying terminal events."""
-    require_current(db)
+    if db.sqlite:
+        require_current(db)
     warn_unsafe_subprocess()
     queue = DatabaseQueue(db)
     while True:

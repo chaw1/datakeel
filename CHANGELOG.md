@@ -18,6 +18,15 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Restore PostgreSQL W3 application initialization and repeat startup without SQLite-only
+  admission. `create_app(..., run_migrations=False)` again reuses caller-initialized stores without
+  migration or baseline checks, including scale fixtures; default SQLite admission stays strict.
+  PostgreSQL/S3 versioned maintenance remains unsupported.
+
+- Restore W3 PostgreSQL initialization for ordinary CLI and evidence benchmark entries.
+  Benchmark engines are disposed even when initialization fails. SQLite benchmark initialization
+  remains versioned; database maintenance commands retain their JSON and exit classifications.
+
 - SQLite migration checksums bind the complete frozen inspection/campaign/helper closure and
   explicit fact-preservation policy. Helper drift rejects existing ledgers before pending upgrades;
   adding future registrations leaves the first version checksum unchanged.
@@ -25,13 +34,14 @@ All notable changes are documented here using the Keep a Changelog format.
 - W-E E1 provenance generation now requires the frozen Commons `Copyrighted=True` declaration before retaining it in the ledger. Standalone fake image inputs reject empty or invalid base64, and CLI regression coverage verifies that `--public-gate` exits 2 even with nonempty valid development evidence.
 - The scale ASGI workload reuses its initialized database without rerunning migrations after
   benchmark fixture creation. SQLite benchmark source facts now live in a separate source database;
-  application construction always validates the current authoritative schema without migrating.
+  default SQLite application construction validates the current authoritative schema.
 
 ### Changed
 
 - API, worker, ordinary database CLI and MCP startup refuse non-current SQLite stores. Demo and
-  generated fixtures initialize only missing/empty stores; the old API migration keyword cannot
-  bypass validation. The nullable-column helper remains a separate low-level contract. The new
+  generated SQLite fixtures initialize only missing/empty stores. Explicit caller reuse through
+  the API migration keyword skips admission. The nullable-column helper remains a separate
+  low-level contract. The new
   versioning coverage owner requires 90%; named migration guard mutations join the existing gate.
 
 - Persistence initialization uses explicit typed schema contributions and independent ownership

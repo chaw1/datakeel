@@ -21,6 +21,7 @@ from datakeel.core.schema import (
     validate_tables,
 )
 from datakeel.core.settings import get_settings
+from datakeel.storage.migrations import add_nullable_columns
 
 if TYPE_CHECKING:
     import sqlite3
@@ -95,7 +96,7 @@ class Database:
     def migrate(
         self, contributions: tuple[SchemaContribution, ...], *, canonical: CanonicalSchema
     ) -> None:
-        """Initialize explicit schema inputs only in a serialized empty fixture database."""
+        """Initialize empty SQLite fixtures or retain serialized W3 PostgreSQL migration."""
         validate_contributions(contributions, canonical)
         with self.engine.begin() as connection:
             if self.sqlite:
@@ -107,10 +108,15 @@ class Database:
                         "hashtext('datakeel:migrate:' || current_schema()))"
                     )
                 )
-            if inspect(connection).get_table_names() or inspect(connection).get_view_names():
+            tables = frozenset(inspect(connection).get_table_names())
+            if inspect(connection).get_view_names() or (self.sqlite and tables):
                 msg = "Explicit schema initializer requires an empty database"
                 raise ValidationError(msg)
+            if tables:
+                validate_tables(tables, canonical)
             Base.metadata.create_all(connection)
+            if not self.sqlite:
+                add_nullable_columns(connection)
             installers = sorted(
                 (item for contribution in contributions for item in contribution.installers),
                 key=lambda item: item.order,

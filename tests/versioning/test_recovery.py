@@ -17,6 +17,7 @@ from datakeel.core.recovery import ISOLATION_MARKER
 from datakeel.core.settings import Settings
 from datakeel.storage.dq_jobs import schedule_due
 from datakeel.storage.task_queue import DatabaseQueue
+from datakeel.versioning import initialize
 from datakeel.versioning.campaign import upgrade
 from datakeel.versioning.recovery import restore_package, verify_package
 from datakeel.versioning.registry import registry
@@ -150,11 +151,13 @@ def test_corrupt_reused_package_prevents_valid_prefix_from_advancing(tmp_path: P
 
 
 def test_isolation_blocks_actual_worker_scheduler_queue_and_webhook_with_fake_transport(
-    db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    unmigrated_db: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Direct scheduler/relay calls also refuse while the marker stays continuously present."""
     from datakeel.core.settings import get_settings  # noqa: PLC0415
 
+    db = unmigrated_db
+    initialize(db)
     home = get_settings().home
     home.mkdir(parents=True, exist_ok=True)
     marker = home / ISOLATION_MARKER

@@ -77,7 +77,8 @@ def _report(run: WorkflowRun, console: Console) -> None:
 
 def _run(args: argparse.Namespace, console: Console) -> None:
     db = Database()
-    require_current(db)
+    if db.sqlite:
+        require_current(db)
     recover_runs(db)
     key = args.idempotency_key or new_id()
     stream = (

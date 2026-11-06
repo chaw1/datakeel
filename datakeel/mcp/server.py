@@ -83,7 +83,8 @@ class UnknownToolAudit(Middleware):
 def create_server(db: Database) -> FastMCP:
     """Create registered controlled tools for either stdio or HTTP SSE transport."""
     definitions = tool_definitions()
-    require_current(db)
+    if db.sqlite:
+        require_current(db)
     server = FastMCP(
         "Datakeel",
         # Keep complete per-tool schemas while bounding each standard tools/list response.

@@ -28,10 +28,14 @@ def test_old_table_gains_nullable_secret_and_assigns_it_once(unmigrated_db: Data
     first = conversation_store.create(db, ConversationCreate())
     with db.engine.begin() as connection:
         connection.execute(text("ALTER TABLE conversations DROP COLUMN canary"))
-    with pytest.raises(ValidationError):
+    if db.sqlite:
+        with pytest.raises(ValidationError):
+            migrate(db)
+        with db.engine.begin() as connection:
+            add_nullable_columns(connection)  # Isolated helper, never SQLite admission.
+    else:
+        # W3 PostgreSQL initialization retains additive repair on repeated startup.
         migrate(db)
-    with db.engine.begin() as connection:
-        add_nullable_columns(connection)  # Isolated helper contract, never production admission.
     canary = get_canary(db, first.id)
     assert get_canary(db, first.id) == canary
     assert canary.startswith("dkc_")
