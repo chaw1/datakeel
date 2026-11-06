@@ -3,8 +3,6 @@
 
 """The image demo keeps pixel evidence, unlocated candidates and scripted failures visible."""
 
-import socket
-
 import pytest
 
 from datakeel.cli.image_kg_demo import seed_image_kg_demo
@@ -14,6 +12,7 @@ from datakeel.storage.database import Database
 from datakeel.storage.dataset_service import list_datasets, list_files
 from datakeel.storage.kg_queries import explain_relation, query_kg
 from datakeel.worker.runner import run_worker
+from tests.offline_network import guard_external_network
 
 
 def test_image_demo_replays_without_network_and_retains_review_and_failure_evidence(
@@ -25,7 +24,7 @@ def test_image_demo_replays_without_network_and_retains_review_and_failure_evide
         del args, kwargs
         pytest.fail("Offline image demo attempted a network connection or credential read")
 
-    monkeypatch.setattr(socket.socket, "connect", forbidden)
+    guard_external_network(monkeypatch)
     monkeypatch.setattr("datakeel.extraction_runtime.factory.get_settings", forbidden)
     monkeypatch.setattr("datakeel.transcription.factory.get_settings", forbidden)
     seed = seed_image_kg_demo(db)
