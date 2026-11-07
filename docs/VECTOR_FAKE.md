@@ -6,7 +6,7 @@ existing `run_pipeline` controlled action and worker. The five-node evidence pre
 This kernel exercises contracts with synthetic vectors. It supplies no encoder quality,
 provider usage, real price or cloud latency measurements. Real egress is independently disabled
 and the real budget is zero. There is no real/recording transport, credential loader or network client.
-Read-only vector API and UI are described below. Encoder quality evaluation campaigns remain outside this batch.
+Read-only vector API and UI are described below. The [offline evaluation guide](VECTOR_OFFLINE_EVALUATION.md) describes development-only FAISS and fake-worker performance campaigns; real encoder quality remains untested.
 
 Use generated local text or images and local object storage. A configured S3 bucket is refused
 before object materialization. Text requires `modality="text"` and a reviewed discrete dimension

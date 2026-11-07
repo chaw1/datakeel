@@ -6,6 +6,12 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Development-only FAISS exact comparison and a reproducible cold/hot/incremental controlled
+  fake-worker campaign with frozen synthetic inputs, raw wall time/process-peak RSS, cache and
+  request/comparison accounting, synthetic-gold metrics and named mutation anchors. FAISS stays
+  outside the product wheel/runtime closure; real encoder quality and cloud latency remain
+  untested, with zero real spend. See [offline evaluation](docs/VECTOR_OFFLINE_EVALUATION.md).
+
 - Read-only vector evidence queries for explicit runs, with signed snapshot cursors, complete source
   and reference authorization, typed failure reports and bounded filtering. The bilingual Evidence
   view shows measurements, DBSCAN clusters/noise, source contracts, counts and fake usage/cost;

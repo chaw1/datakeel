@@ -63,10 +63,12 @@ from scripts.training_text_mutations import TRAINING_TEXT_MUTATIONS
 from scripts.vector_mutations import VECTOR_MUTATIONS
 from scripts.vector_query_mutations import VECTOR_QUERY_MUTATIONS
 from scripts.versioning_mutations import VERSIONING_MUTATIONS
+from scripts.we_e5_mutations import WE_E5_MUTATIONS
 from scripts.workbench_mutations import WORKBENCH_MUTATIONS
 from scripts.worker_completion_mutations import WORKER_COMPLETION_MUTATIONS
 
 FEATURE_MUTATIONS = (
+    *WE_E5_MUTATIONS,
     *VECTOR_MUTATIONS,
     *VECTOR_QUERY_MUTATIONS,
     *VERSIONING_MUTATIONS,
