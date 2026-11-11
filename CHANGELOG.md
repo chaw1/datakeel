@@ -4,6 +4,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-11-11
+
 ### Added
 
 - Bilingual small-team deployment guide for the supported authenticating-proxy boundary: loopback
