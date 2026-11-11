@@ -86,6 +86,15 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Capacity evidence refreshed on the current tree (version 0.24.1, commits `3fafd6a`/`6686646`,
+  one identical source fingerprint): 18 sequential unprofiled runs covering B1–B8 M on both
+  database stacks plus B1 L. B5 completed with zero errors on both stacks; B4/B7 were re-measured
+  after the storage split. The 0.13.0 matrix moves to a labelled historical appendix. B8
+  PostgreSQL 50 annotators still meets every target (save p95 113 ms); SQLite 50 did not meet the
+  save/next latency targets in this campaign, and the gap versus the October quiet baseline
+  (pre-FIX1) is flagged for investigation. Team-tier guidance now recommends PostgreSQL pending
+  re-measurement. See [capacity](docs/CAPACITY.md).
+
 - Task leases, queries and terminal transitions now live in `worker_store`. Explicit persistence
   wiring routes frozen completion requests to pipeline/evidence, KG, DQ and datasheet adapters
   in the existing queue transaction. Ambiguous associations and mismatched products fail closed;

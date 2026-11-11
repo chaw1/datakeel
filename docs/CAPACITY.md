@@ -139,76 +139,80 @@ server overhead beyond per-schema relation totals and remains covered by physica
 
 The supplied host description is Apple M5 Pro, 15 CPU cores and 48 GiB RAM. Observed runtime:
 macOS 26.3.2 arm64, Python 3.12.13, SQLite 3.53.1 and PostgreSQL 17.11 in a local aarch64
-Linux container. Hardware sysctl access was restricted, so the processor model and RAM are
-reported rather than independently verified. Other builds and services shared the workstation.
+Linux container (postgres:17-alpine, loopback-only, disposable). Hardware sysctl access was
+restricted, so the processor model and RAM are reported rather than independently verified.
+The 2026-11-11 refresh ran the 18 scenarios sequentially, one at a time, with no other gate or
+test suite sharing the machine; the 1-minute load was logged beside each run start.
 
 执行机给定配置为 Apple M5 Pro、15 核、48 GiB 内存；实测运行环境为 macOS 26.3.2 arm64、
-Python 3.12.13、SQLite 3.53.1，以及本机 aarch64 Linux 容器中的 PostgreSQL 17.11。
-硬件 sysctl 访问受限，因此芯片型号和内存采用给定配置，并未独立读取核实。执行期间共享
-工作站上另有构建和服务运行。
+Python 3.12.13、SQLite 3.53.1，以及本机 aarch64 Linux 容器中的 PostgreSQL 17.11
+（postgres:17-alpine，仅回环，一次性）。硬件 sysctl 访问受限，因此芯片型号和内存采用给定
+配置，并未独立读取核实。2026-11-11 刷新按顺序逐个运行 18 个场景，期间没有其他门禁或测试
+套件共享机器；每次运行开始旁记录 1 分钟负载。
 
 The result table is populated from archived normal-run JSON. Profile measurements are kept
 separately for before/after diagnosis. The table below identifies the measured revision.
 
 实测表取自归档的正常运行 JSON；带 profile 的前后诊断数字独立保存。以下表格注明测量版本。
 
-Measurement dates (Asia/Shanghai): 2026-10-28, version 0.13.0, baseline `a48bb0f` plus the scale-workload changes.
-Individual JSON envelopes retain their exact source fingerprints; some earlier diagnostic
-envelopes predate that field. Public tables use normal runs and explicitly distinguish earlier
-baselines from later queries. Numbers are rounded for display; thresholds use unrounded values.
+Measurement date (Asia/Shanghai): 2026-11-11, version 0.24.1, commits `3fafd6a` (SQLite stack
+and B1–B7) and `6686646` (documentation-only successor; PostgreSQL stack and B8). All 18
+envelopes share one identical source SHA-256 over `datakeel/` and `scripts/` Python files, so
+both commits measure the same code. Every run is a normal unprofiled invocation with seed 23;
+B8 uses `--workers 10 --think-ms 1000`. Numbers are rounded for display; thresholds use
+unrounded values. The superseded 0.13.0 matrix (2026-10-28) is retained in the historical
+appendix below.
 
-测量日期（Asia/Shanghai）为 2026-10-28，版本 0.13.0，代码基于 `a48bb0f` 加本次规模压测改动。各 JSON 保留
-精确源码指纹；部分较早诊断记录尚无该字段。公开表格使用正常运行，并明确区分较早基线和
-后续查询复测。展示数字经过四舍五入，是否达标按原始未舍入值判断。
+测量日期（Asia/Shanghai）为 2026-11-11，版本 0.24.1，提交 `3fafd6a`（SQLite 栈与 B1–B7）和
+`6686646`（仅文档变更的后继提交；PostgreSQL 栈与 B8）。18 份 envelope 对 `datakeel/` 与
+`scripts/` 的 Python 文件共享同一个源码 SHA-256，两个提交测量的是同一份代码。全部为正常
+无 profile 运行，seed 23；B8 使用 `--workers 10 --think-ms 1000`。展示数字经过四舍五入，
+是否达标按原始未舍入值判断。被替代的 0.13.0 矩阵（2026-10-28）保留在下方历史附录。
 
 <!-- CAPACITY_RESULTS_START -->
 
 | M workload / 场景 | SQLite | PostgreSQL |
 | --- | --- | --- |
-| B1 import / 导入 (s) | 39.55 | 43.18 |
-| B1 selected version 10k / 1万文件版本 (s) | 18.82 | 18.59 |
-| B1 compare 100k→10k / 对比 (s) | 9.64 | 9.81 |
-| B1 first page / 首页, p95 (ms) | 154.5 | 279.3 |
-| B1 offset 50k / 深分页, p95 (ms) | 255.4 | 303.6 |
-| B1 filename+modality / 筛选, p95 (ms) | 514.0 | 605.4 |
-| B1 global search / 全局检索, p95 (ms) | 489.0 | 187.6 |
-| B1 dataset summary / 对象概要, p95 (ms) | 76.1 | 71.7 |
-| B1 whole-run parent peak / 整场主进程峰值 (GiB) | 1.795 | 1.425 |
-| B2 100k files / 8 workers | 18.68s; 5352.5 files/s | 23.51s; 4253.1 files/s |
-| B2 parent / sum of worker lifetime peaks (MiB) | 1311.2 / 3978.8 | 944.8 / 3374.2 |
-| B3 import / 导入 (s) | 94.32 | 97.06 |
-| B3 search / 搜索, p95 (ms) | 70.8 | 232.8 |
-| B3 object / 对象页, p95 (ms) | 0.7 | 2.7 |
-| B3 depth5 upstream/downstream, p95 (ms) | 1212.0 / 1419.9 | 1378.0 / 1075.0 |
+| B1 import / 导入 (s) | 32.20 | 34.10 |
+| B1 selected version 10k / 1万文件版本 (s) | 20.01 | 24.13 |
+| B1 compare 100k→10k / 对比 (s) | 9.88 | 13.10 |
+| B1 first page / 首页, p95 (ms) | 155.3 | 424.3 |
+| B1 offset 50k / 深分页, p95 (ms) | 242.3 | 489.1 |
+| B1 filename+modality / 筛选, p95 (ms) | 391.3 | 1,185.8 |
+| B1 global search / 全局检索, p95 (ms) | 414.5 | 425.7 |
+| B1 dataset summary / 对象概要, p95 (ms) | 70.9 | 149.6 |
+| B1 whole-run parent peak / 整场主进程峰值 (GiB) | 2.051 | 1.477 |
+| B2 100k files / 8 workers | 14.77s; 6,769.5 files/s | 22.34s; 4,476.5 files/s |
+| B2 parent / sum of worker lifetime peaks (MiB) | 1,839.2 / 4,596.7 | 1,142.9 / 3,467.8 |
+| B3 import / 导入 (s) | 58.20 | 84.47 |
+| B3 search / 搜索, p95 (ms) | 42.4 | 132.5 |
+| B3 object / 对象页, p95 (ms) | 0.1 | 3.1 |
+| B3 depth5 upstream/downstream, p95 (ms) | 699.2 / 870.5 | 1,102.3 / 942.0 |
 | B4 fact rows / 事实行 | 1,000,000 | 10,000,000 |
-| B4 serial / 20 clients, p95 (ms) | 205.4 / 851.3 | 253.6 / 1331.4 |
-| B5 50 users / 300s, p50/p95/p99 (ms) | 10014 / 22098 / 27747 | 650 / 3678 / 4173 |
-| B5 errors / requests / error rate | 2 / 1373 / 0.1457% | 0 / 13024 / 0.0000% |
-| B6 10k tasks / 8 workers / SIGKILL | 99.82s; 100.18 tasks/s | 99.00s; 101.01 tasks/s |
+| B4 serial / 20 clients, p95 (ms) | 32.5 / 606.5 | 161.2 / 800.1 |
+| B5 50 users / 300s, p50/p95/p99 (ms) | 8,148 / 17,269 / 20,824 | 482 / 2,424 / 2,754 |
+| B5 errors / requests / error rate | 0 / 1,685 / 0.0000% | 0 / 18,938 / 0.0000% |
+| B6 10k tasks / 8 workers / SIGKILL | 77.79s; 128.55 tasks/s | 85.95s; 116.35 tasks/s |
 | B6 retries / lost / duplicate publications | 1 / 0 / 0 | 1 / 0 / 0 |
-| B7 1m edges, depth5 p95 (ms) | 33.9 | 111.1 |
+| B7 1m edges, depth5 p95 (ms) | 27.0 | 81.4 |
 
-B3 rows are the acceptance rerun of the final source tree (commit `5818ba1`, after the escaped-payload detection described below) on the retained production reader, taken while two full gates and another load test shared the machine (1-minute load 12–117). The implementer's earlier quiet-machine run before that detection measured search p95 at 12.9 / 70.6 ms and depth-5 upstream/downstream at 843.1 / 946.2 and 1127.2 / 927.0 ms (SQLite / PostgreSQL). A later event-reader candidate was measured and reverted: its normal upstream/downstream p95 increased to SQLite 1011.6/1011.5 ms and PG 1255.1/1216.5 ms. Complete historical event fields remain in the response; profiling identifies their decoding as the dominant lineage cost.
+All rows come from the single sequential 2026-11-11 campaign on the current tree, after the K2 storage split, the 102-table schema and the escaped-payload detection described below. B3 ran without competing gates or load tests (1-minute load 6.1 at its start, decaying from the preceding B2 run); its search p95 is 42.4 / 132.5 ms and depth-5 upstream/downstream 699.2 / 870.5 and 1,102.3 / 942.0 ms (SQLite / PostgreSQL). Complete historical event fields remain in the response; their decoding is still the dominant lineage cost. The 0.13.0 shared-load acceptance numbers are in the historical appendix.
 
-B3 各行是验收时在最终源码（提交 `5818ba1`，已包含下文的转义 payload 检测）上用保留的生产读取路径复测的数字，复测时本机同时跑着两套完整门禁和另一场压测（1 分钟负载 12–117）。实现方此前在空闲机器、加入该检测之前测得搜索 p95 为 12.9 / 70.6 ms，深度 5 上游/下游为 843.1 / 946.2 与 1127.2 / 927.0 ms（SQLite / PostgreSQL）。后续候选在正常 20 次查询中，上下游 p95 退化为 SQLite 1011.6/1011.5 ms、PG 1255.1/1216.5 ms，已撤回。响应保留全部历史事件字段，profile 表明其解码是血缘查询的主要成本。
+全部行来自当前源码上 2026-11-11 的同一场顺序压测，已包含 K2 存储拆分、102 表 schema 与下文的转义 payload 检测。B3 运行时没有竞争的门禁或压测（开始时 1 分钟负载 6.1，是前一场 B2 的余波）；搜索 p95 为 42.4 / 132.5 ms，深度 5 上游/下游为 699.2 / 870.5 与 1,102.3 / 942.0 ms（SQLite / PostgreSQL）。响应仍保留全部历史事件字段，其解码仍是血缘查询的主要成本。0.13.0 共享负载验收数字见历史附录。
 
 | L dataset: 1m metadata entries / 百万元数据 | SQLite | PostgreSQL |
 | --- | --- | --- |
-| import / snapshot / comparison (s) | 8.65 / 5.40 / 109.39 | 21.76 / 17.64 / 116.62 |
-| first / deep page / search p95 (ms) | 553.1 / 880.3 / 5977.2 | 821.7 / 1032.3 / 2906.2 |
-| whole-run parent peak (GiB) | 2.980 | 1.994 |
+| import / snapshot / comparison (s) | 7.53 / 5.29 / 119.09 | 34.80 / 23.01 / 144.42 |
+| first / deep page / search p95 (ms) | 552.7 / 946.8 / 4,941.8 | 800.9 / 1,119.2 / 2,078.1 |
+| whole-run parent peak (GiB) | 3.793 | 1.928 |
 
-B1 M/L explicitly use the later `B1-*-stable.json` integer-key layout measurements, not the older files named `final`. B2/B6 likewise use the stable matrix. B3 uses the acceptance rerun on the final source tree under shared load. B4/B7 retain earlier normal runs and were not rerun after the later compatibility checks, stable read snapshots and catalog escaped-payload/source filtering changes; their archived source fingerprints describe those measurements, not the final entire source tree.
+Every envelope in this matrix records the same source fingerprint, the full commit, version, machine and database versions, and cleanup status; all 18 runs report status ok. B4 and B7 were re-measured on the current tree, closing the 0.13.0 gap where their archived fingerprints predated later compatibility and filtering changes. L remains an offline metadata persistence/comparison experiment, with no interactive-latency promise and no public million-file version action; other L workloads are implemented but not measured here.
 
-B1 M/L 明确采用时间较晚、整数代理键布局的 `B1-*-stable.json`，不采用名称为 `final` 的较早文件；B2/B6 同样采用 stable 矩阵。B3 采用验收时在最终源码上、负载共享下的复测。B4/B7 保留此前正常运行，没有在后续兼容标记、稳定读快照及目录特殊 payload/source 筛选修改后重测；归档源码指纹标识各自的测量代码，不等于最终整棵源码。
+本矩阵每份 envelope 都记录同一源码指纹、完整提交、版本、机器与数据库版本及清理状态；18 次运行全部 status ok。B4、B7 已在当前源码重测，补上 0.13.0 时其归档指纹早于后续兼容与筛选修改的缺口。L 仍是离线元数据持久化与对比实验，不承诺交互延迟，也不代表公开动作支持一次生成百万文件版本；其他 L 场景有工具支持，本表没有实测。
 
-B5 uses only the two continued normal 300-second / 50-user runs on the frozen final source. The source fingerprint is checked before and after each run and is identical across both stacks. Earlier B5 discovery/surrogate baselines and failed diagnostics remain archived separately and are excluded from this table. SQLite returned two HTTP 500 responses on dataset-object reads; the normal-run log has no exception trace, so their cause is unproven. Both stacks exceed the one-second p95 target, and SQLite also fails the zero-error target. A separate 60-second diagnostic with the same fixture and 50 users completed 326 requests with no error, so it did not reproduce or explain the two failures; it is excluded from capacity evidence.
+B5 completed 300 seconds / 50 users on both stacks with zero errors (SQLite 1,685 requests, PostgreSQL 18,938). The two unexplained SQLite HTTP 500 responses in the 0.13.0 campaign did not recur; that earlier anomaly remains archived as history, not as a current defect claim. Both stacks still exceed the one-second p95 target at this concurrency, so the matrix does not support a 50-user interactive SLA.
 
-B5 仅使用续跑取得的最终冻结源码、正常 300 秒/50 用户两栈实测；每次前后及两栈之间的源码指纹均相同。较早 discovery/surrogate 布局基线和失败诊断继续独立归档，不用于本表。SQLite 有两次数据集对象请求返回 HTTP 500，正常运行日志没有异常堆栈，根因尚未证实。两栈都未达到 p95 一秒，SQLite 还未达到零错误。相同 fixture/50 用户的独立 60 秒诊断完成 326 次请求、零错误，没有复现或解释这两次失败；该诊断不计入容量选源。
-
-B4 predates the source/profile envelope fields: those fields remain unavailable in its source map; the original invocation was unprofiled. L is an offline metadata persistence/comparison experiment, with no interactive-latency promise and no public million-file version action. Other L workloads are implemented but were not measured in this matrix.
-
-B4 早于源码/profile 字段加入，选源表保留缺失值；原命令是正常运行。L 是离线元数据持久化与对比实验，不承诺交互延迟，也不代表公开动作支持一次生成百万文件版本。其他 L 场景有工具支持，本表没有其容量实测。
+B5 两栈均完成 300 秒/50 用户且零错误（SQLite 1,685 请求，PostgreSQL 18,938）。0.13.0 压测中 SQLite 两次未解释的 HTTP 500 没有复现；该早期异常作为历史保留归档，不作为当前缺陷主张。两栈在此并发下仍超过 p95 一秒目标，本矩阵不支持 50 用户交互 SLA。
 
 <!-- CAPACITY_RESULTS_END -->
 
@@ -233,14 +237,48 @@ HTTP。跑完后从数据库读回全部标注指派：同一任务的持有时�
 记录自己收回的指派，重复收回可见。50 人、10 分钟的目标：0 重复领取、保存 p95 ≤ 200 ms、
 下一条（领取）p95 ≤ 300 ms。`--virtual-users` 只改人数。
 
-Measured 2026-10-30 (Asia/Shanghai) on the shared workstation described above with `--workers 10
---think-ms 1000`; the one-minute load average was sampled every minute beside each run. Other
-worktrees ran full parallel test suites (17 processes, 10–13 of 15 cores) for most of the night,
-so each run is labelled with the load it saw.
+**2026-11-11 refresh.** Both stacks reran the full 10-minute / 50-annotator scenario sequentially
+on the current tree (`--workers 10 --think-ms 1000`, no competing suites; 1-minute load at start
+4.2 / 4.9). PostgreSQL meets every target again: zero duplicate claims, save p95 113 ms, next
+p95 254 ms, flat from minute 2. SQLite keeps exclusivity (zero duplicate claims, zero double
+releases) but **does not meet the latency targets**: save p95 stays at 2.5–3.7 s for the whole
+run and next p95 climbs toward 1 s in the second half, at 37.3 operations/s versus 60.8 in the
+October quiet-host run. The October SQLite baseline (`00994be`) predates P29b-FIX1's lock
+ordering, the K2 storage split and the 102-table schema; the cause of this gap is not yet
+identified. Until it is investigated and re-measured, use PostgreSQL for the team tier; the
+former SQLite "20 shared / 50 dedicated" guidance below is suspended.
 
-2026-10-30（Asia/Shanghai）在上文的共享工作站上实测，参数 `--workers 10 --think-ms 1000`，每次
-运行旁边每分钟记录一次 1 分钟负载。当晚其他工作树大部分时间在跑全量并行测试（17 个进程，占
-15 核中的 10–13 核），所以每次运行都标明当时的负载。
+**2026-11-11 刷新。** 两栈在当前源码上顺序重跑完整 10 分钟/50 人场景（`--workers 10
+--think-ms 1000`，无竞争套件；开始时 1 分钟负载 4.2 / 4.9）。PostgreSQL 再次全部达标：
+0 重复领取，保存 p95 113 ms、下一条 p95 254 ms，第 2 分钟起持平。SQLite 独占性保持
+（0 重复领取、0 重复收回），但**延迟不达标**：整场保存 p95 维持在 2.5–3.7 秒，下一条 p95
+后半程爬向 1 秒，吞吐 37.3 次/秒，对比 10 月空闲机的 60.8。10 月 SQLite 基线（`00994be`）
+早于 P29b-FIX1 的锁顺序、K2 存储拆分与 102 表 schema；差距根因尚未查明。在调查并复测之前，
+团队档请使用 PostgreSQL；下文原 SQLite「共享 20 人/独占 50 人」建议暂停使用。
+
+| B8 M, 10 minutes / 10 分钟 | SQLite 50 | PostgreSQL 50 |
+| --- | --- | --- |
+| Commit / 提交 | `3fafd6a` | `6686646` |
+| Claims / saves / submits | 4,537 / 13,611 / 4,437 | 6,841 / 20,523 / 6,691 |
+| Operations/s | 37.3 | 56.3 |
+| Duplicate claims / 重复领取 | 0 | 0 |
+| Abandoned leases reaped / released twice / claimed again | 92 / 0 / 91 | 150 / 0 / 150 |
+| Failed annotators / 失败标注员 | 0 | 0 |
+| next p50 / p95 / p99 (ms) | 71 / 548 / 3,198 | 127 / 254 / 399 |
+| save p50 / p95 / p99 (ms) | 131 / 2,841 / 4,884 | 47 / 113 / 181 |
+| submit p95 (ms) | 2,648 | 172 |
+| next p95 per minute (ms) | 2,652, 163, 195, 109, 221, 430, 500, 1,006, 761, 763 | 1,179, 293, 250, 251, 204, 171, 216, 176, 182, 178 |
+| save p95 per minute (ms) | 2,538, 2,853, 2,733, 2,534, 2,851, 2,648, 2,653, 3,150, 2,866, 3,684 | 147, 144, 130, 129, 97, 94, 108, 99, 89, 97 |
+| Targets met / 达标 | No / 否 | Yes / 是 |
+
+**Historical measurements.** Measured 2026-10-30 (Asia/Shanghai) on the shared workstation
+described above with `--workers 10 --think-ms 1000`; the one-minute load average was sampled
+every minute beside each run. Other worktrees ran full parallel test suites (17 processes,
+10–13 of 15 cores) for most of the night, so each run is labelled with the load it saw.
+
+**历史实测。** 2026-10-30（Asia/Shanghai）在上文的共享工作站上实测，参数 `--workers 10
+--think-ms 1000`，每次运行旁边每分钟记录一次 1 分钟负载。当晚其他工作树大部分时间在跑全量
+并行测试（17 个进程，占 15 核中的 10–13 核），所以每次运行都标明当时的负载。
 
 | B8 M, 10 minutes / 10 分钟 | PostgreSQL 50, quiet | PostgreSQL 50, shared | SQLite 50, quiet | SQLite 20, shared | SQLite 50, shared | PostgreSQL 50, quiet, FIX1 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -264,10 +302,10 @@ tables grow (the first minute's 281 ms is all 50 annotators claiming at once). U
 the same code still holds exclusivity, but latency follows the load: with 10–13 cores taken by
 another test suite, PostgreSQL p95 exceeds one second. SQLite serializes writers but its calls are
 in-process: 50 annotators met every target on a quiet host (save p95 52 ms), 20 met them even under
-shared load, and 50 under shared load met the next-task target but not save. The documented SQLite
-scale for the team tier is therefore 20 concurrent annotators on a shared host and 50 on a
-dedicated one; use PostgreSQL when several workers or services share the database, and keep CPU
-headroom for it.
+shared load, and 50 under shared load met the next-task target but not save. These October SQLite
+figures predate P29b-FIX1 and the later storage changes; the 2026-11-11 refresh above did not
+reproduce them, so the former "20 shared / 50 dedicated" SQLite guidance is suspended pending
+investigation. Use PostgreSQL for the team tier and keep CPU headroom for it.
 
 The last column reruns the quiet PostgreSQL measurement after P29b-FIX1, where every action
 takes its table locks before any task row and claims serialize per person on an advisory lock.
@@ -280,9 +318,9 @@ annotators stay concurrent.
 从第 2 分钟到第 10 分钟随着修订表和指派表增长一直持平（第 1 分钟 281 ms 是 50 人同时开领）。
 共享负载下同一份代码独占性照样成立，但延迟跟着负载走：另一套测试占去 10–13 核时，PostgreSQL
 p95 超过 1 秒。SQLite 写入串行但调用在进程内：机器空闲时 50 人全部达标（保存 p95 52 ms），20 人
-在共享负载下也达标，50 人在共享负载下下一条达标、保存不达标。因此团队档的 SQLite 文档规模是：
-共享机器上同时 20 名标注员，独占机器上 50 名；多个 worker 或服务共用数据库时用 PostgreSQL，并为
-它预留 CPU。
+在共享负载下也达标，50 人在共享负载下下一条达标、保存不达标。这些 10 月 SQLite 数字早于
+P29b-FIX1 与后续存储改动；上方 2026-11-11 刷新没有复现它们，原「共享 20 人/独占 50 人」的
+SQLite 规模建议在调查清楚前暂停使用。团队档请用 PostgreSQL，并为它预留 CPU。
 
 最后一列是 P29b-FIX1 之后在机器空闲时重跑的 PostgreSQL：所有动作先拿表级锁再锁任务行，领取前按人
 拿 advisory lock 串行。吞吐不变（58.9 次/秒），尾部更低：下一条 p95 69 ms、保存 p95 66 ms，从第 2
@@ -365,14 +403,15 @@ Ordinary rows project only navigation fields; unsafe rows read and validate the 
 in Python, with a guarded SQL branch that avoids extracting any JSON text from that row.
 Exact source-ID equality and Unicode search both run over this narrow stream before pagination,
 so they still scan candidates. The B3 figures above include this detection/filtering work:
-under shared load, search p95 went from 12.9 to 70.8 ms on SQLite and from 70.6 to 232.8 ms on
-PostgreSQL. The unsafe-row fallback capacity has not been measured.
+in the sequential 2026-11-11 campaign, search p95 is 42.4 ms on SQLite and 132.5 ms on
+PostgreSQL (the 0.13.0 shared-load acceptance run measured 70.8 / 232.8 ms). The unsafe-row
+fallback capacity has not been measured.
 
 目录搜索与分页筛选逐行检测 payload 中转义的 NUL/代理字符串。普通行仅投影导航字段；特殊行
 读取原始对象并在 Python 验证，通过 SQL 条件分支避开该行的 JSON 文本提取。source_id 精确
 相等和 Unicode 搜索都在该窄字段流中、分页之前筛选，因此仍需扫描候选。上表 B3 数字已包含
-本轮检测与筛选开销：负载共享下搜索 p95 在 SQLite 上从 12.9 升到 70.8 ms，在 PostgreSQL 上从
-70.6 升到 232.8 ms；特殊行回退容量没有测量。
+本轮检测与筛选开销：2026-11-11 顺序压测中搜索 p95 在 SQLite 上为 42.4 ms，在 PostgreSQL 上为
+132.5 ms（0.13.0 共享负载验收为 70.8 / 232.8 ms）；特殊行回退容量没有测量。
 
 Use a bounded file request such as `?limit=50&offset=0`; `q` is a literal NFC/casefold substring
 and `modality` is an exact filter. Deletion is applied before pagination, and authorization remains
@@ -405,9 +444,9 @@ Recommended use is bounded by what was actually measured:
 | --- | --- |
 | Controlled version creation / 受控版本生成 | At most 10,000 selected files per operation; narrow larger datasets. / 单次最多选择1万文件，大数据集应缩小筛选。 |
 | 100,000-file processing / 10万文件批处理 | Measured with eight workers; allocate memory for the parent and all workers, then rerun with real file sizes. / 已测8个worker，须同时预留主进程和全部worker内存，并按真实文件大小复测。 |
-| 100,000-file interactive reads / 10万文件交互读取 | Prefer PostgreSQL and 50-entry pages; the complete 300ms read target is not established. / 优先PG和每页50条，完整300ms读取目标尚未达到。 |
-| Team-tier annotators on one instance / 团队档同时标注人数 | PostgreSQL: 50 measured within the B8 targets on a quiet host; its latency rises steeply under CPU contention, so keep headroom. SQLite: 20 on a shared host, 50 on a dedicated one (both measured within target). / PG：空闲机器上 50 人达标，CPU 争抢时延迟陡增，需预留余量；SQLite 共享机器 20 人、独占机器 50 人（均实测达标）。 |
-| 50 simultaneous users / 50人并发 | Do not promise a one-second p95 from this matrix; measure a lower client count before adopting an interactive SLA. / 本矩阵不支持承诺p95一秒，应先实测较低并发。 |
+| 100,000-file interactive reads / 10万文件交互读取 | Use 50-entry pages. 2026-11-11: SQLite first page 155 ms but filter/search 391/415 ms; PostgreSQL first page 424 ms, filter 1,186 ms. The complete 300 ms read target is not established on either stack. / 用每页50条。2026-11-11：SQLite 首页 155 ms 但筛选/检索 391/415 ms；PG 首页 424 ms、筛选 1,186 ms。两栈完整 300 ms 读取目标均未达到。 |
+| Team-tier annotators on one instance / 团队档同时标注人数 | PostgreSQL: 50 annotators met every B8 target in the 2026-11-11 sequential refresh (save p95 113 ms, next 254 ms); keep CPU headroom. SQLite: 50 did not meet the save/next targets in the same campaign; the October quiet baseline predates later lock-ordering and storage changes. Use PostgreSQL until the SQLite gap is investigated and re-measured. / PG：2026-11-11 顺序刷新中 50 人全部达标（保存 p95 113 ms、下一条 254 ms），需预留 CPU 余量。SQLite：同场 50 人保存/下一条不达标；10 月空闲基线早于后续锁顺序与存储改动。差距查明并复测前请用 PG。 |
+| 50 simultaneous users / 50人并发 | Do not promise a one-second p95 from this matrix (2026-11-11 B5 p95: SQLite 17.3 s, PostgreSQL 2.4 s, zero errors on both); measure a lower client count before adopting an interactive SLA. / 本矩阵不支持承诺p95一秒（2026-11-11 B5 p95：SQLite 17.3 秒、PG 2.4 秒，两栈零错误），应先实测较低并发。 |
 | 1,000,000-entry manifests / 百万清单 | Offline metadata persistence/comparison only; no measured interactive operating ceiling. / 仅作为离线元数据持久化与对比实验，没有已验证的交互上限。 |
 
 No intermediate size or concurrency ceiling was measured by bisection. These are operating
@@ -422,3 +461,62 @@ must reject a behavior-preserving O(n²) mutation; `--mutation` exits nonzero wh
 `make check` 执行真实 S 数据集冒烟，并对生产版本清单合并做四倍规模退化检查。使用时间窗口
 中位数和放大倍数，不以绝对延迟作门槛；同一判据必须拒绝保持结果正确的 O(n²) 变异，
 `--mutation` 注入后应非零退出。
+
+## Historical appendix: 0.13.0 matrix / 历史附录：0.13.0 矩阵
+
+Superseded by the 2026-11-11 refresh above; retained as evidence history, not as current
+capacity guidance. Measured 2026-10-28 (Asia/Shanghai), version 0.13.0, baseline `a48bb0f`
+plus the scale-workload changes, on the same workstation while other builds and services
+shared it. Some earlier diagnostic envelopes predate the source-fingerprint field.
+
+已被上方 2026-11-11 刷新替代；作为证据历史保留，不作为当前容量建议。测量于 2026-10-28
+（Asia/Shanghai），版本 0.13.0，代码基于 `a48bb0f` 加本次规模压测改动，同一工作站上另有
+构建和服务共享负载。部分较早诊断记录尚无源码指纹字段。
+
+| M workload / 场景 | SQLite | PostgreSQL |
+| --- | --- | --- |
+| B1 import / 导入 (s) | 39.55 | 43.18 |
+| B1 selected version 10k / 1万文件版本 (s) | 18.82 | 18.59 |
+| B1 compare 100k→10k / 对比 (s) | 9.64 | 9.81 |
+| B1 first page / 首页, p95 (ms) | 154.5 | 279.3 |
+| B1 offset 50k / 深分页, p95 (ms) | 255.4 | 303.6 |
+| B1 filename+modality / 筛选, p95 (ms) | 514.0 | 605.4 |
+| B1 global search / 全局检索, p95 (ms) | 489.0 | 187.6 |
+| B1 dataset summary / 对象概要, p95 (ms) | 76.1 | 71.7 |
+| B1 whole-run parent peak / 整场主进程峰值 (GiB) | 1.795 | 1.425 |
+| B2 100k files / 8 workers | 18.68s; 5352.5 files/s | 23.51s; 4253.1 files/s |
+| B2 parent / sum of worker lifetime peaks (MiB) | 1311.2 / 3978.8 | 944.8 / 3374.2 |
+| B3 import / 导入 (s) | 94.32 | 97.06 |
+| B3 search / 搜索, p95 (ms) | 70.8 | 232.8 |
+| B3 object / 对象页, p95 (ms) | 0.7 | 2.7 |
+| B3 depth5 upstream/downstream, p95 (ms) | 1212.0 / 1419.9 | 1378.0 / 1075.0 |
+| B4 fact rows / 事实行 | 1,000,000 | 10,000,000 |
+| B4 serial / 20 clients, p95 (ms) | 205.4 / 851.3 | 253.6 / 1331.4 |
+| B5 50 users / 300s, p50/p95/p99 (ms) | 10014 / 22098 / 27747 | 650 / 3678 / 4173 |
+| B5 errors / requests / error rate | 2 / 1373 / 0.1457% | 0 / 13024 / 0.0000% |
+| B6 10k tasks / 8 workers / SIGKILL | 99.82s; 100.18 tasks/s | 99.00s; 101.01 tasks/s |
+| B6 retries / lost / duplicate publications | 1 / 0 / 0 | 1 / 0 / 0 |
+| B7 1m edges, depth5 p95 (ms) | 33.9 | 111.1 |
+
+| L dataset: 1m metadata entries / 百万元数据 | SQLite | PostgreSQL |
+| --- | --- | --- |
+| import / snapshot / comparison (s) | 8.65 / 5.40 / 109.39 | 21.76 / 17.64 / 116.62 |
+| first / deep page / search p95 (ms) | 553.1 / 880.3 / 5977.2 | 821.7 / 1032.3 / 2906.2 |
+| whole-run parent peak (GiB) | 2.980 | 1.994 |
+
+Original selection notes: B1 M/L used the later `B1-*-stable.json` integer-key layout, not the
+older `final` files; B2/B6 likewise used the stable matrix. B3 was the acceptance rerun on commit
+`5818ba1` under shared load (1-minute load 12–117); the implementer's earlier quiet-machine run
+before escaped-payload detection measured search p95 12.9 / 70.6 ms and depth-5 843.1 / 946.2 and
+1127.2 / 927.0 ms (SQLite / PostgreSQL). B4/B7 retained earlier normal runs whose archived
+fingerprints predated later compatibility, stable-snapshot and filtering changes. B5 SQLite
+returned two HTTP 500 responses on dataset-object reads with no exception trace; the cause was
+unproven and a 60-second diagnostic did not reproduce them. B4 predates the source/profile
+envelope fields.
+
+原始选源注记：B1 M/L 采用时间较晚、整数代理键布局的 `B1-*-stable.json`，不采用名称为 `final`
+的较早文件；B2/B6 同样采用 stable 矩阵。B3 为提交 `5818ba1` 上负载共享（1 分钟负载 12–117）
+的验收复测；实现方此前在空闲机器、加入转义 payload 检测之前测得搜索 p95 12.9 / 70.6 ms，
+深度 5 为 843.1 / 946.2 与 1127.2 / 927.0 ms（SQLite / PostgreSQL）。B4/B7 保留较早正常运行，
+其归档指纹早于后续兼容标记、稳定读快照与筛选修改。B5 SQLite 有两次数据集对象请求返回
+HTTP 500，日志无异常堆栈，根因未证实，60 秒诊断没有复现。B4 早于源码/profile 字段加入。
