@@ -19,7 +19,7 @@ uv run ruff check .
 uv run pyright
 ```
 
-[中文说明](README.zh.md) · [Architecture](docs/ARCHITECTURE.md) · [Code standards](docs/CODE_STANDARDS.md) · [Controlled actions](docs/ACTIONS.md) · [Changelog](CHANGELOG.md)
+[中文说明](README.zh.md) · [Architecture](docs/ARCHITECTURE.md) · [Code standards](docs/CODE_STANDARDS.md) · [Controlled actions](docs/ACTIONS.md) · [Deployment](docs/DEPLOYMENT.md) · [Changelog](CHANGELOG.md)
 
 ## Proofreading workspace
 

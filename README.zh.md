@@ -19,7 +19,7 @@ uv run ruff check .
 uv run pyright
 ```
 
-[English](README.md) · [架构](docs/ARCHITECTURE.md) · [代码规范](docs/CODE_STANDARDS.md) · [受控动作](docs/ACTIONS.md) · [更新日志](CHANGELOG.md)
+[English](README.md) · [架构](docs/ARCHITECTURE.md) · [代码规范](docs/CODE_STANDARDS.md) · [受控动作](docs/ACTIONS.md) · [部署指南](docs/DEPLOYMENT.zh.md) · [更新日志](CHANGELOG.md)
 
 ## 校样工作台
 

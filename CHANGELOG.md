@@ -6,6 +6,13 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Bilingual small-team deployment guide for the supported authenticating-proxy boundary: loopback
+  defaults, shared-operator and registered per-user modes, Caddy/nginx + oauth2-proxy and Caddy
+  basic-auth recipes that strip client-supplied actor headers and inject the authenticated
+  principal, operator registration, and a forged-header/revocation/audit verification checklist.
+  Documentation only; no application authentication, API or schema change. See
+  [deployment](docs/DEPLOYMENT.md).
+
 - Development-only FAISS exact comparison and a reproducible cold/hot/incremental controlled
   fake-worker campaign with frozen synthetic inputs, raw wall time/process-peak RSS, cache and
   request/comparison accounting, synthetic-gold metrics and named mutation anchors. FAISS stays
