@@ -12,7 +12,7 @@ from sqlalchemy import inspect
 
 from datakeel.persistence.canonical import canonical_schema
 from datakeel.persistence.legacy import schema_contributions
-from datakeel.versioning.campaign_v2 import status, upgrade, validate_registry
+from datakeel.versioning.campaign_v3 import status, upgrade, validate_registry
 from datakeel.versioning.inspect import LEDGER
 from datakeel.versioning.registry import registry
 
@@ -22,8 +22,8 @@ if TYPE_CHECKING:
     from datakeel.storage.database import Database
 
 
-def legacy(db: Database, *, version: int = 2) -> Path:
-    """Construct the latest baseline independently, or the explicitly frozen v1 fixture."""
+def legacy(db: Database, *, version: int = 3) -> Path:
+    """Construct the latest typed baseline, or an explicitly frozen earlier campaign prefix."""
     from pathlib import Path  # noqa: PLC0415
 
     if version == 1:
@@ -31,6 +31,17 @@ def legacy(db: Database, *, version: int = 2) -> Path:
 
         with db.engine.begin() as connection:
             initial(connection)
+    elif version == 2:
+        from datakeel.versioning.campaign_v3 import apply_version  # noqa: PLC0415
+        from datakeel.versioning.registry import registry  # noqa: PLC0415
+
+        with db.engine.connect() as connection:
+            for definition in registry()[:2]:
+                apply_version(connection, definition, "legacy-fixture")
+        with db.engine.begin() as connection:
+            connection.exec_driver_sql("DROP TRIGGER datakeel_ledger_no_update")
+            connection.exec_driver_sql("DROP TRIGGER datakeel_ledger_no_delete")
+            connection.exec_driver_sql("DROP TABLE datakeel_schema_versions")
     else:
         db.migrate(schema_contributions(), canonical=canonical_schema())
     return Path(str(db.engine.url.database))
@@ -53,11 +64,11 @@ def test_semantic_baseline_equivalent_data_keeps_unknown_release(
     before = status(path, tmp_path, registry())
     assert (before.state, before.baseline, before.release_source) == (
         "unversioned",
-        "sqlite-b2",
+        "sqlite-b3",
         "unknown",
     )
     result = upgrade(path, Settings(home=tmp_path), registry())
-    assert (result.exit_code, result.state, result.applied) == (0, "current", (1, 2))
+    assert (result.exit_code, result.state, result.applied) == (0, "current", (1, 2, 3))
     assert len(inspect(unmigrated_db.engine).get_table_names()) == 103
     assert LEDGER in inspect(unmigrated_db.engine).get_table_names()
     repeat = upgrade(path, Settings(home=tmp_path), registry())
@@ -135,7 +146,7 @@ def test_corrupt_ledger_rejected_without_repair(
             else:
                 field = {
                     "checksum": "checksum='bad'",
-                    "gap": "version=3",
+                    "gap": "version=4",
                     "timestamp": "applied_at='not-a-time'",
                     "facts": "facts='not-a-digest'",
                 }[mutation]

@@ -18,7 +18,7 @@ from datakeel.core.settings import Settings
 from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.storage.dq_jobs import schedule_due
 from datakeel.versioning import initialize
-from datakeel.versioning.campaign_v2 import upgrade
+from datakeel.versioning.campaign_v3 import upgrade
 from datakeel.versioning.recovery import restore_package, verify_package
 from datakeel.versioning.registry import registry
 from datakeel.worker.dq_webhooks import relay_webhooks

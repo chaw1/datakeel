@@ -271,6 +271,6 @@ A complete local recovery point binds the database, referenced objects and non-s
 restored homes carry persistent service/outbound isolation. No automatic service restart or downgrade
 is provided. S2 is SQLite-only; PostgreSQL/S3 and real historical-release qualification are later work.
 See [maintenance](DATABASE_MAINTENANCE.md). The W3 composition/ownership ratchets remain unchanged;
-new versioning infrastructure has its own package and 90% coverage owner. Frozen v1 remains
-unchanged; the separately checksummed v2 runner recognizes both full targets, upgrades only the
-vector/lease increment, and stamps complete unversioned v2 stores without replaying DDL.
+new versioning infrastructure has its own package and 90% coverage owner. Frozen v1 and v2 remain
+unchanged; the separately checksummed v3 runner recognizes every full target, upgrades only the
+additive display-rank increment, and stamps complete unversioned v3 stores without replaying DDL.

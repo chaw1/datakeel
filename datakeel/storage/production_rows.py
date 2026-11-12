@@ -59,6 +59,8 @@ class ProductionTaskRow(Base):
     approved_revision_id: Mapped[str | None] = mapped_column(String, nullable=True)
     annotator_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Task-list display order, last so ALTER matches create_all; NULL until backfilled.
+    display_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class ProductionAssignmentRow(Base):

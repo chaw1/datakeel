@@ -64,7 +64,7 @@ VECTOR_MUTATIONS = (
         path="worker_store/rows.py",
         before="    lease_expires_at: Mapped[float | None] = mapped_column(Float, nullable=True)\n",
         after="",
-        case="tests/storage/test_vector_schema.py::test_ddl_preserves_every_main_table_except_explicit_vector_and_lease_additions[sqlite]",
+        case="tests/storage/test_vector_schema.py::test_ddl_preserves_every_main_table_except_explicit_inventory_additions[sqlite]",
         runner="pytest",
     ),
     Mutation(

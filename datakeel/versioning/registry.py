@@ -6,8 +6,9 @@
 from datakeel.versioning.models import MigrationDefinition
 from datakeel.versioning.v1 import definition
 from datakeel.versioning.v2 import definition as vector_definition
+from datakeel.versioning.v3 import definition as rank_definition
 
 
 def registry() -> tuple[MigrationDefinition, ...]:
     """Assemble frozen definitions without including mutable registration code in their hashes."""
-    return (definition(), vector_definition())
+    return (definition(), vector_definition(), rank_definition())

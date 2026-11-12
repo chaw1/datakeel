@@ -9,11 +9,15 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from typing import TYPE_CHECKING
 
+from sqlalchemy import select, update
+
 from datakeel.actions.production_parameters import ClaimTaskParams, ReleaseTaskParams
 from datakeel.core.errors import NotFoundError
 from datakeel.core.models import new_id
+from datakeel.dataset_store.display_order import task_key
 from datakeel.storage.production_assignments import claim_task, release_task
 from datakeel.storage.production_queries import get_task, list_assignments, list_packages
+from datakeel.storage.production_rows import ProductionTaskRow
 from tests.production_helpers import production_fixture
 
 if TYPE_CHECKING:
@@ -86,6 +90,65 @@ def test_claims_follow_the_task_list_display_order(db: Database) -> None:
             session.commit()
             claimed.append(result.id)
     assert claimed == [tasks[0].id, tasks[1].id]
+
+
+def test_split_persists_display_ranks_in_list_order(db: Database) -> None:
+    """The one-time split freezes the exact list order into indexed ranks across packages."""
+    project, tasks = production_fixture(db, "group", count=5, package_size=2)
+    with db.session() as session:
+        key = task_key(session, project.id)
+        rows = session.scalars(
+            select(ProductionTaskRow).where(ProductionTaskRow.project_id == project.id)
+        )
+        ordered = sorted(rows, key=key)
+        assert [row.display_rank for row in ordered] == list(range(len(tasks)))
+        assert [row.id for row in ordered] == [task.id for task in tasks]
+
+
+def test_legacy_null_ranks_are_backfilled_in_display_order_on_first_claim(db: Database) -> None:
+    """Rows from before persisted ranks are ordered once, then claims follow the list exactly."""
+    project, tasks = production_fixture(db, "group", count=4, package_size=2)
+    with db.session() as session:
+        session.execute(
+            update(ProductionTaskRow)
+            .where(ProductionTaskRow.project_id == project.id)
+            .values(display_rank=None)
+        )
+        session.commit()
+    claimed: list[str] = []
+    for actor in ("annotator-a", "annotator-b", "annotator-c", "annotator-d"):
+        with db.session() as session:
+            db.lock_writes(session)
+            result = claim_task(
+                session, ClaimTaskParams(request_id=new_id(), project_id=project.id), actor
+            )
+            session.commit()
+            claimed.append(result.id)
+    assert claimed == [task.id for task in tasks]
+    with db.session() as session:
+        ranks = session.scalars(
+            select(ProductionTaskRow.display_rank)
+            .where(ProductionTaskRow.project_id == project.id)
+            .order_by(ProductionTaskRow.display_rank)
+        ).all()
+    assert ranks == [0, 1, 2, 3]
+
+
+def test_claim_priority_precedes_persisted_display_order(db: Database) -> None:
+    """A higher-priority task is claimed first even when the list shows it later."""
+    project, tasks = production_fixture(db, "group", count=3)
+    with db.session() as session:
+        row = session.get(ProductionTaskRow, tasks[-1].id)
+        assert row is not None
+        row.priority = 5
+        session.commit()
+    with db.session() as session:
+        db.lock_writes(session)
+        result = claim_task(
+            session, ClaimTaskParams(request_id=new_id(), project_id=project.id), "annotator-a"
+        )
+        session.commit()
+    assert result.id == tasks[-1].id
 
 
 def test_release_keeps_revision_and_assignment_history(db: Database) -> None:

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import importlib
 from typing import TYPE_CHECKING
 
 import pytest
@@ -12,7 +13,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 from datakeel.core.settings import Settings
-from datakeel.versioning.campaign_v2 import status, upgrade
+from datakeel.versioning.campaign_v3 import upgrade
 from datakeel.versioning.inspect import facts_digest, schema_objects
 from datakeel.versioning.registry import registry
 from tests.versioning.helpers import seed_toy, toy_registry
@@ -62,14 +63,16 @@ def test_latest_stamp_rolls_back_all_ledger_rows_without_business_ddl(
 
 
 @pytest.mark.parametrize("fault", ["", "ddl", "data"])
-def test_v2_runner_retains_toy_registry_semantics(tmp_path: Path, fault: str) -> None:
+@pytest.mark.parametrize("runner", ["campaign_v2", "campaign_v3"])
+def test_runners_retain_toy_registry_semantics(tmp_path: Path, fault: str, runner: str) -> None:
     """Explicit fact-transforming toy versions still commit or roll back at the same boundary."""
+    module = importlib.import_module(f"datakeel.versioning.{runner}")
     path = tmp_path / "toy.sqlite"
     seed_toy(path)
-    result = upgrade(path, Settings(home=tmp_path / "home"), toy_registry(fault))
+    result = module.upgrade(path, Settings(home=tmp_path / "home"), toy_registry(fault))
     assert result.exit_code == (5 if fault else 0)
     assert result.version == (1 if fault else 2)
-    assert status(path, tmp_path / "home", toy_registry()).state == (
+    assert module.status(path, tmp_path / "home", toy_registry()).state == (
         "pending" if fault else "current"
     )
 
@@ -96,5 +99,5 @@ def test_latest_stamp_emits_only_system_ddl(unmigrated_db: Database, tmp_path: P
     finally:
         event.remove(Engine, "after_cursor_execute", after)
     assert result.exit_code == 0
-    assert len(writes) == 5  # One ledger table, two ledger triggers, two ledger rows.
+    assert len(writes) == 6  # One ledger table, two ledger triggers, three ledger rows.
     assert all("datakeel_schema_versions" in sql for sql in writes), "W4-v2-no-business-ddl"

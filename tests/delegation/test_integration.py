@@ -234,4 +234,4 @@ def _prepare_sqlite_trace(db: Database, *, missing_columns: bool) -> None:
         assert status(path, settings.home, registry()).state == "invalid"
     else:
         result = upgrade(path, settings, registry())
-        assert (result.exit_code, result.state, result.applied) == (0, "current", (1, 2))
+        assert (result.exit_code, result.state, result.applied) == (0, "current", (1, 2, 3))

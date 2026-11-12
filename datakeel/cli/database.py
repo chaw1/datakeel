@@ -15,7 +15,7 @@ from datakeel.cli.parsers import CommandGroup
 from datakeel.core.errors import ValidationError
 from datakeel.core.settings import get_settings
 from datakeel.versioning import database_path
-from datakeel.versioning.campaign_v2 import status, upgrade
+from datakeel.versioning.campaign_v3 import status, upgrade
 from datakeel.versioning.location import MaintenanceLocation
 from datakeel.versioning.models import DatabaseStatus
 from datakeel.versioning.recovery import restore_package

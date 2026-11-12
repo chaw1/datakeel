@@ -54,7 +54,9 @@ The first registered version creates the frozen 99-table `sqlite-b1` schema and 
 file-discovery checkpoint, or stamps a fully matching unversioned baseline without changing facts.
 It adds the explicit `datakeel_schema_versions` system table, with immutable update/delete triggers.
 The second version adds the three vector tables, their indexes and nullable shard lease, reaching
-102 business tables plus the ledger. Baseline validation includes every user table,
+102 business tables plus the ledger. The third version adds the nullable task display rank and
+rebuilds the claim-order index to cover it, keeping the same 102 business tables plus the ledger.
+Baseline validation includes every user table,
 column, constraint, index, view and trigger, SQLite integrity/FK checks, valid JSON and the frozen
 business invariants. SQL whitespace normalization preserves quoted contents. Different legal rows
 and empty facts belong to the same class. No historical release mapping is asserted by S2.
@@ -76,6 +78,9 @@ implementation and introduce a separately versioned helper/runner/model set with
 do not edit a shared frozen file in place or add future files to V1's source list. The v2 entry points explicitly use `campaign_v2.py` and `inspect_v2.py`; the v1 runner and its
 19-file closure remain byte-for-byte frozen. V2 binds both the reused frozen helpers and its own
 runner, inspection, additive fact projection, handler and DDL artifacts in a separate checksum.
+The v3 entry points explicitly use `campaign_v3.py` and `inspect_v3.py`; V3 reuses the frozen v2
+helpers and the frozen shard alternate form, and binds its own runner, inspection, handler and
+DDL artifact in a separate checksum without editing any v1/v2 closure file.
 Changing any frozen helper rejects existing ledger checksums in both status and upgrade before
 backup or forward execution. Restore the matching program sources or an independently verified
 recovery point; never rewrite/re-sign applied ledger rows. Development databases made by the
@@ -93,20 +98,32 @@ separately frozen `sqlite_b2_altered_shards.json` admits exactly that one equiva
 all other objects must still match the complete target. Extra columns, partial vector schemas,
 missing indexes/triggers and unknown tables remain invalid.
 
-Unversioned recognition checks all registered targets. A complete 102-table baseline is reported
-as `unversioned` / `sqlite-b2`; explicit upgrade validates its facts and stamps both ledger rows in
-one transaction without replaying any DDL. A complete 99-table baseline stamps v1 then runs the
-additive v2 step. A v1 ledger is `pending` until explicit upgrade. Neither startup nor ordinary
-initialization upgrades pending/unversioned databases. Missing/empty file and memory fixtures apply
-v1 then v2. Already-current stores only validate and return; repeating upgrade creates no backup.
-Requesting v1 on an unversioned v2 database is a refused downgrade, not a partial stamp.
+V3's complete `sqlite_b3.json` target is exported the same way from the current typed schema.
+`display_rank` is declared as the typed model's last column, so the real `ALTER TABLE` result
+equals the typed export and needs no separate alternate; the only remaining physical duality is
+the inherited `task_shards` form, which reuses the frozen `sqlite_b2_altered_shards.json`. The v3
+forward adds the nullable column, drops the previous claim-order index and recreates it with the
+display rank. Existing rows keep NULL ranks; the first claim per project backfills the persisted
+display order idempotently under the project row lock, so the migration itself adds no facts.
 
-The v2 campaign checks every old column, SQLite row identity and blob byte before committing an
-additive version. New tables must be empty and added fields must be NULL; existing vector facts
-and non-NULL leases on a complete v2 baseline are preserved during stamping. Full target/data
-validation, fact checks and ledger insertion share the same transaction. Latest-baseline stamping
-also rolls both ledger rows back together on failure. The public status schema, recovery package
-format and restored-home isolation remain unchanged. PostgreSQL retains W3 additive migration.
+Unversioned recognition checks all registered targets. A complete current 102-table baseline is
+reported as `unversioned` / `sqlite-b3`; explicit upgrade validates its facts and stamps all three
+ledger rows in one transaction without replaying any DDL. A complete v2-era baseline without the
+display rank is still recognized as `sqlite-b2`, stamped, then runs the additive v3 step. A
+complete 99-table baseline stamps v1 then runs the additive v2 and v3 steps. A v1 or v2 ledger is
+`pending` until explicit upgrade. Neither startup nor ordinary initialization upgrades
+pending/unversioned databases. Missing/empty file and memory fixtures apply v1, v2 then v3.
+Already-current stores only validate and return; repeating upgrade creates no backup. Requesting
+v1 or v2 on an unversioned v3 database is a refused downgrade, not a partial stamp.
+
+The campaign checks every old column, SQLite row identity and blob byte before committing an
+additive version. New tables must be empty and added fields must be NULL; existing vector facts,
+non-NULL leases and NULL display ranks on a complete baseline are preserved during stamping. Full
+target/data validation, fact checks and ledger insertion share the same transaction.
+Latest-baseline stamping also rolls all ledger rows back together on failure. The public status
+schema, recovery package format and restored-home isolation remain unchanged. PostgreSQL retains
+W3 additive migration: the nullable rank is added at startup and the claim-order index converges
+to the display-rank definition on the first migration after upgrade.
 
 With pending work, the idle independent source connection's SQLite backup includes committed WAL
 facts. The package contains `database.sqlite`, all nested JSON/dedicated-column `object_key` and

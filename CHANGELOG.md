@@ -6,6 +6,16 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Team-tier task claiming ranks candidates in the database instead of fetching and sorting every
+  open task in Python inside the write lock, which serialized concurrent saves behind each claim
+  on SQLite (B8 50-annotator save p95 was 2.8 s against a 200 ms target). The task list's display
+  order is now persisted once per project as `production_tasks.display_rank` and covered by the
+  claim-order index, so a claim is one ordered `SKIP LOCKED` query that still returns exactly the
+  task the list shows as next. SQLite gains schema v3 (nullable column + rebuilt index, purely
+  additive, facts mechanically preserved); legacy rows are backfilled idempotently on the first
+  claim, and PostgreSQL converges the index at startup. See
+  [maintenance](docs/DATABASE_MAINTENANCE.md) and [capacity](docs/CAPACITY.md).
+
 - Deployment guide Caddy recipes inject the authenticated actor with a single `header_up`
   set. The previous delete-then-set pair let Caddy apply the deletion after the set, dropping
   the injected header so the application fell back to the legacy `local` actor. Found and

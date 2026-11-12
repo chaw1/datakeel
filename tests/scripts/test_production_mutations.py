@@ -33,7 +33,7 @@ def test_frozen_schema_anchor_kills_when_old_row_anchor_survives(
 ) -> None:
     """Measure green control, ineffective old target and new call assertion in isolated copies."""
     mutation = next(item for item in PRODUCTION_MUTATIONS if item.name == name)
-    assert mutation.path == "versioning/sqlite_b2.json"
+    assert mutation.path == "versioning/sqlite_b3.json"
     assert mutation.source_root == "datakeel"
     assert mutation.runner == "pytest"
     _copy_source(tmp_path)

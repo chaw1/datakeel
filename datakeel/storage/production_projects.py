@@ -22,6 +22,7 @@ from datakeel.core.models import FileItem, new_id, utcnow
 from datakeel.core.production_keypoints import enabled_components
 from datakeel.core.production_models import Project, TaskPackage, TaskState
 from datakeel.core.production_segments import require_segment_sources
+from datakeel.dataset_store.display_order import persist_task_ranks
 from datakeel.storage.annotation_store import require_annotation_version
 from datakeel.storage.production_assignments import preserve_personal_assignment
 from datakeel.storage.production_catalog import require_label_set, require_template
@@ -137,6 +138,7 @@ def split_packages(session: Session, params: SplitPackagesParams) -> tuple[TaskP
         _create_package(session, project, group, params, ordinal)
         for ordinal, group in enumerate(_groups(files, params))
     )
+    persist_task_ranks(session, project.id)
     session.execute(
         update(ProductionSummaryRow)
         .where(ProductionSummaryRow.scope_id == project.id, ProductionSummaryRow.state == "pending")

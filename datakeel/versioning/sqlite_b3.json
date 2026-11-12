@@ -1,0 +1,1628 @@
+[
+  {
+    "kind": "index",
+    "name": "ix_action_audit_plan_id",
+    "table": "action_audit",
+    "sql": "CREATE INDEX ix_action_audit_plan_id ON action_audit (plan_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_action_chains_actor",
+    "table": "action_chains",
+    "sql": "CREATE INDEX ix_action_chains_actor ON action_chains (actor)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_action_chains_conversation_id",
+    "table": "action_chains",
+    "sql": "CREATE INDEX ix_action_chains_conversation_id ON action_chains (conversation_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_action_runs_plan_id",
+    "table": "action_runs",
+    "sql": "CREATE INDEX ix_action_runs_plan_id ON action_runs (plan_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_annotation_batches_created_at",
+    "table": "annotation_batches",
+    "sql": "CREATE INDEX ix_annotation_batches_created_at ON annotation_batches (created_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_annotation_batches_dataset_id",
+    "table": "annotation_batches",
+    "sql": "CREATE INDEX ix_annotation_batches_dataset_id ON annotation_batches (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_annotation_batches_version_id",
+    "table": "annotation_batches",
+    "sql": "CREATE INDEX ix_annotation_batches_version_id ON annotation_batches (version_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_annotation_inspections_batch_id",
+    "table": "annotation_inspections",
+    "sql": "CREATE INDEX ix_annotation_inspections_batch_id ON annotation_inspections (batch_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_annotation_inspections_created_at",
+    "table": "annotation_inspections",
+    "sql": "CREATE INDEX ix_annotation_inspections_created_at ON annotation_inspections (created_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_annotation_sampling_plans_batch_id",
+    "table": "annotation_sampling_plans",
+    "sql": "CREATE INDEX ix_annotation_sampling_plans_batch_id ON annotation_sampling_plans (batch_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_annotation_sampling_plans_created_at",
+    "table": "annotation_sampling_plans",
+    "sql": "CREATE INDEX ix_annotation_sampling_plans_created_at ON annotation_sampling_plans (created_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_ask_answers_session_id",
+    "table": "ask_answers",
+    "sql": "CREATE INDEX ix_ask_answers_session_id ON ask_answers (session_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_ask_conversations_actor",
+    "table": "ask_conversations",
+    "sql": "CREATE INDEX ix_ask_conversations_actor ON ask_conversations (actor)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_ask_conversations_updated_at",
+    "table": "ask_conversations",
+    "sql": "CREATE INDEX ix_ask_conversations_updated_at ON ask_conversations (updated_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_assertion_decisions_assertion_id",
+    "table": "assertion_decisions",
+    "sql": "CREATE INDEX ix_assertion_decisions_assertion_id ON assertion_decisions (assertion_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_assertions_active",
+    "table": "assertions",
+    "sql": "CREATE INDEX ix_assertions_active ON assertions (active)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_assertions_predicate",
+    "table": "assertions",
+    "sql": "CREATE INDEX ix_assertions_predicate ON assertions (predicate)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_assertions_subject_id",
+    "table": "assertions",
+    "sql": "CREATE INDEX ix_assertions_subject_id ON assertions (subject_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_assertions_verification",
+    "table": "assertions",
+    "sql": "CREATE INDEX ix_assertions_verification ON assertions (verification)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_asset_applications_asset_id",
+    "table": "asset_applications",
+    "sql": "CREATE INDEX ix_asset_applications_asset_id ON asset_applications (asset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_asset_control_events_asset_id",
+    "table": "asset_control_events",
+    "sql": "CREATE INDEX ix_asset_control_events_asset_id ON asset_control_events (asset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_asset_grants_asset_id",
+    "table": "asset_grants",
+    "sql": "CREATE INDEX ix_asset_grants_asset_id ON asset_grants (asset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_asset_grants_subject",
+    "table": "asset_grants",
+    "sql": "CREATE INDEX ix_asset_grants_subject ON asset_grants (subject)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_asset_usage_actor",
+    "table": "asset_usage",
+    "sql": "CREATE INDEX ix_asset_usage_actor ON asset_usage (actor)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_asset_usage_asset_id",
+    "table": "asset_usage",
+    "sql": "CREATE INDEX ix_asset_usage_asset_id ON asset_usage (asset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_asset_usage_occurred_at",
+    "table": "asset_usage",
+    "sql": "CREATE INDEX ix_asset_usage_occurred_at ON asset_usage (occurred_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_budget_reservations_conversation_id",
+    "table": "budget_reservations",
+    "sql": "CREATE INDEX ix_budget_reservations_conversation_id ON budget_reservations (conversation_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_budget_reservations_day",
+    "table": "budget_reservations",
+    "sql": "CREATE INDEX ix_budget_reservations_day ON budget_reservations (day)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_catalog_edges_kind",
+    "table": "catalog_edges",
+    "sql": "CREATE INDEX ix_catalog_edges_kind ON catalog_edges (kind)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_catalog_edges_scope",
+    "table": "catalog_edges",
+    "sql": "CREATE INDEX ix_catalog_edges_scope ON catalog_edges (scope)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_catalog_edges_source_id",
+    "table": "catalog_edges",
+    "sql": "CREATE INDEX ix_catalog_edges_source_id ON catalog_edges (source_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_catalog_edges_target_id",
+    "table": "catalog_edges",
+    "sql": "CREATE INDEX ix_catalog_edges_target_id ON catalog_edges (target_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_catalog_objects_kind",
+    "table": "catalog_objects",
+    "sql": "CREATE INDEX ix_catalog_objects_kind ON catalog_objects (kind)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_catalog_objects_scope",
+    "table": "catalog_objects",
+    "sql": "CREATE INDEX ix_catalog_objects_scope ON catalog_objects (scope)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_conversation_audit_conversation_id",
+    "table": "conversation_audit",
+    "sql": "CREATE INDEX ix_conversation_audit_conversation_id ON conversation_audit (conversation_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_custom_operator_runs_code_hash",
+    "table": "custom_operator_runs",
+    "sql": "CREATE INDEX ix_custom_operator_runs_code_hash ON custom_operator_runs (code_hash)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_custom_operator_runs_task_id",
+    "table": "custom_operator_runs",
+    "sql": "CREATE INDEX ix_custom_operator_runs_task_id ON custom_operator_runs (task_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_custom_operator_versions_code_hash",
+    "table": "custom_operator_versions",
+    "sql": "CREATE INDEX ix_custom_operator_versions_code_hash ON custom_operator_versions (code_hash)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_custom_operator_versions_name",
+    "table": "custom_operator_versions",
+    "sql": "CREATE INDEX ix_custom_operator_versions_name ON custom_operator_versions (name)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_data_asset_history_asset_id",
+    "table": "data_asset_history",
+    "sql": "CREATE INDEX ix_data_asset_history_asset_id ON data_asset_history (asset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_datasheets_created_at",
+    "table": "datasheets",
+    "sql": "CREATE INDEX ix_datasheets_created_at ON datasheets (created_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_datasheets_dataset_id",
+    "table": "datasheets",
+    "sql": "CREATE INDEX ix_datasheets_dataset_id ON datasheets (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_datasheets_version_id",
+    "table": "datasheets",
+    "sql": "CREATE INDEX ix_datasheets_version_id ON datasheets (version_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_dq_history_rule_id",
+    "table": "dq_history",
+    "sql": "CREATE INDEX ix_dq_history_rule_id ON dq_history (rule_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_dq_issue_audits_issue_id",
+    "table": "dq_issue_audits",
+    "sql": "CREATE INDEX ix_dq_issue_audits_issue_id ON dq_issue_audits (issue_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_dq_issues_rule_id",
+    "table": "dq_issues",
+    "sql": "CREATE INDEX ix_dq_issues_rule_id ON dq_issues (rule_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_dq_results_rule_id",
+    "table": "dq_results",
+    "sql": "CREATE INDEX ix_dq_results_rule_id ON dq_results (rule_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_dq_results_started_at",
+    "table": "dq_results",
+    "sql": "CREATE INDEX ix_dq_results_started_at ON dq_results (started_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_dq_rules_source_id",
+    "table": "dq_rules",
+    "sql": "CREATE INDEX ix_dq_rules_source_id ON dq_rules (source_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_dq_runs_rule_id",
+    "table": "dq_runs",
+    "sql": "CREATE INDEX ix_dq_runs_rule_id ON dq_runs (rule_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_dq_webhook_outbox_due_at",
+    "table": "dq_webhook_outbox",
+    "sql": "CREATE INDEX ix_dq_webhook_outbox_due_at ON dq_webhook_outbox (due_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_eval_runs_provider",
+    "table": "eval_runs",
+    "sql": "CREATE INDEX ix_eval_runs_provider ON eval_runs (provider)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_evidence_cache_cache_key",
+    "table": "evidence_cache",
+    "sql": "CREATE INDEX ix_evidence_cache_cache_key ON evidence_cache (cache_key)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_file_discovery_dataset_id",
+    "table": "file_discovery",
+    "sql": "CREATE INDEX ix_file_discovery_dataset_id ON file_discovery (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_file_discovery_version_id",
+    "table": "file_discovery",
+    "sql": "CREATE INDEX ix_file_discovery_version_id ON file_discovery (version_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_identity_role_bindings_role_id",
+    "table": "identity_role_bindings",
+    "sql": "CREATE INDEX ix_identity_role_bindings_role_id ON identity_role_bindings (role_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_identity_role_bindings_user_id",
+    "table": "identity_role_bindings",
+    "sql": "CREATE INDEX ix_identity_role_bindings_user_id ON identity_role_bindings (user_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_kg_eval_runs_created_at",
+    "table": "kg_eval_runs",
+    "sql": "CREATE INDEX ix_kg_eval_runs_created_at ON kg_eval_runs (created_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_kg_eval_runs_model",
+    "table": "kg_eval_runs",
+    "sql": "CREATE INDEX ix_kg_eval_runs_model ON kg_eval_runs (model)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_kg_eval_runs_profile",
+    "table": "kg_eval_runs",
+    "sql": "CREATE INDEX ix_kg_eval_runs_profile ON kg_eval_runs (profile)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_kg_eval_runs_suite_digest",
+    "table": "kg_eval_runs",
+    "sql": "CREATE INDEX ix_kg_eval_runs_suite_digest ON kg_eval_runs (suite_digest)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_kg_runs_dataset_id",
+    "table": "kg_runs",
+    "sql": "CREATE INDEX ix_kg_runs_dataset_id ON kg_runs (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_kg_runs_version_id",
+    "table": "kg_runs",
+    "sql": "CREATE INDEX ix_kg_runs_version_id ON kg_runs (version_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_metadata_changes_dataset_id",
+    "table": "metadata_changes",
+    "sql": "CREATE INDEX ix_metadata_changes_dataset_id ON metadata_changes (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_metric_audit_metric_id",
+    "table": "metric_audit",
+    "sql": "CREATE INDEX ix_metric_audit_metric_id ON metric_audit (metric_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_metric_audit_plan_id",
+    "table": "metric_audit",
+    "sql": "CREATE INDEX ix_metric_audit_plan_id ON metric_audit (plan_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_model_call_trace_conversation_id",
+    "table": "model_call_trace",
+    "sql": "CREATE INDEX ix_model_call_trace_conversation_id ON model_call_trace (conversation_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_model_call_trace_day",
+    "table": "model_call_trace",
+    "sql": "CREATE INDEX ix_model_call_trace_day ON model_call_trace (day)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_model_call_trace_model",
+    "table": "model_call_trace",
+    "sql": "CREATE INDEX ix_model_call_trace_model ON model_call_trace (model)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_outbox_delivered",
+    "table": "outbox",
+    "sql": "CREATE INDEX ix_outbox_delivered ON outbox (delivered)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_ai_reviews_project_id",
+    "table": "production_ai_reviews",
+    "sql": "CREATE INDEX ix_production_ai_reviews_project_id ON production_ai_reviews (project_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_ai_reviews_revision_id",
+    "table": "production_ai_reviews",
+    "sql": "CREATE INDEX ix_production_ai_reviews_revision_id ON production_ai_reviews (revision_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_ai_reviews_task_id",
+    "table": "production_ai_reviews",
+    "sql": "CREATE INDEX ix_production_ai_reviews_task_id ON production_ai_reviews (task_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_assignments_actor",
+    "table": "production_assignments",
+    "sql": "CREATE INDEX ix_production_assignments_actor ON production_assignments (actor)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_assignments_lease_expires_at",
+    "table": "production_assignments",
+    "sql": "CREATE INDEX ix_production_assignments_lease_expires_at ON production_assignments (lease_expires_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_assignments_task_id",
+    "table": "production_assignments",
+    "sql": "CREATE INDEX ix_production_assignments_task_id ON production_assignments (task_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_label_sets_label_set_id",
+    "table": "production_label_sets",
+    "sql": "CREATE INDEX ix_production_label_sets_label_set_id ON production_label_sets (label_set_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_lease_releases_actor",
+    "table": "production_lease_releases",
+    "sql": "CREATE INDEX ix_production_lease_releases_actor ON production_lease_releases (actor)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_lease_releases_project_id",
+    "table": "production_lease_releases",
+    "sql": "CREATE INDEX ix_production_lease_releases_project_id ON production_lease_releases (project_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_lease_releases_released_at",
+    "table": "production_lease_releases",
+    "sql": "CREATE INDEX ix_production_lease_releases_released_at ON production_lease_releases (released_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_lease_releases_task_id",
+    "table": "production_lease_releases",
+    "sql": "CREATE INDEX ix_production_lease_releases_task_id ON production_lease_releases (task_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_package_inspections_created_at",
+    "table": "production_package_inspections",
+    "sql": "CREATE INDEX ix_production_package_inspections_created_at ON production_package_inspections (created_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_package_inspections_package_id",
+    "table": "production_package_inspections",
+    "sql": "CREATE INDEX ix_production_package_inspections_package_id ON production_package_inspections (package_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_package_inspections_project_id",
+    "table": "production_package_inspections",
+    "sql": "CREATE INDEX ix_production_package_inspections_project_id ON production_package_inspections (project_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_packages_project_id",
+    "table": "production_packages",
+    "sql": "CREATE INDEX ix_production_packages_project_id ON production_packages (project_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_prelabel_runs_project_id",
+    "table": "production_prelabel_runs",
+    "sql": "CREATE INDEX ix_production_prelabel_runs_project_id ON production_prelabel_runs (project_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_projects_dataset_id",
+    "table": "production_projects",
+    "sql": "CREATE INDEX ix_production_projects_dataset_id ON production_projects (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_reviews_project_id",
+    "table": "production_reviews",
+    "sql": "CREATE INDEX ix_production_reviews_project_id ON production_reviews (project_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_reviews_task_id",
+    "table": "production_reviews",
+    "sql": "CREATE INDEX ix_production_reviews_task_id ON production_reviews (task_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_revisions_project_id",
+    "table": "production_revisions",
+    "sql": "CREATE INDEX ix_production_revisions_project_id ON production_revisions (project_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_revisions_task_id",
+    "table": "production_revisions",
+    "sql": "CREATE INDEX ix_production_revisions_task_id ON production_revisions (task_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_tasks_annotator_id",
+    "table": "production_tasks",
+    "sql": "CREATE INDEX ix_production_tasks_annotator_id ON production_tasks (annotator_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_tasks_package_id",
+    "table": "production_tasks",
+    "sql": "CREATE INDEX ix_production_tasks_package_id ON production_tasks (package_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_tasks_project_id",
+    "table": "production_tasks",
+    "sql": "CREATE INDEX ix_production_tasks_project_id ON production_tasks (project_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_production_template_versions_template_id",
+    "table": "production_template_versions",
+    "sql": "CREATE INDEX ix_production_template_versions_template_id ON production_template_versions (template_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_release_reconciliations_release_id",
+    "table": "release_reconciliations",
+    "sql": "CREATE INDEX ix_release_reconciliations_release_id ON release_reconciliations (release_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_releases_dataset_id",
+    "table": "releases",
+    "sql": "CREATE INDEX ix_releases_dataset_id ON releases (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_releases_version_id",
+    "table": "releases",
+    "sql": "CREATE INDEX ix_releases_version_id ON releases (version_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_task_shards_state",
+    "table": "task_shards",
+    "sql": "CREATE INDEX ix_task_shards_state ON task_shards (state)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_task_shards_task_id",
+    "table": "task_shards",
+    "sql": "CREATE INDEX ix_task_shards_task_id ON task_shards (task_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_tasks_dataset_id",
+    "table": "tasks",
+    "sql": "CREATE INDEX ix_tasks_dataset_id ON tasks (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_tasks_datasheet_job_id",
+    "table": "tasks",
+    "sql": "CREATE INDEX ix_tasks_datasheet_job_id ON tasks (datasheet_job_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_tasks_dq_run_id",
+    "table": "tasks",
+    "sql": "CREATE INDEX ix_tasks_dq_run_id ON tasks (dq_run_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_tasks_kg_run_id",
+    "table": "tasks",
+    "sql": "CREATE INDEX ix_tasks_kg_run_id ON tasks (kg_run_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_tool_invocation_name",
+    "table": "tool_invocation",
+    "sql": "CREATE INDEX ix_tool_invocation_name ON tool_invocation (name)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_tool_invocation_session_id",
+    "table": "tool_invocation",
+    "sql": "CREATE INDEX ix_tool_invocation_session_id ON tool_invocation (session_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_training_evaluations_dataset_id",
+    "table": "training_evaluations",
+    "sql": "CREATE INDEX ix_training_evaluations_dataset_id ON training_evaluations (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_training_governance_runs_dataset_id",
+    "table": "training_governance_runs",
+    "sql": "CREATE INDEX ix_training_governance_runs_dataset_id ON training_governance_runs (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_training_governance_runs_version_id",
+    "table": "training_governance_runs",
+    "sql": "CREATE INDEX ix_training_governance_runs_version_id ON training_governance_runs (version_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_training_splits_created_at",
+    "table": "training_splits",
+    "sql": "CREATE INDEX ix_training_splits_created_at ON training_splits (created_at)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_training_splits_dataset_id",
+    "table": "training_splits",
+    "sql": "CREATE INDEX ix_training_splits_dataset_id ON training_splits (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_training_splits_version_id",
+    "table": "training_splits",
+    "sql": "CREATE INDEX ix_training_splits_version_id ON training_splits (version_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_vector_fake_attempts_plan_id",
+    "table": "vector_fake_attempts",
+    "sql": "CREATE INDEX ix_vector_fake_attempts_plan_id ON vector_fake_attempts (plan_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_vector_fake_attempts_task_id",
+    "table": "vector_fake_attempts",
+    "sql": "CREATE INDEX ix_vector_fake_attempts_task_id ON vector_fake_attempts (task_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_versions_dataset_id",
+    "table": "versions",
+    "sql": "CREATE INDEX ix_versions_dataset_id ON versions (dataset_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_workflow_audit_run_id",
+    "table": "workflow_audit",
+    "sql": "CREATE INDEX ix_workflow_audit_run_id ON workflow_audit (run_id)"
+  },
+  {
+    "kind": "index",
+    "name": "ix_workflow_runs_workflow_id",
+    "table": "workflow_runs",
+    "sql": "CREATE INDEX ix_workflow_runs_workflow_id ON workflow_runs (workflow_id)"
+  },
+  {
+    "kind": "index",
+    "name": "production_task_claim_order",
+    "table": "production_tasks",
+    "sql": "CREATE INDEX production_task_claim_order ON production_tasks (project_id, state, priority DESC, display_rank, id)"
+  },
+  {
+    "kind": "index",
+    "name": "production_task_next",
+    "table": "production_tasks",
+    "sql": "CREATE INDEX production_task_next ON production_tasks (project_id, state, priority, id)"
+  },
+  {
+    "kind": "index",
+    "name": "production_unique_active_assignment",
+    "table": "production_assignments",
+    "sql": "CREATE UNIQUE INDEX production_unique_active_assignment ON production_assignments (task_id, stage) WHERE active = 1"
+  },
+  {
+    "kind": "table",
+    "name": "action_audit",
+    "table": "action_audit",
+    "sql": "CREATE TABLE action_audit ( id VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, action_type VARCHAR NOT NULL, phase VARCHAR NOT NULL, status VARCHAR NOT NULL, actor VARCHAR NOT NULL, session_id VARCHAR, detail JSON NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), FOREIGN KEY(plan_id) REFERENCES action_plans (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "action_chains",
+    "table": "action_chains",
+    "sql": "CREATE TABLE action_chains ( id VARCHAR NOT NULL, conversation_id VARCHAR, actor VARCHAR NOT NULL, updated_at FLOAT NOT NULL, lease_until FLOAT NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "action_operations",
+    "table": "action_operations",
+    "sql": "CREATE TABLE action_operations ( operation_id VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, actor VARCHAR NOT NULL, request_digest VARCHAR NOT NULL, run_id VARCHAR NOT NULL, PRIMARY KEY (operation_id), FOREIGN KEY(plan_id) REFERENCES action_plans (id), UNIQUE (run_id), FOREIGN KEY(run_id) REFERENCES action_runs (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "action_plans",
+    "table": "action_plans",
+    "sql": "CREATE TABLE action_plans ( id VARCHAR NOT NULL, action_type VARCHAR NOT NULL, payload JSON NOT NULL, status VARCHAR NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "action_runs",
+    "table": "action_runs",
+    "sql": "CREATE TABLE action_runs ( id VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, action_type VARCHAR NOT NULL, status VARCHAR NOT NULL, task_id VARCHAR, receipt JSON, error VARCHAR, created_at FLOAT NOT NULL, completed_at FLOAT, PRIMARY KEY (id), FOREIGN KEY(plan_id) REFERENCES action_plans (id), UNIQUE (task_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "annotation_batches",
+    "table": "annotation_batches",
+    "sql": "CREATE TABLE annotation_batches ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, version_id VARCHAR NOT NULL, idempotency_key VARCHAR NOT NULL, request_digest VARCHAR NOT NULL, batch JSON NOT NULL, report JSON NOT NULL, created_at FLOAT NOT NULL, coordinate_frame VARCHAR, PRIMARY KEY (id), UNIQUE (dataset_id, idempotency_key), FOREIGN KEY(dataset_id) REFERENCES datasets (id), FOREIGN KEY(version_id) REFERENCES versions (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "annotation_inspections",
+    "table": "annotation_inspections",
+    "sql": "CREATE TABLE annotation_inspections ( id VARCHAR NOT NULL, action_plan_id VARCHAR NOT NULL, batch_id VARCHAR NOT NULL, payload JSON NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), UNIQUE (action_plan_id), FOREIGN KEY(action_plan_id) REFERENCES action_plans (id), FOREIGN KEY(batch_id) REFERENCES annotation_batches (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "annotation_sampling_plans",
+    "table": "annotation_sampling_plans",
+    "sql": "CREATE TABLE annotation_sampling_plans ( id VARCHAR NOT NULL, batch_id VARCHAR NOT NULL, payload JSON NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), FOREIGN KEY(batch_id) REFERENCES annotation_batches (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "approvals",
+    "table": "approvals",
+    "sql": "CREATE TABLE approvals ( id VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, plan_digest VARCHAR NOT NULL, actor VARCHAR NOT NULL, status VARCHAR NOT NULL, consumed BOOLEAN NOT NULL, reason VARCHAR NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), UNIQUE (plan_id), FOREIGN KEY(plan_id) REFERENCES action_plans (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "ask_answers",
+    "table": "ask_answers",
+    "sql": "CREATE TABLE ask_answers ( id VARCHAR NOT NULL, session_id VARCHAR NOT NULL, producer_event_id VARCHAR NOT NULL, request_payload JSON NOT NULL, question_payload JSON NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(session_id) REFERENCES ask_sessions (id), FOREIGN KEY(producer_event_id) REFERENCES lineage_events (event_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "ask_conversations",
+    "table": "ask_conversations",
+    "sql": "CREATE TABLE ask_conversations ( id VARCHAR NOT NULL, actor VARCHAR NOT NULL, title VARCHAR NOT NULL, created_at VARCHAR NOT NULL, updated_at VARCHAR NOT NULL, answer_ids JSON NOT NULL, frame_payload JSON, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "ask_sessions",
+    "table": "ask_sessions",
+    "sql": "CREATE TABLE ask_sessions ( id VARCHAR NOT NULL, actor VARCHAR NOT NULL, created_at VARCHAR NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "assertion_decisions",
+    "table": "assertion_decisions",
+    "sql": "CREATE TABLE assertion_decisions ( sequence INTEGER NOT NULL, id VARCHAR NOT NULL, idempotency_key VARCHAR NOT NULL, assertion_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (sequence), UNIQUE (id), UNIQUE (idempotency_key) )"
+  },
+  {
+    "kind": "table",
+    "name": "assertions",
+    "table": "assertions",
+    "sql": "CREATE TABLE assertions ( id VARCHAR NOT NULL, subject_id VARCHAR NOT NULL, predicate VARCHAR NOT NULL, producer_event_id VARCHAR NOT NULL, payload JSON NOT NULL, status VARCHAR NOT NULL, decided_by VARCHAR, decided_at VARCHAR, active BOOLEAN NOT NULL, verification VARCHAR, verification_detail JSON, PRIMARY KEY (id), FOREIGN KEY(producer_event_id) REFERENCES lineage_events (event_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "asset_applications",
+    "table": "asset_applications",
+    "sql": "CREATE TABLE asset_applications ( id VARCHAR NOT NULL, asset_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(asset_id) REFERENCES data_assets (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "asset_control_events",
+    "table": "asset_control_events",
+    "sql": "CREATE TABLE asset_control_events ( id VARCHAR NOT NULL, asset_id VARCHAR NOT NULL, operation_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(asset_id) REFERENCES data_assets (id), UNIQUE (operation_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "asset_grants",
+    "table": "asset_grants",
+    "sql": "CREATE TABLE asset_grants ( id VARCHAR NOT NULL, asset_id VARCHAR NOT NULL, application_id VARCHAR NOT NULL, subject VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(asset_id) REFERENCES data_assets (id), UNIQUE (application_id), FOREIGN KEY(application_id) REFERENCES asset_applications (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "asset_usage",
+    "table": "asset_usage",
+    "sql": "CREATE TABLE asset_usage ( id VARCHAR NOT NULL, asset_id VARCHAR NOT NULL, actor VARCHAR NOT NULL, occurred_at FLOAT NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(asset_id) REFERENCES data_assets (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "budget_accounts",
+    "table": "budget_accounts",
+    "sql": "CREATE TABLE budget_accounts ( \"key\" VARCHAR NOT NULL, token_limit BIGINT NOT NULL, usd_limit_nanos BIGINT NOT NULL, used_tokens BIGINT NOT NULL, reserved_tokens BIGINT NOT NULL, spent_nanos BIGINT NOT NULL, reserved_nanos BIGINT NOT NULL, PRIMARY KEY ( \"key\" ) )"
+  },
+  {
+    "kind": "table",
+    "name": "budget_reservations",
+    "table": "budget_reservations",
+    "sql": "CREATE TABLE budget_reservations ( id VARCHAR NOT NULL, conversation_id VARCHAR NOT NULL, model VARCHAR NOT NULL, day VARCHAR NOT NULL, tokens BIGINT NOT NULL, cost_nanos BIGINT NOT NULL, status VARCHAR NOT NULL, price JSON NOT NULL, price_version VARCHAR NOT NULL, reason VARCHAR NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "catalog_edges",
+    "table": "catalog_edges",
+    "sql": "CREATE TABLE catalog_edges ( id VARCHAR NOT NULL, scope VARCHAR NOT NULL, kind VARCHAR NOT NULL, source_id VARCHAR NOT NULL, target_id VARCHAR NOT NULL, producer_event_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "catalog_objects",
+    "table": "catalog_objects",
+    "sql": "CREATE TABLE catalog_objects ( asset_id VARCHAR NOT NULL, scope VARCHAR NOT NULL, kind VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (asset_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "checkpoint_writes",
+    "table": "checkpoint_writes",
+    "sql": "CREATE TABLE checkpoint_writes ( thread_id VARCHAR NOT NULL, checkpoint_ns VARCHAR NOT NULL, checkpoint_id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, idx INTEGER NOT NULL, task_path VARCHAR NOT NULL, channel VARCHAR NOT NULL, value BLOB NOT NULL, PRIMARY KEY (thread_id, checkpoint_ns, checkpoint_id, task_id, idx) )"
+  },
+  {
+    "kind": "table",
+    "name": "checkpoints",
+    "table": "checkpoints",
+    "sql": "CREATE TABLE checkpoints ( thread_id VARCHAR NOT NULL, checkpoint_ns VARCHAR NOT NULL, checkpoint_id VARCHAR NOT NULL, parent_checkpoint_id VARCHAR, checkpoint BLOB NOT NULL, metadata_bytes BLOB NOT NULL, PRIMARY KEY (thread_id, checkpoint_ns, checkpoint_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "conversation_audit",
+    "table": "conversation_audit",
+    "sql": "CREATE TABLE conversation_audit ( id VARCHAR NOT NULL, conversation_id VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, kind VARCHAR NOT NULL, reason VARCHAR NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), FOREIGN KEY(conversation_id) REFERENCES conversations (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "conversation_requests",
+    "table": "conversation_requests",
+    "sql": "CREATE TABLE conversation_requests ( conversation_id VARCHAR NOT NULL, \"key\" VARCHAR NOT NULL, content VARCHAR NOT NULL, token VARCHAR NOT NULL, status VARCHAR NOT NULL, events JSON NOT NULL, PRIMARY KEY (conversation_id, \"key\" ), FOREIGN KEY(conversation_id) REFERENCES conversations (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "conversation_resumes",
+    "table": "conversation_resumes",
+    "sql": "CREATE TABLE conversation_resumes ( conversation_id VARCHAR NOT NULL, \"key\" VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, token VARCHAR NOT NULL, status VARCHAR NOT NULL, events JSON NOT NULL, PRIMARY KEY (conversation_id, \"key\" ), FOREIGN KEY(conversation_id) REFERENCES conversations (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "conversations",
+    "table": "conversations",
+    "sql": "CREATE TABLE conversations ( id VARCHAR NOT NULL, payload JSON NOT NULL, active_token VARCHAR, active_until FLOAT NOT NULL, canary VARCHAR, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "custom_operator_runs",
+    "table": "custom_operator_runs",
+    "sql": "CREATE TABLE custom_operator_runs ( id VARCHAR NOT NULL, code_hash VARCHAR NOT NULL, task_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "custom_operator_versions",
+    "table": "custom_operator_versions",
+    "sql": "CREATE TABLE custom_operator_versions ( id VARCHAR NOT NULL, name VARCHAR NOT NULL, code_hash VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "data_asset_history",
+    "table": "data_asset_history",
+    "sql": "CREATE TABLE data_asset_history ( id VARCHAR NOT NULL, asset_id VARCHAR NOT NULL, operation_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(asset_id) REFERENCES data_assets (id), UNIQUE (operation_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "data_assets",
+    "table": "data_assets",
+    "sql": "CREATE TABLE data_assets ( id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "datasets",
+    "table": "datasets",
+    "sql": "CREATE TABLE datasets ( id VARCHAR NOT NULL, name VARCHAR NOT NULL, created_at FLOAT NOT NULL, files JSON NOT NULL, quality_config JSON NOT NULL, template JSON, metadata_values JSON NOT NULL, compliance JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "datasheet_jobs",
+    "table": "datasheet_jobs",
+    "sql": "CREATE TABLE datasheet_jobs ( id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, payload JSON NOT NULL, prepared JSON NOT NULL, status VARCHAR NOT NULL, error VARCHAR, created_at FLOAT NOT NULL, PRIMARY KEY (id), UNIQUE (task_id), FOREIGN KEY(task_id) REFERENCES tasks (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "datasheets",
+    "table": "datasheets",
+    "sql": "CREATE TABLE datasheets ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, version_id VARCHAR NOT NULL, created_at FLOAT NOT NULL, payload JSON NOT NULL, published BOOLEAN NOT NULL, PRIMARY KEY (id), FOREIGN KEY(dataset_id) REFERENCES datasets (id), FOREIGN KEY(version_id) REFERENCES versions (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "dq_history",
+    "table": "dq_history",
+    "sql": "CREATE TABLE dq_history ( id VARCHAR NOT NULL, rule_id VARCHAR NOT NULL, revision INTEGER NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), UNIQUE (rule_id, revision) )"
+  },
+  {
+    "kind": "table",
+    "name": "dq_issue_audits",
+    "table": "dq_issue_audits",
+    "sql": "CREATE TABLE dq_issue_audits ( id VARCHAR NOT NULL, issue_id VARCHAR NOT NULL, actor VARCHAR NOT NULL, occurred_at FLOAT NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "dq_issues",
+    "table": "dq_issues",
+    "sql": "CREATE TABLE dq_issues ( id VARCHAR NOT NULL, rule_id VARCHAR NOT NULL, active BOOLEAN NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "dq_results",
+    "table": "dq_results",
+    "sql": "CREATE TABLE dq_results ( id VARCHAR NOT NULL, run_id VARCHAR NOT NULL, rule_id VARCHAR NOT NULL, rule_revision INTEGER NOT NULL, started_at FLOAT NOT NULL, sequence INTEGER, status VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), UNIQUE (run_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "dq_rules",
+    "table": "dq_rules",
+    "sql": "CREATE TABLE dq_rules ( id VARCHAR NOT NULL, revision INTEGER NOT NULL, deleted BOOLEAN NOT NULL, source_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "dq_runs",
+    "table": "dq_runs",
+    "sql": "CREATE TABLE dq_runs ( id VARCHAR NOT NULL, rule_id VARCHAR NOT NULL, rule_revision INTEGER NOT NULL, slot VARCHAR NOT NULL, task_id VARCHAR NOT NULL, state VARCHAR NOT NULL, rule_payload JSON NOT NULL, result_id VARCHAR, error VARCHAR, PRIMARY KEY (id), UNIQUE (rule_id, rule_revision, slot), UNIQUE (task_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "dq_webhook_outbox",
+    "table": "dq_webhook_outbox",
+    "sql": "CREATE TABLE dq_webhook_outbox ( id VARCHAR NOT NULL, body VARCHAR NOT NULL, attempts INTEGER NOT NULL, due_at FLOAT NOT NULL, delivered BOOLEAN NOT NULL, lease_owner VARCHAR, leased_until FLOAT, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "eval_runs",
+    "table": "eval_runs",
+    "sql": "CREATE TABLE eval_runs ( id VARCHAR NOT NULL, provider VARCHAR NOT NULL, suite_digest VARCHAR NOT NULL, payload JSON NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "evidence_cache",
+    "table": "evidence_cache",
+    "sql": "CREATE TABLE evidence_cache ( slot VARCHAR NOT NULL, cache_key VARCHAR NOT NULL, producer_event_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (slot), FOREIGN KEY(producer_event_id) REFERENCES lineage_events (event_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "file_discovery",
+    "table": "file_discovery",
+    "sql": "CREATE TABLE file_discovery ( id INTEGER NOT NULL, file_id VARCHAR NOT NULL, name VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, version_id VARCHAR NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), FOREIGN KEY(dataset_id) REFERENCES datasets (id) ON DELETE CASCADE ON UPDATE CASCADE, FOREIGN KEY(version_id) REFERENCES versions (id) ON DELETE CASCADE ON UPDATE CASCADE )"
+  },
+  {
+    "kind": "table",
+    "name": "file_discovery_checkpoints",
+    "table": "file_discovery_checkpoints",
+    "sql": "CREATE TABLE file_discovery_checkpoints ( generation VARCHAR NOT NULL, PRIMARY KEY (generation) )"
+  },
+  {
+    "kind": "table",
+    "name": "file_states",
+    "table": "file_states",
+    "sql": "CREATE TABLE file_states ( dataset_id VARCHAR NOT NULL, file_id VARCHAR NOT NULL, quarantined BOOLEAN NOT NULL, deleted BOOLEAN NOT NULL, revision INTEGER NOT NULL, PRIMARY KEY (dataset_id, file_id), FOREIGN KEY(dataset_id) REFERENCES datasets (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "identity_role_bindings",
+    "table": "identity_role_bindings",
+    "sql": "CREATE TABLE identity_role_bindings ( id VARCHAR NOT NULL, user_id VARCHAR NOT NULL, role_id VARCHAR NOT NULL, project_key VARCHAR NOT NULL, PRIMARY KEY (id), UNIQUE (user_id, role_id, project_key), FOREIGN KEY(user_id) REFERENCES identity_users (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "identity_roles",
+    "table": "identity_roles",
+    "sql": "CREATE TABLE identity_roles ( id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "identity_sessions",
+    "table": "identity_sessions",
+    "sql": "CREATE TABLE identity_sessions ( session_id VARCHAR NOT NULL, actor VARCHAR NOT NULL, PRIMARY KEY (session_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "identity_skills",
+    "table": "identity_skills",
+    "sql": "CREATE TABLE identity_skills ( id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "identity_teams",
+    "table": "identity_teams",
+    "sql": "CREATE TABLE identity_teams ( id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "identity_users",
+    "table": "identity_users",
+    "sql": "CREATE TABLE identity_users ( id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "image_transcripts",
+    "table": "image_transcripts",
+    "sql": "CREATE TABLE image_transcripts ( \"key\" VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY ( \"key\" ) )"
+  },
+  {
+    "kind": "table",
+    "name": "kg_block_cache",
+    "table": "kg_block_cache",
+    "sql": "CREATE TABLE kg_block_cache ( \"key\" VARCHAR NOT NULL, key_payload JSON NOT NULL, payload JSON NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY ( \"key\" ) )"
+  },
+  {
+    "kind": "table",
+    "name": "kg_eval_runs",
+    "table": "kg_eval_runs",
+    "sql": "CREATE TABLE kg_eval_runs ( id VARCHAR NOT NULL, profile VARCHAR NOT NULL, model VARCHAR NOT NULL, suite_digest VARCHAR NOT NULL, payload JSON NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "kg_runs",
+    "table": "kg_runs",
+    "sql": "CREATE TABLE kg_runs ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, version_id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, created_at FLOAT NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), UNIQUE (task_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "lineage_events",
+    "table": "lineage_events",
+    "sql": "CREATE TABLE lineage_events ( event_id VARCHAR NOT NULL, idempotency_key VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (event_id), UNIQUE (idempotency_key) )"
+  },
+  {
+    "kind": "table",
+    "name": "memories",
+    "table": "memories",
+    "sql": "CREATE TABLE memories ( id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "memory_audit",
+    "table": "memory_audit",
+    "sql": "CREATE TABLE memory_audit ( id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "memory_uses",
+    "table": "memory_uses",
+    "sql": "CREATE TABLE memory_uses ( root_conversation_id VARCHAR NOT NULL, user_message_number INTEGER NOT NULL, memory_id VARCHAR NOT NULL, PRIMARY KEY (root_conversation_id, user_message_number, memory_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "memory_writes",
+    "table": "memory_writes",
+    "sql": "CREATE TABLE memory_writes ( \"key\" VARCHAR NOT NULL, digest VARCHAR NOT NULL, memory_id VARCHAR NOT NULL, PRIMARY KEY ( \"key\" ) )"
+  },
+  {
+    "kind": "table",
+    "name": "metadata_changes",
+    "table": "metadata_changes",
+    "sql": "CREATE TABLE metadata_changes ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, field VARCHAR NOT NULL, \"before\" JSON, \"after\" JSON, source VARCHAR NOT NULL, reason VARCHAR NOT NULL, occurred_at FLOAT NOT NULL, PRIMARY KEY (id), FOREIGN KEY(dataset_id) REFERENCES datasets (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "metric_audit",
+    "table": "metric_audit",
+    "sql": "CREATE TABLE metric_audit ( id VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, actor VARCHAR NOT NULL, metric_id VARCHAR NOT NULL, from_version INTEGER NOT NULL, to_version INTEGER NOT NULL, event_id VARCHAR NOT NULL, action_type VARCHAR NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), FOREIGN KEY(plan_id) REFERENCES action_plans (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "model_call_trace",
+    "table": "model_call_trace",
+    "sql": "CREATE TABLE model_call_trace ( id VARCHAR NOT NULL, reservation_id VARCHAR NOT NULL, conversation_id VARCHAR NOT NULL, accounting_conversation_id VARCHAR, agent_path VARCHAR, depth INTEGER, parent_tool_call_id VARCHAR, model VARCHAR NOT NULL, day VARCHAR NOT NULL, cost_nanos BIGINT NOT NULL, payload JSON NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), UNIQUE (reservation_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "outbox",
+    "table": "outbox",
+    "sql": "CREATE TABLE outbox ( id VARCHAR NOT NULL, idempotency_key VARCHAR NOT NULL, payload JSON NOT NULL, delivered BOOLEAN NOT NULL, PRIMARY KEY (id), UNIQUE (idempotency_key) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_ai_reviews",
+    "table": "production_ai_reviews",
+    "sql": "CREATE TABLE production_ai_reviews ( id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, project_id VARCHAR NOT NULL, revision_id VARCHAR NOT NULL, risk FLOAT NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(task_id) REFERENCES production_tasks (id), FOREIGN KEY(project_id) REFERENCES production_projects (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_assignments",
+    "table": "production_assignments",
+    "sql": "CREATE TABLE production_assignments ( id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, actor VARCHAR NOT NULL, stage VARCHAR NOT NULL, active BOOLEAN NOT NULL, payload JSON NOT NULL, lease_expires_at FLOAT, PRIMARY KEY (id), FOREIGN KEY(task_id) REFERENCES production_tasks (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_label_sets",
+    "table": "production_label_sets",
+    "sql": "CREATE TABLE production_label_sets ( id VARCHAR NOT NULL, label_set_id VARCHAR NOT NULL, version INTEGER NOT NULL, published BOOLEAN NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), UNIQUE (label_set_id, version) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_lease_releases",
+    "table": "production_lease_releases",
+    "sql": "CREATE TABLE production_lease_releases ( assignment_id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, project_id VARCHAR NOT NULL, actor VARCHAR NOT NULL, reason VARCHAR NOT NULL, released_at FLOAT NOT NULL, payload JSON NOT NULL, PRIMARY KEY (assignment_id), FOREIGN KEY(assignment_id) REFERENCES production_assignments (id), FOREIGN KEY(task_id) REFERENCES production_tasks (id), FOREIGN KEY(project_id) REFERENCES production_projects (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_members",
+    "table": "production_members",
+    "sql": "CREATE TABLE production_members ( project_id VARCHAR NOT NULL, actor VARCHAR NOT NULL, PRIMARY KEY (project_id, actor), FOREIGN KEY(project_id) REFERENCES production_projects (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_models",
+    "table": "production_models",
+    "sql": "CREATE TABLE production_models ( id VARCHAR NOT NULL, revision INTEGER NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_package_inspections",
+    "table": "production_package_inspections",
+    "sql": "CREATE TABLE production_package_inspections ( id VARCHAR NOT NULL, package_id VARCHAR NOT NULL, project_id VARCHAR NOT NULL, created_at FLOAT NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(package_id) REFERENCES production_packages (id), FOREIGN KEY(project_id) REFERENCES production_projects (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_packages",
+    "table": "production_packages",
+    "sql": "CREATE TABLE production_packages ( id VARCHAR NOT NULL, project_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(project_id) REFERENCES production_projects (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_prelabel_runs",
+    "table": "production_prelabel_runs",
+    "sql": "CREATE TABLE production_prelabel_runs ( id VARCHAR NOT NULL, project_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_preparations",
+    "table": "production_preparations",
+    "sql": "CREATE TABLE production_preparations ( actor VARCHAR NOT NULL, action_type VARCHAR NOT NULL, request_id VARCHAR NOT NULL, request_digest VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, PRIMARY KEY (actor, action_type, request_id), UNIQUE (plan_id), FOREIGN KEY(plan_id) REFERENCES action_plans (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_projects",
+    "table": "production_projects",
+    "sql": "CREATE TABLE production_projects ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(dataset_id) REFERENCES datasets (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_reviews",
+    "table": "production_reviews",
+    "sql": "CREATE TABLE production_reviews ( id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, project_id VARCHAR NOT NULL, annotator_id VARCHAR NOT NULL, decision VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(task_id) REFERENCES production_tasks (id), FOREIGN KEY(project_id) REFERENCES production_projects (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_revisions",
+    "table": "production_revisions",
+    "sql": "CREATE TABLE production_revisions ( id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, project_id VARCHAR NOT NULL, source VARCHAR NOT NULL, actor VARCHAR NOT NULL, confidence FLOAT, payload JSON NOT NULL, coordinate_frame VARCHAR, PRIMARY KEY (id), FOREIGN KEY(task_id) REFERENCES production_tasks (id), FOREIGN KEY(project_id) REFERENCES production_projects (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_summaries",
+    "table": "production_summaries",
+    "sql": "CREATE TABLE production_summaries ( scope_id VARCHAR NOT NULL, state VARCHAR NOT NULL, count INTEGER NOT NULL, PRIMARY KEY (scope_id, state) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_tasks",
+    "table": "production_tasks",
+    "sql": "CREATE TABLE production_tasks ( id VARCHAR NOT NULL, project_id VARCHAR NOT NULL, package_id VARCHAR NOT NULL, sample_id VARCHAR NOT NULL, state VARCHAR NOT NULL, round INTEGER NOT NULL, priority INTEGER NOT NULL, latest_revision_id VARCHAR, approved_revision_id VARCHAR, annotator_id VARCHAR, confidence FLOAT, display_rank INTEGER, PRIMARY KEY (id), UNIQUE (project_id, sample_id), FOREIGN KEY(project_id) REFERENCES production_projects (id), FOREIGN KEY(package_id) REFERENCES production_packages (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_template_versions",
+    "table": "production_template_versions",
+    "sql": "CREATE TABLE production_template_versions ( id VARCHAR NOT NULL, template_id VARCHAR NOT NULL, revision INTEGER NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), UNIQUE (template_id, revision) )"
+  },
+  {
+    "kind": "table",
+    "name": "production_templates",
+    "table": "production_templates",
+    "sql": "CREATE TABLE production_templates ( id VARCHAR NOT NULL, revision INTEGER NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "release_entries",
+    "table": "release_entries",
+    "sql": "CREATE TABLE release_entries ( release_id VARCHAR NOT NULL, file_id VARCHAR NOT NULL, ordinal INTEGER NOT NULL, object_key VARCHAR NOT NULL, record JSON NOT NULL, PRIMARY KEY (release_id, file_id), UNIQUE (release_id, ordinal), FOREIGN KEY(release_id) REFERENCES releases (id) DEFERRABLE INITIALLY DEFERRED )"
+  },
+  {
+    "kind": "table",
+    "name": "release_reconciliations",
+    "table": "release_reconciliations",
+    "sql": "CREATE TABLE release_reconciliations ( id VARCHAR NOT NULL, release_id VARCHAR NOT NULL, created_at FLOAT NOT NULL, report JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(release_id) REFERENCES releases (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "releases",
+    "table": "releases",
+    "sql": "CREATE TABLE releases ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, version_id VARCHAR NOT NULL, tag VARCHAR NOT NULL, notes VARCHAR NOT NULL, created_at FLOAT NOT NULL, manifest_sha256 VARCHAR NOT NULL, file_count INTEGER NOT NULL, total_bytes INTEGER NOT NULL, metadata_values JSON NOT NULL, summary JSON NOT NULL, PRIMARY KEY (id), UNIQUE (dataset_id, tag), FOREIGN KEY(dataset_id) REFERENCES datasets (id), FOREIGN KEY(version_id) REFERENCES versions (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "task_shards",
+    "table": "task_shards",
+    "sql": "CREATE TABLE task_shards ( id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, ordinal INTEGER NOT NULL, state VARCHAR NOT NULL, inputs JSON NOT NULL, outputs JSON NOT NULL, lease_owner VARCHAR, heartbeat_at FLOAT, lease_expires_at FLOAT, attempts INTEGER NOT NULL, PRIMARY KEY (id), UNIQUE (task_id, ordinal), FOREIGN KEY(task_id) REFERENCES tasks (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "tasks",
+    "table": "tasks",
+    "sql": "CREATE TABLE tasks ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, idempotency_key VARCHAR NOT NULL, state VARCHAR NOT NULL, queue VARCHAR NOT NULL, pipeline JSON, created_at FLOAT NOT NULL, finished_at FLOAT, total_shards INTEGER NOT NULL, error VARCHAR, input_version_id VARCHAR, kg_run_id VARCHAR, dq_run_id VARCHAR, datasheet_job_id VARCHAR, PRIMARY KEY (id), FOREIGN KEY(dataset_id) REFERENCES datasets (id), UNIQUE (idempotency_key) )"
+  },
+  {
+    "kind": "table",
+    "name": "tool_invocation",
+    "table": "tool_invocation",
+    "sql": "CREATE TABLE tool_invocation ( id VARCHAR NOT NULL, name VARCHAR NOT NULL, actor VARCHAR NOT NULL, agent_id VARCHAR, session_id VARCHAR, parameters_summary JSON NOT NULL, asset_refs JSON NOT NULL, status VARCHAR NOT NULL, started_at FLOAT NOT NULL, completed_at FLOAT, elapsed_ms FLOAT NOT NULL, error VARCHAR, outcome JSON, PRIMARY KEY (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "training_clean_versions",
+    "table": "training_clean_versions",
+    "sql": "CREATE TABLE training_clean_versions ( run_id VARCHAR NOT NULL, version_id VARCHAR NOT NULL, PRIMARY KEY (run_id), FOREIGN KEY(run_id) REFERENCES training_governance_runs (id), UNIQUE (version_id), FOREIGN KEY(version_id) REFERENCES versions (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "training_evaluations",
+    "table": "training_evaluations",
+    "sql": "CREATE TABLE training_evaluations ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), FOREIGN KEY(dataset_id) REFERENCES datasets (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "training_governance_runs",
+    "table": "training_governance_runs",
+    "sql": "CREATE TABLE training_governance_runs ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, version_id VARCHAR NOT NULL, created_at FLOAT NOT NULL, payload JSON NOT NULL, file_ids JSON NOT NULL, evaluation_ids JSON NOT NULL, ledger_key VARCHAR NOT NULL, PRIMARY KEY (id), FOREIGN KEY(dataset_id) REFERENCES datasets (id), FOREIGN KEY(version_id) REFERENCES versions (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "training_splits",
+    "table": "training_splits",
+    "sql": "CREATE TABLE training_splits ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, version_id VARCHAR NOT NULL, name VARCHAR NOT NULL, created_at FLOAT NOT NULL, payload JSON NOT NULL, samples JSON NOT NULL, coordinate_frame VARCHAR, PRIMARY KEY (id), UNIQUE (version_id, name), FOREIGN KEY(dataset_id) REFERENCES datasets (id), FOREIGN KEY(version_id) REFERENCES versions (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "uploads",
+    "table": "uploads",
+    "sql": "CREATE TABLE uploads ( id VARCHAR NOT NULL, idempotency_key VARCHAR NOT NULL, declaration JSON NOT NULL, dataset_id VARCHAR, PRIMARY KEY (id), UNIQUE (idempotency_key), FOREIGN KEY(dataset_id) REFERENCES datasets (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "vector_cache",
+    "table": "vector_cache",
+    "sql": "CREATE TABLE vector_cache ( namespace_key VARCHAR NOT NULL, producer_event_id VARCHAR NOT NULL, payload JSON NOT NULL, PRIMARY KEY (namespace_key) )"
+  },
+  {
+    "kind": "table",
+    "name": "vector_fake_accounts",
+    "table": "vector_fake_accounts",
+    "sql": "CREATE TABLE vector_fake_accounts ( plan_id VARCHAR NOT NULL, requests BIGINT NOT NULL, cost_nanos BIGINT NOT NULL, PRIMARY KEY (plan_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "vector_fake_attempts",
+    "table": "vector_fake_attempts",
+    "sql": "CREATE TABLE vector_fake_attempts ( id VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, task_id VARCHAR NOT NULL, node_id VARCHAR NOT NULL, asset_id VARCHAR NOT NULL, state VARCHAR NOT NULL, token_bound BIGINT NOT NULL, reserved_nanos BIGINT NOT NULL, payload JSON NOT NULL, PRIMARY KEY (id), UNIQUE (task_id, node_id, asset_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "versions",
+    "table": "versions",
+    "sql": "CREATE TABLE versions ( id VARCHAR NOT NULL, dataset_id VARCHAR NOT NULL, created_at FLOAT NOT NULL, manifest JSON NOT NULL, task_id VARCHAR, PRIMARY KEY (id), FOREIGN KEY(dataset_id) REFERENCES datasets (id), UNIQUE (task_id) )"
+  },
+  {
+    "kind": "table",
+    "name": "workflow_audit",
+    "table": "workflow_audit",
+    "sql": "CREATE TABLE workflow_audit ( id VARCHAR NOT NULL, run_id VARCHAR NOT NULL, plan_id VARCHAR, kind VARCHAR NOT NULL, reason VARCHAR NOT NULL, created_at FLOAT NOT NULL, PRIMARY KEY (id), FOREIGN KEY(run_id) REFERENCES workflow_runs (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "workflow_resumes",
+    "table": "workflow_resumes",
+    "sql": "CREATE TABLE workflow_resumes ( run_id VARCHAR NOT NULL, idempotency_key VARCHAR NOT NULL, plan_id VARCHAR NOT NULL, completed BOOLEAN NOT NULL, PRIMARY KEY (run_id, idempotency_key), FOREIGN KEY(run_id) REFERENCES workflow_runs (id) )"
+  },
+  {
+    "kind": "table",
+    "name": "workflow_runs",
+    "table": "workflow_runs",
+    "sql": "CREATE TABLE workflow_runs ( id VARCHAR NOT NULL, workflow_id VARCHAR NOT NULL, idempotency_key VARCHAR NOT NULL, request_digest VARCHAR NOT NULL, definition JSON NOT NULL, inputs JSON NOT NULL, status VARCHAR NOT NULL, pending_plan_id VARCHAR, error VARCHAR, created_at FLOAT NOT NULL, updated_at FLOAT NOT NULL, PRIMARY KEY (id), UNIQUE (idempotency_key) )"
+  },
+  {
+    "kind": "table",
+    "name": "workflow_steps",
+    "table": "workflow_steps",
+    "sql": "CREATE TABLE workflow_steps ( run_id VARCHAR NOT NULL, id VARCHAR NOT NULL, ordinal INTEGER NOT NULL, type VARCHAR NOT NULL, status VARCHAR NOT NULL, output JSON, error VARCHAR, plan_id VARCHAR, started_at FLOAT, finished_at FLOAT, PRIMARY KEY (run_id, id), FOREIGN KEY(run_id) REFERENCES workflow_runs (id) )"
+  },
+  {
+    "kind": "trigger",
+    "name": "assertion_content_immutable",
+    "table": "assertions",
+    "sql": "CREATE TRIGGER assertion_content_immutable BEFORE UPDATE OF payload, subject_id, predicate, producer_event_id ON assertions BEGIN SELECT RAISE(ABORT, 'assertion content is immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "assertion_verification_immutable",
+    "table": "assertions",
+    "sql": "CREATE TRIGGER assertion_verification_immutable BEFORE UPDATE OF verification, verification_detail ON assertions BEGIN SELECT RAISE(ABORT, 'assertion verification is immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "asset_control_events_no_delete",
+    "table": "asset_control_events",
+    "sql": "CREATE TRIGGER asset_control_events_no_delete BEFORE DELETE ON asset_control_events BEGIN SELECT RAISE(ABORT, 'asset audit records are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "asset_control_events_no_update",
+    "table": "asset_control_events",
+    "sql": "CREATE TRIGGER asset_control_events_no_update BEFORE UPDATE ON asset_control_events BEGIN SELECT RAISE(ABORT, 'asset audit records are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "asset_usage_no_delete",
+    "table": "asset_usage",
+    "sql": "CREATE TRIGGER asset_usage_no_delete BEFORE DELETE ON asset_usage BEGIN SELECT RAISE(ABORT, 'asset audit records are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "asset_usage_no_update",
+    "table": "asset_usage",
+    "sql": "CREATE TRIGGER asset_usage_no_update BEFORE UPDATE ON asset_usage BEGIN SELECT RAISE(ABORT, 'asset audit records are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "data_asset_history_no_delete",
+    "table": "data_asset_history",
+    "sql": "CREATE TRIGGER data_asset_history_no_delete BEFORE DELETE ON data_asset_history BEGIN SELECT RAISE(ABORT, 'asset audit records are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "data_asset_history_no_update",
+    "table": "data_asset_history",
+    "sql": "CREATE TRIGGER data_asset_history_no_update BEFORE UPDATE ON data_asset_history BEGIN SELECT RAISE(ABORT, 'asset audit records are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "datakeel_file_discovery_delete",
+    "table": "versions",
+    "sql": "CREATE TRIGGER datakeel_file_discovery_delete AFTER DELETE ON versions BEGIN DELETE FROM file_discovery WHERE version_id = OLD.id; END"
+  },
+  {
+    "kind": "trigger",
+    "name": "datakeel_file_discovery_insert",
+    "table": "versions",
+    "sql": "CREATE TRIGGER datakeel_file_discovery_insert AFTER INSERT ON versions BEGIN INSERT INTO file_discovery (file_id, name, dataset_id, version_id, created_at) SELECT file_id, name, dataset_id, version_id, created_at FROM (SELECT c.*, row_number() OVER (PARTITION BY file_id ORDER BY ordinal) AS priority FROM (SELECT CASE WHEN j.type = 'object' THEN json_extract(j.value, '$.id' ) END AS file_id, CASE WHEN j.type = 'object' THEN json_extract(j.value, '$.filename' ) END AS name, NEW.dataset_id AS dataset_id, NEW.id AS version_id, NEW.created_at AS created_at, CAST(j.key AS INTEGER) AS ordinal FROM json_each(CASE WHEN json_valid(NEW.manifest) THEN CASE WHEN json_type(NEW.manifest) = 'array' THEN NEW.manifest ELSE '[]' END ELSE '[]' END) AS j WHERE CASE WHEN j.type = 'object' THEN json_type(j.value, '$.id' ) = 'text' AND json_type(j.value, '$.filename' ) = 'text' ELSE 0 END AND NEW.created_at IS NOT NULL AND EXISTS (SELECT 1 FROM datasets WHERE id = NEW.dataset_id)) AS c) AS ranked WHERE priority = 1; END"
+  },
+  {
+    "kind": "trigger",
+    "name": "datakeel_file_discovery_update",
+    "table": "versions",
+    "sql": "CREATE TRIGGER datakeel_file_discovery_update AFTER UPDATE ON versions BEGIN DELETE FROM file_discovery WHERE version_id IN (OLD.id, NEW.id); INSERT INTO file_discovery (file_id, name, dataset_id, version_id, created_at) SELECT file_id, name, dataset_id, version_id, created_at FROM (SELECT c.*, row_number() OVER (PARTITION BY file_id ORDER BY ordinal) AS priority FROM (SELECT CASE WHEN j.type = 'object' THEN json_extract(j.value, '$.id' ) END AS file_id, CASE WHEN j.type = 'object' THEN json_extract(j.value, '$.filename' ) END AS name, NEW.dataset_id AS dataset_id, NEW.id AS version_id, NEW.created_at AS created_at, CAST(j.key AS INTEGER) AS ordinal FROM json_each(CASE WHEN json_valid(NEW.manifest) THEN CASE WHEN json_type(NEW.manifest) = 'array' THEN NEW.manifest ELSE '[]' END ELSE '[]' END) AS j WHERE CASE WHEN j.type = 'object' THEN json_type(j.value, '$.id' ) = 'text' AND json_type(j.value, '$.filename' ) = 'text' ELSE 0 END AND NEW.created_at IS NOT NULL AND EXISTS (SELECT 1 FROM datasets WHERE id = NEW.dataset_id)) AS c) AS ranked WHERE priority = 1; END"
+  },
+  {
+    "kind": "trigger",
+    "name": "datakeel_file_python_datasets_insert",
+    "table": "datasets",
+    "sql": "CREATE TRIGGER datakeel_file_python_datasets_insert AFTER INSERT ON datasets BEGIN INSERT INTO file_discovery_checkpoints (generation) SELECT 'public-files-python-json-v1' WHERE (lower(CAST(NEW.files AS TEXT)) GLOB ( '*' || char(92) || 'u0000*' ) OR lower(CAST(NEW.files AS TEXT)) GLOB ( '*' || char(92) || 'ud[89abcdef]*' )) ON CONFLICT(generation) DO NOTHING; END"
+  },
+  {
+    "kind": "trigger",
+    "name": "datakeel_file_python_datasets_update",
+    "table": "datasets",
+    "sql": "CREATE TRIGGER datakeel_file_python_datasets_update AFTER UPDATE ON datasets BEGIN INSERT INTO file_discovery_checkpoints (generation) SELECT 'public-files-python-json-v1' WHERE (lower(CAST(NEW.files AS TEXT)) GLOB ( '*' || char(92) || 'u0000*' ) OR lower(CAST(NEW.files AS TEXT)) GLOB ( '*' || char(92) || 'ud[89abcdef]*' )) ON CONFLICT(generation) DO NOTHING; END"
+  },
+  {
+    "kind": "trigger",
+    "name": "datakeel_file_python_versions_insert",
+    "table": "versions",
+    "sql": "CREATE TRIGGER datakeel_file_python_versions_insert AFTER INSERT ON versions BEGIN INSERT INTO file_discovery_checkpoints (generation) SELECT 'public-files-python-json-v1' WHERE (lower(CAST(NEW.manifest AS TEXT)) GLOB ( '*' || char(92) || 'u0000*' ) OR lower(CAST(NEW.manifest AS TEXT)) GLOB ( '*' || char(92) || 'ud[89abcdef]*' )) ON CONFLICT(generation) DO NOTHING; END"
+  },
+  {
+    "kind": "trigger",
+    "name": "datakeel_file_python_versions_update",
+    "table": "versions",
+    "sql": "CREATE TRIGGER datakeel_file_python_versions_update AFTER UPDATE ON versions BEGIN INSERT INTO file_discovery_checkpoints (generation) SELECT 'public-files-python-json-v1' WHERE (lower(CAST(NEW.manifest AS TEXT)) GLOB ( '*' || char(92) || 'u0000*' ) OR lower(CAST(NEW.manifest AS TEXT)) GLOB ( '*' || char(92) || 'ud[89abcdef]*' )) ON CONFLICT(generation) DO NOTHING; END"
+  },
+  {
+    "kind": "trigger",
+    "name": "decision_no_delete",
+    "table": "assertion_decisions",
+    "sql": "CREATE TRIGGER decision_no_delete BEFORE DELETE ON assertion_decisions BEGIN SELECT RAISE(ABORT, 'assertion decisions are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "decision_no_update",
+    "table": "assertion_decisions",
+    "sql": "CREATE TRIGGER decision_no_update BEFORE UPDATE ON assertion_decisions BEGIN SELECT RAISE(ABORT, 'assertion decisions are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "lineage_no_delete",
+    "table": "lineage_events",
+    "sql": "CREATE TRIGGER lineage_no_delete BEFORE DELETE ON lineage_events BEGIN SELECT RAISE(ABORT, 'lineage events are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "lineage_no_update",
+    "table": "lineage_events",
+    "sql": "CREATE TRIGGER lineage_no_update BEFORE UPDATE ON lineage_events BEGIN SELECT RAISE(ABORT, 'lineage events are append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_ai_reviews_no_delete",
+    "table": "production_ai_reviews",
+    "sql": "CREATE TRIGGER production_ai_reviews_no_delete BEFORE DELETE ON production_ai_reviews BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_ai_reviews_no_update",
+    "table": "production_ai_reviews",
+    "sql": "CREATE TRIGGER production_ai_reviews_no_update BEFORE UPDATE ON production_ai_reviews BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_labels_no_delete",
+    "table": "production_label_sets",
+    "sql": "CREATE TRIGGER production_labels_no_delete BEFORE DELETE ON production_label_sets WHEN OLD.published = 1 BEGIN SELECT RAISE(ABORT, 'published label sets are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_labels_no_update",
+    "table": "production_label_sets",
+    "sql": "CREATE TRIGGER production_labels_no_update BEFORE UPDATE ON production_label_sets WHEN OLD.published = 1 BEGIN SELECT RAISE(ABORT, 'published label sets are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_lease_releases_no_delete",
+    "table": "production_lease_releases",
+    "sql": "CREATE TRIGGER production_lease_releases_no_delete BEFORE DELETE ON production_lease_releases BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_lease_releases_no_update",
+    "table": "production_lease_releases",
+    "sql": "CREATE TRIGGER production_lease_releases_no_update BEFORE UPDATE ON production_lease_releases BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_package_inspections_no_delete",
+    "table": "production_package_inspections",
+    "sql": "CREATE TRIGGER production_package_inspections_no_delete BEFORE DELETE ON production_package_inspections BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_package_inspections_no_update",
+    "table": "production_package_inspections",
+    "sql": "CREATE TRIGGER production_package_inspections_no_update BEFORE UPDATE ON production_package_inspections BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_reviews_no_delete",
+    "table": "production_reviews",
+    "sql": "CREATE TRIGGER production_reviews_no_delete BEFORE DELETE ON production_reviews BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_reviews_no_update",
+    "table": "production_reviews",
+    "sql": "CREATE TRIGGER production_reviews_no_update BEFORE UPDATE ON production_reviews BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_revisions_no_delete",
+    "table": "production_revisions",
+    "sql": "CREATE TRIGGER production_revisions_no_delete BEFORE DELETE ON production_revisions BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_revisions_no_update",
+    "table": "production_revisions",
+    "sql": "CREATE TRIGGER production_revisions_no_update BEFORE UPDATE ON production_revisions BEGIN SELECT RAISE(ABORT, 'production history is append-only' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_template_versions_no_delete",
+    "table": "production_template_versions",
+    "sql": "CREATE TRIGGER production_template_versions_no_delete BEFORE DELETE ON production_template_versions BEGIN SELECT RAISE(ABORT, 'template versions are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "production_template_versions_no_update",
+    "table": "production_template_versions",
+    "sql": "CREATE TRIGGER production_template_versions_no_update BEFORE UPDATE ON production_template_versions BEGIN SELECT RAISE(ABORT, 'template versions are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "release_entries_no_delete",
+    "table": "release_entries",
+    "sql": "CREATE TRIGGER release_entries_no_delete BEFORE DELETE ON release_entries BEGIN SELECT RAISE(ABORT, 'published releases are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "release_entries_no_update",
+    "table": "release_entries",
+    "sql": "CREATE TRIGGER release_entries_no_update BEFORE UPDATE ON release_entries BEGIN SELECT RAISE(ABORT, 'published releases are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "release_entries_sealed",
+    "table": "release_entries",
+    "sql": "CREATE TRIGGER release_entries_sealed BEFORE INSERT ON release_entries WHEN EXISTS (SELECT 1 FROM releases WHERE id = NEW.release_id) BEGIN SELECT RAISE(ABORT, 'published releases are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "releases_no_delete",
+    "table": "releases",
+    "sql": "CREATE TRIGGER releases_no_delete BEFORE DELETE ON releases BEGIN SELECT RAISE(ABORT, 'published releases are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "releases_no_update",
+    "table": "releases",
+    "sql": "CREATE TRIGGER releases_no_update BEFORE UPDATE ON releases BEGIN SELECT RAISE(ABORT, 'published releases are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_clean_versions_no_delete",
+    "table": "training_clean_versions",
+    "sql": "CREATE TRIGGER training_clean_versions_no_delete BEFORE DELETE ON training_clean_versions BEGIN SELECT RAISE(ABORT, 'training governance facts are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_clean_versions_no_update",
+    "table": "training_clean_versions",
+    "sql": "CREATE TRIGGER training_clean_versions_no_update BEFORE UPDATE ON training_clean_versions BEGIN SELECT RAISE(ABORT, 'training governance facts are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_evaluations_no_delete",
+    "table": "training_evaluations",
+    "sql": "CREATE TRIGGER training_evaluations_no_delete BEFORE DELETE ON training_evaluations BEGIN SELECT RAISE(ABORT, 'training governance facts are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_evaluations_no_update",
+    "table": "training_evaluations",
+    "sql": "CREATE TRIGGER training_evaluations_no_update BEFORE UPDATE ON training_evaluations BEGIN SELECT RAISE(ABORT, 'training governance facts are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_governance_runs_no_delete",
+    "table": "training_governance_runs",
+    "sql": "CREATE TRIGGER training_governance_runs_no_delete BEFORE DELETE ON training_governance_runs BEGIN SELECT RAISE(ABORT, 'training governance facts are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_governance_runs_no_update",
+    "table": "training_governance_runs",
+    "sql": "CREATE TRIGGER training_governance_runs_no_update BEFORE UPDATE ON training_governance_runs BEGIN SELECT RAISE(ABORT, 'training governance facts are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_no_delete",
+    "table": "training_splits",
+    "sql": "CREATE TRIGGER training_no_delete BEFORE DELETE ON training_splits BEGIN SELECT RAISE(ABORT, 'training splits are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_no_update",
+    "table": "training_splits",
+    "sql": "CREATE TRIGGER training_no_update BEFORE UPDATE ON training_splits BEGIN SELECT RAISE(ABORT, 'training splits are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "training_version_no_update",
+    "table": "versions",
+    "sql": "CREATE TRIGGER training_version_no_update BEFORE UPDATE OF manifest, dataset_id, id ON versions WHEN EXISTS (SELECT 1 FROM training_splits WHERE version_id = OLD.id) BEGIN SELECT RAISE(ABORT, 'training source versions are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "versions_no_delete",
+    "table": "versions",
+    "sql": "CREATE TRIGGER versions_no_delete BEFORE DELETE ON versions WHEN EXISTS (SELECT 1 FROM releases WHERE version_id = OLD.id) BEGIN SELECT RAISE(ABORT, 'published releases are immutable' ); END"
+  },
+  {
+    "kind": "trigger",
+    "name": "versions_no_update",
+    "table": "versions",
+    "sql": "CREATE TRIGGER versions_no_update BEFORE UPDATE ON versions WHEN EXISTS (SELECT 1 FROM releases WHERE version_id = OLD.id) BEGIN SELECT RAISE(ABORT, 'published releases are immutable' ); END"
+  }
+]

@@ -24,7 +24,7 @@ from datakeel.core.production_models import (
     AssignmentStage,
     ProductionTask,
 )
-from datakeel.dataset_store.display_order import task_key
+from datakeel.dataset_store.display_order import persist_task_ranks
 from datakeel.storage.identity_authorization import effective_scopes
 from datakeel.storage.identity_rows import UserRow
 from datakeel.storage.production_dispatch_rules import (
@@ -47,8 +47,6 @@ from datakeel.storage.production_tasks import (
     task_view,
     transition_task,
 )
-
-_CLAIM_LOCK_ATTEMPTS = 3
 
 
 def active_assignment(
@@ -186,10 +184,8 @@ def rework_transfers(tasks: Iterable[ProductionTaskRow], actor: str) -> tuple[Re
 def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> ProductionTask:
     """Lock and claim the next task; concurrent claimers skip locked rows in PostgreSQL.
 
-    Candidates rank by priority and then the task list's display order, so a claim
-    returns the task the list shows as next instead of whichever row identity sorts
-    first. Rows are locked one candidate at a time with ``skip_locked`` so claimers
-    never block on each other's locks.
+    Candidates rank by priority then the persisted display order, so a claim returns the
+    task the list shows as next. One ordered ``skip_locked`` query keeps the write lock brief.
     """
     project = require_mutable_project(session, params.project_id)
     if project.workflow_tier == "personal":
@@ -218,20 +214,15 @@ def claim_task(session: Session, params: ClaimTaskParams, actor: str) -> Product
         base = exclude_own_work(base, actor)
     if params.package_id is not None:
         base = base.where(ProductionTaskRow.package_id == params.package_id)
-    key = task_key(session, project.id)
-    for _ in range(_CLAIM_LOCK_ATTEMPTS):
-        candidates = sorted(session.scalars(base), key=lambda row: (-row.priority, key(row)))
-        for row in candidates:
-            locked = session.scalar(
-                base.where(ProductionTaskRow.id == row.id).with_for_update(skip_locked=True)
-            )
-            if locked is None:
-                continue
-            create_assignment(session, locked, actor, params.stage, "claim")
-            session.flush()
-            return task_view(locked)
-    message = "No available production task"
-    raise NotFoundError(message)
+    persist_task_ranks(session, project.id)
+    order = ProductionTaskRow.priority.desc(), ProductionTaskRow.display_rank, ProductionTaskRow.id
+    task = session.scalar(base.order_by(*order).limit(1).with_for_update(skip_locked=True))
+    if task is None:
+        message = "No available production task"
+        raise NotFoundError(message)
+    create_assignment(session, task, actor, params.stage, "claim")
+    session.flush()
+    return task_view(task)
 
 
 def _validate_package(session: Session, params: ClaimTaskParams) -> None:

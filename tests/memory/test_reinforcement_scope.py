@@ -157,7 +157,7 @@ def test_reinforcement_when_old_memory_table_migrated_preserves_facts_and_adds_s
         path, settings = database_path(db), get_settings()
         assert status(path, settings.home, registry()).state == "unversioned"
         result = upgrade(path, settings, registry())
-        assert (result.exit_code, result.state, result.applied) == (0, "current", (1, 2))
+        assert (result.exit_code, result.state, result.applied) == (0, "current", (1, 2, 3))
     migrate(db)
     migrate(db)
     scope = _scope(db)

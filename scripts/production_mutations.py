@@ -8,7 +8,7 @@ from scripts.mutation_models import Mutation
 PRODUCTION_MUTATIONS = (
     Mutation(
         name="production-revision-append-only",
-        path="versioning/sqlite_b2.json",
+        path="versioning/sqlite_b3.json",
         before=(
             "CREATE TRIGGER production_revisions_no_update BEFORE UPDATE "
             "ON production_revisions BEGIN"
@@ -25,7 +25,7 @@ PRODUCTION_MUTATIONS = (
     ),
     Mutation(
         name="production-exclusive-assignment",
-        path="versioning/sqlite_b2.json",
+        path="versioning/sqlite_b3.json",
         before="CREATE UNIQUE INDEX production_unique_active_assignment ON",
         after="CREATE INDEX production_unique_active_assignment ON",
         case=(

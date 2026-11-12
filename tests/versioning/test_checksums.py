@@ -187,15 +187,15 @@ def test_future_registration_does_not_change_v1_checksum(tmp_path: Path) -> None
     contents = path.read_text()
     path.write_text(
         contents.replace(
-            "return (definition(), vector_definition())",
+            "return (definition(), vector_definition(), rank_definition())",
             (
-                "return (definition(), vector_definition(), "
-                "vector_definition().model_copy(update={'version': 3}))"
+                "return (definition(), vector_definition(), rank_definition(), "
+                "rank_definition().model_copy(update={'version': 4}))"
             ),
         )
     )
-    (path.parent / "v3.py").write_text('"""Future migration, outside the v1 closure."""\n')
+    (path.parent / "v4.py").write_text('"""Future migration, outside the v1 closure."""\n')
     after = _probe(source, home, "status")
-    assert after["registrations"] == 3
+    assert after["registrations"] == 4
     assert before["checksum"] == after["checksum"]
     assert after["report"]["state"] == "pending"

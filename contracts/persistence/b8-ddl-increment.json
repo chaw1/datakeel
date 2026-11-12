@@ -1,0 +1,28 @@
+{
+  "base": "we-e2-ddl.json",
+  "slice": "b8-display-rank",
+  "increment": {
+    "sqlite": {
+      "production_tasks": {
+        "table": "CREATE TABLE production_tasks (\n\tid VARCHAR NOT NULL, \n\tproject_id VARCHAR NOT NULL, \n\tpackage_id VARCHAR NOT NULL, \n\tsample_id VARCHAR NOT NULL, \n\tstate VARCHAR NOT NULL, \n\tround INTEGER NOT NULL, \n\tpriority INTEGER NOT NULL, \n\tlatest_revision_id VARCHAR, \n\tapproved_revision_id VARCHAR, \n\tannotator_id VARCHAR, \n\tconfidence FLOAT, \n\tdisplay_rank INTEGER, \n\tPRIMARY KEY (id), \n\tUNIQUE (project_id, sample_id), \n\tFOREIGN KEY(project_id) REFERENCES production_projects (id), \n\tFOREIGN KEY(package_id) REFERENCES production_packages (id)\n)",
+        "indexes": [
+          "CREATE INDEX ix_production_tasks_annotator_id ON production_tasks (annotator_id)",
+          "CREATE INDEX ix_production_tasks_package_id ON production_tasks (package_id)",
+          "CREATE INDEX ix_production_tasks_project_id ON production_tasks (project_id)",
+          "CREATE INDEX production_task_next ON production_tasks (project_id, state, priority, id)"
+        ]
+      }
+    },
+    "postgresql": {
+      "production_tasks": {
+        "table": "CREATE TABLE production_tasks (\n\tid VARCHAR NOT NULL, \n\tproject_id VARCHAR NOT NULL, \n\tpackage_id VARCHAR NOT NULL, \n\tsample_id VARCHAR NOT NULL, \n\tstate VARCHAR NOT NULL, \n\tround INTEGER NOT NULL, \n\tpriority INTEGER NOT NULL, \n\tlatest_revision_id VARCHAR, \n\tapproved_revision_id VARCHAR, \n\tannotator_id VARCHAR, \n\tconfidence FLOAT, \n\tdisplay_rank INTEGER, \n\tPRIMARY KEY (id), \n\tUNIQUE (project_id, sample_id), \n\tFOREIGN KEY(project_id) REFERENCES production_projects (id), \n\tFOREIGN KEY(package_id) REFERENCES production_packages (id)\n)",
+        "indexes": [
+          "CREATE INDEX ix_production_tasks_annotator_id ON production_tasks (annotator_id)",
+          "CREATE INDEX ix_production_tasks_package_id ON production_tasks (package_id)",
+          "CREATE INDEX ix_production_tasks_project_id ON production_tasks (project_id)",
+          "CREATE INDEX production_task_next ON production_tasks (project_id, state, priority, id)"
+        ]
+      }
+    }
+  }
+}

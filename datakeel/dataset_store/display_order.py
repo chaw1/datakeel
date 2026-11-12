@@ -80,3 +80,33 @@ def ordered_task_rows(
 ) -> list[ProductionTaskRow]:
     """Task rows of one project as the task list shows them."""
     return sorted(rows, key=task_key(session, project_id))
+
+
+def persist_task_ranks(session: Session, project_id: str) -> None:
+    """Persist the display order once so claims can rank in SQL instead of Python.
+
+    Packages and the source version never change after the one-time split, so ranks are
+    immutable once written. New projects rank at split time; legacy rows without ranks
+    are backfilled idempotently under the project row lock before the first claim uses
+    them. The caller owns the transaction.
+    """
+    if (
+        session.scalar(
+            select(ProductionTaskRow.id)
+            .where(
+                ProductionTaskRow.project_id == project_id,
+                ProductionTaskRow.display_rank.is_(None),
+            )
+            .limit(1)
+        )
+        is None
+    ):
+        return
+    session.get(ProductionProjectRow, project_id, with_for_update=True, populate_existing=True)
+    key = task_key(session, project_id)
+    rows = session.scalars(
+        select(ProductionTaskRow).where(ProductionTaskRow.project_id == project_id)
+    )
+    for rank, row in enumerate(sorted(rows, key=key)):
+        row.display_rank = rank
+    session.flush()

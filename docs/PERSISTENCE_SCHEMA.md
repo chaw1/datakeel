@@ -68,6 +68,13 @@ all tables, indexes and constraints against that fixture and exercise an existin
 through repeated additive migrations. PostgreSQL compilation is an offline oracle, not live
 PostgreSQL migration evidence.
 
+Later slices append their own explicit DDL inventories instead of editing the frozen E2 oracle.
+`contracts/persistence/b8-ddl-increment.json` carries the nullable `production_tasks.display_rank`
+column compiled for both dialects; the same DDL guard merges it over the E2 baseline and
+increment. The claim-order index itself is installer-owned: its display-rank definition is frozen
+in the SQLite v3 target and PostgreSQL converges it at startup, each covered by its own
+regression.
+
 An independent reviewer also supplies candidate-external canonical copies:
 
 ```sh

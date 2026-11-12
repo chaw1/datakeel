@@ -19,7 +19,7 @@ from datakeel.core.settings import Settings
 from datakeel.mcp import create_server
 from datakeel.storage.database import Database
 from datakeel.versioning import initialize
-from datakeel.versioning.campaign_v2 import status, upgrade
+from datakeel.versioning.campaign_v3 import status, upgrade
 from datakeel.versioning.models import DatabaseStatus
 from datakeel.versioning.registry import registry
 from datakeel.worker.runner import run_worker
@@ -49,20 +49,20 @@ def _prepare(path: Path, home: Path, state: str, monkeypatch: pytest.MonkeyPatch
     if state == "ahead":
         with database.engine.begin() as connection:
             connection.exec_driver_sql(
-                "INSERT INTO datakeel_schema_versions SELECT 3,checksum,baseline,minimum_reader,"
+                "INSERT INTO datakeel_schema_versions SELECT 4,checksum,baseline,minimum_reader,"
                 "applied_at,campaign,facts FROM datakeel_schema_versions WHERE version=1"
             )
     if state == "pending":
-        third = versions[-1].model_copy(
+        fourth = versions[-1].model_copy(
             update={
-                "version": 3,
+                "version": 4,
                 "source": versions[-1].target.id,
                 "forward": lambda _c: None,
                 "checksum": "3" * 64,
             }
         )
-        monkeypatch.setattr("datakeel.versioning.registry", lambda: (*versions, third))
-        monkeypatch.setattr("datakeel.cli.database.registry", lambda: (*versions, third))
+        monkeypatch.setattr("datakeel.versioning.registry", lambda: (*versions, fourth))
+        monkeypatch.setattr("datakeel.cli.database.registry", lambda: (*versions, fourth))
     return database
 
 

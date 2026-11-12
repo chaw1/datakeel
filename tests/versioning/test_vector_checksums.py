@@ -21,7 +21,7 @@ from tests.versioning.test_vector_v2 import V1_CHECKSUM
 
 def test_v2_closure_contains_every_transitive_local_import() -> None:
     """Audit the complete runner/inspection/recovery/DDL closure independently of the hash code."""
-    first, second = registry()
+    first, second, third = registry()
     sources = set(second.checksum_sources)
     assert sources == set(first.checksum_sources) | {
         "versioning/campaign_v2.py",
@@ -31,9 +31,17 @@ def test_v2_closure_contains_every_transitive_local_import() -> None:
         "versioning/sqlite_b2_altered_shards.json",
         "versioning/v2.py",
     }
+    assert set(third.checksum_sources) == sources | {
+        "versioning/campaign_v3.py",
+        "versioning/inspect_v3.py",
+        "versioning/sqlite_b3.json",
+        "versioning/v3.py",
+    }
     assert first.checksum == V1_CHECKSUM
     assert second.preserve_facts is True
-    for name in sources:
+    assert third.preserve_facts is True
+    closure = sources | set(third.checksum_sources)
+    for name in sorted(closure):
         if not name.endswith(".py"):
             continue
         for node in ast.walk(ast.parse((Path("datakeel") / name).read_text())):
@@ -43,7 +51,7 @@ def test_v2_closure_contains_every_transitive_local_import() -> None:
                 and node.module.startswith("datakeel.")
             ):
                 dependency = node.module.removeprefix("datakeel.").replace(".", "/") + ".py"
-                assert dependency in sources, (name, dependency)
+                assert dependency in closure, (name, dependency)
 
 
 _PROBE = """
@@ -52,7 +60,7 @@ from pathlib import Path
 sys.path.insert(0, sys.argv[1])
 from datakeel.core.settings import Settings
 from datakeel.versioning.registry import registry
-from datakeel.versioning.campaign_v2 import upgrade, status
+from datakeel.versioning.campaign_v3 import upgrade, status
 source, home, action = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
 versions = registry()
 report = (upgrade(home/'db', Settings(home=home), versions) if action != 'status'
@@ -76,17 +84,25 @@ def _probe(source: Path, home: Path, action: str) -> dict[str, object]:
 
 
 @pytest.mark.parametrize(
-    ("filename", "before", "after"),
+    ("filename", "before", "after", "index"),
     [
-        ("facts_v2.py", "if changed:", "if False:"),
-        ("inspect_v2.py", '"PRAGMA foreign_key_check"', '"SELECT 1 WHERE 0"'),
-        ("v2.py", "ADD COLUMN lease_expires_at FLOAT", "ADD COLUMN lease_expires_at TEXT"),
+        ("facts_v2.py", "if changed:", "if False:", 1),
+        ("inspect_v2.py", '"PRAGMA foreign_key_check"', '"SELECT 1 WHERE 0"', 1),
+        ("v2.py", "ADD COLUMN lease_expires_at FLOAT", "ADD COLUMN lease_expires_at TEXT", 1),
+        ("inspect_v3.py", '"PRAGMA foreign_key_check"', '"SELECT 1 WHERE 0"', 2),
+        ("v3.py", "ADD COLUMN display_rank INTEGER", "ADD COLUMN display_rank TEXT", 2),
+        (
+            "campaign_v3.py",
+            "if existed and definition.preserve_facts:",
+            "if False and existed and definition.preserve_facts:",
+            2,
+        ),
     ],
 )
-def test_v2_source_drift_rejects_existing_head_without_resigning_v1(
-    tmp_path: Path, filename: str, before: str, after: str
+def test_source_drift_rejects_existing_head_without_resigning_prefix(
+    tmp_path: Path, filename: str, before: str, after: str, index: int
 ) -> None:
-    """Changed v2 helpers cannot execute or re-sign a persisted ledger, even if DDL is unchanged."""
+    """Changed helpers cannot execute or re-sign a persisted ledger, even if DDL is unchanged."""
     source, home = tmp_path / "source", tmp_path / "home"
     shutil.copytree(
         Path("datakeel"),
@@ -104,8 +120,10 @@ def test_v2_source_drift_rejects_existing_head_without_resigning_v1(
     for action in ("status", "upgrade"):
         result = _probe(source, home, action)
         assert result["checksums"][0] == control["checksums"][0] == V1_CHECKSUM
-        assert result["checksums"][1] != control["checksums"][1]
-        assert result["report"]["exit_code"] == 3, "W4-v2-helper-drift-rejected"
+        assert result["checksums"][index] != control["checksums"][index]
+        if index == 2:
+            assert result["checksums"][1] == control["checksums"][1]
+        assert result["report"]["exit_code"] == 3, "W4-helper-drift-rejected"
         assert (home / "db").read_bytes() == database
         assert tuple(sorted((home / "backups").rglob("*"))) == backups
     path.write_text(contents)

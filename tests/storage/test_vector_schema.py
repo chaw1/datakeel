@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from datakeel.storage.database import Database
 
 ORACLE = Path("contracts/persistence/we-e2-ddl.json")
+B8_INCREMENT = Path("contracts/persistence/b8-ddl-increment.json")
 
 
 def _compiled(dialect: Dialect) -> dict[str, dict[str, str | list[str]]]:
@@ -41,12 +42,21 @@ def _compiled(dialect: Dialect) -> dict[str, dict[str, str | list[str]]]:
 
 
 @pytest.mark.parametrize("dialect", [sqlite.dialect(), postgresql.dialect()], ids=["sqlite", "pg"])
-def test_ddl_preserves_every_main_table_except_explicit_vector_and_lease_additions(
+def test_ddl_preserves_every_main_table_except_explicit_inventory_additions(
     dialect: Dialect,
 ) -> None:
-    """Every column, constraint and index matches the frozen main plus the exact increment."""
+    """Every column, constraint and index matches the frozen main plus the exact inventories.
+
+    The E2 oracle stays byte-identical; later slices append their own explicit increment
+    files (B8 adds the nullable task display rank) instead of editing the frozen baseline.
+    """
     oracle = json.loads(ORACLE.read_text())
-    expected = {**oracle["baseline"][dialect.name], **oracle["increment"][dialect.name]}
+    b8 = json.loads(B8_INCREMENT.read_text())
+    expected = {
+        **oracle["baseline"][dialect.name],
+        **oracle["increment"][dialect.name],
+        **b8["increment"][dialect.name],
+    }
     assert _compiled(dialect) == expected
 
 
@@ -87,7 +97,7 @@ def test_nullable_lease_upgrade_preserves_existing_shard_and_is_idempotent(
         from pathlib import Path  # noqa: PLC0415
 
         from datakeel.core.settings import get_settings  # noqa: PLC0415
-        from datakeel.versioning.campaign_v2 import upgrade  # noqa: PLC0415
+        from datakeel.versioning.campaign_v3 import upgrade  # noqa: PLC0415
         from datakeel.versioning.registry import registry  # noqa: PLC0415
 
         assert (
