@@ -59,14 +59,15 @@ datakeel.example.org {
         copy_headers X-Auth-Request-User
     }
     reverse_proxy 127.0.0.1:8765 {
-        header_up -X-Datakeel-Actor
         header_up X-Datakeel-Actor {http.request.header.X-Auth-Request-User}
     }
 }
 ```
 
-`header_up -X-Datakeel-Actor` 先删掉客户端带来的任何值，下一行再注入认证主体。未认证请求
-到不了应用。`X-Auth-Request-User` 的具体取值取决于 IdP 的声明（通常是 preferred username），
+单条 `header_up` 设置即替换客户端带来的任何 `X-Datakeel-Actor` 值。**不要另加
+`header_up -X-Datakeel-Actor` 删除行**：Caddy 的删除操作在设置之后应用，删除+设置成对出现
+会把注入的头删掉，应用回退到旧 `local` 操作人。未认证请求到不了应用。
+`X-Auth-Request-User` 的具体取值取决于 IdP 的声明（通常是 preferred username），
 先验证一次，再按该值登记应用用户 ID。
 
 ## 配方二：nginx + oauth2-proxy
@@ -107,12 +108,12 @@ datakeel.example.org {
         bob   REPLACE_WITH_BCRYPT_HASH
     }
     reverse_proxy 127.0.0.1:8765 {
-        header_up -X-Datakeel-Actor
         header_up X-Datakeel-Actor {http.auth.user.id}
     }
 }
 ```
 
+与配方一相同，单条设置即替换客户端自带的 actor 头，不需要也不应加删除行。
 零登记用户时这是模式 A（只做认证）；给 `alice`、`bob` 登记角色即为模式 B。basic auth 没有
 会话吊销和 MFA，有 IdP 时优先配方一。
 

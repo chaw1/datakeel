@@ -68,14 +68,16 @@ datakeel.example.org {
         copy_headers X-Auth-Request-User
     }
     reverse_proxy 127.0.0.1:8765 {
-        header_up -X-Datakeel-Actor
         header_up X-Datakeel-Actor {http.request.header.X-Auth-Request-User}
     }
 }
 ```
 
-`header_up -X-Datakeel-Actor` removes whatever the client sent; the next line injects the
-authenticated principal. Unauthenticated requests never reach the application. The exact
+The single `header_up` set replaces any client-supplied `X-Datakeel-Actor` with the
+authenticated principal. Do not add a separate `header_up -X-Datakeel-Actor` delete line:
+Caddy applies header deletions after sets, so the pair would drop the injected header and
+the application would fall back to the legacy `local` actor. Unauthenticated requests never
+reach the application. The exact
 `X-Auth-Request-User` value depends on your IdP claims (typically the preferred username); verify
 it once and register application user IDs to match.
 
@@ -119,13 +121,13 @@ datakeel.example.org {
         bob   REPLACE_WITH_BCRYPT_HASH
     }
     reverse_proxy 127.0.0.1:8765 {
-        header_up -X-Datakeel-Actor
         header_up X-Datakeel-Actor {http.auth.user.id}
     }
 }
 ```
 
-With zero registered users this is Mode A (authentication only). Register `alice` and `bob` with
+As in Recipe 1, the single set operation replaces any client-supplied actor header; no
+delete line is needed or safe. With zero registered users this is Mode A (authentication only). Register `alice` and `bob` with
 roles to make it Mode B. Basic auth has no session revocation or MFA; prefer Recipe 1 when an IdP
 is available.
 

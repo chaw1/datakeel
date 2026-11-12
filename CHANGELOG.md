@@ -4,6 +4,15 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Fixed
+
+- Deployment guide Caddy recipes inject the authenticated actor with a single `header_up`
+  set. The previous delete-then-set pair let Caddy apply the deletion after the set, dropping
+  the injected header so the application fell back to the legacy `local` actor. Found and
+  verified against a live Caddy + basic-auth deployment on a separate host; the six-point
+  verification checklist (unauthenticated rejection, forged-header stripping, loopback-only
+  direct access, role grant/revocation, audit principal, MCP isolation) passes end to end.
+
 ## [0.25.0] - 2026-11-11
 
 ### Added
