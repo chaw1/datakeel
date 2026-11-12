@@ -8,7 +8,9 @@ All notable changes are documented here using the Keep a Changelog format.
 
 - Team-tier task claiming ranks candidates in the database instead of fetching and sorting every
   open task in Python inside the write lock, which serialized concurrent saves behind each claim
-  on SQLite (B8 50-annotator save p95 was 2.8 s against a 200 ms target). The task list's display
+  on SQLite. Re-measured B8 (50 annotators, 10 minutes): SQLite save p95 2,841 → 188 ms and
+  next-task p95 548 → 33 ms, PostgreSQL 113 → 73 ms and 254 → 77 ms; both stacks meet every
+  target with zero duplicate claims. The task list's display
   order is now persisted once per project as `production_tasks.display_rank` and covered by the
   claim-order index, so a claim is one ordered `SKIP LOCKED` query that still returns exactly the
   task the list shows as next. SQLite gains schema v3 (nullable column + rebuilt index, purely

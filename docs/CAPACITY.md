@@ -161,13 +161,17 @@ envelopes share one identical source SHA-256 over `datakeel/` and `scripts/` Pyt
 both commits measure the same code. Every run is a normal unprofiled invocation with seed 23;
 B8 uses `--workers 10 --think-ms 1000`. Numbers are rounded for display; thresholds use
 unrounded values. The superseded 0.13.0 matrix (2026-10-28) is retained in the historical
-appendix below.
+appendix below. B8 was re-measured on 2026-11-12 at commit `8de3577` (version 0.25.0 plus the
+unreleased display-rank fix); both stacks share one identical source SHA-256, and the B8 section
+below carries the new envelopes. B1–B7 remain the 2026-11-11 measurements.
 
 测量日期（Asia/Shanghai）为 2026-11-11，版本 0.24.1，提交 `3fafd6a`（SQLite 栈与 B1–B7）和
 `6686646`（仅文档变更的后继提交；PostgreSQL 栈与 B8）。18 份 envelope 对 `datakeel/` 与
 `scripts/` 的 Python 文件共享同一个源码 SHA-256，两个提交测量的是同一份代码。全部为正常
 无 profile 运行，seed 23；B8 使用 `--workers 10 --think-ms 1000`。展示数字经过四舍五入，
 是否达标按原始未舍入值判断。被替代的 0.13.0 矩阵（2026-10-28）保留在下方历史附录。
+B8 已于 2026-11-12 在提交 `8de3577`（0.25.0 加未发布的显示序修复）复测，两栈共享同一
+源码 SHA-256，新 envelope 见下方 B8 节；B1–B7 仍为 2026-11-11 的测量。
 
 <!-- CAPACITY_RESULTS_START -->
 
@@ -271,6 +275,46 @@ former SQLite "20 shared / 50 dedicated" guidance below is suspended.
 | save p95 per minute (ms) | 2,538, 2,853, 2,733, 2,534, 2,851, 2,648, 2,653, 3,150, 2,866, 3,684 | 147, 144, 130, 129, 97, 94, 108, 99, 89, 97 |
 | Targets met / 达标 | No / 否 | Yes / 是 |
 
+**2026-11-12 re-measurement.** Both stacks reran the same 10-minute / 50-annotator scenario
+sequentially at commit `8de3577` (`--workers 10 --think-ms 1000`, seed 23, no competing suites;
+1-minute load at start 3.8 / 2.7). The fix persists the task list's display order
+(`production_tasks.display_rank`, SQLite schema v3) so a claim is one ordered `SKIP LOCKED`
+query instead of fetching and sorting every open candidate in Python inside the write lock.
+**SQLite now meets every target**: zero duplicate claims, zero double releases, save p95 188 ms
+and next p95 33 ms, at 58.3 operations/s versus 37.3 on 2026-11-11. Next-task p95 stays flat at
+18–32 ms from minute 2; save p95 drifts from 149 ms to 247 ms across the run as the revision and
+assignment tables grow, and the whole-run p95 stays within the 200 ms target. PostgreSQL
+improves as well (save p95 73 ms, next p95 77 ms, flat from minute 2), because its claims no
+longer sort every candidate in Python either. The 2026-11-11 gap is closed and the suspension
+of the SQLite team-tier guidance is lifted. Per-minute rows show the ten full minutes; each run
+elapsed about 605 s and the trailing partial bucket is omitted.
+
+**2026-11-12 复测。** 两栈在提交 `8de3577` 顺序重跑同一 10 分钟/50 人场景（`--workers 10
+--think-ms 1000`，seed 23，无竞争套件；开始时 1 分钟负载 3.8 / 2.7）。修复把任务列表显示序
+持久化（`production_tasks.display_rank`，SQLite schema v3），领取恢复为单条带排序的
+`SKIP LOCKED` 查询，不再在写锁内把全部候选拉到 Python 排序。**SQLite 全部达标**：
+0 重复领取、0 重复收回，保存 p95 188 ms、下一条 p95 33 ms，吞吐 58.3 次/秒（2026-11-11
+为 37.3）。下一条 p95 从第 2 分钟起持平在 18–32 ms；保存 p95 随修订表与指派表增长从
+149 ms 缓升到 247 ms，整场 p95 仍在 200 ms 目标内。PostgreSQL 同样改善（保存 p95 73 ms、
+下一条 p95 77 ms，第 2 分钟起持平），因为它的领取也不再在 Python 里全量排序。
+2026-11-11 的差距已关闭，SQLite 团队档建议的暂停解除。逐分钟行展示十个完整分钟；
+每场约 605 秒，末尾不足一分钟的桶略去。
+
+| B8 M, 10 minutes / 10 分钟 | SQLite 50 | PostgreSQL 50 |
+| --- | --- | --- |
+| Commit / 提交 | `8de3577` | `8de3577` |
+| Claims / saves / submits | 7,092 / 21,276 / 6,942 | 7,084 / 21,252 / 6,934 |
+| Operations/s | 58.3 | 58.3 |
+| Duplicate claims / 重复领取 | 0 | 0 |
+| Abandoned leases reaped / released twice / claimed again | 150 / 0 / 150 | 150 / 0 / 150 |
+| Failed annotators / 失败标注员 | 0 | 0 |
+| next p50 / p95 / p99 (ms) | 5 / 33 / 388 | 41 / 77 / 110 |
+| save p50 / p95 / p99 (ms) | 21 / 188 / 598 | 42 / 73 / 91 |
+| submit p95 (ms) | 196 | 110 |
+| next p95 per minute (ms) | 635, 21, 30, 18, 31, 31, 31, 32, 20, 51 | 281, 76, 75, 77, 71, 78, 76, 79, 74, 77 |
+| save p95 per minute (ms) | 149, 167, 160, 176, 186, 181, 232, 231, 242, 247 | 70, 72, 74, 75, 72, 72, 72, 74, 74, 72 |
+| Targets met / 达标 | Yes / 是 | Yes / 是 |
+
 **Historical measurements.** Measured 2026-10-30 (Asia/Shanghai) on the shared workstation
 described above with `--workers 10 --think-ms 1000`; the one-minute load average was sampled
 every minute beside each run. Other worktrees ran full parallel test suites (17 processes,
@@ -304,8 +348,11 @@ another test suite, PostgreSQL p95 exceeds one second. SQLite serializes writers
 in-process: 50 annotators met every target on a quiet host (save p95 52 ms), 20 met them even under
 shared load, and 50 under shared load met the next-task target but not save. These October SQLite
 figures predate P29b-FIX1 and the later storage changes; the 2026-11-11 refresh above did not
-reproduce them, so the former "20 shared / 50 dedicated" SQLite guidance is suspended pending
-investigation. Use PostgreSQL for the team tier and keep CPU headroom for it.
+reproduce them. The 2026-11-12 re-measurement identifies the cause — the claim's full-candidate
+Python sort inside SQLite's write lock — and closes the gap with the persisted display rank:
+both stacks meet every quiet-host 50-annotator target. The former "20 shared / 50 dedicated"
+shared-load figures are historical and have not been re-measured; keep CPU headroom for the
+team tier on either stack.
 
 The last column reruns the quiet PostgreSQL measurement after P29b-FIX1, where every action
 takes its table locks before any task row and claims serialize per person on an advisory lock.
@@ -319,8 +366,10 @@ annotators stay concurrent.
 共享负载下同一份代码独占性照样成立，但延迟跟着负载走：另一套测试占去 10–13 核时，PostgreSQL
 p95 超过 1 秒。SQLite 写入串行但调用在进程内：机器空闲时 50 人全部达标（保存 p95 52 ms），20 人
 在共享负载下也达标，50 人在共享负载下下一条达标、保存不达标。这些 10 月 SQLite 数字早于
-P29b-FIX1 与后续存储改动；上方 2026-11-11 刷新没有复现它们，原「共享 20 人/独占 50 人」的
-SQLite 规模建议在调查清楚前暂停使用。团队档请用 PostgreSQL，并为它预留 CPU。
+P29b-FIX1 与后续存储改动；上方 2026-11-11 刷新没有复现它们。2026-11-12 复测查明了根因
+（领取在 SQLite 写锁内对全部候选做 Python 排序），并以持久化显示序关闭了差距：两栈在
+空闲机上 50 人全部达标。原「共享 20 人/独占 50 人」的共享负载数字是历史测量，尚未复测；
+两栈的团队档都请预留 CPU。
 
 最后一列是 P29b-FIX1 之后在机器空闲时重跑的 PostgreSQL：所有动作先拿表级锁再锁任务行，领取前按人
 拿 advisory lock 串行。吞吐不变（58.9 次/秒），尾部更低：下一条 p95 69 ms、保存 p95 66 ms，从第 2
