@@ -1,4 +1,6 @@
 @import "./palette-pencil.css";
+@import "./palette-ochre.css";
+@import "./palette-graphite.css";
 
 :root {
   --icon-fill: none;
@@ -23,12 +25,33 @@
   --line-solid: 1;
   --line-loose: 2;
   --space: 4px;
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 9px;
+  --control-sm: 28px;
+  --control-md: 32px;
+  --control-lg: 38px;
+  --border-hairline: 1px solid var(--rule);
+  --border-strong: 1.5px solid var(--ink);
+  --border-stamp: 2px solid var(--ink);
   --ok-wash: color-mix(in srgb, var(--ok) 8%, var(--sheet));
   --warn-wash: color-mix(in srgb, var(--warn) 8%, var(--sheet));
   --red-wash: color-mix(in srgb, var(--red) 8%, var(--sheet));
   --ink-wash: color-mix(in srgb, var(--ink) 4%, var(--sheet));
+  --surface-hover: color-mix(in srgb, var(--ink) 3.5%, var(--sheet));
+  --rule-strong: color-mix(in srgb, var(--ink) 28%, var(--rule));
   --shadow: color-mix(in srgb, var(--ink) 12%, transparent);
+  --shadow-xs: 0 1px 2px var(--shadow);
+  --shadow-sm: 0 4px 14px var(--shadow);
+  --shadow-lg: 0 12px 40px var(--shadow);
   --scrim: color-mix(in srgb, var(--paper) 65%, transparent);
+  --z-sticky: 5;
+  --z-drawer: 40;
+  --z-modal: 100;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
   color-scheme: light;
 }
 

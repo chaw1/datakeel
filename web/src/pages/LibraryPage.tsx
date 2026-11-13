@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Icon } from "../components/Icon";
+import { Badge, Button, EmptyState, Input, PageHeader } from "../components/ui";
 import { objectHref } from "../features/object/navigation";
 import { useI18n } from "../i18n/useI18n";
 import { date, display } from "../lib/format";
@@ -23,20 +24,20 @@ export function LibraryPage({
   const [search, setSearch] = useState("");
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <h1>{t("datasetCountTitle", { count: datasets.length })}</h1>
-        </div>
-        <button
-          className="button"
-          onClick={() => {
-            setRefresh((value) => value + 1);
-          }}
-        >
-          <Icon name="refresh" size={16} />
-          {t("refresh")}{" "}
-        </button>
-      </div>
+      <PageHeader
+        title={t("datasetCountTitle", { count: datasets.length })}
+        actions={
+          <Button
+            icon="refresh"
+            iconSize={16}
+            onClick={() => {
+              setRefresh((value) => value + 1);
+            }}
+          >
+            {t("refresh")}
+          </Button>
+        }
+      />
       <div className="library-stats">
         <div>
           <span className="stat-symbol">
@@ -75,17 +76,16 @@ export function LibraryPage({
           {t("dataLibraryLabel")}{" "}
           <span className="count-pill">{datasets.length}</span>
         </h2>
-        <label className="search-field">
-          <Icon name="search" size={16} />
-          <input
-            aria-label={t("searchDatasets")}
-            placeholder={t("findADataset")}
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-            }}
-          />
-        </label>
+        <Input
+          icon="search"
+          wrapperClassName="search-field"
+          aria-label={t("searchDatasets")}
+          placeholder={t("findADataset")}
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value);
+          }}
+        />
       </div>
       <div className="dataset-grid">
         {datasets
@@ -109,7 +109,7 @@ export function LibraryPage({
                 <span className="dataset-symbol">
                   <Icon name="database" size={23} />
                 </span>
-                <span className="badge gray">{t("dataset")}</span>
+                <Badge>{t("dataset")}</Badge>
               </div>
               <h3>{dataset.name}</h3>
               <p>
@@ -137,17 +137,16 @@ export function LibraryPage({
           ))}
       </div>
       {!datasets.length && (
-        <div className="card empty-state">
-          <Icon name="database" size={32} />
-          <h3>
-            {loading ? t("openingYourWorkspace") : t("yourLibraryIsReady")}
-          </h3>
-          <p>
-            {loading
+        <EmptyState
+          card
+          icon="database"
+          title={loading ? t("openingYourWorkspace") : t("yourLibraryIsReady")}
+          description={
+            loading
               ? t("connectingToTheLocalApi")
-              : t("runDatakeelDemoToImportTheSampleDatasetAndStartAPipeline")}
-          </p>
-        </div>
+              : t("runDatakeelDemoToImportTheSampleDatasetAndStartAPipeline")
+          }
+        />
       )}
     </>
   );

@@ -1,3 +1,4 @@
+import { PageHeader, Surface } from "../components/ui";
 import { objectHref } from "../features/object/navigation";
 import { useI18n } from "../i18n/useI18n";
 import { date, timestamp } from "../lib/format";
@@ -19,15 +20,18 @@ export function WorkbenchPage({ data }: { data: DashboardSnapshot }) {
     .slice(0, 5);
   return (
     <>
-      <div className="page-heading">
-        <h1 className="page-title">
-          {t("workbenchCount", {
-            count: data.approvals.length + running.length + alerts.length,
-          })}
-        </h1>
-      </div>
+      <PageHeader
+        title={t("workbenchCount", {
+          count: data.approvals.length + running.length + alerts.length,
+        })}
+        titleClassName="page-title"
+      />
       <div className="workbench-grid">
-        <section className="card workbench-section" data-workbench="approvals">
+        <Surface
+          as="section"
+          className="workbench-section"
+          data-workbench="approvals"
+        >
           <header>
             <h2>{t("pendingCount", { count: data.approvals.length })}</h2>
             <a className="text-button" href="#/approvals?status=pending">
@@ -55,8 +59,12 @@ export function WorkbenchPage({ data }: { data: DashboardSnapshot }) {
           {!data.approvals.length && (
             <p className="muted">{t("noCurrentWork")}</p>
           )}
-        </section>
-        <section className="card workbench-section" data-workbench="runs">
+        </Surface>
+        <Surface
+          as="section"
+          className="workbench-section"
+          data-workbench="runs"
+        >
           <header>
             <h2>{t("runningPipelines", { count: running.length })}</h2>
             <a className="text-button" href="#/runs?type=pipeline&state=active">
@@ -89,8 +97,12 @@ export function WorkbenchPage({ data }: { data: DashboardSnapshot }) {
               </li>
             ))}
           </ul>
-        </section>
-        <section className="card workbench-section" data-workbench="quality">
+        </Surface>
+        <Surface
+          as="section"
+          className="workbench-section"
+          data-workbench="quality"
+        >
           <header>
             <h2>{t("qualityAlerts", { count: alerts.length })}</h2>
             <a className="text-button" href="#/quality?filter=alerts">
@@ -114,7 +126,7 @@ export function WorkbenchPage({ data }: { data: DashboardSnapshot }) {
             ))}
           </ul>
           {!alerts.length && <p className="muted">{t("noQualityAlerts")}</p>}
-        </section>
+        </Surface>
       </div>
     </>
   );

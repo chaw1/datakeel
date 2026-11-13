@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { Select } from "../components/ui";
 import { useI18n } from "../i18n/useI18n";
 
 type Theme = "system" | "light" | "dark";
@@ -20,7 +21,8 @@ export function ThemeControl() {
     else document.documentElement.dataset.theme = theme;
   }, [theme]);
   return (
-    <select
+    <Select
+      size="sm"
       aria-label={t("theme")}
       value={theme}
       onBlur={(event) => {
@@ -35,6 +37,6 @@ export function ThemeControl() {
       <option value="system">{t("themeSystem")}</option>
       <option value="light">{t("themeLight")}</option>
       <option value="dark">{t("themeDark")}</option>
-    </select>
+    </Select>
   );
 }

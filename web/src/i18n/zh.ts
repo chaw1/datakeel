@@ -24,6 +24,7 @@ import { productionZh } from "./productionZh";
 import { releaseZh } from "./releaseZh";
 import { standardsZh } from "./standardsZh";
 import { trainingZh } from "./trainingZh";
+import { uiZh } from "./uiZh";
 import { wbCockpitZh } from "./wbCockpitZh";
 import { wbEditorZh } from "./wbEditorZh";
 import { wbTeamZh } from "./wbTeamZh";
@@ -71,6 +72,7 @@ export const zh: Record<MessageKey, string> = {
   ...askReasonZh,
   ...evidenceZh,
   ...catalogZh,
+  ...uiZh,
   askNav: "问数",
   catalogLineageTitle: "追溯指标的数据来源。",
   catalogLineageDescription:
@@ -347,32 +349,6 @@ export const zh: Record<MessageKey, string> = {
   allStates: "所有状态",
   filterRunStatus: "筛选运行状态",
   executionQueued: "动作已进入队列，请在动作历史中跟踪进度。",
-  ontologyTitle: "了解可以操作的数据对象。",
-  ontologyDescription: "浏览注册的对象类型、关系、只读函数与受控动作。",
-  objectTypes: "对象类型",
-  linkTypes: "关系类型",
-  functions: "函数",
-  actions: "动作",
-  schema: "结构定义",
-  identityMapping: "身份映射",
-  cardinality: "基数",
-  semantics: "关系语义",
-  domain: "起点类型",
-  range: "终点类型",
-  inputSchema: "输入结构",
-  outputSchema: "输出结构",
-  parameterSchema: "参数结构",
-  readScope: "读取范围",
-  authScope: "所需权限",
-  preconditions: "前置条件",
-  effects: "影响",
-  inverseAction: "逆动作",
-  handler: "处理器",
-  schemaVersion: "版本 {version}",
-  noRegistryEntries: "此分类暂无已注册类型。",
-  searchOntology: "搜索本体",
-  ontologyCategory: "本体分类",
-  ontologyTypes: "注册定义",
   openActionHistory: "打开动作历史",
   approveFailure: "无法完成此动作。",
   refreshHistory: "刷新动作历史",

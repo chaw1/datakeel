@@ -208,11 +208,11 @@
   margin-left: auto;
 }
 select {
-  border: 1px solid var(--rule);
-  border-radius: 5px;
-  padding: calc(var(--space) * 1.75) calc(var(--space) * 2.75);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: calc(var(--space) * 1.25) calc(var(--space) * 2.5);
   background: var(--sheet);
-  color: var(--muted);
+  color: var(--ink);
   font-size: var(--font-xs);
   font-family: var(--font-body);
 }

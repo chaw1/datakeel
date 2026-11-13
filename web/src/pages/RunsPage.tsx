@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader, Select, Surface } from "../components/ui";
 import { objectHref } from "../features/object/navigation";
 import { StateBadge } from "../features/tasks/StateBadge";
 import { TaskOutcome } from "../features/tasks/TaskOutcome";
@@ -55,13 +56,13 @@ export function RunsPage({
   }
   return (
     <>
-      <div className="page-heading">
-        <h1>{t("pageCount", { name: t("runRecords"), count: rows.length })}</h1>
-      </div>
+      <PageHeader
+        title={t("pageCount", { name: t("runRecords"), count: rows.length })}
+      />
       <div className="table-toolbar">
         <label>
           {t("runType")}{" "}
-          <select
+          <Select
             aria-label={t("runType")}
             value={type}
             onChange={(event) => {
@@ -75,7 +76,7 @@ export function RunsPage({
             <option value="all">{t("allTypes")}</option>
             <option value="pipeline">{t("pipelineType")}</option>
             <option value="action">{t("actionType")}</option>
-          </select>
+          </Select>
         </label>
         <label>
           <input
@@ -88,7 +89,7 @@ export function RunsPage({
           {t("activeOnly")}
         </label>
       </div>
-      <div className="card table-scroll">
+      <Surface className="table-scroll">
         <table aria-label={t("runRecords")}>
           <thead>
             <tr>
@@ -136,10 +137,19 @@ export function RunsPage({
             ))}
           </tbody>
         </table>
-      </div>
-      {!rows.length && <p className="empty-state">{t("noMatchingRuns")}</p>}
+      </Surface>
+      {!rows.length && (
+        <EmptyState
+          title={t("noMatchingRuns")}
+          description={t("emptyFilteredHint")}
+        />
+      )}
       {task && (
-        <section className="card run-details" aria-label={t("runDetailsTitle")}>
+        <Surface
+          as="section"
+          className="run-details"
+          aria-label={t("runDetailsTitle")}
+        >
           <h2>{t("runDetailsTitle")}</h2>
           <a
             className="text-button"
@@ -153,7 +163,7 @@ export function RunsPage({
           </a>
           <TaskOutcome task={task} />
           <pre>{JSON.stringify(task, null, 2)}</pre>
-        </section>
+        </Surface>
       )}
     </>
   );

@@ -1,4 +1,11 @@
 import { Icon } from "../components/Icon";
+import {
+  Button,
+  EmptyState,
+  PageHeader,
+  SegmentedTabs,
+  Select,
+} from "../components/ui";
 import { useI18n } from "../i18n/useI18n";
 import { DatasheetsPage } from "../pages/DatasheetsPage";
 import { FilesPage } from "../pages/FilesPage";
@@ -48,8 +55,10 @@ export function DatasetWorkspace({
   );
   return (
     <>
-      <div className="page-heading dataset-heading">
-        <div>
+      <PageHeader
+        compact
+        className="dataset-heading"
+        backAction={
           <button
             className="back-link"
             onClick={() => {
@@ -58,57 +67,58 @@ export function DatasetWorkspace({
           >
             {t("dataLibrary")}{" "}
           </button>
-          <h1>
-            {page === "tasks"
-              ? t("pipelineRuns")
-              : selected?.name || t("datasetWorkspace")}
-          </h1>
-          <p>
-            {page === "tasks"
-              ? t("followEveryRunFromTheFirstShardToTheFinalArtifact")
-              : t("datasetSummary", {
-                  files: files.toLocaleString(),
-                  modalities: modalities.length
-                    ? modalities.join(" + ")
-                    : t("multimodalData"),
-                  versions: data.versions.length,
-                })}
-          </p>
-        </div>
-        {selected && (
-          <div className="export-actions">
-            <button
-              className="button"
-              aria-label={t("refreshDataset")}
-              onClick={() => {
-                setRefresh((value) => value + 1);
-              }}
-            >
-              <Icon name="refresh" size={15} />
-            </button>
-            <a
-              className="button"
-              href={`/api/export?format=openlineage&dataset_id=${encodeURIComponent(selectedId)}`}
-              download
-            >
-              <Icon name="download" size={15} />
-              {t("openlineage")}{" "}
-            </a>
-            <a
-              className="button"
-              href={`/api/export?format=croissant&dataset_id=${encodeURIComponent(selectedId)}`}
-              download
-            >
-              <Icon name="download" size={15} />
-              {t("croissant")}{" "}
-            </a>
-          </div>
-        )}
-      </div>
+        }
+        title={
+          page === "tasks"
+            ? t("pipelineRuns")
+            : selected?.name || t("datasetWorkspace")
+        }
+        subtitle={
+          page === "tasks"
+            ? t("followEveryRunFromTheFirstShardToTheFinalArtifact")
+            : t("datasetSummary", {
+                files: files.toLocaleString(),
+                modalities: modalities.length
+                  ? modalities.join(" + ")
+                  : t("multimodalData"),
+                versions: data.versions.length,
+              })
+        }
+        actions={
+          selected && (
+            <div className="export-actions">
+              <Button
+                icon="refresh"
+                iconSize={15}
+                aria-label={t("refreshDataset")}
+                onClick={() => {
+                  setRefresh((value) => value + 1);
+                }}
+              />
+              <a
+                className="button"
+                href={`/api/export?format=openlineage&dataset_id=${encodeURIComponent(selectedId)}`}
+                download
+              >
+                <Icon name="download" size={15} />
+                {t("openlineage")}{" "}
+              </a>
+              <a
+                className="button"
+                href={`/api/export?format=croissant&dataset_id=${encodeURIComponent(selectedId)}`}
+                download
+              >
+                <Icon name="download" size={15} />
+                {t("croissant")}{" "}
+              </a>
+            </div>
+          )
+        }
+      />
       {datasets.length > 1 && (
         <label className="dataset-selector">
           {t("dataset")}{" "}
-          <select
+          <Select
             aria-label={t("selectDataset")}
             value={selectedId}
             onBlur={(event) => {
@@ -123,7 +133,7 @@ export function DatasetWorkspace({
                 {dataset.name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       )}
       {data.errors.length > 0 && (
@@ -133,29 +143,25 @@ export function DatasetWorkspace({
         </div>
       )}
       {!selected ? (
-        <div className="card empty-state">
-          <h3>{t("noDatasetSelected")}</h3>
-          <p>{t("yourDataWillAppearHereAfterImport")}</p>
-        </div>
+        <EmptyState
+          card
+          title={t("noDatasetSelected")}
+          description={t("yourDataWillAppearHereAfterImport")}
+        />
       ) : page === "tasks" ? (
         <TasksPage data={data} />
       ) : (
         <>
-          <nav className="tabs" aria-label={t("datasetViews")}>
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                aria-current={page === tab.id ? "page" : undefined}
-                className={page === tab.id ? "active" : ""}
-                onClick={() => {
-                  navigate(tab.id);
-                }}
-              >
-                {t(tab.label)}
-                {tab.id === "files" && <span>{files}</span>}
-              </button>
-            ))}
-          </nav>
+          <SegmentedTabs
+            label={t("datasetViews")}
+            activeId={page}
+            onSelect={navigate}
+            items={tabs.map((tab) => ({
+              id: tab.id,
+              label: t(tab.label),
+              count: tab.id === "files" ? files : undefined,
+            }))}
+          />
           {page === "overview" && (
             <OverviewPage
               data={data}

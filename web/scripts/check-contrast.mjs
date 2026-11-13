@@ -28,10 +28,10 @@ const requiredTokens = [
   "pencil-wash",
 ];
 const themePatterns = {
-  light: /(?:^|})\s*:root\s*\{([^}]+)\}/m,
-  dark: /:root\[data-theme=["']dark["']\]\s*\{([^}]+)\}/,
+  light: /(?:^|})\s*:root(?:\[data-palette=["']([\w-]+)["']\])?\s*\{([^}]+)\}/m,
+  dark: /:root(?:\[data-palette=["']([\w-]+)["']\])?\[data-theme=["']dark["']\]\s*\{([^}]+)\}/,
   system:
-    /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root:not\(\[data-theme=["']light["']\]\)\s*\{([^}]+)\}/,
+    /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root(?:\[data-palette=["']([\w-]+)["']\])?:not\(\[data-theme=["']light["']\]\)\s*\{([^}]+)\}/,
 };
 
 function luminance(hex) {
@@ -53,13 +53,22 @@ export function contrastRatio(foreground, background) {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-function parseTheme(source, theme) {
-  const body = source.match(themePatterns[theme])?.[1];
+function parseTheme(source, theme, filename) {
+  const match = source.match(themePatterns[theme]);
+  const scopedPalette = match?.[1];
+  const body = match?.[2];
   if (!body) throw new Error(`Missing ${theme} theme selector.`);
+  const slug = filename.match(/^palette-([\w-]+)\.css$/)?.[1];
+  const expectedPalette = slug && slug !== "pencil" ? slug : undefined;
+  if (scopedPalette !== expectedPalette) {
+    throw new Error(
+      `${theme}: expected ${expectedPalette ? `[data-palette="${expectedPalette}"]` : "unscoped :root"} selector, got ${scopedPalette ? `[data-palette="${scopedPalette}"]` : "unscoped :root"}.`,
+    );
+  }
   const values = Object.fromEntries(
-    [...body.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)].map((match) => [
-      match[1],
-      match[2].trim().toLowerCase(),
+    [...body.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)].map((entry) => [
+      entry[1],
+      entry[2].trim().toLowerCase(),
     ]),
   );
   for (const token of requiredTokens) {
@@ -76,7 +85,10 @@ export function inspectPalette(source, filename) {
   const clean = source.replace(/\/\*[\s\S]*?\*\//g, "");
   try {
     const themes = Object.fromEntries(
-      Object.keys(themePatterns).map((name) => [name, parseTheme(clean, name)]),
+      Object.keys(themePatterns).map((name) => [
+        name,
+        parseTheme(clean, name, filename),
+      ]),
     );
     for (const token of requiredTokens) {
       if (themes.dark[token] !== themes.system[token]) {
@@ -126,7 +138,8 @@ export async function checkContrast(directory = paletteRoot) {
   };
 }
 
-function fixture(lightMuted = "#000000") {
+function fixture(lightMuted = "#000000", paletteScope = "") {
+  const scope = paletteScope ? `[data-palette="${paletteScope}"]` : "";
   const values = (background, foreground, muted) =>
     requiredTokens
       .map((token) => {
@@ -140,7 +153,7 @@ function fixture(lightMuted = "#000000") {
       .join("\n");
   const light = values("#ffffff", "#000000", lightMuted);
   const dark = values("#000000", "#ffffff", "#ffffff");
-  return `:root { ${light} }\n:root[data-theme="dark"] { ${dark} }\n@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ${dark} } }`;
+  return `:root${scope} { ${light} }\n:root${scope}[data-theme="dark"] { ${dark} }\n@media (prefers-color-scheme: dark) { :root${scope}:not([data-theme="light"]) { ${dark} } }`;
 }
 
 function selfTest() {
@@ -149,6 +162,15 @@ function selfTest() {
   assert.equal(contrastRatio("#777", "#777"), 1);
   assert.ok(contrastRatio("#777777", "#ffffff") < 4.5);
   assert.deepEqual(inspectPalette(fixture(), "fixture.css").problems, []);
+  assert.deepEqual(
+    inspectPalette(fixture("#000000", "ochre"), "palette-ochre.css").problems,
+    [],
+  );
+  assert.match(
+    inspectPalette(fixture("#000000", "wrong"), "palette-ochre.css")
+      .problems[0],
+    /expected \[data-palette="ochre"\] selector/,
+  );
   const negative = inspectPalette(fixture("#AAAAAA"), "fixture.css");
   assert.equal(negative.problems.length, 2);
   assert.match(

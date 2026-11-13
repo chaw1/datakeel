@@ -9,34 +9,34 @@ const groups = [
   {
     label: "workbench",
     items: [
-      { id: "workbench", label: "workbench", icon: "grid" },
-      { id: "labeling", label: "wbNav", icon: "grid" },
+      { id: "workbench", label: "workbench", icon: "workbench" },
+      { id: "labeling", label: "wbNav", icon: "annotation" },
     ],
   },
   {
     label: "dataGroup",
     items: [
       { id: "datasets", label: "dataLibraryLabel", icon: "database" },
-      { id: "catalog", label: "catalogNav", icon: "database" },
-      { id: "data-assets", label: "assetMarket", icon: "database" },
-      { id: "standards", label: "stdNav", icon: "grid" },
-      { id: "ask", label: "askNav", icon: "message" },
+      { id: "catalog", label: "catalogNav", icon: "catalog" },
+      { id: "data-assets", label: "assetMarket", icon: "asset" },
+      { id: "standards", label: "stdNav", icon: "standards" },
+      { id: "ask", label: "askNav", icon: "ask" },
     ],
   },
   {
     label: "evidenceGroup",
     items: [
-      { id: "evidence", label: "evidenceNav", icon: "quality" },
-      { id: "kg", label: "kgNav", icon: "grid" },
+      { id: "evidence", label: "evidenceNav", icon: "evidence" },
+      { id: "kg", label: "kgNav", icon: "kg" },
       { id: "quality", label: "dataQuality", icon: "quality" },
-      { id: "quality-rules", label: "dqNav", icon: "quality" },
+      { id: "quality-rules", label: "dqNav", icon: "rules" },
     ],
   },
   {
     label: "operationsGroup",
     items: [
-      { id: "custom-operators", label: "customOperatorsNav", icon: "grid" },
-      { id: "workflows", label: "workflowsNav", icon: "activity" },
+      { id: "custom-operators", label: "customOperatorsNav", icon: "operator" },
+      { id: "workflows", label: "workflowsNav", icon: "workflow" },
       { id: "approvals", label: "approvalsNav", icon: "check" },
       { id: "runs", label: "runRecords", icon: "activity" },
     ],
@@ -44,14 +44,14 @@ const groups = [
   {
     label: "agentsGroup",
     items: [
-      { id: "agent", label: "agentNav", icon: "message" },
-      { id: "memory", label: "memoryNav", icon: "grid" },
-      { id: "traces", label: "tracesNav", icon: "activity" },
+      { id: "agent", label: "agentNav", icon: "agent" },
+      { id: "memory", label: "memoryNav", icon: "memory" },
+      { id: "traces", label: "tracesNav", icon: "trace" },
     ],
   },
   {
     label: "modelsGroup",
-    items: [{ id: "ontology", label: "ontologyNav", icon: "grid" }],
+    items: [{ id: "ontology", label: "ontologyNav", icon: "ontology" }],
   },
 ] as const;
 export function Sidebar({

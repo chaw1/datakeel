@@ -40,20 +40,20 @@ export const tabs: { id: Page; label: MessageKey }[] = [
 ];
 
 export const operationPages = [
-  { id: "custom-operators", label: "customOperatorsNav", icon: "grid" },
-  { id: "data-assets", label: "assetMarket", icon: "database" },
-  { id: "workflows", label: "workflowsNav", icon: "activity" },
-  { id: "catalog", label: "catalogNav", icon: "database" },
-  { id: "standards", label: "stdNav", icon: "grid" },
-  { id: "ask", label: "askNav", icon: "message" },
-  { id: "evidence", label: "evidenceNav", icon: "quality" },
-  { id: "kg", label: "kgNav", icon: "grid" },
-  { id: "agent", label: "agentNav", icon: "message" },
-  { id: "memory", label: "memoryNav", icon: "grid" },
+  { id: "custom-operators", label: "customOperatorsNav", icon: "operator" },
+  { id: "data-assets", label: "assetMarket", icon: "asset" },
+  { id: "workflows", label: "workflowsNav", icon: "workflow" },
+  { id: "catalog", label: "catalogNav", icon: "catalog" },
+  { id: "standards", label: "stdNav", icon: "standards" },
+  { id: "ask", label: "askNav", icon: "ask" },
+  { id: "evidence", label: "evidenceNav", icon: "evidence" },
+  { id: "kg", label: "kgNav", icon: "kg" },
+  { id: "agent", label: "agentNav", icon: "agent" },
+  { id: "memory", label: "memoryNav", icon: "memory" },
   { id: "approvals", label: "approvalsNav", icon: "check" },
   { id: "action-runs", label: "actionRunsNav", icon: "activity" },
-  { id: "traces", label: "tracesNav", icon: "activity" },
-  { id: "ontology", label: "ontologyNav", icon: "grid" },
+  { id: "traces", label: "tracesNav", icon: "trace" },
+  { id: "ontology", label: "ontologyNav", icon: "ontology" },
 ] as const;
 export type OperationPage = (typeof operationPages)[number]["id"];
 export function isOperationPage(page: Page): page is OperationPage {

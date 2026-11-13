@@ -1,4 +1,4 @@
-:root {
+:root[data-palette="graphite"] {
   --paper: #f3f3f3;
   --sheet: #ffffff;
   --ink: #141414;
@@ -19,7 +19,7 @@
   --label-8: #5b6300;
 }
 
-:root[data-theme="dark"] {
+:root[data-palette="graphite"][data-theme="dark"] {
   --paper: #121212;
   --sheet: #1a1a1b;
   --ink: #e8e8e8;
@@ -41,7 +41,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root[data-palette="graphite"]:not([data-theme="light"]) {
     --paper: #121212;
     --sheet: #1a1a1b;
     --ink: #e8e8e8;

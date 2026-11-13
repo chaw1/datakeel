@@ -24,6 +24,7 @@ import { productionEn } from "./productionEn";
 import { releaseEn } from "./releaseEn";
 import { standardsEn } from "./standardsEn";
 import { trainingEn } from "./trainingEn";
+import { uiEn } from "./uiEn";
 import { wbCockpitEn } from "./wbCockpitEn";
 import { wbEditorEn } from "./wbEditorEn";
 import { wbTeamEn } from "./wbTeamEn";
@@ -70,6 +71,7 @@ export const en = {
   ...askReasonEn,
   ...evidenceEn,
   ...catalogEn,
+  ...uiEn,
   askNav: "Ask data",
   catalogLineageTitle: "Follow the metric to its source.",
   catalogLineageDescription:
@@ -359,33 +361,6 @@ export const en = {
   filterRunStatus: "Filter run status",
   executionQueued:
     "The action was queued. Follow its progress in action history.",
-  ontologyTitle: "Understand the objects you can work with.",
-  ontologyDescription:
-    "Explore registered object types, links, read functions, and controlled actions.",
-  objectTypes: "Object types",
-  linkTypes: "Link types",
-  functions: "Functions",
-  actions: "Actions",
-  schema: "Schema",
-  identityMapping: "Identity mapping",
-  cardinality: "Cardinality",
-  semantics: "Semantics",
-  domain: "Domain",
-  range: "Range",
-  inputSchema: "Input schema",
-  outputSchema: "Output schema",
-  parameterSchema: "Parameter schema",
-  readScope: "Read scope",
-  authScope: "Required scope",
-  preconditions: "Preconditions",
-  effects: "Effects",
-  inverseAction: "Inverse action",
-  handler: "Handler",
-  schemaVersion: "Version {version}",
-  noRegistryEntries: "No types are registered in this category.",
-  searchOntology: "Search ontology",
-  ontologyCategory: "Ontology category",
-  ontologyTypes: "Registered definitions",
   openActionHistory: "Open action history",
   approveFailure: "The action could not be completed.",
   refreshHistory: "Refresh action history",

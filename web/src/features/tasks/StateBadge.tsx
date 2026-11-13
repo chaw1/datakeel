@@ -1,3 +1,4 @@
+import { Badge, type BadgeTone } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import type { MessageKey } from "../../i18n/en";
@@ -18,14 +19,16 @@ export function StateBadge({ state }: { state: string }) {
     INTERRUPTED: "workflowInterrupted",
   };
   const normalized = state.toUpperCase();
+  const tone: BadgeTone = ["COMPLETED", "SUCCEEDED"].includes(normalized)
+    ? "ok"
+    : ["FAILED", "CANCELLED", "DENIED", "INTERRUPTED"].includes(normalized)
+      ? "danger"
+      : "warn";
   return (
-    <span
-      className={`badge ${["COMPLETED", "SUCCEEDED"].includes(normalized) ? "green" : ["FAILED", "CANCELLED", "DENIED", "INTERRUPTED"].includes(normalized) ? "red" : "amber"}`}
-    >
-      <span className="status-dot" />
+    <Badge tone={tone} dot>
       {normalized in states
         ? t(states[normalized])
         : state.toLowerCase().replaceAll("_", " ")}
-    </span>
+    </Badge>
   );
 }

@@ -62,3 +62,10 @@
 - 空态三种说清楚（真没数据 / 筛选清空了 / 抽取器没跑）；问数的澄清态只问一个问题、选项上写口径版本负责人；不可答态说卡在哪并给最近的替代；答不了也记进 Trace。
 - ⌘K 快捷搜索：找对象、跳过去、发起对话；不直接执行动作；中文输入法组字时回车不触发；四期起也搜指标和术语。
 - 页面标题改成页名加计数，去掉口号式文案。
+
+## 7. 设计系统原语与多色板切换（Design System v2）
+
+- **结构性设计令牌（[tokens.css](../../web/src/styles/tokens.css)）**：在已有字体与字号阶梯基础上补充圆角（`--radius-xs` 至 `--radius-pill`）、控件高度（`--control-sm/md/lg`）、边框线（`--border-subtle/default/strong`、`--surface-hover`、`--rule-strong`）、浮层阴影（`--shadow-sm/md/lg`）、层级（`--z-header` 至 `--z-toast`）及统一缓动与时长（`--ease-standard`、`--duration-fast/normal`），保留高密度扁平纸面排版与单一红/蓝铅笔强调色约束。
+- **三套已过审校样色板运行时切换（[PaletteControl.tsx](../../web/src/app/PaletteControl.tsx)）**：保留 `铅笔红蓝`（`pencil`）为未加作用域的默认 `:root` 色板，`赭石钢蓝`（`ochre`）与 `石墨暗红`（`graphite`）分别作用域于 `[data-palette="ochre"]` / `[data-palette="graphite"]`（含亮/暗色与系统偏好），经 `web/scripts/check-contrast.mjs` 自动校验正文/次要/图标与反色对比度；选择状态持久化于 `localStorage["datakeel.palette"]`，可在顶栏即时切换。
+- **34 个语义图标集（[Icon.tsx](../../web/src/components/Icon.tsx)）**：在原有 18 个图标基础上新增 `workbench`、`annotation`、`catalog`、`asset`、`standards`、`ask`、`evidence`、`kg`、`rules`、`operator`、`workflow`、`agent`、`memory`、`trace`、`ontology`、`palette`，实现全 19 个侧边栏导航项与操作页的一一对应，消除重复占位图标。
+- **零依赖校样 UI 原语（`web/src/components/ui/` + [ui.css](../../web/src/styles/ui.css)）**：提供 `Button`（`secondary`/`primary`/`danger`/`ghost`/`link`）、`Select`、`Input`、`Badge`（`neutral`/`accent`/`ok`/`warn`/`danger`/`stamp`）、`Surface`（`sheet`/`paper`/`ledger`）、`PageHeader`、`SegmentedTabs` 与 `EmptyState`，保证原生控件 `:where(...)` 基线重置、`button` 字号始终保持正文无衬线字体（`< 18px`）且不引入外部 UI 组件库或样式传参泄露。

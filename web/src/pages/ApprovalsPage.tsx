@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import { Button, PageHeader } from "../components/ui";
 import { ActionReceipt } from "../features/actions/ActionReceipt";
 import { ApprovalList } from "../features/approvals/ApprovalList";
 import { useI18n } from "../i18n/useI18n";
@@ -30,20 +30,17 @@ export function ApprovalsPage({
   }
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <h1>
-            {t("pageCount", {
-              name: t("approvalsNav"),
-              count: resource.value?.length ?? 0,
-            })}
-          </h1>
-        </div>
-        <button className="button" onClick={resource.reload}>
-          <Icon name="refresh" />
-          {t("refresh")}
-        </button>
-      </div>
+      <PageHeader
+        title={t("pageCount", {
+          name: t("approvalsNav"),
+          count: resource.value?.length ?? 0,
+        })}
+        actions={
+          <Button icon="refresh" iconSize={18} onClick={resource.reload}>
+            {t("refresh")}
+          </Button>
+        }
+      />
       {workflowRun && (
         <p>
           <a

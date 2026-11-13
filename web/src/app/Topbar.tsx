@@ -1,9 +1,11 @@
 import { CommandPalette } from "../components/CommandPalette";
 import { Icon } from "../components/Icon";
+import { Select } from "../components/ui";
 import { localizedObjectName } from "../i18n/graphCatalogNames";
 import { useI18n } from "../i18n/useI18n";
 
 import { operationPages } from "./navigation";
+import { PaletteControl } from "./PaletteControl";
 import { ThemeControl } from "./ThemeControl";
 
 import type { Page } from "./navigation";
@@ -57,8 +59,10 @@ export function Topbar({
       </div>
       <div className="topbar-right">
         <CommandPalette />
+        <PaletteControl />
         <ThemeControl />
-        <select
+        <Select
+          size="sm"
           aria-label={t("language")}
           value={locale}
           onBlur={(event) => {
@@ -70,7 +74,7 @@ export function Topbar({
         >
           <option value="en">{t("english")}</option>
           <option value="zh">{t("chinese")}</option>
-        </select>
+        </Select>
       </div>
     </header>
   );
