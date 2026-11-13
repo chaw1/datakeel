@@ -1,8 +1,11 @@
 .sidebar {
   padding-top: calc(var(--space) * 5);
 }
+.sidebar-header {
+  margin-bottom: calc(var(--space) * 5);
+}
 .sidebar .brand {
-  margin-bottom: calc(var(--space) * 6);
+  margin-bottom: 0;
 }
 .sidebar .nav {
   gap: calc(var(--space) * 3);
@@ -23,10 +26,10 @@
   padding-top: calc(var(--space) * 3);
 }
 .topbar {
-  height: 56px;
+  height: 48px;
 }
 .topbar-right {
-  gap: calc(var(--space) * 3);
+  gap: calc(var(--space) * 2.5);
 }
 main {
   padding: calc(var(--space) * 6);
@@ -119,6 +122,48 @@ main {
     padding-inline: calc(var(--space) * 4);
   }
 }
+@media (min-width: 881px) {
+  [data-sidebar-collapsed="true"] .sidebar {
+    width: 64px;
+    padding-inline: calc(var(--space) * 2);
+  }
+  [data-sidebar-collapsed="true"] .main-shell {
+    margin-left: calc(var(--space) * 16);
+  }
+  [data-sidebar-collapsed="true"] .sidebar-header {
+    flex-direction: column;
+    gap: calc(var(--space) * 2);
+    margin-bottom: calc(var(--space) * 4);
+  }
+  [data-sidebar-collapsed="true"] .sidebar .brand {
+    padding: 0;
+    justify-content: center;
+  }
+  [data-sidebar-collapsed="true"] .brand-text,
+  [data-sidebar-collapsed="true"] .brand-dot,
+  [data-sidebar-collapsed="true"] .nav-group-toggle,
+  [data-sidebar-collapsed="true"] .nav-item-label,
+  [data-sidebar-collapsed="true"] .nav-count,
+  [data-sidebar-collapsed="true"] .local-note strong,
+  [data-sidebar-collapsed="true"] .sidebar-footer {
+    display: none;
+  }
+  [data-sidebar-collapsed="true"] .sidebar .nav-group {
+    padding-bottom: calc(var(--space) * 1.5);
+    border-bottom: 1px solid var(--rule);
+  }
+  [data-sidebar-collapsed="true"] .sidebar .nav-item {
+    justify-content: center;
+    padding: calc(var(--space) * 2);
+  }
+  [data-sidebar-collapsed="true"] .local-note {
+    text-align: center;
+    padding: calc(var(--space) * 3) 0;
+  }
+  [data-sidebar-collapsed="true"] .local-note .status-dot {
+    margin-right: 0;
+  }
+}
 @media (max-width: 880px) {
   .sidebar .nav {
     display: flex;
@@ -132,8 +177,15 @@ main {
     padding-bottom: calc(var(--space) * 2);
     border-bottom: 1px solid var(--rule);
   }
+  .sidebar-toggle,
+  .brand-text,
+  .nav-group-toggle,
   .sidebar .nav-label,
-  .sidebar .nav-item span {
+  .sidebar .nav-item span,
+  .actor-sep,
+  .actor-role,
+  .breadcrumb-group,
+  .breadcrumb-tab {
     display: none;
   }
   .sidebar .nav-item {
@@ -149,7 +201,10 @@ main {
     min-width: 0;
   }
   .topbar .breadcrumb > button,
-  .topbar .breadcrumb > svg {
+  .topbar .breadcrumb > svg,
+  .breadcrumb-kind,
+  .actor-badge,
+  .palette-control {
     display: none;
   }
   .topbar-right {

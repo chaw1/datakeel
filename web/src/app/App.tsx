@@ -17,8 +17,10 @@ import { OperationsWorkspace } from "./OperationsWorkspace";
 import { useRoute } from "./routing";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { useActorIdentity } from "./useActorIdentity";
 import { useDashboard } from "./useDashboard";
 import { useLegacyRoute } from "./useLegacyRoute";
+import { useSidebarState } from "./useSidebarState";
 
 import type { Page, LineageTarget } from "./navigation";
 import type { ObjectTab, ObjectTarget } from "../features/object/navigation";
@@ -29,6 +31,8 @@ export default function App() {
   useLegacyRoute(route);
   const workspace = useWorkspace(undefined, false);
   const dashboard = useDashboard();
+  const sidebar = useSidebarState();
+  const identity = useActorIdentity();
   const [conversationId, setConversationId] = useState("");
   const {
     datasets,
@@ -79,12 +83,20 @@ export default function App() {
     changed();
   }
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      data-sidebar-collapsed={sidebar.collapsed ? "true" : undefined}
+    >
       <Sidebar
         page={page}
         datasets={datasets}
         pending={dashboard.value.approvals.length}
         error={error || dashboard.error}
+        objectKind={route.object?.kind}
+        collapsed={sidebar.collapsed}
+        collapsedGroups={sidebar.collapsedGroups}
+        onToggleCollapsed={sidebar.toggleCollapsed}
+        onToggleGroup={sidebar.toggleGroup}
       />
       <div className="main-shell">
         <Topbar
@@ -93,6 +105,9 @@ export default function App() {
           selected={selected}
           objectName={currentObjectName}
           objectKind={route.object?.kind}
+          objectTab={route.object?.tab}
+          params={route.params}
+          identity={identity}
         />
         <main>
           {(error || dashboard.error) && (

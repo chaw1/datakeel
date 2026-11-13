@@ -1,16 +1,16 @@
 import { CommandPalette } from "../components/CommandPalette";
-import { Icon } from "../components/Icon";
 import { Select } from "../components/ui";
-import { localizedObjectName } from "../i18n/graphCatalogNames";
 import { useI18n } from "../i18n/useI18n";
 
-import { operationPages } from "./navigation";
+import { ActorBadge } from "./ActorBadge";
+import { Breadcrumbs } from "./Breadcrumbs";
 import { PaletteControl } from "./PaletteControl";
 import { ThemeControl } from "./ThemeControl";
 
 import type { Page } from "./navigation";
+import type { ActorIdentity } from "./useActorIdentity";
 import type { Dataset } from "../api/types";
-import type { ObjectKind } from "../features/object/navigation";
+import type { ObjectKind, ObjectTab } from "../features/object/navigation";
 
 export function Topbar({
   page,
@@ -18,47 +18,34 @@ export function Topbar({
   selected,
   objectName,
   objectKind,
+  objectTab,
+  params,
+  identity,
 }: {
   page: Page;
   navigate: (page: Page) => void;
   selected?: Dataset;
   objectName?: string;
   objectKind?: ObjectKind;
+  objectTab?: ObjectTab;
+  params?: URLSearchParams;
+  identity?: ActorIdentity;
 }) {
   const { t, locale, setLocale } = useI18n();
-  const operation = operationPages.find((item) => item.id === page);
-  const label = operation
-    ? t(operation.label)
-    : page === "workbench"
-      ? t("workbench")
-      : page === "labeling"
-        ? t("wbNav")
-        : page === "object"
-          ? locale === "en" && objectName && objectKind
-            ? localizedObjectName(objectKind, objectName, locale)
-            : t("pageObject")
-          : page === "runs"
-            ? t("runRecords")
-            : page === "quality" || page === "quality-rules"
-              ? t(page === "quality" ? "dataQuality" : "dqNav")
-              : page === "datasets"
-                ? t("dataLibraryLabel")
-                : (selected?.name ?? t("workspaceLabel"));
   return (
     <header className="topbar">
-      <div className="breadcrumb">
-        <button
-          onClick={() => {
-            navigate("workbench");
-          }}
-        >
-          {t("workspaceLabel")}
-        </button>
-        <Icon name="chevron" size={12} />
-        <span className="breadcrumb-current">{label}</span>
-      </div>
+      <Breadcrumbs
+        page={page}
+        navigate={navigate}
+        selected={selected}
+        objectName={objectName}
+        objectKind={objectKind}
+        objectTab={objectTab}
+        params={params}
+      />
       <div className="topbar-right">
         <CommandPalette />
+        <ActorBadge identity={identity} />
         <PaletteControl />
         <ThemeControl />
         <Select

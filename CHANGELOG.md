@@ -6,6 +6,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Collapsible navigation sidebar rail (`⌘B` / `Ctrl+B`) and per-group collapse state persisted in `localStorage`, auto-expanding on hash route changes (`Sidebar`, `useSidebarState`).
+- Compact sticky `48px` topbar with multi-level clickable breadcrumbs (`Breadcrumbs`) and server-verified actor/role badge (`ActorBadge`, `useActorIdentity`).
 - Design System v2 foundation for the web workspace (`web/src/components/ui/`, `web/src/styles/ui.css`, `web/src/styles/tokens.css`): structural radius, control-height, border, elevation, layer, and motion tokens plus zero-dependency UI primitives (`Button`, `Select`, `Input`, `Badge`, `Surface`, `PageHeader`, `SegmentedTabs`, `EmptyState`), adopted in the topbar, `StateBadge`, `WorkbenchPage`, `LibraryPage`, `DatasetWorkspace`, `ApprovalsPage`, and `RunsPage`.
 - Runtime proofreading palette switcher (`PaletteControl`) in the topbar across all three contrast-verified palettes (`pencil`, `ochre`, `graphite`) scoped via `[data-palette]` and persisted in `datakeel.palette`.
 - Expanded semantic icon library from 18 to 34 icons (`web/src/components/Icon.tsx`) with distinct icons across all 19 sidebar navigation destinations.

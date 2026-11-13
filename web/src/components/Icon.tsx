@@ -32,7 +32,9 @@ export type IconName =
   | "memory"
   | "trace"
   | "ontology"
-  | "palette";
+  | "palette"
+  | "sidebar"
+  | "user";
 const paths: Record<IconName, React.ReactNode> = {
   message: (
     <path d="M20 15a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3v9ZM7 8h9M7 12h6" />
@@ -192,6 +194,18 @@ const paths: Record<IconName, React.ReactNode> = {
       <circle cx="9" cy="10" r="5" />
       <circle cx="15" cy="10" r="5" />
       <circle cx="12" cy="15" r="5" />
+    </>
+  ),
+  sidebar: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
     </>
   ),
 };

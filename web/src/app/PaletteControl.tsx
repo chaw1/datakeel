@@ -22,6 +22,7 @@ export function PaletteControl() {
   }, [palette]);
   return (
     <Select
+      className="palette-control"
       size="sm"
       aria-label={t("palette")}
       value={palette}

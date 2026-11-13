@@ -40,6 +40,8 @@ const iconNames: readonly IconName[] = [
   "trace",
   "ontology",
   "palette",
+  "sidebar",
+  "user",
 ];
 
 it("renders every semantic icon as an accessible single-stroke SVG", () => {
