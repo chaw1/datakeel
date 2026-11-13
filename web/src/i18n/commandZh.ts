@@ -8,6 +8,7 @@ export const commandZh = {
   cmdHint: "↑ ↓ 选择 · 回车打开 · Esc 关闭",
   cmdClose: "关闭搜索",
   cmdConversation: "就 {name} 发起对话",
+  cmdCopilot: "在副驾侧栏询问 {name}",
   cmdPrompt: "查看 {name}（{kind}：{id}）",
   cmdPrefilled: "消息草稿 · 确认后发送",
 };

@@ -32,6 +32,11 @@ export const intentZh = {
   chainResume: "续跑",
   chainContinue: "继续",
   chainAllDone: "全部步骤已完成。",
+  chainDeferredCount: "还有 {count} 个后续步骤等本次变更生效后再规划",
+  chainPlanRemaining: "规划剩余步骤",
+  chainReplanCurrent: "按当前状态重新规划",
+  chainReplanning: "正在规划…",
+  chainReplannedReady: "已在下方生成新计划，确认前不会执行任何写入。",
   chainSignatureHint:
     "这一步在审批队列里等签字。可以在这里签，也可以去审批页签；签完后动作链继续。",
   productionDraftLabelSet: "起草标签集和标注指南",

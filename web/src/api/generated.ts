@@ -1974,6 +1974,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intents/chains/{chain_id}/replan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replan
+         * @description Plan deferred suffix steps or replan failed steps against the live database.
+         */
+        post: operations["replan_api_intents_chains__chain_id__replan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/intents/chains/{chain_id}/run": {
         parameters: {
             query?: never;
@@ -3568,6 +3588,7 @@ export interface components {
              * @default local
              */
             actor: string;
+            context?: components["schemas"]["PageContext"];
             /** Conversation Id */
             conversation_id?: string | null;
             /**
@@ -3575,6 +3596,10 @@ export interface components {
              * Format: date-time
              */
             created_at?: string;
+            /** Deferred Steps */
+            deferred_steps?: components["schemas"]["DraftStep"][];
+            /** Draft Steps */
+            draft_steps?: components["schemas"]["DraftStep"][];
             /** Id */
             id?: string;
             /**
@@ -3585,6 +3610,8 @@ export interface components {
             language: "zh" | "en";
             /** Model */
             model?: string | null;
+            /** Next Chain Id */
+            next_chain_id?: string | null;
             /** Notes */
             notes?: string[];
             /**
@@ -5336,6 +5363,13 @@ export interface components {
             /** Owners */
             owners: components["schemas"]["CatalogObject"][];
             table: components["schemas"]["CatalogObject"];
+        };
+        /**
+         * ChainReplanRequest
+         * @description Optional live page context carried when replanning a failed or deferred chain.
+         */
+        ChainReplanRequest: {
+            context?: components["schemas"]["PageContext"] | null;
         };
         /**
          * ChainStep
@@ -7313,6 +7347,24 @@ export interface components {
             standard_codes: string[];
             /** Version Id */
             version_id?: string | null;
+        };
+        /**
+         * DraftStep
+         * @description One proposed action or read call; values may still be names or references.
+         */
+        DraftStep: {
+            /** Action */
+            action: string;
+            /** Id */
+            id: string;
+            /** Params */
+            params?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Said */
+            said?: {
+                [key: string]: string;
+            };
         };
         /**
          * DroppedSentence
@@ -17481,6 +17533,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActionChain"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replan_api_intents_chains__chain_id__replan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chain_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ChainReplanRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntentResult"];
                 };
             };
             /** @description Validation Error */

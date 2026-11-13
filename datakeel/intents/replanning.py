@@ -8,12 +8,20 @@ from collections.abc import Callable
 from pydantic import JsonValue
 
 from datakeel.core.errors import NotFoundError, ValidationError
-from datakeel.core.intent_models import Clarification, IntentResult
+from datakeel.core.intent_models import (
+    ActionChain,
+    ChainStep,
+    Clarification,
+    IntentResult,
+    ParserKind,
+)
+from datakeel.core.models import BoundaryModel
 from datakeel.intents.catalog import EntityCatalog
 from datakeel.intents.drafts import DraftStep, IntentDraft
 from datakeel.intents.fill import FillState, fill_steps
 from datakeel.intents.partial import without
 from datakeel.storage.database import Database
+from datakeel.storage.intent_chains import save_chain
 from datakeel.storage.production_queries import project_for_params
 
 # These actions read or change task holding, task state, workflow tier or dispatch strategy.
@@ -94,5 +102,42 @@ def ready_steps(
         return (without(draft, reasons) if len(draft.steps) > 1 else None) or empty
     deferred = replanning_barrier(db, filled.steps, draft.language)
     if deferred and (narrowed := without(draft, deferred)) is not None:
-        return narrowed
+        deferred_steps = [step for step in draft.steps if step.id in deferred]
+        return narrowed.model_copy(update={"deferred": [*draft.deferred, *deferred_steps]})
     return filled.steps, filled.excluded
+
+
+class PlannedChainInfo(BoundaryModel):
+    """Descriptive provenance persisted alongside a newly checked action chain."""
+
+    notes: list[str]
+    text: str
+    conversation_id: str | None = None
+    parser: ParserKind = "rules"
+    model: str | None = None
+
+
+def save_planned_chain(
+    db: Database,
+    draft: IntentDraft,
+    checked: list[ChainStep],
+    state: FillState,
+    info: PlannedChainInfo,
+) -> ActionChain:
+    """Persist a checked chain together with its page context, draft steps and deferred suffix."""
+    return save_chain(
+        db,
+        ActionChain(
+            conversation_id=info.conversation_id,
+            actor=state.actor,
+            text=info.text,
+            language=draft.language,
+            context=state.context,
+            draft_steps=list(draft.steps),
+            deferred_steps=list(draft.deferred),
+            steps=checked,
+            notes=info.notes,
+            parser=info.parser,
+            model=info.model,
+        ),
+    )

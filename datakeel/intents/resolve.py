@@ -10,7 +10,6 @@ from pydantic import ValidationError as ModelValidationError
 
 from datakeel.actions.registry import POLICIES
 from datakeel.core.intent_models import (
-    ActionChain,
     ChainStep,
     Clarification,
     IntentResult,
@@ -41,7 +40,7 @@ from datakeel.intents.read_scope import (
     task_argument,
     unfiltered_note,
 )
-from datakeel.intents.replanning import ready_steps
+from datakeel.intents.replanning import PlannedChainInfo, ready_steps, save_planned_chain
 from datakeel.intents.validate import bad_value, check_step, overreach, required_fields
 from datakeel.intents.wording import (
     already_so,
@@ -55,7 +54,6 @@ from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.models import ObjectSet
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.storage.database import Database
-from datakeel.storage.intent_chains import save_chain
 from datakeel.storage.label_drafts import planned_draft_cost
 
 DRAFT_SAMPLES = 8
@@ -336,20 +334,20 @@ class Resolver:
         settled = self._settled(draft, checked, text)
         if settled is not None:
             return settled
-        chain = save_chain(
+        # Only rule notes are kept: they are generated from the parameters. A model's
+        # own description could claim a change the parameters do not make.
+        chain = save_planned_chain(
             self.db,
-            ActionChain(
-                conversation_id=conversation_id,
-                actor=self.state.actor,
-                text=text,
-                language=draft.language,
-                steps=checked,
-                # Only rule notes are kept: they are generated from the parameters. A model's
-                # own description could claim a change the parameters do not make.
+            draft,
+            checked,
+            self.state,
+            PlannedChainInfo(
                 notes=[
                     *(self._notes(draft, text) if origin[0] == "rules" else []),
                     *skipped_lines(draft.skipped, text, draft.language),
                 ],
+                text=text,
+                conversation_id=conversation_id,
                 parser=origin[0],
                 model=origin[1],
             ),

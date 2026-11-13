@@ -74,6 +74,17 @@ class ChainStep(BoundaryModel):
     error: str | None = None
 
 
+class DraftStep(BoundaryModel):
+    """One proposed action or read call; values may still be names or references."""
+
+    id: str = Field(min_length=1, max_length=20)
+    action: str = Field(min_length=1, max_length=100)
+    params: dict[str, JsonValue] = Field(default_factory=dict)
+    # The person's own words for each identity value, so a translated or abbreviated name
+    # still counts as named (checked against the sentence, never trusted blindly).
+    said: dict[str, str] = Field(default_factory=dict[str, str])
+
+
 class ActionChain(BoundaryModel):
     """Order existing action plans for one sentence and record each step's progress."""
 
@@ -84,11 +95,21 @@ class ActionChain(BoundaryModel):
     language: Literal["zh", "en"] = "zh"
     parser: ParserKind = "rules"
     model: str | None = None
+    context: PageContext = Field(default_factory=PageContext)
+    draft_steps: list[DraftStep] = Field(default_factory=list[DraftStep], max_length=50)
+    deferred_steps: list[DraftStep] = Field(default_factory=list[DraftStep], max_length=50)
+    next_chain_id: str | None = None
     steps: list[ChainStep] = Field(min_length=1, max_length=50)
     status: ChainStatus = "planned"
     notes: list[str] = Field(default_factory=list[str])
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
+
+
+class ChainReplanRequest(BoundaryModel):
+    """Optional live page context carried when replanning a failed or deferred chain."""
+
+    context: PageContext | None = None
 
 
 class Candidate(BoundaryModel):

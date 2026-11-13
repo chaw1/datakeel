@@ -87,6 +87,7 @@ READ_OR_CONTROLLED_ROUTES = frozenset(
         ("POST", "/api/actions/{plan_id}/execute"),
         ("POST", "/api/approvals/{plan_id}"),
         ("POST", "/api/intents/chains/{chain_id}/run"),
+        ("POST", "/api/intents/chains/{chain_id}/replan"),
     }
 )
 

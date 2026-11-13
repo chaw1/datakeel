@@ -2,6 +2,7 @@ import { useI18n } from "../../i18n/useI18n";
 
 import { AgentObservation } from "./AgentObservation";
 
+import type { PageContext } from "../../api/intents";
 import type { AgentEvent } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
@@ -10,6 +11,7 @@ type Props = {
   path?: string;
   dryRun: boolean;
   busy: boolean;
+  context?: PageContext;
   visibleReceipts: Set<AgentEvent["id"]>;
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
@@ -29,6 +31,7 @@ export function AgentSteps({ events, path = "main", ...props }: Props) {
               event={event}
               dryRun={props.dryRun}
               busy={props.busy}
+              context={props.context}
               onResolved={props.onResolved}
               onOpenReceipt={props.onOpenReceipt}
               onReply={props.onReply}

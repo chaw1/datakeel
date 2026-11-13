@@ -22,6 +22,14 @@ export function runChain(id: string) {
   return post<ActionChain>(`${chainPath(id)}/run`, {});
 }
 
+/** Replan failed steps or plan deferred steps against live state without running. */
+export function replanChain(id: string, context?: PageContext) {
+  return post<IntentResult>(
+    `${chainPath(id)}/replan`,
+    context ? { context } : {},
+  );
+}
+
 export async function readLabelSet(
   id: string,
   version: number,

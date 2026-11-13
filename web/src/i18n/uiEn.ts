@@ -39,4 +39,21 @@ export const uiEn = {
   searchOntology: "Search ontology",
   ontologyCategory: "Ontology category",
   ontologyTypes: "Registered definitions",
+  copilotOpen: "Copilot",
+  copilotShortcut: "⌘J",
+  copilotTitle: "Workspace copilot",
+  copilotSubtitle:
+    "Read state, draft checked plans, and review before anything writes.",
+  copilotClose: "Close copilot",
+  copilotNewChat: "New session",
+  copilotOpenFull: "Full page",
+  copilotContextLabel: "Page context",
+  copilotContextUse: "Attach current view",
+  copilotContextPaused: "Context paused",
+  copilotContextGlobal: "Workspace",
+  copilotEmptyTitle: "Ask from where you are working.",
+  copilotEmptyHint:
+    "Read queries answer directly; write intents compile into an inspectable action chain.",
+  copilotPromptInspect: "Summarize the current view and open blockers",
+  copilotPromptApprovals: "List pending approvals and their risk",
 } as const;

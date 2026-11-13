@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 
+import { CopilotDrawer } from "../features/copilot/CopilotDrawer";
+import { derivePageContext } from "../features/copilot/pageContext";
 import { useWorkspace } from "../features/datasets/useWorkspace";
 import { objectHref } from "../features/object/navigation";
 import { ObjectPage } from "../features/object/ObjectPage";
@@ -34,6 +36,8 @@ export default function App() {
   const sidebar = useSidebarState();
   const identity = useActorIdentity();
   const [conversationId, setConversationId] = useState("");
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotPrompt, setCopilotPrompt] = useState("");
   const {
     datasets,
     selected,
@@ -82,6 +86,17 @@ export default function App() {
     window.location.hash = lineageHref(target);
     changed();
   }
+  const copilotContext = derivePageContext(route, selected, currentObjectName);
+  const toggleCopilot = useCallback(() => {
+    setCopilotOpen((current) => !current);
+  }, []);
+  const closeCopilot = useCallback(() => {
+    setCopilotOpen(false);
+  }, []);
+  const openCopilotWithPrompt = useCallback((prompt: string) => {
+    setCopilotPrompt(prompt);
+    setCopilotOpen(true);
+  }, []);
   return (
     <div
       className="app-shell"
@@ -108,6 +123,9 @@ export default function App() {
           objectTab={route.object?.tab}
           params={route.params}
           identity={identity}
+          copilotOpen={copilotOpen}
+          onToggleCopilot={toggleCopilot}
+          onOpenCopilot={openCopilotWithPrompt}
         />
         <main>
           {(error || dashboard.error) && (
@@ -168,6 +186,19 @@ export default function App() {
           </footer>
         </main>
       </div>
+      <CopilotDrawer
+        open={copilotOpen}
+        summary={copilotContext}
+        draftPrompt={copilotPrompt}
+        onClearDraft={() => {
+          setCopilotPrompt("");
+        }}
+        onToggle={toggleCopilot}
+        onClose={closeCopilot}
+        onConversation={setConversationId}
+        onOpenReceipt={openReceipt}
+        onDataChanged={changed}
+      />
     </div>
   );
 }

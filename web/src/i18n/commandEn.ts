@@ -8,6 +8,7 @@ export const commandEn = {
   cmdHint: "↑ ↓ Select · Enter Open · Esc Close",
   cmdClose: "Close search",
   cmdConversation: "Start a conversation about {name}",
+  cmdCopilot: "Ask in Copilot drawer about {name}",
   cmdPrompt: "Inspect {name} ({kind}: {id})",
   cmdPrefilled: "Draft message · send when ready",
 };

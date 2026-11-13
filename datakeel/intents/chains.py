@@ -19,9 +19,12 @@ from datakeel.actions.parameters import PARAMETER_TYPES
 from datakeel.core.errors import DatakeelError, ValidationError
 from datakeel.core.intent_models import ActionChain, ChainStep
 from datakeel.core.models import JsonDocument, LineageEvent, new_id, utcnow
+from datakeel.intents.chain_replan import replan_chain
 from datakeel.storage.action_store import get_plan
 from datakeel.storage.database import Database
 from datakeel.storage.intent_chains import claim_chain, plan_runs, save_chain
+
+__all__ = ["TargetState", "advance_chain", "receipt_outputs", "replan_chain", "resolve_refs"]
 
 TargetState = Literal["done", "waiting", "running", "failed"]
 

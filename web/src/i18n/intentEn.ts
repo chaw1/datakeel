@@ -33,6 +33,13 @@ export const intentEn = {
   chainResume: "Resume",
   chainContinue: "Continue",
   chainAllDone: "All steps are done.",
+  chainDeferredCount:
+    "{count} follow-up {count, plural, one {step waits} other {steps wait}} on this change",
+  chainPlanRemaining: "Plan remaining steps",
+  chainReplanCurrent: "Replan from current state",
+  chainReplanning: "Planning…",
+  chainReplannedReady:
+    "Updated plan ready below. Nothing runs until you confirm.",
   chainSignatureHint:
     "This step waits in the approval queue. Sign it here or on the Approvals page; the chain then continues.",
   productionDraftLabelSet: "draft label set and guidelines",

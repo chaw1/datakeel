@@ -9,7 +9,7 @@ from rich.console import Console
 
 from datakeel.cli.parsers import CommandGroup
 from datakeel.core.intent_models import PageContext
-from datakeel.intents.chains import advance_chain
+from datakeel.intents.chains import advance_chain, replan_chain
 from datakeel.intents.planner import PlannerTurn, plan_turn
 from datakeel.storage.database import Database
 from datakeel.storage.intent_chains import get_chain
@@ -24,7 +24,7 @@ def register_parser(commands: CommandGroup) -> None:
     for name in ("dataset", "version", "project", "package"):
         plan.add_argument(f"--{name}")
     plan.add_argument("--actor", default="local")
-    for command in ("show", "run"):
+    for command in ("show", "run", "replan"):
         sub = subcommands.add_parser(command)
         sub.add_argument("chain_id")
         sub.add_argument("--actor", default="local")
@@ -42,6 +42,10 @@ def dispatch(db: Database, args: argparse.Namespace) -> None:
         )
         result = plan_turn(db, PlannerTurn(text=args.text, actor=args.actor, context=context))
         console.print(result.model_dump_json(indent=2) if result else "null", markup=False)
+        return
+    if args.intents_command == "replan":
+        result = replan_chain(db, args.chain_id, args.actor)
+        console.print(result.model_dump_json(indent=2), markup=False)
         return
     chain = (
         get_chain(db, args.chain_id, actor=args.actor)

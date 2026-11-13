@@ -7,8 +7,8 @@ from fastapi import APIRouter, Request
 
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.api.identity_access import http_actor
-from datakeel.core.intent_models import ActionChain
-from datakeel.intents.chains import advance_chain
+from datakeel.core.intent_models import ActionChain, ChainReplanRequest, IntentResult
+from datakeel.intents.chains import advance_chain, replan_chain
 from datakeel.storage.intent_chains import get_chain
 
 router = APIRouter(prefix="/api/intents", tags=["intents"])
@@ -29,3 +29,19 @@ def run_chain(chain_id: str, db: DatabaseDependency, request: Request) -> Action
     that already executed are never run again.
     """
     return advance_chain(db, chain_id, http_actor(request))
+
+
+@router.post("/chains/{chain_id}/replan")
+def replan(
+    chain_id: str,
+    db: DatabaseDependency,
+    request: Request,
+    body: ChainReplanRequest | None = None,
+) -> IntentResult:
+    """Plan deferred suffix steps or replan failed steps against the live database."""
+    return replan_chain(
+        db,
+        chain_id,
+        http_actor(request),
+        context=body.context if body is not None else None,
+    )

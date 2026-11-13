@@ -71,3 +71,9 @@
 - **零依赖校样 UI 原语（`web/src/components/ui/` + [ui.css](../../web/src/styles/ui.css)）**：提供 `Button`（`secondary`/`primary`/`danger`/`ghost`/`link`）、`Select`、`Input`、`Badge`（`neutral`/`accent`/`ok`/`warn`/`danger`/`stamp`）、`Surface`（`sheet`/`paper`/`ledger`）、`PageHeader`、`SegmentedTabs` 与 `EmptyState`，保证原生控件 `:where(...)` 基线重置、`button` 字号始终保持正文无衬线字体（`< 18px`）且不引入外部 UI 组件库或样式传参泄露。
 - **可折叠分组侧边栏与 `48px` 紧凑顶栏（[Sidebar.tsx](../../web/src/app/Sidebar.tsx)、[useSidebarState.ts](../../web/src/app/useSidebarState.ts)）**：默认全展开保持既有导航可达性，支持顶栏按钮或 `⌘B` / `Ctrl+B` 折叠为 `64px` 图标窄栏、按分组折叠并持久记忆至 `localStorage`，路由跳转至已折叠分组时自动展开所属分组；`.topbar` 固定吸顶且压缩至 `48px`。
 - **多级可点击面包屑与服务端身份徽章（[Breadcrumbs.tsx](../../web/src/app/Breadcrumbs.tsx)、[ActorBadge.tsx](../../web/src/app/ActorBadge.tsx)）**：面包屑展示工作区、导航分组/对象父级（数据库/数据目录/数据标准/运行记录）、对象类型、当前页及对象页签，`runs?type=...` 与对象详情可点击逐级回退；顶栏身份徽章由 `GET /api/production/workbench` 验证服务端 `actor` 与有效权限（`本地模式` / `管理员` / `{N} 项权限` / `只读`）。
+
+## 8. 全局上下文副驾与动作链续规划（Copilot & Chain Replan）
+
+- **全局右侧副驾抽屉（[CopilotDrawer.tsx](../../web/src/features/copilot/CopilotDrawer.tsx)、[copilot.css](../../web/src/styles/copilot.css)）**：通过顶栏按钮或 `⌘J` / `Ctrl+J` 在任意页面唤起 `420px` 校样侧栏（移动端全宽），保留 `⌘K` / `Ctrl+K` 给快速搜索、`⌘B` / `Ctrl+B` 给侧边栏折叠；从搜索结果页脚也可直接将对象提示转入副驾。
+- **实时视图上下文与懒加载会话（[pageContext.ts](../../web/src/features/copilot/pageContext.ts)、[useCopilotSession.ts](../../web/src/features/copilot/useCopilotSession.ts)、[CopilotContextBar.tsx](../../web/src/features/copilot/CopilotContextBar.tsx)）**：依据当前路由与所选对象实时推导 `PageContext` 芯片并支持一键暂停/恢复附带；侧栏关闭时不发起任何网络请求，打开时也不预建空会话，仅在首次发送消息时创建会话并透传上下文。
+- **动作链续规划与失败重规划（[ChainReplanBar.tsx](../../web/src/features/agent/ChainReplanBar.tsx)、`POST /api/intents/chains/{id}/replan`、`datakeel intents replan`）**：对存在状态依赖延迟步骤（`deferred_steps`）的已完成动作链提供「规划剩余步骤」，对失败动作链提供「按当前状态重新规划」（复用已完成步骤输出 `$ref` 并在实时数据库上重估选择器），始终先生成未执行的 `planned` 新动作链供人工确认。

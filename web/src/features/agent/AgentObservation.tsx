@@ -5,6 +5,7 @@ import { PlanCard } from "../actions/PlanCard";
 import { AgentRouting } from "./AgentRouting";
 import { IntentCard } from "./IntentCard";
 
+import type { PageContext } from "../../api/intents";
 import type { AgentEvent } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 import type { MessageKey } from "../../i18n/en";
@@ -25,6 +26,7 @@ export function AgentObservation({
   event,
   dryRun,
   busy,
+  context,
   onResolved,
   onOpenReceipt,
   receiptVisible = true,
@@ -35,6 +37,7 @@ export function AgentObservation({
   event: AgentEvent;
   dryRun: boolean;
   busy: boolean;
+  context?: PageContext;
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
@@ -50,6 +53,7 @@ export function AgentObservation({
       <IntentCard
         intent={event.intent}
         busy={busy}
+        context={context}
         onReply={onReply}
         onResolved={onResolved}
         onOpenReceipt={onOpenReceipt}

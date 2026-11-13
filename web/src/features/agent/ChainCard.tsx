@@ -8,9 +8,15 @@ import { PlanCard } from "../actions/PlanCard";
 import { approvalActions } from "../approvals/approvalActions";
 import { money } from "../traces/format";
 
+import { ChainReplanBar } from "./ChainReplanBar";
 import { LabelDraftEditor } from "./LabelDraftEditor";
 
-import type { ActionChain, ChainStep } from "../../api/intents";
+import type {
+  ActionChain,
+  ChainStep,
+  IntentResult,
+  PageContext,
+} from "../../api/intents";
 import type { ActionPlan, ActionRun } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 import type { MessageKey } from "../../i18n/en";
@@ -77,11 +83,17 @@ function useWaitingPlan(chain: ActionChain) {
 export function ChainCard({
   initial,
   busy,
+  hasContinuation = false,
+  context,
+  onReplanned,
   onResolved,
   onOpenReceipt,
 }: {
   initial: ActionChain;
   busy: boolean;
+  hasContinuation?: boolean;
+  context?: PageContext;
+  onReplanned?: (result: IntentResult) => void;
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
@@ -251,9 +263,22 @@ export function ChainCard({
           </button>
         </div>
       ) : (
-        <p role="status" className="chain-done">
-          {t("chainAllDone")}
-        </p>
+        (!(chain.deferred_steps?.length ?? 0) || !onReplanned) && (
+          <p role="status" className="chain-done">
+            {t("chainAllDone")}
+          </p>
+        )
+      )}
+      {onReplanned && (
+        <ChainReplanBar
+          chain={chain}
+          busy={busy}
+          running={running}
+          hasContinuation={hasContinuation}
+          context={context}
+          onReplanned={onReplanned}
+          onError={setError}
+        />
       )}
     </section>
   );

@@ -234,3 +234,21 @@ it.each([
     );
   },
 );
+
+it("hands off the selected object prompt to the Copilot drawer when configured", async () => {
+  const onOpenCopilot = vi.fn();
+  render(<CommandPalette onOpenCopilot={onOpenCopilot} />);
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Search objects" }));
+  await screen.findAllByRole("option");
+  await userEvent.setup().click(
+    screen.getByRole("button", {
+      name: "Ask in Copilot drawer about dataset result",
+    }),
+  );
+  expect(onOpenCopilot).toHaveBeenCalledWith(
+    expect.stringContaining("dataset/object-0"),
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});

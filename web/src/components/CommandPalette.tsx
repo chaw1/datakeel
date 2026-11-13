@@ -9,6 +9,7 @@ import { shortId } from "../lib/format";
 import { useCompositionGuard } from "../lib/useCompositionGuard";
 import { useResource } from "../lib/useResource";
 
+import { CommandPaletteFooter } from "./CommandPaletteFooter";
 import { Icon } from "./Icon";
 import { ResourceState } from "./ResourceState";
 import "./command-palette.css";
@@ -22,8 +23,10 @@ const identity =
 
 export function CommandPalette({
   onNavigate,
+  onOpenCopilot,
 }: {
   onNavigate?: (href: string) => void;
+  onOpenCopilot?: (prompt: string) => void;
 }) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
@@ -62,8 +65,8 @@ export function CommandPalette({
       }),
     );
   }
-  function startConversation(item: SearchResult) {
-    const prompt = t("cmdPrompt", {
+  function objectPrompt(item: SearchResult) {
+    return t("cmdPrompt", {
       name: localizedObjectName(
         item.kind,
         item.name,
@@ -73,9 +76,16 @@ export function CommandPalette({
       kind: t(kindLabels[item.kind]),
       id: item.id,
     });
+  }
+  function startConversation(item: SearchResult) {
+    const prompt = objectPrompt(item);
     navigate(
       `#/agent?${new URLSearchParams({ prompt, ...(item.dataset_id ? { dataset: item.dataset_id } : {}) })}`,
     );
+  }
+  function askInCopilot(item: SearchResult) {
+    setOpen(false);
+    onOpenCopilot?.(objectPrompt(item));
   }
   useEffect(() => {
     const key = (event: globalThis.KeyboardEvent) => {
@@ -269,26 +279,11 @@ export function CommandPalette({
             {!resource.loading && !items.length && (
               <p className="empty-state">{t("cmdEmpty")}</p>
             )}
-            <footer>
-              {selected && (
-                <button
-                  className="text-button command-chat"
-                  onClick={() => {
-                    startConversation(selected);
-                  }}
-                >
-                  {t("cmdConversation", {
-                    name: localizedObjectName(
-                      selected.kind,
-                      selected.name,
-                      locale,
-                      selected.english_name,
-                    ),
-                  })}
-                </button>
-              )}
-              <p>{t("cmdHint")}</p>
-            </footer>
+            <CommandPaletteFooter
+              selected={selected}
+              onStartConversation={startConversation}
+              onOpenCopilot={onOpenCopilot ? askInCopilot : undefined}
+            />
           </dialog>
         </div>
       )}

@@ -7,18 +7,10 @@ from typing import Literal
 
 from pydantic import Field, JsonValue
 
+from datakeel.core.intent_models import DraftStep
 from datakeel.core.models import BoundaryModel
 
-
-class DraftStep(BoundaryModel):
-    """One proposed action or read call; values may still be names or references."""
-
-    id: str = Field(min_length=1, max_length=20)
-    action: str = Field(min_length=1, max_length=100)
-    params: dict[str, JsonValue] = Field(default_factory=dict)
-    # The person's own words for each identity value, so a translated or abbreviated name
-    # still counts as named (checked against the sentence, never trusted blindly).
-    said: dict[str, str] = Field(default_factory=dict[str, str])
+__all__ = ["DraftStep", "IntentDraft", "SkippedPart", "language_of", "skipped_parts"]
 
 
 class SkippedPart(BoundaryModel):
@@ -59,6 +51,8 @@ class IntentDraft(BoundaryModel):
     confident: bool = False
     # Parts of the request no step covers: each is reported, never dropped silently.
     skipped: list[SkippedPart] = Field(default_factory=list[SkippedPart], max_length=10)
+    # State-dependent suffix deferred until earlier steps finish, kept for one-click continuation.
+    deferred: list[DraftStep] = Field(default_factory=list[DraftStep], max_length=50)
 
 
 def language_of(text: str) -> Literal["zh", "en"]:

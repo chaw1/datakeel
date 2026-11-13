@@ -5,6 +5,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { AgentMemoryUsage } from "./AgentMemoryUsage";
 import { AgentSteps } from "./AgentSteps";
 
+import type { PageContext } from "../../api/intents";
 import type { AgentEvent, Conversation } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
@@ -12,6 +13,7 @@ export function ConversationTranscript({
   conversation,
   live,
   busy,
+  context,
   onResolved,
   onOpenReceipt,
   onReply,
@@ -19,6 +21,7 @@ export function ConversationTranscript({
   conversation: Conversation;
   live: { content: string; events: AgentEvent[] };
   busy: boolean;
+  context?: PageContext;
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
   onReply?: (content: string) => void;
@@ -76,6 +79,7 @@ export function ConversationTranscript({
             events={events}
             dryRun={conversation.config.dry_run}
             busy={busy}
+            context={context}
             onResolved={onResolved}
             onOpenReceipt={onOpenReceipt}
             onReply={onReply}

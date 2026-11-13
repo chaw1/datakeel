@@ -146,6 +146,26 @@
   font-size: var(--font-xs);
   font-family: var(--font-body);
 }
+.chain-replan-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--space) * 2.5);
+  margin-top: calc(var(--space) * 3);
+  padding-top: calc(var(--space) * 2.5);
+  border-top: var(--border-hairline);
+}
+.chain-deferred-note,
+.chain-replan-ready {
+  margin: calc(var(--space) * 2) 0 0;
+  font-family: var(--font-body);
+}
+.chain-continuation {
+  margin-top: calc(var(--space) * 3);
+  padding-left: calc(var(--space) * 3);
+  border-left: 2px solid var(--pencil);
+}
 .label-draft {
   margin-top: calc(var(--space) * 3);
   font-family: var(--font-body);

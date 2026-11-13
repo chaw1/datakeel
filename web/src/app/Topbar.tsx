@@ -1,5 +1,6 @@
 import { CommandPalette } from "../components/CommandPalette";
 import { Select } from "../components/ui";
+import { CopilotTrigger } from "../features/copilot/CopilotTrigger";
 import { useI18n } from "../i18n/useI18n";
 
 import { ActorBadge } from "./ActorBadge";
@@ -21,6 +22,9 @@ export function Topbar({
   objectTab,
   params,
   identity,
+  copilotOpen = false,
+  onToggleCopilot,
+  onOpenCopilot,
 }: {
   page: Page;
   navigate: (page: Page) => void;
@@ -30,6 +34,9 @@ export function Topbar({
   objectTab?: ObjectTab;
   params?: URLSearchParams;
   identity?: ActorIdentity;
+  copilotOpen?: boolean;
+  onToggleCopilot?: () => void;
+  onOpenCopilot?: (prompt: string) => void;
 }) {
   const { t, locale, setLocale } = useI18n();
   return (
@@ -44,7 +51,10 @@ export function Topbar({
         params={params}
       />
       <div className="topbar-right">
-        <CommandPalette />
+        <CommandPalette onOpenCopilot={onOpenCopilot} />
+        {onToggleCopilot && (
+          <CopilotTrigger open={copilotOpen} onToggle={onToggleCopilot} />
+        )}
         <ActorBadge identity={identity} />
         <PaletteControl />
         <ThemeControl />

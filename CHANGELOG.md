@@ -6,6 +6,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Action-chain continuation and live-DB replanning (`POST /api/intents/chains/{chain_id}/replan`, `datakeel intents replan`, `replan_chain`), planning state-dependent `deferred_steps` after `succeeded` prerequisite steps and replanning unexecuted steps on `failed` chains while substituting completed step `$ref` outputs without re-running finished work.
+- Global right-side proofreading Copilot drawer (`⌘J` / `Ctrl+J`, topbar `CopilotTrigger`, and `CommandPalette` handoff) with toggleable live `PageContext` chips (`CopilotContextBar`), zero background requests while closed, lazy session creation on send, and inline `ChainReplanBar` actions inside `IntentCard` / `ChainCard`.
 - Collapsible navigation sidebar rail (`⌘B` / `Ctrl+B`) and per-group collapse state persisted in `localStorage`, auto-expanding on hash route changes (`Sidebar`, `useSidebarState`).
 - Compact sticky `48px` topbar with multi-level clickable breadcrumbs (`Breadcrumbs`) and server-verified actor/role badge (`ActorBadge`, `useActorIdentity`).
 - Design System v2 foundation for the web workspace (`web/src/components/ui/`, `web/src/styles/ui.css`, `web/src/styles/tokens.css`): structural radius, control-height, border, elevation, layer, and motion tokens plus zero-dependency UI primitives (`Button`, `Select`, `Input`, `Badge`, `Surface`, `PageHeader`, `SegmentedTabs`, `EmptyState`), adopted in the topbar, `StateBadge`, `WorkbenchPage`, `LibraryPage`, `DatasetWorkspace`, `ApprovalsPage`, and `RunsPage`.

@@ -9,11 +9,13 @@ export function MessageComposer({
   busy,
   onSend,
   initialContent = "",
+  inputId = "agent-message",
 }: {
   disabled: boolean;
   busy: boolean;
   onSend: (content: string) => void;
   initialContent?: string;
+  inputId?: string;
 }) {
   const { t } = useI18n();
   const [content, setContent] = useState(initialContent);
@@ -28,11 +30,11 @@ export function MessageComposer({
         setContent("");
       }}
     >
-      <label className="sr-only" htmlFor="agent-message">
+      <label className="sr-only" htmlFor={inputId}>
         {t("messageInput")}
       </label>
       <textarea
-        id="agent-message"
+        id={inputId}
         value={content}
         disabled={disabled || busy}
         maxLength={80000}
