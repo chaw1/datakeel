@@ -4,6 +4,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-11-14
+
 ### Added
 
 - Action-chain continuation and live-DB replanning (`POST /api/intents/chains/{chain_id}/replan`, `datakeel intents replan`, `replan_chain`), planning state-dependent `deferred_steps` after `succeeded` prerequisite steps and replanning unexecuted steps on `failed` chains while substituting completed step `$ref` outputs without re-running finished work.
