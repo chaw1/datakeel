@@ -4,6 +4,18 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- Bilingual documentation hubs ([`docs/README.md`](docs/README.md), [`docs/README.zh.md`](docs/README.zh.md)) indexing all repository guides, alongside extracted API/pipeline references ([`docs/API_REFERENCE.md`](docs/API_REFERENCE.md), [`docs/API_REFERENCE.zh.md`](docs/API_REFERENCE.zh.md)) and offline evaluation/gate references ([`docs/VERIFICATION.md`](docs/VERIFICATION.md), [`docs/VERIFICATION.zh.md`](docs/VERIFICATION.zh.md)).
+- Community and package metadata: [`SUPPORT.md`](SUPPORT.md), [`CITATION.cff`](CITATION.cff), [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml), and PEP 639-compatible `authors`, `keywords`, `classifiers`, and `[project.urls]` in [`pyproject.toml`](pyproject.toml).
+- Loopback-only local PostgreSQL stack in [`compose.yaml`](compose.yaml) (documented in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and [`docs/DEPLOYMENT.zh.md`](docs/DEPLOYMENT.zh.md)) and a tag-triggered GitHub Release workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)) attaching the verified wheel, hashed requirements, notices, and `SHA256SUMS.txt` without publishing to PyPI or container registries.
+- Repository open-source hygiene regression tests in [`tests/test_oss_repository.py`](tests/test_oss_repository.py) checking relative links across documentation hubs, package metadata compliance, loopback Compose boundaries, and release-workflow restrictions.
+
+### Changed
+
+- Restructured [`README.md`](README.md) and [`README.zh.md`](README.zh.md) into scannable bilingual open-source entry points while keeping all verified CLI, MCP, architecture SVG, local Docker, and `export-traces` contracts intact.
+- Synchronized [`docs/BACKLOG.md`](docs/BACKLOG.md) with implemented v0.19.0–v0.26.0 items and removed the standalone historical acceptance memo `docs/P32B-ACCEPTANCE.md`.
+
 ## [0.26.0] - 2026-11-14
 
 ### Added

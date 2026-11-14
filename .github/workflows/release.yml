@@ -1,0 +1,101 @@
+name: Release artifacts
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build verified wheel and GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup
+        with:
+          license-wheels: 'true'
+
+      - name: Public content scan
+        run: make check-public
+
+      - name: Verify frontend bundle hash matches source
+        working-directory: web
+        run: npm run check:source
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          uv run --no-sync python - <<'PY'
+          import os
+          import pathlib
+          import tomllib
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+          expected = f"v{version}"
+          actual = os.environ["GITHUB_REF_NAME"]
+          if actual != expected:
+              raise SystemExit(f"Tag {actual} does not match pyproject.toml version {expected}")
+          PY
+
+      - name: Build verified local wheel and hashed requirements
+        run: make build-wheel
+
+      - name: Package release notices, checksums and changelog notes
+        run: |
+          cp THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md
+          (
+            cd dist
+            wheel=$(ls datakeel-*.whl)
+            sha256sum "$wheel" requirements.txt THIRD_PARTY_NOTICES.md > SHA256SUMS.txt
+          )
+          uv run --no-sync python - <<'PY'
+          import os
+          import pathlib
+          import re
+          import tomllib
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+          ref_name = os.environ.get("GITHUB_REF_NAME", "")
+          target = ref_name[1:] if ref_name.startswith("v") else version
+          changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          pattern = rf"^## \[{re.escape(target)}\][^\n]*\n(.*?)(?=^## \[|\Z)"
+          match = re.search(pattern, changelog, flags=re.MULTILINE | re.DOTALL)
+          notes = match.group(1).strip() if match else f"Release v{target}."
+          pathlib.Path("dist/RELEASE_NOTES.md").write_text(notes + "\n", encoding="utf-8")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            dist/datakeel-*.whl
+            dist/requirements.txt
+            dist/THIRD_PARTY_NOTICES.md
+            dist/SHA256SUMS.txt
+            dist/RELEASE_NOTES.md
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" \
+              dist/datakeel-*.whl \
+              dist/requirements.txt \
+              dist/THIRD_PARTY_NOTICES.md \
+              dist/SHA256SUMS.txt \
+              --verify-tag \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file dist/RELEASE_NOTES.md
+          fi

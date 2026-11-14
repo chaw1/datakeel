@@ -5,6 +5,32 @@ description = "A small, observable data platform from files to trustworthy datas
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
+authors = [
+  { name = "Datakeel Contributors" },
+]
+keywords = [
+  "ai-datasets",
+  "data-catalog",
+  "data-governance",
+  "data-lineage",
+  "data-quality",
+  "mcp",
+  "multimodal",
+  "semantic-layer",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Framework :: FastAPI",
+  "Framework :: Pydantic :: 2",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Database",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
+]
 dependencies = [
   "fastapi>=0.115,<1",
   "uvicorn>=0.30,<1",
@@ -32,6 +58,13 @@ dependencies = [
   "opentelemetry-sdk==1.45.1",
   "opentelemetry-exporter-otlp-proto-http==1.45.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/chaw1/datakeel"
+Documentation = "https://github.com/chaw1/datakeel/blob/main/docs/README.md"
+Repository = "https://github.com/chaw1/datakeel.git"
+Issues = "https://github.com/chaw1/datakeel/issues"
+Changelog = "https://github.com/chaw1/datakeel/blob/main/CHANGELOG.md"
 
 [project.scripts]
 datakeel = "datakeel.cli:main"

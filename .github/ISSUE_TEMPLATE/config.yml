@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability / 安全漏洞私密报告
+    url: https://github.com/chaw1/datakeel/security/advisories/new
+    about: Report suspected vulnerabilities privately instead of opening a public issue. / 疑似漏洞请私下报告，切勿公开提交。
+  - name: Documentation & 10-minute tour / 文档中心与十分钟导览
+    url: https://github.com/chaw1/datakeel/blob/main/docs/README.md
+    about: Browse setup guides, API references, and the offline walkthrough before asking a usage question. / 提问前可先查阅上手指南、接口文档与离线导览。

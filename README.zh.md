@@ -1,384 +1,89 @@
+<img src="web/public/favicon.svg" width="42" height="42" alt="Datakeel" align="left" />
+
 # Datakeel
 
-管理文件版本、检查证据，并基于登记指标回答业务问题；结果可追溯，变更走受控动作。
+**可审计的本地优先数据与 AI 数据集工作台 —— 统一多模态样本证据校样、企业指标可追溯问数与受控 Agent/MCP 动作。**
 
-[十分钟导览](docs/DEMO.md) · [Ten-minute tour](docs/DEMO.en.md)
+[![Quality gates](https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg)](https://github.com/chaw1/datakeel/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/chaw1/datakeel)](https://github.com/chaw1/datakeel/releases)
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12+-2459A8.svg)](pyproject.toml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-2459A8.svg)](LICENSE)
 
-[数据标准](docs/STANDARDS.md) 支持字段标准与码表、可解释的规则映射建议、已确认字段的落标检查和覆盖率。标准变更与映射确认均须人工签批。
+[English](README.md) · 简体中文 · [十分钟导览](docs/DEMO.md) · [文档中心](docs/README.zh.md) · [接口参考](docs/API_REFERENCE.zh.md) · [架构决策](docs/ARCHITECTURE.md) · [部署指南](docs/DEPLOYMENT.zh.md) · [更新日志](CHANGELOG.md)
 
-```bash
-uv sync
-uv run datakeel demo
-# 页面：http://127.0.0.1:8765
-# API：http://127.0.0.1:8765/api/docs
-# Ctrl+C 停止 API 和 worker
-uv run datakeel export --format openlineage --output events.json
-uv run datakeel export --format croissant --output croissant.json
-uv run pytest
-uv run ruff check .
-uv run pyright
-```
-
-[English](README.md) · [架构](docs/ARCHITECTURE.md) · [代码规范](docs/CODE_STANDARDS.md) · [受控动作](docs/ACTIONS.md) · [部署指南](docs/DEPLOYMENT.zh.md) · [更新日志](CHANGELOG.md)
+---
 
 ## 校样工作台
 
 ![证据工作台中文浅色界面](docs/images/ui-evidence-zh.png)
 
-界面按工作台、数据、证据与质量、操作、智能体、模型分成六组。工作台集中展示待签批、运行中流水线、最近动作及数据集质量告警。八类对象共用档案模板，包含事实、关系、证据与历史；事实数字可直接追到来源。同名动作合并成可展开的 ×N 档案卡，局部图最多显示 25 个节点。
+Datakeel 将数据工程与 AI 数据集研发流程组织在六个导航分组中：**工作台、数据、证据与质量、操作、智能体、模型**。八类对象共用统一档案视图（事实、关系、证据与历史），界面上每一处事实数字都可直接追溯到来源：
 
-英文界面的对象标题、面包屑、搜索结果、签批单和关系卡片使用一致的目录英文名；没有英文译名时保留原名。
+- **三态证据与交互锚点**：严格区分「有（`present`）」「无（`absent`）」与「未知（`unknown`）」（圆点表示尚无断言）；支持 `j`/`k`、`a`/`r` 与 `Esc` 快捷键联动高亮文本下划线、概念行与图像标注框，同时将机器证据与人工审核决定分开记录。
+- **来源脚注与签批单**：问数结果绑定指标定义版本、负责人、带参数 SQL、来源字段与时间区间；不可逆或外发变更必须在显式签批单确认冻结参数、影响面与摘要后才能执行。
+- **全局速查与校样副驾**：按 `⌘K / Ctrl+K` 搜索数据集、文件、版本、动作、表、字段、指标和术语（完整 UUID 截取前八位展示，业务 ID 完整保留），或按 `⌘J / Ctrl+J` 唤起右侧上下文副驾并查看/续规划动作链。
+- **开箱离线界面**：内置中英双语与三套对比度验证色板（双铅笔 `pencil`、赭石 `ochre`、石墨 `graphite`），本地打包 OFL 字体及许可声明（[第三方许可](web/public/THIRD-PARTY-LICENSES.txt)），演示模式不访问任何外部域名。
 
-目录对象以及指标、维度、术语定义支持可选 `english_name`；负责人显示元数据单独写在 [`owners.yaml`](contracts/semantic-layer/owners.yaml)，按原负责人名称关联。英文界面优先采用该字段，省略时沿用既有名称回退。对象 ID 仅在完整 UUID 时截取前八位，`retail_revenue` 等业务 ID 完整显示，复制始终使用完整身份。
+---
 
-- **三态标记**区分有、无、未知；圆点表示尚无断言。审核状态与证据值分别显示。
-- **证据锚点**把 caption 下划线与上标、同编号概念行和图像框连在一起，悬停会同步描边。1440×900 下首屏可看完整六个样本；详情抽屉支持 j/k 切换断言、a/r 采纳或驳回、Esc 关闭，输入法组字期间不触发业务快捷键。
-- **来源脚注**合并重复的抽取器与版本出处；问数结果指向指标、SQL、来源字段及时间区间。澄清候选携带所选指标重新回答原问题，不可答时说明缺失的信息。
-- **签批单**列出冻结对象、影响面、外发、可逆性、摘要、有效期和签批人。不可逆操作用红框提示并要求明确签批；参数变化后原单作废，执行结果可追到回执。
+## 核心设计保证
 
-按 **⌘K / Ctrl+K** 搜索数据集、文件、版本、动作、表、字段、指标和术语；粘贴唯一 UUID 或前八位可直达对象档案。“就此对象发起对话”只预填草稿，不会直接执行。顶栏可切换中英文与浅色、深色、跟随系统。拉丁字体 Source Serif 4（600/700）和 Source Code Pro（400/500）本地打包，[OFL 许可声明](web/public/THIRD-PARTY-LICENSES.txt)随包发布；正文使用系统黑体栈，中文衬线标题回落系统宋体。demo 页面不访问外部域名。
+- **不可变版本与可追溯数值**：文件版本冻结 SHA-256 清单；企业问数仅从已登记指标 YAML 编译只读参数化 `SELECT` 查询，采用半开时间区间，遇未登记概念或歧义口径返回 `unanswerable` / `clarification` 而绝不编造数字；七章数据集说明书要求逐句引用冻结事实。
+- **诚实表达未知证据**：缺失标注或附属文件保持 `unknown` 而非误判为不存在；图片质量、点云清洗、近重复哈希与知识图谱抽取均保留完整溯源记录。
+- **冻结计划与人工签批兜底**：所有状态变更先生成带摘要、有效期、影响范围与可逆性标识的计划；内置 LangGraph 智能体与 FastMCP 服务端只能准备计划，无法自行审批或执行不可逆操作。
+- **本地优先并支持小团队扩展**：默认使用 SQLite + 本地目录，Python 包内嵌编译好的 React 界面；需要时可切换 PostgreSQL + S3、接入认证反向代理（[部署指南](docs/DEPLOYMENT.zh.md)），并启用可选 Rust 加速扩展（`datakeel-accel`）。
 
-对独立的本机 demo 重现截图矩阵：
+---
 
-```bash
-cd web
-npm ci
-npm run screenshots -- http://127.0.0.1:8765
-# 13 页 × 中英文 × 浅深色 → 仓库根目录 artifacts/screenshots/
-cd ..
-```
+## 快速上手
 
-脚本固定浏览器时钟，逐页记录 console 错误。UI 冒烟还会执行受控变更，每轮使用新的 demo 数据目录启动，再在第二个终端从仓库根目录执行：
+安装 [uv](https://docs.astral.sh/uv/getting-started/installation/) 后，在仓库根目录执行两条命令即可启动离线演示（`.python-version` 自动选择 Python 3.12，无需 Node、Docker、外部数据库或模型密钥）：
 
 ```bash
-DATAKEEL_HOME="$(mktemp -d)" uv run datakeel demo --port 8773
-# 第二个终端：
-npm --prefix web run smoke:ui -- http://127.0.0.1:8773
-# 截图和报告 → 仓库根目录 artifacts/ui-smoke/
+uv sync --locked
+uv run datakeel demo
+# Web 界面：http://127.0.0.1:8765
+# API 文档：http://127.0.0.1:8765/api/docs
+# 按 Ctrl+C 同时停止 API 与 worker 进程
 ```
 
-两个脚本均可在 demo URL 后指定输出目录。完整开发门禁见[代码规范](docs/CODE_STANDARDS.md)，审批与执行规则见[受控动作说明](docs/ACTIONS.md)。
+`demo` 会启动本机 `api` 与 `worker` 进程，并导入确定性本地样例：
+- **Field notes · generated demo**：200 张 PNG 与 200 份文本，经过 11 个算子生成 2 个不可变版本；
+- **Paired scenes · evidence demo**：1,000 个图像/caption/标注配对样本（含 50 处标注冲突、30 个缺失 sidecar 与 10 个损坏图像），运行 5 个确定性证据算子；
+- **Fictional Kitchen Co.**：ERP/CRM/电商/售后 4 个 SQLite 数据源（24 张表、128 个字段、13 个指标、12 个维度、32 条术语、51,992 行数据与 6 个分级数据资产）；
+- **Business notes · knowledge graph demo**：24 篇录制短文、3 篇长文及录制图片转录样例。
 
-## Quick start
-
-安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，在仓库根目录执行前两行。`.python-version` 选择 Python 3.12，uv 可自动安装。默认演示无需 Node、Docker、外部服务或模型配置，Python 包已包含编译后的 React 页面。
-
-演示启动 API 和 worker，创建五个文件数据集，并导入下方的企业目录。**Field notes · generated demo** 保留原来的 200 张 PNG、200 段文本和 11 个算子；两段特意生成的空文本被过滤，第二个版本留下 398 份产物，原始 400 份文件仍可下载。新增的 **Paired scenes · evidence demo** 包含 1,000 个图像/caption/标注配对样本，train 800、val 200，注入 50 处标注冲突、30 个缺失标注 sidecar 和 10 个损坏图像，由同一 worker 和 DAG 执行 5 个确定性证据算子。命令打印地址、耗时和抽取计数。再次运行复用导入数据，并增量读取证据缓存；换一个 `DATAKEEL_HOME` 可独立重跑，`demo --legacy-only` 只运行原场景。
-
-页面可切换文件版本、下载产物、点血缘节点查看事件、查看五维质量及六章报告。报告默认采用规则基线；设置 `DATAKEEL_LLM_URL` 后向指定 chat-completions 地址请求正文，2 秒超时或请求失败时回退基线，生成正文后附基线核验。
-
-默认演示还发布六个[数据资产](docs/DATA_ASSETS.md)，覆盖公开、内部、需申请和受限四种分级。打开「资产市场」搜索、查看卡片，填写用途和期限申请，经受控动作审批后使用并查看审计。演示不会预发授权；查询、导出、下载范围独立，申请与读取使用同一操作人标识（CLI/HTTP 默认 `local-user`，Agent/MCP 为 `local`）。
-
-读取涉及受保护资源时需要授权。默认演示中的全库血缘导出和未筛选的 MCP 指标列表会跳过「客户数」等受保护条目，并写明跳过数量、条目 ID 和原因；退货率问句披露的受保护相近指标会拒绝并提示申请。直接点名受保护资源时同样拒绝，申请后才能读取；按 `retail` 筛选指标、查询零售额仍可直接执行。完整审批流程见[资产导览](docs/DEMO.md#数据资产发现申请使用与审计)。
-
-## 构建本地安装产物
-
-在源码 checkout 中，`make build-wheel` 会按 lock 刷新许可声明、用 `npm ci` 安装前端审计输入、构建一个纯 Python wheel，并导出带 hash 的运行时依赖。构建需要 Python 3.12、uv、Node 和 Rust 审计工具链；运行生成的 wheel 不需要 Node。请安装到新的环境，不要借用源码目录：
-
-```bash
-make build-wheel
-python3.12 -m venv .venv-wheel
-. .venv-wheel/bin/activate
-python -m pip install dist/datakeel-*.whl
-datakeel demo
-```
-
-安装 Docker 后，`make build-image` 会构建同一个 wheel，并在非 root 本地镜像中按锁定依赖安装。该命令没有发布或远程 tag 参数：
-
-```bash
-make build-image
-docker run --rm -p 127.0.0.1:8765:8765 -v datakeel-data:/data datakeel:local
-# 打开 http://127.0.0.1:8765；按 Ctrl+C 停止容器
-```
-
-两个命令都不会上传 wheel 或镜像，也不表示已经发布到 PyPI 或 Docker Hub。
-
-## 企业目录与可追溯问数
-
-同一个 demo 还生成虚构厨电公司 **Fictional Kitchen Co.**，包含 ERP、CRM、电商、售后四个 SQLite 数据源：20 张表和 4 个视图在目录里对应 **24 个表对象、128 个字段、13 个指标、12 个维度、32 条术语**。生成器写入 51,992 行，并独立计算 `gold.json`；重跑得到相同的 SQLite `.dump` 文本与 gold 字节。SQLite 反射产生包含关系和外键引用；字段派生关系仅来自视图或用户 SQL 的解析，使用 `sqlglot` 30.24.0（MIT）。工程元数据还可从 dbt 产物、Airflow REST API v1（实时拉取或离线导出）及 OpenLineage 事件导入，详见下文。
-
-打开 **数据目录**，按数据源 → 表 → 字段浏览，查看表负责人、相邻关系及使用该表的指标。指标目录和术语表支持搜索、分页；指标卡展示口径、负责人、版本、caveats 和引用无法解析的原因。**下游影响** 显示有界的字段、表、指标、维度、术语树。**查看血缘** 打开对象档案的关系 tab，指定 `include_catalog=true`、两跳、最多 25 个可见节点；目录关系使用独立边类型，各类对象按列布局。
-
-打开 **问数**，选择 `上个季度华东区零售额是多少`。demo 固定参考时刻为 **2026-10-01T00:00:00Z**，返回 `[2026-07-01, 2026-10-01)` 的 **4,979,475 元**。答案附 `retail_revenue` 指标卡、当时的版本与负责人、口径说明、带参数 SQL、来源表字段、术语匹配高亮及血缘链接。展开 SQL 可查看绑定参数；**回放已保存答案** 读取原结果和原指标版本，不重新执行查询。不启动页面也可直接执行：
+推荐跟随 **[十分钟导览](docs/DEMO.md)** 体验完整流程，也可直接通过 CLI 运行问数与标准导出：
 
 ```bash
 uv run datakeel demo --once
 uv run datakeel ask '上个季度华东区零售额是多少' --reference-instant 2026-10-01T00:00:00Z
 uv run datakeel ask '退货率为什么上升' --reference-instant 2026-10-01T00:00:00Z
 uv run datakeel ask '上个季度营业额是多少' --reference-instant 2026-10-01T00:00:00Z
-uv run datakeel eval-ask --json
-uv run datakeel rebuild-catalog
+uv run datakeel export --format openlineage --output events.json
+uv run datakeel export --format croissant --output croissant.json
 ```
 
-各命令使用相同的 `DATAKEEL_HOME` 和数据库配置。普通 CLI 问数省略 `--reference-instant` 时使用当前时刻；demo 和评测使用固定时刻。时间范围采用半开区间，此基准下“近 30 天”为 `[2026-09-01, 2026-10-01)`。在 `eval-ask` 等未设置资产限制的夹具中，退货率等未登记概念返回 `unanswerable` 和三个相近指标；已上架资产的访问策略也约束这些候选披露。“营业额”命中冲突口径，返回 `clarification` 和候选。两种状态均不含数值答案或可执行 SQL。匹配流程是确定性的；候选 ID 重排接口与 fake provider 只用于单元测试，不进入 demo、golden 或 `eval-ask`，CLI 没有 `ask --provider` 选项。SQL 只能由编译器从登记指标生成，执行层只接受 SELECT，并强制只读连接、语句超时和行数上限。
+> 中英文问句共用同一套确定性时间解析、指标/别名规范化、维度分组与拒答护栏。详见[问数图表与多轮追问](docs/ASK.zh.md)与[HTTP API 与流水线参考](docs/API_REFERENCE.zh.md)。
 
-英文问题与中文共用同一个时间解析器和拒答护栏。月份全称或缩写加年份、`Q2 2026` / `2026 Q2` / `the second quarter of 2026`、`last|this|previous month|quarter|year`、`from … to …` 区间以及 `as of` / `at the end of`（时点语义，与“截至”一致）均按 `--reference-instant` 解析；中文另支持“第N季度”“N季度”“2026年Q3”。起点不早于基准时刻的期间一律拒答。`by|per|for each|broken down by` 加维度名走分组，`in|for` 加维度取值走筛选。维度与取值的英文别名来自语义层（`english_name`、`synonyms` 及可选的 `value_synonyms`，以已声明取值为键）。每个答案记录 `interpretation`：指标、时间范围与口径、筛选、分组及未消费片段。任何时间、筛选、分组或计算成分未被解析器消费时，返回 `clarification` 或 `unanswerable` 并指出该片段，绝不返回不带条件的数字。
+---
 
-指标匹配依次使用登记名称及别名、规范化 id 词形、保守名称前缀。`refund_amount`、`refund amount`、`refund-amount` 和 `Refund Amounts` 对应同一 id；规范化只处理大小写、分隔符及英文规则 `-s`/`-es` 复数。英文别名显式登记常用单复数拼法；登记含义或 id 词形冲突时要求澄清。`Who owns the highest refund amount?` 等目录负责人问句不执行数值 SQL；业务排名问法保留既有指标语义。
+## 核心能力矩阵
 
-### 指标 YAML 与受控变更
+| 领域 | 核心能力 | 专题文档 |
+| --- | --- | --- |
+| **多模态证据、媒体与知识图谱** | 五算子证据 DAG（图像感知哈希、caption 提及、标注、标签缺口、64 位 dHash 近重复及可选 Rust 扩展）、图像质量五项体检与 PLY/PCD 点云清洗、本机 `ffmpeg` 音视频预处理、文本与图片知识图谱、容器沙箱自定义算子 | [图片与点云质量](docs/MEDIA_QUALITY.md) · [音视频预处理](docs/MEDIA.md) · [知识图谱](docs/KG.md) · [自定义算子](docs/CUSTOM_OPERATORS.md) · [Rust 加速](docs/RUST_ACCEL.md) · [离线向量内核](docs/VECTOR_FAKE.md) |
+| **标注生产、训练集与交付** | 标签集发布与只追加修订、EXIF 自动摆正工作台、团队档驾驶舱（租约、技能派单、AI 预标注与预审）、离线标注一致性评估、带种子分层切分与泄漏检查（COCO/YOLO/HF/JSONL 导出）、大模型 SFT/偏好对试运行清洗、逐句有据说明书、可复现交付包与 `reconcile` 对账 | [生产流程](docs/PRODUCTION.zh.md) · [标注工作台](docs/ANNOTATION_WORKBENCH.zh.md) · [标注质量](docs/ANNOTATION_QA.md) · [训练集切分](docs/TRAINING.zh.md) · [大模型训练数据](docs/LLM_DATA.zh.md) · [说明书](docs/DATASHEETS.md) · [发布与交付](docs/RELEASES.zh.md) |
+| **企业目录、问数与数据治理** | SQLite 反射与 `sqlglot` 字段血缘、dbt / Airflow REST v1 / OpenLineage 导入、版本化指标 YAML（`update_metric` / `rollback_metric`）、可追溯问数与选图、可移植字段标准与码表、表质量规则监控与告警、数据资产分级与授权申请、表格时序剖析 | [问数说明](docs/ASK.zh.md) · [元数据导入](docs/METADATA_IMPORTS.md) · [数据标准](docs/STANDARDS.md) · [质量规则](docs/QUALITY_RULES.md) · [数据资产](docs/DATA_ASSETS.md) · [时序剖析](docs/TIMESERIES.md) |
+| **受控动作、智能体与工作流** | 冻结摘要签批单、基于 LangGraph 持久断点的离线 `fake-demo` 智能体、只读子 Agent 委派、canary 与提示注入拦截、脱敏跨会话记忆、Token/USD 预算、确定性 YAML 工作流、一句话多步动作链规划（试用，`⌘J`）、服务端角色与权限矩阵 | [受控动作](docs/ACTIONS.md) · [工作流](docs/WORKFLOWS.md) · [智能体与记忆](docs/AGENT.md) · [一句话做事](docs/ONE_SENTENCE.zh.md) · [身份与权限](docs/IDENTITY_ACCESS.zh.md) |
 
-[语义层](contracts/semantic-layer/metrics.yaml) 刻意区分三个口径：出货额使用 ERP 出货价、归供应链负责人；销售额使用 CRM 已入账开票金额、归财务负责人；零售额使用已完成订单实付金额、归零售运营负责人。以下简化示例遵循实际 schema；demo 仅在指标目录为空时初始化完整的指标、维度和术语文件：
+---
 
-```yaml
-metrics:
-  - id: retail_revenue
-    name: 零售额
-    synonyms: [终端零售额, 实付零售额, 营业额]
-    description: 已完成电商订单的实付金额，未冲抵后续退款。
-    owner: 零售运营负责人
-    version: 1
-    measure:
-      table: ecommerce/main/orders
-      column: ecommerce/main/orders/paid_amount
-      aggregation: sum
-    filters:
-      - column: ecommerce/main/orders/status
-        op: eq
-        value: completed
-    time:
-      column: ecommerce/main/orders/date
-      granularity: day
-    dimensions: [retail_region, retail_channel, retail_category]
-    caveats: [合成数据，金额为人民币元；出货额、销售额和零售额不可互换。]
-```
+## MCP 接入与可选模型配置
 
-`time` 必填。聚合函数允许 `sum/count/count_distinct/avg/min/max`；过滤字段名为 `op`，仅允许 `eq/ne/in/gte/lte`，只有 `in` 使用数组值。维度绑定登记 `column`，可附静态 `values`；术语通过 `means: {kind: metric|dimension|column, id: ...}` 指向对象。没有 `grain` 或 `values_source`。资产 ID 为 `source/schema/table[/column]`，SQLite 的 schema 为 `main`，名称中的分隔符及空白按段 percent-encode。引用缺失时，指标显示 `unresolved` 与原因，并拒绝执行查询。
+`uv run datakeel mcp` 提供 **102 个 FastMCP 工具**（37 个只读查询 + 65 个仅生成冻结计划的动作）。MCP 服务端不暴露签批与执行工具，`approve_plan` 或 `execute_plan` 调用一律拒绝并记入审计，最终需由人工在 Web 界面或 CLI 签批执行。
 
-目录版本是唯一权威，YAML `version` 仅作导入时的期望当前版本校验，不能覆盖历史；重跑 demo 保留已有指标修改。进入 **数据目录 → 指标 → 修改定义**，修改金额字段、过滤条件或业务描述，点 **审阅修改** 准备 `update_metric`，核对计划后再执行动作。成功回执对应一个新版本。将 `retail_revenue` 从 `paid_amount` 改为 `list_amount`，同一示例问题变为 **5,255,975 元**。其声明的 `inverse_of` 动作 `rollback_metric` 可把旧定义恢复为又一个新版本：通过 `POST /api/actions/rollback_metric/prepare` 传入 `metric_id` 和历史 `version`，再用既有动作执行接口执行返回的计划。**查看历史版本（JSON）** 链接到 [`GET /api/catalog/metrics/retail_revenue/history`](http://127.0.0.1:8765/api/catalog/metrics/retail_revenue/history)，记录含 `plan_id`、actor、前后版本。术语变更同样使用 `update_term` / `rollback_term`。
-
-源导入使用 `import_catalog` / `restore_catalog`。显式重新 prepare+execute 未变化的源时，回执显示 `unchanged`，不增加目录事件，统计包含 `parse_failures`。`rebuild-catalog` 从事件重建对象与关系边，校验含投影器版本的规范化哈希；可用 `--expected-hash` 传入此前保存的哈希。question 资产及注册谓词 `ask.answers_with`、`ask.matched_term`、`ask.unanswerable` 复用证据来源、审核和 `rebuild-evidence`；目录及 question 对象不进入文件选择 manifest。
-
-本地 dbt 产物、Airflow REST v1 实时拉取或离线导出、鉴权 OpenLineage 事件与指标草稿确认见[元数据导入说明](docs/METADATA_IMPORTS.md)。
-
-## 检查证据与选择样本
-
-打开 **证据**，选择 **Paired scenes · evidence demo**，应用示例筛选：val 中 caption 提到 `person`、没有 `annotated_as/person=present` 断言、同时存在 train 直接近重复候选的样本。未修改的生成数据返回 **47 条**，其中一条标注状态为未知。缺少标注文件不能证明图中没有行人。
-
-每行展示版本固定的缩略图、caption 高亮、标注框、紧凑断言矩阵、候选待审数、质量分（沿用文件级五维总分，0–100）和直接近重复候选。共用的来源版本只在表头显示一次，抽取器及版本出处汇总到脚注。可按概念、场景三态、标注缺口、split、质量和 train/val 候选过滤。勾选当前页条目后可 **生成版本 / 隔离所选样本 / 删除所选样本**：前两项走可逆动作并自动执行，删除停在签批单。计划冻结选中文件的 ID 与来源版本，后续断言审核不会悄悄重新选择对象；文件状态发生变化仍会使旧计划失效。
-
-详情抽屉可接受、拒绝断言或恢复为 `candidate`。`decide_assertions` 只改审核状态并追加审计，不改证据内容和来源。查询默认使用 candidate/accepted 断言；详情保留 rejected 断言供再次审核。**查看证据子图** 跳转文件档案的关系 tab，图例与边样式区分 `lineage`、`semantic` 与目录关系。
-
-来源版本已有配对样本元数据但尚未抽取时，点击 **准备运行证据抽取** 会生成绑定所示来源版本的 `run_pipeline` 计划。先查看冻结输入，再明确点击 **执行动作**；页面展示任务与动作回执，轮询进度，并在成功后刷新证据。普通文件数据集会在 **在本地生成或导入配对样本** 中说明配对要求：每个场景放在 `train/` 或 `val/` 下，图像与可选的 `caption.txt`、`annotations.json` 同目录。按页面给出的本地生成、导入命令执行，使用与服务相同的 `DATAKEEL_HOME` 和 `DATAKEEL_DATABASE_URL`；已有样本可跳过生成并修改导入目录。配对导入器保留引用关系，但不会自动抽取。刷新数据库后，在证据页选择新数据集，再准备抽取计划；缺少附属文件仍表示未知证据。
-
-五个算子为 `evidence.image_phash`、`evidence.caption_mentions`、`evidence.annotation_labels`、`evidence.label_gap`、`evidence.near_duplicate`。[词表](contracts/evidence/lexicon.yaml) 把 `pedestrian`、`行人` 及标注类别别名折叠为 canonical `person`；`night` 等场景概念同样使用 `mentions` 谓词。caption 派生状态只取 `present` 或 `unknown`，缺 sidecar 保持未知。只有 caption 提到某概念且已提供的标注文件漏标时，`label_gap` 才是 `present`；本版只有直接测量的 `corrupt` 可取 `absent`。文本锚点是 NFC 归一化后 Unicode 码点的半开区间 `[start, end)`，图像锚点是摆正后（应用 EXIF 方向）的原图像素 `xyxy`，附摆正后的宽高；v0.18.0 及以前抽出的证据怎么重抽，见[图片方向](docs/ANNOTATION_WORKBENCH.zh.md#图片方向)。
-
-[近重复合同](contracts/evidence/near_duplicate.yaml) 固定 64 位 dHash、汉明距离 ≤8。默认 `mode: prefix` 按前 4 位分桶，可能漏掉跨桶样本对；`mode: exact` 用互不重叠的多段索引找全阈值内的直接样本对，增加索引与比较成本。每个直接样本对只存一次、双向查询，不做传递扩展或自动合并。可选 `datakeel-accel` 包用 Rust 执行相同的整数比较；`DATAKEEL_ACCEL=auto|off|required` 控制实现，`auto` 未安装时回退 Python。[构建步骤、实测性能和实现报告](docs/RUST_ACCEL.md)说明具体用法。模型抽取器接口和 fake 适配器仅做单元测试，不进入抽取 DAG、证据评测或模型预算。
-
-## 图片质量与点云
-
-`image.quality` 按模糊、曝光、噪声、分辨率、纯色五项打分，并给出每项不合格的测量原因。PLY（ASCII 及大小端二进制）与 PCD（ASCII、二进制）点云可探测、清洗、体素降采样、去统计离群点、检查疑似单位错配并生成俯视 PNG 预览。结果进入五维质量评分、报告、血缘和文件对象页。运行 `uv run python scripts/demo_media.py --output <新目录>` 可离线跑通完整链路；信号、默认阈值与局限见[图片与点云质量](docs/MEDIA_QUALITY.md)。
-
-## 抽取与复核文本知识图谱
-
-演示增加 **Business notes · knowledge graph demo**：24 篇录制短文、3 篇明确标注的脚本长文，以及 1 个故意截断的样例。打开「知识图谱」，查找 `Vivo`，查看待复核关系：证据句存在，但尾实体不在原文。通过既有复核动作拒绝它，再确认图中该边变为已拒绝。原文核对和人工判断保持独立。
-
-实体保留全部提及位置；关系跨块、跨文档合并重复证据，保留抽取器和模型来源。Schema 提案只读，不自动改变合同。抽取记录展示成功、缓存、失败及未执行块。默认 replay 与 fake 脚本离线运行；外部配置须先签批冻结的目标、模型、输入和预算，worker 才能执行。Agent 与 MCP 共用 `query_kg`、`explain_relation` 和受控动作 `run_kg_extraction`；Agent 按需发现这些工具。
-
-```bash
-uv run datakeel eval-kg --json
-uv run datakeel eval-kg --profile replay-flash --json
-```
-
-报告分别给出原始录制和实际产品候选的评分、仅核对通过子集与关系过滤原因；重放不会产生模型 token 或费用。[Schema、配置、外部题集、可选本机抽取与外发威胁模型](docs/KG.md)说明如何使用自行授权的文本和模型接口。
-
-## 确定性工作流与路由
-
-打开「工作流」，选择「新数据集体检」「指标口径变更」或「低质样本清理」，核对按 schema 生成的输入表单并显式开始。运行记录保留各步骤状态、输出与失败原因。清理流程先自动隔离，删除前暂停等签批；签批后须返回运行页点「签批后继续」。可按[导览中的独立三文件数据集](docs/DEMO.md#8-跑一次低质样本清理并签批约-1-分钟)演练，不改动原来的 400 文件 demo。
-
-Agent 对话会给出匹配的工作流建议，显示模型档位及备用尝试。点击建议只打开预填表单，不自动运行。会话指定模型优先；只有 `model: auto` 按档位选择。默认 fake provider 继续离线运行。
-
-```bash
-uv run datakeel workflow list
-uv run datakeel workflow validate contracts/workflows/low-quality-cleanup.yaml
-uv run datakeel routing validate
-uv run datakeel eval-route
-```
-
-[YAML、CLI、HTTP/SSE、恢复与路由参考](docs/WORKFLOWS.md)说明合同及失败行为。单独启动 `datakeel api` 时，还须运行 `datakeel worker` 推进排队流水线。失败或断流不从中途重试，只有签批暂停可以恢复。
-
-## 离线聊天演示
-
-打开 **Agent 对话**，选择 **Field notes · generated demo**，并创建会话；UI 新会话默认使用 `fake` provider 和 `fake-demo` 模型。这是确定性的本机演示实现，不是真实语言模型。在同一个会话依次输入：
-
-1. `查找质量低于 60 分的文本文件`。
-2. `把这些文件隔离并生成新版本`：可逆动作自动执行，返回执行回执。
-3. `删除这些文件`：停在签批单。查看对象数、字节数、有效期和冻结参数后，选择 **签批并删除文件** 或 **退回**；签批仅执行一次，退回不修改文件。
-
-也可直接输入 `把质量低于 60 分的文本样本隔离并生成新版本`。搜索针对原始源文件资产，因此能选到两份空文本；派生产物有独立版本。回执可跳转血缘节点，质量页支持隔离状态筛选；审批待办、运行记录（在“运行类型”中选择“动作”）、本体浏览、Trace 与成本页展示同一套持久化事实。
-
-证据聊天另选 **Paired scenes · evidence demo** 创建会话，输入 `找出 val 里 caption 提到行人但没有 person 标注的样本，附训练集近重复`，再尝试 `解释证据`、`把这些样本生成新版本` 或 `删除这些样本`。离线 provider 调用真实 `query_evidence` 和 `explain_sample`，每次最多展示 **两条样本**，动作只绑定本次返回的 ID 与来源版本；完整结果到证据页分页查看。解释区分未知与不存在。这是限定意图的确定性演示，不是通用语言理解评测。
-
-新建会话时开启 **Dry run**，所有动作只生成计划，不执行。完整历史、工具结果、计划和回执均落库，刷新后恢复会话及最新审批状态，不会重新提交消息。内置 Agent 的模型工具列表不包含 `approve_plan` 或 `execute_plan`，人工确认由 UI 完成。
-
-Agent 使用 LangGraph，在同一 SQLite 或 PostgreSQL 数据库中同步保存 checkpoint。需要审批的计划会持久暂停，进程重启后仍可继续。人工签批后，客户端可恢复挂起计划而不追加用户消息；若已通过签批单执行，恢复时复用原回执。暂停期间发送新消息会使旧断点作废并留下审计，随后正常对话。[动作指南](docs/ACTIONS.md#resuming-a-paused-agent--恢复暂停的-agent) 说明恢复请求和签批校验。
-
-每会话/每日 token 与 USD 预算均持久化，重启不清零。默认每会话 100,000 token / 1 USD、每个 UTC 日 1,000,000 token / 10 USD，可在新建会话表单设置。远程调用前保守预占预算；trace 各段 token 之和等于实际输入，缓存读写是输入的子集。已发送请求失败且用量未知时，trace 标为 `billing_status=unknown`：观测用量保持 0，但 `accounted_tokens` 和估算成本按预占额计入预算。实际用量超限时先记账，再停止工具执行。fake 的费用来自 `contracts/model-prices.yaml` 中的测试价目，不产生真实扣费。
-
-委派工具通过 `tool_search` 加载。输入 `委派目录分析` 可运行独立子会话；嵌套步骤显示工具和 token，所有费用计入根会话。内置目录分析、证据审核和指标管理三个子 Agent，均不能准备不可逆动作。工具数据进入不可信 JSON 信封，canary 泄漏会在保存回复和执行工具前停止；注入仍可能诱导可逆动作，不可逆动作始终需要人工签批。
-
-「记忆」面板支持显式添加、数据集筛选与确认删除，写入前脱敏邮箱和电话；跨会话按相关度和衰减强度取用，当前取用条目显示在 Agent 页。删除后再开会话提同样问题，可确认不再取用。定义、参数、API 和 golden 格式见 [Agent 参考](docs/AGENT.md)。直接说「把小王手里没动的任务分给小李」，智能体会拼出一串受控动作，缺什么就问，确认后才执行。这是**试用功能**：没见过的说法大约八成能直接给出正确的计划；所有会改数据的动作都要确认后才执行，说错了取消即可；规划默认用 DeepSeek Flash、思考开。详见[一句话做事](docs/ONE_SENTENCE.zh.md)。
-
-### 可选真实 provider 配置
-
-运行时支持 OpenAI chat-completions 和 Anthropic messages。离线演示与测试不调用真实服务。将 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY` 作为仓库外环境密钥配置，再通过 `POST /api/agent/conversations` 显式设置 `provider` / `model`：`openai` / `gpt-4.1-mini`，或 `anthropic` / `claude-haiku-4-5-20251001`。这些模型列在 `contracts/model-prices.yaml`。设了密钥时，Web 新建会话用该厂商和 `model: auto`，只路由到所配接口提供的模型；没设密钥才用离线演示模型，并在页面上说明。使用 `DATAKEEL_OPENAI_BASE_URL`（通常以 `/v1` 结尾）或 `DATAKEEL_ANTHROPIC_BASE_URL`（服务根地址）覆盖地址；OpenAI 兼容地址可指向其它兼容服务，模型使用前须有价目条目。`DATAKEEL_PROVIDER_TIMEOUT` 默认 180 秒；一句话规划请求要 JSON 并走流式，推理模型想得久也不会中途超时。旧完整端点配置 `DATAKEEL_OPENAI_URL` / `DATAKEEL_ANTHROPIC_URL` 已弃用，仅再兼容一个版本，分别要求以 `/chat/completions` / `/v1/messages` 结尾；显式 BASE_URL 优先。选择真实 provider 并发送消息会发出计费请求；适配通过 LangChain chat model，仅用本机 HTTP fixture 验证协议；模型自动重试关闭。LangSmith 追踪强制关闭，即使设置 `LANGSMITH_TRACING` 或 `LANGCHAIN_TRACING_V2` 也不会启用，本版不提供追踪开关。旧的 `DATAKEEL_LLM_URL` 独立控制报告正文增强。
-
-### 用 OpenTelemetry 导出模型 trace
-
-`datakeel export-traces [--conversation-id ID]` 只读现有 trace 数据库，不 migrate、不写入，然后同步导出 OTLP/HTTP protobuf span。span 同时携带 [OpenTelemetry GenAI client-inference 语义约定](https://github.com/open-telemetry/semantic-conventions-genai/blob/16f3130892e2e02fa3f0eef72c0e6b554ff08e5c/docs/gen-ai/client-inference.md)（目前为 **Development**）和 OpenInference 属性。提示词、补全、工具 payload、对话正文、模型路由 JSON 和 exporter 凭证均不导出。run、plan 和 accounting ID 不会冒充官方会话。span 时间由持久化结算时间和 latency 重建，是近似值，不是 provider 的精确起止时间。
-
-命令使用标准 `OTEL_EXPORTER_OTLP_*` 配置。signal-specific endpoint 要包含 `/v1/traces`；通用 endpoint 由 SDK 追加该路径。只有 HTTP 200 且 `rejected_spans=0` 才算接受。所有 span 均被接受后才打印数量并成功返回；失败或部分导出返回非零。没有后台队列或导出 cursor，重复执行可能在看板中产生重复 span。
-
-```bash
-# 本地 OTLP Collector
-OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:4318/v1/traces \
-  uv run datakeel export-traces --conversation-id <id>
-
-# 本地 Phoenix（span 同时带 OpenInference 属性）
-OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:6006/v1/traces \
-  uv run datakeel export-traces --conversation-id <id>
-
-# Langfuse：通用 base endpoint，凭证只放在仓库外环境变量中
-export OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel
-export OTEL_EXPORTER_OTLP_HEADERS='Authorization=Basic <base64-public-key-secret-key>,x-langfuse-ingestion-version=4'
-uv run datakeel export-traces --conversation-id <id>
-```
-
-## 架构
-
-![Datakeel 当前架构：协议入口、应用与领域层、核心合同和事实底座](docs/images/architecture-overview.svg)
-
-数据库是事实源。版本是含 SHA-256 的文件清单快照，networkx 图由事件重建。Postgres 每次用 `FOR UPDATE SKIP LOCKED` 领取一个分片，SQLite 使用 `BEGIN IMMEDIATE` 串行领取；心跳、有限重试、租约校验和事务 outbox 防止重复终态。
-
-```text
-datakeel/
-  core/          资产与事件模型
-  semantic/      语义解析与生成快照
-  operators/     file、image、text、evidence 算子与参数 schema
-  evidence/      断言、锚点、查询和抽取合同
-  catalog/       SQLite 反射、SQL 字段血缘与目录导入
-  metrics/       YAML 指标、引用解析与只读 SQL 编译
-  ask/           确定性问数、证据与隔离评测
-  sample_enterprise/  随包提供的确定性企业数据与 gold
-  pipeline/      类型槽位校验与并行 DAG
-  quality/       五维评分与六章报告
-  lineage/       幂等事件、图投影与导出
-  governance/    模板、元数据校验与合规
-  storage/       数据库与本地/S3对象存储
-  worker/        领取、心跳、reaper、outbox
-  api/           HTTP 路由和 /admin 只读页
-  ontology/      版本化类型、对象查询、只读函数
-  actions/       冻结计划、审批、执行策略
-  agent/         会话、上下文、工具发现、打转检测与计量
-  runtime/       LangGraph 执行、LangChain 模型适配与 checkpoint saver
-  harness/       持久预算、trace、golden 评估
-  mcp/           FastMCP stdio / SSE 工具
-  cli/           demo、api、worker、migrate、export、ask、eval、eval-evidence、eval-ask、
-                 rebuild-evidence、rebuild-catalog、mcp
-web/             React + TypeScript + Vite 源码
-contracts/       算子与证据合同、指标语义层、问数及 golden 语料
-examples/        可重新生成的样例入口
-tests/           单测、集成与回归
-scripts/         快照生成与可重复验证
-docs/            架构、代码规范和使用指南
-```
-
-本体只是已有事实的接口：AssetRef 是唯一身份，版本仍用 manifest，ObjectSet 冻结对象 revision。审批绑定计划摘要且有有效期；参数或目标状态变化后执行失效。成功与失败都保留可归因的审计和血缘证据。
-
-## 独立运行与配置
-
-```bash
-uv run datakeel migrate
-uv run datakeel api --port 8765
-# 另一个终端，使用相同配置：
-uv run datakeel worker
-# 无页面运行样例并退出：
-uv run datakeel demo --once
-```
-
-SQLite 的 `db status` 只读检查，`db upgrade` 显式升级，`migrate` 为兼容入口；服务不再暗中升级已有库。完整恢复包和隔离恢复见 [数据库维护](docs/DATABASE_MAINTENANCE.md)。
-
-
-`DATAKEEL_HOME` 默认 `.datakeel`，保存数据库、对象、样例和隔离运行目录。`DATAKEEL_DATABASE_URL=postgresql://user@127.0.0.1:5432/datakeel` 切换 Postgres。`DATAKEEL_S3_BUCKET` 启用 S3，`DATAKEEL_S3_ENDPOINT` 指定兼容端点；访问配置通过标准 AWS 环境变量/profile 提供，留在仓库外。API 与 worker 必须使用同一对象后端。
-
-新建本机 Postgres 的完整 Docker 命令见 [英文 Quick start](README.md#run-the-roles-separately)。默认演示只监听 loopback；多用户认证和生产部署不在本期范围内，当前身份固定为 `local`。
-
-## 工作流
-
-[本机 API 文档](http://127.0.0.1:8765/api/docs) 提供完整请求 schema。
-
-| 工作流       | 接口                                                                                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 数据集与导入 | `GET/POST /api/datasets`；导入文件使用 `{filename, content_base64}`                                                                                                            |
-| 版本与下载   | `/api/datasets/{id}/versions`、`/files?version={version_id}`、`/files/{file_id}/download`                                                                                      |
-| 任务         | `POST /api/tasks`、`GET /api/tasks`、`/api/tasks/{id}/artifacts`                                                                                                               |
-| 血缘与影响面 | `/api/lineage/graph?asset={id}&direction=upstream&depth=3`                                                                                                                     |
-| 证据         | `POST /api/evidence/query`、`GET /api/evidence/assets/{asset_id}?version_id={version_id}`、`POST /api/evidence/assertions/decide`                                              |
-| 证据子图     | `GET /api/lineage/graph?include_semantic=true&asset_id={id}&hops=2&max_nodes=100`                                                                                              |
-| 数据目录     | `GET /api/catalog/{collection}`；集合为 `sources`、`tables`、`columns`、`metrics`、`dimensions`、`terms`、`owners`，支持 `limit`、`offset`、`search`、`parent_id`、`source_id` |
-| 表与指标详情 | `GET /api/catalog/tables/{asset_id}`、`GET /api/catalog/metrics/{id}`、`GET /api/catalog/metrics/{id}/history`                                                                 |
-| 问数与回放   | `POST /api/ask`、`GET /api/ask/{id}`                                                                                                                                           |
-| 目录关系     | `GET /api/catalog/neighbors?asset_id={id}`、`GET /api/catalog/impact?asset_id={id}&max_nodes=100`                                                                              |
-| 目录子图     | `GET /api/lineage/graph?asset_id=retail_revenue&hops=2&max_nodes=30&include_catalog=true`                                                                                      |
-| 质量         | `GET /api/datasets/{id}/quality`、`PUT /quality/config`                                                                                                                        |
-| 治理         | `PUT /template`、`GET/PUT /metadata`、`GET /metadata/changes`、`GET /compliance`                                                                                               |
-| Agent 会话   | `POST/GET /api/agent/conversations`、`GET /api/agent/conversations/{id}`、`POST /api/agent/conversations/{id}/messages`（SSE）                                                 |
-| Agent 恢复   | `POST /api/agent/conversations/{id}/resume`，请求体 `{plan_id, idempotency_key}`（SSE）；`GET /api/agent/conversations/{id}/audit` 查询恢复审计                                |
-| 受控动作     | `POST /api/actions/{type}/prepare`、`POST /api/approvals/{plan_id}`、`POST /api/actions/{plan_id}/execute`、`GET /api/actions/runs`                                            |
-| 本体与计量   | `GET /api/ontology`、`POST /api/ontology/object-sets/evaluate`、`GET /api/harness/traces`、`GET /api/harness/costs?group_by=conversation`                                      |
-| 报告与导出   | `/api/datasets/{id}/report`、`/api/export?format=croissant&dataset_id={id}`                                                                                                    |
-
-任务接受 `dataset_id`、`idempotency_key`、可选 `version_id`、`pipeline`、`shards`、`queue`。未指定版本时从导入快照重放；指定版本时消费该不可变快照，提交时即冻结输入列表。默认一个分片保证全数据集去重；显式多分片适合独立文件变换，去重只在各分片内生效，没有跨分片合并去重。队列支持 cpu/io/gpu，本期提供 CPU/IO 算子。
-
-DAG 格式和算子 manifest 见 [合同说明](contracts/README.md)。条件/路由造成空输入时，算子仍记录空批次执行事件；非法 DAG 在入队前拒绝。
-
-证据抽取复用 `run_pipeline` 动作：将 `datakeel.pipeline.evidence.evidence_pipeline()` 返回的完整 DAG 作为 `pipeline` 参数，同时传入 `dataset_id` 和 `shards=1`。算子 manifest 列出五个证据算子；全局近重复抽取拒绝多分片。省略 `pipeline` 仍使用原有默认算子链。
-
-抽取报告提供整体及每算子的 `inputs`、`skipped_cached`、`extracted`、`failed`。默认数据首跑为 5,000 次算子输入、4,990 次成功抽取、10 次图像解码失败；内容不变时重跑缓存命中全部 5,000 次输入，抽取为零。缓存键包含实际输入内容、selector、extractor ID/版本、schema 版本及两份证据合同的哈希。只变更 caption 抽取器版本时仅重抽其 1,000 次输入，其余算子命中缓存，旧 caption 断言失效并留下审计。
-
-`POST /api/evidence/query` 请求体为平铺的 ObjectSet 1.1 加 `cursor`、`page_size`（默认 50，最多 200），结果按 asset ID 升序，下一页传回 `next_cursor`。从 `GET /api/datasets` 取得配对数据集 ID 后替换下例：
-
-```bash
-DATASET_ID="replace-with-paired-dataset-id"
-curl --fail http://127.0.0.1:8765/api/evidence/query \
-  -H 'Content-Type: application/json' --data-binary @- <<EOF
-{
-  "schema_version": "1.1",
-  "dataset_id": "${DATASET_ID}",
-  "split": "val",
-  "assertion_filters": [
-    {"predicate": "mentions", "concept": "person", "value": "present"},
-    {"predicate": "annotated_as", "concept": "person", "value": "present", "operator": "not_exists"}
-  ],
-  "has_near_duplicate_in": "train",
-  "page_size": 20
-}
-EOF
-```
-
-这里 `not_exists` 表示没有匹配的标注断言，包含未知情况；只查已确认缺口时应要求 `label_gap/person=present`。旧 ObjectSet 1.0 冻结 manifest 仍可按原序列化方式读取。断言过滤在动作准备时求值，冻结结果对象集。
-
-既有血缘接口增加 `include_semantic`、`asset_id`、`hops`（1–3）、`max_nodes`（1–1,000），语义邻居按资产类型及 ID 排序进行确定性 BFS。`near_duplicate_of` 投影为既有 `similar_to` 类型。抽取事件只引用内容寻址的 knowledge bundle，事件表不写断言正文。以下命令重建断言/缓存投影并重放审核审计：
-
-```bash
-uv run datakeel rebuild-evidence
-```
-
-命令报告包含 `PROJECTOR_VERSION` 的前后规范化哈希，不一致时退出码非零。在自行清空可丢弃投影后，可用 `--expected-hash` 传入事先保存的哈希，对比原状态。
-
-质量五维权重为完整性25、一致性20、唯一性15、标注25、分布健康15，无标注时默认剔除标注维并重归一，仍返回五维对象。一致性按模态分组，分布使用 Shannon 均匀度。`{"min_size_bytes":999999}` 会降低完整性，`{"thresholds":{"excellent":99}}` 调整等级边界。
-
-模板支持 JSON Schema 或 fields 字段定义（必填/枚举/正则）。可先绑定模板再补元数据；非法保存整体拒绝，合法保存记录字段前后值、来源、原因，并更新目录40/命名30/元数据30的合规分。引用限本地 schema。
-
-OpenLineage 导出是事件数组，逐个元素用官方 RunEvent Schema 校验。Croissant 1.1 描述原始源文件及下载链接。CLI 导出可用 `DATAKEEL_BASE_URL` 指定服务地址，HTTP 导出自动采用请求地址。
-
-## MCP 接入
-
-`uv run datakeel mcp` 默认启动 stdio 服务，由客户端管理输入输出和生命周期。共 **102 个工具**：37 个只读函数（含 `training_distribution`、`training_leakage`、`get_training_quality`、`annotation_quality`、`list_quality_rules`、`get_table_quality`、`query_standard_coverage`、`list_standard_usage`、`query_kg`、`explain_relation`、`query_evidence`、`get_evidence`、`explain_sample`、`project_progress`、`next_task`、`production_prelabel_accuracy` 和团队档 `lease_status`、`assignees` 等 14 个生产只读函数及下方四个），65 个**只准备计划**的动作（含 `clean_training_data`、`draft_label_set`、`define_role`、`save_revision`、`run_prelabel`、`upgrade_project_template`、`finalize_project` 等角色与生产动作、质量规则维护与运行、`confirm_metric_draft`、问题单认领、`annotation_acceptance`、`publish_release`、`generate_datasheet`、`publish_datasheet`、`submit_custom_operator`、数据资产上架与授权、数据标准导入与映射、`run_kg_extraction`、`decide_assertions`、目录导入/恢复、指标及术语更新/回滚）。没有签批和执行工具：准备好的计划只能由人在 Web 界面或 CLI 审阅、签批并执行，MCP 客户端自己无法把计划走完；以 `approve_plan` / `execute_plan` 为名的调用会被拒绝并记入审计。每次调用记录状态、资产引用和调用方归因；内置 Agent 则走上面的 UI 确认流程。表合同、worker 定时检查、问题恢复和签名告警见[质量规则说明](docs/QUALITY_RULES.md)。
-
-Agent 和 MCP 同步提供 `ask_data`、`list_metrics`、`explain_metric`、`impact_of`。`ask_data` 只读源数据，在 Datakeel 保存答案及证据；涉及资产的调用记录 `asset_refs`，空的 `list_metrics` 结果可没有引用。工具、动作与 HTTP 使用同一套类型模型生成 schema。
-
-Claude Desktop 通过 **Settings → Developer → Edit Config** 编辑 `claude_desktop_config.json`，把以下条目合并进已有配置。Cursor 可使用同一 JSON，保存为项目 `.cursor/mcp.json` 或用户 `~/.cursor/mcp.json`。将绝对路径替换为本机路径；`DATAKEEL_HOME` 与 demo 保持一致才能共享数据集。官方说明：[Desktop 本机接入](https://modelcontextprotocol.io/docs/develop/connect-local-servers)、[Cursor MCP 配置](https://cursor.com/docs/mcp)。
+在 **Claude Desktop**（`claude_desktop_config.json`）或 **Cursor**（`.cursor/mcp.json`）中配置本机路径，`DATAKEEL_HOME` 与演示保持一致即可共享数据：
 
 ```json
 {
@@ -400,13 +105,7 @@ Claude Desktop 通过 **Settings → Developer → Edit Config** 编辑 `claude_
 }
 ```
 
-独立启动本机 SSE 服务：
-
-```bash
-uv run datakeel mcp --transport sse --host 127.0.0.1 --port 8766
-```
-
-Cursor 也可以使用 SSE 地址配置：
+也可以通过 `uv run datakeel mcp --transport sse --host 127.0.0.1 --port 8766` 启动独立的本机回环 SSE 服务：
 
 ```json
 {
@@ -418,88 +117,90 @@ Cursor 也可以使用 SSE 地址配置：
 }
 ```
 
-使用与 API、worker 相同的数据库和对象存储配置。服务使用本机单身份，默认绑定 loopback，不提供多用户认证。接入桌面模型客户端是可选步骤，独立于 Datakeel 的离线演示。
+- **可选真实模型配置**：通过仓库外环境变量设置 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY`（及可选 `DATAKEEL_OPENAI_BASE_URL` / `DATAKEEL_ANTHROPIC_BASE_URL`）；所用模型须在 [`contracts/model-prices.yaml`](contracts/model-prices.yaml) 登记价目。未设置密钥时默认使用离线 `fake-demo`。
+- **OpenTelemetry 追踪导出**：使用 `uv run datakeel export-traces [--conversation-id <id>]` 将脱敏后的 OTLP/HTTP protobuf span（不含提示词、补全、工具载荷与凭证）导出至本地 OTLP Collector、Phoenix 或 Langfuse，详见[接口参考](docs/API_REFERENCE.zh.md#opentelemetry-模型-trace-导出)。
 
-## 评估与完整门禁
+---
 
-```bash
-uv run datakeel eval --provider fake
-uv run datakeel eval --provider fake --json
-uv run datakeel eval-evidence
-uv run datakeel eval-evidence --json
-uv run datakeel eval-ask
-uv run datakeel eval-ask --json
-uv run datakeel eval-kg --json
-uv run python scripts/mutate.py --output mutation-results.json
+## 系统架构
+
+![Datakeel 当前架构：协议入口、应用与领域层、核心合同和事实底座](docs/images/architecture-overview.svg)
+
+Datakeel 采用模块化单体设计，由无状态 `api` 与行锁抢单 `worker` 两个进程组成，共享 SQLite 或 PostgreSQL 事实库与本地/S3 对象存储。版本是含 SHA-256 校验的不可变文件清单，血缘图由追加式事件投影重建；PostgreSQL 使用 `FOR UPDATE SKIP LOCKED` 领取任务分片（SQLite 使用 `BEGIN IMMEDIATE`），配合心跳、租约校验与事务 outbox 保证幂等终态。
+
+```text
+datakeel/       核心领域模型、语义解析、算子、证据、知识图谱、数据目录、指标、问数、流水线、
+                质量、血缘、治理、存储、worker、api、本体、受控动作、agent、LangGraph 运行时、
+                评估 harness、FastMCP 服务与 CLI
+accel/          可选 Rust PyO3/maturin 扩展包（datakeel-accel）
+web/            React + TypeScript + Vite 前端源码（构建产物随包提交至 datakeel/web_dist）
+contracts/      文件语义、算子清单、证据词表、企业指标语义层、工作流与 golden 测试语料
+sandbox/        用于运行已签批自定义算子的容器沙箱镜像定义
+docs/           架构决策、使用指南、API/评测参考及容量基准报告
+tests/          与源码结构镜像对应的单测、集成、契约与仓库回归测试
 ```
 
-58 条 golden 保留原有 12 条查询、动作、审批、打转、预算、跨轮指代与 dry-run 等场景，以及证据查询、未知状态解释、按查询结果生成版本和删除待审四条；新增问数、澄清、拒答、受控修改指标后答案变化四条企业场景。另外 12 条覆盖委派、泄漏、注入审批及跨会话记忆。另有 4 条图谱场景覆盖查询、缺失端点解释、自动重放和外发签批且对话执行记录为 0。另有 4 条知识问数、3 条图片来源和 1 条无授权资产引导场景；后者要求 Agent 提示申请且不泄露数据。另有 2 条标准场景检查落标最差表和已确认的标准使用列，2 条质量场景检查表规则失败与表的问题单历史，1 条标注场景检查一致性与抽检验收结果。另有 2 条训练集场景通过真实工具结果检查类别分布和植入的跨集合泄漏，1 条大模型训练数据场景经只读质量工具核对坏行和重复记录。另有 6 条一句话做事场景：多步动作链在确认前什么都不改、缺项目时追问并在下一轮补齐、越权时拒绝并点名缺的权限、先查权限再追问参数、动作不接受的参数变成追问而不是被丢掉、没有对应动作时直接说明。每条用脚本回复驱动真实本机服务与隔离样例。第二次运行显示上次 ID 和通过数、token、成本差值；`--json` 输出完整结果，有失败则退出码非零。`--provider openai` / `--provider anthropic` 会选择真实付费评估，离线门禁不会运行。
+详见[架构决策](docs/ARCHITECTURE.md)、[持久化 Schema 组合](docs/PERSISTENCE_SCHEMA.md)与[HTTP API 与流水线参考](docs/API_REFERENCE.zh.md)。
 
-变异脚本要求临时源码副本中的 856 处变异全部为 `KILLED`。缺标注 `unknown → absent` 先被生产断言校验拒绝，再仅在临时变异副本显式旁路该校验，让真实 `explain_sample` 结果进入 golden 内容检查并变红。近重复阈值加 4 则由真实图像链测试杀死：A–B、B–C 距离均为 6，A–C 为 12。新增两处企业变异分别验证候选 ID 边界不接受模型 SQL，以及不可答状态不接受猜测数值；它们是生产边界专项测试，不调用真实模型。运行时变异还检查签批恢复授权与工具调用幂等。工作流及路由变异检查工作流签批恢复授权、意图得分分差、图的环检测，以及切换备用模型前对失败尝试结算预算。新增 canary、委派深度、工具越权、记忆硬删及每次用户提问的记忆增强去重五个变异。图谱增加关闭端点核对、丢弃待复核候选、缓存遗漏模型身份三个变异。知识问数另有四处变异，分别篡改候选审阅标签、按下划线拆分标识符、把未支持的知识问句送入数值路线、拒绝另一端关联后丢弃关系，必须由真实工具结果的 golden 或专项回归捕获。资产增加缺失授权、到期、撤销、精确范围、工具缓存重放、来源清单、Agent 消息重放和版本来源八处守卫变异。两处标准变异分别倒置合规率排序、丢弃已确认映射，必须使对应 golden 失败。新增变异还保护指标词形与歧义、人物问句边界、流向槽位、分类候选上限与关键字核对，以及请求否定和工作流写确认。v0.13.0 合入的功能线另为时序检测、发布与交付、自定义算子、图片路由与坐标、数据资产、指标草稿、质量规则、元数据导入、标注质量和说明书增加了变异，各自的功能文档说明每处变异破坏什么。v0.14.0 再为压测门禁、选图、追问解析和 MCP 拒绝签批执行调用增加锚点。v0.15.0 又为训练集切分、导出、泄漏和写入授权，大模型训练数据的检查、脱敏、去重和清洗，生产角色、指派、修订和预测导入，标注工作台，以及两批小修增加锚点。v0.16.0 再为团队档的租约过期与到期边界、回收器只收一次并重读续租、领取和审核队列里的标审分离、技能等级过滤、整包退回、PostgreSQL 加锁顺序和按人串行计负载增加锚点。v0.17.0 再为模板属性校验（每个形状都查必填、数字范围、默认值本身合法、模型草稿只查类型、提交时重新校验）、收回和派单计划只冻结状态、轮次和当前持有人、`lease_status` 和任务状态接口给出实际生效的租约到期时间、先按文件名搜再分页、样本名不暴露服务器路径、派单预览用当前负载、只列进行中阶段的租约，以及团队档审核队列不列自己标过的任务增加锚点。v0.18.0 再为英文通用标签 `secret`、`token`、`key`、`auth` 后的值什么时候算凭证（字符类别、全是数字、首字母之外有大写、至少 8 位、长单词的随机程度、带连字符的普通单词）、密码满 4 位就打码、带前缀的配置键、已经打过码的占位符、凭证后紧跟的中文标点、括号里的区号（大陆区号、北美区号和局号首位、手机号前三位加括号、半个括号）、编号和只隔一个空格的两条电话、导入时记下图片宽高和相对路径并跳过隐藏项、YOLO 没有宽高时整份拒绝、COCO 结果里对不上的图片、重开进行中的任务不涨轮次、谁能看派人名单和谁能被指名派单，以及工作台样本名用相对路径增加锚点。v0.19.0 再为照片摆正（EXIF 八种方向含镜像的点映射和宽高互换、导入时记摆正宽高并给老数据集补读、工作台和预标注模型拿到的都是摆正后的像素、老修订和老批次与切分读时摆正、YOLO 和 COCO 导入按对的方向、导出摆正并在清单里留痕、证据抽取器升版让旧框作废）、项目锁定模板版本和签批升级、人手上限只算标注中的任务且单次派单上限不高于项目设定、返工点名转派、问数的英文解读和拒答原因代码、云端预标注的预算、估价、重跑、失败清单和每个项目同时只跑一次、IoU 匹配、置信度分档与校准曲线、直通有人负责、有人持有的任务只写草稿以及放宽直通要签批、AI 预审规则、抽检比例和按风险排序的审核队列，以及返工转派之后直通触发人仍不能审增加锚点。v0.20.0 再为一句话做事（说法登记门禁、固定说法只在用到整句时才用、写操作的容器只能来自页面、上一轮、前一步或原话、先查权限再追问、每个动作的前提条件、不会改变任何东西的计划、出卡片前先读出任务组并排除受保护的任务、卡片用人话写、修补轮和失败时的直白回答）、动作链（签批、续跑不重复、签批被退回、只有提出请求的人能执行、签批人就是发请求的人）、起草标签集（来源、丢掉编造的样本 ID、签批和费用上限）、按所配接口路由模型，以及规划和这一版的人手上限、返工转派后的标审分离、模板升级、云端预标注衔接的地方增加锚点。v0.21.0 再为骨架三态、模板按 ID 对齐和已用点删除保护、EXIF、COCO 拓扑/可见性/边界与导入导出保护、纯骨架及混合空框指标排除，以及各下游流程复核增加锚点。v0.22.0 再为段整数强类型、建项目和升级的源 probe 检查、原生导入、过滤前格式拒绝、WebVTT 未审保护和混合指标降级增加锚点。每个隔离的测试子进程仍限时 300 秒；完整 golden 评测子进程限时 900 秒，因为它和其它变异进程共用一台机器。子进程超时会在新的源码副本里重跑一次，再超时就记为环境失败，门禁不通过。超时和环境或初始化失败都不计为成功杀死变异。
+---
 
-`eval-evidence` 在隔离的本机进程中新生成 1,000 个样本，运行生产抽取 DAG，再执行 [questions.yaml](contracts/evidence/questions.yaml) 的 15 题：近重复 4 题、冲突 4 题、损坏 4 题、无标注 3 题。baseline 只用标签、路径和已有质量事实，with_evidence 加入断言与直接近重复关系。报告包含每题 precision/recall、宏平均、pair 指标、三态计数、抽取计数与耗时，复用 `eval_runs` 表，`provider=evidence`，`suite_digest` 是题集文件 SHA-256。临时样例随评测结束清理，保留报告和 gold 摘要；`--questions path.yaml` 可指定另一份通过校验的题集。
+## 部署与本地构建
 
-默认 `prefix` 模式在内置合成数据及当前题集上，实测宏平均 precision 为 **0.336567 → 1.000000**，recall 为 **0.933333 → 0.989542**。直接样本对命中 **48/52**，precision 1.0、recall 0.923077；val→train 命中 **47/51**，recall 0.921569。`threshold_met=true`：recall 增益 ≥0.05、precision 下降 ≤0.02、pair precision ≥0.9、pair recall ≥0.8。宏平均 recall 增益主要来自 `missing-car`：无标注时，仅靠标签的 baseline 无法确认 car。这些数值只说明本生成集和所声明 baseline 的结果，不代表真实数据上的泛化能力。所有结果（包括 `threshold_met: false`）均如实落库并打印，指标未达门槛不让命令失败；执行或校验错误仍会失败。该评测不包含模型抽取、模型 token 或模型费用。
-
-运行 `uv run datakeel eval-evidence --mode exact --json`，在相同生成数据上评测不漏检模式。实测 exact 直接样本对命中 **52/52**、val→train 命中 **51/51**，两者 precision/recall 均为 **1.0**；证据宏平均 precision/recall 也均为 **1.0**。报告记录 `near_duplicate_mode` 以及近重复算子实际使用的实现和版本。这些是生成夹具上的结果，不代表真实数据的泛化表现。
-
-`eval-ask` 新建隔离本机企业数据，对照生成器独立 gold 执行 [20 道题](contracts/ask/questions.yaml)：14 道可答（`ok-`）、4 道不可答（`ua-`）、2 道澄清（`cl-`），参考时刻固定为 `2026-10-01T00:00:00Z`。数值相对误差允许 0.5%；证据按状态检查，可答要求指标、SQL、表字段、匹配证据等齐全，拒答和澄清要求对应断言与候选。报告逐题保留答案、正确性、证据完整性、耗时和题集/gold 摘要，写入既有 `eval_runs`，`provider=ask`。报告门槛为答对至少 13/14、拒答 4/4、证据完整 20/20，另报澄清数量；`threshold_met=false` 如实打印和保存，不让命令失败。题集非法及单题评测之外的执行失败仍会报错。`--questions path.yaml` 可指定另一份合法题集；整个评测不调用模型，不计 token 或模型费用。
-
-完整开发门禁（前端开发需要 Node）：
+### 分进程独立运行
 
 ```bash
-uv run python scripts/generate_semantic.py
-uv run pytest tests/semantic
-(cd web && npm ci && npm run build)
-make check
+uv run datakeel db upgrade          # 显式升级数据库（db status 只读检查）
+uv run datakeel api --port 8765
+# 在第二个终端使用相同的 DATAKEEL_HOME / DATAKEEL_DATABASE_URL / DATAKEEL_S3_* 配置：
+uv run datakeel worker
+```
+
+### 构建本地 Wheel 与 Docker 镜像
+
+在源码根目录执行（构建需 Python 3.12、`uv`、Node.js 22 与 Rust 1.96；运行生成的 wheel 或镜像不需要 Node）：
+
+```bash
+make build-wheel                    # 在 dist/ 生成纯 Python wheel 与带哈希的 requirements.txt
+make build-image                    # 构建非 root 本机镜像 datakeel:local
+docker run --rm -p 127.0.0.1:8765:8765 -v datakeel-data:/data datakeel:local
+```
+
+以上命令均为纯本机构建，不会向 PyPI 或 Docker Hub 推送或发布任何制品。
+
+### 使用 Docker Compose 一键拉起本地 PostgreSQL 栈
+
+执行 `make build-image` 后，可通过仓库根目录的 [`compose.yaml`](compose.yaml) 在回环地址（`127.0.0.1:8765`）同时启动 `postgres:17-alpine`、`migrate`、`api` 与 `worker`：
+
+```bash
+docker compose up -d
+# 如需向 Compose 的 Postgres 与 /data 卷注入样例数据：
+docker compose run --rm api demo --once
+```
+
+若需面向小团队通过 Caddy 或 nginx + `oauth2-proxy` 暴露访问，请按[小团队部署指南](docs/DEPLOYMENT.zh.md)配置认证反向代理与[数据库维护说明](docs/DATABASE_MAINTENANCE.md)。
+
+---
+
+## 开发与全仓门禁
+
+```bash
+uv sync --locked
+(cd web && npm ci)
+uv run pre-commit install
+make check                          # 公开内容扫描、Rust、Ruff ALL、严格 Pyright、import-linter、
+                                    # 规模/Schema 门禁、pytest（总覆盖 >=85% / 核心模块 >=90%）、前端与许可审计
 uv run python scripts/check_readme.py
-bash scripts/ci-check.sh
+bash scripts/ci-check.sh            # 本地完整 CI 等价入口：含 make check、README 实测与 856 处变异测试
 ```
 
-`make check` 执行格式、Ruff ALL、严格类型、分层、规模、覆盖率与全部前端门禁。`uv run pre-commit install` 安装提交钩子。`bash scripts/ci-check.sh` 是本地 CI 等价入口，在同一门禁之外执行 README 命令与变异测试；默认 SQLite，设置新建本机库的 `DATAKEEL_TEST_DATABASE_URL` 即可重跑 Postgres。pytest 和变异步骤都多进程并行，并行数用 `DATAKEEL_TEST_WORKERS` 设置（`1` 为串行）。GitHub CI 在两个栈上把同一组命令拆成并行 job（一个门禁 job、四个 pytest 分片、两个变异分片，以及检查分片完整性并合并覆盖率和变异结果的汇总 job），目标是每次运行 45 分钟以内，详见[测试执行说明](docs/TEST_SPEED.md)。
+GitHub CI 在 SQLite 与 PostgreSQL 两个数据库栈上并行运行完整门禁、4 个 pytest 分片与 2 个变异分片。详见[贡献指南](CONTRIBUTING.md)、[代码规范](docs/CODE_STANDARDS.md)、[离线评测与完整门禁](docs/VERIFICATION.zh.md)及[测试执行提速](docs/TEST_SPEED.md)。
 
-前端构建自动复制到 `datakeel/web_dist`，改源码后需重新构建。开发端口5173代理API8765。语义 Python/TS 快照均有漂移检查，OpenLineage 官方 schema 固定在测试仓中，可离线校验。
+---
 
-对运行中的演示执行 `uv run python scripts/verify_acceptance.py --base-url http://127.0.0.1:8765`。设置 `DATAKEEL_TEST_DATABASE_URL` 后，同一 pytest 集合改用本机 Postgres，数据库账号需要 `CREATEDB` 权限。每个 `db` 夹具从本 worker 已迁移好的模板库克隆一个自己的库，用完只删这一个；用 `unmigrated_db` 的迁移用例仍只创建/清理自己唯一命名的 schema。`scripts/verify_acceptance.py --workers` 启动两个真实 worker，验证8个分片全部只尝试一次；该测试数据库应先停掉其它 worker。
+## 社区协作、安全与许可
 
-S3 提供客户端契约测试，不自动连接真实 S3。LLM 成功分支用本机 fixture 验证。中断执行产生的对象保留用于排查，本期没有自动产物 GC。
-
-## 许可与范围说明
-
-项目 Apache-2.0，样例全部自行生成。Python 直接运行依赖采用 Apache、MIT 家族或 BSD 家族许可；锁定依赖中的宽松传递组件还包括 PSF、ISC、Zlib、CC0。FastMCP 采用 Apache-2.0，email-validator 为宽松的 Unlicense。Python 按包精确例外包括原样使用的 `certifi` 根证书数据（`MPL-2.0`）、原样使用的 `orjson`（`MPL-2.0 AND (Apache-2.0 OR MIT)`）及 `regex`（`Apache-2.0 AND CNRI-Python`）。[运行时许可清单](THIRD_PARTY_NOTICES.md) 列出完整传递闭包及核验证据。前端还打包本期明确批准的 Source Serif 4 与 Source Code Pro 拉丁字体，采用 SIL Open Font License 1.1（OFL-1.1），原样使用 `@fontsource` 包中的字体文件；版权与许可声明和 React 运行时声明一起写入 `THIRD-PARTY-LICENSES.txt`，随编译后应用分发。未引入 ELv2、BSL、AGPL、SSPL 运行时，保留上游许可声明。
-
-### 问负责人、上游和下游
-
-离线 demo 还会导入「企业文档 · Enterprise documents」六篇虚构文档，并用录制抽取图谱。在问数页点击负责人、库存上游、orders 下游三个新例句，或手动输入 `营业额谁负责？`，查看分开的「系统记录」与「文档里的说法」、原文证据、来源和两种审阅标签。图谱实体详情显示可接受、拒绝的对应资产。[关联与问数规则](docs/KG.md#catalog-associations-and-knowledge-questions--对应资产与知识问数)解释唯一/歧义关联及一致性标记。
-
-`eval-ask` 默认另跑 23 条知识/路线用例的初始、审后两态。原 20 条指标用例的夹具、统计和阈值保持独立；`knowledge.states` 保存逐条结果，`knowledge.threshold_met` 要求两态全过。指标数值回答另外附最多五条相关知识。关联与作答全程用确定性规则，不调用模型，也不增加运行时依赖。
-
-## 图片知识图谱
-
-导入截图、扫描件或结构图，在「知识图谱」选择转写配置与文本抽取配置。可选 `auto` 先用本地 OCR，再按置信度、连线、删除线等信号决定是否转交视觉模型，单图覆盖优先。签批卡按全部可能外发图片估算上限，报告显示实际外发数与原因。关系先作为候选，保留转写原文和 OCR 或已校验的视觉证据框；图上未定位与手写人名标记待复核。demo 包含真实录制图片和明确标注的脚本失败样例。运行 `uv run datakeel eval-kg --suite image --json` 即可离线评测内置 60 张图，详见[图片配置、来源与签批](docs/KG.md#images-and-scans--图片与扫描件)。
-
-本地 OCR 的第三方包由用户自行安装：`pip install rapidocr==3.10.0 onnxruntime`。它们不是 Datakeel 的依赖，也不在 Datakeel 的许可审计范围内。部分平台（例如 macOS）的 OpenCV 预编译包捆绑 x264/x265 等 GPL 编解码库，ONNX Runtime 含 MPL-2.0 的 Eigen；需要再分发时须自行评估。离线回放无需安装这些包。
-
-[表格与时序剖析](docs/TIMESERIES.md)包含一条命令生成传感器周数据、统计检查规则和受控目录剖析说明。
-
-音视频本地预处理、合成演示与原始时间区间血缘见[音视频预处理说明](docs/MEDIA.md)。
-
-## 自定义算子
-
-在「自定义算子」提交 Python 文件，审阅完整源码与静态检查，签批 SHA-256 固定版本后，通过普通流水线在容器沙箱运行。容器运行时由用户自装；提交代码不会回退到不安全的本机执行。详见[双语文件合同与安全说明](docs/CUSTOM_OPERATORS.md)和[导览示例](docs/DEMO.md#11-写一个算子审阅后在沙箱运行约-3-分钟)。
-
-## 数据集说明书
-
-打开数据集并进入「说明书」页签，可为某个数据集版本生成七章说明书（动机、构成、采集、预处理、用途、分发、维护）。系统先冻结带稳定 ID 和来源的平台事实；保留的每句话都引用事实，没有引用、引用不存在的事实，或数字、日期、专有名词得不到被引用事实支持的句子会被删除并记录原因。缺事实的章节明确标出。离线模板不需要模型；可选的已配置模型沿用现有预算与外发签批规则。生成草稿走受控动作，发布须签批；数据集有新版本后旧说明书标为已过期。Markdown 与 HTML 下载保留逐句依据。详见[说明书参考](docs/DATASHEETS.md)。
-
-「版本 → 训练集」区域可预览和保存带种子的训练/验证/测试切分，可选按全部标签分层（也可只按分类、框或文本片段标签），对比全部标签分布，检查完全相同内容、图片和文本近重复（文本用 SimHash）以及组键泄漏，再经已有受控导出动作生成 COCO、YOLO、ImageFolder、Hugging Face imagefolder 或文本 JSONL。训练包绑定不可变版本与切分，附清单，逐字节可复现。分组约束、阈值、CLI 和往返导入见[训练集说明](docs/TRAINING.zh.md)。
-
-## 大模型训练数据治理
-
-打开数据集的「文本数据治理」页签，逐条检查 SFT 对话、指令和偏好对 JSONL。本地规则覆盖结构、语言、重复、PII/密钥和自有评测集污染。检查先给出去留试运行，另行签批后生成可复现的新版本与血缘；测量信号进入质量分和有引用的说明书。详见[训练数据说明](docs/LLM_DATA.zh.md)和[导览](docs/DEMO.md#18-检查并清洗训练记录约-2-分钟)。
-
-## 数据生产项目
-
-`uv run datakeel production demo` 生成带离线预测的个人图片标注项目。CLI 和 REST 支持标签集发布、只追加修订、小组派单/审核/返工，以及定稿到标准数据集版本。登记用户后由服务端按角色计算权限，零用户实例保留原有本机体验。详见[生产流程](docs/PRODUCTION.zh.md)和[HTTP 身份边界](docs/IDENTITY_ACCESS.zh.md)。
-
-标注生产：键盘标注、模板属性表单、离线草稿、审核、团队档驾驶舱（租约、整包验收、按技能派单、派给指定的人、收回任务、返工转派）、模板版本升级、AI 预标注准确率、置信度分档和 AI 预审，以及定稿见[标注工作台指南](docs/ANNOTATION_WORKBENCH.zh.md)。照片按 EXIF 方向摆正后显示、标注、导入和导出。从目录导入的任务，悬停显示它在目录里的相对路径，也能按目录名搜到。
+- **使用提问与支持**：见 [SUPPORT.md](SUPPORT.md) 与 [文档中心](docs/README.zh.md)。
+- **漏洞私密报告**：请按 [SECURITY.md](SECURITY.md) 通过 GitHub 私密漏洞通道提交，切勿公开披露。
+- **行为准则**：参与贡献请遵守 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
+- **学术或技术引用**：引用元数据见 [CITATION.cff](CITATION.cff)。
+- **开源许可**：采用 [Apache-2.0](LICENSE) 协议。完整运行时依赖清单、上游许可证明与已批准例外（`certifi`、`orjson`、`regex` 及本地打包的 OFL-1.1 字体）见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 [`web/public/THIRD-PARTY-LICENSES.txt`](web/public/THIRD-PARTY-LICENSES.txt)；未引入 ELv2、BSL、AGPL 或 SSPL 运行时依赖。

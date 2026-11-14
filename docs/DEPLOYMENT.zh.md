@@ -153,3 +153,17 @@ datakeel.example.org {
   [数据库维护](DATABASE_MAINTENANCE.md)。
 - 多租户隔离、应用级登录和企业身份联邦按架构决策不在范围内；一个实例服务一个可信团队。
 - 容量数字是实测工作点，不是部署承诺；见[容量](CAPACITY.md)，承诺 SLO 前在目标硬件复测。
+
+## 使用本地 Docker Compose 编排
+
+通过 `make build-image` 构建本地镜像后，仓库根目录的 [`compose.yaml`](../compose.yaml) 可一键启动
+`postgres:17-alpine`（仅限 Compose 内部网络，不暴露宿主机端口）、`migrate`、`api`（仅绑定
+`127.0.0.1:8765`）与共享 `/data` 卷的 `worker`：
+
+```bash
+make build-image
+docker compose up -d
+```
+
+上述任一认证反向代理配方均可直接反代 `127.0.0.1:8765`。若用于跨主机环境，请将示例中的本地
+`POSTGRES_HOST_AUTH_METHOD: trust` 替换为独立强凭证并做好网络隔离。

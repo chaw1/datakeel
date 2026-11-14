@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+title: "Datakeel"
+message: "If you reference or build upon Datakeel in technical reports, benchmarks, or academic work, please cite it using the metadata below."
+type: software
+authors:
+  - name: "Datakeel Contributors"
+repository-code: "https://github.com/chaw1/datakeel"
+url: "https://github.com/chaw1/datakeel"
+license: Apache-2.0
+abstract: >-
+  An auditable, local-first data and AI dataset workbench unifying multimodal
+  evidence proofreading, traceable enterprise metric Q&A, reproducible training
+  splits and datasheets, and human-approved Agent/MCP controlled actions.
+keywords:
+  - ai-datasets
+  - data-governance
+  - data-lineage
+  - data-quality
+  - multimodal-evidence
+  - semantic-layer
+  - mcp

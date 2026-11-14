@@ -175,3 +175,18 @@ Run these against the deployed proxy hostname before inviting the team:
   architecture. One instance serves one trusted team.
 - Capacity numbers are observed operating points, not deployment guarantees; see
   [capacity](CAPACITY.md) and re-measure on your target hardware before committing to SLOs.
+
+## Running the local Docker Compose stack
+
+After building the local image with `make build-image`, [`compose.yaml`](../compose.yaml) runs
+`postgres:17-alpine` (internal Compose network only, no host port), `migrate`, `api` (bound only to
+`127.0.0.1:8765`), and `worker` sharing the `datakeel-data` `/data` volume:
+
+```bash
+make build-image
+docker compose up -d
+```
+
+Point any of the reverse-proxy recipes above at `127.0.0.1:8765`. If deploying across hosts,
+replace the local `POSTGRES_HOST_AUTH_METHOD: trust` setting with strong database credentials and
+network isolation outside the repository.

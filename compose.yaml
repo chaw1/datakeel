@@ -1,0 +1,75 @@
+# Copyright 2026 Datakeel contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Local PostgreSQL stack for Datakeel (requires `make build-image` first):
+#   make build-image
+#   docker compose up -d
+#   docker compose run --rm api demo --once   # optional sample seeding
+#
+# Binds strictly to loopback (127.0.0.1:8765) for single-host use or an
+# authenticating reverse proxy (see docs/DEPLOYMENT.md).
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: datakeel
+      POSTGRES_DB: datakeel
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - datakeel-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U datakeel -d datakeel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    image: datakeel:local
+    command: ["migrate"]
+    environment:
+      DATAKEEL_HOME: /data
+      DATAKEEL_DATABASE_URL: postgresql://datakeel@postgres:5432/datakeel
+    volumes:
+      - datakeel-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: datakeel:local
+    command: ["api", "--host", "0.0.0.0", "--port", "8765"]
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      DATAKEEL_HOME: /data
+      DATAKEEL_DATABASE_URL: postgresql://datakeel@postgres:5432/datakeel
+    volumes:
+      - datakeel-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker:
+    image: datakeel:local
+    command: ["worker"]
+    environment:
+      DATAKEEL_HOME: /data
+      DATAKEEL_DATABASE_URL: postgresql://datakeel@postgres:5432/datakeel
+    volumes:
+      - datakeel-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  datakeel-pgdata: {}
+  datakeel-data: {}
