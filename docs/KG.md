@@ -229,7 +229,7 @@ Source documents and model responses are untrusted data. Schema restrictions and
 
 ## Catalog associations and knowledge questions / 对应资产与知识问数
 
-Graph `dataset` entities can associate with catalog tables or views; `metric` entities can associate with semantic metrics. Associations are independent candidate assertions under `link.maps_to`, published by `evidence.kg_link`. No model is used for linking, intent recognition or subject resolution. Only the latest published graph version per dataset participates; different datasets retain separate source attribution. Questions do not merge identities through `kg.same_as`. Canonical entity names and their own source-anchored mention spellings participate in subject matching. Distinct graph identities contribute through eligible associations, with an explicit same-name person/organization and catalog-role exception for responsibility questions.
+Graph `dataset` entities can associate with catalog tables or views; `metric` entities can associate with semantic metrics. Associations are independent candidate assertions under `link.maps_to`, published by `evidence.kg_link`. No model is used for linking or subject resolution; intent recognition is deterministic by default, and when an optional `Provider` is injected into `ask_data`, model intent proposals are accepted only for unresolved or fallback rules (`K3`, `K5`, `K7`, `K8` without explicit ownership) after passing subject-kind, focus, option-set and direction guards (`K18-verified-model-candidate`). Only the latest published graph version per dataset participates; different datasets retain separate source attribution. Questions do not merge identities through `kg.same_as`. Canonical entity names and their own source-anchored mention spellings participate in subject matching. Distinct graph identities contribute through eligible associations, with an explicit same-name person/organization and catalog-role exception for responsibility questions.
 
 关联只处理图谱的 dataset 和 metric 类型。表标识符用 `[A-Za-z][A-Za-z0-9_]*(?:[./][A-Za-z][A-Za-z0-9_]*)*` 提取，与表名、`schema.表名`、完整目录 id 忽略大小写精确比较；固定停用词是 `table`、`tables`、`the`、`表`。下划线不会拆开，所以 `erp_raw_shipments` 不等于 `shipments`。文字只来自实体名和该实体提及锚点覆盖的片段，不扫描所在整句。
 
@@ -277,6 +277,7 @@ Topic questions such as `inventory 有谁在读取？` ask for consumers even wh
 | `K15-question-slot` | The interrogative occupies the source or result slot, including a topic's pronoun reference / 疑问短语占来源或结果槽，支持话题指代 | Source → `upstream`; result → `downstream` |
 | `K16-counterfactual-slot` | A known source is removed, retired or stops supplying data; the question asks for affected results / 已知来源缺失、下线、断供，询问受影响的结果 | `downstream` |
 | `K17-flow-slot` | A flow frame asks for its destination or source / 流向框架询问去向或来源 | Destination → `downstream`; source → `upstream` |
+| `K18-verified-model-candidate` | Optional injected provider proposes an intent on an ambiguous or fallback rule (`K3`/`K5`/`K7`/`K8`) and passes deterministic subject, focus, option and direction verification / 可选模型为歧义或默认回退规则提出候选并通过主语类型、焦点、候选项和方向一致性规则核对 | Verified `owner` / `upstream` / `downstream` / `owned` |
 
 Shared terms live in `datakeel/ask/knowledge_vocabulary.py`; `knowledge_frames.py` combines them with argument templates for source, result, counterfactual and flow questions.
 

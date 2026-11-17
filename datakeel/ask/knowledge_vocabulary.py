@@ -132,18 +132,21 @@ HIERARCHY_UP = r"上游|上一层|前一层|底层|底下|\b(?:upstream|undernea
 HIERARCHY_DOWN = r"下游|下一层|后一层|\bdownstream\b"
 SOURCE_NOUNS = r"来源|源头|源表|数据源|输入|基础|依据|\b(?:sources?|inputs?|basis|foundation)\b"
 FLOW_DESTINATION = (
-    r"去向|下一站|流向|流到|流入|送到|供给|提供给|供数|支撑|用于|供(?=谁|哪|什么|多少|几)|"
-    r"\b(?:fed\s+into|feeds?|powers?|supports?|supplies|supply|produces?|generates?|sources?\s+for)\b"
+    r"去向|下一站|流向|流到|流入|落到|落入|送到|喂给|推送给|供给|提供给|供数|支撑|用于|"
+    r"供(?=谁|哪|什么|多少|几)|"
+    r"\b(?:fed\s+into|feeds?\s+into|feeds?|lands?\s+in|pushes?\s+to|powers?|supports?|"
+    r"supplies|supply|produces?|generates?|sources?\s+for)\b"
 )
 BARE_USAGE_ZH = r"(?:用|读)(?=\s|[?!.\u3002\uff1f\uff01\uff0c,;\uff1b]|$)"
 FLOW_DEPENDENCY = (
-    r"依赖|基于|依托|用到|使用|用(?:过|了|着)|用(?=哪|什么|\s)|调用|读取|消费|订阅|引用|"
+    r"依赖|基于|依托|用到|使用|用(?:过|了|着)|用(?=哪|什么|\s)|调用|读取|消费|订阅|引用|拉取|取数|"
     r"取自|来自|出自|源于|从|"
-    r"\b(?:from|based\s+on|built\s+on|depends?\s+on|uses?|used|using|consumes?|consumed|"
+    r"\b(?:from|based\s+on|built\s+on|depends?\s+on|rel(?:y|ies|ied|ying)\s+on|"
+    r"pulls?\s+from|pulled\s+from|pulling\s+from|uses?|used|using|consumes?|consumed|"
     r"reads?|read|reading|calls?|called|calling|consuming|references?|subscribes?\s+to)\b|"
     + BARE_USAGE_ZH
 )
-USAGE_ZH = r"使用|用到|用过|用了|用着|引用|读取|消费|依赖|调用|订阅|" + BARE_USAGE_ZH
+USAGE_ZH = r"使用|用到|用过|用了|用着|引用|读取|消费|依赖|调用|订阅|拉取|取数|" + BARE_USAGE_ZH
 USAGE_EN_PAST = r"used|consumed|read|referenced|called"
 PRODUCTION_EN_PAST = r"fed|powered|supported|supplied|produced|generated"
 PRODUCTION_ZH = r"生成|加工|计算|产出|汇总|衍生"
@@ -160,7 +163,7 @@ DEPENDENCY_CONSEQUENCE = (
 )
 CONSUMPTION = (
     rf"(?:{USAGE_ZH})|\b(?:uses?|used|using|consumes?|consuming|reads?|reading|"
-    r"calls?|calling|depends?\s+on)\b"
+    r"calls?|calling|depends?\s+on|rel(?:y|ies|ied|ying)\s+on|pull(?:s|ed|ing)?\s+from)\b"
 )
 COUNTERFACTUAL = (
     r"(?:要是|如果|假如|假设|一旦).*?(?:没了|消失|停了|停用|下线|删除|删掉|不可用)|"
@@ -183,7 +186,7 @@ EMPLOYMENT = (
 WORK_WORDS = r"工作|\bwork\b"
 CONDITION_WORDS = r"要是|如果|假如|假设|一旦|若|\bif\b"
 ABSENCE_WORDS = (
-    r"没了|没有|不存在|消失|停了|停用|停更|停掉|停供|断供|停止更新|"
+    r"没了|没有|不存在|消失|挂了|崩了|宕机|停了|停用|停更|停掉|停供|断供|停止更新|"
     r"不再(?:更新|供数|提供数据|可用)|下线|删除|删掉|不可用|"
     r"\b(?:went|go(?:es)?|going|go)\s+away\b|"
     r"\b(?:disappear\w*|remove\w*|unavailable|stop\w*|vanish\w*|missing|gone|deleted|dropped)\b"
@@ -277,7 +280,7 @@ ZH_RECIPIENT_USAGE = (
 ZH_TOPIC_USAGE = (
     rf"§\s*[,\uff0c]?\s*(?:目前|现在|还|都|是|有|\s)*"
     rf"(?P<actor>(?:谁|哪|多少|几){ROLE_CLAUSE}?)"
-    rf"(?P<usage>{TOPIC_USAGE_ZH})(?P<object>{ROLE_CLAUSE})"
+    rf"(?P<usage>{TOPIC_USAGE_ZH}|(?<=在)(?:查|看))(?P<object>{ROLE_CLAUSE})"
 )
 ZH_ELIDED_OBJECT = r"\s*(?:了|过|着|呢|啊|呀|它|其)*\s*"
 

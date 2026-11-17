@@ -20,11 +20,13 @@ from datakeel.ask.followup import (
     previous_period,
 )
 from datakeel.ask.interpretation_en import interpreted_question_en
+from datakeel.ask.knowledge_intent_candidates import refine_knowledge_intent
 from datakeel.ask.knowledge_parser import metric_recognition, parse_knowledge_question
 from datakeel.ask.knowledge_service import knowledge_answer, related_knowledge
 from datakeel.ask.models import DimensionParse, Leftovers, QueryContext
 from datakeel.ask.profile import parse_profile_question, profile_answer
 from datakeel.ask.reasons import refusal as coded_refusal
+from datakeel.core.agent_models import Provider
 from datakeel.core.ask_frame_models import AskComparison, AskQueryFrame
 from datakeel.core.ask_models import (
     AskAnswer,
@@ -57,6 +59,7 @@ def ask_data(
     *,
     access: AccessContext | None = None,
     record_usage: bool = True,
+    provider: Provider | None = None,
 ) -> AskAnswer:
     """Answer only from registered metadata and store every outcome with its evidence."""
     caller = (access or AccessContext(actor=request.actor, entry="ask", scope="query")).model_copy(
@@ -69,7 +72,9 @@ def ask_data(
         else None
     )
     request = request.model_copy(update={"conversation_id": request.conversation_id or new_id()})
-    answer = _ask_data(db, request, caller, previous.current_frame if previous else None)
+    answer = _ask_data(
+        db, request, caller, previous.current_frame if previous else None, provider=provider
+    )
     answer = answer.model_copy(
         update={
             "conversation_id": request.conversation_id,
@@ -85,7 +90,12 @@ def ask_data(
 
 
 def _ask_data(
-    db: Database, request: AskRequest, access: AccessContext, previous: AskQueryFrame | None
+    db: Database,
+    request: AskRequest,
+    access: AccessContext,
+    previous: AskQueryFrame | None,
+    *,
+    provider: Provider | None = None,
 ) -> AskAnswer:
     profile = parse_profile_question(request)
     if profile is not None:
@@ -117,6 +127,8 @@ def _ask_data(
         require_access(
             db, tuple(item.asset_ref for item in knowledge.candidates), access, record=False
         )
+        if provider is not None and request.knowledge_intent is None:
+            knowledge = refine_knowledge_intent(request.question, knowledge, provider)
         return knowledge_answer(db, request, knowledge, snapshot, context.layer, graph).model_copy(
             update={"recognition": knowledge.recognition}
         )

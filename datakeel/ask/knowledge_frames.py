@@ -15,7 +15,8 @@ _CLAUSE = vocabulary.ROLE_CLAUSE
 _REFERENCE = rf"§|(?:{vocabulary.SUBJECT_PRONOUN})"
 _USAGE = (
     rf"(?:{vocabulary.USAGE_ZH})|"
-    r"\b(?:uses?|consumes?|reads?|depends?\s+on|references?|subscribes?\s+to)\b"
+    r"\b(?:uses?|consumes?|reads?|depends?\s+on|rel(?:y|ies|ied|ying)\s+on|"
+    r"pull(?:s|ed|ing)?\s+from|references?|subscribes?\s+to)\b"
 )
 _DERIVATION = r"\b(?:derived|built|made|created|generated|produced)\s+(?:from|on|using|with)\b"
 _BASIS = r"基础|依据|来源|输入|\b(?:basis|base|foundation|input|source)\b"
@@ -71,6 +72,7 @@ _ABSENCE = (
     vocabulary.ABSENCE_WORDS
     + r"|断供|停掉|停供|\b(?:retir(?:e|es|ed)|drop(?:s|ped)?|remove[ds]?)\b|"
     r"\b(?:shut(?:s|ting)?\s+down|(?:went|go(?:es)?|taken|take[ns]?)\s+offline|offline|"
+    r"(?:went|go(?:es)?)\s+down|crash(?:es|ed)?|"
     r"turn(?:s|ed)?\s+off|switch(?:es|ed)?\s+off|deprecated?|decommission(?:s|ed)?|"
     r"discontinu(?:e|es|ed)|delet(?:e|es|ed)|purg(?:e|es|ed)|wip(?:e|es|ed)|"
     r"(?:had|has|have)\s+an?\s+outage|out\s+of\s+service|stopp?ed\s+updating)\b"
@@ -81,8 +83,9 @@ _SOURCE_REQUEST = (
     r"substitute\w*|fallback|backup)\b"
 )
 _FLOW = (
-    r"流向|流到|流入|去向|下一站|(?:最后|最终)\s*到(?:了|达)?|"
-    r"\b(?:flow(?:s|ed|ing)?|go(?:es)?\s+next|end(?:s|ed)?\s+up)\b"
+    r"流向|流到|流入|落到|落入|去向|下一站|(?:最后|最终)\s*到(?:了|达)?|"
+    r"\b(?:flow(?:s|ed|ing)?|go(?:es)?\s+next|end(?:s|ed)?\s+up|"
+    r"wind(?:s)?\s+up|wound\s+up|land(?:s|ed)?\s+in)\b"
 )
 _INVERSION = r"\b(?:does|do|did|is|are|was|were|has|have|can|could|would|will)\s+§"
 _FRONTED_SOURCE = rf"(?:\bfrom\s+|\bout\s+of\s+|从\s*)(?:{_QUESTION})"
