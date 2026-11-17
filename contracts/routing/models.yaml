@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Model prices are supplied by the checked-in model-prices.yaml snapshot.
-# Add same-provider fallback links only after adding their explicit price records.
+# See contracts/routing/models-tiered.example.yaml for a multi-tier + backup profile.
 version: 1
 providers:
   fake:

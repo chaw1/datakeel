@@ -377,9 +377,9 @@ request_parameters:
   enable_thinking: false
 ```
 
-Native Ollama preserves `num_ctx` and maps `done_reason` to the common finish reason. To use a compatible cloud endpoint, use `interface: openai`, an explicit `base_url`, `model: qwen3.5-flash` and `api_key_env: DASHSCOPE_API_KEY`; see the bundled cloud example. The client ignores proxy environment variables, does not follow redirects and never retries quota rejection, reported generically as “服务商额度不足”.
+Native Ollama preserves `num_ctx` and maps `done_reason` to the common finish reason. To use a compatible cloud endpoint, use `interface: openai`, an explicit `base_url`, `model: qwen3.5-flash` and `api_key_env: DATAKEEL_VISION_API_KEY`; see the bundled cloud examples (`bailian-qwen35-flash*`), which bill against the checked-in `qwen3.5-flash` tariff in `contracts/model-prices.yaml`. The client ignores proxy environment variables, does not follow redirects and never retries quota rejection, reported generically as “服务商额度不足”.
 
-Ollama 原生接口支持 `num_ctx`，避免兼容接口默认上下文截断。百炼示例使用 OpenAI 兼容接口与环境变量名；不会把密钥写入配置、计划或录制。服务商额度不足会返回明确的 `provider_quota_exhausted` 失败，不作为网络故障重试。
+Ollama 原生接口支持 `num_ctx`，避免兼容接口默认上下文截断。百炼示例使用 OpenAI 兼容接口与环境变量名 `DATAKEEL_VISION_API_KEY`，并按 `contracts/model-prices.yaml` 中已登记的 `qwen3.5-flash` 单价计算转写费用上限与实际结算；不会把密钥写入配置、计划或录制。服务商额度不足会返回明确的 `provider_quota_exhausted` 失败，不作为网络故障重试。
 
 RapidOCR is loaded lazily. Users install the third-party OCR packages themselves with `pip install rapidocr==3.10.0 onnxruntime`; these are not Datakeel dependencies and are outside Datakeel's license audit. Missing packages produce a typed per-image failure with this installation hint. Visual mode still runs local OCR for line geometry; replay and fake carry their own frozen OCR lines and need no OCR installation.
 
@@ -427,7 +427,7 @@ Auto runs local OCR first. The pure `auto-v2` rules use weighted OCR confidence,
 
 `auto` 先运行本地 OCR，再根据置信度、失败/空结果、估计文档区域内的文字框与墨迹覆盖、框外连线、删除线或灰色行决定路线。灰行只与同组排版对齐的相邻行比较，统一纸色、平滑阴影和文档外背景不算；删除线必须是穿过文字框中部的细横线。普通文字记 `clean_text`；转交理由逐图显示中英文说明。阈值统一在转写 YAML 的 `auto_routing` 中覆盖（例如 `min_mean_confidence: 0.85`），完整默认值见 `datakeel/core/transcription_auto.py`。规则版本与全部阈值进入签批摘要和 auto 缓存键；改变它们必须重新准备和签批。升级到 `auto-v2` 后，旧 `auto-v1` 的 auto 签批不能继续执行，旧 auto 转写缓存不会复用；历史运行及转写记录仍可读取，显式 OCR/VLM 的入口与缓存身份不变。
 
-Prepare does not call OCR, routing or vision. Its outbound list includes every auto image that may reach an external endpoint, labelled “auto: depending on OCR results”; costs assume all eligible images use vision. Execution checks each file ID and content hash against that signed list before any external visual request. A missing entry fails that image while the rest continue. Reports retain the approved transcription cost upper bound alongside actual outbound image counts and separate actual transcription charges, with unknown prices remaining unknown. Cached reruns report no new transfers. The local OCR reference remains visible beside a visual result and is excluded from extraction. The model-price example has commented transcription price fields; add verified prices before relying on known estimates.
+Prepare does not call OCR, routing or vision. Its outbound list includes every auto image that may reach an external endpoint, labelled “auto: depending on OCR results”; costs assume all eligible images use vision. Execution checks each file ID and content hash against that signed list before any external visual request. A missing entry fails that image while the rest continue. Reports retain the approved transcription cost upper bound alongside actual outbound image counts and separate actual transcription charges, with unknown prices remaining unknown. Cached reruns report no new transfers. The local OCR reference remains visible beside a visual result and is excluded from extraction. Bundled `bailian-qwen35-flash*` profiles resolve known upper bounds and settled charges from `contracts/model-prices.yaml`; add verified prices there before relying on known estimates for custom models.
 
 签批前不调用任何转写后端或判定函数。auto 按所有可能转交图片估算费用上限，卡片列出文件与条件；执行时逐图核对文件身份和内容哈希，未获准图片拒绝外发，其余照常完成。报告显示实际外发数、分阶段费用及不参与抽取的本地 OCR 参考稿；缓存复用不计作再次外发。未知价格继续显示未知。
 

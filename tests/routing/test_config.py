@@ -11,6 +11,7 @@ import yaml
 from datakeel.agent.service import create_conversation
 from datakeel.core.agent_models import ConversationCreate
 from datakeel.core.errors import ValidationError
+from datakeel.core.routing_models import TierState
 from datakeel.routing.config import (
     contract_path,
     fallback_chain,
@@ -20,6 +21,7 @@ from datakeel.routing.config import (
     validate_config,
 )
 from datakeel.routing.models import ProviderModels, TierModels
+from datakeel.routing.tiers import model_chain, select_model
 from datakeel.storage.database import Database
 
 
@@ -142,3 +144,43 @@ def test_chain_when_cycle_is_supplied_remains_bounded() -> None:
         fallbacks={"one": "two", "two": "one"},
     )
     assert fallback_chain(models, "one") == ["one", "two"]
+
+
+def test_tiered_example_configuration_when_loaded_routes_tiers_and_fallbacks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The bundled tiered-and-backup example validates cleanly across providers and endpoints."""
+    example = contract_path("routing/models-tiered.example.yaml")
+    assert validate_config(example) == []
+    config = load_config(example)
+
+    openai_auto = ConversationCreate(provider="openai", model="auto")
+    simple = select_model(openai_auto, TierState(), config)
+    multi = select_model(openai_auto, TierState(response_has_tool_result=True), config)
+    high_risk = select_model(openai_auto, TierState(response_has_plan=True), config)
+    assert (simple.model, simple.pinned) == ("gpt-4.1-nano", False)
+    assert (multi.model, multi.pinned) == ("gpt-4.1-mini", False)
+    assert (high_risk.model, high_risk.pinned) == ("gpt-4.1", False)
+    assert model_chain(openai_auto, high_risk, config) == [
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4.1-nano",
+    ]
+
+    anthropic_auto = ConversationCreate(provider="anthropic", model="auto")
+    anthropic_high = select_model(anthropic_auto, TierState(response_has_plan=True), config)
+    assert anthropic_high.model == "claude-sonnet-4-5-20250929"
+    assert model_chain(anthropic_auto, anthropic_high, config) == [
+        "claude-sonnet-4-5-20250929",
+        "claude-sonnet-4-20250514",
+        "claude-haiku-4-5-20251001",
+    ]
+
+    monkeypatch.setenv("DATAKEEL_OPENAI_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode")
+    bailian = load_config(example)
+    assert bailian.providers["openai"].tiers.high_risk == "qwen3.8-max"
+    assert fallback_chain(bailian.providers["openai"], "qwen3.8-max") == [
+        "qwen3.8-max",
+        "qwen3.7-plus",
+        "qwen3.5-flash",
+    ]

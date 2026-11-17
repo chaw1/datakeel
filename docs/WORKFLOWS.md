@@ -281,9 +281,9 @@ Agent SSE adds `route` before `done`: `route` contains `workflow_id`, `score`, `
 
 Agent 在 `done` 前新增 `route` 事件，字段如上。新增审计字段记录是否调用分类器、原始选择、核对结果及是否要求确认。分类选中含写操作或签批步骤的工作流后，用户须从工作流表单显式启动；同一会话响应仍可只读查询及发现工具，写操作、执行、记忆写入和可能间接写入的委派均在派发前停止，原因是 `workflow_confirmation_required`。用户显式启动后继续沿用工作流原有签批门。仅命中工作流时单独发送 `route`，自由 Agent 决策附在 `done.route`。决策保存在会话事件中，也可通过 `GET /api/agent/conversations/{id}/routes` 查询。恢复不进行意图路由。
 
-Model configuration lives in [`contracts/routing/models.yaml`](../contracts/routing/models.yaml). `DATAKEEL_MODEL_ROUTING_FILE` selects another file. Each provider declares `tiers.simple`, `tiers.multi_step`, `tiers.high_risk` and a `fallbacks` mapping from one model name to the next. The bundled configuration has no backup links. All referenced models must have same-provider prices in `contracts/model-prices.yaml`.
+Model configuration lives in [`contracts/routing/models.yaml`](../contracts/routing/models.yaml). `DATAKEEL_MODEL_ROUTING_FILE` selects another file, such as the bundled tiered-and-backup example [`contracts/routing/models-tiered.example.yaml`](../contracts/routing/models-tiered.example.yaml). Each provider declares `tiers.simple`, `tiers.multi_step`, `tiers.high_risk` and a `fallbacks` mapping from one model name to the next. The default configuration keeps a single conservative model per provider without backup links; the tiered example demonstrates distinct tiers and up to two same-provider backups across OpenAI, Anthropic, DeepSeek and Bailian. All referenced models must have same-provider prices in `contracts/model-prices.yaml`.
 
-模型配置位于上述 YAML，可用 `DATAKEEL_MODEL_ROUTING_FILE` 指向另一份配置。每个 provider 声明三个档位以及主模型到下一模型的 `fallbacks` 映射；默认配置不启用备用链。每个引用模型都必须在价格表中具有同 provider 的价格。
+模型配置位于上述 YAML，可用 `DATAKEEL_MODEL_ROUTING_FILE` 指向另一份配置（例如内置的分档加备用示例 [`contracts/routing/models-tiered.example.yaml`](../contracts/routing/models-tiered.example.yaml)）。每个 provider 声明三个档位以及主模型到下一模型的 `fallbacks` 映射；默认配置保持单模型且不启用备用链，示例配置展示 OpenAI、Anthropic、DeepSeek 与百炼的三档模型及同服务商备用链。每个引用模型都必须在价格表中具有同 provider 的价格。
 
 Before each call, loaded controlled actions or an already produced plan select `high_risk`; otherwise an earlier tool result in this response selects `multi_step`; otherwise the tier is `simple`. An explicit conversation model stays pinned. Only `model: auto` selects by tier. Fake conversations always use their configured model.
 

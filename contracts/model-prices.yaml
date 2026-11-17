@@ -77,3 +77,31 @@ models:
     cache_read: 0.276
     cache_write: 0.276
     source: https://www.alibabacloud.com/help/en/model-studio/model-pricing (2026-10-31; China (Beijing); input <= 256K; limited-time 20% off)
+  - model: gpt-4.1
+    provider: openai
+    input: 2.00
+    output: 8.00
+    cache_read: 0.50
+    cache_write: 2.00
+    source: https://developers.openai.com/api/docs/models/gpt-4.1
+  - model: gpt-4.1-nano
+    provider: openai
+    input: 0.10
+    output: 0.40
+    cache_read: 0.025
+    cache_write: 0.10
+    source: https://developers.openai.com/api/docs/models/gpt-4.1-nano
+  - model: claude-sonnet-4-5-20250929
+    provider: anthropic
+    input: 3.00
+    output: 15.00
+    cache_read: 0.30
+    cache_write: 3.75
+    source: https://platform.claude.com/docs/en/about-claude/pricing
+  - model: claude-sonnet-4-20250514
+    provider: anthropic
+    input: 3.00
+    output: 15.00
+    cache_read: 0.30
+    cache_write: 3.75
+    source: https://platform.claude.com/docs/en/about-claude/pricing

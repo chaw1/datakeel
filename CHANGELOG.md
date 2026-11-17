@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Multi-tier OpenAI and Anthropic tariffs in [`contracts/model-prices.yaml`](contracts/model-prices.yaml) alongside a bundled tiered-and-backup routing example ([`contracts/routing/models-tiered.example.yaml`](contracts/routing/models-tiered.example.yaml)) and bundled cloud visual transcription pricing regression coverage.
 - Bilingual documentation hubs ([`docs/README.md`](docs/README.md), [`docs/README.zh.md`](docs/README.zh.md)) indexing all repository guides, alongside extracted API/pipeline references ([`docs/API_REFERENCE.md`](docs/API_REFERENCE.md), [`docs/API_REFERENCE.zh.md`](docs/API_REFERENCE.zh.md)) and offline evaluation/gate references ([`docs/VERIFICATION.md`](docs/VERIFICATION.md), [`docs/VERIFICATION.zh.md`](docs/VERIFICATION.zh.md)).
 - Community and package metadata: [`SUPPORT.md`](SUPPORT.md), [`CITATION.cff`](CITATION.cff), [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml), and PEP 639-compatible `authors`, `keywords`, `classifiers`, and `[project.urls]` in [`pyproject.toml`](pyproject.toml).
 - Loopback-only local PostgreSQL stack in [`compose.yaml`](compose.yaml) (documented in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and [`docs/DEPLOYMENT.zh.md`](docs/DEPLOYMENT.zh.md)) and a tag-triggered GitHub Release workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)) attaching the verified wheel, hashed requirements, notices, and `SHA256SUMS.txt` without publishing to PyPI or container registries.

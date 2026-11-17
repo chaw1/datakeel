@@ -18,4 +18,4 @@ auto_routing:
   version: auto-v2
   min_mean_confidence: 0.85
 # All omitted routing thresholds use the frozen AutoRoutingConfig defaults.
-# Add a verified qwen3.5-flash tariff to contracts/model-prices.yaml for known costs.
+# Worst-case estimates and settled transcription costs use qwen3.5-flash in contracts/model-prices.yaml.
