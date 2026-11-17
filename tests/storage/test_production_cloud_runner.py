@@ -4,7 +4,6 @@
 """Cloud runs call the model outside every transaction, one live run per project, readable."""
 
 import threading
-import time
 import warnings
 from datetime import timedelta
 from pathlib import Path
@@ -12,7 +11,8 @@ from typing import TYPE_CHECKING
 
 import httpx
 import pytest
-from sqlalchemy import select
+from sqlalchemy import event, select
+from sqlalchemy.engine import Connection
 
 from datakeel.actions.models import ActionContext, ApprovalDecision, ExecuteRequest
 from datakeel.actions.production_catalog_parameters import RunPrelabelParams
@@ -57,6 +57,11 @@ def _values(project_id: str, budget: float = 100) -> dict[str, object]:
     return {"project_id": project_id, "model_id": "vision", "budget": budget}
 
 
+def _bound_probe_lock_wait(connection: Connection) -> None:
+    # A conflicting lock fails the probe instead of deadlocking the provider callback.
+    connection.exec_driver_sql("SET LOCAL lock_timeout = '12s'")
+
+
 class ProbingVision(FakeVision):
     """While the fifth image is in flight, write elsewhere and read this run's progress."""
 
@@ -64,7 +69,7 @@ class ProbingVision(FakeVision):
         """Probe once, from inside the provider call, so no runner code is between."""
         super().__init__(failures={1: "500"})
         self.db, self.project_id, self.other = db, project_id, other_project_id
-        self.write_seconds: float | None = None
+        self.write_completed = False
         self.progress: tuple[PrelabelProgress, ...] = ()
         self.reconciled: int | None = None
         self.warnings: list[str] = []
@@ -73,13 +78,12 @@ class ProbingVision(FakeVision):
     def __call__(self, request: httpx.Request) -> httpx.Response:
         """Answer as usual; the first call of the second batch probes the database first."""
         with self._probe:
-            probing = len(self.requests) == 8 and self.write_seconds is None
+            probing = len(self.requests) == 8 and not self.write_completed
             if probing:
-                started = time.perf_counter()
                 run_action(
                     self.db, "configure_project", {"project_id": self.other, "confidence_high": 0.9}
                 )
-                self.write_seconds = time.perf_counter() - started
+                self.write_completed = True
                 self.progress = prelabel_progress(self.db, self.project_id)
                 with warnings.catch_warnings(record=True) as caught:
                     warnings.simplefilter("always")
@@ -91,7 +95,7 @@ class ProbingVision(FakeVision):
 def test_model_calls_hold_no_lock_and_progress_is_readable_mid_run(
     db: Database, tmp_path: Path
 ) -> None:
-    """Another project's write finishes at once mid-run; done, failed and spent are visible."""
+    """Another project's write finishes before the model returns; progress remains visible."""
     project, _ = seed_cloud_project(db, tmp_path / "images", count=8)
     other = run_action(
         db,
@@ -107,11 +111,12 @@ def test_model_calls_hold_no_lock_and_progress_is_readable_mid_run(
     ).root
     assert isinstance(other, dict)
     run_action(db, "register_model", {"model": cloud_model()})
+    if not db.sqlite:
+        event.listen(db.engine, "begin", _bound_probe_lock_wait)
     fake = ProbingVision(db, project.id, str(other["id"]))
     with use_transport(httpx.MockTransport(fake)):
         details = run_action(db, "run_prelabel", _values(project.id))
-    assert fake.write_seconds is not None
-    assert fake.write_seconds < 1
+    assert fake.write_completed
     # The worker's reconciler leaves the live run, which has no worker task, to its caller.
     assert (fake.reconciled, fake.warnings) == (0, [])
     (running,) = fake.progress

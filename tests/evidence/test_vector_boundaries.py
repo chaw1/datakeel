@@ -9,8 +9,6 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
 
-from datakeel.actions.models import ApprovalDecision
-from datakeel.actions.service import approve_plan
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.evidence_execution import EvidenceExecutionContext
 from datakeel.core.vector_models import VectorError
@@ -20,6 +18,7 @@ from datakeel.evidence.vector_transport import FakeVectorTransport
 from datakeel.persistence.task_queue import DatabaseQueue
 from datakeel.pipeline import run_pipeline
 from datakeel.storage.evidence_store import list_assertions
+from datakeel.storage.vector_authorization import require_vector_human
 from datakeel.storage.vector_budget import reserve_vector
 from datakeel.storage.vector_rows import VectorCacheRow
 from tests.evidence.vector_helpers import leased_vector, vector_dataset, vector_prepare
@@ -35,12 +34,7 @@ def test_tool_approval_guard_is_observable(db: Database, tmp_path: Path) -> None
     plan = vector_prepare(db, vector_dataset(db, tmp_path / "inputs"))
     refused = False
     try:
-        approve_plan(
-            db,
-            plan.id,
-            ApprovalDecision(approve=True, plan_digest=plan.plan_digest),
-            access=AccessContext(actor="local", entry="mcp", scope="query"),
-        )
+        require_vector_human(plan, AccessContext(actor="local", entry="mcp", scope="query"))
     except VectorError:
         refused = True
     assert refused

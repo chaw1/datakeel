@@ -40,16 +40,27 @@ class ProductionPackageInspectionRow(Base):
     payload: Mapped[dict[str, JsonValue]] = mapped_column(JSON)
 
 
+def _drop_old_claim_index(connection: Connection) -> None:
+    # Look up the index on the visible task table, including its actual schema.
+    existing = connection.exec_driver_sql(
+        "SELECT namespace.nspname, pg_get_indexdef(index_class.oid) "
+        "FROM pg_index AS links "
+        "JOIN pg_class AS index_class ON index_class.oid = links.indexrelid "
+        "JOIN pg_namespace AS namespace ON namespace.oid = index_class.relnamespace "
+        "WHERE links.indrelid = to_regclass('production_tasks') "
+        "AND index_class.relname = 'production_task_claim_order'"
+    ).fetchone()
+    if existing is not None and "display_rank" not in existing[1]:
+        schema = connection.dialect.identifier_preparer.quote_schema(str(existing[0]))
+        connection.exec_driver_sql(f"DROP INDEX {schema}.production_task_claim_order")
+
+
 def install_team_constraints(connection: Connection, *, sqlite: bool) -> None:
     """Index the claim order and reject UPDATE and DELETE of release and inspection history."""
     # Claims take the highest priority first and then the persisted display order. A
     # mixed-direction index lets concurrent claimers walk the queue with SKIP LOCKED.
     if not sqlite:
-        existing = connection.exec_driver_sql(
-            "SELECT indexdef FROM pg_indexes WHERE indexname = 'production_task_claim_order'"
-        ).fetchone()
-        if existing is not None and "display_rank" not in existing[0]:
-            connection.exec_driver_sql("DROP INDEX production_task_claim_order")
+        _drop_old_claim_index(connection)
     connection.exec_driver_sql(
         "CREATE INDEX IF NOT EXISTS production_task_claim_order "
         "ON production_tasks (project_id, state, priority DESC, display_rank, id)"
