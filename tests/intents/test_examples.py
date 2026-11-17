@@ -5,12 +5,24 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from datakeel.actions import service
+from datakeel.actions.production_parameters import (
+    ReviewTaskParams,
+    SaveRevisionParams,
+    SubmitTaskParams,
+)
+from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.intent_models import PageContext
+from datakeel.core.models import new_id
 from datakeel.intents.chains import advance_chain
+from datakeel.storage import production_reviews
 from datakeel.storage.intent_reads import held_tasks
+from datakeel.storage.production_reviews import review_task, submit_task
+from datakeel.storage.production_revisions import append_revision
+from datakeel.storage.production_tasks import require_task
 from tests.intents.support import (
     REASSIGN,
     REWORK,
@@ -25,6 +37,8 @@ from tests.production_team_support import ServiceRunner
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    import pytest
 
     from datakeel.core.intent_models import ActionChain
     from datakeel.storage.database import Database
@@ -72,15 +86,104 @@ def test_reassign_sentence_takes_back_untouched_tasks_and_assigns_them(db: Datab
 
 
 def test_rework_question_is_answered_directly_without_a_plan(db: Database) -> None:
-    """A read question runs the read function at once and says it does not filter by week."""
+    """A weekly rework question binds window='this_week' and answers directly without a plan."""
     project, _ = team(db)
     result = plan(db, REWORK, PageContext(project_id=project.id), actor="boss")
     assert result.kind == "answer"
     assert result.answer is not None
     assert result.answer.function == "rework_rate"
-    assert result.answer.arguments == {"project_id": project.id}
+    assert result.answer.arguments == {"project_id": project.id, "window": "this_week"}
     assert result.chain is None
-    assert "不按周" in result.text or "还没有审核" in result.text
+    assert "本周还没有审核记录" in result.text
+
+
+def _record_timed_review(
+    db: Database,
+    monkeypatch: pytest.MonkeyPatch,
+    task: tuple[str, str],
+    actor: str,
+    decision: str,
+    at: datetime,
+) -> None:
+    task_id, sample_id = task
+    monkeypatch.setattr(production_reviews, "utcnow", lambda: at)
+    with db.session() as session:
+        revision = append_revision(
+            session,
+            require_task(session, task_id),
+            SaveRevisionParams(
+                request_id=new_id(),
+                task_id=task_id,
+                previous_revision_id=None,
+                annotation=AnnotationRecord(
+                    sample_id=sample_id, annotator_id=actor, labels=("cat",)
+                ),
+            ),
+            actor,
+        )
+        submit_task(session, SubmitTaskParams(request_id=new_id(), task_id=task_id), actor)
+        review_task(
+            session,
+            ReviewTaskParams(
+                request_id=new_id(),
+                task_id=task_id,
+                revision_id=revision.id,
+                decision="rework" if decision == "rework" else "approve",
+                issues=("Fix box",) if decision == "rework" else (),
+            ),
+            "boss",
+        )
+        session.commit()
+
+
+def test_rework_question_filters_reviews_by_time_window_and_recent_days(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Older reviews outside 'this week' or 'last N days' do not skew windowed rework answers."""
+    project, tasks = team(db)
+    runner = ServiceRunner(db)
+    runner("assign_tasks", {"task_ids": [tasks[2].id], "actor": "li"}, "boss")
+    now = datetime(2026, 11, 18, 12, 0, tzinfo=UTC)  # Wednesday
+    _record_timed_review(
+        db,
+        monkeypatch,
+        (tasks[0].id, tasks[0].sample_id),
+        "wang",
+        "rework",
+        now - timedelta(days=10),
+    )
+    _record_timed_review(
+        db,
+        monkeypatch,
+        (tasks[1].id, tasks[1].sample_id),
+        "wang",
+        "approve",
+        now - timedelta(days=1),
+    )
+    _record_timed_review(
+        db, monkeypatch, (tasks[2].id, tasks[2].sample_id), "li", "rework", now - timedelta(days=1)
+    )
+    monkeypatch.setattr("datakeel.ontology.production_functions.utcnow", lambda: now)
+
+    ctx = PageContext(project_id=project.id)
+    weekly = plan(db, REWORK, ctx, actor="boss")
+    assert weekly.kind == "answer"
+    assert "li" in weekly.text
+    assert "100%" in weekly.text
+
+    english_days = plan(
+        db, "Who has the highest rework rate in the last 3 days?", ctx, actor="boss"
+    )
+    assert english_days.kind == "answer"
+    assert english_days.answer is not None
+    assert english_days.answer.arguments == {"project_id": project.id, "days": 3}
+    assert "li has the highest rework rate in the last 3 days: 100%" in english_days.text
+
+    unfiltered = plan(db, "谁的返工率最高?", ctx, actor="boss")
+    assert unfiltered.kind == "answer"
+    assert unfiltered.answer is not None
+    assert unfiltered.answer.arguments == {"project_id": project.id}
+    assert "按项目全部审核记录统计" in unfiltered.text
 
 
 def test_unknown_person_is_asked_with_candidates_and_the_reply_resumes(db: Database) -> None:

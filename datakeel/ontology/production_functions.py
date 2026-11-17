@@ -3,10 +3,12 @@
 
 """Expose authoritative production queries to both read-only tool transports."""
 
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from datakeel.core.data_asset_models import AccessContext
-from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument
+from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument, utcnow
+from datakeel.core.production_models import ReworkRateWorkload
 from datakeel.core.production_reads import (
     AssigneesParams,
     LabelSetDiffParams,
@@ -16,6 +18,7 @@ from datakeel.core.production_reads import (
     PackageReadParams,
     ProductionObjectQuery,
     ProjectReadParams,
+    ReworkRateParams,
 )
 from datakeel.ontology.models import FunctionResult
 from datakeel.storage.database import Database
@@ -42,7 +45,7 @@ PRODUCTION_READ_MODELS: dict[str, type[BoundaryModel]] = {
     "project_progress": ProjectReadParams,
     "package_status": PackageReadParams,
     "annotator_workload": ProjectReadParams,
-    "rework_rate": ProjectReadParams,
+    "rework_rate": ReworkRateParams,
     "annotation_consistency": ProjectReadParams,
     "prelabel_confidence": ProjectReadParams,
     "production_prelabel_accuracy": ProjectReadParams,
@@ -54,6 +57,48 @@ PRODUCTION_READ_MODELS: dict[str, type[BoundaryModel]] = {
     "package_acceptance": PackageAcceptanceParams,
     "assignees": AssigneesParams,
 }
+
+
+def _review_bounds(
+    query: ReworkRateParams, reference: datetime
+) -> tuple[str | None, int | None, datetime | None, datetime | None, bool]:
+    if query.since is not None or query.until is not None:
+        start = query.since.astimezone(UTC) if query.since is not None else None
+        end = query.until.astimezone(UTC) if query.until is not None else None
+        return query.window or "custom", query.days, start, end, False
+    if query.days is not None:
+        return query.window, query.days, reference - timedelta(days=query.days), reference, False
+    if query.window is None or query.window == "all_time":
+        return query.window, None, None, None, False
+    day_start = reference.replace(hour=0, minute=0, second=0, microsecond=0)
+    monday = day_start - timedelta(days=day_start.weekday())
+    presets: dict[str, tuple[datetime, datetime, bool]] = {
+        "today": (day_start, reference, False),
+        "this_week": (monday, reference, False),
+        "last_week": (monday - timedelta(days=7), monday, True),
+        "this_month": (day_start.replace(day=1), reference, False),
+        "last_7_days": (reference - timedelta(days=7), reference, False),
+        "last_30_days": (reference - timedelta(days=30), reference, False),
+    }
+    start, end, exclusive = presets[query.window]
+    return query.window, None, start, end, exclusive
+
+
+def rework_rate_workload(
+    db: Database, query: ReworkRateParams, *, now: datetime | None = None
+) -> ReworkRateWorkload:
+    """Compute rework rates across all project reviews or within a bounded UTC review window."""
+    reference = (now or utcnow()).astimezone(UTC)
+    window, days, start, end, exclusive_end = _review_bounds(query, reference)
+    base = annotator_workload(db, query.project_id, (start, end, exclusive_end))
+    return ReworkRateWorkload(
+        project_id=base.project_id,
+        annotators=base.annotators,
+        window=window,
+        days=days,
+        since=start,
+        until=end,
+    )
 
 
 def invoke_production(
@@ -106,6 +151,8 @@ def _project_read(
     if name == "package_status":
         query = PackageReadParams.model_validate(arguments.root)
         return project_progress(db, query.project_id, query.package_id)
+    if name == "rework_rate":
+        return rework_rate_workload(db, ReworkRateParams.model_validate(arguments.root))
     project = ProjectReadParams.model_validate(arguments.root)
     readers: dict[str, Callable[[Database, str], BoundaryModel]] = {
         "project_progress": project_progress,

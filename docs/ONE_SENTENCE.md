@@ -4,7 +4,7 @@
 
 > **This is a beta feature.** On wording it has not seen before, about eight in ten requests get the right plan straight away; the rest may get an extra question, a "cannot do this", or a plan that is wrong. Every action that changes data runs only after you confirm it, so when a plan is wrong you cancel it and nothing changes; read-only questions are answered without changing anything. Planning uses DeepSeek Flash (`deepseek-flash`) by default with thinking on (DeepSeek's default). The entry and every result card in the interface carry a "Beta" mark.
 
-Type what you want in the Agent dialog, for example "Set up a box annotation project for car and truck with two people cross-checking and a 10% spot check". Datakeel turns the sentence into a chain of existing controlled actions, shows what each step changes, what it costs and whether it needs a signature, and runs nothing until you confirm. Questions such as "who has the highest rework rate" are answered directly by a read function.
+Type what you want in the Agent dialog, for example "Set up a box annotation project for car and truck with two people cross-checking and a 10% spot check". Datakeel turns the sentence into a chain of existing controlled actions, shows what each step changes, what it costs and whether it needs a signature, and runs nothing until you confirm. Questions such as "who has the highest rework rate this week" are answered directly by a read function, filtering reviews by the requested UTC window (`today`, `this_week`, `last_week`, `this_month`, `last_7_days`, `last_30_days`, or rolling `days`) and counting all project reviews when no window is stated.
 
 ## How a sentence is understood
 
@@ -57,5 +57,4 @@ Drafting sizes its output limit by the label count (4,000 to 8,192 tokens), and 
 
 ## Limits
 
-- `rework_rate` counts every review of the project; "this week" is not filtered and the answer says so.
 - The planner model is the conversation's model, with room for 4000 output tokens so reasoning models still return the JSON. The offline demo provider uses only the recipes.

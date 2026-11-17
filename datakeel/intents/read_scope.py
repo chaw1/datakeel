@@ -46,6 +46,26 @@ def own_projects(
 
 
 SELF = re.compile(r"我|\b(?:my|mine|me|I)\b")
+_REWORK_WINDOWS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"这周|本周|这一周|\bthis\s+week\b", re.IGNORECASE), "this_week"),
+    (re.compile(r"上周|上一周|上星期|\b(?:last|previous)\s+week\b", re.IGNORECASE), "last_week"),
+    (re.compile(r"今天|今日|\btoday\b", re.IGNORECASE), "today"),
+    (re.compile(r"这个月|本月|这一月|\bthis\s+month\b", re.IGNORECASE), "this_month"),
+    (
+        re.compile(r"(?:最近|近|过去)\s*7\s*天|\b(?:last|past)\s+7\s+days\b", re.IGNORECASE),
+        "last_7_days",
+    ),
+    (
+        re.compile(r"(?:最近|近|过去)\s*30\s*天|\b(?:last|past)\s+30\s+days\b", re.IGNORECASE),
+        "last_30_days",
+    ),
+)
+_REWORK_DAYS = re.compile(
+    r"(?:最近|近|过去)\s*(?P<zh>\d{1,4})\s*天|\b(?:last|past)\s+(?P<en>\d{1,4})\s+days?\b",
+    re.IGNORECASE,
+)
+_TIME_KEYS = frozenset({"time", "period", "range", "time_range", "week", "date_range"})
+_MAX_REWORK_DAYS = 3650
 
 
 def assumed_note(entry: CatalogEntry, language: str) -> str:
@@ -153,3 +173,25 @@ def production_read(db: Database, step: DraftStep) -> DraftStep:
         return step
     params: dict[str, JsonValue] = {"kind": "production_task", "task_id": value}
     return step.model_copy(update={"action": "production_objects", "params": params})
+
+
+def rework_window_arguments(
+    known: dict[str, JsonValue], unknown: dict[str, JsonValue], text: str
+) -> tuple[dict[str, JsonValue], dict[str, JsonValue]]:
+    """Extract spoken review windows for rework_rate and clear consumed unknown time keys."""
+    if {"window", "days", "since", "until"} & set(known):
+        rest = {key: value for key, value in unknown.items() if key not in _TIME_KEYS}
+        return known, rest
+    inferred: dict[str, JsonValue] = {}
+    for pattern, window in _REWORK_WINDOWS:
+        if pattern.search(text):
+            inferred = {"window": window}
+            break
+    if not inferred and (hit := _REWORK_DAYS.search(text)):
+        count = int(hit.group("zh") or hit.group("en"))
+        if 1 <= count <= _MAX_REWORK_DAYS:
+            inferred = {"days": count}
+    if not inferred:
+        return known, unknown
+    rest = {key: value for key, value in unknown.items() if key not in _TIME_KEYS}
+    return {**known, **inferred}, rest

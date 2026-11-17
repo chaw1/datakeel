@@ -205,6 +205,15 @@ class ProductionWorkload(BoundaryModel):
     annotators: tuple[AnnotatorWorkload, ...]
 
 
+class ReworkRateWorkload(ProductionWorkload):
+    """Extend project workload with the effective UTC review window when filtered."""
+
+    window: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    days: int | None = Field(default=None, exclude_if=lambda value: value is None)
+    since: datetime | None = Field(default=None, exclude_if=lambda value: value is None)
+    until: datetime | None = Field(default=None, exclude_if=lambda value: value is None)
+
+
 class ConfidenceBucket(BoundaryModel):
     """Count model revisions in a half-open bucket, with 1 included in the last."""
 

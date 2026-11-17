@@ -36,23 +36,59 @@ def _people(data: JsonValue) -> list[dict[str, JsonValue]]:
     return [item for item in rows if isinstance(item, dict)] if isinstance(rows, list) else []
 
 
+_WINDOW_WORDS: dict[str, tuple[str, str]] = {
+    "today": ("今天", "today"),
+    "this_week": ("本周", "this week"),
+    "last_week": ("上周", "last week"),
+    "this_month": ("本月", "this month"),
+    "last_7_days": ("最近 7 天", "in the last 7 days"),
+    "last_30_days": ("最近 30 天", "in the last 30 days"),
+    "all_time": ("全部时间", "across all time"),
+    "custom": ("所选时间段内", "in the selected period"),
+}
+
+
+def _rework_scope(data: dict[str, JsonValue]) -> tuple[str, str] | None:
+    days = data.get("days")
+    if isinstance(days, int) and not isinstance(days, bool):
+        return f"最近 {days} 天", f"in the last {days} days"
+    window = data.get("window")
+    return _WINDOW_WORDS.get(window) if isinstance(window, str) else None
+
+
 def _workload(data: JsonValue, language: str) -> str | None:
     if not isinstance(data, dict) or not isinstance(data.get("annotators"), list):
         return None
+    scope = _rework_scope(data)
     reviewed = [item for item in _people(data) if _number(item, "review_count") > 0]
     if not reviewed:
-        return "还没有审核记录, 算不出返工率。" if language == "zh" else "No reviews yet."
+        zh = (
+            f"{scope[0]}还没有审核记录, 算不出返工率。"
+            if scope
+            else "还没有审核记录, 算不出返工率。"
+        )
+        en = f"No reviews {scope[1]} yet." if scope else "No reviews yet."
+        return zh if language == "zh" else en
     top = max(reviewed, key=lambda item: (_number(item, "rework_rate"), str(item.get("actor"))))
     rate, actor = _number(top, "rework_rate"), top.get("actor")
     count, total = int(_number(top, "rework_count")), int(_number(top, "review_count"))
-    if language == "zh":
+    if scope is not None:
         return (
-            f"返工率最高的是 {actor}: {rate:.0%} ({total} 次审核里返工 {count} 次)。"
-            "该函数按项目全部审核记录统计, 不按周筛选。"
+            f"{scope[0]}返工率最高的是 {actor}: {rate:.0%} ({total} 次审核里返工 {count} 次)。"
+            if language == "zh"
+            else (
+                f"{actor} has the highest rework rate {scope[1]}: "
+                f"{rate:.0%} ({count} of {total} reviews)."
+            )
         )
     return (
-        f"{actor} has the highest rework rate: {rate:.0%} ({count} of {total} reviews). "
-        "The function counts every review in the project; it does not filter by week."
+        f"返工率最高的是 {actor}: {rate:.0%} "
+        f"({total} 次审核里返工 {count} 次, 按项目全部审核记录统计)。"
+        if language == "zh"
+        else (
+            f"{actor} has the highest rework rate: {rate:.0%} "
+            f"({count} of {total} reviews across all project reviews)."
+        )
     )
 
 

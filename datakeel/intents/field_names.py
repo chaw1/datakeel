@@ -177,6 +177,10 @@ MORE_LABELS: dict[str, tuple[str, str]] = {
     "transfers": ("返工改派", "rework handovers"),
     "object_confidences": ("逐个对象的置信度", "per-object confidence"),
     "confidence_tier": ("置信度分档", "confidence tier"),
+    "window": ("统计时间范围", "time window"),
+    "days": ("最近天数", "recent days"),
+    "since": ("起始时间", "start time"),
+    "until": ("截止时间", "end time"),
 }
 
 # Fixed choices of parameters and read results, in words (see plain_words).
@@ -369,4 +373,12 @@ ENUM_LABELS: dict[str, tuple[str, str]] = {
     "assets": ("文件", "files"),
     "ids": ("编号", "ids"),
     "skipped": ("跳过的", "skipped"),
+    "today": ("今天", "today"),
+    "this_week": ("本周", "this week"),
+    "last_week": ("上周", "last week"),
+    "this_month": ("本月", "this month"),
+    "last_7_days": ("最近 7 天", "last 7 days"),
+    "last_30_days": ("最近 30 天", "last 30 days"),
+    "all_time": ("全部时间", "all time"),
+    "custom": ("自定义时间段", "custom period"),
 }

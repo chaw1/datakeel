@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- UTC review time-window filtering (`window`, `days`, `since`, `until` via `ReworkRateParams`) for the `rework_rate` read function and one-sentence planner answers in [`datakeel/ontology/production_functions.py`](datakeel/ontology/production_functions.py), [`datakeel/storage/production_statistics.py`](datakeel/storage/production_statistics.py), and [`datakeel/intents/`](datakeel/intents/).
 - Optional rule-verified model intent candidate refinement (`K18-verified-model-candidate` in [`datakeel/ask/knowledge_intent_candidates.py`](datakeel/ask/knowledge_intent_candidates.py)) alongside expanded bilingual topic-usage, counterfactual outage, and flow-slot vocabulary in [`datakeel/ask/`](datakeel/ask/).
 - Multi-tier OpenAI and Anthropic tariffs in [`contracts/model-prices.yaml`](contracts/model-prices.yaml) alongside a bundled tiered-and-backup routing example ([`contracts/routing/models-tiered.example.yaml`](contracts/routing/models-tiered.example.yaml)) and bundled cloud visual transcription pricing regression coverage.
 - Bilingual documentation hubs ([`docs/README.md`](docs/README.md), [`docs/README.zh.md`](docs/README.zh.md)) indexing all repository guides, alongside extracted API/pipeline references ([`docs/API_REFERENCE.md`](docs/API_REFERENCE.md), [`docs/API_REFERENCE.zh.md`](docs/API_REFERENCE.zh.md)) and offline evaluation/gate references ([`docs/VERIFICATION.md`](docs/VERIFICATION.md), [`docs/VERIFICATION.zh.md`](docs/VERIFICATION.zh.md)).

@@ -36,6 +36,7 @@ from datakeel.intents.read_scope import (
     one_task,
     own_projects,
     production_read,
+    rework_window_arguments,
     scope_question,
     task_argument,
     unfiltered_note,
@@ -94,6 +95,8 @@ class Resolver:
         known, unknown = task_argument(
             *known_fields(step, self.state, self.catalog), set(model.model_fields)
         )
+        if step.action == "rework_rate":
+            known, unknown = rework_window_arguments(known, unknown, text)
         applied: set[str] = set()
         for field, kind in CONTAINER_KINDS.items():
             # A container the words name narrows the read even where it is optional.

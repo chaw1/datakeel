@@ -1,5 +1,12 @@
 # Backlog
 
+## 已处理（Unreleased）
+- 意图路由扩充 `dataset-health`、`metric-change` 口语化双语概念同义词与英语不规则动词词形还原，并支持三槽位工作流在命中 `entity + outcome` 部分概念时进入 `intent_classifier` 分支（`eval-route` 116/116 意图与 14/14 档位 100% 通过）。
+- 价目表 [`model-prices.yaml`](../contracts/model-prices.yaml) 补齐多档 OpenAI / Anthropic 模型单价，新增三档分档加同服务商备用示例 [`models-tiered.example.yaml`](../contracts/routing/models-tiered.example.yaml)，并核验百炼视觉转写（含 `auto` 模式）签批卡与运行报告的转写费用上限。
+- 知识问句扩充「有谁在看/查/拉取」、断供宕机反事实及 `wind up`/`land in`/「落到」流向词表，并新增可选模型意图候选提议加确定性主语/焦点/候选项/方向规则核对（`K18-verified-model-candidate`）。
+- 返工率只读函数 `rework_rate` 与一句话入口支持按 `today`、`this_week`、`last_week`、`this_month`、`last_7_days`、`last_30_days`、`days` 或显式 `since`/`until` UTC 时间窗口过滤审核记录。
+- 图片数据集别名草稿（`kg.same_as`）统一采用图片抽取身份 `kg-image:`（与图片关系身份一致），图片抽图谱接口显式恢复 OpenAPI 422 `HTTPValidationError` 响应 schema。
+
 ## 已处理（v0.19.0–v0.26.0 已落地）
 - 团队档 B8：任务列表显示序持久化为 `production_tasks.display_rank`，领取恢复单条 `ORDER BY … SKIP LOCKED` 查询；SQLite 走 schema v3 纯增量迁移，PostgreSQL 启动收敛索引，双栈复测全部达标（v0.26.0，证据见 [CAPACITY.md](CAPACITY.md)）。
 - 目录对象、指标、维度与术语支持可选 `english_name`；负责人英文展示名单独登记在 [`owners.yaml`](../contracts/semantic-layer/owners.yaml)，英文界面优先使用并在缺省时回退原名。
@@ -27,9 +34,5 @@
 - 安全问题与行为准则举报统一走 GitHub 私密报告。
 
 ## 后续
-- 意图路由对没见过的说法召回偏低（一组新写的正例只命中 3/8），规则偏保守。可以按真实使用记录扩同义词，或者让低于阈值但部分命中的请求也交给分类模型判断。
-- 默认的模型分档配置三档都映射到同一个模型，也没有备用模型。价目表补上真实模型的价格后，再提供分档加备用的示例配置。
-- 知识问句的方向词表还有长尾：话题后接「有谁在 + 动词」、`went away` 这类反事实说法、`end up` 这类流向说法，目前会判成上游，回答为「没有知识」。纯规则识别会一直有长尾，可以考虑让模型给出意图候选，再由规则核对。
-- 图片数据集里，别名（`kg.same_as`）草稿用的是文本抽取身份，图片关系用的是图片身份。目前不影响取代逻辑，但两套身份不一致，应统一成图片身份。
-- 图片抽图谱接口的 422 响应，在 OpenAPI 生成的客户端里丢了 `HTTPValidationError` 的 body schema。
-- 云端视觉转写的示例配置没有价格，运行报告里转写费用显示「未知」。补上价目表后，签批卡和报告才能给出转写费用上限。
+
+当前无待处理长尾积压项。

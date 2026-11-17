@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
+from pydantic import ValidationError
 
 from datakeel.actions.production_parameters import (
     AssignTasksParams,
@@ -17,6 +19,9 @@ from datakeel.actions.production_parameters import (
 )
 from datakeel.core.annotation_models import AnnotationRecord
 from datakeel.core.models import new_id
+from datakeel.core.production_reads import ReworkRateParams
+from datakeel.ontology.production_functions import rework_rate_workload
+from datakeel.storage import production_reviews
 from datakeel.storage.production_assignments import assign_tasks
 from datakeel.storage.production_reviews import review_task, submit_task
 from datakeel.storage.production_revisions import append_revision
@@ -174,3 +179,91 @@ def test_model_only_personal_submission_counts_the_human_submitter(db: Database)
     assert task.approved_revision_id == revision.id
     workload = annotator_workload(db, project.id).annotators[0]
     assert (workload.actor, workload.completed) == ("submitter", 1)
+
+
+def _seed_timed_reviews(db: Database, monkeypatch: pytest.MonkeyPatch) -> str:
+    project, tasks = production_fixture(db, "group", count=3)
+    stamps = (
+        (tasks[0], "rework", datetime(2026, 10, 25, 10, 0, tzinfo=UTC)),
+        (tasks[1], "rework", datetime(2026, 11, 12, 10, 0, tzinfo=UTC)),
+        (tasks[2], "approve", datetime(2026, 11, 18, 9, 0, tzinfo=UTC)),
+    )
+    with db.session() as session:
+        assign_tasks(
+            session,
+            AssignTasksParams(
+                request_id="assign-all",
+                task_ids=tuple(task.id for task in tasks),
+                actor="a",
+            ),
+        )
+        session.commit()
+    for task, decision, stamp in stamps:
+        monkeypatch.setattr(production_reviews, "utcnow", lambda at=stamp: at)
+        with db.session() as session:
+            rev = append_revision(
+                session,
+                require_task(session, task.id),
+                SaveRevisionParams(
+                    request_id=new_id(),
+                    task_id=task.id,
+                    previous_revision_id=None,
+                    annotation=AnnotationRecord(
+                        sample_id=task.sample_id, annotator_id="a", labels=("cat",)
+                    ),
+                ),
+                "a",
+            )
+            submit_task(session, SubmitTaskParams(request_id=new_id(), task_id=task.id), "a")
+            review_task(
+                session,
+                ReviewTaskParams(
+                    request_id=new_id(),
+                    task_id=task.id,
+                    revision_id=rev.id,
+                    decision="rework" if decision == "rework" else "approve",
+                    issues=("Fix",) if decision == "rework" else (),
+                ),
+                "q",
+            )
+            session.commit()
+    return project.id
+
+
+def test_rework_rate_workload_filters_by_named_windows_days_and_explicit_bounds(
+    db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """UTC review windows isolate today, this/last week, month, rolling days, and bounds."""
+    project_id = _seed_timed_reviews(db, monkeypatch)
+    now = datetime(2026, 11, 18, 15, 0, tzinfo=UTC)
+
+    def _stats(params: ReworkRateParams) -> tuple[int, int, float]:
+        row = rework_rate_workload(db, params, now=now).annotators[0]
+        return row.rework_count, row.review_count, row.rework_rate
+
+    assert _stats(ReworkRateParams(project_id=project_id)) == (2, 3, pytest.approx(2 / 3))
+    assert _stats(ReworkRateParams(project_id=project_id, window="all_time")) == (
+        2,
+        3,
+        pytest.approx(2 / 3),
+    )
+    assert _stats(ReworkRateParams(project_id=project_id, window="today")) == (0, 1, 0.0)
+    assert _stats(ReworkRateParams(project_id=project_id, window="this_week")) == (0, 1, 0.0)
+    assert _stats(ReworkRateParams(project_id=project_id, window="last_week")) == (1, 1, 1.0)
+    assert _stats(ReworkRateParams(project_id=project_id, window="this_month")) == (1, 2, 0.5)
+    assert _stats(ReworkRateParams(project_id=project_id, window="last_7_days")) == (1, 2, 0.5)
+    assert _stats(ReworkRateParams(project_id=project_id, window="last_30_days")) == (
+        2,
+        3,
+        pytest.approx(2 / 3),
+    )
+    assert _stats(ReworkRateParams(project_id=project_id, days=2)) == (0, 1, 0.0)
+    assert _stats(
+        ReworkRateParams(
+            project_id=project_id,
+            since=datetime(2026, 11, 10, 0, 0, tzinfo=UTC),
+            until=datetime(2026, 11, 15, 0, 0, tzinfo=UTC),
+        )
+    ) == (1, 1, 1.0)
+    with pytest.raises(ValidationError):
+        ReworkRateParams(project_id=project_id, since=now, until=now - timedelta(days=1))

@@ -203,7 +203,7 @@ uv run datakeel production read project_progress project.json --actor local
 
 REST 使用 `POST /api/actions/{action_type}/prepare`、`GET /api/actions/plans/{id}`、`POST /api/approvals/{id}`、`POST /api/actions/{id}/execute`，决定时带回计划摘要。只读函数统一使用 `POST /api/production/functions/{name}`，也注册给 Agent/MCP：项目进度 `project_progress`、包状态 `package_status`、工作量 `annotator_workload`、返工率 `rework_rate`、一致性 `annotation_consistency`、置信度分布 `prelabel_confidence`、标签集差异 `label_set_diff`、下一条任务 `next_task`、对象投影 `production_objects`、预标注完全一致率 `production_prelabel_accuracy`，团队档另有租约状态 `lease_status`、按技能工作量 `skill_workload`、任务包验收 `package_acceptance`，以及可派人名单 `assignees`（参数 `project_id`、`stage`：能按名字派这一阶段任务的人和他们手上的任务数，和 `GET /api/production/projects/{id}/assignees` 返回一致，调用方不能派单时同样被拒）。
 
-一致性复用现有标注质检；置信度分布统计所有有置信度的模型修订。返工率为每个原标注员收到的返工决定数除以其全部审核决定数。`production_prelabel_accuracy` 对已通过/定稿的人工修订与其最近前序模型修订比较，返回参考任务数、完全一致数和比率（无参考时为 null），以及[预标注准确率](#预标注准确率)里说的 IoU 精确率、召回率和 F1；属性、重复形状及已审核空值区别均纳入比较。
+一致性复用现有标注质检；置信度分布统计所有有置信度的模型修订。返工率为每个原标注员收到的返工决定数除以其全部审核决定数（`rework_rate` 可选传入 `window`、`days` 或 `since`/`until` 按 UTC 时间窗口筛选审核记录，缺省统计项目全量审核）。`production_prelabel_accuracy` 对已通过/定稿的人工修订与其最近前序模型修订比较，返回参考任务数、完全一致数和比率（无参考时为 null），以及[预标注准确率](#预标注准确率)里说的 IoU 精确率、召回率和 F1；属性、重复形状及已审核空值区别均纳入比较。
 
 ## 实现选择与来源
 

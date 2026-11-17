@@ -3,13 +3,23 @@
 
 """Read-only production queries shared by HTTP, command line and tool adapters."""
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field
+from pydantic import AwareDatetime, Field, model_validator
 
 from datakeel.core.models import BoundaryModel
 from datakeel.core.production_catalog_models import LabelMigration
 from datakeel.core.production_team_models import PackageSamplingParams
+
+ReworkWindow = Literal[
+    "today",
+    "this_week",
+    "last_week",
+    "this_month",
+    "last_7_days",
+    "last_30_days",
+    "all_time",
+]
 
 ProductionKind = Literal[
     "user",
@@ -33,6 +43,23 @@ class ProjectReadParams(BoundaryModel):
     """Read exact statistics from one production project."""
 
     project_id: str = Field(min_length=1)
+
+
+class ReworkRateParams(ProjectReadParams):
+    """Read rework rates for one project, optionally bounded by a UTC review time window."""
+
+    window: ReworkWindow | None = None
+    days: int | None = Field(default=None, ge=1, le=3650)
+    since: AwareDatetime | None = None
+    until: AwareDatetime | None = None
+
+    @model_validator(mode="after")
+    def ordered_bounds(self) -> Self:
+        """Reject inverted explicit review intervals before running statistics."""
+        if self.since is not None and self.until is not None and self.since > self.until:
+            msg = "Review window start 'since' must not exceed 'until'"
+            raise ValueError(msg)
+        return self
 
 
 class PackageReadParams(ProjectReadParams):
