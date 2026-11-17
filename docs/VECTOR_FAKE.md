@@ -1,12 +1,16 @@
-# Fake vector kernel
+# Vector kernel (fake and cloud modes)
 
 The explicit DAG is `evidence.vector_embed` → `evidence.semantic_duplicate`,
 `evidence.semantic_cluster`, `evidence.semantic_outlier` or `evidence.coverage_gap`, executed by the
 existing `run_pipeline` controlled action and worker. The five-node evidence preset is unchanged.
-This kernel exercises contracts with synthetic vectors. It supplies no encoder quality,
-provider usage, real price or cloud latency measurements. Real egress is independently disabled
-and the real budget is zero. There is no real/recording transport, credential loader or network client.
-Read-only vector API and UI are described below. The [offline evaluation guide](VECTOR_OFFLINE_EVALUATION.md) describes development-only FAISS and fake-worker performance campaigns; real encoder quality remains untested.
+By default (`mode="fake"`, `fake_version="we-e2-fake-v1"`), the kernel exercises contracts with
+synthetic vectors: real egress is disabled, real budget is zero, and no credential loader or network
+client is constructed. When explicitly configured with `mode="real"` (`fake_version="we-cloud-http-v1"`),
+`evidence.vector_embed` dispatches non-retrying OpenAI-compatible `/v1/embeddings` requests (`trust_env=False`,
+`follow_redirects=False`) under human-approved CNY nano-budgets, pre-dispatch credential/DNS SSRF checks,
+and mode-isolated cache/bundle integrity. Read-only vector API and UI are described below. The
+[offline evaluation guide](VECTOR_OFFLINE_EVALUATION.md) describes development-only FAISS and
+fake-worker performance campaigns; live provider semantic quality and cloud latency remain untested in CI.
 
 Use generated local text or images and local object storage. A configured S3 bucket is refused
 before object materialization. Text requires `modality="text"` and a reviewed discrete dimension
@@ -63,11 +67,20 @@ signed plan/run. Attempt history records plan/run/lease identities, policy/conte
 request/response IDs, reservation and usage; it contains neither credentials nor raw request bodies.
 
 The embedding cache key includes original revision, final bytes, preprocessing, full destination,
-model/dimension/modality and fake contract/implementation version. It excludes peers, run IDs
+model/dimension/modality and contract/implementation version. It excludes peers, run IDs
 and manifest versions. Cache reuse rebinds the original source anchor to the requested version.
 The global key includes every target's version/content/embedding/status summary and parameters.
-Fake/recording/real namespaces are separate; this implementation reads and publishes only fake.
+`fake:we-e2-fake-v1:*` and `real:we-cloud-http-v1:*` namespaces are strictly separated and never cross-satisfy.
 Successful vectors are rounded to F32 little-endian, with their byte hashes recorded.
+
+## Cloud HTTP embedding mode (`mode="real"`) / 云端向量编码模式
+
+Setting `mode="real"` on `evidence.vector_embed` requires an explicit complete profile:
+
+- `fake_version="we-cloud-http-v1"`, `tokenizer="utf8-byte-bound-v1"` (worst-case 1 token per UTF-8 byte for text, `policy.image_tokens` for images), and an explicit `model` (`text-embedding-v4`, `text-embedding-v3`, `text-embedding-3-small`, `text-embedding-3-large` for `text`; `multimodal-embedding-v1` for `image`).
+- Clean `/embeddings` endpoint URL without credentials, query parameters, fragments, reserved fixture domains (`.invalid`, `.test`, `.example`, `.localhost`), or non-global IP literals. Non-loopback endpoints require `https://` and an explicit `credential_env` variable name (`^[A-Z][A-Z0-9_]{1,127}$`); loopback endpoints (`localhost`, `127.0.0.1`, `::1`) permit `http://` or `https://` with optional `credential_env`.
+- `policy.price_version="cloud-price-v1"`, `policy.real_egress_enabled=True`, `policy.real_budget_cny > 0`, and exact CNY-to-nano alignment (`round(real_budget_cny * 1_000_000_000) == max_cost_nanos`).
+- Pre-dispatch checks resolve `credential_env` via `Settings.extraction_key` and verify DNS answers for non-loopback hosts are globally routable (`ip.is_global`) **before** transitioning the attempt from `RESERVED` to `SENDING`, so missing credentials or SSRF-blocked destinations refund cleanly on task fencing without burning budget. Once `SENDING` commits, redirects (`3xx`), authentication failures (`401`/`403`), rate limits (`429`/`503` temporary input failures), timeouts, and malformed responses retain conservative `UNKNOWN` occupancy.
 
 Duplicates compare exact `i<j` F64 cosine over those F32 values. They are nontransitive candidate
 facts with two original-content Whole anchors and a cosine/threshold measurement. Bounds apply

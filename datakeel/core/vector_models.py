@@ -4,17 +4,29 @@
 """Frozen fake vector plans, accounting limits and explicit execution identities."""
 
 import hashlib
+import ipaddress
 import json
 from typing import Annotated, Literal, Self
 from urllib.parse import urlsplit
 
-from pydantic import ConfigDict, Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from datakeel.core.errors import ExecutionError
 from datakeel.core.models import AssetRef, BoundaryModel, FileItem
 from datakeel.core.settings import get_settings
 
 Digest = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+VectorMode = Literal["fake", "real"]
+VectorImpl = Literal["we-e2-fake-v1", "we-cloud-http-v1"]
+EmbeddingModel = Literal[
+    "text-embedding-v4",
+    "text-embedding-v3",
+    "text-embedding-3-small",
+    "text-embedding-3-large",
+    "multimodal-embedding-v1",
+]
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+_RESERVED_SUFFIXES = (".invalid", ".test", ".example", ".localhost")
 VECTOR_OPERATORS = frozenset(
     {
         "evidence.vector_embed",
@@ -70,50 +82,114 @@ def require_local_vector_objects() -> None:
 
 
 class VectorPolicy(BoundaryModel):
-    """Freeze invented CNY accounting units, never provider prices or real consent."""
+    """Freeze CNY nano-accounting bounds and explicit cloud egress consent."""
 
     currency: Literal["CNY"] = "CNY"
-    price_version: Literal["fake-price-v1"] = "fake-price-v1"
+    price_version: Literal["fake-price-v1", "cloud-price-v1"] = "fake-price-v1"
     nanos_per_token: int = Field(default=1, ge=0, strict=True)
     image_tokens: int = Field(default=100, gt=0, strict=True)
     max_requests: int = Field(default=5000, ge=0, strict=True)
     max_cost_nanos: int = Field(default=100000000, ge=0, strict=True)
-    real_budget_cny: Literal[0] = 0
-    real_egress_enabled: Literal[False] = False
+    real_budget_cny: (
+        Annotated[int, Field(ge=0, strict=True)]
+        | Annotated[float, Field(ge=0, strict=True, allow_inf_nan=False)]
+    ) = 0
+    real_egress_enabled: Annotated[bool, Field(strict=True)] = False
+
+
+def _valid_real_endpoint(scheme: str, host: str) -> bool:
+    if host in _LOOPBACK_HOSTS:
+        return scheme in {"http", "https"}
+    if scheme != "https" or host.endswith(_RESERVED_SUFFIXES):
+        return False
+    try:
+        return ipaddress.ip_address(host).is_global
+    except ValueError:
+        return True
 
 
 class EmbedParams(BoundaryModel):
-    """Allow only the versioned fake contract and a frozen reserved HTTPS URL."""
+    """Bind either the deterministic fake contract or an explicit cloud HTTP embedding profile."""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-    mode: Literal["fake"] = "fake"
-    fake_version: Literal["we-e2-fake-v1"] = "we-e2-fake-v1"
+    mode: VectorMode = "fake"
+    fake_version: VectorImpl = "we-e2-fake-v1"
     contract: Literal["we-e1-v1"] = "we-e1-v1"
     endpoint: str = "https://embedding.example.invalid/v1/embeddings"
     modality: Literal["text", "image"] = "text"
     dimensions: Literal[64, 128, 256, 512, 768, 1024, 1536, 2048] = 64
-    tokenizer: Literal["fake-codepoint-v1"] = "fake-codepoint-v1"
+    tokenizer: Literal["fake-codepoint-v1", "utf8-byte-bound-v1"] = "fake-codepoint-v1"
+    model: EmbeddingModel | None = Field(default=None, exclude_if=lambda value: value is None)
+    credential_env: str | None = Field(
+        default=None,
+        pattern=r"^[A-Z][A-Z0-9_]{1,127}$",
+        exclude_if=lambda value: value is None,
+    )
     policy: VectorPolicy = Field(default_factory=VectorPolicy)
 
-    @field_validator("endpoint")
-    @classmethod
-    def reserved_https(cls, value: str) -> str:
-        """Reject credentials, query strings, fragments and nonfixture destinations."""
-        parsed = urlsplit(value)
-        if (
-            parsed.scheme != "https"
-            or not parsed.hostname
-            or not parsed.hostname.endswith((".invalid", ".test"))
-            or parsed.username
-            or parsed.password
-            or parsed.query
-            or parsed.fragment
-            or not parsed.path.endswith("/embeddings")
-            or parsed.port is not None
-        ):
-            msg = "fake_endpoint_required"
+    def effective_model(self) -> EmbeddingModel:
+        """Resolve the wire model identifier without altering fake-mode defaults."""
+        if self.model is not None:
+            return self.model
+        return "text-embedding-v4" if self.modality == "text" else "multimodal-embedding-v1"
+
+    @model_validator(mode="after")
+    def mode_and_endpoint_contract(self) -> Self:
+        """Keep fake mode isolated and require explicit consent and bounds for real mode."""
+        parsed = urlsplit(self.endpoint)
+        host = (parsed.hostname or "").lower()
+        clean_url = bool(
+            host
+            and not parsed.username
+            and not parsed.password
+            and not parsed.query
+            and not parsed.fragment
+            and parsed.path.endswith("/embeddings")
+        )
+        if self.mode == "fake":
+            if (
+                not clean_url
+                or parsed.scheme != "https"
+                or not host.endswith((".invalid", ".test"))
+                or parsed.port is not None
+            ):
+                msg = "fake_endpoint_required"
+                raise ValueError(msg)
+            if (
+                self.fake_version != "we-e2-fake-v1"
+                or self.tokenizer != "fake-codepoint-v1"
+                or self.model is not None
+                or self.credential_env is not None
+                or self.policy.real_egress_enabled
+                or self.policy.real_budget_cny != 0
+                or self.policy.price_version != "fake-price-v1"
+            ):
+                msg = "fake_mode_forbids_real_settings"
+                raise ValueError(msg)
+            return self
+        if not clean_url or not _valid_real_endpoint(parsed.scheme, host):
+            msg = "real_endpoint_invalid"
             raise ValueError(msg)
-        return value
+        if host not in _LOOPBACK_HOSTS and self.credential_env is None:
+            msg = "real_endpoint_requires_credential_env"
+            raise ValueError(msg)
+        if (
+            self.fake_version != "we-cloud-http-v1"
+            or self.tokenizer != "utf8-byte-bound-v1"
+            or self.model is None
+            or (self.model == "multimodal-embedding-v1") != (self.modality == "image")
+        ):
+            msg = "real_embedding_profile_invalid"
+            raise ValueError(msg)
+        if (
+            not self.policy.real_egress_enabled
+            or self.policy.price_version != "cloud-price-v1"
+            or self.policy.real_budget_cny <= 0
+            or round(self.policy.real_budget_cny * 1_000_000_000) != self.policy.max_cost_nanos
+        ):
+            msg = "real_budget_policy_invalid"
+            raise ValueError(msg)
+        return self
 
 
 class DuplicateParams(BoundaryModel):

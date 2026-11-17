@@ -6,11 +6,16 @@
 from datakeel.core.evidence_drafts import ObservationDraft
 from datakeel.core.evidence_models import EvidenceAnchor, EvidenceValue, ExtractorRef
 from datakeel.core.vector_measurements import CoverageMeasurement
+from datakeel.core.vector_models import VectorMode
 from datakeel.core.vector_results import VectorFinding, VectorSample
 
 
 def set_drafts(
-    samples: tuple[VectorSample, ...], findings: tuple[VectorFinding, ...], operator: str
+    samples: tuple[VectorSample, ...],
+    findings: tuple[VectorFinding, ...],
+    operator: str,
+    *,
+    mode: VectorMode = "fake",
 ) -> tuple[ObservationDraft, ...]:
     """Anchor a subject and nearest R while retaining the full closure in its measurement."""
     by_id = {s.subject.asset_id: s for s in samples}
@@ -20,6 +25,19 @@ def set_drafts(
         "evidence.semantic_outlier": "semantic_outlier",
         "evidence.coverage_gap": "coverage_gap",
     }
+    reason = (
+        (
+            "cloud_candidate_relative_to_frozen_references"
+            if operator == "evidence.coverage_gap"
+            else "cloud_embedding_candidate"
+        )
+        if mode == "real"
+        else (
+            "fake_candidate_relative_to_frozen_references"
+            if operator == "evidence.coverage_gap"
+            else "fake_contract_candidate_not_model_quality"
+        )
+    )
     for finding in findings:
         sample = by_id[finding.subject]
         anchored = [sample]
@@ -36,9 +54,7 @@ def set_drafts(
                 ),
                 extractor=ExtractorRef(id=operator, version="we-e3-sets-v1"),
                 measurement=finding.measurement,
-                reason="fake_candidate_relative_to_frozen_references"
-                if operator == "evidence.coverage_gap"
-                else "fake_contract_candidate_not_model_quality",
+                reason=reason,
             )
         )
     return tuple(result)

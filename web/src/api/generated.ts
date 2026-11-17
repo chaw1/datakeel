@@ -13320,21 +13320,21 @@ export interface components {
         };
         /**
          * VectorInputStatus
-         * @description Expose a source's typed failure and synthetic provenance without substituting a vector.
+         * @description Expose a source's typed failure and provenance without substituting a vector.
          */
         VectorInputStatus: {
             /**
              * Fake Version
              * @default we-e2-fake-v1
-             * @constant
+             * @enum {string}
              */
-            fake_version: "we-e2-fake-v1";
+            fake_version: "we-e2-fake-v1" | "we-cloud-http-v1";
             /**
              * Mode
              * @default fake
-             * @constant
+             * @enum {string}
              */
-            mode: "fake";
+            mode: "fake" | "real";
             /** Reason */
             reason?: string | null;
             /**
@@ -13361,7 +13361,7 @@ export interface components {
         };
         /**
          * VectorNodeReport
-         * @description Distinguish invented fake usage and contract status from real quality or latency.
+         * @description Distinguish synthetic fake usage from metered cloud requests, tokens and nano-cost.
          */
         VectorNodeReport: {
             /**
@@ -13390,21 +13390,27 @@ export interface components {
             /**
              * Fake Version
              * @default we-e2-fake-v1
-             * @constant
+             * @enum {string}
              */
-            fake_version: "we-e2-fake-v1";
+            fake_version: "we-e2-fake-v1" | "we-cloud-http-v1";
             /**
              * Mode
              * @default fake
-             * @constant
+             * @enum {string}
              */
-            mode: "fake";
+            mode: "fake" | "real";
+            /** Real Cost Nanos */
+            real_cost_nanos?: number | null;
             /**
              * Real Quality
              * @default not_tested
              * @constant
              */
             real_quality: "not_tested";
+            /** Real Requests */
+            real_requests?: number | null;
+            /** Real Usage */
+            real_usage?: number | null;
             /** Reason */
             reason?: string | null;
             /**
@@ -13517,9 +13523,9 @@ export interface components {
             /**
              * Mode
              * @default fake
-             * @constant
+             * @enum {string}
              */
-            mode: "fake";
+            mode: "fake" | "real";
             /**
              * Nodes
              * @default []

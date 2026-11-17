@@ -14,7 +14,8 @@ from datakeel.storage.vector_authorization import authorize_vector
 from datakeel.storage.vector_rows import VectorAccountRow, VectorAttemptRow
 
 
-def _view(row: VectorAttemptRow) -> VectorAttempt:
+def attempt_view(row: VectorAttemptRow) -> VectorAttempt:
+    """Convert a persisted attempt audit row into a typed boundary summary."""
     return VectorAttempt.model_validate(
         {
             "id": row.id,
@@ -90,14 +91,14 @@ def reserve_vector(
                 "content_hash": payload.content_revision,
                 "body_hash": payload.body_hash,
                 "payload_hash": payload.payload_hash,
-                "mode": "fake",
+                "mode": node.params.mode,
                 "history": [],
             },
         )
         session.add(row)
         _transition(row, "RESERVED")
         session.commit()
-        return _view(row)
+        return attempt_view(row)
 
 
 def dispatch_vector(
@@ -177,7 +178,7 @@ def list_vector_attempts(db: Database, task_id: str) -> tuple[VectorAttempt, ...
     """Read restart-stable fake audit summaries without request content."""
     with db.session() as session:
         return tuple(
-            _view(row)
+            attempt_view(row)
             for row in session.scalars(
                 select(VectorAttemptRow)
                 .where(VectorAttemptRow.task_id == task_id)

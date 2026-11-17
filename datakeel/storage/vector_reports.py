@@ -29,6 +29,11 @@ def vector_task_report(db: Database, task_id: str) -> VectorTaskReport | None:
             or (task.error and task.error.startswith(("vector_", "VectorError: vector_")))
         ):
             return None
+        is_real = any(
+            n.get("params", {}).get("mode") == "real"
+            for n in (task.pipeline or {}).get("nodes", [])
+        )
+        mode = "real" if is_real else "fake"
         nodes = tuple(
             item.vector
             for item in extraction_report(db, task_id).operators
@@ -36,6 +41,8 @@ def vector_task_report(db: Database, task_id: str) -> VectorTaskReport | None:
         )
         failures = tuple(
             VectorNodeReport(
+                mode=mode,
+                fake_version="we-cloud-http-v1" if is_real else "we-e2-fake-v1",
                 status="failed",
                 reason=str(row.payload["quality"].get("vector_failure_reason")),
                 counts=VectorCounts.model_validate(row.payload["quality"]["vector_failure_counts"]),
@@ -60,6 +67,7 @@ def vector_task_report(db: Database, task_id: str) -> VectorTaskReport | None:
             else "pending"
         )
         return VectorTaskReport(
+            mode=mode,
             status=status,
             reason=task.error.removeprefix("VectorError: ")
             if task.error

@@ -16,7 +16,7 @@ from datakeel.core.evidence_execution import (
 )
 from datakeel.core.evidence_models import Assertion, ExtractorRef
 from datakeel.core.models import AssetRef, LineageEvent, new_id
-from datakeel.core.vector_models import vector_hash
+from datakeel.core.vector_models import VectorImpl, vector_hash
 from datakeel.core.vector_results import (
     VectorCacheProduct,
     VectorNodeReport,
@@ -42,17 +42,18 @@ def vector_publication(
     findings = pairs.findings if isinstance(pairs, VectorSetOutput) else ()
     scope = pairs.scope if isinstance(pairs, VectorSetOutput) else None
     pairs = () if isinstance(pairs, VectorSetOutput) else pairs
+    mode, impl = report.mode, report.fake_version
     drafts = (
-        pair_drafts(samples, pairs)
+        pair_drafts(samples, pairs, mode=mode, implementation=impl)
         if node.operator == "evidence.semantic_duplicate"
-        else set_drafts(samples, findings, str(node.operator))
+        else set_drafts(samples, findings, str(node.operator), mode=mode)
     )
     assertions = tuple(
         Assertion(**draft.model_dump(), producer_event_id=event_id, run_id=context.task_id)
         for draft in drafts
     )
     entries = _entries(
-        samples, assertions, report.canonical_hash or vector_hash(None), str(node.operator)
+        samples, assertions, report.canonical_hash or vector_hash(None), str(node.operator), impl
     )
     event = LineageEvent(
         event_id=event_id,
@@ -66,8 +67,8 @@ def vector_publication(
         params={
             "run_id": context.task_id,
             "node_id": node.id,
-            "mode": "fake",
-            "fake_version": "we-e2-fake-v1",
+            "mode": mode,
+            "fake_version": impl,
             "contract": "we-e1-v1",
             "parameters": node.params,
         },
@@ -93,12 +94,13 @@ def _entries(
     assertions: tuple[Assertion, ...],
     canonical_hash: str,
     operator: str,
+    implementation: VectorImpl = "we-e2-fake-v1",
 ) -> tuple[EvidenceCacheEntry, ...]:
     if operator == "evidence.vector_embed":
         return ()
     extractor = ExtractorRef(
         id=operator,
-        version="we-e2-fake-v1" if operator == "evidence.semantic_duplicate" else "we-e3-sets-v1",
+        version=implementation if operator == "evidence.semantic_duplicate" else "we-e3-sets-v1",
     )
     inputs = tuple(
         EvidenceInput(role=sample.subject.asset_id, content_revision=sample.content_revision)

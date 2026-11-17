@@ -1741,7 +1741,7 @@
       "$defs": {
         "VectorPolicy": {
           "additionalProperties": false,
-          "description": "Freeze invented CNY accounting units, never provider prices or real consent.",
+          "description": "Freeze CNY nano-accounting bounds and explicit cloud egress consent.",
           "properties": {
             "currency": {
               "const": "CNY",
@@ -1750,8 +1750,11 @@
               "type": "string"
             },
             "price_version": {
-              "const": "fake-price-v1",
               "default": "fake-price-v1",
+              "enum": [
+                "fake-price-v1",
+                "cloud-price-v1"
+              ],
               "title": "Price Version",
               "type": "string"
             },
@@ -1780,13 +1783,20 @@
               "type": "integer"
             },
             "real_budget_cny": {
-              "const": 0,
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              ],
               "default": 0,
-              "title": "Real Budget Cny",
-              "type": "integer"
+              "title": "Real Budget Cny"
             },
             "real_egress_enabled": {
-              "const": false,
               "default": false,
               "title": "Real Egress Enabled",
               "type": "boolean"
@@ -1800,14 +1810,20 @@
       "description": "Expose the fake embedding schema through the existing operator registry.",
       "properties": {
         "mode": {
-          "const": "fake",
           "default": "fake",
+          "enum": [
+            "fake",
+            "real"
+          ],
           "title": "Mode",
           "type": "string"
         },
         "fake_version": {
-          "const": "we-e2-fake-v1",
           "default": "we-e2-fake-v1",
+          "enum": [
+            "we-e2-fake-v1",
+            "we-cloud-http-v1"
+          ],
           "title": "Fake Version",
           "type": "string"
         },
@@ -1847,10 +1863,45 @@
           "type": "integer"
         },
         "tokenizer": {
-          "const": "fake-codepoint-v1",
           "default": "fake-codepoint-v1",
+          "enum": [
+            "fake-codepoint-v1",
+            "utf8-byte-bound-v1"
+          ],
           "title": "Tokenizer",
           "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "enum": [
+                "text-embedding-v4",
+                "text-embedding-v3",
+                "text-embedding-3-small",
+                "text-embedding-3-large",
+                "multimodal-embedding-v1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "credential_env": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Z][A-Z0-9_]{1,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Credential Env"
         },
         "policy": {
           "$ref": "#/$defs/VectorPolicy"

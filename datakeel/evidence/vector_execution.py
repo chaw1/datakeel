@@ -16,6 +16,8 @@ from datakeel.core.vector_models import (
     DuplicateParams,
     FrozenVectorNode,
     VectorError,
+    VectorImpl,
+    VectorMode,
     VectorPermit,
     require_local_vector_objects,
     vector_hash,
@@ -26,11 +28,12 @@ from datakeel.core.vector_results import (
     VectorNodeReport,
     VectorSample,
 )
+from datakeel.evidence.vector_cloud import CloudVectorTransport
 from datakeel.evidence.vector_duplicate import direct_pairs, global_key, vector_counts
 from datakeel.evidence.vector_payload import PreparedWire, prepare_wire
 from datakeel.evidence.vector_publication import vector_publication
 from datakeel.evidence.vector_set_execution import compute_set
-from datakeel.evidence.vector_transport import FakeVectorTransport
+from datakeel.evidence.vector_transport import FakeVectorTransport, VectorDispatchGate
 from datakeel.operators.base import OperatorResult
 from datakeel.pipeline.models import Node
 from datakeel.storage.database import Database
@@ -58,6 +61,7 @@ class VectorExecution:
         self.db, self.context, self.permit = db, context, permit
         self.pending: list[PendingExtraction] = []
         self.samples: dict[str, tuple[VectorSample, ...]] = {}
+        self.modes: dict[str, tuple[VectorMode, VectorImpl]] = {}
         self.lock = threading.Lock()
 
     def execute_node(self, node: Node, files: list[FileItem], directory: Path) -> OperatorResult:
@@ -89,6 +93,7 @@ class VectorExecution:
             raise VectorError(msg)
         with self.lock:
             available = self.samples.get(selection.embedding_node, ())
+            mode, impl = self.modes.get(selection.embedding_node, ("fake", "we-e2-fake-v1"))
         samples = tuple(
             sample
             for sample in available
@@ -100,35 +105,54 @@ class VectorExecution:
             )
         )
         if node.operator != "evidence.semantic_duplicate":
-            computed = compute_set(self.db, samples, node, selection.scope)
+            computed = compute_set(
+                self.db, samples, node, selection.scope, mode=mode, implementation=impl
+            )
             pending = vector_publication(
                 self.context, node, computed.products, samples, computed.report, computed.output
             )
             with self.lock:
                 self.pending.append(pending)
             return OperatorResult(files=files, quality=pending.event.quality)
-        return self._duplicate(node, files, samples)
+        return self._duplicate(node, files, samples, mode=mode, implementation=impl)
 
     def _duplicate(
-        self, node: Node, files: list[FileItem], samples: tuple[VectorSample, ...]
+        self,
+        node: Node,
+        files: list[FileItem],
+        samples: tuple[VectorSample, ...],
+        *,
+        mode: VectorMode = "fake",
+        implementation: VectorImpl = "we-e2-fake-v1",
     ) -> OperatorResult:
         if len(samples) != len(files):
             msg = "vector_duplicate_inputs_changed"
             raise VectorError(msg)
         params = DuplicateParams.model_validate(node.params)
-        key = global_key(samples, params)
-        cached = vector_cached(self.db, key, "global")
+        key = global_key(samples, params, mode=mode, implementation=implementation)
+        cached = vector_cached(self.db, key, "global", mode=mode, implementation=implementation)
         pairs = cached.pairs if cached else direct_pairs(samples, params)
         products = (
             ()
             if any(sample.temporary for sample in samples)
-            else (VectorCacheProduct(key=key, kind="global", samples=samples, pairs=pairs),)
+            else (
+                VectorCacheProduct(
+                    key=key,
+                    mode=mode,
+                    implementation=implementation,
+                    kind="global",
+                    samples=samples,
+                    pairs=pairs,
+                ),
+            )
         )
         counts = vector_counts(samples)
         if counts.input and not counts.eligible:
             msg = "vector_all_inputs_failed"
             raise VectorError(msg, counts)
         report = VectorNodeReport(
+            mode=mode,
+            fake_version=implementation,
             status="partial_success" if counts.failed else "success",
             counts=counts,
             canonical_hash=vector_hash(
@@ -143,24 +167,8 @@ class VectorExecution:
         return OperatorResult(files=files, quality=pending.event.quality)
 
     def _embed(self, node: Node, frozen: FrozenVectorNode, files: list[FileItem]) -> OperatorResult:
-        if tuple(sorted(file.id for file in files)) != frozen.actual_asset_ids:
-            msg = "vector_branch_inputs_changed"
-            raise VectorError(msg)
-        wires = [prepare_wire(file, frozen.params) for file in sorted(files, key=lambda f: f.id)]
-        expected = {item.asset_id: item for item in frozen.inputs}
-        wires = [
-            wire.model_copy(
-                update={
-                    "frozen": wire.frozen.model_copy(
-                        update={"subject": expected[wire.frozen.asset_id].subject}
-                    )
-                }
-            )
-            for wire in wires
-        ]
-        if any(wire.frozen not in frozen.inputs for wire in wires):
-            msg = "vector_frozen_payload_changed"
-            raise VectorError(msg)
+        wires = _verified_wires(frozen, files)
+        mode, impl = frozen.params.mode, frozen.params.fake_version
         samples: list[VectorSample] = []
         products: list[VectorCacheProduct] = []
         hits = eligible_hits = requests = usage = 0
@@ -174,36 +182,34 @@ class VectorExecution:
             if not sample.temporary:
                 products.append(
                     VectorCacheProduct(
-                        key=wire.frozen.cache_key, kind="embedding", samples=(sample,)
+                        key=wire.frozen.cache_key,
+                        mode=mode,
+                        implementation=impl,
+                        kind="embedding",
+                        samples=(sample,),
                     )
                 )
         selected = tuple(samples)
-        counts = vector_counts(selected)
-        if counts.input and not counts.eligible:
-            msg = "vector_all_inputs_failed"
-            raise VectorError(msg, counts)
-        report = VectorNodeReport(
-            status="partial_success" if counts.failed else "success",
-            counts=counts,
-            canonical_hash=vector_hash(sorted(sample.canonical() for sample in selected)),
-            cache_hits=hits,
-            eligible_cache_hits=eligible_hits,
-            fake_requests=requests,
-            fake_usage=usage,
-            fake_cost_nanos=usage * frozen.params.policy.nanos_per_token,
-        )
+        report = _embed_report(frozen, selected, hits, eligible_hits, requests, usage)
         pending = vector_publication(self.context, node, tuple(products), selected, report)
         with self.lock:
             self.samples[node.id] = selected
+            self.modes[node.id] = (mode, impl)
             self.pending.append(pending)
-        return OperatorResult(files=_annotated(files, selected), quality=pending.event.quality)
+        return OperatorResult(
+            files=_annotated(files, selected, mode=mode, implementation=impl),
+            quality=pending.event.quality,
+        )
 
     def _sample(self, node: FrozenVectorNode, wire: PreparedWire) -> tuple[VectorSample, bool, int]:
         frozen = wire.frozen
+        mode, impl = node.params.mode, node.params.fake_version
         subject = frozen.subject or AssetRef(
             asset_type="file", asset_id=frozen.asset_id, version=self.context.version_id
         )
-        cached = vector_cached(self.db, frozen.cache_key, "embedding")
+        cached = vector_cached(
+            self.db, frozen.cache_key, "embedding", mode=mode, implementation=impl
+        )
         if cached:
             return cached.samples[0].model_copy(update={"subject": subject}), True, 0
         sample = VectorSample(
@@ -216,8 +222,12 @@ class VectorExecution:
             return sample, False, 0
         attempt = reserve_vector(self.db, self.permit, node.node_id, frozen)
         try:
-            response = FakeVectorTransport().send(self.db, self.permit, node, wire, attempt.id)
-            raw = response.data[0].embedding
+            if mode == "real":
+                gate = VectorDispatchGate(self.db, self.permit, node, wire, attempt.id)
+                raw, tokens, response_id = CloudVectorTransport().send(gate, node, wire, attempt.id)
+            else:
+                fake = FakeVectorTransport().send(self.db, self.permit, node, wire, attempt.id)
+                raw, tokens, response_id = fake.data[0].embedding, fake.usage.total_tokens, fake.id
             vector = struct.unpack(f"<{len(raw)}f", struct.pack(f"<{len(raw)}f", *raw))
             valid = VectorSample(
                 subject=subject,
@@ -226,19 +236,73 @@ class VectorExecution:
                 vector=vector,
                 f32le_sha256=hashlib.sha256(struct.pack(f"<{len(vector)}f", *vector)).hexdigest(),
             )
-            settle_vector(
-                self.db, self.permit, attempt.id, response.usage.total_tokens, response.id
-            )
+            settle_vector(self.db, self.permit, attempt.id, tokens, response_id)
         except (VectorError, ValidationError, OverflowError, struct.error) as error:
             reason = error.reason if isinstance(error, VectorError) else "vector_invalid_response"
             unknown_vector(self.db, attempt.id, reason)
             if reason == "vector_temporary_input_failure":
                 return sample.model_copy(update={"failure": reason, "temporary": True}), False, 0
             raise VectorError(reason) from None
-        return valid, False, response.usage.total_tokens
+        return valid, False, tokens
 
 
-def _annotated(files: list[FileItem], samples: tuple[VectorSample, ...]) -> list[FileItem]:
+def _verified_wires(frozen: FrozenVectorNode, files: list[FileItem]) -> list[PreparedWire]:
+    if tuple(sorted(file.id for file in files)) != frozen.actual_asset_ids:
+        msg = "vector_branch_inputs_changed"
+        raise VectorError(msg)
+    expected = {item.asset_id: item for item in frozen.inputs}
+    wires = [
+        wire.model_copy(
+            update={"frozen": wire.frozen.model_copy(update={"subject": expected[file.id].subject})}
+        )
+        for file in sorted(files, key=lambda item: item.id)
+        for wire in (prepare_wire(file, frozen.params),)
+    ]
+    if any(wire.frozen not in frozen.inputs for wire in wires):
+        msg = "vector_frozen_payload_changed"
+        raise VectorError(msg)
+    return wires
+
+
+def _embed_report(
+    frozen: FrozenVectorNode,
+    selected: tuple[VectorSample, ...],
+    hits: int,
+    eligible_hits: int,
+    requests: int,
+    usage: int,
+) -> VectorNodeReport:
+    counts = vector_counts(selected)
+    if counts.input and not counts.eligible:
+        msg = "vector_all_inputs_failed"
+        raise VectorError(msg, counts)
+    mode, impl = frozen.params.mode, frozen.params.fake_version
+    cost_nanos = usage * frozen.params.policy.nanos_per_token
+    is_fake = mode == "fake"
+    return VectorNodeReport(
+        mode=mode,
+        fake_version=impl,
+        status="partial_success" if counts.failed else "success",
+        counts=counts,
+        canonical_hash=vector_hash(sorted(sample.canonical() for sample in selected)),
+        cache_hits=hits,
+        eligible_cache_hits=eligible_hits,
+        fake_requests=requests if is_fake else 0,
+        fake_usage=usage if is_fake else 0,
+        fake_cost_nanos=cost_nanos if is_fake else 0,
+        real_requests=None if is_fake else requests,
+        real_usage=None if is_fake else usage,
+        real_cost_nanos=None if is_fake else cost_nanos,
+    )
+
+
+def _annotated(
+    files: list[FileItem],
+    samples: tuple[VectorSample, ...],
+    *,
+    mode: VectorMode = "fake",
+    implementation: VectorImpl = "we-e2-fake-v1",
+) -> list[FileItem]:
     by_id = {sample.subject.asset_id: sample for sample in samples}
     return [
         file.model_copy(
@@ -246,6 +310,8 @@ def _annotated(files: list[FileItem], samples: tuple[VectorSample, ...]) -> list
                 "metadata": {
                     **file.metadata,
                     "vector_input": VectorInputStatus(
+                        mode=mode,
+                        fake_version=implementation,
                         status="input_failed" if by_id[file.id].failure else "eligible",
                         reason=by_id[file.id].failure,
                     ).model_dump(mode="json"),

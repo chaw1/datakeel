@@ -29,9 +29,14 @@ def validate_vector_bundle(event: LineageEvent, bundle: KnowledgeBundle) -> None
         return
     samples = bundle.vector_samples
     report = VectorNodeReport.model_validate(event.quality.get("vector"))
+    is_real = event.params.get("mode") == "real"
+    mode = "real" if is_real else "fake"
+    impl = "we-cloud-http-v1" if is_real else "we-e2-fake-v1"
     valid = (
-        event.params.get("mode") == "fake"
-        and event.params.get("fake_version") == "we-e2-fake-v1"
+        event.params.get("mode") == mode
+        and event.params.get("fake_version") == impl
+        and report.mode == mode
+        and report.fake_version == impl
         and report.counts == vector_counts(samples)
     )
     if event.operator == "evidence.vector_embed":
@@ -41,7 +46,7 @@ def validate_vector_bundle(event: LineageEvent, bundle: KnowledgeBundle) -> None
         params = DuplicateParams.model_validate(event.params.get("parameters"))
         expected = vector_hash(
             {
-                "key": global_key(samples, params),
+                "key": global_key(samples, params, mode=mode, implementation=impl),
                 "pairs": [pair.model_dump(mode="json") for pair in bundle.vector_pairs],
             }
         )
@@ -54,7 +59,7 @@ def validate_vector_bundle(event: LineageEvent, bundle: KnowledgeBundle) -> None
         valid = valid and actual == pairs
     valid = valid and report.canonical_hash == expected
     for product in bundle.vector_products:
-        valid = valid and product.mode == "fake" and product.implementation == "we-e2-fake-v1"
+        valid = valid and product.mode == mode and product.implementation == impl
         valid = valid and all(sample in samples for sample in product.samples)
         if product.kind == "embedding":
             valid = valid and product.key == product.samples[0].embedding_key

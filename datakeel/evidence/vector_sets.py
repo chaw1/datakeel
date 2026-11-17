@@ -11,7 +11,14 @@ from datakeel.core.vector_measurements import (
     CoverageMeasurement,
     OutlierMeasurement,
 )
-from datakeel.core.vector_models import ClusterParams, VectorError, VectorScope, vector_hash
+from datakeel.core.vector_models import (
+    ClusterParams,
+    VectorError,
+    VectorImpl,
+    VectorMode,
+    VectorScope,
+    vector_hash,
+)
 from datakeel.core.vector_results import VectorFinding, VectorSample
 from datakeel.evidence.vector_parameters import CoverageParams
 
@@ -167,13 +174,16 @@ def set_key(
     params: ClusterParams | CoverageParams,
     operator: str,
     scope: VectorScope | None = None,
+    *,
+    mode: VectorMode = "fake",
+    implementation: VectorImpl = "we-e2-fake-v1",
 ) -> str:
     """Bind mode, full recorded output, operator, parameters and both source closures."""
     return vector_hash(
         {
             "contract": "we-e3-sets-v1",
-            "mode": "fake",
-            "implementation": "we-e2-fake-v1",
+            "mode": mode,
+            "implementation": implementation,
             "operator": operator,
             "samples": sorted(s.canonical() for s in samples),
             "params": params.model_dump(mode="json"),

@@ -16,16 +16,18 @@ from datakeel.core.vector_models import (
     Digest,
     VectorAttempt,
     VectorCounts,
+    VectorImpl,
+    VectorMode,
     VectorScope,
     vector_hash,
 )
 
 
 class VectorNodeReport(BoundaryModel):
-    """Distinguish invented fake usage and contract status from real quality or latency."""
+    """Distinguish synthetic fake usage from metered cloud requests, tokens and nano-cost."""
 
-    mode: Literal["fake"] = "fake"
-    fake_version: Literal["we-e2-fake-v1"] = "we-e2-fake-v1"
+    mode: VectorMode = "fake"
+    fake_version: VectorImpl = "we-e2-fake-v1"
     real_quality: Literal["not_tested"] = "not_tested"
     status: Literal["success", "partial_success", "failed", "insufficient"]
     reason: str | None = None
@@ -37,12 +39,15 @@ class VectorNodeReport(BoundaryModel):
     fake_requests: int = Field(default=0, ge=0)
     fake_usage: int = Field(default=0, ge=0)
     fake_cost_nanos: int = Field(default=0, ge=0)
+    real_requests: int | None = Field(default=None, ge=0, exclude_if=lambda value: value is None)
+    real_usage: int | None = Field(default=None, ge=0, exclude_if=lambda value: value is None)
+    real_cost_nanos: int | None = Field(default=None, ge=0, exclude_if=lambda value: value is None)
 
 
 class VectorTaskReport(BoundaryModel):
     """Expose terminal or pending status without representing a failed run as an empty success."""
 
-    mode: Literal["fake"] = "fake"
+    mode: VectorMode = "fake"
     status: Literal["pending", "success", "partial_success", "failed", "cancelled", "insufficient"]
     reason: str | None = None
     nodes: tuple[VectorNodeReport, ...] = ()
@@ -50,10 +55,10 @@ class VectorTaskReport(BoundaryModel):
 
 
 class VectorInputStatus(BoundaryModel):
-    """Expose a source's typed failure and synthetic provenance without substituting a vector."""
+    """Expose a source's typed failure and provenance without substituting a vector."""
 
-    mode: Literal["fake"] = "fake"
-    fake_version: Literal["we-e2-fake-v1"] = "we-e2-fake-v1"
+    mode: VectorMode = "fake"
+    fake_version: VectorImpl = "we-e2-fake-v1"
     status: Literal["eligible", "input_failed"]
     reason: str | None = None
 

@@ -7,17 +7,30 @@ import math
 
 from datakeel.core.evidence_drafts import ObservationDraft
 from datakeel.core.evidence_models import EvidenceAnchor, ExtractorRef
-from datakeel.core.vector_models import DuplicateParams, VectorCounts, VectorError, vector_hash
+from datakeel.core.vector_models import (
+    DuplicateParams,
+    VectorCounts,
+    VectorError,
+    VectorImpl,
+    VectorMode,
+    vector_hash,
+)
 from datakeel.core.vector_results import CosineMeasurement, VectorPair, VectorSample
 
 
-def global_key(samples: tuple[VectorSample, ...], params: DuplicateParams) -> str:
+def global_key(
+    samples: tuple[VectorSample, ...],
+    params: DuplicateParams,
+    *,
+    mode: VectorMode = "fake",
+    implementation: VectorImpl = "we-e2-fake-v1",
+) -> str:
     """Bind the full target/revision/content/vector/status summary, independent of input order."""
     return vector_hash(
         {
             "contract": "we-e2-duplicate-v1",
-            "mode": "fake",
-            "implementation": "we-e2-fake-v1",
+            "mode": mode,
+            "implementation": implementation,
             "params": params.model_dump(mode="json"),
             "targets": sorted(sample.canonical() for sample in samples),
         }
@@ -69,10 +82,19 @@ def vector_counts(samples: tuple[VectorSample, ...]) -> VectorCounts:
 
 
 def pair_drafts(
-    samples: tuple[VectorSample, ...], pairs: tuple[VectorPair, ...]
+    samples: tuple[VectorSample, ...],
+    pairs: tuple[VectorPair, ...],
+    *,
+    mode: VectorMode = "fake",
+    implementation: VectorImpl = "we-e2-fake-v1",
 ) -> tuple[ObservationDraft, ...]:
     """Bind both Whole anchors to original bytes, never preprocessed or peer-only hashes."""
     by_id = {sample.subject.asset_id: sample for sample in samples}
+    reason = (
+        "cloud_embedding_candidate"
+        if mode == "real"
+        else "fake_contract_candidate_not_model_quality"
+    )
     return tuple(
         ObservationDraft(
             subject=by_id[pair.left].subject,
@@ -84,9 +106,9 @@ def pair_drafts(
                 )
                 for key in (pair.left, pair.right)
             ),
-            extractor=ExtractorRef(id="evidence.semantic_duplicate", version="we-e2-fake-v1"),
+            extractor=ExtractorRef(id="evidence.semantic_duplicate", version=implementation),
             measurement=pair.measurement,
-            reason="fake_contract_candidate_not_model_quality",
+            reason=reason,
         )
         for pair in pairs
     )

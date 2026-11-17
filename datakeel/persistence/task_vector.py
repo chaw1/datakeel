@@ -43,9 +43,8 @@ def validate_vector_completion(
         version_id=str(approved.canonical_params.get("version_id") or ""),
     )
     authorize_vector(session, permit)
-    verify_vector_params(
-        session, approved, PipelineParams.model_validate(approved.canonical_params)
-    )
+    params = PipelineParams.model_validate(approved.canonical_params)
+    verify_vector_params(session, approved, params)
     expected: set[str] = (
         {node.id for node in pipeline.nodes if node.operator in VECTOR_OPERATORS}
         if pipeline
@@ -59,7 +58,17 @@ def validate_vector_completion(
     if set(actual) != expected or len(actual) != len(expected):
         msg = "vector_publication_incomplete"
         raise VectorError(msg)
-    if any(product.mode != "fake" for item in evidence for product in item.bundle.vector_products):
+    expected_mode = (
+        params.vector_prepared.nodes[0].params.mode
+        if params.vector_prepared and params.vector_prepared.nodes
+        else "fake"
+    )
+    if any(
+        item.event.params.get("mode") != expected_mode
+        or any(product.mode != expected_mode for product in item.bundle.vector_products)
+        for item in evidence
+        if item.event.operator in VECTOR_OPERATORS
+    ):
         msg = "vector_publication_mode_mismatch"
         raise VectorError(msg)
     return evidence

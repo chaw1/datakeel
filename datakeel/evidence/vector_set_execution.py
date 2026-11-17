@@ -4,7 +4,14 @@
 """Compute bounded set candidates with disposable global cache reuse and typed status."""
 
 from datakeel.core.models import BoundaryModel
-from datakeel.core.vector_models import ClusterParams, VectorCounts, VectorError, VectorScope
+from datakeel.core.vector_models import (
+    ClusterParams,
+    VectorCounts,
+    VectorError,
+    VectorImpl,
+    VectorMode,
+    VectorScope,
+)
 from datakeel.core.vector_results import (
     VectorCacheProduct,
     VectorFinding,
@@ -33,6 +40,9 @@ def compute_set(
     samples: tuple[VectorSample, ...],
     node: Node,
     scope: VectorScope | None,
+    *,
+    mode: VectorMode = "fake",
+    implementation: VectorImpl = "we-e2-fake-v1",
 ) -> SetComputation:
     """Reuse only a full set key and retain target-only counts for relative coverage."""
     params = (
@@ -46,21 +56,11 @@ def compute_set(
         if scope is None or s.subject.asset_id in {m.subject.asset_id for m in scope.targets}
     )
     counts = vector_counts(targets)
-    key = set_key(samples, params, str(node.operator), scope)
-    cached = vector_cached(db, key, "global")
-    if isinstance(params, CoverageParams):
-        if scope is None:
-            msg = "vector_reference_scope_missing"
-            raise VectorError(msg)
-        findings = cached.findings if cached else coverage_findings(samples, scope, params)
-    else:
-        findings = (
-            cached.findings
-            if cached
-            else cluster_findings(
-                samples, params, outlier=node.operator == "evidence.semantic_outlier"
-            )
-        )
+    key = set_key(
+        samples, params, str(node.operator), scope, mode=mode, implementation=implementation
+    )
+    cached = vector_cached(db, key, "global", mode=mode, implementation=implementation)
+    findings = cached.findings if cached else _resolve_findings(samples, scope, params, node)
     insufficient = isinstance(params, ClusterParams) and counts.eligible < params.min_samples
     if counts.input and not counts.eligible:
         msg = "vector_all_inputs_failed"
@@ -70,26 +70,56 @@ def compute_set(
         if any(s.temporary for s in samples)
         else (
             VectorCacheProduct(
-                key=key, kind="global", samples=samples, findings=findings, scope=scope
+                key=key,
+                mode=mode,
+                implementation=implementation,
+                kind="global",
+                samples=samples,
+                findings=findings,
+                scope=scope,
             ),
         )
     )
     return SetComputation(
         products=products,
         output=VectorSetOutput(findings=findings, scope=scope),
-        report=_report(counts, key, findings, insufficient=insufficient, cached=bool(cached)),
+        report=_report(
+            counts,
+            set_hash(key, findings),
+            insufficient=insufficient,
+            cached=bool(cached),
+            mode=mode,
+            implementation=implementation,
+        ),
     )
+
+
+def _resolve_findings(
+    samples: tuple[VectorSample, ...],
+    scope: VectorScope | None,
+    params: CoverageParams | ClusterParams,
+    node: Node,
+) -> tuple[VectorFinding, ...]:
+    if isinstance(params, CoverageParams):
+        if scope is None:
+            msg = "vector_reference_scope_missing"
+            raise VectorError(msg)
+        return coverage_findings(samples, scope, params)
+    return cluster_findings(samples, params, outlier=node.operator == "evidence.semantic_outlier")
 
 
 def _report(
     counts: VectorCounts,
-    key: str,
-    findings: tuple[VectorFinding, ...],
+    canonical_hash: str,
     *,
     insufficient: bool,
     cached: bool,
+    mode: VectorMode,
+    implementation: VectorImpl,
 ) -> VectorNodeReport:
     return VectorNodeReport(
+        mode=mode,
+        fake_version=implementation,
         status="insufficient"
         if insufficient
         else "partial_success"
@@ -97,7 +127,7 @@ def _report(
         else "success",
         reason="vector_insufficient_samples" if insufficient else None,
         counts=counts,
-        canonical_hash=set_hash(key, findings),
+        canonical_hash=canonical_hash,
         cache_hits=counts.input if cached else 0,
         eligible_cache_hits=counts.eligible if cached else 0,
     )

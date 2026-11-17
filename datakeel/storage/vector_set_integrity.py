@@ -35,34 +35,39 @@ def validate_set_bundle(event: LineageEvent, bundle: KnowledgeBundle) -> None:
         findings = cluster_findings(
             samples, params, outlier=event.operator == "evidence.semantic_outlier"
         )
-    expected = set_drafts(samples, findings, event.operator)
+    is_real = event.params.get("mode") == "real"
+    mode = "real" if is_real else "fake"
+    impl = "we-cloud-http-v1" if is_real else "we-e2-fake-v1"
+    expected = set_drafts(samples, findings, event.operator, mode=mode)
     actual = tuple(
         a.model_dump(mode="json", include=set(type(draft).model_fields))
         for a, draft in zip(bundle.assertions, expected, strict=False)
     )
+    key = set_key(samples, params, event.operator, scope, mode=mode, implementation=impl)
     report = VectorNodeReport.model_validate(event.quality.get("vector"))
     valid = (
-        event.params.get("mode") == "fake"
-        and event.params.get("fake_version") == "we-e2-fake-v1"
+        event.params.get("mode") == mode
+        and event.params.get("fake_version") == impl
+        and report.mode == mode
+        and report.fake_version == impl
         and report.counts == vector_counts(targets)
         and findings == bundle.vector_findings
         and len(bundle.assertions) == len(expected)
         and actual == tuple(d.model_dump(mode="json") for d in expected)
-        and report.canonical_hash
-        == set_hash(set_key(samples, params, event.operator, scope), findings)
+        and report.canonical_hash == set_hash(key, findings)
         and not bundle.vector_pairs
         and tuple(event.inputs) == tuple(s.subject for s in samples)
     )
     for product in bundle.vector_products:
         valid = valid and (
-            product.mode == "fake"
-            and product.implementation == "we-e2-fake-v1"
+            product.mode == mode
+            and product.implementation == impl
             and product.kind == "global"
             and product.samples == samples
             and product.findings == findings
             and product.scope == scope
             and not product.pairs
-            and product.key == set_key(samples, params, event.operator, scope)
+            and product.key == key
         )
     if not valid:
         msg = "vector_bundle_integrity_invalid"

@@ -10,7 +10,6 @@ from datakeel.core.errors import NotFoundError
 from datakeel.core.models import AssetRef, LineageEvent
 from datakeel.core.vector_models import (
     VECTOR_OPERATORS,
-    VectorAttempt,
     VectorCounts,
     VectorError,
     VectorPrepared,
@@ -21,6 +20,7 @@ from datakeel.dataset_store.rows import EventRow, VersionRow
 from datakeel.pipeline.models import Node, Pipeline
 from datakeel.storage.action_rows import ActionPlanRow, ActionRunRow
 from datakeel.storage.evidence_artifacts import load_bundle
+from datakeel.storage.vector_budget import attempt_view
 from datakeel.storage.vector_references import resolve_references
 from datakeel.storage.vector_rows import VectorAttemptRow, VectorCacheRow
 from datakeel.worker_store.rows import TaskRow
@@ -80,12 +80,18 @@ def query_report(
     session: Session, task: TaskRow, events: tuple[LineageEvent, ...]
 ) -> VectorTaskReport:
     """Preserve failure counts, pending state and durable fake attempt accounting."""
+    is_real = any(
+        n.get("params", {}).get("mode") == "real" for n in (task.pipeline or {}).get("nodes", [])
+    )
+    mode = "real" if is_real else "fake"
     nodes = tuple(
         VectorNodeReport.model_validate(event.quality["vector"])
         for event in events
         if "vector" in event.quality
     ) + tuple(
         VectorNodeReport(
+            mode=mode,
+            fake_version="we-cloud-http-v1" if is_real else "we-e2-fake-v1",
             status="failed",
             reason=str(event.quality.get("vector_failure_reason")),
             counts=VectorCounts.model_validate(event.quality["vector_failure_counts"]),
@@ -107,17 +113,7 @@ def query_report(
         else "success"
     )
     attempts = tuple(
-        VectorAttempt.model_validate(
-            {
-                "id": row.id,
-                "state": row.state,
-                "token_bound": row.token_bound,
-                "reserved_nanos": row.reserved_nanos,
-                "usage": row.payload.get("usage"),
-                "response_id": row.payload.get("response_id"),
-                "reason": row.payload.get("reason"),
-            }
-        )
+        attempt_view(row)
         for row in session.scalars(
             select(VectorAttemptRow)
             .where(VectorAttemptRow.task_id == task.id)
@@ -125,6 +121,7 @@ def query_report(
         )
     )
     return VectorTaskReport(
+        mode=mode,
         status=status,
         reason=task.error.removeprefix("VectorError: ")
         if task.error

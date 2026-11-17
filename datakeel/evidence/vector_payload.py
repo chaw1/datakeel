@@ -70,8 +70,13 @@ def prepare_wire(file: FileItem, params: EmbedParams) -> PreparedWire:
         if params.modality == "text"
         else f"image-exif-rgb-png512-v1:pillow-{__version__}"
     )
+    text_tokens = (
+        len(payload.decode("utf-8"))
+        if params.modality == "text" and params.tokenizer == "fake-codepoint-v1"
+        else max(1, len(payload))
+    )
     token_bound = (
-        (len(payload.decode("utf-8")) if params.modality == "text" else params.policy.image_tokens)
+        (text_tokens if params.modality == "text" else params.policy.image_tokens)
         if not failure
         else 0
     )
@@ -105,16 +110,17 @@ def prepare_wire(file: FileItem, params: EmbedParams) -> PreparedWire:
 
 
 def _body(payload: bytes, params: EmbedParams) -> bytes:
+    model = params.effective_model()
     request = (
         {
-            "model": "text-embedding-v4",
+            "model": model,
             "input": [payload.decode("utf-8")],
             "dimensions": params.dimensions,
             "encoding_format": "float",
         }
         if params.modality == "text"
         else {
-            "model": "multimodal-embedding-v1",
+            "model": model,
             "input": [{"image": "data:image/png;base64," + base64.b64encode(payload).decode()}],
         }
     )

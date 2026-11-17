@@ -53,6 +53,54 @@ class FakeReply(BoundaryModel):
     body: bytes
 
 
+def verify_predispatch(
+    db: Database, permit: VectorPermit, node: FrozenVectorNode, wire: PreparedWire
+) -> None:
+    """Reverify consumed approval, lease ownership and frozen wire hash before dispatch."""
+    with db.session() as session:
+        prepared = authorize_vector(session, permit)
+        if node not in prepared.nodes or wire.frozen not in node.inputs:
+            msg = "vector_transport_plan_mismatch"
+            raise VectorError(msg)
+    if hashlib.sha256(wire.body).hexdigest() != wire.frozen.body_hash:
+        msg = "vector_final_payload_changed"
+        raise VectorError(msg)
+
+
+def commit_dispatch(
+    db: Database, permit: VectorPermit, attempt_id: str, wire: PreparedWire
+) -> None:
+    """Transition the reserved attempt to SENDING before crossing a transport boundary."""
+    dispatch_vector(db, permit, attempt_id, wire.frozen)
+
+
+class VectorDispatchGate:
+    """Bind predispatch verification and SENDING transition without exposing storage types."""
+
+    def __init__(
+        self,
+        db: Database,
+        permit: VectorPermit,
+        node: FrozenVectorNode,
+        wire: PreparedWire,
+        attempt_id: str,
+    ) -> None:
+        """Capture the leased worker identity and reserved attempt for one transport call."""
+        self._db = db
+        self._permit = permit
+        self._node = node
+        self._wire = wire
+        self._attempt_id = attempt_id
+
+    def verify(self) -> None:
+        """Reverify consumed approval, lease ownership and frozen wire hash before dispatch."""
+        verify_predispatch(self._db, self._permit, self._node, self._wire)
+
+    def commit(self) -> None:
+        """Persist SENDING before any external socket or fake boundary is crossed."""
+        commit_dispatch(self._db, self._permit, self._attempt_id, self._wire)
+
+
 class FakeVectorTransport:
     """Never construct a socket, HTTP client, key loader or recording adapter."""
 
@@ -65,15 +113,8 @@ class FakeVectorTransport:
         attempt_id: str,
     ) -> FakeResponse:
         """Recheck full destination, bytes, signed identity, persisted attempt before fake send."""
-        with db.session() as session:
-            prepared = authorize_vector(session, permit)
-            if node not in prepared.nodes or wire.frozen not in node.inputs:
-                msg = "vector_transport_plan_mismatch"
-                raise VectorError(msg)
-        if hashlib.sha256(wire.body).hexdigest() != wire.frozen.body_hash:
-            msg = "vector_final_payload_changed"
-            raise VectorError(msg)
-        dispatch_vector(db, permit, attempt_id, wire.frozen)
+        verify_predispatch(db, permit, node, wire)
+        commit_dispatch(db, permit, attempt_id, wire)
         reply = self._safe_reply(node, wire)
         if HTTPStatus.MULTIPLE_CHOICES <= reply.status < HTTPStatus.BAD_REQUEST:
             msg = "vector_redirect_refused"

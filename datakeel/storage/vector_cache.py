@@ -33,21 +33,17 @@ def _forget_evidence_lock(session: Session, transaction: SessionTransaction) -> 
         session.info.pop(_LOCK_TRANSACTIONS, None)
 
 
-def vector_cached(db: Database, key: str, kind: str) -> VectorCacheProduct | None:
-    """Read only the exact fake implementation namespace; never fall through to another mode."""
+def vector_cached(
+    db: Database, key: str, kind: str, *, mode: str = "fake", implementation: str = "we-e2-fake-v1"
+) -> VectorCacheProduct | None:
+    """Read only the exact mode/implementation namespace; never fall through across modes."""
     with db.session() as session:
-        row = session.get(VectorCacheRow, f"fake:we-e2-fake-v1:{kind}:{key}")
+        row = session.get(VectorCacheRow, f"{mode}:{implementation}:{kind}:{key}")
         if row is None:
             return None
-        product = VectorCacheProduct.model_validate(row.payload)
-        if (
-            product.key != key
-            or product.kind != kind
-            or product.mode != "fake"
-            or product.implementation != "we-e2-fake-v1"
-        ):
-            return None
-        return product
+        p = VectorCacheProduct.model_validate(row.payload)
+        ok = (p.key, p.kind, p.mode, p.implementation) == (key, kind, mode, implementation)
+        return p if ok else None
 
 
 def project_vectors(
