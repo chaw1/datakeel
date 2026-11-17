@@ -1,6 +1,6 @@
 # Backlog
 
-## 已处理（Unreleased）
+## 已处理（v0.27.0）
 - 意图路由扩充 `dataset-health`、`metric-change` 口语化双语概念同义词与英语不规则动词词形还原，并支持三槽位工作流在命中 `entity + outcome` 部分概念时进入 `intent_classifier` 分支（`eval-route` 116/116 意图与 14/14 档位 100% 通过）。
 - 价目表 [`model-prices.yaml`](../contracts/model-prices.yaml) 补齐多档 OpenAI / Anthropic 模型单价，新增三档分档加同服务商备用示例 [`models-tiered.example.yaml`](../contracts/routing/models-tiered.example.yaml)，并核验百炼视觉转写（含 `auto` 模式）签批卡与运行报告的转写费用上限。
 - 知识问句扩充「有谁在看/查/拉取」、断供宕机反事实及 `wind up`/`land in`/「落到」流向词表，并新增可选模型意图候选提议加确定性主语/焦点/候选项/方向规则核对（`K18-verified-model-candidate`）。

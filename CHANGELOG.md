@@ -4,6 +4,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-17
+
 ### Added
 
 - Governed cloud HTTP vector embedding mode (`mode="real"`, `fake_version="we-cloud-http-v1"`) in [`datakeel/evidence/vector_cloud.py`](datakeel/evidence/vector_cloud.py), [`datakeel/core/vector_models.py`](datakeel/core/vector_models.py), and [`datakeel/storage/`](datakeel/storage/), supporting OpenAI- and DashScope-compatible `/v1/embeddings` endpoints with explicit `real_egress_enabled` / `real_budget_cny` CNY nano-accounting, pre-dispatch credential and DNS SSRF fencing, non-redirecting `httpx` execution, and mode-isolated `real:we-cloud-http-v1:*` caches and replay integrity. See [vector kernel](docs/VECTOR_FAKE.md).
