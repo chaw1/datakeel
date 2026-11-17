@@ -1,59 +1,42 @@
-<img src="web/public/favicon.svg" width="42" height="42" alt="Datakeel" align="left" />
+<p align="center"><img src="web/public/favicon.svg" width="56" height="56" alt="" /></p>
+<h1 align="center">Datakeel</h1>
+<p align="center"><strong>本地优先的可审计数据集工作台</strong></p>
+<p align="center">审阅样本证据，交付可核验的数据集版本，把业务数字追溯到来源。</p>
 
-# Datakeel
+<p align="center">
+  <a href="https://github.com/chaw1/datakeel/releases"><img alt="发布版本" src="https://img.shields.io/github/v/release/chaw1/datakeel?color=2459a8" /></a>
+  <a href="https://github.com/chaw1/datakeel/actions/workflows/ci.yml"><img alt="质量门禁" src="https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="pyproject.toml"><img alt="Python 3.12+" src="https://img.shields.io/badge/Python-3.12%2B-2459a8" /></a>
+  <a href="LICENSE"><img alt="Apache-2.0 许可" src="https://img.shields.io/badge/license-Apache--2.0-536a1c" /></a>
+</p>
 
-**可审计的本地优先数据与 AI 数据集工作台 —— 统一多模态样本证据校样、企业指标可追溯问数与受控 Agent/MCP 动作。**
+<p align="center">
+  <a href="README.md">English</a> ·
+  <a href="#快速上手">快速上手</a> ·
+  <a href="docs/DATASET_DELIVERY.zh.md">数据集交付</a> ·
+  <a href="docs/DEMO.md">演示导览</a> ·
+  <a href="docs/README.zh.md">文档中心</a> ·
+  <a href="CHANGELOG.md">更新日志</a>
+</p>
 
-[![Quality gates](https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg)](https://github.com/chaw1/datakeel/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/chaw1/datakeel)](https://github.com/chaw1/datakeel/releases)
-[![Python 3.12+](https://img.shields.io/badge/Python-3.12+-2459A8.svg)](pyproject.toml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-2459A8.svg)](LICENSE)
-
-[English](README.md) · 简体中文 · [十分钟导览](docs/DEMO.md) · [文档中心](docs/README.zh.md) · [接口参考](docs/API_REFERENCE.zh.md) · [架构决策](docs/ARCHITECTURE.md) · [部署指南](docs/DEPLOYMENT.zh.md) · [更新日志](CHANGELOG.md)
-
----
-
-## 校样工作台
-
-![证据工作台中文浅色界面](docs/images/ui-evidence-zh.png)
-
-Datakeel 将数据工程与 AI 数据集研发流程组织在六个导航分组中：**工作台、数据、证据与质量、操作、智能体、模型**。八类对象共用统一档案视图（事实、关系、证据与历史），界面上每一处事实数字都可直接追溯到来源：
-
-- **三态证据与交互锚点**：严格区分「有（`present`）」「无（`absent`）」与「未知（`unknown`）」（圆点表示尚无断言）；支持 `j`/`k`、`a`/`r` 与 `Esc` 快捷键联动高亮文本下划线、概念行与图像标注框，同时将机器证据与人工审核决定分开记录。
-- **来源脚注与签批单**：问数结果绑定指标定义版本、负责人、带参数 SQL、来源字段与时间区间；不可逆或外发变更必须在显式签批单确认冻结参数、影响面与摘要后才能执行。
-- **全局速查与校样副驾**：按 `⌘K / Ctrl+K` 搜索数据集、文件、版本、动作、表、字段、指标和术语（完整 UUID 截取前八位展示，业务 ID 完整保留），或按 `⌘J / Ctrl+J` 唤起右侧上下文副驾并查看/续规划动作链。
-- **开箱离线界面**：内置中英双语与三套对比度验证色板（双铅笔 `pencil`、赭石 `ochre`、石墨 `graphite`），本地打包 OFL 字体及许可声明（[第三方许可](web/public/THIRD-PARTY-LICENSES.txt)），演示模式不访问任何外部域名。
-
----
-
-## 核心设计保证
-
-- **不可变版本与可追溯数值**：文件版本冻结 SHA-256 清单；企业问数仅从已登记指标 YAML 编译只读参数化 `SELECT` 查询，采用半开时间区间，遇未登记概念或歧义口径返回 `unanswerable` / `clarification` 而绝不编造数字；七章数据集说明书要求逐句引用冻结事实。
-- **诚实表达未知证据**：缺失标注或附属文件保持 `unknown` 而非误判为不存在；图片质量、点云清洗、近重复哈希与知识图谱抽取均保留完整溯源记录。
-- **冻结计划与人工签批兜底**：所有状态变更先生成带摘要、有效期、影响范围与可逆性标识的计划；内置 LangGraph 智能体与 FastMCP 服务端只能准备计划，无法自行审批或执行不可逆操作。
-- **本地优先并支持小团队扩展**：默认使用 SQLite + 本地目录，Python 包内嵌编译好的 React 界面；需要时可切换 PostgreSQL + S3、接入认证反向代理（[部署指南](docs/DEPLOYMENT.zh.md)），并启用可选 Rust 加速扩展（`datakeel-accel`）。
-
----
+![Datakeel 数据集交付审查并排显示训练集和测试集中的重复图片](docs/images/dataset-delivery-zh.png)
 
 ## 快速上手
 
-安装 [uv](https://docs.astral.sh/uv/getting-started/installation/) 后，在仓库根目录执行两条命令即可启动离线演示（`.python-version` 自动选择 Python 3.12，无需 Node、Docker、外部数据库或模型密钥）：
+安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，在仓库根目录执行下面两条命令。演示会启动本机 API 与 worker，提供内置 Web 界面，并向本地 SQLite 导入生成样例。模型调用使用内置的离线模型服务。
 
 ```bash
 uv sync --locked
 uv run datakeel demo
 # Web 界面：http://127.0.0.1:8765
 # API 文档：http://127.0.0.1:8765/api/docs
-# 按 Ctrl+C 同时停止 API 与 worker 进程
+# Ctrl+C 同时停止 API 和 worker。
 ```
 
-`demo` 会启动本机 `api` 与 `worker` 进程，并导入确定性本地样例：
-- **Field notes · generated demo**：200 张 PNG 与 200 份文本，经过 11 个算子生成 2 个不可变版本；
-- **Paired scenes · evidence demo**：1,000 个图像/caption/标注配对样本（含 50 处标注冲突、30 个缺失 sidecar 与 10 个损坏图像），运行 5 个确定性证据算子；
-- **Fictional Kitchen Co.**：ERP/CRM/电商/售后 4 个 SQLite 数据源（24 张表、128 个字段、13 个指标、12 个维度、32 条术语、51,992 行数据与 6 个分级数据资产）；
-- **Business notes · knowledge graph demo**：24 篇录制短文、3 篇长文及录制图片转录样例。
+先从「证据」页打开一张图片，查看它的描述与标注。也可以进入「问数」，将参考日期设为 `2026-10-01`，问「上个季度华东区零售额是多少」。导览使用同一份演示数据。 [演示导览](docs/DEMO.md)
 
-推荐跟随 **[十分钟导览](docs/DEMO.md)** 体验完整流程，也可直接通过 CLI 运行问数与标准导出：
+<details>
+<summary>用命令行运行演示、问数与导出</summary>
 
 ```bash
 uv run datakeel demo --once
@@ -64,26 +47,39 @@ uv run datakeel export --format openlineage --output events.json
 uv run datakeel export --format croissant --output croissant.json
 ```
 
-> 中英文问句共用同一套确定性时间解析、指标/别名规范化、维度分组与拒答护栏。详见[问数图表与多轮追问](docs/ASK.zh.md)与[HTTP API 与流水线参考](docs/API_REFERENCE.zh.md)。
+演示提供文件处理、配对图片证据、企业指标和知识图谱四组生成数据。图片证据包含 1,000 张样本，以及可在界面核对的标注冲突、缺失的配套文件和损坏文件。
 
----
+</details>
 
-## 核心能力矩阵
+## 可以用它做什么
 
-| 领域 | 核心能力 | 专题文档 |
+| 工作 | 可以核对的结果 | 指南 |
 | --- | --- | --- |
-| **多模态证据、媒体与知识图谱** | 五算子证据 DAG（图像感知哈希、caption 提及、标注、标签缺口、64 位 dHash 近重复及可选 Rust 扩展）、图像质量五项体检与 PLY/PCD 点云清洗、本机 `ffmpeg` 音视频预处理、文本与图片知识图谱、容器沙箱自定义算子 | [图片与点云质量](docs/MEDIA_QUALITY.md) · [音视频预处理](docs/MEDIA.md) · [知识图谱](docs/KG.md) · [自定义算子](docs/CUSTOM_OPERATORS.md) · [Rust 加速](docs/RUST_ACCEL.md) · [离线向量内核](docs/VECTOR_FAKE.md) |
-| **标注生产、训练集与交付** | 标签集发布与只追加修订、EXIF 自动摆正工作台、团队档驾驶舱（租约、技能派单、AI 预标注与预审）、离线标注一致性评估、带种子分层切分与泄漏检查（COCO/YOLO/HF/JSONL 导出）、大模型 SFT/偏好对试运行清洗、逐句有据说明书、可复现交付包与 `reconcile` 对账 | [生产流程](docs/PRODUCTION.zh.md) · [标注工作台](docs/ANNOTATION_WORKBENCH.zh.md) · [标注质量](docs/ANNOTATION_QA.md) · [训练集切分](docs/TRAINING.zh.md) · [大模型训练数据](docs/LLM_DATA.zh.md) · [说明书](docs/DATASHEETS.md) · [发布与交付](docs/RELEASES.zh.md) |
-| **企业目录、问数与数据治理** | SQLite 反射与 `sqlglot` 字段血缘、dbt / Airflow REST v1 / OpenLineage 导入、版本化指标 YAML（`update_metric` / `rollback_metric`）、可追溯问数与选图、可移植字段标准与码表、表质量规则监控与告警、数据资产分级与授权申请、表格时序剖析 | [问数说明](docs/ASK.zh.md) · [元数据导入](docs/METADATA_IMPORTS.md) · [数据标准](docs/STANDARDS.md) · [质量规则](docs/QUALITY_RULES.md) · [数据资产](docs/DATA_ASSETS.md) · [时序剖析](docs/TIMESERIES.md) |
-| **受控动作、智能体与工作流** | 冻结摘要签批单、基于 LangGraph 持久断点的离线 `fake-demo` 智能体、只读子 Agent 委派、canary 与提示注入拦截、脱敏跨会话记忆、Token/USD 预算、确定性 YAML 工作流、一句话多步动作链规划（试用，`⌘J`）、服务端角色与权限矩阵 | [受控动作](docs/ACTIONS.md) · [工作流](docs/WORKFLOWS.md) · [智能体与记忆](docs/AGENT.md) · [一句话做事](docs/ONE_SENTENCE.zh.md) · [身份与权限](docs/IDENTITY_ACCESS.zh.md) |
+| 导入并审查图片目录 | 预览图片和配套文件，查看跨划分匹配的图片，确认后将样本排除在修正版本之外。 | [数据集交付审查](docs/DATASET_DELIVERY.zh.md) |
+| 审阅样本 | 从候选问题跳到图片、描述、标注或来源事件。证据区分「有」「无」「未知」。 | [证据审阅](docs/DEMO.md#2-审一个样本再生成版本约-2-分钟) |
+| 准备训练数据 | 比较不可变版本、检查切分泄漏，并按任务需要导出 COCO、YOLO、Hugging Face 或 JSONL。 | [训练集](docs/TRAINING.zh.md) |
+| 发布与交付 | 签批已冻结的发布计划，下载可复现的交付包，用 `datakeel reconcile` 核对清单。 | [数据集发布](docs/RELEASES.zh.md) |
+| 解释一个业务数字 | 核对指标定义版本、来源字段、带参数 SQL 与时间窗口，按维度继续追问或查看血缘。 | [问数](docs/ASK.zh.md) |
+| 审阅智能体建议 | 核对受影响对象、外发范围与费用，由人在 Web 或 CLI 签批和执行。 | [受控动作](docs/ACTIONS.md) · [MCP](#mcp-与模型) |
 
----
+中英文界面提供样本校样快捷键，并可用 `⌘K / Ctrl+K` 查找对象、用 `⌘J / Ctrl+J` 打开带当前对象上下文的副驾。 [界面设计](docs/design/UI-DIRECTION-B.md)
 
-## MCP 接入与可选模型配置
+标注生产、音视频处理、大模型数据检查、知识图谱和目录导入的专题指南收录在 [文档中心](docs/README.zh.md)。
 
-`uv run datakeel mcp` 提供 **102 个 FastMCP 工具**（37 个只读查询 + 65 个仅生成冻结计划的动作）。MCP 服务端不暴露签批与执行工具，`approve_plan` 或 `execute_plan` 调用一律拒绝并记入审计，最终需由人工在 Web 界面或 CLI 签批执行。
+## 架构
 
-在 **Claude Desktop**（`claude_desktop_config.json`）或 **Cursor**（`.cursor/mcp.json`）中配置本机路径，`DATAKEEL_HOME` 与演示保持一致即可共享数据：
+![Datakeel 架构图展示 API、worker、领域契约和存储层](docs/images/architecture-overview.svg)
+
+Datakeel 运行 API 与带租约保护的 worker，使用 SQLite 或 PostgreSQL 记录事实，用本地或 S3 兼容存储保存对象。文件版本冻结 SHA-256 清单，血缘可从只追加事件重建，对外发或不可逆的动作由人签批确切的计划。 [架构决策](docs/ARCHITECTURE.md) · [持久化 Schema](docs/PERSISTENCE_SCHEMA.md) · [接口参考](docs/API_REFERENCE.zh.md)
+
+## MCP 与模型
+
+MCP 服务提供可审计查询和计划准备，可通过本机 stdio 或回环 SSE 接入。将 `DATAKEEL_HOME` 设置为 Web 界面使用的目录，即可查看同一批数据。 [受控动作](docs/ACTIONS.md)
+
+<details>
+<summary>MCP 客户端配置示例</summary>
+
+为 Claude Desktop（`claude_desktop_config.json`）或 Cursor（`.cursor/mcp.json`）配置本地 stdio 时，请替换相应的绝对路径：
 
 ```json
 {
@@ -105,7 +101,7 @@ uv run datakeel export --format croissant --output croissant.json
 }
 ```
 
-也可以通过 `uv run datakeel mcp --transport sse --host 127.0.0.1 --port 8766` 启动独立的本机回环 SSE 服务：
+如需独立的回环 SSE 服务，运行 `uv run datakeel mcp --transport sse --host 127.0.0.1 --port 8766`：
 
 ```json
 {
@@ -117,90 +113,59 @@ uv run datakeel export --format croissant --output croissant.json
 }
 ```
 
-- **可选真实模型配置**：通过仓库外环境变量设置 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY`（及可选 `DATAKEEL_OPENAI_BASE_URL` / `DATAKEEL_ANTHROPIC_BASE_URL`）；所用模型须在 [`contracts/model-prices.yaml`](contracts/model-prices.yaml) 登记价目。未设置密钥时默认使用离线 `fake-demo`。
-- **OpenTelemetry 追踪导出**：使用 `uv run datakeel export-traces [--conversation-id <id>]` 将脱敏后的 OTLP/HTTP protobuf span（不含提示词、补全、工具载荷与凭证）导出至本地 OTLP Collector、Phoenix 或 Langfuse，详见[接口参考](docs/API_REFERENCE.zh.md#opentelemetry-模型-trace-导出)。
+</details>
 
----
+接入真实模型可在仓库外配置 `DATAKEEL_OPENAI_API_KEY` 或 `DATAKEEL_ANTHROPIC_API_KEY`，也可设置对应的 `DATAKEEL_OPENAI_BASE_URL` 或 `DATAKEEL_ANTHROPIC_BASE_URL`。所用模型须登记在 [价目表](contracts/model-prices.yaml)。
 
-## 系统架构
+用 `uv run datakeel export-traces [--conversation-id <id>]` 将脱敏 OTLP/HTTP span 导出至采集器、Phoenix 或 Langfuse。 [Trace 导出参考](docs/API_REFERENCE.zh.md#opentelemetry-模型-trace-导出)
 
-![Datakeel 当前架构：协议入口、应用与领域层、核心合同和事实底座](docs/images/architecture-overview.svg)
+## 部署与贡献
 
-Datakeel 采用模块化单体设计，由无状态 `api` 与行锁抢单 `worker` 两个进程组成，共享 SQLite 或 PostgreSQL 事实库与本地/S3 对象存储。版本是含 SHA-256 校验的不可变文件清单，血缘图由追加式事件投影重建；PostgreSQL 使用 `FOR UPDATE SKIP LOCKED` 领取任务分片（SQLite 使用 `BEGIN IMMEDIATE`），配合心跳、租约校验与事务 outbox 保证幂等终态。
+GitHub Releases 提供 wheel、带哈希的依赖清单、许可说明和 SHA-256 校验文件。小团队共享部署可参考身份认证代理和 PostgreSQL 方案。 [发行文件](https://github.com/chaw1/datakeel/releases) · [部署指南](docs/DEPLOYMENT.zh.md) · [SQLite 维护](docs/DATABASE_MAINTENANCE.md)
 
-```text
-datakeel/       核心领域模型、语义解析、算子、证据、知识图谱、数据目录、指标、问数、流水线、
-                质量、血缘、治理、存储、worker、api、本体、受控动作、agent、LangGraph 运行时、
-                评估 harness、FastMCP 服务与 CLI
-accel/          可选 Rust PyO3/maturin 扩展包（datakeel-accel）
-web/            React + TypeScript + Vite 前端源码（构建产物随包提交至 datakeel/web_dist）
-contracts/      文件语义、算子清单、证据词表、企业指标语义层、工作流与 golden 测试语料
-sandbox/        用于运行已签批自定义算子的容器沙箱镜像定义
-docs/           架构决策、使用指南、API/评测参考及容量基准报告
-tests/          与源码结构镜像对应的单测、集成、契约与仓库回归测试
-```
-
-详见[架构决策](docs/ARCHITECTURE.md)、[持久化 Schema 组合](docs/PERSISTENCE_SCHEMA.md)与[HTTP API 与流水线参考](docs/API_REFERENCE.zh.md)。
-
----
-
-## 部署与本地构建
-
-### 分进程独立运行
+<details>
+<summary>分别启动进程或构建本地产物</summary>
 
 ```bash
-uv run datakeel db upgrade          # 显式升级数据库（db status 只读检查）
+uv run datakeel db upgrade
 uv run datakeel api --port 8765
-# 在第二个终端使用相同的 DATAKEEL_HOME / DATAKEEL_DATABASE_URL / DATAKEEL_S3_* 配置：
+# 第二个终端使用相同数据库和对象存储配置。
 uv run datakeel worker
 ```
 
-### 构建本地 Wheel 与 Docker 镜像
-
-在源码根目录执行（构建需 Python 3.12、`uv`、Node.js 22 与 Rust 1.96；运行生成的 wheel 或镜像不需要 Node）：
+源码构建使用 Python 3.12、uv、Node.js 22 和 Rust 1.96。下面的命令构建本地产物。
 
 ```bash
-make build-wheel                    # 在 dist/ 生成纯 Python wheel 与带哈希的 requirements.txt
-make build-image                    # 构建非 root 本机镜像 datakeel:local
+make build-wheel
+make build-image
 docker run --rm -p 127.0.0.1:8765:8765 -v datakeel-data:/data datakeel:local
 ```
 
-以上命令均为纯本机构建，不会向 PyPI 或 Docker Hub 推送或发布任何制品。
-
-### 使用 Docker Compose 一键拉起本地 PostgreSQL 栈
-
-执行 `make build-image` 后，可通过仓库根目录的 [`compose.yaml`](compose.yaml) 在回环地址（`127.0.0.1:8765`）同时启动 `postgres:17-alpine`、`migrate`、`api` 与 `worker`：
+完成本地镜像构建后，可以用 Compose 在回环地址运行 API、worker、迁移任务和 PostgreSQL。
 
 ```bash
 docker compose up -d
-# 如需向 Compose 的 Postgres 与 /data 卷注入样例数据：
 docker compose run --rm api demo --once
 ```
 
-若需面向小团队通过 Caddy 或 nginx + `oauth2-proxy` 暴露访问，请按[小团队部署指南](docs/DEPLOYMENT.zh.md)配置认证反向代理与[数据库维护说明](docs/DATABASE_MAINTENANCE.md)。
+</details>
 
----
-
-## 开发与全仓门禁
+<details>
+<summary>运行仓库质量门禁</summary>
 
 ```bash
 uv sync --locked
 (cd web && npm ci)
 uv run pre-commit install
-make check                          # 公开内容扫描、Rust、Ruff ALL、严格 Pyright、import-linter、
-                                    # 规模/Schema 门禁、pytest（总覆盖 >=85% / 核心模块 >=90%）、前端与许可审计
+make check
 uv run python scripts/check_readme.py
-bash scripts/ci-check.sh            # 本地完整 CI 等价入口：含 make check、README 实测与 856 处变异测试
+bash scripts/ci-check.sh
 ```
 
-GitHub CI 在 SQLite 与 PostgreSQL 两个数据库栈上并行运行完整门禁、4 个 pytest 分片与 2 个变异分片。详见[贡献指南](CONTRIBUTING.md)、[代码规范](docs/CODE_STANDARDS.md)、[离线评测与完整门禁](docs/VERIFICATION.zh.md)及[测试执行提速](docs/TEST_SPEED.md)。
+CI 在 SQLite 与 PostgreSQL 上执行门禁、测试及变异检查。测试输入与门禁条件见 [评测与验证](docs/VERIFICATION.zh.md) 和 [代码规范](docs/CODE_STANDARDS.md)。
 
----
+</details>
 
-## 社区协作、安全与许可
+[贡献指南](CONTRIBUTING.md) · [支持与提问](SUPPORT.md) · [私密安全报告](SECURITY.md) · [行为准则](CODE_OF_CONDUCT.md) · [引用](CITATION.cff)
 
-- **使用提问与支持**：见 [SUPPORT.md](SUPPORT.md) 与 [文档中心](docs/README.zh.md)。
-- **漏洞私密报告**：请按 [SECURITY.md](SECURITY.md) 通过 GitHub 私密漏洞通道提交，切勿公开披露。
-- **行为准则**：参与贡献请遵守 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
-- **学术或技术引用**：引用元数据见 [CITATION.cff](CITATION.cff)。
-- **开源许可**：采用 [Apache-2.0](LICENSE) 协议。完整运行时依赖清单、上游许可证明与已批准例外（`certifi`、`orjson`、`regex` 及本地打包的 OFL-1.1 字体）见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 [`web/public/THIRD-PARTY-LICENSES.txt`](web/public/THIRD-PARTY-LICENSES.txt)；未引入 ELv2、BSL、AGPL 或 SSPL 运行时依赖。
+Datakeel 采用 [Apache-2.0](LICENSE) 许可。依赖与内置字体许可见 [第三方声明](THIRD_PARTY_NOTICES.md) 和 [前端声明](web/public/THIRD-PARTY-LICENSES.txt)。
