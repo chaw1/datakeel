@@ -25,6 +25,7 @@ from datakeel.dataset_store.upload_files import (
     upload_lock,
     verify_stored_object,
 )
+from datakeel.dataset_store.upload_folders import prepare_uploaded_folder
 from datakeel.storage.database import Database
 from datakeel.storage.objects import object_store
 
@@ -118,8 +119,10 @@ def _completion_input(db: Database, identifier: str) -> UploadInput | UploadView
 
 def _prepare_upload(identifier: str, body: UploadInput) -> tuple[FileItem, ...]:
     with tempfile.TemporaryDirectory(prefix="datakeel-upload-") as directory:
-        target = Path(directory) / body.filename
+        target = Path(directory) / ("payload" if body.folder is not None else body.filename)
         assemble_file(identifier, body, target)
+        if body.folder is not None:
+            return prepare_uploaded_folder(target, body.folder)
         files = prepare_files([target])
         key = files[0].metadata.get("object_key")
         if not isinstance(key, str):
@@ -139,7 +142,11 @@ def _publish_upload(
         message = "Upload declaration changed during completion"
         raise ConflictError(message)
     if not row.dataset_id:
-        dataset = publish_files(session, body.name, files, JsonDocument(body.metadata))
+        if body.folder is None:
+            dataset = publish_files(session, body.name, files, JsonDocument(body.metadata))
+        else:
+            metadata = JsonDocument({**body.metadata, "evidence_samples": True})
+            dataset = publish_files(session, body.name, files, metadata, paired=True)
         row.dataset_id = dataset.id
     return _view(row)
 

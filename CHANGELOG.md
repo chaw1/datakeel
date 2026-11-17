@@ -4,6 +4,25 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- Browser image-folder import from the data library with a local preview, directory split
+  detection, optional caption and annotation pairing, and resumable upload.
+- Dataset delivery review for an immutable version. Inspect cross-split matches side by side,
+  correct a version by retaining an exact file selection, and sign a release whose portable
+  manifest carries the checked partition and leakage result. The image workflow has a
+  bilingual [delivery guide](docs/DATASET_DELIVERY.md) and a local browser smoke test.
+
+### Changed
+
+- Reorganized both READMEs and documentation hubs around the tasks users can complete.
+
+### Fixed
+
+- PostgreSQL claim-index initialization now locates the index by the resolved table rather than
+  a name shared across schemas. The prelabel lock regression also checks observable concurrent
+  progress, and the vector-specific signature test observes its own guard independently.
+
 ## [0.27.0] - 2026-11-17
 
 ### Added

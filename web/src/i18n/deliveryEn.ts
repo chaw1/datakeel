@@ -1,0 +1,40 @@
+export const deliveryEn = {
+  deliveryReview: "Dataset delivery review",
+  deliveryReviewIntro:
+    "Check an immutable version before signing and delivering it.",
+  deliveryCandidate: "Candidate version",
+  deliveryBaseline: "Baseline version",
+  deliveryNoBaseline: "First delivery · no baseline",
+  deliveryVersionLabel: "{id} · {count} files · {date}",
+  deliveryCheck: "Check imported splits",
+  deliveryRecheck: "Refresh leakage check",
+  deliveryUnchecked: "Leakage check pending",
+  deliveryBlocked: "Blocked by cross-split leakage",
+  deliveryIncomplete: "At least two populated splits are required",
+  deliveryUnassigned: "All files must belong to an imported split",
+  deliveryReady: "Ready for release review",
+  deliveryUnknownSplits: "{count} files have no imported split",
+  deliverySeenPairs: "{count} measured signals across partitions",
+  deliveryExcludeSample: "Exclude {name} from the corrected version",
+  deliveryExcludeCount: "{count} selected for exclusion",
+  deliveryNoLabels: "No recorded labels",
+  deliveryLabelCounts: "Label distribution · {count} labels",
+  deliveryMissingAnnotations:
+    "{count} {count, plural, one {image} other {images}} without a paired annotation file",
+  deliveryMorePairs: "Show more pairs",
+  deliveryCorrection: "Review corrected version",
+  deliveryCorrectionHint: "Create a new version and retain the source files.",
+  deliverySelectionUnavailable:
+    "This selection is empty or exceeds the complete manifest available for correction.",
+  deliverySelectionChanged:
+    "The frozen selection differs from the exact files to keep. Refresh the version and try again.",
+  deliveryCorrected:
+    "Corrected version created. Check its imported splits to continue.",
+  deliveryRelease: "Sign and deliver this candidate",
+  deliveryReleaseProof: "Signed delivery review",
+  deliveryReceipt: "Open signed release receipt",
+  deliveryDatasheetCurrent: "Datasheet available for this version",
+  deliveryDatasheetStale: "Only earlier versions have a datasheet",
+  deliveryDatasheetMissing: "No datasheet generated",
+  deliveryDatasheetLink: "Open datasheets",
+};

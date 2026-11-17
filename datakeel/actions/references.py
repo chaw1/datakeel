@@ -27,6 +27,7 @@ from datakeel.actions.dq_parameters import (
 from datakeel.actions.models import ActionPlan
 from datakeel.actions.parameters import ExportParams, parse_params
 from datakeel.actions.production_references import production_parameter_refs
+from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.actions.standard_parameters import (
     ConfirmStandardMappingParams,
     ImportStandardsParams,
@@ -48,6 +49,8 @@ def parameter_refs(params: BoundaryModel) -> list[AssetRef]:
 
 
 def _feature_refs(params: BoundaryModel) -> list[AssetRef]:
+    if isinstance(params, PublishReleaseParams):
+        return delivery_review_refs(params)
     if isinstance(params, ExportParams) and params.split_set_id and params.version_id:
         return [
             AssetRef(asset_id=params.dataset_id, version=params.version_id),
@@ -78,6 +81,25 @@ def _feature_refs(params: BoundaryModel) -> list[AssetRef]:
     if isinstance(params, ConfirmMetricDraftParams):
         return [AssetRef(asset_type="metric_draft", asset_id=params.draft_id)]
     return []
+
+
+def delivery_review_refs(params: PublishReleaseParams) -> list[AssetRef]:
+    """Authorize the saved partition and its optional comparison version for disclosure."""
+    review = params.delivery_review
+    if review is None:
+        return []
+    refs = [
+        AssetRef(asset_type="training_split", asset_id=review.split_id, version=params.version_id)
+    ]
+    if review.baseline_version_id is not None:
+        refs.append(
+            AssetRef(
+                asset_type="version",
+                asset_id=review.baseline_version_id,
+                version=review.baseline_version_id,
+            )
+        )
+    return refs
 
 
 def _quality_refs(params: BoundaryModel) -> list[AssetRef]:

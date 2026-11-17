@@ -16,10 +16,14 @@ export function PublishRelease({
   versions,
   datasetId,
   onChanged,
+  review,
+  onPublished,
 }: {
   versions: Version[];
   datasetId: string;
   onChanged: () => void;
+  review?: { split_id: string; baseline_version_id?: string };
+  onPublished?: (releaseId: string, runId: string) => void;
 }) {
   const { t } = useI18n();
   const isComposing = useCompositionGuard();
@@ -47,6 +51,7 @@ export function PublishRelease({
         version_id: versionId,
         tag,
         notes,
+        ...(review ? { delivery_review: review } : {}),
       };
     try {
       const preparedPlan = await post<ActionPlan>(
@@ -62,7 +67,7 @@ export function PublishRelease({
   }
   return (
     <details className="release-publish">
-      <summary>{t("releasePublish")}</summary>
+      <summary>{t(review ? "deliveryRelease" : "releasePublish")}</summary>
       <form className="release-form" onSubmit={(event) => void prepare(event)}>
         <label>
           {t("releaseSourceVersion")}
@@ -135,7 +140,14 @@ export function PublishRelease({
           onOpenReceipt={(target) => {
             window.location.hash = lineageHref(target);
           }}
-          onResolved={() => {
+          onResolved={(run) => {
+            if (review && run?.status === "SUCCEEDED") {
+              const output = run.receipt?.outputs?.find(
+                (item) => item.asset_type === "release",
+              );
+              if (output) onPublished?.(output.asset_id, run.id);
+            }
+            if (review && run && run.status !== "SUCCEEDED") return;
             setPlan(null);
             onChanged();
           }}

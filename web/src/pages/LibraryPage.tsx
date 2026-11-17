@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Icon } from "../components/Icon";
 import { Badge, Button, EmptyState, Input, PageHeader } from "../components/ui";
+import { BrowserImport } from "../features/browserImport/BrowserImport";
 import { objectHref } from "../features/object/navigation";
 import { useI18n } from "../i18n/useI18n";
 import { date, display } from "../lib/format";
@@ -22,22 +23,53 @@ export function LibraryPage({
 }) {
   const { t, locale } = useI18n();
   const [search, setSearch] = useState("");
+  const [showImport, setShowImport] = useState(false);
   return (
     <>
       <PageHeader
         title={t("datasetCountTitle", { count: datasets.length })}
         actions={
-          <Button
-            icon="refresh"
-            iconSize={16}
-            onClick={() => {
-              setRefresh((value) => value + 1);
-            }}
-          >
-            {t("refresh")}
-          </Button>
+          <>
+            {!showImport && (
+              <Button
+                icon="image"
+                variant="primary"
+                onClick={() => {
+                  setShowImport(true);
+                }}
+              >
+                {t("importImages")}
+              </Button>
+            )}
+            <Button
+              icon="refresh"
+              iconSize={16}
+              onClick={() => {
+                setRefresh((value) => value + 1);
+              }}
+            >
+              {t("refresh")}
+            </Button>
+          </>
         }
       />
+      {showImport && (
+        <BrowserImport
+          onCancel={() => {
+            setShowImport(false);
+          }}
+          onDone={(id) => {
+            setShowImport(false);
+            setSelectedId(id);
+            setRefresh((value) => value + 1);
+            window.location.hash = objectHref({
+              kind: "dataset",
+              id,
+              tab: "versions",
+            });
+          }}
+        />
+      )}
       <div className="library-stats">
         <div>
           <span className="stat-symbol">
@@ -136,15 +168,13 @@ export function LibraryPage({
             </button>
           ))}
       </div>
-      {!datasets.length && (
+      {!datasets.length && !showImport && (
         <EmptyState
           card
           icon="database"
           title={loading ? t("openingYourWorkspace") : t("yourLibraryIsReady")}
           description={
-            loading
-              ? t("connectingToTheLocalApi")
-              : t("runDatakeelDemoToImportTheSampleDatasetAndStartAPipeline")
+            loading ? t("connectingToTheLocalApi") : t("importFolderHint")
           }
         />
       )}

@@ -11,10 +11,15 @@ from sqlalchemy.orm import Session
 
 from datakeel.actions.models import ActionPlan, OperationResult
 from datakeel.actions.release_parameters import PublishReleaseParams
-from datakeel.core.errors import ConflictError
+from datakeel.core.errors import ConflictError, NotFoundError, ValidationError
 from datakeel.core.models import AssetRef, BoundaryModel, JsonDocument, new_id, utcnow
 from datakeel.core.portable_metadata import portable_metadata
-from datakeel.core.release_models import VersionSummary
+from datakeel.core.release_models import (
+    DeliveryReviewProof,
+    VersionSummary,
+    require_delivery_partition,
+)
+from datakeel.core.training_models import SplitSet
 from datakeel.dataset_store.object_projection import content_digest
 from datakeel.dataset_store.version_diff import version_summary
 from datakeel.dataset_store.version_stream import (
@@ -26,8 +31,11 @@ from datakeel.dataset_store.version_stream import (
 from datakeel.ontology.models import FrozenManifest, FrozenObject, ObjectSet
 from datakeel.storage.objects import digest, fresh_object, object_store
 from datakeel.storage.release_rows import ReleaseEntryRow, ReleaseRow
+from datakeel.storage.training_rows import TrainingSplitRow
+from datakeel.storage.training_store import frozen_split_leakage
 
 BATCH_SIZE = 100
+REVIEW_METADATA = "delivery_review"
 
 
 class _ReleaseFacts(BoundaryModel):
@@ -37,6 +45,40 @@ class _ReleaseFacts(BoundaryModel):
     total_bytes: int
     metadata: dict[str, JsonValue]
     summary: VersionSummary
+
+
+def _publication_review(
+    session: Session, params: PublishReleaseParams, file_count: int
+) -> DeliveryReviewProof | None:
+    review = params.delivery_review
+    if review is None:
+        return None
+    row = session.get(TrainingSplitRow, review.split_id)
+    if row is None or row.dataset_id != params.dataset_id or row.version_id != params.version_id:
+        message = "Delivery review split does not belong to the candidate version"
+        raise NotFoundError(message)
+    baseline = review.baseline_version_id
+    if baseline == params.version_id:
+        message = "Delivery review baseline must differ from the candidate version"
+        raise ValidationError(message)
+    if baseline is not None:
+        require_version(session, params.dataset_id, baseline)
+    split = SplitSet.model_validate(row.payload)
+    require_delivery_partition(split, file_count)
+    report = frozen_split_leakage(session, split)
+    if report.pairs:
+        message = "Delivery review found cross-split leakage; correct and check a new version"
+        raise ConflictError(message)
+    return DeliveryReviewProof(
+        version_id=params.version_id,
+        baseline_version_id=baseline,
+        split_id=split.id,
+        split_algorithm_version=split.algorithm_version,
+        checked_signals=report.checked_signals,
+        image_threshold=split.request.image_threshold,
+        distributions=split.distributions,
+        sample_count=report.sample_count,
+    )
 
 
 def _facts(session: Session, params: PublishReleaseParams) -> _ReleaseFacts:
@@ -52,12 +94,17 @@ def _facts(session: Session, params: PublishReleaseParams) -> _ReleaseFacts:
         storage_checksum.update(str(item.metadata.get("object_key", "")).encode() + b"\0")
         count += 1
         size += item.size
+    metadata = portable_metadata(JsonDocument.model_validate(dataset.metadata_values).root)
+    metadata.pop(REVIEW_METADATA, None)
+    review = _publication_review(session, params, count)
+    if review is not None:
+        metadata[REVIEW_METADATA] = JsonDocument.model_validate(review.model_dump(mode="json")).root
     return _ReleaseFacts(
         manifest_sha256=checksum.hexdigest(),
         storage_sha256=storage_checksum.hexdigest(),
         file_count=count,
         total_bytes=size,
-        metadata=portable_metadata(JsonDocument.model_validate(dataset.metadata_values).root),
+        metadata=metadata,
         summary=version_summary(session, dataset, params.version_id),
     )
 

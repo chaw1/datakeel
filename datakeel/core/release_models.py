@@ -7,9 +7,38 @@ from typing import Literal
 
 from pydantic import Field, JsonValue
 
+from datakeel.core.errors import ConflictError, ValidationError
 from datakeel.core.models import BoundaryModel
+from datakeel.core.training_models import LeakageKind, SplitDistribution, SplitRequest, SplitSet
 
 DiffCategory = Literal["added", "removed", "content_changed", "metadata_changed", "unchanged"]
+_MIN_NONEMPTY_SPLITS = 2
+
+
+class DeliveryReviewProof(BoundaryModel):
+    """Portable evidence for one exact version and a zero-leakage directory split."""
+
+    rule: Literal["directory-leakage-v1"] = "directory-leakage-v1"
+    version_id: str
+    baseline_version_id: str | None = None
+    split_id: str
+    split_algorithm_version: str
+    checked_signals: tuple[LeakageKind, ...]
+    image_threshold: int
+    distributions: tuple[SplitDistribution, ...]
+    sample_count: int
+    leakage_pairs: Literal[0] = 0
+
+
+def require_delivery_partition(split: SplitSet, file_count: int) -> None:
+    """Reject weakened rules, missing membership and a one-partition candidate."""
+    if split.request != SplitRequest(name=split.request.name, source="directory"):
+        message = "Delivery review requires the standard directory leakage policy"
+        raise ValidationError(message)
+    nonempty_splits = sum(item.count > 0 for item in split.distributions)
+    if len(split.members) != file_count or nonempty_splits < _MIN_NONEMPTY_SPLITS:
+        message = "Delivery review requires the entire version in at least two nonempty splits"
+        raise ConflictError(message)
 
 
 class ReleaseFile(BoundaryModel):

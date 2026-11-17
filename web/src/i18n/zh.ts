@@ -10,9 +10,11 @@ import { catalogZh } from "./catalogZh";
 import { commandZh } from "./commandZh";
 import { customOperatorZh } from "./customOperatorZh";
 import { datasheetZh } from "./datasheetZh";
+import { deliveryZh } from "./deliveryZh";
 import { dqZh } from "./dqZh";
 import { evidenceZh } from "./evidenceZh";
 import { graphZh } from "./graphZh";
+import { importZh } from "./importZh";
 import { kgZh } from "./kgZh";
 import { knowledgeZh } from "./knowledgeZh";
 import { llmDataZh } from "./llmDataZh";
@@ -51,6 +53,7 @@ export const zh: Record<MessageKey, string> = {
   ...metadataZh,
   ...annotationZh,
   ...datasheetZh,
+  ...deliveryZh,
   ...mediaZh,
   ...kgZh,
   ...knowledgeZh,
@@ -71,6 +74,7 @@ export const zh: Record<MessageKey, string> = {
   ...askZh,
   ...askReasonZh,
   ...evidenceZh,
+  ...importZh,
   ...catalogZh,
   ...uiZh,
   askNav: "问数",

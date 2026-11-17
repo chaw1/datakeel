@@ -2,6 +2,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { Releases } from "../releases/Releases";
 import { TrainingSets } from "../training/TrainingSets";
 
+import { DeliveryReview } from "./DeliveryReview";
 import { VersionCompare } from "./VersionCompare";
 import { Versions } from "./Versions";
 import "./versions.css";
@@ -20,6 +21,12 @@ export function VersionWorkspace({
   const { t } = useI18n();
   return (
     <div className="version-workspace">
+      <DeliveryReview
+        key={datasetId}
+        versions={versions}
+        datasetId={datasetId}
+        onChanged={onChanged}
+      />
       <TrainingSets datasetId={datasetId} versions={versions} />
       <VersionCompare versions={versions} datasetId={datasetId} />
       <Releases

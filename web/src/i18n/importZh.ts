@@ -1,0 +1,30 @@
+import type { importEn } from "./importEn";
+
+export const importZh: Record<keyof typeof importEn, string> = {
+  importImages: "导入图片",
+  importFolderHint:
+    "选择包含 PNG、JPEG 或 WebP 图片的文件夹。可同时导入描述和标注文件，未指定切分的图片归入 train。",
+  importChooseFolder: "选择图片文件夹",
+  importDatasetName: "数据集名称",
+  importPreview: "文件夹预览",
+  importImageCount: "{count} 张图片",
+  importCaptionCount: "{count} 张已配对描述",
+  importAnnotationCount: "{count} 张已配对标注",
+  importCaptionLabel: "描述 · ",
+  importAnnotationLabel: "标注 · ",
+  importMissing: "缺失",
+  importUnreadable: "无法读取",
+  importPreviewCount: "显示 {preview} / {total} 张图片。",
+  importIgnored: "将跳过 {count} 个不支持或未配对的文件。",
+  importSkipUnreadable: "跳过无法读取的图片（{count} 张）",
+  importScanning: "正在检测图片并配对描述与标注…",
+  importProgress: "文件夹上传进度",
+  importUploading: "已上传 {percent}%",
+  importPublishing: "正在创建首个数据集版本…",
+  importDataset: "导入数据集",
+  importCancel: "取消",
+  importFailed: "无法导入文件夹，请重试以继续上传。",
+  importNoImages: "请选择包含 PNG、JPEG 或 WebP 图片的文件夹。",
+  importPathError: "部分文件路径无效，或分配切分后出现了同路径文件。",
+  importSizeLimit: "图片和配对文件最多 2,000 个，总大小上限为 256 MiB。",
+};

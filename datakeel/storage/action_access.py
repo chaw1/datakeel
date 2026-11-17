@@ -11,6 +11,8 @@ from datakeel.actions.parameters import PipelineParams, parse_params
 from datakeel.actions.production_catalog_parameters import CATALOG_PARAMETER_TYPES
 from datakeel.actions.production_parameters import PRODUCTION_PARAMETER_TYPES
 from datakeel.actions.production_references import production_parameter_refs
+from datakeel.actions.references import delivery_review_refs
+from datakeel.actions.release_parameters import PublishReleaseParams
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.models import JsonDocument
 from datakeel.storage.action_store import locked_plan
@@ -32,6 +34,10 @@ def _source_refs(plan: ActionPlan) -> list[AssetRef]:
     ):
         params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
         refs.extend(production_parameter_refs(params))
+    if plan.action_type == "publish_release":
+        refs.extend(
+            delivery_review_refs(PublishReleaseParams.model_validate(plan.canonical_params))
+        )
     if plan.action_type == "run_pipeline":
         params = PipelineParams.model_validate(plan.canonical_params)
         if params.vector_prepared:

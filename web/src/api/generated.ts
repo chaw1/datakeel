@@ -13214,6 +13214,16 @@ export interface components {
             filename: string;
         };
         /**
+         * UploadFolderFile
+         * @description Describe one relative member of a concatenated image folder upload.
+         */
+        UploadFolderFile: {
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
+        };
+        /**
          * UploadInput
          * @description Declare one file's immutable identity before sending bounded chunks.
          */
@@ -13222,6 +13232,8 @@ export interface components {
             chunk_bytes: number;
             /** Filename */
             filename: string;
+            /** Folder */
+            folder?: components["schemas"]["UploadFolderFile"][] | null;
             /** Idempotency Key */
             idempotency_key: string;
             /** Metadata */

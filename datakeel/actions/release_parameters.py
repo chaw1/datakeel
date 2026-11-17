@@ -8,6 +8,13 @@ from pydantic import Field, field_validator
 from datakeel.core.models import BoundaryModel
 
 
+class DeliveryReviewInput(BoundaryModel):
+    """Select the immutable directory split checked for this publication."""
+
+    split_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    baseline_version_id: str | None = Field(default=None, min_length=1)
+
+
 class PublishReleaseParams(BoundaryModel):
     """Freeze one dataset version under a unique semantic release label."""
 
@@ -18,6 +25,9 @@ class PublishReleaseParams(BoundaryModel):
         max_length=100,
     )
     notes: str = Field(default="", max_length=10000)
+    delivery_review: DeliveryReviewInput | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @field_validator("tag")
     @classmethod

@@ -5,9 +5,28 @@
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from datakeel.core.models import BoundaryModel, FileItem
+
+IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp"})
+
+
+class CocoAnnotation(BoundaryModel):
+    """Accept the supported category/bbox subset of a larger COCO annotation."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+    category: str
+    bbox: tuple[float, float, float, float]
+
+
+class CocoDocument(BoundaryModel):
+    """Ignore unrelated COCO properties while validating supplied annotations."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+    annotations: tuple[CocoAnnotation, ...]
+    width: int | None = None
+    height: int | None = None
 
 
 class SampleSidecars(BoundaryModel):

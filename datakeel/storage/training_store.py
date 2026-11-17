@@ -225,12 +225,17 @@ def check_leakage(
     """Compare frozen source signals rather than newer mutable annotation history."""
     with db.session() as session:
         split = read_split(session, dataset_id, split_id, access=access)
-        row = session.get(TrainingSplitRow, split_id)
-        if row is None:
-            message = "Training split disappeared during leakage read"
-            raise NotFoundError(message)
-        samples = tuple(TrainingSample.model_validate(sample) for sample in row.samples)
-        return leakage_report(samples, split)
+        return frozen_split_leakage(session, split)
+
+
+def frozen_split_leakage(session: Session, split: SplitSet) -> LeakageReport:
+    """Measure the saved samples for a split validated in the same transaction."""
+    row = session.get(TrainingSplitRow, split.id)
+    if row is None:
+        message = "Training split disappeared during leakage read"
+        raise NotFoundError(message)
+    samples = tuple(TrainingSample.model_validate(sample) for sample in row.samples)
+    return leakage_report(samples, split)
 
 
 def preview_leakage(

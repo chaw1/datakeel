@@ -7,10 +7,9 @@ import unicodedata
 from pathlib import Path
 
 from PIL import Image
-from pydantic import ConfigDict
 
 from datakeel.core.evidence_drafts import ObservationDraft
-from datakeel.core.evidence_inputs import sample_sidecars
+from datakeel.core.evidence_inputs import CocoAnnotation, CocoDocument, sample_sidecars
 from datakeel.core.evidence_models import EvidenceValue, ExtractorRef, ImageRegion
 from datakeel.core.image_orientation import (
     ORIENTATION_TAG,
@@ -18,7 +17,7 @@ from datakeel.core.image_orientation import (
     orientation_value,
     to_display,
 )
-from datakeel.core.models import BoundaryModel, FileItem
+from datakeel.core.models import FileItem
 from datakeel.operators.base import Operator, OperatorResult, summarize
 from datakeel.operators.evidence.common import EvidenceParams, anchor, publish, subject
 from datakeel.operators.evidence.contracts import Lexicon, read_lexicon
@@ -28,21 +27,7 @@ from datakeel.operators.evidence.facts import AnnotationBox, AnnotationFacts, Im
 VERSION = "1.1"
 
 
-class CocoAnnotation(BoundaryModel):
-    """Accept the supported category/bbox subset of a larger COCO annotation."""
-
-    model_config = ConfigDict(extra="ignore", frozen=True)
-    category: str
-    bbox: tuple[float, float, float, float]
-
-
-class CocoDocument(BoundaryModel):
-    """Ignore unrelated COCO properties while validating supplied annotations."""
-
-    model_config = ConfigDict(extra="ignore", frozen=True)
-    annotations: tuple[CocoAnnotation, ...]
-    width: int | None = None
-    height: int | None = None
+__all__ = ["OPERATOR", "VERSION", "CocoAnnotation", "CocoDocument", "execute"]
 
 
 def _geometry(file: FileItem) -> ImageGeometry | None:

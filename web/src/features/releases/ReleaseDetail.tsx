@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { requireSuccess } from "../../api/client";
 import { ResourceState } from "../../components/ResourceState";
+import { Badge } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { bytes } from "../../lib/format";
 import { useResource } from "../../lib/useResource";
@@ -48,6 +49,9 @@ export function ReleaseDetail({ releaseId }: { releaseId: string }) {
       {detail.value && (
         <>
           <h4>{detail.value.tag}</h4>
+          {detail.value.metadata.delivery_review && (
+            <Badge tone="ok">{t("deliveryReleaseProof")}</Badge>
+          )}
           <p>{detail.value.notes}</p>
           <dl className="version-summary">
             <div>

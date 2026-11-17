@@ -10,9 +10,11 @@ import { catalogEn } from "./catalogEn";
 import { commandEn } from "./commandEn";
 import { customOperatorEn } from "./customOperatorEn";
 import { datasheetEn } from "./datasheetEn";
+import { deliveryEn } from "./deliveryEn";
 import { dqEn } from "./dqEn";
 import { evidenceEn } from "./evidenceEn";
 import { graphEn } from "./graphEn";
+import { importEn } from "./importEn";
 import { kgEn } from "./kgEn";
 import { knowledgeEn } from "./knowledgeEn";
 import { llmDataEn } from "./llmDataEn";
@@ -50,6 +52,7 @@ export const en = {
   ...metadataEn,
   ...annotationEn,
   ...datasheetEn,
+  ...deliveryEn,
   ...mediaEn,
   ...kgEn,
   ...knowledgeEn,
@@ -70,6 +73,7 @@ export const en = {
   ...askEn,
   ...askReasonEn,
   ...evidenceEn,
+  ...importEn,
   ...catalogEn,
   ...uiEn,
   askNav: "Ask data",
