@@ -13,6 +13,7 @@ from datakeel.routing.concepts import (
     concept_terms,
     inflected_position,
     normalize,
+    partial_concept_match,
     position,
     verification_terms,
 )
@@ -128,6 +129,8 @@ def _score(text: str, workflow: WorkflowDefinition, workflows: list[WorkflowDefi
         0.5
         if _matches_groups(text, triggers.classification_groups, inflections=True)
         or concept_match(text, triggers)
+        else 0.25
+        if partial_concept_match(text, triggers)
         else 0
     )
     return max(partial, semantic) * triggers.threshold

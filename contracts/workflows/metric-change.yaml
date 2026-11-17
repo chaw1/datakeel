@@ -29,12 +29,18 @@ triggers:
     entities:
     - 口径|指标口径|统计口径|计算口径|取数口径|指标定义|定义|计算方式|计算方法|计算逻辑|计算公式|公式|算法|取数逻辑|度量|度量字段|度量列|度量表达式|计算字段|计算列|取数字段
     - metric definition|definition|definitions|defined|redefine|formula|formulas|calculation|calculations|calculated|computed|computation|calculation field|calculation logic|measure|measures|measure column|measure field|measure expression|metric logic|metric calculation|metric formula
+    - 统计方法|汇总方式|聚合方式|取数方式|指标算法|计算规则|统计规则|字段口径|指标字段|指标列|统计逻辑
+    - aggregation|metric expression|calculation rule|metric field|metric column
     actions:
     - 改|改成|改为|改一下|修改|更改|调整|调一下|换|换成|换掉|替换|切换|重设|重新定义|变更|动一下
     - change|switch|swap|replace|redefine|revise|alter|modify|tweak|adjust|update|rework|override|repoint|use a different|use another
+    - 改用|换用|切到|切为|改按|调成|更新为|重算口径|重写|重构|迭代
+    - switch to|point to|change to|move to|refactor|rewrite|recalculate with|compute from
     outcomes:
     - 对比|比较|对照|前后|再问|重问|重新问|再算|重算|重新算|再跑|重跑|再回答|差别|差异|区别|变化|新旧|两版|答案|问数结果
     - compare|comparison|contrast|before and after|before/after|side by side|side-by-side|recompute|recalculate|rerun|re-run|re-ask|reask|ask again|ask it again|question again|same question|answer again|difference|differences|diff|what changes|how it changes|old and new|new answer|answer|answers
+    - 比对|核对|看下差别|看看变化|看差多少|重跑问数|再查一次|重新查
+    - before vs after|old vs new|check the impact|see the delta|re-query|run the question again
     - 差了|差多少|相差|差距|差值|差额|变了|变动|涨跌|增减|影响
     - changed|delta|gap|impact
   keywords:

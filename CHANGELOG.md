@@ -14,6 +14,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Expanded bilingual workflow trigger concepts (`dataset-health`, `metric-change`), irregular English verb inflections, and partial entity-plus-outcome classifier eligibility in [`datakeel/routing/`](datakeel/routing/) while preserving all 116 frozen intent labels.
 - Extended Design System v2 UI primitives (`PageHeader`, `Button`, `Select`, `Input`, `Badge`, `Surface`, `SegmentedTabs`, `EmptyState`) across all remaining route pages in [`web/src/pages/`](web/src/pages/) and core domain workspaces (`ObjectHeader`, `Evidence`, `KnowledgeGraph`, `Catalog`, `Standards`, `Workflows`, `CustomOperators`, `DataAssets`, `QualityRules`, `Labeling`, `Agent`, `Ask`, `Memory`, `Traces`, `Datasheets`).
 - Restructured [`README.md`](README.md) and [`README.zh.md`](README.zh.md) into scannable bilingual open-source entry points while keeping all verified CLI, MCP, architecture SVG, local Docker, and `export-traces` contracts intact.
 - Synchronized [`docs/BACKLOG.md`](docs/BACKLOG.md) with implemented v0.19.0–v0.26.0 items and removed the standalone historical acceptance memo `docs/P32B-ACCEPTANCE.md`.

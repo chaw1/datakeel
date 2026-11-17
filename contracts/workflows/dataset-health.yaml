@@ -13,9 +13,13 @@ triggers:
     entities:
     - 数据集|这批数据|这份数据|这些数据|这套数据|这个数据|整批数据|数据包|语料|语料库
     - dataset|datasets|data set|data sets|this data|the data|these data|corpus|corpora|data batch|batch of data
+    - 训练数据|验证数据|测试数据|新数据|刚导入的数据|样本集|图片集|文本集|图像集
+    - imported dataset|new dataset|training set|validation set|test set|sample set|image set|text set
     actions:
     - 体检|健康检查|全面检查|整体检查|完整检查|全面诊断|诊断|摸底|摸个底|摸摸底|摸一下底|把关|把把关|过一遍|过一下|评估
     - health check|health-check|checkup|check-up|check up on|diagnose|diagnostic|diagnostics|vet|once-over|sanity check|sanity-check|go over|look over|run through|audit|assess|assessment|evaluate|evaluation|appraise|full check|thorough check|full review|thorough review
+    - 巡检|全面巡检|质量巡检|排查|全面排查|查体|质量体检|数据体检|质量检查|质检|全面质检|健康度检查|健康评估|跑一遍检查|做个全面评估|验一下货|验验质量|全身检查
+    - health audit|quality check|quality checkup|quality audit|run a check|kick off a checkup|full diagnostic|end-to-end check|readiness check|health review|full inspection|thorough inspection
     - 体检报告|健康报告|质检报告|健康度报告|health report|health-check report|quality report
   keywords:
   - - 数据集|dataset|datasets

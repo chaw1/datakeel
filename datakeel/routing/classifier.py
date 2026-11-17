@@ -67,10 +67,12 @@ def _candidate(workflow: WorkflowDefinition) -> dict[str, object]:
         "description": workflow.description,
         "steps": [step.title.en if step.title else step.id for step in workflow.steps],
         "changes_data": writes_data(workflow),
-        "acts_on": concept_terms(triggers, "entities"),
-        "request_verbs": concept_terms(triggers, "actions") or triggers.classification_keywords,
-        "must_also_ask_for": concept_terms(triggers, "outcomes"),
-        "not_for": concept_terms(triggers, "exclusions"),
+        "acts_on": concept_terms(triggers, "entities")[:2],
+        "request_verbs": (concept_terms(triggers, "actions") or triggers.classification_keywords)[
+            :2
+        ],
+        "must_also_ask_for": concept_terms(triggers, "outcomes")[:2],
+        "not_for": concept_terms(triggers, "exclusions")[:2],
     }
 
 

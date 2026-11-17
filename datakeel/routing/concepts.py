@@ -10,14 +10,20 @@ from typing import Literal
 from datakeel.workflows.models import WorkflowTriggers
 
 _IRREGULAR = {
+    "cut": ("cuts", "cutting"),
     "do": ("did", "done", "does"),
     "get": ("got", "gotten"),
     "give": ("gave", "given"),
     "go": ("went", "gone", "goes"),
     "make": ("made",),
+    "put": ("puts", "putting"),
+    "rebuild": ("rebuilt",),
     "redo": ("redid", "redone", "redoes"),
     "rerun": ("reran",),
+    "rewrite": ("rewrote", "rewritten"),
     "run": ("ran",),
+    "set": ("sets", "setting"),
+    "split": ("splits", "splitting"),
     "sweep": ("swept",),
     "take": ("took", "taken"),
     "throw": ("threw", "thrown"),
@@ -60,6 +66,16 @@ def concept_match(text: str, triggers: WorkflowTriggers) -> bool:
         required.append(concepts.outcomes)
     return all(
         any(inflected_position(text, term) is not None for term in terms) for terms in required
+    )
+
+
+def partial_concept_match(text: str, triggers: WorkflowTriggers) -> bool:
+    """Allow an entity-plus-outcome pair to reach an external classifier when verbs vary."""
+    concepts = triggers.concepts
+    if concepts is None or not concepts.outcomes:
+        return False
+    return any(inflected_position(text, term) is not None for term in concepts.entities) and any(
+        inflected_position(text, term) is not None for term in concepts.outcomes
     )
 
 

@@ -200,3 +200,45 @@ def test_classifier_when_workflow_has_only_approval_step_requires_confirmation()
     result = classified_route(decision, workflow.id, "cleanup", [workflow])
     assert result.verification_passed is True
     assert result.requires_confirmation is True
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("帮我给刚导入的数据做个全面质检。", "dataset-health"),
+        ("Kick off a readiness check on the training set.", "dataset-health"),
+        ("把这批样本集跑一遍质量巡检。", "dataset-health"),
+        ("Give the new image set a full inspection.", "dataset-health"),
+        ("把统计规则改按净额再比对前后差异。", "metric-change"),
+        ("Rewrite the metric formula and check the impact before vs after.", "metric-change"),
+        ("把指标列切到实付金额后重跑问数。", "metric-change"),
+        ("Switch the metric field and see the delta old vs new.", "metric-change"),
+    ],
+)
+def test_expanded_colloquial_concepts_when_routed_resolve_all_eight_unseen_positives(
+    message: str, expected: str
+) -> None:
+    """Colloquial health-audit and metric-comparison phrasings classify deterministically."""
+    workflows = list_workflows()
+    decision = keyword_route(message, workflows)
+    assert decision.branch == "classifier"
+    selected = classify_offline(message, decision.candidates, workflows)
+    result = classified_route(decision, selected, message, workflows)
+    assert result.workflow_id == expected
+    assert result.verification_passed is True
+
+
+def test_partial_concept_entity_and_outcome_when_verb_is_novel_reaches_verified_classifier() -> (
+    None
+):
+    """A three-role workflow reaches external classification when entity and outcome both match."""
+    workflows = list_workflows()
+    message = "Harmonize the metric formula and compare before and after."
+    decision = keyword_route(message, workflows)
+    assert decision.branch == "classifier"
+    assert decision.score == 0.25
+    assert classify_offline(message, decision.candidates, workflows) is None
+    result = classified_route(decision, "metric-change", message, workflows)
+    assert result.workflow_id == "metric-change"
+    assert result.verification_passed is True
+    assert result.requires_confirmation is True
