@@ -1,4 +1,5 @@
 import { Icon } from "../../components/Icon";
+import { Badge, EmptyState } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { display } from "../../lib/format";
 
@@ -16,11 +17,11 @@ export function ReportView({
 
   if (!report)
     return (
-      <div className="empty-state">
-        <Icon name="report" size={28} />
-        <h3>{t("yourReportIsBeingPrepared")}</h3>
-        <p>{t("theBaselineReportWillAppearAfterAnalysisCompletes")}</p>
-      </div>
+      <EmptyState
+        icon="report"
+        title={t("yourReportIsBeingPrepared")}
+        description={t("theBaselineReportWillAppearAfterAnalysisCompletes")}
+      />
     );
   const chapters = report.chapters;
   return (
@@ -56,12 +57,12 @@ export function ReportView({
                 : "aPracticalAssessmentOfQualitySuitabilityAndTheNextStepsForYourDataset",
             )}{" "}
           </p>
-          <span className="badge green">
+          <Badge tone="ok">
             <Icon name="check" size={13} />
             {t("baselineVerified")}{" "}
-          </span>
+          </Badge>
           {report.fallback && (
-            <span className="badge amber">{t("baselineFallback")}</span>
+            <Badge tone="warn">{t("baselineFallback")}</Badge>
           )}
         </div>
         {chapters.map((chapter, index) => (

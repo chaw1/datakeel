@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Button, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
@@ -48,10 +49,10 @@ export function ConversationSidebar({
     daily_usd: "10",
   });
   return (
-    <aside className="card conversation-sidebar">
+    <aside className="card ui-surface conversation-sidebar">
       <h2>{t("conversations")}</h2>
       <label htmlFor="conversation-dataset">{t("conversationDataset")}</label>
-      <select
+      <Select
         id="conversation-dataset"
         value={scope ?? datasetId}
         disabled={disabled || creating}
@@ -68,7 +69,7 @@ export function ConversationSidebar({
             {dataset.name}
           </option>
         ))}
-      </select>
+      </Select>
       <label className="dry-run-toggle">
         <input
           type="checkbox"
@@ -86,8 +87,7 @@ export function ConversationSidebar({
         onChange={setBudget}
         disabled={disabled || creating}
       />
-      <button
-        className="button"
+      <Button
         disabled={disabled || creating}
         onKeyDown={(event) => {
           if (isComposing(event.nativeEvent)) event.preventDefault();
@@ -97,7 +97,7 @@ export function ConversationSidebar({
         }}
       >
         {t(creating ? "agentWorking" : "newConversation")}
-      </button>
+      </Button>
       <nav aria-label={t("conversations")} className="conversation-list">
         {conversations.map((conversation) => (
           <button

@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Button, Input } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
@@ -40,7 +41,7 @@ export function AskComposer({
   const [reference, setReference] = useState("2026-10-01");
   return (
     <form
-      className="card ask-composer"
+      className="card ui-surface ask-composer"
       onSubmit={(event) => {
         event.preventDefault();
         if (
@@ -73,7 +74,7 @@ export function AskComposer({
         </p>
       )}
       <label htmlFor="ask-actor">{t("assetActor")}</label>
-      <input
+      <Input
         className="ask-actor"
         id="ask-actor"
         value={actor}
@@ -123,7 +124,7 @@ export function AskComposer({
       <div className="ask-composer-footer">
         <div className="ask-reference">
           <label htmlFor="ask-reference">{t("askReference")}</label>
-          <input
+          <Input
             onKeyDown={(event) => {
               if (event.key === "Enter" && isComposing(event.nativeEvent))
                 event.preventDefault();
@@ -142,17 +143,17 @@ export function AskComposer({
           />
           <p id="ask-reference-hint">{t("askReferenceHint")}</p>
         </div>
-        <button
+        <Button
           onKeyDown={(event) => {
             if (event.key === "Enter" && isComposing(event.nativeEvent))
               event.preventDefault();
           }}
           type="submit"
-          className="button primary"
+          variant="primary"
           disabled={waiting || !question.trim() || !reference || !actor.trim()}
         >
           {t(busy ? "askWorking" : "askSubmit")}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { PageHeader, Select, Surface } from "../components/ui";
 import { KGWorkspace } from "../features/kg/KGWorkspace";
 import { useI18n } from "../i18n/useI18n";
 
@@ -31,31 +32,32 @@ export function KnowledgeGraphPage({
     "";
   return (
     <div className="kg-page">
-      <div className="page-heading">
-        <div>
-          <h1 className="page-title">{t("kgNav")}</h1>
-          <p className="muted">{t("kgIntro")}</p>
-        </div>
-        <label className="dataset-selector">
-          {t("kgDataset")}
-          <select
-            aria-label={t("kgDataset")}
-            value={active}
-            onBlur={(event) => {
-              setChosen(event.target.value);
-            }}
-            onChange={(event) => {
-              setChosen(event.target.value);
-            }}
-          >
-            {datasets.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <PageHeader
+        titleClassName="page-title"
+        title={t("kgNav")}
+        subtitle={t("kgIntro")}
+        actions={
+          <label className="dataset-selector">
+            {t("kgDataset")}
+            <Select
+              aria-label={t("kgDataset")}
+              value={active}
+              onBlur={(event) => {
+                setChosen(event.target.value);
+              }}
+              onChange={(event) => {
+                setChosen(event.target.value);
+              }}
+            >
+              {datasets.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </Select>
+          </label>
+        }
+      />
       {active ? (
         <KGWorkspace
           key={active}
@@ -64,12 +66,12 @@ export function KnowledgeGraphPage({
           onOpenReceipt={onOpenReceipt}
         />
       ) : (
-        <section className="card">
+        <Surface as="section">
           <p>{t("kgNoDataset")}</p>
-          <a className="button" href="#/datasets">
+          <a className="button ui-button" href="#/datasets">
             {t("evAddData")}
           </a>
-        </section>
+        </Surface>
       )}
     </div>
   );

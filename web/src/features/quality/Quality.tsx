@@ -1,4 +1,5 @@
 import { Icon } from "../../components/Icon";
+import { Badge, EmptyState } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { display } from "../../lib/format";
 
@@ -22,11 +23,11 @@ export default function Quality({
 
   if (!quality)
     return (
-      <div className="empty-state">
-        <Icon name="quality" size={28} />
-        <h3>{t("qualityIsOnItsWay")}</h3>
-        <p>{t("scoresAndIssuesAppearAfterTheDatasetIsAnalyzed")}</p>
-      </div>
+      <EmptyState
+        icon="quality"
+        title={t("qualityIsOnItsWay")}
+        description={t("scoresAndIssuesAppearAfterTheDatasetIsAnalyzed")}
+      />
     );
   const dimensions = Object.entries(quality.dimensions);
   const issues = quality.issues;
@@ -35,11 +36,17 @@ export default function Quality({
       <div className="quality-summary">
         <QualityScore quality={quality} />
         <div>
-          <span
-            className={`badge ${quality.grade === "poor" ? "red" : quality.grade === "fair" ? "amber" : "green"}`}
+          <Badge
+            tone={
+              quality.grade === "poor"
+                ? "danger"
+                : quality.grade === "fair"
+                  ? "warn"
+                  : "ok"
+            }
           >
             {qualityGrade(quality.grade, t)}
-          </span>
+          </Badge>
           <h3>{t("aClearerPictureOfYourData")}</h3>
           <p>
             {t("fiveDimensionsOneWeightedScore")} <br />
@@ -101,11 +108,17 @@ export default function Quality({
             <div className="issue-list">
               {issues.map((issue, index) => (
                 <article className="issue" key={index}>
-                  <span
-                    className={`badge ${issue.severity === "critical" ? "red" : issue.severity === "warning" ? "amber" : "gray"}`}
+                  <Badge
+                    tone={
+                      issue.severity === "critical"
+                        ? "danger"
+                        : issue.severity === "warning"
+                          ? "warn"
+                          : "neutral"
+                    }
                   >
                     {qualitySeverity(issue.severity, t)}
-                  </span>
+                  </Badge>
                   <div>
                     <h4>{qualityIssueMessage(issue, quality.dimensions, t)}</h4>
                     {issue.dimension ? (

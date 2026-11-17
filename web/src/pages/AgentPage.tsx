@@ -3,6 +3,13 @@ import { useState } from "react";
 import { createConversation } from "../api/agent";
 import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  PageHeader,
+  Surface,
+} from "../components/ui";
 import { contextFromQuery } from "../features/agent/agentLink";
 import { ConversationSidebar } from "../features/agent/ConversationSidebar";
 import { ConversationTranscript } from "../features/agent/ConversationTranscript";
@@ -101,24 +108,21 @@ export function AgentPage({
   }
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <h1>
-            {t("pageCount", {
-              name: t("agentNav"),
-              count: conversations.value?.length ?? 0,
-            })}
-          </h1>
-        </div>
-        <button
-          className="button"
-          disabled={session.live.running}
-          onClick={refresh}
-        >
-          <Icon name="refresh" />
-          {t("refresh")}
-        </button>
-      </div>
+      <PageHeader
+        title={t("pageCount", {
+          name: t("agentNav"),
+          count: conversations.value?.length ?? 0,
+        })}
+        actions={
+          <Button
+            icon="refresh"
+            disabled={session.live.running}
+            onClick={refresh}
+          >
+            {t("refresh")}
+          </Button>
+        }
+      />
       <ResourceState
         loading={conversations.loading}
         error={error || conversations.error}
@@ -140,7 +144,7 @@ export function AgentPage({
             void create(dataset, dryRun, budget);
           }}
         />
-        <section className="card conversation-main">
+        <Surface as="section" className="conversation-main">
           {setup?.problem && (
             <div className="warning-banner" role="status">
               <div>
@@ -160,15 +164,13 @@ export function AgentPage({
             <>
               <div className="conversation-heading">
                 <div>
-                  <span className="badge gray">
-                    {session.value.config.model}
-                  </span>
-                  <span className="badge gray">
+                  <Badge>{session.value.config.model}</Badge>
+                  <Badge>
                     {t(session.value.config.dry_run ? "dryRun" : "liveActions")}
-                  </span>
+                  </Badge>
                 </div>
-                <button
-                  className="text-button"
+                <Button
+                  variant="link"
                   disabled={session.live.running}
                   onClick={() => {
                     onTrace(id);
@@ -176,7 +178,7 @@ export function AgentPage({
                 >
                   {t("viewTrace")}
                   <Icon name="arrow" size={14} />
-                </button>
+                </Button>
               </div>
               {session.value.config.budget && (
                 <details className="conversation-budget">
@@ -219,11 +221,7 @@ export function AgentPage({
               )}
             </>
           ) : (
-            !session.loading && (
-              <div className="empty-state">
-                <p>{t("chooseConversation")}</p>
-              </div>
-            )
+            !session.loading && <EmptyState title={t("chooseConversation")} />
           )}
           <MessageComposer
             key={id}
@@ -232,7 +230,7 @@ export function AgentPage({
             busy={session.live.running}
             onSend={say}
           />
-        </section>
+        </Surface>
       </div>
     </>
   );

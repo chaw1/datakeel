@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { PageHeader, Select, Surface } from "../components/ui";
 import { EvidenceExplorer } from "../features/evidence/EvidenceExplorer";
 import { useI18n } from "../i18n/useI18n";
 
@@ -26,27 +27,32 @@ export function EvidencePage({
   const active = chosen || preferred || datasetId || datasets[0]?.id || "";
   return (
     <div className="evidence-page">
-      <div className="page-heading evidence-page-heading">
-        <h1 className="page-title">{t("evTitle", { count })}</h1>
-        <label className="dataset-selector">
-          {t("evDataset")}
-          <select
-            value={active}
-            onBlur={(event) => {
-              if (active !== event.target.value) setChosen(event.target.value);
-            }}
-            onChange={(event) => {
-              setChosen(event.target.value);
-            }}
-          >
-            {datasets.map((dataset) => (
-              <option key={dataset.id} value={dataset.id}>
-                {dataset.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <PageHeader
+        className="evidence-page-heading"
+        titleClassName="page-title"
+        title={t("evTitle", { count })}
+        actions={
+          <label className="dataset-selector">
+            {t("evDataset")}
+            <Select
+              value={active}
+              onBlur={(event) => {
+                if (active !== event.target.value)
+                  setChosen(event.target.value);
+              }}
+              onChange={(event) => {
+                setChosen(event.target.value);
+              }}
+            >
+              {datasets.map((dataset) => (
+                <option key={dataset.id} value={dataset.id}>
+                  {dataset.name}
+                </option>
+              ))}
+            </Select>
+          </label>
+        }
+      />
       {active ? (
         <EvidenceExplorer
           key={active}
@@ -57,12 +63,12 @@ export function EvidencePage({
           onCount={setCount}
         />
       ) : (
-        <div className="card evidence-empty" data-empty-kind="data">
+        <Surface className="evidence-empty" data-empty-kind="data">
           <h3>{t("evNoData")}</h3>
-          <a className="button" href="#/datasets">
+          <a className="button ui-button" href="#/datasets">
             {t("evAddData")}
           </a>
-        </div>
+        </Surface>
       )}
     </div>
   );

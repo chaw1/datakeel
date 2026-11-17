@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import { Button, PageHeader, Select, Surface } from "../components/ui";
 import { CostTable } from "../features/traces/CostTable";
 import { TraceList } from "../features/traces/TraceList";
 import { useI18n } from "../i18n/useI18n";
@@ -32,24 +32,21 @@ export function TracesPage({
   }
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <h1>
-            {t("pageCount", {
-              name: t("tracesNav"),
-              count: traces.value?.length ?? 0,
-            })}
-          </h1>
-        </div>
-        <button className="button" onClick={refresh}>
-          <Icon name="refresh" />
-          {t("refresh")}
-        </button>
-      </div>
-      <section className="card cost-summary">
+      <PageHeader
+        title={t("pageCount", {
+          name: t("tracesNav"),
+          count: traces.value?.length ?? 0,
+        })}
+        actions={
+          <Button icon="refresh" onClick={refresh}>
+            {t("refresh")}
+          </Button>
+        }
+      />
+      <Surface as="section" className="cost-summary">
         <div className="card-heading">
           <h2>{t("costSummary")}</h2>
-          <select
+          <Select
             aria-label={t("groupCostsBy")}
             value={group}
             onChange={(event) => {
@@ -62,13 +59,13 @@ export function TracesPage({
             <option value="conversation">{t("byConversation")}</option>
             <option value="day">{t("byDay")}</option>
             <option value="model">{t("byModel")}</option>
-          </select>
+          </Select>
         </div>
         <ResourceState {...costs} onRetry={costs.reload} />
         {costs.value && (
           <CostTable costs={costs.value} onConversation={onConversation} />
         )}
-      </section>
+      </Surface>
       <div className="section-heading trace-heading">
         <h2>
           {t("modelCalls")}
@@ -76,7 +73,7 @@ export function TracesPage({
             <span className="count-pill">{traces.value.length}</span>
           )}
         </h2>
-        <select
+        <Select
           aria-label={t("traceConversation")}
           value={conversationId}
           onChange={(event) => {
@@ -94,7 +91,7 @@ export function TracesPage({
                 ?.content.slice(0, 55) || conversation.id}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       <ResourceState
         loading={false}

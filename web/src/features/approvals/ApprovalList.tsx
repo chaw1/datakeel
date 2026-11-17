@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { decidePlan } from "../../api/actions";
+import { Button, EmptyState } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { PlanCard } from "../actions/PlanCard";
@@ -56,8 +57,8 @@ export function ApprovalList({
         </h2>
         <div className="selection-actions">
           <span>{t("approvalSelection", { count: selectedPlans.length })}</span>
-          <button
-            className="button subtle"
+          <Button
+            variant="ghost"
             disabled={busy || !selectedPlans.length}
             onKeyDown={(event) => {
               if (isComposing(event.nativeEvent)) event.preventDefault();
@@ -67,7 +68,7 @@ export function ApprovalList({
             }}
           >
             {t(busy ? "planWorking" : "rejectSelected")}
-          </button>
+          </Button>
         </div>
       </div>
       {message && (
@@ -85,11 +86,7 @@ export function ApprovalList({
           </div>
         </div>
       )}
-      {!plans.length && (
-        <div className="card empty-state">
-          <p>{t("noPendingApprovals")}</p>
-        </div>
-      )}
+      {!plans.length && <EmptyState card title={t("noPendingApprovals")} />}
       <div className="approval-grid">
         {plans.map((plan) => (
           <div className="approval-item" key={plan.id}>

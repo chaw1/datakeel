@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Button, Input, Select, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
@@ -32,8 +33,9 @@ export function WorkflowForm({
     setValues((current) => ({ ...current, [name]: value }));
   };
   return (
-    <section
-      className="card workflow-form-card"
+    <Surface
+      as="section"
+      className="workflow-form-card"
       aria-label={t("workflowInputs")}
     >
       <h2>{workflowName(definition.id, t, definition.name)}</h2>
@@ -68,7 +70,7 @@ export function WorkflowForm({
                 )}
               </label>
               {name === "dataset_id" ? (
-                <select
+                <Select
                   id={fieldId}
                   value={values[name]}
                   disabled={busy}
@@ -90,7 +92,7 @@ export function WorkflowForm({
                       {dataset.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               ) : ["object", "array"].includes(field.type) ? (
                 <>
                   <textarea
@@ -117,7 +119,7 @@ export function WorkflowForm({
                   }}
                 />
               ) : (
-                <input
+                <Input
                   id={fieldId}
                   type={
                     ["integer", "number"].includes(field.type)
@@ -141,17 +143,17 @@ export function WorkflowForm({
             {error}
           </p>
         )}
-        <button
+        <Button
           type="submit"
-          className="button primary"
+          variant="primary"
           disabled={busy}
           onKeyDown={(event) => {
             if (composing(event.nativeEvent)) event.preventDefault();
           }}
         >
           {t(busy ? "workflowRunning" : "workflowStart")}
-        </button>
+        </Button>
       </form>
-    </section>
+    </Surface>
   );
 }

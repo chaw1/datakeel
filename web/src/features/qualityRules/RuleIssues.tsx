@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { prepareQualityIssue } from "../../api/qualityRules";
+import { Button, Input } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 
@@ -62,7 +63,7 @@ export function RuleIssues({
                 {issue.status !== "resolved" && (
                   <label className="dq-assignee">
                     {t("dqAssignee")}
-                    <input
+                    <Input
                       aria-label={t("dqAssigneeFor", { rule: issue.rule_id })}
                       value={assignees[issue.id] ?? issue.assignee ?? "local"}
                       maxLength={200}
@@ -87,8 +88,8 @@ export function RuleIssues({
                 </dl>
                 <div className="dq-controls">
                   {issue.status !== "resolved" && (
-                    <button
-                      className="button subtle"
+                    <Button
+                      variant="ghost"
                       disabled={
                         busy ||
                         !(
@@ -102,18 +103,18 @@ export function RuleIssues({
                       }}
                     >
                       {t("dqClaim")}
-                    </button>
+                    </Button>
                   )}
                   {issue.can_resolve && (
-                    <button
-                      className="button subtle"
+                    <Button
+                      variant="ghost"
                       disabled={busy}
                       onClick={() => {
                         void prepare(issue, "resolved");
                       }}
                     >
                       {t("dqResolve")}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </li>

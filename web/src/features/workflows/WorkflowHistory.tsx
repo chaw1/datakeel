@@ -1,3 +1,4 @@
+import { Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { StateBadge } from "../tasks/StateBadge";
@@ -9,8 +10,9 @@ import type { WorkflowRun } from "../../api/workflows";
 export function WorkflowHistory({ runs }: { runs: WorkflowRun[] }) {
   const { t, locale } = useI18n();
   return (
-    <section
-      className="card workflow-history"
+    <Surface
+      as="section"
+      className="workflow-history"
       aria-label={t("workflowHistory")}
     >
       <h2>{t("workflowHistory")}</h2>
@@ -48,6 +50,6 @@ export function WorkflowHistory({ runs }: { runs: WorkflowRun[] }) {
           </table>
         </div>
       )}
-    </section>
+    </Surface>
   );
 }

@@ -1,3 +1,4 @@
+import { Badge, EmptyState, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 
@@ -8,16 +9,11 @@ import type { ModelCallTrace } from "../../api/types";
 
 export function TraceList({ traces }: { traces: ModelCallTrace[] }) {
   const { t, locale } = useI18n();
-  if (!traces.length)
-    return (
-      <div className="card empty-state">
-        <p>{t("noTraces")}</p>
-      </div>
-    );
+  if (!traces.length) return <EmptyState card title={t("noTraces")} />;
   return (
     <div className="trace-list">
       {traces.map((trace) => (
-        <article className="card trace-card" key={trace.id}>
+        <Surface as="article" className="trace-card" key={trace.id}>
           <div className="section-heading">
             <div>
               <span className="eyebrow">
@@ -34,15 +30,13 @@ export function TraceList({ traces }: { traces: ModelCallTrace[] }) {
               {t("delegationPath")}: <code>{trace.agent_path}</code>
             </p>
           )}
-          <p
-            className={`badge ${trace.billing_status === "unknown" ? "amber" : "gray"}`}
-          >
+          <Badge tone={trace.billing_status === "unknown" ? "warn" : "neutral"}>
             {t(
               trace.billing_status === "unknown"
                 ? "billingUnknown"
                 : "billingActual",
             )}
-          </p>
+          </Badge>
           {trace.budget_exceeded && (
             <p className="error-text">{t("budgetExceeded")}</p>
           )}
@@ -128,7 +122,7 @@ export function TraceList({ traces }: { traces: ModelCallTrace[] }) {
               </div>
             </dl>
           </details>
-        </article>
+        </Surface>
       ))}
     </div>
   );

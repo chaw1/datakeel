@@ -1,4 +1,5 @@
 import { Icon } from "../../components/Icon";
+import { EmptyState } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date, taskProgress } from "../../lib/format";
 
@@ -17,11 +18,11 @@ export function Tasks({
 
   if (!tasks.length)
     return (
-      <div className="empty-state">
-        <Icon name="activity" size={28} />
-        <h3>{t("readyForTheFirstRun")}</h3>
-        <p>{t("yourPipelineRunsAndLiveProgressWillAppearHere")}</p>
-      </div>
+      <EmptyState
+        icon="activity"
+        title={t("readyForTheFirstRun")}
+        description={t("yourPipelineRunsAndLiveProgressWillAppearHere")}
+      />
     );
   return (
     <div className="task-list">

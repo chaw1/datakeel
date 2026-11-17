@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Badge } from "../../components/ui";
 import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { shortId } from "../../lib/format";
@@ -46,7 +47,7 @@ export function ObjectHeader({
       <div>
         <p className="object-kicker">
           <span>{t(kindLabels[target.kind])}</span>
-          <span className="badge gray">{t(objectStatus(data))}</span>
+          <Badge>{t(objectStatus(data))}</Badge>
         </p>
         <h1 className="page-title">{name}</h1>
         <button
@@ -68,18 +69,18 @@ export function ObjectHeader({
       </div>
       <div className="object-actions">
         {["dataset", "file", "table"].includes(target.kind) && (
-          <a className="button" href={chat}>
+          <a className="button ui-button" href={chat}>
             {t("objChat")}
           </a>
         )}
         {["metric", "term"].includes(target.kind) && (
-          <a className="button" href={ask}>
+          <a className="button ui-button" href={ask}>
             {t("objAsk")}
           </a>
         )}
         {target.kind === "dataset" && (
           <a
-            className="button"
+            className="button ui-button"
             href={objectHref({
               ...target,
               tab: "evidence",
@@ -91,7 +92,7 @@ export function ObjectHeader({
         )}
         {target.kind === "metric" && (
           <a
-            className="button"
+            className="button ui-button"
             href={objectHref({ ...target, tab: "evidence", section: "edit" })}
           >
             {t("objEdit")}
@@ -99,7 +100,7 @@ export function ObjectHeader({
         )}
         {["table", "column"].includes(target.kind) && (
           <a
-            className="button"
+            className="button ui-button"
             href={objectHref({
               ...target,
               tab: "relations",
@@ -111,7 +112,7 @@ export function ObjectHeader({
         )}
         {target.kind === "action_run" && (
           <a
-            className="button"
+            className="button ui-button"
             href={objectHref({
               ...target,
               tab: "history",
@@ -123,7 +124,7 @@ export function ObjectHeader({
         )}
         {data.version && (
           <a
-            className="button"
+            className="button ui-button"
             href={`data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data.version.manifest, null, 2))}`}
             download={`manifest-${target.id}.json`}
           >

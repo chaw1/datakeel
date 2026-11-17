@@ -1,3 +1,4 @@
+import { Button, Input, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import { exampleFilters, initialFilters } from "./query";
@@ -79,26 +80,26 @@ export function EvidenceFilters({
     <section className="evidence-filter-card" aria-label={t("evFilters")}>
       <div className="evidence-filter-toolbar">
         <div className="evidence-filter-actions">
-          <button
-            className="text-button"
+          <Button
+            variant="link"
             onClick={() => {
               onChange(exampleFilters);
             }}
           >
             {t("evExample")}
-          </button>
-          <button
-            className="text-button"
+          </Button>
+          <Button
+            variant="link"
             onClick={() => {
               onChange(initialFilters);
             }}
           >
             {t("evReset")}
-          </button>
+          </Button>
         </div>
         <label className="evidence-sort">
           {t("evSort")}
-          <select
+          <Select
             value={value.sort}
             onBlur={(event) => {
               if (value.sort !== event.target.value)
@@ -117,7 +118,7 @@ export function EvidenceFilters({
             <option value="review">{t("evSortReview")}</option>
             <option value="filename">{t("evSortFilename")}</option>
             <option value="quality">{t("evSortQuality")}</option>
-          </select>
+          </Select>
         </label>
       </div>
       <details className="evidence-filter-panel">
@@ -126,7 +127,7 @@ export function EvidenceFilters({
           {fields.map((field) => (
             <label key={field.key}>
               <span>{t(field.label)}</span>
-              <select
+              <Select
                 value={value[field.key]}
                 onBlur={(event) => {
                   if (value[field.key] !== event.target.value)
@@ -141,7 +142,7 @@ export function EvidenceFilters({
                     {t(label)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           ))}
           {(
@@ -152,7 +153,7 @@ export function EvidenceFilters({
           ).map(([key, label]) => (
             <label key={key}>
               <span>{t(label)}</span>
-              <input
+              <Input
                 type="number"
                 min={0}
                 max={100}

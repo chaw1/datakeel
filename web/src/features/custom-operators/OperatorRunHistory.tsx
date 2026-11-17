@@ -1,3 +1,4 @@
+import { Badge, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 
@@ -11,8 +12,9 @@ export function OperatorRunHistory({ runs }: { runs: CustomOperatorRun[] }) {
       {!runs.length && <p className="muted">{t("customOperatorNoRuns")}</p>}
       <div className="custom-run-history">
         {runs.map((run) => (
-          <article
-            className="card custom-run-record"
+          <Surface
+            as="article"
+            className="custom-run-record"
             key={run.id}
             data-custom-run={run.id}
           >
@@ -20,11 +22,9 @@ export function OperatorRunHistory({ runs }: { runs: CustomOperatorRun[] }) {
               <h3>
                 <code>{run.operator}</code>
               </h3>
-              <span
-                className={`status-badge ${run.success ? "success" : "failed"}`}
-              >
+              <Badge tone={run.success ? "ok" : "danger"}>
                 {t(run.success ? "SUCCEEDED" : "FAILED")}
-              </span>
+              </Badge>
             </header>
             <p className="muted">{date(run.completed_at, locale)}</p>
             <dl className="approval-fields">
@@ -67,7 +67,7 @@ export function OperatorRunHistory({ runs }: { runs: CustomOperatorRun[] }) {
                 {JSON.stringify(run, null, 2)}
               </pre>
             </details>
-          </article>
+          </Surface>
         ))}
       </div>
     </section>

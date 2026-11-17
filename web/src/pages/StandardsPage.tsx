@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { PageHeader, SegmentedTabs } from "../components/ui";
 import { StandardsAnalysis } from "../features/standards/StandardsAnalysis";
 import { StandardsBrowser } from "../features/standards/StandardsBrowser";
 import { StandardsCoverage } from "../features/standards/StandardsCoverage";
@@ -20,6 +21,7 @@ const tabs = [
   ["history", "stdHistory"],
   ["analysis", "stdAnalysis"],
 ] as const;
+
 export function StandardsPage({
   onOpenReceipt,
   onDataChanged,
@@ -36,26 +38,13 @@ export function StandardsPage({
   }
   return (
     <div className="standards-page catalog-page">
-      <div className="page-heading">
-        <div>
-          <h1>{t("stdNav")}</h1>
-          <p>{t("stdIntro")}</p>
-        </div>
-      </div>
-      <nav className="tabs" aria-label={t("stdNav")}>
-        {tabs.map(([value, label]) => (
-          <button
-            key={value}
-            className={tab === value ? "active" : ""}
-            aria-current={tab === value ? "page" : undefined}
-            onClick={() => {
-              setTab(value);
-            }}
-          >
-            {t(label)}
-          </button>
-        ))}
-      </nav>
+      <PageHeader title={t("stdNav")} subtitle={t("stdIntro")} />
+      <SegmentedTabs
+        label={t("stdNav")}
+        activeId={tab}
+        onSelect={setTab}
+        items={tabs.map(([id, label]) => ({ id, label: t(label) }))}
+      />
       <div key={`${tab}:${String(revision)}`}>
         {(tab === "fields" || tab === "code-lists") && (
           <StandardsBrowser

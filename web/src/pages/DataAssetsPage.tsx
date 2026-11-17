@@ -1,8 +1,15 @@
 import { useState } from "react";
 
 import { classifications } from "../api/dataAssets";
-import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import {
+  Button,
+  EmptyState,
+  Input,
+  PageHeader,
+  SegmentedTabs,
+  Select,
+} from "../components/ui";
 import { AssetAudit } from "../features/data-assets/AssetAudit";
 import { AssetDetail } from "../features/data-assets/AssetDetail";
 import { AssetEditor } from "../features/data-assets/AssetEditor";
@@ -70,47 +77,40 @@ export function DataAssetsPage({
     );
   return (
     <div className="data-assets-page">
-      <div className="page-heading">
-        <div>
-          <h1>
-            {t("assetMarket")} · {market.value?.total ?? 0}
-          </h1>
-          <p>{t("assetMarketIntro")}</p>
-        </div>
-        <button
-          className="button primary"
-          aria-label={t(creating ? "assetCancelEdit" : "assetNew")}
-          title={t(creating ? "assetCancelEdit" : "assetNew")}
-          onClick={() => {
-            setCreating(!creating);
-            setAudit(false);
-          }}
-        >
-          <Icon name={creating ? "close" : "file"} />
-          {t(creating ? "assetCancelEdit" : "assetNew")}
-        </button>
-      </div>
-      <nav className="tabs" aria-label={t("assetMarket")}>
-        <button
-          className={audit ? "" : "active"}
-          aria-current={!audit ? "page" : undefined}
-          onClick={() => {
-            setAudit(false);
-          }}
-        >
-          {t("assetMarket")}
-        </button>
-        <button
-          className={audit ? "active" : ""}
-          aria-current={audit ? "page" : undefined}
-          onClick={() => {
+      <PageHeader
+        title={`${t("assetMarket")} · ${String(market.value?.total ?? 0)}`}
+        subtitle={t("assetMarketIntro")}
+        actions={
+          <Button
+            variant="primary"
+            icon={creating ? "close" : "file"}
+            aria-label={t(creating ? "assetCancelEdit" : "assetNew")}
+            title={t(creating ? "assetCancelEdit" : "assetNew")}
+            onClick={() => {
+              setCreating(!creating);
+              setAudit(false);
+            }}
+          >
+            {t(creating ? "assetCancelEdit" : "assetNew")}
+          </Button>
+        }
+      />
+      <SegmentedTabs
+        label={t("assetMarket")}
+        activeId={audit ? "audit" : "market"}
+        onSelect={(next) => {
+          if (next === "audit") {
             setAudit(true);
             setCreating(false);
-          }}
-        >
-          {t("assetAuditAll")}
-        </button>
-      </nav>
+          } else {
+            setAudit(false);
+          }
+        }}
+        items={[
+          { id: "market", label: t("assetMarket") },
+          { id: "audit", label: t("assetAuditAll") },
+        ]}
+      />
       {creating && (
         <AssetEditor onChanged={changed} onOpenReceipt={onOpenReceipt} />
       )}
@@ -119,7 +119,7 @@ export function DataAssetsPage({
       ) : (
         <>
           <form
-            className="card asset-market-filters"
+            className="card ui-surface asset-market-filters"
             onKeyDownCapture={(event) => {
               if (event.key === "Enter" && isComposing(event.nativeEvent))
                 event.preventDefault();
@@ -131,7 +131,7 @@ export function DataAssetsPage({
           >
             <label className="asset-search">
               {t("assetSearch")}
-              <input
+              <Input
                 type="search"
                 value={search}
                 onChange={(event) => {
@@ -141,7 +141,7 @@ export function DataAssetsPage({
             </label>
             <label>
               {t("assetClassification")}
-              <select
+              <Select
                 value={classification}
                 onBlur={(event) => {
                   setClassification(event.target.value);
@@ -156,11 +156,11 @@ export function DataAssetsPage({
                     {t(label)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               {t("assetTag")}
-              <input
+              <Input
                 value={tag}
                 onChange={(event) => {
                   setTag(event.target.value);
@@ -169,7 +169,7 @@ export function DataAssetsPage({
             </label>
             <label>
               {t("assetSort")}
-              <select
+              <Select
                 value={sort}
                 onBlur={(event) => {
                   setSort(event.target.value);
@@ -183,11 +183,9 @@ export function DataAssetsPage({
                     {t(label)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
-            <button className="button" type="submit">
-              {t("assetSearchSubmit")}
-            </button>
+            <Button type="submit">{t("assetSearchSubmit")}</Button>
             <label className="asset-manage">
               <input
                 type="checkbox"
@@ -202,13 +200,13 @@ export function DataAssetsPage({
           <p className="muted asset-sort-rule">{t("assetSortRule")}</p>
           <ResourceState {...market} onRetry={market.reload} />
           {market.value?.items.length === 0 && (
-            <div className="card empty-state">{t("assetEmpty")}</div>
+            <EmptyState card title={t("assetEmpty")} />
           )}
           <div className="asset-market-grid">
             {market.value?.items.map((card) => (
               <a
                 key={card.asset.id}
-                className="card asset-market-card"
+                className="card ui-surface asset-market-card"
                 href={`#/data-assets?${new URLSearchParams({ asset: card.asset.id }).toString()}`}
               >
                 <AssetSummary card={card} />

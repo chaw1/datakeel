@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { ResourceState } from "../../components/ResourceState";
+import { Button, Select, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 
@@ -36,19 +37,20 @@ export function ImportedObjects({
     `/api/catalog/import/objects?${query.toString()}`,
   );
   return (
-    <section
-      className="card catalog-detail"
+    <Surface
+      as="section"
+      className="catalog-detail"
       aria-label={t("metadataImportedObjects")}
     >
       <div className="section-heading">
         <h2>{t("metadataImportedObjects")}</h2>
-        <button className="button subtle" onClick={resource.reload}>
+        <Button variant="ghost" onClick={resource.reload}>
           {t("metadataRefresh")}
-        </button>
+        </Button>
       </div>
       <label>
         {t("metadataKind")}
-        <select
+        <Select
           value={kind}
           onBlur={(event) => {
             setKind(event.target.value);
@@ -64,7 +66,7 @@ export function ImportedObjects({
               {t(label)}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <ResourceState
         loading={resource.loading}
@@ -94,25 +96,25 @@ export function ImportedObjects({
           </ul>
           {!resource.value.items.length && <p>{t("catEmpty")}</p>}
           <div className="catalog-pagination">
-            <button
-              className="button subtle"
+            <Button
+              variant="ghost"
               disabled={!offset}
               onClick={() => {
                 setOffset(Math.max(0, offset - 20));
               }}
             >
               {t("previous")}
-            </button>
+            </Button>
             <span>{resource.value.total}</span>
-            <button
-              className="button subtle"
+            <Button
+              variant="ghost"
               disabled={offset + 20 >= resource.value.total}
               onClick={() => {
                 setOffset(offset + 20);
               }}
             >
               {t("next")}
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -129,8 +131,8 @@ export function ImportedObjects({
               onOpenReceipt={onOpenReceipt}
             />
           )}
-          <button
-            className="button subtle"
+          <Button
+            variant="ghost"
             onClick={() => {
               onOpenReceipt({
                 assetId: selected.asset_ref.asset_id,
@@ -139,9 +141,9 @@ export function ImportedObjects({
             }}
           >
             {t("catLineage")}
-          </button>
+          </Button>
         </section>
       )}
-    </section>
+    </Surface>
   );
 }

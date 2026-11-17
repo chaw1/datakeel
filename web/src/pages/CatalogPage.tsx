@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { PageHeader, SegmentedTabs } from "../components/ui";
 import { CatalogBrowser } from "../features/catalog/CatalogBrowser";
 import { FilteredMetricCatalog } from "../features/catalog/FilteredMetricCatalog";
 import { Glossary } from "../features/catalog/Glossary";
@@ -50,33 +51,21 @@ export function CatalogPage({
   const column = params.get("column") ?? "";
   return (
     <div className="catalog-page">
-      <div className="page-heading">
-        <div>
-          <h1>
-            {t("pageCount", {
-              name: t("catalogNav"),
-              count:
-                tab === "metrics" && (table || column)
-                  ? filteredCount
-                  : (count.value?.total ?? 0),
-            })}
-          </h1>
-        </div>
-      </div>
-      <nav className="tabs" aria-label={t("catalogNav")}>
-        {tabs.map(([value, label]) => (
-          <button
-            key={value}
-            className={tab === value ? "active" : ""}
-            aria-current={tab === value ? "page" : undefined}
-            onClick={() => {
-              setTab(value);
-            }}
-          >
-            {t(label)}
-          </button>
-        ))}
-      </nav>
+      <PageHeader
+        title={t("pageCount", {
+          name: t("catalogNav"),
+          count:
+            tab === "metrics" && (table || column)
+              ? filteredCount
+              : (count.value?.total ?? 0),
+        })}
+      />
+      <SegmentedTabs
+        label={t("catalogNav")}
+        activeId={tab}
+        onSelect={setTab}
+        items={tabs.map(([id, label]) => ({ id, label: t(label) }))}
+      />
       {tab === "imports" && (
         <>
           <MetadataImportForm

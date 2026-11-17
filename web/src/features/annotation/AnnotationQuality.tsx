@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { annotationPath } from "../../api/annotation";
 import { ResourceState } from "../../components/ResourceState";
+import { EmptyState, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { useResource } from "../../lib/useResource";
@@ -54,7 +55,7 @@ export function AnnotationQuality({
           {!!batches.length && (
             <label className="annotation-form">
               {t("annotationBatch")}
-              <select
+              <Select
                 value={report?.id ?? ""}
                 onChange={(event) => {
                   setSelected(event.target.value);
@@ -68,7 +69,7 @@ export function AnnotationQuality({
                     {batch.name} · {date(batch.created_at, locale)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           )}
           {report ? (
@@ -83,7 +84,7 @@ export function AnnotationQuality({
               <AnnotationFindings report={report} />
             </>
           ) : (
-            <p className="card empty-state">{t("annotationEmpty")}</p>
+            <EmptyState card title={t("annotationEmpty")} />
           )}
         </>
       )}

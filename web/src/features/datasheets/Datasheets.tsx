@@ -3,6 +3,7 @@ import { useState } from "react";
 import { get } from "../../api/client";
 import { generateDatasheet, publishDatasheet } from "../../api/datasheets";
 import { ResourceState } from "../../components/ResourceState";
+import { Button, EmptyState, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { useResource } from "../../lib/useResource";
@@ -120,9 +121,7 @@ export function Datasheets({
           <h2>{t("datasheets")}</h2>
           <p>{t("datasheetDescription")}</p>
         </div>
-        <button className="button" onClick={refresh}>
-          {t("datasheetRefresh")}
-        </button>
+        <Button onClick={refresh}>{t("datasheetRefresh")}</Button>
       </div>
       <DatasheetControls
         versions={liveVersions ?? versions}
@@ -165,11 +164,9 @@ export function Datasheets({
         error={error || resource.error}
         onRetry={refresh}
       />
-      {!versions.length && (
-        <p className="empty-state">{t("datasheetNoVersions")}</p>
-      )}
+      {!versions.length && <EmptyState title={t("datasheetNoVersions")} />}
       {!!versions.length && !resource.loading && !sheet && (
-        <p className="empty-state">{t("datasheetNoDocuments")}</p>
+        <EmptyState title={t("datasheetNoDocuments")} />
       )}
       {plan && (
         <ApprovalSheet
@@ -203,7 +200,7 @@ export function Datasheets({
           <div className="datasheet-controls">
             <label>
               {t("datasheetHistory")}
-              <select
+              <Select
                 aria-label={t("datasheetHistory")}
                 value={sheet.id}
                 onBlur={(event) => {
@@ -222,11 +219,11 @@ export function Datasheets({
                     )}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               {t("datasheetCompare")}
-              <select
+              <Select
                 aria-label={t("datasheetCompare")}
                 value={comparison?.id ?? ""}
                 onBlur={(event) => {
@@ -248,27 +245,26 @@ export function Datasheets({
                       {item.id.slice(0, 8)}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
-            <button
-              className="button"
+            <Button
               disabled={busy || sheet.published}
               onClick={() => {
                 void prepare(true);
               }}
             >
               {t("datasheetPublish")}
-            </button>
+            </Button>
             {sheet.stale && (
-              <button
-                className="button primary"
+              <Button
+                variant="primary"
                 disabled={busy}
                 onClick={() => {
                   void prepare(false, true);
                 }}
               >
                 {t("datasheetRegenerateLatest")}
-              </button>
+              </Button>
             )}
           </div>
           {comparison && (

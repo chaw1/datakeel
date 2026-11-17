@@ -1,3 +1,4 @@
+import { Button, EmptyState } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import { cacheRate, money } from "./format";
@@ -12,12 +13,7 @@ export function CostTable({
   onConversation: (id: string) => void;
 }) {
   const { t, locale } = useI18n();
-  if (!costs.length)
-    return (
-      <div className="empty-state">
-        <p>{t("noCosts")}</p>
-      </div>
-    );
+  if (!costs.length) return <EmptyState title={t("noCosts")} />;
   return (
     <div className="table-scroll">
       <table className="cost-table">
@@ -38,15 +34,16 @@ export function CostTable({
             <tr key={cost.key}>
               <td>
                 {cost.group_by === "conversation" ? (
-                  <button
-                    className="text-button mono"
+                  <Button
+                    variant="link"
+                    className="mono"
                     onClick={() => {
                       onConversation(cost.key);
                     }}
                     aria-label={t("openConversationTrace", { id: cost.key })}
                   >
                     {cost.key}
-                  </button>
+                  </Button>
                 ) : (
                   cost.key
                 )}

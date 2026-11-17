@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { tablePath } from "../../api/catalog";
 import { get } from "../../api/client";
 import { ResourceState } from "../../components/ResourceState";
+import { Surface } from "../../components/ui";
 import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 
@@ -66,7 +67,11 @@ export function FilteredMetricCatalog({
   }, [table, column, revision, onCount]);
   return (
     <div className="catalog-browser">
-      <section className="card catalog-list" aria-label={t("catMetrics")}>
+      <Surface
+        as="section"
+        className="catalog-list"
+        aria-label={t("catMetrics")}
+      >
         <h2>
           {t("pageCount", { name: t("catMetrics"), count: items.length })}
         </h2>
@@ -99,7 +104,7 @@ export function FilteredMetricCatalog({
             </li>
           ))}
         </ul>
-      </section>
+      </Surface>
       {selected && (
         <MetricDetails
           key={selected}

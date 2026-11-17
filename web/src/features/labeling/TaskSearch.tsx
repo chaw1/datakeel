@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { Input } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 const DEBOUNCE_MS = 300;
@@ -30,7 +31,7 @@ export function TaskSearch({
   return (
     <label className="wb-task-search">
       {t("wbSearchTasks")}
-      <input
+      <Input
         type="search"
         value={text}
         maxLength={200}

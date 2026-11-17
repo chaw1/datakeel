@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { askData, openAskConversation, replayAnswer } from "../api/ask";
+import { Button, PageHeader, Surface } from "../components/ui";
 import { AskAnswerView } from "../features/ask/AskAnswerView";
 import { AskComposer } from "../features/ask/AskComposer";
 import { AskConversations } from "../features/ask/AskConversations";
@@ -131,14 +132,10 @@ export function AskPage({
   }
   return (
     <div className="ask-page">
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">{t("askNav")}</span>
-          <h1>
-            {t("askTitle")} · {savedAnswers.length}
-          </h1>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={t("askNav")}
+        title={`${t("askTitle")} · ${String(savedAnswers.length)}`}
+      />
       <AskConversations
         key={actor}
         actor={actor}
@@ -173,14 +170,14 @@ export function AskPage({
         }}
       />
       {busy && (
-        <div className="card ask-loading" role="status">
+        <Surface className="ask-loading" role="status">
           <span className="ask-loading-dot" />
           {t(
             lastOperation && "answerId" in lastOperation
               ? "askReplaying"
               : "askWorking",
           )}
-        </div>
+        </Surface>
       )}
       {error && (
         <div className="error-banner" role="alert">
@@ -188,15 +185,13 @@ export function AskPage({
             <strong>{t("askError")}</strong>
             <p>{error}</p>
           </div>
-          <button
-            className="button"
-            type="button"
+          <Button
             onClick={() => {
               if (lastOperation) void perform(lastOperation);
             }}
           >
             {t("askRetry")}
-          </button>
+          </Button>
         </div>
       )}
       {answer && (
@@ -286,13 +281,13 @@ export function AskPage({
         </>
       )}
       {!answer && !waiting && !error && (
-        <div className="card ask-empty">
+        <Surface className="ask-empty">
           <span className="ask-empty-symbol" aria-hidden="true">
             ?
           </span>
           <h2>{t("askEmptyTitle")}</h2>
           <p>{t("askEmptyBody")}</p>
-        </div>
+        </Surface>
       )}
     </div>
   );

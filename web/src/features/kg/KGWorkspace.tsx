@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { decideRelations } from "../../api/kg";
 import { ResourceState } from "../../components/ResourceState";
+import { Button, Select, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { useResource } from "../../lib/useResource";
@@ -116,7 +117,7 @@ export function KGWorkspace({
       <div className="kg-toolbar">
         <label>
           {t("kgVersion")}
-          <select
+          <Select
             aria-label={t("kgVersion")}
             value={versionId}
             onBlur={(event) => {
@@ -137,11 +138,9 @@ export function KGWorkspace({
                 {item.id}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
-        <button className="button" onClick={refresh}>
-          {t("kgRefresh")}
-        </button>
+        <Button onClick={refresh}>{t("kgRefresh")}</Button>
       </div>
       <ResourceState {...versions} onRetry={versions.reload} />
       <ResourceState {...schemas} onRetry={schemas.reload} />
@@ -154,7 +153,7 @@ export function KGWorkspace({
         onOpenReceipt={onOpenReceipt}
       />
       {pending && <p role="status">{t("kgPending")}</p>}
-      <section className="card kg-results">
+      <Surface as="section" className="kg-results">
         <div className="kg-tabs" role="tablist" aria-label={t("kgNav")}>
           {(Object.keys(tabs) as (keyof typeof tabs)[]).map((key) => (
             <button
@@ -204,24 +203,23 @@ export function KGWorkspace({
                   count: resource.value?.relations.length ?? 0,
                 })}
               </span>
-              <button
-                className="button"
+              <Button
                 disabled={!selected.length || busy || resource.loading}
                 onClick={() => {
                   void decide("accepted");
                 }}
               >
                 {t("kgAccept")}
-              </button>
-              <button
-                className="button danger"
+              </Button>
+              <Button
+                variant="danger"
                 disabled={!selected.length || busy || resource.loading}
                 onClick={() => {
                   void decide("rejected");
                 }}
               >
                 {t("kgReject")}
-              </button>
+              </Button>
             </div>
             {resource.value && (
               <KGRelations
@@ -263,7 +261,7 @@ export function KGWorkspace({
           </>
         )}
         {tab === "evaluations" && <KGEvaluations />}
-      </section>
+      </Surface>
       {relationId && (
         <KGRelationDrawer
           key={relationId}

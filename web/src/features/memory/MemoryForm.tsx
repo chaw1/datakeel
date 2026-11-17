@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { createMemory } from "../../api/memory";
+import { Button, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import type { Dataset } from "../../api/types";
@@ -37,7 +38,7 @@ export function MemoryForm({
   }
   return (
     <form
-      className="card memory-form"
+      className="card ui-surface memory-form"
       onSubmit={(event) => {
         event.preventDefault();
         void save();
@@ -55,7 +56,7 @@ export function MemoryForm({
         }}
       />
       <label htmlFor="memory-scope">{t("memoryScope")}</label>
-      <select
+      <Select
         id="memory-scope"
         onBlur={(event) => {
           setDatasetId(event.target.value);
@@ -72,19 +73,19 @@ export function MemoryForm({
             {dataset.name}
           </option>
         ))}
-      </select>
+      </Select>
       {error && (
         <p role="alert" className="error-text">
           {error}
         </p>
       )}
-      <button
-        className="button primary"
+      <Button
+        variant="primary"
         type="submit"
         disabled={busy || !content.trim()}
       >
         {t(busy ? "memoryAdding" : "memoryAdd")}
-      </button>
+      </Button>
     </form>
   );
 }

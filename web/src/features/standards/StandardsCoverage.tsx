@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { ResourceState } from "../../components/ResourceState";
+import { Select, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 import { objectHref } from "../object/navigation";
@@ -20,7 +21,7 @@ export function StandardsCoverage() {
   const [group, setGroup] = useState<(typeof groups)[number][0]>("tables");
   const coverage = resource.value;
   return (
-    <section className="card standards-section">
+    <Surface as="section" className="standards-section">
       <ResourceState
         loading={resource.loading}
         error={resource.error}
@@ -44,7 +45,7 @@ export function StandardsCoverage() {
           </dl>
           <label>
             {t("stdGroupBy")}
-            <select
+            <Select
               value={group}
               onBlur={(event) => {
                 const selected = groups.find(
@@ -64,7 +65,7 @@ export function StandardsCoverage() {
                   {t(label)}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <div className="catalog-table-scroll">
             <table>
@@ -155,6 +156,6 @@ export function StandardsCoverage() {
           )}
         </>
       )}
-    </section>
+    </Surface>
   );
 }

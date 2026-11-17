@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Icon } from "../../components/Icon";
+import { Badge, Button, EmptyState, Input, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { bytes, display } from "../../lib/format";
 import { objectHref } from "../object/navigation";
@@ -38,19 +39,18 @@ export function Files({
   return (
     <>
       <div className="table-toolbar">
-        <label className="search-field">
-          <Icon name="search" />
-          <input
-            aria-label={t("searchFiles")}
-            placeholder={t("searchFilesLabel")}
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setPage(0);
-            }}
-          />
-        </label>
-        <select
+        <Input
+          icon="search"
+          wrapperClassName="search-field"
+          aria-label={t("searchFiles")}
+          placeholder={t("searchFilesLabel")}
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(0);
+          }}
+        />
+        <Select
           aria-label={t("selectFileVersion")}
           value={versionId}
           onBlur={(event) => {
@@ -69,8 +69,8 @@ export function Files({
               {index === 0 ? t("latest") : ""}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           aria-label={t("filterModality")}
           value={modality}
           onBlur={(event) => {
@@ -90,7 +90,7 @@ export function Files({
               {item}
             </option>
           ))}
-        </select>
+        </Select>
         <span className="muted small">
           {filtered.length} {t("files", { count: filtered.length })}
         </span>
@@ -133,17 +133,15 @@ export function Files({
                       {file.filename}
                     </a>
                     {file.metadata?.quarantined === true && (
-                      <span className="badge amber">{t("quarantined")}</span>
+                      <Badge tone="warn">{t("quarantined")}</Badge>
                     )}
                     {file.metadata?.deleted === true && (
-                      <span className="badge gray">{t("deletedFile")}</span>
+                      <Badge>{t("deletedFile")}</Badge>
                     )}
                   </span>
                 </td>
                 <td>
-                  <span className="badge gray">
-                    {display(file.modality, t("file"))}
-                  </span>
+                  <Badge>{display(file.modality, t("file"))}</Badge>
                 </td>
                 <td className="muted">{bytes(file.size)}</td>
                 <td>
@@ -171,9 +169,7 @@ export function Files({
         </table>
       </div>
       {filtered.length === 0 && (
-        <div className="empty-state">
-          <p>{t("noFilesMatchYourSearch")}</p>
-        </div>
+        <EmptyState title={t("noFilesMatchYourSearch")} />
       )}
       <div className="pagination">
         <span>
@@ -182,27 +178,27 @@ export function Files({
           {filtered.length} {t("files", { count: filtered.length })}{" "}
         </span>
         <div>
-          <button
-            className="button subtle"
+          <Button
+            variant="ghost"
             disabled={current === 0}
             onClick={() => {
               setPage(current - 1);
             }}
           >
             {t("previous")}{" "}
-          </button>
+          </Button>
           <span>
             {t("page")} {current + 1} {t("of")} {pages}
           </span>
-          <button
-            className="button subtle"
+          <Button
+            variant="ghost"
             disabled={current + 1 === pages}
             onClick={() => {
               setPage(current + 1);
             }}
           >
             {t("next")}{" "}
-          </button>
+          </Button>
         </div>
       </div>
     </>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { runCustomOperator } from "../../api/customOperators";
+import { Badge, Button, Select, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
@@ -57,10 +58,14 @@ export function OperatorVersionCard({
     }
   }
   return (
-    <article className="card custom-version" data-custom-version={version.id}>
+    <Surface
+      as="article"
+      className="custom-version"
+      data-custom-version={version.id}
+    >
       <header className="section-heading">
         <h3>{version.name}</h3>
-        <span className="status-badge">{t("APPROVED")}</span>
+        <Badge tone="ok">{t("APPROVED")}</Badge>
       </header>
       <code className="custom-hash">{version.code_hash}</code>
       <p className="muted">
@@ -95,7 +100,7 @@ export function OperatorVersionCard({
         )}
         <label>
           {t("dataset")}
-          <select
+          <Select
             aria-label={`${t("dataset")} · ${version.name}`}
             required
             disabled={busy || !datasets.length}
@@ -115,7 +120,7 @@ export function OperatorVersionCard({
                 {dataset.name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           {t("customOperatorParams")}
@@ -134,8 +139,8 @@ export function OperatorVersionCard({
             {error}
           </p>
         )}
-        <button
-          className="button primary"
+        <Button
+          variant="primary"
           type="submit"
           disabled={busy || blocked || !datasetId}
           onKeyDown={(event) => {
@@ -143,8 +148,8 @@ export function OperatorVersionCard({
           }}
         >
           {t(busy ? "planWorking" : "customOperatorRun")}
-        </button>
+        </Button>
       </form>
-    </article>
+    </Surface>
   );
 }

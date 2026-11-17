@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { deleteMemory } from "../../api/memory";
+import { Badge, Button, EmptyState, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 
@@ -32,29 +33,25 @@ export function MemoryList({
       setBusy(false);
     }
   }
-  if (!entries.length)
-    return (
-      <div className="card empty-state">
-        <p>{t("memoryEmpty")}</p>
-      </div>
-    );
+  if (!entries.length) return <EmptyState card title={t("memoryEmpty")} />;
   return (
     <div className="memory-list">
       {entries.map((entry) => (
-        <article
-          className="card memory-card"
+        <Surface
+          as="article"
+          className="memory-card"
           key={entry.id}
           data-memory-id={entry.id}
         >
           <div className="section-heading">
-            <span className="badge gray">
+            <Badge>
               {entry.dataset_id
                 ? (datasets.find((dataset) => dataset.id === entry.dataset_id)
                     ?.name ?? entry.dataset_id)
                 : t("memoryGlobal")}
-            </span>
-            <button
-              className="text-button"
+            </Badge>
+            <Button
+              variant="link"
               disabled={busy}
               onClick={() => {
                 setSelected(entry.id);
@@ -62,7 +59,7 @@ export function MemoryList({
               }}
             >
               {t("memoryDelete")}
-            </button>
+            </Button>
           </div>
           <p className="memory-content">{entry.content}</p>
           <dl className="memory-facts">
@@ -128,28 +125,27 @@ export function MemoryList({
                 </p>
               )}
               <div>
-                <button
-                  className="button"
+                <Button
                   disabled={busy}
                   onClick={() => {
                     setSelected("");
                   }}
                 >
                   {t("memoryCancelDelete")}
-                </button>
-                <button
-                  className="button danger"
+                </Button>
+                <Button
+                  variant="danger"
                   disabled={busy}
                   onClick={() => {
                     void remove(entry.id);
                   }}
                 >
                   {t(busy ? "memoryDeleting" : "memoryConfirmDelete")}
-                </button>
+                </Button>
               </div>
             </section>
           )}
-        </article>
+        </Surface>
       ))}
     </div>
   );

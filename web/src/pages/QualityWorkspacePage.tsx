@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader, Surface } from "../components/ui";
 import { objectHref } from "../features/object/navigation";
 import { useI18n } from "../i18n/useI18n";
 
@@ -18,22 +19,24 @@ export function QualityWorkspacePage({
   );
   return (
     <>
-      <div className="page-heading">
-        <h1>{t("qualityDatasets", { count: shown.length })}</h1>
-        <label>
-          <input
-            type="checkbox"
-            checked={alertsOnly}
-            onChange={(event) => {
-              window.location.hash = event.target.checked
-                ? "/quality?filter=alerts"
-                : "/quality";
-            }}
-          />
-          {t("qualityAlertFilter")}
-        </label>
-      </div>
-      <div className="card table-scroll">
+      <PageHeader
+        title={t("qualityDatasets", { count: shown.length })}
+        actions={
+          <label>
+            <input
+              type="checkbox"
+              checked={alertsOnly}
+              onChange={(event) => {
+                window.location.hash = event.target.checked
+                  ? "/quality?filter=alerts"
+                  : "/quality";
+              }}
+            />
+            {t("qualityAlertFilter")}
+          </label>
+        }
+      />
+      <Surface className="table-scroll">
         <table>
           <thead>
             <tr>
@@ -67,12 +70,18 @@ export function QualityWorkspacePage({
             ))}
           </tbody>
         </table>
-      </div>
+      </Surface>
       {!shown.length && (
-        <div className="empty-state">
-          <p>{t("noQualityAlerts")}</p>
-          {alertsOnly && <a href="#/quality">{t("clearFilter")}</a>}
-        </div>
+        <EmptyState
+          title={t("noQualityAlerts")}
+          action={
+            alertsOnly ? (
+              <a className="text-button" href="#/quality">
+                {t("clearFilter")}
+              </a>
+            ) : undefined
+          }
+        />
       )}
     </>
   );

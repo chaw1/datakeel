@@ -1,3 +1,4 @@
+import { Button, Input, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import type { TrainingConfig } from "../../api/llmData";
@@ -39,7 +40,7 @@ export function TrainingControls({
     >
       <label>
         {t("llmDataVersion")}
-        <select
+        <Select
           value={versionId}
           disabled={busy}
           onBlur={(event) => {
@@ -54,11 +55,11 @@ export function TrainingControls({
               {version.id}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label>
         {t("llmDataFormat")}
-        <select
+        <Select
           value={format}
           disabled={busy}
           onBlur={(event) => {
@@ -72,11 +73,11 @@ export function TrainingControls({
           <option value="messages">{t("llmDataMessages")}</option>
           <option value="instruction">{t("llmDataInstruction")}</option>
           <option value="preference">{t("llmDataPreference")}</option>
-        </select>
+        </Select>
       </label>
       <label>
         {t("llmDataMaxTokens")}
-        <input
+        <Input
           type="number"
           min={1}
           max={1000000}
@@ -90,7 +91,7 @@ export function TrainingControls({
       </label>
       <label>
         {t("llmDataNgram")}
-        <input
+        <Input
           type="number"
           min={2}
           max={100}
@@ -102,13 +103,9 @@ export function TrainingControls({
           }}
         />
       </label>
-      <button
-        type="submit"
-        className="button primary"
-        disabled={busy || !versionId}
-      >
+      <Button type="submit" variant="primary" disabled={busy || !versionId}>
         {t(busy ? "llmDataAnalyzing" : "llmDataAnalyze")}
-      </button>
+      </Button>
     </form>
   );
 }

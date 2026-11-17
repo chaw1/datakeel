@@ -1,7 +1,13 @@
 import { useState } from "react";
 
-import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import {
+  Button,
+  EmptyState,
+  PageHeader,
+  Select,
+  Surface,
+} from "../components/ui";
 import { ActionReceipt } from "../features/actions/ActionReceipt";
 import { useI18n } from "../i18n/useI18n";
 import { useResource } from "../lib/useResource";
@@ -30,23 +36,22 @@ export function ActionRunsPage({
     ) ?? [];
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">{t("operations")}</span>
-          <h1>{t("actionHistoryTitle")}</h1>
-          <p>{t("actionHistoryDescription")}</p>
-        </div>
-        <button className="button" onClick={resource.reload}>
-          <Icon name="refresh" />
-          {t("refresh")}
-        </button>
-      </div>
+      <PageHeader
+        eyebrow={t("operations")}
+        title={t("actionHistoryTitle")}
+        subtitle={t("actionHistoryDescription")}
+        actions={
+          <Button icon="refresh" onClick={resource.reload}>
+            {t("refresh")}
+          </Button>
+        }
+      />
       <ResourceState {...resource} onRetry={resource.reload} />
       <div className="section-heading">
         <h2>
           {t("actionHistory")} <span className="count-pill">{runs.length}</span>
         </h2>
-        <select
+        <Select
           aria-label={t("filterRunStatus")}
           value={status}
           onChange={(event) => {
@@ -62,22 +67,23 @@ export function ActionRunsPage({
               {t(state)}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       {!resource.loading && !resource.error && !runs.length && (
-        <div className="card empty-state">
-          <p>{t(status === "all" ? "noActionRuns" : "noMatchingRuns")}</p>
-        </div>
+        <EmptyState
+          card
+          title={t(status === "all" ? "noActionRuns" : "noMatchingRuns")}
+        />
       )}
       <div className="action-run-list">
         {runs.map((run) => (
-          <article key={run.id} className="card run-card">
+          <Surface as="article" key={run.id} className="run-card">
             <ActionReceipt run={run} onOpenReceipt={onOpenReceipt} />
             <details>
               <summary>{t("runDetails")}</summary>
               <pre>{JSON.stringify(run, null, 2)}</pre>
             </details>
-          </article>
+          </Surface>
         ))}
       </div>
     </>

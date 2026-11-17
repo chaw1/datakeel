@@ -1,4 +1,5 @@
 import { Icon } from "../../components/Icon";
+import { Badge, EmptyState } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { objectHref } from "../object/navigation";
@@ -36,9 +37,7 @@ export function Versions({
                     {t("version")} {versions.length - index}
                   </a>
                 </h3>
-                {index === 0 && (
-                  <span className="badge green">{t("latestLabel")}</span>
-                )}
+                {index === 0 && <Badge tone="ok">{t("latestLabel")}</Badge>}
               </div>
               <p className="mono small">{version.id}</p>
               <div className="muted small">
@@ -55,9 +54,7 @@ export function Versions({
           </article>
         ))
       ) : (
-        <div className="empty-state">
-          <p>{t("aVersionWillAppearAfterTheDatasetIsImported")}</p>
-        </div>
+        <EmptyState title={t("aVersionWillAppearAfterTheDatasetIsImported")} />
       )}
     </div>
   );

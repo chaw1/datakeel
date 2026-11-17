@@ -1,6 +1,8 @@
+import { Surface } from "../components/ui";
 import { ReportView } from "../features/reports/ReportView";
 
 import type { DatasetData } from "../api/types";
+
 export function ReportPage({
   data,
 }: {
@@ -8,8 +10,8 @@ export function ReportPage({
   selectedId: string;
 }) {
   return (
-    <section className="card">
+    <Surface as="section">
       <ReportView report={data.report} />
-    </section>
+    </Surface>
   );
 }

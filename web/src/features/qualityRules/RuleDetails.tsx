@@ -1,5 +1,6 @@
 import { qualityIssuesPath, qualityResultsPath } from "../../api/qualityRules";
 import { ResourceState } from "../../components/ResourceState";
+import { Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date, timestamp } from "../../lib/format";
 import { useResource } from "../../lib/useResource";
@@ -33,7 +34,7 @@ export function RuleDetails({
     ordered.find((result) => result.rule_revision === view.rule.revision) ??
     view.latest_result;
   return (
-    <section className="card dq-details" aria-label={view.rule.name}>
+    <Surface as="section" className="dq-details" aria-label={view.rule.name}>
       <header>
         <div>
           <h2>{view.rule.name}</h2>
@@ -150,6 +151,6 @@ export function RuleDetails({
       {issues.value && (
         <RuleIssues issues={issues.value} onPrepared={onPrepared} />
       )}
-    </section>
+    </Surface>
   );
 }

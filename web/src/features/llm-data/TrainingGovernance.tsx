@@ -7,6 +7,7 @@ import {
 } from "../../api/llmData";
 import { lineageHref } from "../../app/lineageNavigation";
 import { ResourceState } from "../../components/ResourceState";
+import { Button, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
@@ -116,7 +117,7 @@ export function TrainingGovernance({
   }
   return (
     <details
-      className="card llm-data-governance"
+      className="card ui-surface llm-data-governance"
       open={open}
       onToggle={(event) => {
         setOpen(event.currentTarget.open);
@@ -182,7 +183,7 @@ export function TrainingGovernance({
             {!!runs.length && (
               <label className="llm-data-history">
                 {t("llmDataHistory")}
-                <select
+                <Select
                   value={run?.id ?? ""}
                   onBlur={(event) => {
                     setSelectedRunId(event.target.value);
@@ -197,7 +198,7 @@ export function TrainingGovernance({
                       {date(item.created_at, locale)} · {item.id.slice(0, 8)}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
             )}
             {!history.loading && !run && <p>{t("llmDataNoRuns")}</p>}
@@ -233,16 +234,14 @@ export function TrainingGovernance({
                       })}
                     </p>
                   ) : (
-                    <button
-                      type="button"
-                      className="button"
+                    <Button
                       disabled={busy}
                       onClick={() => {
                         void clean();
                       }}
                     >
                       {t("llmDataReviewClean")}
-                    </button>
+                    </Button>
                   )}
                 </section>
               </>

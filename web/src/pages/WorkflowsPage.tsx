@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import { Button, PageHeader } from "../components/ui";
 import {
   workflowDescription,
   workflowName,
@@ -47,16 +48,15 @@ export function WorkflowsPage({
   }
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <h1>{t("workflowsNav")}</h1>
-          <p className="muted">{t("workflowIntro")}</p>
-        </div>
-        <button className="button" disabled={session.busy} onClick={refresh}>
-          <Icon name="refresh" />
-          {t("refresh")}
-        </button>
-      </div>
+      <PageHeader
+        title={t("workflowsNav")}
+        subtitle={t("workflowIntro")}
+        actions={
+          <Button icon="refresh" disabled={session.busy} onClick={refresh}>
+            {t("refresh")}
+          </Button>
+        }
+      />
       <ResourceState
         loading={definitions.loading}
         error={definitions.error || history.error}
@@ -71,7 +71,7 @@ export function WorkflowsPage({
           {definitions.value?.map((item) => (
             <button
               key={item.id}
-              className={`card workflow-card ${showForm && id === item.id ? "selected" : ""}`}
+              className={`card ui-surface workflow-card ${showForm && id === item.id ? "selected" : ""}`}
               disabled={session.busy}
               onClick={() => {
                 setSelectedId(item.id);

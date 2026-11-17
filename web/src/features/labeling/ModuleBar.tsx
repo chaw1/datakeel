@@ -1,3 +1,4 @@
+import { Badge, Button, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { agentHref } from "../agent/agentLink";
 
@@ -29,7 +30,8 @@ export function ModuleBar({
       <h1 className="sr-only">{t("wbNav")}</h1>
       <label>
         {t("wbProject")}
-        <select
+        <Select
+          size="sm"
           value={projectId}
           onBlur={() => undefined}
           onChange={(event) => {
@@ -41,13 +43,14 @@ export function ModuleBar({
               {item.name}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       {project && (
         <>
           <label>
             {t("wbPackage")}
-            <select
+            <Select
+              size="sm"
               value={packageId}
               onBlur={() => undefined}
               onChange={(event) => {
@@ -60,7 +63,7 @@ export function ModuleBar({
                   {item.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <div className="wb-progress">
             <span>
@@ -90,7 +93,7 @@ export function ModuleBar({
             {t("wbActor", { actor: index.actor })}
           </span>
           <a
-            className="button subtle"
+            className="button ui-button ui-button-ghost"
             href={agentHref({
               project_id: project.project.id,
               dataset_id: project.project.dataset_id,
@@ -107,15 +110,13 @@ export function ModuleBar({
             })}
           >
             {t("wbAskAgent")}{" "}
-            <span className="badge" title={t("intentBetaHint")}>
-              {t("intentBeta")}
-            </span>
+            <Badge title={t("intentBetaHint")}>{t("intentBeta")}</Badge>
           </a>
         </>
       )}
-      <button type="button" onClick={workspace.changed}>
+      <Button size="sm" onClick={workspace.changed}>
         {t("wbRefetch")}
-      </button>
+      </Button>
     </div>
   );
 }

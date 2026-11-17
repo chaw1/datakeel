@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 
 export type BadgeTone =
   "neutral" | "accent" | "ok" | "warn" | "danger" | "stamp";
@@ -12,11 +12,10 @@ const legacyToneClass: Record<BadgeTone, string> = {
   stamp: "red",
 };
 
-export interface BadgeProps {
+export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   tone?: BadgeTone;
   dot?: boolean;
   mono?: boolean;
-  className?: string;
   children: ReactNode;
 }
 
@@ -26,6 +25,7 @@ export function Badge({
   mono = false,
   className = "",
   children,
+  ...props
 }: BadgeProps) {
   const classes = [
     "badge",
@@ -38,7 +38,7 @@ export function Badge({
     .filter(Boolean)
     .join(" ");
   return (
-    <span className={classes}>
+    <span className={classes} {...props}>
       {dot && <span className="status-dot" />}
       {children}
     </span>

@@ -99,7 +99,7 @@ it("renders Badge tones and optional status dot", () => {
       <Badge tone="ok" dot>
         {"Ready"}
       </Badge>
-      <Badge tone="stamp" mono>
+      <Badge tone="stamp" mono title={"Hint"}>
         {"Irreversible"}
       </Badge>
     </>,
@@ -110,6 +110,7 @@ it("renders Badge tones and optional status dot", () => {
     "ui-badge-ok",
   );
   expect(container.querySelector(".status-dot")).not.toBeNull();
+  expect(screen.getByText("Irreversible")).toHaveAttribute("title", "Hint");
   expect(screen.getByText("Irreversible")).toHaveClass(
     "badge",
     "red",

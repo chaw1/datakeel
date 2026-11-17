@@ -1,7 +1,9 @@
+import { Badge, Surface } from "../components/ui";
 import { VersionWorkspace } from "../features/versions/VersionWorkspace";
 import { useI18n } from "../i18n/useI18n";
 
 import type { DatasetData } from "../api/types";
+
 export function VersionsPage({
   data,
   selectedId,
@@ -11,7 +13,7 @@ export function VersionsPage({
 }) {
   const { t } = useI18n();
   return (
-    <section className="card">
+    <Surface as="section">
       <div className="card-heading">
         <div>
           <h2>{t("versionHistory")}</h2>
@@ -21,12 +23,12 @@ export function VersionsPage({
             )}{" "}
           </p>
         </div>
-        <span className="badge gray">
+        <Badge>
           {data.versions.length}{" "}
           {t("snapshots", { count: data.versions.length })}{" "}
-        </span>
+        </Badge>
       </div>
       <VersionWorkspace versions={data.versions} datasetId={selectedId} />
-    </section>
+    </Surface>
   );
 }

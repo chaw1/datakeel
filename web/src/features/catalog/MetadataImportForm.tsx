@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { importAirflow, importDbt } from "../../api/metadataImports";
+import { Button, Input, Select, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import type {
@@ -104,7 +105,7 @@ export function MetadataImportForm({ onImported }: { onImported: () => void }) {
     }
   }
   return (
-    <section className="card catalog-detail">
+    <Surface as="section" className="catalog-detail">
       <h2>{t("metadataImports")}</h2>
       <p>{t("metadataImportHelp")}</p>
       <form
@@ -116,7 +117,7 @@ export function MetadataImportForm({ onImported }: { onImported: () => void }) {
         <div className="catalog-form-grid">
           <label>
             {t("metadataSystem")}
-            <select
+            <Select
               value={system}
               onBlur={(event) => {
                 setSystem(event.target.value);
@@ -131,11 +132,11 @@ export function MetadataImportForm({ onImported }: { onImported: () => void }) {
             >
               <option value="dbt">{t("metadataDbt")}</option>
               <option value="airflow">{t("metadataAirflow")}</option>
-            </select>
+            </Select>
           </label>
           <label>
             {t("metadataSourceId")}
-            <input
+            <Input
               value={source}
               required
               pattern={".*\\S.*"}
@@ -147,7 +148,7 @@ export function MetadataImportForm({ onImported }: { onImported: () => void }) {
           </label>
           <label>
             {t("metadataSourceName")}
-            <input
+            <Input
               value={name}
               disabled={pending}
               onChange={(event) => {
@@ -172,9 +173,9 @@ export function MetadataImportForm({ onImported }: { onImported: () => void }) {
             </label>
           ))}
         </div>
-        <button className="button primary" disabled={pending} type="submit">
+        <Button variant="primary" disabled={pending} type="submit">
           {t(pending ? "metadataImportPending" : "metadataImportSubmit")}
-        </button>
+        </Button>
       </form>
       {error && <p role="alert">{error}</p>}
       {report && (
@@ -206,6 +207,6 @@ export function MetadataImportForm({ onImported }: { onImported: () => void }) {
           )}
         </div>
       )}
-    </section>
+    </Surface>
   );
 }

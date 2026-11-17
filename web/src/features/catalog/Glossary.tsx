@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { catalogPath } from "../../api/catalog";
 import { ResourceState } from "../../components/ResourceState";
+import { Button, Input, Surface } from "../../components/ui";
 import { localizedObjectName } from "../../i18n/graphCatalogNames";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
@@ -25,10 +26,10 @@ export function Glossary({
   );
   const page = resource.value;
   return (
-    <section className="card catalog-detail">
+    <Surface as="section" className="catalog-detail">
       <label className="catalog-glossary-search">
         {t("catSearch", { kind: t("catTerms") })}
-        <input
+        <Input
           type="search"
           value={query}
           onChange={(event) => {
@@ -75,8 +76,8 @@ export function Glossary({
                     </td>
                     <td>{synonyms(term).join(", ") || t("catNotSet")}</td>
                     <td>
-                      <button
-                        className="text-button"
+                      <Button
+                        variant="link"
                         onClick={() => {
                           onOpenReceipt({
                             assetId: term.asset_ref.asset_id,
@@ -85,7 +86,7 @@ export function Glossary({
                         }}
                       >
                         {termTarget(term) || t("catNotSet")}
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -101,27 +102,27 @@ export function Glossary({
                 total: page.total,
               })}
             </p>
-            <button
-              className="button subtle"
+            <Button
+              variant="ghost"
               disabled={offset === 0}
               onClick={() => {
                 setOffset(Math.max(0, offset - 20));
               }}
             >
               {t("previous")}
-            </button>
-            <button
-              className="button subtle"
+            </Button>
+            <Button
+              variant="ghost"
               disabled={offset + page.items.length >= page.total}
               onClick={() => {
                 setOffset(offset + 20);
               }}
             >
               {t("next")}
-            </button>
+            </Button>
           </div>
         </>
       )}
-    </section>
+    </Surface>
   );
 }

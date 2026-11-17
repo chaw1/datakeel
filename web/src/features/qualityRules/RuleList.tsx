@@ -1,3 +1,4 @@
+import { Button, EmptyState, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import { resultStatuses, ruleKinds, ruleTarget } from "./ruleLabels";
@@ -15,7 +16,7 @@ export function RuleList({
 }) {
   const { t } = useI18n();
   return (
-    <div className="card table-scroll dq-rule-list">
+    <Surface className="table-scroll dq-rule-list">
       <table>
         <thead>
           <tr>
@@ -33,15 +34,15 @@ export function RuleList({
               className={selectedId === view.rule.id ? "dq-selected" : ""}
             >
               <td>
-                <button
-                  className="text-button"
+                <Button
+                  variant="link"
                   aria-pressed={selectedId === view.rule.id}
                   onClick={() => {
                     onSelect(view.rule.id);
                   }}
                 >
                   {view.rule.name}
-                </button>
+                </Button>
                 <span className="dq-rule-meta">
                   {t("dqRevision", { revision: view.rule.revision })} ·{" "}
                   {t(view.rule.severity === "warn" ? "dqWarn" : "dqError")}
@@ -63,7 +64,7 @@ export function RuleList({
           ))}
         </tbody>
       </table>
-      {!views.length && <p className="empty-state">{t("dqEmpty")}</p>}
-    </div>
+      {!views.length && <EmptyState title={t("dqEmpty")} />}
+    </Surface>
   );
 }

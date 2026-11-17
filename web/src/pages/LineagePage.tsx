@@ -1,10 +1,12 @@
 import { ResourceState } from "../components/ResourceState";
+import { Badge, Surface } from "../components/ui";
 import Lineage from "../features/lineage/Lineage";
 import { useI18n } from "../i18n/useI18n";
 import { useResource } from "../lib/useResource";
 
 import type { DatasetData, Graph } from "../api/types";
 import type { LineageTarget } from "../app/navigation";
+
 export function LineagePage({
   data,
   focus,
@@ -22,7 +24,7 @@ export function LineagePage({
         : null;
   const resource = useResource<Graph>(path, data.graph);
   return (
-    <section className="card">
+    <Surface as="section">
       <div className="card-heading">
         <div>
           <h2>
@@ -36,7 +38,7 @@ export function LineagePage({
             )}{" "}
           </p>
         </div>
-        <span className="badge green">{t("appendOnlyHistory")}</span>
+        <Badge tone="ok">{t("appendOnlyHistory")}</Badge>
       </div>
       <ResourceState {...resource} onRetry={resource.reload} />
       {resource.value && (
@@ -46,6 +48,6 @@ export function LineagePage({
           focus={focus}
         />
       )}
-    </section>
+    </Surface>
   );
 }

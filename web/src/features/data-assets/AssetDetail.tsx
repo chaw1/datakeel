@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { assetPath } from "../../api/dataAssets";
 import { ResourceState } from "../../components/ResourceState";
+import { Button, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 import { objectHref, isObjectKind } from "../object/navigation";
@@ -45,21 +46,20 @@ export function AssetDetail({
       <ResourceState {...card} onRetry={card.reload} />
       {card.value && asset && (
         <>
-          <div className="card asset-detail">
+          <Surface className="asset-detail">
             <AssetSummary card={card.value} expanded />
-          </div>
+          </Surface>
           <div className="asset-controls">
-            <button
-              className="button"
+            <Button
               onClick={() => {
                 setEditing(!editing);
               }}
             >
               {t(editing ? "assetCancelEdit" : "assetEdit")}
-            </button>
+            </Button>
             {target && isObjectKind(target.asset_type) && (
               <a
-                className="button"
+                className="button ui-button"
                 href={objectHref({
                   kind: target.asset_type,
                   id: target.asset_id,
@@ -70,7 +70,7 @@ export function AssetDetail({
                 {t("assetOpenTarget")}
               </a>
             )}
-            <a className="button" href="#/ask">
+            <a className="button ui-button" href="#/ask">
               {t("assetAsk")}
             </a>
           </div>

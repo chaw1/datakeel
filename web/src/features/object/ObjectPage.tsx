@@ -123,7 +123,7 @@ export function ObjectPage({
             <TableQualityRules table={data.catalog} />
           )}
           {data.catalog && <MetadataEvidence item={data.catalog} />}
-          <nav className="tabs object-tabs" aria-label={t("objTitle")}>
+          <nav className="tabs ui-tabs object-tabs" aria-label={t("objTitle")}>
             {tabs.map((value) => (
               <a
                 className={tab === value ? "active" : ""}

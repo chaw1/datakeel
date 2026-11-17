@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 
+import { Button, EmptyState } from "../components/ui";
 import { mutateProduction, actionDetails } from "../features/labeling/actions";
 import { FinalizationPanel } from "../features/labeling/FinalizationPanel";
 import { allowed } from "../features/labeling/model";
@@ -75,7 +76,7 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
       {!index ? (
         <p role="status">{t("wbLoading")}</p>
       ) : !index.projects.length ? (
-        <p className="empty-state">{t("wbNoProjects")}</p>
+        <EmptyState title={t("wbNoProjects")} />
       ) : (
         <>
           <ModuleBar workspace={workspace} />
@@ -137,16 +138,15 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                           ? "production:review"
                           : "production:annotate",
                       ) && (
-                        <button
-                          type="button"
-                          className="button primary"
+                        <Button
+                          variant="primary"
                           disabled={claiming}
                           onClick={() => {
                             void claim();
                           }}
                         >
                           {t(view === "reviews" ? "wbClaimReview" : "wbClaim")}
-                        </button>
+                        </Button>
                       )}
                   </div>
                   <TaskSearch
@@ -162,25 +162,25 @@ export function LabelingPage({ params }: { params: URLSearchParams }) {
                     }}
                   />
                   <div className="wb-pagination">
-                    <button
-                      type="button"
+                    <Button
+                      size="sm"
                       disabled={workspace.page === 0}
                       onClick={() => {
                         void workspace.paginate(-1);
                       }}
                     >
                       {t("wbPageBack")}
-                    </button>
+                    </Button>
                     <span>{t("wbPage", { page: workspace.page + 1 })}</span>
-                    <button
-                      type="button"
+                    <Button
+                      size="sm"
                       disabled={!project.next_cursor}
                       onClick={() => {
                         void workspace.paginate(1);
                       }}
                     >
                       {t("wbLoadMore")}
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}

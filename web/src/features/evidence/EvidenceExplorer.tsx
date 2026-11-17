@@ -4,6 +4,7 @@ import { executePlan } from "../../api/actions";
 import { post } from "../../api/client";
 import { getEvidence } from "../../api/evidence";
 import { ResourceState } from "../../components/ResourceState";
+import { Button, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { ActionReceipt } from "../actions/ActionReceipt";
@@ -137,7 +138,7 @@ export function EvidenceExplorer({
         }}
       />
       <EvidenceFilters value={filters} onChange={filter} />
-      <section className="card evidence-results-card">
+      <Surface as="section" className="evidence-results-card">
         <div className="evidence-results-heading">
           <div>
             <p role="status">
@@ -146,15 +147,14 @@ export function EvidenceExplorer({
                 : t("evIntro")}
             </p>
           </div>
-          <button
-            className="button"
+          <Button
             onClick={() => {
               setSelected([]);
               setRevision((value) => value + 1);
             }}
           >
             {t("refreshDataset")}
-          </button>
+          </Button>
         </div>
         <div className="evidence-selection-bar">
           <strong>{t("evSelected", { count: selected.length })}</strong>
@@ -166,8 +166,8 @@ export function EvidenceExplorer({
                 ["delete_files", "evDelete"],
               ] as const
             ).map(([action, label]) => (
-              <button
-                className={`button ${action === "delete_files" ? "danger" : ""}`}
+              <Button
+                variant={action === "delete_files" ? "danger" : "secondary"}
                 key={action}
                 disabled={!selection || busy || resource.loading}
                 onKeyDown={(event) => {
@@ -178,7 +178,7 @@ export function EvidenceExplorer({
                 }}
               >
                 {t(busy ? "evBusy" : label)}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -233,8 +233,7 @@ export function EvidenceExplorer({
               />
             )}
             <div className="evidence-pagination">
-              <button
-                className="button"
+              <Button
                 disabled={cursors.length < 2}
                 onClick={() => {
                   setCursors((value) => value.slice(0, -1));
@@ -242,10 +241,9 @@ export function EvidenceExplorer({
                 }}
               >
                 {t("evPrevious")}
-              </button>
+              </Button>
               <span>{t("evPage", { page: cursors.length })}</span>
-              <button
-                className="button"
+              <Button
                 disabled={!result.next_cursor}
                 onClick={() => {
                   setCursors((value) => [...value, result.next_cursor]);
@@ -253,11 +251,11 @@ export function EvidenceExplorer({
                 }}
               >
                 {t("evNext")}
-              </button>
+              </Button>
             </div>
           </>
         )}
-      </section>
+      </Surface>
       {run && <ActionReceipt run={run} onOpenReceipt={onOpenReceipt} />}
       {plan && (
         <div className="evidence-pending-plan">

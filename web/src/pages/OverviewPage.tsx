@@ -1,4 +1,5 @@
 import { Icon } from "../components/Icon";
+import { Badge, Button, Surface } from "../components/ui";
 import Lineage from "../features/lineage/Lineage";
 import { qualityGrade } from "../features/quality/labels";
 import { QualityScore } from "../features/quality/QualityScore";
@@ -7,6 +8,7 @@ import { useI18n } from "../i18n/useI18n";
 
 import type { DatasetData } from "../api/types";
 import type { Page } from "../app/navigation";
+
 export function OverviewPage({
   data,
   files,
@@ -71,65 +73,65 @@ export function OverviewPage({
         </div>
       </div>
       <div className="overview-columns">
-        <section className="card lineage-card">
+        <Surface as="section" className="lineage-card">
           <div className="card-heading">
             <div>
               <h2>{t("aTraceableJourney")}</h2>
               <p>{t("fromSourceDataToEveryTransformation")}</p>
             </div>
-            <button
-              className="text-button"
+            <Button
+              variant="link"
               onClick={() => {
                 navigate("lineage");
               }}
             >
               {t("exploreLineage")} <Icon name="arrow" size={15} />
-            </button>
+            </Button>
           </div>
           <Lineage graph={data.graph} compact />
-        </section>
-        <section className="card quality-preview">
+        </Surface>
+        <Surface as="section" className="quality-preview">
           <div className="card-heading">
             <h2>{t("qualityAtAGlance")}</h2>
             <Icon name="quality" />
           </div>
           <QualityScore quality={data.quality} />
-          <span className="badge green">
+          <Badge tone="ok">
             {qualityGrade(data.quality?.grade, t, "awaitingAnalysis")}
-          </span>
+          </Badge>
           <p>
             {data.quality?.issues.length ?? 0}{" "}
             {t("findingsAcrossFiveDimensions", {
               count: data.quality?.issues.length ?? 0,
             })}{" "}
           </p>
-          <button
-            className="text-button"
+          <Button
+            variant="link"
             onClick={() => {
               navigate("quality");
             }}
           >
             {t("seeQualityDetails")} <Icon name="arrow" size={15} />
-          </button>
-        </section>
+          </Button>
+        </Surface>
       </div>
-      <section className="card recent-runs">
+      <Surface as="section" className="recent-runs">
         <div className="card-heading">
           <div>
             <h2>{t("recentActivity")}</h2>
             <p>{t("pipelineProgressUpdatedAsItHappens")}</p>
           </div>
-          <button
-            className="text-button"
+          <Button
+            variant="link"
             onClick={() => {
               navigate("tasks");
             }}
           >
             {t("allRuns")} <Icon name="arrow" size={15} />
-          </button>
+          </Button>
         </div>
         <Tasks tasks={data.tasks} compact />
-      </section>
+      </Surface>
       <button
         className="report-callout"
         onClick={() => {
@@ -147,7 +149,7 @@ export function OverviewPage({
             )}{" "}
           </p>
         </div>
-        <span className="button">
+        <span className="button ui-button">
           {t("readReport")} <Icon name="arrow" size={16} />
         </span>
       </button>

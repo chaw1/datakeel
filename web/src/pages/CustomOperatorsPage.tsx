@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import { Button, PageHeader } from "../components/ui";
 import { ActionReceipt } from "../features/actions/ActionReceipt";
 import { PlanCard } from "../features/actions/PlanCard";
 import { CustomCodeApproval } from "../features/custom-operators/CustomCodeApproval";
@@ -69,16 +69,15 @@ export function CustomOperatorsPage({
   }
   return (
     <div className="custom-operators-page">
-      <div className="page-heading">
-        <div>
-          <h1>{t("customOperatorsNav")}</h1>
-          <p>{t("customOperatorsIntro")}</p>
-        </div>
-        <button className="button" onClick={reload}>
-          <Icon name="refresh" />
-          {t("refresh")}
-        </button>
-      </div>
+      <PageHeader
+        title={t("customOperatorsNav")}
+        subtitle={t("customOperatorsIntro")}
+        actions={
+          <Button icon="refresh" onClick={reload}>
+            {t("refresh")}
+          </Button>
+        }
+      />
       <ResourceState {...configuration} onRetry={configuration.reload} />
       {configuration.value && (
         <p className="muted">
@@ -134,15 +133,14 @@ export function CustomOperatorsPage({
                     </a>
                   )}
                   {item.status === "APPROVED" && (
-                    <button
-                      className="text-button"
-                      type="button"
+                    <Button
+                      variant="link"
                       onClick={() => {
                         setPlan(item);
                       }}
                     >
                       {t("customOperatorOpenApproval")}
-                    </button>
+                    </Button>
                   )}
                   <details>
                     <summary>{t("customOperatorReview")}</summary>

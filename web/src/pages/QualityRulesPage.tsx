@@ -6,8 +6,14 @@ import {
   qualityRulesPath,
 } from "../api/qualityRules";
 import { lineageHref } from "../app/lineageNavigation";
-import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import {
+  Button,
+  EmptyState,
+  Input,
+  PageHeader,
+  Surface,
+} from "../components/ui";
 import { PlanCard } from "../features/actions/PlanCard";
 import { RuleDetails } from "../features/qualityRules/RuleDetails";
 import { RuleEditor } from "../features/qualityRules/RuleEditor";
@@ -81,31 +87,30 @@ export function QualityRulesPage({ params }: { params?: URLSearchParams }) {
   }
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <h1>{t("dqNav")}</h1>
-          <p>{t("dqDescription")}</p>
-        </div>
-        <div className="dq-controls">
-          <button className="button" onClick={refresh}>
-            <Icon name="refresh" />
-            {t("refresh")}
-          </button>
-          <button
-            className="button primary"
-            onClick={() => {
-              setEditor("create");
-              setPlan(null);
-            }}
-          >
-            {t("dqNew")}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title={t("dqNav")}
+        subtitle={t("dqDescription")}
+        actions={
+          <div className="dq-controls">
+            <Button icon="refresh" onClick={refresh}>
+              {t("refresh")}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setEditor("create");
+                setPlan(null);
+              }}
+            >
+              {t("dqNew")}
+            </Button>
+          </div>
+        }
+      />
       <div className="dq-filter">
         <label>
           {t("dqFilter")}
-          <input
+          <Input
             type="search"
             placeholder={t("dqFilterHint")}
             value={search}
@@ -160,46 +165,45 @@ export function QualityRulesPage({ params }: { params?: URLSearchParams }) {
                 refresh();
             }}
           />
-          <button
-            className="button subtle"
+          <Button
+            variant="ghost"
             onClick={() => {
               setPlan(null);
             }}
           >
             {t("dqCancel")}
-          </button>
+          </Button>
         </div>
       )}
       {selected && (
         <>
           <div className="dq-controls dq-selected-actions">
-            <button
-              className="button"
+            <Button
               disabled={busy}
               onClick={() => {
                 void prepare("run");
               }}
             >
               {t("dqRun")}
-            </button>
-            <button
-              className="button subtle"
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => {
                 setEditor("edit");
                 setPlan(null);
               }}
             >
               {t("dqEdit")}
-            </button>
-            <button
-              className="button subtle"
+            </Button>
+            <Button
+              variant="ghost"
               disabled={busy}
               onClick={() => {
                 void prepare("delete");
               }}
             >
               {t("dqDelete")}
-            </button>
+            </Button>
           </div>
           <RuleDetails
             key={`${selected.rule.id}:${String(revision)}`}
@@ -210,8 +214,8 @@ export function QualityRulesPage({ params }: { params?: URLSearchParams }) {
       )}
       {!selected && !editor && (
         <>
-          <p className="empty-state">{t("dqChoose")}</p>
-          <section className="card dq-details">
+          <EmptyState title={t("dqChoose")} />
+          <Surface as="section" className="dq-details">
             <ResourceState
               loading={issues.loading && !issues.value}
               error={issues.error}
@@ -220,7 +224,7 @@ export function QualityRulesPage({ params }: { params?: URLSearchParams }) {
             {issues.value && (
               <RuleIssues issues={issues.value} onPrepared={prepared} />
             )}
-          </section>
+          </Surface>
         </>
       )}
     </>

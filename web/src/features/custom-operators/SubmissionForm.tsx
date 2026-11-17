@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { submitCustomOperator } from "../../api/customOperators";
+import { Button, Input, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
@@ -36,7 +37,7 @@ export function SubmissionForm({
   }
   return (
     <form
-      className="card custom-submission-form"
+      className="card ui-surface custom-submission-form"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
@@ -47,7 +48,7 @@ export function SubmissionForm({
       <div className="custom-form-row">
         <label htmlFor="custom-name">
           {t("customOperatorName")}
-          <input
+          <Input
             id="custom-name"
             required
             maxLength={64}
@@ -61,7 +62,7 @@ export function SubmissionForm({
         </label>
         <label htmlFor="custom-modality">
           {t("customOperatorModality")}
-          <select
+          <Select
             id="custom-modality"
             value={modality}
             disabled={busy}
@@ -79,7 +80,7 @@ export function SubmissionForm({
             <option value="any">{t("customOperatorAny")}</option>
             <option value="text">{t("customOperatorText")}</option>
             <option value="image">{t("customOperatorImage")}</option>
-          </select>
+          </Select>
         </label>
       </div>
       <label htmlFor="custom-code">{t("customOperatorCode")}</label>
@@ -104,8 +105,8 @@ export function SubmissionForm({
           {error}
         </p>
       )}
-      <button
-        className="button primary"
+      <Button
+        variant="primary"
         type="submit"
         disabled={busy || !name.trim() || !code.trim()}
         onKeyDown={(event) => {
@@ -113,7 +114,7 @@ export function SubmissionForm({
         }}
       >
         {t(busy ? "planWorking" : "customOperatorSubmit")}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -1,3 +1,4 @@
+import { Button, Input, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import type { DatasheetDocument } from "../../api/datasheets";
@@ -40,7 +41,7 @@ export function DatasheetControls({
       <div className="datasheet-controls">
         <label>
           {t("datasheetVersion")}
-          <select
+          <Select
             aria-label={t("datasheetVersion")}
             value={versionId}
             onBlur={(event) => {
@@ -55,11 +56,11 @@ export function DatasheetControls({
                 {t("version")} {versions.length - index} · {version.id}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           {t("datasheetLanguage")}
-          <select
+          <Select
             aria-label={t("datasheetLanguage")}
             value={language}
             onBlur={(event) => {
@@ -71,11 +72,11 @@ export function DatasheetControls({
           >
             <option value="en">{t("datasheetEnglish")}</option>
             <option value="zh">{t("datasheetChinese")}</option>
-          </select>
+          </Select>
         </label>
         <label>
           {t("datasheetMode")}
-          <select
+          <Select
             aria-label={t("datasheetMode")}
             value={mode}
             onBlur={(event) => {
@@ -87,13 +88,13 @@ export function DatasheetControls({
           >
             <option value="template">{t("datasheetTemplate")}</option>
             <option value="model">{t("datasheetModel")}</option>
-          </select>
+          </Select>
         </label>
         {mode === "model" && (
           <>
             <label>
               {t("provider")}
-              <select
+              <Select
                 aria-label={t("provider")}
                 value={provider}
                 onBlur={(event) => {
@@ -118,11 +119,11 @@ export function DatasheetControls({
                 <option value="fake">{t("datasheetFake")}</option>
                 <option value="openai">{t("datasheetOpenai")}</option>
                 <option value="anthropic">{t("datasheetAnthropic")}</option>
-              </select>
+              </Select>
             </label>
             <label>
               {t("datasheetModelName")}
-              <input
+              <Input
                 aria-label={t("datasheetModelName")}
                 value={model}
                 onChange={(event) => {
@@ -133,13 +134,13 @@ export function DatasheetControls({
             </label>
           </>
         )}
-        <button
-          className="button primary"
+        <Button
+          variant="primary"
           disabled={busy || !versionId || (mode === "model" && !model.trim())}
           onClick={onGenerate}
         >
           {t(existing ? "datasheetRegenerate" : "datasheetGenerate")}
-        </button>
+        </Button>
       </div>
       {mode === "model" && <p className="muted">{t("datasheetModelHint")}</p>}
     </>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
+import { Button, PageHeader, Select } from "../components/ui";
 import { MemoryForm } from "../features/memory/MemoryForm";
 import { MemoryList } from "../features/memory/MemoryList";
 import { useI18n } from "../i18n/useI18n";
@@ -18,24 +18,21 @@ export function MemoryPage({ datasets }: { datasets: Dataset[] }) {
   );
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <h1>
-            {t("pageCount", { name: t("memoryNav"), count: entries.length })}
-          </h1>
-          <p>{t("memoryDescription")}</p>
-        </div>
-        <button className="button" onClick={memories.reload}>
-          <Icon name="refresh" />
-          {t("refresh")}
-        </button>
-      </div>
+      <PageHeader
+        title={t("pageCount", { name: t("memoryNav"), count: entries.length })}
+        subtitle={t("memoryDescription")}
+        actions={
+          <Button icon="refresh" onClick={memories.reload}>
+            {t("refresh")}
+          </Button>
+        }
+      />
       <div className="memory-layout">
         <MemoryForm datasets={datasets} onSaved={memories.reload} />
         <section aria-label={t("memoryNav")}>
           <div className="memory-filter">
             <label htmlFor="memory-filter">{t("memoryFilter")}</label>
-            <select
+            <Select
               id="memory-filter"
               onBlur={(event) => {
                 setScope(event.target.value);
@@ -52,7 +49,7 @@ export function MemoryPage({ datasets }: { datasets: Dataset[] }) {
                   {dataset.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <ResourceState {...memories} onRetry={memories.reload} />
           {memories.value && (

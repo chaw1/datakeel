@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { prepareMapping } from "../../api/standards";
 import { ResourceState } from "../../components/ResourceState";
+import { Badge, Button, Input, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 import { useResource } from "../../lib/useResource";
@@ -57,11 +58,11 @@ export function StandardsMappings({
     }
   }
   return (
-    <section className="card standards-section">
+    <Surface as="section" className="standards-section">
       <p>{t("stdMappingIntro")}</p>
       <label>
         {t("stdSearchColumns")}
-        <input
+        <Input
           type="search"
           value={search}
           onChange={(event) => {
@@ -116,9 +117,9 @@ export function StandardsMappings({
                 </h3>
                 <p className="mono">{item.column_id}</p>
                 {confirmed && (
-                  <p className="badge green">
+                  <Badge tone="ok">
                     {t("stdMapped", { code: confirmed.standard_code })}
-                  </p>
+                  </Badge>
                 )}
                 {item.candidates.map((candidate) => (
                   <div
@@ -130,15 +131,15 @@ export function StandardsMappings({
                       {percentage(candidate.score)}
                     </strong>
                     {candidate.low_confidence && (
-                      <p className="badge">{t("stdLowConfidence")}</p>
+                      <Badge>{t("stdLowConfidence")}</Badge>
                     )}
                     <ul aria-label={t("stdReasons")}>
                       {candidate.reasons.map((reason) => (
                         <li key={reason}>{reason}</li>
                       ))}
                     </ul>
-                    <button
-                      className="button subtle"
+                    <Button
+                      variant="ghost"
                       disabled={
                         busy ||
                         candidate.standard_code === confirmed?.standard_code
@@ -152,7 +153,7 @@ export function StandardsMappings({
                       }}
                     >
                       {t("stdConfirmMapping")}
-                    </button>
+                    </Button>
                   </div>
                 ))}
                 {!item.candidates.length && (
@@ -164,6 +165,6 @@ export function StandardsMappings({
           {!rows.length && <li>{t("stdNoColumns")}</li>}
         </ul>
       )}
-    </section>
+    </Surface>
   );
 }

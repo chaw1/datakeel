@@ -2,6 +2,13 @@ import { useState } from "react";
 
 import { standardsPath } from "../../api/standards";
 import { ResourceState } from "../../components/ResourceState";
+import {
+  Button,
+  EmptyState,
+  Input,
+  Select,
+  Surface,
+} from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 
@@ -40,11 +47,11 @@ export function StandardsBrowser({
   const standard = fields.value?.find((item) => item.code === selected);
   const codeList = codes.value?.find((item) => item.code === selected);
   return (
-    <div className="standards-section card">
+    <Surface className="standards-section">
       <div className="standards-toolbar">
         <label>
           {t("stdSearch")}
-          <input
+          <Input
             type="search"
             value={search}
             onChange={(event) => {
@@ -54,7 +61,7 @@ export function StandardsBrowser({
         </label>
         <label>
           {t("stdStatus")}
-          <select
+          <Select
             value={status}
             onBlur={(event) => {
               setStatus(event.target.value);
@@ -69,17 +76,17 @@ export function StandardsBrowser({
                 {t(label)}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
-      <button
-        className="button subtle"
+      <Button
+        variant="ghost"
         onClick={() => {
           setCreating(!creating);
         }}
       >
         {t(collection === "fields" ? "stdCreateField" : "stdCreateCodeList")}
-      </button>
+      </Button>
       {creating &&
         (collection === "fields" ? (
           <StandardEditor
@@ -157,10 +164,10 @@ export function StandardsBrowser({
               onOpenReceipt={onOpenReceipt}
             />
           ) : (
-            <p className="empty-state">{t("stdChoose")}</p>
+            <EmptyState title={t("stdChoose")} />
           )}
         </div>
       )}
-    </div>
+    </Surface>
   );
 }

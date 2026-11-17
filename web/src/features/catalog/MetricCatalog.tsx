@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { EmptyState } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 
 import { CatalogList } from "./CatalogList";
@@ -38,7 +39,7 @@ export function MetricCatalog({
           }}
         />
       ) : (
-        <div className="card empty-state">{t("catChooseMetric")}</div>
+        <EmptyState card title={t("catChooseMetric")} />
       )}
     </div>
   );

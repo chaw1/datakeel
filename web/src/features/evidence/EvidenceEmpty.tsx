@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useResource } from "../../lib/useResource";
 
@@ -71,19 +72,19 @@ export function EvidenceEmpty({
               <span>
                 {t(label)}: {String(filters[key])}
               </span>{" "}
-              <button
-                className="text-button"
+              <Button
+                variant="link"
                 onClick={() => {
                   onChange({ ...filters, [key]: initialFilters[key] });
                 }}
               >
                 {t("evRemoveFilter", { condition: t(label) })}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
       ) : kind === "data" ? (
-        <a className="button" href="#/datasets">
+        <a className="button ui-button" href="#/datasets">
           {t("evAddData")}
         </a>
       ) : (

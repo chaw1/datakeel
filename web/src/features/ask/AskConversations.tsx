@@ -5,6 +5,7 @@ import {
   listAskConversations,
   openAskConversation,
 } from "../../api/ask";
+import { Button } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
 
@@ -68,26 +69,22 @@ export function AskConversations({
   return (
     <section className="ask-conversations" aria-label={t("askConversations")}>
       <div className="ask-chart-controls">
-        <button
-          className="button"
-          type="button"
+        <Button
           disabled={busy || disabled}
           onClick={() => {
             if (!isComposing()) onNew();
           }}
         >
           {t("askNewConversation")}
-        </button>
-        <button
-          className="button"
-          type="button"
+        </Button>
+        <Button
           disabled={busy || disabled}
           onClick={() => {
             void perform(() => listAskConversations(actor), setItems);
           }}
         >
           {t("askConversations")}
-        </button>
+        </Button>
         {activeId && (
           <span className="ask-muted">
             {t("askConversationActive")}: <code>{activeId.slice(0, 8)}</code>
@@ -104,9 +101,7 @@ export function AskConversations({
                 {item.title || t("askNewConversation")} ·{" "}
                 {t("askConversationTurns", { count: item.turns.length })}
               </span>
-              <button
-                className="button"
-                type="button"
+              <Button
                 disabled={busy || disabled}
                 aria-label={`${t("askOpenConversation")}: ${item.title}`}
                 onClick={() => {
@@ -117,10 +112,8 @@ export function AskConversations({
                 }}
               >
                 {t("askOpenConversation")}
-              </button>
-              <button
-                className="button"
-                type="button"
+              </Button>
+              <Button
                 disabled={busy || disabled}
                 aria-label={`${t("askDeleteConversation")}: ${item.title}`}
                 onClick={() => {
@@ -138,7 +131,7 @@ export function AskConversations({
                 }}
               >
                 {t("askDeleteConversation")}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

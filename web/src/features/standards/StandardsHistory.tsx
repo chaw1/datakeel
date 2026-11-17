@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { post } from "../../api/client";
 import { ResourceState } from "../../components/ResourceState";
+import { Badge, Button, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
@@ -45,7 +46,7 @@ export function StandardsHistory({
     }
   }
   return (
-    <section className="card standards-section">
+    <Surface as="section" className="standards-section">
       <p>{t("stdHistoryIntro")}</p>
       <ResourceState
         loading={resource.loading}
@@ -88,10 +89,10 @@ export function StandardsHistory({
             </pre>
           </details>
           {item.revision === revisions.at(-1)?.revision ? (
-            <span className="badge green">{t("stdCurrentRevision")}</span>
+            <Badge tone="ok">{t("stdCurrentRevision")}</Badge>
           ) : (
-            <button
-              className="button subtle"
+            <Button
+              variant="ghost"
               disabled={busy}
               onKeyDown={(event) => {
                 if (composing(event.nativeEvent)) event.preventDefault();
@@ -101,11 +102,11 @@ export function StandardsHistory({
               }}
             >
               {t("stdRollback")}
-            </button>
+            </Button>
           )}
         </article>
       ))}
       {!resource.loading && !revisions.length && <p>{t("stdNoHistory")}</p>}
-    </section>
+    </Surface>
   );
 }

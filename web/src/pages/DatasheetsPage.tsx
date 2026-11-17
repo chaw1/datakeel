@@ -1,3 +1,4 @@
+import { Surface } from "../components/ui";
 import { Datasheets } from "../features/datasheets/Datasheets";
 
 import type { DatasetData } from "../api/types";
@@ -10,12 +11,12 @@ export function DatasheetsPage({
   selectedId: string;
 }) {
   return (
-    <section className="card">
+    <Surface as="section">
       <Datasheets
         key={selectedId}
         datasetId={selectedId}
         versions={data.versions}
       />
-    </section>
+    </Surface>
   );
 }
