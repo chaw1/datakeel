@@ -55,6 +55,7 @@ This index organizes Datakeel's user guides, contracts, deployment recipes and e
 | [Delegation and memory](AGENT.md) | Nested read-only subagents, untrusted tool envelopes, canary guards, cross-conversation memory and persistent budgets | EN / ZH |
 | [One sentence to plan (beta)](ONE_SENTENCE.md) | Natural-language multi-step action chain planning, missing-parameter follow-ups and confirmation before writes | [EN](ONE_SENTENCE.md) · [ZH](ONE_SENTENCE.zh.md) |
 | [Identity and HTTP access](IDENTITY_ACCESS.md) | Registered operators, role bindings, action scope resolution and zero-user local compatibility | [EN](IDENTITY_ACCESS.md) · [ZH](IDENTITY_ACCESS.zh.md) |
+| [Action declarations](ACTION_DECLARATIONS.md) | Closed declarative action contracts, `action_store` lifecycle stages, `k1.v1` IR and independent authorization data | ZH |
 
 ## 6. Architecture, deployment & operations
 

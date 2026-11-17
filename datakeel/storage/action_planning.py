@@ -7,9 +7,12 @@ from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
+from datakeel.action_store.lifecycle import prepared, stage
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.datasheet_parameters import GenerateDatasheetParams
+from datakeel.actions.declarations import ActionFrame, required
 from datakeel.actions.dq_parameters import QualityActionParams
+from datakeel.actions.file_declarations import active_declarations
 from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.label_draft_parameters import DraftLabelSetParams
@@ -111,8 +114,13 @@ def verify_target_state(session: Session, plan: ActionPlan) -> None:
         raise ConflictError(msg)
     params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
     verify_vector_params(session, plan, params)
-    current = current_manifest(session, plan, params)
-    if snapshot_digest(session, params, current) != plan.state_digest or current.truncated:
+    frame = ActionFrame(params=params, plan=plan)
+    if plan.action_type in active_declarations():
+        frame = stage(plan.action_type, "manifest", session, frame)
+        frame = stage(plan.action_type, "snapshot", session, frame)
+    current = frame.manifest or current_manifest(session, plan, params)
+    state = frame.state_digest or snapshot_digest(session, params, current)
+    if state != plan.state_digest or current.truncated:
         msg = "Action target state changed after preparation"
         raise ConflictError(msg)
 
@@ -175,17 +183,42 @@ def _external(action_type: str, parsed: object) -> bool:
     )
 
 
+def _prepare_frame(action: str, session: Session, parsed: BoundaryModel) -> ActionFrame:
+    if action in active_declarations():
+        return prepared(action, session, ActionFrame(params=parsed))
+    manifest = action_manifest(session, parsed)
+    if isinstance(parsed, VersionParams | PipelineParams | ExportParams | RunKGExtractionParams):
+        require_unique_file_sources(manifest)
+    kg = parsed.prepared if isinstance(parsed, RunKGExtractionParams) else None
+    external = _external(action, parsed)
+    return ActionFrame(
+        params=parsed,
+        manifest=manifest,
+        references=tuple(parameter_refs(parsed)),
+        state_digest=snapshot_digest(session, parsed, manifest),
+        external=external,
+        impact=ActionImpact(
+            object_count=_impact_count(session, parsed, manifest),
+            total_bytes=len(parsed.code.encode())
+            if isinstance(parsed, SubmitCustomOperatorParams)
+            else manifest.total_bytes,
+            external=external,
+            kg_estimate=kg.estimate if kg else None,
+            transcription_estimate=kg.transcription_estimate if kg else None,
+        ),
+    )
+
+
 def _new_plan(
     action_type: str, params: JsonDocument, context: ActionContext, session: Session
 ) -> ActionPlan:
     definition = action_definition(action_type)
     parsed = _prepare_params(session, action_type, params)
-    manifest = action_manifest(session, parsed)
-    if isinstance(parsed, VersionParams | PipelineParams | ExportParams | RunKGExtractionParams):
-        require_unique_file_sources(manifest)
-    kg = parsed.prepared if isinstance(parsed, RunKGExtractionParams) else None
-    external = _external(action_type, parsed)
+    frame = _prepare_frame(action_type, session, parsed)
+    manifest = required(frame.manifest)
+    external = frame.external
     created = utcnow()
+    targets = [item.asset_ref for item in manifest.objects] + list(frame.references)
     plan = ActionPlan.model_validate(
         {
             "id": new_id(),
@@ -194,31 +227,14 @@ def _new_plan(
             "canonical_params": parsed.model_dump(mode="json"),
             "manifest": manifest,
             "plan_digest": "",
-            "target_digest": digest(
-                [
-                    ref.model_dump(mode="json")
-                    for ref in [
-                        *[item.asset_ref for item in manifest.objects],
-                        *parameter_refs(parsed),
-                    ]
-                ]
-            ),
-            "state_digest": snapshot_digest(session, parsed, manifest),
+            "target_digest": digest([ref.model_dump(mode="json") for ref in targets]),
+            "state_digest": frame.state_digest,
             "created_at": created,
             "expires_at": created + timedelta(seconds=context.ttl_seconds),
-            "reversible": _reversible(session, parsed, declared=definition.reversible),
+            "reversible": frame.reversible
+            and _reversible(session, parsed, declared=definition.reversible),
             "external": external,
-            "impact": ActionImpact(
-                object_count=_impact_count(session, parsed, manifest),
-                total_bytes=(
-                    len(parsed.code.encode())
-                    if isinstance(parsed, SubmitCustomOperatorParams)
-                    else manifest.total_bytes
-                ),
-                external=external,
-                kg_estimate=kg.estimate if kg else None,
-                transcription_estimate=kg.transcription_estimate if kg else None,
-            ),
+            "impact": required(frame.impact),
             "actor": context.actor,
             "agent_id": context.agent_id,
             "session_id": context.session_id,

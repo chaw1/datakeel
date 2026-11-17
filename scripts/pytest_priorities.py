@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 # Exact, stable node IDs only. Sandbox scheduling belongs to its separate affinity group.
 PRIORITY_NODEIDS = (
+    "tests/actions/test_declarations.py::test_agent_quarantine_auto_execution_retains_attributed_receipt",
     (
         "tests/routing/test_commands.py::"
         "test_eval_command_when_offline_prints_accuracy_and_confusion"

@@ -1,7 +1,12 @@
+import { actionDeclarations } from "../../api/actionDeclarations";
+
 import type { ActionPlan } from "../../api/types";
 import type { MessageKey } from "../../i18n/en";
 
-export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
+export const approvalActions = {
+  ...Object.fromEntries<`action.${string}`>(
+    Object.keys(actionDeclarations).map((id) => [id, `action.${id}`]),
+  ),
   clean_training_data: "llmDataCleanAction",
   manage_users: "productionManageUsers",
   manage_skills: "productionManageSkills",
@@ -67,4 +72,4 @@ export const approvalActions: Record<ActionPlan["action_type"], MessageKey> = {
   delete_quality_rule: "dqDeleteAction",
   run_quality_rule: "dqRunAction",
   change_quality_issue: "dqIssueAction",
-};
+} satisfies Partial<Record<ActionPlan["action_type"], MessageKey>>;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { actionDeclarations } from "../../api/actionDeclarations";
 import { Icon } from "../../components/Icon";
 import { useI18n } from "../../i18n/useI18n";
 import { bytes, date } from "../../lib/format";
@@ -34,7 +35,13 @@ export function ApprovalSheet(props: ApprovalProps) {
   );
   const expired = seconds === 0;
   const [copy, setCopy] = useState<"ready" | "copied" | "error">("ready");
-  const action = t(approvalActions[plan.action_type]);
+  const titleKey = Object.entries(approvalActions).find(
+    ([name]) => name === plan.action_type,
+  )?.[1];
+  const action = titleKey
+    ? t(titleKey)
+    : (actionDeclarations[plan.action_type]?.phrases[locale][0] ??
+      plan.action_type);
   async function copyDigest() {
     try {
       await navigator.clipboard.writeText(plan.plan_digest);

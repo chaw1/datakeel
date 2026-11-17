@@ -1,0 +1,244 @@
+[
+  {
+    "id": "quarantine_files",
+    "auth_scope": "files:write",
+    "execution_target": "data_plane",
+    "reversible": true,
+    "inverse": "unquarantine_files",
+    "effect_text": "Set quarantine state",
+    "authorization": {
+      "human_only": false,
+      "automatic": true,
+      "scope_resolver": "server_effective_scopes",
+      "actor": "plan_actor",
+      "signer": "same_actor",
+      "disclosure": "source_grants",
+      "budget": "frozen_ceiling",
+      "mcp": "prepare_only"
+    },
+    "approval": {
+      "mode": "auto",
+      "dynamic": "prepare_tightens"
+    },
+    "handlers": {
+      "module": "datakeel.action_store.file_handlers",
+      "prepare": [
+        "prepare"
+      ],
+      "manifest": "manifest",
+      "snapshot": "snapshot",
+      "references": "references",
+      "impact": "impact",
+      "execute": "quarantine",
+      "deferred": null,
+      "worker": null,
+      "completion": "synchronous",
+      "rollback": "rollback",
+      "receipt": "receipt"
+    },
+    "preconditions": [
+      {
+        "kind": "file_selection.v1",
+        "asset": "file"
+      },
+      {
+        "kind": "authorized_limits.v1",
+        "asset": "file"
+      },
+      {
+        "kind": "frozen_revisions.v1",
+        "asset": "file"
+      }
+    ],
+    "effects": [
+      {
+        "asset": "file",
+        "field": "quarantined",
+        "value": true
+      }
+    ],
+    "examples": [
+      {
+        "language": "zh",
+        "text": "隔离文件",
+        "params": {
+          "selection": {
+            "dataset_id": "example-dataset"
+          }
+        }
+      },
+      {
+        "language": "en",
+        "text": "quarantine files",
+        "params": {
+          "selection": {
+            "dataset_id": "example-dataset"
+          }
+        }
+      }
+    ],
+    "phrases": [
+      [
+        "zh",
+        [
+          "隔离文件"
+        ]
+      ],
+      [
+        "en",
+        [
+          "quarantine files"
+        ]
+      ]
+    ],
+    "legacy_examples": [
+      [
+        "zh",
+        [
+          "把这个数据集里质量低于 60 的文本隔离"
+        ]
+      ],
+      [
+        "en",
+        [
+          "Quarantine text files with quality below 60 in this dataset"
+        ]
+      ]
+    ],
+    "surfaces": [
+      "registry",
+      "http",
+      "mcp_prepare",
+      "agent",
+      "cli",
+      "intents",
+      "card"
+    ],
+    "widget": "generic",
+    "fixtures": [
+      "quarantine-history-v1"
+    ],
+    "compatibility": "replace"
+  },
+  {
+    "id": "unquarantine_files",
+    "auth_scope": "files:write",
+    "execution_target": "data_plane",
+    "reversible": true,
+    "inverse": "quarantine_files",
+    "effect_text": "Clear quarantine state",
+    "authorization": {
+      "human_only": false,
+      "automatic": true,
+      "scope_resolver": "server_effective_scopes",
+      "actor": "plan_actor",
+      "signer": "same_actor",
+      "disclosure": "source_grants",
+      "budget": "frozen_ceiling",
+      "mcp": "prepare_only"
+    },
+    "approval": {
+      "mode": "auto",
+      "dynamic": "prepare_tightens"
+    },
+    "handlers": {
+      "module": "datakeel.action_store.file_handlers",
+      "prepare": [
+        "prepare"
+      ],
+      "manifest": "manifest",
+      "snapshot": "snapshot",
+      "references": "references",
+      "impact": "impact",
+      "execute": "unquarantine",
+      "deferred": null,
+      "worker": null,
+      "completion": "synchronous",
+      "rollback": "rollback",
+      "receipt": "receipt"
+    },
+    "preconditions": [
+      {
+        "kind": "file_selection.v1",
+        "asset": "file"
+      },
+      {
+        "kind": "authorized_limits.v1",
+        "asset": "file"
+      },
+      {
+        "kind": "frozen_revisions.v1",
+        "asset": "file"
+      }
+    ],
+    "effects": [
+      {
+        "asset": "file",
+        "field": "quarantined",
+        "value": false
+      }
+    ],
+    "examples": [
+      {
+        "language": "zh",
+        "text": "取消隔离",
+        "params": {
+          "selection": {
+            "dataset_id": "example-dataset"
+          }
+        }
+      },
+      {
+        "language": "en",
+        "text": "unquarantine files",
+        "params": {
+          "selection": {
+            "dataset_id": "example-dataset"
+          }
+        }
+      }
+    ],
+    "phrases": [
+      [
+        "zh",
+        [
+          "取消隔离"
+        ]
+      ],
+      [
+        "en",
+        [
+          "unquarantine files"
+        ]
+      ]
+    ],
+    "legacy_examples": [
+      [
+        "zh",
+        [
+          "把昨天误隔离的这批图片放出来"
+        ]
+      ],
+      [
+        "en",
+        [
+          "Release these images from quarantine"
+        ]
+      ]
+    ],
+    "surfaces": [
+      "registry",
+      "http",
+      "mcp_prepare",
+      "agent",
+      "cli",
+      "intents",
+      "card"
+    ],
+    "widget": "generic",
+    "fixtures": [
+      "quarantine-history-v1"
+    ],
+    "compatibility": "replace"
+  }
+]

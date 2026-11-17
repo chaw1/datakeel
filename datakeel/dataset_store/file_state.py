@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.core.errors import ConflictError
 from datakeel.core.models import BoundaryModel, FileItem
 from datakeel.dataset_store.rows import FileStateRow
 
@@ -28,6 +29,36 @@ def get_file_state(session: Session, dataset_id: str, file_id: str) -> FileState
     if row is None:
         return FileStateView()
     return FileStateView(quarantined=row.quarantined, deleted=row.deleted, revision=row.revision)
+
+
+def apply_file_state(
+    session: Session,
+    dataset_id: str,
+    file_id: str,
+    expected_revision: int,
+    *,
+    quarantined: bool | None = None,
+    deleted: bool = False,
+) -> None:
+    """Mutate one locked file-state row with optimistic revision enforcement."""
+    row = session.get(FileStateRow, (dataset_id, file_id), with_for_update=True)
+    if row is None:
+        row = FileStateRow(
+            dataset_id=dataset_id,
+            file_id=file_id,
+            quarantined=False,
+            deleted=False,
+            revision=0,
+        )
+        session.add(row)
+    if row.deleted or row.revision != expected_revision:
+        msg = "Selected file revision changed during execution"
+        raise ConflictError(msg)
+    if deleted:
+        row.deleted = True
+    elif quarantined is not None:
+        row.quarantined = quarantined
+    row.revision += 1
 
 
 def _bindable(session: Session, identifier: str) -> bool:

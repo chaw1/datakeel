@@ -21,6 +21,7 @@ from scripts.intent_planning_mutations import PLANNING_MUTATIONS
 from scripts.intent_query_first_mutations import QUERY_FIRST_MUTATIONS
 from scripts.intent_replanning_mutations import REPLANNING_MUTATIONS
 from scripts.intent_v020_mutations import INTENT_V020_MUTATIONS
+from scripts.k1_mutations import K1_MUTATIONS
 from scripts.k9_mutations import K9_MUTATIONS
 from scripts.keypoint_mutations import KEYPOINT_MUTATIONS
 from scripts.kg_mutations import KG_MUTATIONS
@@ -132,4 +133,5 @@ FEATURE_MUTATIONS = (
     *INTENT_V020_MUTATIONS,
     *K9_MUTATIONS,
     *WORKER_COMPLETION_MUTATIONS,
+    *K1_MUTATIONS,
 )

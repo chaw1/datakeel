@@ -52,6 +52,8 @@ cli
 
 `.importlinter` 定义 layers 合同；同层之间的依赖必须列明为显式例外并写理由。S2 的 datasets、lineage、governance、quality 纯规则层位于适配器之下，semantic 位于领域之下；纯规则不得导入存储，dataset_store 不得导入 API/worker/CLI/MCP。
 
+动作声明与授权模型位于 `actions`；事务适配器 `action_store` 在其上、既有应用编排在 adapter 之上。旧 action service facade 的向上接线仍须逐条列为过渡例外，不能借层级调整隐藏该依赖。`action_store` 同时承担 `actions` 与自身的 90% 覆盖率责任；原存储实现和 dataset file state 的覆盖率责任继续保留。
+
 `datakeel/runtime/` 和 `datakeel/extraction_runtime/` 是允许直接导入模型框架与 SDK 的两个适配目录；后者只负责抽取传输，不使用会话图。forbidden 合同扫描 `langgraph`、`langgraph_sdk`、`langchain_core`、`langchain_openai`、`langchain_anthropic`、`langsmith`、`openai`、`anthropic` 和 `tiktoken` 的外部导入，使其它模块只能经 Datakeel 的类型化接口使用它们。`kg` 领域包不导入这些框架或 runtime。checkpoint 数据库模型与 bytes 读写函数仍在 `storage/checkpoint_store.py`，不得导入框架。
 
 ## 4. 测试

@@ -1,5 +1,7 @@
 import { createContext } from "react";
 
+import { actionDeclarations } from "../api/actionDeclarations";
+
 import { en } from "./en";
 import { zh } from "./zh";
 
@@ -7,13 +9,17 @@ import type { MessageKey } from "./en";
 
 export type Locale = "en" | "zh";
 export type Translate = (
-  key: MessageKey,
+  key: MessageKey | `action.${string}`,
   values?: Record<string, string | number>,
 ) => string;
 export function translator(locale: Locale): Translate {
   const plurals = new Intl.PluralRules(locale);
   return (key, values = {}) => {
-    const message = (locale === "zh" ? zh : en)[key].replace(
+    const template = key.startsWith("action.")
+      ? actionDeclarations[key.slice(7)]?.titles[locale]
+      : (locale === "zh" ? zh : en)[key as MessageKey];
+    if (template === undefined) throw new Error(`Unknown message: ${key}`);
+    const message = template.replace(
       /\{(\w+), plural, one \{([^{}]*)\} other \{([^{}]*)\}\}/g,
       (_match: string, name: string, one: string, other: string) =>
         plurals.select(Number(values[name] ?? 0)) === "one" ? one : other,

@@ -8,10 +8,12 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from datakeel.action_store.lifecycle import complete, declared_receipt, rollback
+from datakeel.actions.authorization import production_request
+from datakeel.actions.file_declarations import active_declarations
 from datakeel.actions.models import ActionPlan, ActionRun, ExecuteRequest, OperationResult
 from datakeel.actions.parameters import ExportParams, parse_params
 from datakeel.actions.policy import digest
-from datakeel.actions.receipts import receipt
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError
 from datakeel.core.label_guidelines import BilledDraftError
@@ -37,7 +39,6 @@ from datakeel.storage.data_asset_review import (
 from datakeel.storage.database import Database
 from datakeel.storage.draft_metering import record_draft_calls
 from datakeel.storage.identity_authorization import require_server_scope
-from datakeel.storage.production_human import require_production_human
 from datakeel.storage.vector_authorization import require_vector_human
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ def _commit_result(
     session.add(row)
     session.flush()
     if result.task_id is None and result.deferred is None:
-        event = receipt(plan, row.id, result.outputs)
+        event = declared_receipt(session, plan, row.id, result)
         event = event.model_copy(update={"quality": {**event.quality, "details": result.details}})
         row.receipt = event.model_dump(mode="json")
         row.completed_at = utcnow().timestamp()
@@ -99,7 +100,7 @@ def _record_failure(
             and isinstance(error, AuthorizationError | ConflictError)
         )
         status = "DENIED" if denied else "FAILED"
-        event = receipt(plan, identifier, [], error=description)
+        event = declared_receipt(session, plan, identifier, OperationResult(), error=description)
         session.add(
             ActionRunRow(
                 id=identifier,
@@ -127,30 +128,26 @@ def _record_failure(
         session.commit()
 
 
-def _production_request(
+def _entry_request(
     plan: ActionPlan, request: ExecuteRequest, access: AccessContext | None
 ) -> ExecuteRequest:
-    require_production_human(plan, access)
     require_vector_human(plan, access)
-    if "request_id" in plan.canonical_params and request.operation_id is None:
-        return request.model_copy(update={"operation_id": plan.operation_id})
-    return request
+    return production_request(plan, request, access)
 
 
 def execute_plan(
     db: Database, plan_id: str, request: ExecuteRequest, *, access: AccessContext | None = None
 ) -> ActionRun:
     """Atomically revalidate, consume approval, mutate, audit, and publish a receipt."""
-    attempted = False
-    authorized = False
+    plan: ActionPlan | None = None
+    attempted = authorized = False
     result: OperationResult | None = None
-    committed = False
-    record_attempt = False
+    committed = record_attempt = False
     try:
         with db.session() as session:
             lock_action_targets(db, session, plan_id)
             row, plan = locked_plan(session, plan_id)
-            request = _production_request(plan, request, access)
+            request = _entry_request(plan, request, access)
             refuse_tool_decision(plan.action_type, access)
             validate_execution_request(plan, request)
             require_server_scope(session, plan, request.actor)
@@ -184,9 +181,14 @@ def execute_plan(
     except Exception as error:
         if not committed:
             rollback_export(result)
+            rollback(db, plan, result, attempted=attempted)
         logger.exception("Controlled action failed", extra={"action_id": plan_id})
         if record_attempt:
             _record_failure(db, plan_id, error, request, attempted=attempted, authorized=authorized)
         raise
     # Slow outside work (cloud model calls) runs after the plan's transaction has committed.
-    return complete_deferred(db, *deferred)
+    return (
+        complete(db, *deferred)
+        if deferred[0].action_type in active_declarations()
+        else complete_deferred(db, *deferred)
+    )

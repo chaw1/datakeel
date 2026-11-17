@@ -33,6 +33,13 @@ Agent 全程用对话操作，但只能走受控动作；harness 让 Agent 可�
 
 ## 3. 目录结构
 
+受控动作的纯声明、授权数据与内部 IR 位于 `actions`；`action_store` 在其上绑定类型化
+生命周期，原 `storage` 编排仍拥有准备、执行、签批及审计事务。只有隔离与取消隔离激活
+generated owner，其余动作继续走 legacy owner。`action_store` 不参与 worker completion
+事务，也不改变数据集版本语义。既有 action facade 向上调用存储的过渡接线，以及
+adapter 向旧存储 helper 的调用，逐条保留在 `.importlinter`；纯模型层置于 adapter 之下，
+已经向下的依赖不再需要同层例外。详情见 [动作声明内核](ACTION_DECLARATIONS.md)。
+
 ```
 datakeel/
   pyproject.toml            # uv 工作区，一个包，多个子模块

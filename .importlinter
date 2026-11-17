@@ -10,7 +10,9 @@ layers =
     datakeel.kg_eval | datakeel.extraction_runtime | datakeel.api | datakeel.worker | datakeel.agent | datakeel.runtime | datakeel.harness | datakeel.mcp | datakeel.intents
     datakeel.persistence
     datakeel.versioning
-    datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.standards | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.prelabel | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.actions | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory | datakeel.label_drafts
+    datakeel.training | datakeel.llm_data | datakeel.datasheets | datakeel.assets | datakeel.delivery | datakeel.transcription | datakeel.kg | datakeel.pipeline | datakeel.standards | datakeel.operators | datakeel.storage | datakeel.http | datakeel.sample | datakeel.sample_kg | datakeel.sample_evidence | datakeel.sample_enterprise | datakeel.sample_media | datakeel.sample_annotation_qa | datakeel.annotation_qa | datakeel.prelabel | datakeel.sample_standards | datakeel.sample_timeseries | datakeel.evidence | datakeel.ontology | datakeel.catalog | datakeel.metrics | datakeel.ask | datakeel.workflows | datakeel.routing | datakeel.delegation | datakeel.memory | datakeel.label_drafts
+    datakeel.action_store
+    datakeel.actions
     datakeel.worker_store
     datakeel.dataset_store
     datakeel.datasets | datakeel.lineage
@@ -20,6 +22,19 @@ layers =
     datakeel.core
 # Delivery services verify portable frozen release facts without importing API code.
 ignore_imports =
+# Declaration types sit below their transaction adapters; exact transitional bindings only.
+    datakeel.action_store.validation -> datakeel.storage.database
+    datakeel.action_store.file_handlers -> datakeel.storage.action_selection
+    datakeel.action_store.file_handlers -> datakeel.storage.action_snapshot
+    datakeel.action_store.file_handlers -> datakeel.storage.action_targets
+    datakeel.action_store.file_handlers -> datakeel.storage.evidence_actions
+    datakeel.action_store.lifecycle -> datakeel.storage.action_rows
+    datakeel.action_store.lifecycle -> datakeel.storage.action_store
+    datakeel.action_store.lifecycle -> datakeel.storage.database
+    datakeel.actions.declarations -> datakeel.ontology.models
+    datakeel.actions.ir -> datakeel.ontology.registry
+    datakeel.actions.selection_parameters -> datakeel.ontology.models
+    datakeel.actions.service -> datakeel.action_store.validation
 # Training reads and exports adapt verified version facts; similarity reuses local hashing.
     datakeel.storage.training_store -> datakeel.training.leakage
     datakeel.storage.training_store -> datakeel.training.splitting
@@ -29,35 +44,22 @@ ignore_imports =
     datakeel.training.leakage -> datakeel.operators.evidence.near_duplicate_hashes
     datakeel.ontology.training_functions -> datakeel.storage.database
     datakeel.ontology.training_functions -> datakeel.storage.training_store
-    datakeel.storage.training_export -> datakeel.actions.parameters
     datakeel.storage.training_export -> datakeel.training.export_detection
-    datakeel.storage.training_download -> datakeel.actions.parameters
     datakeel.storage.action_export -> datakeel.training.export
     datakeel.storage.training_import -> datakeel.training.importers
     datakeel.storage.training_import -> datakeel.training.native
 # LLM training-data governance reuses indexed hashes and typed offline analysis, never model adapters.
     datakeel.llm_data.index -> datakeel.operators.evidence.near_duplicate_hashes
-    datakeel.storage.llm_data_selection -> datakeel.actions.llm_data_parameters
     datakeel.storage.llm_data_selection -> datakeel.ontology.models
-    datakeel.storage.evidence_actions -> datakeel.actions.llm_data_parameters
-    datakeel.storage.llm_data_actions -> datakeel.actions.models
-    datakeel.storage.llm_data_actions -> datakeel.actions.llm_data_parameters
     datakeel.storage.llm_data_actions -> datakeel.llm_data
     datakeel.storage.llm_data_store -> datakeel.llm_data
     datakeel.storage.llm_data_reads -> datakeel.llm_data
     datakeel.ontology.llm_data_functions -> datakeel.storage.database
     datakeel.ontology.llm_data_functions -> datakeel.storage.llm_data_reads
-    datakeel.storage.action_operations -> datakeel.actions.llm_data_parameters
-    datakeel.storage.action_snapshot -> datakeel.actions.llm_data_parameters
     datakeel.operators.text.training_quality -> datakeel.llm_data
     datakeel.storage.delivery_service -> datakeel.delivery.manifest
     datakeel.storage.delivery_service -> datakeel.delivery.reconcile
-    datakeel.storage.release_actions -> datakeel.actions.models
-    datakeel.storage.release_actions -> datakeel.actions.release_parameters
     datakeel.storage.release_actions -> datakeel.ontology.models
-    datakeel.storage.evidence_actions -> datakeel.actions.release_parameters
-    datakeel.storage.action_planning -> datakeel.actions.release_parameters
-    datakeel.storage.action_operations -> datakeel.actions.release_parameters
 # E4 snapshot reads validate frozen R using the existing typed pipeline resolver.
     datakeel.storage.vector_query_snapshot -> datakeel.pipeline.models
 # E3 set planning composes typed ObjectSet selection, pure computation and existing vector projections.
@@ -87,12 +89,6 @@ ignore_imports =
     datakeel.assets.service -> datakeel.storage.data_asset_cards
     datakeel.assets.access -> datakeel.storage.data_asset_access
 # Standards keep pure rules separate from typed source reads and controlled transactions.
-    datakeel.storage.standard_changes -> datakeel.actions.models
-    datakeel.storage.standard_changes -> datakeel.actions.standard_parameters
-    datakeel.storage.standard_changes -> datakeel.actions.references
-    datakeel.storage.catalog_action_state -> datakeel.actions.standard_parameters
-    datakeel.storage.action_snapshot -> datakeel.actions.standard_parameters
-    datakeel.storage.action_operations -> datakeel.actions.standard_parameters
     datakeel.storage.standard_observations -> datakeel.metrics.sql_safety
     datakeel.storage.standard_observations -> datakeel.standards.names
     datakeel.storage.standard_queries -> datakeel.standards.checks
@@ -107,12 +103,6 @@ ignore_imports =
     datakeel.quality.dq_source -> datakeel.metrics.execution
     datakeel.quality.dq_statistics -> datakeel.metrics.execution
     datakeel.quality.dq_source -> datakeel.metrics.sql_safety
-    datakeel.storage.dq_actions -> datakeel.actions.dq_parameters
-    datakeel.storage.dq_actions -> datakeel.actions.models
-    datakeel.storage.action_planning -> datakeel.actions.dq_parameters
-    datakeel.storage.action_operations -> datakeel.actions.dq_parameters
-    datakeel.storage.action_snapshot -> datakeel.actions.dq_parameters
-    datakeel.storage.evidence_actions -> datakeel.actions.dq_parameters
     datakeel.ontology.dq_functions -> datakeel.storage.database
     datakeel.ontology.dq_functions -> datakeel.storage.catalog_queries
     datakeel.ontology.dq_functions -> datakeel.storage.dq_reads
@@ -122,17 +112,11 @@ ignore_imports =
     datakeel.ontology.annotation_functions -> datakeel.storage.database
     datakeel.ontology.annotation_functions -> datakeel.storage.annotation_store
 # Datasheet facts use existing assessments; controlled changes retain typed frozen inputs.
-    datakeel.storage.datasheet_actions -> datakeel.actions.datasheet_parameters
-    datakeel.storage.datasheet_actions -> datakeel.actions.models
     datakeel.storage.datasheet_actions -> datakeel.datasheets.templates
     datakeel.storage.datasheet_actions -> datakeel.datasheets.prompt
     datakeel.storage.datasheet_actions -> datakeel.datasheets.destination
     datakeel.storage.datasheet_actions -> datakeel.routing.config
-    datakeel.storage.datasheet_jobs -> datakeel.actions.datasheet_parameters
-    datakeel.storage.datasheet_jobs -> datakeel.actions.models
     datakeel.storage.datasheet_jobs -> datakeel.datasheets.validation
-    datakeel.storage.action_planning -> datakeel.actions.datasheet_parameters
-    datakeel.storage.action_operations -> datakeel.actions.datasheet_parameters
 # Approved model workers reuse the existing provider factory and persistent budget boundary.
     datakeel.worker.datasheet_model -> datakeel.agent.factory
 # Generated media uses only the local command adapter.
@@ -162,15 +146,10 @@ ignore_imports =
     datakeel.delegation.service -> datakeel.storage.conversation_secrets
     datakeel.delegation.service -> datakeel.storage.database
     datakeel.delegation.tree -> datakeel.storage.conversation_store
-    datakeel.delegation.service -> datakeel.actions.policy
-    datakeel.delegation.loader -> datakeel.actions.registry
 # Workflow definitions validate existing tool schemas and irreversible action policy.
-    datakeel.workflows.schemas -> datakeel.actions.models
-    datakeel.workflows.schemas -> datakeel.actions.parameters
     datakeel.workflows.schemas -> datakeel.evidence.query_models
     datakeel.workflows.schemas -> datakeel.ontology.functions
     datakeel.workflows.schemas -> datakeel.ontology.models
-    datakeel.workflows.validation -> datakeel.actions.registry
 # Workflow adapters enter the persistent graph and reuse signed action receipts.
     datakeel.api.app -> datakeel.runtime.workflow_service
     datakeel.api.routes.workflow_runs -> datakeel.runtime.workflow_service
@@ -180,19 +159,14 @@ ignore_imports =
     datakeel.workflows.execution -> datakeel.ontology.tooling
     datakeel.workflows.execution -> datakeel.storage.database
 # Recovery projects signed records into pure shared policy, independent of conversations.
-    datakeel.storage.workflow_recovery -> datakeel.actions.recovery
-    datakeel.storage.workflow_recovery -> datakeel.actions.models
-    datakeel.storage.approval_evidence -> datakeel.actions.recovery
 # Routing reads workflow vocabulary and controlled action declarations without dispatching them.
     datakeel.routing.classifier -> datakeel.workflows.models
     datakeel.routing.concepts -> datakeel.workflows.models
     datakeel.routing.intent -> datakeel.workflows.models
     datakeel.routing.scopes -> datakeel.workflows.models
-    datakeel.routing.intent -> datakeel.actions.registry
     datakeel.routing.evaluation -> datakeel.workflows.loader
     datakeel.routing.service -> datakeel.workflows.loader
     datakeel.routing.service -> datakeel.workflows.models
-    datakeel.routing.tiers -> datakeel.actions.registry
 # Separate classification and model attempts use the same transactional budget and trace store.
     datakeel.routing.service -> datakeel.storage.database
     datakeel.routing.service -> datakeel.storage.harness_service
@@ -215,11 +189,6 @@ ignore_imports =
     datakeel.runtime.graph -> datakeel.agent.models
     datakeel.runtime.graph -> datakeel.agent.recovery
 # Shared tool dispatch uses action policy/services and stores invocation audit through typed models.
-    datakeel.ontology.tooling -> datakeel.actions.service
-    datakeel.ontology.tooling -> datakeel.actions.models
-    datakeel.ontology.tooling -> datakeel.actions.parameters
-    datakeel.ontology.tooling -> datakeel.actions.policy
-    datakeel.ontology.tooling -> datakeel.actions.references
     datakeel.ontology.tooling -> datakeel.storage.database
     datakeel.ontology.tooling -> datakeel.storage.tool_invocations
 # Action facades call typed transactional storage services; schemas reuse ontology and DAG models.
@@ -237,7 +206,6 @@ ignore_imports =
 # Read-only ontology functions use typed storage projections; object schemas reuse public views.
     datakeel.ontology.functions -> datakeel.storage.database
     datakeel.ontology.functions -> datakeel.storage.governance_service
-    datakeel.ontology.tool_models -> datakeel.actions.models
 # P1 persistence composes typed governance/quality/lineage projections; DAG validation uses operators.
     datakeel.pipeline.execution -> datakeel.operators
     datakeel.pipeline.models -> datakeel.operators.base
@@ -245,36 +213,12 @@ ignore_imports =
 # Indexed catalog adjacency consumes the same frozen graph query as lineage reads.
     datakeel.worker_store.task_queue -> datakeel.pipeline
 # Persistence implements action transactions with pure policy/receipt helpers and ontology projections.
-    datakeel.storage.action_approvals -> datakeel.actions.models
-    datakeel.storage.action_execution -> datakeel.actions.models
-    datakeel.storage.action_execution -> datakeel.actions.parameters
-    datakeel.storage.action_execution -> datakeel.actions.policy
-    datakeel.storage.action_execution -> datakeel.actions.receipts
-    datakeel.storage.action_export -> datakeel.actions.models
-    datakeel.storage.action_export -> datakeel.actions.parameters
-    datakeel.storage.action_operations -> datakeel.actions.models
-    datakeel.storage.action_operations -> datakeel.actions.parameters
-    datakeel.storage.action_planning -> datakeel.actions.models
-    datakeel.storage.action_planning -> datakeel.actions.parameters
-    datakeel.storage.action_planning -> datakeel.actions.policy
-    datakeel.storage.action_planning -> datakeel.actions.registry
-    datakeel.storage.action_planning -> datakeel.actions.references
     datakeel.storage.action_planning -> datakeel.ontology.models
     datakeel.storage.action_planning -> datakeel.pipeline
-    datakeel.storage.action_selection -> datakeel.actions.models
     datakeel.storage.action_selection -> datakeel.ontology.models
-    datakeel.storage.action_snapshot -> datakeel.actions.models
-    datakeel.storage.action_snapshot -> datakeel.actions.parameters
     datakeel.storage.action_snapshot -> datakeel.ontology.models
 # Idempotent execution validates typed requests and the same canonical action policy.
-    datakeel.storage.action_requests -> datakeel.actions.models
-    datakeel.storage.action_requests -> datakeel.actions.policy
 # Recovery verifies the original frozen action digest and signed actor before graph continuation.
-    datakeel.storage.conversation_authorization -> datakeel.actions.models
-    datakeel.storage.conversation_authorization -> datakeel.actions.recovery
-    datakeel.storage.action_store -> datakeel.actions.models
-    datakeel.storage.action_worker -> datakeel.actions.models
-    datakeel.storage.action_worker -> datakeel.actions.receipts
     datakeel.dataset_store.object_projection -> datakeel.ontology.models
     datakeel.dataset_store.object_queries -> datakeel.ontology.models
     datakeel.storage.tool_invocations -> datakeel.ontology.tool_models
@@ -305,8 +249,6 @@ ignore_imports =
     datakeel.ontology.evidence_functions -> datakeel.storage.database
     datakeel.ontology.evidence_functions -> datakeel.storage.evidence_queries
 # Assertion decisions reuse controlled plans and versioned asset selections in one transaction.
-    datakeel.storage.evidence_actions -> datakeel.actions.models
-    datakeel.storage.evidence_actions -> datakeel.actions.parameters
     datakeel.storage.evidence_actions -> datakeel.ontology.models
 # Evidence queries extend ObjectSet and render typed frozen objects within storage snapshots.
     datakeel.evidence.query_models -> datakeel.ontology.models
@@ -316,8 +258,6 @@ ignore_imports =
     datakeel.storage.evidence_queries -> datakeel.evidence.query_models
     datakeel.storage.evidence_queries -> datakeel.evidence.presentation
 # Evidence selection execution revalidates frozen file revisions without resampling assertions.
-    datakeel.storage.action_targets -> datakeel.actions.models
-    datakeel.storage.action_targets -> datakeel.actions.parameters
     datakeel.storage.action_targets -> datakeel.ontology.models
 # Evidence golden fixtures exercise the existing fenced worker instead of fabricated assertions.
     datakeel.harness.evidence_cases -> datakeel.worker.runner
@@ -335,8 +275,6 @@ ignore_imports =
     datakeel.catalog.metadata_service -> datakeel.storage.catalog_reads
     datakeel.catalog.metadata_service -> datakeel.storage.database
 # Draft confirmation composes signed action parameters with semantic snapshot publication.
-    datakeel.storage.metric_drafts -> datakeel.actions.catalog_parameters
-    datakeel.storage.metric_drafts -> datakeel.actions.models
     datakeel.storage.metric_drafts -> datakeel.metrics.projection
 # Questions compose registered semantics and read-only compilation, then persist typed answers.
     datakeel.dataset_store.profile_queries -> datakeel.operators.table.models
@@ -360,15 +298,8 @@ ignore_imports =
 # Cached question-tool replays verify that their independently owned Ask thread still exists.
     datakeel.ontology.tooling -> datakeel.storage.ask_conversations
 # Metadata actions freeze independent catalog state and commit versioned semantics atomically.
-    datakeel.storage.catalog_action_state -> datakeel.actions.catalog_parameters
     datakeel.storage.catalog_action_state -> datakeel.catalog.service
     datakeel.storage.catalog_action_state -> datakeel.ontology.models
-    datakeel.storage.catalog_actions -> datakeel.actions.catalog_parameters
-    datakeel.storage.catalog_actions -> datakeel.actions.models
-    datakeel.storage.metric_audit -> datakeel.actions.models
-    datakeel.storage.action_operations -> datakeel.actions.catalog_parameters
-    datakeel.storage.action_snapshot -> datakeel.actions.catalog_parameters
-    datakeel.storage.evidence_actions -> datakeel.actions.catalog_parameters
     datakeel.storage.term_changes -> datakeel.metrics.projection
 # Current source availability refreshes semantic cards without rewriting historical versions.
     datakeel.storage.catalog_queries -> datakeel.metrics.projection
@@ -384,12 +315,7 @@ ignore_imports =
 # Scripted graph samples read only packaged vocabulary and recording fixtures.
     datakeel.sample_kg -> datakeel.kg.loader
 # Graph extraction reuses controlled transactions and typed domain preparation/publication.
-    datakeel.storage.action_planning -> datakeel.actions.kg_parameters
-    datakeel.storage.action_operations -> datakeel.actions.kg_parameters
-    datakeel.storage.kg_preparation -> datakeel.actions.kg_parameters
 # Authorized workers reuse the same typed file-selection boundary for fingerprint verification.
-    datakeel.storage.kg_inputs -> datakeel.actions.kg_parameters
-    datakeel.storage.kg_preparation -> datakeel.actions.parameters
     datakeel.storage.kg_preparation -> datakeel.kg.loader
     datakeel.storage.kg_preparation -> datakeel.kg.policy
     datakeel.storage.kg_progress -> datakeel.kg.policy
@@ -401,8 +327,6 @@ ignore_imports =
     datakeel.storage.kg_publication -> datakeel.kg.identity
     datakeel.storage.kg_publication -> datakeel.kg.retention
     datakeel.storage.kg_queries -> datakeel.kg.text
-    datakeel.storage.kg_store -> datakeel.actions.kg_parameters
-    datakeel.storage.kg_store -> datakeel.actions.models
 # Graph read tools use typed storage projections; workers own the injected provider factory.
     datakeel.ontology.kg_functions -> datakeel.storage.database
     datakeel.ontology.kg_functions -> datakeel.storage.kg_queries
@@ -433,7 +357,6 @@ ignore_imports =
     datakeel.harness.image_kg_cases -> datakeel.worker.runner
 
 # Approved custom-source publication reuses controlled plans and validates durable DAG submissions.
-    datakeel.storage.custom_store -> datakeel.actions.models
     datakeel.storage.custom_validation -> datakeel.pipeline.models
 # Native reads and cached tool results share one transactional grant policy.
     datakeel.ontology.tooling -> datakeel.storage.data_asset_access
@@ -441,13 +364,6 @@ ignore_imports =
     datakeel.ontology.catalog_functions -> datakeel.storage.data_asset_access
     datakeel.ask.service -> datakeel.storage.data_asset_access
 # Asset plans freeze and mutate domain facts in the existing controlled transaction.
-    datakeel.storage.action_planning -> datakeel.actions.data_asset_parameters
-    datakeel.storage.action_operations -> datakeel.actions.data_asset_parameters
-    datakeel.storage.action_snapshot -> datakeel.actions.data_asset_parameters
-    datakeel.storage.evidence_actions -> datakeel.actions.data_asset_parameters
-    datakeel.storage.data_asset_action_state -> datakeel.actions.data_asset_parameters
-    datakeel.storage.data_asset_actions -> datakeel.actions.data_asset_parameters
-    datakeel.storage.data_asset_actions -> datakeel.actions.models
 
 # Delegated summaries retain their actual descendant read identities for current-grant replay.
     datakeel.delegation.service -> datakeel.storage.conversation_asset_refs
@@ -456,17 +372,13 @@ ignore_imports =
 # Source-bearing action views and cached tool outcomes share native asset authorization.
     datakeel.actions.service -> datakeel.storage.action_access
     datakeel.actions.service -> datakeel.storage.action_reads
-    datakeel.storage.action_access -> datakeel.actions.models
-    datakeel.storage.action_reads -> datakeel.actions.models
 
 # Recovery inspects receipt identities internally; current-plan disclosure stays guarded.
-    datakeel.agent.recovery -> datakeel.storage.action_store
 # Annotation reports are computed by the framework-free annotation_qa package at import time.
     datakeel.storage.annotation_store -> datakeel.annotation_qa
 # Annotation imports adapt existing sidecar models and freeze approval state in one transaction.
     datakeel.storage.annotation_legacy -> datakeel.operators.evidence.annotation_labels
     datakeel.storage.annotation_legacy -> datakeel.operators.evidence.facts
-    datakeel.storage.annotation_actions -> datakeel.actions.models
     datakeel.storage.annotation_actions -> datakeel.ontology.models
 
 # Production schemas, transactional authorization and read adapters share typed domain contracts.
@@ -475,55 +387,12 @@ ignore_imports =
     datakeel.ontology.production_functions -> datakeel.storage.production_queries
     datakeel.ontology.production_functions -> datakeel.storage.production_statistics
     datakeel.ontology.production_functions -> datakeel.storage.workbench_assignees
-    datakeel.storage.action_operations -> datakeel.actions.identity_parameters
-    datakeel.storage.action_operations -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.action_operations -> datakeel.actions.production_parameters
-    datakeel.storage.action_planning -> datakeel.actions.identity_parameters
-    datakeel.storage.action_planning -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.action_planning -> datakeel.actions.production_parameters
-    datakeel.storage.action_snapshot -> datakeel.actions.identity_parameters
-    datakeel.storage.action_snapshot -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.action_snapshot -> datakeel.actions.production_parameters
-    datakeel.storage.evidence_actions -> datakeel.actions.identity_parameters
-    datakeel.storage.evidence_actions -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.evidence_actions -> datakeel.actions.production_parameters
-    datakeel.storage.identity_actions -> datakeel.actions.identity_parameters
-    datakeel.storage.identity_actions -> datakeel.actions.models
-    datakeel.storage.identity_actions -> datakeel.actions.registry
-    datakeel.storage.identity_authorization -> datakeel.actions.identity_parameters
-    datakeel.storage.identity_authorization -> datakeel.actions.models
-    datakeel.storage.identity_authorization -> datakeel.actions.policy
-    datakeel.storage.identity_authorization -> datakeel.actions.registry
-    datakeel.storage.identity_mutations -> datakeel.actions.identity_parameters
-    datakeel.storage.identity_mutations -> datakeel.actions.models
-    datakeel.storage.identity_store -> datakeel.actions.registry
-    datakeel.storage.memory_store -> datakeel.actions.registry
-    datakeel.storage.production_action_state -> datakeel.actions.production_parameters
-    datakeel.storage.production_actions -> datakeel.actions.models
-    datakeel.storage.production_actions -> datakeel.actions.production_parameters
-    datakeel.storage.production_assignments -> datakeel.actions.production_parameters
-    datakeel.storage.production_catalog_actions -> datakeel.actions.models
-    datakeel.storage.production_catalog_actions -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.production_catalog_changes -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.production_catalog_plans -> datakeel.actions.production_catalog_parameters
     datakeel.storage.production_catalog_plans -> datakeel.ontology.models
-    datakeel.storage.production_finalize -> datakeel.actions.models
-    datakeel.storage.production_finalize -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.production_human -> datakeel.actions.models
-    datakeel.storage.production_human -> datakeel.actions.production_language
-    datakeel.storage.production_idempotency -> datakeel.actions.models
-    datakeel.storage.production_idempotency -> datakeel.actions.policy
     datakeel.storage.production_objects -> datakeel.ontology.models
-    datakeel.storage.production_predictions -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.production_projects -> datakeel.actions.production_parameters
-    datakeel.storage.production_reviews -> datakeel.actions.production_parameters
-    datakeel.storage.production_revisions -> datakeel.actions.production_parameters
     datakeel.storage.production_statistics -> datakeel.annotation_qa
-    datakeel.storage.production_template_upgrade -> datakeel.actions.production_catalog_parameters
 # AI prelabel: storage composes pure matching, tiers and risk rules from annotation_qa, the
 # provider-neutral cloud adapter in prelabel, and the existing perceptual-hash and near-duplicate
 # contracts; storage also owns the typed production parameters it executes.
-    datakeel.storage.production_ai_audit -> datakeel.actions.models
 # Pre-review facts load project-wide drafts and read the near-duplicate hash threshold once.
     datakeel.storage.production_ai_facts -> datakeel.annotation_qa
     datakeel.storage.production_ai_facts -> datakeel.operators.evidence.contracts
@@ -532,41 +401,23 @@ ignore_imports =
     datakeel.storage.production_ai_rules -> datakeel.annotation_qa
     datakeel.storage.production_cloud_labeling -> datakeel.annotation_qa
     datakeel.storage.production_cloud_labeling -> datakeel.prelabel
-    datakeel.storage.production_cloud_prelabel -> datakeel.actions.production_catalog_parameters
     datakeel.storage.production_cloud_prelabel -> datakeel.prelabel
 # Cloud runs finish after the plan's transaction: the runner prices calls, the closer signs the receipt.
-    datakeel.storage.production_cloud_runner -> datakeel.actions.production_catalog_parameters
     datakeel.storage.production_cloud_runner -> datakeel.prelabel
-    datakeel.storage.action_deferred -> datakeel.actions.models
-    datakeel.storage.action_deferred -> datakeel.actions.policy
-    datakeel.storage.action_deferred -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.action_deferred -> datakeel.actions.receipts
     datakeel.storage.production_prelabel_refs -> datakeel.annotation_qa
-    datakeel.storage.production_prelabel_writes -> datakeel.actions.production_parameters
     datakeel.storage.production_prelabel_writes -> datakeel.annotation_qa
-    datakeel.storage.production_review_policy -> datakeel.actions.production_parameters
     datakeel.storage.production_task_images -> datakeel.operators.evidence.image_phash
     datakeel.storage.production_tiers -> datakeel.annotation_qa
 # The review queue measures draft difference with the same B1 IoU matching as accuracy.
     datakeel.storage.workbench_risk -> datakeel.annotation_qa
 # Team-tier leases, skill dispatch and package acceptance execute typed production actions.
     datakeel.ontology.production_functions -> datakeel.storage.production_team_reads
-    datakeel.storage.production_acceptance -> datakeel.actions.models
-    datakeel.storage.production_acceptance -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.production_dispatch -> datakeel.actions.production_parameters
-    datakeel.storage.production_dispatch_plans -> datakeel.actions.production_parameters
-    datakeel.storage.production_reaper -> datakeel.actions.production_parameters
 
 # Production source grants and authoritative runtime session actors reuse existing contracts.
     datakeel.delegation.service -> datakeel.storage.identity_sessions
-    datakeel.storage.action_access -> datakeel.actions.parameters
-    datakeel.storage.action_access -> datakeel.actions.production_catalog_parameters
-    datakeel.storage.action_access -> datakeel.actions.production_parameters
-    datakeel.storage.action_access -> datakeel.actions.production_references
     datakeel.workflows.execution -> datakeel.storage.identity_sessions
 
 # Tool reference inference keeps production and worker task identities distinct.
-    datakeel.ontology.tool_refs -> datakeel.actions.production_language
 
 # One-sentence chains order existing controlled actions; drafting reads typed sources.
     datakeel.agent.service -> datakeel.intents.turns
@@ -574,12 +425,6 @@ ignore_imports =
     datakeel.intents.turns -> datakeel.agent.demo
     datakeel.intents.turns -> datakeel.agent.models
     datakeel.intents.turns -> datakeel.agent.providers
-    datakeel.storage.intent_chains -> datakeel.actions.models
-    datakeel.storage.action_operations -> datakeel.actions.label_draft_parameters
-    datakeel.storage.action_planning -> datakeel.actions.label_draft_parameters
-    datakeel.storage.label_drafts -> datakeel.actions.label_draft_parameters
-    datakeel.storage.label_drafts -> datakeel.actions.models
-    datakeel.storage.label_drafts -> datakeel.actions.production_catalog_parameters
     datakeel.storage.label_drafts -> datakeel.label_drafts.complete
     datakeel.storage.label_drafts -> datakeel.label_drafts.model
     datakeel.storage.label_drafts -> datakeel.label_drafts.models
@@ -593,13 +438,7 @@ ignore_imports =
     datakeel.storage.vector_reports -> datakeel.pipeline.models
 
 # Signed fake vector DAGs reuse typed pipeline validation and transactional budget/cache services.
-    datakeel.storage.action_worker -> datakeel.actions.parameters
-    datakeel.storage.vector_planning -> datakeel.actions.parameters
-    datakeel.storage.vector_planning -> datakeel.actions.models
     datakeel.storage.vector_planning -> datakeel.evidence.vector_plan
-    datakeel.storage.vector_authorization -> datakeel.actions.policy
-    datakeel.storage.vector_authorization -> datakeel.actions.parameters
-    datakeel.storage.vector_authorization -> datakeel.actions.models
     datakeel.evidence.vector_transport -> datakeel.storage.vector_budget
     datakeel.evidence.vector_transport -> datakeel.storage.vector_authorization
     datakeel.evidence.vector_transport -> datakeel.storage.database
@@ -699,6 +538,19 @@ forbidden_modules =
 allow_indirect_imports = True
 # The adapter owns framework edges; all other modules consume typed application interfaces.
 ignore_imports =
+# Declaration types sit below their transaction adapters; exact transitional bindings only.
+    datakeel.action_store.validation -> datakeel.storage.database
+    datakeel.action_store.file_handlers -> datakeel.storage.action_selection
+    datakeel.action_store.file_handlers -> datakeel.storage.action_snapshot
+    datakeel.action_store.file_handlers -> datakeel.storage.action_targets
+    datakeel.action_store.file_handlers -> datakeel.storage.evidence_actions
+    datakeel.action_store.lifecycle -> datakeel.storage.action_rows
+    datakeel.action_store.lifecycle -> datakeel.storage.action_store
+    datakeel.action_store.lifecycle -> datakeel.storage.database
+    datakeel.actions.declarations -> datakeel.ontology.models
+    datakeel.actions.ir -> datakeel.ontology.registry
+    datakeel.actions.selection_parameters -> datakeel.ontology.models
+    datakeel.actions.service -> datakeel.action_store.validation
     datakeel.runtime -> **
     datakeel.runtime.** -> **
     datakeel.extraction_runtime -> **

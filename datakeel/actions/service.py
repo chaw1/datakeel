@@ -3,6 +3,7 @@
 
 """Public controlled-action entry points for HTTP and tool callers."""
 
+from datakeel.action_store.validation import validate_declarations
 from datakeel.actions.approvals import approve_plan
 from datakeel.actions.execution import execute_plan
 from datakeel.actions.planning import prepare_action
@@ -19,3 +20,6 @@ __all__ = [
     "list_runs",
     "prepare_action",
 ]
+
+
+validate_declarations()

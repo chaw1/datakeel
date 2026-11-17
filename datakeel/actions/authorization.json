@@ -1,0 +1,155 @@
+{
+  "create_label_set": {
+    "human_only": true
+  },
+  "publish_label_set": {
+    "human_only": true
+  },
+  "create_project": {
+    "human_only": true
+  },
+  "split_packages": {
+    "human_only": true
+  },
+  "assign_tasks": {
+    "human_only": true
+  },
+  "claim_task": {
+    "human_only": true
+  },
+  "release_task": {
+    "human_only": true
+  },
+  "save_revision": {
+    "human_only": true
+  },
+  "submit_task": {
+    "human_only": true
+  },
+  "review_task": {
+    "human_only": true
+  },
+  "reopen_task": {
+    "human_only": true
+  },
+  "upgrade_project": {
+    "human_only": true
+  },
+  "heartbeat": {
+    "human_only": true
+  },
+  "revoke_assignment": {
+    "human_only": true
+  },
+  "configure_project": {
+    "human_only": true
+  },
+  "accept_package": {
+    "human_only": true
+  },
+  "upgrade_project_template": {
+    "human_only": true
+  },
+  "register_model": {
+    "human_only": true
+  },
+  "update_model": {
+    "human_only": true
+  },
+  "import_predictions": {
+    "human_only": true
+  },
+  "run_prelabel": {
+    "human_only": true
+  },
+  "finalize_project": {
+    "human_only": true
+  },
+  "manage_users": {
+    "human_only": true
+  },
+  "manage_skills": {
+    "human_only": true
+  },
+  "define_role": {
+    "human_only": true,
+    "signer": "role_grantor"
+  },
+  "update_role": {
+    "human_only": true,
+    "signer": "role_grantor"
+  },
+  "create_data_asset": {
+    "automatic": true
+  },
+  "update_data_asset": {
+    "automatic": true
+  },
+  "publish_data_asset": {
+    "automatic": true
+  },
+  "withdraw_data_asset": {
+    "automatic": true
+  },
+  "create_version_from_selection": {
+    "automatic": true
+  },
+  "run_pipeline": {
+    "automatic": true
+  },
+  "save_metadata": {
+    "automatic": true
+  },
+  "decide_assertions": {
+    "automatic": true
+  },
+  "import_catalog": {
+    "automatic": true
+  },
+  "restore_catalog": {
+    "automatic": true
+  },
+  "update_metric": {
+    "automatic": true
+  },
+  "rollback_metric": {
+    "automatic": true
+  },
+  "update_term": {
+    "automatic": true
+  },
+  "rollback_term": {
+    "automatic": true
+  },
+  "run_kg_extraction": {
+    "automatic": true
+  },
+  "run_quality_rule": {
+    "automatic": true
+  },
+  "change_quality_issue": {
+    "automatic": true
+  },
+  "generate_datasheet": {
+    "automatic": true
+  },
+  "clean_training_data": {},
+  "draft_label_set": {},
+  "submit_custom_operator": {},
+  "decide_asset_application": {},
+  "revoke_asset_grant": {},
+  "annotation_acceptance": {},
+  "delete_files": {},
+  "export_dataset": {},
+  "confirm_metric_draft": {},
+  "publish_release": {},
+  "import_standards": {},
+  "update_standard": {},
+  "update_code_list": {},
+  "confirm_standard_mapping": {},
+  "rollback_standards": {},
+  "create_quality_rule": {},
+  "update_quality_rule": {},
+  "delete_quality_rule": {},
+  "publish_datasheet": {}
+}

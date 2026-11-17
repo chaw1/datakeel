@@ -103,3 +103,16 @@ it("switches built-in metric and dimension names while preserving custom names",
     "Custom metric",
   );
 });
+
+it.each([
+  ["en", "Quarantine files"],
+  ["zh", "隔离文件"],
+] as const)("resolves declared action titles in %s", (locale, title) => {
+  expect(translator(locale)("action.quarantine_files")).toBe(title);
+});
+
+it("rejects undeclared action message IDs", () => {
+  expect(() => translator("en")("action.missing_declaration")).toThrow(
+    "Unknown message: action.missing_declaration",
+  );
+});

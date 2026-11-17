@@ -5,10 +5,12 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast, get_args
 
-from pydantic import Field, JsonValue
+from pydantic import ConfigDict, Field, JsonValue, field_validator
+from pydantic.json_schema import JsonSchemaValue
 
+from datakeel.core.errors import ValidationError
 from datakeel.core.kg_execution import KGEstimate
 from datakeel.core.kg_images import TranscriptionEstimate
 from datakeel.core.models import AssetRef, BoundaryModel, LineageEvent
@@ -82,6 +84,31 @@ ActionName = Literal[
     "clean_training_data",
     "draft_label_set",
 ]
+
+
+def _declared_action_schema(schema: JsonSchemaValue) -> None:
+    from datakeel.actions.file_declarations import (  # noqa: PLC0415  # Model/declaration cycle.
+        active_declarations,
+    )
+
+    properties = cast("dict[str, dict[str, object]]", schema["properties"])
+    properties["action_type"]["enum"] = list(
+        dict.fromkeys((*get_args(ActionName), *active_declarations()))
+    )
+
+
+def _check_declared_action(value: object) -> str:
+    if not isinstance(value, str):
+        msg = "Action type must be a string"
+        raise ValidationError(msg)
+    from datakeel.actions.registry import (  # noqa: PLC0415  # Registry uses plan contracts.
+        action_definition,
+    )
+
+    action_definition(value)
+    return value
+
+
 PlanStatus = Literal["PREPARED", "APPROVED", "REJECTED", "EXECUTED", "FAILED"]
 RunStatus = Literal["QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DENIED"]
 
@@ -113,6 +140,8 @@ class ActionImpact(BoundaryModel):
 class ActionPlan(BoundaryModel):
     """Bind canonical parameters and selected revisions to a single-use plan."""
 
+    model_config = ConfigDict(json_schema_extra=_declared_action_schema)
+
     id: str
     operation_id: str | None = None
     action_type: ActionName
@@ -131,6 +160,12 @@ class ActionPlan(BoundaryModel):
     session_id: str | None = None
     context: ActionContext
     status: PlanStatus = "PREPARED"
+
+    @field_validator("action_type", mode="plain", json_schema_input_type=ActionName)
+    @classmethod
+    def declared_action(cls, value: object) -> str:
+        """Keep the historical schema while admitting only registered generated IDs."""
+        return _check_declared_action(value)
 
     @property
     def requires_approval(self) -> bool:
@@ -171,6 +206,8 @@ class ExecuteRequest(BoundaryModel):
 class ActionRun(BoundaryModel):
     """Expose durable short execution or asynchronous worker completion."""
 
+    model_config = ConfigDict(json_schema_extra=_declared_action_schema)
+
     id: str
     plan_id: str
     action_type: ActionName
@@ -188,6 +225,12 @@ class ActionRun(BoundaryModel):
             "The legacy error field remains available."
         ),
     )
+
+    @field_validator("action_type", mode="plain", json_schema_input_type=ActionName)
+    @classmethod
+    def declared_action(cls, value: object) -> str:
+        """Keep the historical schema while admitting only registered generated IDs."""
+        return _check_declared_action(value)
 
 
 class OperationResult(BoundaryModel):

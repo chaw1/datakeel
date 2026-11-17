@@ -249,7 +249,7 @@ def test_decision_mutation_rolls_back_when_receipt_publication_fails(
             raise ExecutionError(msg)
         return receipt(prepared, run_id, outputs, error=error)
 
-    monkeypatch.setattr("datakeel.storage.action_execution.receipt", failed_receipt)
+    monkeypatch.setattr("datakeel.action_store.lifecycle.receipt", failed_receipt)
     with pytest.raises(ExecutionError, match="fixture receipt failure"):
         execute_plan(db, plan.id, ExecuteRequest(plan_digest=plan.plan_digest))
     assert list_assertions(db)[0].status == "candidate"

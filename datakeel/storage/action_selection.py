@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from datakeel.actions.models import ActionPlan
 from datakeel.core.errors import ConflictError, NotFoundError
 from datakeel.core.models import FileItem
-from datakeel.dataset_store.rows import DatasetRow, FileStateRow, VersionRow
+from datakeel.dataset_store.file_state import apply_file_state
+from datakeel.dataset_store.rows import DatasetRow, VersionRow
 from datakeel.ontology.models import FrozenManifest, FrozenObject
 
 type _FileIndex = dict[str, dict[str, object]]
@@ -93,21 +94,12 @@ def change_file_state(session: Session, plan: ActionPlan) -> None:
         if identity in seen:
             continue
         seen.add(identity)
-        row = session.get(FileStateRow, identity, with_for_update=True)
-        if row is None:
-            row = FileStateRow(
-                dataset_id=identity[0],
-                file_id=identity[1],
-                quarantined=False,
-                deleted=False,
-                revision=0,
-            )
-            session.add(row)
-        if row.deleted or row.revision != item.state_revision:
-            msg = "Selected file revision changed during execution"
-            raise ConflictError(msg)
-        if plan.action_type == "delete_files":
-            row.deleted = True
-        else:
-            row.quarantined = plan.action_type == "quarantine_files"
-        row.revision += 1
+        deleted = plan.action_type == "delete_files"
+        apply_file_state(
+            session,
+            identity[0],
+            identity[1],
+            item.state_revision,
+            quarantined=None if deleted else plan.action_type == "quarantine_files",
+            deleted=deleted,
+        )

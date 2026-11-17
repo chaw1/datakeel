@@ -1,0 +1,16 @@
+[
+  "data_asset",
+  "quality_rule",
+  "quality_issue",
+  "standard",
+  "standards",
+  "code_list",
+  "release",
+  "training_split",
+  "custom_operator",
+  "action_run",
+  "metric_draft",
+  "standard_mapping",
+  "standard_suggestion",
+  "datasheet"
+]

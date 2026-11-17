@@ -55,6 +55,7 @@
 | [委派与记忆](AGENT.md) | 嵌套只读子 Agent、不可信工具信封、canary 泄漏拦截、跨会话记忆与持久预算 | EN / ZH |
 | [一句话做事（试用）](ONE_SENTENCE.zh.md) | 自然语言多步动作链规划、缺参追问与确认前零改动保证 | [ZH](ONE_SENTENCE.zh.md) · [EN](ONE_SENTENCE.md) |
 | [身份与 HTTP 访问](IDENTITY_ACCESS.zh.md) | 操作人登记、角色绑定、动作权限解析与零用户本地模式 | [ZH](IDENTITY_ACCESS.zh.md) · [EN](IDENTITY_ACCESS.md) |
+| [动作声明内核](ACTION_DECLARATIONS.md) | 封闭式动作声明模型、`action_store` 事务生命周期、`k1.v1` 内部 IR 与独立授权数据 | ZH |
 
 ## 6. 架构、部署与运维
 

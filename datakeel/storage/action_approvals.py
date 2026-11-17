@@ -34,8 +34,8 @@ def approve_plan(
     with db.session() as session:
         db.lock_writes(session)
         row, plan = locked_plan(session, plan_id)
-        require_production_human(plan, access)
         require_vector_human(plan, access)
+        require_production_human(plan, access)
         refuse_tool_decision(plan.action_type, access)
         role_action = plan.action_type in {"define_role", "update_role"}
         verify_plan(

@@ -10,10 +10,13 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from datakeel.action_store.lifecycle import stage
 from datakeel.actions.catalog_parameters import CatalogActionParams
 from datakeel.actions.data_asset_parameters import DataAssetActionParams
 from datakeel.actions.datasheet_parameters import GenerateDatasheetParams, PublishDatasheetParams
+from datakeel.actions.declarations import ActionFrame, required
 from datakeel.actions.dq_parameters import QualityActionParams
+from datakeel.actions.file_declarations import active_declarations
 from datakeel.actions.identity_parameters import IdentityActionParams
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.label_draft_parameters import DraftLabelSetParams
@@ -59,7 +62,7 @@ from datakeel.storage.standard_changes import execute_standard_action
 from datakeel.worker_store.rows import ShardRow, TaskRow
 
 
-def _metadata(session: Session, params: MetadataParams) -> OperationResult:
+def _metadata(session: Session, _plan: ActionPlan, params: MetadataParams) -> OperationResult:
     dataset = session.get(DatasetRow, params.dataset_id, with_for_update=True)
     if dataset is None:
         msg = "Dataset no longer exists"
@@ -131,23 +134,25 @@ _TYPED_ACTIONS: tuple[
     (PublishReleaseParams, publish_release),
     (CatalogActionParams, execute_catalog_action),
     (DecideAssertionsParams, decide_action),
+    (MetadataParams, _metadata),
+    (PipelineParams, _pipeline),
+    (RunKGExtractionParams, schedule_extraction),
+    (DraftLabelSetParams, execute_label_draft),
 )
 
 
 def execute_business(session: Session, plan: ActionPlan) -> OperationResult:
     """Mutate a validated plan without opening or committing another transaction."""
     params = parse_params(plan.action_type, JsonDocument(plan.canonical_params))
+    if plan.action_type in active_declarations():
+        frame = stage(plan.action_type, "execute", session, ActionFrame(params=params, plan=plan))
+        return required(frame.result)
     for kind, handler in _TYPED_ACTIONS:
         if isinstance(params, kind):
             return handler(session, plan, params)
-    if plan.action_type in {"quarantine_files", "unquarantine_files", "delete_files"}:
+    if plan.action_type == "delete_files":
         change_file_state(session, plan)
-        outputs = (
-            []
-            if plan.action_type == "delete_files"
-            else [item.asset_ref for item in plan.manifest.objects]
-        )
-        return OperationResult(outputs=outputs)
+        return OperationResult()
     if plan.action_type == "create_version_from_selection":
         dataset_id = single_dataset(plan)
         version = VersionRow(
@@ -159,17 +164,5 @@ def execute_business(session: Session, plan: ActionPlan) -> OperationResult:
         return OperationResult(
             outputs=[AssetRef(asset_type="version", asset_id=version.id, version=version.id)]
         )
-    return _additional_action(session, plan, params)
-
-
-def _additional_action(session: Session, plan: ActionPlan, params: object) -> OperationResult:
-    if isinstance(params, MetadataParams):
-        return _metadata(session, params)
-    if isinstance(params, PipelineParams):
-        return _pipeline(session, plan, params)
-    if isinstance(params, RunKGExtractionParams):
-        return schedule_extraction(session, plan, params)
-    if isinstance(params, DraftLabelSetParams):
-        return execute_label_draft(session, plan, params)
     msg = "No in-database handler for this action"
     raise NotFoundError(msg)

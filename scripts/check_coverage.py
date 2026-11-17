@@ -18,6 +18,7 @@ CRITICAL_PACKAGES = (
     "worker_store",
     "lineage",
     "actions",
+    "action_store",
     "worker",
     "harness",
     "agent",
@@ -65,6 +66,7 @@ def belongs_to_package(name: str, package: str) -> bool:
     return (
         name == f"datakeel/{package}"
         or name.startswith(f"datakeel/{package}/")
+        or (package == "actions" and name.startswith("datakeel/action_store/"))
         or (package == "worker" and name.startswith("datakeel/worker_store/"))
         or (
             package in {"worker", "worker_store"}

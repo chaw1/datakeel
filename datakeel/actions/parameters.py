@@ -25,6 +25,7 @@ from datakeel.actions.dq_parameters import (
     RunQualityRuleParams,
     UpdateQualityRuleParams,
 )
+from datakeel.actions.file_declarations import active_declarations
 from datakeel.actions.identity_parameters import IDENTITY_PARAMETER_TYPES
 from datakeel.actions.kg_parameters import RunKGExtractionParams
 from datakeel.actions.label_draft_parameters import DraftLabelSetParams
@@ -32,6 +33,7 @@ from datakeel.actions.llm_data_parameters import CleanTrainingParams
 from datakeel.actions.production_catalog_parameters import CATALOG_PARAMETER_TYPES
 from datakeel.actions.production_parameters import PRODUCTION_PARAMETER_TYPES
 from datakeel.actions.release_parameters import PublishReleaseParams
+from datakeel.actions.selection_parameters import SelectionParams
 from datakeel.actions.standard_parameters import (
     ConfirmStandardMappingParams,
     ImportStandardsParams,
@@ -49,12 +51,6 @@ from datakeel.core.transcription_auto import require_current_auto_policy
 from datakeel.core.vector_models import VectorPrepared
 from datakeel.ontology.models import ObjectSet, PropertyFilter
 from datakeel.pipeline import Pipeline, validate_pipeline
-
-
-class SelectionParams(BoundaryModel):
-    """Resolve a file ObjectSet to a frozen manifest before changing state."""
-
-    selection: ObjectSet
 
 
 class VersionParams(SelectionParams):
@@ -142,8 +138,11 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "draft_label_set": DraftLabelSetParams,
     "clean_training_data": CleanTrainingParams,
     "annotation_acceptance": AnnotationAcceptanceParams,
-    "quarantine_files": SelectionParams,
-    "unquarantine_files": SelectionParams,
+    **{
+        name: declaration.params
+        for name, declaration in active_declarations().items()
+        if declaration.compatibility == "replace"
+    },
     "delete_files": SelectionParams,
     "create_version_from_selection": VersionParams,
     "run_pipeline": PipelineParams,
@@ -173,6 +172,10 @@ PARAMETER_TYPES: dict[str, type[BoundaryModel]] = {
     "run_quality_rule": RunQualityRuleParams,
     "change_quality_issue": ChangeQualityIssueParams,
 }
+
+PARAMETER_TYPES.update(
+    {name: declaration.params for name, declaration in active_declarations().items()}
+)
 
 
 def parse_params(action_type: str, params: JsonDocument) -> BoundaryModel:

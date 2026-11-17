@@ -61,10 +61,7 @@ CORE_MUTATIONS = (
     Mutation(
         name="target-state",
         path="storage/action_planning.py",
-        before=(
-            "if snapshot_digest(session, params, current) != plan.state_digest "
-            "or current.truncated:"
-        ),
+        before=("if state != plan.state_digest or current.truncated:"),
         after="if False:",
         case="06-frozen-approval",
     ),

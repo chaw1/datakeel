@@ -3,6 +3,7 @@
 
 """Declare built-in action policies separately from their execution handlers."""
 
+from datakeel.actions.file_declarations import active_declarations
 from datakeel.actions.identity_parameters import IDENTITY_POLICIES
 from datakeel.actions.label_draft_parameters import DRAFT_POLICIES
 from datakeel.actions.parameters import PARAMETER_TYPES
@@ -13,7 +14,7 @@ from datakeel.core.errors import ValidationError
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.models import ActionType
 
-POLICIES: dict[str, tuple[str, bool, str]] = {
+LEGACY_POLICIES: dict[str, tuple[str, bool, str]] = {
     "clean_training_data": ("datasets:write", False, "Publish an approved clean training version"),
     **IDENTITY_POLICIES,
     **PRODUCTION_POLICIES,
@@ -27,8 +28,11 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
     "decide_asset_application": ("data-assets:approve", False, "Decide an access application"),
     "revoke_asset_grant": ("data-assets:approve", False, "Revoke an access grant"),
     "annotation_acceptance": ("annotations:accept", False, "Archive signed sampling acceptance"),
-    "quarantine_files": ("files:write", True, "Set quarantine state"),
-    "unquarantine_files": ("files:write", True, "Clear quarantine state"),
+    **{
+        name: (value.auth_scope, value.reversible, value.effect_text)
+        for name, value in active_declarations().items()
+        if value.compatibility == "replace"
+    },
     "create_version_from_selection": (
         "datasets:write",
         True,
@@ -71,14 +75,34 @@ POLICIES: dict[str, tuple[str, bool, str]] = {
 }
 
 
+# Declaration slots retain original ordering; the archived baseline is the rollback source.
+POLICIES = {
+    **LEGACY_POLICIES,
+    **{
+        name: (value.auth_scope, value.reversible, value.effect_text)
+        for name, value in active_declarations().items()
+    },
+}
+
+
 def action_definition(action_type: str) -> ActionType:
     """Resolve a declared action's schemas, required scope, and reversibility."""
     policy = POLICIES.get(action_type)
+    declaration = active_declarations().get(action_type)
+    if policy is None and declaration is not None:
+        policy = (declaration.auth_scope, declaration.reversible, declaration.effect_text)
     if policy is None:
         msg = f"Unknown action: {action_type}"
         raise ValidationError(msg)
-    scope, reversible, effect = policy
+    scope, reversible, effect = (
+        policy
+        if declaration is None
+        else (declaration.auth_scope, declaration.reversible, declaration.effect_text)
+    )
     phrases, examples = action_language(action_type)
+    if declaration is not None:
+        phrases = {key: list(values) for key, values in declaration.phrases}
+        examples = {key: list(values) for key, values in declaration.legacy_examples}
     return ActionType(
         id=action_type,
         params_schema=JsonDocument.model_validate(PARAMETER_TYPES[action_type].model_json_schema()),
@@ -90,9 +114,9 @@ def action_definition(action_type: str) -> ActionType:
         ],
         effects=[effect],
         reversible=reversible,
-        inverse_of={
-            "quarantine_files": "unquarantine_files",
-            "unquarantine_files": "quarantine_files",
+        inverse_of=declaration.inverse
+        if declaration is not None
+        else {
             "decide_assertions": "decide_assertions",
             "import_catalog": "restore_catalog",
             "restore_catalog": "import_catalog",
@@ -114,4 +138,4 @@ def action_definition(action_type: str) -> ActionType:
 
 def action_definitions() -> list[ActionType]:
     """List versioned policies used by ontology and tool discovery."""
-    return [action_definition(name) for name in POLICIES]
+    return [action_definition(name) for name in dict.fromkeys((*POLICIES, *active_declarations()))]
