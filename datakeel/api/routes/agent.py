@@ -54,9 +54,43 @@ def create(body: ConversationCreate, db: DatabaseDependency, request: Request) -
 
 
 @router.get("")
-def list_all(db: DatabaseDependency, request: Request) -> list[ConversationView]:
+def list_all(
+    db: DatabaseDependency, request: Request, q: str | None = None, dataset_id: str | None = None
+) -> list[ConversationView]:
     """List recoverable local conversations."""
-    return service.list_conversations(db, actor=http_actor(request))
+    return _filter_conversations(
+        service.list_conversations(db, actor=http_actor(request)), q=q, dataset_id=dataset_id
+    )
+
+
+def _filter_conversations(
+    items: list[ConversationView], *, q: str | None, dataset_id: str | None
+) -> list[ConversationView]:
+    """Search already authorized transcripts without changing their established order."""
+    tokens = (q or "").casefold().split()
+    dataset_id = (dataset_id or "").strip()
+    if not tokens and not dataset_id:
+        return items
+    matches: list[ConversationView] = []
+    for item in items:
+        if dataset_id and item.config.dataset_id != dataset_id:
+            continue
+        fields = [item.id, item.config.dataset_id or "", item.config.model]
+        fields.extend(
+            message.content for message in item.messages if message.role in {"user", "assistant"}
+        )
+        fields.extend(call.name for message in item.messages for call in message.tool_calls)
+        fields.extend(event.call.name for event in item.events if event.call is not None)
+        fields.extend(
+            text
+            for event in item.events
+            if event.intent is not None
+            for text in (event.intent.text, event.intent.request, event.intent.kind)
+        )
+        searchable = "\n".join(fields).casefold()
+        if all(token in searchable for token in tokens):
+            matches.append(item)
+    return matches
 
 
 @router.get("/{conversation_id}")

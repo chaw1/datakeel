@@ -2,6 +2,12 @@ import { intentZh } from "./intentZh";
 
 import type { agentEn } from "./agentEn";
 export const agentZh: Record<keyof typeof agentEn, string> = {
+  memorySearch: "搜索记忆",
+  memoryEdit: "编辑记忆",
+  memoryEditContent: "编辑记忆内容",
+  memorySave: "保存记忆",
+  memorySaving: "正在保存记忆…",
+  memoryCancelEdit: "取消编辑",
   conversationTokenLimit: "会话词元上限",
   dailyTokenLimit: "每日词元上限",
   conversationUsdLimit: "会话美元上限",

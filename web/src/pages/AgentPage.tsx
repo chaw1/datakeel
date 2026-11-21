@@ -52,7 +52,11 @@ export function AgentPage({
     params.get("conversation") ?? "",
   );
   const initialContent = params.get("prompt") ?? "";
-  const conversations = useResource<Conversation[]>("/api/agent/conversations");
+  const [query, setQuery] = useState("");
+  const search = query.trim();
+  const conversations = useResource<Conversation[]>(
+    `/api/agent/conversations${search ? `?q=${encodeURIComponent(search)}` : ""}`,
+  );
   const id =
     chosenConversation || conversationId || conversations.value?.[0]?.id || "";
   const session = useConversation(id);
@@ -139,6 +143,8 @@ export function AgentPage({
           selectedId={id}
           creating={creating}
           disabled={session.live.running}
+          query={query}
+          onQueryChange={setQuery}
           onSelect={(value) => {
             setChosenConversation(value);
             onConversation(value);

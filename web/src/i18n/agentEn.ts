@@ -1,6 +1,12 @@
 import { intentEn } from "./intentEn";
 
 export const agentEn = {
+  memorySearch: "Search memories",
+  memoryEdit: "Edit memory",
+  memoryEditContent: "Edit memory content",
+  memorySave: "Save memory",
+  memorySaving: "Saving memory…",
+  memoryCancelEdit: "Cancel edit",
   conversationTokenLimit: "Conversation token limit",
   dailyTokenLimit: "Daily token limit",
   conversationUsdLimit: "Conversation USD limit",

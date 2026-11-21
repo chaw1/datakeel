@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
+import { actionPlan } from "../../test/actionFixtures";
 import { conversation } from "../../test/agentFixtures";
 import { dataset } from "../../test/fixtures";
 
@@ -23,6 +24,9 @@ it("does not create or switch conversations during composition", async () => {
       onSelect={select}
     />,
   );
+  expect(screen.queryByRole("searchbox")).toBeNull();
+  expect(screen.getByText("Turns: 0")).toBeVisible();
+  expect(screen.queryByText(/Pending plans:/)).toBeNull();
   const button = screen.getByRole("button", { name: "New conversation" });
   const existing = screen.getByRole("button", {
     name: /^Conversation conversa/,
@@ -45,4 +49,32 @@ it("does not create or switch conversations during composition", async () => {
   );
   await user.click(existing);
   expect(select).toHaveBeenCalledExactlyOnceWith(conversation.id);
+});
+
+it("shows controlled search and compact turn and pending-plan metadata", () => {
+  const onQueryChange = vi.fn();
+  render(
+    <ConversationSidebar
+      conversations={[
+        { ...conversation, turns: 4, pending_plans: [actionPlan] },
+      ]}
+      datasets={[]}
+      selectedId={conversation.id}
+      datasetId=""
+      creating={false}
+      disabled={false}
+      query="quality"
+      onQueryChange={onQueryChange}
+      onCreate={vi.fn()}
+      onSelect={vi.fn()}
+    />,
+  );
+  const search = screen.getByRole("searchbox", {
+    name: "Search conversations",
+  });
+  expect(search).toHaveValue("quality");
+  fireEvent.change(search, { target: { value: "quality inspect" } });
+  expect(onQueryChange).toHaveBeenCalledExactlyOnceWith("quality inspect");
+  expect(screen.getByText("Turns: 4")).toBeVisible();
+  expect(screen.getByText("Pending plans: 1")).toHaveClass("ui-badge-warn");
 });

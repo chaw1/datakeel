@@ -36,12 +36,6 @@ import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
-  memorySearch: "Search memories",
-  memoryEdit: "Edit memory",
-  memoryEditContent: "Edit memory content",
-  memorySave: "Save memory",
-  memorySaving: "Saving memory…",
-  memoryCancelEdit: "Cancel edit",
   agentExecutionMode: "Execution mode",
   agentModeAuto: "Auto",
   agentModePlan: "Plan",
@@ -53,6 +47,15 @@ export const en = {
   agentCallTree: "Agent call tree",
   agentCallTreeTotal: "Total call-tree tokens: {count}",
   agentCallTreeEmpty: "No Agent calls have been recorded yet.",
+  agentCallTreeCost: "Total cost: {cost}",
+  agentCallTreeTools: "Tool calls: {count} · {elapsed} ms",
+  agentCallTreeModels: "Models: {models}",
+  agentModelCalls: "Model calls: {count}",
+  agentToolLatency: "Tool latency: {elapsed} ms",
+  agentFailedTools: "Failed tools: {count}",
+  conversationSearch: "Search conversations",
+  conversationTurns: "Turns: {count}",
+  conversationPendingPlans: "Pending plans: {count}",
   ...workbenchEn,
   ...wbTeamEn,
   ...wbTemplateEn,

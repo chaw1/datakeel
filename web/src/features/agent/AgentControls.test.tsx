@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
@@ -35,6 +35,41 @@ function withMessage(events: Conversation["events"]): Conversation {
 function json(value: unknown) {
   return Response.json(value);
 }
+
+it("searches on the server with trimmed encoded text and restores all conversations", async () => {
+  const current = withMessage([]);
+  const fetch = vi.fn((path: string) =>
+    Promise.resolve(
+      json(
+        path === "/api/agent/conversations"
+          ? [current]
+          : path.startsWith("/api/agent/conversations?")
+            ? []
+            : current,
+      ),
+    ),
+  );
+  vi.stubGlobal("fetch", fetch);
+  render(<AgentPage {...props} />);
+  const existing = { name: /^Inspect low quality files/ };
+  expect(await screen.findByRole("button", existing)).toBeVisible();
+  const search = screen.getByRole("searchbox", {
+    name: "Search conversations",
+  });
+  fireEvent.change(search, { target: { value: "  Quality & tools/报告  " } });
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/agent/conversations?q=${encodeURIComponent("Quality & tools/报告")}`,
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+  expect(screen.queryByRole("button", existing)).toBeNull();
+  await userEvent.clear(search);
+  expect(await screen.findByRole("button", existing)).toBeVisible();
+  expect(
+    fetch.mock.calls.filter(([path]) => path === "/api/agent/conversations"),
+  ).toHaveLength(2);
+});
 
 it("resumes the approved pause through its own endpoint without posting a message", async () => {
   const pause = [

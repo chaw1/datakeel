@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Button, Select } from "../../components/ui";
+import { Badge, Button, Input, Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
@@ -20,6 +20,8 @@ export function ConversationSidebar({
   datasetId,
   creating,
   disabled,
+  query = "",
+  onQueryChange,
   onSelect,
   onCreate,
 }: {
@@ -29,6 +31,8 @@ export function ConversationSidebar({
   datasetId: string;
   creating: boolean;
   disabled: boolean;
+  query?: string;
+  onQueryChange?: (value: string) => void;
   onSelect: (id: string) => void;
   onCreate: (
     datasetId: string,
@@ -98,6 +102,18 @@ export function ConversationSidebar({
       >
         {t(creating ? "agentWorking" : "newConversation")}
       </Button>
+      {onQueryChange && (
+        <Input
+          type="search"
+          aria-label={t("conversationSearch")}
+          placeholder={t("conversationSearch")}
+          value={query}
+          disabled={disabled}
+          onChange={(event) => {
+            onQueryChange(event.target.value);
+          }}
+        />
+      )}
       <nav aria-label={t("conversations")} className="conversation-list">
         {conversations.map((conversation) => (
           <button
@@ -119,6 +135,18 @@ export function ConversationSidebar({
                 t("conversationLabel", { id: conversation.id.slice(0, 8) })}
             </span>
             <small>{date(conversation.created_at, locale)}</small>
+            <span>
+              <small>
+                {t("conversationTurns", { count: conversation.turns })}
+              </small>{" "}
+              {!!conversation.pending_plans?.length && (
+                <Badge tone="warn">
+                  {t("conversationPendingPlans", {
+                    count: conversation.pending_plans.length,
+                  })}
+                </Badge>
+              )}
+            </span>
           </button>
         ))}
       </nav>

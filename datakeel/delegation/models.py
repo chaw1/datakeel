@@ -3,6 +3,8 @@
 
 """Frozen specialist definitions and callback boundaries for delegated execution."""
 
+from decimal import Decimal
+
 from pydantic import Field
 
 from datakeel.core.harness_models import ModelCallTrace
@@ -52,6 +54,10 @@ class CallTreeNode(BoundaryModel):
     parent_tool_call_id: str | None
     tokens: int
     tools: list[str]
+    cost_usd: Decimal = Field(default=Decimal(0), ge=0, allow_inf_nan=False)
+    model_calls: int = Field(default=0, ge=0)
+    tool_elapsed_ms: float = Field(default=0.0, ge=0.0)
+    failed_tools: int = Field(default=0, ge=0)
 
 
 class CallTree(BoundaryModel):
@@ -59,3 +65,8 @@ class CallTree(BoundaryModel):
 
     nodes: list[CallTreeNode]
     traces: list[ModelCallTrace]
+    total_tokens: int = Field(default=0, ge=0)
+    total_cost_usd: Decimal = Field(default=Decimal(0), ge=0, allow_inf_nan=False)
+    total_tool_calls: int = Field(default=0, ge=0)
+    total_tool_elapsed_ms: float = Field(default=0.0, ge=0.0)
+    models: list[str] = Field(default_factory=list[str])

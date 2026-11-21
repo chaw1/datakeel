@@ -37,12 +37,6 @@ import { workspaceZh } from "./workspaceZh";
 
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
-  memorySearch: "搜索记忆",
-  memoryEdit: "编辑记忆",
-  memoryEditContent: "编辑记忆内容",
-  memorySave: "保存记忆",
-  memorySaving: "正在保存记忆…",
-  memoryCancelEdit: "取消编辑",
   agentExecutionMode: "执行模式",
   agentModeAuto: "智能",
   agentModePlan: "一句话规划",
@@ -54,6 +48,15 @@ export const zh: Record<MessageKey, string> = {
   agentCallTree: "代理调用树",
   agentCallTreeTotal: "调用树总词元：{count}",
   agentCallTreeEmpty: "还没有代理调用记录。",
+  agentCallTreeCost: "总费用：{cost}",
+  agentCallTreeTools: "工具调用：{count} · {elapsed} 毫秒",
+  agentCallTreeModels: "模型：{models}",
+  agentModelCalls: "模型调用：{count}",
+  agentToolLatency: "工具耗时：{elapsed} 毫秒",
+  agentFailedTools: "失败工具：{count}",
+  conversationSearch: "搜索会话",
+  conversationTurns: "轮数：{count}",
+  conversationPendingPlans: "待处理计划：{count}",
   ...workbenchZh,
   ...wbTeamZh,
   ...wbTemplateZh,

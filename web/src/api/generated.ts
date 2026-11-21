@@ -5259,8 +5259,30 @@ export interface components {
          * @description Return independently auditable nodes and their individual model-call traces.
          */
         CallTree: {
+            /** Models */
+            models?: string[];
             /** Nodes */
             nodes: components["schemas"]["CallTreeNode"][];
+            /**
+             * Total Cost Usd
+             * @default 0
+             */
+            total_cost_usd: string;
+            /**
+             * Total Tokens
+             * @default 0
+             */
+            total_tokens: number;
+            /**
+             * Total Tool Calls
+             * @default 0
+             */
+            total_tool_calls: number;
+            /**
+             * Total Tool Elapsed Ms
+             * @default 0
+             */
+            total_tool_elapsed_ms: number;
             /** Traces */
             traces: components["schemas"]["ModelCallTrace"][];
         };
@@ -5273,10 +5295,25 @@ export interface components {
             agent_name: string;
             /** Agent Path */
             agent_path: string;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd: string;
             /** Depth */
             depth: number;
+            /**
+             * Failed Tools
+             * @default 0
+             */
+            failed_tools: number;
             /** Id */
             id: string;
+            /**
+             * Model Calls
+             * @default 0
+             */
+            model_calls: number;
             /** Parent Id */
             parent_id: string | null;
             /** Parent Tool Call Id */
@@ -5285,6 +5322,11 @@ export interface components {
             root_id: string;
             /** Tokens */
             tokens: number;
+            /**
+             * Tool Elapsed Ms
+             * @default 0
+             */
+            tool_elapsed_ms: number;
             /** Tools */
             tools: string[];
         };
@@ -14359,7 +14401,10 @@ export interface operations {
     };
     list_all_api_agent_conversations_get: {
         parameters: {
-            query?: never;
+            query?: {
+                q?: string | null;
+                dataset_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -14373,6 +14418,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversationView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
