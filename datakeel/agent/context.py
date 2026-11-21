@@ -16,7 +16,7 @@ from datakeel.core.canary import canary_instruction
 from datakeel.core.context_tokens import allocate_tokens, estimate_tokens
 from datakeel.core.envelopes import envelope
 from datakeel.core.models import JsonDocument
-from datakeel.ontology.tool_history import compact_tool_search
+from datakeel.ontology.tool_history import compact_history
 
 __all__ = ["allocate_tokens", "assemble", "estimate_tokens"]
 
@@ -40,9 +40,7 @@ def assemble(
     memory_text: str = "",
 ) -> ModelRequest:
     """Place immutable instructions and core schemas before changing history and facts."""
-    history = [
-        envelope(compact_tool_search(message, loaded_tools)) for message in conversation.messages
-    ]
+    history = [envelope(m) for m in compact_history(conversation.messages, loaded_tools)]
     secret = canary_instruction(canary) if canary else ""
     parts = [
         ("instructions", "stable", INSTRUCTIONS),

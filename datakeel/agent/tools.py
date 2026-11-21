@@ -6,7 +6,7 @@
 from collections.abc import Callable
 from time import perf_counter
 
-from pydantic import Field, ValidationError
+from pydantic import ValidationError
 
 from datakeel.actions.policy import digest
 from datakeel.actions.registry import action_definitions
@@ -14,7 +14,7 @@ from datakeel.core.agent_models import Conversation, ToolCall, ToolDefinition
 from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
 from datakeel.core.json_schema import compact_schema
 from datakeel.core.llm_data_governance import TRAINING_QUALITY_DESCRIPTION
-from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.core.models import JsonDocument
 from datakeel.delegation.models import DelegateParams
 from datakeel.delegation.policy import tool_allowed
 from datakeel.memory.tools import invoke_memory, memory_tool
@@ -22,6 +22,7 @@ from datakeel.ontology.functions import PARAMETER_MODELS, function_definitions
 from datakeel.ontology.standard_functions import STANDARD_TOOL_DESCRIPTIONS
 from datakeel.ontology.tool_history import DEFERRED_READ_FUNCTIONS
 from datakeel.ontology.tool_models import ToolCallContext, ToolInvocationStart, ToolOutcome
+from datakeel.ontology.tool_search import ToolSearchParams, search_tools, tool_search_definition
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.ontology.training_functions import TRAINING_TOOL_DESCRIPTIONS
 from datakeel.storage.conversation_authorization import record_audit
@@ -34,45 +35,36 @@ from datakeel.storage.tool_invocations import (
 )
 
 
-class ToolSearchParams(BoundaryModel):
-    """Search read tool names or controlled action names and effects."""
-
-    query: str = Field(min_length=1, max_length=200)
-
-
 def resident_tools() -> list[ToolDefinition]:
     """Preserve the nine original read schemas and the bounded discovery tool."""
     return [
-        *[
-            ToolDefinition(
-                name=item.id,
-                description=f"Read {item.id}",
-                parameters=compact_schema(item.input_schema),
-            )
-            for item in function_definitions()
-            if item.id not in DEFERRED_READ_FUNCTIONS
-        ],
         ToolDefinition(
-            name="tool_search",
-            description="Discover reads and prepare-only actions.",
-            parameters=compact_schema(
-                JsonDocument.model_validate(ToolSearchParams.model_json_schema())
-            ),
-        ),
-    ]
+            name=item.id,
+            description=f"Read {item.id}",
+            parameters=compact_schema(item.input_schema),
+        )
+        for item in function_definitions()
+        if item.id not in DEFERRED_READ_FUNCTIONS
+    ] + [tool_search_definition()]
 
 
 def deferred_tools() -> list[ToolDefinition]:
     """Never advertise approval or execution authority to the model."""
+    descriptions = {
+        **STANDARD_TOOL_DESCRIPTIONS,
+        **TRAINING_TOOL_DESCRIPTIONS,
+        "get_training_quality": TRAINING_QUALITY_DESCRIPTION,
+        "ask_data": ASK_DATA_DESCRIPTION,
+    }
     reads = [
         ToolDefinition(
             name=item.id,
-            description=TRAINING_QUALITY_DESCRIPTION
-            if item.id == "get_training_quality"
-            else ASK_DATA_DESCRIPTION
-            if item.id == "ask_data"
-            else {**STANDARD_TOOL_DESCRIPTIONS, **TRAINING_TOOL_DESCRIPTIONS}.get(
-                item.id, f"Read {item.id}"
+            description=descriptions.get(item.id, f"Read {item.id}")
+            + "; "
+            + "; ".join(
+                text
+                for texts in (*item.phrases.values(), *item.examples.values())
+                for text in texts
             ),
             parameters=compact_schema(item.input_schema),
         )
@@ -95,8 +87,7 @@ def deferred_tools() -> list[ToolDefinition]:
                 description=f"Prepare {item.id}: {', '.join(item.effects)}"
                 + "; ".join(
                     text
-                    for group in (item.phrases, item.examples)
-                    for texts in group.values()
+                    for texts in (*item.phrases.values(), *item.examples.values())
                     for text in texts
                 ),
                 parameters=compact_schema(item.params_schema),
@@ -171,20 +162,10 @@ class ToolCatalog:
 
     def _search(self, call: ToolCall) -> ToolOutcome:
         try:
-            query = ToolSearchParams.model_validate(call.arguments.root).query.casefold()
-            matches = [
-                tool
-                for tool in self.deferred
-                if query in f"{tool.name} {tool.description}".casefold()
-            ]
-            matches = [tool for tool in matches if tool.name.casefold() == query] or matches
-            result = ToolOutcome(
-                name=call.name,
-                status="SUCCEEDED",
-                content=JsonDocument.model_validate(
-                    {"tools": [tool.model_dump(mode="json") for tool in matches]}
-                ),
+            content = search_tools(
+                self.deferred, ToolSearchParams.model_validate(call.arguments.root)
             )
+            result = ToolOutcome(name=call.name, status="SUCCEEDED", content=content)
             self._load(result)
         except ValidationError as error:
             result = ToolOutcome(name=call.name, status="FAILED", error=str(error))

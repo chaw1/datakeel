@@ -12,8 +12,9 @@ from datakeel.agent.evidence_demo import respond_evidence
 from datakeel.agent.service import create_conversation, send_message
 from datakeel.core.agent_models import ChatMessage, ConversationCreate, MessageInput, ModelRequest
 from datakeel.core.harness_models import BudgetLimits
-from datakeel.core.models import JsonDocument
-from datakeel.evidence.query_models import EvidenceQuery
+from datakeel.core.models import AssetRef, JsonDocument
+from datakeel.evidence.query_models import EvidenceQuery, EvidenceQueryResult, EvidenceSample
+from datakeel.ontology.tool_history import compact_history
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.storage.evidence_queries import query_evidence
 from tests.evidence.interface_fixtures import seed_query_evidence
@@ -119,3 +120,50 @@ def test_evidence_page_across_datasets_requires_explicit_scope_before_action(
     assert response is not None
     assert "选择一个数据集和来源版本" in response.content
     assert not list_runs(db)
+
+
+def test_evidence_followup_when_prior_read_folded_requires_query_before_action() -> None:
+    """Never reinterpret a compact preview as the original exact selected assets."""
+    sample = EvidenceSample(
+        asset_ref=AssetRef(asset_type="file", asset_id="sample"),
+        dataset_id="dataset",
+        source_version="v1",
+        filename="sample.png",
+        split="val",
+        thumbnail_url=None,
+        caption="generated fixture " * 250,
+        caption_spans=[],
+        annotation_boxes=[],
+        assertions=[],
+        quality_score=50,
+        near_duplicates=[],
+        quarantined=False,
+        deleted=False,
+    )
+    result = EvidenceQueryResult(items=[sample], next_cursor=None, total=1)
+    outcome = ToolOutcome(
+        name="query_evidence",
+        status="SUCCEEDED",
+        content=JsonDocument({"data": result.model_dump(mode="json")}),
+    )
+    messages = [
+        ChatMessage(role="tool", name="query_evidence", content=outcome.model_dump_json()),
+        *[
+            ChatMessage(
+                role="tool",
+                name="get_quality",
+                content=ToolOutcome(name="get_quality", status="SUCCEEDED").model_dump_json(),
+            )
+            for _ in range(4)
+        ],
+    ]
+    request = ModelRequest(model="fake", messages=messages, tools=[], segments=[])
+    before = respond_evidence(request, "隔离这些样本", JsonDocument({}), [])
+    assert before is not None
+    assert before.tool_calls[0].name == "tool_search"
+    request = request.model_copy(update={"messages": compact_history(messages, [])})
+    after = respond_evidence(request, "隔离这些样本", JsonDocument({}), [])
+    assert after is not None
+    assert "重新查询" in after.content
+    assert after.tool_calls == []
+    assert messages[0].content == outcome.model_dump_json()

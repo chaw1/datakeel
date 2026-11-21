@@ -7,7 +7,7 @@ from datakeel.agent.context import allocate_tokens, assemble, estimate_tokens
 from datakeel.agent.tools import deferred_tools, resident_tools
 from datakeel.core.agent_models import ChatMessage, Conversation, ConversationCreate
 from datakeel.core.envelopes import envelope, unwrap
-from datakeel.core.models import JsonDocument
+from datakeel.core.models import AssetRef, JsonDocument
 from datakeel.ontology.tool_models import ToolOutcome
 
 
@@ -148,3 +148,50 @@ def test_discovery_schema_equality_preserves_json_boolean_and_numeric_defaults()
         JsonDocument({}),
     )
     assert ToolOutcome.model_validate_json(unwrap(request.messages[1]).content) == outcome
+
+
+def test_old_read_folding_reduces_history_without_mutating_transcripts_or_stable_prefix() -> None:
+    """Assembly folds large old reads while preserving four recent tool outputs byte for byte."""
+    outcome = ToolOutcome(
+        name="query_evidence",
+        status="SUCCEEDED",
+        content=JsonDocument({"rows": [{"id": i, "text": "row" * 200} for i in range(200)]}),
+        asset_refs=[AssetRef(asset_id="dataset-1")],
+        invocation_id="old-read",
+    )
+    old = ChatMessage(role="tool", name=outcome.name, content=outcome.model_dump_json())
+    recent = [
+        ChatMessage(
+            role="tool",
+            name="list_datasets",
+            content=ToolOutcome(
+                name="list_datasets",
+                status="SUCCEEDED",
+                content=JsonDocument({"text": str(i) * 3000}),
+            ).model_dump_json(),
+        )
+        for i in range(4)
+    ]
+    conversation = Conversation(id="folding", config=ConversationCreate(), messages=[old, *recent])
+    persisted = conversation.model_dump_json()
+    empty = assemble(
+        Conversation(id="empty", config=ConversationCreate()),
+        resident_tools(),
+        [],
+        JsonDocument({}),
+    )
+    first = assemble(conversation, resident_tools(), [], JsonDocument({}))
+    second = assemble(conversation, resident_tools(), [], JsonDocument({}))
+    prompt = ToolOutcome.model_validate_json(unwrap(first.messages[1]).content)
+    assert prompt.content.root["folded"] is True
+    assert prompt.asset_refs == outcome.asset_refs
+    assert prompt.invocation_id == outcome.invocation_id
+    assert first.messages[2:6] == [envelope(message) for message in recent]
+    assert first == second
+    assert first.segments[:2] == empty.segments[:2]
+    assert conversation.model_dump_json() == persisted
+    history = next(segment for segment in first.segments if segment.name == "history")
+    assert (
+        history.tokens
+        < sum(estimate_tokens(message.content) for message in conversation.messages) // 5
+    )

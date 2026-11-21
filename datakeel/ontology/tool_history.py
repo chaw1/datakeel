@@ -1,15 +1,18 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Which reads the Agent discovers on demand, and how discovery results re-enter history."""
+"""Keep discovery schemas and large read history compact only at the prompt boundary."""
 
 import json
+from collections.abc import Sequence
 
 from pydantic import JsonValue, ValidationError
 
 from datakeel.core.agent_models import ChatMessage, ToolDefinition
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.tool_models import ToolOutcome
+
+_PREVIEW_DEPTH = 2
 
 DEFERRED_READ_FUNCTIONS = frozenset(
     {
@@ -45,7 +48,9 @@ DEFERRED_READ_FUNCTIONS = frozenset(
 )
 
 
-def compact_tool_search(message: ChatMessage, loaded_tools: list[ToolDefinition]) -> ChatMessage:
+def compact_tool_search(
+    message: ChatMessage, loaded_tools: Sequence[ToolDefinition]
+) -> ChatMessage:
     """Drop parameter schemas that the request already declares as native tool definitions."""
     if message.role != "tool" or message.name != "tool_search":
         return message
@@ -68,3 +73,64 @@ def compact_tool_search(message: ChatMessage, loaded_tools: list[ToolDefinition]
     }
     outcome = outcome.model_copy(update={"content": JsonDocument(content)})
     return message.model_copy(update={"content": outcome.model_dump_json()})
+
+
+def compact_history(
+    messages: Sequence[ChatMessage],
+    loaded_tools: Sequence[ToolDefinition],
+    *,
+    keep_recent_tools: int = 4,
+    max_tool_bytes: int = 2048,
+) -> list[ChatMessage]:
+    """Fold older read output without modifying persisted messages or recent tool exchanges."""
+    compacted = [compact_tool_search(message, loaded_tools) for message in messages]
+    candidates = [
+        index
+        for index, message in enumerate(compacted)
+        if message.role == "tool" and message.name != "tool_search"
+    ]
+    older = candidates[:-keep_recent_tools] if keep_recent_tools > 0 else candidates
+    for index in older:
+        compacted[index] = _fold_read(compacted[index], max_tool_bytes)
+    return compacted
+
+
+def _fold_read(message: ChatMessage, max_tool_bytes: int) -> ChatMessage:
+    original_bytes = len(message.content.encode("utf-8"))
+    if original_bytes <= max_tool_bytes:
+        return message
+    try:
+        outcome = ToolOutcome.model_validate_json(message.content)
+    except ValidationError:
+        return message
+    if outcome.plan is not None or outcome.run is not None:
+        return message
+    summary: dict[str, JsonValue] = {
+        "folded": True,
+        "original_bytes": original_bytes,
+        "keys": list(outcome.content.root),
+        "fields": {key: _preview(value) for key, value in outcome.content.root.items()},
+    }
+    folded = outcome.model_copy(update={"content": JsonDocument(summary)})
+    return message.model_copy(update={"content": folded.model_dump_json()})
+
+
+def _preview(value: JsonValue, depth: int = 0) -> JsonValue:
+    if isinstance(value, str):
+        return value[:240]
+    if isinstance(value, list):
+        return {
+            "item_count": len(value),
+            "preview": [_preview(item, depth + 1) for item in value[:2]]
+            if depth < _PREVIEW_DEPTH
+            else [],
+        }
+    if isinstance(value, dict):
+        return {
+            "keys": list(value),
+            "item_count": len(value),
+            "preview": {key: _preview(value[key], depth + 1) for key in list(value)[:2]}
+            if depth < _PREVIEW_DEPTH
+            else {},
+        }
+    return value

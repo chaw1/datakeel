@@ -146,5 +146,7 @@ def respond_evidence(
     selected = current or previous
     if selected is None:
         return None
+    if selected.content.root.get("folded") is True:
+        return ModelResponse(content="之前的证据结果已压缩。请重新查询后再操作。")
     result = EvidenceQueryResult.model_validate(selected.content.root.get("data"))
     return _answer(request, text, tools, result)
