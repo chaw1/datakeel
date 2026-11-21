@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import pytest
 from fastmcp import Client, Context
 from jsonschema import Draft202012Validator
-from mcp_types import Implementation, JSONRPCResponse
+from mcp_types import Implementation, JSONRPCResponse, Tool
 
 from datakeel.actions.models import ApprovalDecision, ExecuteRequest
 from datakeel.actions.parameters import PARAMETER_TYPES
@@ -20,6 +20,7 @@ from datakeel.datasets.views import DatasetView
 from datakeel.mcp import create_server
 from datakeel.mcp.catalog import tool_definitions
 from datakeel.mcp.dispatch import caller_context
+from datakeel.mcp.local_tools import LOCAL_TOOL_NAMES, READ_ONLY_LOCAL_TOOLS
 from datakeel.ontology import tooling
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.models import ObjectSet
@@ -39,6 +40,15 @@ async def call(client: Client, name: str, arguments: JsonDocument) -> ToolOutcom
     return result
 
 
+def _assert_annotations(tool: Tool) -> None:
+    assert tool.annotations is not None
+    assert tool.annotations.open_world_hint is False
+    assert tool.annotations.destructive_hint is False
+    read_only = tool.name in PARAMETER_MODELS or tool.name in READ_ONLY_LOCAL_TOOLS
+    assert tool.annotations.read_only_hint is read_only
+    assert tool.annotations.idempotent_hint is read_only
+
+
 def test_server_when_initialized_lists_registered_valid_model_generated_tools(db: Database) -> None:
     """Expose exact argument contracts and structured outcomes through a real MCP handshake."""
 
@@ -48,7 +58,7 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             assert client.initialize_result.server_info.name == "Datakeel"
             listed = await client.list_tools()
         expected = {item.name: item for item in tool_definitions()}
-        assert len(listed) == len(expected) == 99 + 2 + 1  # v0.19.0 +2, draft_label_set +1
+        assert len(listed) == len(expected) == 99 + 2 + 1 + 4
         assert {"training_distribution", "training_leakage"} <= {tool.name for tool in listed}
         training = next(tool for tool in listed if tool.name == "get_training_quality")
         assert training.annotations is not None
@@ -93,8 +103,7 @@ def test_server_when_initialized_lists_registered_valid_model_generated_tools(db
             Draft202012Validator.check_schema(tool.output_schema)
             assert tool.input_schema["title"] == expected[tool.name].parameters.root["title"]
             assert tool.input_schema["additionalProperties"] is False
-            assert tool.annotations is not None
-            assert tool.annotations.open_world_hint is False
+            _assert_annotations(tool)
         assert list_invocations(db) == []
 
     asyncio.run(scenario())
@@ -137,7 +146,7 @@ def test_server_exposes_no_approval_or_execution_tool_and_refuses_them(
     """Approval and execution belong to a person on the Web UI or CLI, never to an MCP host."""
     names = {item.name for item in tool_definitions()}
     assert names.isdisjoint(tooling.CONTROL_TOOLS)
-    assert names == set(PARAMETER_MODELS) | set(PARAMETER_TYPES)
+    assert names == set(PARAMETER_MODELS) | set(PARAMETER_TYPES) | LOCAL_TOOL_NAMES
     selection = JsonDocument({"selection": {"dataset_id": dataset.id, "quality_max": 0}})
 
     async def scenario() -> tuple[ToolOutcome, ToolOutcome, ToolOutcome]:

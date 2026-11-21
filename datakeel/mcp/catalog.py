@@ -9,6 +9,7 @@ from datakeel.core.agent_models import ToolDefinition
 from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
 from datakeel.core.llm_data_governance import TRAINING_QUALITY_DESCRIPTION
 from datakeel.core.models import JsonDocument
+from datakeel.mcp.local_tools import local_tool_definitions
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.standard_functions import STANDARD_TOOL_DESCRIPTIONS
 from datakeel.ontology.training_functions import TRAINING_TOOL_DESCRIPTIONS
@@ -24,7 +25,7 @@ def tool_definitions() -> list[ToolDefinition]:
             parameters=JsonDocument.model_validate(model.model_json_schema()),
         )
         for name, model in models.items()
-    ]
+    ] + local_tool_definitions()
 
 
 def _description(name: str) -> str:

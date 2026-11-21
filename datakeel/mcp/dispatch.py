@@ -3,13 +3,16 @@
 
 """Translate protocol context and results around the shared audited tool dispatcher."""
 
+from collections.abc import Sequence
 from functools import partial
 
 from anyio import to_thread
 from fastmcp import Context
 from fastmcp.tools import ToolResult
 
+from datakeel.core.agent_models import ToolDefinition
 from datakeel.core.models import JsonDocument
+from datakeel.mcp.local_tools import LOCAL_TOOL_NAMES, invoke_local_tool
 from datakeel.ontology.tool_models import ToolCallContext
 from datakeel.ontology.tooling import invoke_tool
 from datakeel.storage.database import Database
@@ -26,12 +29,21 @@ def caller_context(context: Context) -> ToolCallContext:
 
 
 async def dispatch(
-    db: Database, name: str, arguments: JsonDocument, context: Context
+    db: Database,
+    name: str,
+    arguments: JsonDocument,
+    context: Context,
+    catalog: Sequence[ToolDefinition],
 ) -> ToolResult:
     """Audit schema failures and business outcomes through the single domain entry point."""
-    outcome = await to_thread.run_sync(
-        partial(invoke_tool, db, name, arguments, caller_context(context), entry="mcp")
-    )
+    if name in LOCAL_TOOL_NAMES:
+        outcome = await to_thread.run_sync(
+            partial(invoke_local_tool, db, name, arguments, caller_context(context), catalog)
+        )
+    else:
+        outcome = await to_thread.run_sync(
+            partial(invoke_tool, db, name, arguments, caller_context(context), entry="mcp")
+        )
     return ToolResult(
         content=outcome.model_dump_json(),
         structured_content=outcome.model_dump(mode="json"),
