@@ -9,6 +9,24 @@ import type { PageContext } from "../../api/intents";
 import type { AgentEvent, Conversation } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
+function runningTools(events: AgentEvent[]) {
+  const pending = new Map<string, AgentEvent[]>();
+  for (const event of events) {
+    const path = event.agent_path || "main";
+    const calls = pending.get(path) ?? [];
+    if (event.event === "tool_call") pending.set(path, [...calls, event]);
+    if (event.event === "tool_result")
+      pending.set(
+        path,
+        event.call?.id
+          ? calls.filter((item) => item.call?.id !== event.call?.id)
+          : calls.slice(1),
+      );
+    if (["stopped", "done"].includes(event.event)) pending.delete(path);
+  }
+  return new Set([...pending.values()].flat().map((event) => event.id));
+}
+
 function approvalPause(events: AgentEvent[]) {
   const root = events.filter(
     (event) => !event.agent_path || event.agent_path === "main",
@@ -58,7 +76,8 @@ export function ConversationTranscript({
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (panel.current) panel.current.scrollTop = panel.current.scrollHeight;
-  }, [conversation.events.length, live.events.length, live.content]);
+  }, [conversation.events.length, live.events, live.content]);
+  const running = busy ? runningTools(live.events) : new Set<string>();
   const users = conversation.messages
     .filter((message) => message.role === "user")
     .map((message) => message.content);
@@ -117,6 +136,7 @@ export function ConversationTranscript({
             events={events}
             dryRun={conversation.config.dry_run}
             busy={busy}
+            runningTools={running}
             context={context}
             onResolved={onResolved}
             onOpenReceipt={onOpenReceipt}

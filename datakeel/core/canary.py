@@ -4,7 +4,7 @@
 """Short per-conversation sentinels and deterministic output leak detection."""
 
 import secrets
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 from pydantic import JsonValue
 
@@ -12,6 +12,43 @@ from datakeel.core.agent_models import ModelResponse
 
 PREFIX = "dkc_"
 MIN_FRAGMENT = 16
+HOLD_NON_WHITESPACE = len(PREFIX) + 24
+
+
+class CanaryStreamBuffer:
+    """Release safe prefixes while retaining enough text to catch split sentinel leaks."""
+
+    def __init__(self, canaries: Sequence[str]) -> None:
+        """Keep stream-local state and a stable set of active conversation secrets."""
+        self._canaries = tuple(canary for canary in canaries if canary)
+        self._buffer = ""
+        self.emitted = 0
+        self.leaked = False
+
+    def push(self, chunk: str) -> str:
+        """Inspect accumulated text before releasing anything outside the holdback window."""
+        if self.leaked or not chunk:
+            return ""
+        self._buffer += chunk
+        if any(is_leak(canary, self._buffer) for canary in self._canaries):
+            self.leaked = True
+            return ""
+        boundary, remaining = len(self._buffer), HOLD_NON_WHITESPACE
+        while boundary and remaining:
+            boundary -= 1
+            remaining -= not self._buffer[boundary].isspace()
+        safe = self._buffer[self.emitted : boundary]
+        self.emitted = max(self.emitted, boundary)
+        return safe
+
+    def finish(self) -> str:
+        """Flush the unsent tail only after a final complete-output leak check."""
+        if self.leaked or any(is_leak(canary, self._buffer) for canary in self._canaries):
+            self.leaked = True
+            return ""
+        tail = self._buffer[self.emitted :]
+        self.emitted = len(self._buffer)
+        return tail
 
 
 def generate_canary() -> str:

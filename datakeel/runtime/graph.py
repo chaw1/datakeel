@@ -4,10 +4,10 @@
 """Synchronous checkpointed graph scheduling for the existing controlled Agent behavior."""
 
 from collections.abc import Iterator
-from functools import partial
 from typing import TYPE_CHECKING, Literal, cast
 
 import httpx
+from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 from pydantic import Field, JsonValue
@@ -18,11 +18,18 @@ from datakeel.agent.guards import LoopGuard
 from datakeel.agent.metering import ModelMeter
 from datakeel.agent.models import AgentEvent
 from datakeel.agent.recovery import execute_approved
-from datakeel.core.agent_models import ChatMessage, Provider, ResumeInput, ToolCall
-from datakeel.core.canary import response_leaks
+from datakeel.core.agent_models import (
+    ChatMessage,
+    ModelRequest,
+    ModelResponse,
+    Provider,
+    ResumeInput,
+    ToolCall,
+)
+from datakeel.core.canary import CanaryStreamBuffer, response_leaks
 from datakeel.core.errors import BudgetError, ConflictError, DatakeelError, ValidationError
 from datakeel.core.models import BoundaryModel
-from datakeel.delegation.policy import ancestor_leak
+from datakeel.delegation.policy import ancestor_leak, conversation_canaries
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.tool_models import ToolOutcome
 from datakeel.runtime import DURABILITY
@@ -143,31 +150,59 @@ class AgentGraph:
         return self._stream(command)
 
     def _stream(self, value: GraphState | Command[str] | None) -> Iterator[AgentEvent]:
+        emitted_ids: set[str] = set()
         with tracing_disabled():
-            for update in self.graph.stream(
-                value,
-                self.config,
-                stream_mode="updates",
-                durability=DURABILITY,
+            for mode, update in self.graph.stream(
+                value, self.config, stream_mode=["updates", "custom"], durability=DURABILITY
             ):
-                for node_update in cast("dict[str, object]", update).values():
-                    if isinstance(node_update, dict):
-                        events = cast("dict[str, list[str]]", node_update).get("events", [])
-                        for event in events:
-                            item = AgentEvent.model_validate_json(event)
-                            yield (
-                                item
-                                if item.agent_path != "main"
-                                else item.model_copy(
-                                    update={
-                                        "agent_path": self.conversation.agent_path,
-                                        "agent_name": self.conversation.agent_name,
-                                        "conversation_id": self.conversation_id,
-                                    }
-                                )
-                            )
+                items = (
+                    [AgentEvent.model_validate(update)]
+                    if mode == "custom"
+                    else [
+                        AgentEvent.model_validate_json(event)
+                        for node in cast("dict[str, object]", update).values()
+                        if isinstance(node, dict)
+                        for event in cast("dict[str, list[str]]", node).get("events", [])
+                    ]
+                )
+                for item in items:
+                    if item.id not in emitted_ids:
+                        emitted_ids.add(item.id)
+                        yield self._stamp(item)
             if self.graph.get_state(self.config).interrupts:
-                yield _stopped("approval_required")
+                yield self._stamp(_stopped("approval_required"))
+
+    def _stamp(self, event: AgentEvent) -> AgentEvent:
+        if event.agent_path != "main":
+            return event
+        return event.model_copy(
+            update={
+                "agent_path": self.conversation.agent_path,
+                "agent_name": self.conversation.agent_name,
+                "conversation_id": self.conversation_id,
+            }
+        )
+
+    def _emit(self, event: AgentEvent) -> None:
+        get_stream_writer()(self._stamp(event))
+
+    def _complete(self, request: ModelRequest) -> ModelResponse:
+        canaries = conversation_canaries(self.db, self.conversation)
+        buffer = CanaryStreamBuffer(canaries)
+
+        def delta(chunk: str) -> None:
+            if safe := buffer.push(chunk):
+                self._emit(AgentEvent(event="text_delta", text=safe))
+
+        try:
+            response = complete(cast("Provider", self.provider), request, on_text_delta=delta)
+        except DatakeelError:
+            if buffer.emitted:
+                self._emit(AgentEvent(event="text_delta", text=""))
+            raise
+        if not any(response_leaks(c, response) for c in canaries) and (tail := buffer.finish()):
+            self._emit(AgentEvent(event="text_delta", text=tail))
+        return response
 
     def _execute(self, state: GraphState) -> dict[str, JsonValue]:
         dispatcher = ToolDispatcher(self.db, self.conversation_id, self.token, self.guard)
@@ -197,7 +232,7 @@ class AgentGraph:
         meter = ModelMeter(self.db, self.conversation_id, self.token, self.provider)
         try:
             response = meter.complete(
-                partial(complete, self.provider),
+                self._complete,
                 has_plan=state.response_has_plan,
                 has_tool_result=state.response_has_tool_result,
             )
@@ -211,14 +246,10 @@ class AgentGraph:
         ):
             record_audit(self.db, self.conversation_id, "", "CANARY_LEAK", "model_output")
             return self._stop(state, "canary_leak")
-        memory.append(
-            self.db,
-            self.conversation_id,
-            self.token,
-            message=ChatMessage(
-                role="assistant", content=response.content, tool_calls=response.tool_calls
-            ),
+        message = ChatMessage(
+            role="assistant", content=response.content, tool_calls=response.tool_calls
         )
+        memory.append(self.db, self.conversation_id, self.token, message=message)
         events = [AgentEvent(event="text", text=response.content)] if response.content else []
         state = state.model_copy(
             update={
@@ -246,7 +277,9 @@ class AgentGraph:
     def _tools(self, state: GraphState) -> GraphState:
         self.guard.restore(state.guard)
         dispatcher = ToolDispatcher(self.db, self.conversation_id, self.token, self.guard)
-        delegated = DelegationExecutor(self.db, self.conversation, self.provider, AgentGraph)
+        delegated = DelegationExecutor(
+            self.db, self.conversation, self.provider, AgentGraph, self._emit
+        )
         dry_run = memory.get(self.db, self.conversation_id).config.dry_run
         calls = [ToolCall.model_validate_json(item) for item in state.calls]
         events: list[AgentEvent] = []
@@ -255,10 +288,14 @@ class AgentGraph:
         pending_call = ""
         for index, call in enumerate(calls):
             events.append(AgentEvent(event="tool_call", call=call))
+            self._emit(events[-1])
             results, reason = self._dispatch_tool(dispatcher, call, delegated, dry_run=dry_run)
-            events.extend(delegated.drain())
+            children = delegated.drain()
+            events.extend(children)
             reason = delegated.stop_reason or reason
             events.extend(results)
+            for event in [*children, *results]:
+                self._emit(event)
             if reason:
                 pending_call = call.model_dump_json()
                 for pending in calls[index + 1 :]:

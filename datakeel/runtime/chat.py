@@ -3,11 +3,12 @@
 
 """Translate typed model boundaries without changing prompt or usage accounting."""
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from anthropic import AnthropicError
 from anthropic import APIStatusError as AnthropicStatusError
 from anthropic import APITimeoutError as AnthropicTimeoutError
+from langchain_anthropic import ChatAnthropic
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import (
@@ -142,7 +143,9 @@ class ScriptedChatModel(BaseChatModel):
         return ChatResult(generations=[ChatGeneration(message=message)])
 
 
-def _invoke(model: BaseChatModel, request: ModelRequest) -> ModelResponse:
+def _invoke(
+    model: BaseChatModel, request: ModelRequest, on_text_delta: Callable[[str], None] | None = None
+) -> ModelResponse:
     tools = [
         {"type": "function", "function": tool.model_dump(mode="json")} for tool in request.tools
     ]
@@ -156,8 +159,11 @@ def _invoke(model: BaseChatModel, request: ModelRequest) -> ModelResponse:
         runnable = model.bind_tools(tools) if tools else model
         bound = runnable.bind(**options) if options else runnable
         messages = [_message(item) for item in request.messages]
-        if request.json_output and isinstance(model, ChatOpenAI):
-            return _response(_streamed(bound, messages, request))
+        callback = None if request.json_output else on_text_delta
+        if (request.json_output and isinstance(model, ChatOpenAI)) or (
+            isinstance(model, (ChatOpenAI, ChatAnthropic)) and callback is not None
+        ):
+            return _response(_streamed(bound, messages, request, on_text_delta=callback))
         message = bound.invoke(messages, model=request.model, max_tokens=request.max_output_tokens)
     return _response(message)
 
@@ -166,12 +172,10 @@ def _streamed(
     bound: Runnable[LanguageModelInput, BaseMessage],
     messages: list[BaseMessage],
     request: ModelRequest,
+    *,
+    on_text_delta: Callable[[str], None] | None = None,
 ) -> AIMessage:
-    """Join a streamed answer into one message.
-
-    A reasoning model sends chunks while it thinks, so a long answer keeps the connection
-    busy instead of idling into the read timeout.
-    """
+    """Keep the connection active, emit text, and retain authoritative usage and calls."""
     joined: AIMessageChunk | None = None
     empty = "Provider returned an empty stream"
     try:
@@ -180,6 +184,8 @@ def _streamed(
         ):
             if isinstance(chunk, AIMessageChunk):
                 joined = chunk if joined is None else joined + chunk
+                if on_text_delta is not None and chunk.text:
+                    on_text_delta(chunk.text)
     except AssertionError as error:
         # The SDK's stream state asserts when a stream ends before any completion chunk.
         raise ValueError(empty) from error
@@ -195,10 +201,12 @@ class ChatProvider:
         """Accept an already configured model with explicit transport ownership."""
         self.model = model
 
-    def complete(self, request: ModelRequest) -> ModelResponse:
+    def complete(
+        self, request: ModelRequest, *, on_text_delta: Callable[[str], None] | None = None
+    ) -> ModelResponse:
         """Translate vendor failures without retrying or inventing successful usage."""
         try:
-            return _invoke(self.model, request)
+            return _invoke(self.model, request, on_text_delta)
         except (OpenAITimeoutError, AnthropicTimeoutError) as error:
             reason = "timeout"
             raise ProviderError(reason) from error
@@ -210,8 +218,10 @@ class ChatProvider:
             raise ValidationError(msg) from error
 
 
-def complete(provider: Provider, request: ModelRequest) -> ModelResponse:
+def complete(
+    provider: Provider, request: ModelRequest, *, on_text_delta: Callable[[str], None] | None = None
+) -> ModelResponse:
     """Run every model attempt through a chat model while retaining fixture identity."""
     if isinstance(provider, ChatProvider):
-        return provider.complete(request)
+        return provider.complete(request, on_text_delta=on_text_delta)
     return _invoke(ScriptedChatModel(provider, request), request)

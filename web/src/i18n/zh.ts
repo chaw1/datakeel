@@ -43,6 +43,7 @@ export const zh: Record<MessageKey, string> = {
   agentModeAgent: "深度代理",
   agentStop: "停止",
   agentContinue: "继续执行",
+  agentToolRunning: "执行中",
   intentEscalateAgent: "转深度代理分析",
   agentCallTree: "代理调用树",
   agentCallTreeTotal: "调用树总词元：{count}",

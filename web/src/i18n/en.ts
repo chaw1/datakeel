@@ -42,6 +42,7 @@ export const en = {
   agentModeAgent: "Agent",
   agentStop: "Stop",
   agentContinue: "Continue conversation",
+  agentToolRunning: "Running",
   intentEscalateAgent: "Ask Deep Agent instead",
   agentCallTree: "Agent call tree",
   agentCallTreeTotal: "Total call-tree tokens: {count}",

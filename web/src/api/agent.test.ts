@@ -58,6 +58,30 @@ it("rejects malformed stream observations", () => {
   );
 });
 
+it("delivers transient deltas in order before committed text and completion", async () => {
+  const events = [
+    agentEvent("text_delta", { id: "delta-1", text: "First " }),
+    agentEvent("text_delta", { id: "delta-2", text: "words" }),
+    agentEvent("text", { text: "First words." }),
+    agentEvent("done"),
+  ];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(eventStream(events))),
+  );
+  const observed = vi.fn();
+  await streamMessage(
+    "conversation-1",
+    { content: "Explain", idempotency_key: "delta-key" },
+    observed,
+    new AbortController().signal,
+  );
+  expect(observed.mock.calls).toEqual(events.map((event) => [event]));
+  expect(() =>
+    parseAgentEvent('{"event":"text_delta","id":"bad","text":5}'),
+  ).toThrow("Invalid Agent text");
+});
+
 it("does not mistake a child done event for the root stream's completion", async () => {
   vi.stubGlobal(
     "fetch",

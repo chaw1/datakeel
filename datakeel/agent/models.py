@@ -17,11 +17,12 @@ from datakeel.ontology.tool_models import ToolOutcome
 
 
 class AgentEvent(BoundaryModel):
-    """Persist one replayable text, tool, plan, receipt, or terminal observation."""
+    """Carry an authoritative observation or a transient live text delta."""
 
     id: str = Field(default_factory=new_id)
     event: Literal[
         "text",
+        "text_delta",
         "tool_call",
         "tool_result",
         "plan",

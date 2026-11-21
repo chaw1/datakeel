@@ -26,6 +26,26 @@ const blank: LiveTurn = {
   running: false,
   error: "",
 };
+function appendEvent(events: AgentEvent[], event: AgentEvent): AgentEvent[] {
+  const path = event.agent_path || "main";
+  const preview = (item: AgentEvent) =>
+    item.event === "text_delta" && (item.agent_path || "main") === path;
+  if (event.event === "text_delta") {
+    const chunk = event.text;
+    if (chunk === "") return events.filter((item) => !preview(item));
+    if (!chunk) return events;
+    if (!events.some(preview)) return [...events, event];
+    return events.map((item) =>
+      preview(item) ? { ...item, text: `${item.text ?? ""}${chunk}` } : item,
+    );
+  }
+  return [
+    ...(["text", "stopped", "done"].includes(event.event)
+      ? events.filter((item) => !preview(item))
+      : events),
+    event,
+  ];
+}
 export function useConversation(id: string) {
   const [revision, setRevision] = useState(0);
   const key = `${id}:${String(revision)}`;
@@ -82,6 +102,7 @@ export function useConversation(id: string) {
       if (!current()) return;
       setLive((previous) => ({
         ...previous,
+        events: previous.events.filter((event) => event.event !== "text_delta"),
         running: false,
         error: failure || String(error),
       }));
@@ -102,7 +123,7 @@ export function useConversation(id: string) {
       if (current())
         setLive((previous) => ({
           ...previous,
-          events: [...previous.events, event],
+          events: appendEvent(previous.events, event),
         }));
     };
     try {
@@ -137,7 +158,11 @@ export function useConversation(id: string) {
     controller.current.abort();
     controller.current = null;
     const sequence = ++operation.current;
-    setLive((current) => ({ ...current, running: false }));
+    setLive((current) => ({
+      ...current,
+      events: current.events.filter((event) => event.event !== "text_delta"),
+      running: false,
+    }));
     await refresh(sequence);
   }
   return {

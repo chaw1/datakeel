@@ -36,10 +36,16 @@ class DelegationExecutor:
     """Keep one reply's serial count and nested events outside checkpoint configuration."""
 
     def __init__(
-        self, db: Database, parent: Conversation, provider: Provider | None, factory: GraphFactory
+        self,
+        db: Database,
+        parent: Conversation,
+        provider: Provider | None,
+        factory: GraphFactory,
+        emit: Callable[[AgentEvent], None] = lambda _: None,
     ) -> None:
         """Share the provider object while every child receives an independent lease."""
         self.db, self.parent, self.provider, self.factory = db, parent, provider, factory
+        self.emit = emit
         self.ordinal = 0
         self.events: list[AgentEvent] = []
         self.stop_reason: str | None = None
@@ -64,7 +70,8 @@ class DelegationExecutor:
         try:
             graph = self.factory(self.db, child.id, lease.token, self.provider)
             for event in graph.run():
-                events.append(event)
+                if event.event != "text_delta":
+                    events.append(event)
                 self._append(child.id, lease.token, event)
             done = AgentEvent(
                 event="done",
@@ -82,12 +89,14 @@ class DelegationExecutor:
         return _result(child, events)
 
     def _append(self, child_id: str, token: str, event: AgentEvent) -> None:
-        memory.append(
-            self.db,
-            child_id,
-            token,
-            event=JsonDocument.model_validate(event.model_dump(mode="json")),
-        )
+        if event.event != "text_delta":
+            memory.append(
+                self.db,
+                child_id,
+                token,
+                event=JsonDocument.model_validate(event.model_dump(mode="json")),
+            )
+        self.emit(event)
 
 
 def _result(child: Conversation, events: list[AgentEvent]) -> ChildResult:

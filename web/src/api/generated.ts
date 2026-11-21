@@ -3830,7 +3830,7 @@ export interface components {
         };
         /**
          * AgentEvent
-         * @description Persist one replayable text, tool, plan, receipt, or terminal observation.
+         * @description Carry an authoritative observation or a transient live text delta.
          */
         AgentEvent: {
             /**
@@ -3850,7 +3850,7 @@ export interface components {
              * Event
              * @enum {string}
              */
-            event: "text" | "tool_call" | "tool_result" | "plan" | "receipt" | "stopped" | "done" | "route" | "intent";
+            event: "text" | "text_delta" | "tool_call" | "tool_result" | "plan" | "receipt" | "stopped" | "done" | "route" | "intent";
             /** Id */
             id?: string;
             intent?: components["schemas"]["IntentResult"] | null;

@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Canary-safe live text streaming with immediate tool and delegation progress, while keeping transcripts and replays compact.
 - Web and Copilot execution modes, deep Agent escalation, approval continuation, streaming stop, and an on-demand Agent call tree.
 - Intent planning retries configured backup models, recalls explicit user notes per attempt,
   and automatically looks up objects beyond the prompt catalog when it grows or truncates.

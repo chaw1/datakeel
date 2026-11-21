@@ -14,6 +14,7 @@ import type {
 
 const events: AgentEvent["event"][] = [
   "text",
+  "text_delta",
   "tool_call",
   "tool_result",
   "plan",

@@ -118,12 +118,13 @@ def _respond(
             completed = False
             try:
                 for event in events:
-                    memory.append(
-                        db,
-                        session_id,
-                        lease.token,
-                        event=JsonDocument.model_validate(event.model_dump(mode="json")),
-                    )
+                    if event.event != "text_delta":
+                        memory.append(
+                            db,
+                            session_id,
+                            lease.token,
+                            event=JsonDocument.model_validate(event.model_dump(mode="json")),
+                        )
                     if event.event == "done" and event.agent_path == "main":
                         completed = True
                     yield event

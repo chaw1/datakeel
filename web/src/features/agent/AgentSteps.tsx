@@ -11,6 +11,7 @@ type Props = {
   path?: string;
   dryRun: boolean;
   busy: boolean;
+  runningTools?: Set<AgentEvent["id"]>;
   context?: PageContext;
   visibleReceipts: Set<AgentEvent["id"]>;
   onResolved: () => void;
@@ -26,7 +27,7 @@ export function AgentSteps({ events, path = "main", ...props }: Props) {
   return (
     <>
       {events.map((event) => {
-        const agentPath = event.agent_path;
+        const agentPath = event.agent_path || "main";
         if (agentPath === path)
           return (
             <AgentObservation
@@ -34,6 +35,7 @@ export function AgentSteps({ events, path = "main", ...props }: Props) {
               event={event}
               dryRun={props.dryRun}
               busy={props.busy}
+              running={props.runningTools?.has(event.id)}
               context={props.context}
               onResolved={props.onResolved}
               onOpenReceipt={props.onOpenReceipt}
@@ -58,7 +60,7 @@ export function AgentSteps({ events, path = "main", ...props }: Props) {
         const children = events.filter(
           (item) =>
             item.agent_path === childPath ||
-            item.agent_path.startsWith(`${childPath}/`),
+            (item.agent_path || "main").startsWith(`${childPath}/`),
         );
         const first = children.find((item) => item.agent_path === childPath);
         const tools = [

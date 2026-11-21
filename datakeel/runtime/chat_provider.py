@@ -3,7 +3,7 @@
 
 """Construct retry-free vendor chat models over the injected HTTP transport."""
 
-from collections.abc import Generator, Mapping
+from collections.abc import Generator, Iterator, Mapping
 from contextlib import contextmanager
 from functools import cached_property
 
@@ -20,6 +20,21 @@ from datakeel.core.settings import Settings
 from datakeel.runtime.chat import ChatProvider
 
 
+class _Stream(httpx2.SyncByteStream):
+    def __init__(self, response: httpx.Response) -> None:
+        self.response = response
+
+    def __iter__(self) -> Iterator[bytes]:
+        try:
+            yield from self.response.iter_bytes()
+        except httpx.TimeoutException as error:
+            message = "Model transport timeout"
+            raise httpx2.ReadTimeout(message) from error
+
+    def close(self) -> None:
+        self.response.close()
+
+
 class _Transport(httpx2.BaseTransport):
     def __init__(self, client: httpx.Client) -> None:
         self.client = client
@@ -27,11 +42,14 @@ class _Transport(httpx2.BaseTransport):
     def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         """Bridge HTTP library generations without interpreting any model protocol."""
         try:
-            response = self.client.request(
-                request.method,
-                str(request.url),
-                headers=request.headers.multi_items(),
-                content=request.read(),
+            response = self.client.send(
+                self.client.build_request(
+                    request.method,
+                    str(request.url),
+                    headers=request.headers.multi_items(),
+                    content=request.read(),
+                ),
+                stream=True,
             )
         except httpx.TimeoutException as error:
             message = "Model transport timeout"
@@ -43,7 +61,7 @@ class _Transport(httpx2.BaseTransport):
                 for name, value in response.headers.multi_items()
                 if name.lower() not in {"content-encoding", "content-length"}
             ],
-            content=response.content,
+            stream=_Stream(response),
         )
 
 

@@ -26,6 +26,7 @@ export function AgentObservation({
   event,
   dryRun,
   busy,
+  running = false,
   context,
   onResolved,
   onOpenReceipt,
@@ -43,6 +44,7 @@ export function AgentObservation({
   event: AgentEvent;
   dryRun: boolean;
   busy: boolean;
+  running?: boolean;
   context?: PageContext;
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
@@ -66,7 +68,7 @@ export function AgentObservation({
         onOpenReceipt={onOpenReceipt}
       />
     );
-  if (event.event === "text" && event.text)
+  if (["text", "text_delta"].includes(event.event) && event.text)
     return (
       <div className="assistant-text">
         <span className="eyebrow">{t("assistantMessage")}</span>
@@ -78,6 +80,11 @@ export function AgentObservation({
       <details className="tool-observation">
         <summary>
           {t("toolCall")} · <code>{event.call.name}</code>
+          {running && (
+            <span role="status" className="badge gray">
+              {t("agentToolRunning")}
+            </span>
+          )}
         </summary>
         <h4>{t("toolArguments")}</h4>
         <pre>{JSON.stringify(event.call.arguments, null, 2)}</pre>

@@ -442,12 +442,11 @@ def test_provider_when_usage_absent_preserves_conservative_reservation_in_trace(
     """A successful text answer without usage retains its reserved token and cost bound."""
     config = ConversationCreate(provider="openai", model="gpt-4.1-mini", max_output_tokens=30)
     conversation = create_conversation(db, config)
-    payload = {
-        "choices": [{"message": {"role": "assistant", "content": "Done."}, "finish_reason": "stop"}]
-    }
+    payload = _sse(_chunk({"role": "assistant", "content": "Done."}, "stop"))
+    response = httpx.Response(200, headers={"content-type": "text/event-stream"}, content=payload)
     with (
         httpx.Client(
-            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload)),
+            transport=httpx.MockTransport(lambda _: response),
             trust_env=False,
         ) as client,
         model_provider(

@@ -31,6 +31,16 @@ def tool_allowed(scope: list[str] | None, name: str) -> bool:
     return scope is None or name in scope or name == "tool_search"
 
 
+def conversation_canaries(db: Database, conversation: Conversation) -> tuple[str, ...]:
+    """Protect the current secret and every ancestor secret during live streaming."""
+    canaries = [get_canary(db, conversation.id)]
+    parent_id = conversation.parent_conversation_id
+    while parent_id is not None:
+        canaries.append(get_canary(db, parent_id))
+        parent_id = get(db, parent_id).parent_conversation_id
+    return tuple(canary for canary in canaries if canary)
+
+
 def ancestor_leak(db: Database, conversation: Conversation, response: ModelResponse) -> bool:
     """Check ancestor secrets before a child's reply can enter its own transcript."""
     parent_id = conversation.parent_conversation_id
