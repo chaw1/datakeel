@@ -40,7 +40,10 @@ def assemble(
     memory_text: str = "",
 ) -> ModelRequest:
     """Place immutable instructions and core schemas before changing history and facts."""
-    history = [envelope(m) for m in compact_history(conversation.messages, loaded_tools)]
+    budget = conversation.config.budget
+    limit = max(4096, budget.conversation_tokens // 2) if budget else None
+    history = compact_history(conversation.messages, loaded_tools, max_history_tokens=limit)
+    history = [envelope(m) for m in history]
     secret = canary_instruction(canary) if canary else ""
     parts = [
         ("instructions", "stable", INSTRUCTIONS),

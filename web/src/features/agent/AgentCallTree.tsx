@@ -6,7 +6,7 @@ import { Badge } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { money } from "../traces/format";
 
-import type { CallTree } from "../../api/types";
+import type { CallTree, ConversationCreate } from "../../api/types";
 
 type OptionalTelemetry<T, Keys extends keyof T> = Omit<T, Keys> &
   Partial<Pick<T, Keys>>;
@@ -26,9 +26,11 @@ type CompatibleTree = OptionalTelemetry<
 export function AgentCallTree({
   conversationId,
   revision = 0,
+  budget,
 }: {
   conversationId: string;
   revision?: number;
+  budget?: ConversationCreate["budget"];
 }) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
@@ -59,6 +61,34 @@ export function AgentCallTree({
     };
   }, [open, conversationId, key]);
   const value = loaded.key === key ? loaded.value : null;
+  const tokens =
+    value?.total_tokens ??
+    value?.nodes.reduce((total, node) => total + node.tokens, 0) ??
+    0;
+  const cost = Number(value?.total_cost_usd ?? 0);
+  const percent = new Intl.NumberFormat(locale, {
+    style: "percent",
+    maximumFractionDigits: 1,
+  });
+  const usage = budget
+    ? [
+        {
+          label: t("agentBudgetTokens"),
+          used: tokens,
+          limit: budget.conversation_tokens,
+          display: `${tokens.toLocaleString(locale)} / ${budget.conversation_tokens.toLocaleString(locale)}`,
+        },
+        {
+          label: t("agentBudgetCost"),
+          used: cost,
+          limit: Number(budget.conversation_usd),
+          display: `${money(cost, locale)} / ${money(budget.conversation_usd, locale)}`,
+        },
+      ].map((item) => ({
+        ...item,
+        ratio: item.limit > 0 ? item.used / item.limit : Number(item.used > 0),
+      }))
+    : [];
   return (
     <details
       className="agent-call-tree"
@@ -81,9 +111,7 @@ export function AgentCallTree({
             <>
               <p className="muted small">
                 {t("agentCallTreeTotal", {
-                  count:
-                    value.total_tokens ??
-                    value.nodes.reduce((total, node) => total + node.tokens, 0),
+                  count: tokens,
                 })}
                 {" · "}
                 {t("agentCallTreeCost", {
@@ -95,6 +123,29 @@ export function AgentCallTree({
                   elapsed: Math.round(value.total_tool_elapsed_ms ?? 0),
                 })}
               </p>
+              {budget && (
+                <div
+                  className="muted small"
+                  role="group"
+                  aria-label={t("agentBudgetUtilization")}
+                >
+                  <strong>{t("agentBudgetUtilization")}</strong>
+                  {usage.map((item) => (
+                    <p key={item.label}>
+                      {item.label}: {item.display} ·{" "}
+                      {percent.format(item.ratio)}{" "}
+                      <progress
+                        aria-label={item.label}
+                        value={item.limit > 0 ? item.used : item.ratio}
+                        max={item.limit > 0 ? item.limit : 1}
+                      />
+                    </p>
+                  ))}
+                  {usage.some((item) => item.ratio + Number.EPSILON >= 0.8) && (
+                    <Badge tone="warn">{t("agentBudgetHighWarning")}</Badge>
+                  )}
+                </div>
+              )}
               {!!value.models?.length && (
                 <p className="muted small">
                   {t("agentCallTreeModels", {

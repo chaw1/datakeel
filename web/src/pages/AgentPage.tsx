@@ -193,6 +193,7 @@ export function AgentPage({
                 key={id}
                 conversationId={id}
                 revision={session.value.events.length}
+                budget={session.value.config.budget}
               />
               {session.value.config.budget && (
                 <details className="conversation-budget">
