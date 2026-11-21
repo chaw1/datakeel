@@ -3,7 +3,7 @@
 
 """Let the Agent dialog hand a sentence to the planner before the free conversation.
 
-Real providers get the full planner: rules first, then one metered model call. The offline
+Real providers get rules first, then metered planner rounds with model fallbacks. The offline
 demo provider only uses the deterministic recipes. A scripted test provider opts in only
 when its next scripted response is addressed to the ``intent_planner`` agent, so existing
 scripts keep their exact behaviour.
@@ -17,14 +17,12 @@ from datakeel.agent.providers import FakeProvider
 from datakeel.core.agent_models import ChatMessage, Conversation, Provider, ScriptedResponse
 from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import IntentResult, PageContext
-from datakeel.core.routing_models import TierState
+from datakeel.core.settings import get_settings
 from datakeel.intents.drafts import language_of
+from datakeel.intents.model_calls import PlannerCalls
 from datakeel.intents.model_parse import AGENT_NAME
 from datakeel.intents.outcomes import internal_error, unsupported
 from datakeel.intents.planner import ModelAccess, PlannerTurn, conversation_focus, plan_turn
-from datakeel.routing.accounting import CallContext, ModelAccount
-from datakeel.routing.config import load_config
-from datakeel.routing.tiers import select_model
 from datakeel.storage import conversation_store as memory
 from datakeel.storage.database import Database
 from datakeel.storage.identity_sessions import session_actor
@@ -67,20 +65,20 @@ def pending_question(conversation: Conversation) -> IntentResult | None:
     return None
 
 
-def _access(db: Database, conversation: Conversation) -> tuple[ModelAccount, ModelAccess]:
-    selected = select_model(conversation.config, TierState(), load_config())
-    account = ModelAccount(
-        db,
-        CallContext(
-            conversation_id=conversation.id,
-            turn=conversation.turns + 1,
-            provider=conversation.config.provider,
-            limits=conversation.config.budget,
-            call_type="intent_classifier",
-            agent_path=AGENT_NAME,
-        ),
+def _access(
+    db: Database, conversation: Conversation, provider: Provider, turn: PlannerTurn, token: str
+) -> tuple[PlannerCalls, ModelAccess]:
+    calls = PlannerCalls(db, conversation, provider, turn, token)
+    settings = get_settings()
+    explore_mode = settings.intent_planner_explore
+    if isinstance(provider, FakeProvider) and explore_mode != "on":
+        explore_mode = "off"
+    return calls, ModelAccess(
+        model=calls.route.model,
+        allowed=True,
+        explore_mode=explore_mode,
+        explore_threshold=settings.intent_planner_explore_threshold,
     )
-    return account, ModelAccess(model=selected.model, allowed=True)
 
 
 def planner_events(
@@ -105,19 +103,13 @@ def planner_events(
     )
     # The offline demo keeps its own disclosed vocabulary for questions; only recipes apply.
     rules_only = (None, ModelAccess(read_rules=False))
-    account, access = _access(db, conversation) if mode == "model" else rules_only
+    calls, access = (
+        _access(db, conversation, provider, turn, token) if mode == "model" else rules_only
+    )
     head = provider.script[0] if isinstance(provider, FakeProvider) and provider.script else None
     try:
-        result = plan_turn(
-            db,
-            turn,
-            complete=(lambda request: account.complete(request, provider.complete))
-            if account
-            else None,
-            access=access,
-        )
+        result = plan_turn(db, turn, complete=calls.complete if calls else None, access=access)
     except DatakeelError:
-        # The raw error stays in the server log; the person hears a plain sentence.
         result = internal_error(text, language_of(text)) if mode == "model" else None
     if result is None and mode == "model":
         # A real model was in the loop: answer every sentence instead of a silent free loop.
@@ -133,6 +125,19 @@ def planner_events(
     if result is None:
         return None
     memory.append(
-        db, conversation.id, token, message=ChatMessage(role="assistant", content=result.text)
+        db,
+        conversation.id,
+        token,
+        message=ChatMessage(role="assistant", content=result.text),
+        model_call=bool(calls and calls.account.attempts),
     )
-    return [AgentEvent(event="intent", intent=result, text=result.text, agent_name=AGENT_NAME)]
+    used_memories = calls.used_memory_ids if calls else []
+    return [
+        AgentEvent(
+            event="intent",
+            intent=result,
+            text=result.text,
+            agent_name=AGENT_NAME,
+            used_memory_ids=used_memories,
+        )
+    ]

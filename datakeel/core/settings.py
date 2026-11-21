@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     dq_webhook_retry_seconds: float = Field(default=5, gt=0, le=3600)
     dq_webhook_max_attempts: int = Field(default=8, ge=1, le=20)
     model_routing_file: Path | None = None
+    intent_planner_explore: Literal["off", "auto", "on"] = "auto"
+    intent_planner_explore_threshold: int = Field(default=60, ge=1, le=5000)
     upload_max_chunk_bytes: int = Field(default=8 * 1024 * 1024, ge=1, le=64 * 1024 * 1024)
     upload_max_concurrency: int = Field(default=4, ge=1, le=32)
     upload_max_file_bytes: int = Field(default=5 * 1024**3, ge=0, le=1024**4)

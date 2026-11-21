@@ -6,6 +6,10 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Intent planning retries configured backup models, recalls explicit user notes per attempt,
+  and automatically looks up objects beyond the prompt catalog when it grows or truncates.
+  Configure discovery with `DATAKEEL_INTENT_PLANNER_EXPLORE=off|auto|on` (default `auto`)
+  and `DATAKEEL_INTENT_PLANNER_EXPLORE_THRESHOLD` (default `60`).
 - Browser image-folder import from the data library with a local preview, directory split
   detection, optional caption and annotation pairing, and resumable upload.
 - Dataset delivery review for an immutable version. Inspect cross-split matches side by side,

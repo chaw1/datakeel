@@ -78,12 +78,12 @@ def route_message(
 def model_decisions(
     db: Database, conversation_id: str, after_turn: int
 ) -> list[ModelRouteDecision]:
-    """Expose only this response's conversational attempts after existing stream events."""
+    """Expose conversational and planner attempts, excluding workflow classification."""
     return [
         trace.model_route
         for trace in list_traces(db, conversation_id)
         if trace.conversation_id == conversation_id
         and trace.turn > after_turn
-        and trace.call_type == "conversation"
+        and (trace.call_type == "conversation" or trace.agent_path == "intent_planner")
         and trace.model_route is not None
     ]

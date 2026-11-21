@@ -83,6 +83,7 @@ class EntityCatalog(BoundaryModel):
     """Bounded snapshot of users, projects, datasets, versions, label sets and standards."""
 
     entries: list[CatalogEntry] = Field(default_factory=list[CatalogEntry])
+    truncated: bool = False
 
     def of(self, kind: str, parent: str | None = None) -> list[CatalogEntry]:
         """List entries of one kind, optionally inside one parent object."""
@@ -142,46 +143,71 @@ def candidates(entries: list[CatalogEntry]) -> list[Candidate]:
     ][:CANDIDATE_LIMIT]
 
 
+def catalog_needs_explore(catalog: EntityCatalog, *, threshold: int) -> bool:
+    """Use read-first planning when the snapshot is incomplete or too large."""
+    return catalog.truncated or len(catalog.entries) >= threshold
+
+
 def build_catalog(db: Database, project_id: str | None = None) -> EntityCatalog:
-    """Read the objects a request can name; every list is bounded."""
-    entries = [
-        CatalogEntry(
-            kind="user",
-            id=user.id,
-            label=user.display_name,
-            names=(user.id, user.display_name),
-            status=user.status,
-        )
-        for user in list_users(db)[:CATALOG_LIMIT]
-    ]
-    projects = list_projects(db)[:CATALOG_LIMIT]
-    entries += [
-        CatalogEntry(
-            kind="project",
-            id=project.id,
-            label=project.name,
-            names=(project.id, project.name),
-            parent=project.dataset_id,
-        )
-        for project in projects
-    ]
-    entries += _packages(db, projects, project_id)
-    for dataset in list_datasets(db)[:CATALOG_LIMIT]:
-        entries.append(
+    """Read bounded categories, retaining whether any category reached its ceiling."""
+    entries: list[CatalogEntry] = []
+    truncated = False
+
+    def add(group: list[CatalogEntry], limit: int = CATALOG_LIMIT) -> None:
+        nonlocal truncated
+        truncated |= len(group) >= limit
+        entries.extend(group[:limit])
+
+    add(
+        [
             CatalogEntry(
-                kind="dataset",
-                id=dataset.id,
-                label=dataset.name,
-                names=(dataset.id, dataset.name),
-                size=dataset.file_count,
+                kind="user",
+                id=u.id,
+                label=u.display_name,
+                names=(u.id, u.display_name),
+                status=u.status,
             )
+            for u in list_users(db)
+        ]
+    )
+    projects = list_projects(db)
+    add(
+        [
+            CatalogEntry(
+                kind="project", id=p.id, label=p.name, names=(p.id, p.name), parent=p.dataset_id
+            )
+            for p in projects
+        ]
+    )
+    for project in sorted(projects[:CATALOG_LIMIT], key=lambda p: p.id != project_id):
+        add(catalog_packages(db, (project,), project_id))
+    datasets = list_datasets(db)
+    add(
+        [
+            CatalogEntry(
+                kind="dataset", id=d.id, label=d.name, names=(d.id, d.name), size=d.file_count
+            )
+            for d in datasets
+        ]
+    )
+    for dataset in datasets[:CATALOG_LIMIT]:
+        versions = catalog_versions(db, dataset.id, dataset.name)
+        truncated |= len(versions) >= CATALOG_LIMIT or len(list_versions(db, dataset.id)) > len(
+            versions
         )
-        entries += _versions(db, dataset.id, dataset.name)
-    entries += _label_sets(db) + _standards(db) + _people_catalog(db) + _models(db)
-    return EntityCatalog(entries=entries)
+        entries.extend(versions)
+    add(catalog_label_sets(db))
+    add(catalog_standards(db), CATALOG_LIMIT * 2)
+    people = catalog_people(db)
+    for kind in ("role", "skill", "team"):
+        add([entry for entry in people if entry.kind == kind])
+    add(catalog_models(db))
+    return EntityCatalog(entries=entries, truncated=truncated)
 
 
-def _versions(db: Database, dataset: str, name: str) -> list[CatalogEntry]:
+def catalog_versions(
+    db: Database, dataset: str, name: str, *, all_versions: bool = False
+) -> list[CatalogEntry]:
     """The newest versions, and every version a release tag names ("门店货架 v2.0.0")."""
     tags: dict[str, list[str]] = {}
     try:
@@ -210,11 +236,11 @@ def _versions(db: Database, dataset: str, name: str) -> list[CatalogEntry]:
             size=version.file_count,
         )
         for number, version in versions
-        if version.id in newest or version.id in tags
+        if all_versions or version.id in newest or version.id in tags
     ]
 
 
-def _packages(
+def catalog_packages(
     db: Database, projects: tuple[Project, ...], project_id: str | None
 ) -> list[CatalogEntry]:
     """Every project's packages: a sentence may name a package of a project it is not on.
@@ -232,12 +258,12 @@ def _packages(
                 parent=project.id,
                 size=package.task_count,
             )
-            for package in list_packages(db, project.id)[:CATALOG_LIMIT]
+            for package in list_packages(db, project.id)
         ]
     return entries
 
 
-def _people_catalog(db: Database) -> list[CatalogEntry]:
+def catalog_people(db: Database, *, include_inactive: bool = False) -> list[CatalogEntry]:
     """Roles, skills and teams a sentence can name ("as annotator", "the lidar skill")."""
     entries = [
         CatalogEntry(
@@ -245,9 +271,10 @@ def _people_catalog(db: Database) -> list[CatalogEntry]:
             id=role.id,
             label=role.name,
             names=(role.id, role.name, *ROLE_WORDS.get(role.id, ())),
+            status=role.status,
         )
-        for role in list_roles(db)[:CATALOG_LIMIT]
-        if role.status == "active"
+        for role in list_roles(db)
+        if include_inactive or role.status == "active"
     ]
     entries += [
         CatalogEntry(
@@ -256,21 +283,25 @@ def _people_catalog(db: Database) -> list[CatalogEntry]:
             label=skill.name,
             names=(skill.id, skill.name),
             note=f"annotation_type={skill.annotation_type} domain={skill.domain}",
+            status=skill.status,
         )
-        for skill in list_skills(db)[:CATALOG_LIMIT]
-        if skill.status == "active"
+        for skill in list_skills(db)
+        if include_inactive or skill.status == "active"
     ]
     entries += [
-        CatalogEntry(kind="team", id=team.id, label=team.name, names=(team.id, team.name))
-        for team in list_teams(db)[:CATALOG_LIMIT]
-        if team.status == "active"
+        CatalogEntry(
+            kind="team", id=team.id, label=team.name, names=(team.id, team.name), status=team.status
+        )
+        for team in list_teams(db)
+        if include_inactive or team.status == "active"
     ]
     return entries
 
 
-def _models(db: Database) -> list[CatalogEntry]:
+def catalog_models(db: Database) -> list[CatalogEntry]:
+    """Read all model definitions without the production query result ceiling."""
     entries: list[CatalogEntry] = []
-    for item in production_objects(db, ProductionObjectQuery(kind="model"))[:CATALOG_LIMIT]:
+    for item in production_objects(db, ProductionObjectQuery(kind="model"), bounded=False):
         name = str(item.properties.get("name", item.asset_ref.asset_id))
         version = item.properties.get("version")
         label = f"{name} {version}" if version else name
@@ -285,12 +316,12 @@ def _models(db: Database) -> list[CatalogEntry]:
     return entries
 
 
-def _label_sets(db: Database) -> list[CatalogEntry]:
+def catalog_label_sets(db: Database) -> list[CatalogEntry]:
+    """Read the newest vocabulary version for every identity."""
     latest: dict[str, CatalogEntry] = {}
-    for item in production_objects(db, ProductionObjectQuery(kind="label_set")):
-        properties = item.properties
-        name = str(properties.get("name", item.asset_ref.asset_id))
-        version = properties.get("version")
+    for item in production_objects(db, ProductionObjectQuery(kind="label_set"), bounded=False):
+        name = str(item.properties.get("name", item.asset_ref.asset_id))
+        version = item.properties.get("version")
         entry = CatalogEntry(
             kind="label_set",
             id=item.asset_ref.asset_id,
@@ -301,10 +332,11 @@ def _label_sets(db: Database) -> list[CatalogEntry]:
         previous = latest.get(entry.id)
         if previous is None or (entry.size or 0) > (previous.size or 0):
             latest[entry.id] = entry
-    return list(latest.values())[:CATALOG_LIMIT]
+    return list(latest.values())
 
 
-def _standards(db: Database) -> list[CatalogEntry]:
+def catalog_standards(db: Database) -> list[CatalogEntry]:
+    """Read every standard and code list in the active contract."""
     contract = get_contract(db)
     fields = [
         CatalogEntry(
@@ -325,4 +357,4 @@ def _standards(db: Database) -> list[CatalogEntry]:
         )
         for item in contract.code_lists
     ]
-    return (fields + lists)[: CATALOG_LIMIT * 2]
+    return fields + lists

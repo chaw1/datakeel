@@ -3,12 +3,11 @@
 
 """One-sentence entry: rules first, then one bounded model call, then strict checking.
 
-The planner only proposes. It never prepares, approves or executes an action; a chain is
-stored for a person to confirm in the Web UI or CLI. Read-only questions are answered at
-once through the audited tool boundary with the person's own access.
+Plans await human confirmation; reads use the audited tool boundary and speaker access.
 """
 
 from collections.abc import Callable
+from typing import Literal
 
 from pydantic import Field, JsonValue
 from pydantic import ValidationError as ModelValidationError
@@ -17,7 +16,12 @@ from datakeel.core.agent_models import ModelRequest, ModelResponse
 from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import Clarification, IntentResult, PageContext, ParserKind
 from datakeel.core.models import BoundaryModel
-from datakeel.intents.catalog import FIELD_KINDS, EntityCatalog, build_catalog
+from datakeel.intents.catalog import (
+    FIELD_KINDS,
+    EntityCatalog,
+    build_catalog,
+    catalog_needs_explore,
+)
 from datakeel.intents.derived import model_record
 from datakeel.intents.drafts import DraftStep, IntentDraft, language_of
 from datakeel.intents.explore import Lookups, explore_request, explored
@@ -71,6 +75,20 @@ class ModelAccess(BoundaryModel):
     read_rules: bool = True
     # Look things up first (explore.py) instead of one call with the whole registry.
     explore: bool = False
+    explore_mode: Literal["off", "auto", "on"] = "off"
+    explore_threshold: int = 60
+    memories: str = ""
+
+    def explores(self, catalog: EntityCatalog) -> bool:
+        """Keep direct callers opt-in while allowing production catalog-based activation."""
+        return (
+            self.explore
+            or self.explore_mode == "on"
+            or (
+                self.explore_mode == "auto"
+                and catalog_needs_explore(catalog, threshold=self.explore_threshold)
+            )
+        )
 
 
 def conversation_focus(db: Database, conversation_id: str | None) -> dict[str, str]:
@@ -205,13 +223,16 @@ def _model_draft(
         open_question=pending.text if pending else "",
         speaker=turn.actor,
         roles=_roles(db, turn.actor),
+        memories=access.memories,
     )
     words = f"{pending.request} {turn.text}" if pending else turn.text
     ranked = rank(words, full_registry())
-    if access.explore:
+    if access.explores(catalog):
         tool = ToolCallContext(actor=turn.actor, session_id=turn.conversation_id)
         first = explore_request(access.model, turn.text, ranked, scene)
-        request, response = explored(first, complete, Lookups(db, catalog, tool))
+        lookups = Lookups(db, catalog, tool, project_id=turn.context.project_id)
+        request, response = explored(first, complete, lookups)
+        catalog.entries.extend(lookups.discovered)
     else:
         request = planner_request(access.model, turn.text, ranked, catalog, scene)
         response = call_model(complete, request)

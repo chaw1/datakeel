@@ -128,7 +128,9 @@ def _displayed(
     return values
 
 
-def production_objects(db: Database, query: ProductionObjectQuery) -> tuple[FrozenObject, ...]:
+def production_objects(
+    db: Database, query: ProductionObjectQuery, *, bounded: bool = True
+) -> tuple[FrozenObject, ...]:
     """Return validated object projections; role templates appear before their first override."""
     with db.session() as session:
         values = _READERS[query.kind](session)
@@ -145,7 +147,7 @@ def production_objects(db: Database, query: ProductionObjectQuery) -> tuple[Froz
                     str(getattr(value, "version", "")),
                 ),
             ),
-        )[: query.limit]
+        )[: query.limit if bounded else None]
         return tuple(_freeze(query.kind, value) for value in selected)
 
 

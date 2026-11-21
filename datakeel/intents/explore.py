@@ -26,7 +26,8 @@ from datakeel.core.agent_models import (
 )
 from datakeel.core.context_tokens import estimate_tokens
 from datakeel.core.models import JsonDocument
-from datakeel.intents.catalog import EntityCatalog
+from datakeel.intents.catalog import CatalogEntry, EntityCatalog
+from datakeel.intents.catalog_lookup import search_catalog_objects
 from datakeel.intents.model_parse import (
     AGENT_NAME,
     ALWAYS_SCHEMAS,
@@ -112,11 +113,20 @@ LOOKS = {"look_entries": "entries", "look_objects": "objects", "run_read": "read
 class Lookups:
     """Answer look-ups from the registry, the visible objects and registered reads only."""
 
-    def __init__(self, db: Database, catalog: EntityCatalog, tool: ToolCallContext) -> None:
+    def __init__(
+        self,
+        db: Database,
+        catalog: EntityCatalog,
+        tool: ToolCallContext,
+        *,
+        project_id: str | None = None,
+    ) -> None:
         """Keep what a look-up may read: the database, the visible objects, the speaker."""
         self.db = db
         self.catalog = catalog
         self.tool = tool
+        self.project_id = project_id
+        self.discovered: list[CatalogEntry] = []
 
     def found(self, look: dict[str, JsonValue]) -> str:
         """The result of one look-up as text for the model, bounded in length."""
@@ -132,10 +142,15 @@ class Lookups:
         return text[:FOUND_LIMIT]
 
     def _objects(self, kind: str, words: str) -> str:
-        pool = self.catalog.of(kind)
-        if words.strip():
-            matched = [entry for word in words.split() for entry in self.catalog.match(kind, word)]
-            pool = list({entry.id: entry for entry in matched}.values()) or pool
+        pool = search_catalog_objects(
+            self.db, kind, words, project_id=self.project_id, limit=OBJECT_LIMIT
+        )
+        if not pool and words.strip():
+            pool = search_catalog_objects(
+                self.db, kind, "", project_id=self.project_id, limit=OBJECT_LIMIT
+            )
+        known = {(entry.kind, entry.id) for entry in (*self.catalog.entries, *self.discovered)}
+        self.discovered.extend(entry for entry in pool if (entry.kind, entry.id) not in known)
         lines = [
             f'{entry.kind} {entry.id} "{entry.label}"'
             + (f" in {entry.parent}" if entry.parent else "")
