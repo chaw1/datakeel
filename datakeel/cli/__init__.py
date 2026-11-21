@@ -13,6 +13,7 @@ import uvicorn
 from rich.console import Console
 
 from datakeel.cli import (
+    agent,
     custom_operators,
     data_assets,
     database,
@@ -22,6 +23,7 @@ from datakeel.cli import (
     kg_image_evaluation,
     llm_data,
     media_demo,
+    memory,
     metadata_imports,
     production,
     quality,
@@ -61,6 +63,8 @@ __all__ = ["main", "seed_demo"]
 
 # Feature modules that register their own subcommands, in help order.
 _PARSER_MODULES = (
+    agent,
+    memory,
     workflow,
     routing,
     kg_evaluation,
@@ -216,6 +220,8 @@ def main() -> None:
 
 # Feature command groups that own their own dispatch over the initialized fact store.
 _MODULE_COMMANDS: dict[str, Callable[[Database, argparse.Namespace], None]] = {
+    "agent": agent.dispatch,
+    "memory": memory.dispatch,
     "timeseries-demo": timeseries_demo.dispatch,
     "demo-media": media_demo.dispatch,
     "custom-operator": custom_operators.dispatch,

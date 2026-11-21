@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Native `datakeel agent` and `datakeel memory` commands for streamed chat, approved-plan resumption, specialist discovery, searchable history, call telemetry and redacted memory management, with JSON output.
 - Auditable Markdown/JSON Agent session exports and on-demand Copilot call-tree and budget telemetry.
 - Audited MCP memory search, writing and editing, bilingual tool discovery, and specialist/memory resources.
 - Agent conversation search and dataset filtering, with call-tree token, cost, model and tool latency telemetry.
