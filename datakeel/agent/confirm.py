@@ -3,7 +3,7 @@
 
 """Keep irreversible approval exclusively in the human interaction layer."""
 
-from datakeel.actions.authorization import allows_automatic
+from datakeel.actions.authorization import authorization_for
 from datakeel.core.models import JsonDocument
 from datakeel.ontology.tool_models import ToolCallContext, ToolOutcome
 from datakeel.ontology.tooling import invoke_tool
@@ -17,7 +17,7 @@ def execute_reversible(
     plan = outcome.plan
     if outcome.status != "SUCCEEDED" or plan is None or plan.requires_approval or dry_run:
         return None
-    if not allows_automatic(plan.action_type, reversible=plan.reversible):
+    if authorization_for(plan.action_type).human_only:
         return None
     return invoke_tool(
         db,

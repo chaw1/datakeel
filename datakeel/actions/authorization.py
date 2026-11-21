@@ -26,12 +26,6 @@ def authorization_for(name: str) -> AuthorizationPolicy:
     return policy
 
 
-def allows_automatic(name: str, *, reversible: bool) -> bool:
-    """Allow only explicit reversible, nonproduction execution eligibility."""
-    policy = authorization_for(name)
-    return reversible and policy.automatic and not policy.human_only
-
-
 def require_production_human(plan: ActionPlan, access: AccessContext | None) -> None:
     """Allow model transports to prepare plans and reject their approval or execution."""
     policy = authorization_for(plan.action_type)
