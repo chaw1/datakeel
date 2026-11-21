@@ -18,9 +18,16 @@ if TYPE_CHECKING:
 
 
 def test_bundled_agents_expose_required_scopes() -> None:
-    """Ship read-only catalog, reversible evidence and reversible metric specialists."""
+    """Ship six specialists with explicit read-only and reversible action scopes."""
     agents = {item.name: item for item in list_agents()}
-    assert set(agents) == {"catalog-analyst", "evidence-reviewer", "metric-manager"}
+    assert set(agents) == {
+        "catalog-analyst",
+        "evidence-reviewer",
+        "kg-standard-analyst",
+        "metric-manager",
+        "production-ops",
+        "training-auditor",
+    }
     assert {"get_lineage", "list_metrics", "impact_of"} <= set(agents["catalog-analyst"].tools)
     assert "decide_assertions" in agents["evidence-reviewer"].tools
     assert {"update_metric", "rollback_metric"} <= set(agents["metric-manager"].tools)
@@ -28,6 +35,41 @@ def test_bundled_agents_expose_required_scopes() -> None:
     assert agents_path().is_dir()
     with pytest.raises(NotFoundError, match="Unknown delegated"):
         get_agent("missing")
+
+
+@pytest.mark.parametrize(
+    ("name", "tools"),
+    [
+        (
+            "production-ops",
+            (
+                "project_progress package_status package_acceptance annotator_workload "
+                "skill_workload rework_rate annotation_consistency prelabel_confidence "
+                "production_prelabel_accuracy lease_status assignees production_objects "
+                "label_set_diff delegate_agent"
+            ),
+        ),
+        (
+            "training-auditor",
+            (
+                "list_datasets training_distribution training_leakage get_training_quality "
+                "annotation_quality get_quality get_report delegate_agent"
+            ),
+        ),
+        (
+            "kg-standard-analyst",
+            (
+                "query_kg explain_relation query_standard_coverage list_standard_usage "
+                "get_table_quality list_quality_rules list_datasets delegate_agent"
+            ),
+        ),
+    ],
+)
+def test_domain_specialists_have_exact_read_only_scopes(name: str, tools: str) -> None:
+    """Keep each new domain specialist bounded to its declared reads and four turns."""
+    agent = get_agent(name)
+    assert agent.tools == tools.split()
+    assert agent.max_turns == 4
 
 
 @pytest.mark.parametrize(

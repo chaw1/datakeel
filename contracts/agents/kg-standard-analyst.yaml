@@ -1,0 +1,12 @@
+name: kg-standard-analyst
+description: Query knowledge graph entities and relations, inspect data standard coverage and column usage, and review table quality rules using read-only tools. Delegate only within this read-only scope.
+max_turns: 4
+tools:
+  - query_kg
+  - explain_relation
+  - query_standard_coverage
+  - list_standard_usage
+  - get_table_quality
+  - list_quality_rules
+  - list_datasets
+  - delegate_agent

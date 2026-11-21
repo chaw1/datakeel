@@ -1,0 +1,18 @@
+name: production-ops
+description: Inspect annotation production progress, packages, annotator/skill workloads, rework rates, consistency, prelabel confidence/accuracy, leases and assignees using read-only tools. Delegate only within this read-only scope.
+max_turns: 4
+tools:
+  - project_progress
+  - package_status
+  - package_acceptance
+  - annotator_workload
+  - skill_workload
+  - rework_rate
+  - annotation_consistency
+  - prelabel_confidence
+  - production_prelabel_accuracy
+  - lease_status
+  - assignees
+  - production_objects
+  - label_set_diff
+  - delegate_agent

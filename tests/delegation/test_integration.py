@@ -56,7 +56,15 @@ def test_demo_and_tree_api_report_measured_nested_steps(db: Database) -> None:
         assert tree["nodes"][1]["tools"] == ["list_datasets"]
         assert tree["nodes"][1]["tokens"] > 0
         assert len(client.get("/api/agent/conversations").json()) == 1
-        assert len(client.get("/api/agent/conversations/definitions/agents").json()) == 3
+        definitions = client.get("/api/agent/conversations/definitions/agents").json()
+        assert {item["name"] for item in definitions} == {
+            "catalog-analyst",
+            "evidence-reviewer",
+            "kg-standard-analyst",
+            "metric-manager",
+            "production-ops",
+            "training-auditor",
+        }
 
 
 def test_child_turn_limit_is_independent_of_parent_turns(db: Database) -> None:

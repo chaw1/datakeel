@@ -1,0 +1,12 @@
+name: training-auditor
+description: Audit training split distributions, cross-split leakage, LLM training-data quality, annotation quality and dataset reports using read-only tools. Delegate only within this read-only scope.
+max_turns: 4
+tools:
+  - list_datasets
+  - training_distribution
+  - training_leakage
+  - get_training_quality
+  - annotation_quality
+  - get_quality
+  - get_report
+  - delegate_agent

@@ -15,6 +15,7 @@ from datakeel.core.ask_models import ASK_DATA_DESCRIPTION
 from datakeel.core.json_schema import compact_schema
 from datakeel.core.llm_data_governance import TRAINING_QUALITY_DESCRIPTION
 from datakeel.core.models import JsonDocument
+from datakeel.delegation.loader import delegate_tool_description
 from datakeel.delegation.models import DelegateParams
 from datakeel.delegation.policy import tool_allowed
 from datakeel.memory.tools import invoke_memory, memory_tool
@@ -70,7 +71,7 @@ def deferred_tools() -> list[ToolDefinition]:
         memory_tool(),
         ToolDefinition(
             name="delegate_agent",
-            description="Delegate a bounded task to a named specialist.",
+            description=delegate_tool_description(),
             parameters=compact_schema(
                 JsonDocument.model_validate(DelegateParams.model_json_schema())
             ),
