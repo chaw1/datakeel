@@ -31,9 +31,15 @@ export function AgentObservation({
   onOpenReceipt,
   receiptVisible = true,
   onReply,
+  onEscalateAgent,
+  onResume,
+  resumePlanId,
 }: {
   receiptVisible?: boolean;
   onReply?: (content: string) => void;
+  onEscalateAgent?: (content: string) => void;
+  onResume?: (planId: string) => void;
+  resumePlanId?: string;
   event: AgentEvent;
   dryRun: boolean;
   busy: boolean;
@@ -55,6 +61,7 @@ export function AgentObservation({
         busy={busy}
         context={context}
         onReply={onReply}
+        onEscalateAgent={onEscalateAgent}
         onResolved={onResolved}
         onOpenReceipt={onOpenReceipt}
       />
@@ -119,6 +126,19 @@ export function AgentObservation({
         <strong>{t("agentStopped")}</strong>
         <p>{reasonKey ? t(reasonKey) : event.stop_reason}</p>
         {event.text && !reasonKey && <p>{event.text}</p>}
+        {event.stop_reason === "approval_required" &&
+          resumePlanId &&
+          onResume && (
+            <button
+              className="button primary"
+              disabled={busy || dryRun}
+              onClick={() => {
+                onResume(resumePlanId);
+              }}
+            >
+              {t("agentContinue")}
+            </button>
+          )}
       </div>
     );
   return null;

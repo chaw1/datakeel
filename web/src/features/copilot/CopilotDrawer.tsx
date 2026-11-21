@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { Icon } from "../../components/Icon";
 import { useI18n } from "../../i18n/useI18n";
@@ -10,6 +10,7 @@ import { CopilotContextBar } from "./CopilotContextBar";
 import { useCopilotSession } from "./useCopilotSession";
 
 import type { CopilotContextSummary } from "./pageContext";
+import type { ExecutionMode } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
 /** Global right-side proofreading copilot drawer anchored inside the workspace shell. */
@@ -35,6 +36,7 @@ export function CopilotDrawer({
   onDataChanged: () => void;
 }) {
   const { t } = useI18n();
+  const [mode, setMode] = useState<ExecutionMode>("auto");
   const session = useCopilotSession({
     open,
     datasetId: summary.datasetId,
@@ -78,9 +80,9 @@ export function CopilotDrawer({
       )
     : agentHref(summary.context, draftPrompt || undefined);
 
-  function handleSend(text: string) {
+  function handleSend(text: string, executionMode = mode) {
     onClearDraft();
-    void session.sendMessage(text, summary.context);
+    void session.sendMessage(text, summary.context, executionMode);
   }
 
   return (
@@ -149,6 +151,12 @@ export function CopilotDrawer({
             }}
             onOpenReceipt={onOpenReceipt}
             onReply={handleSend}
+            onResume={(planId) => {
+              void session.resume(planId).then(onDataChanged);
+            }}
+            onEscalateAgent={(request) => {
+              handleSend(request, "agent");
+            }}
           />
         ) : (
           <div className="copilot-empty">
@@ -187,6 +195,11 @@ export function CopilotDrawer({
           busy={session.busy}
           initialContent={draftPrompt}
           onSend={handleSend}
+          mode={mode}
+          onModeChange={setMode}
+          onStop={() => {
+            void session.stop();
+          }}
         />
       </footer>
     </aside>

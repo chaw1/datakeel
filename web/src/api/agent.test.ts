@@ -2,7 +2,12 @@ import { expect, it, vi } from "vitest";
 
 import { agentEvent, eventStream } from "../test/agentFixtures";
 
-import { parseAgentEvent, streamMessage } from "./agent";
+import {
+  getCallTree,
+  parseAgentEvent,
+  streamMessage,
+  streamResume,
+} from "./agent";
 
 it("requires the final done event before declaring a streamed request complete", async () => {
   vi.stubGlobal(
@@ -103,5 +108,40 @@ it("continues receiving the main response after a delegated Agent finishes", asy
   expect(observed).toHaveBeenCalledTimes(3);
   expect(observed).toHaveBeenCalledWith(
     expect.objectContaining({ text: "The delegated review is complete." }),
+  );
+});
+
+it("streams approval continuation with its exact plan and independent request body", async () => {
+  const fetcher = vi.fn(() =>
+    Promise.resolve(eventStream([agentEvent("done")])),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  const body = { plan_id: "plan-1", idempotency_key: "resume-key" };
+  const signal = new AbortController().signal;
+  const observed = vi.fn();
+  await streamResume("conversation/1", body, observed, signal);
+  expect(fetcher).toHaveBeenCalledWith(
+    "/api/agent/conversations/conversation%2F1/resume",
+    expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify(body),
+      signal,
+    }),
+  );
+  expect(observed).toHaveBeenCalledWith(
+    expect.objectContaining({ event: "done" }),
+  );
+});
+
+it("loads the generated call-tree response on demand", async () => {
+  const tree = { nodes: [], traces: [] };
+  const fetcher = vi.fn(() =>
+    Promise.resolve(new Response(JSON.stringify(tree))),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  await expect(getCallTree("conversation/1")).resolves.toEqual(tree);
+  expect(fetcher).toHaveBeenCalledWith(
+    "/api/agent/conversations/conversation%2F1/tree",
+    expect.objectContaining({ method: "GET" }),
   );
 });

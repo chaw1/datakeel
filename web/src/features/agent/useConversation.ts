@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 
-import { streamMessage } from "../../api/agent";
+import { streamMessage, streamResume } from "../../api/agent";
 import { get } from "../../api/client";
 
 import type { PageContext } from "../../api/intents";
-import type { AgentEvent, Conversation } from "../../api/types";
+import type {
+  AgentEvent,
+  Conversation,
+  ExecutionMode,
+  MessageInput,
+  ResumeInput,
+} from "../../api/types";
 
 type LiveTurn = {
   id: string;
@@ -31,16 +37,23 @@ export function useConversation(id: string) {
   }>({ id: "", key: "", value: null, error: "" });
   const [live, setLive] = useState<LiveTurn>(blank);
   const controller = useRef<AbortController | null>(null);
+  const operation = useRef(0);
+  const loadVersion = useRef(0);
+  const scope = useRef({ id, key });
   const path = `/api/agent/conversations/${encodeURIComponent(id)}`;
   useEffect(() => {
+    scope.current = { id, key };
     if (!id) return;
     let active = true;
+    const version = ++loadVersion.current;
     void get<Conversation>(path)
       .then((value) => {
-        if (active) setLoaded({ id, key, value, error: "" });
+        if (active && version === loadVersion.current)
+          setLoaded({ id, key, value, error: "" });
       })
       .catch((error: unknown) => {
-        if (active) setLoaded({ id, key, value: null, error: String(error) });
+        if (active && version === loadVersion.current)
+          setLoaded({ id, key, value: null, error: String(error) });
       });
     return () => {
       active = false;
@@ -48,52 +61,84 @@ export function useConversation(id: string) {
   }, [id, key, path]);
   useEffect(
     () => () => {
+      operation.current++;
       controller.current?.abort();
+      controller.current = null;
+      setLive(blank);
     },
     [id],
   );
-  async function send(content: string, context?: PageContext) {
-    if (
-      !id ||
-      (controller.current && !controller.current.signal.aborted && live.running)
-    )
-      return;
-    const request = new AbortController();
-    controller.current = request;
-    const interrupted = () => request.signal.aborted;
-    setLive({ id, content, events: [], running: true, error: "" });
-    let failure = "";
-    try {
-      await streamMessage(
-        id,
-        { content, idempotency_key: crypto.randomUUID(), context },
-        (event) => {
-          if (!interrupted())
-            setLive((current) => ({
-              ...current,
-              events: [...current.events, event],
-            }));
-        },
-        request.signal,
-      );
-    } catch (error) {
-      if (interrupted()) return;
-      failure = error instanceof Error ? error.message : String(error);
-    }
-    if (interrupted()) return;
+  async function refresh(sequence: number, failure = "") {
+    const version = ++loadVersion.current;
+    const current = () =>
+      operation.current === sequence && scope.current.id === id;
     try {
       const value = await get<Conversation>(path);
-      if (interrupted()) return;
-      setLoaded({ id, key, value, error: "" });
+      if (!current()) return;
+      if (version === loadVersion.current)
+        setLoaded({ id, key: scope.current.key, value, error: "" });
       setLive({ ...blank, id, error: failure });
     } catch (error) {
-      if (interrupted()) return;
-      setLive((current) => ({
-        ...current,
+      if (!current()) return;
+      setLive((previous) => ({
+        ...previous,
         running: false,
         error: failure || String(error),
       }));
     }
+  }
+  async function run(body: MessageInput | ResumeInput) {
+    if (!id || controller.current) return;
+    const request = new AbortController();
+    const sequence = ++operation.current;
+    loadVersion.current++;
+    controller.current = request;
+    const current = () =>
+      operation.current === sequence && !request.signal.aborted;
+    const content = "content" in body ? body.content : "";
+    setLive({ id, content, events: [], running: true, error: "" });
+    let failure = "";
+    const onEvent = (event: AgentEvent) => {
+      if (current())
+        setLive((previous) => ({
+          ...previous,
+          events: [...previous.events, event],
+        }));
+    };
+    try {
+      if ("content" in body)
+        await streamMessage(id, body, onEvent, request.signal);
+      else await streamResume(id, body, onEvent, request.signal);
+    } catch (error) {
+      if (!current()) return;
+      failure = error instanceof Error ? error.message : String(error);
+    }
+    if (!current()) return;
+    await refresh(sequence, failure);
+    if (controller.current === request) controller.current = null;
+  }
+  function send(
+    content: string,
+    context?: PageContext,
+    mode: ExecutionMode = "auto",
+  ) {
+    return run({
+      content,
+      context,
+      mode,
+      idempotency_key: crypto.randomUUID(),
+    });
+  }
+  function resume(planId: string) {
+    return run({ plan_id: planId, idempotency_key: crypto.randomUUID() });
+  }
+  async function stop() {
+    if (!controller.current) return;
+    controller.current.abort();
+    controller.current = null;
+    const sequence = ++operation.current;
+    setLive((current) => ({ ...current, running: false }));
+    await refresh(sequence);
   }
   return {
     value: loaded.id === id ? loaded.value : null,
@@ -101,8 +146,10 @@ export function useConversation(id: string) {
     loading: !!id && loaded.key !== key,
     live: live.id === id ? live : blank,
     send,
+    resume,
+    stop,
     reload: () => {
-      setLive(blank);
+      setLive((current) => (current.running ? current : blank));
       setRevision((value) => value + 1);
     },
   };

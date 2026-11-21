@@ -116,6 +116,7 @@ class MessageInput(BoundaryModel):
     content: str = Field(min_length=1, max_length=80000)
     idempotency_key: str = Field(default_factory=new_id, min_length=1, max_length=200)
     context: PageContext | None = None
+    mode: Literal["auto", "plan", "agent"] = "auto"
 
 
 class ResumeInput(BoundaryModel):

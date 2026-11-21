@@ -4,10 +4,12 @@ import { get, post, requireSuccess } from "./client";
 
 import type {
   AgentEvent,
+  CallTree,
   Conversation,
   ConversationCreate,
   ConversationDefaults,
   MessageInput,
+  ResumeInput,
 } from "./types";
 
 const events: AgentEvent["event"][] = [
@@ -100,14 +102,15 @@ export async function createConversation(
   );
   return { conversation, setup };
 }
-export async function streamMessage(
+async function streamTurn(
   id: string,
-  body: MessageInput,
+  endpoint: "messages" | "resume",
+  body: MessageInput | ResumeInput,
   onEvent: (event: AgentEvent) => void,
   signal: AbortSignal,
 ): Promise<void> {
   const response = await fetch(
-    `/api/agent/conversations/${encodeURIComponent(id)}/messages`,
+    `/api/agent/conversations/${encodeURIComponent(id)}/${endpoint}`,
     {
       method: "POST",
       headers: {
@@ -137,4 +140,28 @@ export async function streamMessage(
       complete = true;
   }
   if (!complete) throw new Error("Agent stream ended before the done event");
+}
+
+export function streamMessage(
+  id: string,
+  body: MessageInput,
+  onEvent: (event: AgentEvent) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  return streamTurn(id, "messages", body, onEvent, signal);
+}
+
+export function streamResume(
+  id: string,
+  body: ResumeInput,
+  onEvent: (event: AgentEvent) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  return streamTurn(id, "resume", body, onEvent, signal);
+}
+
+export function getCallTree(id: string): Promise<CallTree> {
+  return get<CallTree>(
+    `/api/agent/conversations/${encodeURIComponent(id)}/tree`,
+  );
 }

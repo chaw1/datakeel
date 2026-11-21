@@ -23,6 +23,7 @@ export function IntentCard({
   busy,
   context,
   onReply,
+  onEscalateAgent,
   onResolved,
   onOpenReceipt,
 }: {
@@ -30,6 +31,7 @@ export function IntentCard({
   busy: boolean;
   context?: PageContext;
   onReply?: (content: string) => void;
+  onEscalateAgent?: (content: string) => void;
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
 }) {
@@ -54,6 +56,17 @@ export function IntentCard({
         </span>
       </span>
       <p className="intent-text">{intent.text}</p>
+      {intent.kind === "unsupported" && onEscalateAgent && (
+        <button
+          className="button subtle"
+          disabled={busy}
+          onClick={() => {
+            onEscalateAgent(intent.request);
+          }}
+        >
+          {t("intentEscalateAgent")}
+        </button>
+      )}
       {intent.kind === "refuse" && !!intent.missing_scopes?.length && (
         <p>
           {t("intentMissingScopes")}{" "}
@@ -109,6 +122,7 @@ export function IntentCard({
             busy={busy}
             context={context}
             onReply={onReply}
+            onEscalateAgent={onEscalateAgent}
             onResolved={onResolved}
             onOpenReceipt={onOpenReceipt}
           />

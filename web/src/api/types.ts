@@ -29,7 +29,11 @@ export type ConversationCreate =
   components["schemas"]["ConversationCreate-Input"];
 export type ConversationDefaults =
   components["schemas"]["ConversationDefaults"];
-export type MessageInput = components["schemas"]["MessageInput"];
+export type MessageInput = Omit<components["schemas"]["MessageInput"], "mode"> &
+  Partial<Pick<components["schemas"]["MessageInput"], "mode">>;
+export type ExecutionMode = NonNullable<MessageInput["mode"]>;
+export type ResumeInput = components["schemas"]["ResumeInput"];
+export type CallTree = components["schemas"]["CallTree"];
 export type ModelCallTrace = components["schemas"]["ModelCallTrace"];
 export type CostSummary = components["schemas"]["CostSummary"];
 export type EvidenceQuery = components["schemas"]["EvidenceQuery"];

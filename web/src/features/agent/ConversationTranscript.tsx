@@ -9,6 +9,30 @@ import type { PageContext } from "../../api/intents";
 import type { AgentEvent, Conversation } from "../../api/types";
 import type { LineageTarget } from "../../app/navigation";
 
+function approvalPause(events: AgentEvent[]) {
+  const root = events.filter(
+    (event) => !event.agent_path || event.agent_path === "main",
+  );
+  const reversed = [...root].reverse();
+  const pause = reversed.find((event) => event.event === "stopped");
+  const stopped = pause ? root.indexOf(pause) : -1;
+  if (
+    !pause?.id ||
+    pause.stop_reason !== "approval_required" ||
+    root
+      .slice(stopped + 1)
+      .some((event) => !["done", "route"].includes(event.event))
+  )
+    return undefined;
+  const plan = root
+    .slice(0, stopped)
+    .reverse()
+    .find((event) => event.event === "plan")?.outcome?.plan;
+  return plan && ["APPROVED", "EXECUTED"].includes(plan.status)
+    ? { eventId: pause.id, planId: plan.id }
+    : undefined;
+}
+
 export function ConversationTranscript({
   conversation,
   live,
@@ -17,6 +41,8 @@ export function ConversationTranscript({
   onResolved,
   onOpenReceipt,
   onReply,
+  onResume,
+  onEscalateAgent,
 }: {
   conversation: Conversation;
   live: { content: string; events: AgentEvent[] };
@@ -25,6 +51,8 @@ export function ConversationTranscript({
   onResolved: () => void;
   onOpenReceipt: (target: LineageTarget) => void;
   onReply?: (content: string) => void;
+  onResume?: (planId: string) => void;
+  onEscalateAgent?: (content: string) => void;
 }) {
   const { t } = useI18n();
   const panel = useRef<HTMLDivElement>(null);
@@ -37,13 +65,23 @@ export function ConversationTranscript({
   if (live.content) users.push(live.content);
   const groups: AgentEvent[][] = [[]];
   for (const event of [...conversation.events, ...live.events]) {
-    groups[groups.length - 1].push(event);
+    const root = !event.agent_path || event.agent_path === "main";
+    // A resume starts with its receipt; it does not append another user message.
     if (
-      event.event === "done" &&
-      (!event.agent_path || event.agent_path === "main")
+      root &&
+      event.event === "receipt" &&
+      groups.length > 1 &&
+      !groups[groups.length - 1].length
     )
-      groups.push([]);
+      groups.pop();
+    groups[groups.length - 1].push(event);
+    if (event.event === "done" && root) groups.push([]);
   }
+  const latest = groups.length - (groups[groups.length - 1].length ? 1 : 2);
+  const resume =
+    users.length > latest + 1 && !live.content
+      ? undefined
+      : approvalPause(live.content ? live.events : (groups[latest] ?? []));
   const receipts = new Set<string>();
   return (
     <div
@@ -83,6 +121,9 @@ export function ConversationTranscript({
             onResolved={onResolved}
             onOpenReceipt={onOpenReceipt}
             onReply={onReply}
+            onResume={onResume}
+            onEscalateAgent={onEscalateAgent}
+            resume={index === latest ? resume : undefined}
             visibleReceipts={
               new Set(
                 events

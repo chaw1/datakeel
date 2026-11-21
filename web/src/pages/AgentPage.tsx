@@ -10,6 +10,7 @@ import {
   PageHeader,
   Surface,
 } from "../components/ui";
+import { AgentCallTree } from "../features/agent/AgentCallTree";
 import { contextFromQuery } from "../features/agent/agentLink";
 import { ConversationSidebar } from "../features/agent/ConversationSidebar";
 import { ConversationTranscript } from "../features/agent/ConversationTranscript";
@@ -24,6 +25,7 @@ import type {
   ConversationCreate,
   ConversationDefaults,
   Dataset,
+  ExecutionMode,
 } from "../api/types";
 import type { LineageTarget } from "../app/navigation";
 
@@ -57,6 +59,7 @@ export function AgentPage({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [setup, setSetup] = useState<ConversationDefaults | null>(null);
+  const [mode, setMode] = useState<ExecutionMode>("auto");
   async function create(
     dataset: string,
     dryRun: boolean,
@@ -100,8 +103,8 @@ export function AgentPage({
       params.get("dataset") ??
       (datasetId || null),
   };
-  function say(content: string) {
-    void session.send(content, pageContext).then(() => {
+  function say(content: string, executionMode = mode) {
+    void session.send(content, pageContext, executionMode).then(() => {
       conversations.reload();
       onDataChanged();
     });
@@ -180,6 +183,11 @@ export function AgentPage({
                   <Icon name="arrow" size={14} />
                 </Button>
               </div>
+              <AgentCallTree
+                key={id}
+                conversationId={id}
+                revision={session.value.events.length}
+              />
               {session.value.config.budget && (
                 <details className="conversation-budget">
                   <summary>{t("conversationBudget")}</summary>
@@ -209,6 +217,15 @@ export function AgentPage({
                 onResolved={resolved}
                 onOpenReceipt={onOpenReceipt}
                 onReply={say}
+                onResume={(planId) => {
+                  void session.resume(planId).then(() => {
+                    conversations.reload();
+                    onDataChanged();
+                  });
+                }}
+                onEscalateAgent={(request) => {
+                  say(request, "agent");
+                }}
               />
               {session.live.error && (
                 <div className="error-banner" role="alert">
@@ -229,6 +246,11 @@ export function AgentPage({
             disabled={!session.value || session.loading || !!session.live.error}
             busy={session.live.running}
             onSend={say}
+            mode={mode}
+            onModeChange={setMode}
+            onStop={() => {
+              void session.stop();
+            }}
           />
         </Surface>
       </div>

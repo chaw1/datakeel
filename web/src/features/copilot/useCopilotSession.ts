@@ -4,12 +4,13 @@ import { createConversation } from "../../api/agent";
 import { useConversation } from "../agent/useConversation";
 
 import type { PageContext } from "../../api/intents";
-import type { Conversation } from "../../api/types";
+import type { Conversation, ExecutionMode } from "../../api/types";
 
 type PendingSend = {
   id: string;
   content: string;
   context?: PageContext;
+  mode: ExecutionMode;
 };
 
 const defaultBudget = {
@@ -49,16 +50,20 @@ export function useCopilotSession({
     const pending = pendingRef.current;
     if (!open || !pending || conversationId !== pending.id) return;
     pendingRef.current = null;
-    void sendRef.current(pending.content, pending.context);
+    void sendRef.current(pending.content, pending.context, pending.mode);
   }, [open, conversationId]);
 
-  async function sendMessage(content: string, activeContext?: PageContext) {
+  async function sendMessage(
+    content: string,
+    activeContext?: PageContext,
+    mode: ExecutionMode = "auto",
+  ) {
     const trimmed = content.trim();
     if (!trimmed || creating || session.live.running) return;
     const attached = contextEnabled ? activeContext : undefined;
     setCreateError("");
     if (conversationId) {
-      await session.send(trimmed, attached);
+      await session.send(trimmed, attached, mode);
       return;
     }
     setCreating(true);
@@ -68,6 +73,7 @@ export function useCopilotSession({
         id: created.conversation.id,
         content: trimmed,
         context: attached,
+        mode,
       };
       setSeedConversation(created.conversation);
       setConversationId(created.conversation.id);
@@ -104,5 +110,7 @@ export function useCopilotSession({
     sendMessage,
     resetSession,
     reload: session.reload,
+    resume: session.resume,
+    stop: session.stop,
   };
 }

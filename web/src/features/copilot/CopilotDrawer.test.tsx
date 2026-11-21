@@ -162,6 +162,7 @@ it("lazily creates a conversation on send and respects context toggle", async ()
   );
 
   const input = screen.getByLabelText("Message");
+  await user.selectOptions(screen.getByLabelText("Execution mode"), "agent");
   await user.type(input, "Check open blockers");
   await user.click(screen.getByRole("button", { name: "Send message" }));
 
@@ -170,9 +171,11 @@ it("lazily creates a conversation on send and respects context toggle", async ()
   });
   const firstBody = postedBodies[0] as {
     content: string;
+    mode?: string;
     context?: Record<string, unknown>;
   };
   expect(firstBody.content).toBe("Check open blockers");
+  expect(firstBody.mode).toBe("agent");
   expect(firstBody.context).toMatchObject({
     dataset_id: "ds-1",
     project_id: "proj-1",
@@ -184,10 +187,12 @@ it("lazily creates a conversation on send and respects context toggle", async ()
   ).toHaveAttribute("aria-pressed", "false");
 
   await user.type(screen.getByLabelText("Message"), "Global question");
+  await user.selectOptions(screen.getByLabelText("Execution mode"), "plan");
   await user.click(screen.getByRole("button", { name: "Send message" }));
 
   await waitFor(() => {
     expect(postedBodies).toHaveLength(2);
   });
   expect((postedBodies[1] as { context?: unknown }).context).toBeUndefined();
+  expect((postedBodies[1] as { mode?: string }).mode).toBe("plan");
 });

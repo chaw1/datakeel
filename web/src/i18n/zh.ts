@@ -37,6 +37,16 @@ import { workspaceZh } from "./workspaceZh";
 
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
+  agentExecutionMode: "执行模式",
+  agentModeAuto: "智能",
+  agentModePlan: "一句话规划",
+  agentModeAgent: "深度代理",
+  agentStop: "停止",
+  agentContinue: "继续执行",
+  intentEscalateAgent: "转深度代理分析",
+  agentCallTree: "代理调用树",
+  agentCallTreeTotal: "调用树总词元：{count}",
+  agentCallTreeEmpty: "还没有代理调用记录。",
   ...workbenchZh,
   ...wbTeamZh,
   ...wbTemplateZh,

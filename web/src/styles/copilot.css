@@ -157,6 +157,21 @@
   border-top: var(--border-hairline);
   background: var(--paper);
 }
+.copilot-footer .message-composer {
+  flex-direction: column;
+  align-items: stretch;
+  border-top: 0;
+  padding-top: 0;
+}
+.copilot-footer .message-composer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.copilot-footer .message-composer-actions select {
+  width: auto;
+  max-width: 60%;
+}
 
 @media (max-width: 880px) {
   .copilot-drawer {

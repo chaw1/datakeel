@@ -1,8 +1,11 @@
 import { useState } from "react";
 
 import { Icon } from "../../components/Icon";
+import { Select } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { useCompositionGuard } from "../../lib/useCompositionGuard";
+
+import type { ExecutionMode } from "../../api/types";
 
 export function MessageComposer({
   disabled,
@@ -10,12 +13,18 @@ export function MessageComposer({
   onSend,
   initialContent = "",
   inputId = "agent-message",
+  mode = "auto",
+  onModeChange,
+  onStop,
 }: {
   disabled: boolean;
   busy: boolean;
   onSend: (content: string) => void;
   initialContent?: string;
   inputId?: string;
+  mode?: ExecutionMode;
+  onModeChange?: (mode: ExecutionMode) => void;
+  onStop?: () => void;
 }) {
   const { t } = useI18n();
   const [content, setContent] = useState(initialContent);
@@ -48,18 +57,44 @@ export function MessageComposer({
           setContent(event.target.value);
         }}
       />
-      <button
-        className="button primary"
-        type="submit"
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && isComposing(event.nativeEvent))
-            event.preventDefault();
-        }}
-        disabled={disabled || busy || !content.trim()}
-      >
-        <Icon name="arrow" size={16} />
-        {t(busy ? "agentWorking" : "sendMessage")}
-      </button>
+      <div className="message-composer-actions">
+        <label className="sr-only" htmlFor={`${inputId}-mode`}>
+          {t("agentExecutionMode")}
+        </label>
+        <Select
+          size="sm"
+          id={`${inputId}-mode`}
+          value={mode}
+          disabled={disabled || busy || !onModeChange}
+          onChange={(event) => {
+            const value = event.target.value;
+            if (value === "auto" || value === "plan" || value === "agent")
+              onModeChange?.(value);
+          }}
+        >
+          <option value="auto">{t("agentModeAuto")}</option>
+          <option value="plan">{t("agentModePlan")}</option>
+          <option value="agent">{t("agentModeAgent")}</option>
+        </Select>
+        {busy && onStop ? (
+          <button className="button subtle" type="button" onClick={onStop}>
+            {t("agentStop")}
+          </button>
+        ) : (
+          <button
+            className="button primary"
+            type="submit"
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && isComposing(event.nativeEvent))
+                event.preventDefault();
+            }}
+            disabled={disabled || busy || !content.trim()}
+          >
+            <Icon name="arrow" size={16} />
+            {t(busy ? "agentWorking" : "sendMessage")}
+          </button>
+        )}
+      </div>
     </form>
   );
 }

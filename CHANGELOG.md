@@ -6,6 +6,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Web and Copilot execution modes, deep Agent escalation, approval continuation, streaming stop, and an on-demand Agent call tree.
 - Intent planning retries configured backup models, recalls explicit user notes per attempt,
   and automatically looks up objects beyond the prompt catalog when it grows or truncates.
   Configure discovery with `DATAKEEL_INTENT_PLANNER_EXPLORE=off|auto|on` (default `auto`)

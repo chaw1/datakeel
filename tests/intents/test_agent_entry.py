@@ -6,7 +6,9 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
+
+import pytest
 
 from datakeel.actions import service
 from datakeel.agent.providers import FakeProvider
@@ -20,6 +22,7 @@ from datakeel.core.agent_models import (
 from datakeel.core.intent_models import PageContext
 from datakeel.intents.chains import advance_chain
 from datakeel.intents.model_parse import AGENT_NAME
+from datakeel.intents.turns import planner_mode
 from datakeel.storage.harness_service import list_traces
 from tests.intents.support import SETUP, images
 
@@ -146,6 +149,42 @@ def test_messages_without_page_context_keep_the_free_conversation(
     conversation = create_conversation(db, ConversationCreate())
     events = _send(db, conversation.id, SETUP, None)
     assert not [event for event in events if event.event == "intent"]
+
+
+@pytest.mark.parametrize("mode", ["auto", "agent"])
+def test_agent_mode_bypasses_planner_with_page_context(
+    db: Database, tmp_path: Path, mode: Literal["auto", "agent"]
+) -> None:
+    """The same page-scoped request uses planning only in automatic mode."""
+    dataset = images(db, tmp_path / "images")
+    conversation = create_conversation(db, ConversationCreate())
+    request = MessageInput(content=SETUP, context=PageContext(dataset_id=dataset.id), mode=mode)
+    events = list(send_message(db, conversation.id, request))
+    assert any(event.event == "intent" for event in events) is (mode == "auto")
+    assert any(event.event == "tool_call" for event in events) is (mode == "agent")
+    assert events[-1].event == "done"
+
+
+@pytest.mark.parametrize("mode", ["auto", "plan"])
+def test_plan_mode_enables_offline_planning_without_page_context(
+    db: Database, tmp_path: Path, mode: Literal["auto", "plan"]
+) -> None:
+    """Explicit planning works without page context while automatic clients stay unchanged."""
+    dataset = images(db, tmp_path / "images")
+    conversation = create_conversation(db, ConversationCreate(dataset_id=dataset.id))
+    events = list(send_message(db, conversation.id, MessageInput(content=SETUP, mode=mode)))
+    assert any(event.event == "intent" for event in events) is (mode == "plan")
+    assert any(event.event == "tool_call" for event in events) is (mode == "auto")
+
+
+def test_agent_mode_overrides_scripted_planner_opt_in() -> None:
+    """A scripted planner is skipped before its opt-in is considered in agent mode."""
+    provider = FakeProvider([_planner({"kind": "none"})])
+    assert planner_mode(provider, PageContext(), "agent") == "off"
+    assert planner_mode(provider, None, "plan") == "model"
+    assert planner_mode(provider, None, "auto") == "model"
+    assert planner_mode(FakeProvider([]), None, "plan") == "off"
+    assert MessageInput(content="hello").mode == "auto"
 
 
 def test_model_cannot_invent_identities_or_actions(db: Database, tmp_path: Path) -> None:

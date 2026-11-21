@@ -36,6 +36,16 @@ import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  agentExecutionMode: "Execution mode",
+  agentModeAuto: "Auto",
+  agentModePlan: "Plan",
+  agentModeAgent: "Agent",
+  agentStop: "Stop",
+  agentContinue: "Continue conversation",
+  intentEscalateAgent: "Ask Deep Agent instead",
+  agentCallTree: "Agent call tree",
+  agentCallTreeTotal: "Total call-tree tokens: {count}",
+  agentCallTreeEmpty: "No Agent calls have been recorded yet.",
   ...workbenchEn,
   ...wbTeamEn,
   ...wbTemplateEn,

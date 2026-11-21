@@ -63,3 +63,21 @@ it("cancels native composing Enter on the draft and send button", () => {
   }
   expect(onSend).not.toHaveBeenCalled();
 });
+
+it("changes execution mode and exposes an enabled stop control while streaming", async () => {
+  const onModeChange = vi.fn();
+  const onStop = vi.fn();
+  const props = { disabled: false, onSend: vi.fn(), onModeChange, onStop };
+  const { rerender } = render(<MessageComposer {...props} busy={false} />);
+  await userEvent.selectOptions(
+    screen.getByLabelText("Execution mode"),
+    "agent",
+  );
+  expect(onModeChange).toHaveBeenCalledExactlyOnceWith("agent");
+  rerender(<MessageComposer {...props} disabled busy mode="agent" />);
+  expect(screen.getByLabelText("Execution mode")).toBeDisabled();
+  expect(screen.getByLabelText("Message")).toBeDisabled();
+  await userEvent.click(screen.getByRole("button", { name: "Stop" }));
+  expect(onStop).toHaveBeenCalledOnce();
+  expect(props.onSend).not.toHaveBeenCalled();
+});

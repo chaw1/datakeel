@@ -9869,6 +9869,12 @@ export interface components {
             context?: components["schemas"]["PageContext"] | null;
             /** Idempotency Key */
             idempotency_key?: string;
+            /**
+             * Mode
+             * @default auto
+             * @enum {string}
+             */
+            mode: "auto" | "plan" | "agent";
         };
         /**
          * MetadataChangeView

@@ -30,17 +30,21 @@ from datakeel.storage.identity_sessions import session_actor
 PlannerMode = Literal["off", "rules", "model"]
 
 
-def planner_mode(provider: Provider, context: PageContext | None) -> PlannerMode:
+def planner_mode(
+    provider: Provider, context: PageContext | None, mode: Literal["auto", "plan", "agent"] = "auto"
+) -> PlannerMode:
     """Decide how much of the planner this provider may use.
 
-    Only a message that carries page context (the Web Agent dialog always sends it) enters
-    the planner, so API clients and existing conversations keep their exact behaviour.
+    Automatic mode retains context-based selection and scripted-provider opt-in. Explicit
+    agent mode bypasses planning; plan mode also enables planning without page context.
     """
+    if mode == "agent":
+        return "off"
     if isinstance(provider, FakeProvider):
         head = provider.script[0] if provider.script else None
         engaged = isinstance(head, ScriptedResponse) and head.agent == AGENT_NAME
         return "model" if engaged else "off"
-    if context is None:
+    if context is None and mode == "auto":
         return "off"
     return "rules" if isinstance(provider, DemoProvider) else "model"
 
@@ -87,10 +91,11 @@ def planner_events(
     provider: Provider,
     context: PageContext | None,
     token: str,
+    mode: Literal["auto", "plan", "agent"] = "auto",
 ) -> list[AgentEvent] | None:
     """Plan, answer, ask or refuse; None leaves the turn to the free conversation."""
-    mode = planner_mode(provider, context)
-    if mode == "off":
+    selected = planner_mode(provider, context, mode)
+    if selected == "off":
         return None
     text = next(item.content for item in reversed(conversation.messages) if item.role == "user")
     turn = PlannerTurn(
@@ -104,14 +109,14 @@ def planner_events(
     # The offline demo keeps its own disclosed vocabulary for questions; only recipes apply.
     rules_only = (None, ModelAccess(read_rules=False))
     calls, access = (
-        _access(db, conversation, provider, turn, token) if mode == "model" else rules_only
+        _access(db, conversation, provider, turn, token) if selected == "model" else rules_only
     )
     head = provider.script[0] if isinstance(provider, FakeProvider) and provider.script else None
     try:
         result = plan_turn(db, turn, complete=calls.complete if calls else None, access=access)
     except DatakeelError:
-        result = internal_error(text, language_of(text)) if mode == "model" else None
-    if result is None and mode == "model":
+        result = internal_error(text, language_of(text)) if selected == "model" else None
+    if result is None and selected == "model":
         # A real model was in the loop: answer every sentence instead of a silent free loop.
         result = unsupported(text, language_of(text))
     if (
@@ -131,13 +136,12 @@ def planner_events(
         message=ChatMessage(role="assistant", content=result.text),
         model_call=bool(calls and calls.account.attempts),
     )
-    used_memories = calls.used_memory_ids if calls else []
     return [
         AgentEvent(
             event="intent",
             intent=result,
             text=result.text,
             agent_name=AGENT_NAME,
-            used_memory_ids=used_memories,
+            used_memory_ids=calls.used_memory_ids if calls else [],
         )
     ]

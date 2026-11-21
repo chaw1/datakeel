@@ -145,14 +145,14 @@ def _response_events(
     events = graph.resume(request) if isinstance(request, ResumeInput) else graph.run()
     route = None
     try:
-        with provider_session(conversation.config, provider) as selected:
-            graph.provider = selected
+        with provider_session(conversation.config, provider) as chosen:
+            graph.provider = chosen
             if isinstance(request, MessageInput):
-                offline = isinstance(selected, FakeProvider)
-                route = route_message(db, conversation, selected, offline_classifier=offline)
+                offline = isinstance(chosen, FakeProvider)
+                route = route_message(db, conversation, chosen, offline_classifier=offline)
             graph.workflow_confirmation_required = route is not None and route.requires_confirmation
             planned = (
-                planner_events(db, conversation, selected, request.context, token)
+                planner_events(db, conversation, chosen, request.context, token, mode=request.mode)
                 if isinstance(request, MessageInput)
                 and route is not None
                 and route.workflow_id is None

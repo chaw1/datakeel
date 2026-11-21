@@ -201,6 +201,50 @@
   outline: 2px solid var(--pencil);
   outline-offset: 2px;
 }
+.message-composer-actions {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  min-width: 130px;
+}
+.message-composer-actions select {
+  width: 100%;
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+}
+.agent-stop .button {
+  margin-top: calc(var(--space) * 3);
+}
+.agent-call-tree {
+  margin: calc(var(--space) * 3) 0;
+  padding: calc(var(--space) * 3);
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--font-xs);
+  font-family: var(--font-body);
+}
+.agent-call-tree summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+.agent-call-tree-nodes {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  padding: 0;
+  list-style: none;
+}
+.agent-call-tree-nodes li {
+  padding: calc(var(--space) * 3);
+  background: var(--paper);
+  overflow-wrap: anywhere;
+}
+.agent-call-tree-nodes li[data-child="true"] {
+  margin-left: calc(var(--space) * 4);
+  border-left: 2px solid var(--rule);
+}
+.agent-call-tree-nodes code {
+  display: block;
+  margin-top: calc(var(--space) * 2);
+}
 .trace-heading {
   margin: calc(var(--space) * 7.5) 0 calc(var(--space) * 5);
 }

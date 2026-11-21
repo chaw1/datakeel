@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
 import { I18nContext, translator } from "../../i18n/context";
@@ -12,6 +13,40 @@ const props = {
   onResolved: vi.fn(),
   onOpenReceipt: vi.fn(),
 };
+it("escalates unsupported requests and disables escalation while busy", async () => {
+  const onEscalateAgent = vi.fn();
+  const event = agentEvent("intent", {
+    intent: {
+      kind: "unsupported",
+      parser: "rules",
+      request: "Explore relationships",
+      text: "Try the deep agent",
+    },
+  });
+  const { rerender } = render(
+    <AgentObservation
+      {...props}
+      event={event}
+      onEscalateAgent={onEscalateAgent}
+    />,
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Ask Deep Agent instead" }),
+  );
+  expect(onEscalateAgent).toHaveBeenCalledWith("Explore relationships");
+  rerender(
+    <AgentObservation
+      {...props}
+      busy
+      event={event}
+      onEscalateAgent={onEscalateAgent}
+    />,
+  );
+  expect(
+    screen.getByRole("button", { name: "Ask Deep Agent instead" }),
+  ).toBeDisabled();
+});
+
 it("shows a known stop reason once in the selected language", () => {
   render(
     <AgentObservation
