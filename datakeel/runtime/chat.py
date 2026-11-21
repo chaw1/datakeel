@@ -197,6 +197,8 @@ def _streamed(
 class ChatProvider:
     """Expose a synchronous chat model through Datakeel's provider protocol."""
 
+    parallel_safe: bool = True
+
     def __init__(self, model: BaseChatModel) -> None:
         """Accept an already configured model with explicit transport ownership."""
         self.model = model

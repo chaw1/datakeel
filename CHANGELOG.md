@@ -24,6 +24,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Compatible model providers run distinct read-only specialists concurrently, preserving guard limits, ordered results and live child progress.
 - Long Agent conversations compact older history based on budget while retaining action IDs; the call tree shows token and cost utilization with an 80% warning.
 - Agent turns run up to four independent read tools concurrently, preserving guard limits, ordered results and live progress.
 - Memory now preserves identifier tokens and supports ranked search and inline editing with PII redaction.

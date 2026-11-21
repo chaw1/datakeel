@@ -13,7 +13,7 @@ from datakeel.storage.database import Database
 
 
 def rejection(parent: Conversation, definition: AgentDefinition, ordinal: int) -> str:
-    """Count requested siblings in one reply while execution remains strictly serial."""
+    """Bound requested siblings, depth and inherited capabilities before child execution."""
     limits = get_settings()
     if parent.depth >= limits.delegation_max_depth:
         return "delegation_depth_exceeded"

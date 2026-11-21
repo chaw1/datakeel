@@ -4,6 +4,7 @@
 """Synchronous checkpointed graph scheduling for the existing controlled Agent behavior."""
 
 from collections.abc import Iterator
+from operator import attrgetter
 from typing import TYPE_CHECKING, Literal, cast
 
 import httpx
@@ -14,7 +15,7 @@ from pydantic import Field, JsonValue
 from pydantic import ValidationError as ModelValidationError
 
 from datakeel.agent.dispatch import ToolDispatcher
-from datakeel.agent.guards import LoopGuard
+from datakeel.agent.guards import PING_WINDOW, REPEAT_LIMIT, LoopGuard
 from datakeel.agent.metering import ModelMeter
 from datakeel.agent.models import AgentEvent
 from datakeel.agent.recovery import execute_approved
@@ -29,6 +30,7 @@ from datakeel.core.agent_models import (
 from datakeel.core.canary import CanaryStreamBuffer, response_leaks
 from datakeel.core.errors import BudgetError, ConflictError, DatakeelError, ValidationError
 from datakeel.core.models import BoundaryModel
+from datakeel.delegation.parallel import ParallelDelegationInput
 from datakeel.delegation.policy import ancestor_leak, conversation_canaries
 from datakeel.ontology.functions import PARAMETER_MODELS
 from datakeel.ontology.tool_models import ToolOutcome
@@ -62,19 +64,14 @@ class GraphState(BoundaryModel):
 
 
 def _stopped(reason: str, detail: str = "") -> AgentEvent:
-    return AgentEvent(
-        event="stopped", stop_reason=reason, text=f"Stopped: {reason}. {detail}".strip()
-    )
+    text = f"Stopped: {reason}. {detail}".strip()
+    return AgentEvent(event="stopped", stop_reason=reason, text=text)
 
 
 def approval_gate(state: GraphState) -> dict[str, str]:
     """Pause only; replaying this node never performs business work or grants authority."""
     interrupt(state.plan_id)
     return {}
-
-
-def _route(state: GraphState) -> str:
-    return state.next_node
 
 
 class AgentGraph:
@@ -84,12 +81,8 @@ class AgentGraph:
         self, db: Database, conversation_id: str, token: str, provider: Provider | None
     ) -> None:
         """Keep the response token on this ephemeral instance, outside config and metadata."""
-        self.db, self.conversation_id, self.token, self.provider = (
-            db,
-            conversation_id,
-            token,
-            provider,
-        )
+        self.db, self.conversation_id = db, conversation_id
+        self.token, self.provider = token, provider
         self.guard = LoopGuard()
         self.workflow_confirmation_required = False
         self.conversation = memory.get(db, conversation_id)
@@ -106,9 +99,9 @@ class AgentGraph:
         builder.add_node("execute", self._execute)
         builder.add_edge(START, "model")
         for node in ("model", "tools"):
-            builder.add_conditional_edges(node, _route)
+            builder.add_conditional_edges(node, attrgetter("next_node"))
         builder.add_edge("approval_gate", "execute")
-        builder.add_conditional_edges("execute", _route)
+        builder.add_conditional_edges("execute", attrgetter("next_node"))
         self.graph = builder.compile(checkpointer=self.saver)
 
     def invalidate(self) -> None:
@@ -141,11 +134,8 @@ class AgentGraph:
         """Check real approval immediately, before lazy execution or provider construction."""
         authorize_resume(self.db, self.conversation_id, request.plan_id, self.pending_plan())
         snapshot = self.graph.get_state(self.config)
-        values = {
-            item.id: request.plan_id
-            for item in snapshot.interrupts
-            if item.value == request.plan_id
-        }
+        plan_id = request.plan_id
+        values = {item.id: plan_id for item in snapshot.interrupts if item.value == plan_id}
         command: Command[str] | None = Command(resume=values) if values else None
         return self._stream(command)
 
@@ -212,16 +202,12 @@ class AgentGraph:
             msg = "Paused tool outcome no longer matches the approved plan"
             raise ConflictError(msg)
         outcome = execute_approved(self.db, state.plan_id)
-        state = state.model_copy(
-            update={"events": [AgentEvent(event="receipt", outcome=outcome).model_dump_json()]}
-        )
+        event = AgentEvent(event="receipt", outcome=outcome).model_dump_json()
+        state = state.model_copy(update={"events": [event]})
         self.guard.restore(state.guard)
-        result = (
-            self._stop(state, "execution_failed")
-            if outcome.status == "FAILED"
-            else self._continue(state)
-        )
-        return result.model_dump(mode="json")
+        if outcome.status == "FAILED":
+            return self._stop(state, "execution_failed").model_dump(mode="json")
+        return self._continue(state).model_dump(mode="json")
 
     def _model(self, state: GraphState) -> GraphState:
         if self.provider is None:
@@ -266,25 +252,44 @@ class AgentGraph:
 
     @staticmethod
     def _remember(state: GraphState, meter: ModelMeter) -> GraphState:
-        return state.model_copy(
-            update={
-                "used_memory_ids": list(
-                    dict.fromkeys([*state.used_memory_ids, *meter.used_memory_ids])
-                )
-            }
+        identifiers = list(dict.fromkeys([*state.used_memory_ids, *meter.used_memory_ids]))
+        return state.model_copy(update={"used_memory_ids": identifiers})
+
+    def _delegation_state(self, dispatcher: ToolDispatcher) -> ParallelDelegationInput:
+        visible = {tool.name for tool in dispatcher.catalog.core} | dispatcher.catalog.loaded.keys()
+        return ParallelDelegationInput(
+            parent=self.conversation,
+            parallel_safe=getattr(self.provider, "parallel_safe", False) is True,
+            sqlite=self.db.sqlite,
+            database=self.db.engine.url.database,
+            delegate_visible=not self.workflow_confirmation_required
+            and "delegate_agent" in visible,
+            calls_count=dict(self.guard.calls),
+            failures=dict(self.guard.failures),
+            history=self.guard.history,
+            last_result=self.guard.last_result,
+            no_progress=self.guard.no_progress,
+            repeat_limit=REPEAT_LIMIT,
+            ping_window=PING_WINDOW,
         )
 
     def _tools(self, state: GraphState) -> GraphState:
         self.guard.restore(state.guard)
         dispatcher = ToolDispatcher(self.db, self.conversation_id, self.token, self.guard)
+        writer = get_stream_writer()
+        db, parent, provider = self.db, self.conversation, self.provider
         delegated = DelegationExecutor(
-            self.db, self.conversation, self.provider, AgentGraph, self._emit
+            db, parent, provider, AgentGraph, lambda event: writer(self._stamp(event))
         )
         dry_run = memory.get(self.db, self.conversation_id).config.dry_run
         calls = [ToolCall.model_validate_json(item) for item in state.calls]
         reason, pending_call = None, ""
         results: list[AgentEvent] = []
-        with dispatcher.parallel_reads(calls) as parallel:
+        with (
+            dispatcher.parallel_reads(calls) as reads,
+            delegated.parallel_delegations(calls, self._delegation_state(dispatcher)) as fanout,
+        ):
+            parallel = reads or fanout
             events = [AgentEvent(event="tool_call", call=call) for call in parallel]
             for event in events:
                 self._emit(event)
@@ -293,25 +298,24 @@ class AgentGraph:
                     events.append(AgentEvent(event="tool_call", call=call))
                     self._emit(events[-1])
                 results, reason = self._dispatch_tool(dispatcher, call, delegated, dry_run=dry_run)
-                events.extend(children := delegated.drain())
                 reason = delegated.stop_reason or reason
-                events.extend(results)
-                for event in [*children, *results]:
+                for event in [*delegated.drain(), *results]:
+                    events.append(event)
                     self._emit(event)
-                if reason:
+                if reason and index + 1 >= len(fanout):
                     pending_call = call.model_dump_json()
                     for pending in calls[index + 1 :]:
                         dispatcher.tool_message(
                             pending, ToolOutcome(name=pending.name, status="FAILED", error=reason)
                         )
                     break
+        kinds = {event.event for event in events}
         state = state.model_copy(
             update={
                 "events": [event.model_dump_json() for event in events],
-                "response_has_plan": state.response_has_plan
-                or any(event.event == "plan" for event in events),
+                "response_has_plan": state.response_has_plan or "plan" in kinds,
                 "response_has_tool_result": state.response_has_tool_result
-                or any(event.event == "tool_result" for event in events),
+                or "tool_result" in kinds,
             }
         )
         if reason == "approval_required":
@@ -334,14 +338,13 @@ class AgentGraph:
         *,
         dry_run: bool,
     ) -> tuple[list[AgentEvent], str | None]:
-        if self.workflow_confirmation_required and call.name not in {
-            *PARAMETER_MODELS,
-            "tool_search",
-        }:
+        reads = {*PARAMETER_MODELS, "tool_search"}
+        if self.workflow_confirmation_required and call.name not in reads:
             reason = "workflow_confirmation_required"
             outcome = ToolOutcome(name=call.name, status="FAILED", error=reason)
             dispatcher.tool_message(call, outcome)
             return [AgentEvent(event="tool_result", outcome=outcome)], reason
+        delegated.wait(call)
         return dispatcher.dispatch(call, dry_run=dry_run, local=delegated.invoke)
 
     def _continue(self, state: GraphState) -> GraphState:
@@ -354,20 +357,14 @@ class AgentGraph:
 
     def _tools_node(self, state: GraphState) -> dict[str, JsonValue]:
         result = self._tools(state)
-        identifiers = [
-            identifier
-            for item in result.events
-            for identifier in AgentEvent.model_validate_json(item).used_memory_ids
-        ]
+        events = map(AgentEvent.model_validate_json, result.events)
+        identifiers = [identifier for event in events for identifier in event.used_memory_ids]
         return result.model_copy(
             update={"used_memory_ids": list(dict.fromkeys([*result.used_memory_ids, *identifiers]))}
         ).model_dump(mode="json")
 
     def _stop(self, state: GraphState, reason: str, detail: str = "") -> GraphState:
+        events = [*state.events, _stopped(reason, detail).model_dump_json()]
         return state.model_copy(
-            update={
-                "events": [*state.events, _stopped(reason, detail).model_dump_json()],
-                "guard": self.guard.snapshot(),
-                "next_node": END,
-            }
+            update={"events": events, "guard": self.guard.snapshot(), "next_node": END}
         )

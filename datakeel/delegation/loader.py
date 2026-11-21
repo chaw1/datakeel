@@ -12,7 +12,13 @@ from pydantic import ValidationError as ModelValidationError
 from datakeel.actions.registry import action_definitions
 from datakeel.core.errors import NotFoundError, ValidationError
 from datakeel.delegation.models import AgentDefinition
-from datakeel.ontology.functions import function_definitions
+from datakeel.ontology.functions import PARAMETER_MODELS, function_definitions
+
+
+def is_read_only_agent(definition: AgentDefinition) -> bool:
+    """Allow only declared reads, tool discovery and bounded nested delegation."""
+    permitted = (frozenset(PARAMETER_MODELS) - {"ask_data"}) | {"tool_search", "delegate_agent"}
+    return all(tool in permitted for tool in definition.tools)
 
 
 def agents_path() -> Path:
