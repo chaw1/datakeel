@@ -59,13 +59,7 @@ def deferred_tools() -> list[ToolDefinition]:
     reads = [
         ToolDefinition(
             name=item.id,
-            description=descriptions.get(item.id, f"Read {item.id}")
-            + "; "
-            + "; ".join(
-                text
-                for texts in (*item.phrases.values(), *item.examples.values())
-                for text in texts
-            ),
+            description=descriptions.get(item.id, f"Read {item.id}"),
             parameters=compact_schema(item.input_schema),
         )
         for item in function_definitions()

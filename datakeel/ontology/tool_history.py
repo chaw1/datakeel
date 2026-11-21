@@ -63,7 +63,12 @@ def compact_tool_search(
         return message
     loaded = [json.dumps(tool.model_dump(mode="json"), sort_keys=True) for tool in loaded_tools]
     content: dict[str, JsonValue] = {
-        **outcome.content.root,
+        **{
+            key: value
+            for key, value in outcome.content.root.items()
+            if outcome.content.root.get("truncated") is True
+            or key not in {"total_matches", "truncated"}
+        },
         "tools": [
             {key: value for key, value in item.items() if key != "parameters"}
             if isinstance(item, dict) and json.dumps(item, sort_keys=True) in loaded

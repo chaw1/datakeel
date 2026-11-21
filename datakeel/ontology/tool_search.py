@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from pydantic import Field
@@ -15,9 +16,10 @@ from pydantic import Field
 from datakeel.core.agent_models import ToolDefinition
 from datakeel.core.json_schema import compact_schema
 from datakeel.core.models import BoundaryModel, JsonDocument
+from datakeel.ontology.functions import function_definitions
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 DEFAULT_TOOL_SEARCH_LIMIT = 8
 _NAME_WEIGHT = 3
@@ -25,6 +27,10 @@ _BM25_K1 = 1.2
 _BM25_B = 0.75
 _MIN_PLURAL_LENGTH = 4
 _WORDS = re.compile(r"[a-z0-9]+|[\u3400-\u9fff]+")
+
+
+class _ResidentToolSearchParams(BoundaryModel):
+    query: str = Field(min_length=1, max_length=200)
 
 
 class ToolSearchParams(BoundaryModel):
@@ -35,12 +41,12 @@ class ToolSearchParams(BoundaryModel):
 
 
 def tool_search_definition() -> ToolDefinition:
-    """Advertise bounded discovery without including the deferred catalog in the prompt."""
+    """Advertise bounded discovery while preserving the exact resident tool schema size."""
     return ToolDefinition(
         name="tool_search",
         description="Discover reads and prepare-only actions.",
         parameters=compact_schema(
-            JsonDocument.model_validate(ToolSearchParams.model_json_schema())
+            JsonDocument.model_validate(_ResidentToolSearchParams.model_json_schema())
         ),
     )
 
@@ -75,19 +81,27 @@ def _score(
     )
 
 
-def _rank(tools: Sequence[ToolDefinition], query: str) -> list[ToolDefinition]:
+def _rank(
+    tools: Sequence[ToolDefinition], query: str, extra_text: Mapping[str, str]
+) -> list[ToolDefinition]:
     tokens = set(_tokens(query))
     if not tokens:
         return sorted(
             (
                 tool
                 for tool in tools
-                if query and query in f"{tool.name} {tool.description}".casefold()
+                if query
+                and query
+                in f"{tool.name} {tool.description} {extra_text.get(tool.name, '')}".casefold()
             ),
             key=lambda tool: tool.name,
         )
     documents = [
-        Counter(_tokens(tool.name) * _NAME_WEIGHT + _tokens(tool.description)) for tool in tools
+        Counter(
+            _tokens(tool.name) * _NAME_WEIGHT
+            + _tokens(f"{tool.description} {extra_text.get(tool.name, '')}")
+        )
+        for tool in tools
     ]
     frequencies = Counter(token for document in documents for token in document)
     average = sum(document.total() for document in documents) / max(len(documents), 1) or 1
@@ -102,12 +116,28 @@ def _rank(tools: Sequence[ToolDefinition], query: str) -> list[ToolDefinition]:
     ]
 
 
-def search_tools(tools: Sequence[ToolDefinition], params: ToolSearchParams) -> JsonDocument:
+@lru_cache(maxsize=1)
+def _read_search_texts() -> dict[str, str]:
+    return {
+        item.id: " ".join(
+            text for texts in (*item.phrases.values(), *item.examples.values()) for text in texts
+        )
+        for item in function_definitions()
+    }
+
+
+def search_tools(
+    tools: Sequence[ToolDefinition],
+    params: ToolSearchParams,
+    *,
+    extra_text: Mapping[str, str] | None = None,
+) -> JsonDocument:
     """Return exact names first, otherwise BM25 matches with a deterministic schema cap."""
     query = params.query.strip().casefold()
     name = re.sub(r"[\s-]+", "_", query)
     exact = next((tool for tool in tools if tool.name.casefold() == name), None)
-    matches = [exact] if exact is not None else _rank(tools, query)
+    text_index = _read_search_texts() if extra_text is None else extra_text
+    matches = [exact] if exact is not None else _rank(tools, query, text_index)
     return JsonDocument.model_validate(
         {
             "tools": [tool.model_dump(mode="json") for tool in matches[: params.limit]],
