@@ -190,11 +190,12 @@ operator publication is `unpublished`; empty R and failed R retain failure, neve
 Complete frozen R is checked even when a successful run produced zero candidates. Superseding
 publications invalidate empty historical results too. Events expose source identities, mode,
 implementation and contract without raw execution parameters. Reports retain input/eligible/
-failed/truncated denominators, fake usage, fake cost, and uncertain attempt reservations.
+failed/truncated denominators, cache hits, mode-specific fake or cloud metered usage/cost,
+provider response IDs when settled, and uncertain attempt reservations.
 
 响应区分当前、失效、未发布证据，以及成功、部分成功、失败、取消、等待和样本不足状态。
-零候选仍检查完整 R；空 R、参考失败和未发布结果不表示全覆盖。来源、合同、fake usage、
-费用及未知 attempt 的最坏预留均可追溯，不提供真实模型质量或云端性能结论。
+零候选仍检查完整 R；空 R、参考失败和未发布结果不表示全覆盖。来源、合同、缓存命中、按运行模式区分的
+fake 或云端计量 usage/费用、已结算响应 ID 及未知 attempt 的最坏预留均可追溯，不提供真实模型语义质量结论。
 
 In Evidence, open **Vector evidence**, enter an existing task run ID, choose a kind and query.
 Native form controls, review buttons and page navigation support keyboard operation. Each card

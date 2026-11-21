@@ -15,6 +15,8 @@ it("keeps vector controls and states available in both languages", () => {
   expect(translator("zh")("vecTitle")).toBe("向量证据");
   expect(translator("en")("vecTitle")).toBe("Vector evidence");
   expect(translator("zh")("vecState_stale")).toContain("失效");
+  expect(translator("zh")("vecReal")).toContain("云端 HTTP");
+  expect(translator("en")("vecRealUsage")).toContain("Cloud requests");
 });
 it("renders direct duplicate similarity and threshold without substituting distance", () => {
   render(

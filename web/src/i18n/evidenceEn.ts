@@ -146,12 +146,17 @@ export const evidenceEn = {
   vecReport: "Run status",
   vecFake:
     "Fake contract evidence. Real spend: 0 CNY. Real model quality: not tested.",
+  vecReal:
+    "Cloud HTTP embedding evidence. Metered under approved CNY budget; semantic quality: not tested.",
   vecSnapshot: "Result snapshot",
   vecCounts: "Input / eligible / failed / truncated",
+  vecCacheHits: "Cache hits",
   vecUsage: "Fake requests / tokens / cost",
+  vecRealUsage: "Cloud requests / tokens / cost",
   vecAudit: "Sources, contract and usage audit",
   vecTokens: "Usage tokens",
   vecReserved: "Worst reserved cost",
+  vecResponseId: "Response ID",
   vecAdd: "Add gap to current selection",
   vecAdded: "Added to the current ObjectSet selection. No action executed.",
   vecRestart:
