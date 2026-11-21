@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { createConversation } from "../api/agent";
+import { createConversation, exportConversationUrl } from "../api/agent";
 import { Icon } from "../components/Icon";
 import { ResourceState } from "../components/ResourceState";
 import {
@@ -178,16 +178,25 @@ export function AgentPage({
                     {t(session.value.config.dry_run ? "dryRun" : "liveActions")}
                   </Badge>
                 </div>
-                <Button
-                  variant="link"
-                  disabled={session.live.running}
-                  onClick={() => {
-                    onTrace(id);
-                  }}
-                >
-                  {t("viewTrace")}
-                  <Icon name="arrow" size={14} />
-                </Button>
+                <div>
+                  <a
+                    className="text-button ui-button-link"
+                    href={exportConversationUrl(id, "markdown")}
+                    download
+                  >
+                    {t("exportConversationReport")}
+                  </a>
+                  <Button
+                    variant="link"
+                    disabled={session.live.running}
+                    onClick={() => {
+                      onTrace(id);
+                    }}
+                  >
+                    {t("viewTrace")}
+                    <Icon name="arrow" size={14} />
+                  </Button>
+                </div>
               </div>
               <AgentCallTree
                 key={id}

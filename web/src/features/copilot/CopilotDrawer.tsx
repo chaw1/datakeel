@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
+import { exportConversationUrl } from "../../api/agent";
 import { Icon } from "../../components/Icon";
 import { useI18n } from "../../i18n/useI18n";
+import { AgentCallTree } from "../agent/AgentCallTree";
 import { agentHref } from "../agent/agentLink";
 import { ConversationTranscript } from "../agent/ConversationTranscript";
 import { MessageComposer } from "../agent/MessageComposer";
@@ -97,6 +99,15 @@ export function CopilotDrawer({
           <p className="muted small">{t("copilotSubtitle")}</p>
         </div>
         <div className="copilot-header-actions">
+          {session.conversation && (
+            <a
+              className="button ghost small"
+              href={exportConversationUrl(session.conversation.id, "markdown")}
+              download
+            >
+              {t("exportConversationReport")}
+            </a>
+          )}
           {session.conversationId && (
             <button
               type="button"
@@ -139,6 +150,14 @@ export function CopilotDrawer({
         </div>
       )}
       <div className="copilot-body">
+        {session.conversation && (
+          <AgentCallTree
+            key={session.conversation.id}
+            conversationId={session.conversation.id}
+            revision={session.conversation.events.length}
+            budget={session.conversation.config.budget}
+          />
+        )}
         {session.conversation ? (
           <ConversationTranscript
             conversation={session.conversation}

@@ -7,7 +7,7 @@ import { dataset } from "../../test/fixtures";
 import { CopilotDrawer } from "./CopilotDrawer";
 import { derivePageContext } from "./pageContext";
 
-import type { Conversation, Dataset } from "../../api/types";
+import type { CallTree, Conversation, Dataset } from "../../api/types";
 import type { Route } from "../../app/routing";
 
 const datasetFixture: Dataset = {
@@ -31,7 +31,38 @@ const sampleConversation: Conversation = {
     dry_run: false,
     max_turns: 12,
     max_output_tokens: 1024,
+    budget: {
+      conversation_tokens: 1000,
+      conversation_usd: "0.1",
+      daily_tokens: 10000,
+      daily_usd: "1",
+    },
   },
+};
+const callTree: CallTree = {
+  nodes: [
+    {
+      id: "child-1",
+      root_id: "conv-1",
+      parent_id: "conv-1",
+      parent_tool_call_id: "tool-1",
+      agent_name: "inspector",
+      agent_path: "main/inspector",
+      depth: 1,
+      tokens: 420,
+      cost_usd: "0.025",
+      model_calls: 2,
+      tool_elapsed_ms: 30,
+      failed_tools: 1,
+      tools: ["search_files"],
+    },
+  ],
+  traces: [],
+  models: ["fake-demo"],
+  total_tokens: 420,
+  total_cost_usd: "0.025",
+  total_tool_calls: 3,
+  total_tool_elapsed_ms: 30,
 };
 
 function sseStream(events: Array<{ event: string; payload: unknown }>) {
@@ -106,7 +137,7 @@ it("makes zero fetch calls while closed and opens via Ctrl+J without creating a 
   expect(fetchSpy).not.toHaveBeenCalled();
 });
 
-it("lazily creates a conversation on send and respects context toggle", async () => {
+it("creates on send, respects context, and lazily reveals exportable session telemetry", async () => {
   const user = userEvent.setup();
   const postedBodies: unknown[] = [];
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
@@ -137,6 +168,9 @@ it("lazily creates a conversation on send and respects context toggle", async ()
     }
     if (url === "/api/agent/conversations/conv-1") {
       return Promise.resolve(Response.json(sampleConversation));
+    }
+    if (url === "/api/agent/conversations/conv-1/tree") {
+      return Promise.resolve(Response.json(callTree));
     }
     return Promise.resolve(Response.json({}));
   });
@@ -195,4 +229,36 @@ it("lazily creates a conversation on send and respects context toggle", async ()
   });
   expect((postedBodies[1] as { context?: unknown }).context).toBeUndefined();
   expect((postedBodies[1] as { mode?: string }).mode).toBe("plan");
+  const report = screen.getByRole("link", {
+    name: "Export conversation report",
+  });
+  expect(report).toHaveAttribute(
+    "href",
+    "/api/agent/conversations/conv-1/export?format=markdown",
+  );
+  expect(report).toHaveAttribute("download");
+  expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/tree"))).toBe(
+    false,
+  );
+  expect(screen.queryByRole("progressbar")).toBeNull();
+  await user.click(screen.getByText("Agent call tree"));
+  const totals = await screen.findByText(/Total call-tree tokens: 420/);
+  expect(totals).toHaveTextContent("Total cost: $0.025000");
+  expect(totals).toHaveTextContent("Tool calls: 3 · 30 ms");
+  expect(screen.getByText("inspector")).toBeVisible();
+  expect(screen.getByText("Model calls: 2")).toBeVisible();
+  expect(screen.getByText("Failed tools: 1")).toBeVisible();
+  const usage = screen.getByRole("group", { name: "Budget utilization" });
+  expect(usage).toHaveTextContent("Token budget used: 420 / 1,000 · 42%");
+  expect(usage).toHaveTextContent(
+    "Cost budget used: $0.025000 / $0.100000 · 25%",
+  );
+  expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/tree"))).toEqual(
+    [
+      [
+        "/api/agent/conversations/conv-1/tree",
+        expect.objectContaining({ method: "GET" }),
+      ],
+    ],
+  );
 });

@@ -3,11 +3,24 @@ import { expect, it, vi } from "vitest";
 import { agentEvent, eventStream } from "../test/agentFixtures";
 
 import {
+  exportConversationUrl,
   getCallTree,
   parseAgentEvent,
   streamMessage,
   streamResume,
 } from "./agent";
+
+it("builds encoded conversation report downloads in Markdown by default or JSON", () => {
+  expect(exportConversationUrl("session/one & two")).toBe(
+    "/api/agent/conversations/session%2Fone%20%26%20two/export?format=markdown",
+  );
+  expect(exportConversationUrl("session/one", "markdown")).toBe(
+    "/api/agent/conversations/session%2Fone/export?format=markdown",
+  );
+  expect(exportConversationUrl("session/one", "json")).toBe(
+    "/api/agent/conversations/session%2Fone/export?format=json",
+  );
+});
 
 it("requires the final done event before declaring a streamed request complete", async () => {
   vi.stubGlobal(

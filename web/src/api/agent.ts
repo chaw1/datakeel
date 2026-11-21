@@ -166,3 +166,10 @@ export function getCallTree(id: string): Promise<CallTree> {
     `/api/agent/conversations/${encodeURIComponent(id)}/tree`,
   );
 }
+
+export function exportConversationUrl(
+  id: string,
+  format: "markdown" | "json" = "markdown",
+): string {
+  return `/api/agent/conversations/${encodeURIComponent(id)}/export?format=${format}`;
+}

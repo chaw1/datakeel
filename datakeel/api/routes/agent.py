@@ -3,12 +3,16 @@
 
 """Durable local conversations and server-sent model/tool/action events."""
 
+import re
 from collections.abc import Generator, Iterator
+from datetime import datetime
+from html import escape
 from itertools import chain
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import PlainTextResponse, Response, StreamingResponse
+from pydantic import JsonValue
 from starlette.background import BackgroundTask
 
 from datakeel.agent import service
@@ -23,6 +27,8 @@ from datakeel.core.agent_models import (
     Provider,
     ResumeInput,
 )
+from datakeel.core.models import BoundaryModel, utcnow
+from datakeel.core.pii import redact_pii
 from datakeel.core.routing_models import RouteDecision
 from datakeel.delegation.loader import list_agents
 from datakeel.delegation.models import AgentDefinition, CallTree
@@ -31,6 +37,14 @@ from datakeel.storage.conversation_authorization import list_audit
 from datakeel.storage.identity_sessions import require_session_actor
 
 router = APIRouter(prefix="/api/agent/conversations", tags=["agent"])
+
+
+class ConversationReport(BoundaryModel):
+    """Export authorized conversation evidence and its measured execution tree."""
+
+    conversation: ConversationView
+    call_tree: CallTree
+    exported_at: datetime
 
 
 class EventStreamResponse(StreamingResponse):
@@ -104,6 +118,196 @@ def tree(conversation_id: str, db: DatabaseDependency, request: Request) -> Call
     """Read nested specialist sessions and every metered parent and child call."""
     require_session_actor(db, conversation_id, http_actor(request))
     return call_tree(db, conversation_id)
+
+
+@router.get(
+    "/{conversation_id}/export",
+    response_model=ConversationReport,
+    responses={200: {"content": {"text/markdown": {"schema": {"type": "string"}}}}},
+)
+def export_conversation(
+    conversation_id: str,
+    db: DatabaseDependency,
+    request: Request,
+    export_format: Annotated[Literal["markdown", "json"], Query(alias="format")] = "markdown",
+) -> Response:
+    """Download current authorized evidence without querying private session secrets."""
+    conversation = service.get_conversation(db, conversation_id, actor=http_actor(request))
+    report = ConversationReport(
+        conversation=conversation, call_tree=call_tree(db, conversation_id), exported_at=utcnow()
+    )
+    report = ConversationReport.model_validate(_redact_report(report.model_dump(mode="json")))
+    safe_id = re.sub(r"[^A-Za-z0-9_-]", "_", conversation.id)[:128] or "session"
+    suffix = "json" if export_format == "json" else "md"
+    headers = {
+        "Content-Disposition": f'attachment; filename="datakeel-conversation-{safe_id}.{suffix}"'
+    }
+    if export_format == "json":
+        return Response(
+            report.model_dump_json(indent=2), media_type="application/json", headers=headers
+        )
+    return PlainTextResponse(
+        _report_markdown(report), media_type="text/markdown; charset=utf-8", headers=headers
+    )
+
+
+def _redact_report(value: JsonValue, label: str | None = None) -> JsonValue:
+    if isinstance(value, str):
+        safe = redact_pii(value, kinds=frozenset({"secret", "credential_url"}), label=label)
+        return re.sub(r"(?i)d\s*k\s*c\s*_\s*(?:[0-9a-f]\s*){24}", "[REDACTED]", safe)
+    if isinstance(value, list):
+        return [_redact_report(item, label) for item in value]
+    if isinstance(value, dict):
+        return {
+            cast("str", _redact_report(key)): _redact_report(item, key)
+            for key, item in value.items()
+        }
+    return value
+
+
+def _cell(value: object) -> str:
+    return escape(str(value)).replace("\\", "\\\\").replace("|", "\\|").replace("\n", "<br>")
+
+
+def _report_markdown(report: ConversationReport) -> str:
+    conversation, config = report.conversation, report.conversation.config
+    metadata = {
+        "id": conversation.id,
+        "model": config.model,
+        "provider": config.provider,
+        "dataset_id": config.dataset_id,
+        "dry_run": config.dry_run,
+        "turns": conversation.turns,
+        "created_at": conversation.created_at.isoformat(),
+        "exported_at": report.exported_at.isoformat(),
+        "budget": config.budget.model_dump_json(),
+    }
+    lines = ["# Datakeel Conversation Report", "", "## Session Metadata", ""]
+    lines.extend(f"- {key}: {_cell(value)}" for key, value in metadata.items())
+    lines.extend(_telemetry_markdown(report.call_tree))
+    lines.extend(_actions_markdown(conversation.events))
+    lines.extend(_transcript_markdown(conversation))
+    return "\n".join(lines) + "\n"
+
+
+def _telemetry_markdown(tree: CallTree) -> list[str]:
+    lines = ["", "## Execution & Cost Telemetry", ""]
+    lines.extend(
+        f"- {key}: {_cell(value)}"
+        for key, value in tree.model_dump(
+            exclude={"nodes", "traces", "models", "total_cost_usd"}
+        ).items()
+    )
+    lines.extend(
+        [
+            f"- total_cost_usd: {tree.total_cost_usd:f}",
+            f"- models: {_cell(', '.join(tree.models))}",
+            "",
+            (
+                "| Agent | Path | Tokens | Cost (USD) | Model calls | Tool latency (ms) | "
+                "Failed tools | Tools |"
+            ),
+            "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+        ]
+    )
+    for node in tree.nodes:
+        cells = (
+            node.agent_name,
+            node.agent_path,
+            node.tokens,
+            f"{node.cost_usd:f}",
+            node.model_calls,
+            node.tool_elapsed_ms,
+            node.failed_tools,
+            ", ".join(node.tools),
+        )
+        lines.append("| " + " | ".join(_cell(value) for value in cells) + " |")
+    return lines
+
+
+def _actions_markdown(events: list[AgentEvent]) -> list[str]:
+    lines: list[str] = []
+    for event in events:
+        if event.event not in {"plan", "receipt"} or event.outcome is None:
+            continue
+        outcome = event.outcome
+        if outcome.plan is not None:
+            plan = outcome.plan
+            lines.append(
+                f"- plan.id: {_cell(plan.id)}; action_type: {_cell(plan.action_type)}; "
+                f"status: {plan.status}; requires_approval: {plan.requires_approval}"
+            )
+        if outcome.run is not None:
+            lines.append(f"- run.id: {_cell(outcome.run.id)}; run.status: {outcome.run.status}")
+    return ["", "## Action Plans & Receipts", "", *lines] if lines else []
+
+
+def _event_markdown(event: AgentEvent) -> list[str]:
+    lines: list[str] = []
+    if event.text and event.event != "text_delta":
+        lines.append(f"Assistant ({event.agent_path}): {event.text}")
+    if event.call is not None:
+        lines.append(f"Tool call ({event.agent_path}): {event.call.name}; id: {event.call.id}")
+    if event.outcome is not None:
+        outcome = event.outcome
+        lines.append(f"Tool result ({event.agent_path}): {outcome.name}; status: {outcome.status}")
+        if outcome.error:
+            lines.append(f"Error: {outcome.error}")
+    if event.intent is not None:
+        lines.append(f"Intent ({event.intent.kind}): {event.intent.text}")
+    if event.stop_reason:
+        lines.append(f"Stop reason ({event.agent_path}): {event.stop_reason}")
+    return lines
+
+
+def _transcript_markdown(conversation: ConversationView) -> list[str]:
+    lines = ["", "## Chronological Transcript", ""]
+    if not conversation.events:
+        entries = [
+            f"{message.role.title()}: {message.content}"
+            for message in conversation.messages
+            if message.role in {"user", "assistant"}
+        ]
+    else:
+        groups: list[list[AgentEvent]] = [[]]
+        for event in conversation.events:
+            root = event.agent_path == "main"
+            # Approval continuation starts with a receipt and has no new user message.
+            if root and event.event == "receipt" and len(groups) > 1 and not groups[-1]:
+                groups.pop()
+            groups[-1].append(event)
+            if root and event.event == "done":
+                groups.append([])
+        users = [message.content for message in conversation.messages if message.role == "user"]
+        if len([group for group in groups if group]) > len(users):
+            # Failed resumes have no receipt or durable user-turn identifier to align by.
+            lines.extend(
+                [
+                    "Turn correlation unavailable; each sequence retains its recorded order.",
+                    "",
+                    "### Messages",
+                    "",
+                    *[
+                        f"> {escape(line)}"
+                        for message in conversation.messages
+                        if message.role in {"user", "assistant"}
+                        for line in f"{message.role.title()}: {message.content}".splitlines()
+                    ],
+                    "",
+                    "### Execution events",
+                    "",
+                ]
+            )
+            users = []
+        entries: list[str] = []
+        for index in range(max(len(users), len(groups))):
+            if index < len(users):
+                entries.append(f"User: {users[index]}")
+            if index < len(groups):
+                entries.extend(line for event in groups[index] for line in _event_markdown(event))
+    for entry in entries:
+        lines.extend([*(f"> {escape(line)}" for line in entry.splitlines()), ""])
+    return lines
 
 
 @router.get("/definitions/provider")

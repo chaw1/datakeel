@@ -59,6 +59,7 @@ export const agentZh: Record<keyof typeof agentEn, string> = {
   conversationMode: "模式",
   liveActions: "受控动作",
   viewTrace: "查看调用追踪与成本",
+  exportConversationReport: "导出会话报告",
   conversationActivity: "会话过程",
   streamText: "正在接收回复",
   messageFailed: "消息未能完成。",

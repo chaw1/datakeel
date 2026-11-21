@@ -210,6 +210,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agent/conversations/{conversation_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Conversation
+         * @description Download current authorized evidence without querying private session secrets.
+         */
+        get: operations["export_conversation_api_agent_conversations__conversation_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agent/conversations/{conversation_id}/messages": {
         parameters: {
             query?: never;
@@ -6126,6 +6146,19 @@ export interface components {
              * @enum {string}
              */
             provider: "fake" | "openai" | "anthropic";
+        };
+        /**
+         * ConversationReport
+         * @description Export authorized conversation evidence and its measured execution tree.
+         */
+        ConversationReport: {
+            call_tree: components["schemas"]["CallTree"];
+            conversation: components["schemas"]["ConversationView"];
+            /**
+             * Exported At
+             * Format: date-time
+             */
+            exported_at: string;
         };
         /**
          * ConversationView
@@ -14553,6 +14586,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversationAudit"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_conversation_api_agent_conversations__conversation_id__export_get: {
+        parameters: {
+            query?: {
+                format?: "markdown" | "json";
+            };
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationReport"];
+                    "text/markdown": string;
                 };
             };
             /** @description Validation Error */

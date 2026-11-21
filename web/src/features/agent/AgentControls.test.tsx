@@ -53,6 +53,15 @@ it("searches on the server with trimmed encoded text and restores all conversati
   render(<AgentPage {...props} />);
   const existing = { name: /^Inspect low quality files/ };
   expect(await screen.findByRole("button", existing)).toBeVisible();
+  const report = await screen.findByRole("link", {
+    name: "Export conversation report",
+  });
+  expect(report).toHaveAttribute(
+    "href",
+    `/api/agent/conversations/${conversation.id}/export?format=markdown`,
+  );
+  expect(report).toHaveAttribute("download");
+  expect(fetch.mock.calls.some(([path]) => path.endsWith("/tree"))).toBe(false);
   const search = screen.getByRole("searchbox", {
     name: "Search conversations",
   });

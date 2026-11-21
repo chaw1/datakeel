@@ -59,6 +59,7 @@ export const agentEn = {
   conversationMode: "Mode",
   liveActions: "Controlled actions",
   viewTrace: "View trace & costs",
+  exportConversationReport: "Export conversation report",
   conversationActivity: "Conversation activity",
   streamText: "Receiving response",
   messageFailed: "The message could not be completed.",
