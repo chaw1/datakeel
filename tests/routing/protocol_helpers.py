@@ -67,6 +67,93 @@ def successful_payload(
     }
 
 
+def protocol_response(
+    request: httpx.Request,
+    kind: ProtocolKind,
+    model: str,
+    content: str = "Recovered response.",
+) -> httpx.Response:
+    """Return SSE chunks when stream=True is requested, or JSON completion otherwise."""
+    payload = json.loads(request.content)
+    if payload.get("stream") is not True:
+        return httpx.Response(200, json=successful_payload(kind, model, content))
+    body = _openai_sse(model, content) if kind == "openai" else _anthropic_sse(model, content)
+    return httpx.Response(200, headers={"content-type": "text/event-stream"}, content=body)
+
+
+def _openai_sse(model: str, content: str) -> bytes:
+    chunk = {
+        "id": "chatcmpl-fixture",
+        "object": "chat.completion.chunk",
+        "created": 1,
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"role": "assistant", "content": content},
+                "finish_reason": "stop",
+            }
+        ],
+    }
+    usage = {
+        "id": "chatcmpl-fixture",
+        "object": "chat.completion.chunk",
+        "created": 1,
+        "model": model,
+        "choices": [],
+        "usage": {"prompt_tokens": 8, "completion_tokens": 4, "total_tokens": 12},
+    }
+    return f"data: {json.dumps(chunk)}\n\ndata: {json.dumps(usage)}\n\ndata: [DONE]\n\n".encode()
+
+
+def _anthropic_sse(model: str, content: str) -> bytes:
+    events = [
+        (
+            "message_start",
+            {
+                "type": "message_start",
+                "message": {
+                    "id": "msg-fixture",
+                    "type": "message",
+                    "role": "assistant",
+                    "model": model,
+                    "content": [],
+                    "stop_reason": None,
+                    "stop_sequence": None,
+                    "usage": {"input_tokens": 8, "output_tokens": 0},
+                },
+            },
+        ),
+        (
+            "content_block_start",
+            {
+                "type": "content_block_start",
+                "index": 0,
+                "content_block": {"type": "text", "text": ""},
+            },
+        ),
+        (
+            "content_block_delta",
+            {
+                "type": "content_block_delta",
+                "index": 0,
+                "delta": {"type": "text_delta", "text": content},
+            },
+        ),
+        ("content_block_stop", {"type": "content_block_stop", "index": 0}),
+        (
+            "message_delta",
+            {
+                "type": "message_delta",
+                "delta": {"stop_reason": "end_turn", "stop_sequence": None},
+                "usage": {"output_tokens": 4},
+            },
+        ),
+        ("message_stop", {"type": "message_stop"}),
+    ]
+    return "".join(f"event: {name}\ndata: {json.dumps(item)}\n\n" for name, item in events).encode()
+
+
 class FailingTransport:
     """Record wire model selection and fail exactly the first request."""
 
@@ -84,7 +171,7 @@ class FailingTransport:
         model = str(json.loads(request.content)["model"])
         self.models.append(model)
         if len(self.models) > 1 and not self.repeat:
-            return httpx.Response(200, json=successful_payload(self.kind, model))
+            return protocol_response(request, self.kind, model)
         if self.failure == "timeout":
             message = "fixture timeout"
             raise httpx.ReadTimeout(message, request=request)

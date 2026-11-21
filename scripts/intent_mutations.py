@@ -81,7 +81,7 @@ INTENT_MUTATIONS = (
     Mutation(
         name="planner-needs-page-context",
         path="intents/turns.py",
-        before='    if context is None:\n        return "off"',
+        before='    if context is None and mode == "auto":\n        return "off"',
         after="",
         case=_ENTRY + "test_messages_without_page_context_keep_the_free_conversation",
         runner="pytest",

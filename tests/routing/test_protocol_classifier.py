@@ -14,7 +14,7 @@ from datakeel.core.settings import Settings
 from datakeel.harness.service import list_traces
 from datakeel.runtime.chat_provider import model_provider
 from datakeel.storage.database import Database
-from tests.routing.protocol_helpers import ProtocolKind, successful_payload
+from tests.routing.protocol_helpers import ProtocolKind, protocol_response
 
 
 @pytest.mark.parametrize("kind", ["openai", "anthropic"])
@@ -33,7 +33,7 @@ def test_classification_protocol_when_ambiguous_uses_session_model_and_separate_
         assert payload["model"] == model
         calls.append(request.content.decode())
         content = classification if len(calls) == 1 else "The normal response."
-        return httpx.Response(200, json=successful_payload(kind, model, content))
+        return protocol_response(request, kind, model, content)
 
     with (
         httpx.Client(transport=httpx.MockTransport(respond), trust_env=False) as client,
@@ -72,7 +72,7 @@ def test_classification_protocol_when_rejected_does_not_abort_response(
     conversation = create_conversation(db, config)
     attempts = 0
 
-    def respond(_request: httpx.Request) -> httpx.Response:
+    def respond(request: httpx.Request) -> httpx.Response:
         nonlocal attempts
         attempts += 1
         if attempts == 1:
@@ -80,7 +80,7 @@ def test_classification_protocol_when_rejected_does_not_abort_response(
                 400,
                 json={"error": {"message": "fixture rejection", "type": "invalid_request_error"}},
             )
-        return httpx.Response(200, json=successful_payload(kind, model))
+        return protocol_response(request, kind, model)
 
     with (
         httpx.Client(transport=httpx.MockTransport(respond), trust_env=False) as client,

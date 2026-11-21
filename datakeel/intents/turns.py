@@ -11,13 +11,15 @@ scripts keep their exact behaviour.
 
 from typing import Literal
 
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from datakeel.agent.demo import DemoProvider
 from datakeel.agent.models import AgentEvent
 from datakeel.agent.providers import FakeProvider
 from datakeel.core.agent_models import ChatMessage, Conversation, Provider, ScriptedResponse
 from datakeel.core.errors import DatakeelError
 from datakeel.core.intent_models import IntentResult, PageContext
-from datakeel.core.settings import get_settings
 from datakeel.intents.drafts import language_of
 from datakeel.intents.model_calls import PlannerCalls
 from datakeel.intents.model_parse import AGENT_NAME
@@ -28,6 +30,14 @@ from datakeel.storage.database import Database
 from datakeel.storage.identity_sessions import session_actor
 
 PlannerMode = Literal["off", "rules", "model"]
+
+
+class PlannerExploreSettings(BaseSettings):
+    """Resolve planner exploration thresholds from DATAKEEL_ env without touching frozen core."""
+
+    model_config = SettingsConfigDict(env_prefix="DATAKEEL_", extra="ignore", frozen=True)
+    intent_planner_explore: Literal["off", "auto", "on"] = "auto"
+    intent_planner_explore_threshold: int = Field(default=60, ge=1, le=5000)
 
 
 def planner_mode(
@@ -73,7 +83,7 @@ def _access(
     db: Database, conversation: Conversation, provider: Provider, turn: PlannerTurn, token: str
 ) -> tuple[PlannerCalls, ModelAccess]:
     calls = PlannerCalls(db, conversation, provider, turn, token)
-    settings = get_settings()
+    settings = PlannerExploreSettings()
     explore_mode = settings.intent_planner_explore
     if isinstance(provider, FakeProvider) and explore_mode != "on":
         explore_mode = "off"

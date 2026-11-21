@@ -65,7 +65,7 @@ IDENTITY_MUTATIONS = (
     Mutation(
         name="identity-memory-write-scope",
         path="storage/memory_store.py",
-        before='if "*" not in current.scopes and scope not in current.scopes:',
+        before='if not {"*", scope}.intersection(effective_scopes(session, actor).scopes):',
         after="if False:",
         case="tests/memory/test_identity_write.py::test_registered_unknown_and_acceptance_cannot_write_memory_via_agent",
         runner="pytest",

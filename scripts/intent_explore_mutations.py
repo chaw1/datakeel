@@ -12,7 +12,7 @@ EXPLORE_MUTATIONS = (
     Mutation(
         name="explore-explore-path-is-taken",
         path="intents/planner.py",
-        before="    if access.explore:",
+        before="    if access.explores(catalog):",
         after="    if False:",
         case=_EXPLORE + "test_look_ups_are_answered_and_the_plan_goes_through_the_usual_checks",
         runner="pytest",
@@ -54,13 +54,8 @@ EXPLORE_MUTATIONS = (
     Mutation(
         name="explore-planner-json-requests-stream",
         path="runtime/chat.py",
-        before=(
-            "        if request.json_output and isinstance(model, ChatOpenAI):\n"
-            "            return _response(_streamed(bound, messages, request))"
-        ),
-        after=(
-            "        if False:\n            return _response(_streamed(bound, messages, request))"
-        ),
+        before="        if (request.json_output and isinstance(model, ChatOpenAI)) or (",
+        after="        if (False and isinstance(model, ChatOpenAI)) or (",
         case=_CHAT + "test_openai_when_json_output_requested_streams_and_joins_the_answer",
         runner="pytest",
     ),

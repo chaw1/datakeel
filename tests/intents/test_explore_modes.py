@@ -13,7 +13,6 @@ from pydantic import ValidationError
 from datakeel.agent.service import create_conversation, send_message
 from datakeel.core.agent_models import ConversationCreate, MessageInput, ModelResponse
 from datakeel.core.intent_models import PageContext
-from datakeel.core.settings import Settings
 from datakeel.intents.catalog import (
     CatalogEntry,
     EntityCatalog,
@@ -22,6 +21,7 @@ from datakeel.intents.catalog import (
 )
 from datakeel.intents.explore import Lookups
 from datakeel.intents.planner import ModelAccess, PlannerTurn, plan_turn
+from datakeel.intents.turns import PlannerExploreSettings
 from datakeel.ontology.tool_models import ToolCallContext
 from tests.intents.model_support import REQUEST, PlannerProvider
 from tests.intents.planning_support import steps, two_projects
@@ -65,10 +65,10 @@ def test_mode_selection_preserves_opt_in_and_automatic_thresholds(
 @pytest.mark.parametrize("threshold", [0, 5001])
 def test_production_settings_bound_explore_threshold(threshold: int) -> None:
     """Production auto mode is default and invalid catalog thresholds fail configuration."""
-    assert Settings().intent_planner_explore == "auto"
-    assert Settings().intent_planner_explore_threshold == 60
+    assert PlannerExploreSettings().intent_planner_explore == "auto"
+    assert PlannerExploreSettings().intent_planner_explore_threshold == 60
     with pytest.raises(ValidationError):
-        Settings(intent_planner_explore_threshold=threshold)
+        PlannerExploreSettings(intent_planner_explore_threshold=threshold)
 
 
 def test_lookups_discover_live_objects_once_after_snapshot_creation(db: Database) -> None:

@@ -233,7 +233,8 @@ PLANNING_MUTATIONS = (
         name="intent-internal-error-said-plainly",
         path="intents/turns.py",
         before=(
-            '        result = internal_error(text, language_of(text)) if mode == "model" else None'
+            "        result = internal_error(text, language_of(text)) "
+            'if selected == "model" else None'
         ),
         after="        result = None",
         case=_SCOPE + "test_internal_errors_are_said_plainly_without_the_raw_text",

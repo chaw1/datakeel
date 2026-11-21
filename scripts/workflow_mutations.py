@@ -50,8 +50,8 @@ WORKFLOW_MUTATIONS = (
     Mutation(
         name="intent-classifier-write-confirmation",
         path="runtime/graph.py",
-        before="if self.workflow_confirmation_required and call.name not in {",
-        after="if False and call.name not in {",
+        before="if self.workflow_confirmation_required and call.name not in reads:",
+        after="if False and call.name not in reads:",
         case=(
             "tests/routing/test_confirmation.py::"
             "test_classified_write_when_model_calls_action_stops_before_mutation_then_user_can_start"
