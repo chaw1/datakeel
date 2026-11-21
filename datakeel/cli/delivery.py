@@ -86,6 +86,17 @@ def render_report(report: ReconcileReport, *, json_output: bool = False) -> None
                 f"  {item.path}: {item.reason}; expected={item.expected!r}; actual={item.actual!r}",
                 markup=False,
             )
+    if report.delivery_review is not None:
+        review = report.delivery_review
+        splits = ", ".join(
+            f"{item.split}={item.count}" for item in review.distributions if item.count > 0
+        )
+        signals = ", ".join(review.checked_signals)
+        console.print(
+            f"交付审查证明 / Delivery review: {review.rule} "
+            f"({splits}; signals={signals}; leakage=0)",
+            markup=False,
+        )
 
 
 def database_command(db: Database, args: argparse.Namespace) -> None:

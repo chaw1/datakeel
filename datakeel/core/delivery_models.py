@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import Field, JsonValue
 
 from datakeel.core.models import BoundaryModel, new_id, utcnow
+from datakeel.core.release_models import DeliveryReviewProof
 
 CheckName = Literal["file_count", "bytes", "hashes", "annotations", "metadata", "lineage"]
 
@@ -94,3 +95,6 @@ class ReconcileReport(BoundaryModel):
     created_at: float = Field(default_factory=lambda: utcnow().timestamp())
     passed: bool
     categories: tuple[CheckResult, ...]
+    delivery_review: DeliveryReviewProof | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )

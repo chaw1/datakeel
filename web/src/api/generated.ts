@@ -6838,6 +6838,40 @@ export interface components {
             status: "candidate" | "accepted" | "rejected";
         };
         /**
+         * DeliveryReviewProof
+         * @description Portable evidence for one exact version and a zero-leakage directory split.
+         */
+        DeliveryReviewProof: {
+            /** Baseline Version Id */
+            baseline_version_id?: string | null;
+            /** Checked Signals */
+            checked_signals: components["schemas"]["LeakageKind"][];
+            /** Distributions */
+            distributions: components["schemas"]["SplitDistribution"][];
+            /** Image Threshold */
+            image_threshold: number;
+            /**
+             * Leakage Pairs
+             * @default 0
+             * @constant
+             */
+            leakage_pairs: 0;
+            /**
+             * Rule
+             * @default directory-leakage-v1
+             * @constant
+             */
+            rule: "directory-leakage-v1";
+            /** Sample Count */
+            sample_count: number;
+            /** Split Algorithm Version */
+            split_algorithm_version: string;
+            /** Split Id */
+            split_id: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
          * DeviceGapRank
          * @description Expose only aggregates reproduced exactly by the attached source intervals.
          */
@@ -11303,6 +11337,7 @@ export interface components {
             categories: components["schemas"]["CheckResult"][];
             /** Created At */
             created_at?: number;
+            delivery_review?: components["schemas"]["DeliveryReviewProof"] | null;
             /** Id */
             id?: string;
             /** Passed */

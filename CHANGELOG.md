@@ -6,6 +6,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Workflow CLI run history and step/recovery inspection (`datakeel workflow runs`, `datakeel workflow show --audit`), actor scoping (`--actor`), and `--json` output across `list`, `validate`, `run`, `resume`, `runs`, and `show` ([`datakeel/cli/workflow.py`](datakeel/cli/workflow.py)).
+- Independent `delivery_review` proof validation and bilingual/JSON attestation summary in `datakeel reconcile` ([`datakeel/delivery/`](datakeel/delivery/), [`datakeel/cli/delivery.py`](datakeel/cli/delivery.py)), checking frozen partition totals and source-version alignment offline.
 - Native `datakeel agent` and `datakeel memory` commands for streamed chat, approved-plan resumption, specialist discovery, searchable history, call telemetry and redacted memory management, with JSON output.
 - Auditable Markdown/JSON Agent session exports and on-demand Copilot call-tree and budget telemetry.
 - Audited MCP memory search, writing and editing, bilingual tool discovery, and specialist/memory resources.
@@ -39,6 +41,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Fixed
 
+- Mode-aware vector evidence run reports in [`web/src/features/evidence/VectorReport.tsx`](web/src/features/evidence/VectorReport.tsx), displaying cloud HTTP metered requests, tokens, CNY cost, cache hits, and provider response IDs for `mode="real"` runs instead of synthetic `0 CNY` fake labels.
+- Restored independent mutation-gate observability for `human-approval` in [`datakeel/agent/confirm.py`](datakeel/agent/confirm.py) by checking `authorization_for(plan.action_type).human_only` without masking `plan.requires_approval` on irreversible actions.
 - PostgreSQL claim-index initialization now locates the index by the resolved table rather than
   a name shared across schemas. The prelabel lock regression also checks observable concurrent
   progress, and the vector-specific signature test observes its own guard independently.

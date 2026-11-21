@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from pydantic import JsonValue
+from pydantic import ValidationError as ModelValidationError
 
 from datakeel.core.delivery_models import (
     CheckName,
@@ -15,8 +16,10 @@ from datakeel.core.delivery_models import (
     DeliveryRecord,
     Difference,
 )
-from datakeel.core.release_models import annotation_statistics
+from datakeel.core.release_models import DeliveryReviewProof, annotation_statistics
 from datakeel.delivery.manifest import file_hash, manifest_hash, safe_relative
+
+_MIN_REVIEW_SPLITS = 2
 
 
 def result(name: CheckName, differences: list[Difference]) -> CheckResult:
@@ -121,6 +124,8 @@ def metadata_checks(
     differences.extend(
         _metadata_values(".", manifest.metadata, received_metadata, manifest.required_metadata)
     )
+    _, review_issues = verify_delivery_review(manifest)
+    differences.extend(review_issues)
     for item in manifest.files:
         safe_relative(item.path)
         record = records.get(item.path)
@@ -147,6 +152,35 @@ def _metadata_values(
         or json.dumps(expected.get(key), sort_keys=True, ensure_ascii=False)
         != json.dumps(actual.get(key), sort_keys=True, ensure_ascii=False)
     ]
+
+
+def verify_delivery_review(
+    manifest: DeliveryManifest,
+) -> tuple[DeliveryReviewProof | None, list[Difference]]:
+    """Validate optional frozen delivery_review metadata against version and split totals."""
+    if "delivery_review" not in manifest.metadata:
+        return None, []
+    raw = manifest.metadata["delivery_review"]
+    try:
+        proof = DeliveryReviewProof.model_validate(raw)
+    except ModelValidationError:
+        return None, [Difference(path="MANIFEST.json", reason="invalid_delivery_review")]
+    total_partitioned = sum(item.count for item in proof.distributions)
+    nonempty = sum(item.count > 0 for item in proof.distributions)
+    if (
+        proof.version_id != manifest.source_version
+        or total_partitioned != manifest.file_count
+        or nonempty < _MIN_REVIEW_SPLITS
+    ):
+        return None, [
+            Difference(
+                path="MANIFEST.json",
+                reason="delivery_review_mismatch",
+                expected={"version_id": manifest.source_version, "file_count": manifest.file_count},
+                actual={"version_id": proof.version_id, "file_count": total_partitioned},
+            )
+        ]
+    return proof, []
 
 
 def lineage_checks(manifest: DeliveryManifest, records: dict[str, DeliveryRecord]) -> CheckResult:

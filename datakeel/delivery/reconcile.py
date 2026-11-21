@@ -27,6 +27,7 @@ from datakeel.delivery.checks import (
     inventory_checks,
     lineage_checks,
     metadata_checks,
+    verify_delivery_review,
 )
 from datakeel.delivery.manifest import canonical_hash, safe_relative
 
@@ -118,17 +119,22 @@ def reconcile_facts(
         problems.append(Difference(path="MANIFEST.json", reason="duplicate_payload_paths"))
     if set(by_path) != expected:
         problems.append(Difference(path="RECORDS.json", reason="receipt_inventory_mismatch"))
+    metadata_result = metadata_checks(
+        manifest, by_path, problems, records.metadata, received_manifest_hash
+    )
+    proof, _ = verify_delivery_review(manifest)
     categories = (
         *inventory_checks(manifest, paths),
         hash_checks(manifest, paths),
         annotation_checks(manifest, by_path),
-        metadata_checks(manifest, by_path, problems, records.metadata, received_manifest_hash),
+        metadata_result,
         lineage_checks(manifest, by_path),
     )
     return ReconcileReport(
         release_id=manifest.release_id,
         passed=all(check.passed for check in categories),
         categories=categories,
+        delivery_review=proof if metadata_result.passed else None,
     )
 
 

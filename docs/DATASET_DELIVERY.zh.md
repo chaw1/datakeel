@@ -47,5 +47,5 @@ warehouse/
 uv run datakeel reconcile v1.0.0.tar.gz --manifest MANIFEST.json --json
 ```
 
-交付包包含所选版本的图片文件和可移交的元数据，其中包括审查结果。参见[交付与独立核验](RELEASES.md#export-and-verify-independently)
+交付包包含所选版本的图片文件和可移交的元数据，其中包括审查结果。`datakeel reconcile` 会独立校验 `delivery_review` 与清单来源版本及分区总文件数是否一致，并在终端和 `--json` 输出中展示已核验的划分计数与零泄漏证明。参见[交付与独立核验](RELEASES.md#export-and-verify-independently)
 和[跨划分泄漏检查](TRAINING.md#leakage-evidence)。

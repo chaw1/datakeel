@@ -59,6 +59,8 @@ uv run datakeel reconcile v1.0.0.tar.gz --manifest MANIFEST.json --json
 ```
 
 The release archive contains the selected version's image payloads and portable metadata, including
-the review proof. See [delivery verification](RELEASES.md#export-and-verify-independently) for
-the checks performed on the recipient's copy and [training datasets](TRAINING.md#leakage-evidence)
-for leakage signals.
+the review proof. `datakeel reconcile` independently verifies `delivery_review` against the
+manifest's `source_version` and total partitioned file count, surfacing the verified partition
+breakdown and zero-leakage check in both human-readable and `--json` output. See
+[delivery verification](RELEASES.md#export-and-verify-independently) for the checks performed on the
+recipient's copy and [training datasets](TRAINING.md#leakage-evidence) for leakage signals.
