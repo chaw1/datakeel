@@ -44,6 +44,7 @@ MUTATION_ACTIONS: dict[tuple[str, str], str] = {
     ("POST", "/api/datasets/{dataset_id}/datasheets"): "generate_datasheet",
     ("POST", "/api/datasheets/{document_id}/publish"): "publish_datasheet",
     ("POST", "/api/agent/memories"): "manage_users",
+    ("PATCH", "/api/agent/memories/{memory_id}"): "manage_users",
     ("DELETE", "/api/agent/memories/{memory_id}"): "manage_users",
     # Training splits exist only to define controlled export packages.
     (

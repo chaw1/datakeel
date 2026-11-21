@@ -36,6 +36,12 @@ import { workflowEn } from "./workflowEn";
 import { workspaceEn } from "./workspaceEn";
 
 export const en = {
+  memorySearch: "Search memories",
+  memoryEdit: "Edit memory",
+  memoryEditContent: "Edit memory content",
+  memorySave: "Save memory",
+  memorySaving: "Saving memory…",
+  memoryCancelEdit: "Cancel edit",
   agentExecutionMode: "Execution mode",
   agentModeAuto: "Auto",
   agentModePlan: "Plan",

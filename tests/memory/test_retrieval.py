@@ -14,6 +14,7 @@ from datakeel.memory.retrieval import (
     current_strength,
     refreshed,
     reinforced,
+    search_entries,
     select_entries,
     tokenize,
 )
@@ -22,7 +23,72 @@ from tests.memory.helpers import NOW, entry
 
 def test_tokenize_when_mixed_language_uses_chinese_bigrams_and_english_words() -> None:
     """Punctuation separates Chinese runs and case cannot split equivalent English words."""
-    assert tokenize("销售指标,日 Revenue METRIC") == ["销售", "售指", "指标", "revenue", "metric"]
+    assert tokenize("销售指标,日 Revenue METRIC") == [
+        "销售",
+        "售指",
+        "指标",
+        "日",
+        "revenue",
+        "metric",
+    ]
+
+
+def test_tokenize_when_identifiers_and_digits_present_preserves_every_part() -> None:
+    """Version, metric and dataset identifiers keep digits across punctuation boundaries."""
+    assert tokenize("V2 qwen3.5 iou_50 ds_001 2026 第2版") == [
+        "v2",
+        "qwen3",
+        "5",
+        "iou",
+        "50",
+        "ds",
+        "001",
+        "2026",
+        "第",
+        "2",
+        "版",
+    ]
+    assert tokenize("华东-𠀀𠀁 𠀂") == ["华东", "𠀀𠀁", "𠀂"]
+
+
+@pytest.mark.parametrize(
+    "query", ["v2 release", "qwen3.5", "iou_50", "ds_001", "2026 release", "第2版"]
+)
+def test_select_when_query_contains_identifier_parts_retrieves_matching_memory(query: str) -> None:
+    """Digits and isolated Chinese characters contribute to the unchanged two-token minimum."""
+    matching = entry("match", query)
+    assert select_entries([entry("other"), matching], query).entries == [matching]
+
+
+def test_search_when_query_blank_preserves_input_and_order() -> None:
+    """Browsing without a query leaves caller-selected scope and ordering intact."""
+    entries = [entry("b"), entry("a")]
+    assert search_entries(entries, " \t ") is entries
+    assert search_entries([], "v2") == []
+
+
+@pytest.mark.parametrize("query", ["v2", "华东", "东", "QWEN3.5", "qwe", "..."])
+def test_search_when_short_or_literal_query_recalls_all_matches(query: str) -> None:
+    """Interactive searches support one token, partial words and punctuation without top-k."""
+    entries = [entry(str(index), "V2 华东 qwen3.5 ...") for index in range(5)]
+    assert search_entries([entry("unrelated"), *entries], query) == entries
+
+
+def test_search_when_relevance_or_strength_changes_orders_matches_deterministically() -> None:
+    """BM25, literal matches and strength precede recent use and stable identity ties."""
+    concise = entry("concise", "v2 metric")
+    verbose = entry("verbose", "v2 metric " + "unrelated " * 10)
+    assert search_entries([verbose, concise], "v2 metric") == [concise, verbose]
+    strong = verbose.model_copy(update={"current_strength": 3})
+    assert search_entries([concise, strong], "v2 metric")[0] == strong
+    literal = entry("literal", "qwen3.5")
+    partial = entry("partial", "qwen3.6")
+    assert search_entries([partial, literal], "qwen3.5") == [literal, partial]
+    assert search_entries([concise], "metric v2") == [concise]
+    entries = [entry(name, "v2") for name in ("d", "c", "b", "a")]
+    entries[0] = entries[0].model_copy(update={"last_used_at": NOW})
+    entries[1] = entries[1].model_copy(update={"last_used_at": NOW - timedelta(days=1)})
+    assert [item.id for item in search_entries(entries, "v2")] == ["d", "c", "a", "b"]
 
 
 def test_select_when_fewer_than_two_distinct_tokens_returns_no_memory() -> None:

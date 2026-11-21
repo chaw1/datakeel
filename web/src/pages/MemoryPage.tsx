@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { ResourceState } from "../components/ResourceState";
-import { Button, PageHeader, Select } from "../components/ui";
+import { Button, Input, PageHeader, Select } from "../components/ui";
 import { MemoryForm } from "../features/memory/MemoryForm";
 import { MemoryList } from "../features/memory/MemoryList";
 import { useI18n } from "../i18n/useI18n";
@@ -12,7 +12,11 @@ import type { Dataset, MemoryEntry } from "../api/types";
 export function MemoryPage({ datasets }: { datasets: Dataset[] }) {
   const { t } = useI18n();
   const [scope, setScope] = useState("all");
-  const memories = useResource<MemoryEntry[]>("/api/agent/memories");
+  const [query, setQuery] = useState("");
+  const search = query.trim();
+  const memories = useResource<MemoryEntry[]>(
+    `/api/agent/memories${search ? `?q=${encodeURIComponent(search)}` : ""}`,
+  );
   const entries = (memories.value ?? []).filter(
     (entry) => scope === "all" || (entry.dataset_id ?? "global") === scope,
   );
@@ -31,6 +35,15 @@ export function MemoryPage({ datasets }: { datasets: Dataset[] }) {
         <MemoryForm datasets={datasets} onSaved={memories.reload} />
         <section aria-label={t("memoryNav")}>
           <div className="memory-filter">
+            <Input
+              type="search"
+              aria-label={t("memorySearch")}
+              placeholder={t("memorySearch")}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+              }}
+            />
             <label htmlFor="memory-filter">{t("memoryFilter")}</label>
             <Select
               id="memory-filter"

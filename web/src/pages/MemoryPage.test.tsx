@@ -1,4 +1,11 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
@@ -43,7 +50,26 @@ function mockApi() {
         new Response(JSON.stringify({ deleted_ids: ["memory-1"] })),
       );
     }
-    return Promise.resolve(new Response(JSON.stringify(entries)));
+    if (init?.method === "PATCH") {
+      entries = entries.map((entry) =>
+        path.endsWith(entry.id)
+          ? { ...entry, content: "Contact [REDACTED]" }
+          : entry,
+      );
+      return Promise.resolve(new Response(JSON.stringify(entries[0])));
+    }
+    const query = new URL(path, "http://localhost").searchParams.get("q");
+    return Promise.resolve(
+      new Response(
+        JSON.stringify(
+          query
+            ? entries.filter((entry) =>
+                entry.content.toLowerCase().includes(query.toLowerCase()),
+              )
+            : entries,
+        ),
+      ),
+    );
   });
   vi.stubGlobal("fetch", fetch);
   return fetch;
@@ -121,6 +147,8 @@ it("renders the complete memory controls in Chinese", async () => {
     screen.getByRole("combobox", { name: "按数据集筛选记忆" }),
   ).toBeVisible();
   expect(screen.getAllByText("最近使用")).toHaveLength(2);
+  expect(screen.getByRole("searchbox", { name: "搜索记忆" })).toBeVisible();
+  expect(screen.getAllByRole("button", { name: "编辑记忆" })).toHaveLength(2);
 });
 it("keeps a failed deletion visible and reports the API error", async () => {
   vi.stubGlobal(
@@ -149,4 +177,90 @@ it("keeps a failed deletion visible and reports the API error", async () => {
     "409 Memory unavailable",
   );
   expect(screen.getByText(memory.content)).toBeVisible();
+});
+
+it("searches through the API and restores the scoped list after clearing", async () => {
+  const fetch = mockApi();
+  const user = userEvent.setup();
+  render(<MemoryPage datasets={[dataset]} />);
+  await screen.findByText(memory.content);
+  const search = screen.getByRole("searchbox", { name: "Search memories" });
+  await user.type(search, "Dataset-specific");
+  expect(await screen.findByText("Dataset-specific note")).toBeVisible();
+  expect(screen.queryByText(memory.content)).not.toBeInTheDocument();
+  expect(
+    fetch.mock.calls.some(([path]) => path.endsWith("?q=Dataset-specific")),
+  ).toBe(true);
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: "Filter memory by dataset" }),
+    "global",
+  );
+  expect(screen.queryByText("Dataset-specific note")).not.toBeInTheDocument();
+  await user.clear(search);
+  expect(await screen.findByText(memory.content)).toBeVisible();
+  expect(screen.queryByText("Dataset-specific note")).not.toBeInTheDocument();
+});
+
+it("ignores an older search response after the query changes", async () => {
+  const pending = new Map<string, (response: Response) => void>();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      (path: string) =>
+        new Promise<Response>((resolve) => {
+          pending.set(path, resolve);
+        }),
+    ),
+  );
+  render(<MemoryPage datasets={[]} />);
+  const search = screen.getByRole("searchbox", { name: "Search memories" });
+  fireEvent.change(search, { target: { value: "v2" } });
+  fireEvent.change(search, { target: { value: "qwen3.5" } });
+  await act(() => {
+    pending.get("/api/agent/memories?q=qwen3.5")?.(
+      new Response(JSON.stringify([{ ...memory, content: "qwen3.5" }])),
+    );
+    return Promise.resolve();
+  });
+  expect(screen.getByText("qwen3.5")).toBeVisible();
+  await act(() => {
+    pending.get("/api/agent/memories?q=v2")?.(
+      new Response(JSON.stringify([{ ...memory, content: "v2" }])),
+    );
+    return Promise.resolve();
+  });
+  expect(screen.getByText("qwen3.5")).toBeVisible();
+  expect(screen.queryByText("v2")).not.toBeInTheDocument();
+});
+
+it("cancels inline edits and reloads server-redacted content after saving", async () => {
+  const fetch = mockApi();
+  const user = userEvent.setup();
+  render(<MemoryPage datasets={[]} />);
+  await screen.findByText(memory.content);
+  await user.click(screen.getAllByRole("button", { name: "Edit memory" })[0]);
+  await user.clear(
+    screen.getByRole("textbox", { name: "Edit memory content" }),
+  );
+  expect(screen.getByRole("button", { name: "Save memory" })).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Cancel edit" }));
+  expect(screen.getByText(memory.content)).toBeVisible();
+  expect(fetch.mock.calls.some(([, init]) => init?.method === "PATCH")).toBe(
+    false,
+  );
+  await user.click(screen.getAllByRole("button", { name: "Edit memory" })[0]);
+  const editor = screen.getByRole("textbox", { name: "Edit memory content" });
+  await user.clear(editor);
+  await user.type(editor, "Contact person@example.com");
+  await user.click(screen.getByRole("button", { name: "Save memory" }));
+  expect(await screen.findByText("Contact [REDACTED]")).toBeVisible();
+  expect(
+    screen.queryByText("Contact person@example.com"),
+  ).not.toBeInTheDocument();
+  const patch = fetch.mock.calls.find(([, init]) => init?.method === "PATCH");
+  expect(patch?.[0]).toBe(`/api/agent/memories/${memory.id}`);
+  expect(patch?.[1]?.body).toBe(
+    JSON.stringify({ content: "Contact person@example.com" }),
+  );
+  expect(screen.getAllByText("0.98")).toHaveLength(2);
 });

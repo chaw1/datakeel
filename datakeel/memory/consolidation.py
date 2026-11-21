@@ -75,3 +75,21 @@ def consolidate(
     for entry in retained[policy.max_entries :]:
         result[entry.id] = entry.model_copy(update={"archived": True})
     return sorted(result.values(), key=lambda item: item.id)
+
+
+def deletion_ids(entries: list[MemoryEntry], identifier: str) -> set[str]:
+    """Collect a deleted representative and its recursively archived provenance only."""
+    indexed = {entry.id: entry for entry in entries}
+    selected: set[str] = set()
+    pending = [identifier]
+    while pending:
+        current = pending.pop()
+        if current in selected or current not in indexed:
+            continue
+        selected.add(current)
+        pending.extend(
+            source
+            for source in indexed[current].source_memory_ids
+            if source in indexed and indexed[source].archived
+        )
+    return selected

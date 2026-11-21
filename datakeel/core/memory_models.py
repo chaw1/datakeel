@@ -26,11 +26,10 @@ class MemoryPolicy(BoundaryModel):
     max_entries: int = Field(default=200, ge=1)
 
 
-class MemoryWrite(BoundaryModel):
-    """Accept only explicit memory content and its intended scope."""
+class MemoryUpdate(BoundaryModel):
+    """Accept replacement content without changing scope or provenance."""
 
     content: str = Field(min_length=1, max_length=6000)
-    dataset_id: str | None = Field(default=None, min_length=1)
 
     @field_validator("content")
     @classmethod
@@ -41,6 +40,12 @@ class MemoryWrite(BoundaryModel):
             msg = "Memory content must not be blank"
             raise ValueError(msg)
         return value
+
+
+class MemoryWrite(MemoryUpdate):
+    """Accept only explicit memory content and its intended scope."""
+
+    dataset_id: str | None = Field(default=None, min_length=1)
 
 
 class MemoryCreate(MemoryWrite):

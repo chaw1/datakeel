@@ -7,7 +7,7 @@ from fastapi import APIRouter, Request
 
 from datakeel.api.dependencies import DatabaseDependency
 from datakeel.api.identity_access import http_actor
-from datakeel.core.memory_models import MemoryCreate, MemoryDeletion, MemoryEntry
+from datakeel.core.memory_models import MemoryCreate, MemoryDeletion, MemoryEntry, MemoryUpdate
 from datakeel.memory import service
 
 router = APIRouter(prefix="/api/agent/memories", tags=["memory"])
@@ -15,10 +15,13 @@ router = APIRouter(prefix="/api/agent/memories", tags=["memory"])
 
 @router.get("")
 def list_all(
-    db: DatabaseDependency, request: Request, dataset_id: str | None = None
+    db: DatabaseDependency,
+    request: Request,
+    dataset_id: str | None = None,
+    q: str | None = None,
 ) -> list[MemoryEntry]:
     """List active memories, optionally restricted to global and one dataset scope."""
-    return service.list_memories(db, dataset_id, actor=http_actor(request))
+    return service.list_memories(db, dataset_id, query=q, actor=http_actor(request))
 
 
 @router.post("")
@@ -43,3 +46,11 @@ def get(memory_id: str, db: DatabaseDependency, request: Request) -> MemoryEntry
 def delete(memory_id: str, db: DatabaseDependency) -> MemoryDeletion:
     """Hard-delete the memory and archived provenance records in one transaction."""
     return service.delete_memory(db, memory_id)
+
+
+@router.patch("/{memory_id}")
+def update(
+    memory_id: str, body: MemoryUpdate, db: DatabaseDependency, request: Request
+) -> MemoryEntry:
+    """Redact and replace active memory content without altering its provenance."""
+    return service.update_memory(db, memory_id, body, actor=http_actor(request))

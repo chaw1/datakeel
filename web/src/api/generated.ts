@@ -355,7 +355,11 @@ export interface paths {
         delete: operations["delete_api_agent_memories__memory_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update
+         * @description Redact and replace active memory content without altering its provenance.
+         */
+        patch: operations["update_api_agent_memories__memory_id__patch"];
         trace?: never;
     };
     "/api/approvals": {
@@ -9860,6 +9864,14 @@ export interface components {
             strength: number;
         };
         /**
+         * MemoryUpdate
+         * @description Accept replacement content without changing scope or provenance.
+         */
+        MemoryUpdate: {
+            /** Content */
+            content: string;
+        };
+        /**
          * MessageInput
          * @description An idempotent user turn, independent of transport reconnects.
          */
@@ -14636,6 +14648,7 @@ export interface operations {
         parameters: {
             query?: {
                 dataset_id?: string | null;
+                q?: string | null;
             };
             header?: never;
             path?: never;
@@ -14765,6 +14778,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemoryDeletion"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_agent_memories__memory_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemoryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryEntry"];
                 };
             };
             /** @description Validation Error */

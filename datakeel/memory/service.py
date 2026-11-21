@@ -5,6 +5,7 @@
 
 from collections.abc import Callable
 from datetime import datetime
+from typing import TypedDict, Unpack
 
 from datakeel.core.memory_models import (
     MemoryCreate,
@@ -13,12 +14,19 @@ from datakeel.core.memory_models import (
     MemoryPolicy,
     MemoryReadOptions,
     MemorySelection,
+    MemoryUpdate,
     MemoryUseScope,
 )
 from datakeel.core.models import utcnow
 from datakeel.core.pii import redact_pii
+from datakeel.memory.retrieval import search_entries
 from datakeel.storage import memory_store
 from datakeel.storage.database import Database
+
+
+class _MemoryReadKeywords(TypedDict, total=False):
+    actor: str
+    include_archived: bool
 
 
 def create_memory(
@@ -44,18 +52,40 @@ def list_memories(
     db: Database,
     dataset_id: str | None = None,
     *,
+    query: str | None = None,
     clock: Callable[[], datetime] = utcnow,
     policy: MemoryPolicy | None = None,
-    include_archived: bool = False,
-    actor: str = "local",
+    **options: Unpack[_MemoryReadKeywords],
 ) -> list[MemoryEntry]:
-    """List current entries; an optional dataset filter also includes global entries."""
-    return memory_store.list_entries(
+    """List scoped entries, retaining actor and include_archived keyword compatibility."""
+    read_options = MemoryReadOptions(
+        actor=options.get("actor", "local"),
+        include_archived=options.get("include_archived", False),
+        record=True,
+    )
+    entries = memory_store.list_entries(
         db,
         dataset_id,
         clock(),
         policy or MemoryPolicy(),
-        options=MemoryReadOptions(actor=actor, include_archived=include_archived, record=True),
+        options=read_options,
+    )
+    return search_entries(entries, query) if query else entries
+
+
+def update_memory(
+    db: Database,
+    identifier: str,
+    request: MemoryUpdate,
+    *,
+    clock: Callable[[], datetime] = utcnow,
+    policy: MemoryPolicy | None = None,
+    actor: str = "local",
+) -> MemoryEntry:
+    """Redact replacement content while preserving memory scope, strength and provenance."""
+    content = redact_pii(request.content, replacement="[REDACTED]")
+    return memory_store.update(
+        db, identifier, content, clock(), policy or MemoryPolicy(), actor=actor
     )
 
 

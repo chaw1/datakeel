@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { deleteMemory } from "../../api/memory";
+import { deleteMemory, updateMemory } from "../../api/memory";
 import { Badge, Button, EmptyState, Surface } from "../../components/ui";
 import { useI18n } from "../../i18n/useI18n";
 import { date } from "../../lib/format";
@@ -18,8 +18,24 @@ export function MemoryList({
 }) {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState("");
+  const [editing, setEditing] = useState("");
+  const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  async function save(id: string) {
+    if (busy || !content.trim()) return;
+    setBusy(true);
+    setError("");
+    try {
+      await updateMemory(id, { content: content.trim() });
+      setEditing("");
+      onDeleted();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function remove(id: string) {
     setBusy(true);
     setError("");
@@ -52,16 +68,74 @@ export function MemoryList({
             </Badge>
             <Button
               variant="link"
-              disabled={busy}
+              disabled={busy || editing === entry.id}
+              onClick={() => {
+                setEditing(entry.id);
+                setContent(entry.content);
+                setSelected("");
+                setError("");
+              }}
+            >
+              {t("memoryEdit")}
+            </Button>
+            <Button
+              variant="link"
+              disabled={busy || editing === entry.id}
               onClick={() => {
                 setSelected(entry.id);
+                setEditing("");
                 setError("");
               }}
             >
               {t("memoryDelete")}
             </Button>
           </div>
-          <p className="memory-content">{entry.content}</p>
+          {editing === entry.id ? (
+            <form
+              className="memory-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void save(entry.id);
+              }}
+            >
+              <label htmlFor={`memory-edit-${entry.id}`}>
+                {t("memoryEditContent")}
+              </label>
+              <textarea
+                id={`memory-edit-${entry.id}`}
+                value={content}
+                required
+                maxLength={6000}
+                disabled={busy}
+                onChange={(event) => {
+                  setContent(event.target.value);
+                }}
+              />
+              {error && (
+                <p role="alert" className="error-text">
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={busy || !content.trim()}
+              >
+                {t(busy ? "memorySaving" : "memorySave")}
+              </Button>
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  setEditing("");
+                  setError("");
+                }}
+              >
+                {t("memoryCancelEdit")}
+              </Button>
+            </form>
+          ) : (
+            <p className="memory-content">{entry.content}</p>
+          )}
           <dl className="memory-facts">
             <div>
               <dt>{t("createdAt")}</dt>

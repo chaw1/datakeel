@@ -22,7 +22,7 @@ from datakeel.core.memory_models import (
 )
 from datakeel.core.models import new_id
 from datakeel.dataset_store.rows import DatasetRow
-from datakeel.memory.consolidation import consolidate
+from datakeel.memory.consolidation import consolidate, deletion_ids
 from datakeel.memory.retrieval import refreshed, reinforced, select_entries
 from datakeel.storage.conversation_rows import ConversationRow
 from datakeel.storage.data_asset_context import visible_memories
@@ -45,24 +45,19 @@ def _read(row: MemoryRow, now: datetime, policy: MemoryPolicy) -> MemoryEntry:
     return refreshed(MemoryEntry.model_validate(row.payload), now, policy)
 
 
-def _existing(session: Session, identifier: str) -> MemoryRow:
+def _existing(session: Session, identifier: str, *, active: bool = False) -> MemoryRow:
     row = session.get(MemoryRow, identifier)
-    if row is None:
+    if row is None or (active and MemoryEntry.model_validate(row.payload).archived):
         msg = f"Memory not found: {identifier}"
         raise NotFoundError(msg)
     return row
 
 
-def _validate_source(session: Session, request: MemoryCreate) -> None:
-    if request.dataset_id is not None and session.get(DatasetRow, request.dataset_id) is None:
-        msg = f"Dataset not found: {request.dataset_id}"
-        raise NotFoundError(msg)
-    if (
-        request.source_conversation_id is not None
-        and session.get(ConversationRow, request.source_conversation_id) is None
-    ):
-        msg = f"Conversation not found: {request.source_conversation_id}"
-        raise NotFoundError(msg)
+def _require_write_scope(session: Session, actor: str) -> None:
+    scope = action_definition("manage_users").auth_scope
+    if not {"*", scope}.intersection(effective_scopes(session, actor).scopes):
+        msg = f"Memory writes require a server-authorized action scope: {scope}"
+        raise AuthorizationError(msg)
 
 
 def _replay(session: Session, request: MemoryCreate, digest: str) -> MemoryRow | None:
@@ -81,9 +76,8 @@ def _replay(session: Session, request: MemoryCreate, digest: str) -> MemoryRow |
 
 def _consolidate(session: Session, now: datetime, policy: MemoryPolicy) -> None:
     rows = {row.id: row for row in _rows(session)}
-    entries = consolidate([_read(row, now, policy) for row in rows.values()], now, policy)
     representatives: dict[str, str] = {}
-    for entry in entries:
+    for entry in consolidate([_read(row, now, policy) for row in rows.values()], now, policy):
         rows[entry.id].payload = entry.model_dump(mode="json")
         if not entry.archived:
             representatives.update(dict.fromkeys(entry.source_memory_ids, entry.id))
@@ -103,22 +97,22 @@ def create(
     digest = sha256(request.model_dump_json(exclude={"idempotency_key"}).encode()).hexdigest()
     with db.session() as session:
         _lock(db, session)
-        current = effective_scopes(session, actor)
-        scope = action_definition("manage_users").auth_scope
-        if "*" not in current.scopes and scope not in current.scopes:
-            msg = f"Memory writes require a server-authorized action scope: {scope}"
-            raise AuthorizationError(msg)
-        previous = _replay(session, request, digest)
-        if previous is not None:
+        _require_write_scope(session, actor)
+        if (previous := _replay(session, request, digest)) is not None:
             return _read(previous, now, policy)
-        _validate_source(session, request)
+        for model, identifier, label in (
+            (DatasetRow, request.dataset_id, "Dataset"),
+            (ConversationRow, request.source_conversation_id, "Conversation"),
+        ):
+            if identifier is not None and session.get(model, identifier) is None:
+                msg = f"{label} not found: {identifier}"
+                raise NotFoundError(msg)
+        source = request.source_conversation_id
         entry = MemoryEntry(
             id=new_id(),
             content=request.content,
             dataset_id=request.dataset_id,
-            source_conversation_ids=[request.source_conversation_id]
-            if request.source_conversation_id
-            else [],
+            source_conversation_ids=[source] if source else [],
             created_at=now,
             reinforced_at=now,
         )
@@ -143,16 +137,14 @@ def list_entries(
     """List global and optionally matching dataset memories with current strength."""
     with db.session() as session:
         entries = [_read(row, now, policy) for row in _rows(session)]
-    selected_options = options or MemoryReadOptions()
+    options = options or MemoryReadOptions()
     selected = [
         item
         for item in entries
-        if (selected_options.include_archived or not item.archived)
+        if (options.include_archived or not item.archived)
         and (dataset_id is None or item.dataset_id in {None, dataset_id})
     ]
-    return visible_memories(
-        db, selected, record=selected_options.record, actor=selected_options.actor
-    )
+    return visible_memories(db, selected, record=options.record, actor=options.actor)
 
 
 def get(
@@ -218,30 +210,14 @@ def reinforce(
         session.commit()
 
 
-def _deletion_ids(rows: dict[str, MemoryRow], identifier: str) -> set[str]:
-    selected: set[str] = set()
-    pending = [identifier]
-    while pending:
-        current = pending.pop()
-        if current in selected or current not in rows:
-            continue
-        selected.add(current)
-        entry = MemoryEntry.model_validate(rows[current].payload)
-        pending.extend(
-            source
-            for source in entry.source_memory_ids
-            if source in rows and MemoryEntry.model_validate(rows[source].payload).archived
-        )
-    return selected
-
-
 def delete(db: Database, identifier: str, now: datetime) -> MemoryDeletion:
     """Hard-delete a representative and its archived sources, retaining content-free audit."""
     with db.session() as session:
         _lock(db, session)
         _existing(session, identifier)
         rows = {row.id: row for row in _rows(session)}
-        identifiers = _deletion_ids(rows, identifier)
+        entries = [MemoryEntry.model_validate(row.payload) for row in rows.values()]
+        identifiers = deletion_ids(entries, identifier)
         for memory_id in sorted(identifiers):
             session.delete(rows[memory_id])
         audit = MemoryDeletion(
@@ -260,3 +236,27 @@ def list_audit(db: Database) -> list[MemoryDeletion]:
             for row in session.scalars(select(MemoryAuditRow))
         ]
     return sorted(audits, key=lambda item: (item.created_at, item.id))
+
+
+def update(
+    db: Database,
+    identifier: str,
+    content: str,
+    now: datetime,
+    policy: MemoryPolicy,
+    *,
+    actor: str = "local",
+) -> MemoryEntry:
+    """Replace active memory content under the same write scope and source visibility guards."""
+    with db.session() as session:
+        _lock(db, session)
+        _require_write_scope(session, actor)
+        row = _existing(session, identifier, active=True)
+        entry = _read(row, now, policy)
+        if not visible_memories(db, [entry], actor=actor):
+            msg = "Memory source requires an active query grant; apply for access"
+            raise AuthorizationError(msg)
+        entry = entry.model_copy(update={"content": content})
+        row.payload = entry.model_dump(mode="json")
+        session.commit()
+        return entry

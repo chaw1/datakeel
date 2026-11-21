@@ -13,7 +13,7 @@ from datakeel.core.context_tokens import estimate_tokens
 from datakeel.core.envelopes import MARKER
 from datakeel.core.memory_models import MemoryEntry, MemoryPolicy, MemorySelection
 
-TOKEN_PATTERN = re.compile(r"[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0002fa1f]+|[a-z]+")
+TOKEN_PATTERN = re.compile(r"[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0002fa1f]+|[a-z0-9]+")
 TOP_K = 3
 SEGMENT_LIMIT = 1200
 SEGMENT_OVERHEAD = 16
@@ -21,10 +21,10 @@ MINIMUM_OVERLAP = 2
 
 
 def tokenize(text: str) -> list[str]:
-    """Use adjacent Chinese character pairs and lowercase English words."""
+    """Keep identifiers, Chinese bigrams and isolated Chinese characters searchable."""
     result: list[str] = []
     for match in TOKEN_PATTERN.findall(text.lower()):
-        if match.isascii():
+        if match.isascii() or len(match) == 1:
             result.append(match)
         else:
             result.extend(match[index : index + 2] for index in range(len(match) - 1))
@@ -73,6 +73,24 @@ def _serialize(entries: list[MemoryEntry]) -> str:
         ensure_ascii=False,
         separators=(",", ":"),
     )
+
+
+def search_entries(entries: list[MemoryEntry], query: str) -> list[MemoryEntry]:
+    """Browse all matches using strength-weighted BM25 plus a literal-match bonus."""
+    literal = query.strip().casefold()
+    if not literal:
+        return entries
+    corpus = [Counter(tokenize(item.content)) for item in entries]
+    query_tokens = set(tokenize(literal))
+    ranked: list[tuple[float, float, str, MemoryEntry]] = []
+    for entry, tokens in zip(entries, corpus, strict=True):
+        substring = literal in entry.content.casefold()
+        if not substring and not query_tokens.intersection(tokens):
+            continue
+        score = (_score(query_tokens, tokens, corpus) + float(substring)) * entry.current_strength
+        last_used = entry.last_used_at.timestamp() if entry.last_used_at else -math.inf
+        ranked.append((-score, -last_used, entry.id, entry))
+    return [item[3] for item in sorted(ranked)]
 
 
 def select_entries(entries: list[MemoryEntry], query: str) -> MemorySelection:

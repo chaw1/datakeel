@@ -37,6 +37,12 @@ import { workspaceZh } from "./workspaceZh";
 
 import type { MessageKey } from "./en";
 export const zh: Record<MessageKey, string> = {
+  memorySearch: "搜索记忆",
+  memoryEdit: "编辑记忆",
+  memoryEditContent: "编辑记忆内容",
+  memorySave: "保存记忆",
+  memorySaving: "正在保存记忆…",
+  memoryCancelEdit: "取消编辑",
   agentExecutionMode: "执行模式",
   agentModeAuto: "智能",
   agentModePlan: "一句话规划",
