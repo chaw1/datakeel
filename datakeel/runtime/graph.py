@@ -282,27 +282,29 @@ class AgentGraph:
         )
         dry_run = memory.get(self.db, self.conversation_id).config.dry_run
         calls = [ToolCall.model_validate_json(item) for item in state.calls]
-        events: list[AgentEvent] = []
-        reason: str | None = None
+        reason, pending_call = None, ""
         results: list[AgentEvent] = []
-        pending_call = ""
-        for index, call in enumerate(calls):
-            events.append(AgentEvent(event="tool_call", call=call))
-            self._emit(events[-1])
-            results, reason = self._dispatch_tool(dispatcher, call, delegated, dry_run=dry_run)
-            children = delegated.drain()
-            events.extend(children)
-            reason = delegated.stop_reason or reason
-            events.extend(results)
-            for event in [*children, *results]:
+        with dispatcher.parallel_reads(calls) as parallel:
+            events = [AgentEvent(event="tool_call", call=call) for call in parallel]
+            for event in events:
                 self._emit(event)
-            if reason:
-                pending_call = call.model_dump_json()
-                for pending in calls[index + 1 :]:
-                    dispatcher.tool_message(
-                        pending, ToolOutcome(name=pending.name, status="FAILED", error=reason)
-                    )
-                break
+            for index, call in enumerate(calls):
+                if index >= len(parallel):
+                    events.append(AgentEvent(event="tool_call", call=call))
+                    self._emit(events[-1])
+                results, reason = self._dispatch_tool(dispatcher, call, delegated, dry_run=dry_run)
+                events.extend(children := delegated.drain())
+                reason = delegated.stop_reason or reason
+                events.extend(results)
+                for event in [*children, *results]:
+                    self._emit(event)
+                if reason:
+                    pending_call = call.model_dump_json()
+                    for pending in calls[index + 1 :]:
+                        dispatcher.tool_message(
+                            pending, ToolOutcome(name=pending.name, status="FAILED", error=reason)
+                        )
+                    break
         state = state.model_copy(
             update={
                 "events": [event.model_dump_json() for event in events],
@@ -313,9 +315,7 @@ class AgentGraph:
             }
         )
         if reason == "approval_required":
-            plan = next(
-                event.outcome.plan for event in results if event.event == "plan" and event.outcome
-            )
+            plan = next(e.outcome.plan for e in results if e.event == "plan" and e.outcome)
             return state.model_copy(
                 update={
                     "plan_id": plan.id if plan else "",

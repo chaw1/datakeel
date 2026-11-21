@@ -23,6 +23,7 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Agent turns run up to four independent read tools concurrently, preserving guard limits, ordered results and live progress.
 - Memory now preserves identifier tokens and supports ranked search and inline editing with PII redaction.
 - Ranked bilingual Agent tool discovery with bounded results, and folded older large read
   outputs at the prompt boundary while preserving recent exchanges and persisted transcripts.
