@@ -62,8 +62,8 @@ DATA_ASSET_MUTATIONS = (
     Mutation(
         name="asset-agent-message-replay",
         path="agent/service.py",
-        before="        require_agent_history(db, conversation_id)",
-        after="        pass",
+        before="                require_agent_history(db, session_id)",
+        after="                pass",
         case=(
             "tests/assets/test_agent_history_reads.py::"
             "test_lost_grants_filter_http_history_and_memories_and_reject_cached_streams[revoked]"

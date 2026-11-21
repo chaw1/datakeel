@@ -49,18 +49,28 @@ def get(db: Database, conversation_id: str) -> Conversation:
         return Conversation.model_validate(locked_conversation(session, conversation_id).payload)
 
 
-def list_all(db: Database, *, include_children: bool = False) -> list[Conversation]:
-    """List complete local sessions in deterministic creation order."""
+def list_all(
+    db: Database, *, include_children: bool = False, root_id: str | None = None
+) -> list[Conversation]:
+    """List roots, all sessions or one root's family in deterministic creation order."""
     with db.session() as session:
         rows = session.scalars(select(ConversationRow)).all()
-        return sorted(
-            (
-                view
-                for row in rows
-                if (view := Conversation.model_validate(row.payload))
-                and (include_children or view.parent_conversation_id is None)
-            ),
-            key=lambda item: item.created_at,
+    if root_id is not None:
+        rows = [row for row in rows if root_id in (row.id, row.payload.get("root_conversation_id"))]
+    elif not include_children:
+        rows = [row for row in rows if row.payload.get("parent_conversation_id") is None]
+    return sorted(
+        (Conversation.model_validate(row.payload) for row in rows), key=lambda item: item.created_at
+    )
+
+
+def count_children(db: Database, parent_id: str, agent_name: str) -> int:
+    """Count matching children without deserializing any conversation transcripts."""
+    with db.session() as session:
+        return sum(
+            row.payload.get("parent_conversation_id") == parent_id
+            and row.payload.get("agent_name", "main") == agent_name
+            for row in session.scalars(select(ConversationRow))
         )
 
 

@@ -41,7 +41,7 @@ IDENTITY_MUTATIONS = (
     Mutation(
         name="identity-runtime-actor-binding",
         path="storage/identity_sessions.py",
-        before='return row.actor if row is not None else "local"',
+        before="return session_actors(db, (session_id,))[session_id]",
         after='return "local"',
         case="tests/api/test_identity_access.py::test_agent_read_session_cannot_borrow_local_administrator_for_writes",
         runner="pytest",
@@ -49,8 +49,8 @@ IDENTITY_MUTATIONS = (
     Mutation(
         name="identity-history-grant-caller",
         path="storage/data_asset_context.py",
-        before="_caller(session_actor(db, conversation_id))",
-        after='_caller("local")',
+        before="_require_agent_access(db, refs, session_actor(db, conversation_id), record=True)",
+        after='_require_agent_access(db, refs, "local", record=True)',
         case="tests/assets/test_identity_context.py::test_history_projection_and_cached_replay_use_session_actor_grants",
         runner="pytest",
     ),

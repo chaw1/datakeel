@@ -7,13 +7,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import String, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from datakeel.core.errors import AuthorizationError
 from datakeel.storage.base import Base
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from datakeel.storage.database import Database
 
 
@@ -30,9 +32,18 @@ REGISTERED_IDENTITY_RUNTIME_ROWS = (IdentitySessionRow,)
 
 def session_actor(db: Database, session_id: str) -> str:
     """Read the authoritative actor, retaining local ownership for legacy sessions."""
-    with db.session() as session:
-        row = session.get(IdentitySessionRow, session_id)
-        return row.actor if row is not None else "local"
+    return session_actors(db, (session_id,))[session_id]
+
+
+def session_actors(db: Database, session_ids: Sequence[str]) -> dict[str, str]:
+    """Read requested session owners, retaining local ownership for unbound sessions."""
+    actors = dict.fromkeys(session_ids, "local")
+    if session_ids:
+        statement = select(IdentitySessionRow).where(IdentitySessionRow.session_id.in_(session_ids))
+        with db.session() as session:
+            for row in session.scalars(statement):
+                actors[row.session_id] = row.actor
+    return actors
 
 
 def bind_session_actor(db: Database, session_id: str, actor: str) -> None:

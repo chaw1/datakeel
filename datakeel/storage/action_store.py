@@ -72,31 +72,6 @@ def publish(session: Session, event: LineageEvent) -> None:
     )
 
 
-def list_runs(db: Database) -> list[ActionRun]:
-    """List durable attempts, including rejected and failed executions."""
-    with db.session() as session:
-        return [
-            run_view(row)
-            for row in session.scalars(
-                select(ActionRunRow).order_by(ActionRunRow.created_at.desc())
-            )
-        ]
-
-
-def list_approvals(db: Database) -> list[ActionPlan]:
-    """List plans that still require an explicit human approval decision."""
-    with db.session() as session:
-        plans = [
-            ActionPlan.model_validate(row.payload)
-            for row in session.scalars(
-                select(ActionPlanRow)
-                .where(ActionPlanRow.status == "PREPARED")
-                .order_by(ActionPlanRow.created_at)
-            )
-        ]
-        return [plan for plan in plans if plan.requires_approval]
-
-
 def get_plan(db: Database, plan_id: str) -> ActionPlan:
     """Read one plan with its current approval/execution status."""
     with db.session() as session:

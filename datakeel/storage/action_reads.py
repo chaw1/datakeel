@@ -5,6 +5,7 @@
 
 from sqlalchemy.orm import Session
 
+from datakeel.action_store import lifecycle
 from datakeel.actions.models import ActionPlan, ActionRun
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.core.errors import AuthorizationError
@@ -25,7 +26,7 @@ def get_plan(db: Database, plan_id: str, *, access: AccessContext | None = None)
 
 def list_approvals(db: Database, *, access: AccessContext | None = None) -> list[ActionPlan]:
     """Read pending plans without leaking an unauthorized frozen manifest in a collection."""
-    plans = action_store.list_approvals(db)
+    plans = lifecycle.list_approvals(db)
     with db.session() as session:
         db.lock_writes(session)
         visible = _visible_plans(session, tuple(plans), access)
@@ -36,7 +37,7 @@ def list_approvals(db: Database, *, access: AccessContext | None = None) -> list
 
 def list_runs(db: Database, *, access: AccessContext | None = None) -> list[ActionRun]:
     """Read receipt history, including prior metadata values, under current source grants."""
-    runs = action_store.list_runs(db)
+    runs = lifecycle.list_runs(db)
     with db.session() as session:
         db.lock_writes(session)
         plans = tuple(

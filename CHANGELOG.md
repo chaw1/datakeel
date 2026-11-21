@@ -15,6 +15,9 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Changed
 
+- Batched Agent plan, run, chain and session-owner reads, and scoped delegation history
+  hydration to avoid repeated lookups and unnecessary conversation deserialization.
+
 - Reorganized both READMEs and documentation hubs around the tasks users can complete.
 
 ### Fixed

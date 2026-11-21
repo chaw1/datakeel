@@ -11,67 +11,58 @@ from datakeel.core.models import AssetRef
 from datakeel.storage.conversation_asset_refs import conversation_asset_refs, memory_asset_refs
 from datakeel.storage.data_asset_access import require_access
 from datakeel.storage.database import Database
-from datakeel.storage.identity_sessions import session_actor
+from datakeel.storage.identity_sessions import session_actor, session_actors
 
 
-def _caller(actor: str) -> AccessContext:
-    return AccessContext(actor=actor, entry="agent", scope="query")
+def _require_agent_access(
+    db: Database, refs: tuple[AssetRef, ...], actor: str, *, record: bool = False
+) -> None:
+    require_access(
+        db, refs, AccessContext(actor=actor, entry="agent", scope="query"), record=record
+    )
 
 
-def _allowed(db: Database, refs: tuple[AssetRef, ...], actor: str) -> bool:
-    try:
-        require_access(db, refs, _caller(actor), record=False)
-    except AuthorizationError:
-        return False
-    return True
-
-
-def project_agent_history(db: Database, conversation: Conversation) -> Conversation:
+def project_agent_history(
+    db: Database, conversation: Conversation, *, actor: str | None = None
+) -> Conversation:
     """Drop derived history if a formerly readable resource has lost authorization.
 
     Root user speech remains original; generated child tasks are derived history.
     Stored transcripts and append-only audit are never rewritten.
     """
     try:
-        if _allowed(
-            db, conversation_asset_refs(db, conversation.id), session_actor(db, conversation.id)
-        ):
-            return conversation
+        refs = conversation_asset_refs(db, conversation.id)
+        actor = actor if actor is not None else session_actor(db, conversation.id)
+        _require_agent_access(db, refs, actor)
     except AuthorizationError:
-        pass
-    return conversation.model_copy(
-        update={
-            "messages": [
-                item
-                for item in conversation.messages
-                if item.role == "system"
-                or (item.role == "user" and conversation.parent_conversation_id is None)
-            ],
-            "events": [],
-        }
-    )
+        roles = {"system", "user"} if conversation.parent_conversation_id is None else {"system"}
+        return conversation.model_copy(
+            update={
+                "messages": [item for item in conversation.messages if item.role in roles],
+                "events": [],
+            }
+        )
+    return conversation
 
 
 def read_agent_histories(db: Database, conversations: list[Conversation]) -> list[Conversation]:
     """Project currently readable transcripts and audit their combined returned resources once."""
-    views = [project_agent_history(db, item) for item in conversations]
+    actors = session_actors(db, [item.id for item in conversations])
+    views = [project_agent_history(db, item, actor=actors[item.id]) for item in conversations]
     groups: dict[str, list[AssetRef]] = {}
     for original, view in zip(conversations, views, strict=True):
         if original is view:
-            actor = session_actor(db, original.id)
+            actor = actors[original.id]
             groups.setdefault(actor, []).extend(conversation_asset_refs(db, original.id))
     for actor, refs in groups.items():
-        require_access(db, tuple(refs), _caller(actor))
+        _require_agent_access(db, tuple(refs), actor, record=True)
     return views
 
 
 def require_agent_history(db: Database, conversation_id: str) -> None:
     """Authorize and audit an immutable response replay before returning any cached bytes."""
-    require_access(
-        db,
-        conversation_asset_refs(db, conversation_id),
-        _caller(session_actor(db, conversation_id)),
-    )
+    refs = conversation_asset_refs(db, conversation_id)
+    _require_agent_access(db, refs, session_actor(db, conversation_id), record=True)
 
 
 def visible_memories(
@@ -85,9 +76,12 @@ def visible_memories(
             refs = memory_asset_refs(db, [entry])
         except (AuthorizationError, NotFoundError):
             continue
-        if _allowed(db, refs, actor):
-            visible.append(entry)
-            returned_refs.extend(refs)
+        try:
+            _require_agent_access(db, refs, actor)
+        except AuthorizationError:
+            continue
+        visible.append(entry)
+        returned_refs.extend(refs)
     if record:
-        require_access(db, tuple(returned_refs), _caller(actor))
+        _require_agent_access(db, tuple(returned_refs), actor, record=True)
     return visible

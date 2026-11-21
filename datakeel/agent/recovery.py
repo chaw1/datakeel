@@ -3,12 +3,12 @@
 
 """Resume controlled effects through their durable plan operation identities."""
 
+from datakeel.action_store.lifecycle import get_runs_by_plan_ids
 from datakeel.actions.authorization import authorization_for
 from datakeel.actions.models import ExecuteRequest
 from datakeel.actions.service import execute_plan, get_plan
 from datakeel.core.data_asset_models import AccessContext
 from datakeel.ontology.tool_models import ToolOutcome
-from datakeel.storage.action_store import list_runs
 from datakeel.storage.database import Database
 
 
@@ -16,7 +16,8 @@ def execute_approved(db: Database, plan_id: str) -> ToolOutcome:
     """Reuse an existing receipt or execute the approved plan with its frozen operation ID."""
     plan = get_plan(db, plan_id)
     run = next(
-        (run for run in list_runs(db) if run.plan_id == plan_id and run.status != "DENIED"), None
+        (run for run in get_runs_by_plan_ids(db, [plan_id])[plan_id] if run.status != "DENIED"),
+        None,
     )
     if run is None:
         run = execute_plan(

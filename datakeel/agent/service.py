@@ -3,22 +3,21 @@
 
 """Public conversation creation, replay, and controlled response streaming."""
 
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
+from contextlib import closing
 
 from datakeel.agent.factory import provider_session
-from datakeel.agent.memory import close_interrupted, conversation_view
+from datakeel.agent.memory import close_interrupted, conversation_view, conversation_views
 from datakeel.agent.models import AgentEvent, ConversationView
 from datakeel.agent.providers import FakeProvider
 from datakeel.core.agent_models import (
     ConversationCreate,
     ConversationDefaults,
-    ConversationLease,
     MessageInput,
     Provider,
     ResumeInput,
 )
 from datakeel.core.errors import ValidationError
-from datakeel.core.intent_models import PageContext
 from datakeel.core.models import JsonDocument
 from datakeel.core.settings import get_settings
 from datakeel.dataset_store.dataset_service import get_dataset
@@ -35,7 +34,7 @@ from datakeel.storage.database import Database
 from datakeel.storage.identity_sessions import (
     bind_session_actor,
     require_session_actor,
-    session_actor,
+    session_actors,
 )
 
 
@@ -63,10 +62,10 @@ def get_conversation(
 
 def list_conversations(db: Database, *, actor: str | None = None) -> list[ConversationView]:
     """List persisted local conversations with complete transcript views."""
-    selected = [
-        item for item in memory.list_all(db) if actor is None or session_actor(db, item.id) == actor
-    ]
-    return [conversation_view(db, item) for item in read_agent_histories(db, selected)]
+    conversations = memory.list_all(db)
+    actors = session_actors(db, [item.id for item in conversations]) if actor is not None else {}
+    selected = [item for item in conversations if actor is None or actors[item.id] == actor]
+    return conversation_views(db, read_agent_histories(db, selected))
 
 
 def send_message(
@@ -78,17 +77,7 @@ def send_message(
     actor: str | None = None,
 ) -> Iterator[AgentEvent]:
     """Stream durable events; replay a completed request without executing it again."""
-    with response_lock(db, conversation_id):
-        if actor is not None:
-            require_session_actor(db, conversation_id, actor)
-        _recover_lease(db, conversation_id)
-        lease = memory.begin(db, conversation_id, request)
-        yield from _deliver(
-            db,
-            conversation_id,
-            lease,
-            _response_events(db, conversation_id, lease.token, provider, context=request.context),
-        )
+    yield from _respond(db, conversation_id, request, provider, actor)
 
 
 def resume_conversation(
@@ -100,49 +89,48 @@ def resume_conversation(
     actor: str | None = None,
 ) -> Iterator[AgentEvent]:
     """Resume a signed pause with a separate response lease and no synthetic user turn."""
-    with response_lock(db, conversation_id):
-        if actor is not None:
-            require_session_actor(db, conversation_id, actor)
-        _recover_lease(db, conversation_id)
-        lease = begin_resume(db, conversation_id, request)
-        yield from _deliver(
-            db,
-            conversation_id,
-            lease,
-            _response_events(db, conversation_id, lease.token, provider, request),
-        )
+    yield from _respond(db, conversation_id, request, provider, actor)
 
 
-def _recover_lease(db: Database, conversation_id: str) -> None:
-    token = abandoned_token(db, conversation_id)
-    if token:
-        close_interrupted(db, conversation_id, token)
-        memory.finish(db, conversation_id, token, completed=False)
-
-
-def _deliver(
-    db: Database, conversation_id: str, lease: ConversationLease, events: Iterator[AgentEvent]
+def _respond(
+    db: Database,
+    session_id: str,
+    request: MessageInput | ResumeInput,
+    provider: Provider | None,
+    actor: str | None,
 ) -> Iterator[AgentEvent]:
-    if lease.replay is not None:
-        require_agent_history(db, conversation_id)
-        yield from (AgentEvent.model_validate(document.root) for document in lease.replay)
-        return
-    completed = False
-    try:
-        for event in events:
-            memory.append(
-                db,
-                conversation_id,
-                lease.token,
-                event=JsonDocument.model_validate(event.model_dump(mode="json")),
-            )
-            if event.event == "done" and event.agent_path == "main":
-                completed = True
-            yield event
-    finally:
-        if not completed:
-            close_interrupted(db, conversation_id, lease.token)
-        memory.finish(db, conversation_id, lease.token, completed=completed)
+    with response_lock(db, session_id):
+        if actor is not None:
+            require_session_actor(db, session_id, actor)
+        if token := abandoned_token(db, session_id):
+            close_interrupted(db, session_id, token)
+            memory.finish(db, session_id, token, completed=False)
+        lease = (
+            memory.begin(db, session_id, request)
+            if isinstance(request, MessageInput)
+            else begin_resume(db, session_id, request)
+        )
+        with closing(_response_events(db, session_id, lease.token, provider, request)) as events:
+            if lease.replay is not None:
+                require_agent_history(db, session_id)
+                yield from (AgentEvent.model_validate(document.root) for document in lease.replay)
+                return
+            completed = False
+            try:
+                for event in events:
+                    memory.append(
+                        db,
+                        session_id,
+                        lease.token,
+                        event=JsonDocument.model_validate(event.model_dump(mode="json")),
+                    )
+                    if event.event == "done" and event.agent_path == "main":
+                        completed = True
+                    yield event
+            finally:
+                if not completed:
+                    close_interrupted(db, session_id, lease.token)
+                memory.finish(db, session_id, lease.token, completed=completed)
 
 
 def _response_events(
@@ -150,32 +138,24 @@ def _response_events(
     conversation_id: str,
     token: str,
     provider: Provider | None,
-    resume: ResumeInput | None = None,
-    *,
-    context: PageContext | None = None,
-) -> Iterator[AgentEvent]:
+    request: MessageInput | ResumeInput,
+) -> Generator[AgentEvent]:
     conversation = memory.get(db, conversation_id)
-    config = conversation.config
     graph = AgentGraph(db, conversation_id, token, provider)
-    events = graph.run() if resume is None else graph.resume(resume)
+    events = graph.resume(request) if isinstance(request, ResumeInput) else graph.run()
     route = None
     try:
-        with provider_session(config, provider) as selected:
+        with provider_session(conversation.config, provider) as selected:
             graph.provider = selected
-            route = (
-                route_message(
-                    db,
-                    conversation,
-                    selected,
-                    offline_classifier=isinstance(selected, FakeProvider),
-                )
-                if resume is None
-                else None
-            )
+            if isinstance(request, MessageInput):
+                offline = isinstance(selected, FakeProvider)
+                route = route_message(db, conversation, selected, offline_classifier=offline)
             graph.workflow_confirmation_required = route is not None and route.requires_confirmation
             planned = (
-                planner_events(db, conversation, selected, context, token)
-                if route is not None and route.workflow_id is None
+                planner_events(db, conversation, selected, request.context, token)
+                if isinstance(request, MessageInput)
+                and route is not None
+                and route.workflow_id is None
                 else None
             )
             yield from events if planned is None else planned
@@ -192,11 +172,7 @@ def _response_events(
 
 
 def conversation_defaults() -> ConversationDefaults:
-    """The configured provider with routed models; the offline demo only with a reason.
-
-    "auto" is offered only when the routing knows which models the configured endpoint
-    serves; otherwise the demo is used and the reason names the configuration problem.
-    """
+    """Offer routed models when configured, otherwise the offline demo with its reason."""
     settings = get_settings()
     problem = route_problem(settings)
     if problem is not None:

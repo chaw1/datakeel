@@ -7,7 +7,7 @@ from datakeel.delegation.models import CallTree, CallTreeNode
 from datakeel.storage.conversation_store import get, list_all
 from datakeel.storage.database import Database
 from datakeel.storage.harness_service import list_traces
-from datakeel.storage.tool_invocations import list_invocations
+from datakeel.storage.tool_invocations import list_invocations_by_sessions
 
 
 def call_tree(db: Database, conversation_id: str) -> CallTree:
@@ -15,6 +15,8 @@ def call_tree(db: Database, conversation_id: str) -> CallTree:
     root = get(db, conversation_id)
     root_id = root.root_conversation_id or root.id
     traces = list_traces(db, root_id)
+    family = list_all(db, root_id=root_id)
+    invocations = list_invocations_by_sessions(db, [item.id for item in family])
     nodes = [
         CallTreeNode(
             id=item.id,
@@ -27,9 +29,8 @@ def call_tree(db: Database, conversation_id: str) -> CallTree:
             tokens=sum(
                 trace.accounted_tokens for trace in traces if trace.conversation_id == item.id
             ),
-            tools=[tool.name for tool in list_invocations(db, item.id)],
+            tools=[tool.name for tool in invocations[item.id]],
         )
-        for item in list_all(db, include_children=True)
-        if root_id in (item.id, item.root_conversation_id)
+        for item in family
     ]
     return CallTree(nodes=sorted(nodes, key=lambda item: item.agent_path), traces=traces)

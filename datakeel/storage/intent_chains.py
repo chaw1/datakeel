@@ -3,14 +3,15 @@
 
 """Persist and read action chains; plans and runs remain the authoritative history."""
 
+from collections.abc import Sequence
+
 from sqlalchemy import select
 
+from datakeel.action_store.lifecycle import get_runs_by_plan_ids
 from datakeel.actions.models import ActionRun
 from datakeel.core.errors import AuthorizationError, ConflictError, NotFoundError
 from datakeel.core.intent_models import ActionChain
 from datakeel.core.models import utcnow
-from datakeel.storage.action_rows import ActionRunRow
-from datakeel.storage.action_store import run_view
 from datakeel.storage.database import Database
 from datakeel.storage.intent_rows import ActionChainRow
 
@@ -62,28 +63,15 @@ def claim_chain(db: Database, chain_id: str, actor: str) -> ActionChain:
 
 def plan_runs(db: Database, plan_ids: list[str]) -> dict[str, list[ActionRun]]:
     """Read every attempt of the given plans, oldest first."""
-    found: dict[str, list[ActionRun]] = {identifier: [] for identifier in plan_ids}
-    if not plan_ids:
-        return found
-    with db.session() as session:
-        rows = session.scalars(
-            select(ActionRunRow)
-            .where(ActionRunRow.plan_id.in_(plan_ids))
-            .order_by(ActionRunRow.created_at, ActionRunRow.id)
-        )
-        for row in rows:
-            found[row.plan_id].append(run_view(row))
-    return found
+    return get_runs_by_plan_ids(db, plan_ids, newest_first=False)
 
 
 def get_chain(db: Database, chain_id: str, *, actor: str | None = None) -> ActionChain:
     """Read one chain; a different person cannot read or run someone else's chain."""
-    with db.session() as session:
-        row = session.get(ActionChainRow, chain_id)
-        if row is None:
-            message = "Action chain was not found"
-            raise NotFoundError(message)
-        chain = ActionChain.model_validate(row.payload)
+    chain = get_chains_by_ids(db, (chain_id,)).get(chain_id)
+    if chain is None:
+        message = "Action chain was not found"
+        raise NotFoundError(message)
     if actor is not None and actor != chain.actor:
         message = "Action chains can only be run by the person who asked for them"
         raise AuthorizationError(message)
@@ -100,3 +88,13 @@ def list_chains(db: Database, conversation_id: str) -> list[ActionChain]:
         )
         chains = [ActionChain.model_validate(row.payload) for row in rows]
     return sorted(chains, key=lambda chain: chain.created_at)
+
+
+def get_chains_by_ids(db: Database, chain_ids: Sequence[str]) -> dict[str, ActionChain]:
+    """Read only the requested chain snapshots in one read-only query."""
+    if not chain_ids:
+        return {}
+    statement = select(ActionChainRow).where(ActionChainRow.id.in_(chain_ids))
+    with db.session() as session:
+        rows = session.scalars(statement)
+        return {row.id: ActionChain.model_validate(row.payload) for row in rows}

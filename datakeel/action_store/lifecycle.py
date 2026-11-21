@@ -1,17 +1,18 @@
 # Copyright 2026 Datakeel contributors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Bind ordered lifecycle stages without action IDs or a second dispatch catalog."""
+"""Bind ordered lifecycle stages and read durable action history."""
 
 import logging
 from importlib import import_module
 from typing import TYPE_CHECKING, cast
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datakeel.actions.declarations import ActionFrame
 from datakeel.actions.file_declarations import active_declarations
-from datakeel.actions.models import ActionPlan, ActionRun, OperationResult
+from datakeel.actions.models import ActionPlan, ActionRun, OperationResult, PlanStatus
 from datakeel.actions.parameters import parse_params
 from datakeel.actions.receipts import receipt
 from datakeel.core.errors import ValidationError
@@ -21,10 +22,66 @@ from datakeel.storage.action_store import audit, publish, run_view
 from datakeel.storage.database import Database
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_plans_by_ids(db: Database, plan_ids: "Sequence[str]") -> dict[str, ActionPlan]:
+    """Read requested plans and their current statuses without acquiring row locks."""
+    if not plan_ids:
+        return {}
+    with db.session() as session:
+        return {
+            row.id: ActionPlan.model_validate(row.payload).model_copy(
+                update={"status": cast("PlanStatus", row.status)}
+            )
+            for row in session.scalars(select(ActionPlanRow).where(ActionPlanRow.id.in_(plan_ids)))
+        }
+
+
+def get_runs_by_plan_ids(
+    db: Database, plan_ids: "Sequence[str]", *, newest_first: bool = True
+) -> dict[str, list[ActionRun]]:
+    """Read requested plans' attempts, optionally in oldest-first chain order."""
+    found: dict[str, list[ActionRun]] = {identifier: [] for identifier in plan_ids}
+    if not plan_ids:
+        return found
+    statement = select(ActionRunRow).where(ActionRunRow.plan_id.in_(plan_ids))
+    if newest_first:
+        statement = statement.order_by(ActionRunRow.created_at.desc())
+    else:
+        statement = statement.order_by(ActionRunRow.created_at, ActionRunRow.id)
+    with db.session() as session:
+        for row in session.scalars(statement):
+            found[row.plan_id].append(run_view(row))
+    return found
+
+
+def list_runs(db: Database) -> list[ActionRun]:
+    """List durable attempts, including rejected and failed executions."""
+    with db.session() as session:
+        return [
+            run_view(row)
+            for row in session.scalars(
+                select(ActionRunRow).order_by(ActionRunRow.created_at.desc())
+            )
+        ]
+
+
+def list_approvals(db: Database) -> list[ActionPlan]:
+    """List plans that still require an explicit human approval decision."""
+    with db.session() as session:
+        plans = [
+            ActionPlan.model_validate(row.payload)
+            for row in session.scalars(
+                select(ActionPlanRow)
+                .where(ActionPlanRow.status == "PREPARED")
+                .order_by(ActionPlanRow.created_at)
+            )
+        ]
+        return [plan for plan in plans if plan.requires_approval]
 
 
 def stage(action: str, phase: str, session: Session, frame: ActionFrame) -> ActionFrame:

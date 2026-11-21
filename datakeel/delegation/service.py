@@ -43,10 +43,7 @@ ChildRunner = Callable[[Conversation, str], ChildResult]
 def _child(
     db: Database, parent: Conversation, definition: AgentDefinition, call: ToolCall
 ) -> Conversation:
-    ordinal = 1 + sum(
-        item.parent_conversation_id == parent.id and item.agent_name == definition.name
-        for item in memory.list_all(db, include_children=True)
-    )
+    ordinal = 1 + memory.count_children(db, parent.id, definition.name)
     child = memory.store(
         db,
         Conversation(

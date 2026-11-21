@@ -3,7 +3,9 @@
 
 """Persist every tool dispatch, including rejected and interrupted requests."""
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import cast
 from uuid import NAMESPACE_URL, uuid5
 
 from sqlalchemy import select
@@ -103,8 +105,23 @@ def _view(row: ToolInvocationRow) -> ToolInvocation:
 
 def list_invocations(db: Database, session_id: str | None = None) -> list[ToolInvocation]:
     """Read invocation history in dispatch order, optionally scoped to a session."""
+    return _read_invocations(db, (session_id,) if session_id is not None else None)
+
+
+def _read_invocations(db: Database, session_ids: Sequence[str] | None) -> list[ToolInvocation]:
     with db.session() as session:
         statement = select(ToolInvocationRow).order_by(ToolInvocationRow.started_at)
-        if session_id is not None:
-            statement = statement.where(ToolInvocationRow.session_id == session_id)
+        if session_ids is not None:
+            statement = statement.where(ToolInvocationRow.session_id.in_(session_ids))
         return [_view(row) for row in session.scalars(statement)]
+
+
+def list_invocations_by_sessions(
+    db: Database, session_ids: Sequence[str]
+) -> dict[str, list[ToolInvocation]]:
+    """Read requested sessions' invocation histories in dispatch order."""
+    found: dict[str, list[ToolInvocation]] = {identifier: [] for identifier in session_ids}
+    if session_ids:
+        for invocation in _read_invocations(db, session_ids):
+            found[cast("str", invocation.session_id)].append(invocation)
+    return found
