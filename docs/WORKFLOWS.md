@@ -217,15 +217,18 @@ CLI commands use the same database and object-store settings as API and worker:
 CLI 使用与 API、worker 一致的数据库和对象存储配置：
 
 ```bash
+uv run datakeel workflow list
 uv run datakeel workflow run dataset-health --input dataset_id=DATASET_ID
 uv run datakeel workflow run metric-change --input 'override={"measure":{"column":"ecommerce/main/orders/list_amount"}}'
 uv run datakeel workflow run low-quality-cleanup --input dataset_id=DATASET_ID --input quality_max=60
+uv run datakeel workflow runs --workflow low-quality-cleanup --status PAUSED
+uv run datakeel workflow show RUN_ID --audit --json
 uv run datakeel workflow resume RUN_ID --plan PLAN_ID
 ```
 
-Replace the uppercase placeholders with actual IDs. `--input k=v` accepts JSON numbers, booleans, arrays and objects; other values stay strings. Repeated keys are rejected. `--idempotency-key KEY` makes an intentional retry use the original request identity. On pause, the CLI prints the plan ID, approval URL and resume command.
+Replace the uppercase placeholders with actual IDs. `--input k=v` accepts JSON numbers, booleans, arrays and objects; other values stay strings. Repeated keys are rejected. `--idempotency-key KEY` makes an intentional retry use the original request identity. `workflow runs` and `workflow show` inspect saved run history, step timelines and recovery audit records for the selected `--actor` (default `local`), and `list`, `validate`, `run`, `resume`, `runs` and `show` all accept `--json`. On pause, the CLI prints the plan ID, approval URL and resume command.
 
-将大写占位符替换为真实 ID。`--input k=v` 支持 JSON 数字、布尔、数组及对象，其余保留为字符串；不允许重复键。使用 `--idempotency-key KEY` 可在主动重试时保持原请求身份。暂停时 CLI 输出计划 ID、审批地址及恢复命令。
+将大写占位符替换为真实 ID。`--input k=v` 支持 JSON 数字、布尔、数组及对象，其余保留为字符串；不允许重复键。使用 `--idempotency-key KEY` 可在主动重试时保持原请求身份。`workflow runs` 与 `workflow show` 可按 `--actor`（默认 `local`）查看保存的运行历史、步骤时间线与恢复审计，`list`、`validate`、`run`、`resume`、`runs` 与 `show` 均支持 `--json` 输出。暂停时 CLI 输出计划 ID、审批地址及恢复命令。
 
 If a task times out, inspect its reason and confirm a worker is running with `uv run datakeel worker`. Failures do not retry or continue to later steps. A disconnected live run becomes `INTERRUPTED`; after process restart, unfinished runs outside approval pause are also interrupted. Reload the saved record to inspect it. Only approval pauses can resume; an interrupted run cannot restart from its middle.
 
