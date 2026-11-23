@@ -20,6 +20,7 @@ permissions:
 jobs:
   build:
     name: Build and verify pure-Python wheel
+    if: ${{ inputs.publish_pypi }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -77,14 +78,14 @@ jobs:
   publish-mcp:
     name: Publish server.json to Official MCP Registry (OIDC)
     needs: [build, publish-pypi]
-    if: ${{ always() && inputs.publish_mcp && needs.build.result == 'success' && (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped') }}
+    if: ${{ always() && inputs.publish_mcp && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       id-token: write
       contents: read
     env:
-      MCP_PUBLISHER_VERSION: v1.8.1
+      MCP_PUBLISHER_VERSION: v1.8.15
     steps:
       - uses: actions/checkout@v4
       - name: Install cosign for release signature verification
@@ -97,11 +98,11 @@ jobs:
           archive="mcp-publisher_${os}_${arch}.tar.gz"
           base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
           curl --fail --location --silent --show-error --output "${archive}" "${base_url}/${archive}"
-          curl --fail --location --silent --show-error --output "${archive}.sigstore" "${base_url}/${archive}.sigstore"
+          curl --fail --location --silent --show-error --output "${archive}.sigstore.json" "${base_url}/${archive}.sigstore.json"
           cosign verify-blob \
             --certificate-identity-regexp "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@.+" \
             --cert-oidc-issuer "https://token.actions.githubusercontent.com" \
-            --bundle "${archive}.sigstore" \
+            --bundle "${archive}.sigstore.json" \
             "${archive}"
           tar -xzf "${archive}"
           chmod +x mcp-publisher
