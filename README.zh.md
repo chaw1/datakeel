@@ -21,7 +21,9 @@
   <a href="CHANGELOG.md">更新日志</a>
 </p>
 
-![Datakeel 数据集交付审查并排显示训练集和测试集中的重复图片](docs/images/dataset-delivery-zh.png)
+![Datakeel 18 秒实机演示：视觉证据校样、可追溯指标 SQL 与人工签批受控动作](docs/images/demo-walkthrough.gif)
+
+*18 秒本地离线演示录屏：样本证据校样、可追溯参数化 SQL 问数、智能体计划与人工签批单。图片数据集跨划分泄漏对比见 [数据集交付审查](docs/DATASET_DELIVERY.zh.md)。*
 
 ## 快速上手
 

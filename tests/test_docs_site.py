@@ -135,3 +135,15 @@ def test_mcp_server_manifest_matches_readme_verification_marker() -> None:
     assert manifest["packages"][0]["transport"]["type"] == "stdio"
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert f"mcp-name: {manifest['name']}" in readme
+
+
+def test_pypi_mcp_workflow_is_manual_dispatch_only_and_uses_oidc() -> None:
+    """External PyPI/MCP publication stays strictly manual and uses OIDC without static tokens."""
+    workflow_path = ROOT / ".github/workflows/publish-pypi-mcp.yml"
+    content = workflow_path.read_text(encoding="utf-8")
+    parsed = yaml.safe_load(content)
+    triggers = parsed.get(True) or parsed.get("on")
+    assert list(triggers.keys()) == ["workflow_dispatch"]
+    assert "pypa/gh-action-pypi-publish" in content
+    assert "mcp-publisher login github-oidc" in content
+    assert (ROOT / "docs/images/demo-walkthrough.gif").is_file()

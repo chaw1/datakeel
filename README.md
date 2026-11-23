@@ -22,7 +22,9 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-![Datakeel delivery review comparing a duplicate image found in the training and test sets](docs/images/dataset-delivery-en.png)
+![Datakeel 18-second walkthrough: visual QA evidence review, traceable metric SQL, and human-approved agent actions](docs/images/demo-walkthrough.gif)
+
+*18-second live demo walkthrough: visual QA & evidence anchors, traceable metric SQL, and digest-bound human approval. See also [dataset delivery review](docs/DATASET_DELIVERY.md).*
 
 ## Quick start
 

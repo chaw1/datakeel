@@ -1,0 +1,111 @@
+name: Publish to PyPI and MCP Registry
+
+# Manual-only OIDC publication workflow. The existing GitHub-only release.yml
+# remains untouched so tags never publish externally by accident.
+on:
+  workflow_dispatch:
+    inputs:
+      publish_pypi:
+        description: 'Publish verified wheel to PyPI via Trusted Publishing (OIDC)'
+        type: boolean
+        default: true
+      publish_mcp:
+        description: 'Publish server.json to the Official MCP Registry via GitHub OIDC'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and verify pure-Python wheel
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          license-wheels: 'true'
+      - name: Public content scan
+        run: make check-public
+      - name: Verify frontend bundle hash matches source
+        working-directory: web
+        run: npm run check:source
+      - name: Verify server.json version matches pyproject.toml
+        run: |
+          uv run --no-sync python - <<'PY'
+          import json
+          import pathlib
+          import tomllib
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+          manifest = json.loads(pathlib.Path("server.json").read_text(encoding="utf-8"))
+          if manifest["version"] != version or manifest["packages"][0]["version"] != version:
+              raise SystemExit(f"server.json version mismatch for pyproject version {version}")
+          PY
+      - name: Build verified wheel
+        run: make build-wheel
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pypi-dist
+          path: dist/datakeel-*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-pypi:
+    name: Publish wheel to PyPI (OIDC)
+    needs: [build]
+    if: ${{ inputs.publish_pypi }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/datakeel
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi-dist
+          path: dist
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+
+  publish-mcp:
+    name: Publish server.json to Official MCP Registry (OIDC)
+    needs: [build, publish-pypi]
+    if: ${{ always() && inputs.publish_mcp && needs.build.result == 'success' && (needs.publish-pypi.result == 'success' || needs.publish-pypi.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cosign for release signature verification
+        uses: sigstore/cosign-installer@v3.8.2
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          arch="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          archive="mcp-publisher_${os}_${arch}.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "${archive}" "${base_url}/${archive}"
+          curl --fail --location --silent --show-error --output "${archive}.sigstore" "${base_url}/${archive}.sigstore"
+          cosign verify-blob \
+            --certificate-identity-regexp "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@.+" \
+            --cert-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --bundle "${archive}.sigstore" \
+            "${archive}"
+          tar -xzf "${archive}"
+          chmod +x mcp-publisher
+      - name: Authenticate via GitHub OIDC and publish
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
