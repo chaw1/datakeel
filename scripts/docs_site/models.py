@@ -21,7 +21,7 @@ class SiteConfig(BoundaryModel):
     output_dir: Path
     base_url: str = "https://chaw1.github.io/datakeel/"
     repo_url: str = "https://github.com/chaw1/datakeel"
-    version: str = "0.27.0"
+    version: str = "0.27.1"
 
     @property
     def normalized_base_url(self) -> str:

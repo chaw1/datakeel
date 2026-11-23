@@ -1,6 +1,6 @@
 [project]
 name = "datakeel"
-version = "0.27.0"
+version = "0.27.1"
 description = "Local-first workbench for auditable AI datasets, traceable business metrics, and human-approved MCP agents."
 readme = "README.md"
 requires-python = ">=3.12"

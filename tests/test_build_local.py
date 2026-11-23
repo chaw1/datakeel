@@ -14,6 +14,7 @@ from datakeel.core.errors import ValidationError
 from scripts import build_image, build_wheel
 from scripts.license_base import validate_base_inventory
 from scripts.license_python import python_packages
+from scripts.pypi_readme import rewrite_wheel_metadata
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -134,3 +135,41 @@ def test_protobuf_license_when_locked_uses_reviewed_bsd_evidence() -> None:
         "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d"
         in packages["protobuf"].evidence
     )
+
+
+def test_wheel_metadata_rewrite_resolves_relative_images_and_updates_record(tmp_path: Path) -> None:
+    """Wheel README rewriting converts relative images/links for PyPI and keeps validation green."""
+    path = tmp_path / "datakeel-0.27.1-py3-none-any.whl"
+    wheel(path)
+    meta_name = "datakeel-0.27.1.dist-info/METADATA"
+    record_name = "datakeel-0.27.1.dist-info/RECORD"
+    raw_meta = (
+        "Metadata-Version: 2.4\nName: datakeel\nVersion: 0.27.1\n\n"
+        '<img src="web/public/favicon.svg" />\n'
+        "![demo](docs/images/demo-walkthrough.gif)\n"
+        "[Guide](docs/DEMO.en.md)\n"
+        "```bash\n![not-an-image](docs/ignored.png)\n```\n"
+    )
+    with zipfile.ZipFile(path, "a") as archive:
+        archive.writestr(meta_name, raw_meta)
+        archive.writestr(record_name, f"{meta_name},sha256=old,10\n{record_name},,\n")
+
+    assert validation_failed(path)
+    rewrite_wheel_metadata(path)
+    report = build_wheel.validate_wheel(path)
+    assert report.filename == path.name
+
+    with zipfile.ZipFile(path, "r") as archive:
+        rewritten = archive.read(meta_name).decode("utf-8")
+        record = archive.read(record_name).decode("utf-8")
+    assert (
+        "https://raw.githubusercontent.com/chaw1/datakeel/main/web/public/favicon.svg" in rewritten
+    )
+    assert (
+        "https://raw.githubusercontent.com/chaw1/datakeel/main/docs/images/demo-walkthrough.gif"
+        in rewritten
+    )
+    assert "https://github.com/chaw1/datakeel/blob/main/docs/DEMO.en.md" in rewritten
+    assert "![not-an-image](docs/ignored.png)" in rewritten
+    assert "sha256=old" not in record
+    assert f"{meta_name},sha256=" in record

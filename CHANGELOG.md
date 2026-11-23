@@ -4,7 +4,11 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.27.1] - 2026-11-23
+
 ### Added
+
+- Rewrite relative README image and document URLs to absolute GitHub raw/blob URLs inside wheel `METADATA` (with updated `RECORD` digests and build-time validation) so PyPI renders the 18-second walkthrough GIF, logo, architecture diagram, and documentation links cleanly.
 
 - Bilingual static documentation and landing-page generator (`make build-site`, `scripts/docs_site/`) with GitHub Pages workflow (`.github/workflows/pages.yml`), an 18-second live demo walkthrough GIF (`docs/images/demo-walkthrough.gif`), Open Graph social preview PNGs, hreflang `sitemap.xml`, `robots.txt`, `llms.txt`/`llms-full.txt`, and `SoftwareApplication`/`FAQPage`/`TechArticle` structured data.
 - Official MCP Registry manifest (`server.json`) with matching `mcp-name` verification marker in `README.md`, manual OIDC PyPI/MCP publication workflow (`.github/workflows/publish-pypi-mcp.yml`), plus positioning comparison and FAQ sections in both READMEs and expanded discovery metadata in `pyproject.toml`.

@@ -4,7 +4,7 @@
   "title": "Datakeel",
   "description": "Local-first workbench for auditable AI datasets, traceable SQL metrics, and approved actions.",
   "websiteUrl": "https://chaw1.github.io/datakeel/",
-  "version": "0.27.0",
+  "version": "0.27.1",
   "repository": {
     "url": "https://github.com/chaw1/datakeel",
     "source": "github"
@@ -14,7 +14,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "datakeel",
-      "version": "0.27.0",
+      "version": "0.27.1",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"

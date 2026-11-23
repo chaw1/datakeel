@@ -16,6 +16,7 @@ from rich.console import Console
 from datakeel.core.errors import ValidationError
 from datakeel.core.models import BoundaryModel
 from scripts.public_scan import _scan_blob
+from scripts.pypi_readme import relative_image_urls, rewrite_wheel_metadata
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_WHEEL_FILES = frozenset(
@@ -36,6 +37,18 @@ class WheelReport(BoundaryModel):
     size_bytes: int
     sha256: str
     file_count: int
+
+
+def _validate_metadata_images(archive: zipfile.ZipFile, names: set[str]) -> None:
+    metadata_name = next((name for name in names if name.endswith(".dist-info/METADATA")), None)
+    if metadata_name is None:
+        return
+    meta_text = archive.read(metadata_name).decode("utf-8")
+    body = meta_text.split("\n\n", 1)[1] if "\n\n" in meta_text else ""
+    broken = relative_image_urls(body)
+    if broken:
+        msg = "Wheel METADATA contains relative image URLs: " + ", ".join(broken)
+        raise ValidationError(msg)
 
 
 def validate_wheel(path: Path) -> WheelReport:
@@ -59,6 +72,7 @@ def validate_wheel(path: Path) -> WheelReport:
             if package not in notices:
                 msg = f"Wheel notices are stale: missing {package.decode()}"
                 raise ValidationError(msg)
+        _validate_metadata_images(archive, names)
         for info in archive.infolist():
             if info.is_dir():
                 continue
@@ -111,6 +125,7 @@ def main() -> None:
     if len(wheels) != 1:
         msg = f"Expected exactly one wheel, found {len(wheels)}"
         raise ValidationError(msg)
+    rewrite_wheel_metadata(wheels[0])
     report = validate_wheel(wheels[0])
     Console().print(f"Built {report.filename}: {report.size_bytes} bytes, sha256={report.sha256}")
 
