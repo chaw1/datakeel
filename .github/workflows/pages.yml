@@ -1,0 +1,68 @@
+name: Documentation site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'README.zh.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'SUPPORT.md'
+      - 'SECURITY.md'
+      - 'contracts/README.md'
+      - 'docs/**'
+      - 'pyproject.toml'
+      - 'web/public/favicon.svg'
+      - 'scripts/docs_site/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          toolchains: 'false'
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Build static landing and documentation site
+        env:
+          SITE_BASE_URL: ${{ vars.SITE_BASE_URL || steps.pages.outputs.base_url || 'https://chaw1.github.io/datakeel/' }}
+          SITE_CUSTOM_DOMAIN: ${{ vars.SITE_CUSTOM_DOMAIN || '' }}
+        run: |
+          uv run --no-sync python -m scripts.docs_site \
+            --output artifacts/site \
+            --base-url "$SITE_BASE_URL"
+          if [ -n "$SITE_CUSTOM_DOMAIN" ]; then
+            printf '%s\n' "$SITE_CUSTOM_DOMAIN" > artifacts/site/CNAME
+          fi
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: artifacts/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

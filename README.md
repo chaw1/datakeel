@@ -1,9 +1,11 @@
+<!-- mcp-name: io.github.chaw1/datakeel -->
 <p align="center"><img src="web/public/favicon.svg" width="56" height="56" alt="" /></p>
 <h1 align="center">Datakeel</h1>
-<p align="center"><strong>A local-first workbench for auditable datasets</strong></p>
-<p align="center">Review sample evidence, deliver verifiable versions, and trace business metrics back to their source.</p>
+<p align="center"><strong>A local-first workbench for auditable AI datasets, traceable business metrics, and human-approved agents</strong></p>
+<p align="center">Proofread multimodal training samples, freeze verifiable SHA-256 releases, trace every metric answer back to registered SQL and lineage, and gate Agent/MCP writes behind human sign-off.</p>
 
 <p align="center">
+  <a href="https://chaw1.github.io/datakeel/"><img alt="Website" src="https://img.shields.io/badge/docs-chaw1.github.io%2Fdatakeel-2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/releases"><img alt="Release" src="https://img.shields.io/github/v/release/chaw1/datakeel?color=2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/actions/workflows/ci.yml"><img alt="Quality gates" src="https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="pyproject.toml"><img alt="Python 3.12+" src="https://img.shields.io/badge/Python-3.12%2B-2459a8" /></a>
@@ -12,6 +14,7 @@
 
 <p align="center">
   <a href="README.zh.md">简体中文</a> ·
+  <a href="https://chaw1.github.io/datakeel/">Website</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="docs/DATASET_DELIVERY.md">Dataset delivery</a> ·
   <a href="docs/DEMO.en.md">Guided tour</a> ·
@@ -64,7 +67,29 @@ The demo includes four generated collections for file processing, paired image e
 
 The bilingual UI includes a keyboard-driven evidence review panel, global search with `⌘K / Ctrl+K`, and a contextual Copilot with `⌘J / Ctrl+J`. [UI design](docs/design/UI-DIRECTION-B.md)
 
-For labeling production, audio and video processing, LLM dataset checks, knowledge graphs, and semantic catalog imports, use the [documentation hub](docs/README.md).
+For labeling production, audio and video processing, LLM dataset checks, knowledge graphs, and semantic catalog imports, use the [documentation hub](docs/README.md) or browse the [documentation site](https://chaw1.github.io/datakeel/docs/).
+
+## Where Datakeel fits
+
+Datakeel complements data warehouses and training frameworks by uniting three workflows that are usually stitched across separate tools:
+
+| Dimension | Datakeel | Typical point-tool stack |
+| --- | --- | --- |
+| Deployment footprint | Local-first SQLite + loopback Web UI in two commands; scales to PostgreSQL + S3. | Separate clusters for data catalogs or hosted SaaS accounts for QA and labeling. |
+| Visual QA & split leakage | Three-state evidence (`present` / `absent` / `unknown`), visual review, and cross-split dHash / SimHash / exact leakage checks. | Split across separate inspection tools (FiftyOne), labeling UIs (Label Studio), and ad-hoc scripts. |
+| Reproducible dataset delivery | Digest-signed release plans, immutable SHA-256 manifests, and offline `datakeel reconcile` verification. | File version trackers (DVC) hash blobs without review sign-off or leakage proofs. |
+| Traceable metric Q&A | Registered metric definitions, parameterized SQL, lineage links, and explicit clarification/refusal on ambiguity. | Free-form Text-to-SQL assistants generate unreviewed queries with no metric version binding. |
+| Agent & MCP write safety | Read and plan-preparation tools over stdio/SSE; destructive or outbound writes pause for human sign-off. | Generic database MCP connectors execute writes directly or lack digest-bound approval sheets. |
+
+<details>
+<summary>Frequently asked questions</summary>
+
+- **Do I need cloud API keys or a database server to try Datakeel?** No. `uv run datakeel demo` runs locally on SQLite with an offline deterministic provider and 1,000 generated image, metric, and knowledge-graph samples.
+- **How does Datakeel catch train/test split leakage?** It computes exact hashes, 64-bit perceptual dHash, SimHash text fingerprints, and group keys across partitions, shows side-by-side matches for review, and records the checked proof inside the signed release manifest.
+- **Can an MCP client delete data or change metrics autonomously?** No. Datakeel's MCP server never exposes approval or execution tools; humans review and sign the frozen plan digest in the Web UI or CLI.
+- **Can a small team share one installation?** Yes. Switch to PostgreSQL and S3-compatible object storage behind Caddy or nginx + oauth2-proxy using the [deployment guide](docs/DEPLOYMENT.md).
+
+</details>
 
 ## How it fits together
 

@@ -6,6 +6,8 @@ All notable changes are documented here using the Keep a Changelog format.
 
 ### Added
 
+- Bilingual static documentation and landing-page generator (`make build-site`, `scripts/docs_site/`) with GitHub Pages workflow (`.github/workflows/pages.yml`), Open Graph social preview PNGs, hreflang `sitemap.xml`, `robots.txt`, `llms.txt`/`llms-full.txt`, and `SoftwareApplication`/`FAQPage`/`TechArticle` structured data.
+- Official MCP Registry manifest (`server.json`) with matching `mcp-name` verification marker in `README.md`, plus positioning comparison and FAQ sections in both READMEs and expanded discovery metadata in `pyproject.toml`.
 - Workflow CLI run history and step/recovery inspection (`datakeel workflow runs`, `datakeel workflow show --audit`), actor scoping (`--actor`), and `--json` output across `list`, `validate`, `run`, `resume`, `runs`, and `show` ([`datakeel/cli/workflow.py`](datakeel/cli/workflow.py)).
 - Independent `delivery_review` proof validation and bilingual/JSON attestation summary in `datakeel reconcile` ([`datakeel/delivery/`](datakeel/delivery/), [`datakeel/cli/delivery.py`](datakeel/cli/delivery.py)), checking frozen partition totals and source-version alignment offline.
 - Native `datakeel agent` and `datakeel memory` commands for streamed chat, approved-plan resumption, specialist discovery, searchable history, call telemetry and redacted memory management, with JSON output.

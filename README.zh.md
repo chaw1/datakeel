@@ -1,9 +1,10 @@
 <p align="center"><img src="web/public/favicon.svg" width="56" height="56" alt="" /></p>
 <h1 align="center">Datakeel</h1>
-<p align="center"><strong>本地优先的可审计数据集工作台</strong></p>
-<p align="center">审阅样本证据，交付可核验的数据集版本，把业务数字追溯到来源。</p>
+<p align="center"><strong>本地优先的可审计数据工作台：AI 样本校样、可追溯问数与人工签批智能体</strong></p>
+<p align="center">审阅多模态训练样本、冻结可离线核验的 SHA-256 数据集发布包、把业务数字追溯到已登记 SQL 与血缘，并让 Agent/MCP 写操作经过人工签批。</p>
 
 <p align="center">
+  <a href="https://chaw1.github.io/datakeel/zh/"><img alt="官网与文档" src="https://img.shields.io/badge/docs-chaw1.github.io%2Fdatakeel-2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/releases"><img alt="发布版本" src="https://img.shields.io/github/v/release/chaw1/datakeel?color=2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/actions/workflows/ci.yml"><img alt="质量门禁" src="https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="pyproject.toml"><img alt="Python 3.12+" src="https://img.shields.io/badge/Python-3.12%2B-2459a8" /></a>
@@ -12,6 +13,7 @@
 
 <p align="center">
   <a href="README.md">English</a> ·
+  <a href="https://chaw1.github.io/datakeel/zh/">官网与文档</a> ·
   <a href="#快速上手">快速上手</a> ·
   <a href="docs/DATASET_DELIVERY.zh.md">数据集交付</a> ·
   <a href="docs/DEMO.md">演示导览</a> ·
@@ -64,7 +66,29 @@ uv run datakeel export --format croissant --output croissant.json
 
 中英文界面提供样本校样快捷键，并可用 `⌘K / Ctrl+K` 查找对象、用 `⌘J / Ctrl+J` 打开带当前对象上下文的副驾。 [界面设计](docs/design/UI-DIRECTION-B.md)
 
-标注生产、音视频处理、大模型数据检查、知识图谱和目录导入的专题指南收录在 [文档中心](docs/README.zh.md)。
+标注生产、音视频处理、大模型数据检查、知识图谱和目录导入的专题指南收录在 [文档中心](docs/README.zh.md) 与 [在线文档站](https://chaw1.github.io/datakeel/zh/docs/)。
+
+## 定位边界与常见对比
+
+Datakeel 不替代数仓或模型训练框架，而是把平时分散在多套工具里的三件事放进同一条可审计工作流：
+
+| 维度 | Datakeel | 常见单点工具组合 |
+| --- | --- | --- |
+| 部署与起步 | 本地优先，SQLite + 回环 Web 界面两条命令启动；团队可切换 PostgreSQL + S3。 | 数据目录常需多组件集群，视觉质检与标注常依赖云端 SaaS。 |
+| 视觉校样与切分泄漏 | 三态证据（有 / 无 / 未知）、图像校样与跨划分精确 / dHash / SimHash 泄漏检查。 | 常分散在可视化工具（FiftyOne）、标注平台（Label Studio）与零散脚本之间。 |
+| 可核验数据集交付 | 冻结发布计划签批、不可变 SHA-256 清单与 `datakeel reconcile` 离线对账。 | 文件版本工具（DVC）只记录哈希，不绑定人工审查结论与泄漏证明。 |
+| 可追溯业务问数 | 绑定已登记指标口径、参数化 SQL 与血缘，遇歧义或越权明确追问或拒答。 | 自由生成型 Text-to-SQL 容易编造口径，缺少指标版本绑定。 |
+| 智能体与 MCP 安全 | stdio / SSE MCP 仅暴露受审计读取与计划准备，不可逆与外发动作停在人工签批单。 | 通用数据库 MCP 常直接执行写入，缺少绑定计划摘要的审批边界。 |
+
+<details>
+<summary>常见问题（FAQ）</summary>
+
+- **试用需要外部数据库或模型 API Key 吗？** 不需要。`uv run datakeel demo` 直接在本地 SQLite 中运行，使用离线演示模型加载 1,000 张图片证据、企业指标与知识图谱样例。
+- **如何排查训练集与测试集的重复泄漏？** 支持精确哈希、64 位感知哈希 dHash、文本 SimHash 与组键泄漏检查，支持在浏览器中并排对比并将核查证明写入签批清单。
+- **接入 MCP 后智能体会不会误删或私自改口径？** 不会。MCP 服务不暴露任何审批或写操作执行工具，必须由人在 Web 界面或 CLI 签批冻结计划摘要后才执行。
+- **小团队如何共享部署？** 可切换到 PostgreSQL 和 S3 兼容对象存储，配合 Caddy 或 nginx + oauth2-proxy 反向代理运行，详见 [部署指南](docs/DEPLOYMENT.zh.md)。
+
+</details>
 
 ## 架构
 

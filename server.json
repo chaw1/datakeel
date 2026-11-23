@@ -1,0 +1,40 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chaw1/datakeel",
+  "title": "Datakeel",
+  "description": "Local-first auditable workbench for AI datasets, traceable business metrics, and human-approved controlled actions.",
+  "websiteUrl": "https://chaw1.github.io/datakeel/",
+  "version": "0.27.0",
+  "repository": {
+    "url": "https://github.com/chaw1/datakeel",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "datakeel",
+      "version": "0.27.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp",
+          "description": "Start the Datakeel audited stdio MCP server (read and plan-preparation only)."
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "DATAKEEL_HOME",
+          "description": "Local workspace directory shared with the Datakeel Web UI and CLI.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

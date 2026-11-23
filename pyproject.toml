@@ -1,7 +1,7 @@
 [project]
 name = "datakeel"
 version = "0.27.0"
-description = "A small, observable data platform from files to trustworthy datasets."
+description = "Local-first workbench for auditable AI datasets, traceable business metrics, and human-approved MCP agents."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
@@ -14,9 +14,16 @@ keywords = [
   "data-governance",
   "data-lineage",
   "data-quality",
+  "dataset-versioning",
+  "human-in-the-loop",
+  "local-first",
   "mcp",
   "multimodal",
+  "openlineage",
   "semantic-layer",
+  "split-leakage",
+  "text-to-sql",
+  "visual-qa",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -60,8 +67,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/chaw1/datakeel"
-Documentation = "https://github.com/chaw1/datakeel/blob/main/docs/README.md"
+Homepage = "https://chaw1.github.io/datakeel/"
+Documentation = "https://chaw1.github.io/datakeel/docs/"
 Repository = "https://github.com/chaw1/datakeel.git"
 Issues = "https://github.com/chaw1/datakeel/issues"
 Changelog = "https://github.com/chaw1/datakeel/blob/main/CHANGELOG.md"
