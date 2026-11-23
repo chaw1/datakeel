@@ -129,6 +129,7 @@ def test_mcp_server_manifest_matches_readme_verification_marker() -> None:
     manifest = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
     version = read_package_version(ROOT)
     assert manifest["name"] == "io.github.chaw1/datakeel"
+    assert len(manifest["description"]) <= 100
     assert manifest["version"] == version
     assert manifest["packages"][0]["identifier"] == "datakeel"
     assert manifest["packages"][0]["version"] == version
