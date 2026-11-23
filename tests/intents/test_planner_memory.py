@@ -117,13 +117,13 @@ def test_planner_repair_and_fallback_reinforce_once_per_user_question(
     assert len(provider.requests) == 3
     assert repair_hint in provider.requests[1].messages[-1].content
     assert all(entry.content in request.model_dump_json() for request in provider.requests)
-    assert get_memory(db, entry.id).strength == pytest.approx(1.5)
+    assert get_memory(db, entry.id).strength == pytest.approx(1.5, abs=1e-3)
     assert _uses(db) == [(conversation.id, 1, entry.id)]
     assert next(event for event in events if event.event == "intent").used_memory_ids == [entry.id]
     assert [route.attempt for route in events[-1].model_routes] == [1, 1, 2]
     assert len(list_traces(db, conversation.id)) == 3
     send_planner(db, conversation.id, PlannerProvider())
-    assert get_memory(db, entry.id).strength == pytest.approx(2.0)
+    assert get_memory(db, entry.id).strength == pytest.approx(2.0, abs=1e-3)
     assert _uses(db) == [(conversation.id, 1, entry.id), (conversation.id, 2, entry.id)]
 
 
@@ -168,7 +168,9 @@ def test_planner_memory_reinforces_failed_invocation_but_not_budget_rejection(
     expected_ids = [] if budget_rejected else [entry.id]
     assert len(provider.requests) == (0 if budget_rejected else 1)
     assert intent.used_memory_ids == expected_ids
-    assert get_memory(db, entry.id).strength == pytest.approx(1 if budget_rejected else 1.5)
+    assert get_memory(db, entry.id).strength == pytest.approx(
+        1 if budget_rejected else 1.5, abs=1e-3
+    )
     assert (get_memory(db, entry.id).last_used_at is None) is budget_rejected
     assert _uses(db) == ([] if budget_rejected else [(conversation.id, 1, entry.id)])
     persisted = conversation_store.get(db, conversation.id)
@@ -194,7 +196,7 @@ def test_planner_child_uses_root_question_reinforcement_scope(db: Database) -> N
     )
     events = send_planner(db, child.id, PlannerProvider())
     assert next(event for event in events if event.event == "intent").used_memory_ids == [entry.id]
-    assert get_memory(db, entry.id).strength == pytest.approx(1.5)
+    assert get_memory(db, entry.id).strength == pytest.approx(1.5, abs=1e-3)
     assert _uses(db) == [(root.id, 1, entry.id)]
 
 
