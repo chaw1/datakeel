@@ -5,6 +5,7 @@
 <p align="center">Proofread multimodal training samples, freeze verifiable SHA-256 releases, trace every metric answer back to registered SQL and lineage, and gate Agent/MCP writes behind human sign-off.</p>
 
 <p align="center">
+  <a href="https://pypi.org/project/datakeel/"><img alt="PyPI" src="https://img.shields.io/pypi/v/datakeel?color=2459a8" /></a>
   <a href="https://chaw1.github.io/datakeel/"><img alt="Website" src="https://img.shields.io/badge/docs-chaw1.github.io%2Fdatakeel-2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/releases"><img alt="Release" src="https://img.shields.io/github/v/release/chaw1/datakeel?color=2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/actions/workflows/ci.yml"><img alt="Quality gates" src="https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg" /></a>
@@ -28,11 +29,10 @@
 
 ## Quick start
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run these commands from a checkout. The demo starts the API and worker, serves the bundled web UI, and seeds generated samples in local SQLite. Model calls use the bundled offline provider.
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and launch the offline demo in one command (or run `uv sync --locked && uv run datakeel demo` from a source checkout). The demo starts the API and worker, serves the bundled web UI, and seeds generated samples in local SQLite. Model calls use the bundled offline provider.
 
 ```bash
-uv sync --locked
-uv run datakeel demo
+uvx datakeel demo
 # Web UI:   http://127.0.0.1:8765
 # API docs: http://127.0.0.1:8765/api/docs
 # Ctrl+C stops both processes.

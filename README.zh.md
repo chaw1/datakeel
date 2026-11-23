@@ -4,6 +4,7 @@
 <p align="center">审阅多模态训练样本、冻结可离线核验的 SHA-256 数据集发布包、把业务数字追溯到已登记 SQL 与血缘，并让 Agent/MCP 写操作经过人工签批。</p>
 
 <p align="center">
+  <a href="https://pypi.org/project/datakeel/"><img alt="PyPI" src="https://img.shields.io/pypi/v/datakeel?color=2459a8" /></a>
   <a href="https://chaw1.github.io/datakeel/zh/"><img alt="官网与文档" src="https://img.shields.io/badge/docs-chaw1.github.io%2Fdatakeel-2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/releases"><img alt="发布版本" src="https://img.shields.io/github/v/release/chaw1/datakeel?color=2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/actions/workflows/ci.yml"><img alt="质量门禁" src="https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg" /></a>
@@ -27,11 +28,10 @@
 
 ## 快速上手
 
-安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，在仓库根目录执行下面两条命令。演示会启动本机 API 与 worker，提供内置 Web 界面，并向本地 SQLite 导入生成样例。模型调用使用内置的离线模型服务。
+安装 [uv](https://docs.astral.sh/uv/getting-started/installation/) 后一行命令即可启动离线演示（源码开发可在仓库根目录执行 `uv sync --locked && uv run datakeel demo`）。演示会启动本机 API 与 worker，提供内置 Web 界面，并向本地 SQLite 导入生成样例。模型调用使用内置的离线模型服务。
 
 ```bash
-uv sync --locked
-uv run datakeel demo
+uvx datakeel demo
 # Web 界面：http://127.0.0.1:8765
 # API 文档：http://127.0.0.1:8765/api/docs
 # Ctrl+C 同时停止 API 和 worker。

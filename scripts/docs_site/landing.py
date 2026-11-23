@@ -67,18 +67,21 @@ def _render_docs_grid(docs: Sequence[DocEntry], lang: LanguageCode, config: Site
 
 def _render_hero_section(copy: LocalizedLanding, config: SiteConfig) -> str:
     qs_cmd = (
-        f"git clone {config.repo_url}.git && cd datakeel\n"
-        "uv sync --locked\n"
-        "uv run datakeel demo\n"
-        "# Web UI: http://127.0.0.1:8765  |  API Docs: http://127.0.0.1:8765/api/docs"
+        "uvx datakeel demo\n"
+        "# Web UI: http://127.0.0.1:8765  |  API Docs: http://127.0.0.1:8765/api/docs\n"
+        f"# Or from source: git clone {config.repo_url}.git && cd datakeel && uv sync --locked"
     )
     docs_href = _esc(config.href(copy.docs_href))
     tour_href = _esc(config.href(copy.tour_href))
     hero_img = _esc(config.href(copy.hero_img))
+    pypi_badge = (
+        '<a class="badge badge-pencil" href="https://pypi.org/project/datakeel/">'
+        f"PyPI v{_esc(config.version)}</a>"
+    )
     return f"""<section class="hero">
     <div class="hero-eyebrow">
       <span class="badge badge-ok">Apache-2.0</span>
-      <span class="badge badge-pencil">v{_esc(config.version)}</span>
+      {pypi_badge}
       <span class="badge">Local-First | Python 3.12+ | SQLite / PostgreSQL</span>
       <span class="badge badge-stamp">Human-Approved Writes</span>
     </div>

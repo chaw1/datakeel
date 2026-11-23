@@ -82,7 +82,7 @@ en:
       single_purpose: "Generic MCP database connectors execute arbitrary queries or lack plan sign-off."
   faq:
     - question: "Do I need cloud API keys or a database server to try Datakeel?"
-      answer: "No. Running uv sync --locked and uv run datakeel demo starts the API, worker, bundled web UI, local SQLite state, and an offline deterministic provider with generated image, metric, and knowledge-graph samples."
+      answer: "No. Running uvx datakeel demo starts the API, worker, bundled web UI, local SQLite state, and an offline deterministic provider with generated image, metric, and knowledge-graph samples."
     - question: "How does Datakeel detect train/test dataset leakage?"
       answer: "Datakeel computes exact hashes, perceptual 64-bit dHash fingerprints, SimHash text fingerprints, and group keys across dataset partitions, lets reviewers inspect matches side by side, and records the checked result inside the signed release manifest."
     - question: "How does Ask data prevent hallucinated SQL?"
@@ -178,7 +178,7 @@ zh:
       single_purpose: "通用数据库 MCP 常直接执行写入或缺少可审计的审批挂起机制。"
   faq:
     - question: "试用 Datakeel 需要配置大模型 API Key 或安装数据库吗？"
-      answer: "不需要。运行 uv sync --locked 和 uv run datakeel demo 就会在本地 SQLite 中启动 API、worker 和内置 Web 界面，并使用离线演示模型加载 1,000 张样例图片、企业指标与知识图谱演示数据。"
+      answer: "不需要。一行 uvx datakeel demo 就会在本地 SQLite 中启动 API、worker 和内置 Web 界面，并使用离线演示模型加载 1,000 张样例图片、企业指标与知识图谱演示数据。"
     - question: "Datakeel 如何检查训练集与测试集之间的数据泄漏？"
       answer: "平台支持精确哈希、64 位感知哈希 dHash、文本 SimHash 与组键泄漏检查，支持在浏览器中并排对比跨划分匹配样本，并将核查证明写入签批后的发布清单供离线对账。"
     - question: "「问数」功能怎么避免大模型瞎编 SQL？"
