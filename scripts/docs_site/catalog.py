@@ -6,6 +6,8 @@
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 from scripts.docs_site.models import DocEntry, LanguageCode
@@ -182,12 +184,48 @@ def _find_alternate(source_rel: str, all_paths: set[str]) -> str | None:
     return None
 
 
+def _git_last_modified(repo_root: Path, rel_paths: list[str]) -> dict[str, str]:
+    """Read latest YYYY-MM-DD commit dates for repository documents in one git call."""
+    git_bin = shutil.which("git")
+    if not rel_paths or git_bin is None:
+        return {}
+    try:
+        completed = subprocess.run(  # noqa: S603  # Resolved git binary and repo-relative paths.
+            [
+                git_bin,
+                "-C",
+                str(repo_root),
+                "log",
+                "--format=DATE:%cs",
+                "--name-only",
+                "--",
+                *rel_paths,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+
+    dates: dict[str, str] = {}
+    current_date = ""
+    for line in completed.stdout.splitlines():
+        if line.startswith("DATE:"):
+            current_date = line.removeprefix("DATE:").strip()
+        elif line and current_date and line not in dates:
+            dates[line] = current_date
+    return dates
+
+
 def discover_docs(repo_root: Path) -> tuple[DocEntry, ...]:
     """Scan public Markdown documents and pair bilingual English/Chinese entries."""
     docs_dir = repo_root / "docs"
     rel_paths = sorted(path.relative_to(repo_root).as_posix() for path in docs_dir.rglob("*.md"))
     rel_paths.extend(extra for extra in _EXTRA_DOCS if (repo_root / extra).is_file())
     all_paths = set(rel_paths)
+    lastmods = _git_last_modified(repo_root, rel_paths)
 
     preliminary: dict[str, tuple[str, str, str, LanguageCode, str]] = {}
     url_by_source: dict[str, str] = {}
@@ -219,6 +257,7 @@ def discover_docs(repo_root: Path) -> tuple[DocEntry, ...]:
                 section_zh=section_zh,
                 alternate_url=url_by_source.get(alt_source) if alt_source else None,
                 order=section_order * 100 + index,
+                lastmod=lastmods.get(source_rel),
             )
         )
     entries.sort(key=lambda item: (item.order, item.url_path))

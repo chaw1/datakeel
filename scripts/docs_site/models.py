@@ -69,6 +69,7 @@ class DocEntry(BoundaryModel):
     section_zh: str
     alternate_url: str | None = None
     order: int = 0
+    lastmod: str | None = None
 
 
 class RenderedDoc(BoundaryModel):

@@ -5,7 +5,7 @@
 ## Start here
 
 - **Try the workspace.** Run the offline demo, then inspect sample evidence and follow a change through review and approval. [Quick start](../README.md#quick-start) · [Guided tour](DEMO.en.md)
-- **Prepare and deliver an image dataset.** Import a folder, inspect split leakage, save a correction, and approve delivery. [Browser walkthrough](DATASET_DELIVERY.md)
+- **Detect train/test duplicate images and verify delivery offline (5 minutes).** Download the 3-image sample, inspect cross-split leakage, create a corrected 2-file version, and verify with `datakeel reconcile`. [5-minute walkthrough](DATASET_DELIVERY.md)
 - **Work with business data.** Import engineering metadata, query a registered metric, and trace the result to source fields. [Metadata imports](METADATA_IMPORTS.en.md) · [Ask data](ASK.md)
 - **Run a shared instance.** Set up an authenticating proxy and choose a storage backend. [Deployment](DEPLOYMENT.md) · [Database maintenance](DATABASE_MAINTENANCE.md)
 
@@ -25,7 +25,7 @@
 
 | Guide | Description | Languages |
 | --- | --- | --- |
-| [Image dataset delivery review](DATASET_DELIVERY.md) | Browser folder import, leakage review, corrected versions, signed release, and offline reconciliation | [EN](DATASET_DELIVERY.md) · [ZH](DATASET_DELIVERY.zh.md) |
+| [Detect train/test duplicate images & verify delivery offline](DATASET_DELIVERY.md) | 5-minute walkthrough with a downloadable 3-image sample, side-by-side leakage review, corrected version, signed release, and offline `datakeel reconcile` output | [EN](DATASET_DELIVERY.md) · [ZH](DATASET_DELIVERY.zh.md) |
 | [Production workflows](PRODUCTION.md) | Label sets, immutable revisions, group/team assignment, review/rework and finalization to dataset versions | [EN](PRODUCTION.md) · [ZH](PRODUCTION.zh.md) |
 | [Annotation workbench](ANNOTATION_WORKBENCH.md) | Keyboard editing, EXIF-upright display, template attribute forms, offline drafts and team cockpit | [EN](ANNOTATION_WORKBENCH.md) · [ZH](ANNOTATION_WORKBENCH.zh.md) |
 | [Annotation quality](ANNOTATION_QA.md) | Offline agreement metrics across classification labels, 2D boxes and text spans with sampling acceptance | EN / ZH |

@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
 import yaml
@@ -15,6 +16,11 @@ from PIL import Image
 
 from scripts.docs_site import SiteConfig, build_site
 from scripts.docs_site.build import read_package_version
+from scripts.docs_site.samples import (
+    SAMPLE_ARCHIVE_REL,
+    SAMPLE_ROOT_NAME,
+    build_warehouse_sample_zip_bytes,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 _JSON_LD_RE = re.compile(r'<script type="application/ld\+json">(.*?)</script>', re.DOTALL)
@@ -57,6 +63,7 @@ def test_build_site_generates_bilingual_pages_seo_and_social_cards(tmp_path: Pat
         "assets/favicon.svg",
         "assets/og-en.png",
         "assets/og-zh.png",
+        "assets/samples/warehouse-leakage-sample.zip",
     ):
         assert (out / expected).is_file(), f"Missing generated artifact: {expected}"
 
@@ -122,6 +129,78 @@ def test_pages_workflow_is_valid_and_invokes_docs_site_builder() -> None:
     assert True in parsed or "on" in parsed
     assert "scripts.docs_site" in content
     assert "actions/deploy-pages" in content
+    assert "fetch-depth: 0" in content
+
+
+def test_warehouse_sample_archive_is_deterministic_and_has_intentional_leakage() -> None:
+    """Tracked 3-image sample archive matches generator output with one cross-split duplicate."""
+    archive_path = ROOT / SAMPLE_ARCHIVE_REL
+    assert archive_path.is_file()
+    raw_bytes = archive_path.read_bytes()
+    assert raw_bytes == build_warehouse_sample_zip_bytes()
+
+    with zipfile.ZipFile(archive_path, "r") as archive:
+        names = sorted(archive.namelist())
+        expected = sorted(
+            f"{SAMPLE_ROOT_NAME}/{rel}"
+            for rel in (
+                "train/loading-bay/image.png",
+                "train/loading-bay/caption.txt",
+                "train/loading-bay/annotations.json",
+                "test/loading-bay-copy/image.png",
+                "test/loading-bay-copy/caption.txt",
+                "test/loading-bay-copy/annotations.json",
+                "test/entrance/image.png",
+                "test/entrance/annotations.json",
+            )
+        )
+        assert names == expected
+        train_img = archive.read(f"{SAMPLE_ROOT_NAME}/train/loading-bay/image.png")
+        copy_img = archive.read(f"{SAMPLE_ROOT_NAME}/test/loading-bay-copy/image.png")
+        entrance_img = archive.read(f"{SAMPLE_ROOT_NAME}/test/entrance/image.png")
+        assert train_img == copy_img
+        assert train_img != entrance_img
+
+
+def test_build_site_publishes_sample_archive_lastmod_and_case_study_links(tmp_path: Path) -> None:
+    """Delivery case study links rewrite to assets/samples and sitemap includes lastmod dates."""
+    base_url = "https://docs.example/datakeel/"
+    config = SiteConfig(
+        repo_root=ROOT,
+        output_dir=tmp_path / "site",
+        base_url=base_url,
+        version=read_package_version(ROOT),
+    )
+    build_site(config)
+    out = config.output_dir
+
+    en_delivery = (out / "docs/dataset-delivery/index.html").read_text(encoding="utf-8")
+    zh_delivery = (out / "zh/docs/dataset-delivery/index.html").read_text(encoding="utf-8")
+    for page, img_suffix in ((en_delivery, "en"), (zh_delivery, "zh")):
+        assert 'href="/datakeel/assets/samples/warehouse-leakage-sample.zip"' in page
+        assert f'src="/datakeel/assets/images/dataset-import-{img_suffix}.png"' in page
+        assert f'src="/datakeel/assets/images/dataset-delivery-{img_suffix}.png"' in page
+        assert "directory-leakage-v1" in page
+
+    article_ld = next(
+        item for item in _extract_json_ld(en_delivery) if item.get("@type") == "TechArticle"
+    )
+    assert article_ld["author"] == {"@type": "Organization", "name": "Datakeel Contributors"}
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(article_ld.get("dateModified", "")))
+
+    sitemap_root = ET.fromstring((out / "sitemap.xml").read_bytes())  # noqa: S314  # Local output.
+    ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    lastmods = [el.text for el in sitemap_root.findall("sm:url/sm:lastmod", ns) if el.text]
+    assert len(lastmods) >= 40
+    assert all(re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) for value in lastmods)
+
+    llms_txt = (out / "llms.txt").read_text(encoding="utf-8")
+    llms_full = (out / "llms-full.txt").read_text(encoding="utf-8")
+    sample_url = f"{base_url}assets/samples/warehouse-leakage-sample.zip"
+    assert sample_url in llms_txt
+    assert f"{base_url}zh/docs/dataset-delivery/" in llms_txt
+    assert sample_url in llms_full
+    assert "directory-leakage-v1" in llms_full
 
 
 def test_mcp_server_manifest_matches_readme_verification_marker() -> None:

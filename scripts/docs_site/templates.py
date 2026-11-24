@@ -202,8 +202,11 @@ def _doc_json_ld(entry: DocEntry, config: SiteConfig) -> tuple[dict[str, object]
         "description": entry.description,
         "inLanguage": "zh-CN" if is_zh else "en",
         "url": config.absolute_url(entry.url_path),
+        "author": {"@type": "Organization", "name": "Datakeel Contributors"},
         "isPartOf": {"@type": "WebSite", "name": "Datakeel", "url": config.normalized_base_url},
     }
+    if entry.lastmod:
+        article_ld["dateModified"] = entry.lastmod
     breadcrumb_ld: dict[str, object] = {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",

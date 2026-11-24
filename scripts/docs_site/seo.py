@@ -21,15 +21,18 @@ def _sitemap_entry(
     loc: str,
     priority: str,
     alternates: Sequence[tuple[str, str]],
+    lastmod: str | None = None,
 ) -> str:
     links = "".join(
         f'    <xhtml:link rel="alternate" hreflang="{lang}" '
         f'href="{html.escape(url, quote=True)}" />\n'
         for lang, url in alternates
     )
+    lastmod_line = f"    <lastmod>{html.escape(lastmod)}</lastmod>\n" if lastmod else ""
     return (
         "  <url>\n"
         f"    <loc>{html.escape(loc, quote=True)}</loc>\n"
+        f"{lastmod_line}"
         f"{links}"
         f"    <priority>{priority}</priority>\n"
         "  </url>"
@@ -37,13 +40,14 @@ def _sitemap_entry(
 
 
 def build_sitemap(docs: Sequence[DocEntry], config: SiteConfig) -> tuple[str, int]:
-    """Build an XML sitemap with hreflang alternates for bilingual pages."""
+    """Build an XML sitemap with lastmod timestamps and hreflang alternates."""
     en_home = config.absolute_url("")
     zh_home = config.absolute_url("zh/")
     home_alts = (("en", en_home), ("zh-Hans", zh_home), ("x-default", en_home))
+    latest_date = max((doc.lastmod for doc in docs if doc.lastmod), default=None)
     entries = [
-        _sitemap_entry(en_home, "1.0", home_alts),
-        _sitemap_entry(zh_home, "0.9", home_alts),
+        _sitemap_entry(en_home, "1.0", home_alts, latest_date),
+        _sitemap_entry(zh_home, "0.9", home_alts, latest_date),
     ]
     for doc in docs:
         loc = config.absolute_url(doc.url_path)
@@ -54,7 +58,7 @@ def build_sitemap(docs: Sequence[DocEntry], config: SiteConfig) -> tuple[str, in
             zh_loc = loc if doc.lang == "zh" else other_loc
             alts = [("en", en_loc), ("zh-Hans", zh_loc), ("x-default", en_loc)]
         priority = "0.9" if doc.url_path in {"docs/", "zh/docs/"} else "0.7"
-        entries.append(_sitemap_entry(loc, priority, alts))
+        entries.append(_sitemap_entry(loc, priority, alts, doc.lastmod))
 
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -69,6 +73,30 @@ def build_sitemap(docs: Sequence[DocEntry], config: SiteConfig) -> tuple[str, in
 def build_robots(config: SiteConfig) -> str:
     """Build robots.txt pointing search crawlers to sitemap.xml."""
     return f"User-agent: *\nAllow: /\n\nSitemap: {config.absolute_url('sitemap.xml')}\n"
+
+
+def _llms_featured_links(config: SiteConfig) -> list[str]:
+    return [
+        "## Featured 5-Minute Walkthrough",
+        "",
+        (
+            "- [Detect train/test duplicate images & offline delivery verification (EN)]"
+            f"({config.absolute_url('docs/dataset-delivery/')}): Download the 3-image sample, "
+            "catch cross-split leakage, create a 2-image corrected version, and verify with "
+            "`datakeel reconcile` offline."
+        ),
+        (
+            "- [检查图片训练集与测试集重复泄漏并离线验包 (ZH)]"
+            f"({config.absolute_url('zh/docs/dataset-delivery/')}): 下载 3 张图样例\uff0c"
+            "本地定位跨划分重复图并生成 2 张图修正版本\uff0c"
+            "再用 `datakeel reconcile` 离线核验\u3002"
+        ),
+        (
+            "- [Download 3-image sample archive (ZIP)]"
+            f"({config.absolute_url('assets/samples/warehouse-leakage-sample.zip')})"
+        ),
+        "",
+    ]
 
 
 def build_llms_txt(docs: Sequence[DocEntry], config: SiteConfig) -> str:
@@ -96,6 +124,7 @@ def build_llms_txt(docs: Sequence[DocEntry], config: SiteConfig) -> str:
         f"- [Releases]({config.repo_url}/releases)",
         f"- [Extended LLM Reference]({config.absolute_url('llms-full.txt')})",
         "",
+        *_llms_featured_links(config),
     ]
     by_section: dict[str, list[DocEntry]] = defaultdict(list)
     section_names: dict[str, str] = {}
@@ -113,6 +142,42 @@ def build_llms_txt(docs: Sequence[DocEntry], config: SiteConfig) -> str:
         )
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _llms_walkthrough_section(config: SiteConfig) -> list[str]:
+    return [
+        "## 5-Minute Walkthrough: Train/Test Image Leakage & Offline Verification",
+        "",
+        (
+            "To check whether annotated images leaked across train and test folders locally "
+            "and let recipients verify the delivered archive offline without a database:"
+        ),
+        (
+            "- Download the 3-image sample archive: "
+            f"{config.absolute_url('assets/samples/warehouse-leakage-sample.zip')}"
+        ),
+        (
+            "- Import the folder (`train/loading-bay`, `test/loading-bay-copy`, "
+            "`test/entrance`), run Directory split check: Datakeel blocks delivery and flags "
+            "exact SHA-256 and perceptual dHash leakage (`Identical Content · Distance 0`, "
+            "`Similar Images · Distance 0`) between `train/loading-bay/image.png` and "
+            "`test/loading-bay-copy/image.png`."
+        ),
+        (
+            "- Exclude the leaked test copy to create a new immutable 2-file version "
+            "(`train=1, test=1`) while keeping the original 3-file version as baseline, "
+            "re-check to confirm 0 leakage pairs, approve release `v1.0.0`, and export "
+            "`v1.0.0.tar.gz`."
+        ),
+        (
+            "- Recipients run `uvx datakeel reconcile v1.0.0.tar.gz` (or `--json`) offline "
+            "to verify all 6 categories (file count, bytes, SHA-256 hashes, annotations, "
+            "metadata, lineage) plus `delivery_review` (`directory-leakage-v1`, `leakage=0`)."
+        ),
+        f"- Guide (EN): {config.absolute_url('docs/dataset-delivery/')}",
+        f"- Guide (ZH): {config.absolute_url('zh/docs/dataset-delivery/')}",
+        "",
+    ]
 
 
 def build_llms_full_txt(docs: Sequence[DocEntry], config: SiteConfig) -> str:
@@ -143,6 +208,7 @@ def build_llms_full_txt(docs: Sequence[DocEntry], config: SiteConfig) -> str:
     for faq in faq_for("en"):
         lines.extend([f"### {faq.question}", faq.answer, ""])
 
+    lines.extend(_llms_walkthrough_section(config))
     lines.extend(
         [
             "## MCP Server Integration",

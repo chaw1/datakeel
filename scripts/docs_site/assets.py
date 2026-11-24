@@ -8,6 +8,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -65,7 +66,32 @@ def _paste_preview(canvas: Image.Image, draw: ImageDraw.ImageDraw, screenshot_pa
         canvas.paste(shot, (box_x, box_y))
 
 
-def _build_social_card(screenshot_path: Path, destination: Path, version: str) -> None:
+def _display_url(url: str) -> str:
+    parsed = urlparse(url)
+    path = parsed.path.rstrip("/")
+    return f"{parsed.netloc}{path}" if parsed.netloc else url.rstrip("/")
+
+
+def _copy_tree(source_dir: Path, destination_dir: Path) -> int:
+    if not source_dir.is_dir():
+        return 0
+    copied = 0
+    for source in sorted(source_dir.rglob("*")):
+        if not source.is_file():
+            continue
+        target = destination_dir / source.relative_to(source_dir)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        copied += 1
+    return copied
+
+
+def _build_social_card(
+    screenshot_path: Path,
+    destination: Path,
+    version: str,
+    footer_line: str,
+) -> None:
     canvas = Image.new("RGB", (_OG_WIDTH, _OG_HEIGHT), "#F7F5EE")
     draw = ImageDraw.Draw(canvas)
     draw.rectangle((0, 0, _OG_WIDTH, 10), fill="#2459A8")
@@ -98,19 +124,14 @@ def _build_social_card(screenshot_path: Path, destination: Path, version: str) -
         draw.text((cursor_x + 14, 348), label, fill=fg, font=mono_font)
         cursor_x += width + 12
 
-    draw.text(
-        (84, 518),
-        "github.com/chaw1/datakeel  |  chaw1.github.io/datakeel",
-        fill="#5F5C55",
-        font=mono_font,
-    )
+    draw.text((84, 518), footer_line, fill="#5F5C55", font=mono_font)
     _paste_preview(canvas, draw, screenshot_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(destination, format="PNG", optimize=True)
 
 
 def copy_site_assets(config: SiteConfig) -> int:
-    """Copy CSS, JS, favicon, and documentation images, then generate social preview PNGs."""
+    """Copy CSS, JS, favicon, docs images and samples, then generate social preview PNGs."""
     assets_dir = config.output_dir / "assets"
     assets_dir.mkdir(parents=True, exist_ok=True)
     copied = 0
@@ -124,25 +145,20 @@ def copy_site_assets(config: SiteConfig) -> int:
         shutil.copy2(favicon, assets_dir / "favicon.svg")
         copied += 1
 
-    images_src = config.repo_root / "docs/images"
-    images_dst = assets_dir / "images"
-    if images_src.is_dir():
-        for source in sorted(images_src.rglob("*")):
-            if not source.is_file():
-                continue
-            target = images_dst / source.relative_to(images_src)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
-            copied += 1
+    copied += _copy_tree(config.repo_root / "docs/images", assets_dir / "images")
+    copied += _copy_tree(config.repo_root / "docs/samples", assets_dir / "samples")
 
+    footer_line = f"{_display_url(config.repo_url)}  |  {_display_url(config.normalized_base_url)}"
     _build_social_card(
         config.repo_root / "docs/images/dataset-delivery-en.png",
         assets_dir / "og-en.png",
         config.version,
+        footer_line,
     )
     _build_social_card(
         config.repo_root / "docs/images/dataset-delivery-zh.png",
         assets_dir / "og-zh.png",
         config.version,
+        footer_line,
     )
     return copied + 2

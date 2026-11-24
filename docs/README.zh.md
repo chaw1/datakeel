@@ -5,7 +5,7 @@
 ## 从这里开始
 
 - **试用工作台。** 启动离线演示，查看样本证据，再跟随一项改动完成审阅和签批。 [快速上手](../README.zh.md#快速上手) · [演示导览](DEMO.md)
-- **准备与交付图片数据集。** 导入目录，检查切分泄漏，生成修正版本并签批交付。 [浏览器操作指南](DATASET_DELIVERY.zh.md)
+- **5 分钟检查图片训练集/测试集重复并离线验包。** 下载 3 张图样例，本地查出跨划分重复图、排除生成 2 张图修正版，并用 `datakeel reconcile` 离线核验交付包。 [5 分钟可验证案例](DATASET_DELIVERY.zh.md)
 - **使用业务数据。** 导入工程元数据，查询已登记的指标，再追溯到来源字段。 [元数据导入](METADATA_IMPORTS.md) · [问数](ASK.zh.md)
 - **部署共享实例。** 配置身份认证代理，选择数据库和对象存储。 [部署指南](DEPLOYMENT.zh.md) · [数据库维护](DATABASE_MAINTENANCE.md)
 
@@ -25,7 +25,7 @@
 
 | 文档 | 说明 | 语言 |
 | --- | --- | --- |
-| [图片数据集交付审查](DATASET_DELIVERY.zh.md) | 浏览器导入、泄漏审查、修正版本、签批发布与独立核验 | [ZH](DATASET_DELIVERY.zh.md) · [EN](DATASET_DELIVERY.md) |
+| [检查图片训练集与测试集重复并离线验包](DATASET_DELIVERY.zh.md) | 附可下载 3 张图样例的 5 分钟实操：跨划分查重、修正版本、签批发布与 `datakeel reconcile` 离线核验终端输出 | [ZH](DATASET_DELIVERY.zh.md) · [EN](DATASET_DELIVERY.md) |
 | [数据生产流程](PRODUCTION.zh.md) | 标签集发布、只追加修订、小组/团队派单、审核返工与定稿到标准数据集版本 | [ZH](PRODUCTION.zh.md) · [EN](PRODUCTION.md) |
 | [标注工作台](ANNOTATION_WORKBENCH.zh.md) | 快捷键标注、EXIF 摆正、模板属性表单、离线草稿与团队档项目驾驶舱 | [ZH](ANNOTATION_WORKBENCH.zh.md) · [EN](ANNOTATION_WORKBENCH.md) |
 | [标注质量评估](ANNOTATION_QA.md) | 分类、二维框与文本片段标注的离线一致性指标与抽检验收 | EN / ZH |

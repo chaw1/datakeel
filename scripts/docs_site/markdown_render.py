@@ -62,6 +62,9 @@ def _rewrite_href(
     elif resolved.startswith("docs/images/"):
         rel_img = resolved.removeprefix("docs/images/")
         result = config.href(f"assets/images/{rel_img}")
+    elif resolved.startswith("docs/samples/"):
+        rel_sample = resolved.removeprefix("docs/samples/")
+        result = config.href(f"assets/samples/{rel_sample}")
     else:
         result = f"{config.repo_url}/blob/main/{resolved}{anchor}"
     return result

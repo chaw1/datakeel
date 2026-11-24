@@ -17,7 +17,7 @@
   <a href="README.zh.md">简体中文</a> ·
   <a href="https://chaw1.github.io/datakeel/">Website</a> ·
   <a href="#quick-start">Quick start</a> ·
-  <a href="docs/DATASET_DELIVERY.md">Dataset delivery</a> ·
+  <a href="docs/DATASET_DELIVERY.md">5-min leakage &amp; delivery guide</a> ·
   <a href="docs/DEMO.en.md">Guided tour</a> ·
   <a href="docs/README.md">Documentation</a> ·
   <a href="CHANGELOG.md">Changelog</a>
@@ -25,7 +25,7 @@
 
 ![Datakeel 18-second walkthrough: visual QA evidence review, traceable metric SQL, and human-approved agent actions](docs/images/demo-walkthrough.gif)
 
-*18-second live demo walkthrough: visual QA & evidence anchors, traceable metric SQL, and digest-bound human approval. See also [dataset delivery review](docs/DATASET_DELIVERY.md).*
+*18-second live demo walkthrough: visual QA & evidence anchors, traceable metric SQL, and digest-bound human approval. Want a 5-minute hands-on test? Try [Detect train/test duplicate images & verify delivery offline](docs/DATASET_DELIVERY.md) with the downloadable 3-image sample.*
 
 ## Quick start
 
@@ -60,7 +60,7 @@ The demo includes four generated collections for file processing, paired image e
 
 | Workflow | What you can verify | Guide |
 | --- | --- | --- |
-| Import and review an image folder | Preview sample and sidecar pairing, inspect images that match across partitions, and exclude a confirmed sample in a corrected version. | [Dataset delivery review](docs/DATASET_DELIVERY.md) |
+| Detect train/test image leakage & verify delivery | Download the 3-image sample, catch exact/dHash duplicates across splits, save a 2-image corrected version, and verify offline with `datakeel reconcile`. | [5-min leakage & delivery guide](docs/DATASET_DELIVERY.md) |
 | Review samples | Follow a candidate issue to a caption, annotation, image, or source event. Evidence distinguishes present, absent, and unknown. | [Evidence review](docs/DEMO.en.md#2-review-a-sample-and-create-a-version-2-minutes) |
 | Prepare training data | Compare immutable versions, inspect split leakage, and export training sets in COCO, YOLO, Hugging Face, or JSONL formats as applicable. | [Training sets](docs/TRAINING.md) |
 | Deliver a dataset | Sign a frozen release plan, download a reproducible package, and verify its manifest with `datakeel reconcile`. | [Dataset releases](docs/RELEASES.md) |

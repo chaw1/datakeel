@@ -16,7 +16,7 @@
   <a href="README.md">English</a> ·
   <a href="https://chaw1.github.io/datakeel/zh/">官网与文档</a> ·
   <a href="#快速上手">快速上手</a> ·
-  <a href="docs/DATASET_DELIVERY.zh.md">数据集交付</a> ·
+  <a href="docs/DATASET_DELIVERY.zh.md">5 分钟图片查重与离线验包</a> ·
   <a href="docs/DEMO.md">演示导览</a> ·
   <a href="docs/README.zh.md">文档中心</a> ·
   <a href="CHANGELOG.md">更新日志</a>
@@ -24,7 +24,7 @@
 
 ![Datakeel 18 秒实机演示：视觉证据校样、可追溯指标 SQL 与人工签批受控动作](docs/images/demo-walkthrough.gif)
 
-*18 秒本地离线演示录屏：样本证据校样、可追溯参数化 SQL 问数、智能体计划与人工签批单。图片数据集跨划分泄漏对比见 [数据集交付审查](docs/DATASET_DELIVERY.zh.md)。*
+*18 秒本地离线演示录屏：样本证据校样、可追溯参数化 SQL 问数、智能体计划与人工签批单。想用 5 分钟亲手复现训练集/测试集查重与离线验包？见 [如何检查图片训练集和测试集是否重复，并让客户离线验收](docs/DATASET_DELIVERY.zh.md)（附 3 张图样例）。*
 
 ## 快速上手
 
@@ -59,7 +59,7 @@ uv run datakeel export --format croissant --output croissant.json
 
 | 工作 | 可以核对的结果 | 指南 |
 | --- | --- | --- |
-| 导入并审查图片目录 | 预览图片和配套文件，查看跨划分匹配的图片，确认后将样本排除在修正版本之外。 | [数据集交付审查](docs/DATASET_DELIVERY.zh.md) |
+| 图片集跨划分查重与离线验包 | 下载 3 张图样例，本地查出 train/test 精确与 dHash 重复图片，排除后生成 2 张图修正版，再用 `datakeel reconcile` 离线核验交付包。 | [5 分钟查重与离线验包案例](docs/DATASET_DELIVERY.zh.md) |
 | 审阅样本 | 从候选问题跳到图片、描述、标注或来源事件。证据区分「有」「无」「未知」。 | [证据审阅](docs/DEMO.md#2-审一个样本再生成版本约-2-分钟) |
 | 准备训练数据 | 比较不可变版本、检查切分泄漏，并按任务需要导出 COCO、YOLO、Hugging Face 或 JSONL。 | [训练集](docs/TRAINING.zh.md) |
 | 发布与交付 | 签批已冻结的发布计划，下载可复现的交付包，用 `datakeel reconcile` 核对清单。 | [数据集发布](docs/RELEASES.zh.md) |
