@@ -67,8 +67,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://chaw1.github.io/datakeel/"
-Documentation = "https://chaw1.github.io/datakeel/docs/"
+Homepage = "https://datakeel.jiawis.com/"
+Documentation = "https://datakeel.jiawis.com/docs/"
 Repository = "https://github.com/chaw1/datakeel.git"
 Issues = "https://github.com/chaw1/datakeel/issues"
 Changelog = "https://github.com/chaw1/datakeel/blob/main/CHANGELOG.md"

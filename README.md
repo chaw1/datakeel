@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://pypi.org/project/datakeel/"><img alt="PyPI" src="https://img.shields.io/pypi/v/datakeel?color=2459a8" /></a>
-  <a href="https://chaw1.github.io/datakeel/"><img alt="Website" src="https://img.shields.io/badge/docs-chaw1.github.io%2Fdatakeel-2459a8" /></a>
+  <a href="https://datakeel.jiawis.com/"><img alt="Website" src="https://img.shields.io/badge/docs-datakeel.jiawis.com-2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/releases"><img alt="Release" src="https://img.shields.io/github/v/release/chaw1/datakeel?color=2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/actions/workflows/ci.yml"><img alt="Quality gates" src="https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="pyproject.toml"><img alt="Python 3.12+" src="https://img.shields.io/badge/Python-3.12%2B-2459a8" /></a>
@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="README.zh.md">简体中文</a> ·
-  <a href="https://chaw1.github.io/datakeel/">Website</a> ·
+  <a href="https://datakeel.jiawis.com/">Website</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="docs/DATASET_DELIVERY.md">5-min leakage &amp; delivery guide</a> ·
   <a href="docs/DEMO.en.md">Guided tour</a> ·
@@ -69,7 +69,7 @@ The demo includes four generated collections for file processing, paired image e
 
 The bilingual UI includes a keyboard-driven evidence review panel, global search with `⌘K / Ctrl+K`, and a contextual Copilot with `⌘J / Ctrl+J`. [UI design](docs/design/UI-DIRECTION-B.md)
 
-For labeling production, audio and video processing, LLM dataset checks, knowledge graphs, and semantic catalog imports, use the [documentation hub](docs/README.md) or browse the [documentation site](https://chaw1.github.io/datakeel/docs/).
+For labeling production, audio and video processing, LLM dataset checks, knowledge graphs, and semantic catalog imports, use the [documentation hub](docs/README.md) or browse the [documentation site](https://datakeel.jiawis.com/docs/).
 
 ## Where Datakeel fits
 

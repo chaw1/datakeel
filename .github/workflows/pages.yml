@@ -43,8 +43,8 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Build static landing and documentation site
         env:
-          SITE_BASE_URL: ${{ vars.SITE_BASE_URL || steps.pages.outputs.base_url || 'https://chaw1.github.io/datakeel/' }}
-          SITE_CUSTOM_DOMAIN: ${{ vars.SITE_CUSTOM_DOMAIN || '' }}
+          SITE_BASE_URL: ${{ vars.SITE_BASE_URL || (github.repository == 'chaw1/datakeel' && 'https://datakeel.jiawis.com/') || steps.pages.outputs.base_url || 'https://chaw1.github.io/datakeel/' }}
+          SITE_CUSTOM_DOMAIN: ${{ vars.SITE_CUSTOM_DOMAIN || (github.repository == 'chaw1/datakeel' && 'datakeel.jiawis.com') || '' }}
         run: |
           uv run --no-sync python -m scripts.docs_site \
             --output artifacts/site \

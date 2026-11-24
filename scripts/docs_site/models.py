@@ -19,7 +19,7 @@ class SiteConfig(BoundaryModel):
 
     repo_root: Path
     output_dir: Path
-    base_url: str = "https://chaw1.github.io/datakeel/"
+    base_url: str = "https://datakeel.jiawis.com/"
     repo_url: str = "https://github.com/chaw1/datakeel"
     version: str = "0.27.1"
 

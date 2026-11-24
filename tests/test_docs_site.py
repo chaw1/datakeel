@@ -35,7 +35,7 @@ def test_build_site_generates_bilingual_pages_seo_and_social_cards(tmp_path: Pat
     config = SiteConfig(
         repo_root=ROOT,
         output_dir=tmp_path / "site",
-        base_url="https://chaw1.github.io/datakeel/",
+        base_url="https://datakeel.jiawis.com/",
         version=read_package_version(ROOT),
     )
     summary = build_site(config)
@@ -72,16 +72,16 @@ def test_build_site_generates_bilingual_pages_seo_and_social_cards(tmp_path: Pat
             assert image.size == (1200, 630)
 
     en_home = (out / "index.html").read_text(encoding="utf-8")
-    assert '<link rel="canonical" href="https://chaw1.github.io/datakeel/" />' in en_home
-    assert 'hreflang="zh-Hans" href="https://chaw1.github.io/datakeel/zh/"' in en_home
-    og_tag = 'property="og:image" content="https://chaw1.github.io/datakeel/assets/og-en.png"'
+    assert '<link rel="canonical" href="https://datakeel.jiawis.com/" />' in en_home
+    assert 'hreflang="zh-Hans" href="https://datakeel.jiawis.com/zh/"' in en_home
+    og_tag = 'property="og:image" content="https://datakeel.jiawis.com/assets/og-en.png"'
     assert og_tag in en_home
     ld_types = {item["@type"] for item in _extract_json_ld(en_home)}
     assert {"SoftwareApplication", "FAQPage"} <= ld_types
 
     zh_home = (out / "zh/index.html").read_text(encoding="utf-8")
-    assert '<link rel="canonical" href="https://chaw1.github.io/datakeel/zh/" />' in zh_home
-    assert 'hreflang="en" href="https://chaw1.github.io/datakeel/"' in zh_home
+    assert '<link rel="canonical" href="https://datakeel.jiawis.com/zh/"' in zh_home
+    assert 'hreflang="en" href="https://datakeel.jiawis.com/"' in zh_home
 
 
 def test_build_site_rewrites_doc_links_and_validates_sitemap(tmp_path: Path) -> None:
@@ -130,6 +130,7 @@ def test_pages_workflow_is_valid_and_invokes_docs_site_builder() -> None:
     assert "scripts.docs_site" in content
     assert "actions/deploy-pages" in content
     assert "fetch-depth: 0" in content
+    assert "datakeel.jiawis.com" in content
 
 
 def test_warehouse_sample_archive_is_deterministic_and_has_intentional_leakage() -> None:

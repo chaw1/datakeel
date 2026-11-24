@@ -27,7 +27,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--base-url",
-        default="https://chaw1.github.io/datakeel/",
+        default="https://datakeel.jiawis.com/",
         help="Canonical public URL where the site will be hosted.",
     )
     parser.add_argument(

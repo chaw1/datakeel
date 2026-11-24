@@ -5,7 +5,7 @@ type: software
 authors:
   - name: "Datakeel Contributors"
 repository-code: "https://github.com/chaw1/datakeel"
-url: "https://chaw1.github.io/datakeel/"
+url: "https://datakeel.jiawis.com/"
 license: Apache-2.0
 abstract: >-
   An auditable, local-first data and AI dataset workbench unifying multimodal

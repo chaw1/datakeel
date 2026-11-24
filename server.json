@@ -3,7 +3,7 @@
   "name": "io.github.chaw1/datakeel",
   "title": "Datakeel",
   "description": "Local-first workbench for auditable AI datasets, traceable SQL metrics, and approved actions.",
-  "websiteUrl": "https://chaw1.github.io/datakeel/",
+  "websiteUrl": "https://datakeel.jiawis.com/",
   "version": "0.27.1",
   "repository": {
     "url": "https://github.com/chaw1/datakeel",

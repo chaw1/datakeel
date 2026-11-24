@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="https://pypi.org/project/datakeel/"><img alt="PyPI" src="https://img.shields.io/pypi/v/datakeel?color=2459a8" /></a>
-  <a href="https://chaw1.github.io/datakeel/zh/"><img alt="官网与文档" src="https://img.shields.io/badge/docs-chaw1.github.io%2Fdatakeel-2459a8" /></a>
+  <a href="https://datakeel.jiawis.com/zh/"><img alt="官网与文档" src="https://img.shields.io/badge/docs-datakeel.jiawis.com-2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/releases"><img alt="发布版本" src="https://img.shields.io/github/v/release/chaw1/datakeel?color=2459a8" /></a>
   <a href="https://github.com/chaw1/datakeel/actions/workflows/ci.yml"><img alt="质量门禁" src="https://github.com/chaw1/datakeel/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="pyproject.toml"><img alt="Python 3.12+" src="https://img.shields.io/badge/Python-3.12%2B-2459a8" /></a>
@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="README.md">English</a> ·
-  <a href="https://chaw1.github.io/datakeel/zh/">官网与文档</a> ·
+  <a href="https://datakeel.jiawis.com/zh/">官网与文档</a> ·
   <a href="#快速上手">快速上手</a> ·
   <a href="docs/DATASET_DELIVERY.zh.md">5 分钟图片查重与离线验包</a> ·
   <a href="docs/DEMO.md">演示导览</a> ·
@@ -68,7 +68,7 @@ uv run datakeel export --format croissant --output croissant.json
 
 中英文界面提供样本校样快捷键，并可用 `⌘K / Ctrl+K` 查找对象、用 `⌘J / Ctrl+J` 打开带当前对象上下文的副驾。 [界面设计](docs/design/UI-DIRECTION-B.md)
 
-标注生产、音视频处理、大模型数据检查、知识图谱和目录导入的专题指南收录在 [文档中心](docs/README.zh.md) 与 [在线文档站](https://chaw1.github.io/datakeel/zh/docs/)。
+标注生产、音视频处理、大模型数据检查、知识图谱和目录导入的专题指南收录在 [文档中心](docs/README.zh.md) 与 [在线文档站](https://datakeel.jiawis.com/zh/docs/)。
 
 ## 定位边界与常见对比
 
